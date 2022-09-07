@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
@@ -535,7 +533,7 @@ namespace Internal.TypeSystem
             return false;
         }
 
-        private class StackOverflowProtect
+        private sealed class StackOverflowProtect
         {
             private CastingPair _value;
             private StackOverflowProtect _previous;

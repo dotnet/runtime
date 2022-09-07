@@ -10,9 +10,13 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Tests.TestUtility
     {
         public DisposableFileSystem()
         {
-            RootPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-            Directory.CreateDirectory(RootPath);
-            DirectoryInfo = new DirectoryInfo(RootPath);
+#if NETCOREAPP
+            DirectoryInfo = Directory.CreateTempSubdirectory();
+#else
+            DirectoryInfo = new DirectoryInfo(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()));
+            DirectoryInfo.Create();
+#endif
+            RootPath = DirectoryInfo.FullName;
         }
 
         public string RootPath { get; }

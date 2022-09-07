@@ -25,7 +25,7 @@ namespace ILLink.Shared.TrimAnalysis
     /// <summary>
     /// Caches dataflow annotations for type members.
     /// </summary>
-    sealed public partial class FlowAnnotations
+    public sealed partial class FlowAnnotations
     {
         private readonly TypeAnnotationsHashtable _hashtable;
         private readonly Logger _logger;
@@ -46,6 +46,20 @@ namespace ILLink.Shared.TrimAnalysis
             try
             {
                 method = method.GetTypicalMethodDefinition();
+                return GetAnnotations(method.OwningType).TryGetAnnotation(method, out var methodAnnotations)
+                    && (methodAnnotations.ReturnParameterAnnotation != DynamicallyAccessedMemberTypes.None || methodAnnotations.ParameterAnnotations != null);
+            }
+            catch (TypeSystemException)
+            {
+                return false;
+            }
+        }
+
+        public bool RequiresVirtualMethodDataflowAnalysis(MethodDesc method)
+        {
+            try
+            {
+                method = method.GetTypicalMethodDefinition();
                 return GetAnnotations(method.OwningType).TryGetAnnotation(method, out _);
             }
             catch (TypeSystemException)
@@ -60,6 +74,18 @@ namespace ILLink.Shared.TrimAnalysis
             {
                 field = field.GetTypicalFieldDefinition();
                 return GetAnnotations(field.OwningType).TryGetAnnotation(field, out _);
+            }
+            catch (TypeSystemException)
+            {
+                return false;
+            }
+        }
+
+        public bool RequiresGenericArgumentDataFlowAnalysis(GenericParameterDesc genericParameter)
+        {
+            try
+            {
+                return GetGenericParameterAnnotation(genericParameter) != DynamicallyAccessedMemberTypes.None;
             }
             catch (TypeSystemException)
             {
@@ -259,7 +285,7 @@ namespace ILLink.Shared.TrimAnalysis
             return _hashtable.GetOrCreateValue(type);
         }
 
-        private class TypeAnnotationsHashtable : LockFreeReaderHashtable<TypeDesc, TypeAnnotations>
+        private sealed class TypeAnnotationsHashtable : LockFreeReaderHashtable<TypeDesc, TypeAnnotations>
         {
             private readonly ILProvider _ilProvider;
             private readonly Logger _logger;
@@ -330,7 +356,7 @@ namespace ILLink.Shared.TrimAnalysis
                     // If the class hierarchy is not walkable, just stop collecting the annotations.
                 }
 
-                var annotatedFields = new ArrayBuilder<FieldAnnotation>();
+                var annotatedFields = default(ArrayBuilder<FieldAnnotation>);
 
                 // First go over all fields with an explicit annotation
                 foreach (EcmaField field in ecmaType.GetFields())
@@ -353,7 +379,7 @@ namespace ILLink.Shared.TrimAnalysis
                     annotatedFields.Add(new FieldAnnotation(field, annotation));
                 }
 
-                var annotatedMethods = new ArrayBuilder<MethodAnnotations>();
+                var annotatedMethods = default(ArrayBuilder<MethodAnnotations>);
 
                 // Next go over all methods with an explicit annotation
                 foreach (EcmaMethod method in ecmaType.GetMethods())
@@ -432,10 +458,7 @@ namespace ILLink.Shared.TrimAnalysis
                                 continue;
                             }
 
-                            if (paramAnnotations == null)
-                            {
-                                paramAnnotations = new DynamicallyAccessedMemberTypes[signature.Length + offset];
-                            }
+                            paramAnnotations ??= new DynamicallyAccessedMemberTypes[signature.Length + offset];
                             paramAnnotations[parameter.SequenceNumber - 1 + offset] = pa;
                         }
                     }
@@ -447,8 +470,7 @@ namespace ILLink.Shared.TrimAnalysis
                         var annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute(reader, genericParameterDef.GetCustomAttributes());
                         if (annotation != DynamicallyAccessedMemberTypes.None)
                         {
-                            if (genericParameterAnnotations == null)
-                                genericParameterAnnotations = new DynamicallyAccessedMemberTypes[method.Instantiation.Length];
+                            genericParameterAnnotations ??= new DynamicallyAccessedMemberTypes[method.Instantiation.Length];
                             genericParameterAnnotations[genericParameter.Index] = annotation;
                         }
                     }
@@ -588,8 +610,7 @@ namespace ILLink.Shared.TrimAnalysis
                         var annotation = GetMemberTypesForDynamicallyAccessedMembersAttribute(reader, genericParameterDef.GetCustomAttributes());
                         if (annotation != DynamicallyAccessedMemberTypes.None)
                         {
-                            if (typeGenericParameterAnnotations == null)
-                                typeGenericParameterAnnotations = new DynamicallyAccessedMemberTypes[ecmaType.Instantiation.Length];
+                            typeGenericParameterAnnotations ??= new DynamicallyAccessedMemberTypes[ecmaType.Instantiation.Length];
                             typeGenericParameterAnnotations[genericParameterIndex] = annotation;
                         }
                     }
@@ -723,7 +744,7 @@ namespace ILLink.Shared.TrimAnalysis
             }
         }
 
-        void ValidateMethodParametersHaveNoAnnotations(DynamicallyAccessedMemberTypes[] parameterAnnotations, MethodDesc method, MethodDesc baseMethod, MethodDesc origin)
+        private void ValidateMethodParametersHaveNoAnnotations(DynamicallyAccessedMemberTypes[] parameterAnnotations, MethodDesc method, MethodDesc baseMethod, MethodDesc origin)
         {
             for (int parameterIndex = 0; parameterIndex < parameterAnnotations.Length; parameterIndex++)
             {
@@ -736,7 +757,7 @@ namespace ILLink.Shared.TrimAnalysis
             }
         }
 
-        void ValidateMethodGenericParametersHaveNoAnnotations(DynamicallyAccessedMemberTypes[] genericParameterAnnotations, MethodDesc method, MethodDesc baseMethod, MethodDesc origin)
+        private void ValidateMethodGenericParametersHaveNoAnnotations(DynamicallyAccessedMemberTypes[] genericParameterAnnotations, MethodDesc method, MethodDesc baseMethod, MethodDesc origin)
         {
             for (int genericParameterIndex = 0; genericParameterIndex < genericParameterAnnotations.Length; genericParameterIndex++)
             {
@@ -750,7 +771,7 @@ namespace ILLink.Shared.TrimAnalysis
             }
         }
 
-        void LogValidationWarning(object provider, object baseProvider, MethodDesc origin)
+        private void LogValidationWarning(object provider, object baseProvider, MethodDesc origin)
         {
             switch (provider)
             {
@@ -764,7 +785,7 @@ namespace ILLink.Shared.TrimAnalysis
                         genericParameterOverride.Name, DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(new GenericParameterOrigin(genericParameterOverride)),
                         ((GenericParameterDesc)baseProvider).Name, DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(new GenericParameterOrigin((GenericParameterDesc)baseProvider)));
                     break;
-                case TypeDesc methodReturnType:
+                case TypeDesc:
                     _logger.LogWarning(origin, DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodReturnValueBetweenOverrides,
                         DiagnosticUtilities.GetMethodSignatureDisplayName(origin), DiagnosticUtilities.GetMethodSignatureDisplayName((MethodDesc)baseProvider));
                     break;
@@ -778,7 +799,7 @@ namespace ILLink.Shared.TrimAnalysis
             }
         }
 
-        private class TypeAnnotations
+        private sealed class TypeAnnotations
         {
             public readonly TypeDesc Type;
             public readonly DynamicallyAccessedMemberTypes TypeAnnotation;
@@ -906,7 +927,9 @@ namespace ILLink.Shared.TrimAnalysis
         internal partial bool MethodRequiresDataFlowAnalysis(MethodProxy method)
             => RequiresDataflowAnalysis(method.Method);
 
+#pragma warning disable CA1822 // Other partial implementations are not in the ilc project
         internal partial MethodReturnValue GetMethodReturnValue(MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+#pragma warning restore CA1822 // Mark members as static
             => new MethodReturnValue(method.Method, dynamicallyAccessedMemberTypes);
 
         internal partial MethodReturnValue GetMethodReturnValue(MethodProxy method)
@@ -923,7 +946,9 @@ namespace ILLink.Shared.TrimAnalysis
         internal partial MethodThisParameterValue GetMethodThisParameterValue(MethodProxy method)
             => GetMethodThisParameterValue(method, GetParameterAnnotation(method.Method, 0));
 
+#pragma warning disable CA1822 // Other partial implementations are not in the ilc project
         internal partial MethodParameterValue GetMethodParameterValue(MethodProxy method, int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+#pragma warning restore CA1822 // Mark members as static
             => new(method.Method, parameterIndex, dynamicallyAccessedMemberTypes);
 
         internal partial MethodParameterValue GetMethodParameterValue(MethodProxy method, int parameterIndex)

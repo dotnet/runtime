@@ -760,7 +760,7 @@ namespace System.Xml
         {
             try
             {
-                if (null != text && (text.Contains("--") || text.StartsWith('-')))
+                if (null != text && (text.Contains("--") || text.EndsWith('-')))
                 {
                     throw new ArgumentException(SR.Xml_InvalidCommentChars);
                 }
@@ -1693,7 +1693,7 @@ namespace System.Xml
         // all valid name characters at that position. This can't be changed because of backwards compatibility.
         private void ValidateName(string name, bool isNCName)
         {
-            if (name == null || name.Length == 0)
+            if (string.IsNullOrEmpty(name))
             {
                 throw new ArgumentException(SR.Xml_EmptyName);
             }

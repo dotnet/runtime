@@ -669,7 +669,17 @@ mono_arch_get_call_target (guint8 *code)
 		guint8 *target = code - 4 + (disp * 4);
 
 		return target;
-	} else {
+	}
+#if defined(TARGET_POWERPC64) && !defined(PPC_USES_FUNCTION_DESCRIPTOR)
+	else if (((guint32*)(code - 32)) [0] >> 26 == 15) {
+		guint8 *thunk = GET_MEMORY_SLOT_THUNK_ADDRESS((guint32*)(code - 32));
+		return thunk;
+	} else if (((guint32*)(code - 4)) [0] >> 26 == 15) {
+		guint8 *thunk = GET_MEMORY_SLOT_THUNK_ADDRESS((guint32*)(code - 4));
+		return thunk;
+	}
+#endif
+	else {
 		return NULL;
 	}
 }

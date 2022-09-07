@@ -2,22 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
-using System.Collections.Generic;
 
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.NativeFormat;
 
-using ILCompiler.DependencyAnalysisFramework;
-
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// DefaultConstructorMap blob, containing information on default constructor entrypoints of all types used 
+    /// DefaultConstructorMap blob, containing information on default constructor entrypoints of all types used
     /// by lazy generic instantiations.
     /// </summary>
-    internal class DefaultConstructorMapNode : ObjectNode, ISymbolDefinitionNode
+    internal sealed class DefaultConstructorMapNode : ObjectNode, ISymbolDefinitionNode
     {
         private ObjectAndOffsetSymbolNode _endSymbol;
         private ExternalReferencesTableNode _externalReferences;
@@ -62,6 +58,15 @@ namespace ILCompiler.DependencyAnalysis
             {
                 MethodDesc defaultCtor = type.GetDefaultConstructor();
                 if (defaultCtor == null)
+                    continue;
+
+                // We only place default constructors of reflection-blocked types in this table.
+                // At runtime, the type loader will search both this table and the invoke map
+                // for default constructor info. If the ctor is reflectable, we would have
+                // expected dataflow analysis to ensure there's a reflectable method for it.
+                // If we don't find a reflectable method for the ctor of a non-blocked type
+                // there would have to be a dataflow analysis warning.
+                if (!factory.MetadataManager.IsReflectionBlocked(defaultCtor))
                     continue;
 
                 defaultCtor = defaultCtor.GetCanonMethodTarget(CanonicalFormKind.Specific);

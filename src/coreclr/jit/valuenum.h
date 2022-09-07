@@ -784,8 +784,13 @@ public:
                                bool         srcIsUnsigned    = false,
                                bool         hasOverflowCheck = false);
 
-    ValueNum VNForBitCast(ValueNum srcVN, var_types castToType);
-    ValueNumPair VNPairForBitCast(ValueNumPair srcVNPair, var_types castToType);
+    ValueNum EncodeBitCastType(var_types castToType, unsigned size);
+
+    var_types DecodeBitCastType(ValueNum castToTypeVN, unsigned* pSize);
+
+    ValueNum VNForBitCast(ValueNum srcVN, var_types castToType, unsigned size);
+
+    ValueNumPair VNPairForBitCast(ValueNumPair srcVNPair, var_types castToType, unsigned size);
 
     ValueNum VNForFieldSeq(FieldSeq* fieldSeq);
 
@@ -939,12 +944,9 @@ public:
     // Returns true iff the VN represents a relop
     bool IsVNRelop(ValueNum vn);
 
-    // Given VN(x > y), return VN(y > x), VN(x <= y) or VN(y >= x)
-    //
-    // If vn is not a relop, return NoVN.
-    //
     enum class VN_RELATION_KIND
     {
+        VRK_Inferred,   // (x ?  y)
         VRK_Same,       // (x >  y)
         VRK_Swap,       // (y >  x)
         VRK_Reverse,    // (x <= y)
@@ -955,6 +957,10 @@ public:
     static const char* VNRelationString(VN_RELATION_KIND vrk);
 #endif
 
+    // Given VN(x > y), return VN(y > x), VN(x <= y) or VN(y >= x)
+    //
+    // If vn is not a relop, return NoVN.
+    //
     ValueNum GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk);
 
     // Convert a vartype_t to the value number's storage type for that vartype_t.

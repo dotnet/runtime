@@ -105,6 +105,7 @@ public:
     INT_CONFIG   (GCTotalPhysicalMemory,     "GCTotalPhysicalMemory",     NULL,                                0,                  "Specifies what the GC should consider to be total physical memory")                      \
     INT_CONFIG   (GCRegionRange,             "GCRegionRange",             NULL,                                0,                  "Specifies the range for the GC heap")                                                    \
     INT_CONFIG   (GCRegionSize,              "GCRegionSize",              NULL,                                4194304,            "Specifies the size for a basic GC region")                                               \
+    INT_CONFIG   (GCEnableSpecialRegions,    "GCEnableSpecialRegions",    NULL,                                0,                  "Specifies to enable special handling some regions like SIP")                             \
     STRING_CONFIG(LogFile,                   "GCLogFile",                 NULL,                                                    "Specifies the name of the GC log file")                                                  \
     STRING_CONFIG(ConfigLogFile,             "GCConfigLogFile",           NULL,                                                    "Specifies the name of the GC config log file")                                           \
     INT_CONFIG   (BGCFLTuningEnabled,        "BGCFLTuningEnabled",        NULL,                                0,                  "Enables FL tuning")                                                                      \
@@ -134,15 +135,18 @@ public:
     INT_CONFIG   (GCHeapHardLimitPOHPercent, "GCHeapHardLimitPOHPercent", "System.GC.HeapHardLimitPOHPercent", 0,                  "Specifies the GC heap POH usage as a percentage of the total memory")                    \
     INT_CONFIG   (GCEnabledInstructionSets,  "GCEnabledInstructionSets",  NULL,                                -1,                 "Specifies whether GC can use AVX2 or AVX512F - 0 for neither, 1 for AVX2, 3 for AVX512F")\
     INT_CONFIG   (GCConserveMem,             "GCConserveMemory",          "System.GC.ConserveMemory",          0,                  "Specifies how hard GC should try to conserve memory - values 0-9")                       \
-
+    INT_CONFIG   (GCWriteBarrier,            "GCWriteBarrier",            NULL,                                0,                  "Specifies whether GC should use more precise but slower write barrier")                  \
+    STRING_CONFIG(GCName,                    "GCName",                    "System.GC.Name",                                        "Specifies the path of the standalone GC implementation.")                                
 // This class is responsible for retreiving configuration information
 // for how the GC should operate.
 class GCConfig
 {
 #define BOOL_CONFIG(name, unused_private_key, unused_public_key, unused_default, unused_doc) \
   public: static bool Get##name();                                \
+  public: static bool Get##name(bool defaultValue);               \
   public: static void Set##name(bool value);                      \
   private: static bool s_##name;                                  \
+  private: static bool s_##name##Provided;                        \
   private: static bool s_Updated##name;
   
 #define INT_CONFIG(name, unused_private_key, unused_public_key, unused_default, unused_doc) \
@@ -180,6 +184,14 @@ enum HeapVerifyFlags {
     HEAPVERIFY_NO_MEM_FILL      = 0x20,   // Excludes filling unused segment portions with fill pattern
     HEAPVERIFY_POST_GC_ONLY     = 0x40,   // Performs heap verification post-GCs only (instead of before and after each GC)
     HEAPVERIFY_DEEP_ON_COMPACT  = 0x80    // Performs deep object verfication only on compacting GCs.
+};
+
+enum WriteBarrierFlavor
+{
+    WRITE_BARRIER_DEFAULT = 0,
+    WRITE_BARRIER_REGION_BIT = 1,
+    WRITE_BARRIER_REGION_BYTE = 2,
+    WRITE_BARRIER_SERVER = 3,
 };
 
 // Initializes the GCConfig subsystem. Must be called before accessing any

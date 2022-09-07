@@ -187,12 +187,20 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 // No further changes to _state.Disposables, are allowed.
                 _disposed = true;
 
-                // ResolvedServices is never cleared for singletons because there might be a compilation running in background
-                // trying to get a cached singleton service. If it doesn't find it
-                // it will try to create a new one which will result in an ObjectDisposedException.
-
-                return _disposables;
             }
+
+            if (IsRootScope && !RootProvider.IsDisposed())
+            {
+                // If this ServiceProviderEngineScope instance is a root scope, disposing this instance will need to dispose the RootProvider too.
+                // Otherwise the RootProvider will never get disposed and will leak.
+                // Note, if the RootProvider get disposed first, it will automatically dispose all attached ServiceProviderEngineScope objects.
+                RootProvider.Dispose();
+            }
+
+            // ResolvedServices is never cleared for singletons because there might be a compilation running in background
+            // trying to get a cached singleton service. If it doesn't find it
+            // it will try to create a new one which will result in an ObjectDisposedException.
+            return _disposables;
         }
     }
 }

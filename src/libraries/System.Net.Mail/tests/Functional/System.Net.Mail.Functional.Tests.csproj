@@ -8,7 +8,6 @@
   <ItemGroup>
     <Compile Include="AlternateViewCollectionTest.cs" />
     <Compile Include="AlternateViewTest.cs" />
-    <Compile Include="AssemblyInfo.cs" />
     <Compile Include="AttachmentCollectionTest.cs" />
     <Compile Include="AttachmentTest.cs" />
     <Compile Include="ContentDispositionTest.cs" />
@@ -20,6 +19,7 @@
     <Compile Include="MailAddressTest.cs" />
     <Compile Include="MailMessageTest.cs" />
     <Compile Include="SmtpExceptionTest.cs" />
+    <Compile Include="TestHelper.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs"
              Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempFile.cs"

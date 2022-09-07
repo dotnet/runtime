@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using Internal.TypeSystem;
 
@@ -13,7 +12,7 @@ namespace Internal.JitInterface
     /// This class is for internal purposes within the JitInterface. It's not expected
     /// for it to escape the JitInterface.
     /// </summary>
-    internal class UnboxingMethodDesc : MethodDelegator
+    internal sealed class UnboxingMethodDesc : MethodDelegator
     {
         private readonly UnboxingMethodDescFactory _factory;
 

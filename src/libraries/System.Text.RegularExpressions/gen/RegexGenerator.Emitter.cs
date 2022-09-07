@@ -2883,17 +2883,20 @@ namespace System.Text.RegularExpressions.Generator
                 // We're backtracking.  Check the timeout.
                 EmitTimeoutCheckIfNeeded(writer, rm);
 
-                if (!rtl && subsequent?.FindStartingLiteral() is ValueTuple<char, string?, string?> literal)
+                if (!rtl && subsequent?.FindStartingLiteral() is ValueTuple<char, string?, string?, bool> literal) // char, string, chars, negated
                 {
                     writer.WriteLine($"if ({startingPos} >= {endingPos} ||");
+                    (string lastIndexOfName, string lastIndexOfAnyName) = !literal.Item4 ?
+                        ("LastIndexOf", "LastIndexOfAny") :
+                        ("LastIndexOfAnyExcept", "LastIndexOfAnyExcept");
                     using (EmitBlock(writer,
-                        literal.Item2 is not null ? $"    ({endingPos} = inputSpan.Slice({startingPos}, Math.Min(inputSpan.Length, {endingPos} + {literal.Item2.Length - 1}) - {startingPos}).LastIndexOf({Literal(literal.Item2)})) < 0)" :
-                        literal.Item3 is null ? $"    ({endingPos} = inputSpan.Slice({startingPos}, {endingPos} - {startingPos}).LastIndexOf({Literal(literal.Item1)})) < 0)" :
+                        literal.Item2 is not null ? $"    ({endingPos} = inputSpan.Slice({startingPos}, Math.Min(inputSpan.Length, {endingPos} + {literal.Item2.Length - 1}) - {startingPos}).{lastIndexOfName}({Literal(literal.Item2)})) < 0)" :
+                        literal.Item3 is null ? $"    ({endingPos} = inputSpan.Slice({startingPos}, {endingPos} - {startingPos}).{lastIndexOfName}({Literal(literal.Item1)})) < 0)" :
                         literal.Item3.Length switch
                         {
-                            2 => $"    ({endingPos} = inputSpan.Slice({startingPos}, {endingPos} - {startingPos}).LastIndexOfAny({Literal(literal.Item3[0])}, {Literal(literal.Item3[1])})) < 0)",
-                            3 => $"    ({endingPos} = inputSpan.Slice({startingPos}, {endingPos} - {startingPos}).LastIndexOfAny({Literal(literal.Item3[0])}, {Literal(literal.Item3[1])}, {Literal(literal.Item3[2])})) < 0)",
-                            _ => $"    ({endingPos} = inputSpan.Slice({startingPos}, {endingPos} - {startingPos}).LastIndexOfAny({Literal(literal.Item3)})) < 0)",
+                            2 => $"    ({endingPos} = inputSpan.Slice({startingPos}, {endingPos} - {startingPos}).{lastIndexOfAnyName}({Literal(literal.Item3[0])}, {Literal(literal.Item3[1])})) < 0)",
+                            3 => $"    ({endingPos} = inputSpan.Slice({startingPos}, {endingPos} - {startingPos}).{lastIndexOfAnyName}({Literal(literal.Item3[0])}, {Literal(literal.Item3[1])}, {Literal(literal.Item3[2])})) < 0)",
+                            _ => $"    ({endingPos} = inputSpan.Slice({startingPos}, {endingPos} - {startingPos}).{lastIndexOfAnyName}({Literal(literal.Item3)})) < 0)",
                         }))
                     {
                         Goto(doneLabel);
@@ -3040,7 +3043,8 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     if (iterationCount is null &&
                         node.Kind is RegexNodeKind.Notonelazy &&
-                        subsequent?.FindStartingLiteral(4) is ValueTuple<char, string?, string?> literal) // 5 == max optimized by IndexOfAny, and we need to reserve 1 for node.Ch
+                        subsequent?.FindStartingLiteral(4) is ValueTuple<char, string?, string?, bool> literal && // 5 == max optimized by IndexOfAny, and we need to reserve 1 for node.Ch
+                        !literal.Item4) // not negated; can't search for both the node.Ch and a negated subsequent char with an IndexOf* method
                     {
                         // e.g. "<[^>]*?>"
 
@@ -3098,19 +3102,22 @@ namespace System.Text.RegularExpressions.Generator
                     else if (iterationCount is null &&
                         node.Kind is RegexNodeKind.Setlazy &&
                         node.Str == RegexCharClass.AnyClass &&
-                        subsequent?.FindStartingLiteral() is ValueTuple<char, string?, string?> literal2)
+                        subsequent?.FindStartingLiteral() is ValueTuple<char, string?, string?, bool> literal2)
                     {
                         // e.g. ".*?string" with RegexOptions.Singleline
                         // This lazy loop will consume all characters until the subsequent literal. If the subsequent literal
                         // isn't found, the loop fails. We can implement it to just search for that literal.
+                        (string indexOfName, string indexOfAnyName) = !literal2.Item4 ?
+                            ("IndexOf", "IndexOfAny") :
+                            ("IndexOfAnyExcept", "IndexOfAnyExcept");
                         writer.WriteLine(
-                            literal2.Item2 is not null ? $"{startingPos} = {sliceSpan}.IndexOf({Literal(literal2.Item2)});" :
-                            literal2.Item3 is null ? $"{startingPos} = {sliceSpan}.IndexOf({Literal(literal2.Item1)});" :
+                            literal2.Item2 is not null ? $"{startingPos} = {sliceSpan}.{indexOfName}({Literal(literal2.Item2)});" :
+                            literal2.Item3 is null ? $"{startingPos} = {sliceSpan}.{indexOfName}({Literal(literal2.Item1)});" :
                             literal2.Item3.Length switch
                             {
-                                2 => $"{startingPos} = {sliceSpan}.IndexOfAny({Literal(literal2.Item3[0])}, {Literal(literal2.Item3[1])});",
-                                3 => $"{startingPos} = {sliceSpan}.IndexOfAny({Literal(literal2.Item3[0])}, {Literal(literal2.Item3[1])}, {Literal(literal2.Item3[2])});",
-                                _ => $"{startingPos} = {sliceSpan}.IndexOfAny({Literal(literal2.Item3)});",
+                                2 => $"{startingPos} = {sliceSpan}.{indexOfAnyName}({Literal(literal2.Item3[0])}, {Literal(literal2.Item3[1])});",
+                                3 => $"{startingPos} = {sliceSpan}.{indexOfAnyName}({Literal(literal2.Item3[0])}, {Literal(literal2.Item3[1])}, {Literal(literal2.Item3[2])});",
+                                _ => $"{startingPos} = {sliceSpan}.{indexOfAnyName}({Literal(literal2.Item3)});",
                             });
                         using (EmitBlock(writer, $"if ({startingPos} < 0)"))
                         {
@@ -3616,11 +3623,11 @@ namespace System.Text.RegularExpressions.Generator
                         writer.WriteLine();
                     }
                 }
-                else if (node.IsNotoneFamily && maxIterations == int.MaxValue)
+                else if ((node.IsOneFamily || node.IsNotoneFamily) && maxIterations == int.MaxValue)
                 {
-                    // For Notone, we're looking for a specific character, as everything until we find
-                    // it is consumed by the loop.  If we're unbounded, such as with ".*" and if we're case-sensitive,
-                    // we can use the vectorized IndexOf to do the search, rather than open-coding it.  The unbounded
+                    // For One or Notone, we're looking for a specific character, as everything until we find
+                    // it (or its negation in the case of One) is consumed by the loop.  If we're unbounded, such as with ".*" and if we're case-sensitive,
+                    // we can use the vectorized IndexOf{AnyExcept} to do the search, rather than open-coding it.  The unbounded
                     // restriction is purely for simplicity; it could be removed in the future with additional code to
                     // handle the unbounded case.
 
@@ -3629,7 +3636,8 @@ namespace System.Text.RegularExpressions.Generator
                     {
                         writer.Write($".Slice({sliceStaticPos})");
                     }
-                    writer.WriteLine($".IndexOf({Literal(node.Ch)});");
+                    string op = node.IsNotoneFamily ? "IndexOf" : "IndexOfAnyExcept";
+                    writer.WriteLine($".{op}({Literal(node.Ch)});");
 
                     using (EmitBlock(writer, $"if ({iterationLocal} < 0)"))
                     {
@@ -3641,11 +3649,10 @@ namespace System.Text.RegularExpressions.Generator
                 }
                 else if (node.IsSetFamily &&
                     maxIterations == int.MaxValue &&
-                    (numSetChars = RegexCharClass.GetSetChars(node.Str!, setChars)) != 0 &&
-                    RegexCharClass.IsNegated(node.Str!))
+                    (numSetChars = RegexCharClass.GetSetChars(node.Str!, setChars)) != 0)
                 {
-                    // If the set is negated and contains only a few characters (if it contained 1 and was negated, it should
-                    // have been reduced to a Notone), we can use an IndexOfAny to find any of the target characters.
+                    // If the set contains only a few characters (if it contained 1 and was negated, it should
+                    // have been reduced to a Notone), we can use an IndexOfAny{Except} to find any of the target characters.
                     // As with the notoneloopatomic above, the unbounded constraint is purely for simplicity.
                     Debug.Assert(numSetChars > 1);
 
@@ -3654,11 +3661,14 @@ namespace System.Text.RegularExpressions.Generator
                     {
                         writer.Write($".Slice({sliceStaticPos})");
                     }
-                    writer.WriteLine(numSetChars switch
+                    writer.WriteLine((numSetChars, RegexCharClass.IsNegated(node.Str!)) switch
                     {
-                        2 => $".IndexOfAny({Literal(setChars[0])}, {Literal(setChars[1])});",
-                        3 => $".IndexOfAny({Literal(setChars[0])}, {Literal(setChars[1])}, {Literal(setChars[2])});",
-                        _ => $".IndexOfAny({Literal(setChars.Slice(0, numSetChars).ToString())});",
+                        (2, true)  => $".IndexOfAny({Literal(setChars[0])}, {Literal(setChars[1])});",
+                        (3, true)  => $".IndexOfAny({Literal(setChars[0])}, {Literal(setChars[1])}, {Literal(setChars[2])});",
+                        (_, true)  => $".IndexOfAny({Literal(setChars.Slice(0, numSetChars).ToString())});",
+                        (2, false) => $".IndexOfAnyExcept({Literal(setChars[0])}, {Literal(setChars[1])});",
+                        (3, false) => $".IndexOfAnyExcept({Literal(setChars[0])}, {Literal(setChars[1])}, {Literal(setChars[2])});",
+                        (_, false) => $".IndexOfAnyExcept({Literal(setChars.Slice(0, numSetChars).ToString())});",
                     });
                     using (EmitBlock(writer, $"if ({iterationLocal} < 0)"))
                     {
@@ -4394,9 +4404,13 @@ namespace System.Text.RegularExpressions.Generator
                 negate ^= RegexCharClass.IsNegated(charClass);
                 return (lowInclusive, highInclusive) switch
                 {
+                    ('\0', '\u007F') => $"{(negate ? "!" : "")}char.IsAscii({chExpr})",
                     ('0', '9') => $"{(negate ? "!" : "")}char.IsAsciiDigit({chExpr})",
                     ('a', 'z') => $"{(negate ? "!" : "")}char.IsAsciiLetterLower({chExpr})",
                     ('A', 'Z') => $"{(negate ? "!" : "")}char.IsAsciiLetterUpper({chExpr})",
+                    ('\ud800', '\udfff') => $"{(negate ? "!" : "")}char.IsSurrogate({chExpr})",
+                    ('\ud800', '\udbff') => $"{(negate ? "!" : "")}char.IsHighSurrogate({chExpr})",
+                    ('\udc00', '\udfff') => $"{(negate ? "!" : "")}char.IsLowSurrogate({chExpr})",
                     _ when lowInclusive == highInclusive => $"({chExpr} {(negate ? "!=" : "==")} {Literal(lowInclusive)})",
                     _ => $"{(negate ? "!" : "")}char.IsBetween({chExpr}, {Literal(lowInclusive)}, {Literal(highInclusive)})",
                 };

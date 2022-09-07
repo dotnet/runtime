@@ -262,6 +262,8 @@
 
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\GenericMathHelpers.cs" Link="Common\System\GenericMathHelpers.cs" />
+    <Compile Include="System\Numerics\GenericMathDimHelpers.cs" />
+    <Compile Include="System\Numerics\IBinaryNumberTests.cs" />
     <Compile Include="System\ByteTests.GenericMath.cs" />
     <Compile Include="System\CharTests.GenericMath.cs" />
     <Compile Include="System\DecimalTests.GenericMath.cs" />

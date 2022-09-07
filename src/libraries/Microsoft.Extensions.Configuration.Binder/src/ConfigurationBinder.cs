@@ -19,6 +19,7 @@ namespace Microsoft.Extensions.Configuration
     public static class ConfigurationBinder
     {
         private const BindingFlags DeclaredOnlyLookup = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+        private const string DynamicCodeWarningMessage = "Binding strongly typed objects to configuration values requires generating dynamic code at runtime, for example instantiating generic types.";
         private const string TrimmingWarningMessage = "In case the type is non-primitive, the trimmer cannot statically analyze the object's type so its members may be trimmed.";
         private const string InstanceGetTypeTrimmingWarningMessage = "Cannot statically analyze the type of instance so its members may be trimmed";
         private const string PropertyTrimmingWarningMessage = "Cannot statically analyze property.PropertyType so its members may be trimmed.";
@@ -31,6 +32,7 @@ namespace Microsoft.Extensions.Configuration
         /// <typeparam name="T">The type of the new instance to bind.</typeparam>
         /// <param name="configuration">The configuration instance to bind.</param>
         /// <returns>The new instance of T if successful, default(T) otherwise.</returns>
+        [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         public static T? Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration)
             => configuration.Get<T>(_ => { });
@@ -44,6 +46,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="configuration">The configuration instance to bind.</param>
         /// <param name="configureOptions">Configures the binder options.</param>
         /// <returns>The new instance of T if successful, default(T) otherwise.</returns>
+        [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         public static T? Get<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] T>(this IConfiguration configuration, Action<BinderOptions>? configureOptions)
         {
@@ -65,6 +68,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="configuration">The configuration instance to bind.</param>
         /// <param name="type">The type of the new instance to bind.</param>
         /// <returns>The new instance if successful, null otherwise.</returns>
+        [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         public static object? Get(this IConfiguration configuration, Type type)
             => configuration.Get(type, _ => { });
@@ -78,6 +82,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="type">The type of the new instance to bind.</param>
         /// <param name="configureOptions">Configures the binder options.</param>
         /// <returns>The new instance if successful, null otherwise.</returns>
+        [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         public static object? Get(
             this IConfiguration configuration,
@@ -100,6 +105,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="configuration">The configuration instance to bind.</param>
         /// <param name="key">The key of the configuration section to bind.</param>
         /// <param name="instance">The object to bind.</param>
+        [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(InstanceGetTypeTrimmingWarningMessage)]
         public static void Bind(this IConfiguration configuration, string key, object? instance)
             => configuration.GetSection(key).Bind(instance);
@@ -109,6 +115,7 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="configuration">The configuration instance to bind.</param>
         /// <param name="instance">The object to bind.</param>
+        [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(InstanceGetTypeTrimmingWarningMessage)]
         public static void Bind(this IConfiguration configuration, object? instance)
             => configuration.Bind(instance, _ => { });
@@ -119,6 +126,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="configuration">The configuration instance to bind.</param>
         /// <param name="instance">The object to bind.</param>
         /// <param name="configureOptions">Configures the binder options.</param>
+        [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(InstanceGetTypeTrimmingWarningMessage)]
         public static void Bind(this IConfiguration configuration, object? instance, Action<BinderOptions>? configureOptions)
         {
@@ -201,6 +209,7 @@ namespace Microsoft.Extensions.Configuration
             return defaultValue;
         }
 
+        [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static void BindProperties(object instance, IConfiguration configuration, BinderOptions options)
         {
@@ -231,6 +240,7 @@ namespace Microsoft.Extensions.Configuration
             }
         }
 
+        [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static void BindProperty(PropertyInfo property, object instance, IConfiguration config, BinderOptions options)
         {
@@ -258,6 +268,7 @@ namespace Microsoft.Extensions.Configuration
             }
         }
 
+        [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         private static void BindInstance(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
@@ -368,6 +379,7 @@ namespace Microsoft.Extensions.Configuration
             }
         }
 
+        [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(
             "In case type is a Nullable<T>, cannot statically analyze what the underlying type is so its members may be trimmed.")]
         private static object CreateInstance(
@@ -480,6 +492,7 @@ namespace Microsoft.Extensions.Configuration
             return true;
         }
 
+        [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the value objects in the dictionary so its members may be trimmed.")]
         private static object? BindDictionaryInterface(
             object? source,
@@ -542,6 +555,7 @@ namespace Microsoft.Extensions.Configuration
         // When a user specifies a concrete dictionary in their config class, then that
         // value is used as-us. When a user specifies an interface (instantiated) in their config class,
         // then it is cloned to a new dictionary, the same way as other collections.
+        [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the value objects in the dictionary so its members may be trimmed.")]
         private static void BindConcreteDictionary(
             object? dictionary,
@@ -576,9 +590,10 @@ namespace Microsoft.Extensions.Configuration
             {
                 try
                 {
-                    object key = keyTypeIsEnum ? Enum.Parse(keyType, child.Key) :
+                    object key = keyTypeIsEnum ? Enum.Parse(keyType, child.Key, true) :
                         keyTypeIsInteger ? Convert.ChangeType(child.Key, keyType) :
                         child.Key;
+
                     var valueBindingPoint = new BindingPoint(
                         initialValueProvider: () =>
                         {
@@ -602,6 +617,7 @@ namespace Microsoft.Extensions.Configuration
             }
         }
 
+        [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the object collection so its members may be trimmed.")]
         private static void BindCollection(
             object collection,
@@ -634,6 +650,7 @@ namespace Microsoft.Extensions.Configuration
             }
         }
 
+        [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the Array so its members may be trimmed.")]
         private static Array BindArray(Type type, IEnumerable? source, IConfiguration config, BinderOptions options)
         {
@@ -686,6 +703,7 @@ namespace Microsoft.Extensions.Configuration
             return result;
         }
 
+        [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the Array so its members may be trimmed.")]
         private static object? BindSet(Type type, IEnumerable? source, IConfiguration config, BinderOptions options)
         {
@@ -892,6 +910,7 @@ namespace Microsoft.Extensions.Configuration
             return allProperties;
         }
 
+        [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static object? BindParameter(ParameterInfo parameter, Type type, IConfiguration config,
             BinderOptions options)

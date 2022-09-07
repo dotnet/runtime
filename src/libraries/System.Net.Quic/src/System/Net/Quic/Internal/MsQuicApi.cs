@@ -13,11 +13,11 @@ using Microsoft.Win32;
 
 namespace System.Net.Quic;
 
-internal sealed unsafe class MsQuicApi
+internal sealed unsafe partial class MsQuicApi
 {
     private static readonly Version MinWindowsVersion = new Version(10, 0, 20145, 1000);
 
-    private static readonly Version MsQuicVersion = new Version(2, 0);
+    private static readonly Version MsQuicVersion = new Version(2, 1);
 
     public MsQuicSafeHandle Registration { get; }
 

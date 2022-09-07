@@ -383,7 +383,7 @@ hashBv* hashBv::Create(Compiler* compiler)
     else
     {
         result = new (compiler, CMK_hashBv) hashBv(compiler);
-        memset(result, 0, sizeof(hashBv));
+        memset((void*)result, 0, sizeof(hashBv));
         result->nodeArr = result->initialVector;
     }
 

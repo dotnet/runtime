@@ -2790,6 +2790,15 @@ public:
             CORINFO_CLASS_HANDLE       *vcTypeRet       /* OUT */
             ) = 0;
 
+    // Obtains a list of exact classes for a given base type. Returns 0 if the number of 
+    // the exact classes is greater than maxExactClasses or if more types might be loaded
+    // in future.
+    virtual int getExactClasses(
+                CORINFO_CLASS_HANDLE  baseType,            /* IN */
+                int                   maxExactClasses,     /* IN */
+                CORINFO_CLASS_HANDLE* exactClsRet          /* OUT */
+                ) = 0;
+
     // If the Arg is a CORINFO_TYPE_CLASS fetch the class handle associated with it
     virtual CORINFO_CLASS_HANDLE getArgClass (
             CORINFO_SIG_INFO*           sig,            /* IN */
@@ -2884,9 +2893,15 @@ public:
             CORINFO_METHOD_HANDLE hMethod
             ) = 0;
 
-    // this function is for debugging only.  It returns the method name
-    // and if 'moduleName' is non-null, it sets it to something that will
-    // says which method (a class name, or a module name)
+    // This function returns the method name and if 'moduleName' is non-null,
+    // it sets it to something that contains the method (a class
+    // name, or a module name). Note that the moduleName parameter is for
+    // diagnostics only.
+    //
+    // The method name returned is the same as getMethodNameFromMetadata except
+    // in the case of functions without metadata (e.g. IL stubs), where this
+    // function still returns a reasonable name while getMethodNameFromMetadata
+    // returns null.
     virtual const char* getMethodName (
             CORINFO_METHOD_HANDLE       ftn,        /* IN */
             const char                **moduleName  /* OUT */
