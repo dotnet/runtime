@@ -618,7 +618,7 @@ namespace System.Formats.Tar.Tests
         private static bool CanExtractWithTarTool_Method()
         {
             using Process tarToolProcess = new Process();
-            tarToolProcess.StartInfo.FileName = OperatingSystem.IsWindows() ? "tar" : "/usr/bin/tar";
+            tarToolProcess.StartInfo.FileName = "tar"; // location varies: find it on the PATH.
             tarToolProcess.StartInfo.Arguments = "--help";
 
             tarToolProcess.StartInfo.RedirectStandardOutput = true;
@@ -633,7 +633,7 @@ namespace System.Formats.Tar.Tests
         public static void ExtractWithTarTool(string source, string destination)
         {
             using Process tarToolProcess = new Process();
-            tarToolProcess.StartInfo.FileName = OperatingSystem.IsWindows() ? "tar" : "/usr/bin/tar";
+            tarToolProcess.StartInfo.FileName = "tar"; // location varies: find it on the PATH.
             tarToolProcess.StartInfo.Arguments = $"-xf {source} -C {destination}";
 
             tarToolProcess.StartInfo.RedirectStandardOutput = true;
