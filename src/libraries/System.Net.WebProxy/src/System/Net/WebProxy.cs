@@ -130,7 +130,6 @@ namespace System.Net
             Regex[]? regexBypassList = null;
             if (_bypassList is ChangeTrackingArrayList bypassList)
             {
-                bypassList.IsChanged = false;
                 if (bypassList.Count > 0)
                 {
                     regexBypassList = new Regex[bypassList.Count];
@@ -139,9 +138,14 @@ namespace System.Net
                         regexBypassList[i] = new Regex((string)bypassList[i]!, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
                     }
                 }
-            }
 
-            _regexBypassList = regexBypassList;
+                _regexBypassList = regexBypassList;
+                bypassList.IsChanged = false;
+            }
+            else
+            {
+                _regexBypassList = null;
+            }
         }
 
         private bool IsMatchInBypassList(Uri input)
