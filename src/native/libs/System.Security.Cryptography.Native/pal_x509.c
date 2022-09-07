@@ -452,6 +452,11 @@ static DIR* OpenUserStore(const char* storePath, char** pathTmp, size_t* pathTmp
     // Leave one byte for '\0' and one for '/'
     size_t allocSize = storePathLen + sizeof(ent->d_name) + 2;
     char* tmp = (char*)calloc(allocSize, sizeof(char));
+    if (!tmp)
+    {
+        return NULL;
+    }
+
     memcpy_s(tmp, allocSize, storePath, storePathLen);
     tmp[storePathLen] = '/';
     *pathTmp = tmp;
@@ -604,6 +609,8 @@ int32_t CryptoNative_X509StackAddDirectoryStore(X509Stack* stack, char* storePat
 
         if (tmpStack == NULL)
         {
+            free(pathTmp);
+            closedir(storeDir);
             return 0;
         }
 

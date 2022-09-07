@@ -500,10 +500,22 @@ done:;
             waitpid(processId, &status, 0);
         }
 
-        *stdinFd = -1;
-        *stdoutFd = -1;
-        *stderrFd = -1;
-        *childPid = -1;
+        if (stdinFd != NULL)
+        {
+            *stdinFd = -1;
+        }
+        if (stdoutFd != NULL)
+        {
+            *stdoutFd = -1;
+        }
+        if (stderrFd != NULL)
+        {
+            *stderrFd = -1;
+        }
+        if (childPid != NULL)
+        {
+            *childPid = -1;
+        }
 
         errno = priorErrno;
     }
