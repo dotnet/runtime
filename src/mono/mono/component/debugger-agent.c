@@ -1039,7 +1039,7 @@ socket_transport_connect (const char *address)
 	MonoAddressEntry *rp;
 	SOCKET sfd = INVALID_SOCKET;
 	int s = 0, res;
-	char *host;
+	char *host = NULL;
 	int port;
 
 	MONO_REQ_GC_SAFE_MODE;

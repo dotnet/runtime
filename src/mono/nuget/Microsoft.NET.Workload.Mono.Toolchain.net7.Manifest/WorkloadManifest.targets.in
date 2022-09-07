@@ -102,9 +102,9 @@
     <ItemGroup Condition="'$(TargetsNet7)' == 'true' and '$(_MonoWorkloadTargetsMobile)' == 'true'">
       <KnownRuntimePack Update="@(KnownRuntimePack)">
         <LatestRuntimeFrameworkVersion Condition="'%(KnownRuntimePack.TargetFramework)' == 'net7.0' and '%(KnownRuntimePack.RuntimePackLabels)' == 'Mono'">$(_MonoWorkloadRuntimePackPackageVersion)</LatestRuntimeFrameworkVersion>
-        <!-- Overrides for wasm threading support -->
-        <RuntimePackNamePatterns Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnableThreading)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.multithread.net7.**RID**</RuntimePackNamePatterns>
-        <RuntimePackNamePatterns Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnablePerfTrace)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.perftrace.net7.**RID**</RuntimePackNamePatterns>
+        <!-- Overrides for wasm threads support -->
+        <RuntimePackNamePatterns Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnablethreads)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.multithread.**RID**</RuntimePackNamePatterns>
+        <RuntimePackNamePatterns Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnablePerfTracing)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.perftrace.**RID**</RuntimePackNamePatterns>
       </KnownRuntimePack>
     </ItemGroup>
 
@@ -128,8 +128,8 @@
     </Target>
 
     <Target Name="_ErrorDualWasmThreadProps"
-            Condition="'$(TargetsNet7)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(_BrowserWorkloadDisabled7)' != 'true' and '$(WasmEnableThreading)' == 'true' and '$(WasmEnablePerfTrace)' == 'true'"
+            Condition="'$(TargetsNet7)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(_BrowserWorkloadDisabled7)' != 'true' and '$(WasmEnablethreads)' == 'true' and '$(WasmEnablePerfTrace)' == 'true'"
             BeforeTargets="Build">
-        <Error Text="WebAssembly workloads can only support one active threading mode at a time. Either set WasmEnableThreading or WasmEnablePerfTrace to true, but not both." />
+        <Error Text="WebAssembly workloads can only support one active threading mode at a time. Either set WasmEnablethreads or WasmEnablePerfTracing to true, but not both." />
     </Target>
 </Project>
