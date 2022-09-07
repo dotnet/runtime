@@ -19,10 +19,11 @@ jobs:
   parameters:
     runProfile: 'v8'
     collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
-    onlySanityCheck: true
-    #perfForkToUse:
-      #url: https://github.com/radical/performance
-      #branch: fix-build
+    onlySanityCheck: false
+    filter: 'System.IO.Tests.Perf_File.CopyToOverwrite*'
+    perfForkToUse:
+      url: https://github.com/radical/performance
+      branch: debug-aot-perf-file
     #downloadSpecificBuild:
       #buildId: '1878694'
       #pipeline: 'perf-wasm'

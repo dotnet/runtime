@@ -22,6 +22,7 @@ parameters:
   skipLiveLibrariesDownload: false
   collectHelixLogsScript: ''
   timeoutInMinutes: 320
+  filter: ''
   compare: false
   onlySanityCheck: false
   downloadSpecificBuild: null # buildId, pipeline, branchName, project
@@ -125,9 +126,12 @@ jobs:
     - name: _perfForkArg
       ${{ if ne(parameters.perfForkToUse.url, '') }}:
         value: --perffork ${{ parameters.perfForkToUse.url }} --perfforkbranch ${{ coalesce(parameters.perfForkToUse.branch, 'main') }}
+    - name: _perfFilterArg
+      ${{ if ne(parameters.filterArg, '') }}:
+        value: --filter "${{ parameters.filterArg }}"
 
     - name: extraSetupParametersSuffix
-      value: "$(_compareArg) $(_onlySanityCheckArg) $(_perfForkArg)"
+      value: "$(_compareArg) $(_onlySanityCheckArg) $(_perfForkArg) $(_perfFilterArg)"
 
     frameworks:
       - ${{ parameters.framework }}

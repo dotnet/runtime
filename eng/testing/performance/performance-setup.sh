@@ -172,6 +172,10 @@ while (($# > 0)); do
       only_sanity=true
       shift 1
       ;;
+    --filter)
+      perf_filter=$2
+      shift 2
+      ;;
     *)
       echo "Common settings:"
       echo "  --corerootdirectory <value>    Directory where Core_Root exists, if running perf testing with --corerun"
@@ -200,6 +204,7 @@ while (($# > 0)); do
       echo "  --iosmono                      Set for ios Mono/Maui runs"
       echo "  --iosllvmbuild                 Set LLVM for iOS Mono/Maui runs"
       echo "  --mauiversion                  Set the maui version for Mono/Maui runs"
+      echo "  --filter                       Set the benchmarks filter passed to BDN"
       echo ""
       exit 0
       ;;
@@ -358,6 +363,10 @@ if [[ "$monoaot" == "true" ]]; then
     monoaot_dotnet_path=$payload_directory/monoaot
     mv $monoaot_path $monoaot_dotnet_path
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --runtimes monoaotllvm --aotcompilerpath \$HELIX_CORRELATION_PAYLOAD/monoaot/sgen/mini/mono-sgen --customruntimepack \$HELIX_CORRELATION_PAYLOAD/monoaot/pack --aotcompilermode llvm"
+fi
+
+if [[ -n "$perf_filter" ]]; then
+    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --filter \"$perf_filter\""
 fi
 
 extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --logBuildOutput --generateBinLog"

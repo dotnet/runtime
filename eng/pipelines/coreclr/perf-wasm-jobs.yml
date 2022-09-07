@@ -3,6 +3,7 @@
 
 parameters:
   runProfile: 'non-v8'
+  filter: ''
   compare: false
   onlySanityCheck: false
   downloadSpecificBuild: null # { buildId, pipeline, branchName, project }
@@ -145,6 +146,7 @@ jobs:
         onlySanityCheck: ${{ parameters.onlySanityCheck }}
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
         perfForkToUse: ${{ parameters.perfForkToUse }}
+        filter: ${{ parameters.filter }}
 
   # run mono wasm blazor perf job
   - template: /eng/pipelines/common/platform-matrix.yml
