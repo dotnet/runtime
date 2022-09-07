@@ -141,37 +141,6 @@ namespace Microsoft.Workload.Build.Tasks
                 return true;
             }
 
-            // HACK BEGIN - because sdk doesn't yet have the net6/net7 manifest names in the known workloads
-            // list
-            string? txtPath = Directory.EnumerateFiles(Path.Combine(SdkWithNoWorkloadInstalledPath, "sdk"), "IncludedWorkloadManifests.txt",
-                                            new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 2})
-                                .FirstOrDefault();
-            if (txtPath is null)
-                throw new LogAsErrorException($"Could not find IncludedWorkloadManifests.txt in {SdkWithNoWorkloadInstalledPath}");
-
-            string stampPath = Path.Combine(Path.GetDirectoryName(txtPath)!, ".stamp");
-            if (!File.Exists(stampPath))
-            {
-                Log.LogMessage(MessageImportance.High, $"txtPath: {txtPath}");
-                string newTxt = File.ReadAllText(txtPath)
-                                    .Replace("microsoft.net.workload.mono.toolchain",
-                                                $"microsoft.net.workload.mono.toolchain.net6{Environment.NewLine}microsoft.net.workload.mono.toolchain.net7")
-                                    .Replace("microsoft.net.workload.emscripten",
-                                                $"microsoft.net.workload.emscripten.net6{Environment.NewLine}microsoft.net.workload.emscripten.net7");
-                File.WriteAllText(txtPath, newTxt);
-                File.WriteAllText(stampPath, "");
-            }
-
-            string p = Path.Combine(SdkWithNoWorkloadInstalledPath, "sdk-manifests", "7.0.100", "microsoft.net.workload.mono.toolchain");
-            Log.LogMessage(MessageImportance.High, $"Deleting {p}");
-            if (Directory.Exists(p))
-                Directory.Delete(p, recursive: true);
-            p = Path.Combine(SdkWithNoWorkloadInstalledPath, "sdk-manifests", "7.0.100", "microsoft.net.workload.emscripten");
-            Log.LogMessage(MessageImportance.High, $"Deleting {p}");
-            if (Directory.Exists(p))
-                Directory.Delete(p, recursive: true);
-            // HACK END
-
             string nugetConfigContents = GetNuGetConfig();
             HashSet<string> manifestsInstalled = new();
             foreach (ITaskItem workload in WorkloadIds)
