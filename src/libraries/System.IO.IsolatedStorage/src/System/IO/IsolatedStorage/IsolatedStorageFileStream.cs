@@ -64,7 +64,7 @@ namespace System.IO.IsolatedStorage
         //
         // We only expose our own nested FileStream so the base class having a handle doesn't matter. Passing a new SafeFileHandle
         // with ownsHandle: false avoids the parent class closing without our knowledge.
-        private IsolatedStorageFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, InitializationData initializationData)
+        private IsolatedStorageFileStream(string path, FileAccess access, int bufferSize, InitializationData initializationData)
             : base(new SafeFileHandle(initializationData.NestedStream.SafeFileHandle.DangerousGetHandle(), ownsHandle: false), access, bufferSize)
         {
             _isf = initializationData.StorageFile;

@@ -466,7 +466,7 @@ namespace System.Data.SqlTypes
 
         public static SqlBinary WrapBytes(byte[] bytes)
         {
-            return new SqlBinary(bytes, ignored: true);
+            return new SqlBinary(bytes);
         }
 
         /// <summary>
