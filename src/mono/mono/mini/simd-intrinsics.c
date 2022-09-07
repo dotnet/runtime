@@ -1031,16 +1031,20 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		int iid = type_enum_is_float (arg0_type) ? INTRINS_AARCH64_ADV_SIMD_FABS : INTRINS_AARCH64_ADV_SIMD_ABS;
 		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, iid, arg0_type, fsig, args);
 #elif TARGET_AMD64
-		switch (arg0_type) {
-			case MONO_TYPE_I1:
-			case MONO_TYPE_I2:
-			case MONO_TYPE_I4:
-				// for byte, short, int OP_SSSE3_ABS
-				return emit_simd_ins_for_sig (cfg, klass, OP_SSSE3_ABS, -1, arg0_type, fsig, args);
-			default:
-				return NULL;
+		/*
+			TODO:
+			1. bitmask where elem is less than zero
+			2. neg vector: 0-args[0]
+			3. conditional select based on bitmask to select from original vector and neg vector
+		*/
+
+		if (type_enum_is_float(arg0_type)) {
+			// TOOD Abs(v) = v & ~vector<T>(-0.0)
+			return NULL;
+			//MonoInst* zeros = emit_xzero(cfg, klass);
 		}
-		return NULL;
+
+		return emit_simd_ins_for_sig (cfg, klass, OP_SSSE3_ABS, -1, arg0_type, fsig, args); // TODO works for longs even thought it should?
 #else
 		return NULL;
 #endif
