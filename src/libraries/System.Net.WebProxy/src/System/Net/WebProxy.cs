@@ -224,20 +224,7 @@ namespace System.Net
 
             public ChangeTrackingArrayList(ICollection c) : base(c) { }
 
-            private volatile bool _isChanged;
-
-            public bool IsChanged
-            {
-                get
-                {
-                    return _isChanged;
-                }
-
-                set
-                {
-                    _isChanged = value;
-                }
-            }
+            public volatile bool IsChanged;
 
             // Override the methods that can add, remove, or change the regexes in the bypass list.
             // Methods that only read (like CopyTo, BinarySearch, etc.) and methods that reorder
