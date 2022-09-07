@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<!--  Licensed to the .NET Foundation under one or more agreements. -->
+<!-- The .NET Foundation licenses this file to you under the MIT license. -->
+<html>
+
+<head>
+  <title>Wasm Sample running two instances of .NET</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body>
+  <h3>Wasm Sample running two instances of .NET</h3>
+  <p>
+    Each button increments a static field in an instance of .NET runtime
+  </p>
+  <h4>First .NET runtime</h4>
+  <p>
+    <button id="button1" type="button">Increment</button>
+    <span id="out1">0</span>
+  </p>
+  <h4>Second .NET runtime</h4>
+  <p>
+    <button id="button2" type="button">Increment</button>
+    <span id="out2">0</span>
+  </p>
+
+  <script type='module' src="./main.js"></script>
+</body>
+
+</html>
