@@ -183,7 +183,7 @@
       <HelixCorrelationPayload Include="$(EmSdkDirForHelixPayload)node"          Destination="build/emsdk-node" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(Scenario)' == '' or '$(Scenario)' == 'normal' or '$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'WasmTestOnNodeJS'">
+    <ItemGroup Condition="'$(Scenario)' == '' or '$(Scenario)' == 'normal' or '$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'WasmTestOnNodeJs'">
       <HelixCorrelationPayload Include="$(TestEchoMiddleware)" Destination="xharness/TestEchoMiddleware" Condition="Exists('$(TestEchoMiddleware)')" />
       <HelixCorrelationPayload Include="$(RemoteLoopMiddleware)" Destination="xharness/RemoteLoopMiddleware" Condition="Exists('$(RemoteLoopMiddleware)')" />
     </ItemGroup>

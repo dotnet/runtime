@@ -307,8 +307,8 @@
       <RunScriptCommands Include="if [[ &quot;$SCENARIO&quot; == &quot;WasmTestOnNodeJs&quot; || &quot;$SCENARIO&quot; == &quot;wasmtestonnodejs&quot; ]]; then npm ci; fi" />
     </ItemGroup>
     <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
-      <SetScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( set &quot;WasmXHarnessMonoArgs=%WasmXHarnessMonoArgs% --setenv=NPM_MODULES^=$(NodeNpmModuleString)&quot; )" />
-      <RunScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( call npm ci )" />
+      <SetScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJs] ( set &quot;WasmXHarnessMonoArgs=%WasmXHarnessMonoArgs% --setenv=NPM_MODULES^=$(NodeNpmModuleString)&quot; )" />
+      <RunScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJs] ( call npm ci )" />
     </ItemGroup>
   </Target>
 
