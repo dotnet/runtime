@@ -20,8 +20,8 @@ namespace Microsoft.Interop.JavaScript
 
         public override IEnumerable<ExpressionSyntax> GenerateBind(TypePositionInfo info, StubCodeContext context)
         {
-            var jsty = (JSTaskTypeInfo)info.ManagedType;
-            if (jsty.ResultTypeInfo.FullTypeName == "void")
+            var jsty = (JSTaskTypeInfo)((JSMarshallingInfo)info.MarshallingAttributeInfo).TypeInfo;
+            if (jsty.ResultTypeInfo is JSSimpleTypeInfo(KnownManagedType.Void))
             {
                 yield return InvocationExpression(MarshalerTypeName(MarshalerType.Task), ArgumentList());
             }
@@ -34,7 +34,7 @@ namespace Microsoft.Interop.JavaScript
 
         public override IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
         {
-            var jsty = (JSTaskTypeInfo)info.ManagedType;
+            var jsty = (JSTaskTypeInfo)((JSMarshallingInfo)info.MarshallingAttributeInfo).TypeInfo;
 
             string argName = context.GetAdditionalIdentifier(info, "js_arg");
             var target = info.IsManagedReturnPosition
@@ -47,14 +47,14 @@ namespace Microsoft.Interop.JavaScript
 
             if (context.CurrentStage == StubCodeContext.Stage.Unmarshal && context.Direction == CustomTypeMarshallingDirection.In && info.IsManagedReturnPosition)
             {
-                yield return jsty.ResultTypeInfo.FullTypeName == "void"
+                yield return jsty.ResultTypeInfo is JSSimpleTypeInfo(KnownManagedType.Void)
                     ? ToManagedMethodVoid(target, source)
                     : ToManagedMethod(target, source, jsty.ResultTypeInfo.Syntax);
             }
 
             if (context.CurrentStage == StubCodeContext.Stage.Marshal && context.Direction == CustomTypeMarshallingDirection.Out && info.IsManagedReturnPosition)
             {
-                yield return jsty.ResultTypeInfo.FullTypeName == "void"
+                yield return jsty.ResultTypeInfo is JSSimpleTypeInfo(KnownManagedType.Void)
                     ? ToJSMethodVoid(target, source)
                     : ToJSMethod(target, source, jsty.ResultTypeInfo.Syntax);
             }
@@ -66,14 +66,14 @@ namespace Microsoft.Interop.JavaScript
 
             if (context.CurrentStage == StubCodeContext.Stage.Invoke && context.Direction == CustomTypeMarshallingDirection.In && !info.IsManagedReturnPosition)
             {
-                yield return jsty.ResultTypeInfo.FullTypeName == "void"
+                yield return jsty.ResultTypeInfo is JSSimpleTypeInfo(KnownManagedType.Void)
                     ? ToJSMethodVoid(target, source)
                     : ToJSMethod(target, source, jsty.ResultTypeInfo.Syntax);
             }
 
             if (context.CurrentStage == StubCodeContext.Stage.Unmarshal && context.Direction == CustomTypeMarshallingDirection.Out && !info.IsManagedReturnPosition)
             {
-                yield return jsty.ResultTypeInfo.FullTypeName == "void"
+                yield return jsty.ResultTypeInfo is JSSimpleTypeInfo(KnownManagedType.Void)
                     ? ToManagedMethodVoid(target, source)
                     : ToManagedMethod(target, source, jsty.ResultTypeInfo.Syntax);
             }

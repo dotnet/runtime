@@ -3859,6 +3859,22 @@ struct GenTreeCast : public GenTreeOp
     {
     }
 #endif
+
+    bool IsZeroExtending()
+    {
+        assert(varTypeIsIntegral(CastOp()) && varTypeIsIntegral(CastToType()));
+
+        if (varTypeIsSmall(CastToType()))
+        {
+            return varTypeIsUnsigned(CastToType());
+        }
+        if (TypeIs(TYP_LONG) && genActualTypeIsInt(CastOp()))
+        {
+            return IsUnsigned();
+        }
+
+        return false;
+    }
 };
 
 // GT_BOX nodes are place markers for boxed values.  The "real" tree

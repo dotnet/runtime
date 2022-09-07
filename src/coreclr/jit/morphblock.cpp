@@ -19,6 +19,8 @@ protected:
     virtual void TrySpecialCases();
     virtual void MorphStructCases();
 
+    void PropagateAssertions();
+
     virtual const char* GetHelperName() const
     {
         return "MorphInitBlock";
@@ -125,7 +127,7 @@ GenTree* MorphInitBlockHelper::Morph()
 
     PrepareDst();
     PrepareSrc();
-
+    PropagateAssertions();
     TrySpecialCases();
 
     if (m_transformationDecision == BlockTransformation::Undefined)
@@ -273,6 +275,23 @@ void MorphInitBlockHelper::PrepareDst()
         }
     }
 #endif // DEBUG
+}
+
+//------------------------------------------------------------------------
+// PropagateAssertions: propagate assertions based on the original tree
+//
+// Notes:
+//    Once the init or copy tree is morphed, assertion gen can no
+//    longer recognize what it means.
+//
+//    So we generate assertions based on the original tree.
+//
+void MorphInitBlockHelper::PropagateAssertions()
+{
+    if (m_comp->optLocalAssertionProp)
+    {
+        m_comp->optAssertionGen(m_asg);
+    }
 }
 
 //------------------------------------------------------------------------

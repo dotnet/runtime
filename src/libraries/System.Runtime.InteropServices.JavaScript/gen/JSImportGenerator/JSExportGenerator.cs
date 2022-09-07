@@ -319,7 +319,7 @@ namespace Microsoft.Interop.JavaScript
             // Verify the method has no generic types or defined implementation
             // and is marked static and partial.
             if (methodSyntax.TypeParameterList is not null
-                || methodSyntax.Body is null
+                || (methodSyntax.Body is null && methodSyntax.ExpressionBody is null)
                 || !methodSyntax.Modifiers.Any(SyntaxKind.StaticKeyword)
                 || methodSyntax.Modifiers.Any(SyntaxKind.PartialKeyword))
             {

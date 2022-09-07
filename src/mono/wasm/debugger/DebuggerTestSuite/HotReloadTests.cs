@@ -51,35 +51,37 @@ namespace DebuggerTests
             CheckNumber(locals, "a", 10);
         }
 
-        [ConditionalFact(nameof(RunningOnChrome))]
-        public async Task DebugHotReloadMethodAddBreakpoint()
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData("ApplyUpdateReferencedAssembly")]
+        [InlineData("ApplyUpdateReferencedAssemblyChineseCharInPathㄨ")]
+        public async Task DebugHotReloadMethodAddBreakpoint(string assembly_name)
         {
             int line = 30;
             await SetBreakpoint(".*/MethodBody1.cs$", line, 12, use_regex: true);
             var pause_location = await LoadAssemblyAndTestHotReload(
-                    Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll"),
-                    Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb"),
-                    Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll"),
+                    Path.Combine(DebuggerTestAppPath, $"{assembly_name}.dll"),
+                    Path.Combine(DebuggerTestAppPath, $"{assembly_name}.pdb"),
+                    Path.Combine(DebuggerTestAppPath, $"../wasm/{assembly_name}.dll"),
                     "MethodBody3", "StaticMethod3", expectBpResolvedEvent: true);
 
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "a", 10);
-            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 30, 12, "ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3");
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", $"dotnet://{assembly_name}.dll/MethodBody1.cs", 30, 12, "ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3");
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "b", 15);
 
-            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 30, 12, "ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3");
+            pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", $"dotnet://{assembly_name}.dll/MethodBody1.cs", 30, 12, "ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3");
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             await CheckBool(locals, "c", true);
 
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 31, 12, "ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3",
+            await StepAndCheck(StepKind.Over, $"dotnet://{assembly_name}.dll/MethodBody1.cs", 31, 12, "ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "d", 10);
                     await Task.CompletedTask;
                 }
             );
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 32, 12, "ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3",
+            await StepAndCheck(StepKind.Over, $"dotnet://{assembly_name}.dll/MethodBody1.cs", 32, 12, "ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "d", 10);
@@ -87,7 +89,7 @@ namespace DebuggerTests
                     await Task.CompletedTask;
                 }
             );
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 33, 8, "ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3",
+            await StepAndCheck(StepKind.Over, $"dotnet://{assembly_name}.dll/MethodBody1.cs", 33, 8, "ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "d", 10);
@@ -217,12 +219,14 @@ namespace DebuggerTests
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 21, 12, scripts, top_frame["location"]);
         }
 
-        [ConditionalFact(nameof(RunningOnChrome))]
-        public async Task DebugHotReloadMethodAddBreakpointUsingSDB()
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData("ApplyUpdateReferencedAssembly")]
+        [InlineData("ApplyUpdateReferencedAssemblyChineseCharInPathㄨ")]
+        public async Task DebugHotReloadMethodAddBreakpointUsingSDB(string assembly_name)
         {
-            string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
-            string pdb_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb");
-            string asm_file_hot_reload = Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll");
+            string asm_file = Path.Combine(DebuggerTestAppPath, $"{assembly_name}.dll");
+            string pdb_file = Path.Combine(DebuggerTestAppPath, $"{assembly_name}.pdb");
+            string asm_file_hot_reload = Path.Combine(DebuggerTestAppPath, $"../wasm/{assembly_name}.dll");
 
             int line = 30;
             await SetBreakpoint(".*/MethodBody1.cs$", line, 12, use_regex: true);
@@ -238,7 +242,7 @@ namespace DebuggerTests
 
             JToken top_frame = pause_location["callFrames"]?[0];
             AssertEqual("ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
-            CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 30, 12, scripts, top_frame["location"]);
+            CheckLocation($"dotnet://{assembly_name}.dll/MethodBody1.cs", 30, 12, scripts, top_frame["location"]);
 
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             CheckNumber(locals, "b", 15);
@@ -249,19 +253,19 @@ namespace DebuggerTests
 
             top_frame = pause_location["callFrames"]?[0];
             AssertEqual("ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
-            CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 30, 12, scripts, top_frame["location"]);
+            CheckLocation($"dotnet://{assembly_name}.dll/MethodBody1.cs", 30, 12, scripts, top_frame["location"]);
 
             locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
             await CheckBool(locals, "c", true);
 
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 31, 12, "ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3",
+            await StepAndCheck(StepKind.Over, $"dotnet://{assembly_name}.dll/MethodBody1.cs", 31, 12, "ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "d", 10);
                     await Task.CompletedTask;
                 }
             );
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 32, 12, "ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3",
+            await StepAndCheck(StepKind.Over, $"dotnet://{assembly_name}.dll/MethodBody1.cs", 32, 12, "ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "d", 10);
@@ -269,7 +273,7 @@ namespace DebuggerTests
                     await Task.CompletedTask;
                 }
             );
-            await StepAndCheck(StepKind.Over, "dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 33, 8, "ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3",
+            await StepAndCheck(StepKind.Over, $"dotnet://{assembly_name}.dll/MethodBody1.cs", 33, 8, "ApplyUpdateReferencedAssembly.MethodBody3.StaticMethod3",
             locals_fn: async (locals) =>
                 {
                     CheckNumber(locals, "d", 10);

@@ -30,7 +30,7 @@ namespace System.Formats.Tar.Tests
             malformed.Seek(0, SeekOrigin.Begin);
 
             using TarReader reader = new TarReader(malformed);
-            Assert.Throws<FormatException>(() => reader.GetNextEntry());
+            Assert.Throws<InvalidDataException>(() => reader.GetNextEntry());
         }
 
         [Fact]
@@ -252,10 +252,13 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData(512)]
-        [InlineData(512 + 1)]
-        [InlineData(512 + 512 - 1)]
-        public void BlockAlignmentPadding_DoesNotAffectNextEntries(int contentSize)
+        [InlineData(512, false)]
+        [InlineData(512, true)]
+        [InlineData(512 + 1, false)]
+        [InlineData(512 + 1, true)]
+        [InlineData(512 + 512 - 1, false)]
+        [InlineData(512 + 512 - 1, true)]
+        public void BlockAlignmentPadding_DoesNotAffectNextEntries(int contentSize, bool copyData)
         {
             byte[] fileContents = new byte[contentSize];
             Array.Fill<byte>(fileContents, 0x1);
@@ -275,17 +278,17 @@ namespace System.Formats.Tar.Tests
             using var unseekable = new WrappedStream(archive, archive.CanRead, archive.CanWrite, canSeek: false);
             using var reader = new TarReader(unseekable);
 
-            TarEntry e = reader.GetNextEntry();
+            TarEntry e = reader.GetNextEntry(copyData);
             Assert.Equal(contentSize, e.Length);
 
             byte[] buffer = new byte[contentSize];
             while (e.DataStream.Read(buffer) > 0) ;
             AssertExtensions.SequenceEqual(fileContents, buffer);
 
-            e = reader.GetNextEntry();
+            e = reader.GetNextEntry(copyData);
             Assert.Equal(0, e.Length);
 
-            e = reader.GetNextEntry();
+            e = reader.GetNextEntry(copyData);
             Assert.Null(e);
         }
     }

@@ -17,7 +17,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public InterfaceDispatchMapNode(NodeFactory factory, TypeDesc type)
         {
-            // Multidimensional arrays should not get a sealed vtable or a dispatch map. Runtime should use the 
+            // Multidimensional arrays should not get a sealed vtable or a dispatch map. Runtime should use the
             // sealed vtable and dispatch map of the System.Array basetype instead.
             // Pointer arrays also follow the same path
             Debug.Assert(!type.IsArrayTypeWithoutGenericInterfaces());
@@ -48,7 +48,7 @@ namespace ILCompiler.DependencyAnalysis
                     return ObjectNodeSection.DataSection;
             }
         }
-        
+
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
             var result = new DependencyList();
@@ -137,7 +137,7 @@ namespace ILCompiler.DependencyAnalysis
             return false;
         }
 
-        void EmitDispatchMap(ref ObjectDataBuilder builder, NodeFactory factory)
+        private void EmitDispatchMap(ref ObjectDataBuilder builder, NodeFactory factory)
         {
             var entryCountReservation = builder.ReserveShort();
             var defaultEntryCountReservation = builder.ReserveShort();
@@ -165,7 +165,7 @@ namespace ILCompiler.DependencyAnalysis
                 Debug.Assert(interfaceType.IsInterface);
 
                 IReadOnlyList<MethodDesc> virtualSlots = factory.VTable(interfaceType).Slots;
-                
+
                 for (int interfaceMethodSlot = 0; interfaceMethodSlot < virtualSlots.Count; interfaceMethodSlot++)
                 {
                     MethodDesc declMethod = virtualSlots[interfaceMethodSlot];

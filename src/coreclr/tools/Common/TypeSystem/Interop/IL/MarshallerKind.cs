@@ -3,7 +3,7 @@
 
 namespace Internal.TypeSystem.Interop
 {
-    enum MarshallerKind
+    internal enum MarshallerKind
     {
         Unknown,
         BlittableValue,

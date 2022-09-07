@@ -6,7 +6,7 @@
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	readonly partial struct DiagnosticContext
+	public readonly partial struct DiagnosticContext
 	{
 		/// <summary>
 		/// The diagnostic context may be entirely disabled or some kinds of warnings may be suppressed.

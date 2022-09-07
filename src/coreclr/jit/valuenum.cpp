@@ -9819,7 +9819,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         useEntryPointAddrAsArg0 = false;
     }
 
-    CallArg* curArg = &*args->Args().begin();
+    CallArg* curArg = args->Args().begin().GetArg();
     if (nArgs == 0)
     {
         if (generateUniqueVN)

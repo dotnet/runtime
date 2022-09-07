@@ -18,7 +18,7 @@ namespace Internal.CommandLine
         public ArgumentParser(IEnumerable<string> arguments, Func<string, IEnumerable<string>> responseFileReader)
         {
             if (arguments == null)
-                throw new ArgumentNullException("arguments");
+                throw new ArgumentNullException(nameof(arguments));
 
             _tokens = ArgumentLexer.Lex(arguments, responseFileReader);
         }

@@ -6,7 +6,7 @@ using System;
 namespace Mono.Linker
 {
 	/// <summary>
-	/// This attribute name will be the name hardcoded in linker which will remove all 
+	/// This attribute name will be the name hardcoded in linker which will remove all
 	/// attribute usages but not the attribute definition
 	/// </summary>
 	[AttributeUsage (

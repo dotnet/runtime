@@ -14,7 +14,6 @@ using ILCompiler.DependencyAnalysis;
 using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 using AssemblyName = System.Reflection.AssemblyName;
 using System.Collections.Generic;
-using static ILCompiler.DependencyAnalysis.ObjectNode;
 
 namespace ILCompiler
 {
@@ -33,7 +32,7 @@ namespace ILCompiler
         private Dictionary<string, int> _blobs = new();
 
         private Utf8StringBuilder _utf8StringBuilder = new Utf8StringBuilder();
-       
+
         public MstatObjectDumper(string fileName, TypeSystemContext context)
         {
             _fileName = fileName;

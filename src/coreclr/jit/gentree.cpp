@@ -4258,7 +4258,7 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
         {
             int addrCostExDelta = originalAddrCostEx - addrModeCostEx;
             int addrCostSzDelta = originalAddrCostSz - addrModeCostSz;
-            addrComma->SetCosts(addrComma->GetCostEx() - addrCostExDelta, addrComma->GetCostSz() - addrCostExDelta);
+            addrComma->SetCosts(addrComma->GetCostEx() - addrCostExDelta, addrComma->GetCostSz() - addrCostSzDelta);
 
             *pCostEx += addrComma->AsOp()->gtGetOp1()->GetCostEx();
             *pCostSz += addrComma->AsOp()->gtGetOp1()->GetCostSz();
@@ -7726,7 +7726,7 @@ bool GenTreeOp::UsesDivideByConstOptimized(Compiler* comp)
     else
     {
         ValueNum vn = divisor->gtVNPair.GetLiberal();
-        if (comp->vnStore->IsVNConstant(vn))
+        if (comp->vnStore && comp->vnStore->IsVNConstant(vn))
         {
             divisorValue = comp->vnStore->CoercedConstantValue<ssize_t>(vn);
         }
