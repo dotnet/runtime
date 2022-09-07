@@ -29,6 +29,7 @@
     <JITToolsRidWithoutPlatform Condition="'$(JITToolsRidWithoutPlatform)' == 'osx' and '$(JITToolsRidPlatform)' == 'x64'">osx.10.12</JITToolsRidWithoutPlatform>
     <JITToolsRidWithoutPlatform Condition="'$(JITToolsRidWithoutPlatform)' == 'osx' and '$(JITToolsRidPlatform)' == 'arm64'">osx.11.0</JITToolsRidWithoutPlatform>
 
+    <JITToolsRidPlatform Condition="'$(JITToolsRidPlatform)' == 'x86'">x64</JITToolsRidPlatform>
     <JITToolsRid Condition="'$(JITToolsRid)' == ''">$(JITToolsRidWithoutPlatform)-$(JITToolsRidPlatform)</JITToolsRid>
 
     <JITToolsVersion Condition="'$(JITToolsVersion)' == '' and '$(JITToolsRid)' == 'linux-arm64'">$(runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsVersion)</JITToolsVersion>
