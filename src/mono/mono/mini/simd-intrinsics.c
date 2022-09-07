@@ -550,7 +550,7 @@ static int type_to_extract_op (MonoTypeEnum type);
 static const int fast_log2 [] = { 1, 0, 1, -1, 2, -1, -1, -1, 3 };
 
 static MonoInst*
-extract_first_element(MonoCompile *cfg, MonoClass *klass, MonoTypeEnum element_type, int sreg)
+extract_first_element (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum element_type, int sreg)
 {
 	int extract_op = type_to_extract_op (element_type);
 	MonoInst* ins = emit_simd_ins (cfg, klass, extract_op, sreg, -1);
