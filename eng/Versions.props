@@ -22,8 +22,8 @@
     <UsingToolXliff>false</UsingToolXliff>
     <LastReleasedStableAssemblyVersion>$(AssemblyVersion)</LastReleasedStableAssemblyVersion>
     <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
-    <MicrosoftNETWorkloadEmscriptennet6Manifest70100Version>7.0.0-rc.2.22451.4</MicrosoftNETWorkloadEmscriptennet6Manifest70100Version>
-    <MicrosoftNETWorkloadEmscriptennet7Manifest70100Version>7.0.0-rc.2.22451.4</MicrosoftNETWorkloadEmscriptennet7Manifest70100Version>
+    <MicrosoftNETWorkloadEmscriptennet6Manifest70100Version>7.0.0-rc.2.22457.1</MicrosoftNETWorkloadEmscriptennet6Manifest70100Version>
+    <MicrosoftNETWorkloadEmscriptennet7Manifest70100Version>7.0.0-rc.2.22457.1</MicrosoftNETWorkloadEmscriptennet7Manifest70100Version>
   </PropertyGroup>
   <!--
     For source generator support we need to target multiple versions of Roslyn in order to be able to run on older versions of Roslyn.
