@@ -187,15 +187,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             List<Dto> items = Enumerable.Repeat(dto, 3_000_000).ToList();
-
-            // Try-catch is used since OOM might not occur on all machines.
-            try
-            {
-                byte[] serialized = JsonSerializer.SerializeToUtf8Bytes(items);
-            }
-            catch (OutOfMemoryException)
-            {
-            }
+            Assert.Throws<OutOfMemoryException>(() => JsonSerializer.SerializeToUtf8Bytes(items));
         }
 
         class Dto
