@@ -193,7 +193,7 @@ namespace Internal.IL
                                 OnLeaveTargetCreated(target);
                             }
                             else
-                                ReportInvalidBranchTarget(target);
+                                ReportInvalidBranchTarget();
                         }
                         break;
                     case ILOpcode.brfalse_s:
@@ -214,7 +214,7 @@ namespace Internal.IL
                             if ((uint)target < (uint)_basicBlocks.Length)
                                 CreateBasicBlock(target);
                             else
-                                ReportInvalidBranchTarget(target);
+                                ReportInvalidBranchTarget();
                             CreateBasicBlock(_currentOffset);
                         }
                         break;
@@ -229,7 +229,7 @@ namespace Internal.IL
                                 OnLeaveTargetCreated(target);
                             }
                             else
-                                ReportInvalidBranchTarget(target);
+                                ReportInvalidBranchTarget();
                         }
                         break;
                     case ILOpcode.brfalse:
@@ -250,7 +250,7 @@ namespace Internal.IL
                             if ((uint)target < (uint)_basicBlocks.Length)
                                 CreateBasicBlock(target);
                             else
-                                ReportInvalidBranchTarget(target);
+                                ReportInvalidBranchTarget();
                             CreateBasicBlock(_currentOffset);
                         }
                         break;
@@ -265,7 +265,7 @@ namespace Internal.IL
                                 if ((uint)target < (uint)_basicBlocks.Length)
                                     CreateBasicBlock(target);
                                 else
-                                    ReportInvalidBranchTarget(target);
+                                    ReportInvalidBranchTarget();
                             }
                             CreateBasicBlock(_currentOffset);
                         }
@@ -598,7 +598,7 @@ namespace Internal.IL
                         break;
                     case ILOpcode.castclass:
                     case ILOpcode.isinst:
-                        ImportCasting(opCode, ReadILToken());
+                        ImportCasting(ReadILToken());
                         break;
                     case ILOpcode.conv_r_un:
                         ImportConvert(WellKnownType.Double, false, true);
@@ -902,7 +902,7 @@ namespace Internal.IL
                         ImportReadOnlyPrefix();
                         continue;
                     default:
-                        ReportInvalidInstruction(opCode);
+                        ReportInvalidInstruction();
                         EndImportingInstruction();
                         return;
                 }

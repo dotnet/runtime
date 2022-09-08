@@ -45,7 +45,7 @@ namespace ILCompiler.DependencyAnalysis
             // If the VTable slice is getting built on demand, the fact that the virtual method is used means
             // that the slot is used.
             var lazyVTableSlice = factory.VTable(_decl.OwningType) as LazilyBuiltVTableSliceNode;
-            lazyVTableSlice?.AddEntry(factory, _decl);
+            lazyVTableSlice?.AddEntry(_decl);
         }
 
         public override bool HasConditionalStaticDependencies => _decl.Context.SupportsUniversalCanon && _decl.OwningType.HasInstantiation && !_decl.OwningType.IsInterface;

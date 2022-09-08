@@ -29,6 +29,8 @@ using System.Reflection.Metadata.Ecma335;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 #endif
 
+#pragma warning disable IDE0060
+
 namespace Internal.JitInterface
 {
     internal enum CompilationResult

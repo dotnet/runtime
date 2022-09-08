@@ -29,7 +29,7 @@ internal sealed class TransactionShim
     public void CreateVoter(OletxPhase1VolatileEnlistmentContainer managedIdentifier, out VoterBallotShim voterBallotShim)
     {
         var voterNotifyShim = new VoterNotifyShim(_shimFactory, managedIdentifier);
-        var voterShim = new VoterBallotShim(_shimFactory, voterNotifyShim);
+        var voterShim = new VoterBallotShim(voterNotifyShim);
         _shimFactory.VoterFactory.Create(Transaction, voterNotifyShim, out ITransactionVoterBallotAsync2 voterBallot);
         voterShim.VoterBallotAsync2 = voterBallot;
         voterBallotShim = voterShim;

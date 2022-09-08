@@ -75,6 +75,7 @@ namespace ILLink.Shared.TrimAnalysis
             return false;
         }
 
+#pragma warning disable IDE0060
         private partial bool TryResolveTypeNameForCreateInstanceAndMark(in MethodProxy calledMethod, string assemblyName, string typeName, out TypeProxy resolvedType)
         {
             // TODO: niche APIs that we probably shouldn't even have added
@@ -84,9 +85,10 @@ namespace ILLink.Shared.TrimAnalysis
             resolvedType = default;
             return false;
         }
+#pragma warning restore IDE0060
 
         private partial void MarkStaticConstructor(TypeProxy type)
-            => _reflectionMarker.MarkStaticConstructor(_diagnosticContext.Origin, type.Type);
+            => _reflectionMarker.MarkStaticConstructor(type.Type);
 
         private partial void MarkEventsOnTypeHierarchy(TypeProxy type, string name, BindingFlags? bindingFlags)
             => _reflectionMarker.MarkEventsOnTypeHierarchy(_diagnosticContext.Origin, type.Type, e => e.Name == name, _memberWithRequirements, bindingFlags);
@@ -107,7 +109,7 @@ namespace ILLink.Shared.TrimAnalysis
             => _reflectionMarker.MarkMethod(_diagnosticContext.Origin, method.Method, _memberWithRequirements);
 
         private partial void MarkType(TypeProxy type)
-            => _reflectionMarker.MarkType(_diagnosticContext.Origin, type.Type, _memberWithRequirements);
+            => _reflectionMarker.MarkType(type.Type, _memberWithRequirements);
 
         private partial bool MarkAssociatedProperty(MethodProxy method)
         {

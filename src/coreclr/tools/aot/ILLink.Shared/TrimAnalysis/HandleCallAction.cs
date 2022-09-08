@@ -773,7 +773,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 					foreach (var typeNameValue in argumentValues[0]) {
 						if (typeNameValue is KnownStringValue knownStringValue) {
-							if (!_requireDynamicallyAccessedMembersAction.TryResolveTypeNameAndMark (knownStringValue.Contents, false, out TypeProxy foundType)) {
+							if (!_requireDynamicallyAccessedMembersAction.TryResolveTypeNameAndMark (knownStringValue.Contents, out TypeProxy foundType)) {
 								// Intentionally ignore - it's not wrong for code to call Type.GetType on non-existing name, the code might expect null/exception back.
 								AddReturnValue (MultiValueLattice.Top);
 							} else {

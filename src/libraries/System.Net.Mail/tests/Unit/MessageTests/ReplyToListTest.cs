@@ -35,7 +35,7 @@ namespace System.Net.Mail.Tests
 
             _message.From = new MailAddress("from@example.com");
 
-            _message.PrepareHeaders(true, false);
+            _message.PrepareHeaders(false);
 
             Assert.Equal(2, _message.ReplyToList.Count);
 
@@ -60,7 +60,7 @@ namespace System.Net.Mail.Tests
 
             _message.From = new MailAddress("from@example.com");
 
-            _message.PrepareHeaders(true, false);
+            _message.PrepareHeaders(false);
 
             Assert.Equal(3, _message.ReplyToList.Count);
 
@@ -89,7 +89,7 @@ namespace System.Net.Mail.Tests
 
             _message.From = new MailAddress("from@example.com");
 
-            _message.PrepareHeaders(true, false);
+            _message.PrepareHeaders(false);
 
             Assert.True(_message.ReplyToList.Count == 3, "ReplyToList did not contain all email addresses");
 

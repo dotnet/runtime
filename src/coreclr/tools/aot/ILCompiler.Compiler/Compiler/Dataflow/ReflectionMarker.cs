@@ -53,7 +53,7 @@ namespace ILCompiler.Dataflow
                         MarkField(origin, field, memberWithRequirements);
                         break;
                     case MetadataType nestedType:
-                        MarkType(origin, nestedType, memberWithRequirements);
+                        MarkType(nestedType, memberWithRequirements);
                         break;
                     case PropertyPseudoDesc property:
                         MarkProperty(origin, property, memberWithRequirements);
@@ -67,7 +67,7 @@ namespace ILCompiler.Dataflow
             }
         }
 
-        internal bool TryResolveTypeNameAndMark(string typeName, in DiagnosticContext diagnosticContext, bool needsAssemblyName, Origin memberWithRequirements, [NotNullWhen(true)] out TypeDesc? type)
+        internal bool TryResolveTypeNameAndMark(string typeName, in DiagnosticContext diagnosticContext, Origin memberWithRequirements, [NotNullWhen(true)] out TypeDesc? type)
         {
             ModuleDesc? callingModule = ((diagnosticContext.Origin.MemberDefinition as MethodDesc)?.OwningType as MetadataType)?.Module;
 
@@ -85,14 +85,14 @@ namespace ILCompiler.Dataflow
                 if (Factory.MetadataManager.CanGenerateMetadata(referenceModule.GetGlobalModuleType()))
                     _dependencies.Add(Factory.ModuleMetadata(referenceModule), memberWithRequirements.ToString());
 
-                MarkType(diagnosticContext.Origin, foundType, memberWithRequirements);
+                MarkType(foundType, memberWithRequirements);
             }
 
             type = foundType;
             return true;
         }
 
-        internal void MarkType(in MessageOrigin origin, TypeDesc type, Origin memberWithRequirements)
+        internal void MarkType(TypeDesc type, Origin memberWithRequirements)
         {
             if (!_enabled)
                 return;
@@ -178,7 +178,7 @@ namespace ILCompiler.Dataflow
                 MarkEvent(origin, @event, memberWithRequirements);
         }
 
-        internal void MarkStaticConstructor(in MessageOrigin origin, TypeDesc type)
+        internal void MarkStaticConstructor(TypeDesc type)
         {
             if (!_enabled)
                 return;

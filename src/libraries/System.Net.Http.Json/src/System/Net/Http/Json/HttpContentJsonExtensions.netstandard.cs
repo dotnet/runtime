@@ -10,7 +10,7 @@ namespace System.Net.Http.Json
 {
     public static partial class HttpContentJsonExtensions
     {
-        private static Task<Stream> ReadHttpContentStreamAsync(HttpContent content, CancellationToken cancellationToken)
+        private static Task<Stream> ReadHttpContentStreamAsync(HttpContent content, CancellationToken _/*cancellationToken*/)
         {
             // The ReadAsStreamAsync overload that takes a cancellationToken is not available in .NET Standard
             return content.ReadAsStreamAsync();

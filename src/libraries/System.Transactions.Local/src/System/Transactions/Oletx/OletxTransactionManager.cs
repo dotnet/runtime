@@ -463,8 +463,7 @@ internal sealed class OletxTransactionManager
                 transactionShim,
                 outcomeEnlistment,
                 txIdentifier,
-                oletxIsoLevel,
-                true);
+                oletxIsoLevel);
             tx = new OletxCommittableTransaction(realTransaction);
 
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;

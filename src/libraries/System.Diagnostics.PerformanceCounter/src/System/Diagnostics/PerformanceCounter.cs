@@ -79,7 +79,7 @@ namespace System.Diagnostics
             GC.SuppressFinalize(this);
         }
 
-        internal PerformanceCounter(string categoryName, string counterName, string instanceName, string machineName, bool skipInit)
+        internal PerformanceCounter(string categoryName, string counterName, string instanceName, string machineName, bool _)
         {
             MachineName = machineName;
             CategoryName = categoryName;

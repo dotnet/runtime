@@ -237,7 +237,7 @@ namespace ILCompiler.IBC
                             }
                         }
 
-                        loadedMethodProfileData = loadedMethodProfileData.Concat(ReadMIbcGroup(tsc, (EcmaMethod)ilBody.GetObject(token)));
+                        loadedMethodProfileData = loadedMethodProfileData.Concat(ReadMIbcGroup((EcmaMethod)ilBody.GetObject(token)));
                         break;
                     case ILOpcode.pop:
                         mibcGroupName = "";
@@ -341,7 +341,7 @@ namespace ILCompiler.IBC
         ///
         /// This format is designed to be extensible to hold more data as we add new per method profile data without breaking existing parsers.
         /// </summary>
-        private static IEnumerable<MethodProfileData> ReadMIbcGroup(TypeSystemContext tsc, EcmaMethod method)
+        private static IEnumerable<MethodProfileData> ReadMIbcGroup(EcmaMethod method)
         {
             EcmaMethodIL ilBody = EcmaMethodIL.Create(method);
             MetadataLoaderForPgoData metadataLoader = new MetadataLoaderForPgoData(ilBody);

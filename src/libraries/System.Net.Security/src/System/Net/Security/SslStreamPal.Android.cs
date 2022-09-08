@@ -210,16 +210,6 @@ namespace System.Net.Security
         }
 
 #pragma warning disable IDE0060
-        public static SecurityStatusPal Renegotiate(
-            SecureChannel secureChannel,
-            ref SafeFreeCredentials? credentialsHandle,
-            ref SafeDeleteSslContext? context,
-            SslAuthenticationOptions sslAuthenticationOptions,
-            out byte[]? outputBuffer)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         public static SecurityStatusPal ApplyAlertToken(
             SafeDeleteContext? securityContext,
             TlsAlertType alertType,

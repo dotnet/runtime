@@ -139,7 +139,7 @@ namespace System.Composition.Convention
                 ParseSelectConstructor(selectConstructor);
             }
 
-            public ConstructorInfo SelectConstructor()
+            public ConstructorInfo SelectConstructor(IEnumerable<ConstructorInfo> _)
             {
                 return _constructorInfo;
             }

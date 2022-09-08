@@ -183,7 +183,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public void AddEntry(NodeFactory factory, MethodDesc virtualMethod)
+        public void AddEntry(MethodDesc virtualMethod)
         {
             // GVMs are not emitted in the type's vtable.
             Debug.Assert(!virtualMethod.HasInstantiation);

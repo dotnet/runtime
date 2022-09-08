@@ -1521,7 +1521,7 @@ namespace Internal.IL
             var method = ResolveMethodToken(token);
         }
 
-        void ImportCasting(ILOpcode opcode, int token)
+        void ImportCasting(int token)
         {
             var type = ResolveTypeToken(token);
 
@@ -2747,7 +2747,7 @@ namespace Internal.IL
             _pendingPrefix &= ~prefix;
         }
 
-        void ReportInvalidBranchTarget(int targetOffset)
+        void ReportInvalidBranchTarget()
         {
             VerificationError(VerifierError.BadBranch);
         }
@@ -2763,7 +2763,7 @@ namespace Internal.IL
             AbortMethodVerification();
         }
 
-        void ReportInvalidInstruction(ILOpcode opcode)
+        void ReportInvalidInstruction()
         {
             VerificationError(VerifierError.UnknownOpcode);
         }

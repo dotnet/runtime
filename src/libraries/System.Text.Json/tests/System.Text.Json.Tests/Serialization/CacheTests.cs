@@ -234,7 +234,7 @@ namespace System.Text.Json.Serialization.Tests
                     Type updateHandler = typeof(JsonSerializerOptions).Assembly.GetType("System.Text.Json.JsonSerializerOptionsUpdateHandler", throwOnError: true, ignoreCase: false);
                     MethodInfo clearCache = updateHandler.GetMethod("ClearCache");
                     Assert.NotNull(clearCache);
-                    clearCache.Invoke(null, new object[] { null });
+                    clearCache.Invoke(null, new object[0]);
                     Assert.Equal(0, getCount(options));
 
                     JsonSerializer.Serialize<SimpleTestClass>(testObj, options);

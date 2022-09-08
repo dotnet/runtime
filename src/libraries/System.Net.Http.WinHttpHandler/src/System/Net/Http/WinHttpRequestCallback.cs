@@ -43,11 +43,10 @@ namespace System.Net.Http
             WinHttpRequestState? state = WinHttpRequestState.FromIntPtr(context);
             Debug.Assert(state != null, "WinHttpCallback must have a non-null state object");
 
-            RequestCallback(handle, state, internetStatus, statusInformation, statusInformationLength);
+            RequestCallback(state, internetStatus, statusInformation, statusInformationLength);
         }
 
         private static void RequestCallback(
-            IntPtr handle,
             WinHttpRequestState state,
             uint internetStatus,
             IntPtr statusInformation,

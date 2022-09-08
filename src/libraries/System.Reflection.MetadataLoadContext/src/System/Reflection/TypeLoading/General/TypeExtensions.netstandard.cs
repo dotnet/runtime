@@ -9,7 +9,7 @@ namespace System.Reflection.TypeLoading
     internal static class NetCoreApiEmulators
     {
         // On NetStandard, have to do with slower emulations.
-
+#pragma warning disable IDE0060
         public static bool IsSignatureType(this Type type) => false;
         public static bool IsSZArray(this Type type) => type.IsArray && type.GetArrayRank() == 1 && type.Name.EndsWith("[]", StringComparison.Ordinal);
         public static bool IsVariableBoundArray(this Type type) => type.IsArray && !type.IsSZArray();
@@ -17,6 +17,7 @@ namespace System.Reflection.TypeLoading
 
         // Signature Types do not exist on NetStandard 2.0 but it's possible we could reach this if a NetCore app uses the NetStandard build of this library.
         public static Type MakeSignatureGenericType(this Type genericTypeDefinition, Type[] typeArguments) => throw new NotSupportedException(SR.NotSupported_MakeGenericType_SignatureTypes);
+#pragma warning restore IDE0060
     }
 
     /// <summary>

@@ -179,8 +179,8 @@ namespace Internal.IL
             return _compilation.GetHelperEntrypoint(helper);
         }
 
-        private static void MarkInstructionBoundary() { }
-        private static void EndImportingBasicBlock(BasicBlock basicBlock) { }
+        static partial void MarkInstructionBoundary();
+        static partial void EndImportingBasicBlock(BasicBlock basicBlock);
 
         private void StartImportingBasicBlock(BasicBlock basicBlock)
         {
@@ -224,7 +224,7 @@ namespace Internal.IL
             _isReadOnly = false;
         }
 
-        private void ImportCasting(ILOpcode opcode, int token)
+        private void ImportCasting(int token)
         {
             TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
 
@@ -798,7 +798,7 @@ namespace Internal.IL
             _dependencies.Add(_factory.CanonicalEntrypoint(stub), "calli");
         }
 
-        private void ImportBranch(ILOpcode opcode, BasicBlock target, BasicBlock fallthrough)
+        private void ImportBranch(ILOpcode _/*opcode*/, BasicBlock target, BasicBlock fallthrough)
         {
             ImportFallthrough(target);
 
@@ -827,7 +827,7 @@ namespace Internal.IL
                 if (opCode == ILOpcode.unbox_any)
                 {
                     // When applied to a reference type, unbox_any has the same effect as castclass.
-                    ImportCasting(ILOpcode.castclass, token);
+                    ImportCasting(token);
                 }
                 return;
             }
@@ -1070,7 +1070,7 @@ namespace Internal.IL
             ImportFieldAccess(token, isStatic, isStatic ? "stsfld" : "stfld");
         }
 
-        private void ImportLoadString(int token)
+        private void ImportLoadString(int _)
         {
             // If we care, this can include allocating the frozen string node.
             _dependencies.Add(_factory.SerializedStringObject(""), "ldstr");
@@ -1226,7 +1226,7 @@ namespace Internal.IL
                 + (_ilBytes[ilOffset + 3] << 24));
         }
 
-        private static void ReportInvalidBranchTarget(int targetOffset)
+        private static void ReportInvalidBranchTarget()
         {
             ThrowHelper.ThrowInvalidProgramException();
         }
@@ -1241,7 +1241,7 @@ namespace Internal.IL
             ThrowHelper.ThrowInvalidProgramException();
         }
 
-        private static void ReportInvalidInstruction(ILOpcode opcode)
+        private static void ReportInvalidInstruction()
         {
             ThrowHelper.ThrowInvalidProgramException();
         }

@@ -788,7 +788,7 @@ namespace System.Data.OleDb
 
         private int ExecuteCommand(CommandBehavior behavior, out object? executeResult)
         {
-            if (InitializeCommand(behavior, false))
+            if (InitializeCommand(behavior))
             {
                 if (0 != (CommandBehavior.SchemaOnly & this.commandBehavior))
                 {
@@ -1125,7 +1125,7 @@ namespace System.Data.OleDb
             ParameterBindings?.CleanupBindings();
         }
 
-        private bool InitializeCommand(CommandBehavior behavior, bool throwifnotsupported)
+        private bool InitializeCommand(CommandBehavior behavior)
         {
             Debug.Assert(null != _connection, "InitializeCommand: null OleDbConnection");
 
@@ -1191,7 +1191,7 @@ namespace System.Data.OleDb
                 _isPrepared = false;
                 if (CommandType.TableDirect != CommandType)
                 {
-                    InitializeCommand(0, true);
+                    InitializeCommand(0);
                     PrepareCommandText(1);
                 }
             }
