@@ -4473,8 +4473,12 @@ public:
         return ((ArrayBase *)this)->GetNumComponents();
     }
 
-    void Validate(BOOL bDeep=TRUE)
+    void Validate(BOOL bDeep=TRUE, BOOL bVerifyNextHeader = FALSE, BOOL bVerifySyncBlock = FALSE)
     {
+        // declaration of extra parameters just so the call site would need no #ifdefs
+        UNREFERENCED_PARAMETER(bVerifyNextHeader);
+        UNREFERENCED_PARAMETER(bVerifySyncBlock);
+
         MethodTable * pMT = GetMethodTable();
 
         _ASSERTE(pMT->SanityCheck());
@@ -6085,20 +6089,22 @@ public:
         uint16_t proc_no[MAX_SUPPORTED_CPUS];
         uint16_t node_no[MAX_SUPPORTED_CPUS];
         uint16_t max_node_no = 0;
-        for (uint16_t i = 0; i < n_heaps; i++)
+        uint16_t heap_num;
+        for (heap_num = 0; heap_num < n_heaps; heap_num++)
         {
-            if (!GCToOSInterface::GetProcessorForHeap (i, &proc_no[i], &node_no[i]))
+            if (!GCToOSInterface::GetProcessorForHeap (heap_num, &proc_no[heap_num], &node_no[heap_num]))
                 break;
-            if (!do_numa || node_no[i] == NUMA_NODE_UNDEFINED)
-                node_no[i] = 0;
-            max_node_no = max(max_node_no, node_no[i]);
+            assert(proc_no[heap_num] < MAX_SUPPORTED_CPUS);
+            if (!do_numa || node_no[heap_num] == NUMA_NODE_UNDEFINED)
+                node_no[heap_num] = 0;
+            max_node_no = max(max_node_no, node_no[heap_num]);
         }
 
         // Pass 2: assign heap numbers by numa node
         int cur_heap_no = 0;
         for (uint16_t cur_node_no = 0; cur_node_no <= max_node_no; cur_node_no++)
         {
-            for (int i = 0; i < n_heaps; i++)
+            for (int i = 0; i < heap_num; i++)
             {
                 if (node_no[i] != cur_node_no)
                     continue;
@@ -24659,12 +24665,7 @@ void gc_heap::set_background_overflow_p (uint8_t* oo)
     heap_segment* overflow_region = get_region_info_for_address (oo);
     overflow_region->flags |= heap_segment_flags_overflow;
     dprintf (3,("setting overflow flag for region %p", heap_segment_mem (overflow_region)));
-#ifdef MULTIPLE_HEAPS
-    gc_heap* overflow_heap = heap_segment_heap (overflow_region);
-#else
-    gc_heap* overflow_heap = nullptr;
-#endif
-    overflow_heap->background_overflow_p = TRUE;
+    background_overflow_p = TRUE;
 }
 #endif //USE_REGIONS
 
@@ -25311,13 +25312,13 @@ void gc_heap::background_process_mark_overflow_internal (uint8_t* min_add, uint8
 
             dprintf (2, ("h%d: SOH: ov-mo: %Id", heap_number, total_marked_objects));
             fire_overflow_event (min_add, max_add, total_marked_objects, i);
-            if (small_object_segments)
+            if (i >= soh_gen2)
             {
                 concurrent_print_time_delta (concurrent_p ? "Cov SOH" : "Nov SOH");
+                small_object_segments = FALSE;
             }
 
             total_marked_objects = 0;
-            small_object_segments = FALSE;
         }
     }
 }
@@ -33980,23 +33981,35 @@ void gc_heap::background_scan_dependent_handles (ScanContext *sc)
 
             if (!s_fScanRequired)
             {
-#ifndef USE_REGIONS
+#ifdef USE_REGIONS
+                BOOL all_heaps_background_overflow_p = FALSE;
+#else //USE_REGIONS
                 uint8_t* all_heaps_max = 0;
                 uint8_t* all_heaps_min = MAX_PTR;
+#endif //USE_REGIONS
                 int i;
                 for (i = 0; i < n_heaps; i++)
                 {
+#ifdef USE_REGIONS
+                    // in the regions case, compute the OR of all the per-heap flags
+                    if (g_heaps[i]->background_overflow_p)
+                        all_heaps_background_overflow_p = TRUE;
+#else //USE_REGIONS
                     if (all_heaps_max < g_heaps[i]->background_max_overflow_address)
                         all_heaps_max = g_heaps[i]->background_max_overflow_address;
                     if (all_heaps_min > g_heaps[i]->background_min_overflow_address)
                         all_heaps_min = g_heaps[i]->background_min_overflow_address;
+#endif //USE_REGIONS
                 }
                 for (i = 0; i < n_heaps; i++)
                 {
+#ifdef USE_REGIONS
+                    g_heaps[i]->background_overflow_p = all_heaps_background_overflow_p;
+#else //USE_REGIONS
                     g_heaps[i]->background_max_overflow_address = all_heaps_max;
                     g_heaps[i]->background_min_overflow_address = all_heaps_min;
+#endif //USE_REGIONS
                 }
-#endif //!USE_REGIONS
             }
 
             dprintf(2, ("Starting all gc thread mark stack overflow processing"));
@@ -34740,15 +34753,24 @@ void gc_heap::background_mark_phase ()
 
     enable_preemptive ();
 
-#if defined(MULTIPLE_HEAPS) && !defined(USE_REGIONS)
+#if defined(MULTIPLE_HEAPS)
     bgc_t_join.join(this, gc_join_concurrent_overflow);
     if (bgc_t_join.joined())
     {
+#ifdef USE_REGIONS
+        BOOL all_heaps_background_overflow_p = FALSE;
+#else //USE_REGIONS
         uint8_t* all_heaps_max = 0;
         uint8_t* all_heaps_min = MAX_PTR;
+#endif //USE_REGIONS
         int i;
         for (i = 0; i < n_heaps; i++)
         {
+#ifdef USE_REGIONS
+            // in the regions case, compute the OR of all the per-heap flags
+            if (g_heaps[i]->background_overflow_p)
+                all_heaps_background_overflow_p = TRUE;
+#else //USE_REGIONS
             dprintf (3, ("heap %d overflow max is %Ix, min is %Ix",
                 i,
                 g_heaps[i]->background_max_overflow_address,
@@ -34757,17 +34779,21 @@ void gc_heap::background_mark_phase ()
                 all_heaps_max = g_heaps[i]->background_max_overflow_address;
             if (all_heaps_min > g_heaps[i]->background_min_overflow_address)
                 all_heaps_min = g_heaps[i]->background_min_overflow_address;
-
+#endif //USE_REGIONS
         }
         for (i = 0; i < n_heaps; i++)
         {
+#ifdef USE_REGIONS
+            g_heaps[i]->background_overflow_p = all_heaps_background_overflow_p;
+#else //USE_REGIONS
             g_heaps[i]->background_max_overflow_address = all_heaps_max;
             g_heaps[i]->background_min_overflow_address = all_heaps_min;
+#endif //USE_REGIONS
         }
         dprintf(3, ("Starting all bgc threads after updating the overflow info"));
         bgc_t_join.restart();
     }
-#endif //MULTIPLE_HEAPS && !USE_REGIONS
+#endif //MULTIPLE_HEAPS
 
     disable_preemptive (true);
 
@@ -44777,8 +44803,9 @@ HRESULT GCHeap::Initialize()
     uint32_t nhp = 1;
     uint32_t nhp_from_config = 0;
 
-#ifdef MULTIPLE_HEAPS
-
+#ifndef MULTIPLE_HEAPS
+    GCConfig::SetServerGC(false);
+#else //!MULTIPLE_HEAPS
     GCConfig::SetServerGC(true);
     AffinitySet config_affinity_set;
     GCConfigStringHolder cpu_index_ranges_holder(GCConfig::GetGCHeapAffinitizeRanges());
@@ -44808,7 +44835,9 @@ HRESULT GCHeap::Initialize()
 
     nhp_from_config = static_cast<uint32_t>(GCConfig::GetHeapCount());
 
-    g_num_active_processors = GCToEEInterface::GetCurrentProcessCpuCount();
+    // The CPU count may be overriden by the user. Ensure that we create no more than g_num_processors
+    // heaps as that is the number of slots we have allocated for handle tables.
+    g_num_active_processors = min (GCToEEInterface::GetCurrentProcessCpuCount(), g_num_processors);
 
     if (nhp_from_config)
     {
@@ -44833,7 +44862,7 @@ HRESULT GCHeap::Initialize()
             nhp = min(nhp, num_affinitized_processors);
         }
     }
-#endif //MULTIPLE_HEAPS
+#endif //!MULTIPLE_HEAPS
 
     size_t seg_size = 0;
     size_t large_seg_size = 0;
@@ -44917,6 +44946,7 @@ HRESULT GCHeap::Initialize()
 #endif //USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
+    assert (nhp <= g_num_processors);
     gc_heap::n_heaps = nhp;
     hr = gc_heap::initialize_gc (seg_size, large_seg_size, pin_seg_size, nhp);
 #else
@@ -44951,7 +44981,7 @@ HRESULT GCHeap::Initialize()
         int available_mem_th = 10;
         if (gc_heap::total_physical_mem >= ((uint64_t)80 * 1024 * 1024 * 1024))
         {
-            int adjusted_available_mem_th = 3 + (int)((float)47 / (float)(GCToOSInterface::GetTotalProcessorCount()));
+            int adjusted_available_mem_th = 3 + (int)((float)47 / (float)g_num_processors);
             available_mem_th = min (available_mem_th, adjusted_available_mem_th);
         }
 
@@ -45122,14 +45152,9 @@ HRESULT GCHeap::Initialize()
 // GC callback functions
 bool GCHeap::IsPromoted(Object* object)
 {
-#ifdef _DEBUG
-    if (object)
-    {
-        ((CObjectHeader*)object)->Validate();
-    }
-#endif //_DEBUG
-
     uint8_t* o = (uint8_t*)object;
+
+    bool is_marked;
 
     if (gc_heap::settings.condemned_generation == max_generation)
     {
@@ -45142,27 +45167,35 @@ bool GCHeap::IsPromoted(Object* object)
 #ifdef BACKGROUND_GC
         if (gc_heap::settings.concurrent)
         {
-            bool is_marked = (!((o < hp->background_saved_highest_address) && (o >= hp->background_saved_lowest_address))||
+            is_marked = (!((o < hp->background_saved_highest_address) && (o >= hp->background_saved_lowest_address))||
                             hp->background_marked (o));
-            return is_marked;
         }
         else
 #endif //BACKGROUND_GC
         {
-            return (!((o < hp->highest_address) && (o >= hp->lowest_address))
-                    || hp->is_mark_set (o));
+            is_marked = (!((o < hp->highest_address) && (o >= hp->lowest_address))
+                        || hp->is_mark_set (o));
         }
     }
     else
     {
 #ifdef USE_REGIONS
-        return (gc_heap::is_in_gc_range (o) ? (gc_heap::is_in_condemned_gc (o) ? gc_heap::is_mark_set (o) : true) : true);
+        is_marked = (gc_heap::is_in_gc_range (o) ? (gc_heap::is_in_condemned_gc (o) ? gc_heap::is_mark_set (o) : true) : true);
 #else
         gc_heap* hp = gc_heap::heap_of (o);
-        return (!((o < hp->gc_high) && (o >= hp->gc_low))
-                || hp->is_mark_set (o));
+        is_marked = (!((o < hp->gc_high) && (o >= hp->gc_low))
+                   || hp->is_mark_set (o));
 #endif //USE_REGIONS
     }
+
+#ifdef _DEBUG
+    if (o)
+    {
+        ((CObjectHeader*)o)->Validate(TRUE, TRUE, is_marked);
+    }
+#endif //_DEBUG
+
+    return is_marked;
 }
 
 size_t GCHeap::GetPromotedBytes(int heap_index)

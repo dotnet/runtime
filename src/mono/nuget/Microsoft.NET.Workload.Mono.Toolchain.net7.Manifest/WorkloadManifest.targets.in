@@ -22,7 +22,7 @@
 
     <PropertyGroup Condition="'$(TargetsNet7)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' AND '$(UsingBrowserRuntimeWorkload)' == ''">
         <!-- $(WasmBuildNative)==true is needed to enable workloads, when using native references, without AOT -->
-        <UsingBrowserRuntimeWorkload Condition="'$(RunAOTCompilation)' == 'true' or '$(WasmBuildNative)' == 'true' or '$(WasmGenerateAppBundle)' == 'true' or '$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true'" >true</UsingBrowserRuntimeWorkload>
+        <UsingBrowserRuntimeWorkload Condition="'$(RunAOTCompilation)' == 'true' or '$(WasmEnableSIMD)' == 'true' or '$(WasmBuildNative)' == 'true' or '$(WasmGenerateAppBundle)' == 'true' or '$(UsingMicrosoftNETSdkBlazorWebAssembly)' != 'true'" >true</UsingBrowserRuntimeWorkload>
         <UsingBrowserRuntimeWorkload Condition="'$(UsingBrowserRuntimeWorkload)' == ''" >$(WasmNativeWorkload7)</UsingBrowserRuntimeWorkload>
     </PropertyGroup>
 
@@ -94,7 +94,7 @@
         <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk.net7" />
     </ImportGroup>
 
-    <PropertyGroup Condition="'$(TargetsNet7)' == 'true' and ('$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'macOS' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'tvos' or ('$(RuntimeIdentifier)' == 'browser-wasm' and '$(UsingBrowserRuntimeWorkload)' == 'true'))">
+    <PropertyGroup Condition="'$(TargetsNet7)' == 'true' and ('$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'macOS' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'tvos' or '$(RuntimeIdentifier)' == 'browser-wasm')">
       <_MonoWorkloadTargetsMobile>true</_MonoWorkloadTargetsMobile>
       <_MonoWorkloadRuntimePackPackageVersion>$(_RuntimePackInWorkloadVersion7)</_MonoWorkloadRuntimePackPackageVersion>
     </PropertyGroup>

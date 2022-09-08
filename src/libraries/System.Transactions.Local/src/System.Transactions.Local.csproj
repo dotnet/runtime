@@ -5,7 +5,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
     <NoWarn>CA1805;IDE0059;CS1591</NoWarn>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
-    <IsTrimmable>false</IsTrimmable>
+    <IsTrimmable Condition="'$(TargetPlatformIdentifier)' == 'windows'">false</IsTrimmable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Transactions\CommittableTransaction.cs" />

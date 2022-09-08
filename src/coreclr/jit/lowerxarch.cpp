@@ -507,18 +507,6 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
             // registers to be consumed atomically by the call.
             if (varTypeIsIntegralOrI(fieldNode))
             {
-                // If we are loading from an in-memory local, we would like to use "push", but this
-                // is only legal if we can safely load all 4 bytes. Retype the local node here to
-                // TYP_INT for such legal cases to make downstream (LSRA & codegen) logic simpler.
-                // Retyping is ok because we model this node as STORE<field type>(LOAD<node type>).
-                // If the field came from promotion, we allow the padding to remain undefined, if
-                // from decomposition, the field type will be INT (naturally blocking the retyping).
-                if (varTypeIsSmall(fieldNode) && (genTypeSize(fieldType) <= genTypeSize(fieldNode)) &&
-                    fieldNode->OperIsLocalRead())
-                {
-                    fieldNode->ChangeType(TYP_INT);
-                }
-
                 if (IsContainableImmed(putArgStk, fieldNode))
                 {
                     MakeSrcContained(putArgStk, fieldNode);
@@ -3419,6 +3407,20 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
         {
             assert(simdBaseType == TYP_FLOAT);
 
+            // We need to mask off the most significant element to avoid the shuffle + add
+            // from including it in the computed result. We need to do this for both op1 and
+            // op2 in case one of them is `NaN` (because Zero * NaN == NaN)
+
+            simd16_t simd16Val = {};
+
+            simd16Val.i32[0] = -1;
+            simd16Val.i32[1] = -1;
+            simd16Val.i32[2] = -1;
+            simd16Val.i32[3] = +0;
+
+            simdType = TYP_SIMD16;
+            simdSize = 16;
+
             // We will be constructing the following parts:
             //   ...
             //          +--*  CNS_INT    int    -1
@@ -3426,7 +3428,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
             //          +--*  CNS_INT    int    -1
             //          +--*  CNS_INT    int    0
             //   tmp1 = *  HWINTRINSIC   simd16 T Create
-            //          /--*  op2 simd16
+            //          /--*  op1 simd16
             //          +--*  tmp1 simd16
             //   op1  = *  HWINTRINSIC   simd16 T And
             //   ...
@@ -3434,30 +3436,48 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
             // This is roughly the following managed code:
             //   ...
             //   tmp1 = Vector128.Create(-1, -1, -1, 0);
-            //   op1  = Sse.And(op1, tmp2);
+            //   op1  = Sse.And(op1, tmp1);
             //   ...
 
-            GenTree* cns0 = comp->gtNewIconNode(-1, TYP_INT);
-            BlockRange().InsertAfter(op1, cns0);
+            GenTreeVecCon* vecCon1 = comp->gtNewVconNode(simdType, simdBaseJitType);
+            vecCon1->gtSimd16Val   = simd16Val;
 
-            GenTree* cns1 = comp->gtNewIconNode(-1, TYP_INT);
-            BlockRange().InsertAfter(cns0, cns1);
+            BlockRange().InsertAfter(op1, vecCon1);
 
-            GenTree* cns2 = comp->gtNewIconNode(-1, TYP_INT);
-            BlockRange().InsertAfter(cns1, cns2);
+            op1 = comp->gtNewSimdHWIntrinsicNode(simdType, op1, vecCon1, NI_SSE_And, simdBaseJitType, simdSize);
+            BlockRange().InsertAfter(vecCon1, op1);
 
-            GenTree* cns3 = comp->gtNewIconNode(0, TYP_INT);
-            BlockRange().InsertAfter(cns2, cns3);
-
-            tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, cns0, cns1, cns2, cns3, NI_Vector128_Create,
-                                                  CORINFO_TYPE_INT, 16);
-            BlockRange().InsertAfter(cns3, tmp1);
-
-            op1 = comp->gtNewSimdHWIntrinsicNode(simdType, op1, tmp1, NI_SSE_And, simdBaseJitType, simdSize);
-            BlockRange().InsertAfter(tmp1, op1);
-
-            LowerNode(tmp1);
+            LowerNode(vecCon1);
             LowerNode(op1);
+
+            // We will be constructing the following parts:
+            //   ...
+            //          +--*  CNS_INT    int    -1
+            //          +--*  CNS_INT    int    -1
+            //          +--*  CNS_INT    int    -1
+            //          +--*  CNS_INT    int    0
+            //   tmp2 = *  HWINTRINSIC   simd16 T Create
+            //          /--*  op2 simd16
+            //          +--*  tmp2 simd16
+            //   op2  = *  HWINTRINSIC   simd16 T And
+            //   ...
+
+            // This is roughly the following managed code:
+            //   ...
+            //   tmp2 = Vector128.Create(-1, -1, -1, 0);
+            //   op2  = Sse.And(op2, tmp2);
+            //   ...
+
+            GenTreeVecCon* vecCon2 = comp->gtNewVconNode(simdType, simdBaseJitType);
+            vecCon2->gtSimd16Val   = simd16Val;
+
+            BlockRange().InsertAfter(op2, vecCon2);
+
+            op2 = comp->gtNewSimdHWIntrinsicNode(simdType, op2, vecCon2, NI_SSE_And, simdBaseJitType, simdSize);
+            BlockRange().InsertAfter(vecCon2, op2);
+
+            LowerNode(vecCon2);
+            LowerNode(op2);
         }
     }
 

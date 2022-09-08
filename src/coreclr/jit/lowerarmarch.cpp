@@ -2086,7 +2086,8 @@ bool Lowering::IsValidCompareChain(GenTree* child, GenTree* parent)
             return IsValidCompareChain(child->AsOp()->gtGetOp2(), child) &&
                    IsValidCompareChain(child->AsOp()->gtGetOp1(), child);
         }
-        else if (child->OperIsCmpCompare())
+        else if (child->OperIsCmpCompare() && varTypeIsIntegral(child->gtGetOp1()) &&
+                 varTypeIsIntegral(child->gtGetOp2()))
         {
             // Can the child compare be contained.
             return IsSafeToContainMem(parent, child);
@@ -2148,7 +2149,8 @@ bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree
             child->SetContained();
             return true;
         }
-        else if (child->OperIsCmpCompare())
+        else if (child->OperIsCmpCompare() && varTypeIsIntegral(child->gtGetOp1()) &&
+                 varTypeIsIntegral(child->gtGetOp2()))
         {
             child->AsOp()->SetContained();
 

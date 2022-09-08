@@ -97,6 +97,8 @@ namespace Microsoft.Workload.Build.Tasks
 
                     if (!ExecuteInternal(req) && !req.IgnoreErrors)
                         return false;
+
+                    File.WriteAllText(req.StampPath, string.Empty);
                 }
 
                 return !Log.HasLoggedErrors;
@@ -138,37 +140,6 @@ namespace Microsoft.Workload.Build.Tasks
                                     $"is newer than packages {string.Join(',', allManifestPkgs)}.");
                 return true;
             }
-
-            // HACK BEGIN - because sdk doesn't yet have the net6/net7 manifest names in the known workloads
-            // list
-            string? txtPath = Directory.EnumerateFiles(Path.Combine(SdkWithNoWorkloadInstalledPath, "sdk"), "IncludedWorkloadManifests.txt",
-                                            new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 2})
-                                .FirstOrDefault();
-            if (txtPath is null)
-                throw new LogAsErrorException($"Could not find IncludedWorkloadManifests.txt in {SdkWithNoWorkloadInstalledPath}");
-
-            string stampPath = Path.Combine(Path.GetDirectoryName(txtPath)!, ".stamp");
-            if (!File.Exists(stampPath))
-            {
-                Log.LogMessage(MessageImportance.High, $"txtPath: {txtPath}");
-                string newTxt = File.ReadAllText(txtPath)
-                                    .Replace("microsoft.net.workload.mono.toolchain",
-                                                $"microsoft.net.workload.mono.toolchain.net6{Environment.NewLine}microsoft.net.workload.mono.toolchain.net7")
-                                    .Replace("microsoft.net.workload.emscripten",
-                                                $"microsoft.net.workload.emscripten.net6{Environment.NewLine}microsoft.net.workload.emscripten.net7");
-                File.WriteAllText(txtPath, newTxt);
-                File.WriteAllText(stampPath, "");
-            }
-
-            string p = Path.Combine(SdkWithNoWorkloadInstalledPath, "sdk-manifests", "7.0.100", "microsoft.net.workload.mono.toolchain");
-            Log.LogMessage(MessageImportance.High, $"Deleting {p}");
-            if (Directory.Exists(p))
-                Directory.Delete(p, recursive: true);
-            p = Path.Combine(SdkWithNoWorkloadInstalledPath, "sdk-manifests", "7.0.100", "microsoft.net.workload.emscripten");
-            Log.LogMessage(MessageImportance.High, $"Deleting {p}");
-            if (Directory.Exists(p))
-                Directory.Delete(p, recursive: true);
-            // HACK END
 
             string nugetConfigContents = GetNuGetConfig();
             HashSet<string> manifestsInstalled = new();
@@ -399,6 +370,7 @@ namespace Microsoft.Workload.Build.Tasks
             public string ManifestName => Workload.GetMetadata("ManifestName");
             public string Version => Workload.GetMetadata("Version");
             public string TargetPath => Target.GetMetadata("InstallPath");
+            public string StampPath => Target.GetMetadata("StampPath");
             public bool IgnoreErrors => Workload.GetMetadata("IgnoreErrors").ToLowerInvariant() == "true";
             public string WorkloadId => Workload.ItemSpec;
 

@@ -1018,8 +1018,8 @@ void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
 #endif // FEATURE_EVENT_TRACE
 }
 
-#if defined(FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP) && (!defined(TARGET_ARM64) || !defined(TARGET_UNIX))
-#error FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP is only implemented for ARM64 and UNIX
+#if defined(FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP) && !defined(TARGET_UNIX)
+#error FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP is only implemented for UNIX
 #endif
 
 void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
@@ -1307,13 +1307,6 @@ MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
 
 bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* publicKey, bool* value)
 {
-    // these configuration values are given to us via startup flags.
-    if (strcmp(privateKey, "gcServer") == 0)
-    {
-        *value = g_heap_type == GC_HEAP_SVR;
-        return true;
-    }
-
     if (strcmp(privateKey, "gcConservative") == 0)
     {
         *value = true;

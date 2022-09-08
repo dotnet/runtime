@@ -6856,7 +6856,7 @@ MONO_RESTORE_WARNING
 		}
 
 		case OP_CHECK_THIS:
-			LLVMBuildLoad2 (builder, IntPtrType (), convert (ctx, lhs, pointer_type (IntPtrType ())), "");
+			LLVMBuildLoad2 (builder, LLVMInt8Type (), convert (ctx, lhs, pointer_type (LLVMInt8Type ())), "");
 			break;
 		case OP_OUTARG_VTRETADDR:
 			break;

@@ -59,9 +59,9 @@ namespace System.Threading.RateLimiting
             {
                 throw new ArgumentException($"{nameof(options.QueueLimit)} must be set to a value greater than or equal to 0.", nameof(options));
             }
-            if (options.Window < TimeSpan.Zero)
+            if (options.Window <= TimeSpan.Zero)
             {
-                throw new ArgumentException($"{nameof(options.Window)} must be set to a value greater than or equal to TimeSpan.Zero.", nameof(options));
+                throw new ArgumentException($"{nameof(options.Window)} must be set to a value greater than TimeSpan.Zero.", nameof(options));
             }
 
             _options = new FixedWindowRateLimiterOptions
@@ -287,7 +287,7 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                if ((long)((nowTicks - _lastReplenishmentTick) * TickFrequency) < _options.Window.Ticks)
+                if (((nowTicks - _lastReplenishmentTick) * TickFrequency) < _options.Window.Ticks && !_options.AutoReplenishment)
                 {
                     return;
                 }
@@ -295,21 +295,14 @@ namespace System.Threading.RateLimiting
                 _lastReplenishmentTick = nowTicks;
 
                 int availableRequestCounters = _requestCount;
-                int maxPermits = _options.PermitLimit;
-                int resourcesToAdd;
 
-                if (availableRequestCounters < maxPermits)
-                {
-                    resourcesToAdd = maxPermits - availableRequestCounters;
-                }
-                else
+                if (availableRequestCounters >= _options.PermitLimit)
                 {
                     // All counters available, nothing to do
                     return;
                 }
 
-                _requestCount += resourcesToAdd;
-                Debug.Assert(_requestCount == _options.PermitLimit);
+                _requestCount = _options.PermitLimit;
 
                 // Process queued requests
                 while (_queue.Count > 0)
