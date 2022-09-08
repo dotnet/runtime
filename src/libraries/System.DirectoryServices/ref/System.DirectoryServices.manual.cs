@@ -4,10 +4,10 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.DirectoryServices.Design;
+
 namespace System.DirectoryServices
 {
-    using System.DirectoryServices.Design;
-    
     [System.ComponentModel.TypeConverter(typeof(DirectoryEntryConverter))]
     public partial class DirectoryEntry { }
 }
