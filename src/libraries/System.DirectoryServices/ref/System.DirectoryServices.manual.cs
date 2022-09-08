@@ -4,7 +4,7 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-namespace System.DirectoryServices
+namespace System.DirectoryServices.Design
 {
     [System.ComponentModel.TypeConverter(typeof(DirectoryEntryConverter))]
     public partial class DirectoryEntry { }
