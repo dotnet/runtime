@@ -684,6 +684,7 @@ pal::string_t normalize_linux_rid(pal::string_t rid)
 {
     pal::string_t rhelPrefix(_X("rhel."));
     pal::string_t alpinePrefix(_X("alpine."));
+    pal::string_t rockyPrefix(_X("rocky."));
     size_t lastVersionSeparatorIndex = std::string::npos;
 
     if (rid.compare(0, rhelPrefix.length(), rhelPrefix) == 0)
@@ -697,6 +698,10 @@ pal::string_t normalize_linux_rid(pal::string_t rid)
         {
             lastVersionSeparatorIndex = rid.find(_X("."), secondVersionSeparatorIndex + 1);
         }
+    }
+    else if (rid.compare(0, rockyPrefix.length(), rockyPrefix) == 0)
+    {
+        lastVersionSeparatorIndex = rid.find(_X("."), rockyPrefix.length());
     }
 
     if (lastVersionSeparatorIndex != std::string::npos)
