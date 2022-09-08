@@ -203,9 +203,11 @@ namespace Microsoft.Workload.Build.Tasks
                         lines.Add(manifestId);
                 }
 
+                // currently using emscripten.net7 instead of this,
+                // so remove it from the list
                 lines.Remove("microsoft.net.workload.emscripten");
 
-                if (lines.Count > originalCount)
+                if (lines.Count != originalCount)
                 {
                     // Update the file only if we are making any changes
                     File.WriteAllText(txtPath, string.Join(Environment.NewLine, lines));
