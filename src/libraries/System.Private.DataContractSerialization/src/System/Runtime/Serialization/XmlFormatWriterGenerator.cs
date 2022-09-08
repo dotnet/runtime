@@ -99,7 +99,7 @@ namespace System.Runtime.Serialization
                     InitArgs(classContract.UnderlyingType);
                     if (classContract.IsReadOnlyContract)
                     {
-                        ThrowIfCannotSerializeReadOnlyTypes(classContract);
+                        ThrowIfCannotSerializeReadOnlyTypes();
                     }
                     WriteClass(classContract);
                     return (XmlFormatClassWriterDelegate)_ilg.EndMethod();
@@ -143,7 +143,7 @@ namespace System.Runtime.Serialization
                     InitArgs(collectionContract.UnderlyingType);
                     if (collectionContract.IsReadOnlyContract)
                     {
-                        ThrowIfCannotSerializeReadOnlyTypes(collectionContract);
+                        ThrowIfCannotSerializeReadOnlyCollectionTypes();
                     }
                     WriteCollection(collectionContract);
                     return (XmlFormatCollectionWriterDelegate)_ilg.EndMethod();
@@ -182,12 +182,12 @@ namespace System.Runtime.Serialization
                 _ilg.Stloc(_objectLocal);
             }
 
-            private void ThrowIfCannotSerializeReadOnlyTypes(ClassDataContract classContract)
+            private void ThrowIfCannotSerializeReadOnlyTypes()
             {
                 ThrowIfCannotSerializeReadOnlyTypes(XmlFormatGeneratorStatics.ClassSerializationExceptionMessageProperty);
             }
 
-            private void ThrowIfCannotSerializeReadOnlyTypes(CollectionDataContract classContract)
+            private void ThrowIfCannotSerializeReadOnlyCollectionTypes()
             {
                 ThrowIfCannotSerializeReadOnlyTypes(XmlFormatGeneratorStatics.CollectionSerializationExceptionMessageProperty);
             }

@@ -648,7 +648,7 @@ namespace System.Net.Http
                                 }
                                 return;
                             default:
-                                await SkipUnknownPayloadAsync(frameType.GetValueOrDefault(), payloadLength).ConfigureAwait(false);
+                                await SkipUnknownPayloadAsync(payloadLength).ConfigureAwait(false);
                                 break;
                         }
                     }

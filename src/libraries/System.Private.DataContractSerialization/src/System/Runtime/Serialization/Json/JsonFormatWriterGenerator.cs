@@ -119,7 +119,7 @@ namespace System.Runtime.Serialization.Json
                     paramTypes[i] = parameters[i].ParameterType;
 
                 DynamicMethod dynamicMethod = new DynamicMethod(methodName, signature.ReturnType, paramTypes, typeof(JsonFormatWriterGenerator).Module, allowPrivateMemberAccess);
-                ilg.BeginMethod(dynamicMethod, delegateType, methodName, paramTypes);
+                ilg.BeginMethod(dynamicMethod, delegateType, paramTypes);
             }
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]

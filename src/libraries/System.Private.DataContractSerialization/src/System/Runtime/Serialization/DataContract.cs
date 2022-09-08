@@ -60,7 +60,7 @@ namespace System.Runtime.Serialization.DataContracts
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal static DataContract GetDataContract(RuntimeTypeHandle typeHandle, Type? type)
+        internal static DataContract GetDataContract(RuntimeTypeHandle typeHandle)
         {
             int id = GetId(typeHandle);
             DataContract dataContract = GetDataContractSkipValidation(id, typeHandle, null);

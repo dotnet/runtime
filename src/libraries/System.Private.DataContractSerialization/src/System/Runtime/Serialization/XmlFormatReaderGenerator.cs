@@ -377,12 +377,12 @@ namespace System.Runtime.Serialization
                 int memberCount = classContract.MemberNames!.Length;
                 _ilg.Call(_contextArg, XmlFormatGeneratorStatics.IncrementItemCountMethod, memberCount);
 
-                LocalBuilder memberIndexLocal = _ilg.DeclareLocal(Globals.TypeOfInt, "memberIndex", -1);
+                LocalBuilder memberIndexLocal = _ilg.DeclareLocal(Globals.TypeOfInt, -1);
 
                 int firstRequiredMember;
                 bool[] requiredMembers = GetRequiredMembers(classContract, out firstRequiredMember);
                 bool hasRequiredMembers = (firstRequiredMember < memberCount);
-                LocalBuilder? requiredIndexLocal = hasRequiredMembers ? _ilg.DeclareLocal(Globals.TypeOfInt, "requiredIndex", firstRequiredMember) : null;
+                LocalBuilder? requiredIndexLocal = hasRequiredMembers ? _ilg.DeclareLocal(Globals.TypeOfInt, firstRequiredMember) : null;
 
                 object forReadElements = _ilg.For(null, null, null);
                 _ilg.Call(null, XmlFormatGeneratorStatics.MoveToNextElementMethod, _xmlReaderArg);
@@ -424,7 +424,7 @@ namespace System.Runtime.Serialization
                 {
                     DataMember dataMember = classContract.Members[i];
                     Type memberType = dataMember.MemberType;
-                    _ilg.Case(memberLabels[memberCount], dataMember.Name);
+                    _ilg.Case(memberLabels[memberCount]);
                     if (dataMember.IsRequired)
                     {
                         int nextRequiredIndex = memberCount + 1;

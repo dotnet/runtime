@@ -58,7 +58,7 @@ namespace System.Runtime.Serialization
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private object? InternalDeserializeWithSurrogate(XmlReaderDelegator xmlReader, Type declaredType, DataContract? surrogateDataContract)
+        private object? InternalDeserializeWithSurrogate(XmlReaderDelegator xmlReader, Type declaredType, DataContract? surrogateDataContract, string? name, string? ns)
         {
             Debug.Assert(_serializationSurrogateProvider != null);
 
@@ -70,7 +70,7 @@ namespace System.Runtime.Serialization
             }
             ReadAttributes(xmlReader);
             string objectId = GetObjectId();
-            object? oldObj = InternalDeserialize(xmlReader, declaredType, ref dataContract);
+            object? oldObj = InternalDeserialize(xmlReader, name, ns, declaredType, ref dataContract);
             object? obj = DataContractSurrogateCaller.GetDeserializedObject(_serializationSurrogateProvider, oldObj, dataContract.UnderlyingType, declaredType);
             ReplaceDeserializedObject(objectId, oldObj, obj);
 

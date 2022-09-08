@@ -55,7 +55,7 @@ namespace System.Runtime.Serialization
                 obj = context.GetRealObject(objectReference, context.GetObjectId());
             }
 
-            obj = ResolveAdapterObject(obj, classContract);
+            obj = ResolveAdapterObject(obj);
             InvokeDeserializationCallback(obj);
             InvokeOnDeserialized(context, classContract, obj);
 
@@ -306,7 +306,7 @@ namespace System.Runtime.Serialization
                     }
                     else
                     {
-                        value = context.GetExistingObject(objectId);
+                        value = context.GetExistingObject(objectId, type, name, ns);
                     }
                 }
             }
@@ -434,7 +434,7 @@ namespace System.Runtime.Serialization
             return obj;
         }
 
-        private static object ResolveAdapterObject(object obj, ClassDataContract classContract)
+        private static object ResolveAdapterObject(object obj)
         {
             Type objType = obj.GetType();
             if (objType == Globals.TypeOfDateTimeOffsetAdapter)

@@ -590,7 +590,7 @@ namespace System.Net.NetworkInformation
 
         private Task<PingReply> SendPingAsync(IPAddress address, int timeout, byte[] buffer, PingOptions? options, CancellationToken cancellationToken)
         {
-            CheckArgs(address, timeout, buffer, options);
+            CheckArgs(address, timeout, buffer);
 
             return SendPingAsyncInternal(
                 // Need to snapshot the address here, so we're sure that it's not changed between now

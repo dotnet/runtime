@@ -184,7 +184,7 @@ namespace System.Runtime.Serialization.Json
                     paramTypes[i] = parameters[i].ParameterType;
 
                 DynamicMethod dynamicMethod = new DynamicMethod(methodName, signature.ReturnType, paramTypes, typeof(JsonFormatReaderGenerator).Module, allowPrivateMemberAccess);
-                ilg.BeginMethod(dynamicMethod, delegateType, methodName, paramTypes);
+                ilg.BeginMethod(dynamicMethod, delegateType, paramTypes);
             }
 
             private void InitArgs()
@@ -311,12 +311,12 @@ namespace System.Runtime.Serialization.Json
                 int memberCount = classContract.MemberNames!.Length;
                 _ilg.Call(_contextArg, XmlFormatGeneratorStatics.IncrementItemCountMethod, memberCount);
 
-                BitFlagsGenerator expectedElements = new BitFlagsGenerator(memberCount, _ilg, classContract.UnderlyingType.Name + "_ExpectedElements");
+                BitFlagsGenerator expectedElements = new BitFlagsGenerator(memberCount, _ilg);
                 byte[] requiredElements = new byte[expectedElements.GetLocalCount()];
                 SetRequiredElements(classContract, requiredElements);
                 SetExpectedElements(expectedElements, 0 /*startIndex*/);
 
-                LocalBuilder memberIndexLocal = _ilg.DeclareLocal(Globals.TypeOfInt, "memberIndex", -1);
+                LocalBuilder memberIndexLocal = _ilg.DeclareLocal(Globals.TypeOfInt, -1);
                 Label throwDuplicateMemberLabel = _ilg.DefineLabel();
                 Label throwMissingRequiredMembersLabel = _ilg.DefineLabel();
 
@@ -365,7 +365,7 @@ namespace System.Runtime.Serialization.Json
                 {
                     DataMember dataMember = classContract.Members[i];
                     Type memberType = dataMember.MemberType;
-                    _ilg.Case(memberLabels[memberCount], dataMember.Name);
+                    _ilg.Case(memberLabels[memberCount]);
                     _ilg.Set(memberIndexLocal, memberCount);
                     expectedElements.Load(memberCount);
                     _ilg.Brfalse(throwDuplicateMemberLabel);

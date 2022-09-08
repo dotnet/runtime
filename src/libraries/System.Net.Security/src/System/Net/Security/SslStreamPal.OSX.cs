@@ -31,6 +31,7 @@ namespace System.Net.Security
         {
         }
 
+#pragma warning disable IDE0060
         public static SecurityStatusPal AcceptSecurityContext(
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
@@ -38,7 +39,7 @@ namespace System.Net.Security
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions, null);
+            return HandshakeInternal(ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions, null);
         }
 
         public static SecurityStatusPal InitializeSecurityContext(
@@ -50,10 +51,9 @@ namespace System.Net.Security
             SslAuthenticationOptions sslAuthenticationOptions,
             SelectClientCertificate clientCertificateSelectionCallback)
         {
-            return HandshakeInternal(credential, ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions, clientCertificateSelectionCallback);
+            return HandshakeInternal(ref context, inputBuffer, ref outputBuffer, sslAuthenticationOptions, clientCertificateSelectionCallback);
         }
 
-#pragma warning disable IDE0060
         public static SecurityStatusPal Renegotiate(
             ref SafeFreeCredentials? credentialsHandle,
             ref SafeDeleteSslContext? context,
@@ -62,12 +62,13 @@ namespace System.Net.Security
         {
             throw new PlatformNotSupportedException();
         }
-#pragma warning restore IDE0060
 
         public static SafeFreeCredentials? AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions)
         {
             return null;
         }
+
+#pragma warning restore IDE0060
 
         public static SecurityStatusPal EncryptMessage(
             SafeDeleteSslContext securityContext,
@@ -219,7 +220,6 @@ namespace System.Net.Security
         }
 
         private static SecurityStatusPal HandshakeInternal(
-            SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
             ReadOnlySpan<byte> inputBuffer,
             ref byte[]? outputBuffer,

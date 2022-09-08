@@ -148,7 +148,7 @@ namespace System.Runtime.Serialization
                 if (!dataMember.IsRequired)
                     element.MinOccurs = 0;
 
-                element.Annotation = GetSchemaAnnotation(actualTypeElement, ExportSurrogateData(), ExportEmitDefaultValue(dataMember));
+                element.Annotation = GetSchemaAnnotation(actualTypeElement, ExportSurrogateData(dataMember), ExportEmitDefaultValue(dataMember));
                 rootSequence.Items.Add(element);
             }
 
@@ -170,7 +170,7 @@ namespace System.Runtime.Serialization
                 if (classDataContract.IsReference)
                     AddReferenceAttributes(type.Attributes, schema);
             }
-            type.Annotation = GetSchemaAnnotation(genericInfoElement, ExportSurrogateData(), isValueTypeElement);
+            type.Annotation = GetSchemaAnnotation(genericInfoElement, ExportSurrogateData(classDataContract), isValueTypeElement);
         }
 
         private static void AddReferenceAttributes(XmlSchemaObjectCollection attributes, XmlSchema schema)
@@ -348,7 +348,7 @@ namespace System.Runtime.Serialization
             if (_dataContractSet.SerializationExtendedSurrogateProvider != null)
                 DataContractSurrogateCaller.GetKnownCustomDataTypes(_dataContractSet.SerializationExtendedSurrogateProvider, knownTypes);
             DataContractSerializer serializer = new DataContractSerializer(Globals.TypeOfObject,
-                SurrogateDataAnnotationName.Name, SurrogateDataAnnotationName.Namespace, knownTypes, int.MaxValue,
+                SurrogateDataAnnotationName.Name, SurrogateDataAnnotationName.Namespace, knownTypes,
                 ignoreExtensionDataObject: false, preserveObjectReferences: true);
             serializer.WriteObject(xmlWriter, surrogateData);
             xmlWriter.Flush();
@@ -367,7 +367,7 @@ namespace System.Runtime.Serialization
                 genericInfoElement = ExportGenericInfo(collectionDataContract.UnderlyingType, Globals.GenericTypeLocalName, Globals.SerializationNamespace);
             if (collectionDataContract.IsDictionary)
                 isDictionaryElement = ExportIsDictionary();
-            type.Annotation = GetSchemaAnnotation(isDictionaryElement, genericInfoElement, ExportSurrogateData());
+            type.Annotation = GetSchemaAnnotation(isDictionaryElement, genericInfoElement, ExportSurrogateData(collectionDataContract));
 
             XmlSchemaSequence rootSequence = new XmlSchemaSequence();
 
@@ -388,7 +388,7 @@ namespace System.Runtime.Serialization
                     SchemaHelper.AddElementForm(keyValueElement, schema);
                     if (dataMember.IsNullable)
                         keyValueElement.IsNillable = true;
-                    keyValueElement.Annotation = GetSchemaAnnotation(ExportSurrogateData());
+                    keyValueElement.Annotation = GetSchemaAnnotation(ExportSurrogateData(dataMember));
                     keyValueSequence.Items.Add(keyValueElement);
                 }
                 keyValueType.Particle = keyValueSequence;
@@ -424,7 +424,7 @@ namespace System.Runtime.Serialization
             XmlSchemaSimpleType type = new XmlSchemaSimpleType();
             type.Name = enumDataContract.XmlName.Name;
             XmlElement? actualTypeElement = (enumDataContract.BaseContractName == DefaultEnumBaseTypeName) ? null : ExportActualType(enumDataContract.BaseContractName);
-            type.Annotation = GetSchemaAnnotation(actualTypeElement, ExportSurrogateData());
+            type.Annotation = GetSchemaAnnotation(actualTypeElement, ExportSurrogateData(enumDataContract));
             schema.Items.Add(type);
 
             XmlSchemaSimpleTypeRestriction restriction = new XmlSchemaSimpleTypeRestriction();
@@ -484,7 +484,7 @@ namespace System.Runtime.Serialization
                 if (dataContract.IsValueType)
                     isValueTypeElement = GetAnnotationMarkup(IsValueTypeName, XmlConvert.ToString(dataContract.IsValueType), schema);
             }
-            type.Annotation = GetSchemaAnnotation(genericInfoElement, ExportSurrogateData(), isValueTypeElement);
+            type.Annotation = GetSchemaAnnotation(genericInfoElement, ExportSurrogateData(dataContract), isValueTypeElement);
         }
 
         private static XmlSchemaComplexContentExtension CreateTypeContent(XmlSchemaComplexType type, XmlQualifiedName baseTypeName, XmlSchema schema)
@@ -538,7 +538,7 @@ namespace System.Runtime.Serialization
                 if (xsdType != null)
                 {
                     xsdType.Annotation = GetSchemaAnnotation(
-                                           ExportSurrogateData(),
+                                           ExportSurrogateData(dataContract),
                                            dataContract.IsValueType ?
                                              GetAnnotationMarkup(IsValueTypeName, XmlConvert.ToString(dataContract.IsValueType), schema!) :
                                              null
