@@ -23,7 +23,9 @@ public:
     //====================================================================
     // These methods convert between an HR and and a managed exception.
     //====================================================================
+#ifdef FEATURE_COMINTEROP
     static FCDECL2(Object *, GetExceptionForHR, INT32 errorCode, LPVOID errorInfo);
+#endif // FEATURE_COMINTEROP
     static FCDECL1(int, GetHRForException, Object* eUNSAFE);
 
     static FCDECL2(UINT32, SizeOfClass, ReflectClassBaseObject* refClass, CLR_BOOL throwIfNotMarshalable);

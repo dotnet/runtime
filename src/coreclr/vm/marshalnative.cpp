@@ -589,6 +589,7 @@ FCIMPL2(Object *, MarshalNative::GetExceptionForHR, INT32 errorCode, LPVOID erro
 }
 FCIMPLEND
 
+#ifdef FEATURE_COMINTEROP
 FCIMPL1(int, MarshalNative::GetHRForException, Object* eUNSAFE)
 {
     CONTRACTL {
@@ -608,7 +609,6 @@ FCIMPL1(int, MarshalNative::GetHRForException, Object* eUNSAFE)
 }
 FCIMPLEND
 
-#ifdef FEATURE_COMINTEROP
 //====================================================================
 // return the IUnknown* for an Object.
 //====================================================================
