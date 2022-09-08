@@ -71,11 +71,6 @@ namespace System.Net.Quic
         /// <summary>
         /// The operation has been aborted.
         /// </summary>
-        OperationAborted,
-
-        /// <summary>
-        /// The requested address does not exist on the machine
-        /// </summary>
-        AddressNotAvailable
+        OperationAborted
     }
 }

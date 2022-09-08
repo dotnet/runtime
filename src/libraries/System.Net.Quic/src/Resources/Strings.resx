@@ -233,8 +233,5 @@
   <data name="net_InvalidSocketAddressSize" xml:space="preserve">
     <value>The supplied {0} is an invalid size for the {1} end point.</value>
   </data>
-  <data name="net_quic_address_not_available" xml:space="preserve">
-    <value>The provided address is not available on the machine.</value>
-  </data>
 </root>
 
