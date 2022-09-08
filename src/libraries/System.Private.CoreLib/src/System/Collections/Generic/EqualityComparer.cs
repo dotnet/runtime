@@ -95,7 +95,16 @@ namespace System.Collections.Generic
         }
 
         public override bool Equals(T? x, T? y) => _equals(x, y);
+
         public override int GetHashCode([DisallowNull] T obj) => _getHashCode(obj);
+
+        public override bool Equals(object? obj) =>
+            obj is DelegateEqualityComparer<T> other &&
+            _equals == other._equals &&
+            _getHashCode == other._getHashCode;
+
+        public override int GetHashCode() =>
+            HashCode.Combine(_equals.GetHashCode(), _getHashCode.GetHashCode());
     }
 
     // The methods in this class look identical to the inherited methods, but the calls
