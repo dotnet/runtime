@@ -29,14 +29,16 @@
 {
   "MONO_LOG_LEVEL": "warning",
   "MONO_LOG_MASK": "all",
-  "DOTNET_DiagnosticPorts": "ws://localhost:8088/diagnostics,suspend"
+  "DOTNET_DiagnosticPorts": "ws://localhost:8088/diagnostics,suspend",
+  "CI_TEST": "$(ArchiveTests)"
 }' />
     <!-- this option requires compiling the runtime with /p:MonoDiagnosticsMock=true and also building this project with the same property-->
     <WasmExtraConfig Condition="'$(MonoDiagnosticsMock)' == 'true'" Include="environmentVariables" Value='
 {
   "MONO_LOG_LEVEL": "warning",
   "MONO_LOG_MASK": "all",
-  "DOTNET_DiagnosticPorts": "mock:./mock.js,suspend"
+  "DOTNET_DiagnosticPorts": "mock:./mock.js,suspend",
+  "CI_TEST": "$(ArchiveTests)"
 }' />
   </ItemGroup>
 
