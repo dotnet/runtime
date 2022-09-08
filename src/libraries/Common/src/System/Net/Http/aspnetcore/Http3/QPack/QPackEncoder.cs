@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #nullable enable
-using System.Buffers;
-using System.Buffers.Text;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Http.HPack;
 using System.Text;
@@ -312,14 +311,23 @@ namespace System.Net.Http.QPack
         {
             Debug.Assert(buffer.Length >= s.Length);
 
-            if (Ascii.FromUtf16(s, buffer, out _, out _) == OperationStatus.InvalidData)
+            for (int i = 0; i < s.Length; ++i)
             {
-                throw new HttpRequestException(SR.net_http_request_invalid_char_encoding);
+                char ch = s[i];
+
+                if (ch > 127)
+                {
+                    throw new QPackEncodingException(SR.net_http_request_invalid_char_encoding);
+                }
+
+                buffer[i] = (byte)ch;
             }
         }
 
         private static bool EncodeNameString(string s, Span<byte> buffer, out int length)
         {
+            const int toLowerMask = 0x20;
+
             if (buffer.Length != 0)
             {
                 buffer[0] = 0x30;
@@ -330,8 +338,18 @@ namespace System.Net.Http.QPack
 
                     if (buffer.Length >= s.Length)
                     {
-                        OperationStatus toLowerStatus = Ascii.ToLower(s, buffer, out _, out _);
-                        Debug.Assert(toLowerStatus == OperationStatus.Done, "HttpHeaders prevents adding non-ASCII header names.");
+                        for (int i = 0; i < s.Length; ++i)
+                        {
+                            int ch = s[i];
+                            Debug.Assert(ch <= 127, "HttpHeaders prevents adding non-ASCII header names.");
+
+                            if ((uint)(ch - 'A') <= 'Z' - 'A')
+                            {
+                                ch |= toLowerMask;
+                            }
+
+                            buffer[i] = (byte)ch;
+                        }
 
                         length = nameLength + s.Length;
                         return true;

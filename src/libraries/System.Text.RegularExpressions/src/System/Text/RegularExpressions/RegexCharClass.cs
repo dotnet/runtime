@@ -979,7 +979,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Gets whether the specified span contains only ASCII.</summary>
         public static bool IsAscii(ReadOnlySpan<char> s)
         {
-#if NETSTANDARD
+#if REGEXGENERATOR
             foreach (char c in s)
             {
                 if (c >= 128)

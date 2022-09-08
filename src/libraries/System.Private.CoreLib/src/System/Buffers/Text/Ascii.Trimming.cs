@@ -18,7 +18,7 @@ namespace System.Buffers.Text
         private static Range TrimHelper<T>(ReadOnlySpan<T> value, TrimType trimType)
             where T : unmanaged, IBinaryInteger<T>
         {
-            const uint trimMask =
+            const uint TrimMask =
                 (1u << (0x09 - 1))
                 | (1u << (0x0A - 1))
                 | (1u << (0x0B - 1))
@@ -32,7 +32,7 @@ namespace System.Buffers.Text
                 for (; start < value.Length; start++)
                 {
                     uint elementValue = uint.CreateTruncating(value[start]);
-                    if ((elementValue > 0x20) || ((trimMask & (1u << ((int)elementValue - 1))) == 0))
+                    if ((elementValue > 0x20) || ((TrimMask & (1u << ((int)elementValue - 1))) == 0))
                     {
                         break;
                     }
@@ -45,7 +45,7 @@ namespace System.Buffers.Text
                 for (; start <= end; end--)
                 {
                     uint elementValue = uint.CreateTruncating(value[end]);
-                    if ((elementValue > 0x20) || ((trimMask & (1u << ((int)elementValue - 1))) == 0))
+                    if ((elementValue > 0x20) || ((TrimMask & (1u << ((int)elementValue - 1))) == 0))
                     {
                         break;
                     }

@@ -67,7 +67,7 @@ namespace System.Buffers.Text
             where TTo : unmanaged, IBinaryInteger<TTo>
             where TCasing : struct
         {
-            if ((typeof(TFrom) == typeof(TTo) || (Unsafe.SizeOf<TFrom>() * source.Length % Unsafe.SizeOf<TTo>() == 0)) && source.Overlaps(MemoryMarshal.Cast<TTo, TFrom>(destination)))
+            if (MemoryMarshal.AsBytes(source).Overlaps(MemoryMarshal.AsBytes(destination)))
             {
                 throw new InvalidOperationException(SR.InvalidOperation_SpanOverlappedOperation);
             }
@@ -121,13 +121,13 @@ namespace System.Buffers.Text
             Debug.Assert(typeof(TTo) == typeof(byte) || typeof(TTo) == typeof(ushort));
             Debug.Assert(typeof(TCasing) == typeof(ToUpperConversion) || typeof(TCasing) == typeof(ToLowerConversion));
 
-            bool SourceIsAscii = (sizeof(TFrom) == 1); // JIT turns this into a const
-            bool DestIsAscii = (sizeof(TTo) == 1); // JIT turns this into a const
-            bool ConversionIsWidening = SourceIsAscii && !DestIsAscii; // JIT turns this into a const
-            bool ConversionIsNarrowing = !SourceIsAscii && DestIsAscii; // JIT turns this into a const
-            bool ConversionIsWidthPreserving = typeof(TFrom) == typeof(TTo); // JIT turns this into a const
-            bool ConversionIsToUpper = (typeof(TCasing) == typeof(ToUpperConversion)); // JIT turns this into a const
-            uint NumInputElementsToConsumeEachVectorizedLoopIteration = (uint)(sizeof(Vector128<byte>) / sizeof(TFrom)); // JIT turns this into a const
+            bool sourceIsAscii = (sizeof(TFrom) == 1); // JIT turns this into a const
+            bool destIsAscii = (sizeof(TTo) == 1); // JIT turns this into a const
+            bool conversionIsWidening = sourceIsAscii && !destIsAscii; // JIT turns this into a const
+            bool conversionIsNarrowing = !sourceIsAscii && destIsAscii; // JIT turns this into a const
+            bool conversionIsWidthPreserving = typeof(TFrom) == typeof(TTo); // JIT turns this into a const
+            bool conversionIsToUpper = (typeof(TCasing) == typeof(ToUpperConversion)); // JIT turns this into a const
+            uint numInputElementsToConsumeEachVectorizedLoopIteration = (uint)(sizeof(Vector128<byte>) / sizeof(TFrom)); // JIT turns this into a const
 
             nuint i = 0;
 
@@ -135,14 +135,14 @@ namespace System.Buffers.Text
             // widening or narrowing. In this case, fall back to a naive element-by-element
             // loop.
 
-            if (!ConversionIsWidthPreserving && !Vector128.IsHardwareAccelerated)
+            if (!conversionIsWidthPreserving && !Vector128.IsHardwareAccelerated)
             {
                 goto DrainRemaining;
             }
 
             // Process the input as a series of 128-bit blocks.
 
-            if (Vector128.IsHardwareAccelerated && elementCount >= NumInputElementsToConsumeEachVectorizedLoopIteration)
+            if (Vector128.IsHardwareAccelerated && elementCount >= numInputElementsToConsumeEachVectorizedLoopIteration)
             {
                 // Unaligned read and check for non-ASCII data.
 
@@ -157,7 +157,7 @@ namespace System.Buffers.Text
                 // (value - CONST) <= (Z - A), but using signed instead of unsigned arithmetic.
 
                 TFrom SourceSignedMinValue = TFrom.CreateTruncating(1 << (8 * sizeof(TFrom) - 1));
-                Vector128<TFrom> subtractionVector = Vector128.Create(ConversionIsToUpper ? (SourceSignedMinValue + TFrom.CreateTruncating('a')) : (SourceSignedMinValue + TFrom.CreateTruncating('A')));
+                Vector128<TFrom> subtractionVector = Vector128.Create(conversionIsToUpper ? (SourceSignedMinValue + TFrom.CreateTruncating('a')) : (SourceSignedMinValue + TFrom.CreateTruncating('A')));
                 Vector128<TFrom> comparisionVector = Vector128.Create(SourceSignedMinValue + TFrom.CreateTruncating(26 /* A..Z or a..z */));
                 Vector128<TFrom> caseConversionVector = Vector128.Create(TFrom.CreateTruncating(0x20)); // works both directions
 
@@ -172,8 +172,8 @@ namespace System.Buffers.Text
                 // many elements we should skip in order to have future writes be
                 // aligned.
 
-                uint expectedWriteAlignment = NumInputElementsToConsumeEachVectorizedLoopIteration * (uint)sizeof(TTo); // JIT turns this into a const
-                i = NumInputElementsToConsumeEachVectorizedLoopIteration - ((uint)pDest % expectedWriteAlignment) / (uint)sizeof(TTo);
+                uint expectedWriteAlignment = numInputElementsToConsumeEachVectorizedLoopIteration * (uint)sizeof(TTo); // JIT turns this into a const
+                i = numInputElementsToConsumeEachVectorizedLoopIteration - ((uint)pDest % expectedWriteAlignment) / (uint)sizeof(TTo);
                 Debug.Assert((nuint)(&pDest[i]) % expectedWriteAlignment == 0, "Destination buffer wasn't properly aligned!");
 
                 // Future iterations of this loop will be aligned,
@@ -183,7 +183,7 @@ namespace System.Buffers.Text
                 {
                     Debug.Assert(i <= elementCount, "We overran a buffer somewhere.");
 
-                    if ((elementCount - i) < NumInputElementsToConsumeEachVectorizedLoopIteration)
+                    if ((elementCount - i) < numInputElementsToConsumeEachVectorizedLoopIteration)
                     {
                         // If we're about to enter the final iteration of the loop, back up so that
                         // we can read one unaligned block. If we've already consumed all the data,
@@ -194,7 +194,7 @@ namespace System.Buffers.Text
                             goto Return;
                         }
 
-                        i = elementCount - NumInputElementsToConsumeEachVectorizedLoopIteration;
+                        i = elementCount - numInputElementsToConsumeEachVectorizedLoopIteration;
                     }
 
                     // Unaligned read & check for non-ASCII data.
@@ -214,7 +214,7 @@ namespace System.Buffers.Text
                     // We expect this write to be aligned except for the last run through the loop.
 
                     ChangeWidthAndWriteTo(srcVector, pDest, i);
-                    i += NumInputElementsToConsumeEachVectorizedLoopIteration;
+                    i += numInputElementsToConsumeEachVectorizedLoopIteration;
                 }
             }
 
@@ -225,13 +225,13 @@ namespace System.Buffers.Text
             if (IntPtr.Size >= 8 && (elementCount - i) >= (nuint)(8 / sizeof(TFrom)))
             {
                 ulong nextBlockAsUInt64 = Unsafe.ReadUnaligned<ulong>(&pSrc[i]);
-                if (SourceIsAscii)
+                if (sourceIsAscii)
                 {
                     if (!Utf8Utility.AllBytesInUInt64AreAscii(nextBlockAsUInt64))
                     {
                         goto Drain32;
                     }
-                    nextBlockAsUInt64 = (ConversionIsToUpper)
+                    nextBlockAsUInt64 = (conversionIsToUpper)
                         ? Utf8Utility.ConvertAllAsciiBytesInUInt64ToUppercase(nextBlockAsUInt64)
                         : Utf8Utility.ConvertAllAsciiBytesInUInt64ToLowercase(nextBlockAsUInt64);
                 }
@@ -241,12 +241,12 @@ namespace System.Buffers.Text
                     {
                         goto Drain32;
                     }
-                    nextBlockAsUInt64 = (ConversionIsToUpper)
+                    nextBlockAsUInt64 = (conversionIsToUpper)
                         ? Utf16Utility.ConvertAllAsciiCharsInUInt64ToUppercase(nextBlockAsUInt64)
                         : Utf16Utility.ConvertAllAsciiCharsInUInt64ToLowercase(nextBlockAsUInt64);
                 }
 
-                if (ConversionIsWidthPreserving)
+                if (conversionIsWidthPreserving)
                 {
                     Unsafe.WriteUnaligned<ulong>(&pDest[i], nextBlockAsUInt64);
                 }
@@ -255,7 +255,7 @@ namespace System.Buffers.Text
                     Debug.Assert(Vector128.IsHardwareAccelerated);
 
                     Vector128<ulong> blockAsVectorOfUInt64 = Vector128.CreateScalarUnsafe(nextBlockAsUInt64);
-                    if (ConversionIsWidening)
+                    if (conversionIsWidening)
                     {
                         Vector128.StoreUnsafe(Vector128.WidenLower(blockAsVectorOfUInt64.AsByte()), ref *(ushort*)pDest, i);
                     }
@@ -284,13 +284,13 @@ namespace System.Buffers.Text
             if ((elementCount - i) >= (nuint)(4 / sizeof(TFrom)))
             {
                 uint nextBlockAsUInt32 = Unsafe.ReadUnaligned<uint>(&pSrc[i]);
-                if (SourceIsAscii)
+                if (sourceIsAscii)
                 {
                     if (!Utf8Utility.AllBytesInUInt32AreAscii(nextBlockAsUInt32))
                     {
                         goto DrainRemaining;
                     }
-                    nextBlockAsUInt32 = (ConversionIsToUpper)
+                    nextBlockAsUInt32 = (conversionIsToUpper)
                         ? Utf8Utility.ConvertAllAsciiBytesInUInt32ToUppercase(nextBlockAsUInt32)
                         : Utf8Utility.ConvertAllAsciiBytesInUInt32ToLowercase(nextBlockAsUInt32);
                 }
@@ -300,12 +300,12 @@ namespace System.Buffers.Text
                     {
                         goto DrainRemaining;
                     }
-                    nextBlockAsUInt32 = (ConversionIsToUpper)
+                    nextBlockAsUInt32 = (conversionIsToUpper)
                         ? Utf16Utility.ConvertAllAsciiCharsInUInt32ToUppercase(nextBlockAsUInt32)
                         : Utf16Utility.ConvertAllAsciiCharsInUInt32ToLowercase(nextBlockAsUInt32);
                 }
 
-                if (ConversionIsWidthPreserving)
+                if (conversionIsWidthPreserving)
                 {
                     Unsafe.WriteUnaligned<uint>(&pDest[i], nextBlockAsUInt32);
                 }
@@ -314,7 +314,7 @@ namespace System.Buffers.Text
                     Debug.Assert(Vector128.IsHardwareAccelerated);
 
                     Vector128<uint> blockAsVectorOfUInt32 = Vector128.CreateScalarUnsafe(nextBlockAsUInt32);
-                    if (ConversionIsWidening)
+                    if (conversionIsWidening)
                     {
                         Vector128<ulong> widenedBlock = Vector128.WidenLower(blockAsVectorOfUInt32.AsByte()).AsUInt64();
                         Unsafe.WriteUnaligned<ulong>(&pDest[i], widenedBlock.ToScalar());
@@ -345,8 +345,12 @@ namespace System.Buffers.Text
             for (; i < elementCount; i++)
             {
                 uint element = uint.CreateTruncating(pSrc[i]);
-                if (!UnicodeUtility.IsAsciiCodePoint(element)) { break; }
-                if (ConversionIsToUpper)
+                if (!UnicodeUtility.IsAsciiCodePoint(element))
+                {
+                    break;
+                }
+
+                if (conversionIsToUpper)
                 {
                     if (UnicodeUtility.IsInRangeInclusive(element, 'a', 'z'))
                     {

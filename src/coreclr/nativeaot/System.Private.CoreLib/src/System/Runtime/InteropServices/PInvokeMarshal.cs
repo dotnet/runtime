@@ -543,9 +543,9 @@ namespace System.Runtime.InteropServices
         /// </summary>
         private static unsafe bool CalculateStringLength(byte* pchBuffer, out int ansiBufferLen, out int unicodeBufferLen)
         {
-            ansiBufferLen = SpanHelpers.IndexOfNullByte(ref *pchBuffer);
-
-            bool allAscii = Ascii.IsAscii(new ReadOnlySpan<byte>(pchBuffer, ansiBufferLen));
+            ReadOnlySpan<byte> span = MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pchBuffer);
+            ansiBufferLen = span.Length;
+            bool allAscii = Ascii.IsAscii(span);
 
             if (allAscii)
             {

@@ -32,6 +32,7 @@
     <Reference Include="System.Net.Requests" />
     <Reference Include="System.Net.WebHeaderCollection" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Threading" />
   </ItemGroup>
 </Project>

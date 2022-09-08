@@ -13,10 +13,15 @@ using System.Text.Unicode;
 using System.Numerics;
 
 #pragma warning disable SA1121 // Use built-in type alias
-using SkipChecks = System.Boolean;
+// used to express: from the two provided char and byte buffers, check byte buffer for non-ASCII bytes
+// as it's the value ("needle") that must not contain non-ASCII characters. Used by StartsWith and EndstWith.
 using CheckBytes = System.Byte;
+// same as above, but for chars
 using CheckChars = System.Char;
-using CheckNonAscii = System.Byte;
+// don't check for non-ASCII (used by Equals which does not throw for non-ASCII  bytes)
+using SkipChecks = System.Boolean;
+// used to express: check value for non-ASCII bytes/chars
+using CheckValue = System.SByte;
 
 namespace System.Buffers.Text
 {
@@ -123,30 +128,30 @@ namespace System.Buffers.Text
             => value.IsEmpty || (text.Length >= value.Length && Map(Equals<CheckBytes>(text.Slice(text.Length - value.Length), value)));
 
         public static bool StartsWithIgnoreCase(ReadOnlySpan<byte> text, ReadOnlySpan<byte> value)
-            => value.IsEmpty || (text.Length >= value.Length && Map(SequenceEqualIgnoreCase<byte, byte, CheckNonAscii>(text.Slice(0, value.Length), value)));
+            => value.IsEmpty || (text.Length >= value.Length && Map(SequenceEqualIgnoreCase<byte, byte, CheckValue>(text.Slice(0, value.Length), value)));
 
         public static bool EndsWithIgnoreCase(ReadOnlySpan<byte> text, ReadOnlySpan<byte> value)
-            => value.IsEmpty || (text.Length >= value.Length && Map(SequenceEqualIgnoreCase<byte, byte, CheckNonAscii>(text.Slice(text.Length - value.Length), value)));
+            => value.IsEmpty || (text.Length >= value.Length && Map(SequenceEqualIgnoreCase<byte, byte, CheckValue>(text.Slice(text.Length - value.Length), value)));
 
         // TODO adsitnik: discuss whether this overload should exists, as the only difference with ROS.StartsWith(ROS, StringComparison.OrdinalIgnoreCase)
         // is throwing an exception for non-ASCII characters found in value
         public static bool StartsWithIgnoreCase(ReadOnlySpan<char> text, ReadOnlySpan<char> value)
-            => value.IsEmpty || (text.Length >= value.Length && Map(SequenceEqualIgnoreCase<char, char, CheckNonAscii>(text.Slice(0, value.Length), value)));
+            => value.IsEmpty || (text.Length >= value.Length && Map(SequenceEqualIgnoreCase<char, char, CheckValue>(text.Slice(0, value.Length), value)));
 
         public static bool EndsWithIgnoreCase(ReadOnlySpan<char> text, ReadOnlySpan<char> value)
-            => value.IsEmpty || (text.Length >= value.Length && Map(SequenceEqualIgnoreCase<char, char, CheckNonAscii>(text.Slice(text.Length - value.Length), value)));
+            => value.IsEmpty || (text.Length >= value.Length && Map(SequenceEqualIgnoreCase<char, char, CheckValue>(text.Slice(text.Length - value.Length), value)));
 
         public static unsafe bool StartsWithIgnoreCase(ReadOnlySpan<byte> text, ReadOnlySpan<char> value)
-            => value.IsEmpty || (text.Length >= value.Length && Map(SequenceEqualIgnoreCase<byte, char, CheckNonAscii>(text.Slice(0, value.Length), value)));
+            => value.IsEmpty || (text.Length >= value.Length && Map(SequenceEqualIgnoreCase<byte, char, CheckValue>(text.Slice(0, value.Length), value)));
 
         public static unsafe bool EndsWithIgnoreCase(ReadOnlySpan<byte> text, ReadOnlySpan<char> value)
-            => value.IsEmpty || (text.Length >= value.Length && Map(SequenceEqualIgnoreCase<byte, char, CheckNonAscii>(text.Slice(text.Length - value.Length), value)));
+            => value.IsEmpty || (text.Length >= value.Length && Map(SequenceEqualIgnoreCase<byte, char, CheckValue>(text.Slice(text.Length - value.Length), value)));
 
         public static unsafe bool StartsWithIgnoreCase(ReadOnlySpan<char> text, ReadOnlySpan<byte> value)
-            => value.IsEmpty || (text.Length >= value.Length && Map(SequenceEqualIgnoreCase<char, byte, CheckNonAscii>(text.Slice(0, value.Length), value)));
+            => value.IsEmpty || (text.Length >= value.Length && Map(SequenceEqualIgnoreCase<char, byte, CheckValue>(text.Slice(0, value.Length), value)));
 
         public static unsafe bool EndsWithIgnoreCase(ReadOnlySpan<char> text, ReadOnlySpan<byte> value)
-            => value.IsEmpty || (text.Length >= value.Length && Map(SequenceEqualIgnoreCase<char, byte, CheckNonAscii>(text.Slice(text.Length - value.Length), value)));
+            => value.IsEmpty || (text.Length >= value.Length && Map(SequenceEqualIgnoreCase<char, byte, CheckValue>(text.Slice(text.Length - value.Length), value)));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool Map(EqualsResult equalsResult)
@@ -235,7 +240,7 @@ namespace System.Buffers.Text
                 }
                 while (!Unsafe.IsAddressGreaterThan(ref currentCharsSearchSpace, ref oneVectorAwayFromCharsEnd));
 
-                // If any elements remain, process the first vector in the search space.
+                // If any elements remain, process the last vector in the search space.
                 if ((uint)chars.Length % Vector256<ushort>.Count != 0)
                 {
                     charValues = Vector256.LoadUnsafe(ref oneVectorAwayFromCharsEnd);
@@ -305,7 +310,7 @@ namespace System.Buffers.Text
                 }
                 while (!Unsafe.IsAddressGreaterThan(ref currentCharsSearchSpace, ref oneVectorAwayFromCharsEnd));
 
-                // If any elements remain, process the first vector in the search space.
+                // If any elements remain, process the last vector in the search space.
                 if ((uint)chars.Length % Vector128<ushort>.Count != 0)
                 {
                     charValues = Vector128.LoadUnsafe(ref oneVectorAwayFromCharsEnd);
@@ -349,7 +354,7 @@ namespace System.Buffers.Text
                 uint valueA = uint.CreateTruncating(text[i]);
                 uint valueB = uint.CreateTruncating(value[i]);
 
-                if (typeof(TCheck) != typeof(SkipChecks))
+                if (typeof(TCheck) == typeof(CheckValue))
                 {
                     if (!UnicodeUtility.IsAsciiCodePoint(valueB))
                     {
@@ -409,4 +414,3 @@ namespace System.Buffers.Text
         }
     }
 }
-#pragma warning restore SA1121 // Use built-in type alias

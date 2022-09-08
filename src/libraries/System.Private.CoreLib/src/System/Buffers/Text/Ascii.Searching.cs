@@ -7,7 +7,8 @@ using System.Runtime.InteropServices;
 using System.Text;
 
 #pragma warning disable SA1121 // Use built-in type alias
-using CheckNonAscii = System.Byte;
+// used to express: check value for non-ASCII bytes/chars
+using CheckValue = System.SByte;
 
 namespace System.Buffers.Text
 {
@@ -165,7 +166,7 @@ namespace System.Buffers.Text
                     break;  // The unsearched portion is now shorter than the sequence we're looking for. So it can't be there.
 
                 // Found the first element of "value". See if the tail matches.
-                if (Map(SequenceEqualIgnoreCase<TText, TValue, CheckNonAscii>(text.Slice(offset + 1, value.Length - 1), value.Slice(1)))) // Map throws if non-ASCII char is found in value
+                if (Map(SequenceEqualIgnoreCase<TText, TValue, CheckValue>(text.Slice(offset + 1, value.Length - 1), value.Slice(1)))) // Map throws if non-ASCII char is found in value
                     return offset;  // The tail matched. Return a successful find.
 
                 remainingSearchSpaceLength--;
@@ -217,7 +218,7 @@ namespace System.Buffers.Text
                     break;
 
                 // Found the first element of "value". See if the tail matches.
-                if (Map(SequenceEqualIgnoreCase<TText, TValue, CheckNonAscii>(text.Slice(relativeIndex + 1, value.Length - 1), value.Slice(1))))
+                if (Map(SequenceEqualIgnoreCase<TText, TValue, CheckValue>(text.Slice(relativeIndex + 1, value.Length - 1), value.Slice(1))))
                     return relativeIndex;  // The tail matched. Return a successful find.
 
                 offset += remainingSearchSpaceLength - relativeIndex;

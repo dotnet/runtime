@@ -7,7 +7,6 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.IO;
 using System.Net.Cache;
 using System.Security;
@@ -510,9 +509,10 @@ namespace System.Net
                         "\r\n";
                     formHeaderBytes = Encoding.UTF8.GetBytes(formHeader);
 
-                    string boundaryBytesText = "\r\n--" + boundary + "--\r\n";
-                    boundaryBytes = new byte[boundaryBytesText.Length];
-                    OperationStatus conversionStatus = Ascii.FromUtf16(boundaryBytesText, boundaryBytes, out _, out _);
+                    boundaryBytes = new byte["\r\n--".Length + boundary.Length + "--\r\n".Length];
+                    "\r\n--"u8.CopyTo(boundaryBytes);
+                    "--\r\n"u8.CopyTo(boundaryBytes.AsSpan("\r\n--".Length + boundary.Length));
+                    OperationStatus conversionStatus = Ascii.FromUtf16(boundary, boundaryBytes.AsSpan("\r\n--".Length), out _, out _);
                     Debug.Assert(conversionStatus == OperationStatus.Done);
                 }
                 else
