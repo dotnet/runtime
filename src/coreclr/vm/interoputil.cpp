@@ -94,7 +94,6 @@ HRESULT GetHRFromCLRErrorInfo(IErrorInfo* pErr)
     SimpleComCallWrapper* pSimpleWrap = SimpleComCallWrapper::GetWrapperFromIP(pErr);
     return pSimpleWrap->IErrorInfo_hr();
 }
-#endif // FEATURE_COMINTEROP
 
 HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
 {
@@ -108,9 +107,7 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
 
     HRESULT hr = E_FAIL;
 
-#ifdef FEATURE_COMINTEROP
     Exception* pException = NULL;
-#endif
 
     GCPROTECT_BEGIN(pThrownObject)
     {
@@ -120,7 +117,6 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
             hr = EnsureComStartedNoThrow();
             if (SUCCEEDED(hr) && pThrownObject != NULL)
             {
-#ifdef FEATURE_COMINTEROP
                 IErrorInfo* pErr = NULL;
                 EX_TRY
                 {
@@ -144,7 +140,6 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
                     hr = GET_EXCEPTION()->GetHR();
                 }
                 EX_END_CATCH(SwallowAllExceptions);
-#endif // FEATURE_COMINTEROP
             }
         }
         EX_CATCH
@@ -158,7 +153,6 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
     return hr;
 }
 
-#if FEATURE_COMINTEROP
 //-------------------------------------------------------------------
  // Used to populate ExceptionData with COM data
 //-------------------------------------------------------------------
