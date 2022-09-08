@@ -224,6 +224,9 @@ namespace System.Net
 
             public ChangeTrackingArrayList(ICollection c) : base(c) { }
 
+            // While this type isn't intended to mutated concurrently with reads, non-concurrent updates
+            // to the list might result in lazy initialization, and it's possible concurrent requests could race
+            // to trigger that initialization.
             public volatile bool IsChanged;
 
             // Override the methods that can add, remove, or change the regexes in the bypass list.
