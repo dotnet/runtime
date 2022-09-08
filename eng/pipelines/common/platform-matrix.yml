@@ -17,10 +17,6 @@ parameters:
   # for the given platform and helixQueueGroup.
   helixQueuesTemplate: ''
   stagedBuild: false
-  # When set to false, suppresses reuse of OSX managed build artifacts (for pipelines without an OSX obj)
-  # When set to true, passes the 'platforms' value as a job parameter also named 'platforms'.
-  # Handled as an opt-in parameter to avoid excessive yaml.
-  passPlatforms: false
   container: ''
   shouldContinueOnError: false
   jobParameters: {}
@@ -49,8 +45,6 @@ jobs:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # WebAssembly Linux Firefox
@@ -74,8 +68,6 @@ jobs:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # WebAssembly on Windows
@@ -96,6 +88,4 @@ jobs:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
-        ${{ if eq(parameters.passPlatforms, true) }}:
-          platforms: ${{ parameters.platforms }}
         ${{ insert }}: ${{ parameters.jobParameters }}
