@@ -534,6 +534,11 @@ namespace WebAssemblyInfo
                 case Opcode.I64_Reinterpret_F64:
                 case Opcode.F32_Reinterpret_I32:
                 case Opcode.F64_Reinterpret_I64:
+                case Opcode.I32_Extend8_S:
+                case Opcode.I32_Extend16_S:
+                case Opcode.I64_Extend8_S:
+                case Opcode.I64_Extend16_S:
+                case Opcode.I64_Extend32_S:
                     break;
 
                 case Opcode.Prefix:
