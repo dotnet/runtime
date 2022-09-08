@@ -145,7 +145,7 @@ namespace System.Formats.Tar
             // First, we write the preceding extended attributes header
             TarHeader extendedAttributesHeader = new(TarEntryFormat.Pax);
             // Fill the current header's dict
-            CollectExtendedAttributesFromStandardFieldsIfNeeded();
+            CollectExtendedAttributesFromStandardFields();
             // And pass the attributes to the preceding extended attributes header for writing
             extendedAttributesHeader.WriteAsPaxExtendedAttributes(archiveStream, buffer, ExtendedAttributes, isGea: false, globalExtendedAttributesEntryNumber: -1);
             buffer.Clear(); // Reset it to reuse it
@@ -164,7 +164,7 @@ namespace System.Formats.Tar
             // First, we write the preceding extended attributes header
             TarHeader extendedAttributesHeader = new(TarEntryFormat.Pax);
             // Fill the current header's dict
-            CollectExtendedAttributesFromStandardFieldsIfNeeded();
+            CollectExtendedAttributesFromStandardFields();
             // And pass the attributes to the preceding extended attributes header for writing
             await extendedAttributesHeader.WriteAsPaxExtendedAttributesAsync(archiveStream, buffer, ExtendedAttributes, isGea: false, globalExtendedAttributesEntryNumber: -1, cancellationToken).ConfigureAwait(false);
 
@@ -619,7 +619,7 @@ namespace System.Formats.Tar
 
         // Some fields that have a reserved spot in the header, may not fit in such field anymore, but they can fit in the
         // extended attributes. They are always collected or updated in that dictionary, with no restrictions.
-        private void CollectExtendedAttributesFromStandardFieldsIfNeeded()
+        private void CollectExtendedAttributesFromStandardFields()
         {
             ExtendedAttributes[PaxEaName] = _name;
 
