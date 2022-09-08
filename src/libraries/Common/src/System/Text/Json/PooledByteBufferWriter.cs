@@ -177,6 +177,13 @@ namespace System.Text.Json
 
             int availableSpace = _rentedBuffer.Length - _index;
 
+            // If we've reached ~ 1GB written, grow to the maximum buffer
+            // length to avoid incessant minimal growths causing perf issues.
+            if (_index >= MaximumBufferSize / 2)
+            {
+                sizeHint = MaximumBufferSize - _index;
+            }
+
             if (sizeHint > availableSpace)
             {
                 int currentLength = _rentedBuffer.Length;
