@@ -149,7 +149,7 @@
       <MsiPackageProjects Include="%(Msis.PackageProject)" />
     </ItemGroup>
 
-    <MSBuild Projects="@(MsiPackageProjects)" Properties="OutputPath=$(ArtifactsShippingPackagesDir)" Targets="restore;pack" />
+    <MSBuild Projects="@(MsiPackageProjects)" Properties="OutputPath=$(ArtifactsShippingPackagesDir);IncludeSymbols=false" Targets="restore;pack" />
   </Target>
 
   <!-- Target to create a single wixpack for signing -->
