@@ -1248,7 +1248,7 @@ namespace WebAssemblyInfo
             for (UInt32 idx = 0; idx < functions.Length; idx++)
             {
                 string? name = null;
-                bool process = false;
+                bool process = Program.FunctionFilter == null && Program.FunctionOffset == -1;
 
                 if (Program.FunctionOffset != -1 && funcsCode != null
                     && idx < funcsCode.Length
