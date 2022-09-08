@@ -64,6 +64,7 @@ namespace System.Xml.Tests
 
         //-----------------------------------------------------------------------------------
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75123", TestPlatforms.Browser)]
         //[Variation(Desc = "v4 - ns = valid, URL = invalid")]
         public void v4()
         {

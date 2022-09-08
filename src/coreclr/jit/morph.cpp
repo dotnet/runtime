@@ -6918,32 +6918,8 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
             // if the root node was an `ASG`, `RET` or `CAST`.
             // Return a zero con node to exit morphing of the old trees without asserts
             // and forbid POST_ORDER morphing doing something wrong with our call.
-            var_types callType;
-            if (varTypeIsStruct(origCallType))
-            {
-                CORINFO_CLASS_HANDLE        retClsHnd = call->gtRetClsHnd;
-                Compiler::structPassingKind howToReturnStruct;
-                callType = getReturnTypeForStruct(retClsHnd, call->GetUnmanagedCallConv(), &howToReturnStruct);
-                assert((howToReturnStruct != SPK_Unknown) && (howToReturnStruct != SPK_ByReference));
-                if (howToReturnStruct == SPK_ByValue)
-                {
-                    callType = TYP_I_IMPL;
-                }
-                else if (howToReturnStruct == SPK_ByValueAsHfa || varTypeIsSIMD(callType))
-                {
-                    callType = TYP_FLOAT;
-                }
-                assert((callType != TYP_UNKNOWN) && !varTypeIsStruct(callType));
-            }
-            else
-            {
-                callType = origCallType;
-            }
-            assert((callType != TYP_UNKNOWN) && !varTypeIsStruct(callType));
-            callType = genActualType(callType);
-
-            GenTree* zero = gtNewZeroConNode(callType);
-            result        = fgMorphTree(zero);
+            var_types zeroType = (origCallType == TYP_STRUCT) ? TYP_INT : genActualType(origCallType);
+            result             = fgMorphTree(gtNewZeroConNode(zeroType));
         }
         else
         {
@@ -8665,12 +8641,6 @@ GenTree* Compiler::fgMorphConst(GenTree* tree)
 //
 // Return value:
 //    GenTreeLclVar if the obj can be replaced by it, null otherwise.
-//
-// Notes:
-//    TODO-CQ: currently this transformation is done only under copy block,
-//    but it is beneficial to do for each OBJ node. However, `PUT_ARG_STACK`
-//    for some platforms does not expect struct `LCL_VAR` as a source, so
-//    it needs more work.
 //
 GenTreeLclVar* Compiler::fgMorphTryFoldObjAsLclVar(GenTreeObj* obj, bool destroyNodes)
 {
@@ -11301,13 +11271,14 @@ DONE_MORPHING_CHILDREN:
                         temp = nullptr;
                     }
                 }
-                else if (op1->OperGet() == GT_ADD)
+                else
                 {
 #ifdef TARGET_ARM
+                    GenTree* effOp1 = op1->gtEffectiveVal(true);
                     // Check for a misalignment floating point indirection.
-                    if (varTypeIsFloating(typ))
+                    if (effOp1->OperIs(GT_ADD) && varTypeIsFloating(typ))
                     {
-                        GenTree* addOp2 = op1->AsOp()->gtGetOp2();
+                        GenTree* addOp2 = effOp1->gtGetOp2();
                         if (addOp2->IsCnsIntOrI())
                         {
                             ssize_t offset = addOp2->AsIntCon()->gtIconVal;
