@@ -305,7 +305,9 @@
       <_EmSdkFiles Include="$(EMSDK_PATH)\**\*" Exclude="$(EMSDK_PATH)\.git\**\*" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(_EmSdkFiles)" DestinationFolder="$(EmSdkDirForHelixPayload)\%(RecursiveDir)" />
+    <Copy SourceFiles="@(_EmSdkFiles)"
+          DestinationFiles="@(_EmSdkFiles -> '$(EmSdkDirForHelixPayload)\%(RecursiveDir)%(FileName)%(Extension)')"
+          SkipUnchangedFiles="true" />
   </Target>
 
   <Target Name="DownloadFirefoxToSendToHelix" Condition="!Exists($(FirefoxForHelixPayload)) and '$(DebuggerHost)' == 'firefox'">
