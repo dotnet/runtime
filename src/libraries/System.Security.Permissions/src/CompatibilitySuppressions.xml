@@ -14,4 +14,22 @@
     <Right>lib/netstandard2.0/System.Security.Permissions.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Security.Permissions.KeyContainerPermissionAccessEntryCollection.#ctor</Target>
+    <Left>lib/netstandard2.0/System.Security.Permissions.dll</Left>
+    <Right>lib/net462/System.Security.Permissions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Security.Permissions.KeyContainerPermissionAccessEntryCollection.CopyTo(System.Array,System.Int32)</Target>
+    <Left>lib/netstandard2.0/System.Security.Permissions.dll</Left>
+    <Right>lib/net462/System.Security.Permissions.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Security.Permissions.KeyContainerPermissionAccessEntryEnumerator.#ctor</Target>
+    <Left>lib/netstandard2.0/System.Security.Permissions.dll</Left>
+    <Right>lib/net462/System.Security.Permissions.dll</Right>
+  </Suppression>
 </Suppressions>
