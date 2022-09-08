@@ -10243,6 +10243,18 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
                 {
                     op1 = fgMorphRetInd(tree->AsUnOp());
                 }
+                // Local assertions may enable zero or copy prop.
+                //
+                if (fgGlobalMorph && optLocalAssertionProp && (optAssertionCount > 0) && op1->OperIs(GT_LCL_VAR))
+                {
+                    GenTree* newOp1 = op1;
+                    while (newOp1 != nullptr)
+                    {
+                        op1    = newOp1;
+                        newOp1 = optAssertionProp(apFull, newOp1, nullptr, nullptr);
+                    }
+                    assert(op1 != nullptr);
+                }
                 if (op1->OperIs(GT_LCL_VAR))
                 {
                     // With a `genReturnBB` this `RETURN(src)` tree will be replaced by a `ASG(genReturnLocal, src)`
