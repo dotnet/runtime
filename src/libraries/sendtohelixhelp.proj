@@ -60,8 +60,8 @@
 
     <FailOnTestFailure Condition="'$(FailOnTestFailure)' == '' and '$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
 
-    <SdkForWorkloadTestingDirName Condition="'$(SdkForWorkloadTestingDirName)' == '' and '$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' == 'true'">dotnet-net7</SdkForWorkloadTestingDirName>
-    <SdkForWorkloadTestingDirName Condition="'$(SdkForWorkloadTestingDirName)' == '' and '$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' != 'true'">dotnet-none</SdkForWorkloadTestingDirName>
+    <SdkForWorkloadTestingDirName Condition="'$(SdkForWorkloadTestingDirName)' == '' and '$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' == 'true'">dotnet-workload</SdkForWorkloadTestingDirName>
+    <SdkForWorkloadTestingDirName Condition="'$(SdkForWorkloadTestingDirName)' == '' and '$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' != 'true'">sdk-no-workload</SdkForWorkloadTestingDirName>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HelixType)' == ''">
@@ -121,7 +121,7 @@
     <HelixPreCommand Include="printenv | grep COMPlus" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(NeedsWorkload)' == 'true'">
+  <ItemGroup Condition="'$(NeedsWorkload)' == 'true' and '$(Scenario)' == 'buildwasmapps'">
     <HelixCommandPrefixItem Condition="'$(WindowsShell)' != 'true'" Include="PATH=$HELIX_CORRELATION_PAYLOAD/$(SdkForWorkloadTestingDirName):$PATH" />
     <HelixCommandPrefixItem Condition="'$(WindowsShell)' == 'true'" Include="PATH=%HELIX_CORRELATION_PAYLOAD%\$(SdkForWorkloadTestingDirName)%3B%PATH%" />
 
@@ -278,7 +278,7 @@
   <Target Name="PrintHelixQueues">
     <Message Importance="High" Text="Using Queues: $(HelixTargetQueues)" />
     <Message Condition="'$(Scenario)' == 'BuildWasmApps'" Importance="High"
-             Text="Scenario: $(Scenario), TestUsingWorkloads: $(TestUsingWorkloads)" />
+             Text="Scenario: $(Scenario), TestWorkloadsUsingVariant: $(TestWorkloadsUsingVariant)" />
   </Target>
 
   <Target Name="PrintBuildTargetFramework">

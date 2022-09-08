@@ -39,8 +39,10 @@ namespace Microsoft.Workload.Build.Tasks
 
         public bool           OnlyUpdateManifests{ get; set; }
 
-        private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
-        private string AllManifestsStampPath => Path.Combine(SdkWithNoWorkloadInstalledPath, ".all-manifests.stamp");
+        private string TmpPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+
+        private const string  s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
+        private string        AllManifestsStampPath => Path.Combine(SdkWithNoWorkloadInstalledPath, ".all-manifests.stamp");
 
         public override bool Execute()
         {
@@ -52,6 +54,10 @@ namespace Microsoft.Workload.Build.Tasks
                 if (!Directory.Exists(LocalNuGetsPath))
                     throw new LogAsErrorException($"Cannot find {nameof(LocalNuGetsPath)}={LocalNuGetsPath} . " +
                                                     "Set it to the Shipping packages directory in artifacts.");
+
+                if (Directory.Exists(TmpPath))
+                    Directory.Delete(TmpPath);
+                Directory.CreateDirectory(TmpPath);
 
                 if (!InstallAllManifests())
                     return false;
@@ -77,7 +83,9 @@ namespace Microsoft.Workload.Build.Tasks
                         return workloads.Any()
                                 ? workloads
                                 : throw new LogAsErrorException($"Could not find any workload variant named '{w.variant}'");
-                    }).ToArray();
+                    })
+                    // FIXME: groupby
+                    .ToArray();
 
                 foreach (InstallWorkloadRequest req in selectedRequests)
                 {
@@ -88,17 +96,32 @@ namespace Microsoft.Workload.Build.Tasks
                     }
                 }
 
-                string cachePath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+                string nugetPkgsPath = Path.Combine(TmpPath, Path.GetRandomFileName());
+                if (Directory.Exists(nugetPkgsPath))
+                {
+                    Log.LogMessage(MessageImportance.Low, $"Deleting {nugetPkgsPath}");
+                    Directory.Delete(nugetPkgsPath, recursive: true);
+                }
+                Directory.CreateDirectory(nugetPkgsPath);
+
+                Log.LogMessage(MessageImportance.High, $"Using {nugetPkgsPath} for nuget packages");
+
                 foreach (InstallWorkloadRequest req in selectedRequests)
                 {
                     Log.LogMessage(MessageImportance.High, $"** Installing workload {req.WorkloadId} in {req.TargetPath} **");
                     if (!req.Validate(Log))
                         return false;
 
-                    if (!ExecuteInternal(req) && !req.IgnoreErrors)
+                    if (!ExecuteInternal(req, nugetPkgsPath) && !req.IgnoreErrors)
                         return false;
 
                     File.WriteAllText(req.StampPath, string.Empty);
+                }
+
+                foreach (InstallWorkloadRequest req in selectedRequests)
+                {
+                    File.WriteAllText(req.StampPath, string.Empty);
+                    Log.LogMessage(MessageImportance.Normal, $"Writing {req.StampPath}");
                 }
 
                 return !Log.HasLoggedErrors;
@@ -110,7 +133,7 @@ namespace Microsoft.Workload.Build.Tasks
             }
         }
 
-        private bool ExecuteInternal(InstallWorkloadRequest req)
+        private bool ExecuteInternal(InstallWorkloadRequest req, string nugetPkgsPath)
         {
             if (!File.Exists(TemplateNuGetConfigPath))
             {
@@ -118,14 +141,37 @@ namespace Microsoft.Workload.Build.Tasks
                 return false;
             }
 
+            if (Directory.Exists(req.TargetPath))
+            {
+                Log.LogMessage(MessageImportance.Low, $"Deleting directory {req.TargetPath}");
+                Directory.Delete(req.TargetPath, recursive: true);
+            }
+
             Log.LogMessage(MessageImportance.Low, $"Duplicating {SdkWithNoWorkloadInstalledPath} into {req.TargetPath}");
             Utils.DirectoryCopy(SdkWithNoWorkloadInstalledPath, req.TargetPath);
 
-            string nugetConfigContents = GetNuGetConfig();
-            if (!InstallPacks(req, nugetConfigContents))
+            string nugetConfigContents = GetNuGetConfig(nugetPkgsPath);
+            if (!InstallPacks(req, nugetConfigContents, nugetPkgsPath))
                 return false;
 
             UpdateAppRef(req.TargetPath, req.Version);
+
+            // hack
+//             var sdkVersion = Path.GetFileName(Directory.GetDirectories(Path.Combine(req.TargetPath, "sdk"), "*").Single());
+//             string globalJson = """
+//             {
+//   "sdk": {
+//     "version": "##SDK_VER##",
+//     "allowPrerelease": true,
+//     "rollForward": "disable"
+//   },
+//   "tools": {
+//     "dotnet": "##SDK_VER##"
+//   }
+// }
+// """;
+//             globalJson = globalJson.Replace("##SDK_VER##", sdkVersion);
+//             File.WriteAllText(Path.Combine(Path.GetDirectoryName(req.TargetPath)!, "global.json"), globalJson);
 
             return !Log.HasLoggedErrors;
         }
@@ -172,17 +218,32 @@ namespace Microsoft.Workload.Build.Tasks
             return true;
         }
 
-        private bool InstallPacks(InstallWorkloadRequest req, string nugetConfigContents)
+        private bool InstallPacks(InstallWorkloadRequest req, string nugetConfigContents, string nugetPkgsPath)
         {
-            string nugetConfigPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+            string nugetConfigPath = Path.Combine(TmpPath, Path.GetRandomFileName());
             File.WriteAllText(nugetConfigPath, nugetConfigContents);
 
             // Log.LogMessage(MessageImportance.High, $"{Environment.NewLine}** dotnet workload install {req.WorkloadId} **{Environment.NewLine}");
+
+            if (!RunInstallWorkloadCommand(req, nugetConfigPath, nugetPkgsPath, string.Empty))//, $"--download-to-cache={nugetPkgsPath}"))
+                return false;
+            // if (!RunInstallWorkloadCommand(req, nugetConfigPath, nugetPkgsPath, $"--from-cache={nugetPkgsPath}"))
+            //     return false;
+
+            return !Log.HasLoggedErrors;
+        }
+
+        private bool RunInstallWorkloadCommand(InstallWorkloadRequest req, string nugetConfigPath, string nugetPkgsPath, string extraArgs)
+        {
             (int exitCode, string output) = Utils.TryRunProcess(
                                                     Log,
                                                     Path.Combine(req.TargetPath, "dotnet"),
-                                                    $"workload install --skip-manifest-update --no-cache --configfile \"{nugetConfigPath}\" {req.WorkloadId}",
-                                                    workingDir: Path.GetTempPath(),
+                                                    $"workload install --skip-manifest-update --configfile \"{nugetConfigPath}\" {req.WorkloadId} {extraArgs}",
+                                                    workingDir: TmpPath,
+                                                    // envVars: new Dictionary<string, string>()
+                                                    // {
+                                                    //     { "NUGET_PACKAGES", nugetPkgsPath }
+                                                    // },
                                                     silent: false,
                                                     logStdErrAsMessage: req.IgnoreErrors,
                                                     debugMessageImportance: MessageImportance.High);
@@ -191,7 +252,7 @@ namespace Microsoft.Workload.Build.Tasks
                 if (req.IgnoreErrors)
                 {
                     Log.LogMessage(MessageImportance.High,
-                                    $"{Environment.NewLine} ** Ignoring workload installation failure exit code {exitCode}. **{Environment.NewLine}");
+                                    $"{Environment.NewLine} ** Ignoring workload installation failure exit code {exitCode}. Output: {output}{Environment.NewLine}");
                 }
                 else
                 {
@@ -210,7 +271,7 @@ namespace Microsoft.Workload.Build.Tasks
 
         private void UpdateAppRef(string sdkPath, string version)
         {
-            Log.LogMessage(MessageImportance.High, $"{Environment.NewLine}** Updating Targeting pack **{Environment.NewLine}");
+            Log.LogMessage(MessageImportance.High, $"{Environment.NewLine}** Updating Targeting pack {version} in {sdkPath} **{Environment.NewLine}");
 
             string pkgPath = Path.Combine(LocalNuGetsPath, $"Microsoft.NETCore.App.Ref.{version}.nupkg");
             if (!File.Exists(pkgPath))
@@ -233,13 +294,25 @@ namespace Microsoft.Workload.Build.Tasks
             Log.LogMessage($"Extracting {pkgPath} to {dstDir}");
         }
 
-        private string GetNuGetConfig()
+        private string GetNuGetConfig(string? nugetPkgsPath)
         {
             string contents = File.ReadAllText(TemplateNuGetConfigPath);
             if (contents.IndexOf(s_nugetInsertionTag, StringComparison.InvariantCultureIgnoreCase) < 0)
                 throw new LogAsErrorException($"Could not find {s_nugetInsertionTag} in {TemplateNuGetConfigPath}");
 
-            return contents.Replace(s_nugetInsertionTag, $@"<add key=""nuget-local"" value=""{LocalNuGetsPath}"" />");
+            // string globalPackagesFolderLine = nugetPkgsPath is not null
+            //                                     ? $@"<add key=""globalPackagesFolder"" value=""{nugetPkgsPath}"" />"
+            //                                     : string.Empty;
+
+            return contents.Replace(s_nugetInsertionTag, $"""
+            <add key="nuget-local" value="{LocalNuGetsPath}" />
+            """)
+            .Replace("<!-- HERE HERE -->", $"""
+                    <config>
+                        <add key="globalPackagesFolder" value="{nugetPkgsPath}" />
+                    </config>
+                    """
+            );
         }
 
         private bool InstallWorkloadManifest(ITaskItem workloadId, string name, string version, string sdkDir, string nugetConfigContents, bool stopOnMissing)

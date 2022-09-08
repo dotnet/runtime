@@ -90,7 +90,7 @@ namespace Wasm.Build.Tests
             AddItemsPropertiesToProject(projectFile, extraProperties: nativeRelink ? string.Empty : "<RunAOTCompilation>true</RunAOTCompilation>");
 
             // build with -p:DeployOnBuild=true, and that will trigger a publish
-            (CommandResult res, _) = BuildInternal(id, config, publish: false, setWasmDevel: false, "-p:DeployOnBuild=true");
+            (CommandResult res, _) = BuildInternal(id, config, publish: false, setWasmDevel: false, extraArgs: "-p:DeployOnBuild=true");
 
             var expectedFileType = nativeRelink ? NativeFilesType.Relinked : NativeFilesType.AOT;
 
@@ -266,7 +266,7 @@ namespace Wasm.Build.Tests
             BlazorPublish(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
 
             // publish/wwwroot/_framework/blazor.boot.json
-            string frameworkDir = FindBlazorBinFrameworkDir(config, forPublish: true);
+            string frameworkDir = FindBlazorBinFrameworkDir(config, forPublish: true, framework: DefaultTargetFramework);
             string bootJson = Path.Combine(frameworkDir, "blazor.boot.json");
 
             Assert.True(File.Exists(bootJson), $"Could not find {bootJson}");

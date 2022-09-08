@@ -11,7 +11,7 @@
 
   <Target Name="DownloadAndInstallChrome"
           AfterTargets="Build"
-          Condition="!Exists($(ChromeStampFile)) and '$(InstallChromeForTests)' == 'true'">
+          Condition="(!Exists($(ChromeStampFile)) or !Exists($(ChromeDir))) and '$(InstallChromeForTests)' == 'true'">
 
     <ItemGroup>
       <_StampFile Include="$(BrowserStampDir).install-chrome*.stamp" />

@@ -102,7 +102,7 @@
     <_WasmNestedPublishAppPreTarget Condition="'$(DisableAutoWasmPublishApp)' != 'true'">Publish</_WasmNestedPublishAppPreTarget>
 
     <EnableDefaultWasmAssembliesToBundle Condition="'$(EnableDefaultWasmAssembliesToBundle)' == ''">true</EnableDefaultWasmAssembliesToBundle>
-    <WasmBuildOnlyAfterPublish Condition="'$(WasmBuildOnlyAfterPublish)' == '' and '$(DeployOnBuild)' == 'true'">true</WasmBuildOnlyAfterPublish>
+    <WasmBuildOnlyAfterPublish Condition="'$(WasmBuildOnlyAfterPublish)' == '' and ('$(DeployOnBuild)' == 'true' or '$(_IsPublishing)' == 'true')">true</WasmBuildOnlyAfterPublish>
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == '' and '$(OutputType)' != 'Library'">true</WasmGenerateAppBundle>
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">false</WasmGenerateAppBundle>
     <UseAppHost>false</UseAppHost>

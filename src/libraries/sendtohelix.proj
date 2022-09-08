@@ -79,10 +79,13 @@
 
     <!-- For BuildWasmApps we want to build the project twice, with: TestUsingWorkloads=true, and TestUsingWorkloads=false -->
     <ItemGroup Condition="'@(_Scenarios -> AnyHaveMetadataValue('Identity', 'buildwasmapps'))' == 'true'">
-      <_TestUsingWorkloadsValues Include="true;false" />
+      <_TestWorkloadsUsingVariantValues Include="net6" />
+      <_TestWorkloadsUsingVariantValues Include="net6_7" />
+      <_TestWorkloadsUsingVariantValues Include="net7" />
+      <_TestWorkloadsUsingVariantValues Include="none" />
 
       <_BuildWasmAppsProjectsToBuild Include="$(PerScenarioProjectFile)">
-        <AdditionalProperties>$(_PropertiesToPass);Scenario=BuildWasmApps;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);TestUsingWorkloads=%(_TestUsingWorkloadsValues.Identity)</AdditionalProperties>
+        <AdditionalProperties>$(_PropertiesToPass);Scenario=BuildWasmApps;TestArchiveRuntimeFile=$(TestArchiveRuntimeFile);TestWorkloadsUsingVariant=%(_TestWorkloadsUsingVariantValues.Identity)</AdditionalProperties>
         <AdditionalProperties Condition="'$(NeedsToBuildWasmAppsOnHelix)' != ''">%(_BuildWasmAppsProjectsToBuild.AdditionalProperties);NeedsToBuildWasmAppsOnHelix=$(NeedsToBuildWasmAppsOnHelix)</AdditionalProperties>
       </_BuildWasmAppsProjectsToBuild>
     </ItemGroup>

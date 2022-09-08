@@ -26,6 +26,8 @@ namespace Wasm.Build.Tests
         public string                           WorkloadPacksDir              { get; init; }
         public string                           BuiltNuGetsPath               { get; init; }
 
+        public WorkloadSetupVariant             WorkloadSetupVariant          { get; init; }
+
         public static readonly string           RelativeTestAssetsPath = @"..\testassets\";
         public static readonly string           TestAssetsPath = Path.Combine(AppContext.BaseDirectory, "testassets");
         public static readonly string           TestDataPath = Path.Combine(AppContext.BaseDirectory, "data");
@@ -43,6 +45,13 @@ namespace Wasm.Build.Tests
                 solutionRoot = solutionRoot.Parent;
             }
 
+            if (Enum.TryParse(EnvironmentVariables.WorkloadSetupVariant, true, out WorkloadSetupVariant variant))
+                WorkloadSetupVariant = variant;
+            else
+                throw new Exception($"Unknown workload setup variant - {EnvironmentVariables.WorkloadSetupVariant}");
+
+            string? appRefDir = EnvironmentVariables.AppRefDir;
+
             string? sdkForWorkloadPath = EnvironmentVariables.SdkForWorkloadTestingPath;
             if (string.IsNullOrEmpty(sdkForWorkloadPath))
             {
@@ -51,11 +60,23 @@ namespace Wasm.Build.Tests
                                                 "..",
                                                 "..",
                                                 "..",
-                                                "dotnet-net7");
+                                                "..",
+                                                $"dotnet-{WorkloadSetupVariant}");
+
                 if (Directory.Exists(probePath))
                     sdkForWorkloadPath = Path.GetFullPath(probePath);
                 else
                     throw new Exception($"Environment variable SDK_FOR_WORKLOAD_TESTING_PATH not set, and could not find it at {probePath}");
+
+                if (string.IsNullOrEmpty(appRefDir))
+                {
+                    appRefDir = Path.Combine(Path.GetDirectoryName(probePath)!, "microsoft.netcore.app.ref");
+                    if (!Directory.Exists(appRefDir))
+                    {
+                        throw new Exception($"Cannot test with workloads without AppRefDir environment variable being set. " +
+                                            $"Tried to find it at {Path.GetDirectoryName(probePath)}, but couldn't find it there either.");
+                    }
+                }
             }
             if (!Directory.Exists(sdkForWorkloadPath))
                 throw new Exception($"Could not find SDK_FOR_WORKLOAD_TESTING_PATH={sdkForWorkloadPath}");
@@ -64,8 +85,8 @@ namespace Wasm.Build.Tests
                 sdkForWorkloadPath = Path.GetFullPath(sdkForWorkloadPath);
 
             EnvVars = new Dictionary<string, string>();
-            bool workloadInstalled = EnvironmentVariables.SdkHasWorkloadInstalled != null && EnvironmentVariables.SdkHasWorkloadInstalled == "true";
-            if (workloadInstalled)
+            //bool workloadInstalled = EnvironmentVariables.SdkHasWorkloadInstalled != null && EnvironmentVariables.SdkHasWorkloadInstalled == "true";
+            if (WorkloadSetupVariant != WorkloadSetupVariant.none)
             {
                 var workloadPacksVersion = EnvironmentVariables.WorkloadPacksVersion;
                 if (string.IsNullOrEmpty(workloadPacksVersion))
@@ -78,11 +99,6 @@ namespace Wasm.Build.Tests
                 DirectoryBuildPropsContents = s_directoryBuildPropsForWorkloads;
                 DirectoryBuildTargetsContents = s_directoryBuildTargetsForWorkloads;
 
-                var appRefDir = EnvironmentVariables.AppRefDir;
-                if (string.IsNullOrEmpty(appRefDir))
-                    throw new Exception($"Cannot test with workloads without AppRefDir environment variable being set");
-
-                DefaultBuildArgs = $" /p:AppRefDir={appRefDir}";
                 IsWorkload = true;
             }
             else
@@ -90,11 +106,6 @@ namespace Wasm.Build.Tests
                 WorkloadPacksDir = "/dont-use-this-no-workload-installed";
                 WorkloadPacksVersion = "dont-use-this-no-workload-installed";
                 RuntimePackDir = "/dont-check-runtime-pack-dir-for-no-workloads-case";
-                var appRefDir = EnvironmentVariables.AppRefDir;
-                if (string.IsNullOrEmpty(appRefDir))
-                    throw new Exception($"Cannot test with workloads without AppRefDir environment variable being set");
-
-                DefaultBuildArgs = $" /p:AppRefDir={appRefDir}";
                 DirectoryBuildPropsContents = s_directoryBuildPropsForLocal;
                 DirectoryBuildTargetsContents = s_directoryBuildTargetsForLocal;
             }
@@ -122,6 +133,8 @@ namespace Wasm.Build.Tests
             // in the logs
             EnvVars["DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER"] = "1";
             DefaultBuildArgs += " /nr:false";
+
+            DefaultBuildArgs = $" /p:AppRefDir={appRefDir}";
 
             if (OperatingSystem.IsWindows())
             {
@@ -156,5 +169,22 @@ namespace Wasm.Build.Tests
 
         protected static string s_directoryBuildPropsForBlazorLocal = File.ReadAllText(Path.Combine(TestDataPath, "Blazor.Local.Directory.Build.props"));
         protected static string s_directoryBuildTargetsForBlazorLocal = File.ReadAllText(Path.Combine(TestDataPath, "Blazor.Local.Directory.Build.targets"));
+    }
+
+    [Flags]
+    public enum WorkloadSetupVariant
+    {
+        net7 = 0,
+        net6   = 0x1,
+        net6_7 = 0x2,
+        none   = 0x4,
+    //     Default = net7,
+    //     All    = net6 | net7 | net6_7 | none,
+
+    //     // Previs: net6, Latest: net7
+    //     WithoutPrevious = net7 | none,
+    //     WithoutLatest = net6 | none,
+    //     WithPrevious = net6 | net6_7,
+    //     WithLatest = net7 | net6_7
     }
 }

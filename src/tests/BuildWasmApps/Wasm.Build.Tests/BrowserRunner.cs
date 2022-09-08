@@ -24,6 +24,7 @@ internal class BrowserRunner : IAsyncDisposable
         return BrowserLocator.FindChrome(artifactsBinDir, "BROWSER_PATH_FOR_TESTS");
     });
 
+    public static string ChromePath => s_chromePath.Value;
     public IPlaywright? Playwright { get; private set; }
     public IBrowser? Browser { get; private set; }
     public Task<CommandResult>? RunTask { get; private set; }

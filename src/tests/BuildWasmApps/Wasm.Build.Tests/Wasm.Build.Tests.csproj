@@ -11,7 +11,8 @@
     <!-- This project should not build against the live built .NETCoreApp targeting pack as it contributes to the build itself. -->
     <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
 
-    <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == ''">true</TestUsingWorkloads>
+    <!-- FIXME: make this a property - net7, default variant -->
+    <TestWorkloadsUsingVariant Condition="'$(TestWorkloadsUsingVariant)' == ''">net7</TestWorkloadsUsingVariant>
     <InstallWorkloadForTesting>true</InstallWorkloadForTesting>
     <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and '$(ContinuousIntegrationBuild)' != 'true' and Exists('/.dockerenv')">true</InstallChromeForTests>
 
@@ -39,16 +40,17 @@
   </ItemGroup>
 
   <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript">
-    <ItemGroup Condition="'$(TestUsingWorkloads)' == 'true'">
+    <ItemGroup>
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WORKLOAD_PACKS_VER=$(Version)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WORKLOAD_PACKS_VER=$(Version)" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
-      <!-- TEST_USING_WORKLOADS - this is set per helix job, in sendtohelixhelp.proj -->
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BASE_DIR=%24{HELIX_CORRELATION_PAYLOAD}" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BASE_DIR=%HELIX_CORRELATION_PAYLOAD%" />
+    <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WORKLOADS_VARIANT=$(TestWorkloadsUsingVariant)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WORKLOADS_VARIANT=$(TestWorkloadsUsingVariant)" />
+    </ItemGroup>
 
+    <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/chrome-linux/chrome" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BROWSER_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe" />
 
@@ -56,14 +58,21 @@
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux/node" />
     </ItemGroup>
 
-    <PropertyGroup>
-      <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' == 'true'">-notrait category=no-workload</_XUnitTraitArg>
-      <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
-    </PropertyGroup>
-    <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
-      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
-      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
+    <ItemGroup Condition="Exists('/.dockerenv') and '$(ContinuousIntegrationBuild)' != 'true'">
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_TESTS=$(ArtifactsBinDir)/chrome/chrome-linux/chrome" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BROWSER_PATH_FOR_TESTS=$(ArtifactsBinDir)\chrome\chrome-win\chrome.exe" />
+    </ItemGroup>
 
+    <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
+      <_XUnitTraitArg Condition="'$(TestWorkloadsUsingVariant)' == 'none'">-trait category=no-workload -trait category=none</_XUnitTraitArg>
+
+      <!-- FIXME: `category=` doesn't work -->
+      <!-- FIXME: Generate the notraits from the workload combos -->
+      <_XUnitTraitArg Condition="'$(TestWorkloadsUsingVariant)' == 'net7'">-trait category=workload -trait category=net7 -notrait category=no-workload -notrait category=net6 -notrait category=net6_7</_XUnitTraitArg>
+      <_XUnitTraitArg Condition="'$(_XUnitTraitArg)' == ''">-trait category=$(TestWorkloadsUsingVariant)</_XUnitTraitArg>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
 
@@ -75,6 +84,9 @@
     </ItemGroup>
 
     <ItemGroup>
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1" />
+
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="set_env_vars" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="CALL :SetEnvVars" />
     </ItemGroup>

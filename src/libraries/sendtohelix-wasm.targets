@@ -52,7 +52,7 @@
     <FirefoxForHelixPayload>$(TestArchiveRoot)firefox.zip</FirefoxForHelixPayload>
     <DebuggerHost Condition="'$(DebuggerHost)' == ''">chrome</DebuggerHost>
 
-    <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
+    <!--<NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>-->
     <NeedsEMSDK Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">true</NeedsEMSDK>
     <NeedsEMSDKNode Condition="'$(Scenario)' == 'WasmTestOnNodeJs' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsEMSDKNode>
     <NeedsToRunOnBrowser Condition="'$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnBrowser>
@@ -116,10 +116,6 @@
     <HelixPreCommand Include="set PATH=$(_HelixLocalNodePath)/%_HELIX_NODEJS_VERSION%/bin%3B%PATH%" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
-    <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' == 'true'">-notrait category=no-workload</_XUnitTraitArg>
-    <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
-  </PropertyGroup>
   <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
     <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
     <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
@@ -138,7 +134,7 @@
     <InstallDevCerts>$(IsRunningLibraryTests)</InstallDevCerts>
 
     <!-- Install SDK so that, we could use `dotnet dev-certs https` -->
-    <NeedsDotNetSdk Condition="'$(NeedsWorkload)' != 'true'">true</NeedsDotNetSdk>
+    <NeedsDotNetSdk Condition="'$(Scenario)' != 'BuildWasmApps'">true</NeedsDotNetSdk>
 
     <UseDotNetCliVersionFromGlobalJson Condition="'$(IsWasmDebuggerTests)' == 'true'">true</UseDotNetCliVersionFromGlobalJson>
   </PropertyGroup>
@@ -163,6 +159,7 @@
   <Import Project="$(RepositoryEngineeringDir)testing\ProvisioningVersions.props" />
 
   <Target Name="PrepareHelixCorrelationPayload_Wasm">
+    <Message Condition="'$(TestWorkloadsUsingVariant)' != ''" Importance="High" Text="With TestWorkloadsUsingVariant=$(TestWorkloadsUsingVariant)" />
     <Message Condition="'$(NeedsEMSDK)' == 'true' or '$(NeedsEMSDKNode)' == 'true'" Importance="High" Text="Using emsdk: $(EmSdkDirForHelixPayload)" />
 
     <ItemGroup Condition="'$(NeedsToRunOnBrowser)' == 'true'">
@@ -181,6 +178,11 @@
       <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"                  Destination="build/wasm" />
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
       <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TestWorkloadsUsingVariant)' != ''">
+      <HelixCorrelationPayload Include="$(ArtifactsBinDir)/dotnet-$(TestWorkloadsUsingVariant)" Destination="dotnet-$(TestWorkloadsUsingVariant)" />
+      <HelixCorrelationPayload Include="$(MicrosoftNetCoreAppRefPackDir)"                       Destination="microsoft.netcore.app.ref" />
     </ItemGroup>
 
     <!-- copy node separately only if EMSDK is not being included -->
@@ -241,8 +243,6 @@
   <Target Name="_AddWorkItemsForBuildWasmApps" Condition="'$(Scenario)' == 'BuildWasmApps'">
     <PropertyGroup>
       <BuildWasmAppsJobsList>$(RepositoryEngineeringDir)testing\scenarios\BuildWasmAppsJobsList.txt</BuildWasmAppsJobsList>
-      <WorkItemPrefix Condition="'$(TestUsingWorkloads)' == 'true'">Workloads-</WorkItemPrefix>
-      <WorkItemPrefix Condition="'$(TestUsingWorkloads)' != 'true'">NoWorkload-</WorkItemPrefix>
     </PropertyGroup>
 
     <ItemGroup>
@@ -251,24 +251,30 @@
     </ItemGroup>
     <PropertyGroup>
       <_BuildWasmAppsPayloadArchive>@(_WasmWorkItem)</_BuildWasmAppsPayloadArchive>
+      <!-- FIXME: move to dir.props -->
+      <_WasmLatestWorkloadName>net7</_WasmLatestWorkloadName>
     </PropertyGroup>
 
-    <ReadLinesFromFile File="$(BuildWasmAppsJobsList)" Condition="Exists($(BuildWasmAppsJobsList)) and '$(TestUsingWorkloads)' == 'true'">
+    <ReadLinesFromFile File="$(BuildWasmAppsJobsList)">
       <Output TaskParameter="Lines" ItemName="BuildWasmApps_PerJobList" />
     </ReadLinesFromFile>
 
     <!-- for testing with workloads, we use separate items -->
-    <ItemGroup>
-      <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'$(WorkItemPrefix)%(Extension)')" Condition="'$(TestUsingWorkloads)' == 'true'">
+    <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
+      <!-- For the default framework, run all the test classes separately, as most will be running with that -->
+      <HelixWorkItem Include="@(BuildWasmApps_PerJobList->'$(_WasmLatestWorkloadName)-%(Extension)')" Condition="'$(TestWorkloadsUsingVariant)' == '$(_WasmLatestWorkloadName)'">
         <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
-        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
-        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set WORKLOADS_VARIANT=$(_WasmLatestWorkloadName) &amp; set &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
+        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export WORKLOADS_VARIANT=$(_WasmLatestWorkloadName) %3B export &quot;HELIX_XUNIT_ARGS=-class %(Identity)&quot;</PreCommands>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>
 
-      <HelixWorkItem Include="NoWorkload-Wasm.Build.Tests" Condition="'$(TestUsingWorkloads)' != 'true'">
+      <!-- for other workload variants, run all the tests in one item, because they will have only a few tests -->
+      <HelixWorkItem Include="$(TestWorkloadsUsingVariant)-Wasm.Build.Tests" Condition="'$(TestWorkloadsUsingVariant)' != '$(_WasmLatestWorkloadName)'">
         <PayloadArchive>$(_BuildWasmAppsPayloadArchive)</PayloadArchive>
+        <PreCommands Condition="'$(OS)' == 'Windows_NT'">set WORKLOADS_VARIANT=$(TestWorkloadsUsingVariant)</PreCommands>
+        <PreCommands Condition="'$(OS)' != 'Windows_NT'">export WORKLOADS_VARIANT=$(TestWorkloadsUsingVariant)</PreCommands>
         <Command>$(HelixCommand)</Command>
         <Timeout>$(_workItemTimeout)</Timeout>
       </HelixWorkItem>

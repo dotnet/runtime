@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+set -x
+set -e
+
 # SetCommands defined in eng\testing\tests.wasm.targets
 [[SetCommands]]
 [[SetCommandsEcho]]
@@ -63,29 +66,25 @@ echo MAIN_JS=$MAIN_JS
 echo JS_ENGINE=$JS_ENGINE
 echo JS_ENGINE_ARGS=$JS_ENGINE_ARGS
 echo XHARNESS_ARGS=$XHARNESS_ARGS
+echo WORKLOADS_VARIANT=$WORKLOADS_VARIANT
 
 function set_env_vars()
 {
     local _DIR_NAME=
-    if [ "x$TEST_USING_WORKLOADS" = "xtrue" ]; then
-        _DIR_NAME=dotnet-net7
-        export SDK_HAS_WORKLOAD_INSTALLED=true
-    else
-        _DIR_NAME=dotnet-none
-        export SDK_HAS_WORKLOAD_INSTALLED=false
-    fi
+    local _VARIANT=${WORKLOADS_VARIANT:-none}
+    _DIR_NAME=dotnet-${_VARIANT}
+    export SDK_HAS_WORKLOAD_INSTALLED=true
 
+    set
     local _SDK_DIR=
-    if [[ -n "$HELIX_WORKITEM_UPLOAD_ROOT" ]]; then
-        cp -r $BASE_DIR/$_DIR_NAME $EXECUTION_DIR
+    if [[ -n "$HELIX_CORRELATION_PAYLOAD" ]]; then
+        cp -r $HELIX_CORRELATION_PAYLOAD/$_DIR_NAME $EXECUTION_DIR
         _SDK_DIR=$EXECUTION_DIR/$_DIR_NAME
-    else
-        _SDK_DIR=$BASE_DIR/$_DIR_NAME
-    fi
 
-    export PATH=$_SDK_DIR:$PATH
-    export SDK_FOR_WORKLOAD_TESTING_PATH=$_SDK_DIR
-    export AppRefDir=$BASE_DIR/microsoft.netcore.app.ref
+        export PATH=$_SDK_DIR:$PATH
+        export SDK_FOR_WORKLOAD_TESTING_PATH=$_SDK_DIR
+        export AppRefDir=$HELIX_CORRELATION_PAYLOAD/microsoft.netcore.app.ref
+    fi
 }
 
 export TEST_LOG_PATH=${XHARNESS_OUT}/logs
