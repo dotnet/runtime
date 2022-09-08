@@ -71,6 +71,6 @@ namespace System.Net.Quic
         /// <summary>
         /// The operation has been aborted.
         /// </summary>
-        OperationAborted
+        OperationAborted,
     }
 }

@@ -58,7 +58,7 @@ namespace System.Net.Quic
         VersionNegotiationError = 9,
         ConnectionIdle = 10,
         ProtocolError = 11,
-        OperationAborted = 12
+        OperationAborted = 12,
     }
     public sealed partial class QuicException : System.IO.IOException
     {
