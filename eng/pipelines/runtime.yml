@@ -418,13 +418,12 @@ jobs:
     alwaysRun: ${{ variables.isRollingBuild }}
 
 # Wasm.Build.Tests
-# Issue: https://github.com/dotnet/runtime/issues/75223
-#- template: /eng/pipelines/common/templates/wasm-build-tests.yml
-  #parameters:
-    #platforms:
-      #- Browser_wasm
-      #- Browser_wasm_win
-    #alwaysRun: ${{ variables.isRollingBuild }}
+- template: /eng/pipelines/common/templates/wasm-build-tests.yml
+  parameters:
+    platforms:
+      - Browser_wasm
+      - Browser_wasm_win
+    alwaysRun: ${{ variables.isRollingBuild }}
 
 # Wasm Debugger tests
 - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
