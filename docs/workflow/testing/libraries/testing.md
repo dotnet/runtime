@@ -111,11 +111,11 @@ There are several custom compilation modes for tests. These are enabled by setti
 | --- | --- | --- |
 | TestSingleFile | Test compilation using the single file compilation mode | libs+clr |
 | TestNativeAot | Test by compiling the test using NativeAOT | libs+clr.aot |
-| TestCrossgen2 | Test compilation of the test/libraries into R2R binaries | libs+clr |
+| TestReadyToRun | Test compilation of the test/libraries into R2R binaries | libs+clr |
 
 To run a test in specific mode, simply build the tests after building the prerequisite subsets, and specify the test mode on a command line such as:
 ```cmd
-dotnet build /t:Test /p:Configuration=Release /p:TestCrossgen2=true
+dotnet build /t:Test /p:Configuration=Release /p:TestReadyToRun=true
 ```
 
 These tests do not use the standard XUnit test runner, instead they use [SingleFileTestRunner.cs](../../../../src/libraries/Common/tests/SingleFileTestRunner/SingleFileTestRunner.cs). The set of available command line options is limited to `-xml`, `-notrait`, `-class`, `-class-`, `-noclass`, `-method`, `-method-`, `-nomethod`, `-namespace`, `-namespace-`, `-nonamespace`, and `-parallel`.
