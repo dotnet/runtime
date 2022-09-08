@@ -143,6 +143,16 @@ namespace WebAssemblyInfo
                     }
 
                     return $"{opStr}{offset}{align}{optional}    [SIMD]";
+                case Opcode.MTPrefix:
+                    opStr = prefix + MTOpcode.ToString().ToLower().Replace("_", ".");
+                    offset = MemArg.Offset != 0 ? $" offset:{MemArg.Offset}" : null;
+                    align = MemArg.Align != 0 ? $" align:{MemArg.Align}" : null;
+
+                    return $"{opStr}{offset}{align}    [MT]";
+                case Opcode.Prefix:
+                    opStr = prefix + PrefixOpcode.ToString().ToLower().Replace("_", ".");
+
+                    return $"{opStr}    [PF]";
                 case Opcode.Nop:
                 default:
                     return opStr;
