@@ -11,6 +11,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests
 {
+    [Trait("category", "net7")]
     public class MainWithArgsTests : BuildTestBase
     {
         public MainWithArgsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)

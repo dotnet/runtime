@@ -187,7 +187,7 @@ namespace Microsoft.Workload.Build.Tasks
                 return true;
             }
 
-            string nugetConfigContents = GetNuGetConfig();
+            string nugetConfigContents = GetNuGetConfig(LocalNuGetsPath);
             HashSet<string> manifestsInstalled = new();
             foreach (ITaskItem workload in WorkloadIds)
             {

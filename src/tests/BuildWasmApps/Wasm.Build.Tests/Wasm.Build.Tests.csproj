@@ -11,8 +11,9 @@
     <!-- This project should not build against the live built .NETCoreApp targeting pack as it contributes to the build itself. -->
     <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
 
+    <DefaultWorkloadVariantForTesting>net7</DefaultWorkloadVariantForTesting>
     <!-- FIXME: make this a property - net7, default variant -->
-    <TestWorkloadsUsingVariant Condition="'$(TestWorkloadsUsingVariant)' == ''">net7</TestWorkloadsUsingVariant>
+    <TestWorkloadsUsingVariant Condition="'$(TestWorkloadsUsingVariant)' == ''">$(DefaultWorkloadVariantForTesting)</TestWorkloadsUsingVariant>
     <InstallWorkloadForTesting>true</InstallWorkloadForTesting>
     <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and '$(ContinuousIntegrationBuild)' != 'true' and Exists('/.dockerenv')">true</InstallChromeForTests>
 
@@ -68,8 +69,9 @@
 
       <!-- FIXME: `category=` doesn't work -->
       <!-- FIXME: Generate the notraits from the workload combos -->
-      <_XUnitTraitArg Condition="'$(TestWorkloadsUsingVariant)' == 'net7'">-trait category=workload -trait category=net7 -notrait category=no-workload -notrait category=net6 -notrait category=net6_7</_XUnitTraitArg>
-      <_XUnitTraitArg Condition="'$(_XUnitTraitArg)' == ''">-trait category=$(TestWorkloadsUsingVariant)</_XUnitTraitArg>
+      <_XUnitTraitArg Condition="'$(TestWorkloadsUsingVariant)' == '$(DefaultWorkloadVariantForTesting)'"></_XUnitTraitArg>
+      <!-- <_XUnitTraitArg Condition="'$(TestWorkloadsUsingVariant)' == 'net7'">-trait category=workload -trait category=net7 -notrait category=no-workload -notrait category=net6 -notrait category=net6_7</_XUnitTraitArg> -->
+      <!-- <_XUnitTraitArg Condition="'$(_XUnitTraitArg)' == ''">-trait category=$(TestWorkloadsUsingVariant)</_XUnitTraitArg> -->
     </PropertyGroup>
 
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">

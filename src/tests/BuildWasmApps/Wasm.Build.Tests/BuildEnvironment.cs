@@ -161,6 +161,22 @@ namespace Wasm.Build.Tests
             }
         }
 
+        public static void SetupEnvironments()
+        {
+            string[] variants = new[]
+            {
+                "latest",
+                "net7",
+                "net6"
+            };
+
+            foreach (string variant in variants)
+            {
+                new BuildEnvironment(variant);
+            }
+
+        }
+
         protected static string s_directoryBuildPropsForWorkloads = File.ReadAllText(Path.Combine(TestDataPath, "Workloads.Directory.Build.props"));
         protected static string s_directoryBuildTargetsForWorkloads = File.ReadAllText(Path.Combine(TestDataPath, "Workloads.Directory.Build.targets"));
 

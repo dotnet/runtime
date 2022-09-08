@@ -154,6 +154,7 @@
                           IgnoreErrors="$(WasmIgnoreNet6WorkloadInstallErrors)"
                           />
 
+    <!-- FIXME: rename to latest -->
     <WorkloadCombinationsToInstall Include="net7"   Variants="net7" />
     <!-- Latest net6 6.0.x versions are not available in feed currently so don't install them -->
     <WorkloadCombinationsToInstall Include="net6"   Variants="net6" Condition="'$(SkipWorkloadTestsForNet6)' != 'true'" />
