@@ -9726,6 +9726,12 @@ MONO_RESTORE_WARNING
 		}
 		case OP_WASM_SIMD_SWIZZLE: {
 			int nelems = LLVMGetVectorSize (LLVMTypeOf (lhs));
+			if (nelems == 16) {
+				LLVMValueRef args [] = { lhs, rhs };
+				values [ins->dreg] = call_intrins (ctx, INTRINS_WASM_SWIZZLE, args, "");
+				break;
+			}
+
 			LLVMValueRef indexes [16];
 			for (int i = 0; i < nelems; ++i)
 				indexes [i] = LLVMBuildExtractElement (builder, rhs, const_int32 (i), "");
