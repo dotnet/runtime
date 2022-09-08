@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -222,6 +224,85 @@ namespace System.Formats.Tar.Tests
                     }
                 }
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(WriteEntry_CopyArchive_Data))]
+        public async Task WriteEntry_CopyArchiveAsync(TestTarFormat testFormat, string testCaseName, CompressionMethod compressionMethod, bool copyData)
+        {
+            TarEntryFormat entryFormat = GetEntryFormatForTestTarFormat(testFormat);
+            string pathWithExpectedFiles = GetTestCaseUnarchivedFolderPath(testCaseName);
+            if (!Path.EndsInDirectorySeparator(pathWithExpectedFiles))
+            {
+                pathWithExpectedFiles = pathWithExpectedFiles + Path.DirectorySeparatorChar;
+            }
+
+            await using Stream file = GetTarMemoryStream(compressionMethod, testFormat, testCaseName);
+            await using Stream originArchive = compressionMethod == CompressionMethod.GZip ? new GZipStream(file, CompressionMode.Decompress) : file;
+
+            await VerifyCopyArchiveAsync(pathWithExpectedFiles, originArchive, entryFormat, copyData);
+        }
+
+        protected async Task VerifyCopyArchiveAsync(string pathWithExpectedFiles, Stream originArchive, TarEntryFormat entryFormat, bool copyData)
+        {
+            TarEntry entry;
+
+            await using MemoryStream destinationArchive = new MemoryStream();
+            await using (TarReader reader = new TarReader(originArchive, leaveOpen: false))
+            {
+                await using (TarWriter writer = new TarWriter(destinationArchive, entryFormat, leaveOpen: true))
+                {
+                    while ((entry = await reader.GetNextEntryAsync(copyData)) != null)
+                    {
+                        if (entry is PaxTarEntry paxEntry)
+                        {
+                            paxEntry.GroupName = TestLongGName;
+                            paxEntry.UserName = TestLongUName;
+                        }
+                        await writer.WriteEntryAsync(entry);
+                    }
+                }
+            }
+
+            destinationArchive.Position = 0;
+
+            Dictionary<string, FileSystemInfo> expectedEntries = GetFileSystemInfosRecursive(pathWithExpectedFiles).ToDictionary(fsi =>
+                fsi.FullName.Substring(pathWithExpectedFiles.Length).Replace(Path.DirectorySeparatorChar, '/'));
+
+            int count = 0;
+            await using (TarReader destinationReader = new TarReader(destinationArchive, leaveOpen: false))
+            {
+                while ((entry = await destinationReader.GetNextEntryAsync(copyData)) != null)
+                {
+                    if (entry is PaxGlobalExtendedAttributesTarEntry) // Metadata entry
+                    {
+                        continue;
+                    }
+                    string keyPath = Path.TrimEndingDirectorySeparator(entry.Name);
+                    Assert.True(expectedEntries.TryGetValue(keyPath, out FileSystemInfo expectedFSI), $"Entry '{keyPath}' not found in FileSystemInfos dictionary.");
+
+                    // Cannot compare entry.LinkName with expectedFSI.LinkTarget because links in runtime-assets are not stored by nuget as such, but as regular files
+                    if (entry.EntryType is TarEntryType.HardLink or TarEntryType.SymbolicLink)
+                    {
+                        AssertExtensions.GreaterThan(entry.LinkName.Length, 0, $"Entry LinkName length is 0.");
+                        string expectedLinkTargetPath = Path.Join(pathWithExpectedFiles, entry.LinkName);
+                        Assert.True(Path.Exists(expectedLinkTargetPath), $"Link target does not exist: {expectedLinkTargetPath}");
+                    }
+                    else
+                    {
+                        Assert.Equal(string.Empty, entry.LinkName);
+                    }
+
+                    if (entry is PaxTarEntry paxEntry)
+                    {
+                        Assert.Equal(TestLongGName, paxEntry.GroupName);
+                        Assert.Equal(TestLongUName, paxEntry.UserName);
+                    }
+
+                    count++;
+                }
+            }
+            Assert.Equal(expectedEntries.Count, count);
         }
     }
 }

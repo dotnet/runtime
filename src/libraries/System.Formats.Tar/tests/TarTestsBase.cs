@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Enumeration;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Microsoft.DotNet.RemoteExecutor;
@@ -58,6 +59,8 @@ namespace System.Formats.Tar.Tests
 
         protected const string TestGName = "group";
         protected const string TestUName = "user";
+        protected readonly string TestLongGName = new string('ñ', 33);
+        protected readonly string TestLongUName = new string('ü', 100);
 
         // The metadata of the entries inside the asset archives are all set to these values
         protected const int AssetGid = 3579;
@@ -178,7 +181,7 @@ namespace System.Formats.Tar.Tests
             "xattrs"
         };
 
-        protected enum CompressionMethod
+        public enum CompressionMethod
         {
             // Archiving only, no compression
             Uncompressed,
@@ -510,6 +513,16 @@ namespace System.Formats.Tar.Tests
             }
         }
 
+        protected static TarEntryFormat GetEntryFormatForTestTarFormat(TestTarFormat testFormat) =>
+            testFormat switch
+            {
+                TestTarFormat.v7 => TarEntryFormat.V7,
+                TestTarFormat.ustar => TarEntryFormat.Ustar,
+                TestTarFormat.pax or TestTarFormat.pax_gea => TarEntryFormat.Pax,
+                TestTarFormat.oldgnu or TestTarFormat.gnu => TarEntryFormat.Gnu,
+                _ => throw new ArgumentOutOfRangeException(nameof(testFormat)),
+            };
+
         protected static void SetUnixFileMode(string path, UnixFileMode mode)
         {
             if (!PlatformDetection.IsWindows)
@@ -621,6 +634,12 @@ namespace System.Formats.Tar.Tests
             {
                 yield return new object[] { name };
             }
+        }
+
+        protected static FileSystemEnumerable<FileSystemInfo> GetFileSystemInfosRecursive(string path)
+        {
+            var enumerationOptions = new EnumerationOptions { RecurseSubdirectories = true };
+            return new FileSystemEnumerable<FileSystemInfo>(path, (ref FileSystemEntry e) => e.ToFileSystemInfo(), enumerationOptions);
         }
     }
 }
