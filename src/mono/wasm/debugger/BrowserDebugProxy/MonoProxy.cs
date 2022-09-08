@@ -534,6 +534,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
             }
 
+            //ignore all protocol extension messages not supported on .net6
+            if (method.StartsWith("DotnetDebugger.", StringComparison.Ordinal))
+                return true;
+
             return false;
         }
         private async Task<bool> CallOnFunction(MessageId id, JObject args, CancellationToken token)
