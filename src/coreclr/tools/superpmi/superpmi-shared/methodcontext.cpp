@@ -6461,27 +6461,33 @@ const char* MethodContext::repGetClassNameFromMetadata(CORINFO_CLASS_HANDLE cls,
 }
 
 void MethodContext::recGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls,
-                                                    CORINFO_CLASS_HANDLE result,
-                                                    unsigned             index)
+                                                    unsigned             index,
+                                                    CORINFO_CLASS_HANDLE result)
 {
     if (GetTypeInstantiationArgument == nullptr)
-        GetTypeInstantiationArgument = new LightWeightMap<DWORDLONG, DWORDLONG>();
+        GetTypeInstantiationArgument = new LightWeightMap<DLD, DWORDLONG>();
 
-    DWORDLONG key = CastHandle(cls);
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(cls);
+    key.B = index;
     DWORDLONG value = CastHandle(result);
     GetTypeInstantiationArgument->Add(key, value);
     DEBUG_REC(dmpGetTypeInstantiationArgument(key, value));
 }
-void MethodContext::dmpGetTypeInstantiationArgument(DWORDLONG key, DWORDLONG value)
+void MethodContext::dmpGetTypeInstantiationArgument(DLD key, DWORDLONG value)
 {
-    printf("GetTypeInstantiationArgument key - classNonNull-%llu, value NonNull-%llu", key, value);
+    printf("GetTypeInstantiationArgument key - classNonNull-%llu, index-%u, value NonNull-%llu", key.A, key.B, value);
     GetTypeInstantiationArgument->Unlock();
 }
 CORINFO_CLASS_HANDLE MethodContext::repGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index)
 {
     CORINFO_CLASS_HANDLE result = nullptr;
 
-    DWORDLONG key = CastHandle(cls);
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(cls);
+    key.B = index;
 
     int itemIndex = -1;
     if (GetTypeInstantiationArgument != nullptr)
@@ -7001,8 +7007,15 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
 
     char* obuff = buff;
 
-    // Add the Method Signature
-    int t = sprintf_s(buff, len, "%s -- ", CallUtils::GetMethodFullName(this, pInfo->ftn, pInfo->args, ignoreMethodName));
+    // Add the Method Signature. Be careful about potentially huge method signatures; truncate if necessary.
+    const char* methodFullName = CallUtils::GetMethodFullName(this, pInfo->ftn, pInfo->args, ignoreMethodName);
+    int t = _snprintf_s(buff, len - METHOD_IDENTITY_INFO_NON_NAME_RESERVE, _TRUNCATE, "%s -- ", methodFullName);
+    if (t == -1)
+    {
+        // We truncated the name string, meaning we wrote exactly `len - METHOD_IDENTITY_INFO_NON_NAME_RESERVE` characters
+        // (including the terminating null). We advance the buffer pointer by this amount, not including that terminating null.
+        t = len - METHOD_IDENTITY_INFO_NON_NAME_RESERVE - 1;
+    }
     buff += t;
     len -= t;
 

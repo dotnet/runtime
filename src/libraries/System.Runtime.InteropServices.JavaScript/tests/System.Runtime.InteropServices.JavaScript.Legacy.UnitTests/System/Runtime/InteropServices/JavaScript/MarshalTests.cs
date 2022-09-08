@@ -672,7 +672,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public static void InternedStringReturnValuesWork()
         {
             HelperMarshal._stringResource = HelperMarshal._stringResource2 = null;
-            var fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:StoreArgumentAndReturnLiteral";
+            var fqn = "[System.Runtime.InteropServices.JavaScript.Legacy.UnitTests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:StoreArgumentAndReturnLiteral";
             Utils.InvokeJS(
                 $"var a = BINDING.bind_static_method('{fqn}')('test');\r\n" +
                 $"var b = BINDING.bind_static_method('{fqn}')(a);\r\n" +

@@ -2756,8 +2756,6 @@ BOOL gc_heap::fgn_last_gc_was_concurrent = FALSE;
 
 VOLATILE(bool) gc_heap::full_gc_approach_event_set;
 
-bool gc_heap::special_sweep_p = false;
-
 size_t gc_heap::full_gc_counts[gc_type_max];
 
 bool gc_heap::maxgen_size_inc_p = false;
@@ -2855,6 +2853,8 @@ size_t     gc_heap::expand_mechanisms_per_heap[max_expand_mechanisms_count];
 size_t     gc_heap::interesting_mechanism_bits_per_heap[max_gc_mechanism_bits_count];
 
 mark_queue_t gc_heap::mark_queue;
+
+bool gc_heap::special_sweep_p = false;
 
 #endif // MULTIPLE_HEAPS
 
@@ -6089,20 +6089,22 @@ public:
         uint16_t proc_no[MAX_SUPPORTED_CPUS];
         uint16_t node_no[MAX_SUPPORTED_CPUS];
         uint16_t max_node_no = 0;
-        for (uint16_t i = 0; i < n_heaps; i++)
+        uint16_t heap_num;
+        for (heap_num = 0; heap_num < n_heaps; heap_num++)
         {
-            if (!GCToOSInterface::GetProcessorForHeap (i, &proc_no[i], &node_no[i]))
+            if (!GCToOSInterface::GetProcessorForHeap (heap_num, &proc_no[heap_num], &node_no[heap_num]))
                 break;
-            if (!do_numa || node_no[i] == NUMA_NODE_UNDEFINED)
-                node_no[i] = 0;
-            max_node_no = max(max_node_no, node_no[i]);
+            assert(proc_no[heap_num] < MAX_SUPPORTED_CPUS);
+            if (!do_numa || node_no[heap_num] == NUMA_NODE_UNDEFINED)
+                node_no[heap_num] = 0;
+            max_node_no = max(max_node_no, node_no[heap_num]);
         }
 
         // Pass 2: assign heap numbers by numa node
         int cur_heap_no = 0;
         for (uint16_t cur_node_no = 0; cur_node_no <= max_node_no; cur_node_no++)
         {
-            for (int i = 0; i < n_heaps; i++)
+            for (int i = 0; i < heap_num; i++)
             {
                 if (node_no[i] != cur_node_no)
                     continue;
@@ -14122,6 +14124,8 @@ gc_heap::init_gc_heap (int h_number)
 #ifdef RECORD_LOH_STATE
     loh_state_index = 0;
 #endif //RECORD_LOH_STATE
+
+    special_sweep_p = false;
 #endif //MULTIPLE_HEAPS
 
 #ifdef MULTIPLE_HEAPS
@@ -44804,8 +44808,9 @@ HRESULT GCHeap::Initialize()
     uint32_t nhp = 1;
     uint32_t nhp_from_config = 0;
 
-#ifdef MULTIPLE_HEAPS
-
+#ifndef MULTIPLE_HEAPS
+    GCConfig::SetServerGC(false);
+#else //!MULTIPLE_HEAPS
     GCConfig::SetServerGC(true);
     AffinitySet config_affinity_set;
     GCConfigStringHolder cpu_index_ranges_holder(GCConfig::GetGCHeapAffinitizeRanges());
@@ -44835,7 +44840,9 @@ HRESULT GCHeap::Initialize()
 
     nhp_from_config = static_cast<uint32_t>(GCConfig::GetHeapCount());
 
-    g_num_active_processors = GCToEEInterface::GetCurrentProcessCpuCount();
+    // The CPU count may be overriden by the user. Ensure that we create no more than g_num_processors
+    // heaps as that is the number of slots we have allocated for handle tables.
+    g_num_active_processors = min (GCToEEInterface::GetCurrentProcessCpuCount(), g_num_processors);
 
     if (nhp_from_config)
     {
@@ -44860,7 +44867,7 @@ HRESULT GCHeap::Initialize()
             nhp = min(nhp, num_affinitized_processors);
         }
     }
-#endif //MULTIPLE_HEAPS
+#endif //!MULTIPLE_HEAPS
 
     size_t seg_size = 0;
     size_t large_seg_size = 0;
@@ -44944,6 +44951,7 @@ HRESULT GCHeap::Initialize()
 #endif //USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
+    assert (nhp <= g_num_processors);
     gc_heap::n_heaps = nhp;
     hr = gc_heap::initialize_gc (seg_size, large_seg_size, pin_seg_size, nhp);
 #else
@@ -44978,7 +44986,7 @@ HRESULT GCHeap::Initialize()
         int available_mem_th = 10;
         if (gc_heap::total_physical_mem >= ((uint64_t)80 * 1024 * 1024 * 1024))
         {
-            int adjusted_available_mem_th = 3 + (int)((float)47 / (float)(GCToOSInterface::GetTotalProcessorCount()));
+            int adjusted_available_mem_th = 3 + (int)((float)47 / (float)g_num_processors);
             available_mem_th = min (available_mem_th, adjusted_available_mem_th);
         }
 
