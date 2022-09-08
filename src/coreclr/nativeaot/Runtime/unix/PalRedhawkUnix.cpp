@@ -1064,7 +1064,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
     }
 #endif
 
-    if ((status != 0) && (status != EAGAIN))
+    if ((status != 0) && (status != EAGAIN) && (status != ESRCH))
     {
         // Failure to send the signal is fatal. There are only two cases when sending
         // the signal can fail. First, if the signal ID is invalid and second,
