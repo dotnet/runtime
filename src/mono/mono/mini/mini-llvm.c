@@ -8219,6 +8219,10 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = LLVMBuildSIToFP (builder, i4, sse_r4_t, dname);
 			break;
 		}
+		case OP_VCVTUDQ2PS: {
+			values [ins->dreg] = LLVMBuildUIToFP (builder, lhs, sse_r4_t, dname);
+			break;
+		}
 		case OP_CVTDQ2PD: {
 			LLVMValueRef indexes [16];
 

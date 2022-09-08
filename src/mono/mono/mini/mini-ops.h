@@ -1024,6 +1024,7 @@ MINI_OP(OP_CVTPS2DQ, "cvtps2dq", XREG, XREG, NONE)
 MINI_OP(OP_CVTPS2PD, "cvtps2pd", XREG, XREG, NONE)
 MINI_OP(OP_CVTTPD2DQ, "cvttpd2dq", XREG, XREG, NONE)
 MINI_OP(OP_CVTTPS2DQ, "cvttps2dq", XREG, XREG, NONE)
+MINI_OP(OP_VCVTUDQ2PS, "vcvtudq2ps", XREG, XREG, NONE)
 
 /* sse 1 */
 /* inst_c1 is target type */
