@@ -30,6 +30,7 @@ namespace WebAssemblyInfo
         public long Offset;
 
         public SIMDOpcode SIMDOpcode;
+        public MTOpcode MTOpcode;
         public byte[] SIMDImmByteArray;
         public byte SIMDImmLaneIdx;
 

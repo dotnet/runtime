@@ -540,6 +540,10 @@ namespace WebAssemblyInfo
                     ReadSIMDInstruction(ref instruction);
                     break;
 
+                case Opcode.MTPrefix:
+                    ReadMTInstruction(ref instruction);
+                    break;
+
                 default:
                     throw new FileLoadException($"Unknown opcode: {opcode} ({opcode:x})");
             }
@@ -807,6 +811,89 @@ namespace WebAssemblyInfo
             }
         }
 
+        void ReadMTInstruction(ref Instruction instruction)
+        {
+            instruction.MTOpcode = (MTOpcode)ReadU32();
+            Console.WriteLine($"MT opcode: {instruction.MTOpcode}");
+
+            switch (instruction.MTOpcode)
+            {
+                case MTOpcode.Atomic_Fence:
+                    ReadI32();
+                    break;
+                case MTOpcode.Memory_Atomic_Notify:
+                case MTOpcode.Memory_Atomic_Wait32:
+                case MTOpcode.Memory_Atomic_Wait64:
+                case MTOpcode.I32_Atomic_Load:
+                case MTOpcode.I64_Atomic_Load:
+                case MTOpcode.I32_Atomic_Load8_u:
+                case MTOpcode.I32_Atomic_Load16_u:
+                case MTOpcode.I64_Atomic_Load8_u:
+                case MTOpcode.I64_Atomic_Load16_u:
+                case MTOpcode.I64_Atomic_Load32_u:
+                case MTOpcode.I32_Atomic_Store:
+                case MTOpcode.I64_Atomic_Store:
+                case MTOpcode.I32_Atomic_Store8:
+                case MTOpcode.I32_Atomic_Store16:
+                case MTOpcode.I64_Atomic_Store8:
+                case MTOpcode.I64_Atomic_Store16:
+                case MTOpcode.I64_Atomic_Store32:
+                case MTOpcode.I32_Atomic_Rmw_Add:
+                case MTOpcode.I64_Atomic_Rmw_Add:
+                case MTOpcode.I32_Atomic_Rmw8_Add_U:
+                case MTOpcode.I32_Atomic_Rmw16_Add_U:
+                case MTOpcode.I64_Atomic_Rmw8_Add_U:
+                case MTOpcode.I64_Atomic_Rmw16_Add_U:
+                case MTOpcode.I64_Atomic_Rmw32_Add_U:
+                case MTOpcode.I32_Atomic_Rmw_Sub:
+                case MTOpcode.I64_Atomic_Rmw_Sub:
+                case MTOpcode.I32_Atomic_Rmw8_Sub_U:
+                case MTOpcode.I32_Atomic_Rmw16_Sub_U:
+                case MTOpcode.I64_Atomic_Rmw8_Sub_U:
+                case MTOpcode.I64_Atomic_Rmw16_Sub_U:
+                case MTOpcode.I64_Atomic_Rmw32_Sub_U:
+                case MTOpcode.I32_Atomic_Rmw_And:
+                case MTOpcode.I64_Atomic_Rmw_And:
+                case MTOpcode.I32_Atomic_Rmw8_And_U:
+                case MTOpcode.I32_Atomic_Rmw16_And_U:
+                case MTOpcode.I64_Atomic_Rmw8_And_U:
+                case MTOpcode.I64_Atomic_Rmw16_And_U:
+                case MTOpcode.I64_Atomic_Rmw32_And_U:
+                case MTOpcode.I32_Atomic_Rmw_Or:
+                case MTOpcode.I64_Atomic_Rmw_Or:
+                case MTOpcode.I32_Atomic_Rmw8_Or_U:
+                case MTOpcode.I32_Atomic_Rmw16_Or_U:
+                case MTOpcode.I64_Atomic_Rmw8_Or_U:
+                case MTOpcode.I64_Atomic_Rmw16_Or_U:
+                case MTOpcode.I64_Atomic_Rmw32_Or_U:
+                case MTOpcode.I32_Atomic_Rmw_Xor:
+                case MTOpcode.I64_Atomic_Rmw_Xor:
+                case MTOpcode.I32_Atomic_Rmw8_Xor_U:
+                case MTOpcode.I32_Atomic_Rmw16_Xor_U:
+                case MTOpcode.I64_Atomic_Rmw8_Xor_U:
+                case MTOpcode.I64_Atomic_Rmw16_Xor_U:
+                case MTOpcode.I64_Atomic_Rmw32_Xor_U:
+                case MTOpcode.I32_Atomic_Rmw_Xchg:
+                case MTOpcode.I64_Atomic_Rmw_Xchg:
+                case MTOpcode.I32_Atomic_Rmw8_Xchg_U:
+                case MTOpcode.I32_Atomic_Rmw16_Xchg_U:
+                case MTOpcode.I64_Atomic_Rmw8_Xchg_U:
+                case MTOpcode.I64_Atomic_Rmw16_Xchg_U:
+                case MTOpcode.I64_Atomic_Rmw32_Xchg_U:
+                case MTOpcode.I32_Atomic_Rmw_CmpXchg:
+                case MTOpcode.I64_Atomic_Rmw_CmpXchg:
+                case MTOpcode.I32_Atomic_Rmw8_CmpXchg_U:
+                case MTOpcode.I32_Atomic_Rmw16_CmpXchg_U:
+                case MTOpcode.I64_Atomic_Rmw8_CmpXchg_U:
+                case MTOpcode.I64_Atomic_Rmw16_CmpXchg_U:
+                case MTOpcode.I64_Atomic_Rmw32_CmpXchg_U:
+                    instruction.MemArg = ReadMemArg();
+                    break;
+                default:
+                    throw new FileLoadException($"Unknown MT opcode: {instruction.MTOpcode} ({instruction.MTOpcode:x})");
+            }
+        }
+
         public (Instruction[], Opcode) ReadBlock(Opcode end = Opcode.End)
         {
             List<Instruction> instructions = new();
@@ -814,10 +901,10 @@ namespace WebAssemblyInfo
             do
             {
                 b = (Opcode)Reader.ReadByte();
+                //Console.WriteLine($"    opcode: {b}");
+
                 if (b == Opcode.End || b == end)
                     break;
-
-                //Console.WriteLine($"    opcode: {b}");
 
                 instructions.Add(ReadInstruction(b));
             } while (true);

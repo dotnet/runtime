@@ -207,5 +207,6 @@ namespace WebAssemblyInfo
         // special
         Prefix = 0xfc,
         SIMDPrefix = 0xfd,
+        MTPrefix = 0xfe,
     }
 }
