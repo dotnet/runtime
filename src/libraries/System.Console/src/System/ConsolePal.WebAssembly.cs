@@ -74,7 +74,7 @@ namespace System
 
     internal static partial class ConsolePal
     {
-#pragma warning disable IDE0060        
+#pragma warning disable IDE0060
         [JSImport("globalThis.console.clear")]
         public static partial void Clear();
 

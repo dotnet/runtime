@@ -1128,22 +1128,22 @@ namespace Internal.IL
             }
         }
 
-        private void ImportLoadElement(int token)
+        private void ImportLoadElement(int _)
         {
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.RngChkFail), "ldelem");
         }
 
-        private void ImportLoadElement(TypeDesc elementType)
+        private void ImportLoadElement(TypeDesc _)
         {
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.RngChkFail), "ldelem");
         }
 
-        private void ImportStoreElement(int token)
+        private void ImportStoreElement(int _)
         {
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.RngChkFail), "stelem");
         }
 
-        private void ImportStoreElement(TypeDesc elementType)
+        private void ImportStoreElement(TypeDesc _)
         {
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.RngChkFail), "stelem");
         }
@@ -1340,40 +1340,40 @@ namespace Internal.IL
             return _compilation.TypeSystemContext.GetWellKnownType(wellKnownType);
         }
 
-        private static void ImportNop() { }
-        private static void ImportBreak() { }
-        private static void ImportLoadVar(int index, bool argument) { }
-        private static void ImportStoreVar(int index, bool argument) { }
-        private static void ImportAddressOfVar(int index, bool argument) { }
-        private static void ImportDup() { }
-        private static void ImportPop() { }
-        private static void ImportLoadNull() { }
-        private static void ImportReturn() { }
-        private static void ImportLoadInt(long value, StackValueKind kind) { }
-        private static void ImportLoadFloat(double value) { }
-        private static void ImportLoadIndirect(int token) { }
-        private static void ImportLoadIndirect(TypeDesc type) { }
-        private static void ImportStoreIndirect(int token) { }
-        private static void ImportStoreIndirect(TypeDesc type) { }
-        private static void ImportShiftOperation(ILOpcode opcode) { }
-        private static void ImportCompareOperation(ILOpcode opcode) { }
-        private static void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned) { }
-        private static void ImportUnaryOperation(ILOpcode opCode) { }
-        private static void ImportCpOpj(int token) { }
-        private static void ImportCkFinite() { }
-        private static void ImportLocalAlloc() { }
-        private static void ImportEndFilter() { }
-        private static void ImportCpBlk() { }
-        private static void ImportInitBlk() { }
-        private static void ImportRethrow() { }
-        private static void ImportSizeOf(int token) { }
-        private static void ImportUnalignedPrefix(byte alignment) { }
-        private static void ImportVolatilePrefix() { }
-        private static void ImportTailPrefix() { }
-        private static void ImportNoPrefix(byte mask) { }
-        private static void ImportThrow() { }
-        private static void ImportInitObj(int token) { }
-        private static void ImportLoadLength() { }
-        private static void ImportEndFinally() { }
+        static partial void ImportNop();
+        static partial void ImportBreak();
+        static partial void ImportLoadVar(int index, bool argument);
+        static partial void ImportStoreVar(int index, bool argument);
+        static partial void ImportAddressOfVar(int index, bool argument);
+        static partial void ImportDup();
+        static partial void ImportPop();
+        static partial void ImportLoadNull();
+        static partial void ImportReturn();
+        static partial void ImportLoadInt(long value, StackValueKind kind);
+        static partial void ImportLoadFloat(double value);
+        static partial void ImportLoadIndirect(int token);
+        static partial void ImportLoadIndirect(TypeDesc type);
+        static partial void ImportStoreIndirect(int token);
+        static partial void ImportStoreIndirect(TypeDesc type);
+        static partial void ImportShiftOperation(ILOpcode opcode);
+        static partial void ImportCompareOperation(ILOpcode opcode);
+        static partial void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned);
+        static partial void ImportUnaryOperation(ILOpcode opCode);
+        static partial void ImportCpOpj(int token);
+        static partial void ImportCkFinite();
+        static partial void ImportLocalAlloc();
+        static partial void ImportEndFilter();
+        static partial void ImportCpBlk();
+        static partial void ImportInitBlk();
+        static partial void ImportRethrow();
+        static partial void ImportSizeOf(int token);
+        static partial void ImportUnalignedPrefix(byte alignment);
+        static partial void ImportVolatilePrefix();
+        static partial void ImportTailPrefix();
+        static partial void ImportNoPrefix(byte mask);
+        static partial void ImportThrow();
+        static partial void ImportInitObj(int token);
+        static partial void ImportLoadLength();
+        static partial void ImportEndFinally();
     }
 }

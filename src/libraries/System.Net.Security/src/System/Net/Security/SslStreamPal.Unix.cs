@@ -24,6 +24,7 @@ namespace System.Net.Security
         {
         }
 
+#pragma warning disable IDE0060
         public static SecurityStatusPal AcceptSecurityContext(
             ref SafeFreeCredentials? credential,
             ref SafeDeleteSslContext? context,
@@ -216,7 +217,6 @@ namespace System.Net.Security
             }
         }
 
-#pragma warning disable IDE0060
         public static SecurityStatusPal ApplyAlertToken(SafeDeleteContext? securityContext, TlsAlertType alertType, TlsAlertMessage alertMessage)
         {
             // There doesn't seem to be an exposed API for writing an alert,
@@ -226,7 +226,7 @@ namespace System.Net.Security
         }
 #pragma warning restore IDE0060
 
-        public static SecurityStatusPal ApplyShutdownToken(ref SafeFreeCredentials? credentialsHandle, SafeDeleteSslContext context)
+        public static SecurityStatusPal ApplyShutdownToken(SafeDeleteSslContext context)
         {
             // Unset the quiet shutdown option initially configured.
             Interop.Ssl.SslSetQuietShutdown((SafeSslHandle)context, 0);

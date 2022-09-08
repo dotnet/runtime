@@ -1013,7 +1013,7 @@ namespace System.Net
             return null;
         }
 
-        internal NegotiateAuthenticationStatusCode Wrap(ReadOnlySpan<byte> input, IBufferWriter<byte> outputWriter, bool requestEncryption, out bool isEncrypted)
+        internal NegotiateAuthenticationStatusCode Wrap(ReadOnlySpan<byte> input, IBufferWriter<byte> outputWriter, bool _/*requestEncryption*/, out bool isEncrypted)
         {
             if (_clientSeal == null)
             {

@@ -70,7 +70,6 @@ namespace Internal.TypeSystem.Interop
                 {
                     marshallers[i] = CreateDisabledMarshaller(
                         parameterType,
-                        parameterIndex,
                         MarshallerType.Argument,
                         MarshalDirection.Forward,
                         marshallers,

@@ -236,7 +236,7 @@ namespace ILCompiler
             return false;
         }
 
-        internal static bool IsWarningAsError(int code)
+        internal static bool IsWarningAsError(int _/*code*/)
         {
             // TODO: warnaserror
             return false;
