@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace System
 {
@@ -2669,6 +2670,261 @@ namespace System
             public static bool NegateIfNeeded(bool equals) => !equals;
             public static Vector128<T> NegateIfNeeded(Vector128<T> equals) => ~equals;
             public static Vector256<T> NegateIfNeeded(Vector256<T> equals) => ~equals;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Reverse<T>(ref T elements, nuint length)
+        {
+            Debug.Assert(length > 0);
+            if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                if (Unsafe.SizeOf<T>() == sizeof(byte))
+                {
+                    ReverseSIMD(ref Unsafe.As<T, byte>(ref elements), length);
+                    return;
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(char))
+                {
+                    ReverseSIMD(ref Unsafe.As<T, short>(ref elements), length);
+                    return;
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(int))
+                {
+                    ReverseSIMD(ref Unsafe.As<T, int>(ref elements), length);
+                    return;
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(long))
+                {
+                    ReverseSIMD(ref Unsafe.As<T, long>(ref elements), length);
+                    return;
+                }
+            }
+            ReverseScalar(ref elements, length);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void ReverseScalar<T>(ref T elements, nuint length)
+        {
+            if (length <= 1)
+                return;
+            ref T first = ref elements;
+            ref T last = ref Unsafe.Subtract(ref Unsafe.Add(ref first, (int)length), 1);
+            do
+            {
+                T temp = first;
+                first = last;
+                last = temp;
+                first = ref Unsafe.Add(ref first, 1);
+                last = ref Unsafe.Subtract(ref last, 1);
+            } while (Unsafe.IsAddressLessThan(ref first, ref last));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void ReverseSIMD<T>(ref T elements, nuint length) where T : struct
+        {
+            if (Avx2.IsSupported && (nuint)Vector256<T>.Count * 2 <= length)
+            {
+                nuint numElements = (nuint)Vector256<T>.Count;
+                nuint numIters = (length / numElements) / 2;
+                for (nuint i = 0; i < numIters; i++)
+                {
+                    nuint firstOffset = i * numElements;
+                    nuint lastOffset = length - ((1 + i) * numElements);
+                    // Load the values into vectors
+                    Vector256<T> tempFirst = Vector256.LoadUnsafe(ref elements, firstOffset);
+                    Vector256<T> tempLast = Vector256.LoadUnsafe(ref elements, lastOffset);
+
+                    // Avx2 operates on two 128-bit lanes rather than the full 256-bit vector.
+                    if (Unsafe.SizeOf<T>() == sizeof(byte))
+                    {
+                        // Perform a shuffle to reverse each 128-bit lane, then permute to finish reversing the vector:
+                        //     +-------------------------------------------------------------------------------+
+                        //     | A1 | B1 | C1 | D1 | E1 | F1 | G1 | H1 | I1 | J1 | K1 | L1 | M1 | N1 | O1 | P1 |
+                        //     +-------------------------------------------------------------------------------+
+                        //     | A2 | B2 | C2 | D2 | E2 | F2 | G2 | H2 | I2 | J2 | K2 | L2 | M2 | N2 | O2 | P2 |
+                        //     +-------------------------------------------------------------------------------+
+                        //         Shuffle --->
+                        //     +-------------------------------------------------------------------------------+
+                        //     | P1 | O1 | N1 | M1 | L1 | K1 | J1 | I1 | H1 | G1 | F1 | E1 | D1 | C1 | B1 | A1 |
+                        //     +-------------------------------------------------------------------------------+
+                        //     | P2 | O2 | N2 | M2 | L2 | K2 | J2 | I2 | H2 | G2 | F2 | E2 | D2 | C2 | B2 | A2 |
+                        //     +-------------------------------------------------------------------------------+
+                        //         Permute --->
+                        //     +-------------------------------------------------------------------------------+
+                        //     | P2 | O2 | N2 | M2 | L2 | K2 | J2 | I2 | H2 | G2 | F2 | E2 | D2 | C2 | B2 | A2 |
+                        //     +-------------------------------------------------------------------------------+
+                        //     | P1 | O1 | N1 | M1 | L1 | K1 | J1 | I1 | H1 | G1 | F1 | E1 | D1 | C1 | B1 | A1 |
+                        //     +-------------------------------------------------------------------------------+
+                        tempFirst = Avx2.Shuffle(tempFirst.As<T, byte>(), Vector256.Create(
+                            (byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0,
+                                  15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)).As<byte, T>();
+                        tempFirst = Avx2.Permute2x128(tempFirst.As<T, byte>(), tempFirst.As<T, byte>(), 0b00_01).As<byte, T>();
+                        tempLast = Avx2.Shuffle(tempLast.As<T, byte>(), Vector256.Create(
+                            (byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0,
+                                  15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)).As<byte, T>();
+                        tempLast = Avx2.Permute2x128(tempLast.As<T, byte>(), tempLast.As<T, byte>(), 0b00_01).As<byte, T>();
+                    }
+                    else if (Unsafe.SizeOf<T>() == sizeof(char))
+                    {
+                        tempFirst = Avx2.Shuffle(tempFirst.As<T, byte>(), Vector256.Create(
+                            (byte)14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1,
+                                  14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1)).As<byte, T>();
+                        tempFirst = Avx2.Permute2x128(tempFirst.As<T, byte>(), tempFirst.As<T, byte>(), 0b00_01).As<byte, T>();
+                        tempLast = Avx2.Shuffle(tempLast.As<T, byte>(), Vector256.Create(
+                            (byte)14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1,
+                                  14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1)).As<byte, T>();
+                        tempLast = Avx2.Permute2x128(tempLast.As<T, byte>(), tempLast.As<T, byte>(), 0b00_01).As<byte, T>();
+                    }
+                    else if (Unsafe.SizeOf<T>() == sizeof(int))
+                    {
+                        // Permute to reverse each vector:
+                        //     +-------------------------------+
+                        //     | A | B | C | D | E | F | G | H |
+                        //     +-------------------------------+
+                        //         --->
+                        //     +-------------------------------+
+                        //     | H | G | F | E | D | C | B | A |
+                        //     +-------------------------------+
+                        tempFirst = Avx2.PermuteVar8x32(tempFirst.As<T, int>(), Vector256.Create(7, 6, 5, 4, 3, 2, 1, 0)).As<int, T>();
+                        tempLast = Avx2.PermuteVar8x32(tempLast.As<T, int>(), Vector256.Create(7, 6, 5, 4, 3, 2, 1, 0)).As<int, T>();
+                    }
+                    else if (Unsafe.SizeOf<T>() == sizeof(long))
+                    {
+                        // Permute to reverse each vector:
+                        tempFirst = Avx2.Permute4x64(tempFirst.As<T, long>(), 0b00_01_10_11).As<long, T>();
+                        tempLast = Avx2.Permute4x64(tempLast.As<T, long>(), 0b00_01_10_11).As<long, T>();
+                    }
+
+                    // Store the values into final location
+                    tempLast.StoreUnsafe(ref elements, firstOffset);
+                    tempFirst.StoreUnsafe(ref elements, lastOffset);
+                }
+                elements = ref Unsafe.Add(ref elements, numIters * numElements);
+                length -= numIters * numElements * 2;
+            }
+            else if (Vector128.IsHardwareAccelerated && (nuint)Vector128<T>.Count * 2 <= length)
+            {
+                nuint numElements = (nuint)Vector128<T>.Count;
+                nuint numIters;
+                // We reverse a span by processing it in the chunks of 16 bytes. We first reverse two 16 byte chunks, one
+                // from the beginning and its corresponding chunk from the end of the span. We then swap these two chunks
+                // chunks to place them at their correct destination. We optimise this further by processing four chunks
+                // of 16 bytes, two from the beginning and two from the end, as much as we can. Then we process two chunks.
+                if ((nuint)Vector128<T>.Count * 4 <= length)
+                {
+                    numIters = (length / numElements) / 4;
+                    for (nuint i = 0; i < numIters; i++)
+                    {
+                        nuint firstOffset = i * numElements * 2;
+                        nuint secondOffset = firstOffset + numElements;
+                        nuint lastOffset = length - (i * numElements * 2) - numElements;
+                        nuint secondLastOffset = lastOffset - numElements;
+
+                        // Load in values from beginning and end of the array.
+                        Vector128<T> tempFirst = Vector128.LoadUnsafe(ref elements, firstOffset);
+                        Vector128<T> tempSecond = Vector128.LoadUnsafe(ref elements, secondOffset);
+                        Vector128<T> tempLast = Vector128.LoadUnsafe(ref elements, lastOffset);
+                        Vector128<T> tempSecondLast = Vector128.LoadUnsafe(ref elements, secondLastOffset);
+
+                        // Shuffle to reverse each vector
+                        if (Unsafe.SizeOf<T>() == sizeof(byte))
+                        {
+                            //     +-------------------------------------------------------------------------------+
+                            //     | A1 | B1 | C1 | D1 | E1 | F1 | G1 | H1 | I1 | J1 | K1 | L1 | M1 | N1 | O1 | P1 |
+                            //     +-------------------------------------------------------------------------------+
+                            //     | A2 | B2 | C2 | D2 | E2 | F2 | G2 | H2 | I2 | J2 | K2 | L2 | M2 | N2 | O2 | P2 |
+                            //     +-------------------------------------------------------------------------------+
+                            //         Shuffle --->
+                            //     +-------------------------------------------------------------------------------+
+                            //     | P2 | O2 | N2 | M2 | L2 | K2 | J2 | I2 | H2 | G2 | F2 | E2 | D2 | C2 | B2 | A2 |
+                            //     +-------------------------------------------------------------------------------+
+                            //     | P1 | O1 | N1 | M1 | L1 | K1 | J1 | I1 | H1 | G1 | F1 | E1 | D1 | C1 | B1 | A1 |
+                            //     +-------------------------------------------------------------------------------+
+                            tempFirst = Vector128.Shuffle(tempFirst.As<T, byte>(), Vector128.Create(
+                                (byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)).As<byte, T>();
+                            tempSecond = Vector128.Shuffle(tempSecond.As<T, byte>(), Vector128.Create(
+                                (byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)).As<byte, T>();
+                            tempLast = Vector128.Shuffle(tempLast.As<T, byte>(), Vector128.Create(
+                                (byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)).As<byte, T>();
+                            tempSecondLast = Vector128.Shuffle(tempSecondLast.As<T, byte>(), Vector128.Create(
+                                (byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)).As<byte, T>();
+                        }
+                        else if (Unsafe.SizeOf<T>() == sizeof(char))
+                        {
+                            tempFirst = Vector128.Shuffle(tempFirst.As<T, short>(), Vector128.Create(7, 6, 5, 4, 3, 2, 1, 0)).As<short, T>();
+                            tempSecond = Vector128.Shuffle(tempSecond.As<T, short>(), Vector128.Create(7, 6, 5, 4, 3, 2, 1, 0)).As<short, T>();
+                            tempLast = Vector128.Shuffle(tempLast.As<T, short>(), Vector128.Create(7, 6, 5, 4, 3, 2, 1, 0)).As<short, T>();
+                            tempSecondLast = Vector128.Shuffle(tempSecondLast.As<T, short>(), Vector128.Create(7, 6, 5, 4, 3, 2, 1, 0)).As<short, T>();
+                        }
+                        else if (Unsafe.SizeOf<T>() == sizeof(int))
+                        {
+                            tempFirst = Vector128.Shuffle(tempFirst.As<T, int>(), Vector128.Create(3, 2, 1, 0)).As<int, T>();
+                            tempSecond = Vector128.Shuffle(tempSecond.As<T, int>(), Vector128.Create(3, 2, 1, 0)).As<int, T>();
+                            tempLast = Vector128.Shuffle(tempLast.As<T, int>(), Vector128.Create(3, 2, 1, 0)).As<int, T>();
+                            tempSecondLast = Vector128.Shuffle(tempSecondLast.As<T, int>(), Vector128.Create(3, 2, 1, 0)).As<int, T>();
+                        }
+                        else if (Unsafe.SizeOf<T>() == sizeof(long))
+                        {
+                            tempFirst = Vector128.Shuffle(tempFirst.As<T, long>(), Vector128.Create(1, 0)).As<long, T>();
+                            tempSecond = Vector128.Shuffle(tempSecond.As<T, long>(), Vector128.Create(1, 0)).As<long, T>();
+                            tempLast = Vector128.Shuffle(tempLast.As<T, long>(), Vector128.Create(1, 0)).As<long, T>();
+                            tempSecondLast = Vector128.Shuffle(tempSecondLast.As<T, long>(), Vector128.Create(1, 0)).As<long, T>();
+                        }
+
+                        // Store the reversed vectors
+                        tempLast.StoreUnsafe(ref elements, firstOffset);
+                        tempSecondLast.StoreUnsafe(ref elements, secondOffset);
+                        tempFirst.StoreUnsafe(ref elements, lastOffset);
+                        tempSecond.StoreUnsafe(ref elements, secondLastOffset);
+                    }
+                    elements = ref Unsafe.Add(ref elements, numIters * numElements * 2);
+                    length -= numIters * numElements * 4;
+                }
+                if ((nuint)Vector128<T>.Count * 2 <= length)
+                {
+                    numIters = (length / numElements) / 2;
+                    for (nuint i = 0; i < numIters; i++)
+                    {
+                        nuint firstOffset = i * numElements;
+                        nuint lastOffset = length - ((1 + i) * numElements);
+
+                        // Load in values from beginning and end of the array.
+                        Vector128<T> tempFirst = Vector128.LoadUnsafe(ref elements, firstOffset);
+                        Vector128<T> tempLast = Vector128.LoadUnsafe(ref elements, lastOffset);
+
+                        if (Unsafe.SizeOf<T>() == sizeof(byte))
+                        {
+                            tempFirst = Vector128.Shuffle(tempFirst.As<T, byte>(), Vector128.Create(
+                                (byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)).As<byte, T>();
+                            tempLast = Vector128.Shuffle(tempLast.As<T, byte>(), Vector128.Create(
+                                (byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)).As<byte, T>();
+                        }
+                        else if (Unsafe.SizeOf<T>() == sizeof(char))
+                        {
+                            tempFirst = Vector128.Shuffle(tempFirst.As<T, short>(), Vector128.Create(7, 6, 5, 4, 3, 2, 1, 0)).As<short, T>();
+                            tempLast = Vector128.Shuffle(tempLast.As<T, short>(), Vector128.Create(7, 6, 5, 4, 3, 2, 1, 0)).As<short, T>();
+                        }
+                        else if (Unsafe.SizeOf<T>() == sizeof(int))
+                        {
+                            tempFirst = Vector128.Shuffle(tempFirst.As<T, int>(), Vector128.Create(3, 2, 1, 0)).As<int, T>();
+                            tempLast = Vector128.Shuffle(tempLast.As<T, int>(), Vector128.Create(3, 2, 1, 0)).As<int, T>();
+                        }
+                        else if (Unsafe.SizeOf<T>() == sizeof(long))
+                        {
+                            tempFirst = Vector128.Shuffle(tempFirst.As<T, long>(), Vector128.Create(1, 0)).As<long, T>();
+                            tempLast = Vector128.Shuffle(tempLast.As<T, long>(), Vector128.Create(1, 0)).As<long, T>();
+                        }
+
+                        // Store the reversed vectors
+                        tempLast.StoreUnsafe(ref elements, firstOffset);
+                        tempFirst.StoreUnsafe(ref elements, lastOffset);
+                    }
+                    elements = ref Unsafe.Add(ref elements, numIters * numElements);
+                    length -= numIters * numElements * 2;
+                }
+            }
+            // Store any remaining values one-by-one
+            ReverseScalar(ref elements, length);
         }
     }
 }
