@@ -52,6 +52,7 @@ namespace System.Diagnostics
 }
 namespace System.Diagnostics.SymbolStore
 {
+#if !BUILDING_CORELIB_REFERENCE
     public partial interface ISymbolBinder
     {
         [System.ObsoleteAttribute("ISymbolBinder.GetReader has been deprecated because it is not 64-bit compatible. Use ISymbolBinder1.GetReader instead. ISymbolBinder1.GetReader accepts the importer interface pointer as an IntPtr instead of an Int32, and thus works on both 32-bit and 64-bit architectures.")]
@@ -74,11 +75,13 @@ namespace System.Diagnostics.SymbolStore
         byte[] GetCheckSum();
         byte[] GetSourceRange(int startLine, int startColumn, int endLine, int endColumn);
     }
+#endif
     public partial interface ISymbolDocumentWriter
     {
         void SetCheckSum(System.Guid algorithmId, byte[] checkSum);
         void SetSource(byte[] source);
     }
+#if !BUILDING_CORELIB_REFERENCE
     public partial interface ISymbolMethod
     {
         System.Diagnostics.SymbolStore.ISymbolScope RootScope { get; }
@@ -205,4 +208,5 @@ namespace System.Diagnostics.SymbolStore
         public static readonly System.Guid Microsoft;
         public SymLanguageVendor() { }
     }
+#endif
 }

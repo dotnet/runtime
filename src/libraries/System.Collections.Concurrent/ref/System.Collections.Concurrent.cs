@@ -6,6 +6,7 @@
 
 namespace System.Collections.Concurrent
 {
+#if !BUILDING_CORELIB_REFERENCE
     [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public partial class BlockingCollection<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.IDisposable
     {
@@ -126,6 +127,7 @@ namespace System.Collections.Concurrent
         public bool TryRemove(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
         public bool TryUpdate(TKey key, TValue newValue, TValue comparisonValue) { throw null; }
     }
+#endif
     public partial class ConcurrentQueue<T> : System.Collections.Concurrent.IProducerConsumerCollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.ICollection, System.Collections.IEnumerable
     {
         public ConcurrentQueue() { }
@@ -146,6 +148,7 @@ namespace System.Collections.Concurrent
         public bool TryDequeue([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T result) { throw null; }
         public bool TryPeek([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T result) { throw null; }
     }
+#if !BUILDING_CORELIB_REFERENCE
     public partial class ConcurrentStack<T> : System.Collections.Concurrent.IProducerConsumerCollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.ICollection, System.Collections.IEnumerable
     {
         public ConcurrentStack() { }
@@ -176,6 +179,7 @@ namespace System.Collections.Concurrent
         None = 0,
         NoBuffering = 1,
     }
+#endif
     public partial interface IProducerConsumerCollection<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.ICollection, System.Collections.IEnumerable
     {
         void CopyTo(T[] array, int index);
@@ -183,6 +187,7 @@ namespace System.Collections.Concurrent
         bool TryAdd(T item);
         bool TryTake([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out T item);
     }
+#if !BUILDING_CORELIB_REFERENCE
     public abstract partial class OrderablePartitioner<TSource> : System.Collections.Concurrent.Partitioner<TSource>
     {
         protected OrderablePartitioner(bool keysOrderedInEachPartition, bool keysOrderedAcrossPartitions, bool keysNormalized) { }
@@ -212,4 +217,5 @@ namespace System.Collections.Concurrent
         public virtual System.Collections.Generic.IEnumerable<TSource> GetDynamicPartitions() { throw null; }
         public abstract System.Collections.Generic.IList<System.Collections.Generic.IEnumerator<TSource>> GetPartitions(int partitionCount);
     }
+#endif
 }

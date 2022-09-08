@@ -6,6 +6,7 @@
 
 namespace System.Collections
 {
+#if !BUILDING_CORELIB_REFERENCE
     public sealed partial class BitArray : System.Collections.ICollection, System.Collections.IEnumerable, System.ICloneable
     {
         public BitArray(bool[] values) { }
@@ -38,9 +39,12 @@ namespace System.Collections
         public static System.Collections.IComparer StructuralComparer { get { throw null; } }
         public static System.Collections.IEqualityComparer StructuralEqualityComparer { get { throw null; } }
     }
+#endif
 }
+
 namespace System.Collections.Generic
 {
+#if !BUILDING_CORELIB_REFERENCE
     public static partial class CollectionExtensions
     {
         public static TValue? GetValueOrDefault<TKey, TValue>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dictionary, TKey key) { throw null; }
@@ -48,6 +52,7 @@ namespace System.Collections.Generic
         public static bool Remove<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
         public static bool TryAdd<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, TValue value) { throw null; }
     }
+#endif
     public abstract partial class Comparer<T> : System.Collections.Generic.IComparer<T>, System.Collections.IComparer
     {
         protected Comparer() { }
@@ -240,6 +245,7 @@ namespace System.Collections.Generic
             void System.Collections.IEnumerator.Reset() { }
         }
     }
+#if !BUILDING_CORELIB_REFERENCE
     public sealed partial class LinkedListNode<T>
     {
         public LinkedListNode(T value) { }
@@ -298,6 +304,7 @@ namespace System.Collections.Generic
             void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         }
     }
+#endif
     public partial class List<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
     {
         public List() { }
@@ -379,7 +386,7 @@ namespace System.Collections.Generic
             void System.Collections.IEnumerator.Reset() { }
         }
     }
-
+#if !BUILDING_CORELIB_REFERENCE
     public partial class PriorityQueue<TElement, TPriority>
     {
         public PriorityQueue() { }
@@ -423,7 +430,7 @@ namespace System.Collections.Generic
             }
         }
     }
-
+#endif
     public partial class Queue<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.ICollection, System.Collections.IEnumerable
     {
         public Queue() { }
@@ -466,6 +473,7 @@ namespace System.Collections.Generic
         public new bool Equals(object? x, object? y) { throw null; }
         public int GetHashCode(object? obj) { throw null; }
     }
+#if !BUILDING_CORELIB_REFERENCE
     public partial class SortedDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IDictionary<TKey, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable where TKey : notnull
     {
         public SortedDictionary() { }
@@ -718,4 +726,5 @@ namespace System.Collections.Generic
             void System.Collections.IEnumerator.Reset() { }
         }
     }
+#endif
 }

@@ -2861,10 +2861,12 @@ namespace System
         public FieldAccessException(string? message) { }
         public FieldAccessException(string? message, System.Exception? inner) { }
     }
+#if !BUILDING_CORELIB_REFERENCE
     public partial class FileStyleUriParser : System.UriParser
     {
         public FileStyleUriParser() { }
     }
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Enum, Inherited=false)]
     public partial class FlagsAttribute : System.Attribute
     {
@@ -2890,10 +2892,12 @@ namespace System
         public override string ToString() { throw null; }
         public abstract string ToString(System.IFormatProvider? formatProvider);
     }
+#if !BUILDING_CORELIB_REFERENCE
     public partial class FtpStyleUriParser : System.UriParser
     {
         public FtpStyleUriParser() { }
     }
+#endif
     public delegate TResult Func<out TResult>();
     public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9);
     public delegate TResult Func<in T1, in T2, in T3, in T4, in T5, in T6, in T7, in T8, in T9, in T10, out TResult>(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9, T10 arg10);
@@ -2996,6 +3000,7 @@ namespace System
         Timeout = 3,
         NotApplicable = 4,
     }
+#if !BUILDING_CORELIB_REFERENCE
     public partial class GenericUriParser : System.UriParser
     {
         public GenericUriParser(System.GenericUriParserOptions options) { }
@@ -3020,6 +3025,7 @@ namespace System
     {
         public GopherStyleUriParser() { }
     }
+#endif
     public readonly partial struct Guid : System.IComparable, System.IComparable<System.Guid>, System.IEquatable<System.Guid>, System.ISpanFormattable
 #if FEATURE_GENERIC_MATH
 #pragma warning disable SA1001
@@ -3386,10 +3392,12 @@ namespace System
         public override int GetHashCode() { throw null; }
         public int ToHashCode() { throw null; }
     }
+#if !BUILDING_CORELIB_REFERENCE
     public partial class HttpStyleUriParser : System.UriParser
     {
         public HttpStyleUriParser() { }
     }
+#endif
 #if FEATURE_GENERIC_MATH
     [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("Generic Math is in preview.", Url = "https://aka.ms/dotnet-warnings/generic-math-preview")]
     public partial interface IAdditionOperators<TSelf, TOther, TResult>
@@ -4516,10 +4524,12 @@ namespace System
         public Lazy(TMetadata metadata, System.Threading.LazyThreadSafetyMode mode) { }
         public TMetadata Metadata { get { throw null; } }
     }
+#if !BUILDING_CORELIB_REFERENCE
     public partial class LdapStyleUriParser : System.UriParser
     {
         public LdapStyleUriParser() { }
     }
+#endif
     public enum LoaderOptimization
     {
         NotSpecified = 0,
@@ -4878,6 +4888,7 @@ namespace System
         public MulticastNotSupportedException(string? message) { }
         public MulticastNotSupportedException(string? message, System.Exception? inner) { }
     }
+#if !BUILDING_CORELIB_REFERENCE
     public partial class NetPipeStyleUriParser : System.UriParser
     {
         public NetPipeStyleUriParser() { }
@@ -4890,6 +4901,7 @@ namespace System
     {
         public NewsStyleUriParser() { }
     }
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited=false)]
     public sealed partial class NonSerializedAttribute : System.Attribute
     {
@@ -7693,6 +7705,7 @@ namespace System
         public bool IsTerminating { get { throw null; } }
     }
     public delegate void UnhandledExceptionEventHandler(object sender, System.UnhandledExceptionEventArgs e);
+#if !BUILDING_CORELIB_REFERENCE
     public partial class Uri : System.Runtime.Serialization.ISerializable
     {
         public static readonly string SchemeDelimiter;
@@ -7896,6 +7909,7 @@ namespace System
         Path = 2,
         Query = 3,
     }
+#endif
     public partial struct ValueTuple : System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.IComparable, System.IComparable<System.ValueTuple>, System.IEquatable<System.ValueTuple>, System.Runtime.CompilerServices.ITuple
     {
         object? System.Runtime.CompilerServices.ITuple.this[int index] { get { throw null; } }

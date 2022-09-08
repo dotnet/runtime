@@ -165,6 +165,7 @@ namespace System
             public bool AppendFormatted(string? value, int alignment = 0, string? format = null) { throw null; }
         }
     }
+#if !BUILDING_CORELIB_REFERENCE
     public readonly partial struct SequencePosition : System.IEquatable<System.SequencePosition>
     {
         private readonly object _dummy;
@@ -180,9 +181,11 @@ namespace System
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public object? GetObject() { throw null; }
     }
+#endif
 }
 namespace System.Buffers
 {
+#if !BUILDING_CORELIB_REFERENCE
     public sealed partial class ArrayBufferWriter<T> : System.Buffers.IBufferWriter<T>
     {
         public ArrayBufferWriter() { }
@@ -315,6 +318,7 @@ namespace System.Buffers
         public bool TryReadToAny(out System.Buffers.ReadOnlySequence<T> sequence, System.ReadOnlySpan<T> delimiters, bool advancePastDelimiter = true) { throw null; }
         public bool TryReadToAny(out System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> delimiters, bool advancePastDelimiter = true) { throw null; }
     }
+#endif
     public readonly partial struct StandardFormat : System.IEquatable<System.Buffers.StandardFormat>
     {
         private readonly int _dummyPrimitive;
@@ -541,6 +545,7 @@ namespace System.Runtime.InteropServices
         public static bool TryWrite<T>(System.Span<byte> destination, ref T value) where T : struct { throw null; }
         public static void Write<T>(System.Span<byte> destination, ref T value) where T : struct { }
     }
+#if !BUILDING_CORELIB_REFERENCE
     public static partial class SequenceMarshal
     {
         public static bool TryGetArray<T>(System.Buffers.ReadOnlySequence<T> sequence, out System.ArraySegment<T> segment) { throw null; }
@@ -548,9 +553,11 @@ namespace System.Runtime.InteropServices
         public static bool TryGetReadOnlySequenceSegment<T>(System.Buffers.ReadOnlySequence<T> sequence, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Buffers.ReadOnlySequenceSegment<T>? startSegment, out int startIndex, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Buffers.ReadOnlySequenceSegment<T>? endSegment, out int endIndex) { throw null; }
         public static bool TryRead<T>(ref System.Buffers.SequenceReader<byte> reader, out T value) where T : unmanaged { throw null; }
     }
+#endif
 }
 namespace System.Text
 {
+#if !BUILDING_CORELIB_REFERENCE
     public static partial class EncodingExtensions
     {
         public static void Convert(this System.Text.Decoder decoder, in System.Buffers.ReadOnlySequence<byte> bytes, System.Buffers.IBufferWriter<char> writer, bool flush, out long charsUsed, out bool completed) { throw null; }
@@ -566,6 +573,7 @@ namespace System.Text
         public static long GetChars(this System.Text.Encoding encoding, System.ReadOnlySpan<byte> bytes, System.Buffers.IBufferWriter<char> writer) { throw null; }
         public static string GetString(this System.Text.Encoding encoding, in System.Buffers.ReadOnlySequence<byte> bytes) { throw null; }
     }
+#endif
     public ref partial struct SpanLineEnumerator
     {
         private object _dummy;
