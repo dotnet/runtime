@@ -620,29 +620,32 @@ namespace System.Formats.Tar.Tests
             return new FileSystemEnumerable<FileSystemInfo>(path, (ref FileSystemEntry e) => e.ToFileSystemInfo(), enumerationOptions);
         }
 
-        public static bool CanExtractWithTarTool = CanExtractWithTarTool_Method();
+        public static bool CanExtractWithTarTool => s_canExtractWithTarTool.Value;
 
-        private static bool CanExtractWithTarTool_Method()
+        private static readonly Lazy<bool> s_canExtractWithTarTool = new Lazy<bool>(() =>
         {
-            try
+            if (PlatformDetection.IsWindows)
             {
-                using Process tarToolProcess = new Process();
-                tarToolProcess.StartInfo.FileName = "tar"; // location varies: find it on the PATH.
-                tarToolProcess.StartInfo.Arguments = "--help";
-
-                tarToolProcess.StartInfo.RedirectStandardOutput = true;
-                tarToolProcess.Start();
-
-                string output = tarToolProcess.StandardOutput.ReadToEnd();
-                tarToolProcess.WaitForExit();
-
-                return tarToolProcess.ExitCode == 0;
+                Version osVersion = Environment.OSVersion.Version;
+                bool isAtLeastWin10Build17063 = osVersion.Major >= 11 || osVersion.Major == 10 && osVersion.Build >= 17063;
+                if (!isAtLeastWin10Build17063)
+                {
+                    return false;
+                }
             }
-            catch
-            {
-                return false;
-            }
-        }
+
+            using Process tarToolProcess = new Process();
+            tarToolProcess.StartInfo.FileName = "tar"; // location varies: find it on the PATH.
+            tarToolProcess.StartInfo.Arguments = "--help";
+
+            tarToolProcess.StartInfo.RedirectStandardOutput = true;
+            tarToolProcess.Start();
+
+            string output = tarToolProcess.StandardOutput.ReadToEnd();
+            tarToolProcess.WaitForExit();
+
+            return tarToolProcess.ExitCode == 0;
+        });
 
         public static void ExtractWithTarTool(string source, string destination)
         {

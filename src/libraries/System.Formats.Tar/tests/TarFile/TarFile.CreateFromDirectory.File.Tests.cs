@@ -264,6 +264,12 @@ namespace System.Formats.Tar.Tests
                 throw new SkipTestException("specialfiles is only supported on Unix and it needs sudo permissions for extraction.");
             }
 
+            string[] symlinkTestCases = { "file_symlink", "foldersymlink_folder_subfolder_file", "file_longsymlink" };
+            if (symlinkTestCases.Contains(testCaseName) && !MountHelper.CanCreateSymbolicLinks)
+            {
+                throw new SkipTestException("Symlinks are not supported on this platform.");
+            }
+
             using TempDirectory root = new TempDirectory();
 
             string archivePath = GetTarFilePath(CompressionMethod.Uncompressed, TestTarFormat.pax.ToString(), testCaseName);
@@ -285,11 +291,10 @@ namespace System.Formats.Tar.Tests
             // compare results
             Dictionary<string, FileSystemInfo> expectedEntries = GetFileSystemInfosRecursive(tarExtractedPath).ToDictionary(fsi => fsi.FullName.Substring(tarExtractedPath.Length));
 
-            foreach (var actualEntry in GetFileSystemInfosRecursive(dotnetTarExtractedPath))
+            foreach (FileSystemInfo actualEntry in GetFileSystemInfosRecursive(dotnetTarExtractedPath))
             {
                 string keyPath = actualEntry.FullName.Substring(dotnetTarExtractedPath.Length);
-
-                Assert.True(expectedEntries.TryGetValue(keyPath, out FileSystemInfo expectedEntry), "Entry not expected.");
+                Assert.True(expectedEntries.TryGetValue(keyPath, out FileSystemInfo expectedEntry), $"Entry '{keyPath}' not expected.");
                 Assert.Equal(expectedEntry.Attributes, actualEntry.Attributes);
                 Assert.Equal(expectedEntry.LinkTarget, actualEntry.LinkTarget);
 
