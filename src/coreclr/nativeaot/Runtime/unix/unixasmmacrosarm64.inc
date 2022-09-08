@@ -182,6 +182,10 @@ C_FUNC(\Name):
     .endif
 
     stp     x0, lr, [sp,#-0x10]!
+#if defined(__APPLE__)
+    // Apple's tls_get_var trashes xip0 (and possibly xip1)
+    stp     xip0, xip1, [sp,#-0x10]!
+#endif
 
     // This sequence of instructions is recognized and potentially patched
     // by the linker (GD->IE/LE relaxation).
@@ -206,6 +210,9 @@ C_FUNC(\Name):
     add     \target, \target, x0
 #endif
 
+#if defined(__APPLE__)
+    ldp     xip0, xip1, [sp],#0x10
+#endif
     ldp     x0, lr, [sp],#0x10
 .endm
 
