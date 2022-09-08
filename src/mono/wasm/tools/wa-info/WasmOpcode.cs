@@ -209,4 +209,29 @@ namespace WebAssemblyInfo
         SIMDPrefix = 0xfd,
         MTPrefix = 0xfe,
     }
+
+    enum PrefixOpcode : byte
+    {
+        // saturating
+        I32_Trunc_Sat_F32_S = 0,
+        I32_Trunc_Sat_F32_U = 1,
+        I32_Trunc_Sat_F64_S = 2,
+        I32_Trunc_Sat_F64_U = 3,
+        I64_Trunc_Sat_F32_S = 4,
+        I64_Trunc_Sat_F32_U = 5,
+        I64_Trunc_Sat_F64_S = 6,
+        I64_Trunc_Sat_F64_U = 7,
+        // memory
+        Memory_Init = 8,
+        Data_Drop = 9,
+        Memory_Copy = 10,
+        Memory_Fill = 11,
+        // table
+        Table_Init = 12,
+        Elem_Drop = 13,
+        Table_Copy = 14,
+        Table_Grow = 15,
+        Table_Size = 16,
+        Table_Fill = 17,
+    }
 }

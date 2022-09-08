@@ -536,6 +536,10 @@ namespace WebAssemblyInfo
                 case Opcode.F64_Reinterpret_I64:
                     break;
 
+                case Opcode.Prefix:
+                    ReadPrefixInstruction(ref instruction);
+                    break;
+
                 case Opcode.SIMDPrefix:
                     ReadSIMDInstruction(ref instruction);
                     break;
@@ -549,6 +553,51 @@ namespace WebAssemblyInfo
             }
 
             return instruction;
+        }
+
+        void ReadPrefixInstruction(ref Instruction instruction)
+        {
+            instruction.PrefixOpcode = (PrefixOpcode)ReadU32();
+            // Console.WriteLine($"Prefix opcode: {instruction.PrefixOpcode}");
+            switch (instruction.PrefixOpcode)
+            {
+                case PrefixOpcode.I32_Trunc_Sat_F32_S:
+                case PrefixOpcode.I32_Trunc_Sat_F32_U:
+                case PrefixOpcode.I32_Trunc_Sat_F64_S:
+                case PrefixOpcode.I32_Trunc_Sat_F64_U:
+                case PrefixOpcode.I64_Trunc_Sat_F32_S:
+                case PrefixOpcode.I64_Trunc_Sat_F32_U:
+                case PrefixOpcode.I64_Trunc_Sat_F64_S:
+                case PrefixOpcode.I64_Trunc_Sat_F64_U:
+                    break;
+                case PrefixOpcode.Memory_Init:
+                    instruction.Idx = ReadU32();
+                    Reader.ReadByte();
+                    break;
+                case PrefixOpcode.Data_Drop:
+                    instruction.Idx = ReadU32();
+                    break;
+                case PrefixOpcode.Memory_Copy:
+                    Reader.ReadByte();
+                    Reader.ReadByte();
+                    break;
+                case PrefixOpcode.Memory_Fill:
+                    Reader.ReadByte();
+                    break;
+                case PrefixOpcode.Table_Init:
+                case PrefixOpcode.Table_Copy:
+                    instruction.Idx = ReadU32();
+                    instruction.Idx2 = ReadU32();
+                    break;
+                case PrefixOpcode.Elem_Drop:
+                case PrefixOpcode.Table_Grow:
+                case PrefixOpcode.Table_Size:
+                case PrefixOpcode.Table_Fill:
+                    instruction.Idx = ReadU32();
+                    break;
+                default:
+                    throw new FileLoadException($"Unknown Prefix opcode: {instruction.PrefixOpcode} ({instruction.PrefixOpcode:x})");
+            }
         }
 
         void ReadSIMDInstruction(ref Instruction instruction)
