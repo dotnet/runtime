@@ -82,6 +82,14 @@ jobs:
       isMacCatalystOnlyBuild: ${{ variables.isMacCatalystOnlyBuild }}
       isRollingBuild: ${{ variables.isRollingBuild }}
 
+# Add Linux Bionic jobs only for rolling builds
+- ${{ if eq(variables.isLinuxBionicOnlyBuild, true) }}:
+  - template: /eng/pipelines/runtime-extra-platforms-linuxbionic.yml
+    parameters:
+      isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+      isLinuxBionicOnlyBuild: ${{ variables.isLinuxBionicOnlyBuild }}
+      isRollingBuild: ${{ variables.isRollingBuild }}
+
 # Any jobs that are not specific to any platform
 - ${{ if eq(variables.isNotSpecificPlatformOnlyBuild, true) }}:
   - template: /eng/pipelines/runtime-extra-platforms-other.yml

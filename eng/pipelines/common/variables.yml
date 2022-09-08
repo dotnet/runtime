@@ -29,15 +29,17 @@ variables:
   value: ${{ in(variables['Build.DefinitionName'], 'runtime-androidemulator') }}
 - name: isMacCatalystOnlyBuild
   value: ${{ in(variables['Build.DefinitionName'], 'runtime-catalyst', 'runtime-maccatalyst') }}
+- name: isLinuxBionicOnlyBuild
+  value: ${{ in(variables['Build.DefinitionName'], 'runtime-linuxbionic', 'runtime-bionic') }}
 - name: isRunSmokeTestsOnly
-  value: ${{ notin(variables['Build.DefinitionName'], 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'runtime-ios', 'runtime-tvos', 'runtime-ioslike', 'runtime-iossimulator', 'runtime-tvossimulator', 'runtime-ioslikesimulator', 'runtime-android', 'runtime-androidemulator', 'runtime-catalyst', 'runtime-maccatalyst') }}
+  value: ${{ notin(variables['Build.DefinitionName'], 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'runtime-ios', 'runtime-tvos', 'runtime-ioslike', 'runtime-iossimulator', 'runtime-tvossimulator', 'runtime-ioslikesimulator', 'runtime-android', 'runtime-androidemulator', 'runtime-catalyst', 'runtime-maccatalyst', 'runtime-linuxbionic', 'runtime-bionic') }}
 - name: isNotSpecificPlatformOnlyBuild
-  value: ${{ notin(variables['Build.DefinitionName'], 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'runtime-ios', 'runtime-tvos', 'runtime-ioslike', 'runtime-iossimulator', 'runtime-tvossimulator', 'runtime-ioslikesimulator', 'runtime-android', 'runtime-androidemulator', 'runtime-catalyst', 'runtime-maccatalyst') }}
+  value: ${{ notin(variables['Build.DefinitionName'], 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'runtime-ios', 'runtime-tvos', 'runtime-ioslike', 'runtime-iossimulator', 'runtime-tvossimulator', 'runtime-ioslikesimulator', 'runtime-android', 'runtime-androidemulator', 'runtime-catalyst', 'runtime-maccatalyst', 'runtime-linuxbionic', 'runtime-bionic') }}
 
 # We only run evaluate paths on runtime, runtime-staging and runtime-community pipelines on PRs
 # keep in sync with /eng/pipelines/common/xplat-setup.yml
 - name: dependOnEvaluatePaths
-  value: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging', 'runtime-community', 'runtime-extra-platforms', 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'runtime-ios', 'runtime-tvos', 'runtime-ioslike', 'runtime-iossimulator', 'runtime-tvossimulator', 'runtime-ioslikesimulator', 'runtime-android', 'runtime-androidemulator', 'runtime-catalyst', 'runtime-maccatalyst', 'dotnet-linker-tests', 'runtime-dev-innerloop')) }}
+  value: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging', 'runtime-community', 'runtime-extra-platforms', 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'runtime-ios', 'runtime-tvos', 'runtime-ioslike', 'runtime-iossimulator', 'runtime-tvossimulator', 'runtime-ioslikesimulator', 'runtime-android', 'runtime-androidemulator', 'runtime-catalyst', 'runtime-maccatalyst', 'runtime-linuxbionic', 'runtime-bionic', 'dotnet-linker-tests', 'runtime-dev-innerloop')) }}
 - name: debugOnPrReleaseOnRolling
   ${{ if ne(variables['Build.Reason'], 'PullRequest') }}:
     value: Release
