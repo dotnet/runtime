@@ -241,7 +241,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		static void TestVarargsMethod ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type type, __arglist)
 		{
- 		}
+		}
 
 		class WriteCapturedParameter
 		{

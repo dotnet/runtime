@@ -319,8 +319,7 @@ namespace Mono.Linker.Steps
 				if (!IsConstantValue (instr))
 					return null;
 
-				if (result == null)
-					result = new Instruction[method.Parameters.Count];
+				result ??= new Instruction[method.Parameters.Count];
 
 				result[pos] = instr;
 			}
@@ -578,8 +577,7 @@ namespace Mono.Linker.Steps
 
 			void RewriteConditionToNop (int index)
 			{
-				if (conditionInstrsToRemove == null)
-					conditionInstrsToRemove = new List<int> ();
+				conditionInstrsToRemove ??= new List<int> ();
 
 				conditionInstrsToRemove.Add (index);
 				RewriteToNop (index);
@@ -755,8 +753,7 @@ namespace Mono.Linker.Steps
 						Instruction[]? args = GetArgumentsOnStack (md, FoldedInstructions ?? instructions, i);
 						targetResult = args?.Length > 0 && md.IsStatic ? EvaluateIntrinsicCall (md, args) : null;
 
-						if (targetResult == null)
-							targetResult = optimizer.TryGetMethodCallResult (new CalleePayload (md, args))?.Instruction;
+						targetResult ??= optimizer.TryGetMethodCallResult (new CalleePayload (md, args))?.Instruction;
 
 						if (targetResult == null)
 							break;
@@ -1007,8 +1004,7 @@ namespace Mono.Linker.Steps
 							continue;
 
 						case FlowControl.Cond_Branch:
-							if (condBranches == null)
-								condBranches = new Stack<int> ();
+							condBranches ??= new Stack<int> ();
 
 							switch (instr.Operand) {
 							case Instruction starget:
@@ -1052,15 +1048,13 @@ namespace Mono.Linker.Steps
 							int end = instrs.IndexOf (handler.TryEnd) - 1;
 
 							if (!HasAnyBitSet (reachable, start, end)) {
-								if (unreachableHandlers == null)
-									unreachableHandlers = new List<ExceptionHandler> ();
+								unreachableHandlers ??= new List<ExceptionHandler> ();
 
 								unreachableHandlers.Add (handler);
 								continue;
 							}
 
-							if (condBranches == null)
-								condBranches = new Stack<int> ();
+							condBranches ??= new Stack<int> ();
 
 							condBranches.Push (GetInstructionIndex (handler.HandlerStart));
 							if (handler.FilterStart != null)
@@ -1240,8 +1234,7 @@ namespace Mono.Linker.Steps
 
 					VariableDefinition? variable = GetVariableReference (instr);
 					if (variable != null) {
-						if (removedVariablesReferences == null)
-							removedVariablesReferences = new List<VariableDefinition> ();
+						removedVariablesReferences ??= new List<VariableDefinition> ();
 						if (!removedVariablesReferences.Contains (variable))
 							removedVariablesReferences.Add (variable);
 					}
@@ -1273,8 +1266,7 @@ namespace Mono.Linker.Steps
 							if (index > 0 && IsSideEffectFreeLoad (instrs[index - 1])) {
 								var nop = Instruction.Create (OpCodes.Nop);
 
-								if (sentinelNops == null)
-									sentinelNops = new List<Instruction> ();
+								sentinelNops ??= new List<Instruction> ();
 								sentinelNops.Add (nop);
 
 								ILProcessor.Replace (index - 1, Instruction.Create (OpCodes.Pop));
@@ -1902,16 +1894,14 @@ namespace Mono.Linker.Steps
 
 			void PushOnStack (Instruction instruction)
 			{
-				if (stack_instr == null)
-					stack_instr = new Stack<Instruction> ();
+				stack_instr ??= new Stack<Instruction> ();
 
 				stack_instr.Push (instruction);
 			}
 
 			void StoreToLocals (int index)
 			{
-				if (locals == null)
-					locals = new Dictionary<int, Instruction> ();
+				locals ??= new Dictionary<int, Instruction> ();
 
 				if (stack_instr == null)
 					Debug.Fail ("Invalid IL?");

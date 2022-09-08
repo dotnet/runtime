@@ -61,9 +61,7 @@ namespace Mono.Linker
 
 		public void AddRecorder (IDependencyRecorder recorder)
 		{
-			if (recorders == null) {
-				recorders = new List<IDependencyRecorder> ();
-			}
+			recorders ??= new List<IDependencyRecorder> ();
 
 			recorders.Add (recorder);
 		}

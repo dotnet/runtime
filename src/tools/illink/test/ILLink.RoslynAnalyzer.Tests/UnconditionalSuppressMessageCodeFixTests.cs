@@ -4,7 +4,6 @@
 using System;
 using System.Threading.Tasks;
 using ILLink.Shared;
-using Microsoft;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Text;
 using Xunit;

@@ -423,9 +423,7 @@ namespace ILLink.Tasks
 				members = featureSwitchMembers[featureSwitch.Value][className];
 			}
 
-			if (members.fields == null) {
-				members.fields = new HashSet<string> ();
-			}
+			members.fields ??= new HashSet<string> ();
 			members.fields.Add (fieldName);
 		}
 
@@ -446,9 +444,7 @@ namespace ILLink.Tasks
 				members = featureSwitchMembers[featureSwitch.Value][fullClassName];
 			}
 
-			if (members.methods == null) {
-				members.methods = new HashSet<string> ();
-			}
+			members.methods ??= new HashSet<string> ();
 			members.methods.Add (methodName);
 		}
 

@@ -58,8 +58,7 @@ namespace Mono.Linker
 		Dictionary<SerializerKind, HashSet<ICustomAttributeProvider>>? _trackedRoots;
 		Dictionary<SerializerKind, HashSet<ICustomAttributeProvider>> TrackedRoots {
 			get {
-				if (_trackedRoots == null)
-					_trackedRoots = new Dictionary<SerializerKind, HashSet<ICustomAttributeProvider>> ();
+				_trackedRoots ??= new Dictionary<SerializerKind, HashSet<ICustomAttributeProvider>> ();
 
 				return _trackedRoots;
 			}
@@ -68,8 +67,7 @@ namespace Mono.Linker
 		HashSet<TypeDefinition>? _recursiveTypes;
 		HashSet<TypeDefinition> RecursiveTypes {
 			get {
-				if (_recursiveTypes == null)
-					_recursiveTypes = new HashSet<TypeDefinition> ();
+				_recursiveTypes ??= new HashSet<TypeDefinition> ();
 
 				return _recursiveTypes;
 			}

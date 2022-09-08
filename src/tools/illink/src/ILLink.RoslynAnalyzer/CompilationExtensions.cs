@@ -1,10 +1,10 @@
 ﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Collections.Immutable;
-using System;
 
 namespace ILLink.RoslynAnalyzer
 {
@@ -73,7 +73,7 @@ namespace ILLink.RoslynAnalyzer
 
 			return type;
 		}
-		
+
 		// copied from https://github.com/dotnet/roslyn/blob/main/src/Workspaces/SharedUtilitiesAndExtensions/Compiler/Core/Extensions/ISymbolExtensions.cs
 		private static SymbolVisibility GetResultantVisibility (this ISymbol symbol)
 		{
