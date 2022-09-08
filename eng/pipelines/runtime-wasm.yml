@@ -32,5 +32,9 @@ jobs:
     extraHelixArgs: /p:NeedsToBuildWasmAppsOnHelix=true /p:WasmEnableSIMD=true
     runSmokeOnlyArg: ''
     alwaysRun: true
+    # failures due to
+    #   https://github.com/dotnet/runtime/issues/75044
+    #   and https://github.com/dotnet/runtime/issues/75098
+    shouldContinueOnError: true
     scenarios:
       - WasmTestOnNodeJS
