@@ -141,6 +141,12 @@
 
   <ItemGroup>
     <WorkloadIdForTesting Include="wasm-tools;wasm-experimental"
+                          ManifestName="Microsoft.NET.Workload.Mono.ToolChain"
+                          Variant="latest"
+                          Version="$(PackageVersion)"
+                          VersionBand="$(SdkBandVersion)" />
+
+    <WorkloadIdForTesting Include="wasm-tools;wasm-experimental"
                           ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net7"
                           Variant="net7"
                           Version="$(PackageVersion)"
@@ -154,9 +160,10 @@
                           IgnoreErrors="$(WasmIgnoreNet6WorkloadInstallErrors)"
                           />
 
-    <WorkloadCombinationsToInstall Include="net7"   Variants="net7" />
-    <WorkloadCombinationsToInstall Include="net6"   Variants="net6" />
-    <WorkloadCombinationsToInstall Include="net6+7" Variants="net6;net7" />
+    <WorkloadCombinationsToInstall Include="latest"   Variants="latest" />
+    <WorkloadCombinationsToInstall Include="net7"     Variants="net7" />
+    <WorkloadCombinationsToInstall Include="net6"     Variants="net6" />
+    <WorkloadCombinationsToInstall Include="net6+7"   Variants="net6;net7" />
     <!--<WorkloadCombinationsToInstall Include="none" />-->
 
     <WasmExtraFilesToDeploy Condition="'$(_UseWasmSymbolicator)' == 'true'" Include="$(MonoProjectRoot)wasm\data\wasm-symbol-patterns.txt" />

@@ -1,5 +1,6 @@
 <Project>
   <PropertyGroup>
-    <WasmNativeWorkload>true</WasmNativeWorkload>
+    <WasmNativeWorkload Condition="'$(WasmNativeWorkload)' == '">net8.0</WasmNativeWorkload>
+    <!--<WasmNativeWorkload>net8.0</WasmNativeWorkload>-->
   </PropertyGroup>
 </Project>

@@ -96,7 +96,7 @@ namespace Wasm.Build.Tests
                             HasV8Script: false,
                             MainJS: "main.js",
                             Publish: false,
-                            TargetFramework: "net7.0"
+                            TargetFramework: BuildTestBase.DefaultTargetFramework
                         ));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true);
@@ -118,7 +118,7 @@ namespace Wasm.Build.Tests
                             HasV8Script: false,
                             MainJS: "main.js",
                             Publish: true,
-                            TargetFramework: "net7.0",
+                            TargetFramework: BuildTestBase.DefaultTargetFramework,
                             UseCache: false));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
@@ -146,7 +146,7 @@ namespace Wasm.Build.Tests
                         HasV8Script: false,
                         MainJS: "main.mjs",
                         Publish: false,
-                        TargetFramework: "net7.0"
+                        TargetFramework: BuildTestBase.DefaultTargetFramework
                         ));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true);
@@ -171,7 +171,7 @@ namespace Wasm.Build.Tests
                             HasV8Script: false,
                             MainJS: "main.mjs",
                             Publish: true,
-                            TargetFramework: "net7.0",
+                            TargetFramework: BuildTestBase.DefaultTargetFramework,
                             UseCache: false));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
@@ -204,7 +204,7 @@ namespace Wasm.Build.Tests
                             HasV8Script: false,
                             MainJS: "main.mjs",
                             Publish: false,
-                            TargetFramework: "net7.0"
+                            TargetFramework: BuildTestBase.DefaultTargetFramework
                             ));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !relinking);
@@ -268,7 +268,7 @@ namespace Wasm.Build.Tests
                             HasV8Script: false,
                             MainJS: "main.mjs",
                             Publish: true,
-                            TargetFramework: "net7.0",
+                            TargetFramework: BuildTestBase.DefaultTargetFramework,
                             UseCache: false));
 
             if (!aot)

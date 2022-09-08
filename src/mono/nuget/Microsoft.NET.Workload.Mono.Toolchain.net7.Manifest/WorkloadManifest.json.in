@@ -74,7 +74,7 @@
       "extends": [ "microsoft-net-runtime-mono-tooling-net7" ],
       "platforms": [ "win-x64", "osx-arm64", "osx-x64" ]
     },
-    "microsoft-net-runtime-maccatalyst": {
+    "microsoft-net-runtime-maccatalyst-net7": {
       "abstract": true,
       "description": "MacCatalyst Mono Runtime and AOT Workload",
       "packs": [

@@ -6,7 +6,7 @@
                                             '$(RuntimeIdentifier)' == 'browser-wasm' and
                                             '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                                             !$([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '8.0'))">true</_BrowserWorkloadDisabledCurrent>
-        <TargetsCurrent Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '7.0'))">true</TargetsNet7>
+        <TargetsCurrent Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '8.0'))">true</TargetsCurrent>
     </PropertyGroup>
 
     <!--
@@ -94,7 +94,7 @@
         <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
     </ImportGroup>
 
-    <PropertyGroup Condition="'$(TargetsCurrent)' == 'true' and ('$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'macOS' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'tvos' or ('$(RuntimeIdentifier)' == 'browser-wasm' and '$(UsingBrowserRuntimeWorkload)' == 'true'))">
+    <PropertyGroup Condition="'$(TargetsCurrent)' == 'true' and ('$(TargetPlatformIdentifier)' == 'android' or '$(TargetPlatformIdentifier)' == 'macOS' or '$(TargetPlatformIdentifier)' == 'ios' or '$(TargetPlatformIdentifier)' == 'maccatalyst' or '$(TargetPlatformIdentifier)' == 'tvos' or '$(RuntimeIdentifier)' == 'browser-wasm')">
       <_MonoWorkloadTargetsMobile>true</_MonoWorkloadTargetsMobile>
       <_MonoWorkloadRuntimePackPackageVersion>$(_RuntimePackInWorkloadVersionCurrent)</_MonoWorkloadRuntimePackPackageVersion>
     </PropertyGroup>

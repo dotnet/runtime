@@ -6,7 +6,7 @@
     <MajorVersion>8</MajorVersion>
     <MinorVersion>0</MinorVersion>
     <PatchVersion>0</PatchVersion>
-    <SdkBandVersion>7.0.100</SdkBandVersion>
+    <SdkBandVersion>8.0.100</SdkBandVersion>
     <PreReleaseVersionLabel>alpha</PreReleaseVersionLabel>
     <PreReleaseVersionIteration>1</PreReleaseVersionIteration>
     <!-- Set assembly version to align with major and minor version,
@@ -196,7 +196,7 @@
     <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>11.1.0-alpha.1.22451.2</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMSdkVersion>
     <runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>11.1.0-alpha.1.22451.2</runtimeosx1012x64MicrosoftNETCoreRuntimeMonoLLVMToolsVersion>
     <!-- emscripten / Node -->
-    <MicrosoftNETWorkloadEmscriptenManifest70100Version>8.0.0-alpha.1.22417.1</MicrosoftNETWorkloadEmscriptenManifest70100Version>
+    <MicrosoftNETWorkloadEmscriptenManifest70100Version>8.0.0-alpha.1.22457.2</MicrosoftNETWorkloadEmscriptenManifest70100Version>
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftNETWorkloadEmscriptenManifest70100Version)</MicrosoftNETRuntimeEmscriptenVersion>
     <!-- workloads -->
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>

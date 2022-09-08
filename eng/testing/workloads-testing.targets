@@ -3,7 +3,9 @@
   <PropertyGroup Condition="'$(TestUsingWorkloads)' == 'true'">
     <!-- for non-ci builds, we install the sdk when tests are run -->
     <InstallWorkloadForTesting Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(ArchiveTests)' == 'true'">true</InstallWorkloadForTesting>
+  </PropertyGroup>
 
+  <PropertyGroup Condition="'$(InstallWorkloadForTesting)' == 'true'">
     <_SdkForWorkloadTestingBasePath>$(ArtifactsBinDir)</_SdkForWorkloadTestingBasePath>
     <_SdkWithNoWorkloadPath>$([MSBuild]::NormalizeDirectory($(_SdkForWorkloadTestingBasePath), 'dotnet-none'))</_SdkWithNoWorkloadPath>
     <_SdkWithNoWorkloadStampPath>$([MSBuild]::NormalizePath($(_SdkWithNoWorkloadPath), '.version-$(SdkVersionForWorkloadTesting).stamp'))</_SdkWithNoWorkloadStampPath>
@@ -48,9 +50,9 @@
 
     <PropertyGroup Condition="'$(SdkVersionForWorkloadTesting)' == ''">
       <_DotNetInstallCommand Condition="!$([MSBuild]::IsOSPlatform('windows'))"
-              >$(_DotNetInstallScriptPath) -i $(_SdkWithNoWorkloadPath) -v latest -q daily --channel 7.0</_DotNetInstallCommand>
+              >$(_DotNetInstallScriptPath) -i $(_SdkWithNoWorkloadPath) -v latest -q daily --channel 8.0</_DotNetInstallCommand>
       <_DotNetInstallCommand Condition="$([MSBuild]::IsOSPlatform('windows'))"
-              >$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Quality daily -Channel 7.0</_DotNetInstallCommand>
+              >$(_DotNetInstallScriptPath) -InstallDir $(_SdkWithNoWorkloadPath) -Quality daily -Channel 8.0</_DotNetInstallCommand>
     </PropertyGroup>
 
     <DownloadFile SourceUrl="https://dot.net/v1/$(_DotNetInstallScriptName)"
@@ -190,7 +192,7 @@
 
   <Target Name="_InstallWorkloads"
           Inputs="@(AvailableNuGetsInArtifacts)"
-          Outputs="@(_SdkWithWorkloadToInstall->'%(StampPath)')">
+          Outputs="@(_SdkWithWorkloadToInstall->'%(StampPath)');$(_SdkWithNoWorkloadStampPath)">
     <ItemGroup>
       <_BuiltNuGets Include="$(LibrariesShippingPackagesDir)\*.nupkg" />
     </ItemGroup>
@@ -205,5 +207,7 @@
                      TemplateNuGetConfigPath="$(RepoRoot)NuGet.config"
                      SdkWithNoWorkloadInstalledPath="$(_SdkWithNoWorkloadPath)"
       />
+
+    <WriteLinesToFile Lines="" File="$(_SdkWithNoWorkloadStampPath)" />
   </Target>
 </Project>

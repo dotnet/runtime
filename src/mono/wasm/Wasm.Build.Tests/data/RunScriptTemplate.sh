@@ -68,7 +68,7 @@ function set_env_vars()
 {
     local _DIR_NAME=
     if [ "x$TEST_USING_WORKLOADS" = "xtrue" ]; then
-        _DIR_NAME=dotnet-net7
+        _DIR_NAME=dotnet-latest
         export SDK_HAS_WORKLOAD_INSTALLED=true
     else
         _DIR_NAME=dotnet-none

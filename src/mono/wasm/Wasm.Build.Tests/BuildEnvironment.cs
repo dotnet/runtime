@@ -51,7 +51,7 @@ namespace Wasm.Build.Tests
                                                 "..",
                                                 "..",
                                                 "..",
-                                                "dotnet-net7");
+                                                "dotnet-latest");
                 if (Directory.Exists(probePath))
                     sdkForWorkloadPath = Path.GetFullPath(probePath);
                 else

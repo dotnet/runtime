@@ -41,6 +41,14 @@ namespace Microsoft.Workload.Build.Tasks
 
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
         private string AllManifestsStampPath => Path.Combine(SdkWithNoWorkloadInstalledPath, ".all-manifests.stamp");
+        private static readonly string[] s_manifestIds = new[]
+        {
+            "microsoft.net.workload.emscripten.net7",
+            "microsoft.net.workload.mono.toolchain",
+            "microsoft.net.workload.emscripten.net6",
+            "microsoft.net.workload.mono.toolchain.net7",
+            "microsoft.net.workload.mono.toolchain.net6"
+        };
 
         public override bool Execute()
         {
@@ -97,6 +105,8 @@ namespace Microsoft.Workload.Build.Tasks
 
                     if (!ExecuteInternal(req) && !req.IgnoreErrors)
                         return false;
+
+                    File.WriteAllText(req.StampPath, string.Empty);
                 }
 
                 return !Log.HasLoggedErrors;
@@ -139,36 +149,7 @@ namespace Microsoft.Workload.Build.Tasks
                 return true;
             }
 
-            // HACK BEGIN - because sdk doesn't yet have the net6/net7 manifest names in the known workloads
-            // list
-            string? txtPath = Directory.EnumerateFiles(Path.Combine(SdkWithNoWorkloadInstalledPath, "sdk"), "IncludedWorkloadManifests.txt",
-                                            new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 2})
-                                .FirstOrDefault();
-            if (txtPath is null)
-                throw new LogAsErrorException($"Could not find IncludedWorkloadManifests.txt in {SdkWithNoWorkloadInstalledPath}");
-
-            string stampPath = Path.Combine(Path.GetDirectoryName(txtPath)!, ".stamp");
-            if (!File.Exists(stampPath))
-            {
-                Log.LogMessage(MessageImportance.High, $"txtPath: {txtPath}");
-                string newTxt = File.ReadAllText(txtPath)
-                                    .Replace("microsoft.net.workload.mono.toolchain",
-                                                $"microsoft.net.workload.mono.toolchain.net6{Environment.NewLine}microsoft.net.workload.mono.toolchain.net7")
-                                    .Replace("microsoft.net.workload.emscripten",
-                                                $"microsoft.net.workload.emscripten.net6{Environment.NewLine}microsoft.net.workload.emscripten.net7");
-                File.WriteAllText(txtPath, newTxt);
-                File.WriteAllText(stampPath, "");
-            }
-
-            string p = Path.Combine(SdkWithNoWorkloadInstalledPath, "sdk-manifests", "7.0.100", "microsoft.net.workload.mono.toolchain");
-            Log.LogMessage(MessageImportance.High, $"Deleting {p}");
-            if (Directory.Exists(p))
-                Directory.Delete(p, recursive: true);
-            p = Path.Combine(SdkWithNoWorkloadInstalledPath, "sdk-manifests", "7.0.100", "microsoft.net.workload.emscripten");
-            Log.LogMessage(MessageImportance.High, $"Deleting {p}");
-            if (Directory.Exists(p))
-                Directory.Delete(p, recursive: true);
-            // HACK END
+            ExecuteHackForInstallerMismatch();
 
             string nugetConfigContents = GetNuGetConfig();
             HashSet<string> manifestsInstalled = new();
@@ -199,6 +180,39 @@ namespace Microsoft.Workload.Build.Tasks
             File.WriteAllText(AllManifestsStampPath, string.Empty);
 
             return true;
+
+            void ExecuteHackForInstallerMismatch()
+            {
+                // HACK - because sdk doesn't yet have the version-less manifest names in the known
+                // workloads list
+                string? txtPath = Directory.EnumerateFiles(Path.Combine(SdkWithNoWorkloadInstalledPath, "sdk"), "IncludedWorkloadManifests.txt",
+                                                new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 2})
+                                    .FirstOrDefault();
+                if (txtPath is null)
+                    throw new LogAsErrorException($"Could not find IncludedWorkloadManifests.txt in {SdkWithNoWorkloadInstalledPath}");
+
+                string stampPath = Path.Combine(Path.GetDirectoryName(txtPath)!, ".stamp");
+                if (File.Exists(stampPath))
+                    return;
+
+                List<string> lines = File.ReadAllLines(txtPath).ToList();
+                int originalCount = lines.Count;
+                foreach (string manifestId in s_manifestIds)
+                {
+                    if (!lines.Contains(manifestId))
+                        lines.Add(manifestId);
+                }
+
+                lines.Remove("microsoft.net.workload.emscripten");
+
+                if (lines.Count > originalCount)
+                {
+                    // Update the file only if we are making any changes
+                    File.WriteAllText(txtPath, string.Join(Environment.NewLine, lines));
+                }
+
+                File.WriteAllText(stampPath, "");
+            }
         }
 
         private bool InstallPacks(InstallWorkloadRequest req, string nugetConfigContents)
@@ -279,7 +293,14 @@ namespace Microsoft.Workload.Build.Tasks
             // Multiple directories for a manifest, differing only in case causes
             // workload install to fail due to duplicate manifests!
             // This is applicable only on case-sensitive filesystems
-            string outputDir = FindSubDirIgnoringCase(Path.Combine(sdkDir, "sdk-manifests", VersionBand), name);
+            string manifestVersionBandDir = Path.Combine(sdkDir, "sdk-manifests", VersionBand);
+            if (!Directory.Exists(manifestVersionBandDir))
+            {
+                Log.LogMessage(MessageImportance.High, $"Could not find {manifestVersionBandDir}. Creating it..");
+                Directory.CreateDirectory(manifestVersionBandDir);
+            }
+
+            string outputDir = FindSubDirIgnoringCase(manifestVersionBandDir, name);
 
             PackageReference pkgRef = new(Name: $"{name}.Manifest-{VersionBand}",
                                           Version: version,
@@ -399,6 +420,7 @@ namespace Microsoft.Workload.Build.Tasks
             public string ManifestName => Workload.GetMetadata("ManifestName");
             public string Version => Workload.GetMetadata("Version");
             public string TargetPath => Target.GetMetadata("InstallPath");
+            public string StampPath => Target.GetMetadata("StampPath");
             public bool IgnoreErrors => Workload.GetMetadata("IgnoreErrors").ToLowerInvariant() == "true";
             public string WorkloadId => Workload.ItemSpec;
 
