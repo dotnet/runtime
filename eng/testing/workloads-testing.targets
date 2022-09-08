@@ -183,7 +183,7 @@
       <!-- add for non-threaded runtime also -->
       <_NuGetsToBuild Include="$(LibrariesShippingPackagesDir)Microsoft.NETCore.App.Runtime.Mono.browser-wasm.$(_PackageVersion).nupkg"
                       Project="$(InstallerProjectRoot)pkg/sfx/Microsoft.NETCore.App/Microsoft.NETCore.App.Runtime.sfxproj"
-                      Properties="@(_DefaultPropsForNuGetBuild, ';')"
+                      Properties="@(_DefaultPropsForNuGetBuild, ';');MonoWasmBuildVariant="
                       Dependencies="$(_DefaultRuntimePackNuGetPath)"
                       Descriptor="single threaded runtime pack"
                       Condition="'$(_DefaultBuildVariant)' != '.'" />
