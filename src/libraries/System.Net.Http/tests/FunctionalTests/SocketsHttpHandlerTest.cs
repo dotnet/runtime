@@ -1275,22 +1275,31 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        public static IEnumerable<object[]> TripleBoolValues() =>
+            from trailing in BoolValues
+            from async in BoolValues
+            from lineFolds in BoolValues
+            select new object[] { trailing, async, lineFolds };
+
         [Theory]
-        [InlineData(false, true)]
-        [InlineData(false, false)]
-        [InlineData(true, true)]
-        [InlineData(true, false)]
-        public async Task LargeHeaders_TrickledOverTime_ProcessedEfficiently(bool trailingHeaders, bool async)
+        [MemberData(nameof(TripleBoolValues))]
+        public async Task LargeHeaders_TrickledOverTime_ProcessedEfficiently(bool trailingHeaders, bool async, bool lineFolds)
         {
             Memory<byte> responsePrefix = Encoding.ASCII.GetBytes(trailingHeaders
                 ? "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n0\r\nLong-Header: "
                 : "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nLong-Header: ");
 
+            bool streamDisposed = false;
             int readCount = 0;
-            int fastFillLength = 128 * 1024 * 1024; // 128 MB
+            int fastFillLength = 64 * 1024 * 1024; // 64 MB
 
             Func<Memory<byte>, int> readFunc = memory =>
             {
+                if (streamDisposed)
+                {
+                    throw new ObjectDisposedException("Foo");
+                }
+
                 Span<byte> buffer = memory.Span;
 
                 if (!responsePrefix.IsEmpty)
@@ -1306,16 +1315,33 @@ namespace System.Net.Http.Functional.Tests
                     int toFill = Math.Min(fastFillLength, buffer.Length);
                     buffer.Slice(0, toFill).Fill((byte)'a');
                     fastFillLength -= toFill;
+                    if (lineFolds)
+                    {
+                        for (int i = 0; i < toFill / 10; i++)
+                        {
+                            buffer[i * 10 + 8] = (byte)'\n';
+                            buffer[i * 10 + 9] = (byte)' ';
+                        }
+                    }
                     return toFill;
                 }
 
                 if (++readCount < 500_000)
                 {
                     // Slowly trickle data over 500 thousand read calls.
-                    // If the implementation scans the whole buffer after every read, it will have to sift through 64 TB of data.
+                    // If the implementation scans the whole buffer after every read, it will have to sift through 32 TB of data.
                     // As that is not achievable on current hardware within the PassingTestTimeout window, the test would fail.
-                    buffer[0] = (byte)'a';
-                    return 1;
+                    if (lineFolds && readCount % 10 == 0)
+                    {
+                        buffer[0] = (byte)'\n';
+                        buffer[1] = (byte)' ';
+                        return 2;
+                    }
+                    else
+                    {
+                        buffer[0] = (byte)'a';
+                        return 1;
+                    }
                 }
 
                 Debug.Assert(buffer.Length >= 4);
@@ -1332,7 +1358,8 @@ namespace System.Net.Http.Functional.Tests
                     int read = readFunc(arrayBuffer);
                     arrayBuffer.AsSpan(0, read).CopyTo(buffer);
                     return read;
-                }
+                },
+                DisposeFunc = _ => streamDisposed = true
             };
 
             using var client = new HttpClient(new SocketsHttpHandler
