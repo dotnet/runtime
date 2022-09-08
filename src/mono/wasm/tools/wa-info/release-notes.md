@@ -1,3 +1,10 @@
+### Release version 0.0.11
+
+Changes:
+
+wa-info and wa-diff
+ * removed debug print
+
 ### Release version 0.0.10
 
 Changes:
