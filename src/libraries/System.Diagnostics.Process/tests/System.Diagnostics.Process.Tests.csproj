@@ -68,5 +68,7 @@
       <OutputItemType>Content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </ProjectReference>
+    <!-- R2R testing does not tolerate the combination of a regular project reference and a content reference. -->
+    <PublishReadyToRunExclude Include="LongPath.dll" />
   </ItemGroup>
 </Project>

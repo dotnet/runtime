@@ -90,6 +90,20 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="__ReplaceCrossgen2ExecutableWithFreshlyBuiltOne" BeforeTargets="_PrepareForReadyToRunCompilation">
+    <PropertyGroup>
+      <Crossgen2ArtifactPath>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)','crossgen2'))crossgen2$(ExeSuffix)</Crossgen2ArtifactPath>
+    </PropertyGroup>
+    <ItemGroup>
+      <Crossgen2CurrentTool Include="@(Crossgen2Tool->'$(Crossgen2ArtifactPath)')" />
+      <Crossgen2Tool Remove="@(Crossgen2Tool)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Crossgen2Tool Include="@(Crossgen2CurrentTool)" />
+    </ItemGroup>
+  </Target>
+
   <Target Name="PublishTestAsSingleFile"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
           AfterTargets="Build"
