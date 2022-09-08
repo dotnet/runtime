@@ -1101,7 +1101,10 @@ namespace System.Net.Http
             while (true)
             {
                 int colIdx = buffer.IndexOfAny((byte)':', (byte)'\n');
-                if (colIdx < 0) goto needMore;
+                if (colIdx < 0)
+                {
+                    return (finished: false, bytesConsumed: originalBufferLength - buffer.Length);
+                }
 
                 if (buffer[colIdx] == '\n')
                 {
@@ -1114,15 +1117,20 @@ namespace System.Net.Http
                 }
 
                 int valueStartIdx = colIdx + 1;
-
-                if ((uint)valueStartIdx >= (uint)buffer.Length) goto needMore;
+                if ((uint)valueStartIdx >= (uint)buffer.Length)
+                {
+                    return (finished: false, bytesConsumed: originalBufferLength - buffer.Length);
+                }
 
                 Span<byte> valueIter = buffer.Slice(valueStartIdx);
 
                 while (true)
                 {
                     int lfIdx = valueIter.IndexOf((byte)'\n');
-                    if ((uint)lfIdx >= (uint)valueIter.Length) goto needMore;
+                    if ((uint)lfIdx >= (uint)valueIter.Length)
+                    {
+                        return (finished: false, bytesConsumed: originalBufferLength - buffer.Length);
+                    }
 
                     int crIdx = lfIdx - 1;
                     int crOrLfIdx = (uint)crIdx < (uint)valueIter.Length && valueIter[crIdx] == '\r'
@@ -1130,7 +1138,10 @@ namespace System.Net.Http
                         : lfIdx;
 
                     int spIdx = lfIdx + 1;
-                    if ((uint)spIdx >= (uint)valueIter.Length) goto needMore;
+                    if ((uint)spIdx >= (uint)valueIter.Length)
+                    {
+                        return (finished: false, bytesConsumed: originalBufferLength - buffer.Length);
+                    }
 
                     if (valueIter[spIdx] is not (byte)'\t' and not (byte)' ')
                     {
@@ -1155,9 +1166,6 @@ namespace System.Net.Http
                     valueIter = valueIter.Slice(spIdx + 1);
                 }
             }
-
-        needMore:
-            return (finished: false, bytesConsumed: originalBufferLength - buffer.Length);
 
             static void ThrowForInvalidHeaderLine(ReadOnlySpan<byte> buffer, int newLineIndex) =>
                 throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_line, Encoding.ASCII.GetString(buffer.Slice(0, newLineIndex))));
@@ -1776,7 +1784,17 @@ namespace System.Net.Http
                     }
 
                     searchOffset += offset;
-                    Debug.Assert(searchOffset == _readLength || (searchOffset == _readLength - 1 && _readBuffer[searchOffset] == '\n'));
+
+                    if (searchOffset != _readLength)
+                    {
+                        Debug.Assert(searchOffset == _readLength - 1 && _readBuffer[searchOffset] == '\n');
+                        if (_readLength <= 2)
+                        {
+                            // There are no headers - we start off with a new line.
+                            // This is reachable from ChunkedEncodingReadStream if the buffers allign just right and there are no trailing headers.
+                            break;
+                        }
+                    }
 
                     if (_readLength >= _allowedReadLineBytes)
                     {
