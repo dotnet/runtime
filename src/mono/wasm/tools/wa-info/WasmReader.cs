@@ -873,7 +873,7 @@ namespace WebAssemblyInfo
             switch (instruction.MTOpcode)
             {
                 case MTOpcode.Atomic_Fence:
-                    ReadI32();
+                    Reader.ReadByte();
                     break;
                 case MTOpcode.Memory_Atomic_Notify:
                 case MTOpcode.Memory_Atomic_Wait32:
