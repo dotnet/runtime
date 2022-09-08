@@ -1272,41 +1272,16 @@ namespace System.Text.RegularExpressions.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         public void NonBacktracking_NoEndAnchorMatchAtTimeoutCheck()
         {
-            // First figure out how many characters the innermost matching loop of NonBacktracking looks at between
-            // timeout checks. This makes the test more robust, as the value isn't exposed and we'd have to set it as
-            // a constant here.
-            Regex timeoutPattern = new Regex("a*", RegexHelpers.RegexOptionNonBacktracking, TimeSpan.FromTicks(1));
-            // Function for comparing the left hand side to the internal chars matched per timeout check in NonBacktracking
-            int IsCharsPerTimeoutCheck(int candidate, int dummy)
-            {
-                try
-                {
-                    timeoutPattern.Match(new string('a', candidate));
-                    try
-                    {
-                        timeoutPattern.Match(new string('a', candidate + 1));
-                    }
-                    catch (RegexMatchTimeoutException)
-                    {
-                        // Only the higher check timed out, number of chars per timeout check found
-                        return 0;
-                    }
-                    // Neither check timed out, chars per timeout check is higher
-                    return -1;
-                }
-                catch (RegexMatchTimeoutException)
-                {
-                    // Candidate times out, chars per timeout check is lower
-                    return 1;
-                }
-            }
-            int charsPerTimeoutCheck = Array.BinarySearch(Enumerable.Range(0, 16_000).ToArray(), -1, Comparer<int>.Create(IsCharsPerTimeoutCheck));
-            Assert.True(charsPerTimeoutCheck >= 0);
+            // This constant must be at least as large as the one in the implementation that sets the maximum number
+            // of innermost loop iterations between timeout checks.
+            const int CharsToTriggerTimeoutCheck = 10000;
+            // Check that it is indeed large enough to trigger timeouts. If this fails the constant above needs to be larger.
+            Assert.Throws<RegexMatchTimeoutException>(() => new Regex("a*", RegexHelpers.RegexOptionNonBacktracking, TimeSpan.FromTicks(1))
+                .Match(new string('a', CharsToTriggerTimeoutCheck)));
 
-            // Now that the limit is known, do the actual test
+            // The actual test: ^a*$ shouldn't match in a string ending in 'b'
             Regex testPattern = new Regex("^a*$", RegexHelpers.RegexOptionNonBacktracking, TimeSpan.FromHours(1));
-            string input = string.Concat(new string('a', charsPerTimeoutCheck), 'b');
-            // Checking for timeout just before the 'b' shouldn't allow the $ anchor to match
+            string input = string.Concat(new string('a', CharsToTriggerTimeoutCheck), 'b');
             Assert.False(testPattern.IsMatch(input));
         }
 
