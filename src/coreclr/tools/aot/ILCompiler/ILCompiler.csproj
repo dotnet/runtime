@@ -3,14 +3,15 @@
   <PropertyGroup>
     <OutputPath>$(RuntimeBinDir)ilc/</OutputPath>
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
-    <NativeAotSupported Condition="'$(DotNetBuildFromSource)' == 'true' or '$(TargetOS)' == 'osx'">false</NativeAotSupported>
-    <PublishAot Condition="'$(NativeAotSupported)' == 'true'">true</PublishAot>
     <RunAnalyzers>true</RunAnalyzers>
   </PropertyGroup>
 
   <Import Project="ILCompiler.props" />
 
-  <PropertyGroup>
+  <!-- BEGIN: Workaround for https://github.com/dotnet/runtime/issues/67742 -->
+  <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' != 'true'">
+    <NativeAotSupported Condition="'$(DotNetBuildFromSource)' == 'true' or '$(TargetOS)' == 'osx'">false</NativeAotSupported>
+    <PublishAot Condition="'$(NativeAotSupported)' == 'true'">true</PublishAot>
     <PublishDir>$(RuntimeBinDir)ilc-published/</PublishDir>
   </PropertyGroup>
 
@@ -26,5 +27,5 @@
       <SingleFileHostSourcePath></SingleFileHostSourcePath>
     </PropertyGroup>
   </Target>
-
+ <!-- END: Workaround for https://github.com/dotnet/runtime/issues/67742 -->
 </Project>
