@@ -1107,6 +1107,12 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #endif
 	}
 	case SN_ConvertToInt32: 
+#ifdef TARGET_AMD64
+		if (arg0_type != MONO_TYPE_R4)
+			return NULL;
+		
+		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_I4_X, INTRINS_SSE_CVTTPS2DQ, arg0_type, fsig, args);	
+#endif
 	case SN_ConvertToUInt32: {
 #ifdef TARGET_ARM64
 		if (arg0_type != MONO_TYPE_R4)
