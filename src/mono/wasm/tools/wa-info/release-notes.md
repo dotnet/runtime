@@ -1,3 +1,13 @@
+### Release version 0.0.10
+
+Changes:
+
+wa-info and wa-diff
+ * add support for threads instructions
+ * add support for prefix instructions
+ * fix few missing instructions reading
+ * fix -d without function filter or offset set, to print all functions again
+
 ### Release version 0.0.9
 
 Changes:
