@@ -868,7 +868,7 @@ namespace WebAssemblyInfo
         void ReadMTInstruction(ref Instruction instruction)
         {
             instruction.MTOpcode = (MTOpcode)ReadU32();
-            Console.WriteLine($"MT opcode: {instruction.MTOpcode}");
+            // Console.WriteLine($"MT opcode: {instruction.MTOpcode}");
 
             switch (instruction.MTOpcode)
             {
