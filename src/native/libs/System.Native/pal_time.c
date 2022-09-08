@@ -18,9 +18,10 @@
 
 enum
 {
-    SecondsToMicroSeconds = 1000000,   // 10^6
-    SecondsToNanoSeconds = 1000000000, // 10^9
-    MicroSecondsToNanoSeconds = 1000   // 10^3
+    MicroSecondsToNanoSeconds = 1000,   // 10^3
+    SecondsToNanoSeconds = 1000000000,  // 10^9
+    SecondsToTicks = 10000000,          // 10^7
+    TicksToNanoSeconds = 100,           // 10^2
 };
 
 int32_t SystemNative_UTimensat(const char* path, TimeSpec* times)
@@ -92,6 +93,29 @@ uint64_t SystemNative_GetTimestamp()
     (void)result; // suppress unused parameter warning in release builds
 
     return ((uint64_t)(ts.tv_sec) * SecondsToNanoSeconds) + (uint64_t)(ts.tv_nsec);
+#endif
+}
+
+int64_t SystemNative_GetBootTimeTicks()
+{
+#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
+    struct timespec ts;
+
+    int result = clock_gettime(CLOCK_BOOTTIME, &ts);
+    assert(result == 0); // only possible errors are if the given clockId isn't supported or &ts is an invalid address
+    (void)result; // suppress unused parameter warning in release builds
+
+    int64_t sinceBootTicks = ((int64_t)ts.tv_sec * SecondsToTicks) + (ts.tv_nsec / TicksToNanoSeconds);
+
+    result = clock_gettime(CLOCK_REALTIME_COARSE, &ts);
+    assert(result == 0);
+
+    int64_t sinceEpochTicks = ((int64_t)ts.tv_sec * SecondsToTicks) + (ts.tv_nsec / TicksToNanoSeconds);
+    const int64_t UnixEpochTicks = 621355968000000000;
+
+    return UnixEpochTicks + sinceEpochTicks - sinceBootTicks;
+#else
+    return -1;
 #endif
 }
 
