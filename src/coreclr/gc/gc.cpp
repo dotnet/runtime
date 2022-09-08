@@ -12660,6 +12660,7 @@ void gc_heap::distribute_free_regions()
         gc_heap* hp = pGenGCHeap;
         // just to reduce the number of #ifdefs in the code below
         const int i = 0;
+        const int n_heaps = 1;
 #endif //MULTIPLE_HEAPS
 
         for (int kind = basic_free_region; kind < kind_count; kind++)
@@ -12670,7 +12671,8 @@ void gc_heap::distribute_free_regions()
             for (heap_segment* region = region_list.get_first_free_region(); region != nullptr; region = next_region)
             {
                 next_region = heap_segment_next (region);
-                if (heap_segment_age_in_free (region) >= AGE_IN_FREE_TO_DECOMMIT)
+                int age_in_free_to_decommit = min (max (AGE_IN_FREE_TO_DECOMMIT, n_heaps), MAX_AGE_IN_FREE);
+                if (heap_segment_age_in_free (region) >= age_in_free_to_decommit)
                 {
                     num_decommit_regions_by_time++;
                     size_decommit_regions_by_time += get_region_committed_size (region);
@@ -12688,8 +12690,33 @@ void gc_heap::distribute_free_regions()
 
         heap_budget_in_region_units[i][basic_free_region] = 0;
         heap_budget_in_region_units[i][large_free_region] = 0;
-        for (int gen = soh_gen0; gen < total_generation_count; gen++)
+    }
+
+
+    for (int gen = soh_gen0; gen < total_generation_count; gen++)
+    {
+        if ((gen <= soh_gen2) &&
+            total_budget_in_region_units[basic_free_region] >= (total_num_free_regions[basic_free_region] +
+                                                                surplus_regions[basic_free_region].get_num_free_regions()))
         {
+            // don't accumulate budget from higher soh generations if we cannot cover lower ones
+            dprintf (REGIONS_LOG, ("out of free regions - skipping gen %d budget = %Id >= avail %Id",
+                gen,
+                total_budget_in_region_units[basic_free_region],
+                total_num_free_regions[basic_free_region] + surplus_regions[basic_free_region].get_num_free_regions()));
+            continue;
+        }
+#ifdef MULTIPLE_HEAPS
+        for (int i = 0; i < n_heaps; i++)
+        {
+            gc_heap* hp = g_heaps[i];
+#else //MULTIPLE_HEAPS
+        {
+            gc_heap* hp = pGenGCHeap;
+            // just to reduce the number of #ifdefs in the code below
+            const int i = 0;
+            const int n_heaps = 1;
+#endif //MULTIPLE_HEAPS
             ptrdiff_t budget_gen = max (hp->estimate_gen_growth (gen), 0);
             int kind = gen >= loh_generation;
             size_t budget_gen_in_region_units = (budget_gen + (region_size[kind] - 1)) / region_size[kind];
@@ -40571,9 +40598,12 @@ void gc_heap::decommit_ephemeral_segment_pages()
         {
             gradual_decommit_in_progress_p = TRUE;
 
-            dprintf (1, ("h%2d gen %d reduce_commit by %IdkB",
+            dprintf (1, ("h%2d gen %d region %Ix allocated %IdkB committed %IdkB reduce_commit by %IdkB",
                 heap_number,
                 gen_number,
+                get_region_start (tail_region),
+                (heap_segment_allocated (tail_region) - get_region_start (tail_region))/1024,
+                (heap_segment_committed (tail_region) - get_region_start (tail_region))/1024,
                 (heap_segment_committed (tail_region) - decommit_target)/1024));
         }
         dprintf(3, ("h%2d gen %d allocated: %IdkB committed: %IdkB target: %IdkB",
