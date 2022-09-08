@@ -624,7 +624,7 @@ namespace System.Formats.Tar.Tests
 
         private static readonly Lazy<bool> s_canExtractWithTarTool = new Lazy<bool>(() =>
         {
-            if (PlatformDetection.IsAndroid) // Android reports tar: chown 7913:3579 'file.txt': Operation not permitted.
+            if (PlatformDetection.IsAndroid || PlatformDetection.IsLinuxBionic) // Android reports tar: chown 7913:3579 'file.txt': Operation not permitted.
             {
                 return false;
             }
