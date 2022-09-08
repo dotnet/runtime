@@ -3403,9 +3403,14 @@ mini_emit_box (MonoCompile *cfg, MonoInst *val, MonoClass *klass, int context_us
 
 		if (context_used) {
 			if (cfg->llvm_only) {
+				MonoInst *addr;
 				MonoMethodSignature *sig = mono_method_signature_internal (method);
-				MonoInst *addr = emit_get_rgctx_method (cfg, context_used, method,
-														MONO_RGCTX_INFO_METHOD_FTNDESC);
+				if (mini_is_gsharedvt_klass (klass))
+					addr = mini_emit_get_gsharedvt_info_klass (cfg, klass,
+															   MONO_RGCTX_INFO_NULLABLE_CLASS_BOX);
+				else
+					addr = emit_get_rgctx_method (cfg, context_used, method,
+												  MONO_RGCTX_INFO_METHOD_FTNDESC);
 				cfg->interp_in_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->interp_in_signatures, sig);
 				return mini_emit_llvmonly_calli (cfg, sig, &val, addr);
 			} else {
