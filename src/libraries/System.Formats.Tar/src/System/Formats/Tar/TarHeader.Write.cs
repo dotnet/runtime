@@ -391,6 +391,9 @@ namespace System.Formats.Tar
         // Writes all the common fields shared by all formats into the specified spans.
         private int WriteCommonFields(Span<byte> buffer, long actualLength, TarEntryType actualEntryType)
         {
+            // Don't write an empty LinkName if the entry is a hardlink or symlink
+            Debug.Assert(!string.IsNullOrEmpty(_linkName) ^ (_typeFlag is not TarEntryType.SymbolicLink and not TarEntryType.HardLink));
+
             int checksum = 0;
 
             if (_mode > 0)

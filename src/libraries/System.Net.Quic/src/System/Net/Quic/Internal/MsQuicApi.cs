@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Microsoft.Quic;
@@ -14,7 +13,7 @@ using Microsoft.Win32;
 
 namespace System.Net.Quic;
 
-internal sealed unsafe class MsQuicApi
+internal sealed unsafe partial class MsQuicApi
 {
     private static readonly Version MinWindowsVersion = new Version(10, 0, 20145, 1000);
 
@@ -48,8 +47,7 @@ internal sealed unsafe class MsQuicApi
         }
     }
 
-    private static readonly Lazy<MsQuicApi> _api = new Lazy<MsQuicApi>(AllocateMsQuicApi);
-    internal static MsQuicApi Api => _api.Value;
+    internal static MsQuicApi Api { get; } = null!;
 
     internal static bool IsQuicSupported { get; }
 
@@ -60,21 +58,29 @@ internal sealed unsafe class MsQuicApi
 
     static MsQuicApi()
     {
-        if (!TryLoadMsQuic(out IntPtr msQuicHandle))
+        IntPtr msQuicHandle;
+        if (!NativeLibrary.TryLoad($"{Interop.Libraries.MsQuic}.{MsQuicVersion.Major}", typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle) &&
+            !NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle))
         {
             return;
         }
 
         try
         {
-            if (!TryOpenMsQuic(msQuicHandle, out QUIC_API_TABLE* apiTable))
+            if (!NativeLibrary.TryGetExport(msQuicHandle, "MsQuicOpenVersion", out IntPtr msQuicOpenVersionAddress))
+            {
+                return;
+            }
+
+            QUIC_API_TABLE* apiTable = null;
+            delegate* unmanaged[Cdecl]<uint, QUIC_API_TABLE**, int> msQuicOpenVersion = (delegate* unmanaged[Cdecl]<uint, QUIC_API_TABLE**, int>)msQuicOpenVersionAddress;
+            if (StatusFailed(msQuicOpenVersion((uint)MsQuicVersion.Major, &apiTable)))
             {
                 return;
             }
 
             try
             {
-                // Check version
                 int arraySize = 4;
                 uint* libVersion = stackalloc uint[arraySize];
                 uint size = (uint)arraySize * sizeof(uint);
@@ -93,7 +99,7 @@ internal sealed unsafe class MsQuicApi
                     return;
                 }
 
-                // Assume SChannel is being used on windows and query for the actual provider from the library if querying is supported
+                // Assume SChannel is being used on windows and query for the actual provider from the library
                 QUIC_TLS_PROVIDER provider = OperatingSystem.IsWindows() ? QUIC_TLS_PROVIDER.SCHANNEL : QUIC_TLS_PROVIDER.OPENSSL;
                 size = sizeof(QUIC_TLS_PROVIDER);
                 apiTable->GetParam(null, QUIC_PARAM_GLOBAL_TLS_PROVIDER, &size, &provider);
@@ -116,67 +122,26 @@ internal sealed unsafe class MsQuicApi
                     Tls13ClientMayBeDisabled = IsTls13Disabled(isServer: false);
                 }
 
+                Api = new MsQuicApi(apiTable);
                 IsQuicSupported = true;
             }
             finally
             {
-                // Gracefully close the API table to free resources. The API table will be allocated lazily again if needed
-                bool closed = TryCloseMsQuic(msQuicHandle, apiTable);
-                Debug.Assert(closed, "Failed to close MsQuic");
+                if (!IsQuicSupported && NativeLibrary.TryGetExport(msQuicHandle, "MsQuicClose", out IntPtr msQuicClose))
+                {
+                    // Gracefully close the API table
+                    ((delegate* unmanaged[Cdecl]<QUIC_API_TABLE*, void>)msQuicClose)(apiTable);
+                }
             }
+
         }
         finally
         {
-            // Unload the library, we will load it again when we actually use QUIC
-            NativeLibrary.Free(msQuicHandle);
+            if (!IsQuicSupported)
+            {
+                NativeLibrary.Free(msQuicHandle);
+            }
         }
-    }
-
-    private static MsQuicApi AllocateMsQuicApi()
-    {
-        Debug.Assert(IsQuicSupported);
-
-        if (TryLoadMsQuic(out IntPtr msQuicHandle) &&
-            TryOpenMsQuic(msQuicHandle, out QUIC_API_TABLE* apiTable))
-        {
-            return new MsQuicApi(apiTable);
-        }
-
-        throw new Exception("Failed to create MsQuicApi instance");
-    }
-
-    private static bool TryLoadMsQuic(out IntPtr msQuicHandle) =>
-        NativeLibrary.TryLoad($"{Interop.Libraries.MsQuic}.{MsQuicVersion.Major}", typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle) ||
-        NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle);
-
-    private static bool TryOpenMsQuic(IntPtr msQuicHandle, out QUIC_API_TABLE* apiTable)
-    {
-        apiTable = null;
-        if (!NativeLibrary.TryGetExport(msQuicHandle, "MsQuicOpenVersion", out IntPtr msQuicOpenVersionAddress))
-        {
-            return false;
-        }
-
-        QUIC_API_TABLE* table = null;
-        delegate* unmanaged[Cdecl]<uint, QUIC_API_TABLE**, int> msQuicOpenVersion = (delegate* unmanaged[Cdecl]<uint, QUIC_API_TABLE**, int>)msQuicOpenVersionAddress;
-        if (StatusFailed(msQuicOpenVersion((uint)MsQuicVersion.Major, &table)))
-        {
-            return false;
-        }
-
-        apiTable = table;
-        return true;
-    }
-
-    private static bool TryCloseMsQuic(IntPtr msQuicHandle, QUIC_API_TABLE* apiTable)
-    {
-        if (NativeLibrary.TryGetExport(msQuicHandle, "MsQuicClose", out IntPtr msQuicClose))
-        {
-            ((delegate* unmanaged[Cdecl]<QUIC_API_TABLE*, void>)msQuicClose)(apiTable);
-            return true;
-        }
-
-        return false;
     }
 
     private static bool IsWindowsVersionSupported() => OperatingSystem.IsWindowsVersionAtLeast(MinWindowsVersion.Major,

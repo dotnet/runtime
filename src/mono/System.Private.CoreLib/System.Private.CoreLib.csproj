@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
@@ -125,8 +125,8 @@
     <DefineConstants>$(DefineConstants);MONO_FEATURE_SRE</DefineConstants>
 
     <FeatureMono>true</FeatureMono>
-    <FeatureWasmThreads Condition="'$(TargetsBrowser)' == 'true' and '$(WasmEnableThreads)' == 'true'">true</FeatureWasmThreads>
-    <FeatureWasmPerfTracing Condition="'$(TargetsBrowser)' == 'true' and ('$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true')">true</FeatureWasmPerfTracing>
+    <FeatureWasmThreads Condition="'$(TargetsBrowser)' == 'true' and ('$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread')">true</FeatureWasmThreads>
+    <FeatureWasmPerfTracing Condition="'$(TargetsBrowser)' == 'true' and ('$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace')">true</FeatureWasmPerfTracing>
     <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
     <FeatureManagedEtw>true</FeatureManagedEtw>
     <FeaturePortableTimer Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableTimer>

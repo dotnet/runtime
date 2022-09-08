@@ -2026,7 +2026,7 @@ PCODE DynamicHelpers::CreateDictionaryLookupHelper(LoaderAllocator * pAllocator,
                 *(DWORD*)p = 0xd280000a | ((UINT32)slotOffset << 5); p += 4;
                 dataOffset -= 4;
 
-                // cmp x9,x10
+                // cmp x11,x10
                 *(DWORD*)p = 0xeb0a017f; p += 4;
                 dataOffset -= 4;
 

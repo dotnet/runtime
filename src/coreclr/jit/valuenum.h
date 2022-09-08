@@ -633,6 +633,9 @@ public:
     ValueNum VNForFunc(
         var_types typ, VNFunc func, ValueNum op1VNwx, ValueNum op2VNwx, ValueNum op3VNwx, ValueNum op4VNwx);
 
+    // Skip all folding checks.
+    ValueNum VNForFuncNoFolding(var_types typ, VNFunc func, ValueNum op1VNwx, ValueNum op2VNwx);
+
     ValueNum VNForMapSelect(ValueNumKind vnk, var_types type, ValueNum map, ValueNum index);
 
     ValueNum VNForMapPhysicalSelect(ValueNumKind vnk, var_types type, ValueNum map, unsigned offset, unsigned size);
@@ -698,6 +701,22 @@ public:
         else
         {
             conservativeFuncVN = VNForFunc(typ, func, op1VN.GetConservative(), op2VN.GetConservative());
+        }
+
+        return ValueNumPair(liberalFuncVN, conservativeFuncVN);
+    }
+    ValueNumPair VNPairForFuncNoFolding(var_types typ, VNFunc func, ValueNumPair op1VN, ValueNumPair op2VN)
+    {
+        ValueNum liberalFuncVN = VNForFuncNoFolding(typ, func, op1VN.GetLiberal(), op2VN.GetLiberal());
+        ValueNum conservativeFuncVN;
+
+        if (op1VN.BothEqual() && op2VN.BothEqual())
+        {
+            conservativeFuncVN = liberalFuncVN;
+        }
+        else
+        {
+            conservativeFuncVN = VNForFuncNoFolding(typ, func, op1VN.GetConservative(), op2VN.GetConservative());
         }
 
         return ValueNumPair(liberalFuncVN, conservativeFuncVN);

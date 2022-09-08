@@ -1313,13 +1313,6 @@ MethodTable* GCToEEInterface::GetFreeObjectMethodTable()
 
 bool GCToEEInterface::GetBooleanConfigValue(const char* privateKey, const char* publicKey, bool* value)
 {
-    // these configuration values are given to us via startup flags.
-    if (strcmp(privateKey, "gcServer") == 0)
-    {
-        *value = g_heap_type == GC_HEAP_SVR;
-        return true;
-    }
-
     if (strcmp(privateKey, "gcConservative") == 0)
     {
         *value = true;
