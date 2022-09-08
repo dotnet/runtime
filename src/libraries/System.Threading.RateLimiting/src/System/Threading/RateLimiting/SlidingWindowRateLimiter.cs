@@ -26,6 +26,7 @@ namespace System.Threading.RateLimiting
 
         private readonly Timer? _renewTimer;
         private readonly SlidingWindowRateLimiterOptions _options;
+        private readonly TimeSpan _replenishmentPeriod;
         private readonly Deque<RequestRegistration> _queue = new Deque<RequestRegistration>();
 
         // Use the queue as the lock field so we don't need to allocate another object for a lock and have another field in the object
@@ -42,7 +43,7 @@ namespace System.Threading.RateLimiting
         public override bool IsAutoReplenishing => _options.AutoReplenishment;
 
         /// <inheritdoc />
-        public override TimeSpan ReplenishmentPeriod => new TimeSpan(_options.Window.Ticks / _options.SegmentsPerWindow);
+        public override TimeSpan ReplenishmentPeriod => _replenishmentPeriod;
 
         /// <summary>
         /// Initializes the <see cref="SlidingWindowRateLimiter"/>.
@@ -78,6 +79,7 @@ namespace System.Threading.RateLimiting
             };
 
             _requestCount = options.PermitLimit;
+            _replenishmentPeriod = new TimeSpan(_options.Window.Ticks / _options.SegmentsPerWindow);
 
             // _requestsPerSegment holds the no. of acquired requests in each window segment
             _requestsPerSegment = new int[options.SegmentsPerWindow];
@@ -287,7 +289,7 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                if ((long)((nowTicks - _lastReplenishmentTick) * TickFrequency) < ReplenishmentPeriod.Ticks)
+                if (((nowTicks - _lastReplenishmentTick) * TickFrequency) < ReplenishmentPeriod.Ticks && !_options.AutoReplenishment)
                 {
                     return;
                 }

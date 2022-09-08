@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace System.Net
 {
@@ -127,10 +128,9 @@ namespace System.Net
 
         private void UpdateRegexList()
         {
-            Regex[]? regexBypassList = null;
             if (_bypassList is ChangeTrackingArrayList bypassList)
             {
-                bypassList.IsChanged = false;
+                Regex[]? regexBypassList = null;
                 if (bypassList.Count > 0)
                 {
                     regexBypassList = new Regex[bypassList.Count];
@@ -139,9 +139,14 @@ namespace System.Net
                         regexBypassList[i] = new Regex((string)bypassList[i]!, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
                     }
                 }
-            }
 
-            _regexBypassList = regexBypassList;
+                _regexBypassList = regexBypassList;
+                bypassList.IsChanged = false;
+            }
+            else
+            {
+                _regexBypassList = null;
+            }
         }
 
         private bool IsMatchInBypassList(Uri input)
@@ -219,7 +224,10 @@ namespace System.Net
 
             public ChangeTrackingArrayList(ICollection c) : base(c) { }
 
-            public bool IsChanged { get; set; }
+            // While this type isn't intended to mutated concurrently with reads, non-concurrent updates
+            // to the list might result in lazy initialization, and it's possible concurrent requests could race
+            // to trigger that initialization.
+            public volatile bool IsChanged;
 
             // Override the methods that can add, remove, or change the regexes in the bypass list.
             // Methods that only read (like CopyTo, BinarySearch, etc.) and methods that reorder

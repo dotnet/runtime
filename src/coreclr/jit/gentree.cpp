@@ -4258,7 +4258,7 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
         {
             int addrCostExDelta = originalAddrCostEx - addrModeCostEx;
             int addrCostSzDelta = originalAddrCostSz - addrModeCostSz;
-            addrComma->SetCosts(addrComma->GetCostEx() - addrCostExDelta, addrComma->GetCostSz() - addrCostExDelta);
+            addrComma->SetCosts(addrComma->GetCostEx() - addrCostExDelta, addrComma->GetCostSz() - addrCostSzDelta);
 
             *pCostEx += addrComma->AsOp()->gtGetOp1()->GetCostEx();
             *pCostSz += addrComma->AsOp()->gtGetOp1()->GetCostSz();
@@ -7150,6 +7150,15 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
         case TYP_DOUBLE:
             zero = gtNewDconNode(0.0);
             break;
+
+#ifdef FEATURE_SIMD
+        case TYP_SIMD8:
+        case TYP_SIMD12:
+        case TYP_SIMD16:
+        case TYP_SIMD32:
+            zero = gtNewZeroConNode(type, CORINFO_TYPE_FLOAT);
+            break;
+#endif // FEATURE_SIMD
 
         default:
             noway_assert(!"Bad type in gtNewZeroConNode");

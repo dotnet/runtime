@@ -1,15 +1,17 @@
 parameters:
   packageType: null
-  image: null
+  target: ''
   packageStepDescription: null
   packagingArgs: ''
   subsetArg: ''
 
 steps:
+## Run NuGet Authentication for each of the side containers
+- ${{ if ne(variables['System.TeamProject'], 'public') }}:
+  - task: NuGetAuthenticate@0
+    target: ${{ parameters.target }}
 - script: |
-    set -x
-    df -h
-    $(DockerRunMSBuild) ${{ parameters.image }} $(BuildScript) \
+    $(Build.SourcesDirectory)/build.sh \
       --ci \
       ${{ parameters.subsetArg }} \
       ${{ parameters.packagingArgs }} \
@@ -17,3 +19,4 @@ steps:
       $(LiveOverridePathArgs) \
       /bl:artifacts/log/$(_BuildConfig)/msbuild.${{ parameters.packageType }}.installers.binlog
   displayName: Package ${{ parameters.packageStepDescription }} - ${{ parameters.packageType }}
+  target: ${{ parameters.target }}

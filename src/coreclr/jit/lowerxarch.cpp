@@ -507,18 +507,6 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
             // registers to be consumed atomically by the call.
             if (varTypeIsIntegralOrI(fieldNode))
             {
-                // If we are loading from an in-memory local, we would like to use "push", but this
-                // is only legal if we can safely load all 4 bytes. Retype the local node here to
-                // TYP_INT for such legal cases to make downstream (LSRA & codegen) logic simpler.
-                // Retyping is ok because we model this node as STORE<field type>(LOAD<node type>).
-                // If the field came from promotion, we allow the padding to remain undefined, if
-                // from decomposition, the field type will be INT (naturally blocking the retyping).
-                if (varTypeIsSmall(fieldNode) && (genTypeSize(fieldType) <= genTypeSize(fieldNode)) &&
-                    fieldNode->OperIsLocalRead())
-                {
-                    fieldNode->ChangeType(TYP_INT);
-                }
-
                 if (IsContainableImmed(putArgStk, fieldNode))
                 {
                     MakeSrcContained(putArgStk, fieldNode);

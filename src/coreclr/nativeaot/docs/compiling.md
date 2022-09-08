@@ -68,3 +68,24 @@ You also need to specify the sysroot directory for Clang using the `SysRoot` pro
 ```
 
 You may also follow [cross-building instructions](../../../../docs/workflow/building/coreclr/cross-building.md) to create your own sysroot directory.
+
+## Using statically linked ICU
+This feature can statically link libicu libraries (such as libicui18n.a) into your applications at build time.
+NativeAOT binaries built with this feature can run even when libicu libraries are not installed.
+
+You can use this feature by adding the `StaticICULinking` property to your project file as follows:
+
+```xml
+    <PropertyGroup>
+      <StaticICULinking>true</StaticICULinking>
+    </PropertyGroup>
+```
+
+This feature is only supported on Linux. This feature is not supported when crosscompiling.
+
+### Prerequisites
+
+Ubuntu (20.04+)
+```
+sudo apt-get install libicu-dev cmake
+```
