@@ -3,21 +3,22 @@
 
 using System;
 using System.Collections.Immutable;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading;
 
 using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop.JavaScript
 {
-    internal sealed record JSSignatureContext : IEquatable<JSSignatureContext>
+    internal sealed record JSSignatureContext
     {
-        private static SymbolDisplayFormat s_typeNameFormat { get; } = new SymbolDisplayFormat(
+        private static SymbolDisplayFormat TypeAndContainingTypesStyle { get; } = new SymbolDisplayFormat(
             globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
             typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypes
         );
+
+        private static SymbolDisplayFormat TypeContainingTypesAndNamespacesStyle { get; } = new SymbolDisplayFormat(
+            globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
+            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces);
 
         internal static readonly string GeneratorName = typeof(JSImportGenerator).Assembly.GetName().Name;
 
@@ -43,7 +44,7 @@ namespace Microsoft.Interop.JavaScript
                 ImmutableArray.Create<ITypeBasedMarshallingInfoProvider>(new FallbackJSMarshallingInfoProvider()));
             SignatureContext sigContext = SignatureContext.Create(method, jsMarshallingAttributeParser, env, typeof(JSImportGenerator).Assembly);
 
-            string stubTypeFullName = method.ContainingType.ToDisplayString(new SymbolDisplayFormat(typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces));
+            string stubTypeFullName = method.ContainingType.ToDisplayString(TypeContainingTypesAndNamespacesStyle);
 
             // there could be multiple method signatures with the same name, get unique signature name
             uint hash = 17;
@@ -73,7 +74,7 @@ namespace Microsoft.Interop.JavaScript
         private static string GetFullyQualifiedMethodName(StubEnvironment env, IMethodSymbol method)
         {
             // Mono style nested class name format.
-            string typeName = method.ContainingType.ToDisplayString(s_typeNameFormat).Replace(".", "/");
+            string typeName = method.ContainingType.ToDisplayString(TypeAndContainingTypesStyle).Replace(".", "/");
 
             if (!method.ContainingType.ContainingNamespace.IsGlobalNamespace)
                 typeName = $"{method.ContainingType.ContainingNamespace.ToDisplayString()}.{typeName}";
