@@ -275,4 +275,3 @@ namespace System.Buffers.Text
         }
     }
 }
-#pragma warning restore SA1121 // Use built-in type alias

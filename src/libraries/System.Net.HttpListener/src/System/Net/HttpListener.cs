@@ -201,7 +201,7 @@ namespace System.Net
                     }
 
                     int toLowerLength = destination.IndexOf(':');
-                    if (toLowerLength == -1)
+                    if (toLowerLength < 0)
                     {
                         toLowerLength = destination.Length;
                     }

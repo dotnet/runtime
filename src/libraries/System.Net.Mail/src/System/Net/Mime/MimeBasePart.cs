@@ -112,7 +112,7 @@ namespace System.Net.Mime
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            return Ascii.IsAscii(value) && (permitCROrLF || value.AsSpan().IndexOfAny('\r', '\n') == -1);
+            return Ascii.IsAscii(value) && (permitCROrLF || value.AsSpan().IndexOfAny('\r', '\n') < 0);
         }
 
         internal string? ContentID

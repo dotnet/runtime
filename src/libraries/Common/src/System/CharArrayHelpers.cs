@@ -8,7 +8,6 @@ namespace System
 {
     internal static class CharArrayHelpers
     {
-
 #if NET7_0_OR_GREATER
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool EqualsOrdinalAsciiIgnoreCase(string left, char[] right, int rightStartIndex, int rightLength)
