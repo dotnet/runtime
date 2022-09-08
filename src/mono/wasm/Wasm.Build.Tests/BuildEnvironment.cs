@@ -25,6 +25,7 @@ namespace Wasm.Build.Tests
         public string                           LogRootPath                   { get; init; }
 
         public string                           WorkloadPacksDir              { get; init; }
+        public string                           BuiltNuGetsPath               { get; init; }
 
         public static readonly string           RelativeTestAssetsPath = @"..\testassets\";
         public static readonly string           TestAssetsPath = Path.Combine(AppContext.BaseDirectory, "testassets");
@@ -98,6 +99,11 @@ namespace Wasm.Build.Tests
                 DirectoryBuildPropsContents = s_directoryBuildPropsForLocal;
                 DirectoryBuildTargetsContents = s_directoryBuildTargetsForLocal;
             }
+
+            if (EnvironmentVariables.BuiltNuGetsPath is null || !Directory.Exists(EnvironmentVariables.BuiltNuGetsPath))
+                throw new Exception($"Cannot find 'BUILT_NUGETS_PATH={EnvironmentVariables.BuiltNuGetsPath}'");
+
+            BuiltNuGetsPath = EnvironmentVariables.BuiltNuGetsPath;
 
             // `runtime` repo's build environment sets these, and they
             // mess up the build for the test project, which is using a different

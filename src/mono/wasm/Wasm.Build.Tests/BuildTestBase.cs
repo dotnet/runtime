@@ -41,6 +41,7 @@ namespace Wasm.Build.Tests
         protected static int s_defaultPerTestTimeoutMs = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 30*60*1000 : 15*60*1000;
         protected static BuildEnvironment s_buildEnv;
         private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : ([^ ]*)";
+        private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
         private static Regex s_runtimePackPathRegex;
         private static int s_testCounter;
         private readonly int _testIdx;
@@ -423,9 +424,22 @@ namespace Wasm.Build.Tests
             Directory.CreateDirectory(_projectDir);
             Directory.CreateDirectory(Path.Combine(_projectDir, ".nuget"));
 
-            File.Copy(Path.Combine(BuildEnvironment.TestDataPath, NuGetConfigFileNameForDefaultFramework), Path.Combine(_projectDir, "nuget.config"));
+            File.WriteAllText(Path.Combine(_projectDir, "nuget.config"),
+                                GetNuGetConfigWithLocalPackagesPath(
+                                            Path.Combine(BuildEnvironment.TestDataPath, NuGetConfigFileNameForDefaultFramework),
+                                            s_buildEnv.BuiltNuGetsPath));
+
             File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "Blazor.Directory.Build.props"), Path.Combine(_projectDir, "Directory.Build.props"));
             File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "Blazor.Directory.Build.targets"), Path.Combine(_projectDir, "Directory.Build.targets"));
+        }
+
+        private static string GetNuGetConfigWithLocalPackagesPath(string templatePath, string localNuGetsPath)
+        {
+            string contents = File.ReadAllText(templatePath);
+            if (contents.IndexOf(s_nugetInsertionTag, StringComparison.InvariantCultureIgnoreCase) < 0)
+                throw new Exception($"Could not find {s_nugetInsertionTag} in {templatePath}");
+
+            return contents.Replace(s_nugetInsertionTag, $@"<add key=""nuget-local"" value=""{localNuGetsPath}"" />");
         }
 
         public string CreateWasmTemplateProject(string id, string template = "wasmbrowser")
