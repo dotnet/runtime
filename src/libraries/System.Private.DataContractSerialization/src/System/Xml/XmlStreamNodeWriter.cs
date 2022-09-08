@@ -4,6 +4,7 @@
 using System.IO;
 using System.Numerics;
 using System.Text;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Serialization;
@@ -342,8 +343,8 @@ namespace System.Xml
         {
             if (BitConverter.IsLittleEndian)
             {
-                new ReadOnlySpan<byte>((byte*)chars, sizeof(char) * charCount)
-                    .CopyTo(buffer.AsSpan(offset));
+                new ReadOnlySpan<char>(chars, charCount)
+                    .CopyTo(MemoryMarshal.Cast<byte, char>(buffer.AsSpan(offset)));
             }
             else
             {
@@ -389,7 +390,7 @@ namespace System.Xml
                             chars += Vector128<short>.Count;
                         }
 
-                        Vector128<short> v2 = Sse2.LoadVector128((short*)simdLast);
+                        Vector128<short> v2 = *(Vector128<short>*)simdLast;
                         if (!Sse41.TestZ(v2, mask))
                             goto NonAscii;
 
