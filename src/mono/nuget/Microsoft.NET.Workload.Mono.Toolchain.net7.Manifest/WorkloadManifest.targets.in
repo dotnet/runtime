@@ -127,7 +127,7 @@
              Text="WebAssembly workloads, required for linking native files (from %40(NativeFileReference)), are only supported for projects targeting net6.0+ ." />
     </Target>
 
-    <Target Name="_ErrorDualWasmThreadProps"
+    <Target Name="_ErrorDualWasmThreadProps7"
             Condition="'$(TargetsNet7)' == 'true' and '$(RuntimeIdentifier)' == 'browser-wasm' and '$(_BrowserWorkloadDisabled7)' != 'true' and '$(WasmEnablethreads)' == 'true' and '$(WasmEnablePerfTrace)' == 'true'"
             BeforeTargets="Build">
         <Error Text="WebAssembly workloads can only support one active threading mode at a time. Either set WasmEnablethreads or WasmEnablePerfTracing to true, but not both." />
