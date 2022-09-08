@@ -2756,8 +2756,6 @@ BOOL gc_heap::fgn_last_gc_was_concurrent = FALSE;
 
 VOLATILE(bool) gc_heap::full_gc_approach_event_set;
 
-bool gc_heap::special_sweep_p = false;
-
 size_t gc_heap::full_gc_counts[gc_type_max];
 
 bool gc_heap::maxgen_size_inc_p = false;
@@ -2855,6 +2853,8 @@ size_t     gc_heap::expand_mechanisms_per_heap[max_expand_mechanisms_count];
 size_t     gc_heap::interesting_mechanism_bits_per_heap[max_gc_mechanism_bits_count];
 
 mark_queue_t gc_heap::mark_queue;
+
+bool gc_heap::special_sweep_p = false;
 
 #endif // MULTIPLE_HEAPS
 
@@ -14124,6 +14124,8 @@ gc_heap::init_gc_heap (int h_number)
 #ifdef RECORD_LOH_STATE
     loh_state_index = 0;
 #endif //RECORD_LOH_STATE
+
+    special_sweep_p = false;
 #endif //MULTIPLE_HEAPS
 
 #ifdef MULTIPLE_HEAPS
@@ -44806,8 +44808,9 @@ HRESULT GCHeap::Initialize()
     uint32_t nhp = 1;
     uint32_t nhp_from_config = 0;
 
-#ifdef MULTIPLE_HEAPS
-
+#ifndef MULTIPLE_HEAPS
+    GCConfig::SetServerGC(false);
+#else //!MULTIPLE_HEAPS
     GCConfig::SetServerGC(true);
     AffinitySet config_affinity_set;
     GCConfigStringHolder cpu_index_ranges_holder(GCConfig::GetGCHeapAffinitizeRanges());
@@ -44864,7 +44867,7 @@ HRESULT GCHeap::Initialize()
             nhp = min(nhp, num_affinitized_processors);
         }
     }
-#endif //MULTIPLE_HEAPS
+#endif //!MULTIPLE_HEAPS
 
     size_t seg_size = 0;
     size_t large_seg_size = 0;

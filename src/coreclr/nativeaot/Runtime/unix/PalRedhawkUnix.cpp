@@ -13,6 +13,8 @@
 #include "UnixHandle.h"
 #include <pthread.h>
 #include "gcenv.h"
+#include "gcenv.ee.h"
+#include "gcconfig.h"
 #include "holder.h"
 #include "UnixSignals.h"
 #include "UnixContext.h"
@@ -416,6 +418,8 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
 #endif // !USE_PORTABLE_HELPERS
 
     ConfigureSignals();
+
+    GCConfig::Initialize();
 
     if (!GCToOSInterface::Initialize())
     {

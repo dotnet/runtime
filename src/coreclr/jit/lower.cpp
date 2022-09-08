@@ -2850,38 +2850,33 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         GenTree* andOp1 = op1->gtGetOp1();
         GenTree* andOp2 = op1->gtGetOp2();
 
-        if (op2Value != 0)
+        //
+        // If we don't have a 0 compare we can get one by transforming ((x AND mask) EQ|NE mask)
+        // into ((x AND mask) NE|EQ 0) when mask is a single bit.
+        //
+        if ((op2Value != 0) && isPow2(static_cast<target_size_t>(op2Value)) && andOp2->IsIntegralConst(op2Value))
         {
-            // Optimizes (X & 1) == 1 to (X & 1)
-            // The compiler requires jumps to have relop operands, so we do not fold that case.
+            op2Value = 0;
+            op2->SetIconValue(0);
+            cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
+        }
+
+        // Transform ((x AND 1) NE 0) into (x AND 1)
+        // The compiler requires jumps to have relop operands, so we do not fold that case.
+        if ((op2Value == 0) && cmp->OperIs(GT_NE) && andOp2->IsIntegralConst(1))
+        {
             LIR::Use cmpUse;
-            if ((op2Value == 1) && cmp->OperIs(GT_EQ))
+            if ((genActualType(op1) == cmp->TypeGet()) && BlockRange().TryGetUse(cmp, &cmpUse) &&
+                !cmpUse.User()->OperIs(GT_JTRUE) && !cmpUse.User()->OperIsConditional())
             {
-                if (andOp2->IsIntegralConst(1) && (genActualType(op1) == cmp->TypeGet()) &&
-                    BlockRange().TryGetUse(cmp, &cmpUse) && !cmpUse.User()->OperIs(GT_JTRUE) &&
-                    !cmpUse.User()->OperIsConditional())
-                {
-                    GenTree* next = cmp->gtNext;
+                GenTree* next = cmp->gtNext;
 
-                    cmpUse.ReplaceWith(op1);
+                cmpUse.ReplaceWith(op1);
 
-                    BlockRange().Remove(cmp->gtGetOp2());
-                    BlockRange().Remove(cmp);
+                BlockRange().Remove(cmp->gtGetOp2());
+                BlockRange().Remove(cmp);
 
-                    return next;
-                }
-            }
-
-            //
-            // If we don't have a 0 compare we can get one by transforming ((x AND mask) EQ|NE mask)
-            // into ((x AND mask) NE|EQ 0) when mask is a single bit.
-            //
-
-            if (isPow2<target_size_t>(static_cast<target_size_t>(op2Value)) && andOp2->IsIntegralConst(op2Value))
-            {
-                op2Value = 0;
-                op2->SetIconValue(0);
-                cmp->SetOperRaw(GenTree::ReverseRelop(cmp->OperGet()));
+                return next;
             }
         }
 
