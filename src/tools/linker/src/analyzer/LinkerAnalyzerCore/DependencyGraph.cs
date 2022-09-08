@@ -70,8 +70,7 @@ namespace LinkerAnalyzer.Core
 								VertexData begin = Vertex (b, true);
 								VertexData end = Vertex (e, true);
 
-								if (end.parentIndexes == null)
-									end.parentIndexes = new List<int> ();
+								end.parentIndexes ??= new List<int> ();
 								if (!end.parentIndexes.Contains (begin.index)) {
 									end.parentIndexes.Add (begin.index);
 									//Console.WriteLine (" end parent index: {0}", end.parentIndexes);

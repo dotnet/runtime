@@ -12,11 +12,11 @@ using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
+using static Mono.Linker.ParameterHelpers;
 using LocalVariableStore = System.Collections.Generic.Dictionary<
 	Mono.Cecil.Cil.VariableDefinition,
 	Mono.Linker.Dataflow.ValueBasicBlockPair>;
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
-using static Mono.Linker.ParameterHelpers;
 
 namespace Mono.Linker.Dataflow
 {
@@ -301,9 +301,7 @@ namespace Mono.Linker.Dataflow
 					}
 				}
 
-				if (currentStack == null) {
-					currentStack = new Stack<StackSlot> (methodBody.MaxStackSize);
-				}
+				currentStack ??= new Stack<StackSlot> (methodBody.MaxStackSize);
 
 				switch (operation.OpCode.Code) {
 				case Code.Add:
@@ -1097,7 +1095,7 @@ namespace Mono.Linker.Dataflow
 
 				if (calledMethod.ParameterReferenceKind ((int) ilArgumentIndex) is not (ReferenceKind.Ref or ReferenceKind.Out))
 					continue;
-				SingleValue newByRefValue = methodIsResolved && (int)parameterIndex < calledMethodDefinition!.Parameters.Count
+				SingleValue newByRefValue = methodIsResolved && (int) parameterIndex < calledMethodDefinition!.Parameters.Count
 					? _context.Annotations.FlowAnnotations.GetMethodParameterValue (calledMethodDefinition!, parameterIndex)
 					: UnknownValue.Instance;
 				StoreInReference (methodArguments[(int) ilArgumentIndex], newByRefValue, callingMethodBody.Method, operation, locals, curBasicBlock, ref ipState);

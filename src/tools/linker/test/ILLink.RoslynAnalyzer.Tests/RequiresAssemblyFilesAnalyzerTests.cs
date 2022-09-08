@@ -420,7 +420,7 @@ build_property.{MSBuildPropertyOptionNames.EnableSingleFileAnalyzer} = true")));
 			return VerifyRequiresAssemblyFilesCodeFix (
 				source: test,
 				fixedSource: fixtest,
-				baselineExpected:new[] {
+				baselineExpected: new[] {
 					// /0/Test0.cs(6,14): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.
 					VerifyCS.Diagnostic(DiagnosticId.RequiresAssemblyFiles).WithSpan(6, 14, 6, 18).WithArguments("C.M1()", " message.", ""),
 					// /0/Test0.cs(10,24): warning IL3002: Using member 'C.M1()' which has 'RequiresAssemblyFilesAttribute' can break functionality when embedded in a single-file app. message.

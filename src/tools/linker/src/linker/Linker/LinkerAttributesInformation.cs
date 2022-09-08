@@ -69,8 +69,7 @@ namespace Mono.Linker
 				if (attributeValue == null)
 					continue;
 
-				if (cache == null)
-					cache = new List<(Type Type, List<Attribute> Attributes)> ();
+				cache ??= new List<(Type Type, List<Attribute> Attributes)> ();
 
 				Type attributeValueType = attributeValue.GetType ();
 

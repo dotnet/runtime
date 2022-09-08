@@ -145,9 +145,7 @@ stages:
       steps:
       - checkout: self
         submodules: true
-      # Disabled to prevent dotnet-format bugs (see https://github.com/dotnet/linker/pull/2884).
-      # This should be turned back on when we are on a preview7 SDK.
-      # - script: ./lint.sh --verify-no-changes --verbosity diagnostic
+      - script: ./lint.sh --verify-no-changes --verbosity diagnostic
 
 # Post-Build Arcade logic
 - ${{ if eq(variables.officialBuild, 'true') }}:

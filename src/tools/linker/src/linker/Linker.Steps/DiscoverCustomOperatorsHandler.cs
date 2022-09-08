@@ -24,8 +24,7 @@ namespace Mono.Linker.Steps
 
 		Dictionary<TypeDefinition, List<MethodDefinition>> PendingOperatorsForType {
 			get {
-				if (_pendingOperatorsForType == null)
-					_pendingOperatorsForType = new Dictionary<TypeDefinition, List<MethodDefinition>> ();
+				_pendingOperatorsForType ??= new Dictionary<TypeDefinition, List<MethodDefinition>> ();
 				return _pendingOperatorsForType;
 			}
 		}
@@ -119,8 +118,7 @@ namespace Mono.Linker.Steps
 		TypeDefinition? _nullableOfT;
 		TypeDefinition? NullableOfT {
 			get {
-				if (_nullableOfT == null)
-					_nullableOfT = BCL.FindPredefinedType (WellKnownType.System_Nullable_T, Context);
+				_nullableOfT ??= BCL.FindPredefinedType (WellKnownType.System_Nullable_T, Context);
 				return _nullableOfT;
 			}
 		}

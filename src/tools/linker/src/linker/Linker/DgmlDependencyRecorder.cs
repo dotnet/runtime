@@ -31,8 +31,7 @@ namespace Mono.Linker
 				IndentChars = " "
 			};
 
-			if (fileName == null)
-				fileName = DefaultDependenciesFileName;
+			fileName ??= DefaultDependenciesFileName;
 
 			if (string.IsNullOrEmpty (Path.GetDirectoryName (fileName)) && !string.IsNullOrEmpty (context.OutputDirectory)) {
 				fileName = Path.Combine (context.OutputDirectory, fileName);
