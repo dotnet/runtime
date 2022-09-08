@@ -624,6 +624,11 @@ namespace System.Formats.Tar.Tests
 
         private static readonly Lazy<bool> s_canExtractWithTarTool = new Lazy<bool>(() =>
         {
+            if (PlatformDetection.IsAndroid || PlatformDetection.IsWindowsNanoServer)
+            {
+                return false;
+            }
+
             if (PlatformDetection.IsWindows)
             {
                 Version osVersion = Environment.OSVersion.Version;
@@ -656,10 +661,10 @@ namespace System.Formats.Tar.Tests
             tarToolProcess.StartInfo.RedirectStandardOutput = true;
             tarToolProcess.Start();
 
-            tarToolProcess.StandardOutput.ReadToEnd();
+            string output = tarToolProcess.StandardOutput.ReadToEnd();
             tarToolProcess.WaitForExit();
 
-            Assert.Equal(0, tarToolProcess.ExitCode);
+            Assert.True(tarToolProcess.ExitCode == 0, "Tar process output: " + output);
         }
     }
 }

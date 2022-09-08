@@ -264,12 +264,6 @@ namespace System.Formats.Tar.Tests
                 throw new SkipTestException("specialfiles is only supported on Unix and it needs sudo permissions for extraction.");
             }
 
-            string[] symlinkTestCases = { "file_symlink", "foldersymlink_folder_subfolder_file", "file_longsymlink" };
-            if (symlinkTestCases.Contains(testCaseName) && !MountHelper.CanCreateSymbolicLinks)
-            {
-                throw new SkipTestException("Symlinks are not supported on this platform.");
-            }
-
             using TempDirectory root = new TempDirectory();
 
             string archivePath = GetTarFilePath(CompressionMethod.Uncompressed, TestTarFormat.pax.ToString(), testCaseName);
