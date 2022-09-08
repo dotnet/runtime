@@ -618,15 +618,12 @@ namespace System.Formats.Tar
         }
 
         // Some fields that have a reserved spot in the header, may not fit in such field anymore, but they can fit in the
-        // extended attributes. They get collected and saved in that dictionary, with no restrictions.
+        // extended attributes. They are always collected or updated in that dictionary, with no restrictions.
         private void CollectExtendedAttributesFromStandardFieldsIfNeeded()
         {
-            ExtendedAttributes.Add(PaxEaName, _name);
+            ExtendedAttributes[PaxEaName] = _name;
 
-            if (!ExtendedAttributes.ContainsKey(PaxEaMTime))
-            {
-                ExtendedAttributes.Add(PaxEaMTime, TarHelpers.GetTimestampStringFromDateTimeOffset(_mTime));
-            }
+            ExtendedAttributes[PaxEaMTime] = TarHelpers.GetTimestampStringFromDateTimeOffset(_mTime);
 
             if (!string.IsNullOrEmpty(_gName))
             {
@@ -640,12 +637,12 @@ namespace System.Formats.Tar
 
             if (!string.IsNullOrEmpty(_linkName))
             {
-                ExtendedAttributes.Add(PaxEaLinkName, _linkName);
+                ExtendedAttributes[PaxEaLinkName] = _linkName;
             }
 
             if (_size > 99_999_999)
             {
-                ExtendedAttributes.Add(PaxEaSize, _size.ToString());
+                ExtendedAttributes[PaxEaSize] = _size.ToString();
             }
 
             // Adds the specified string to the dictionary if it's longer than the specified max byte length.
@@ -653,7 +650,7 @@ namespace System.Formats.Tar
             {
                 if (Encoding.UTF8.GetByteCount(value) > maxLength)
                 {
-                    extendedAttributes.Add(key, value);
+                    extendedAttributes[key] = value;
                 }
             }
         }
