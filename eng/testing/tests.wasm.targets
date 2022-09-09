@@ -161,8 +161,9 @@
 
     <WorkloadCombinationsToInstall Include="latest"   Variants="latest" />
     <WorkloadCombinationsToInstall Include="net7"     Variants="net7" />
-    <WorkloadCombinationsToInstall Include="net6"     Variants="net6" />
-    <WorkloadCombinationsToInstall Include="net6+7"   Variants="net6;net7" />
+    <WorkloadCombinationsToInstall Include="net7+latest"   Variants="net7;latest" />
+    <!--<WorkloadCombinationsToInstall Include="net6"     Variants="net6" />-->
+    <!--<WorkloadCombinationsToInstall Include="net6+7"   Variants="net6;net7" />-->
     <!--<WorkloadCombinationsToInstall Include="none" />-->
 
     <WasmExtraFilesToDeploy Condition="'$(_UseWasmSymbolicator)' == 'true'" Include="$(MonoProjectRoot)wasm\data\wasm-symbol-patterns.txt" />
