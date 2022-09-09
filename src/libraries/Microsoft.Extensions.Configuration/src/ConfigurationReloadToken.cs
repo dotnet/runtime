@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.Configuration
             return ChangeCallbackRegistrar.UnsafeRegisterChangeCallback(
                 callback,
                 state,
-                _cts,
+                _cts.Token,
                 static s => s.ActiveChangeCallbacks = false,
                 this);
         }

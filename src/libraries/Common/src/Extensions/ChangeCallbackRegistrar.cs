@@ -15,16 +15,16 @@ namespace Microsoft.Extensions.Internal
         /// </summary>
         /// <param name="callback">The callback to invoke.</param>
         /// <param name="state">State to be passed into the callback.</param>
-        /// <param name="_cts"></param>
-        /// <param name="onFailure"></param>
-        /// <param name="onFailureState"></param>
+        /// <param name="Token">The <see cref="CancellationToken"/> to invoke the callback with.</param>
+        /// <param name="onFailure">The action to execute when an <see cref="ObjectDisposedException"/> is thrown. Should be used to set the IChangeToken's ActiveChangeCallbacks property to false.</param>
+        /// <param name="onFailureState">The state to be passed into the <paramref name="onFailure"/> action.</param>
         /// <returns>The <see cref="CancellationToken"/> registration.</returns>
-        internal static IDisposable UnsafeRegisterChangeCallback<T>(Action<object?> callback, object? state, CancellationTokenSource _cts, Action<T> onFailure, T onFailureState)
+        internal static IDisposable UnsafeRegisterChangeCallback<T>(Action<object?> callback, object? state, CancellationToken Token, Action<T> onFailure, T onFailureState)
         {
 #if NETCOREAPP || NETSTANDARD2_1
             try
             {
-                return _cts.Token.UnsafeRegister(callback, state);
+                return Token.UnsafeRegister(callback, state);
             }
             catch (ObjectDisposedException)
             {
@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.Internal
 
             try
             {
-                return _cts.Token.Register(callback, state);
+                return Token.Register(callback, state);
             }
             catch (ObjectDisposedException)
             {
