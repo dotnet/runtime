@@ -598,7 +598,6 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                             resultID,
                             from = args["to"].Value<string>()
                         });
-                        await SendEvent(sessionId, "", o, token);
                         Console.WriteLine($"to no evaluateJSAsync 1 - {o}");
                         Frame scope = context.CallStack.First<Frame>();
                         Console.WriteLine($"to no evaluateJSAsync 2 - {o}");
@@ -640,6 +639,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                                 osend["resultDescription"] = retValue["description"];
                             }
                             Console.WriteLine($"to no evaluateJSAsync 5 - {o}");
+                            await SendEvent(sessionId, "", o, token);
                             await SendEvent(sessionId, "", osend, token);
                         }
                         catch (ReturnAsErrorException ree)
@@ -660,6 +660,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                                 })
                             }));
                             Console.WriteLine($"to no evaluateJSAsync 6.1 - {o}");
+                            await SendEvent(sessionId, "", o, token);
                             await SendEvent(sessionId, "", osend, token);
                         }
                         catch (Exception e)
@@ -681,6 +682,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                                 })
                             }));
                             Console.WriteLine($"to no evaluateJSAsync 7.0 - {o}");
+                            await SendEvent(sessionId, "", o, token);
                             await SendEvent(sessionId, "", osend, token);
                         }
                     }
