@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Primitives
                 callback,
                 state,
                 Token,
-                static s => s.ActiveChangeCallbacks = false,
+                static s => s.ActiveChangeCallbacks = false, // Reset the flag to indicate to future callers that this wouldn't work.
                 this);
         }
     }
