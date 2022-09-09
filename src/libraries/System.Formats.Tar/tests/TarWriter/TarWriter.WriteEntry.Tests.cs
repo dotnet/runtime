@@ -323,27 +323,28 @@ namespace System.Formats.Tar.Tests
         {
             Assert.Equal(255, maxPathComponent.Length);
 
-            var ms = new MemoryStream();
-            using (var writer = new TarWriter(ms, true))
+            TarEntry entry;
+            MemoryStream ms = new();
+            using (TarWriter writer = new(ms, true))
             {
                 TarEntryType entryType = format == TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
-                var entry1 = InvokeTarEntryCreationConstructor(format, entryType, maxPathComponent);
-                writer.WriteEntry(entry1);
+                entry = InvokeTarEntryCreationConstructor(format, entryType, maxPathComponent);
+                writer.WriteEntry(entry);
 
-                var entry2 = InvokeTarEntryCreationConstructor(format, entryType, Path.Join(maxPathComponent, maxPathComponent));
-                writer.WriteEntry(entry2);
+                entry = InvokeTarEntryCreationConstructor(format, entryType, Path.Join(maxPathComponent, maxPathComponent));
+                writer.WriteEntry(entry);
             }
 
             ms.Position = 0;
-            using var reader = new TarReader(ms);
+            using TarReader reader = new(ms);
 
-            TarEntry readEntry = reader.GetNextEntry();
+            entry = reader.GetNextEntry();
             string expectedName = GetExpectedNameForFormat(format, maxPathComponent);
-            Assert.Equal(expectedName, readEntry.Name);
+            Assert.Equal(expectedName, entry.Name);
 
-            readEntry = reader.GetNextEntry();
+            entry = reader.GetNextEntry();
             expectedName = GetExpectedNameForFormat(format, Path.Join(maxPathComponent, maxPathComponent));
-            Assert.Equal(expectedName, readEntry.Name);
+            Assert.Equal(expectedName, entry.Name);
 
             Assert.Null(reader.GetNextEntry());
 
