@@ -4,6 +4,7 @@
 using System;
 using System.Threading;
 using Microsoft.Extensions.Primitives;
+using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.Configuration
 {
@@ -27,7 +28,7 @@ namespace Microsoft.Extensions.Configuration
         public bool HasChanged => _cts.IsCancellationRequested;
 
         /// <summary>
-        /// Registers for a callback that will be invoked when the entry has changed. <see cref="Microsoft.Extensions.Primitives.IChangeToken.HasChanged"/>
+        /// Registers for a callback that will be invoked when the entry has changed. <see cref="IChangeToken.HasChanged"/>
         /// MUST be set before the callback is invoked.
         /// </summary>
         /// <param name="callback">The callback to invoke.</param>
@@ -35,58 +36,17 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The <see cref="CancellationToken"/> registration.</returns>
         public IDisposable RegisterChangeCallback(Action<object?> callback, object? state)
         {
-#if NETCOREAPP || NETSTANDARD2_1
-            try
-            {
-                return _cts.Token.UnsafeRegister(callback, state);
-            }
-            catch (ObjectDisposedException)
-            {
-                // Reset the flag so that we can indicate to future callers that this wouldn't work.
-                ActiveChangeCallbacks = false;
-            }
-#else
-            // Don't capture the current ExecutionContext and its AsyncLocals onto the token registration causing them to live forever
-            bool restoreFlow = false;
-            if (!ExecutionContext.IsFlowSuppressed())
-            {
-                ExecutionContext.SuppressFlow();
-                restoreFlow = true;
-            }
-
-            try
-            {
-                return _cts.Token.Register(callback, state);
-            }
-            catch (ObjectDisposedException)
-            {
-                // Reset the flag so that we can indicate to future callers that this wouldn't work.
-                ActiveChangeCallbacks = false;
-            }
-            finally
-            {
-                // Restore the current ExecutionContext
-                if (restoreFlow)
-                {
-                    ExecutionContext.RestoreFlow();
-                }
-            }
-#endif
-            return NullDisposable.Instance;
+            return ChangeCallbackRegistrar.UnsafeRegisterChangeCallback(
+                callback,
+                state,
+                _cts,
+                static s => s.ActiveChangeCallbacks = false,
+                this);
         }
 
         /// <summary>
         /// Used to trigger the change token when a reload occurs.
         /// </summary>
         public void OnReload() => _cts.Cancel();
-
-        private sealed class NullDisposable : IDisposable
-        {
-            public static readonly NullDisposable Instance = new NullDisposable();
-
-            public void Dispose()
-            {
-            }
-        }
     }
 }
