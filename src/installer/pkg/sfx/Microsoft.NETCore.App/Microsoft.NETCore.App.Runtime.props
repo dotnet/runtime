@@ -148,7 +148,7 @@
   <Target Name="CreateDotVersionFile"
           DependsOnTargets="InitializeSourceControlInformationFromSourceControlManager"
           BeforeTargets="GetFilesToPublish"
-          Condition="'$(DisableSourceLink)' != 'true'">
+          Condition="'$(EnableSourceLink)' != 'false'">
     <ItemGroup>
       <_VersionFile Include="$(IntermediateOutputPath).version" TargetPath="shared/$(SharedFrameworkName)/$(Version)/" />
     </ItemGroup>
