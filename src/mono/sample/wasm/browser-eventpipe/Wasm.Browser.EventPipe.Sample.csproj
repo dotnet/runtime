@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="..\DefaultBrowserSample.props" />
+  <Import Project="..\DefaultBrowserSample.targets" />
   <PropertyGroup>
     <WasmBuildNative>true</WasmBuildNative>
     <FeatureWasmPerfTracing>true</FeatureWasmPerfTracing>
