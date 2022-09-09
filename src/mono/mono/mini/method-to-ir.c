@@ -7460,7 +7460,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 
 			// The method to be called may have already been resolved when handling a previous opcode. In that
 			// case, we ignore the operand and act as CALL, instead of CALLVIRT.
-			// E.g. #32166 (box+callvirt optimization)
+			// E.g. https://github.com/dotnet/runtime/issues/32166 (box+callvirt optimization)
 			if (cmethod_override) {
 				cmethod = cmethod_override;
 				cmethod_override = NULL;
