@@ -375,7 +375,6 @@ namespace System.Formats.Tar
             if (_name.Length > FieldLengths.Name)
             {
                 int prefixBytesLength = Math.Min(_name.Length - FieldLengths.Name, FieldLengths.Prefix);
-                Debug.Assert(prefixBytesLength <= 256);
                 Span<byte> remaining = stackalloc byte[prefixBytesLength];
                 int encoded = Encoding.ASCII.GetBytes(_name.AsSpan(FieldLengths.Name, prefixBytesLength), remaining);
                 Debug.Assert(encoded == remaining.Length);
