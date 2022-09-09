@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Internal
         /// </summary>
         /// <param name="callback">The callback to invoke.</param>
         /// <param name="state">State to be passed into the callback.</param>
-        /// <param name="Token">The <see cref="CancellationToken"/> to invoke the callback with.</param>
+        /// <param name="token">The <see cref="CancellationToken"/> to invoke the callback with.</param>
         /// <param name="onFailure">The action to execute when an <see cref="ObjectDisposedException"/> is thrown. Should be used to set the IChangeToken's ActiveChangeCallbacks property to false.</param>
         /// <param name="onFailureState">The state to be passed into the <paramref name="onFailure"/> action.</param>
         /// <returns>The <see cref="CancellationToken"/> registration.</returns>
@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.Internal
 
             try
             {
-                return Token.Register(callback, state);
+                return token.Register(callback, state);
             }
             catch (ObjectDisposedException)
             {
