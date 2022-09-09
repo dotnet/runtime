@@ -26,10 +26,21 @@ namespace System
             get
             {
                 DateTime utcDateTime = DateTime.UtcNow;
+                object? localDateTimeOffset;
 
                 if (s_androidTZDataLoaded == 1) // The background thread finished, the cache is loaded.
                 {
                     return ToLocalTime(utcDateTime, true);
+                }
+                else
+                {
+                    localDateTimeOffset = AppContext.GetData("System.TimeZoneInfo.LocalDateTimeOffset");
+                    if (localDateTimeOffset == null) // If no offset property provided through monovm app context, default
+                    {
+                        // no need to create the thread, load tzdata now
+                        s_androidTZDataLoaded = 1;
+                        return ToLocalTime(utcDateTime, true);
+                    }
                 }
 
                 // The cache isn't loaded yet.
@@ -50,10 +61,6 @@ namespace System
                         }
                     }) { IsBackground = true }.Start();
                 }
-
-                object? localDateTimeOffset = AppContext.GetData("System.TimeZoneInfo.LocalDateTimeOffset");
-                if (localDateTimeOffset == null) // If no offset property provided through monovm app context, default
-                    return ToLocalTime(utcDateTime, true);
 
                 // Fast path obtained offset incorporated into ToLocalTime(DateTime.UtcNow, true) logic
                 int localDateTimeOffsetSeconds = Convert.ToInt32(localDateTimeOffset);
