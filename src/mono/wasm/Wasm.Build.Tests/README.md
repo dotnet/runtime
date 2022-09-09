@@ -53,3 +53,7 @@ For this, the builds get cached using `BuildArgs` as the key.
 
 - Each test gets a randomly generated "id". This `id` can be used to find the
   binlogs, or the test directories.
+
+## Useful environment variables
+
+- `SHOW_BUILD_OUTPUT` - will show the build output to the console
