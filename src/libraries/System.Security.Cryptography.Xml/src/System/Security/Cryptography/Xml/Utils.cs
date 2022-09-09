@@ -422,6 +422,7 @@ namespace System.Security.Cryptography.Xml
         {
             StringBuilder sb = new StringBuilder();
             sb.Append(data);
+            sb.Replace("&#13;", "&#xD");
             Utils.SBReplaceCharWithString(sb, (char)13, "&#xD;");
             return sb.ToString();
         }
@@ -433,6 +434,7 @@ namespace System.Security.Cryptography.Xml
             sb.Replace("&", "&amp;");
             sb.Replace("<", "&lt;");
             sb.Replace(">", "&gt;");
+            sb.Replace("&#13;", "&#xD");
             SBReplaceCharWithString(sb, (char)13, "&#xD;");
             return sb.ToString();
         }
@@ -449,6 +451,9 @@ namespace System.Security.Cryptography.Xml
             sb.Replace("&", "&amp;");
             sb.Replace("<", "&lt;");
             sb.Replace("\"", "&quot;");
+            sb.Replace("&#9;", "&#x9;");
+            sb.Replace("&#10;", "&#xA;");
+            sb.Replace("&#13;", "&#xD");
             SBReplaceCharWithString(sb, (char)9, "&#x9;");
             SBReplaceCharWithString(sb, (char)10, "&#xA;");
             SBReplaceCharWithString(sb, (char)13, "&#xD;");
