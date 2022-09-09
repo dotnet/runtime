@@ -185,6 +185,13 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(C14NSpecExample6Output, result);
         }
 
+        [Fact]
+        public void C14NSpecExample7()
+        {
+            string result = TestHelpers.ExecuteTransform(C14NSpecExample7Input, new XmlDsigC14NTransform());
+            Assert.Equal(C14NSpecExample7Output, result);
+        }
+
         //
         // Example 1 from C14N spec - PIs, Comments, and Outside of Document Element:
         // http://www.w3.org/TR/xml-c14n#Example-OutsideDoc
@@ -343,6 +350,15 @@ namespace System.Security.Cryptography.Xml.Tests
                     "<doc>&#169;</doc>\n";
         static string C14NSpecExample6Output =
                 "<doc>\xC2\xA9</doc>";
+
+        //
+        // Example 7 from C14N spec - Character Modifications and Character References
+        // https://www.w3.org/TR/xml-c14n/#Example-Chars
+        //
+        static string C14NSpecExample7Input =
+                    "<doc>&#13;</doc>";
+        static string C14NSpecExample7Output =
+                    "<doc>&#xD;</doc>";
 
         [Fact]
         public void SimpleNamespacePrefixes()
