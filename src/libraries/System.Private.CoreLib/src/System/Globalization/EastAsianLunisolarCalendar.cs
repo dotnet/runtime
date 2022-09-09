@@ -646,7 +646,7 @@ namespace System.Globalization
             return InternalIsLeapYear(year);
         }
 
-        private const int DefaultGregorianTwoDigitYearMax = 2029;
+        private const int DefaultGregorianTwoDigitYearMax = 2049;
 
         public override int TwoDigitYearMax
         {
