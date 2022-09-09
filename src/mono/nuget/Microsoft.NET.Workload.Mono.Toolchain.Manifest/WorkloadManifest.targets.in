@@ -16,10 +16,16 @@
       <_BrowserWorkloadDisabled>$(_BrowserWorkloadNotSupportedForTFM)</_BrowserWorkloadDisabled>
 
       <!-- Is the workload for the target framework available -->
-      <WasmNativeWorkloadAvailable />
-      <WasmNativeWorkloadAvailable Condition="'$(TargetsNet8)' == 'true' and $(WasmNativeWorkloadAvailableList.Contains('+net8.0+'))">true</WasmNativeWorkloadAvailable>
-      <WasmNativeWorkloadAvailable Condition="'$(TargetsNet7)' == 'true' and $(WasmNativeWorkloadAvailableList.Contains('+net7.0+'))">true</WasmNativeWorkloadAvailable>
-      <WasmNativeWorkloadAvailable Condition="'$(TargetsNet6)' == 'true' and $(WasmNativeWorkloadAvailableList.Contains('+net6.0+'))">true</WasmNativeWorkloadAvailable>
+      <!--<WasmNativeWorkloadAvailable />-->
+      <!--<WasmNativeWorkloadAvailable Condition="'$(TargetsNet8)' == 'true' and $(WasmNativeWorkloadAvailableList.Contains('+net8.0+'))">true</WasmNativeWorkloadAvailable>-->
+      <!--<WasmNativeWorkloadAvailable Condition="'$(TargetsNet7)' == 'true' and $(WasmNativeWorkloadAvailableList.Contains('+net7.0+'))">true</WasmNativeWorkloadAvailable>-->
+      <!--<WasmNativeWorkloadAvailable Condition="'$(TargetsNet6)' == 'true' and $(WasmNativeWorkloadAvailableList.Contains('+net6.0+'))">true</WasmNativeWorkloadAvailable>-->
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
+       <WasmNativeWorkloadAvailable Condition="'$(TargetsNet7)' == 'true' and '$(WasmNativeWorkload7)' == 'true' and '$(WasmNativeWorkload)' != 'false'">true</WasmNativeWorkloadAvailable>
+       <WasmNativeWorkloadAvailable Condition="'$(TargetsNet8)' == 'true' and '$(WasmNativeWorkload8)' == 'true' and '$(WasmNativeWorkload)' != 'false'">true</WasmNativeWorkloadAvailable>
+       <WasmNativeWorkloadAvailable Condition="'$(TargetsNet6)' == 'true' and '$(WasmNativeWorkload)' == 'true'">true</WasmNativeWorkloadAvailable>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
