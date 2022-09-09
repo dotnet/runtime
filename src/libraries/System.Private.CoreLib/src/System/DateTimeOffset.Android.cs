@@ -32,25 +32,24 @@ namespace System
                     return ToLocalTime(utcDateTime, true);
                 }
 
-                if (Interlocked.CompareExchange(ref s_androidTZDataLoaded, 0, -1) != -1)
+                // The cache isn't loaded yet.
+                if (Interlocked.CompareExchange(ref s_androidTZDataLoaded, 0, -1) == -1)
                 {
-                    return ToLocalTime(utcDateTime, true);
+                    new Thread(() =>
+                    {
+                        try
+                        {
+                            // Delay the background thread to avoid impacting startup, if it still coincides after 1s, startup is already perceived as slow
+                            Thread.Sleep(1000);
+
+                            _ = TimeZoneInfo.Local; // Load AndroidTZData
+                        }
+                        finally
+                        {
+                            Volatile.Write(ref s_androidTZDataLoaded, 1);
+                        }
+                    }) { IsBackground = true }.Start();
                 }
-
-                new Thread(() =>
-                {
-                    try
-                    {
-                        // Delay the background thread to avoid impacting startup, if it still coincides after 1s, startup is already perceived as slow
-                        Thread.Sleep(1000);
-
-                        _ = TimeZoneInfo.Local; // Load AndroidTZData
-                    }
-                    finally
-                    {
-                        Volatile.Write(ref s_androidTZDataLoaded, 1);
-                    }
-                }) { IsBackground = true }.Start();
 
                 object? localDateTimeOffset = AppContext.GetData("System.TimeZoneInfo.LocalDateTimeOffset");
                 if (localDateTimeOffset == null) // If no offset property provided through monovm app context, default
