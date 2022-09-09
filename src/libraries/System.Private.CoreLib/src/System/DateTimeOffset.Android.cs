@@ -7,10 +7,8 @@ namespace System
 {
     public readonly partial struct DateTimeOffset
     {
-        private static bool s_androidTZDataLoaded;
-        private static readonly object s_localUtcOffsetLock = new();
-        private static Thread? s_loadAndroidTZData;
-        private static bool s_startNewBackgroundThread = true;
+        // 0 == in process of being loaded, 1 == loaded
+        private static int s_androidTZDataLoaded = -1;
 
         // Now on Android does the following
         // 1) quickly returning a fast path result when first called if the right AppContext data element is set
@@ -29,55 +27,30 @@ namespace System
             {
                 DateTime utcDateTime = DateTime.UtcNow;
 
-                if (s_androidTZDataLoaded) // The background thread finished, the cache is loaded.
-                    return ToLocalTime(utcDateTime, true);
-
-                if (s_startNewBackgroundThread) // The cache isn't loaded and no background thread has been created
+                if (s_androidTZDataLoaded == 1) // The background thread finished, the cache is loaded.
                 {
-                    lock (s_localUtcOffsetLock)
-                    {
-                        // Now may be called multiple times before a cache is loaded and a background thread is running,
-                        // once the lock is available, check for a cache and background thread.
-                        if (s_androidTZDataLoaded)
-                            return ToLocalTime(utcDateTime, true);
-
-                        if (s_loadAndroidTZData == null)
-                        {
-                            s_loadAndroidTZData = new Thread(() => {
-                                // Delay the background thread to avoid impacting startup, if it still coincides after 1s, startup is already perceived as slow
-                                Thread.Sleep(1000);
-
-                                _ = TimeZoneInfo.Local; // Load AndroidTZData
-                                s_androidTZDataLoaded = true;
-
-                                lock (s_localUtcOffsetLock)
-                                {
-                                    s_loadAndroidTZData = null; // Ensure thread is cleared when cache is loaded
-                                }
-                            }) { IsBackground = true };
-                        }
-                    }
-
-                    if (s_startNewBackgroundThread)
-                    {
-                        // Because Start does not block the calling thread,
-                        // setting the boolean flag to false immediately after should
-                        // prevent two calls to DateTimeOffset.Now in quick succession
-                        // from both reaching here.
-                        //
-                        // In the event multiple threads hit Start at the same time,
-                        // swallow the exception and move on.
-                        try
-                        {
-                            s_loadAndroidTZData.Start();
-                            s_startNewBackgroundThread = false;
-                        }
-                        catch
-                        {
-                        }
-                    }
+                    return ToLocalTime(utcDateTime, true);
                 }
 
+                if (Interlocked.CompareExchange(ref s_androidTZDataLoaded, 0, -1) != -1)
+                {
+                    return ToLocalTime(utcDateTime, true);
+                }
+
+                new Thread(() =>
+                {
+                    try
+                    {
+                        // Delay the background thread to avoid impacting startup, if it still coincides after 1s, startup is already perceived as slow
+                        Thread.Sleep(1000);
+
+                        _ = TimeZoneInfo.Local; // Load AndroidTZData
+                    }
+                    finally
+                    {
+                        Volatile.Write(ref s_androidTZDataLoaded, 1);
+                    }
+                }) { IsBackground = true }.Start();
 
                 object? localDateTimeOffset = AppContext.GetData("System.TimeZoneInfo.LocalDateTimeOffset");
                 if (localDateTimeOffset == null) // If no offset property provided through monovm app context, default
