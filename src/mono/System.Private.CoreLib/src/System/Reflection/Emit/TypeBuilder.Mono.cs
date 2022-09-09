@@ -956,12 +956,13 @@ namespace System.Reflection.Emit
 
         /* Needed to keep signature compatibility with MS.NET */
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2085:UnrecognizedReflectionPattern",
-            Justification = "Linker doesn't recognize GetEvents(BindingFlags.Public) but this is what the body is doing")]
         public override EventInfo[] GetEvents()
         {
             const BindingFlags DefaultBindingFlags = BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance;
+            // Suppression can be removed after https://github.com/dotnet/linker/issues/2673 is resolved.
+#pragma warning disable IL2085
             return GetEvents(DefaultBindingFlags);
+#pragma warning restore IL2085
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]

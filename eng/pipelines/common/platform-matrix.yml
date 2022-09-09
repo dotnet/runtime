@@ -37,7 +37,7 @@ jobs:
       platform: Linux_arm
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-18.04-cross-arm-20220426130400-6e40d49
+        image: ubuntu-18.04-cross-arm-20220907130538-70ed2e8
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -87,7 +87,7 @@ jobs:
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
         ${{ if eq(parameters.container, '') }}:
-          image: ubuntu-18.04-cross-arm64-20220427171722-6e40d49
+          image: ubuntu-18.04-cross-arm64-20220907130538-70ed2e8
         ${{ if ne(parameters.container, '') }}:
           image: ${{ parameters.container }}
         registry: mcr
