@@ -924,6 +924,12 @@ namespace Microsoft.Extensions.Configuration
 
             var propertyBindingPoint = new BindingPoint(initialValue: config.GetSection(parameterName).Value, isReadOnly: false);
 
+            BindInstance(
+                parameter.ParameterType,
+                propertyBindingPoint,
+                config.GetSection(parameterName),
+                options);
+
             if (propertyBindingPoint.Value is null)
             {
                 if (ParameterDefaultValue.TryGetDefaultValue(parameter, out object? defaultValue))
@@ -935,12 +941,6 @@ namespace Microsoft.Extensions.Configuration
                     throw new InvalidOperationException(SR.Format(SR.Error_ParameterHasNoMatchingConfig, type, parameterName));
                 }
             }
-
-            BindInstance(
-                parameter.ParameterType,
-                propertyBindingPoint,
-                config.GetSection(parameterName),
-                options);
 
             return propertyBindingPoint.Value;
         }
