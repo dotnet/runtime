@@ -40,7 +40,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             IEnumerable<object?[]> GetData(bool aot, bool nativeRelinking, bool invariant)
                 => ConfigWithAOTData(aot)
                         .Multiply(new object[] { nativeRelinking, invariant })
-                        .WithRunHosts(RunHost.V8)
+                        .WithRunHosts(RunHost.Chrome)
                         .UnwrapItemsAsArrays().ToList();
         }
 
