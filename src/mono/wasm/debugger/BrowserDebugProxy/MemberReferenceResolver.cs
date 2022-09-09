@@ -213,44 +213,31 @@ namespace Microsoft.WebAssembly.Diagnostics
         // Checks Locals, followed by `this`
         public async Task<JObject> Resolve(string varName, CancellationToken token)
         {
-            Console.WriteLine($"to no Resolve 1 - {varName}");
             // question mark at the end of expression is invalid
             if (varName[^1] == '?')
                 throw new ReturnAsErrorException($"Expected expression.", "ReferenceError");
-            Console.WriteLine($"to no Resolve 2 - {varName}");
+
             //has method calls
             if (varName.Contains('('))
                 return null;
-            Console.WriteLine($"to no Resolve 3 - {varName}");
+
             if (scopeCache.MemberReferences.TryGetValue(varName, out JObject ret))
-            {
-                Console.WriteLine($"to no Resolve 3.1 - {varName}");
                 return ret;
-            }
-            Console.WriteLine($"to no Resolve 4 - {varName}");
 
             if (scopeCache.ObjectFields.TryGetValue(varName, out JObject valueRet))
-            {
-                Console.WriteLine($"to no Resolve 4.1 - {varName}");
                 return await GetValueFromObject(valueRet, token);
-            }
-            Console.WriteLine($"to no Resolve 5 - {varName}");
+
             string[] parts = varName.Split(".", StringSplitOptions.TrimEntries);
             if (parts.Length == 0 || string.IsNullOrEmpty(parts[0]))
                 throw new ReturnAsErrorException($"Failed to resolve expression: {varName}", "ReferenceError");
-            Console.WriteLine($"to no Resolve 6 - {varName}");
+
             JObject retObject = await ResolveAsLocalOrThisMember(parts[0]);
-            Console.WriteLine($"to no Resolve 7 - {varName}");
             bool throwOnNullReference = parts[0][^1] != '?';
             if (retObject != null && parts.Length > 1)
-            {
-                Console.WriteLine($"to no Resolve 8 - {varName}");
                 retObject = await ResolveAsInstanceMember(parts, retObject, throwOnNullReference);
-            }
 
             if (retObject == null)
             {
-                Console.WriteLine($"to no Resolve 9 - {varName}");
                 (retObject, ArraySegment<string> remaining) = await ResolveStaticMembersInStaticTypes(parts, token);
                 if (remaining != null && remaining.Count != 0)
                 {
@@ -261,12 +248,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     else
                     {
-                        Console.WriteLine($"to no Resolve 10 - {varName}");
                         retObject = await ResolveAsInstanceMember(remaining, retObject, throwOnNullReference);
                     }
                 }
             }
-            Console.WriteLine($"to no Resolve 11 - {varName}");
+
             scopeCache.MemberReferences[varName] = retObject;
             return retObject;
 
