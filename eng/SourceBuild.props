@@ -39,7 +39,6 @@
       <InnerBuildArgs>$(InnerBuildArgs) /p:PortableBuild=$(SourceBuildPortable)</InnerBuildArgs>
       <InnerBuildArgs Condition="'$(OfficialBuildId)' != ''">$(InnerBuildArgs) /p:OfficialBuildId=$(OfficialBuildId)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:ContinuousIntegrationBuild=$(ContinuousIntegrationBuild)</InnerBuildArgs>
-      <InnerBuildArgs>$(InnerBuildArgs) /p:DotNetPublishUsingPipelines=$(DotNetPublishUsingPipelines)</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:BuildDebPackage=false</InnerBuildArgs>
       <InnerBuildArgs>$(InnerBuildArgs) /p:EnableNgenOptimization=false</InnerBuildArgs>
     </PropertyGroup>
