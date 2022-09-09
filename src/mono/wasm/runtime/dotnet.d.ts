@@ -236,85 +236,11 @@ declare type ModuleAPI = {
 declare function createDotnetRuntime(moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)): Promise<RuntimeAPI>;
 declare type CreateDotnetRuntimeType = typeof createDotnetRuntime;
 
-interface IDisposable {
-    dispose(): void;
-    get isDisposed(): boolean;
-}
-declare const enum MemoryViewType {
-    Byte = 0,
-    Int32 = 1,
-    Double = 2
-}
-interface IMemoryView {
-    /**
-     * copies elements from provided source to the wasm memory.
-     * target has to have the elements of the same type as the underlying C# array.
-     * same as TypedArray.set()
-     */
-    set(source: TypedArray, targetOffset?: number): void;
-    /**
-     * copies elements from wasm memory to provided target.
-     * target has to have the elements of the same type as the underlying C# array.
-     */
-    copyTo(target: TypedArray, sourceOffset?: number): void;
-    /**
-     * same as TypedArray.slice()
-     */
-    slice(start?: number, end?: number): TypedArray;
-    get length(): number;
-    get byteLength(): number;
-}
-
 declare global {
     function getDotnetRuntime(runtimeId: number): RuntimeAPI | undefined;
 }
 
 declare const dotnet: ModuleAPI["dotnet"];
 declare const exit: ModuleAPI["exit"];
-/**
- * Span class is JS wrapper for System.Span<T>. This view doesn't own the memory, nor pin the underlying array.
- * It's ideal to be used on call from C# with the buffer pinned there or with unmanaged memory.
- * It is disposed at the end of the call to JS.
- */
-declare class Span implements IMemoryView, IDisposable {
-    dispose(): void;
-    get isDisposed(): boolean;
-    set(source: TypedArray, targetOffset?: number | undefined): void;
-    copyTo(target: TypedArray, sourceOffset?: number | undefined): void;
-    slice(start?: number | undefined, end?: number | undefined): TypedArray;
-    get length(): number;
-    get byteLength(): number;
-}
-/**
- * ArraySegment class is JS wrapper for System.ArraySegment<T>.
- * This wrapper would also pin the underlying array and hold GCHandleType.Pinned until this JS instance is collected.
- * User could dispose it manually.
- */
-declare class ArraySegment implements IMemoryView, IDisposable {
-    dispose(): void;
-    get isDisposed(): boolean;
-    set(source: TypedArray, targetOffset?: number | undefined): void;
-    copyTo(target: TypedArray, sourceOffset?: number | undefined): void;
-    slice(start?: number | undefined, end?: number | undefined): TypedArray;
-    get length(): number;
-    get byteLength(): number;
-}
-/**
- * Represents proxy to the System.Exception
- */
-declare class ManagedError extends Error implements IDisposable {
-    get stack(): string | undefined;
-    dispose(): void;
-    get isDisposed(): boolean;
-    toString(): string;
-}
-/**
- * Represents proxy to the System.Object
- */
-declare class ManagedObject implements IDisposable {
-    dispose(): void;
-    get isDisposed(): boolean;
-    toString(): string;
-}
 
-export { ArraySegment, AssetBehaviours, AssetEntry, CreateDotnetRuntimeType, DotnetModuleConfig, EmscriptenModule, IMemoryView, LoadingResource, ManagedError, ManagedObject, MemoryViewType, ModuleAPI, MonoConfig, NativePointer, ResourceRequest, RuntimeAPI, Span, createDotnetRuntime as default, dotnet, exit };
+export { CreateDotnetRuntimeType, DotnetModuleConfig, EmscriptenModule, ModuleAPI, MonoConfig, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };

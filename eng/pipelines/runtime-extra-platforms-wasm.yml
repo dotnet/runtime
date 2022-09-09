@@ -86,7 +86,7 @@ jobs:
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
       scenarios:
-        - WasmTestOnNodeJs
+        - WasmTestOnNodeJS
 
   # Library tests - Windows
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
@@ -98,7 +98,7 @@ jobs:
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       scenarios:
         - WasmTestOnBrowser
-        - WasmTestOnNodeJs
+        - WasmTestOnNodeJS
 
   # Library tests with full threading 
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
@@ -118,7 +118,7 @@ jobs:
       scenarios:
         - normal
         - WasmTestOnBrowser
-        - WasmTestOnNodeJs
+        - WasmTestOnNodeJS
 
   # Library tests with internal threads only
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
@@ -138,7 +138,7 @@ jobs:
       scenarios:
         - normal
         - WasmTestOnBrowser
-        - WasmTestOnNodeJs
+        - WasmTestOnNodeJS
 
   # EAT Library tests - only run on linux
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -178,13 +178,14 @@ jobs:
 
 - ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeNonLibTests, true)) }}:
   # Wasm.Build.Tests
-  - template: /eng/pipelines/common/templates/wasm-build-tests.yml
-    parameters:
-      platforms:
-        - Browser_wasm
-        - Browser_wasm_win
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+  # Issue: https://github.com/dotnet/runtime/issues/75223
+  #- template: /eng/pipelines/common/templates/wasm-build-tests.yml
+    #parameters:
+      #platforms:
+        #- Browser_wasm
+        #- Browser_wasm_win
+      #isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      #isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
 
   # Debugger tests
   - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml

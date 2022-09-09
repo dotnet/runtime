@@ -47,7 +47,6 @@ internal sealed class DtcProxyShimFactory
         object? pvConfigPararms,
         [MarshalAs(UnmanagedType.Interface)] out ITransactionDispenser ppvObject);
 
-    [UnconditionalSuppressMessage("Trimming", "IL2050", Justification = "Leave me alone")]
     public void ConnectToProxy(
         string? nodeName,
         Guid resourceManagerIdentifier,
@@ -63,7 +62,7 @@ internal sealed class DtcProxyShimFactory
 
         lock (_proxyInitLock)
         {
-            DtcGetTransactionManagerExW(nodeName, null, Guids.IID_ITransactionDispenser_Guid, 0, null, out ITransactionDispenser? localDispenser);
+            DtcGetTransactionManagerExWLocal(nodeName, null, Guids.IID_ITransactionDispenser_Guid, 0, null, out ITransactionDispenser? localDispenser);
 
             // Check to make sure the node name matches.
             if (nodeName is not null)
@@ -117,6 +116,13 @@ internal sealed class DtcProxyShimFactory
             resourceManagerShim = rmShim;
             _transactionDispenser = localDispenser;
             whereabouts = tmpWhereabouts;
+
+            [UnconditionalSuppressMessage("Trimming", "IL2050",
+                Justification = "The PInvoke has object/interface typed parameters which are potentially trim incompatible, but in this case they're OK")]
+            static void DtcGetTransactionManagerExWLocal(string? pszHost, string? pszTmName, in Guid riid, int grfOptions, object? pvConfigPararms, out ITransactionDispenser ppvObject)
+            {
+                DtcGetTransactionManagerExW(pszHost, pszTmName, riid, grfOptions, pvConfigPararms, out ppvObject);
+            }
         }
     }
 
