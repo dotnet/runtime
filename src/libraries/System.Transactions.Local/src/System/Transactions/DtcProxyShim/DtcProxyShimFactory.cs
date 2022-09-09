@@ -64,6 +64,17 @@ internal sealed class DtcProxyShimFactory
             throw new PlatformNotSupportedException(SR.DistributedNotSupportOn32Bits);
         }
 
+        ConnectToProxyCore(nodeName, resourceManagerIdentifier, managedIdentifier, out nodeNameMatches, out whereabouts, out resourceManagerShim);
+    }
+
+    private void ConnectToProxyCore(
+        string? nodeName,
+        Guid resourceManagerIdentifier,
+        object managedIdentifier,
+        out bool nodeNameMatches,
+        out byte[] whereabouts,
+        out ResourceManagerShim resourceManagerShim)
+    {
         lock (_proxyInitLock)
         {
 #pragma warning disable IL2026 // This warning is left in the product so developers get an ILLink warning when trimming an app using this transaction support
