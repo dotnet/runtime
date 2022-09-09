@@ -9,9 +9,11 @@
 // (C) 2002, 2003 Motus Technologies Inc. (http://www.motus.com)
 // Copyright (C) 2004-2005, 2008 Novell, Inc (http://www.novell.com)
 
+using System.Buffers.Binary;
 using System.Globalization;
 using System.IO;
 using System.Net;
+using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
@@ -1593,17 +1595,14 @@ namespace System.Security.Cryptography.Xml.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/74115")]
         public void VerifyXmlResolver(bool provideResolver)
         {
-            HttpListener listener;
+            TcpListener listener;
             int port = 9000;
 
             while (true)
             {
-                listener = new HttpListener();
-                listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-                listener.IgnoreWriteExceptions = true;
+                listener = new TcpListener(IPAddress.Loopback, port);
 
                 try
                 {
@@ -1641,7 +1640,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
             bool listenerContacted = false;
             CancellationTokenSource tokenSource = new CancellationTokenSource();
-            Task listenerTask = ProcessRequests(listener, req => listenerContacted = true, tokenSource.Token);
+            Task listenerTask = ProcessRequests(listener, () => listenerContacted = true, tokenSource.Token);
 
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(xml);
@@ -1677,36 +1676,80 @@ namespace System.Security.Cryptography.Xml.Tests
                 catch
                 {
                 }
-
-                ((IDisposable)listener).Dispose();
             }
 
             static async Task ProcessRequests(
-                HttpListener listener,
-                Action<HttpListenerRequest> requestReceived,
+                TcpListener listener,
+                Action requestReceived,
                 CancellationToken cancellationToken)
             {
+                const string Response =
+                    "HTTP/1.1 200 OK\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Length: 0\r\n\r\n";
+
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    HttpListenerContext ctx;
+                    Socket socket;
 
                     try
                     {
-                        ctx = await listener.GetContextAsync();
+#if NETCOREAPP
+                        socket = await listener.AcceptSocketAsync(cancellationToken);
+#else
+                        socket = await listener.AcceptSocketAsync();
+#endif
                     }
                     catch
                     {
                         break;
                     }
 
-                    HttpListenerRequest req = ctx.Request;
-                    requestReceived(req);
-
-                    using (HttpListenerResponse resp = ctx.Response)
+                    using (socket)
                     {
-                        resp.ContentType = "text/plain";
-                        resp.ContentEncoding = Encoding.UTF8;
-                        resp.ContentLength64 = 0;
+                        requestReceived();
+                        byte[] buf = new byte[1024];
+
+#if NETCOREAPP
+                        // The CoreFX XML libraries throw an exception if we don't drain the request
+                        // (unless we don't dispose the socket).
+                        // For some reason each ReceiveAsync only gets 10 bytes at a time,
+                        // so just keep reading.
+                        int offset = 0;
+
+                        do
+                        {
+                            int read = await socket.ReceiveAsync(buf.AsMemory(offset), cancellationToken);
+
+                            if (read <= 0)
+                            {
+                                break;
+                            }
+
+                            offset += read;
+
+                            if (offset >= buf.Length)
+                            {
+                                throw new InvalidOperationException();
+                            }
+
+                            if (offset > sizeof(int))
+                            {
+                                int last = BinaryPrimitives.ReadInt32LittleEndian(buf.AsSpan(offset - sizeof(int)));
+
+                                // CRLFCRLF, little-endian
+                                if (last == 0x0A0D0A0D)
+                                {
+                                    break;
+                                }
+                            }
+                        } while (true);
+
+                        int len = Encoding.ASCII.GetBytes(Response, buf);
+                        await socket.SendAsync(buf.AsMemory(0, len), cancellationToken);
+#else
+                        cancellationToken.ThrowIfCancellationRequested();
+                        int len = Encoding.ASCII.GetBytes(Response, 0, Response.Length, buf, 0);
+                        socket.Send(buf, len, SocketFlags.None);
+#endif
                     }
                 }
             }
