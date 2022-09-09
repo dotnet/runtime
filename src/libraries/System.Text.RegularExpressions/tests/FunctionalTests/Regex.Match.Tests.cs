@@ -1278,6 +1278,22 @@ namespace System.Text.RegularExpressions.Tests
             Assert.InRange(sw.Elapsed.TotalSeconds, 0, 10); // arbitrary upper bound that should be well above what's needed with a 1ms timeout
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public void NonBacktracking_NoEndAnchorMatchAtTimeoutCheck()
+        {
+            // This constant must be at least as large as the one in the implementation that sets the maximum number
+            // of innermost loop iterations between timeout checks.
+            const int CharsToTriggerTimeoutCheck = 10000;
+            // Check that it is indeed large enough to trigger timeouts. If this fails the constant above needs to be larger.
+            Assert.Throws<RegexMatchTimeoutException>(() => new Regex("a*", RegexHelpers.RegexOptionNonBacktracking, TimeSpan.FromTicks(1))
+                .Match(new string('a', CharsToTriggerTimeoutCheck)));
+
+            // The actual test: ^a*$ shouldn't match in a string ending in 'b'
+            Regex testPattern = new Regex("^a*$", RegexHelpers.RegexOptionNonBacktracking, TimeSpan.FromHours(1));
+            string input = string.Concat(new string('a', CharsToTriggerTimeoutCheck), 'b');
+            Assert.False(testPattern.IsMatch(input));
+        }
+
         public static IEnumerable<object[]> Match_Advanced_TestData()
         {
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
