@@ -94,7 +94,7 @@ exit /b %EXIT_CODE%
 REM Functions
 :SetEnvVars
 if [%TEST_USING_WORKLOADS%] == [true] (
-    set _DIR_NAME=dotnet-net7
+    set _DIR_NAME=dotnet-net7+latest
     set SDK_HAS_WORKLOAD_INSTALLED=true
 ) else (
     set _DIR_NAME=dotnet-none

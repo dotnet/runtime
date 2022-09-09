@@ -139,7 +139,7 @@
 
     <!-- FIXME: Using net7 workload here, since we are building the test projects with net7.0
                 right now. -->
-    <SdkWithWorkloadForTestingPath>$(ArtifactsBinDir)dotnet-net7\</SdkWithWorkloadForTestingPath>
+    <SdkWithWorkloadForTestingPath>$(ArtifactsBinDir)dotnet-net7+latest\</SdkWithWorkloadForTestingPath>
     <SdkWithWorkloadForTestingPath>$([MSBuild]::NormalizeDirectory($(SdkWithWorkloadForTestingPath)))</SdkWithWorkloadForTestingPath>
 
     <SdkWithWorkloadStampPath>$(SdkWithWorkloadForTestingPath)version-$(SdkVersionForWorkloadTesting).stamp</SdkWithWorkloadStampPath>
