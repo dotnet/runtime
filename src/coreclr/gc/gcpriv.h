@@ -4962,8 +4962,10 @@ protected:
     PER_HEAP
     heap_segment* freeable_uoh_segment;
 
+#ifndef USE_REGIONS
     PER_HEAP_ISOLATED
     heap_segment* segment_standby_list;
+#endif
 
 #ifdef USE_REGIONS
     PER_HEAP_ISOLATED
