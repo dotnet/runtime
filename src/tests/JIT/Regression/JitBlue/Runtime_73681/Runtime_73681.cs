@@ -9,7 +9,7 @@ public class Program
     public static int Main()
     {
         Console.WriteLine(CallFoo(new C()));
-        return 200;
+        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
