@@ -1247,7 +1247,6 @@ namespace System.Diagnostics.Tests
 
                 Assert.All(processes, process => Assert.Equal(currentProcess.ProcessName, process.ProcessName));
                 Assert.All(processes, process => Assert.Equal(".", process.MachineName));
-                Assert.All(processes, process => Assert.Equal(currentProcess.StartTime, process.StartTime));
             }
 
             // Outputs a list of active processes in case of failure: https://github.com/dotnet/runtime/issues/28874
