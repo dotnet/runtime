@@ -22,17 +22,18 @@ namespace System.Text.Json
 
         private const int MinimumBufferSize = 256;
 
-#if NETCOREAPP
-        private static readonly int MaximumBufferSize = Array.MaxLength;
-#else
-        private const int MaximumBufferSize = int.MaxValue;
-#endif
+        // Value copied from Array.MaxLength in System.Private.CoreLib/src/libraries/System.Private.CoreLib/src/System/Array.cs.
+        public const int MaximumBufferSize = 0X7FFFFFC7;
 
         private PooledByteBufferWriter()
         {
+#if NETCOREAPP
+            // Ensure we are in sync with the Array.MaxLength implementation.
+            Debug.Assert(MaximumBufferSize == Array.MaxLength);
+#endif
         }
 
-        public PooledByteBufferWriter(int initialCapacity)
+        public PooledByteBufferWriter(int initialCapacity) : this()
         {
             Debug.Assert(initialCapacity > 0);
 
@@ -175,18 +176,18 @@ namespace System.Text.Json
             Debug.Assert(_rentedBuffer != null);
             Debug.Assert(sizeHint > 0);
 
-            int availableSpace = _rentedBuffer.Length - _index;
+            int currentLength = _rentedBuffer.Length;
+            int availableSpace = currentLength - _index;
 
-            // If we've reached ~ 1GB written, grow to the maximum buffer
+            // If we've reached ~1GB written, grow to the maximum buffer
             // length to avoid incessant minimal growths causing perf issues.
             if (_index >= MaximumBufferSize / 2)
             {
-                sizeHint = MaximumBufferSize - _index;
+                sizeHint = Math.Max(sizeHint, MaximumBufferSize - currentLength);
             }
 
             if (sizeHint > availableSpace)
             {
-                int currentLength = _rentedBuffer.Length;
                 int growBy = Math.Max(sizeHint, currentLength);
 
                 int newSize = currentLength + growBy;

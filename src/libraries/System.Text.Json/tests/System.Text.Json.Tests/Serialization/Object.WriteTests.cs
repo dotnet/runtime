@@ -168,25 +168,34 @@ namespace System.Text.Json.Serialization.Tests
                 Prop3 = "AC",
                 Prop4 = 500,
                 Prop5 = int.MaxValue / 2,
-                Prop6 = 250.5M / 3,
-                Prop7 = 250.5M / 3,
-                Prop8 = 250.5M / 3,
-                Prop9 = 250.5M / 3,
-                Prop10 = 250.5M / 3,
-                Prop11 = 150.6M / 3,
-                Prop12 = 150.6M / 3,
-                Prop13 = DateTimeOffset.Now,
-                Prop14 = DateTimeOffset.Now,
-                Prop15 = DateTimeOffset.Now,
-                Prop16 = DateTimeOffset.Now,
+                Prop6 = 250M,
+                Prop7 = 250M,
+                Prop8 = 250M,
+                Prop9 = 250M,
+                Prop10 = 250M,
+                Prop11 = 150M,
+                Prop12 = 150M,
+                Prop13 = DateTimeOffset.MaxValue,
+                Prop14 = DateTimeOffset.MaxValue,
+                Prop15 = DateTimeOffset.MaxValue,
+                Prop16 = DateTimeOffset.MaxValue,
                 Prop17 = 3,
-                Prop18 = DateTime.Now,
-                Prop19 = DateTime.Now,
+                Prop18 = DateTime.MaxValue,
+                Prop19 = DateTime.MaxValue,
                 Prop20 = 25000,
-                Prop21 = DateTime.Now
+                Prop21 = DateTime.MaxValue
             };
 
-            List<Dto> items = Enumerable.Repeat(dto, 3_000_000).ToList();
+            // It takes a little over 4,338,000 items to reach a payload size above the Array.MaxLength value.
+            List<Dto> items = Enumerable.Repeat(dto, 4_338_000).ToList();
+
+            try
+            {
+                JsonSerializer.SerializeToUtf8Bytes(items);
+            }
+            catch (OutOfMemoryException) { }
+
+            items.AddRange(Enumerable.Repeat(dto, 1000).ToList());
             Assert.Throws<OutOfMemoryException>(() => JsonSerializer.SerializeToUtf8Bytes(items));
         }
 
