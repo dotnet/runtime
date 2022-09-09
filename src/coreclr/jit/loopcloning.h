@@ -548,9 +548,13 @@ public:
                 break;
             case IndirOfLocal:
                 if (indirOffs != 0)
-                    printf("*(V%02u + %x)", lclNum, indirOffs);
+                {
+                    printf("*(V%02u + %u)", lclNum, indirOffs);
+                }
                 else
+                {
                     printf("*V%02u", lclNum);
+                }
                 break;
             case ClassHandle:
                 printf("%p", clsHnd);
