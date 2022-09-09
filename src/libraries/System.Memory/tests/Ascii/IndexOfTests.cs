@@ -9,10 +9,10 @@ using Xunit;
 namespace System.Buffers.Text.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/75125", TestRuntimes.Mono)]
-    public class IndexOfTests
+    public static class IndexOfTests
     {
         [Fact]
-        public void InvalidCharactersInValueThrows()
+        public static void InvalidCharactersInValueThrows()
         {
             Assert.Throws<ArgumentException>(() => Ascii.IndexOf("aaaa"u8, "\u00C0"));
             Assert.Throws<ArgumentException>(() => Ascii.IndexOf("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"u8, "aaaaaaaaaaaaa\u00C0"));
@@ -58,7 +58,7 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [MemberData(nameof(ExactMatchFound_TestData))]
-        public void ExactMatchFound(string text, string value, int expectedFirstIndex, int expectedLastIndex)
+        public static void ExactMatchFound(string text, string value, int expectedFirstIndex, int expectedLastIndex)
         {
             Assert.Equal(expectedFirstIndex, Ascii.IndexOf(text, Encoding.ASCII.GetBytes(value)));
             Assert.Equal(expectedFirstIndex, Ascii.IndexOf(Encoding.ASCII.GetBytes(text), value));
@@ -91,7 +91,7 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [MemberData(nameof(ExactMatchNotFound_TestData))]
-        public void ExactMatchNotFound(string text, string value)
+        public static void ExactMatchNotFound(string text, string value)
         {
             Assert.Equal(-1, Ascii.IndexOf(text, Encoding.ASCII.GetBytes(value)));
             Assert.Equal(-1, Ascii.IndexOf(Encoding.ASCII.GetBytes(text), value));
@@ -115,7 +115,7 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [MemberData(nameof(IgnoreCaseMatchFound_TestData))]
-        public void IgnoreCaseMatchFound(string text, string value, int expectedFirstIndex, int expectedLastIndex)
+        public static void IgnoreCaseMatchFound(string text, string value, int expectedFirstIndex, int expectedLastIndex)
         {
             Assert.Equal(expectedFirstIndex, Ascii.IndexOfIgnoreCase(Encoding.ASCII.GetBytes(text), Encoding.ASCII.GetBytes(value)));
             Assert.Equal(expectedFirstIndex, Ascii.IndexOfIgnoreCase(text, value));
@@ -143,7 +143,7 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [MemberData(nameof(IgnoreCaseMatchNotFound_TestData))]
-        public void IgnoreCaseMatchNotFound(string text, string value)
+        public static void IgnoreCaseMatchNotFound(string text, string value)
         {
             Assert.Equal(-1, Ascii.IndexOfIgnoreCase(Encoding.ASCII.GetBytes(text), Encoding.ASCII.GetBytes(value)));
             Assert.Equal(-1, Ascii.IndexOfIgnoreCase(text, value));

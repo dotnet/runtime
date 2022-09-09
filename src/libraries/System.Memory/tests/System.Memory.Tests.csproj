@@ -15,12 +15,14 @@
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.T.cs" />
     <Compile Include="Ascii\CaseConversionTests.cs" />
     <Compile Include="Ascii\EqualsTests.cs" />
+    <Compile Include="Ascii\FromUtf16Tests.cs" />
     <Compile Include="Ascii\GetHashCodeByteTests.cs" />
     <Compile Include="Ascii\GetHashCodeCharTests.cs" />
     <Compile Include="Ascii\GetIndexOfFirstNonAsciiByteTests.cs" />
     <Compile Include="Ascii\GetIndexOfFirstNonAsciiCharTests.cs" />
     <Compile Include="Ascii\IndexOfTests.cs" />
     <Compile Include="Ascii\StartsEndsWithTests.cs" />
+    <Compile Include="Ascii\ToUtf16Tests.cs" />
     <Compile Include="Ascii\TrimTests.cs" />
     <Compile Include="MemoryMarshal\AsRef.cs" />
     <Compile Include="MemoryMarshal\AsReadOnlyRef.cs" />

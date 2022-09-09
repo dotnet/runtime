@@ -6,10 +6,10 @@ using Xunit;
 
 namespace System.Buffers.Text.Tests
 {
-    public class TrimTests
+    public static class TrimTests
     {
         [Fact]
-        public void EmptyInput()
+        public static void EmptyInput()
         {
             Assert.Equal(default(Range), Ascii.Trim(ReadOnlySpan<byte>.Empty));
             Assert.Equal(default(Range), Ascii.Trim(ReadOnlySpan<char>.Empty));
@@ -23,7 +23,7 @@ namespace System.Buffers.Text.Tests
         [InlineData("1")]
         [InlineData("abc")]
         [InlineData("a\tb c\rd\ne")]
-        public void NothingToTrimNonEmptyInput(string text)
+        public static void NothingToTrimNonEmptyInput(string text)
         {
             ReadOnlySpan<byte> bytes = Encoding.ASCII.GetBytes(text);
 
@@ -44,7 +44,7 @@ namespace System.Buffers.Text.Tests
         [InlineData("\r\n")]
         [InlineData(" \t\r\n ")]
         [InlineData("\n \t \r")]
-        public void OnlyWhitespaces(string text)
+        public static void OnlyWhitespaces(string text)
         {
             ReadOnlySpan<byte> bytes = Encoding.ASCII.GetBytes(text);
 
@@ -65,7 +65,7 @@ namespace System.Buffers.Text.Tests
         [InlineData("\nd", 1)]
         [InlineData(" \t\r\ne", 4)]
         [InlineData(" \t\r\n\n\r\t f", 8)]
-        public void StartingWithWhitespace(string text, int leadingWhitespaceCount)
+        public static void StartingWithWhitespace(string text, int leadingWhitespaceCount)
         {
             ReadOnlySpan<byte> bytes = Encoding.ASCII.GetBytes(text);
 
@@ -84,7 +84,7 @@ namespace System.Buffers.Text.Tests
         [InlineData("d\n", 1)]
         [InlineData("e \t\r\n", 4)]
         [InlineData("f \t\r\n\n\r\t ", 8)]
-        public void EndingWithWhitespace(string text, int trailingWhitespaceCount)
+        public static void EndingWithWhitespace(string text, int trailingWhitespaceCount)
         {
             ReadOnlySpan<byte> bytes = Encoding.ASCII.GetBytes(text);
 
@@ -103,7 +103,7 @@ namespace System.Buffers.Text.Tests
         [InlineData("\nd\n", 1, 1)]
         [InlineData(" \t\r\ne \t\r\n", 4, 4)]
         [InlineData(" \t\r\n\n\r\t f \t\r\n\n\r\t ", 8, 8)]
-        public void StartingAndEndingWithWhitespace(string text, int leadingWhitespaceCount, int trailingWhitespaceCount)
+        public static void StartingAndEndingWithWhitespace(string text, int leadingWhitespaceCount, int trailingWhitespaceCount)
         {
             ReadOnlySpan<byte> bytes = Encoding.ASCII.GetBytes(text);
 

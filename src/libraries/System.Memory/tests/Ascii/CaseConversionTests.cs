@@ -8,12 +8,12 @@ using Xunit;
 
 namespace System.Buffers.Text.Tests
 {
-    public class CaseConversionTests
+    public static class CaseConversionTests
     {
         private const byte MaxValidAsciiChar = 127;
 
         [Fact]
-        public void OverlappingBuffers_Throws()
+        public static void OverlappingBuffers_Throws()
         {
             byte[] byteBuffer = new byte[10];
             char[] charBuffer = new char[10];
@@ -61,7 +61,7 @@ namespace System.Buffers.Text.Tests
         }
 
         [Fact]
-        public void SingleByteConversion()
+        public static void SingleByteConversion()
         {
             byte[] destinationByte = new byte[1];
             char[] destinationChar = new char[1];
@@ -87,7 +87,7 @@ namespace System.Buffers.Text.Tests
         }
 
         [Fact]
-        public void SingleCharConversion()
+        public static void SingleCharConversion()
         {
             char[] sourceChar = new char[1], destinationChar = new char[1]; // this test is "optimized" as it performs a LOT of iterations
             byte[] destinationByte = new byte[1];
@@ -115,7 +115,7 @@ namespace System.Buffers.Text.Tests
         [Theory]
         [InlineData("\u00C0bCDe")] // U+00C0 is not ASCII
         [InlineData("\u00E0bCDe")] // U+00E0 is not ASCII
-        public void InvalidCharacters(string sourceChars)
+        public static void InvalidCharacters(string sourceChars)
         {
             char[] destinationChars = new char[sourceChars.Length];
             byte[] sourceBytes = System.Text.Encoding.ASCII.GetBytes(sourceChars);
@@ -184,7 +184,7 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [MemberData(nameof(MultipleValidCharacterConversion_Arguments))]
-        public void MultipleValidCharacterConversion(string sourceChars, string expectedLowerChars, string expectedUpperChars)
+        public static void MultipleValidCharacterConversion(string sourceChars, string expectedLowerChars, string expectedUpperChars)
         {
             Assert.Equal(sourceChars.Length, expectedLowerChars.Length);
             Assert.Equal(expectedLowerChars.Length, expectedUpperChars.Length);
@@ -238,7 +238,7 @@ namespace System.Buffers.Text.Tests
         [Theory]
         [InlineData("Hello", 4, "hell", "HELL")]
         [InlineData(" AbC ", 3, " ab", " AB")]
-        public void DestinationTooSmall(string sourceChars, int destinationSize, string expectedLowerChars, string expectedUpperChars)
+        public static void DestinationTooSmall(string sourceChars, int destinationSize, string expectedLowerChars, string expectedUpperChars)
         {
             Assert.NotEqual(sourceChars.Length, destinationSize);
             Assert.Equal(destinationSize, expectedLowerChars.Length);

@@ -8,10 +8,10 @@ using Xunit;
 
 namespace System.Buffers.Text.Tests
 {
-    public class EqualsTests
+    public static class EqualsTests
     {
         [Fact]
-        public void InvalidCharacters_DoesNotThrow()
+        public static void InvalidCharacters_DoesNotThrow()
         {
             Assert.False(Ascii.Equals(Enumerable.Repeat((byte)128, "valid".Length).ToArray(), "valid"));
             Assert.False(Ascii.Equals("valid"u8, "aa\u00C0aa"));
@@ -39,7 +39,7 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [MemberData(nameof(ExactMatch_TestData))]
-        public void ExactMatchFound(string left, string right)
+        public static void ExactMatchFound(string left, string right)
         {
             Assert.True(Ascii.Equals(Encoding.ASCII.GetBytes(left), right));
 
@@ -70,7 +70,7 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [MemberData(nameof(ExactMatchNotFound_TestData))]
-        public void ExactMatchNotFound(string left, string right)
+        public static void ExactMatchNotFound(string left, string right)
         {
             Assert.False(Ascii.Equals(Encoding.ASCII.GetBytes(left), right));
 
@@ -96,7 +96,7 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [MemberData(nameof(IgnoreCaseMatch_TestData))]
-        public void IgnoreCaseMatchFound(string left, string right)
+        public static void IgnoreCaseMatchFound(string left, string right)
         {
             Assert.True(Ascii.EqualsIgnoreCase(Encoding.ASCII.GetBytes(left), Encoding.ASCII.GetBytes(right)));
             Assert.True(Ascii.EqualsIgnoreCase(left, right));

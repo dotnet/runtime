@@ -9,12 +9,12 @@ using Xunit;
 
 namespace System.Buffers.Text.Tests
 {
-    public class GetHashCodeByteTests
+    public static class GetHashCodeByteTests
     {
         [Theory]
         [InlineData(new byte[] { 128 })]
         [InlineData(new byte[] { 91, 91, 128, 91 })] // >= 4 chars can execute a different code path
-        public void InvalidCharactersInValueThrowsOrReturnsFalse(byte[] value)
+        public static void InvalidCharactersInValueThrowsOrReturnsFalse(byte[] value)
         {
             Assert.Throws<ArgumentException>(() => Ascii.GetHashCode(value));
             Assert.Throws<ArgumentException>(() => Ascii.GetHashCodeIgnoreCase(value));
@@ -25,7 +25,7 @@ namespace System.Buffers.Text.Tests
             Assert.Equal(default(int), hashCode);
         }
 
-        public IEnumerable<object[]> ValidInputValidOutput_TestData
+        public static IEnumerable<object[]> ValidInputValidOutput_TestData
         {
             get
             {
@@ -40,7 +40,7 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [InlineData(nameof(ValidInputValidOutput_TestData))]
-        public void ValidInputValidOutput(string input)
+        public static void ValidInputValidOutput(string input)
         {
             // The contract makes it clear that hash code is randomized and is not guaranteed to match string.GetHashCode.
             // But.. re-using same types used internally by string.GetHashCode was the simplest way to get good hashing implementaiton.

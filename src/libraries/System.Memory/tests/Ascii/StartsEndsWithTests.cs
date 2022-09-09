@@ -9,10 +9,10 @@ using Xunit;
 
 namespace System.Buffers.Text.Tests
 {
-    public class StartsEndsWithTests
+    public static class StartsEndsWithTests
     {
         [Fact]
-        public void InvalidCharactersInValueThrows()
+        public static void InvalidCharactersInValueThrows()
         {
             Assert.Throws<ArgumentException>(() => Ascii.StartsWith("aaaa"u8, "\u00C0")); // non-vectorized code path
             Assert.Throws<ArgumentException>(() => Ascii.StartsWith("aaaaaaaaaaaaaaaaaaaaaaaaa"u8, "aaaaaaaaaaaaaaaaaaaaaaaa\u00C0")); // vectorized code path
@@ -54,7 +54,7 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [MemberData(nameof(ExactMatchFound_TestData))]
-        public void MatchFound(string text, string value)
+        public static void MatchFound(string text, string value)
         {
             Assert.True(Ascii.StartsWith(text, Encoding.ASCII.GetBytes(value)));
             Assert.True(Ascii.StartsWith(Encoding.ASCII.GetBytes(text), value));
@@ -93,7 +93,7 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [MemberData(nameof(IgnoreCaseMatchFound_TestData))]
-        public void IgnoreCaseMatchFound(string text, string value)
+        public static void IgnoreCaseMatchFound(string text, string value)
         {
             Assert.True(Ascii.StartsWithIgnoreCase(Encoding.ASCII.GetBytes(text), Encoding.ASCII.GetBytes(value)));
             Assert.True(Ascii.StartsWithIgnoreCase(text, value));
@@ -133,7 +133,7 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [MemberData(nameof(ExactMatchNotFound_TestData))]
-        public void ExactMatchNotFound(string text, string value)
+        public static void ExactMatchNotFound(string text, string value)
         {
             Assert.False(Ascii.StartsWith(text, Encoding.ASCII.GetBytes(value)));
             Assert.False(Ascii.StartsWith(Encoding.ASCII.GetBytes(text), value));
@@ -172,7 +172,7 @@ namespace System.Buffers.Text.Tests
 
         [Theory]
         [MemberData(nameof(IgnoreCaseMatchNotFound_TestData))]
-        public void IgnoreCaseMatchNotFound(string text, string value)
+        public static void IgnoreCaseMatchNotFound(string text, string value)
         {
             Assert.False(Ascii.StartsWithIgnoreCase(Encoding.ASCII.GetBytes(text), Encoding.ASCII.GetBytes(value)));
             Assert.False(Ascii.StartsWithIgnoreCase(text, value));
