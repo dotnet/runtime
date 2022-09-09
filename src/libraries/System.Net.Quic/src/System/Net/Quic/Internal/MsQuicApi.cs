@@ -60,6 +60,11 @@ internal sealed unsafe partial class MsQuicApi
 
     static MsQuicApi()
     {
+        int arraySize = 4;
+        uint* libVersion = stackalloc uint[arraySize];
+
+        for (int i = 0; i < 100; i++) {
+
         if (!TryLoadMsQuic(out IntPtr msQuicHandle))
         {
             return;
@@ -75,8 +80,6 @@ internal sealed unsafe partial class MsQuicApi
             try
             {
                 // Check version
-                int arraySize = 4;
-                uint* libVersion = stackalloc uint[arraySize];
                 uint size = (uint)arraySize * sizeof(uint);
                 if (StatusFailed(apiTable->GetParam(null, QUIC_PARAM_GLOBAL_LIBRARY_VERSION, &size, libVersion)))
                 {
@@ -129,6 +132,8 @@ internal sealed unsafe partial class MsQuicApi
         {
             // Unload the library, we will load it again when we actually use QUIC
             NativeLibrary.Free(msQuicHandle);
+        }
+
         }
     }
 
