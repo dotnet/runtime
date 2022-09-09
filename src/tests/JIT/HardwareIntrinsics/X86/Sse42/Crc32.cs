@@ -14,6 +14,7 @@ namespace IntelHardwareIntrinsicTest._Crc32
         const int Pass = 100;
         const int Fail = 0;
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54185", TestRuntimes.Mono)]
         [Fact]
         public static void Test()
         {

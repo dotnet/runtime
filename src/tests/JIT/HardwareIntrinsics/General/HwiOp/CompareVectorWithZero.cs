@@ -8,6 +8,7 @@ using Xunit;
 
 public class CompareVectorWithZero
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/pull/65632#issuecomment-1046294324", TestRuntimes.Mono)]
     [Fact]
     public static void Test()
     {
