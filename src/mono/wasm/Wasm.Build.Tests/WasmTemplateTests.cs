@@ -343,6 +343,7 @@ namespace Wasm.Build.Tests
                     .Execute($"build -c {config} -bl:{Path.Combine(s_buildEnv.LogRootPath, $"{id}.binlog")}")
                     .EnsureSuccessful();
 
+            /* Disabled till 7.0 gets the fix - https://github.com/dotnet/runtime/pull/75372
             using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                         .WithWorkingDirectory(_projectDir!);
 
@@ -350,6 +351,7 @@ namespace Wasm.Build.Tests
             var page = await runner.RunAsync(runCommand, $"run -c {config} --no-build -r browser-wasm --forward-console");
             await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
             Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
+            */
         }
     }
 }
