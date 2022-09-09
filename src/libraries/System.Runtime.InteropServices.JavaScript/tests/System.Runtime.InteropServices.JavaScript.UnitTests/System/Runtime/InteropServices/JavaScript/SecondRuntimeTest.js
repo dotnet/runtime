@@ -6,11 +6,11 @@ export async function runSecondRuntimeAndTestStaticState() {
     const increment2 = await getIncrementStateFunction(runtime2);
 
     increment1();
-    const state1 = increment1();
+    increment1();
     increment2();
     increment2();
     const state2 = increment2();
-    return state1 == 2 && state2 == 3;
+    return state2;
 }
 
 async function getIncrementStateFunction(runtime) {

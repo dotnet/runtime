@@ -16,20 +16,22 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             await JSHost.ImportAsync("SecondRuntimeTest", "./SecondRuntimeTest.js");
 
-            var result = await Interop.RunSecondRuntimeAndTestStaticState();
-            Assert.True(result);
+            Interop.State = 42;
+            var state2 = await Interop.RunSecondRuntimeAndTestStaticState();
+            Assert.Equal(44, Interop.State);
+            Assert.Equal(3, state2);
         }
 
         public static partial class Interop
         {
-            private static int state = 0;
+            public static int State { get; set; }
 
             [JSExport]
-            public static int IncrementState() => ++state;
+            public static int IncrementState() => ++State;
 
             [JSImport("runSecondRuntimeAndTestStaticState", "SecondRuntimeTest")]
-            [return: JSMarshalAs<JSType.Promise<JSType.Boolean>>]
-            internal static partial Task<bool> RunSecondRuntimeAndTestStaticState();
+            [return: JSMarshalAs<JSType.Promise<JSType.Number>>]
+            internal static partial Task<int> RunSecondRuntimeAndTestStaticState();
         }
     }
 }
