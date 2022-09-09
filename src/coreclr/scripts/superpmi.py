@@ -1882,7 +1882,7 @@ class SuperPMIReplayAsmDiffs:
                 write_fh.write("\n<details>\n")
                 write_fh.write("<summary>Details</summary>\n\n")
 
-                write_fh.write("|Collection|Diffed contexts|MinOpts contexts|FullOpts contexts|Base missing contexts|Diff missing contexts|\n")
+                write_fh.write("|Collection|Diffed contexts|MinOpts|FullOpts|Missed, base|Missed, diff|\n")
                 write_fh.write("|---|--:|--:|--:|--:|--:|\n")
                 for (mch_file, base_metrics, diff_metrics, has_diffs, jit_analyze_summary_file) in asm_diffs:
                     write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d}|{:,d}|\n".format(
