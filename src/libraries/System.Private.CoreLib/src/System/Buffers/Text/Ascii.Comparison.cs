@@ -286,7 +286,7 @@ namespace System.Buffers.Text
 
                     if (typeof(TCheck) == typeof(CheckChars))
                     {
-                        if (ASCIIUtility.VectorContainsNonAsciiChar(charValues))
+                        if (VectorContainsNonAsciiChar(charValues))
                         {
                             return EqualsResult.NonAsciiFound;
                         }
@@ -318,7 +318,7 @@ namespace System.Buffers.Text
 
                     if (typeof(TCheck) == typeof(CheckChars))
                     {
-                        if (ASCIIUtility.VectorContainsNonAsciiChar(charValues))
+                        if (VectorContainsNonAsciiChar(charValues))
                         {
                             return EqualsResult.NonAsciiFound;
                         }

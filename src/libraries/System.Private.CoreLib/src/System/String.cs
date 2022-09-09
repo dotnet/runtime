@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
+using System.Buffers.Text;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -691,7 +692,7 @@ namespace System
 
         public bool IsNormalized(NormalizationForm normalizationForm)
         {
-            if (this.IsAscii())
+            if (Ascii.IsAscii(this))
             {
                 // If its ASCII && one of the 4 main forms, then its already normalized
                 if (normalizationForm == NormalizationForm.FormC ||
@@ -710,7 +711,7 @@ namespace System
 
         public string Normalize(NormalizationForm normalizationForm)
         {
-            if (this.IsAscii())
+            if (Ascii.IsAscii(this))
             {
                 // If its ASCII && one of the 4 main forms, then its already normalized
                 if (normalizationForm == NormalizationForm.FormC ||
@@ -720,14 +721,6 @@ namespace System
                     return this;
             }
             return Normalization.Normalize(this, normalizationForm);
-        }
-
-        private unsafe bool IsAscii()
-        {
-            fixed (char* str = &_firstChar)
-            {
-                return ASCIIUtility.GetIndexOfFirstNonAsciiChar(str, (uint)Length) == (uint)Length;
-            }
         }
 
         // Gets the character at a specified position.

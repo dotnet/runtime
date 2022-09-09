@@ -382,7 +382,10 @@ namespace System.Buffers.Text
             }
             else if (sizeof(T) == 2)
             {
-                if (ASCIIUtility.VectorContainsNonAsciiChar(vector.AsUInt16())) { return true; }
+                if (VectorContainsNonAsciiChar(vector.AsUInt16()))
+                {
+                    return true;
+                }
             }
             else
             {

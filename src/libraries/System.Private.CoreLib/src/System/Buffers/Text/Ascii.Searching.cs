@@ -17,16 +17,16 @@ namespace System.Buffers.Text
         private const int StackallocBytesLimit = 512;
 
         public static int IndexOf(ReadOnlySpan<byte> text, ReadOnlySpan<char> value)
-            => IndexOf<byte, char, NarrowUtf16ToAscii>(text, value);
+            => IndexOf<byte, char, NarrowConverter>(text, value);
 
         public static int LastIndexOf(ReadOnlySpan<byte> text, ReadOnlySpan<char> value)
-            => LastIndexOf<byte, char, NarrowUtf16ToAscii>(text, value);
+            => LastIndexOf<byte, char, NarrowConverter>(text, value);
 
         public static int IndexOf(ReadOnlySpan<char> text, ReadOnlySpan<byte> value)
-            => IndexOf<char, byte, WidenAsciiToUtf16>(text, value);
+            => IndexOf<char, byte, WidenConverter>(text, value);
 
         public static int LastIndexOf(ReadOnlySpan<char> text, ReadOnlySpan<byte> value)
-            => LastIndexOf<char, byte, WidenAsciiToUtf16>(text, value);
+            => LastIndexOf<char, byte, WidenConverter>(text, value);
 
         public static int IndexOfIgnoreCase(ReadOnlySpan<byte> text, ReadOnlySpan<byte> value)
             => IndexOfIgnoreCase<byte, byte>(text, value);
@@ -237,7 +237,7 @@ namespace System.Buffers.Text
             static abstract void Convert(ReadOnlySpan<TFrom> source, Span<TTo> destination);
         }
 
-        private readonly struct NarrowUtf16ToAscii : IConverter<char, byte>
+        private readonly struct NarrowConverter : IConverter<char, byte>
         {
             public static unsafe void Convert(ReadOnlySpan<char> source, Span<byte> destination)
             {
@@ -246,7 +246,7 @@ namespace System.Buffers.Text
                 fixed (char* pValue = &MemoryMarshal.GetReference(source))
                 fixed (byte* pNarrowed = &MemoryMarshal.GetReference(destination))
                 {
-                    asciiCharCount = ASCIIUtility.NarrowUtf16ToAscii(pValue, pNarrowed, (nuint)source.Length);
+                    asciiCharCount = NarrowUtf16ToAscii(pValue, pNarrowed, (nuint)source.Length);
                 }
 
                 if (asciiCharCount != (nuint)source.Length)
@@ -256,7 +256,7 @@ namespace System.Buffers.Text
             }
         }
 
-        private readonly struct WidenAsciiToUtf16 : IConverter<byte, char>
+        private readonly struct WidenConverter : IConverter<byte, char>
         {
             public static unsafe void Convert(ReadOnlySpan<byte> source, Span<char> destination)
             {
@@ -265,7 +265,7 @@ namespace System.Buffers.Text
                 fixed (byte* pValue = &MemoryMarshal.GetReference(source))
                 fixed (char* pWidened = &MemoryMarshal.GetReference(destination))
                 {
-                    asciiCharCount = ASCIIUtility.WidenAsciiToUtf16(pValue, pWidened, (nuint)source.Length);
+                    asciiCharCount = WidenAsciiToUtf16(pValue, pWidened, (nuint)source.Length);
                 }
 
                 if (asciiCharCount != (nuint)source.Length)

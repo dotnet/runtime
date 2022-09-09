@@ -37,7 +37,7 @@ namespace System.Buffers.Text
             fixed (byte* pSource = &MemoryMarshal.GetReference(source))
             fixed (char* pDestination = &MemoryMarshal.GetReference(destination))
             {
-                nuint numElementsActuallyConverted = ASCIIUtility.WidenAsciiToUtf16(pSource, pDestination, numElementsToConvert);
+                nuint numElementsActuallyConverted = WidenAsciiToUtf16(pSource, pDestination, numElementsToConvert);
                 Debug.Assert(numElementsActuallyConverted <= numElementsToConvert);
 
                 bytesConsumed = (int)numElementsActuallyConverted;
@@ -74,7 +74,7 @@ namespace System.Buffers.Text
             fixed (char* pSource = &MemoryMarshal.GetReference(source))
             fixed (byte* pDestination = &MemoryMarshal.GetReference(destination))
             {
-                nuint numElementsActuallyConverted = ASCIIUtility.NarrowUtf16ToAscii(pSource, pDestination, numElementsToConvert);
+                nuint numElementsActuallyConverted = NarrowUtf16ToAscii(pSource, pDestination, numElementsToConvert);
                 Debug.Assert(numElementsActuallyConverted <= numElementsToConvert);
 
                 charsConsumed = (int)numElementsActuallyConverted;
