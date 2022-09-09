@@ -376,7 +376,7 @@ namespace System.Xml
             => BinaryPrimitives.ReadSingleLittleEndian(GetBuffer(sizeof(float), out int offset).AsSpan(offset, sizeof(float)));
 
         public double ReadDouble()
-            => BinaryPrimitives.ReadSingleLittleEndian(GetBuffer(sizeof(double), out int offset).AsSpan(offset, sizeof(double)));
+            => BinaryPrimitives.ReadDoubleLittleEndian(GetBuffer(sizeof(double), out int offset).AsSpan(offset, sizeof(double)));
 
         public decimal ReadDecimal()
         {
@@ -967,7 +967,7 @@ namespace System.Xml
             => BinaryPrimitives.ReadSingleLittleEndian(_buffer.AsSpan(offset, sizeof(float)));
 
         public double GetDouble(int offset)
-            => BinaryPrimitives.ReadSingleLittleEndian(_buffer.AsSpan(offset, sizeof(double)));
+            => BinaryPrimitives.ReadDoubleLittleEndian(_buffer.AsSpan(offset, sizeof(double)));
 
         public decimal GetDecimal(int offset)
         {
