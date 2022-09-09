@@ -3270,7 +3270,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, JitFlags flags, int parts
 			 * - no calls with signatures with variable length types
 			 * etc.
 			 */
-			cfg->gsharedvt_min = TRUE;
+			//cfg->gsharedvt_min = TRUE;
 		}
 
 		if (!cfg->llvm_only) {
