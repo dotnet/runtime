@@ -759,7 +759,7 @@ namespace System.Xml
                 int offset;
                 byte[] buffer = GetTextNodeBuffer(1 + sizeof(float), out offset);
                 buffer[offset + 0] = (byte)XmlBinaryNodeType.FloatText;
-                BinaryPrimitives.WriteSingleLittleEndian(buffer.AsSpan(offset + 1, 4), f);
+                BinaryPrimitives.WriteSingleLittleEndian(buffer.AsSpan(offset + 1, sizeof(float)), f);
                 Advance(1 + sizeof(float));
             }
         }
@@ -776,7 +776,7 @@ namespace System.Xml
                 int offset;
                 byte[] buffer = GetTextNodeBuffer(1 + sizeof(double), out offset);
                 buffer[offset + 0] = (byte)XmlBinaryNodeType.DoubleText;
-                BinaryPrimitives.WriteDoubleLittleEndian(buffer.AsSpan(offset + 1, 8), d);
+                BinaryPrimitives.WriteDoubleLittleEndian(buffer.AsSpan(offset + 1, sizeof(double)), d);
                 Advance(1 + sizeof(double));
             }
         }
@@ -891,16 +891,16 @@ namespace System.Xml
             {
                 fixed (short* items = &array[offset])
                 {
-                    base.UnsafeWriteBytes((byte*)items, 2 * count);
+                    base.UnsafeWriteBytes((byte*)items, sizeof(short) * count);
                 }
             }
             else
             {
                 for (int i = 0; i < count; i++)
                 {
-                    Span<byte> span = GetBuffer(2, out int bufferOffset).AsSpan(bufferOffset, 2);
+                    Span<byte> span = GetBuffer(sizeof(short), out int bufferOffset).AsSpan(bufferOffset, sizeof(short));
                     BinaryPrimitives.WriteInt16LittleEndian(span, array[offset + i]);
-                    Advance(2);
+                    Advance(sizeof(short));
                 }
             }
         }
@@ -912,16 +912,16 @@ namespace System.Xml
             {
                 fixed (int* items = &array[offset])
                 {
-                    base.UnsafeWriteBytes((byte*)items, 4 * count);
+                    base.UnsafeWriteBytes((byte*)items, sizeof(int) * count);
                 }
             }
             else
             {
                 for (int i = 0; i < count; i++)
                 {
-                    Span<byte> span = GetBuffer(4, out int bufferOffset).AsSpan(bufferOffset, 4);
+                    Span<byte> span = GetBuffer(sizeof(int), out int bufferOffset).AsSpan(bufferOffset, sizeof(int));
                     BinaryPrimitives.WriteInt32LittleEndian(span, array[offset + i]);
-                    Advance(4);
+                    Advance(sizeof(int));
                 }
             }
         }
@@ -933,16 +933,16 @@ namespace System.Xml
             {
                 fixed (long* items = &array[offset])
                 {
-                    base.UnsafeWriteBytes((byte*)items, 8 * count);
+                    base.UnsafeWriteBytes((byte*)items, sizeof(long) * count);
                 }
             }
             else
             {
                 for (int i = 0; i < count; i++)
                 {
-                    Span<byte> span = GetBuffer(8, out int bufferOffset).AsSpan(bufferOffset, 8);
+                    Span<byte> span = GetBuffer(sizeof(long), out int bufferOffset).AsSpan(bufferOffset, sizeof(long));
                     BinaryPrimitives.WriteInt64LittleEndian(span, array[offset + i]);
-                    Advance(8);
+                    Advance(sizeof(long));
                 }
             }
         }
@@ -954,16 +954,16 @@ namespace System.Xml
             {
                 fixed (float* items = &array[offset])
                 {
-                    base.UnsafeWriteBytes((byte*)items, 4 * count);
+                    base.UnsafeWriteBytes((byte*)items, sizeof(float) * count);
                 }
             }
             else
             {
                 for (int i = 0; i < count; i++)
                 {
-                    Span<byte> span = GetBuffer(4, out int bufferOffset).AsSpan(bufferOffset, 4);
+                    Span<byte> span = GetBuffer(sizeof(float), out int bufferOffset).AsSpan(bufferOffset, sizeof(float));
                     BinaryPrimitives.WriteSingleLittleEndian(span, array[offset + i]);
-                    Advance(4);
+                    Advance(sizeof(float));
                 }
             }
         }
@@ -975,16 +975,16 @@ namespace System.Xml
             {
                 fixed (double* items = &array[offset])
                 {
-                    base.UnsafeWriteBytes((byte*)items, 8 * count);
+                    base.UnsafeWriteBytes((byte*)items, sizeof(double) * count);
                 }
             }
             else
             {
                 for (int i = 0; i < count; i++)
                 {
-                    Span<byte> span = GetBuffer(8, out int bufferOffset).AsSpan(bufferOffset, 8);
+                    Span<byte> span = GetBuffer(sizeof(double), out int bufferOffset).AsSpan(bufferOffset, sizeof(double));
                     BinaryPrimitives.WriteDoubleLittleEndian(span, array[offset + i]);
-                    Advance(8);
+                    Advance(sizeof(double));
                 }
             }
         }
@@ -996,7 +996,7 @@ namespace System.Xml
             {
                 fixed (decimal* items = &array[offset])
                 {
-                    base.UnsafeWriteBytes((byte*)items, 16 * count);
+                    base.UnsafeWriteBytes((byte*)items, sizeof(decimal) * count);
                 }
             }
             else

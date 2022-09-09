@@ -195,12 +195,10 @@ namespace System.Runtime.Serialization.Xml.Tests
             AssertReadContentFromBinary(8.20788039913184E-304, XmlBinaryNodeType.DoubleText, new byte[] { 8, 7, 6, 5, 4, 3, 2, 1 });
             AssertReadContentFromBinary(guid, XmlBinaryNodeType.GuidText, guid.ToByteArray());
             AssertReadContentFromBinary(new TimeSpan(0x0807060504030201), XmlBinaryNodeType.TimeSpanText, new byte[] { 01, 02, 03, 04, 05, 06, 07, 08 });
-            AssertReadContentFromBinary(new decimal(0x20212223, 0x10111213, 0x01020304, true, scale: 0x1b), XmlBinaryNodeType.DecimalText
-                , new byte[] { 0x0, 0x0, 0x1b, 0x80, 0x4, 0x3, 0x2, 0x1, 0x23, 0x22, 0x21, 0x20, 0x13, 0x12, 0x11, 0x10 });
-            DateTime datetime = new DateTime(2022, 8, 26, 12, 34, 56, DateTimeKind.Utc);
-            Span<byte> datetimeBytes = stackalloc byte[8];
-            BinaryPrimitives.WriteInt64LittleEndian(datetimeBytes, datetime.ToBinary());
-            AssertReadContentFromBinary(datetime, XmlBinaryNodeType.DateTimeText, datetimeBytes);
+            AssertReadContentFromBinary(new decimal(0x20212223, 0x10111213, 0x01020304, true, scale: 0x1b), XmlBinaryNodeType.DecimalText,
+                new byte[] { 0x0, 0x0, 0x1b, 0x80, 0x4, 0x3, 0x2, 0x1, 0x23, 0x22, 0x21, 0x20, 0x13, 0x12, 0x11, 0x10 });
+            AssertReadContentFromBinary(new DateTime(2022, 8, 26, 12, 34, 56, DateTimeKind.Utc), XmlBinaryNodeType.DateTimeText,
+                new byte[] { 0x00, 0x18, 0xdf, 0x61, 0x5f, 0x87, 0xda, 0x48 });
 
             // Double can be represented as float or inte as long as no detail is lost
             AssertReadContentFromBinary((double)0x0100, XmlBinaryNodeType.Int16Text, new byte[] { 0x00, 0x01 });
