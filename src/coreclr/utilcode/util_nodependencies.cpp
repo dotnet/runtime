@@ -14,8 +14,7 @@
 #include "utilcode.h"
 #include "ex.h"
 
-#ifndef TARGET_UNIX
-#include <windows.h>
+#ifdef HOST_WINDOWS
 #include <versionhelpers.h>
 #endif
 
@@ -30,7 +29,7 @@ RunningOnStatusEnum gRunningOnStatus = RUNNING_ON_STATUS_UNINITED;
 //*****************************************************************************
 void InitRunningOnVersionStatus ()
 {
-#ifndef TARGET_UNIX
+#ifdef HOST_WINDOWS
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
