@@ -302,9 +302,7 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         [InlineData(TarEntryFormat.V7)]
-        // On reading, ustar just combines prefix(155) + '/' + name(100), which may be wrong but that's how it currently is.
-        // On writing, it writes the first 100 chars of entryName on name and the next 155 on prefix, so it is flipping the name+prefix on reading.
-        //[InlineData(TarEntryFormat.Ustar)]
+        // [InlineData(TarEntryFormat.Ustar)] https://github.com/dotnet/runtime/issues/75360
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
         public void WriteLongName(TarEntryFormat format)
