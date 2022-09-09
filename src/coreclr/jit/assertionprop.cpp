@@ -1473,13 +1473,30 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
     //
     else if (op1->gtOper == GT_LCL_VAR)
     {
-        unsigned   lclNum = op1->AsLclVarCommon()->GetLclNum();
-        LclVarDsc* lclVar = lvaGetDesc(lclNum);
+        unsigned const   lclNum = op1->AsLclVarCommon()->GetLclNum();
+        LclVarDsc* const lclVar = lvaGetDesc(lclNum);
 
-        //  If the local variable has its address exposed then bail
+        // If the local variable has its address exposed then bail
+        //
         if (lclVar->IsAddressExposed())
         {
             goto DONE_ASSERTION; // Don't make an assertion
+        }
+
+        // If the local is a promoted struct and has an exposed field then bail.
+        //
+        if (lclVar->lvPromoted)
+        {
+            for (unsigned childLclNum = lclVar->lvFieldLclStart;
+                 childLclNum < lclVar->lvFieldLclStart + lclVar->lvFieldCnt; ++childLclNum)
+            {
+                LclVarDsc* const childVar = lvaGetDesc(childLclNum);
+
+                if (childVar->IsAddressExposed())
+                {
+                    goto DONE_ASSERTION;
+                }
+            }
         }
 
         if (helperCallArgs)
@@ -1699,6 +1716,22 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     if (lclVar2->IsAddressExposed())
                     {
                         goto DONE_ASSERTION; // Don't make an assertion
+                    }
+
+                    // If the local is a promoted struct and has an exposed field then bail.
+                    //
+                    if (lclVar2->lvPromoted)
+                    {
+                        for (unsigned childLclNum = lclVar2->lvFieldLclStart;
+                             childLclNum < lclVar2->lvFieldLclStart + lclVar2->lvFieldCnt; ++childLclNum)
+                        {
+                            LclVarDsc* const childVar = lvaGetDesc(childLclNum);
+
+                            if (childVar->IsAddressExposed())
+                            {
+                                goto DONE_ASSERTION;
+                            }
+                        }
                     }
 
                     assertion.op2.kind       = O2K_LCLVAR_COPY;
