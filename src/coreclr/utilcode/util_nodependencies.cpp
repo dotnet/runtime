@@ -48,7 +48,7 @@ void InitRunningOnVersionStatus ()
         fprintf(stderr, "Platform not supported: The minimum supported platform is Windows 7\n");
         TerminateProcess(GetCurrentProcess(), NON_SUPPORTED_PLATFORM_TERMINATE_ERROR_CODE);
     }
-#endif // TARGET_UNIX
+#endif // HOST_WINDOWS
 } // InitRunningOnVersionStatus
 
 #ifndef HOST_64BIT
