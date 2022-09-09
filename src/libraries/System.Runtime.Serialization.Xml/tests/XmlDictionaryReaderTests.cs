@@ -165,6 +165,7 @@ namespace System.Runtime.Serialization.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74494", typeof(PlatformDetection), nameof(PlatformDetection.IsS390xProcess))]
         public static void BinaryXml_ReadPrimitiveTypes()
         {
             float f = 1.23456788f;
@@ -202,6 +203,7 @@ namespace System.Runtime.Serialization.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74494", typeof(PlatformDetection), nameof(PlatformDetection.IsS390xProcess))]
         public static void BinaryXml_Array_RoundTrip()
         {
             int[] ints = new int[] { -1, 0x01020304, 0x11223344, -1 };
