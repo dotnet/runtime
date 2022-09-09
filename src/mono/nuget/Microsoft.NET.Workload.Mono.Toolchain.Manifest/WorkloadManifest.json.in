@@ -142,8 +142,8 @@
       "description": "Shared native build tooling for Mono runtime",
       "packs": [
         "Microsoft.NET.Runtime.MonoAOTCompiler.Task",
-        "Microsoft.NET.Runtime.MonoTargets.Sdk",
-      ],
+        "Microsoft.NET.Runtime.MonoTargets.Sdk"
+      ]
     }
   },
   "packs": {

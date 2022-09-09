@@ -36,10 +36,13 @@
 
     <ItemGroup>
       <_WorkloadManifestValues Include="WorkloadVersion" Value="$(PackageVersion)" />
-      <_WorkloadManifestValues Include="PackageVersion" Value="$(PackageVersion)" />
-      <_WorkloadManifestValues Include="NetCoreAppCurrent" Value="$(NetCoreAppCurrent)" />
+      <_WorkloadManifestValues Include="PackageVersionNet7" Value="$(PackageVersionNet7)" />
       <_WorkloadManifestValues Include="EmscriptenVersion" Value="$(MicrosoftNETRuntimeEmscriptenVersion)" />
+      <_WorkloadManifestValues Include="NetCoreAppCurrent" Value="$(NetCoreAppCurrent)" />
     </ItemGroup>
+
+    <Error Condition="'%(_WorkloadManifestValues.Value)' == ''"
+           Text="No version specified for template variable '%(_WorkloadManifestValues.Identity)'" />
 
     <GenerateFileFromTemplate
       TemplateFile="WorkloadManifest.json.in"

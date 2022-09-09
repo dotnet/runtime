@@ -43,11 +43,11 @@ namespace Microsoft.Workload.Build.Tasks
         private string AllManifestsStampPath => Path.Combine(SdkWithNoWorkloadInstalledPath, ".all-manifests.stamp");
         private static readonly string[] s_manifestIds = new[]
         {
-            "microsoft.net.workload.emscripten.net7",
             "microsoft.net.workload.mono.toolchain",
             "microsoft.net.workload.emscripten.net6",
-            "microsoft.net.workload.mono.toolchain.net7",
-            "microsoft.net.workload.mono.toolchain.net6"
+            "microsoft.net.workload.emscripten.net7",
+            "microsoft.net.workload.mono.toolchain.net6",
+            "microsoft.net.workload.mono.toolchain.net7"
         };
 
         public override bool Execute()
@@ -197,11 +197,13 @@ namespace Microsoft.Workload.Build.Tasks
 
                 List<string> lines = File.ReadAllLines(txtPath).ToList();
                 int originalCount = lines.Count;
+
+                // we want to insert the manifests in a fixed order
+                // so first remove all of them
                 foreach (string manifestId in s_manifestIds)
-                {
-                    if (!lines.Contains(manifestId))
-                        lines.Add(manifestId);
-                }
+                    lines.Remove(manifestId);
+                // .. and then insert
+                lines.AddRange(s_manifestIds);
 
                 // currently using emscripten.net7 instead of this,
                 // so remove it from the list
@@ -298,7 +300,7 @@ namespace Microsoft.Workload.Build.Tasks
             string manifestVersionBandDir = Path.Combine(sdkDir, "sdk-manifests", VersionBand);
             if (!Directory.Exists(manifestVersionBandDir))
             {
-                Log.LogMessage(MessageImportance.High, $"Could not find {manifestVersionBandDir}. Creating it..");
+                Log.LogMessage(MessageImportance.Low, $"    Could not find {manifestVersionBandDir}. Creating it..");
                 Directory.CreateDirectory(manifestVersionBandDir);
             }
 
