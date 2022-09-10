@@ -627,6 +627,9 @@ namespace System.Collections.Generic
             return list;
         }
 
+        // C# slice patterns do not recognize GetRange, so we have Slice to forward to it.
+        public List<T> Slice(int index, int count) => GetRange(index, count);
+
         // Returns the index of the first occurrence of a given value in a range of
         // this list. The list is searched forwards from beginning to end.
         // The elements of the list are compared to the given value using the
