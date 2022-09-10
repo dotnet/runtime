@@ -4,7 +4,7 @@
 namespace System.Formats.Tar
 {
     /// <summary>
-    /// Represents a tar entry from an archive of the GNU format.
+    /// Represents a TAR entry in the GNU format.
     /// </summary>
     /// <remarks>Even though the <see cref="TarEntryFormat.Gnu"/> format is not POSIX compatible, it implements and supports the Unix-specific fields that were defined in the POSIX IEEE P1003.1 standard from 1988: <c>devmajor</c>, <c>devminor</c>, <c>gname</c> and <c>uname</c>.</remarks>
     public sealed class GnuTarEntry : PosixTarEntry
@@ -18,14 +18,9 @@ namespace System.Formats.Tar
         /// <summary>
         /// Initializes a new <see cref="GnuTarEntry"/> instance with the specified entry type and entry name.
         /// </summary>
+        /// <remarks>When creating an instance using the <see cref="GnuTarEntry(TarEntryType, string)"/> constructor, only the following entry types are supported: <see cref="TarEntryType.Directory"/>, <see cref="TarEntryType.HardLink"/>, <see cref="TarEntryType.SymbolicLink"/>, <see cref="TarEntryType.RegularFile"/> <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> and <see cref="TarEntryType.Fifo"/>.</remarks>
         /// <param name="entryType">The type of the entry.</param>
         /// <param name="entryName">A string with the path and file name of this entry.</param>
-        /// <remarks>When creating an instance using the <see cref="GnuTarEntry(TarEntryType, string)"/> constructor, only the following entry types are supported:
-        /// <list type="bullet">
-        /// <item>In all platforms: <see cref="TarEntryType.Directory"/>, <see cref="TarEntryType.HardLink"/>, <see cref="TarEntryType.SymbolicLink"/>, <see cref="TarEntryType.RegularFile"/>.</item>
-        /// <item>In Unix platforms only: <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> and <see cref="TarEntryType.Fifo"/>.</item>
-        /// </list>
-        /// </remarks>
         /// <exception cref="ArgumentNullException"><paramref name="entryName"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><para><paramref name="entryName"/> is empty.</para>
         /// <para>-or-</para>
@@ -40,6 +35,7 @@ namespace System.Formats.Tar
         /// <summary>
         /// Initializes a new <see cref="GnuTarEntry"/> instance by converting the specified <paramref name="other"/> entry into the GNU format.
         /// </summary>
+        /// <param name="other">The <see cref="TarEntry"/> instance to convert to the GNU format.</param>
         /// <exception cref="ArgumentException"><para><paramref name="other"/> is a <see cref="PaxGlobalExtendedAttributesTarEntry"/> and cannot be converted.</para>
         /// <para>-or-</para>
         /// <para>The entry type of <paramref name="other"/> is not supported for conversion to the GNU format.</para></exception>

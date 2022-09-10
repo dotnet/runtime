@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace System.Formats.Tar
 {
     /// <summary>
-    /// Abstract class that represents a tar entry from an archive.
+    /// Defines the core behavior of a TAR entry from an archive.
     /// </summary>
     /// <remarks>All the properties exposed by this class are supported by the <see cref="TarEntryFormat.V7"/>, <see cref="TarEntryFormat.Ustar"/>, <see cref="TarEntryFormat.Pax"/> and <see cref="TarEntryFormat.Gnu"/> formats.</remarks>
     public abstract partial class TarEntry
@@ -69,7 +69,7 @@ namespace System.Formats.Tar
         public int Checksum => _header._checksum;
 
         /// <summary>
-        /// The type of filesystem object represented by this entry.
+        /// Gets the type of filesystem object represented by this entry.
         /// </summary>
         public TarEntryType EntryType => _header._typeFlag;
 
@@ -79,9 +79,9 @@ namespace System.Formats.Tar
         public TarEntryFormat Format => _header._format;
 
         /// <summary>
-        /// The ID of the group that owns the file represented by this entry.
+        /// Gets or sets the ID of the group that owns the file represented by this entry.
         /// </summary>
-        /// <remarks>This field is only supported in Unix platforms.</remarks>
+        /// <remarks>This field is only used in Unix platforms.</remarks>
         public int Gid
         {
             get => _header._gid;
@@ -89,7 +89,7 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// A timestamps that represents the last time the contents of the file represented by this entry were modified.
+        /// Gets or sets the last time the contents of the file represented by this entry were modified.
         /// </summary>
         /// <remarks>In Unix platforms, this timestamp is commonly known as <c>mtime</c>.</remarks>
         /// <exception cref="ArgumentOutOfRangeException">The specified value is larger than <see cref="DateTimeOffset.UnixEpoch"/>.</exception>
@@ -107,13 +107,13 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// When the <see cref="EntryType"/> indicates an entry that can contain data, this property returns the length in bytes of such data.
+        /// When the <see cref="EntryType"/> indicates an entry that can contain data, gets the length in bytes of such data.
         /// </summary>
         /// <remarks>The entry type that commonly contains data is <see cref="TarEntryType.RegularFile"/> (or <see cref="TarEntryType.V7RegularFile"/> in the <see cref="TarEntryFormat.V7"/> format). Other uncommon entry types that can also contain data are: <see cref="TarEntryType.ContiguousFile"/>, <see cref="TarEntryType.DirectoryList"/>, <see cref="TarEntryType.MultiVolume"/> and <see cref="TarEntryType.SparseFile"/>.</remarks>
         public long Length => _header._dataStream != null ? _header._dataStream.Length : _header._size;
 
         /// <summary>
-        /// When the <see cref="EntryType"/> indicates a <see cref="TarEntryType.SymbolicLink"/> or a <see cref="TarEntryType.HardLink"/>, this property returns the link target path of such link.
+        /// When the <see cref="EntryType"/> indicates a <see cref="TarEntryType.SymbolicLink"/> or a <see cref="TarEntryType.HardLink"/>, gets or sets the link target path of the link.
         /// </summary>
         /// <exception cref="InvalidOperationException">The entry type is not <see cref="TarEntryType.HardLink"/> or <see cref="TarEntryType.SymbolicLink"/>.</exception>
         /// <exception cref="ArgumentNullException">The specified value is <see langword="null"/>.</exception>
@@ -133,7 +133,7 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// Represents the Unix file permissions of the file represented by this entry.
+        /// Gets or sets the Unix file permissions of the file represented by this entry.
         /// </summary>
         /// <remarks>The value in this field has no effect on Windows platforms.</remarks>
         public UnixFileMode Mode
@@ -150,7 +150,7 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// Represents the name of the entry, which includes the relative path and the filename.
+        /// Gets or sets the name of the entry, which includes the relative path and the filename.
         /// </summary>
         public string Name
         {
@@ -163,9 +163,9 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// The ID of the user that owns the file represented by this entry.
+        /// Gets or sets the ID of the user that owns the file represented by this entry.
         /// </summary>
-        /// <remarks>This field is only supported in Unix platforms.</remarks>
+        /// <remarks>This field is only used in Unix platforms.</remarks>
         public int Uid
         {
             get => _header._uid;
@@ -190,7 +190,7 @@ namespace System.Formats.Tar
         /// <para>A directory exists with the same name as <paramref name="destinationFileName"/>.</para>
         /// <para>-or-</para>
         /// <para>An I/O problem occurred.</para></exception>
-        /// <exception cref="InvalidOperationException">Attempted to extract a symbolic link, a hard link or an unsupported entry type.</exception>
+        /// <exception cref="InvalidOperationException">Attempted to extract a symbolic link, a hard link, or an unsupported entry type.</exception>
         /// <exception cref="UnauthorizedAccessException">Operation not permitted due to insufficient permissions.</exception>
         public void ExtractToFile(string destinationFileName, bool overwrite)
         {
@@ -237,10 +237,12 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// The data section of this entry. If the <see cref="EntryType"/> does not support containing data, then returns <see langword="null"/>.
+        /// Gets or sets the data section of this entry. If the <see cref="EntryType"/> does not support containing data, then returns <see langword="null"/>.
         /// </summary>
-        /// <value><para>Gets a stream that represents the data section of this entry.</para>
-        /// <para>Sets a new stream that represents the data section, if it makes sense for the <see cref="EntryType"/> to contain data; if a stream already existed, the old stream gets disposed before substituting it with the new stream. Setting a <see langword="null"/> stream is allowed.</para></value>
+        /// <value>
+        /// <para>Gets a stream that represents the data section of this entry.</para>
+        /// <para>Sets a new stream that represents the data section, if it makes sense for the <see cref="P:System.Formats.Tar.TarEntry.EntryType" /> to contain data. If a stream already exists, the old stream is disposed before substituting it with the new stream. Setting a <see langword="null" /> stream is allowed.</para>
+        /// </value>
         /// <remarks>If you write data to this data stream, make sure to rewind it to the desired start position before writing this entry into an archive using <see cref="TarWriter.WriteEntry(TarEntry)"/>.</remarks>
         /// <exception cref="InvalidOperationException">Setting a data section is not supported because the <see cref="EntryType"/> is not <see cref="TarEntryType.RegularFile"/> (or <see cref="TarEntryType.V7RegularFile"/> for an archive of <see cref="TarEntryFormat.V7"/> format).</exception>
         /// <exception cref="ArgumentException">Cannot set an unreadable stream.</exception>
@@ -277,7 +279,7 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// A string that represents the current entry.
+        /// Returns a string that represents the current entry.
         /// </summary>
         /// <returns>The <see cref="Name"/> of the current entry.</returns>
         public override string ToString() => Name;

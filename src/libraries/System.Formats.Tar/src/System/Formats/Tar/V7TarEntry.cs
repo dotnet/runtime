@@ -4,7 +4,7 @@
 namespace System.Formats.Tar
 {
     /// <summary>
-    /// Represents a tar entry from an archive of the V7 format.
+    /// Represents a TAR entry from an archive of the V7 format.
     /// </summary>
     public sealed class V7TarEntry : TarEntry
     {
@@ -32,6 +32,7 @@ namespace System.Formats.Tar
         /// <summary>
         /// Initializes a new <see cref="V7TarEntry"/> instance by converting the specified <paramref name="other"/> entry into the V7 format.
         /// </summary>
+        /// <param name="other">The <see cref="TarEntry" /> instance to convert to the V7 format.</param>
         /// <exception cref="ArgumentException"><para><paramref name="other"/> is a <see cref="PaxGlobalExtendedAttributesTarEntry"/> and cannot be converted.</para>
         /// <para>-or-</para>
         /// <para>The entry type of <paramref name="other"/> is not supported for conversion to the V7 format.</para></exception>

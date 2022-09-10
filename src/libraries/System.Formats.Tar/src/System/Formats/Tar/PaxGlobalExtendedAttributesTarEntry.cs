@@ -8,7 +8,7 @@ using System.Diagnostics;
 namespace System.Formats.Tar
 {
     /// <summary>
-    /// Represents a Global Extended Attributes TAR entry from an archive of the PAX format.
+    /// Represents a Global Extended Attributes TAR entry from the PAX format.
     /// </summary>
     public sealed class PaxGlobalExtendedAttributesTarEntry : PosixTarEntry
     {
@@ -33,7 +33,7 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// Returns the global extended attributes stored in this entry.
+        /// Returns the Global Extended Attributes stored in this entry.
         /// </summary>
         public IReadOnlyDictionary<string, string> GlobalExtendedAttributes => _readOnlyGlobalExtendedAttributes ??= _header.ExtendedAttributes.AsReadOnly();
 

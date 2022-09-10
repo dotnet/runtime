@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace System.Formats.Tar
 {
     /// <summary>
-    /// Writes a tar archive into a stream.
+    /// Writes a TAR archive into a stream.
     /// </summary>
     public sealed partial class TarWriter : IDisposable, IAsyncDisposable
     {
@@ -45,7 +45,7 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// Initializes a <see cref="TarWriter"/> instance that can write tar entries to the specified stream, optionally leaves the stream open upon disposal of
+        /// Initializes a <see cref="TarWriter"/> instance that can write TAR entries to the specified stream, optionally leave the stream open upon disposal of
         /// this instance, and can optionally specify the format when writing entries using the <see cref="WriteEntry(string, string?)"/> method.
         /// </summary>
         /// <param name="archiveStream">The stream to write to.</param>
@@ -79,7 +79,7 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// The format of the entries when writing entries to the archive using the <see cref="WriteEntry(string, string?)"/> method.
+        /// The format of the entries when writing them to the archive using the <see cref="WriteEntry(string, string?)"/> method.
         /// </summary>
         public TarEntryFormat Format { get; private set; }
 
@@ -107,6 +107,7 @@ namespace System.Formats.Tar
         /// <summary>
         /// Asynchronously disposes the current <see cref="TarWriter"/> instance, and closes the archive stream if the <c>leaveOpen</c> argument was set to <see langword="false"/> in the constructor.
         /// </summary>
+        /// <returns>A value task that represents the asynchronous dispose operation.</returns>
         public async ValueTask DisposeAsync()
         {
             if (!_isDisposed)
@@ -230,6 +231,7 @@ namespace System.Formats.Tar
         /// </summary>
         /// <param name="entry">The tar entry to write.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
+        /// <returns>A task that represents the asynchronous write operation.</returns>
         /// <remarks><para>Before writing an entry to the archive, if you wrote data into the entry's <see cref="TarEntry.DataStream"/>, make sure to rewind it to the desired start position.</para>
         /// <para>These are the entry types supported for writing on each format:</para>
         /// <list type="bullet">

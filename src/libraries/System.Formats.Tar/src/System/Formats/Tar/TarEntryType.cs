@@ -4,9 +4,9 @@
 namespace System.Formats.Tar
 {
     /// <summary>
-    /// Specifies the tar entry types.
+    /// Specifies the TAR entry types.
     /// </summary>
-    /// <remarks>Tar entries with a metadata entry type are not exposed to the user, they are handled internally.</remarks>
+    /// <remarks>Tar entries with a metadata entry type aren't exposed to the user. They are handled internally.</remarks>
     public enum TarEntryType : byte
     {
         /// <summary>
@@ -28,7 +28,7 @@ namespace System.Formats.Tar
         /// </summary>
         CharacterDevice = (byte)'3',
         /// <summary>
-        /// <para>Character device special file.</para>
+        /// <para>Block device special file.</para>
         /// <para>This entry type is supported only in the Unix platforms for writing.</para>
         /// </summary>
         BlockDevice = (byte)'4',
@@ -42,7 +42,7 @@ namespace System.Formats.Tar
         /// </summary>
         Fifo = (byte)'6',
         /// <summary>
-        /// <para>GNU contiguous file</para>
+        /// <para>GNU contiguous file.</para>
         /// <para>This entry type is specific to the <see cref="TarEntryFormat.Gnu"/> format, and is treated as a <see cref="RegularFile"/> entry type.</para>
         /// </summary>
         // According to the GNU spec, it's extremely rare to encounter a contiguous entry.

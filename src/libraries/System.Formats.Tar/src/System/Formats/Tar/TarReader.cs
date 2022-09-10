@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace System.Formats.Tar
 {
     /// <summary>
-    /// Reads a tar archive from a stream.
+    /// Reads a TAR archive from a stream.
     /// </summary>
     public sealed class TarReader : IDisposable, IAsyncDisposable
     {
@@ -48,7 +48,7 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// Disposes the current <see cref="TarReader"/> instance, and disposes the non-null <see cref="TarEntry.DataStream"/> instances of all the entries that were read from the archive.
+        /// Disposes the current <see cref="T:System.Formats.Tar.TarReader" /> instance, and disposes the streams of all the entries that were read from the archive if the <c>leaveOpen</c> argument was set to <see langword="false" /> in the constructor.
         /// </summary>
         /// <remarks>The <see cref="TarEntry.DataStream"/> property of any entry can be replaced with a new stream. If the user decides to replace it on a <see cref="TarEntry"/> instance that was obtained using a <see cref="TarReader"/>, the underlying stream gets disposed immediately, freeing the <see cref="TarReader"/> of origin from the responsibility of having to dispose it.</remarks>
         public void Dispose()
@@ -68,7 +68,7 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// Asynchronously disposes the current <see cref="TarReader"/> instance, and disposes the non-null <see cref="TarEntry.DataStream"/> instances of all the entries that were read from the archive.
+        /// Asynchronously disposes the current <see cref="T:System.Formats.Tar.TarReader" /> instance, and closes the streams of all the entries that were read from the archive if the <c>leaveOpen</c> argument was set to <see langword="false" /> in the constructor.
         /// </summary>
         /// <remarks>The <see cref="TarEntry.DataStream"/> property of any entry can be replaced with a new stream. If the user decides to replace it on a <see cref="TarEntry"/> instance that was obtained using a <see cref="TarReader"/>, the underlying stream gets disposed immediately, freeing the <see cref="TarReader"/> of origin from the responsibility of having to dispose it.</remarks>
         public async ValueTask DisposeAsync()
@@ -90,8 +90,8 @@ namespace System.Formats.Tar
         /// <summary>
         /// Retrieves the next entry from the archive stream.
         /// </summary>
-        /// <param name="copyData"><para>Set it to <see langword="true"/> to copy the data of the entry into a new <see cref="MemoryStream"/>. This is helpful when the underlying archive stream is unseekable, and the data needs to be accessed later.</para>
-        /// <para>Set it to <see langword="false"/> if the data should not be copied into a new stream. If the underlying stream is unseekable, the user has the responsibility of reading and processing the <see cref="TarEntry.DataStream"/> immediately after calling this method.</para>
+        /// <para><see langword="true" /> to copy the data of the entry into a new <see cref="T:System.IO.MemoryStream" />.This is helpful when the underlying archive stream is unseekable, and the data needs to be accessed later.</para>
+        /// <para><see langword="false" /> if the data should not be copied into a new stream.If the underlying stream is unseekable, the user has the responsibility of reading and processing the<see cref= "P:System.Formats.Tar.TarEntry.DataStream" /> immediately after calling this method.</para>
         /// <para>The default value is <see langword="false"/>.</para></param>
         /// <returns>A <see cref="TarEntry"/> instance if a valid entry was found, or <see langword="null"/> if the end of the archive has been reached.</returns>
         /// <exception cref="InvalidDataException"><para>The entry's data is malformed.</para>
@@ -149,8 +149,9 @@ namespace System.Formats.Tar
         /// <summary>
         /// Asynchronously retrieves the next entry from the archive stream.
         /// </summary>
-        /// <param name="copyData"><para>Set it to <see langword="true"/> to copy the data of the entry into a new <see cref="MemoryStream"/>. This is helpful when the underlying archive stream is unseekable, and the data needs to be accessed later.</para>
-        /// <para>Set it to <see langword="false"/> if the data should not be copied into a new stream. If the underlying stream is unseekable, the user has the responsibility of reading and processing the <see cref="TarEntry.DataStream"/> immediately after calling this method.</para>
+        /// <param name="copyData">
+        /// <para><see langword="true" /> to copy the data of the entry into a new <see cref="T:System.IO.MemoryStream" />.This is helpful when the underlying archive stream is unseekable, and the data needs to be accessed later.</para>
+        /// <para><see langword="false" /> if the data should not be copied into a new stream.If the underlying stream is unseekable, the user has the responsibility of reading and processing the<see cref= "P:System.Formats.Tar.TarEntry.DataStream" /> immediately after calling this method.</para>
         /// <para>The default value is <see langword="false"/>.</para></param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
         /// <returns>A value task containing a <see cref="TarEntry"/> instance if a valid entry was found, or <see langword="null"/> if the end of the archive has been reached.</returns>

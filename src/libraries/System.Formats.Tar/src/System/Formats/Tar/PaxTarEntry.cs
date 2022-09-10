@@ -8,7 +8,7 @@ using System.Diagnostics;
 namespace System.Formats.Tar
 {
     /// <summary>
-    /// Represents a tar entry from an archive of the PAX format.
+    /// Represents a TAR entry in the PAX format.
     /// </summary>
     public sealed class PaxTarEntry : PosixTarEntry
     {
@@ -21,16 +21,13 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// Initializes a new <see cref="PaxTarEntry"/> instance with the specified entry type, entry name, and the default extended attributes.
+        /// Initializes a new <see cref="PaxTarEntry"/> instance with the specified entry type, entry name, and the default Extended Attributes.
         /// </summary>
         /// <param name="entryType">The type of the entry.</param>
         /// <param name="entryName">A string with the path and file name of this entry.</param>
-        /// <remarks><para>When creating an instance using the <see cref="PaxTarEntry(TarEntryType, string)"/> constructor, only the following entry types are supported:</para>
-        /// <list type="bullet">
-        /// <item>In all platforms: <see cref="TarEntryType.Directory"/>, <see cref="TarEntryType.HardLink"/>, <see cref="TarEntryType.SymbolicLink"/>, <see cref="TarEntryType.RegularFile"/>.</item>
-        /// <item>In Unix platforms only: <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> and <see cref="TarEntryType.Fifo"/>.</item>
-        /// </list>
-        /// <para>Use the <see cref="PaxTarEntry(TarEntryType, string, IEnumerable{KeyValuePair{string, string}})"/> constructor to include additional extended attributes when creating the entry.</para>
+        /// <remarks>
+        /// <para>When creating an instance using the <see cref="PaxTarEntry(TarEntryType, string)"/> constructor, only the following entry types are supported: <see cref="TarEntryType.Directory"/>, <see cref="TarEntryType.HardLink"/>, <see cref="TarEntryType.SymbolicLink"/>, <see cref="TarEntryType.RegularFile"/> <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> and <see cref="TarEntryType.Fifo"/>.</para>
+        /// <para>Use the <see cref="PaxTarEntry(TarEntryType, string, IEnumerable{KeyValuePair{string, string}})"/> constructor to include additional Extended Attributes when creating the entry.</para>
         /// <para>The following entries are always found in the Extended Attributes dictionary of any PAX entry:</para>
         /// <list type="bullet">
         /// <item>Modification time, under the name <c>mtime</c>, as a <see cref="double"/> number.</item>
@@ -64,12 +61,8 @@ namespace System.Formats.Tar
         /// <param name="entryType">The type of the entry.</param>
         /// <param name="entryName">A string with the path and file name of this entry.</param>
         /// <param name="extendedAttributes">An enumeration of string key-value pairs that represents the metadata to include in the Extended Attributes entry that precedes the current entry.</param>
-        /// <remarks>When creating an instance using the <see cref="PaxTarEntry(TarEntryType, string)"/> constructor, only the following entry types are supported:
-        /// <list type="bullet">
-        /// <item>In all platforms: <see cref="TarEntryType.Directory"/>, <see cref="TarEntryType.HardLink"/>, <see cref="TarEntryType.SymbolicLink"/>, <see cref="TarEntryType.RegularFile"/>.</item>
-        /// <item>In Unix platforms only: <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> and <see cref="TarEntryType.Fifo"/>.</item>
-        /// </list>
-        /// The specified <paramref name="extendedAttributes"/> get appended to the default attributes, unless the specified enumeration overrides any of them.
+        /// <remarks>
+        /// <para>The specified <paramref name="extendedAttributes"/> get appended to the default attributes, unless the specified enumeration overrides any of them.</para>
         /// <para>The following entries are always found in the Extended Attributes dictionary of any PAX entry:</para>
         /// <list type="bullet">
         /// <item>Modification time, under the name <c>mtime</c>, as a <see cref="double"/> number.</item>
@@ -103,6 +96,7 @@ namespace System.Formats.Tar
         /// <summary>
         /// Initializes a new <see cref="PaxTarEntry"/> instance by converting the specified <paramref name="other"/> entry into the PAX format.
         /// </summary>
+        /// <param name="other">The <see cref="TarEntry" /> instance to convert to the PAX format.</param>
         /// <exception cref="ArgumentException"><para><paramref name="other"/> is a <see cref="PaxGlobalExtendedAttributesTarEntry"/> and cannot be converted.</para>
         /// <para>-or-</para>
         /// <para>The entry type of <paramref name="other"/> is not supported for conversion to the PAX format.</para></exception>
@@ -131,9 +125,9 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// Returns the extended attributes for this entry.
+        /// Returns the Extended Attributes for this entry.
         /// </summary>
-        /// <remarks>The extended attributes are specified when constructing an entry. Use <see cref="PaxTarEntry(TarEntryType, string, IEnumerable{KeyValuePair{string, string}})"/> to append your own enumeration of extended attributes to the current entry on top of the default ones. Use <see cref="PaxTarEntry(TarEntryType, string)"/> to only use the default extended attributes.
+        /// <remarks>The Extended Attributes are specified when constructing an entry. Use <see cref="PaxTarEntry(TarEntryType, string, IEnumerable{KeyValuePair{string, string}})"/> to append your own enumeration of Extended Attributes to the current entry on top of the default ones. Use <see cref="PaxTarEntry(TarEntryType, string)"/> to only use the default Extended Attributes.
         /// <para>The following entries are always found in the Extended Attributes dictionary of any PAX entry:</para>
         /// <list type="bullet">
         /// <item>Modification time, under the name <c>mtime</c>, as a <see cref="double"/> number.</item>
@@ -153,7 +147,7 @@ namespace System.Formats.Tar
         // Determines if the current instance's entry type supports setting a data stream.
         internal override bool IsDataStreamSetterSupported() => EntryType == TarEntryType.RegularFile;
 
-        // Checks if the extended attributes dictionary contains 'atime' and 'ctime'.
+        // Checks if the 3 dictionary contains 'atime' and 'ctime'.
         // If any of them is not found, it is added with the value of either the current entry's 'mtime',
         // or 'DateTimeOffset.UtcNow', depending on the value of 'useMTime'.
         private void AddNewAccessAndChangeTimestampsIfNotExist(bool useMTime)

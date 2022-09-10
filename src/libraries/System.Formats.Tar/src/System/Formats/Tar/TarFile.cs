@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace System.Formats.Tar
 {
     /// <summary>
-    /// Provides static methods for creating and extracting tar archives.
+    /// Provides static methods for creating and extracting TAR archives.
     /// </summary>
     public static class TarFile
     {
