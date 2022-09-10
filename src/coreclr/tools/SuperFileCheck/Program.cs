@@ -259,10 +259,13 @@ namespace SuperFileCheck
         {
             var methodDecl = methodDeclInfo.Syntax;
             var methodName = methodDeclInfo.Name;
+            
+            var isGeneric = methodDeclInfo.Syntax.TypeParameterList != null;
+            var afterMethodName = isGeneric ? "[" : "(";
 
             // Create anchors from the first prefix.
-            var startAnchorText = $"// {checkPrefixes[0]}-LABEL: {methodName}(";
-            var endAnchorText = $"// {checkPrefixes[0]}: {methodName}(";
+            var startAnchorText = $"// {checkPrefixes[0]}-LABEL: {methodName}{afterMethodName}";
+            var endAnchorText = $"// {checkPrefixes[0]}: {methodName}{afterMethodName}";
 
             // Create temp source file based on the source text of the method.
             // Newlines are added to pad the text so FileCheck's error messages will correspond
