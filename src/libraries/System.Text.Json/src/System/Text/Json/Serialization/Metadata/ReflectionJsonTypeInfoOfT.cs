@@ -28,7 +28,7 @@ namespace System.Text.Json.Serialization.Metadata
                 AddPropertiesAndParametersUsingReflection();
             }
 
-            Func<object>? createObject = Options.MemberAccessorStrategy.CreateConstructor(typeof(T));
+            Func<object>? createObject = JsonSerializerOptions.MemberAccessorStrategy.CreateConstructor(typeof(T));
             SetCreateObjectIfCompatible(createObject);
             CreateObjectForExtensionDataProperty = createObject;
 

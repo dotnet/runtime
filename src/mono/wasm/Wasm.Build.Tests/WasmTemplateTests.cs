@@ -36,12 +36,16 @@ namespace Wasm.Build.Tests
             File.WriteAllText(path, text);
         }
 
-        private void UpdateBrowserMainJs()
+        private void UpdateBrowserMainJs(string targetFramework)
         {
             string mainJsPath = Path.Combine(_projectDir!, "main.js");
             string mainJsContent = File.ReadAllText(mainJsPath);
 
-            mainJsContent = mainJsContent.Replace(".create()", ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()");
+            // .withExitOnUnhandledError() is available only only >net7.0
+            mainJsContent = mainJsContent.Replace(".create()",
+                    targetFramework == "net8.0"
+                        ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
+                        : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()");
             File.WriteAllText(mainJsPath, mainJsContent);
         }
 
@@ -83,7 +87,7 @@ namespace Wasm.Build.Tests
             string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
-            UpdateBrowserMainJs();
+            UpdateBrowserMainJs(DefaultTargetFramework);
 
             var buildArgs = new BuildArgs(projectName, config, false, id, null);
             buildArgs = ExpandBuildArgs(buildArgs);
@@ -96,7 +100,7 @@ namespace Wasm.Build.Tests
                             HasV8Script: false,
                             MainJS: "main.js",
                             Publish: false,
-                            TargetFramework: "net7.0"
+                            TargetFramework: BuildTestBase.DefaultTargetFramework
                         ));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true);
@@ -106,7 +110,6 @@ namespace Wasm.Build.Tests
 
             File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
 
-            _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
 
             bool expectRelinking = config == "Release";
@@ -118,7 +121,7 @@ namespace Wasm.Build.Tests
                             HasV8Script: false,
                             MainJS: "main.js",
                             Publish: true,
-                            TargetFramework: "net7.0",
+                            TargetFramework: BuildTestBase.DefaultTargetFramework,
                             UseCache: false));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
@@ -146,7 +149,7 @@ namespace Wasm.Build.Tests
                         HasV8Script: false,
                         MainJS: "main.mjs",
                         Publish: false,
-                        TargetFramework: "net7.0"
+                        TargetFramework: BuildTestBase.DefaultTargetFramework
                         ));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true);
@@ -171,7 +174,7 @@ namespace Wasm.Build.Tests
                             HasV8Script: false,
                             MainJS: "main.mjs",
                             Publish: true,
-                            TargetFramework: "net7.0",
+                            TargetFramework: BuildTestBase.DefaultTargetFramework,
                             UseCache: false));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
@@ -204,7 +207,7 @@ namespace Wasm.Build.Tests
                             HasV8Script: false,
                             MainJS: "main.mjs",
                             Publish: false,
-                            TargetFramework: "net7.0"
+                            TargetFramework: BuildTestBase.DefaultTargetFramework
                             ));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !relinking);
@@ -268,7 +271,7 @@ namespace Wasm.Build.Tests
                             HasV8Script: false,
                             MainJS: "main.mjs",
                             Publish: true,
-                            TargetFramework: "net7.0",
+                            TargetFramework: BuildTestBase.DefaultTargetFramework,
                             UseCache: false));
 
             if (!aot)
@@ -301,10 +304,6 @@ namespace Wasm.Build.Tests
             string config = "Debug";
             string id = $"blazor_{config}_{Path.GetRandomFileName()}";
             string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
-            // string projectName = Path.GetFileNameWithoutExtension(projectFile);
-
-            // var buildArgs = new BuildArgs(projectName, config, false, id, null);
-            // buildArgs = ExpandBuildArgs(buildArgs);
 
             new DotNetCommand(s_buildEnv, _testOutput)
                     .WithWorkingDirectory(_projectDir!)
@@ -333,10 +332,7 @@ namespace Wasm.Build.Tests
             string id = $"browser_{config}_{Path.GetRandomFileName()}";
             CreateWasmTemplateProject(id, "wasmbrowser");
 
-            // var buildArgs = new BuildArgs(projectName, config, false, id, null);
-            // buildArgs = ExpandBuildArgs(buildArgs);
-
-            UpdateBrowserMainJs();
+            UpdateBrowserMainJs(DefaultTargetFramework);
 
             new DotNetCommand(s_buildEnv, _testOutput)
                     .WithWorkingDirectory(_projectDir!)
