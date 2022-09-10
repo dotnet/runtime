@@ -247,15 +247,23 @@ public:
 
         if (node->OperIsLocal())
         {
-            unsigned const lclNum = node->AsLclVarCommon()->GetLclNum();
-
-            // Uses of address-exposed locals are modelled as global refs.
-            //
+            unsigned const   lclNum = node->AsLclVarCommon()->GetLclNum();
             LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
 
             if (varDsc->IsAddressExposed())
             {
-                m_accumulatedFlags |= GTF_GLOB_REF;
+                if (!user->OperIs(GT_ASG) || (node != user->gtGetOp1()))
+                {
+                    // Uses of address-exposed locals are modelled as global refs.
+                    m_accumulatedFlags |= GTF_GLOB_REF;
+                }
+                else
+                {
+                    // Stores to address-exposed locals are global refs as well,
+                    // but defer adding into the flags just yet: the actual side
+                    // effect will happen at the point of the ASG, not the LHS.
+                    user->gtFlags |= GTF_GLOB_REF;
+                }
             }
         }
 
