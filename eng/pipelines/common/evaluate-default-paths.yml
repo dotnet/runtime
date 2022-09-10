@@ -93,6 +93,15 @@ jobs:
     - subset: runtimetests
       include:
       - src/tests/*
+
+    - subset: non_runtimetests
+      exclude:
+      - src/tests/*
+
+      # having this ensures that change in evaluate-default-paths.yml
+      # doesn't trigger jobs
+      - eng/pipelines/common/evaluate-default-paths.yml
+
     - subset: installer
       include:
       - docs/manpages/*
@@ -176,6 +185,10 @@ jobs:
       - src/mono/wasm/Wasm.Build.Tests/*
       - src/mono/wasm/debugger/*
 
+      # having this ensures that change in evaluate-default-paths.yml
+      # doesn't trigger jobs
+      - eng/pipelines/common/evaluate-default-paths.yml
+
     - subset: wasm_wbt_or_dbg
       include:
       - src/mono/wasm/Wasm.Build.Tests/*
@@ -231,6 +244,10 @@ jobs:
       - src/tasks/WasmAppBuilder/*
       - src/tasks/WasmBuildTasks/*
       - src/tasks/WorkloadBuildTasks/*
+
+      # having this ensures that change in evaluate-default-paths.yml
+      # doesn't trigger jobs
+      - eng/pipelines/common/evaluate-default-paths.yml
 
     - ${{ if ne(parameters.extraSubsets, '') }}:
       - ${{ parameters.extraSubsets }}
