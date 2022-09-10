@@ -178,14 +178,13 @@ jobs:
 
 - ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeNonLibTests, true)) }}:
   # Wasm.Build.Tests
-  # Issue: https://github.com/dotnet/runtime/issues/75223
-  #- template: /eng/pipelines/common/templates/wasm-build-tests.yml
-    #parameters:
-      #platforms:
-        #- Browser_wasm
-        #- Browser_wasm_win
-      #isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      #isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+  - template: /eng/pipelines/common/templates/wasm-build-tests.yml
+    parameters:
+      platforms:
+        - Browser_wasm
+        - Browser_wasm_win
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
 
   # Debugger tests
   - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
