@@ -78,12 +78,7 @@ struct AsmManComType
     mdToken tkClass;
     BOOL    m_fNew;
     CustomDescrList m_CustomDescrList;
-    AsmManComType()
-    {
-        szName = szFileName = szAsmRefName = szComTypeName = NULL;
-        m_fNew = TRUE;
-        tkImpl = 0;
-    };
+    AsmManComType() = default;
     ~AsmManComType()
     {
         if(szName) delete szName;
@@ -106,7 +101,7 @@ struct AsmManRes
     BOOL    m_fNew;
 	CustomDescrList m_CustomDescrList;
 	char*	szAsmRefName;
-	AsmManRes() { szName = szAlias = szAsmRefName = szFileName = NULL; ulOffset = 0; tkTok = 0; dwAttr = 0; m_fNew = TRUE; };
+	AsmManRes() = default;
 	~AsmManRes()
 	{
         if(szAlias && (szAlias != szName)) delete szAlias;
