@@ -17,6 +17,7 @@ parameters:
         src/tasks/WasmAppBuilder/*
         src/tasks/WasmBuildTasks/*
         src/tasks/WorkloadBuildTasks/*
+        src/tests/Common/wasm-test-runner/*
     ]
 
 jobs:
