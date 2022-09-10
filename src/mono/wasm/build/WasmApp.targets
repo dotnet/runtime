@@ -117,7 +117,11 @@
     <!-- workaround: RuntimeIdentifierInference.targets is imported after this file, and updates OutputPath to include
                      the RID. So, we don't have the correct final OutputPath here. But we need it for `dotnet run` to work,
                      as it just reads the RunCommand after evaluation. -->
-    <_AppBundleDirForRunCommand>$([MSBuild]::NormalizeDirectory($(OutputPath), 'AppBundle'))</_AppBundleDirForRunCommand>
+    <_AppBundleDirForRunCommand Condition="'$(_AppBundleDirForRunCommand)' == '' and Exists('$(MSBuildProjectDirectory)/$(OutputPath)/browser-wasm/AppBundle')">$([MSBuild]::NormalizeDirectory($(MSBuildProjectDirectory), $(OutputPath), 'browser-wasm', 'AppBundle'))</_AppBundleDirForRunCommand>
+    <_AppBundleDirForRunCommand Condition="Exists('$(WasmAppDir)/$(AssemblyName).runtimeconfig.json')">$(WasmAppDir)</_AppBundleDirForRunCommand>
+    <_AppBundleDirForRunCommand Condition="'$(_AppBundleDirForRunCommand)' == '' and Exists('$(OutputPath)/AppBundle')">$([MSBuild]::NormalizeDirectory($(OutputPath), 'AppBundle'))</_AppBundleDirForRunCommand>
+    <_AppBundleDirForRunCommand Condition="'$(_AppBundleDirForRunCommand)' == '' and Exists('$(OutputPath)/browser-wasm/AppBundle')">$([MSBuild]::NormalizeDirectory($(OutputPath), 'browser-wasm', 'AppBundle'))</_AppBundleDirForRunCommand>
+    <_AppBundleDirForRunCommand Condition="'$(_AppBundleDirForRunCommand)' == ''">OutputPath=$(OutputPath), OutDir=$(OutDir)</_AppBundleDirForRunCommand>    
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(WasmGenerateAppBundle)' == 'true'">
