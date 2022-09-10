@@ -18,7 +18,7 @@
   </Target>
 
   <PropertyGroup>
-    <MonoDiagnosticsMock Condition="('$(MonoDiagnosticsMock)' == '') and ('$(Configuration)' == 'Debug')">true</MonoDiagnosticsMock>
+    <MonoDiagnosticsMock Condition="('$(MonoDiagnosticsMock)' == '') and ('$(Configuration)' == 'Debug' or '$(ArchiveTests)' == 'true')">true</MonoDiagnosticsMock>
   </PropertyGroup>
 
   <ItemGroup>
