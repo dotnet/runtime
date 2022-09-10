@@ -834,10 +834,7 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddre
 
 REDHAWK_PALEXPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size)
 {
-#ifndef HOST_ARM
-    // Intrinsic should do the right thing across all platforms (except Linux arm)
-    __builtin___clear_cache((char *)pAddress, (char *)pAddress + size);
-#else // HOST_ARM
+#if defined(__linux__) && defined(HOST_ARM)
     // On Linux/arm (at least on 3.10) we found that there is a problem with __do_cache_op (arch/arm/kernel/traps.c)
     // implementing cacheflush syscall. cacheflush flushes only the first page in range [pAddress, pAddress + size)
     // and leaves other pages in undefined state which causes random tests failures (often due to SIGSEGV) with no particular pattern.
@@ -857,7 +854,9 @@ REDHAWK_PALEXPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size
         __builtin___clear_cache((char *)begin, (char *)endOrNextPageBegin);
         begin = endOrNextPageBegin;
     }
-#endif // HOST_ARM
+#else
+    __builtin___clear_cache((char *)pAddress, (char *)pAddress + size);
+#endif
 }
 
 REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer)
