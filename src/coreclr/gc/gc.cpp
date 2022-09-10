@@ -2855,7 +2855,9 @@ size_t     gc_heap::interesting_mechanism_bits_per_heap[max_gc_mechanism_bits_co
 
 mark_queue_t gc_heap::mark_queue;
 
+#ifdef USE_REGIONS
 bool gc_heap::special_sweep_p = false;
+#endif //USE_REGIONS
 
 #endif // MULTIPLE_HEAPS
 
@@ -14124,7 +14126,10 @@ gc_heap::init_gc_heap (int h_number)
     loh_state_index = 0;
 #endif //RECORD_LOH_STATE
 
+#ifdef USE_REGIONS
     special_sweep_p = false;
+#endif //USE_REGIONS
+
 #endif //MULTIPLE_HEAPS
 
 #ifdef MULTIPLE_HEAPS
@@ -26260,6 +26265,10 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
     static uint64_t last_mark_time = 0;
 #endif //FEATURE_EVENT_TRACE
 
+#ifdef USE_REGIONS
+    special_sweep_p = false;
+#endif //USE_REGIONS
+
 #ifdef MULTIPLE_HEAPS
     gc_t_join.join(this, gc_join_begin_mark_phase);
     if (gc_t_join.joined())
@@ -26268,7 +26277,6 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
         maxgen_size_inc_p = false;
 
 #ifdef USE_REGIONS
-        special_sweep_p = false;
         region_count = global_region_allocator.get_used_region_count();
         grow_mark_list_piece();
         verify_region_to_generation_map();
@@ -30088,9 +30096,11 @@ void gc_heap::plan_phase (int condemned_gen_number)
         }
         else
         {
-#ifndef USE_REGIONS
+#ifdef USE_REGIONS
+            bool joined_special_sweep_p = false;
+#else
             settings.demotion = FALSE;
-#endif //!USE_REGIONS
+#endif //USE_REGIONS
             int pol_max = policy_sweep;
 #ifdef GC_CONFIG_DRIVEN
             BOOL is_compaction_mandatory = FALSE;
@@ -30101,14 +30111,16 @@ void gc_heap::plan_phase (int condemned_gen_number)
             {
                 if (pol_max < g_heaps[i]->gc_policy)
                     pol_max = policy_compact;
-#ifndef USE_REGIONS
+#ifdef USE_REGIONS
+                joined_special_sweep_p |= g_heaps[i]->special_sweep_p;
+#else
                 // set the demotion flag is any of the heap has demotion
                 if (g_heaps[i]->demotion_high >= g_heaps[i]->demotion_low)
                 {
                     (g_heaps[i]->get_gc_data_per_heap())->set_mechanism_bit (gc_demotion_bit);
                     settings.demotion = TRUE;
                 }
-#endif //!USE_REGIONS
+#endif //USE_REGIONS
 
 #ifdef GC_CONFIG_DRIVEN
                 if (!is_compaction_mandatory)
@@ -30143,7 +30155,8 @@ void gc_heap::plan_phase (int condemned_gen_number)
             for (i = 0; i < n_heaps; i++)
             {
 #ifdef USE_REGIONS
-                if (special_sweep_p)
+                g_heaps[i]->special_sweep_p = joined_special_sweep_p;
+                if (joined_special_sweep_p)
                 {
                     g_heaps[i]->gc_policy = policy_sweep;
                 }
@@ -30728,7 +30741,9 @@ void gc_heap::plan_phase (int condemned_gen_number)
             }
 #endif //FEATURE_EVENT_TRACE
 
+#ifdef USE_REGIONS
             if (!special_sweep_p)
+#endif //USE_REGIONS
             {
                 GCScan::GcPromotionsGranted(condemned_gen_number,
                                                 max_generation, &sc);
@@ -30760,13 +30775,17 @@ void gc_heap::plan_phase (int condemned_gen_number)
         }
 
 #ifdef FEATURE_PREMORTEM_FINALIZATION
+#ifdef USE_REGIONS
         if (!special_sweep_p)
+#endif //USE_REGIONS
         {
             finalize_queue->UpdatePromotedGenerations (condemned_gen_number, TRUE);
         }
 #endif // FEATURE_PREMORTEM_FINALIZATION
 
+#ifdef USE_REGIONS
         if (!special_sweep_p)
+#endif //USE_REGIONS
         {
             clear_gen1_cards();
         }
@@ -31738,14 +31757,17 @@ void gc_heap::make_free_lists (int condemned_gen_number)
         size_t  end_brick = brick_of (end_address-1);
 
         int current_gen_num = i;
+#ifdef USE_REGIONS
         args.free_list_gen_number = (special_sweep_p ? current_gen_num : get_plan_gen_num (current_gen_num));
+#else
+        args.free_list_gen_number = get_plan_gen_num (current_gen_num);
+#endif //USE_REGIONS
         args.free_list_gen = generation_of (args.free_list_gen_number);
         args.highest_plug = 0;
 
 #ifdef USE_REGIONS
         dprintf (REGIONS_LOG, ("starting at gen%d %Ix -> %Ix", i, start_address, end_address));
 #else
-        assert (!special_sweep_p);
         args.current_gen_limit = (((current_gen_num == max_generation)) ?
                                   MAX_PTR :
                                   (generation_limit (args.free_list_gen_number)));

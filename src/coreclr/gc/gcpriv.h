@@ -3852,8 +3852,10 @@ public:
     PER_HEAP_ISOLATED
     VOLATILE(bool) full_gc_approach_event_set;
 
+#ifdef USE_REGIONS
     PER_HEAP
     bool special_sweep_p;
+#endif
 
 #ifdef BACKGROUND_GC
     PER_HEAP_ISOLATED
