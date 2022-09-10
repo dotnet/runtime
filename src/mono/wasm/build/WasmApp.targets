@@ -121,7 +121,7 @@
     <_AppBundleDirForRunCommand Condition="Exists('$(WasmAppDir)/$(AssemblyName).runtimeconfig.json')">$(WasmAppDir)</_AppBundleDirForRunCommand>
     <_AppBundleDirForRunCommand Condition="'$(_AppBundleDirForRunCommand)' == '' and Exists('$(OutputPath)/AppBundle')">$([MSBuild]::NormalizeDirectory($(OutputPath), 'AppBundle'))</_AppBundleDirForRunCommand>
     <_AppBundleDirForRunCommand Condition="'$(_AppBundleDirForRunCommand)' == '' and Exists('$(OutputPath)/browser-wasm/AppBundle')">$([MSBuild]::NormalizeDirectory($(OutputPath), 'browser-wasm', 'AppBundle'))</_AppBundleDirForRunCommand>
-    <_AppBundleDirForRunCommand Condition="'$(_AppBundleDirForRunCommand)' == ''">OutputPath=$(OutputPath), OutDir=$(OutDir)</_AppBundleDirForRunCommand>    
+    <_AppBundleDirForRunCommand Condition="'$(_AppBundleDirForRunCommand)' == ''">OutputPath=$(OutputPath), OutDir=$(OutDir)</_AppBundleDirForRunCommand>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(WasmGenerateAppBundle)' == 'true'">
