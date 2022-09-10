@@ -229,6 +229,8 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
         return NULL;
     }
 
+    PalFlushInstructionCache(pThunksSection, THUNKS_MAP_SIZE);
+
     return pThunksSection;
 }
 
