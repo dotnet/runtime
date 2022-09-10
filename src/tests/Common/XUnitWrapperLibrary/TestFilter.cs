@@ -118,14 +118,38 @@ public class TestFilter
     // issues.targets file as a split model would be very confusing for developers
     // and test monitors.
     private readonly HashSet<string>? _testExclusionList;
+    private readonly int _stripe = 0;
+    private readonly int _stripeCount = 1;
+    private int _shouldRunQuery = -1;
 
-    public TestFilter(string? filterString, HashSet<string>? testExclusionList)
+    public TestFilter(string? filterString, HashSet<string>? testExclusionList) : 
+        this(filterString == null ? Array.Empty<string>() : new string[]{filterString}, testExclusionList)
     {
+    }
+
+    public TestFilter(string[] filterArgs, HashSet<string>? testExclusionList)
+    {
+        string? filterString = null;
+
+        for (int i = 0; i < filterArgs.Length; i++)
+        {
+            if (filterArgs[i].StartsWith("-stripe"))
+            {
+                _stripe = Int32.Parse(filterArgs[++i]);
+                _stripeCount = Int32.Parse(filterArgs[++i]);
+            }
+            else
+            {
+                if (filterString == null)
+                    filterString = filterArgs[0];
+            }
+        }
+
         if (filterString is not null)
         {
             if (filterString.IndexOfAny(new[] { '!', '(', ')', '~', '=' }) != -1)
             {
-                throw new ArgumentException("Complex test filter expressions are not supported today. The only filters supported today are the simple form supported in 'dotnet test --filter' (substrings of the test's fully qualified name). If further filtering options are desired, file an issue on dotnet/runtime for support.", nameof(filterString));
+                throw new ArgumentException("Complex test filter expressions ar e not supported today. The only filters supported today are the simple form supported in 'dotnet test --filter' (substrings of the test's fully qualified name). If further filtering options are desired, file an issue on dotnet/runtime for support.", nameof(filterString));
             }
             _filter = new NameClause(TermKind.FullyQualifiedName, filterString, substring: true);
         }
@@ -140,15 +164,26 @@ public class TestFilter
 
     public bool ShouldRunTest(string fullyQualifiedName, string displayName, string[]? traits = null)
     {
+        bool shouldRun = false;
         if (_testExclusionList is not null && _testExclusionList.Contains(displayName.Replace("\\", "/")))
         {
-            return false;
+            shouldRun = false;
         }
-        if (_filter is null)
+        else if (_filter is null)
         {
-            return true;
+            shouldRun = true;
         }
-        return _filter.IsMatch(fullyQualifiedName, displayName, traits ?? Array.Empty<string>());
+        else
+        {
+            shouldRun = _filter.IsMatch(fullyQualifiedName, displayName, traits ?? Array.Empty<string>());
+        }
+
+        if (shouldRun)
+        {
+            // Test stripe, if true, then report success
+            return ((System.Threading.Interlocked.Increment(ref _shouldRunQuery)) % _stripeCount) == _stripe;
+        }
+        return false;
     }
     
     public static HashSet<string> LoadTestExclusionList()

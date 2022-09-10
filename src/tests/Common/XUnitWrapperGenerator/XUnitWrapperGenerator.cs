@@ -154,7 +154,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine(string.Join("\n", aliasMap.Values.Where(alias => alias != "global").Select(alias => $"extern alias {alias};")));
         builder.AppendLine("System.Collections.Generic.HashSet<string> testExclusionList = XUnitWrapperLibrary.TestFilter.LoadTestExclusionList();");
 
-        builder.AppendLine("XUnitWrapperLibrary.TestFilter filter = new (args.Length != 0 ? args[0] : null, testExclusionList);");
+        builder.AppendLine("XUnitWrapperLibrary.TestFilter filter = new (args, testExclusionList);");
         builder.AppendLine("XUnitWrapperLibrary.TestSummary summary = new();");
         builder.AppendLine("System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();");
         builder.AppendLine("XUnitWrapperLibrary.TestOutputRecorder outputRecorder = new(System.Console.Out);");
@@ -165,6 +165,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         StringBuilder testExecutorBuilder = new();
         int testsLeftInCurrentTestExecutor = 0;
         int currentTestExecutor = 0;
+        int totalTestsEmitted = 0;
 
         if (testInfos.Length > 0)
         {
@@ -183,6 +184,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     testsLeftInCurrentTestExecutor = 100; // Break test executors into groups of 100, which empircally seems to work well
                 }
                 testExecutorBuilder.AppendLine(test.GenerateTestExecution(reporter));
+                totalTestsEmitted++;
                 testsLeftInCurrentTestExecutor--;
             }
             testExecutorBuilder.AppendLine("}");
@@ -193,6 +195,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
         builder.Append(testExecutorBuilder);
 
+        builder.AppendLine("public static class TestCount { public const int Count = " + totalTestsEmitted.ToString() + "; }");
         return builder.ToString();
     }
 
