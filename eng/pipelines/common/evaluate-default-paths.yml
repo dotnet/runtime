@@ -53,6 +53,7 @@ jobs:
       - eng/pipelines/libraries/*
       - eng/pipelines/common/evaluate-default-paths.yml
       - ${{ parameters._const_paths._wasm_pipelines }}
+      - eng/pipelines/*
 
     - subset: mono_excluding_wasm
       include:
@@ -79,6 +80,7 @@ jobs:
       - eng/pipelines/coreclr/*
       - eng/pipelines/libraries/*
       - eng/pipelines/common/evaluate-default-paths.yml
+      - eng/pipelines/*
 
     - subset: libraries
       exclude:
@@ -98,6 +100,7 @@ jobs:
       - eng/pipelines/installer/*
       - eng/pipelines/common/evaluate-default-paths.yml
       - ${{ parameters._const_paths._wasm_pipelines }}
+      - eng/pipelines/*
 
     - subset: runtimetests
       include:
@@ -107,6 +110,7 @@ jobs:
       exclude:
       - src/tests/*
       - ${{ parameters._const_paths._wasm_pipelines }}
+      - eng/pipelines/*
 
       # having this ensures that change in evaluate-default-paths.yml
       # doesn't trigger jobs
@@ -132,6 +136,7 @@ jobs:
       - eng/pipelines/libraries/*
       - eng/pipelines/common/evaluate-default-paths.yml
       - ${{ parameters._const_paths._wasm_pipelines }}
+      - eng/pipelines/*
 
     # We have limited Apple Silicon testing capacity
     # We want PR testing on a narrower set of changes
@@ -196,6 +201,7 @@ jobs:
       - src/mono/wasm/Wasm.Build.Tests/*
       - src/mono/wasm/debugger/*
       - ${{ parameters._const_paths._wasm_pipelines }}
+      - eng/pipelines/*
 
       # having this ensures that change in evaluate-default-paths.yml
       # doesn't trigger jobs
@@ -238,6 +244,7 @@ jobs:
       exclude:
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
+      - eng/pipelines/*
 
       # having this ensures that change in evaluate-default-paths.yml won't
       # trigger non-onlywasm jobs
@@ -248,6 +255,7 @@ jobs:
       exclude:
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
+      - eng/pipelines/*
 
       - eng/testing/tests.mobile.targets
       - src/mono/*
