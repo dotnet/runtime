@@ -42,8 +42,9 @@ variables:
                 eq(variables['isRollingBuild'], true))) ]
 
 - name: nonWasmRuntimeTestsContainsChange
-  value: $[ and(
-              eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
-              ne(dependencies.evaluate_paths.outputs['SetPathVars_wasm.containsChange'], true)) ]
+  value:
+    and(
+        eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+        ne(dependencies.evaluate_paths.outputs['SetPathVars_wasm.containsChange'], true))
 
 - template: /eng/pipelines/common/perf-variables.yml
