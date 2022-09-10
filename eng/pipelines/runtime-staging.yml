@@ -87,7 +87,7 @@ jobs:
       timeoutInMinutes: 240
       condition: >-
         or(
-          eq($(nonWasmRuntimeTestsContainsChange), true),
+          eq(variables['nonWasmRuntimeTestsContainsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
       ${{ if eq(variables['isRollingBuild'], true) }}:

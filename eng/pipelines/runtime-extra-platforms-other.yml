@@ -469,7 +469,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq($(nonWasmRuntimeTestsContainsChange), true),
+          eq(variables['nonWasmRuntimeTestsContainsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
@@ -488,7 +488,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-          eq($(nonWasmRuntimeTestsContainsChange), true),
+          eq(variables['nonWasmRuntimeTestsContainsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
@@ -521,7 +521,7 @@ jobs:
       condition: >-
         or(
             eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-            eq($(nonWasmRuntimeTestsContainsChange), true),
+            eq(variables['nonWasmRuntimeTestsContainsChange'], true),
             eq(variables['isRollingBuild'], true))
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/common/templates/runtimes/android-runtime-and-send-to-helix.yml
@@ -559,7 +559,7 @@ jobs:
       runtimeVariant: monointerpreter
       condition: >-
         or(
-          eq($(nonWasmRuntimeTestsContainsChange), true),
+          eq(variables['nonWasmRuntimeTestsContainsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
       # extra steps, run tests
@@ -597,7 +597,7 @@ jobs:
       timeoutInMinutes: 240
       condition: >-
         or(
-          eq($(nonWasmRuntimeTestsContainsChange), true),
+          eq(variables['nonWasmRuntimeTestsContainsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
       # don't run tests on PRs until we can get significantly more devices
@@ -629,7 +629,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-          eq($(nonWasmRuntimeTestsContainsChange), true),
+          eq(variables['nonWasmRuntimeTestsContainsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
@@ -652,5 +652,5 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-          eq($(nonWasmRuntimeTestsContainsChange), true),
+          eq(variables['nonWasmRuntimeTestsContainsChange'], true),
           eq(variables['isRollingBuild'], true))
