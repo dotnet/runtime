@@ -175,7 +175,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         internal IChangeToken GetOrAddFilePathChangeToken(string filePath)
         {
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
             var absolutePath = Path.GetFullPath(filePath, _root);
             filePath = absolutePath.Substring(_root.Length);
 #endif
