@@ -776,8 +776,16 @@ REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_
         static const size_t Alignment = 64 * 1024;
 
         size_t alignedSize = size + (Alignment - OS_PAGE_SIZE);
+        int flags = MAP_ANON | MAP_PRIVATE;
 
-        void * pRetVal = mmap(pAddress, alignedSize, unixProtect, MAP_ANON | MAP_PRIVATE, -1, 0);
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+        if (unixProtect & PROT_EXEC)
+        {
+            flags |= MAP_JIT;
+        }
+#endif
+
+        void * pRetVal = mmap(pAddress, alignedSize, unixProtect, flags, -1, 0);
 
         if (pRetVal != NULL)
         {
@@ -1057,7 +1065,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* p
     }
 #endif
 
-    if ((status != 0) && (status != EAGAIN))
+    if ((status != 0) && (status != EAGAIN) && (status != ESRCH))
     {
         // Failure to send the signal is fatal. There are only two cases when sending
         // the signal can fail. First, if the signal ID is invalid and second,
