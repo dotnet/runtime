@@ -207,7 +207,9 @@ public:
     Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
         m_treeSize++;
-        GenTree* const node = *use;
+
+        GenTree* const node  = *use;
+        bool const     isDef = (user != nullptr) && user->OperIs(GT_ASG) && (user->gtGetOp1() == node);
 
         if (node->OperIs(GT_LCL_VAR))
         {
@@ -220,7 +222,6 @@ public:
                 // Screen out contextual "uses"
                 //
                 GenTree* const parent = user;
-                bool const     isDef  = parent->OperIs(GT_ASG) && (parent->gtGetOp1() == node);
                 bool const     isAddr = parent->OperIs(GT_ADDR);
 
                 bool isCallTarget = false;
@@ -245,26 +246,21 @@ public:
             }
         }
 
-        if (node->OperIsLocal())
+        // Stores to and uses of address-exposed locals are modelled as global refs.
+        //
+        GenTree* lclNode = nullptr;
+        if (node->OperIsLocal() && !isDef)
         {
-            unsigned const   lclNum = node->AsLclVarCommon()->GetLclNum();
-            LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
+            lclNode = node;
+        }
+        else if (node->OperIs(GT_ASG) && node->gtGetOp1()->OperIsLocal())
+        {
+            lclNode = node->gtGetOp1();
+        }
 
-            if (varDsc->IsAddressExposed())
-            {
-                if (!user->OperIs(GT_ASG) || (node != user->gtGetOp1()))
-                {
-                    // Uses of address-exposed locals are modelled as global refs.
-                    m_accumulatedFlags |= GTF_GLOB_REF;
-                }
-                else
-                {
-                    // Stores to address-exposed locals are global refs as well,
-                    // but defer adding into the flags just yet: the actual side
-                    // effect will happen at the point of the ASG, not the LHS.
-                    user->gtFlags |= GTF_GLOB_REF;
-                }
-            }
+        if ((lclNode != nullptr) && m_compiler->lvaGetDesc(lclNode->AsLclVarCommon())->IsAddressExposed())
+        {
+            m_accumulatedFlags |= GTF_GLOB_REF;
         }
 
         m_accumulatedFlags |= (node->gtFlags & GTF_GLOB_EFFECT);
