@@ -239,6 +239,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo.TypeRefTypeSystem
 
                 if (GetFinalizer() != null)
                     flags |= TypeFlags.HasFinalizer;
+
+                if (Name == "WeakReference" && Namespace == "System")
+                    flags |= TypeFlags.HasEagerFinalizer;
             }
 
             if ((mask & TypeFlags.AttributeCacheComputed) != 0)

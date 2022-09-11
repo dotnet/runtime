@@ -57,7 +57,7 @@ namespace Internal.Runtime
         /// </summary>
         OptionalFieldsFlag = 0x0100,
 
-        // Unused = 0x0200,
+        HasEagerFinalizerFlag = 0x0200,
 
         /// <summary>
         /// This type is generic.

@@ -1168,8 +1168,17 @@ void GCToEEInterface::HandleFatalError(unsigned int exitCode)
 
 bool GCToEEInterface::EagerFinalized(Object* obj)
 {
-    UNREFERENCED_PARAMETER(obj);
-    return false;
+    if (!obj->GetGCSafeMethodTable()->HasEagerFinalizer())
+        return false;
+
+    // eager finalization happens in a blocking GC stage
+    ASSERT(GCHeapUtilities::GetGCHeap()->IsGCInProgressHelper());
+    WeakReference* weakRefObj = (WeakReference*)obj;
+    OBJECTHANDLE handle = (OBJECTHANDLE)weakRefObj->m_Handle;
+    weakRefObj->m_Handle = NULL;
+    HandleType handleType = weakRefObj->m_IsLongReference ? HandleType::HNDTYPE_WEAK_LONG : HandleType::HNDTYPE_WEAK_SHORT;
+    GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, handleType);
+    return true;
 }
 
 bool GCToEEInterface::IsGCThread()

@@ -63,6 +63,11 @@ namespace Internal.Runtime
                 flags |= (ushort)EETypeFlags.HasFinalizerFlag;
             }
 
+            if (type.HasEagerFinalizer)
+            {
+                flags |= (ushort)EETypeFlags.HasEagerFinalizerFlag;
+            }
+
             if (type.IsDefType
                 && !type.IsCanonicalSubtype(CanonicalFormKind.Universal)
                 && ((DefType)type).ContainsGCPointers)

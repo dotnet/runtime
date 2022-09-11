@@ -176,7 +176,7 @@ private:
         // This type has optional fields present.
         OptionalFieldsFlag      = 0x0100,
 
-        // Unused         = 0x0200,
+        HasEagerFinalizerFlag   = 0x0200,
 
         // This type is generic.
         IsGenericFlag           = 0x0400,
@@ -250,6 +250,11 @@ public:
     bool HasFinalizer()
     {
         return (m_usFlags & HasFinalizerFlag) != 0;
+    }
+
+    bool HasEagerFinalizer()
+    {
+        return (m_usFlags & HasEagerFinalizerFlag) != 0;
     }
 
     bool HasReferenceFields()

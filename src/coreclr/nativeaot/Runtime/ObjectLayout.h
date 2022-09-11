@@ -131,3 +131,11 @@ static uintptr_t const STRING_BASE_SIZE = StringConstants::BaseSize;
 
 //-------------------------------------------------------------------------------------------------
 static uintptr_t const MAX_STRING_LENGTH = 0x3FFFFFDF;
+
+//-------------------------------------------------------------------------------------------------
+class WeakReference : public Object
+{
+public:
+    size_t       m_Handle;
+    uint16_t     m_IsLongReference;
+};
