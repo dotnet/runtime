@@ -685,6 +685,8 @@ namespace System.Security.Cryptography.X509Certificates
                 extraDispose = workingChain;
                 workingChain = new WorkingChain(abortOnSignatureError: false);
 
+                Interop.Crypto.X509StoreCtxSetVerifyCallback(_storeCtx, &VerifyCallback, Unsafe.AsPointer(ref workingChain));
+
                 verify = Interop.Crypto.X509VerifyCert(_storeCtx);
             }
 
