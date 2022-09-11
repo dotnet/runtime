@@ -49,7 +49,6 @@ namespace System.Xml
         protected IXmlNamespaceResolver? _resolver;
 
         private char[] _primitivesBuffer = new char[36];
-        private static readonly TypeScope s_typeScope = new TypeScope();
 
         //
         // XmlWriter implementation
@@ -186,70 +185,71 @@ namespace System.Xml
             ArgumentNullException.ThrowIfNull(value);
 
             Type sourceType = value.GetType();
-            if (!TypeScope.IsKnownType(sourceType))
+            switch (Type.GetTypeCode(sourceType))
             {
-                WriteString(XmlUntypedConverter.Untyped.ToString(value, _resolver));
-                return;
-            }
-
-#pragma warning disable IL2026
-            TypeDesc typeDesc = s_typeScope.GetTypeDesc(sourceType);
-#pragma warning restore IL2026
-            switch (typeDesc.FormatterName)
-            {
-                case "Boolean":
+                case TypeCode.Int32:
+                    if (sourceType.IsEnum)
+                        WriteString(XmlUntypedConverter.Untyped.ToString(value, _resolver));
+                    else
+                        WriteWithBuffer((int)value, XmlConvert.TryFormat);
+                    break;
+                case TypeCode.Boolean:
                     WriteWithBuffer((bool)value, XmlConvert.TryFormat);
                     break;
-                case "Int32":
-                    WriteWithBuffer((int)value, XmlConvert.TryFormat);
-                    break;
-                case "Int16":
+                case TypeCode.Int16:
                     WriteWithBuffer((short)value, XmlConvert.TryFormat);
                     break;
-                case "Int64":
+                case TypeCode.Int64:
                     WriteWithBuffer((long)value, XmlConvert.TryFormat);
                     break;
-                case "Single":
+                case TypeCode.Single:
                     WriteWithBuffer((float)value, XmlConvert.TryFormat);
                     break;
-                case "Double":
+                case TypeCode.Double:
                     WriteWithBuffer((double)value, XmlConvert.TryFormat);
                     break;
-                case "Decimal":
+                case TypeCode.Decimal:
                     WriteWithBuffer((decimal)value, XmlConvert.TryFormat);
                     break;
-                case "Byte":
-                    WriteWithBuffer((byte)value, XmlConvert.TryFormat);
-                    break;
-                case "SByte":
-                    WriteWithBuffer((sbyte)value, XmlConvert.TryFormat);
-                    break;
-                case "UInt16":
-                    WriteWithBuffer((ushort)value, XmlConvert.TryFormat);
-                    break;
-                case "UInt32":
-                    WriteWithBuffer((uint)value, XmlConvert.TryFormat);
-                    break;
-                case "UInt64":
-                    WriteWithBuffer((ulong)value, XmlConvert.TryFormat);
-                    break;
-                //Guid is not supported in XmlUntypedConverter.Untyped and throws exception
-                //case "Guid":
-                //    WriteWithBuffer((Guid)value, XmlConvert.TryFormat);
-                //    break;
-                case "Char":
-                    WriteWithBuffer((char)value, XmlConvert.TryFormat);
-                    break;
-                case "TimeSpan":
-                    WriteWithBuffer((TimeSpan)value, XmlConvert.TryFormat);
-                    break;
-                case "DateTime":
+                case TypeCode.DateTime:
                     WriteWithBuffer((DateTime)value, XmlConvert.TryFormat);
                     break;
-                case "DateTimeOffset":
-                    WriteWithBuffer((DateTimeOffset)value, XmlConvert.TryFormat);
+                case TypeCode.Byte:
+                    WriteWithBuffer((byte)value, XmlConvert.TryFormat);
+                    break;
+                case TypeCode.SByte:
+                    WriteWithBuffer((sbyte)value, XmlConvert.TryFormat);
+                    break;
+                case TypeCode.UInt16:
+                    WriteWithBuffer((ushort)value, XmlConvert.TryFormat);
+                    break;
+                case TypeCode.UInt32:
+                    WriteWithBuffer((uint)value, XmlConvert.TryFormat);
+                    break;
+                case TypeCode.UInt64:
+                    WriteWithBuffer((ulong)value, XmlConvert.TryFormat);
+                    break;
+                case TypeCode.Char:
+                    WriteWithBuffer((char)value, XmlConvert.TryFormat);
                     break;
                 default:
+                    //Guid is not supported in XmlUntypedConverter.Untyped and throws exception
+                    //if (sourceType == typeof(Guid))
+                    //{
+                    //    WriteWithBuffer((Guid)value, XmlConvert.TryFormat);
+                    //    break;
+                    //}
+                    if (sourceType == typeof(TimeSpan))
+                    {
+                        WriteWithBuffer((TimeSpan)value, XmlConvert.TryFormat);
+                        break;
+                    }
+                    if (sourceType == typeof(DateTimeOffset))
+                    {
+                        WriteWithBuffer((DateTimeOffset)value, XmlConvert.TryFormat);
+                        break;
+                    }
+
                     WriteString(XmlUntypedConverter.Untyped.ToString(value, _resolver));
                     break;
             }
