@@ -9225,6 +9225,7 @@ public:
         bool disAsm;      // Display native code as it is generated
         bool dspDiffable; // Makes the Jit Dump 'diff-able' (currently uses same COMPlus_* flag as disDiffable)
         bool disDiffable; // Makes the Disassembly code 'diff-able'
+        bool disRawInstr; // Display raw bytes for instructions
 #ifdef DEBUG
         bool compProcedureSplittingEH; // Separate cold code from hot code for functions with EH
         bool dspCode;                  // Display native code generated

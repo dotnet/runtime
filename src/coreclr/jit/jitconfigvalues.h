@@ -256,6 +256,11 @@ CONFIG_INTEGER(EnableIncompleteISAClass, W("EnableIncompleteISAClass"), 0) // En
 CONFIG_METHODSET(JitDisasm, W("JitDisasm"))
 #endif // !defined(DEBUG)
 
+// Print raw bytes for instructions, e.g.
+//
+//   488B09               mov      rcx, gword ptr [rcx]
+CONFIG_INTEGER(JitDisasmShowRawInstructions, W("JitDisasmShowRawInstructions"), 0)
+
 CONFIG_INTEGER(JitDisasmSummary, W("JitDisasmSummary"), 0) // Prints all jitted methods to the console
 CONFIG_STRING(JitStdOutFile, W("JitStdOutFile"))           // If set, sends JIT's stdout output to this file.
 

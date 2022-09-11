@@ -2799,6 +2799,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.disAsm      = false;
     opts.disDiffable = false;
     opts.dspDiffable = false;
+    opts.disRawInstr = false;
 #ifdef DEBUG
     opts.dspInstrs       = false;
     opts.dspLines        = false;
@@ -3011,6 +3012,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         opts.disAsm = true;
     }
 #endif // !DEBUG
+
+    if (JitConfig.JitDisasmShowRawInstructions() != 0)
+    {
+        opts.disRawInstr = true;
+    }
 
 //-------------------------------------------------------------------------
 

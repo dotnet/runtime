@@ -7080,7 +7080,7 @@ void emitter::emitDispGC(emitAttr attr)
 void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 {
     // We do not display the instruction hex if we want diff-able disassembly
-    if (!emitComp->opts.disDiffable)
+    if (!emitComp->opts.disDiffable && emitComp->opts.disRawInstr)
     {
         if (sz == 2)
         {

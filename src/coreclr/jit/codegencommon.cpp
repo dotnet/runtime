@@ -1757,15 +1757,15 @@ void CodeGen::genGenerateMachineCode()
 
         if (compiler->compCodeOpt() == Compiler::SMALL_CODE)
         {
-            printf("SMALL_CODE");
+            printf("small");
         }
         else if (compiler->compCodeOpt() == Compiler::FAST_CODE)
         {
-            printf("FAST_CODE");
+            printf("fast");
         }
         else
         {
-            printf("BLENDED_CODE");
+            printf("blended");
         }
 
         printf(" for ");
@@ -1829,6 +1829,10 @@ void CodeGen::genGenerateMachineCode()
         {
             printf("; Tier-1 compilation\n");
         }
+        else if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+        {
+            printf("; NativeAOT compilation\n");
+        }
         else if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_READYTORUN))
         {
             printf("; ReadyToRun compilation\n");
@@ -1869,12 +1873,14 @@ void CodeGen::genGenerateMachineCode()
             printf("; optimized using profile data\n");
         }
 
+#if DEBUG
 #if DOUBLE_ALIGN
         if (compiler->genDoubleAlign())
             printf("; double-aligned frame\n");
         else
 #endif
             printf("; %s based frame\n", isFramePointerUsed() ? STR_FPBASE : STR_SPBASE);
+#endif
 
         if (GetInterruptible())
         {
