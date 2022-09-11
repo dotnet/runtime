@@ -6700,7 +6700,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
         if (emitComp->opts.disAsm)
         {
             printf("\n%s:", emitLabelString(ig));
-            if (!emitComp->opts.disDiffable)
+            if (!emitComp->opts.disDiffable && emitComp->opts.disRawInstr)
             {
                 printf("                ;; offset=%04XH", emitCurCodeOffs(cp));
             }
