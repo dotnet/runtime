@@ -273,6 +273,7 @@ jobs:
     platforms:
     - windows_arm64
     - Linux_arm64
+    - OSX_arm64
     jobParameters:
       testGroup: innerloop
       isSingleFile: true
