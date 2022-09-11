@@ -2360,6 +2360,23 @@
         "osx.11.0-x64"
       ]
     },
+    "osx.13": {
+      "#import": [
+        "osx.12"
+      ]
+    },
+    "osx.13-arm64": {
+      "#import": [
+        "osx.13",
+        "osx.12-arm64"
+      ]
+    },
+    "osx.13-x64": {
+      "#import": [
+        "osx.13",
+        "osx.12-x64"
+      ]
+    },
     "rhel": {
       "#import": [
         "linux"
