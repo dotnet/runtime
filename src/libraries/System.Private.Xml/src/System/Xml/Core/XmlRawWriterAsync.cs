@@ -109,35 +109,25 @@ namespace System.Xml
             return WriteStringAsync(text);
         }
 
-        // Forward call to WriteString(string).
+        // Forward call to WriteCharsAsync.
         public override Task WriteCharEntityAsync(char ch)
         {
-            return WriteStringAsync(char.ToString(ch));
+            _primitivesBuffer[0] = ch;
+            return WriteCharsAsync(_primitivesBuffer, 0, 1);
         }
 
         // Forward call to WriteString(string).
         public override Task WriteSurrogateCharEntityAsync(char lowChar, char highChar)
         {
-            ReadOnlySpan<char> entity = stackalloc char[] { lowChar, highChar };
-            return WriteStringAsync(new string(entity));
+            _primitivesBuffer[0] = lowChar;
+            _primitivesBuffer[1] = highChar;
+            return WriteCharsAsync(_primitivesBuffer, 0, 2);
         }
 
         // Forward call to WriteString(string).
         public override Task WriteWhitespaceAsync(string? ws)
         {
             return WriteStringAsync(ws);
-        }
-
-        // Forward call to WriteString(string).
-        public override Task WriteCharsAsync(char[] buffer, int index, int count)
-        {
-            return WriteStringAsync(new string(buffer, index, count));
-        }
-
-        // Forward call to WriteString(string).
-        public override Task WriteRawAsync(char[] buffer, int index, int count)
-        {
-            return WriteStringAsync(new string(buffer, index, count));
         }
 
         // Forward call to WriteString(string).
