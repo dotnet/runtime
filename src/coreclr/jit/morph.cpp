@@ -12751,6 +12751,24 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
             fgUpdateConstTreeValueNumber(op2);
             mul->ChangeOper(GT_LSH, GenTree::PRESERVE_VN);
 
+            if (mul->gtGetOp1()->OperIs(GT_LSH) && mul->gtGetOp1()->gtGetOp2()->IsIntegralConst())
+            {
+                GenTree* lsOp      = mul->gtGetOp1();
+                GenTree* rsOp      = mul->gtGetOp2();
+                GenTree* lsOpChOp1 = lsOp->gtGetOp1();
+                GenTree* lsOpChOp2 = lsOp->gtGetOp2();
+
+                int64_t child_val = lsOpChOp2->AsIntConCommon()->IntegralValue();
+                int64_t root_val  = rsOp->AsIntConCommon()->IntegralValue();
+
+                mul->gtOp1 = lsOpChOp1;
+                mul->gtOp2 = lsOpChOp2;
+                mul->gtOp2->AsIntConCommon()->SetIntegralValue(root_val + child_val);
+
+                DEBUG_DESTROY_NODE(lsOp);
+                DEBUG_DESTROY_NODE(rsOp);
+            }
+
             return mul;
         }
     }
