@@ -9035,6 +9035,12 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
                 op1->gtFlags |= callFlags;
 
                 op1->AsCall()->setEntryPoint(pFieldInfo->fieldLookup);
+
+                if (fgIsCurrentCallDceCandidate())
+                {
+                    JITDUMP("\nmarking helper call [%06u] as special dce...\n", op1->gtTreeID);
+                    op1->AsCall()->gtCallMoreFlags |= GTF_CALL_M_HELPER_SPECIAL_DCE;
+                }
             }
             else
 #endif
@@ -9761,9 +9767,28 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 {
                     // Null check is sometimes needed for ready to run to handle
                     // non-virtual <-> virtual changes between versions
+                    bool addNullcheck = true;
                     if (callInfo->nullInstanceCheck)
                     {
-                        call->gtFlags |= GTF_CALL_NULLCHECK;
+                        GenTree* thisArg = impStackTop(sig->numArgs).val;
+                        if (thisArg->OperIs(GT_RET_EXPR))
+                        {
+                            GenTreeCall* thisAsCall = thisArg->AsRetExpr()->gtInlineCandidate->AsCall();
+                            if (thisAsCall->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
+                            {
+                                NamedIntrinsic ni = lookupNamedIntrinsic(thisAsCall->gtCallMethHnd);
+                                if ((ni == NI_System_Collections_Generic_EqualityComparer_get_Default) ||
+                                    (ni == NI_System_Collections_Generic_Comparer_get_Default))
+                                {
+                                    addNullcheck = false;
+                                }
+                            }
+                        }
+
+                        if (addNullcheck)
+                        {
+                            call->gtFlags |= GTF_CALL_NULLCHECK;
+                        }
                     }
                 }
 #endif

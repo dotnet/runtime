@@ -4631,6 +4631,8 @@ public:
 
     GenTreeCall* fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper);
 
+    bool fgIsCurrentCallDceCandidate();
+
     GenTreeCall* fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls);
 
     bool backendRequiresLocalVarLifetimes()

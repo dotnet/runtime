@@ -793,6 +793,31 @@ GenTreeLclVar* Compiler::fgIsIndirOfAddrOfLocal(GenTree* tree)
     return res;
 }
 
+//------------------------------------------------------------------------
+// fgIsCurrentCallDceCandidate: Determine whether the currently compiled method
+//   is a DCE candidate
+//
+// Returns:
+//    True if the currently compiled method can be removed if it's not used
+//    despite potential side-effects
+//
+bool Compiler::fgIsCurrentCallDceCandidate()
+{
+    // If we're importing the special EqualityComparer<T>.Default or Comparer<T>.Default
+    // intrinsics, flag the helper call. Later during inlining, we can
+    // remove the helper call if the associated field lookup is unused.
+    if ((info.compFlags & CORINFO_FLG_INTRINSIC) != 0)
+    {
+        NamedIntrinsic ni = lookupNamedIntrinsic(info.compMethodHnd);
+        if ((ni == NI_System_Collections_Generic_EqualityComparer_get_Default) ||
+            (ni == NI_System_Collections_Generic_Comparer_get_Default))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper)
 {
     bool         bNeedClassID = true;
@@ -891,18 +916,10 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
     result->gtFlags |= callFlags;
 
-    // If we're importing the special EqualityComparer<T>.Default or Comparer<T>.Default
-    // intrinsics, flag the helper call. Later during inlining, we can
-    // remove the helper call if the associated field lookup is unused.
-    if ((info.compFlags & CORINFO_FLG_INTRINSIC) != 0)
+    if (fgIsCurrentCallDceCandidate())
     {
-        NamedIntrinsic ni = lookupNamedIntrinsic(info.compMethodHnd);
-        if ((ni == NI_System_Collections_Generic_EqualityComparer_get_Default) ||
-            (ni == NI_System_Collections_Generic_Comparer_get_Default))
-        {
-            JITDUMP("\nmarking helper call [%06u] as special dce...\n", result->gtTreeID);
-            result->gtCallMoreFlags |= GTF_CALL_M_HELPER_SPECIAL_DCE;
-        }
+        JITDUMP("\nmarking helper call [%06u] as special dce...\n", result->gtTreeID);
+        result->gtCallMoreFlags |= GTF_CALL_M_HELPER_SPECIAL_DCE;
     }
 
     return result;
