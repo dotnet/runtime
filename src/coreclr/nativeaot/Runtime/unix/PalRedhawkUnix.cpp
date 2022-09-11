@@ -779,7 +779,8 @@ REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_
         int flags = MAP_ANON | MAP_PRIVATE;
 
 #if defined(HOST_OSX) && defined(HOST_ARM64)
-        if (unixProtect & PROT_EXEC) {
+        if (unixProtect & PROT_EXEC)
+        {
             flags |= MAP_JIT;
         }
 #endif
