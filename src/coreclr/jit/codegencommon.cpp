@@ -1873,14 +1873,12 @@ void CodeGen::genGenerateMachineCode()
             printf("; optimized using profile data\n");
         }
 
-#if DEBUG
 #if DOUBLE_ALIGN
         if (compiler->genDoubleAlign())
             printf("; double-aligned frame\n");
         else
 #endif
             printf("; %s based frame\n", isFramePointerUsed() ? STR_FPBASE : STR_SPBASE);
-#endif
 
         if (GetInterruptible())
         {
