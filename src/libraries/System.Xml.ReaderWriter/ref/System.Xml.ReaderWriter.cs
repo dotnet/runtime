@@ -276,26 +276,26 @@ namespace System.Xml
         public static bool TryFormat(bool value, Span<char> destination, out int charsWritten) { throw null; }
         public static bool TryFormat(char value, Span<char> destination, out int charsWritten) { throw null; }
         public static bool TryFormat(decimal value, Span<char> destination, out int charsWritten) { throw null; }
-        [CLSCompliant(false)]
+        [System.CLSCompliant(false)]
         public static bool TryFormat(sbyte value, Span<char> destination, out int charsWritten) { throw null; }
         public static bool TryFormat(short value, Span<char> destination, out int charsWritten) { throw null; }
         public static bool TryFormat(int value, Span<char> destination, out int charsWritten) { throw null; }
         public static bool TryFormat(long value, Span<char> destination, out int charsWritten) { throw null; }
         public static bool TryFormat(byte value, Span<char> destination, out int charsWritten) { throw null; }
-        [CLSCompliant(false)]
+        [System.CLSCompliant(false)]
         public static bool TryFormat(ushort value, Span<char> destination, out int charsWritten) { throw null; }
-        [CLSCompliant(false)]
+        [System.CLSCompliant(false)]
         public static bool TryFormat(uint value, Span<char> destination, out int charsWritten) { throw null; }
-        [CLSCompliant(false)]
+        [System.CLSCompliant(false)]
         public static bool TryFormat(ulong value, Span<char> destination, out int charsWritten) { throw null; }
         public static bool TryFormat(float value, Span<char> destination, out int charsWritten) { throw null; }
         public static bool TryFormat(double value, Span<char> destination, out int charsWritten) { throw null; }
-        public static bool TryFormat(TimeSpan value, Span<char> destination, out int charsWritten) { throw null; }
-        public static bool TryFormat(DateTime value, Span<char> destination, out int charsWritten) { throw null; }
-        public static bool TryFormat(DateTime value, XmlDateTimeSerializationMode dateTimeOption, Span<char> destination, out int charsWritten) { throw null; }
-        public static bool TryFormat(DateTimeOffset value, Span<char> destination, out int charsWritten) { throw null; }
-        public static bool TryFormat(DateTimeOffset value, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format, Span<char> destination, out int charsWritten) { throw null; }
-        public static bool TryFormat(Guid value, Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryFormat(System.TimeSpan value, Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryFormat(System.DateTime value, Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryFormat(System.DateTime value, System.Xml.XmlDateTimeSerializationMode dateTimeOption, Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryFormat(System.DateTimeOffset value, Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryFormat(System.DateTimeOffset value, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("DateTimeFormat")] string format, Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryFormat(System.Guid value, Span<char> destination, out int charsWritten) { throw null; }
     }
     public enum XmlDateTimeSerializationMode
     {
