@@ -131,6 +131,8 @@ namespace System.Xml.Schema
         private static readonly int[] DaysToMonth366 = {
             0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366};
 
+        private const int CharStackBufferSize = 64;
+
         /// <summary>
         /// Constructs an XsdDateTime from a string using specific format.
         /// </summary>
@@ -494,7 +496,22 @@ namespace System.Xml.Schema
         /// </summary>
         public override string ToString()
         {
-            var vsb = new ValueStringBuilder(stackalloc char[64]);
+            var vsb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
+            Format(ref vsb);
+
+            return vsb.ToString();
+        }
+
+        public bool TryFormat(Span<char> destination, out int charsWritten)
+        {
+            var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
+            Format(ref sb);
+
+            return sb.TryCopyTo(destination, out charsWritten);
+        }
+
+        private void Format(ref ValueStringBuilder vsb)
+        {
             switch (InternalTypeCode)
             {
                 case DateTimeTypeCode.DateTime:
@@ -533,7 +550,6 @@ namespace System.Xml.Schema
                     break;
             }
             PrintZone(ref vsb);
-            return vsb.ToString();
         }
 
         // Serialize year, month and day

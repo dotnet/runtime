@@ -147,6 +147,11 @@ namespace System.Xml.Xsl.Runtime
             _arrAttrs[_numEntries++].Init(text);
         }
 
+        public override void WriteRaw(char[] buffer, int index, int count)
+        {
+            WriteString(new string(buffer, index, count));
+        }
+
         /// <summary>
         /// All other WriteValue methods are implemented by XmlWriter to delegate to WriteValue(object), so
         /// only this method needs to be implemented.

@@ -1657,5 +1657,241 @@ namespace System.Xml
         {
             return CreateException(index == 0 ? SR.Xml_BadStartNameChar : SR.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(name, index), exceptionType, 0, index + 1);
         }
+
+        public static bool TryFormat(bool value, Span<char> destination, out int charsWritten)
+        {
+            if (value)
+            {
+                if (destination.Length < 4)
+                {
+                    charsWritten = -1;
+                    return false;
+                }
+
+                destination[0] = 't';
+                destination[1] = 'r';
+                destination[2] = 'u';
+                destination[3] = 'e';
+                charsWritten = 4;
+
+                return true;
+            }
+
+            if (destination.Length < 5)
+            {
+                charsWritten = -1;
+                return false;
+            }
+
+            destination[0] = 'f';
+            destination[1] = 'a';
+            destination[2] = 'l';
+            destination[3] = 's';
+            destination[4] = 'e';
+            charsWritten = 5;
+            return true;
+        }
+
+        public static bool TryFormat(char value, Span<char> destination, out int charsWritten)
+        {
+            charsWritten = -1;
+            if (destination.Length < 5) return false;
+
+            destination[0] = value;
+            charsWritten = 1;
+            return true;
+        }
+
+        public static bool TryFormat(decimal value, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten, default, NumberFormatInfo.InvariantInfo);
+        }
+
+        [CLSCompliant(false)]
+        public static bool TryFormat(sbyte value, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out  charsWritten, default, CultureInfo.InvariantCulture);
+        }
+
+        public static bool TryFormat(short value, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten, default, CultureInfo.InvariantCulture);
+        }
+
+        public static bool TryFormat(int value, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten, default, CultureInfo.InvariantCulture);
+        }
+
+        public static bool TryFormat(long value, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten, default, CultureInfo.InvariantCulture);
+        }
+
+        public static bool TryFormat(byte value, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten, default, CultureInfo.InvariantCulture);
+        }
+
+        [CLSCompliant(false)]
+        public static bool TryFormat(ushort value, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten, default, CultureInfo.InvariantCulture);
+        }
+
+        [CLSCompliant(false)]
+        public static bool TryFormat(uint value, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten, default, CultureInfo.InvariantCulture);
+        }
+
+        [CLSCompliant(false)]
+        public static bool TryFormat(ulong value, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten, default, CultureInfo.InvariantCulture);
+        }
+
+        public static bool TryFormat(float value, Span<char> destination, out int charsWritten)
+        {
+            if (float.IsNegativeInfinity(value))
+            {
+                if (destination.Length < 4)
+                {
+                    charsWritten = -1;
+                    return false;
+                }
+                destination[0] = '-';
+                destination[1] = 'I';
+                destination[2] = 'N';
+                destination[3] = 'F';
+                charsWritten = 4;
+                return true;
+            }
+
+            if (float.IsPositiveInfinity(value))
+            {
+                if (destination.Length < 3)
+                {
+                    charsWritten = -1;
+                    return false;
+                }
+                destination[0] = 'I';
+                destination[1] = 'N';
+                destination[2] = 'F';
+                charsWritten = 3;
+                return true;
+            }
+            if (IsNegativeZero((double)value))
+            {
+                if (destination.Length < 2)
+                {
+                    charsWritten = -1;
+                    return false;
+                }
+                destination[0] = '-';
+                destination[1] = '0';
+                charsWritten = 2;
+                return true;
+            }
+            return value.TryFormat(destination, out charsWritten, "R", NumberFormatInfo.InvariantInfo);
+        }
+
+        public static bool TryFormat(double value, Span<char> destination, out int charsWritten)
+        {
+            if (double.IsNegativeInfinity(value))
+            {
+                if (destination.Length < 4)
+                {
+                    charsWritten = -1;
+                    return false;
+                }
+                destination[0] = '-';
+                destination[1] = 'I';
+                destination[2] = 'N';
+                destination[3] = 'F';
+                charsWritten = 4;
+                return true;
+            }
+
+            if (double.IsPositiveInfinity(value))
+            {
+                if (destination.Length < 3)
+                {
+                    charsWritten = -1;
+                    return false;
+                }
+                destination[0] = 'I';
+                destination[1] = 'N';
+                destination[2] = 'F';
+                charsWritten = 3;
+                return true;
+            }
+            if (IsNegativeZero(value))
+            {
+                if (destination.Length < 2)
+                {
+                    charsWritten = -1;
+                    return false;
+                }
+                destination[0] = '-';
+                destination[1] = '0';
+                charsWritten = 2;
+                return true;
+            }
+            return value.TryFormat(destination, out charsWritten, "R", NumberFormatInfo.InvariantInfo);
+        }
+
+        public static bool TryFormat(TimeSpan value, Span<char> destination, out int charsWritten)
+        {
+            return new XsdDuration(value).TryFormat(destination, out charsWritten);
+        }
+
+        public static bool TryFormat(DateTime value, Span<char> destination, out int charsWritten)
+        {
+            return TryFormat(value, XmlDateTimeSerializationMode.RoundtripKind, destination, out charsWritten);
+        }
+
+        public static bool TryFormat(DateTime value, XmlDateTimeSerializationMode dateTimeOption, Span<char> destination, out int charsWritten)
+        {
+            switch (dateTimeOption)
+            {
+                case XmlDateTimeSerializationMode.Local:
+                    value = SwitchToLocalTime(value);
+                    break;
+
+                case XmlDateTimeSerializationMode.Utc:
+                    value = SwitchToUtcTime(value);
+                    break;
+
+                case XmlDateTimeSerializationMode.Unspecified:
+                    value = new DateTime(value.Ticks, DateTimeKind.Unspecified);
+                    break;
+
+                case XmlDateTimeSerializationMode.RoundtripKind:
+                    break;
+
+                default:
+                    throw new ArgumentException(SR.Format(SR.Sch_InvalidDateTimeOption, dateTimeOption, nameof(dateTimeOption)));
+            }
+
+            XsdDateTime xsdDateTime = new XsdDateTime(value, XsdDateTimeFlags.DateTime);
+            return xsdDateTime.TryFormat(destination, out charsWritten);
+        }
+
+        public static bool TryFormat(DateTimeOffset value, Span<char> destination, out int charsWritten)
+        {
+            XsdDateTime xsdDateTime = new XsdDateTime(value);
+            return xsdDateTime.TryFormat(destination, out charsWritten);
+        }
+
+        public static bool TryFormat(DateTimeOffset value, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten, format, DateTimeFormatInfo.InvariantInfo);
+        }
+
+        public static bool TryFormat(Guid value, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten);
+        }
     }
 }
