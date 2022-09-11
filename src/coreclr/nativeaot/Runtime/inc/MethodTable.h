@@ -133,6 +133,7 @@ private:
         };
     };
 
+    // used for component size for strings and arrays, type arg count for typedefs, other wise holds FlagsEx bits
     uint16_t              m_usComponentSize;
     uint16_t              m_usFlags;
     uint32_t              m_uBaseSize;
@@ -176,7 +177,7 @@ private:
         // This type has optional fields present.
         OptionalFieldsFlag      = 0x0100,
 
-        // the m_usComponentSize is a number (not ExtFlags).
+        // The m_usComponentSize is a number (not holding FlagsEx).
         HasComponentSizeFlag    = 0x0200,
 
         // This type is generic.

@@ -58,7 +58,7 @@ namespace Internal.Runtime
         OptionalFieldsFlag = 0x0100,
 
         /// <summary>
-        /// The t_usComponentSize is a number (not FlagsEx).
+        /// The _usComponentSize is a number (not holding FlagsEx).
         /// </summary>
         HasComponentSizeFlag = 0x0200,
 

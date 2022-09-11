@@ -247,6 +247,7 @@ namespace Internal.Runtime
         [Intrinsic]
         internal static extern MethodTable* Of<T>();
 
+        // used for component size for strings and arrays, type arg count for typedefs, other wise holds FlagsEx bits
         private ushort _usComponentSize;
         private ushort _usFlags;
         private uint _uBaseSize;
