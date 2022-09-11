@@ -228,7 +228,6 @@ EXTERN_C NATIVEAOT_API void* __cdecl RhAllocateThunksMapping()
 
 #if defined(HOST_OSX) && defined(HOST_ARM64)
     pthread_jit_write_protect_np(1);
-    __builtin___clear_cache((char*)pThunksSection, (char*)pThunksSection + THUNKS_MAP_SIZE);
 #else
     if (!PalVirtualProtect(pThunksSection, THUNKS_MAP_SIZE, PAGE_EXECUTE_READ))
     {
