@@ -4,6 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Globalization;
+
 namespace System.Xml
 {
     public enum ConformanceLevel
@@ -271,6 +273,29 @@ namespace System.Xml
         public static string? VerifyTOKEN(string? token) { throw null; }
         public static string VerifyWhitespace(string content) { throw null; }
         public static string VerifyXmlChars(string content) { throw null; }
+        public static bool TryFormat(bool value, Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryFormat(char value, Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryFormat(decimal value, Span<char> destination, out int charsWritten) { throw null; }
+        [CLSCompliant(false)]
+        public static bool TryFormat(sbyte value, Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryFormat(short value, Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryFormat(int value, Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryFormat(long value, Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryFormat(byte value, Span<char> destination, out int charsWritten) { throw null; }
+        [CLSCompliant(false)]
+        public static bool TryFormat(ushort value, Span<char> destination, out int charsWritten) { throw null; }
+        [CLSCompliant(false)]
+        public static bool TryFormat(uint value, Span<char> destination, out int charsWritten) { throw null; }
+        [CLSCompliant(false)]
+        public static bool TryFormat(ulong value, Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryFormat(float value, Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryFormat(double value, Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryFormat(TimeSpan value, Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryFormat(DateTime value, Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryFormat(DateTime value, XmlDateTimeSerializationMode dateTimeOption, Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryFormat(DateTimeOffset value, Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryFormat(DateTimeOffset value, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format, Span<char> destination, out int charsWritten) { throw null; }
+        public static bool TryFormat(Guid value, Span<char> destination, out int charsWritten) { throw null; }
     }
     public enum XmlDateTimeSerializationMode
     {
