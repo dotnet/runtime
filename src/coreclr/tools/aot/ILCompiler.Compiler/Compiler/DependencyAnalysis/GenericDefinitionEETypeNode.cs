@@ -54,7 +54,9 @@ namespace ILCompiler.DependencyAnalysis
             if (HasOptionalFields)
                 flags |= (ushort)EETypeFlags.OptionalFieldsFlag;
 
+            flags |= (ushort)EETypeFlags.HasComponentSizeFlag;
             dataBuilder.EmitShort((short)_type.Instantiation.Length);
+
             dataBuilder.EmitUShort(flags);
             dataBuilder.EmitInt(0);         // Base size is always 0
             dataBuilder.EmitZeroPointer();  // No related type

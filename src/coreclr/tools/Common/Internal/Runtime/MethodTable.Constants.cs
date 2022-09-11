@@ -57,7 +57,10 @@ namespace Internal.Runtime
         /// </summary>
         OptionalFieldsFlag = 0x0100,
 
-        HasEagerFinalizerFlag = 0x0200,
+        /// <summary>
+        /// The t_usComponentSize is a number (not FlagsEx).
+        /// </summary>
+        HasComponentSizeFlag = 0x0200,
 
         /// <summary>
         /// This type is generic.
@@ -75,6 +78,17 @@ namespace Internal.Runtime
         /// </summary>
         ComplexCastingMask = EETypeKindMask | RelatedTypeViaIATFlag | GenericVarianceFlag
     };
+
+    /// <summary>
+    /// Represents the extra flags stored in the <c>_usComponentSize</c> field of a <c>System.Runtime.MethodTable</c>
+    /// when <c>_usComponentSize</c> does not represent ComponentSize. (i.e. when the type is not an array, string or typedef)
+    /// </summary>
+    [Flags]
+    internal enum EETypeFlagsEx : ushort
+    {
+        HasEagerFinalizerFlag = 0x0001,
+        HasCriticalFinalizerFlag = 0x0002,   // NYI
+    }
 
     internal enum EETypeKind : ushort
     {

@@ -268,15 +268,38 @@ namespace Internal.Runtime
         private const uint ValueTypePaddingAlignmentMask = 0xF8;
         private const int ValueTypePaddingAlignmentShift = 3;
 
-        internal ushort ComponentSize
+        internal bool HasComponentSize
         {
             get
             {
-                return _usComponentSize;
+                return ((_usFlags & (ushort)EETypeFlags.HasComponentSizeFlag) != 0);
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
+                if (value)
+                {
+                    _usFlags |= (ushort)EETypeFlags.HasComponentSizeFlag;
+                }
+                else
+                {
+                    // we should not be un-setting this bit.
+                    Debug.Assert(!HasComponentSize);
+                }
+            }
+#endif
+        }
+
+        internal ushort ComponentSize
+        {
+            get
+            {
+                return HasComponentSize ? _usComponentSize : (ushort)0;
+            }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                Debug.Assert(HasComponentSize);
                 _usComponentSize = value;
             }
 #endif
@@ -287,13 +310,13 @@ namespace Internal.Runtime
             get
             {
                 Debug.Assert(IsGenericTypeDefinition);
-                return _usComponentSize;
+                return ComponentSize;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
                 Debug.Assert(IsGenericTypeDefinition);
-                _usComponentSize = value;
+                ComponentSize = value;
             }
 #endif
         }
@@ -308,6 +331,21 @@ namespace Internal.Runtime
             set
             {
                 _usFlags = value;
+            }
+#endif
+        }
+
+        internal ushort FlagsEx
+        {
+            get
+            {
+                return HasComponentSize ? (ushort)0 : _usComponentSize;
+            }
+#if TYPE_LOADER_IMPLEMENTATION
+            set
+            {
+                Debug.Assert(!HasComponentSize);
+                _usComponentSize = value;
             }
 #endif
         }

@@ -50,6 +50,11 @@ namespace Internal.Runtime
             EETypeElementType elementType = ComputeEETypeElementType(type);
             flags |= (ushort)((ushort)elementType << (ushort)EETypeFlags.ElementTypeShift);
 
+            if (type.IsArray || type.IsString)
+            {
+                flags |= (ushort)EETypeFlags.HasComponentSizeFlag;
+            }
+
             if (type.IsGenericDefinition)
             {
                 flags |= (ushort)EETypeKind.GenericTypeDefEEType;
@@ -61,11 +66,6 @@ namespace Internal.Runtime
             if (type.HasFinalizer)
             {
                 flags |= (ushort)EETypeFlags.HasFinalizerFlag;
-            }
-
-            if (type.HasEagerFinalizer)
-            {
-                flags |= (ushort)EETypeFlags.HasEagerFinalizerFlag;
             }
 
             if (type.IsDefType
@@ -94,6 +94,17 @@ namespace Internal.Runtime
             }
 
             return flags;
+        }
+
+        public static ushort ComputeFlagsEx(TypeDesc type)
+        {
+            ushort flagsEx = 0;
+            if (type.HasEagerFinalizer)
+            {
+                flagsEx |= (ushort)EETypeFlagsEx.HasEagerFinalizerFlag;
+            }
+
+            return flagsEx;
         }
 
         // These masks and paddings have been chosen so that the ValueTypePadding field can always fit in a byte of data

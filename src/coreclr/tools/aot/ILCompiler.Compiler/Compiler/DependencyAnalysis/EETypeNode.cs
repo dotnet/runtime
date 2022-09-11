@@ -654,7 +654,8 @@ namespace ILCompiler.DependencyAnalysis
             }
             else
             {
-                objData.EmitShort(0);
+                ushort flagsEx = EETypeBuilderHelpers.ComputeFlagsEx(_type);
+                objData.EmitUShort(flagsEx);
             }
         }
 
@@ -699,6 +700,11 @@ namespace ILCompiler.DependencyAnalysis
             if (this is ClonedConstructedEETypeNode)
             {
                 flags |= (ushort)EETypeKind.ClonedEEType;
+            }
+
+            if (_type.IsArray || _type.IsString)
+            {
+                flags |= (ushort)EETypeFlags.HasComponentSizeFlag;
             }
 
             objData.EmitShort((short)flags);

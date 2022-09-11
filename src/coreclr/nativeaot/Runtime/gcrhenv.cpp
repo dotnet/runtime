@@ -209,7 +209,7 @@ Object* GcAllocInternal(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElem
 
     size_t cbSize = pEEType->get_BaseSize();
 
-    if (pEEType->get_ComponentSize() != 0)
+    if (pEEType->HasComponentSize())
     {
         // Impose limits on maximum array length to prevent corner case integer overflow bugs
         // Keep in sync with Array.MaxLength in BCL.
@@ -226,7 +226,7 @@ Object* GcAllocInternal(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElem
         if (numElements > 0x10000)
         {
             // Perform the size computation using 64-bit integeres to detect overflow
-            uint64_t size64 = (uint64_t)cbSize + ((uint64_t)numElements * (uint64_t)pEEType->get_ComponentSize());
+            uint64_t size64 = (uint64_t)cbSize + ((uint64_t)numElements * (uint64_t)pEEType->RawGetComponentSize());
             size64 = (size64 + (sizeof(uintptr_t) - 1)) & ~(sizeof(uintptr_t) - 1);
 
             cbSize = (size_t)size64;
@@ -238,7 +238,7 @@ Object* GcAllocInternal(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElem
         else
 #endif // !HOST_64BIT
         {
-            cbSize = cbSize + ((size_t)numElements * (size_t)pEEType->get_ComponentSize());
+            cbSize = cbSize + ((size_t)numElements * (size_t)pEEType->RawGetComponentSize());
             cbSize = ALIGN_UP(cbSize, sizeof(uintptr_t));
         }
     }
@@ -269,7 +269,7 @@ Object* GcAllocInternal(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElem
         return NULL;
 
     pObject->set_EEType(pEEType);
-    if (pEEType->get_ComponentSize() != 0)
+    if (pEEType->HasComponentSize())
     {
         ASSERT(numElements == (uint32_t)numElements);
         ((Array*)pObject)->InitArrayLength((uint32_t)numElements);
@@ -336,7 +336,7 @@ void RedhawkGCInterface::WaitForGCCompletion()
 void MethodTable::InitializeAsGcFreeType()
 {
     m_usComponentSize = 1;
-    m_usFlags = ParameterizedEEType;
+    m_usFlags = ParameterizedEEType | HasComponentSizeFlag;
     m_uBaseSize = sizeof(Array) + SYNC_BLOCK_SKEW;
 }
 

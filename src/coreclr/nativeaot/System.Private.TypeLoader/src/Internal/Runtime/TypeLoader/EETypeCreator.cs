@@ -98,6 +98,9 @@ namespace Internal.Runtime.TypeLoader
 
         public static unsafe void SetComponentSize(this RuntimeTypeHandle rtth, ushort componentSize)
         {
+            Debug.Assert(componentSize > 0);
+            Debug.Assert(rtth.ToEETypePtr()->IsArray || rtth.ToEETypePtr()->IsString);
+            rtth.ToEETypePtr()->HasComponentSize = true;
             rtth.ToEETypePtr()->ComponentSize = componentSize;
         }
     }
@@ -183,6 +186,7 @@ namespace Internal.Runtime.TypeLoader
                 bool isGeneric;
                 ushort componentSize = 0;
                 ushort flags;
+                ushort flagsEx = 0;
                 ushort runtimeInterfacesLength = 0;
                 bool isGenericEETypeDef = false;
                 bool isAbstractClass;
@@ -206,6 +210,7 @@ namespace Internal.Runtime.TypeLoader
                     isNullable = pTemplateEEType->IsNullable;
                     componentSize = pTemplateEEType->ComponentSize;
                     flags = pTemplateEEType->Flags;
+                    flagsEx = pTemplateEEType->FlagsEx;
                     isArray = pTemplateEEType->IsArray;
                     isGeneric = pTemplateEEType->IsGeneric;
                     isAbstractClass = pTemplateEEType->IsAbstract && !pTemplateEEType->IsInterface;
@@ -235,6 +240,7 @@ namespace Internal.Runtime.TypeLoader
                     hasFinalizer = state.TypeBeingBuilt.HasFinalizer;
                     isNullable = state.TypeBeingBuilt.GetTypeDefinition().IsNullable;
                     flags = EETypeBuilderHelpers.ComputeFlags(state.TypeBeingBuilt);
+                    flagsEx = EETypeBuilderHelpers.ComputeFlagsEx(state.TypeBeingBuilt);
                     isArray = false;
                     isGeneric = state.TypeBeingBuilt.HasInstantiation;
 
@@ -427,8 +433,16 @@ namespace Internal.Runtime.TypeLoader
                     state.HalfBakedRuntimeTypeHandle = pEEType->ToRuntimeTypeHandle();
 
                     // Set basic MethodTable fields
-                    pEEType->ComponentSize = componentSize;
                     pEEType->Flags = flags;
+                    if (pEEType->HasComponentSize)
+                    {
+                        pEEType->ComponentSize = componentSize;
+                    }
+                    else
+                    {
+                        pEEType->FlagsEx = flagsEx;
+                    }
+
                     pEEType->BaseSize = (uint)baseSize;
                     pEEType->NumVtableSlots = numVtableSlots;
                     pEEType->NumInterfaces = runtimeInterfacesLength;

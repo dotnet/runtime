@@ -176,7 +176,8 @@ private:
         // This type has optional fields present.
         OptionalFieldsFlag      = 0x0100,
 
-        HasEagerFinalizerFlag   = 0x0200,
+        // the m_usComponentSize is a number (not ExtFlags).
+        HasComponentSizeFlag    = 0x0200,
 
         // This type is generic.
         IsGenericFlag           = 0x0400,
@@ -184,6 +185,12 @@ private:
         // We are storing a EETypeElementType in the upper bits for unboxing enums
         ElementTypeMask      = 0xf800,
         ElementTypeShift     = 11,
+    };
+
+    enum FlagsEx
+    {
+        HasEagerFinalizerFlag = 0x0001,
+        HasCriticalFinalizerFlag = 0x0002,   // NYI
     };
 
 public:
@@ -198,9 +205,6 @@ public:
 
     uint32_t get_BaseSize()
         { return m_uBaseSize; }
-
-    uint16_t get_ComponentSize()
-        { return m_usComponentSize; }
 
     PTR_Code get_Slot(uint16_t slotNumber);
 
@@ -254,7 +258,22 @@ public:
 
     bool HasEagerFinalizer()
     {
-        return (m_usFlags & HasEagerFinalizerFlag) != 0;
+        return (m_usComponentSize & HasEagerFinalizerFlag) && !HasComponentSize();
+    }
+
+    bool  HasComponentSize()
+    {
+        return (m_usFlags & HasComponentSizeFlag) != 0;
+    }
+
+    uint16_t RawGetComponentSize()
+    {
+        return m_usComponentSize;
+    }
+
+    uint16_t GetComponentSize()
+    {
+        return HasComponentSize() ? RawGetComponentSize() : 0;
     }
 
     bool HasReferenceFields()
@@ -361,11 +380,8 @@ public:
 public:
     // Methods expected by the GC
     uint32_t GetBaseSize() { return get_BaseSize(); }
-    uint16_t GetComponentSize() { return get_ComponentSize(); }
-    uint16_t RawGetComponentSize() { return get_ComponentSize(); }
     uint32_t ContainsPointers() { return HasReferenceFields(); }
     uint32_t ContainsPointersOrCollectible() { return HasReferenceFields(); }
-    bool  HasComponentSize() const { return true; }
     bool HasCriticalFinalizer() { return false; }
     bool IsValueType() { return get_IsValueType(); }
     UInt32_BOOL SanityCheck() { return Validate(); }
