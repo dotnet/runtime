@@ -11,11 +11,16 @@
     <IncludeNetworkSecurityConfig Condition="'$(TargetOS)' == 'Android'">true</IncludeNetworkSecurityConfig>
   </PropertyGroup>
   <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.Versioning.RequiresPreviewFeaturesAttribute" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="HttpWebRequestTest.cs" />
     <Compile Include="HttpWebResponseTest.cs" />
     <Compile Include="RequestStreamTest.cs" />
     <Compile Include="WebRequestTest.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\Capability.Quic.cs"
+             Link="Common\System\Net\Capability.Quic.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Capability.Security.cs"
              Link="Common\System\Net\Capability.Security.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"
