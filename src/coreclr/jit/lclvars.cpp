@@ -4926,7 +4926,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             //
             // This was formerly done during RCS_EARLY counting,
             // and we did not used to reset counts like we do now.
-            if (varDsc->lvIsStructField)
+            if (varDsc->lvIsStructField && varTypeIsStruct(lvaGetDesc(varDsc->lvParentLcl)))
             {
                 varDsc->incRefCnts(BB_UNITY_WEIGHT, this);
             }
@@ -5740,7 +5740,7 @@ void Compiler::lvaUpdateArgsWithInitialReg()
     {
         LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
-        if (varDsc->lvPromotedStruct())
+        if (varDsc->lvPromoted)
         {
             for (unsigned fieldVarNum = varDsc->lvFieldLclStart;
                  fieldVarNum < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++fieldVarNum)
@@ -6041,7 +6041,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
     // For struct promoted parameters we need to set the offsets for the field lclVars.
     //
     // For a promoted struct we also assign the struct fields stack offset
-    if (varDsc->lvPromotedStruct())
+    if (varDsc->lvPromoted)
     {
         unsigned firstFieldNum = varDsc->lvFieldLclStart;
         int      offset        = varDsc->GetStackOffset();
@@ -6345,17 +6345,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
     // For a dependent promoted struct we also assign the struct fields stack offset
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if !defined(TARGET_64BIT)
-    if ((varDsc->TypeGet() == TYP_LONG) && varDsc->lvPromoted)
-    {
-        noway_assert(varDsc->lvFieldCnt == 2);
-        fieldVarNum = varDsc->lvFieldLclStart;
-        lvaTable[fieldVarNum].SetStackOffset(varDsc->GetStackOffset());
-        lvaTable[fieldVarNum + 1].SetStackOffset(varDsc->GetStackOffset() + genTypeSize(TYP_INT));
-    }
-    else
-#endif // !defined(TARGET_64BIT)
-        if (varDsc->lvPromotedStruct())
+    if (varDsc->lvPromoted)
     {
         unsigned firstFieldNum = varDsc->lvFieldLclStart;
         for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
@@ -7105,10 +7095,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             // Reserve the stack space for this variable
             stkOffs = lvaAllocLocalAndSetVirtualOffset(lclNum, lvaLclSize(lclNum), stkOffs);
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
-            // If we have an incoming register argument that has a struct promoted field
-            // then we need to copy the lvStkOff (the stack home) from the reg arg to the field lclvar
+            // If we have an incoming register argument that has a promoted field then we
+            // need to copy the lvStkOff (the stack home) from the reg arg to the field lclvar
             //
-            if (varDsc->lvIsRegArg && varDsc->lvPromotedStruct())
+            if (varDsc->lvIsRegArg && varDsc->lvPromoted)
             {
                 unsigned firstFieldNum = varDsc->lvFieldLclStart;
                 for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
@@ -7117,20 +7107,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                     fieldVarDsc->SetStackOffset(varDsc->GetStackOffset() + fieldVarDsc->lvFldOffset);
                 }
             }
-#ifdef TARGET_ARM
-            // If we have an incoming register argument that has a promoted long
-            // then we need to copy the lvStkOff (the stack home) from the reg arg to the field lclvar
-            //
-            else if (varDsc->lvIsRegArg && varDsc->lvPromoted)
-            {
-                assert(varTypeIsLong(varDsc) && (varDsc->lvFieldCnt == 2));
-
-                unsigned fieldVarNum = varDsc->lvFieldLclStart;
-                lvaTable[fieldVarNum].SetStackOffset(varDsc->GetStackOffset());
-                lvaTable[fieldVarNum + 1].SetStackOffset(varDsc->GetStackOffset() + 4);
-            }
-#endif // TARGET_ARM
-#endif // TARGET_ARM64 || TARGET_LOONGARCH64
+#endif // defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
         }
     }
 

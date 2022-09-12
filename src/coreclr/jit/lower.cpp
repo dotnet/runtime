@@ -7111,7 +7111,7 @@ void Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
         {
             // Optimize *x = DCON to *x = ICON which can be slightly faster and/or smaller.
             GenTree*  data   = ind->Data();
-            double    dblCns = data->AsDblCon()->gtDconVal;
+            double    dblCns = data->AsDblCon()->DconValue();
             ssize_t   intCns = 0;
             var_types type   = TYP_UNKNOWN;
             // XARCH: we can always contain the immediates.
@@ -7413,7 +7413,7 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
             if (arg->IsCnsFltOrDbl())
             {
                 noway_assert(constArgCount < ArrLen(constArgValues));
-                constArgValues[constArgCount] = static_cast<float>(arg->AsDblCon()->gtDconVal);
+                constArgValues[constArgCount] = static_cast<float>(arg->AsDblCon()->DconValue());
                 constArgCount++;
             }
         }
