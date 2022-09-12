@@ -31,7 +31,7 @@ namespace Internal.TypeSystem
 
     // Mark a type system object with this interface to indicate that it
     // can be hashed, but only by using the IJitHashableOnly interface.
-    // Implementors of this should throw an exception in their implementation of 
+    // Implementors of this should throw an exception in their implementation of
     // ComputeHashCode so that the normal GetHashCode function does not work.
     // This is used to prevent putting these objects into long lived storage.
     public interface IJitHashableOnly
