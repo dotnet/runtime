@@ -32,6 +32,10 @@
     .method private hidebysig static int32 Test (int32 lcl) cil managed noinlining nooptimization
     {
         .maxstack 8
+        
+        // return *(int*)(arg0 + ((3 * 0) << 2) + 1);
+        // to avoid constant folding in Roslyn (even for Debug) it's written in IL
+
         ldarg.0
         ldc.i4.3
         ldc.i4.0
