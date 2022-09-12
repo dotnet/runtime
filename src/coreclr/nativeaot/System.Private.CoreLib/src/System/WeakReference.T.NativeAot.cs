@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Threading;
 
 namespace System
 {
@@ -17,7 +16,6 @@ namespace System
         // the instance fields are effectively readonly
         private IntPtr m_handle;
         private bool m_trackResurrection;
-
 
         //Creates a new WeakReference that keeps track of target.
         private void Create(T target, bool trackResurrection)
@@ -76,7 +74,6 @@ namespace System
         /// Hence we check in the conditionalweaktable maintained by the System.Private.Interop.dll that maps weakreferenceInstance->nativeComObject to check whether the native COMObject is alive or not.
         /// and gets\create a new RCW in case it is alive.
         /// </summary>
-        /// <returns></returns>
         private static object? TryGetComTarget()
         {
 #if ENABLE_WINRT
@@ -97,7 +94,6 @@ namespace System
         /// This method notifies the System.Private.Interop.dll to update the conditionalweaktable for weakreferenceInstance->target in case the target is __ComObject. This ensures that we have a means to
         /// go from the managed weak reference to the actual native object even though the managed counterpart might have been collected.
         /// </summary>
-        /// <param name="target"></param>
         private static void TrySetComTarget(object? target)
         {
 #if ENABLE_WINRT
@@ -113,7 +109,7 @@ namespace System
 
         // Note: While WeakReference<T> is formally a finalizable type, the finalizer does not actually run.
         //       Instead the instances are treated specially in GC when scanning for no longer strongly-reachable
-        //       finalizable objects's.
+        //       finalizable objects.
 #pragma warning disable CA1821 // Remove empty Finalizers
         ~WeakReference()
         {
