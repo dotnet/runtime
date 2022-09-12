@@ -4,6 +4,7 @@
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using System.Net.Quic;
 using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography;
@@ -259,6 +260,16 @@ namespace System.Net.Security.Tests
             }
 
             return name;
+        }
+
+        [ModuleInitializer]
+        internal static void InitializeQuic()
+        {
+            // This will load Quic (if supported) to avoid interference with RemoteExecutor
+            // See https://github.com/dotnet/runtime/pull/75424 for more details
+            // IsSupported currently does not unload lttng. If it does in the future,
+            // we may need to call some real Quic API here to get everything loaded properly
+            _ = OperatingSystem.IsLinux() && QuicConnection.IsSupported;
         }
     }
 }
