@@ -9,7 +9,6 @@
 // (C) 2002, 2003 Motus Technologies Inc. (http://www.motus.com)
 // Copyright (C) 2004-2005, 2008 Novell, Inc (http://www.novell.com)
 
-using System.Buffers.Binary;
 using System.Globalization;
 using System.IO;
 using System.Net;
@@ -1731,12 +1730,9 @@ namespace System.Security.Cryptography.Xml.Tests
                                 throw new InvalidOperationException();
                             }
 
-                            if (offset > sizeof(int))
+                            if (offset > 4)
                             {
-                                int last = BinaryPrimitives.ReadInt32LittleEndian(buf.AsSpan(offset - sizeof(int)));
-
-                                // CRLFCRLF, little-endian
-                                if (last == 0x0A0D0A0D)
+                                if (buf.AsSpan(offset - 4, 4).SequenceEqual("\r\n\r\n"u8))
                                 {
                                     break;
                                 }
