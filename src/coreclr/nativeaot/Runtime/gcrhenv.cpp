@@ -1171,8 +1171,11 @@ bool GCToEEInterface::EagerFinalized(Object* obj)
     if (!obj->GetGCSafeMethodTable()->HasEagerFinalizer())
         return false;
 
-    // eager finalization happens in a blocking GC stage
+    // Eager finalization happens while scanning for unmarked finalizable objects
+    // after marking strongly reachable and prior to marking dependent and long weak handles.
+    // Managed code should not be running.
     ASSERT(GCHeapUtilities::GetGCHeap()->IsGCInProgressHelper());
+
     WeakReference* weakRefObj = (WeakReference*)obj;
     OBJECTHANDLE handle = (OBJECTHANDLE)weakRefObj->m_Handle;
     weakRefObj->m_Handle = NULL;
