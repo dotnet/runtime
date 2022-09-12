@@ -53,13 +53,11 @@ namespace Microsoft.Interop
 
         public static SignatureContext Create(
             IMethodSymbol method,
-            InteropAttributeData interopAttributeData,
+            MarshallingInfoParser marshallingInfoParser,
             StubEnvironment env,
-            IGeneratorDiagnostics diagnostics,
-            AttributeData signatureWideMarshallingAttributeData,
             Assembly generatorInfoAssembly)
         {
-            ImmutableArray<TypePositionInfo> typeInfos = GenerateTypeInformation(method, interopAttributeData, diagnostics, env, signatureWideMarshallingAttributeData);
+            ImmutableArray<TypePositionInfo> typeInfos = GenerateTypeInformation(method, marshallingInfoParser, env);
 
             ImmutableArray<AttributeListSyntax>.Builder additionalAttrs = ImmutableArray.CreateBuilder<AttributeListSyntax>();
 
@@ -102,49 +100,9 @@ namespace Microsoft.Interop
 
         private static ImmutableArray<TypePositionInfo> GenerateTypeInformation(
             IMethodSymbol method,
-            InteropAttributeData interopAttributeData,
-            IGeneratorDiagnostics diagnostics,
-            StubEnvironment env,
-            AttributeData signatureWideMarshallingAttributeData)
+            MarshallingInfoParser marshallingInfoParser,
+            StubEnvironment env)
         {
-            // Compute the current default string encoding value.
-            CharEncoding defaultEncoding = CharEncoding.Undefined;
-            if (interopAttributeData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling))
-            {
-                defaultEncoding = interopAttributeData.StringMarshalling switch
-                {
-                    StringMarshalling.Utf16 => CharEncoding.Utf16,
-                    StringMarshalling.Utf8 => CharEncoding.Utf8,
-                    StringMarshalling.Custom => CharEncoding.Custom,
-                    _ => CharEncoding.Undefined, // [Compat] Do not assume a specific value
-                };
-            }
-            else if (interopAttributeData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshallingCustomType))
-            {
-                defaultEncoding = CharEncoding.Custom;
-            }
-
-            var defaultInfo = new DefaultMarshallingInfo(defaultEncoding, interopAttributeData.StringMarshallingCustomType);
-
-            var useSiteAttributeParsers = ImmutableArray.Create<IUseSiteAttributeParser>(
-                    new MarshalAsAttributeParser(env.Compilation, diagnostics, defaultInfo),
-                    new MarshalUsingAttributeParser(env.Compilation, diagnostics));
-
-            var marshallingInfoParser = new MarshallingInfoParser(
-                diagnostics,
-                new MethodSignatureElementInfoProvider(env.Compilation, diagnostics, method, useSiteAttributeParsers),
-                useSiteAttributeParsers,
-                ImmutableArray.Create<IMarshallingInfoAttributeParser>(
-                    new MarshalAsAttributeParser(env.Compilation, diagnostics, defaultInfo),
-                    new MarshalUsingAttributeParser(env.Compilation, diagnostics),
-                    new NativeMarshallingAttributeParser(env.Compilation, diagnostics)),
-                ImmutableArray.Create<ITypeBasedMarshallingInfoProvider>(
-                    new SafeHandleMarshallingInfoProvider(env.Compilation, method.ContainingType),
-                    new ArrayMarshallingInfoProvider(env.Compilation),
-                    new CharMarshallingInfoProvider(defaultInfo),
-                    new StringMarshallingInfoProvider(env.Compilation, diagnostics, signatureWideMarshallingAttributeData, defaultInfo),
-                    new BooleanMarshallingInfoProvider(),
-                    new BlittableTypeMarshallingInfoProvider(env.Compilation)));
 
             // Determine parameter and return types
             ImmutableArray<TypePositionInfo>.Builder typeInfos = ImmutableArray.CreateBuilder<TypePositionInfo>();

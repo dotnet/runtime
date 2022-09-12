@@ -4432,14 +4432,14 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                     if (ni == NI_System_Math_Max)
                     {
-                        cnsNode->gtDconVal =
-                            FloatingPointUtils::maximum(cnsNode->gtDconVal, otherNode->AsDblCon()->gtDconVal);
+                        cnsNode->SetDconValue(
+                            FloatingPointUtils::maximum(cnsNode->DconValue(), otherNode->AsDblCon()->DconValue()));
                     }
                     else
                     {
                         assert(ni == NI_System_Math_Min);
-                        cnsNode->gtDconVal =
-                            FloatingPointUtils::minimum(cnsNode->gtDconVal, otherNode->AsDblCon()->gtDconVal);
+                        cnsNode->SetDconValue(
+                            FloatingPointUtils::minimum(cnsNode->DconValue(), otherNode->AsDblCon()->DconValue()));
                     }
 
                     retNode = cnsNode;
@@ -4530,11 +4530,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 if (callJitType == CORINFO_TYPE_FLOAT)
                 {
-                    vecCon->gtSimd16Val.f32[0] = (float)op1->AsDblCon()->gtDconVal;
+                    vecCon->gtSimd16Val.f32[0] = (float)op1->AsDblCon()->DconValue();
                 }
                 else
                 {
-                    vecCon->gtSimd16Val.f64[0] = op1->AsDblCon()->gtDconVal;
+                    vecCon->gtSimd16Val.f64[0] = op1->AsDblCon()->DconValue();
                 }
 
                 op1 = vecCon;
@@ -4848,7 +4848,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 {
                     impPopStack();
 
-                    double f64Cns = op1->AsDblCon()->gtDconVal;
+                    double f64Cns = op1->AsDblCon()->DconValue();
                     retNode       = gtNewLconNode(*reinterpret_cast<int64_t*>(&f64Cns));
                 }
 #if TARGET_64BIT
@@ -4915,7 +4915,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 if (op1->IsCnsFltOrDbl())
                 {
-                    float f32Cns = (float)op1->AsDblCon()->gtDconVal;
+                    float f32Cns = (float)op1->AsDblCon()->DconValue();
                     retNode      = gtNewIconNode(*reinterpret_cast<int32_t*>(&f32Cns));
                 }
                 else
