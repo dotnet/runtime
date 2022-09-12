@@ -101,7 +101,7 @@
 
     <CreateVisualStudioWorkload BaseIntermediateOutputPath="$(WorkloadIntermediateOutputPath)"
                                 BaseOutputPath="$(WorkloadOutputPath)"
-                                ComponentResources="$(ComponentResources)"
+                                ComponentResources="@(ComponentResources)"
                                 PackageSource="$(PackageSource)"
                                 ShortNames="@(ShortNames)"
                                 WorkloadManifestPackageFiles="@(ManifestPackages)"
