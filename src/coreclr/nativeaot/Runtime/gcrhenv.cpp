@@ -1178,7 +1178,7 @@ bool GCToEEInterface::EagerFinalized(Object* obj)
 
     WeakReference* weakRefObj = (WeakReference*)obj;
     OBJECTHANDLE handle = (OBJECTHANDLE)weakRefObj->m_Handle;
-    weakRefObj->m_Handle = NULL;
+    weakRefObj->m_Handle = 0;
     HandleType handleType = weakRefObj->m_IsLongReference ? HandleType::HNDTYPE_WEAK_LONG : HandleType::HNDTYPE_WEAK_SHORT;
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfType(handle, handleType);
     return true;
