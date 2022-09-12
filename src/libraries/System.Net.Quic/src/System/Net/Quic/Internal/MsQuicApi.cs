@@ -20,7 +20,8 @@ internal sealed unsafe partial class MsQuicApi
 
     private static readonly Version MsQuicVersion = new Version(2, 1);
 
-    private static readonly IntPtr MsQuicHandle = TryLoadMsQuic(out IntPtr handle) ? handle : IntPtr.Zero;
+    private static readonly delegate* unmanaged[Cdecl]<uint, QUIC_API_TABLE**, int> MsQuicOpenVersion;
+    private static readonly delegate* unmanaged[Cdecl]<QUIC_API_TABLE*, void> MsQuicClose;
 
     public MsQuicSafeHandle Registration { get; }
 
@@ -60,16 +61,22 @@ internal sealed unsafe partial class MsQuicApi
     internal static bool Tls13ServerMayBeDisabled { get; }
     internal static bool Tls13ClientMayBeDisabled { get; }
 
+#pragma warning disable CA1810 // Initialize all static fields in 'MsQuicApi' when those fields are declared and remove the explicit static constructor
     static MsQuicApi()
     {
-        if (MsQuicHandle == IntPtr.Zero)
+        if (!NativeLibrary.TryLoad($"{Interop.Libraries.MsQuic}.{MsQuicVersion.Major}", typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out IntPtr msQuicHandle) &&
+            !NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle))
         {
             // MsQuic library not loaded
             return;
         }
 
+        MsQuicOpenVersion = (delegate* unmanaged[Cdecl]<uint, QUIC_API_TABLE**, int>)NativeLibrary.GetExport(msQuicHandle, nameof(MsQuicOpenVersion));
+        MsQuicClose = (delegate* unmanaged[Cdecl]<QUIC_API_TABLE*, void>)NativeLibrary.GetExport(msQuicHandle, nameof(MsQuicClose));
+
         if (!TryOpenMsQuic(out QUIC_API_TABLE* apiTable, out _))
         {
+            // Too low version of the library (likely pre-2.0)
             return;
         }
 
@@ -122,10 +129,10 @@ internal sealed unsafe partial class MsQuicApi
         finally
         {
             // Gracefully close the API table to free resources. The API table will be allocated lazily again if needed
-            bool closed = TryCloseMsQuic(apiTable);
-            Debug.Assert(closed, "Failed to close MsQuic");
+            MsQuicClose(apiTable);
         }
     }
+#pragma warning restore CA1810
 
     private static MsQuicApi AllocateMsQuicApi()
     {
@@ -139,29 +146,12 @@ internal sealed unsafe partial class MsQuicApi
         return new MsQuicApi(apiTable);
     }
 
-    private static bool TryLoadMsQuic(out IntPtr msQuicHandle) =>
-        NativeLibrary.TryLoad($"{Interop.Libraries.MsQuic}.{MsQuicVersion.Major}", typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle) ||
-        NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle);
-
     private static bool TryOpenMsQuic(out QUIC_API_TABLE* apiTable, out int openStatus)
     {
-        Debug.Assert(MsQuicHandle != IntPtr.Zero);
-
-        apiTable = null;
-        if (!NativeLibrary.TryGetExport(MsQuicHandle, "MsQuicOpenVersion", out IntPtr msQuicOpenVersionAddress))
-        {
-            if (NetEventSource.Log.IsEnabled())
-            {
-                NetEventSource.Info(null, "Failed to get MsQuicOpenVersion export in msquic library.");
-            }
-
-            openStatus = MsQuic.QUIC_STATUS_NOT_FOUND;
-            return false;
-        }
+        Debug.Assert(MsQuicOpenVersion != null);
 
         QUIC_API_TABLE* table = null;
-        delegate* unmanaged[Cdecl]<uint, QUIC_API_TABLE**, int> msQuicOpenVersion = (delegate* unmanaged[Cdecl]<uint, QUIC_API_TABLE**, int>)msQuicOpenVersionAddress;
-        openStatus = msQuicOpenVersion((uint)MsQuicVersion.Major, &table);
+        openStatus = MsQuicOpenVersion((uint)MsQuicVersion.Major, &table);
         if (StatusFailed(openStatus))
         {
             if (NetEventSource.Log.IsEnabled())
@@ -169,24 +159,12 @@ internal sealed unsafe partial class MsQuicApi
                 NetEventSource.Info(null, $"MsQuicOpenVersion returned {openStatus} status code.");
             }
 
+            apiTable = null;
             return false;
         }
 
         apiTable = table;
         return true;
-    }
-
-    private static bool TryCloseMsQuic(QUIC_API_TABLE* apiTable)
-    {
-        Debug.Assert(MsQuicHandle != IntPtr.Zero);
-
-        if (NativeLibrary.TryGetExport(MsQuicHandle, "MsQuicClose", out IntPtr msQuicClose))
-        {
-            ((delegate* unmanaged[Cdecl]<QUIC_API_TABLE*, void>)msQuicClose)(apiTable);
-            return true;
-        }
-
-        return false;
     }
 
     private static bool IsWindowsVersionSupported() => OperatingSystem.IsWindowsVersionAtLeast(MinWindowsVersion.Major,
