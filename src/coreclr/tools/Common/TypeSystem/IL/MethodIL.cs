@@ -1,14 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 using Internal.TypeSystem;
 
 namespace Internal.IL
 {
     //
-    // This duplicates types from System.Reflection.Metadata to avoid layering issues, and 
+    // This duplicates types from System.Reflection.Metadata to avoid layering issues, and
     // because of the System.Reflection.Metadata constructors are not public anyway.
     //
 
@@ -73,7 +71,7 @@ namespace Internal.IL
         /// (typically a <see cref="MethodDesc"/>, <see cref="FieldDesc"/>, <see cref="TypeDesc"/>,
         /// or <see cref="MethodSignature"/>).
         /// </summary>
-        public abstract Object GetObject(int token, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw);
+        public abstract object GetObject(int token, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw);
 
         public override string ToString()
         {
@@ -113,7 +111,7 @@ namespace Internal.IL
         /// </summary>
         public abstract ILExceptionRegion[] GetExceptionRegions();
 
-        public override sealed MethodILScope GetMethodILScopeDefinition()
+        public sealed override MethodILScope GetMethodILScopeDefinition()
         {
             return GetMethodILDefinition();
         }

@@ -359,7 +359,7 @@ VOID MethodDesc::GetMethodInfoWithNewSig(SString &namespaceOrClassName, SString 
 
 /*
  * Function to get a method's full name, something like
- * void [mscorlib]System.StubHelpers.BSTRMarshaler::ClearNative(native int)
+ * void [System.Private.CoreLib]System.StubHelpers.BSTRMarshaler::ClearNative(native int)
  */
 VOID MethodDesc::GetFullMethodInfo(SString& fullMethodSigName)
 {

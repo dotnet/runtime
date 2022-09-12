@@ -1473,13 +1473,30 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
     //
     else if (op1->gtOper == GT_LCL_VAR)
     {
-        unsigned   lclNum = op1->AsLclVarCommon()->GetLclNum();
-        LclVarDsc* lclVar = lvaGetDesc(lclNum);
+        unsigned const   lclNum = op1->AsLclVarCommon()->GetLclNum();
+        LclVarDsc* const lclVar = lvaGetDesc(lclNum);
 
-        //  If the local variable has its address exposed then bail
+        // If the local variable has its address exposed then bail
+        //
         if (lclVar->IsAddressExposed())
         {
             goto DONE_ASSERTION; // Don't make an assertion
+        }
+
+        // If the local is a promoted struct and has an exposed field then bail.
+        //
+        if (lclVar->lvPromoted)
+        {
+            for (unsigned childLclNum = lclVar->lvFieldLclStart;
+                 childLclNum < lclVar->lvFieldLclStart + lclVar->lvFieldCnt; ++childLclNum)
+            {
+                LclVarDsc* const childVar = lvaGetDesc(childLclNum);
+
+                if (childVar->IsAddressExposed())
+                {
+                    goto DONE_ASSERTION;
+                }
+            }
         }
 
         if (helperCallArgs)
@@ -1636,8 +1653,35 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                 //
                 //  Copy Assertions
                 //
+                case GT_OBJ:
+                case GT_BLK:
+                {
+                    // TODO-ADDR: delete once local morph folds SIMD-typed indirections.
+                    //
+                    GenTree* const addr = op2->AsIndir()->Addr();
+
+                    if (addr->OperIs(GT_ADDR))
+                    {
+                        GenTree* const base = addr->AsOp()->gtOp1;
+
+                        if (base->OperIs(GT_LCL_VAR) && varTypeIsStruct(base))
+                        {
+                            ClassLayout* const varLayout = base->GetLayout(this);
+                            ClassLayout* const objLayout = op2->GetLayout(this);
+                            if (ClassLayout::AreCompatible(varLayout, objLayout))
+                            {
+                                op2 = base;
+                                goto IS_COPY;
+                            }
+                        }
+                    }
+
+                    goto DONE_ASSERTION;
+                }
+
                 case GT_LCL_VAR:
                 {
+                IS_COPY:
                     //
                     // Must either be an OAK_EQUAL or an OAK_NOT_EQUAL assertion
                     //
@@ -1672,6 +1716,22 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     if (lclVar2->IsAddressExposed())
                     {
                         goto DONE_ASSERTION; // Don't make an assertion
+                    }
+
+                    // If the local is a promoted struct and has an exposed field then bail.
+                    //
+                    if (lclVar2->lvPromoted)
+                    {
+                        for (unsigned childLclNum = lclVar2->lvFieldLclStart;
+                             childLclNum < lclVar2->lvFieldLclStart + lclVar2->lvFieldCnt; ++childLclNum)
+                        {
+                            LclVarDsc* const childVar = lvaGetDesc(childLclNum);
+
+                            if (childVar->IsAddressExposed())
+                            {
+                                goto DONE_ASSERTION;
+                            }
+                        }
                     }
 
                     assertion.op2.kind       = O2K_LCLVAR_COPY;
@@ -3403,20 +3463,33 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
 //
 bool Compiler::optZeroObjAssertionProp(GenTree* tree, ASSERT_VALARG_TP assertions)
 {
-    assert(varTypeIsStruct(tree));
-
     // We only make ZEROOBJ assertions in local propagation.
     if (!optLocalAssertionProp)
     {
         return false;
     }
 
-    if (!tree->OperIs(GT_LCL_VAR) || lvaGetDesc(tree->AsLclVar())->IsAddressExposed())
+    // And only into local nodes
+    if (!tree->OperIsLocal())
     {
         return false;
     }
 
-    unsigned       lclNum         = tree->AsLclVar()->GetLclNum();
+    // No ZEROOBJ assertions for simd.
+    //
+    if (varTypeIsSIMD(tree))
+    {
+        return false;
+    }
+
+    LclVarDsc* const lclVarDsc = lvaGetDesc(tree->AsLclVarCommon());
+
+    if (lclVarDsc->IsAddressExposed())
+    {
+        return false;
+    }
+
+    const unsigned lclNum         = tree->AsLclVarCommon()->GetLclNum();
     AssertionIndex assertionIndex = optLocalAssertionIsEqualOrNotEqual(O1K_LCLVAR, lclNum, O2K_ZEROOBJ, 0, assertions);
     if (assertionIndex == NO_ASSERTION_INDEX)
     {
@@ -3568,6 +3641,20 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc*        curAssertion,
         return nullptr;
     }
 
+    // Heuristic: for LclFld prop, don't force the copy or its promoted fields to be in memory.
+    //
+    if (tree->OperIs(GT_LCL_FLD))
+    {
+        if (copyVarDsc->IsEnregisterableLcl() || copyVarDsc->lvPromoted)
+        {
+            return nullptr;
+        }
+        else
+        {
+            lvaSetVarDoNotEnregister(copyLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
+        }
+    }
+
     tree->SetLclNum(copyLclNum);
     tree->SetSsaNum(copySsaNum);
 
@@ -3690,6 +3777,84 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
 }
 
 //------------------------------------------------------------------------
+// optAssertionProp_LclFld: try and optimize a local field use via assertions
+//
+// Arguments:
+//    assertions - set of live assertions
+//    tree       - local field use to optimize
+//    stmt       - statement containing the tree
+//
+// Returns:
+//    Updated tree, or nullptr
+//
+// Notes:
+//   stmt may be nullptr during local assertion prop
+//
+GenTree* Compiler::optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt)
+{
+    // If we have a var definition then bail or
+    // If this is the address of the var then it will have the GTF_DONT_CSE
+    // flag set and we don't want to to assertion prop on it.
+    if (tree->gtFlags & (GTF_VAR_DEF | GTF_DONT_CSE))
+    {
+        return nullptr;
+    }
+
+    // Only run during local prop and if copies are available.
+    //
+    if (!optLocalAssertionProp || !optCanPropLclVar)
+    {
+        return nullptr;
+    }
+
+    BitVecOps::Iter iter(apTraits, assertions);
+    unsigned        index = 0;
+    while (iter.NextElem(&index))
+    {
+        AssertionIndex assertionIndex = GetAssertionIndex(index);
+        if (assertionIndex > optAssertionCount)
+        {
+            break;
+        }
+
+        // See if the variable is equal to another variable or a constant.
+        //
+        AssertionDsc* const curAssertion = optGetAssertion(assertionIndex);
+        if (!curAssertion->CanPropLclVar())
+        {
+            continue;
+        }
+
+        // Copy prop
+        //
+        if (curAssertion->op2.kind == O2K_LCLVAR_COPY)
+        {
+            GenTree* const newTree = optCopyAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
+            if (newTree != nullptr)
+            {
+                return newTree;
+            }
+
+            continue;
+        }
+
+        // Constant prop
+        //
+        if (curAssertion->op1.lcl.lclNum == tree->GetLclNum())
+        {
+            GenTree* const newTree = optConstantAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
+
+            if (newTree != nullptr)
+            {
+                return newTree;
+            }
+        }
+    }
+
+    return nullptr;
+}
+
+//------------------------------------------------------------------------
 // optAssertionProp_Asg: Try and optimize an assignment via assertions.
 //
 // Propagates ZEROOBJ for the RHS.
@@ -3708,12 +3873,90 @@ GenTree* Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeL
 GenTree* Compiler::optAssertionProp_Asg(ASSERT_VALARG_TP assertions, GenTreeOp* asg, Statement* stmt)
 {
     GenTree* rhs = asg->gtGetOp2();
-    if (asg->OperIsCopyBlkOp() && varTypeIsStruct(rhs))
+
+    // Try and simplify the RHS.
+    //
+    bool madeChanges = false;
+    if (asg->OperIsCopyBlkOp())
     {
         if (optZeroObjAssertionProp(rhs, assertions))
         {
-            return optAssertionProp_Update(asg, asg, stmt);
+            madeChanges = true;
+            rhs         = asg->gtGetOp2();
         }
+    }
+
+    // If we're assigning a value to a lcl/field that already has
+    // that value, suppress the assignment.
+    //
+    // For now we just check for zero.
+    //
+    // In particular we want to make sure that for struct S the
+    // "redundant init" pattern
+    //
+    //   S s = new S();
+    //   s.field = 0;
+    //
+    // does not kill the zerobj assertion for s.
+    //
+    if (optLocalAssertionProp)
+    {
+        GenTreeLclVarCommon* lhsVarTree = nullptr;
+        if (asg->DefinesLocal(this, &lhsVarTree))
+        {
+            unsigned const       lhsLclNum      = lhsVarTree->GetLclNum();
+            LclVarDsc* const     lhsLclDsc      = lvaGetDesc(lhsLclNum);
+            bool const           lhsLclIsStruct = varTypeIsStruct(lhsLclDsc->TypeGet());
+            AssertionIndex const lhsIndex =
+                optLocalAssertionIsEqualOrNotEqual(O1K_LCLVAR, lhsLclNum, lhsLclIsStruct ? O2K_ZEROOBJ : O2K_CONST_INT,
+                                                   0, assertions);
+            if (lhsIndex != NO_ASSERTION_INDEX)
+            {
+                AssertionDsc* const lhsAssertion = optGetAssertion(lhsIndex);
+                if ((lhsAssertion->assertionKind == OAK_EQUAL) && (lhsAssertion->op2.u1.iconVal == 0))
+                {
+                    bool canOptimize = false;
+
+                    // LHS is zero. Is RHS a literal zero? If so we don't need the assignment.
+                    //
+                    // The latter part of the if below is a heuristic.
+                    //
+                    // If we elimiate a zero assignment for integral lclVars it can lead to
+                    // unnecessary cloning. We need to make sure `optExtractInitTestIncr`
+                    // still sees zero loop iter lower bounds.
+                    //
+                    if (rhs->IsIntegralConst(0) && (lhsLclIsStruct || varTypeIsGC(lhsVarTree)))
+                    {
+                        JITDUMP(
+                            "[%06u] is assigning a constant zero to a struct field or gc local that is already zero\n",
+                            dspTreeID(asg));
+                        JITDUMPEXEC(optPrintAssertion(lhsAssertion));
+                        canOptimize = true;
+                    }
+
+                    if (canOptimize)
+                    {
+                        GenTree* list = nullptr;
+                        gtExtractSideEffList(asg, &list, GTF_SIDE_EFFECT, /* ignoreRoot */ true);
+
+                        if (list != nullptr)
+                        {
+                            return optAssertionProp_Update(list, asg, stmt);
+                        }
+
+                        asg->gtBashToNOP();
+                        return optAssertionProp_Update(asg, asg, stmt);
+                    }
+                }
+            }
+        }
+    }
+
+    // We might have simplified the RHS but were not able to remove the assignment
+    //
+    if (madeChanges)
+    {
+        return optAssertionProp_Update(asg, asg, stmt);
     }
 
     return nullptr;
@@ -4916,6 +5159,9 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_LCL_VAR:
             return optAssertionProp_LclVar(assertions, tree->AsLclVarCommon(), stmt);
 
+        case GT_LCL_FLD:
+            return optAssertionProp_LclFld(assertions, tree->AsLclVarCommon(), stmt);
+
         case GT_ASG:
             return optAssertionProp_Asg(assertions, tree->AsOp(), stmt);
 
@@ -6058,29 +6304,26 @@ Statement* Compiler::optVNAssertionPropCurStmt(BasicBlock* block, Statement* stm
     return nextStmt;
 }
 
-/*****************************************************************************
- *
- *   The entry point for assertion propagation
- */
-
-void Compiler::optAssertionPropMain()
+//------------------------------------------------------------------------------
+// optAssertionPropMain: assertion propagation phase
+//
+// Returns:
+//    Suitable phase status.
+//
+PhaseStatus Compiler::optAssertionPropMain()
 {
     if (fgSsaPassesCompleted == 0)
     {
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In optAssertionPropMain()\n");
-        printf("Blocks/Trees at start of phase\n");
-        fgDispBasicBlocks(true);
-    }
-#endif
 
     optAssertionInit(false);
 
     noway_assert(optAssertionCount == 0);
+    bool madeChanges = false;
+
+    // Assertion prop can speculatively create trees.
+    INDEBUG(const unsigned baseTreeID = compGenTreeID);
 
     // First discover all value assignments and record them in the table.
     for (BasicBlock* const block : Blocks())
@@ -6096,13 +6339,16 @@ void Compiler::optAssertionPropMain()
             if (fgRemoveRestOfBlock)
             {
                 fgRemoveStmt(block, stmt);
-                stmt = stmt->GetNextStmt();
+                stmt        = stmt->GetNextStmt();
+                madeChanges = true;
                 continue;
             }
             else
             {
                 // Perform VN based assertion prop before assertion gen.
                 Statement* nextStmt = optVNAssertionPropCurStmt(block, stmt);
+                madeChanges |= optAssertionPropagatedCurrentStmt;
+                INDEBUG(madeChanges |= (baseTreeID != compGenTreeID));
 
                 // Propagation resulted in removal of the remaining stmts, perform it.
                 if (fgRemoveRestOfBlock)
@@ -6139,7 +6385,7 @@ void Compiler::optAssertionPropMain()
         {
             block->bbAssertionIn = BitVecOps::MakeEmpty(apTraits);
         }
-        return;
+        return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
     }
 
 #ifdef DEBUG
@@ -6209,7 +6455,8 @@ void Compiler::optAssertionPropMain()
             if (fgRemoveRestOfBlock)
             {
                 fgRemoveStmt(block, stmt);
-                stmt = stmt->GetNextStmt();
+                stmt        = stmt->GetNextStmt();
+                madeChanges = true;
                 continue;
             }
 
@@ -6255,6 +6502,7 @@ void Compiler::optAssertionPropMain()
 #endif
                 // Re-morph the statement.
                 fgMorphBlockStmt(block, stmt DEBUGARG("optAssertionPropMain"));
+                madeChanges = true;
             }
 
             // Check if propagation removed statements starting from current stmt.
@@ -6265,8 +6513,5 @@ void Compiler::optAssertionPropMain()
         optAssertionPropagatedCurrentStmt = false; // clear it back as we are done with stmts.
     }
 
-#ifdef DEBUG
-    fgDebugCheckBBlist();
-    fgDebugCheckLinks();
-#endif
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }

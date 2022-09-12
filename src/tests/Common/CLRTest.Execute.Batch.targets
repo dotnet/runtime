@@ -52,7 +52,7 @@ WARNING:   When setting properties based on their current state (for example:
   <Target Name="GenerateBatchExecutionScript"
     Inputs="$(MSBuildProjectFullPath)"
     Outputs="$(OutputPath)\$(AssemblyName).cmd"
-    DependsOnTargets="$(BatchScriptSnippetGen);GetIlasmRoundTripBatchScript">
+    DependsOnTargets="$(BatchScriptSnippetGen);GetIlasmRoundTripBatchScript;GetSuperPMICollectionBatchScript">
 
     <Message Text="Project depends on $(_CLRTestToRunFileFullPath)." Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'" />
 
@@ -298,13 +298,13 @@ IF NOT "%CLRCustomTestLauncher%"=="" (
 
 $(BatchIlrtTestLaunchCmds)
 
-if defined RunCrossGen (
+if defined RunCrossGen2 (
   call :TakeLock
 )
 ECHO %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
 %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
 set CLRTestExitCode=!ERRORLEVEL!
-if defined RunCrossGen (
+if defined RunCrossGen2 (
   call :ReleaseLock
 )
 $(BatchLinkerTestCleanupCmds)
@@ -433,6 +433,8 @@ $(BatchEnvironmentVariables)
 $(BatchCLRTestEnvironmentCompatibilityCheck)
 
 $(IlasmRoundTripBatchScript)
+
+$(SuperPMICollectionBatchScript)
 
 REM Allow precommands to override the ExePath
 set ExePath=$(InputAssemblyName)

@@ -19,6 +19,9 @@ protected:
     virtual void TrySpecialCases();
     virtual void MorphStructCases();
 
+    void PropagateBlockAssertions();
+    void PropagateExpansionAssertions();
+
     virtual const char* GetHelperName() const
     {
         return "MorphInitBlock";
@@ -125,7 +128,7 @@ GenTree* MorphInitBlockHelper::Morph()
 
     PrepareDst();
     PrepareSrc();
-
+    PropagateBlockAssertions();
     TrySpecialCases();
 
     if (m_transformationDecision == BlockTransformation::Undefined)
@@ -147,6 +150,8 @@ GenTree* MorphInitBlockHelper::Morph()
             MorphStructCases();
         }
     }
+
+    PropagateExpansionAssertions();
 
     assert(m_transformationDecision != BlockTransformation::Undefined);
     assert(m_result != nullptr);
@@ -273,6 +278,41 @@ void MorphInitBlockHelper::PrepareDst()
         }
     }
 #endif // DEBUG
+}
+
+//------------------------------------------------------------------------
+// PropagateBlockAssertions: propagate assertions based on the original tree
+//
+// Notes:
+//    Once the init or copy tree is morphed, assertion gen can no
+//    longer recognize what it means.
+//
+//    So we generate assertions based on the original tree.
+//
+void MorphInitBlockHelper::PropagateBlockAssertions()
+{
+    if (m_comp->optLocalAssertionProp)
+    {
+        m_comp->optAssertionGen(m_asg);
+    }
+}
+
+//------------------------------------------------------------------------
+// PropagateExpansionAssertions: propagate assertions based on the
+//   expanded tree
+//
+// Notes:
+//    After the copy/init is expanded, we may see additional expansions
+//    to generate.
+//
+void MorphInitBlockHelper::PropagateExpansionAssertions()
+{
+    // Consider doing this for FieldByField as well
+    //
+    if (m_comp->optLocalAssertionProp && (m_transformationDecision == BlockTransformation::OneAsgBlock))
+    {
+        m_comp->optAssertionGen(m_asg);
+    }
 }
 
 //------------------------------------------------------------------------

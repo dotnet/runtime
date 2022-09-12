@@ -530,10 +530,9 @@ public:
                                   // 32-bit target.  For implicit byref parameters, this gets hijacked between
                                   // fgRetypeImplicitByRefArgs and fgMarkDemotedImplicitByRefArgs to indicate whether
                                   // references to the arg are being rewritten as references to a promoted shadow local.
-    unsigned char lvIsStructField : 1;     // Is this local var a field of a promoted struct local?
-    unsigned char lvOverlappingFields : 1; // True when we have a struct with possibly overlapping fields
-    unsigned char lvContainsHoles : 1;     // True when we have a promoted struct that contains holes
-    unsigned char lvCustomLayout : 1;      // True when this struct has "CustomLayout"
+    unsigned char lvIsStructField : 1; // Is this local var a field of a promoted struct local?
+    unsigned char lvContainsHoles : 1; // True when we have a promoted struct that contains holes
+    unsigned char lvCustomLayout : 1;  // True when this struct has "CustomLayout"
 
     unsigned char lvIsMultiRegArg : 1; // true if this is a multireg LclVar struct used in an argument context
     unsigned char lvIsMultiRegRet : 1; // true if this is a multireg LclVar struct assigned from a multireg call
@@ -982,23 +981,7 @@ public:
         lvStkOffs = offset;
     }
 
-    unsigned lvExactSize; // (exact) size of the type in bytes
-
-    // Is this a promoted struct?
-    // This method returns true only for structs (including SIMD structs), not for
-    // locals that are split on a 32-bit target.
-    // It is only necessary to use this:
-    //   1) if only structs are wanted, and
-    //   2) if Lowering has already been done.
-    // Otherwise lvPromoted is valid.
-    bool lvPromotedStruct()
-    {
-#if !defined(TARGET_64BIT)
-        return (lvPromoted && !varTypeIsLong(lvType));
-#else  // defined(TARGET_64BIT)
-        return lvPromoted;
-#endif // defined(TARGET_64BIT)
-    }
+    unsigned lvExactSize; // (exact) size of a STRUCT/SIMD/BLK local in bytes.
 
     unsigned lvSize() const;
 
@@ -1378,11 +1361,20 @@ public:
     }
 };
 
+// Specify compiler data that a phase might modify
+enum class PhaseStatus : unsigned
+{
+    MODIFIED_NOTHING,    // Phase did not make any changes that warrant running post-phase checks or dumping
+                         // the main jit data strutures.
+    MODIFIED_EVERYTHING, // Phase made changes that warrant running post-phase checks or dumping
+                         // the main jit data strutures.
+};
+
 // interface to hide linearscan implementation from rest of compiler
 class LinearScanInterface
 {
 public:
-    virtual void doLinearScan()                                = 0;
+    virtual PhaseStatus doLinearScan()                         = 0;
     virtual void recordVarLocationsAtStartOfBB(BasicBlock* bb) = 0;
     virtual bool willEnregisterLocalVars() const               = 0;
 #if TRACK_LSRA_STATS
@@ -1414,13 +1406,12 @@ enum class PhaseChecks
     CHECK_ALL
 };
 
-// Specify compiler data that a phase might modify
-enum class PhaseStatus : unsigned
+// Specify which dumps should be run after each phase
+//
+enum class PhaseDumps
 {
-    MODIFIED_NOTHING,    // Phase did not make any changes that warrant running post-phase checks or dumping
-                         // the main jit data strutures.
-    MODIFIED_EVERYTHING, // Phase made changes that warrant running post-phase checks or dumping
-                         // the main jit data strutures.
+    DUMP_NONE,
+    DUMP_ALL
 };
 
 // The following enum provides a simple 1:1 mapping to CLR API's
@@ -2928,7 +2919,6 @@ public:
 #endif
 
     BasicBlock* bbNewBasicBlock(BBjumpKinds jumpKind);
-    void placeLoopAlignInstructions();
 
     /*
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -3804,11 +3794,8 @@ protected:
     Statement* impLastStmt; // The last statement for the current BB.
 
 public:
-    enum
-    {
-        CHECK_SPILL_ALL  = -1,
-        CHECK_SPILL_NONE = -2
-    };
+    static const unsigned CHECK_SPILL_ALL  = static_cast<unsigned>(-1);
+    static const unsigned CHECK_SPILL_NONE = static_cast<unsigned>(-2);
 
     void impBeginTreeList();
     void impEndTreeList(BasicBlock* block, Statement* firstStmt, Statement* lastStmt);
@@ -4008,7 +3995,7 @@ private:
     void impSpillSpecialSideEff();
     void impSpillSideEffect(bool spillGlobEffects, unsigned chkLevel DEBUGARG(const char* reason));
     void impSpillSideEffects(bool spillGlobEffects, unsigned chkLevel DEBUGARG(const char* reason));
-    void impSpillLclRefs(unsigned lclNum);
+    void impSpillLclRefs(unsigned lclNum, unsigned chkLevel);
 
     BasicBlock* impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_HANDLE clsHnd, bool isSingleBlockFilter);
 
@@ -4634,7 +4621,11 @@ public:
 
     // Do "simple lowering."  This functionality is (conceptually) part of "general"
     // lowering that is distributed between fgMorph and the lowering phase of LSRA.
-    void fgSimpleLowering();
+    PhaseStatus fgSimpleLowering();
+
+#if FEATURE_LOOP_ALIGN
+    PhaseStatus placeLoopAlignInstructions();
+#endif
 
     GenTree* fgInitThisClass();
 
@@ -5045,7 +5036,7 @@ protected:
     template <typename CanRemoveBlockBody>
     bool fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock);
 
-    void fgComputeReachability(); // Perform flow graph node reachability analysis.
+    PhaseStatus fgComputeReachability(); // Perform flow graph node reachability analysis.
 
     bool fgRemoveDeadBlocks(); // Identify and remove dead blocks.
 
@@ -5757,7 +5748,7 @@ private:
     GenTree* fgMorphCopyBlock(GenTree* tree);
     GenTree* fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree);
     GenTree* fgMorphForRegisterFP(GenTree* tree);
-    GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac = nullptr);
+    GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone = nullptr);
     GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeCastOnAssignment(GenTreeOp* asg);
     GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
@@ -5776,7 +5767,7 @@ private:
     GenTree* fgMorphRetInd(GenTreeUnOp* tree);
     GenTree* fgMorphModToSubMulDiv(GenTreeOp* tree);
     GenTree* fgMorphUModToAndSub(GenTreeOp* tree);
-    GenTree* fgMorphSmpOpOptional(GenTreeOp* tree);
+    GenTree* fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropDone);
     GenTree* fgMorphMultiOp(GenTreeMultiOp* multiOp);
     GenTree* fgMorphConst(GenTree* tree);
 
@@ -5792,7 +5783,8 @@ public:
 private:
     void fgKillDependentAssertionsSingle(unsigned lclNum DEBUGARG(GenTree* tree));
     void fgKillDependentAssertions(unsigned lclNum DEBUGARG(GenTree* tree));
-    void fgMorphTreeDone(GenTree* tree, GenTree* oldTree = nullptr DEBUGARG(int morphNum = 0));
+    void fgMorphTreeDone(GenTree* tree);
+    void fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone, bool isMorphedTree DEBUGARG(int morphNum = 0));
 
     Statement* fgMorphStmt;
 
@@ -5882,15 +5874,6 @@ private:
     Statement* fgInlinePrependStatements(InlineInfo* inlineInfo);
     void fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* block, Statement* stmt);
 
-#if FEATURE_MULTIREG_RET
-    GenTree* fgGetStructAsStructPtr(GenTree* tree);
-    GenTree* fgAssignStructInlineeToVar(GenTree* child, CORINFO_CLASS_HANDLE retClsHnd);
-    void fgAttachStructInlineeToAsg(GenTree* tree, GenTree* child, CORINFO_CLASS_HANDLE retClsHnd);
-#endif // FEATURE_MULTIREG_RET
-
-    static fgWalkPreFn  fgUpdateInlineReturnExpressionPlaceHolder;
-    static fgWalkPostFn fgLateDevirtualization;
-
 #ifdef DEBUG
     static fgWalkPreFn fgDebugCheckInlineCandidates;
 
@@ -5959,6 +5942,7 @@ private:
 public:
     void optInit();
 
+    PhaseStatus rangeCheckPhase();
     GenTree* optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, Statement* stmt);
     GenTree* optRemoveStandaloneRangeCheck(GenTreeBoundsChk* check, Statement* stmt);
     void optRemoveCommaBasedRangeCheck(GenTree* comma, Statement* stmt);
@@ -6694,7 +6678,7 @@ protected:
 #define FMT_CSE "CSE #%02u"
 
 public:
-    void optOptimizeValnumCSEs();
+    PhaseStatus optOptimizeValnumCSEs();
 
 protected:
     void     optValnumCSE_Init();
@@ -6703,7 +6687,7 @@ protected:
     void optValnumCSE_InitDataFlow();
     void optValnumCSE_DataFlow();
     void optValnumCSE_Availability();
-    void optValnumCSE_Heuristic();
+    bool optValnumCSE_Heuristic();
 
     bool     optDoCSE;             // True when we have found a duplicate CSE tree
     bool     optValnumCSE_phase;   // True when we are executing the optOptimizeValnumCSEs() phase
@@ -6776,16 +6760,16 @@ public:
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, CopyPropSsaDefStack*> LclNumToLiveDefsMap;
 
     // Copy propagation functions.
-    void optCopyProp(Statement* stmt, GenTreeLclVarCommon* tree, unsigned lclNum, LclNumToLiveDefsMap* curSsaName);
+    bool optCopyProp(Statement* stmt, GenTreeLclVarCommon* tree, unsigned lclNum, LclNumToLiveDefsMap* curSsaName);
     void optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
-    void optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
+    bool optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
     void optCopyPropPushDef(GenTree*             defNode,
                             GenTreeLclVarCommon* lclNode,
                             unsigned             lclNum,
                             LclNumToLiveDefsMap* curSsaName);
     unsigned optIsSsaLocal(GenTreeLclVarCommon* lclNode);
     int optCopyProp_LclVarScore(const LclVarDsc* lclVarDsc, const LclVarDsc* copyVarDsc, bool preferOp2);
-    void optVnCopyProp();
+    PhaseStatus optVnCopyProp();
     INDEBUG(void optDumpCopyPropStack(LclNumToLiveDefsMap* curSsaName));
 
     /**************************************************************************
@@ -7288,7 +7272,7 @@ public:
     void optAssertionRemove(AssertionIndex index);
 
     // Assertion prop data flow functions.
-    void       optAssertionPropMain();
+    PhaseStatus optAssertionPropMain();
     Statement* optVNAssertionPropCurStmt(BasicBlock* block, Statement* stmt);
     bool optIsTreeKnownIntValue(bool vnBased, GenTree* tree, ssize_t* pConstant, GenTreeFlags* pIconFlags);
     ASSERT_TP* optInitAssertionDataflowFlags();
@@ -7357,6 +7341,7 @@ public:
     // Assertion propagation functions.
     GenTree* optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
     GenTree* optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt);
+    GenTree* optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeLclVarCommon* tree, Statement* stmt);
     GenTree* optAssertionProp_Asg(ASSERT_VALARG_TP assertions, GenTreeOp* asg, Statement* stmt);
     GenTree* optAssertionProp_Return(ASSERT_VALARG_TP assertions, GenTreeUnOp* ret, Statement* stmt);
     GenTree* optAssertionProp_Ind(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt);
@@ -7551,10 +7536,31 @@ public:
 
     var_types eeGetFieldType(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE* pStructHnd = nullptr);
 
-#if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(TRACK_LSRA_STATS)
+    void eePrintJitType(class StringPrinter* printer, var_types jitType);
+    void eePrintType(class StringPrinter* printer,
+                     CORINFO_CLASS_HANDLE clsHnd,
+                     bool                 includeNamespaces,
+                     bool                 includeInstantiation);
+    void eePrintTypeOrJitAlias(class StringPrinter* printer,
+                               CORINFO_CLASS_HANDLE clsHnd,
+                               bool                 includeNamespaces,
+                               bool                 includeInstantiation);
+    void eePrintMethod(class StringPrinter*  printer,
+                       CORINFO_CLASS_HANDLE  clsHnd,
+                       CORINFO_METHOD_HANDLE methodHnd,
+                       CORINFO_SIG_INFO*     sig,
+                       bool                  includeNamespaces,
+                       bool                  includeClassInstantiation,
+                       bool                  includeMethodInstantiation,
+                       bool                  includeSignature,
+                       bool                  includeReturnType,
+                       bool                  includeThisSpecifier);
 
+#if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD) || defined(TRACK_LSRA_STATS)
     const char* eeGetMethodName(CORINFO_METHOD_HANDLE hnd, const char** className);
-    const char* eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd);
+    const char* eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd,
+                                    bool                  includeReturnType    = true,
+                                    bool                  includeThisSpecifier = true);
     unsigned compMethodHash(CORINFO_METHOD_HANDLE methodHandle);
 
     bool eeIsNativeMethod(CORINFO_METHOD_HANDLE method);
@@ -7778,6 +7784,12 @@ public:
     bool eeRunWithSPMIErrorTrap(void (*function)(ParamType*), ParamType* param)
     {
         return eeRunWithSPMIErrorTrapImp(reinterpret_cast<void (*)(void*)>(function), reinterpret_cast<void*>(param));
+    }
+
+    template <typename Functor>
+    bool eeRunFunctorWithSPMIErrorTrap(Functor f)
+    {
+        return eeRunWithSPMIErrorTrap<Functor>([](Functor* pf) { (*pf)(); }, &f);
     }
 
     bool eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param);
@@ -8834,7 +8846,7 @@ private:
     bool compIsaSupportedDebugOnly(CORINFO_InstructionSet isa) const
     {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-        return (opts.compSupportsISA & (1ULL << isa)) != 0;
+        return opts.compSupportsISA.HasInstructionSet(isa);
 #else
         return false;
 #endif
@@ -8849,14 +8861,13 @@ private:
     bool compExactlyDependsOn(CORINFO_InstructionSet isa) const
     {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64)
-        uint64_t isaBit = (1ULL << isa);
-        if ((opts.compSupportsISAReported & isaBit) == 0)
+        if ((opts.compSupportsISAReported.HasInstructionSet(isa)) == false)
         {
-            if (notifyInstructionSetUsage(isa, (opts.compSupportsISA & isaBit) != 0))
-                ((Compiler*)this)->opts.compSupportsISAExactly |= isaBit;
-            ((Compiler*)this)->opts.compSupportsISAReported |= isaBit;
+            if (notifyInstructionSetUsage(isa, (opts.compSupportsISA.HasInstructionSet(isa))))
+                ((Compiler*)this)->opts.compSupportsISAExactly.AddInstructionSet(isa);
+            ((Compiler*)this)->opts.compSupportsISAReported.AddInstructionSet(isa);
         }
-        return (opts.compSupportsISAExactly & isaBit) != 0;
+        return (opts.compSupportsISAExactly.HasInstructionSet(isa));
 #else
         return false;
 #endif
@@ -8878,7 +8889,7 @@ private:
     // If the result is false, then the target machine may have support for the instruction.
     bool compOpportunisticallyDependsOn(CORINFO_InstructionSet isa) const
     {
-        if ((opts.compSupportsISA & (1ULL << isa)) != 0)
+        if (opts.compSupportsISA.HasInstructionSet(isa))
         {
             return compExactlyDependsOn(isa);
         }
@@ -8893,7 +8904,7 @@ private:
     {
         // Report intent to use the ISA to the EE
         compExactlyDependsOn(isa);
-        return ((opts.compSupportsISA & (1ULL << isa)) != 0);
+        return opts.compSupportsISA.HasInstructionSet(isa);
     }
 
     bool canUseVexEncoding() const
@@ -8930,6 +8941,7 @@ public:
     bool compFloatingPointUsed;        // Does the method use TYP_FLOAT or TYP_DOUBLE
     bool compTailCallUsed;             // Does the method do a tailcall
     bool compTailPrefixSeen;           // Does the method IL have tail. prefix
+    bool compMayConvertTailCallToLoop; // Does the method have a recursive tail call that we may convert to a loop?
     bool compLocallocSeen;             // Does the method IL have localloc opcode
     bool compLocallocUsed;             // Does the method use localloc.
     bool compLocallocOptimized;        // Does the method have an optimized localloc
@@ -8998,19 +9010,19 @@ public:
         JitFlags* jitFlags; // all flags passed from the EE
 
         // The instruction sets that the compiler is allowed to emit.
-        uint64_t compSupportsISA;
+        CORINFO_InstructionSetFlags compSupportsISA;
         // The instruction sets that were reported to the VM as being used by the current method. Subset of
         // compSupportsISA.
-        uint64_t compSupportsISAReported;
+        CORINFO_InstructionSetFlags compSupportsISAReported;
         // The instruction sets that the compiler is allowed to take advantage of implicitly during optimizations.
         // Subset of compSupportsISA.
         // The instruction sets available in compSupportsISA and not available in compSupportsISAExactly can be only
         // used via explicit hardware intrinsics.
-        uint64_t compSupportsISAExactly;
+        CORINFO_InstructionSetFlags compSupportsISAExactly;
 
         void setSupportedISAs(CORINFO_InstructionSetFlags isas)
         {
-            compSupportsISA = isas.GetFlagsRaw();
+            compSupportsISA = isas;
         }
 
         unsigned compFlags; // method attributes
@@ -9324,6 +9336,9 @@ public:
 
         // Use early multi-dimensional array operator expansion (expand after loop optimizations; before lowering).
         bool compJitEarlyExpandMDArrays;
+
+        // Collect 64 bit counts for PGO data.
+        bool compCollect64BitCounts;
 
     } opts;
 
@@ -9874,6 +9889,7 @@ public:
 
     Phases      mostRecentlyActivePhase; // the most recently active phase
     PhaseChecks activePhaseChecks;       // the currently active phase checks
+    PhaseDumps  activePhaseDumps;        // the currently active phase dumps
 
     //-------------------------------------------------------------------------
     //  The following keeps track of how many bytes of local frame space we've
@@ -11299,6 +11315,46 @@ XX                                                                           XX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 */
+
+class StringPrinter
+{
+    CompAllocator m_alloc;
+    char*         m_buffer;
+    size_t        m_bufferMax;
+    size_t        m_bufferIndex = 0;
+
+public:
+    StringPrinter(CompAllocator alloc, char* buffer = nullptr, size_t bufferMax = 0)
+        : m_alloc(alloc), m_buffer(buffer), m_bufferMax(bufferMax)
+    {
+        if ((m_buffer == nullptr) || (m_bufferMax == 0))
+        {
+            m_bufferMax = 128;
+            m_buffer    = alloc.allocate<char>(m_bufferMax);
+        }
+
+        m_buffer[0] = '\0';
+    }
+
+    size_t GetLength()
+    {
+        return m_bufferIndex;
+    }
+
+    char* GetBuffer()
+    {
+        assert(m_buffer[GetLength()] == '\0');
+        return m_buffer;
+    }
+    void Truncate(size_t newLength)
+    {
+        assert(newLength <= m_bufferIndex);
+        m_bufferIndex           = newLength;
+        m_buffer[m_bufferIndex] = '\0';
+    }
+
+    void Printf(const char* format, ...);
+};
 
 /*****************************************************************************
  *

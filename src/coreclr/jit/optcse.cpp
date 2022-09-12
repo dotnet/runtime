@@ -1728,6 +1728,7 @@ class CSE_Heuristic
     unsigned               enregCount; // count of the number of predicted enregistered variables
     bool                   largeFrame;
     bool                   hugeFrame;
+    bool                   madeChanges;
     Compiler::codeOptimize codeOptKind;
     Compiler::CSEdsc**     sortTab;
     size_t                 sortSiz;
@@ -1745,6 +1746,11 @@ public:
     Compiler::codeOptimize CodeOptKind()
     {
         return codeOptKind;
+    }
+
+    bool MadeChanges() const
+    {
+        return madeChanges;
     }
 
     // Perform the Initialization step for our CSE Heuristics. Determine the various cut off values to use for
@@ -3410,6 +3416,7 @@ public:
             if (doCSE)
             {
                 PerformCSE(&candidate);
+                madeChanges = true;
             }
         }
     }
@@ -3422,12 +3429,14 @@ public:
     }
 };
 
-/*****************************************************************************
- *
- *  Routine for performing the Value Number based CSE using our heuristics
- */
-
-void Compiler::optValnumCSE_Heuristic()
+//------------------------------------------------------------------------
+// optValnumCSE_Heuristic: Perform common sub-expression elimination
+//    based on profitabiliy heuristic
+//
+// Returns:
+//    true if changes were made
+//
+bool Compiler::optValnumCSE_Heuristic()
 {
 #ifdef DEBUG
     if (verbose)
@@ -3444,24 +3453,30 @@ void Compiler::optValnumCSE_Heuristic()
     cse_heuristic.SortCandidates();
     cse_heuristic.ConsiderCandidates();
     cse_heuristic.Cleanup();
+
+    return cse_heuristic.MadeChanges();
 }
 
-/*****************************************************************************
- *
- *  Perform common sub-expression elimination.
- */
-
-void Compiler::optOptimizeValnumCSEs()
+//------------------------------------------------------------------------
+// optOptimizeValnumCSEs: Perform common sub-expression elimination
+//
+// Returns:
+//    Suitable phase status
+//
+PhaseStatus Compiler::optOptimizeValnumCSEs()
 {
+
 #ifdef DEBUG
     if (optConfigDisableCSE())
     {
-        return; // Disabled by JitNoCSE
+        JITDUMP("Disabled by JitNoCSE\n");
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 #endif
 
     optValnumCSE_phase = true;
     optCSEweight       = -1.0f;
+    bool madeChanges   = false;
 
     optValnumCSE_Init();
 
@@ -3470,10 +3485,12 @@ void Compiler::optOptimizeValnumCSEs()
         optValnumCSE_InitDataFlow();
         optValnumCSE_DataFlow();
         optValnumCSE_Availability();
-        optValnumCSE_Heuristic();
+        madeChanges = optValnumCSE_Heuristic();
     }
 
     optValnumCSE_phase = false;
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 /*****************************************************************************

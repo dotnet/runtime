@@ -227,7 +227,7 @@ void Compiler::lvaInitTypeRef()
 
     lvaTable         = getAllocator(CMK_LvaTable).allocate<LclVarDsc>(lvaTableCnt);
     size_t tableSize = lvaTableCnt * sizeof(*lvaTable);
-    memset(lvaTable, 0, tableSize);
+    memset((void*)lvaTable, 0, tableSize);
     for (unsigned i = 0; i < lvaTableCnt; i++)
     {
         new (&lvaTable[i], jitstd::placement_t()) LclVarDsc(); // call the constructor.
@@ -1378,6 +1378,7 @@ void Compiler::lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo)
         // Codegen will need it for x86 scope info.
         varDsc->lvImplicitlyReferenced = 1;
 #endif // TARGET_X86
+        varDsc->lvHasLdAddrOp = 1;
 
         lvaSetVarDoNotEnregister(lvaVarargsHandleArg DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
 
@@ -1480,11 +1481,6 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
     if (varTypeIsFloating(type))
     {
         compFloatingPointUsed = true;
-    }
-
-    if (typeHnd != NO_CLASS_HANDLE)
-    {
-        varDsc->lvOverlappingFields = StructHasOverlappingFields(info.compCompHnd->getClassAttribs(typeHnd));
     }
 
 #if FEATURE_IMPLICIT_BYREFS
@@ -2040,6 +2036,12 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
     if (varDsc->lvIsParam && compiler->compGSReorderStackLayout)
     {
         JITDUMP("  struct promotion of V%02u is disabled because lvIsParam and compGSReorderStackLayout\n", lclNum);
+        return false;
+    }
+
+    if (varDsc->lvIsParam && compiler->fgNoStructParamPromotion)
+    {
+        JITDUMP("  struct promotion of V%02u is disabled by fgNoStructParamPromotion\n", lclNum);
         return false;
     }
 
@@ -3073,8 +3075,6 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
 #endif // not TARGET_64BIT
 
     unsigned classAttribs = info.compCompHnd->getClassAttribs(typeHnd);
-
-    varDsc->lvOverlappingFields = StructHasOverlappingFields(classAttribs);
 
     // Check whether this local is an unsafe value type and requires GS cookie protection.
     // GS checks require the stack to be re-ordered, which can't be done with EnC.
@@ -4926,7 +4926,7 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             //
             // This was formerly done during RCS_EARLY counting,
             // and we did not used to reset counts like we do now.
-            if (varDsc->lvIsStructField)
+            if (varDsc->lvIsStructField && varTypeIsStruct(lvaGetDesc(varDsc->lvParentLcl)))
             {
                 varDsc->incRefCnts(BB_UNITY_WEIGHT, this);
             }
@@ -5740,7 +5740,7 @@ void Compiler::lvaUpdateArgsWithInitialReg()
     {
         LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
-        if (varDsc->lvPromotedStruct())
+        if (varDsc->lvPromoted)
         {
             for (unsigned fieldVarNum = varDsc->lvFieldLclStart;
                  fieldVarNum < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++fieldVarNum)
@@ -6041,7 +6041,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
     // For struct promoted parameters we need to set the offsets for the field lclVars.
     //
     // For a promoted struct we also assign the struct fields stack offset
-    if (varDsc->lvPromotedStruct())
+    if (varDsc->lvPromoted)
     {
         unsigned firstFieldNum = varDsc->lvFieldLclStart;
         int      offset        = varDsc->GetStackOffset();
@@ -6345,17 +6345,7 @@ int Compiler::lvaAssignVirtualFrameOffsetToArg(unsigned lclNum,
     // For a dependent promoted struct we also assign the struct fields stack offset
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if !defined(TARGET_64BIT)
-    if ((varDsc->TypeGet() == TYP_LONG) && varDsc->lvPromoted)
-    {
-        noway_assert(varDsc->lvFieldCnt == 2);
-        fieldVarNum = varDsc->lvFieldLclStart;
-        lvaTable[fieldVarNum].SetStackOffset(varDsc->GetStackOffset());
-        lvaTable[fieldVarNum + 1].SetStackOffset(varDsc->GetStackOffset() + genTypeSize(TYP_INT));
-    }
-    else
-#endif // !defined(TARGET_64BIT)
-        if (varDsc->lvPromotedStruct())
+    if (varDsc->lvPromoted)
     {
         unsigned firstFieldNum = varDsc->lvFieldLclStart;
         for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
@@ -7105,10 +7095,10 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             // Reserve the stack space for this variable
             stkOffs = lvaAllocLocalAndSetVirtualOffset(lclNum, lvaLclSize(lclNum), stkOffs);
 #if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
-            // If we have an incoming register argument that has a struct promoted field
-            // then we need to copy the lvStkOff (the stack home) from the reg arg to the field lclvar
+            // If we have an incoming register argument that has a promoted field then we
+            // need to copy the lvStkOff (the stack home) from the reg arg to the field lclvar
             //
-            if (varDsc->lvIsRegArg && varDsc->lvPromotedStruct())
+            if (varDsc->lvIsRegArg && varDsc->lvPromoted)
             {
                 unsigned firstFieldNum = varDsc->lvFieldLclStart;
                 for (unsigned i = 0; i < varDsc->lvFieldCnt; i++)
@@ -7117,20 +7107,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                     fieldVarDsc->SetStackOffset(varDsc->GetStackOffset() + fieldVarDsc->lvFldOffset);
                 }
             }
-#ifdef TARGET_ARM
-            // If we have an incoming register argument that has a promoted long
-            // then we need to copy the lvStkOff (the stack home) from the reg arg to the field lclvar
-            //
-            else if (varDsc->lvIsRegArg && varDsc->lvPromoted)
-            {
-                assert(varTypeIsLong(varDsc) && (varDsc->lvFieldCnt == 2));
-
-                unsigned fieldVarNum = varDsc->lvFieldLclStart;
-                lvaTable[fieldVarNum].SetStackOffset(varDsc->GetStackOffset());
-                lvaTable[fieldVarNum + 1].SetStackOffset(varDsc->GetStackOffset() + 4);
-            }
-#endif // TARGET_ARM
-#endif // TARGET_ARM64 || TARGET_LOONGARCH64
+#endif // defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
         }
     }
 
@@ -7930,10 +7907,6 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
     if (varDsc->lvStructDoubleAlign)
         printf(" double-align");
 #endif // !TARGET_64BIT
-    if (varDsc->lvOverlappingFields)
-    {
-        printf(" overlapping-fields");
-    }
 
     if (compGSReorderStackLayout && !varDsc->lvRegister)
     {
@@ -8405,6 +8378,15 @@ Compiler::fgWalkResult Compiler::lvaStressLclFldCB(GenTree** pTree, fgWalkData* 
         // if we modify them we'll misreport their locations in the patchpoint info.
         //
         if (pComp->doesMethodHavePatchpoints() || pComp->doesMethodHavePartialCompilationPatchpoints())
+        {
+            varDsc->lvNoLclFldStress = true;
+            return WALK_SKIP_SUBTREES;
+        }
+
+        // Converting tail calls to loops may require insertion of explicit
+        // zero initialization for IL locals. The JIT does not support this for
+        // TYP_BLK locals.
+        if (pComp->compMayConvertTailCallToLoop)
         {
             varDsc->lvNoLclFldStress = true;
             return WALK_SKIP_SUBTREES;

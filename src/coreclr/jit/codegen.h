@@ -993,6 +993,13 @@ protected:
             ZERO_EXTEND_INT,
             SIGN_EXTEND_INT,
 #endif
+            LOAD_ZERO_EXTEND_SMALL_INT,
+            LOAD_SIGN_EXTEND_SMALL_INT,
+#ifdef TARGET_64BIT
+            LOAD_ZERO_EXTEND_INT,
+            LOAD_SIGN_EXTEND_INT,
+#endif
+            LOAD_SOURCE
         };
 
     private:

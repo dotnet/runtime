@@ -760,7 +760,7 @@ namespace System.Xml
         {
             try
             {
-                if (null != text && (text.Contains("--") || text.StartsWith('-')))
+                if (null != text && (text.Contains("--") || text.EndsWith('-')))
                 {
                     throw new ArgumentException(SR.Xml_InvalidCommentChars);
                 }

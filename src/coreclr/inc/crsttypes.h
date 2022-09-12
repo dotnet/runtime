@@ -155,7 +155,7 @@ int g_rgCrstLevelMap[] =
     -1,         // CrstClrNotification
     6,          // CrstCodeFragmentHeap
     9,          // CrstCodeVersioning
-    0,          // CrstCOMCallWrapper
+    3,          // CrstCOMCallWrapper
     5,          // CrstCOMWrapperCache
     3,          // CrstDataTest1
     0,          // CrstDataTest2

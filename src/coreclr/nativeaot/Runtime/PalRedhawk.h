@@ -221,6 +221,14 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
 #endif // UNIX_AMD64_ABI
     uintptr_t GetIp() { return Rip; }
     uintptr_t GetSp() { return Rsp; }
+
+    template <typename F>
+    void ForEachPossibleObjectRef(F lambda)
+    {
+        for (uint64_t* pReg = &Rax; pReg < &Rip; pReg++)
+            lambda((size_t*)pReg);
+    }
+
 } CONTEXT, *PCONTEXT;
 #elif defined(HOST_ARM)
 
@@ -406,6 +414,16 @@ typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
     uintptr_t GetIp() { return Pc; }
     uintptr_t GetLr() { return Lr; }
     uintptr_t GetSp() { return Sp; }
+
+    template <typename F>
+    void ForEachPossibleObjectRef(F lambda)
+    {
+        for (uint64_t* pReg = &X0; pReg <= &X28; pReg++)
+            lambda((size_t*)pReg);
+
+        // Lr can be used as a scratch register
+        lambda((size_t*)&Lr);
+    }
 } CONTEXT, *PCONTEXT;
 
 #elif defined(HOST_WASM)
@@ -674,6 +692,7 @@ EXTERN_C void * __cdecl _alloca(size_t);
 REDHAWK_PALIMPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(_In_opt_ void* pAddress, uintptr_t size, uint32_t allocationType, uint32_t protect);
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, uintptr_t size, uint32_t freeType);
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddress, uintptr_t size, uint32_t protect);
+REDHAWK_PALIMPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size);
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalSleep(uint32_t milliseconds);
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalSwitchToThread();
 REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName);

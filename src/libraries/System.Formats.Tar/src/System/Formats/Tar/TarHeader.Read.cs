@@ -20,7 +20,7 @@ namespace System.Formats.Tar
         // Attempts to retrieve the next header from the specified tar archive stream.
         // Throws if end of stream is reached or if any data type conversion fails.
         // Returns a valid TarHeader object if the attributes were read successfully, null otherwise.
-        internal static TarHeader? TryGetNextHeader(Stream archiveStream, bool copyData, TarEntryFormat initialFormat)
+        internal static TarHeader? TryGetNextHeader(Stream archiveStream, bool copyData, TarEntryFormat initialFormat, bool processDataBlock)
         {
             // The four supported formats have a header that fits in the default record size
             Span<byte> buffer = stackalloc byte[TarHelpers.RecordSize];
@@ -28,7 +28,7 @@ namespace System.Formats.Tar
             archiveStream.ReadExactly(buffer);
 
             TarHeader? header = TryReadAttributes(initialFormat, buffer);
-            if (header != null)
+            if (header != null && processDataBlock)
             {
                 header.ProcessDataBlock(archiveStream, copyData);
             }
@@ -39,7 +39,7 @@ namespace System.Formats.Tar
         // Asynchronously attempts read all the fields of the next header.
         // Throws if end of stream is reached or if any data type conversion fails.
         // Returns true if all the attributes were read successfully, false otherwise.
-        internal static async ValueTask<TarHeader?> TryGetNextHeaderAsync(Stream archiveStream, bool copyData, TarEntryFormat initialFormat, CancellationToken cancellationToken)
+        internal static async ValueTask<TarHeader?> TryGetNextHeaderAsync(Stream archiveStream, bool copyData, TarEntryFormat initialFormat, bool processDataBlock, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -50,7 +50,7 @@ namespace System.Formats.Tar
             await archiveStream.ReadExactlyAsync(buffer, cancellationToken).ConfigureAwait(false);
 
             TarHeader? header = TryReadAttributes(initialFormat, buffer.Span);
-            if (header != null)
+            if (header != null && processDataBlock)
             {
                 await header.ProcessDataBlockAsync(archiveStream, copyData, cancellationToken).ConfigureAwait(false);
             }
@@ -180,7 +180,7 @@ namespace System.Formats.Tar
         //   will get all the data section read and the stream pointer positioned at the beginning of the next header.
         // - Block, Character, Directory, Fifo, HardLink and SymbolicLink typeflag entries have no data section so the archive stream pointer will be positioned at the beginning of the next header.
         // - All other typeflag entries with a data section will generate a stream wrapping the data section: SeekableSubReadStream for seekable archive streams, and SubReadStream for unseekable archive streams.
-        private void ProcessDataBlock(Stream archiveStream, bool copyData)
+        internal void ProcessDataBlock(Stream archiveStream, bool copyData)
         {
             bool skipBlockAlignmentPadding = true;
 
@@ -199,6 +199,10 @@ namespace System.Formats.Tar
                 case TarEntryType.HardLink:
                 case TarEntryType.SymbolicLink:
                     // No data section
+                    if (_size > 0)
+                    {
+                        throw new InvalidDataException(string.Format(SR.TarSizeFieldTooLargeForEntryType, _typeFlag));
+                    }
                     break;
                 case TarEntryType.RegularFile:
                 case TarEntryType.V7RegularFile: // Treated as regular file
@@ -257,6 +261,10 @@ namespace System.Formats.Tar
                 case TarEntryType.HardLink:
                 case TarEntryType.SymbolicLink:
                     // No data section
+                    if (_size > 0)
+                    {
+                        throw new InvalidDataException(string.Format(SR.TarSizeFieldTooLargeForEntryType, _typeFlag));
+                    }
                     break;
                 case TarEntryType.RegularFile:
                 case TarEntryType.V7RegularFile: // Treated as regular file
@@ -311,6 +319,8 @@ namespace System.Formats.Tar
             {
                 MemoryStream copiedData = new MemoryStream();
                 TarHelpers.CopyBytes(archiveStream, copiedData, _size);
+                // Reset position pointer so the user can do the first DataStream read from the beginning
+                copiedData.Position = 0;
                 return copiedData;
             }
 
@@ -336,6 +346,8 @@ namespace System.Formats.Tar
             {
                 MemoryStream copiedData = new MemoryStream();
                 await TarHelpers.CopyBytesAsync(archiveStream, copiedData, size, cancellationToken).ConfigureAwait(false);
+                // Reset position pointer so the user can do the first DataStream read from the beginning
+                copiedData.Position = 0;
                 return copiedData;
             }
 
@@ -367,7 +379,7 @@ namespace System.Formats.Tar
             long size = (int)TarHelpers.ParseOctal<uint>(buffer.Slice(FieldLocations.Size, FieldLengths.Size));
             if (size < 0)
             {
-                throw new FormatException(string.Format(SR.TarSizeFieldNegative));
+                throw new InvalidDataException(string.Format(SR.TarSizeFieldNegative));
             }
 
             // Continue with the rest of the fields that require no special checks
@@ -396,11 +408,12 @@ namespace System.Formats.Tar
                     TarEntryType.LongPath or
                     TarEntryType.MultiVolume or
                     TarEntryType.RenamedOrSymlinked or
-                    TarEntryType.SparseFile or
                     TarEntryType.TapeVolume => TarEntryFormat.Gnu,
 
                     // V7 is the only one that uses 'V7RegularFile'.
                     TarEntryType.V7RegularFile => TarEntryFormat.V7,
+
+                    TarEntryType.SparseFile => throw new NotSupportedException(string.Format(SR.TarEntryTypeNotSupported, header._typeFlag)),
 
                     // We can quickly determine the *minimum* possible format if the entry type
                     // is the POSIX 'RegularFile', although later we could upgrade it to PAX or GNU
@@ -464,7 +477,7 @@ namespace System.Formats.Tar
                         // Check for gnu version header for mixed case
                         if (!version.SequenceEqual(GnuVersionBytes))
                         {
-                            throw new FormatException(string.Format(SR.TarPosixFormatExpected, _name));
+                            throw new InvalidDataException(string.Format(SR.TarPosixFormatExpected, _name));
                         }
 
                         _version = GnuVersion;
@@ -482,7 +495,7 @@ namespace System.Formats.Tar
                         // Check for ustar or pax version header for mixed case
                         if (!version.SequenceEqual(UstarVersionBytes))
                         {
-                            throw new FormatException(string.Format(SR.TarGnuFormatExpected, _name));
+                            throw new InvalidDataException(string.Format(SR.TarGnuFormatExpected, _name));
                         }
 
                         _version = UstarVersion;
@@ -613,7 +626,7 @@ namespace System.Formats.Tar
             {
                 if (!ExtendedAttributes.TryAdd(key, value))
                 {
-                    throw new FormatException(string.Format(SR.TarDuplicateExtendedAttribute, name));
+                    throw new InvalidDataException(string.Format(SR.TarDuplicateExtendedAttribute, name));
                 }
             }
         }

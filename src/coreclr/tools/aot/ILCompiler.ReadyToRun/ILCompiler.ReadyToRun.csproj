@@ -101,7 +101,6 @@
     <Compile Include="..\..\Common\Compiler\MethodExtensions.cs" Link="Compiler\MethodExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\NameMangler.cs" Link="Compiler\NameMangler.cs" />
     <Compile Include="..\..\Common\Compiler\SingleMethodRootProvider.cs" Link="Compiler\SingleMethodRootProvider.cs" />
-    <Compile Include="..\..\Common\Compiler\PropertyPseudoDesc.cs" Link="Compiler\PropertyPseudoDesc.cs" />
     <Compile Include="..\..\Common\Compiler\TypeExtensions.cs" Link="Compiler\TypeExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\VectorFieldLayoutAlgorithm.cs" Link="Compiler\VectorFieldLayoutAlgorithm.cs" />
     <Compile Include="..\..\Common\JitInterface\CorInfoTypes.VarInfo.cs" Link="JitInterface\CorInfoTypes.VarInfo.cs" />

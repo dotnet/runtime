@@ -2893,9 +2893,15 @@ public:
             CORINFO_METHOD_HANDLE hMethod
             ) = 0;
 
-    // this function is for debugging only.  It returns the method name
-    // and if 'moduleName' is non-null, it sets it to something that will
-    // says which method (a class name, or a module name)
+    // This function returns the method name and if 'moduleName' is non-null,
+    // it sets it to something that contains the method (a class
+    // name, or a module name). Note that the moduleName parameter is for
+    // diagnostics only.
+    //
+    // The method name returned is the same as getMethodNameFromMetadata except
+    // in the case of functions without metadata (e.g. IL stubs), where this
+    // function still returns a reasonable name while getMethodNameFromMetadata
+    // returns null.
     virtual const char* getMethodName (
             CORINFO_METHOD_HANDLE       ftn,        /* IN */
             const char                **moduleName  /* OUT */
@@ -3252,5 +3258,10 @@ public:
 // So, the value of offset correction is 12
 //
 #define IMAGE_REL_BASED_REL_THUMB_MOV32_PCREL   0x14
+
+/**********************************************************************************/
+#ifdef TARGET_64BIT
+#define USE_PER_FRAME_PINVOKE_INIT
+#endif
 
 #endif // _COR_INFO_H_

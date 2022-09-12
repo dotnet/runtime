@@ -15,7 +15,7 @@ namespace ILCompiler.Dataflow
     // or local functions).
     public readonly struct HoistedLocalKey : IEquatable<HoistedLocalKey>
     {
-        readonly FieldDesc Field;
+        private readonly FieldDesc Field;
 
         public HoistedLocalKey(FieldDesc field)
         {
