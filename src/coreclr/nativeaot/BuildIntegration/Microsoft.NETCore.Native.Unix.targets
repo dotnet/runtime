@@ -29,11 +29,12 @@ The .NET Foundation licenses this file to you under the MIT license.
       <FullRuntimeName Condition="'$(ServerGarbageCollection)' == 'true'">libRuntime.ServerGC</FullRuntimeName>
 
       <CrossCompileRid />
-      <CrossCompileRid Condition="'$(TargetOS)' != 'OSX' and !$(RuntimeIdentifier.EndsWith('-$(OSHostArch)'))">$(RuntimeIdentifier)</CrossCompileRid>
+      <CrossCompileRid Condition="!$(RuntimeIdentifier.EndsWith('-$(OSHostArch)'))">$(RuntimeIdentifier)</CrossCompileRid>
 
       <CrossCompileArch />
       <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-x64'))">x86_64</CrossCompileArch>
-      <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm64'))">aarch64</CrossCompileArch>
+      <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm64')) and '$(TargetOS)' != 'OSX'">aarch64</CrossCompileArch>
+      <CrossCompileArch Condition="$(CrossCompileRid.EndsWith('-arm64')) and '$(TargetOS)' == 'OSX'">arm64</CrossCompileArch>
 
       <TargetTriple />
       <TargetTriple Condition="'$(CrossCompileArch)' != ''">$(CrossCompileArch)-linux-gnu</TargetTriple>
@@ -85,7 +86,8 @@ The .NET Foundation licenses this file to you under the MIT license.
     <ItemGroup>
       <LinkerArg Include="@(NativeLibrary)" />
       <LinkerArg Include="--sysroot=$(SysRoot)" Condition="'$(SysRoot)' != ''" />
-      <LinkerArg Include="--target=$(TargetTriple)" Condition="'$(TargetTriple)' != ''" />
+      <LinkerArg Include="--target=$(TargetTriple)" Condition="'$(TargetOS)' != 'OSX' and '$(TargetTriple)' != ''" />
+      <LinkerArg Include="-arch $(CrossCompileArch)" Condition="'$(TargetOS)' == 'OSX' and '$(CrossCompileArch)' != ''" />
       <LinkerArg Include="-g" Condition="$(NativeDebugSymbols) == 'true'" />
       <LinkerArg Include="-Wl,--strip-debug" Condition="$(NativeDebugSymbols) != 'true' and '$(TargetOS)' != 'OSX'" />
       <LinkerArg Include="-Wl,-rpath,'$(IlcRPath)'" />
