@@ -150,6 +150,8 @@ jobs:
       - src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
       - src/mono/nuget/Microsoft.NET.Runtime.wasm.Sample.Mono/*
       - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Manifest/*
+      - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.net6.Manifest/*
+      - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.net7.Manifest/*
       - src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
       - src/mono/wasm/build/*
       - src/mono/wasm/emscripten-version.txt

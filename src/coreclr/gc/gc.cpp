@@ -2715,10 +2715,11 @@ uint64_t gc_heap::total_loh_a_last_bgc = 0;
 #endif //BGC_SERVO_TUNING
 
 size_t gc_heap::eph_gen_starts_size = 0;
-heap_segment* gc_heap::segment_standby_list;
 #if defined(USE_REGIONS)
 region_free_list gc_heap::global_regions_to_decommit[count_free_region_kinds];
 region_free_list gc_heap::global_free_huge_regions;
+#else
+heap_segment* gc_heap::segment_standby_list;
 #endif //USE_REGIONS
 bool          gc_heap::use_large_pages_p = 0;
 #ifdef HEAP_BALANCE_INSTRUMENTATION
@@ -2755,8 +2756,6 @@ BOOL gc_heap::fgn_last_gc_was_concurrent = FALSE;
 #endif //BACKGROUND_GC
 
 VOLATILE(bool) gc_heap::full_gc_approach_event_set;
-
-bool gc_heap::special_sweep_p = false;
 
 size_t gc_heap::full_gc_counts[gc_type_max];
 
@@ -2855,6 +2854,8 @@ size_t     gc_heap::expand_mechanisms_per_heap[max_expand_mechanisms_count];
 size_t     gc_heap::interesting_mechanism_bits_per_heap[max_gc_mechanism_bits_count];
 
 mark_queue_t gc_heap::mark_queue;
+
+bool gc_heap::special_sweep_p = false;
 
 #endif // MULTIPLE_HEAPS
 
@@ -5751,11 +5752,7 @@ gc_heap::get_segment (size_t size, gc_oh_num oh)
 
     if (result)
     {
-        init_heap_segment (result, __this
-#ifdef USE_REGIONS
-            , 0, size, (uoh_p ? max_generation : 0)
-#endif //USE_REGIONS
-            );
+        init_heap_segment (result, __this);
 #ifdef BACKGROUND_GC
         if (is_bgc_in_progress())
         {
@@ -13652,7 +13649,9 @@ gc_heap::init_semi_shared()
         goto cleanup;
 #endif //FEATURE_BASICFREEZE
 
+#ifndef USE_REGIONS
     segment_standby_list = 0;
+#endif //USE_REGIONS
 
     if (!full_gc_approach_event.CreateManualEventNoThrow(FALSE))
     {
@@ -14124,6 +14123,8 @@ gc_heap::init_gc_heap (int h_number)
 #ifdef RECORD_LOH_STATE
     loh_state_index = 0;
 #endif //RECORD_LOH_STATE
+
+    special_sweep_p = false;
 #endif //MULTIPLE_HEAPS
 
 #ifdef MULTIPLE_HEAPS
@@ -30414,11 +30415,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
         if (condemned_gen_number >= (max_generation -1))
         {
 #ifdef MULTIPLE_HEAPS
-            // this needs be serialized just because we have one
-            // segment_standby_list/seg_table for all heaps. We should make it at least
-            // so that when hoarding is not on we don't need this join because
-            // decommitting memory can take a long time.
-            //must serialize on deleting segments
             gc_t_join.join(this, gc_join_rearrange_segs_compaction);
             if (gc_t_join.joined())
 #endif //MULTIPLE_HEAPS
@@ -44599,6 +44595,7 @@ HRESULT GCHeap::StaticShutdown()
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     }
 
+#ifndef USE_REGIONS
     //destroy all segments on the standby list
     while(gc_heap::segment_standby_list != 0)
     {
@@ -44610,6 +44607,7 @@ HRESULT GCHeap::StaticShutdown()
 #endif //MULTIPLE_HEAPS
         gc_heap::segment_standby_list = next_seg;
     }
+#endif // USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
 
@@ -44806,8 +44804,9 @@ HRESULT GCHeap::Initialize()
     uint32_t nhp = 1;
     uint32_t nhp_from_config = 0;
 
-#ifdef MULTIPLE_HEAPS
-
+#ifndef MULTIPLE_HEAPS
+    GCConfig::SetServerGC(false);
+#else //!MULTIPLE_HEAPS
     GCConfig::SetServerGC(true);
     AffinitySet config_affinity_set;
     GCConfigStringHolder cpu_index_ranges_holder(GCConfig::GetGCHeapAffinitizeRanges());
@@ -44864,7 +44863,7 @@ HRESULT GCHeap::Initialize()
             nhp = min(nhp, num_affinitized_processors);
         }
     }
-#endif //MULTIPLE_HEAPS
+#endif //!MULTIPLE_HEAPS
 
     size_t seg_size = 0;
     size_t large_seg_size = 0;
