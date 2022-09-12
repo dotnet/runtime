@@ -420,7 +420,10 @@
   <data name="TraceSourceBase" xml:space="preserve">
     <value>[Base]</value>
   </data>
-  <data name="DistributedNotSupportOn32Bits" xml:space="preserve">
+  <data name="DistributedNotSupportedOn32Bits" xml:space="preserve">
     <value>Distributed transactions are currently unsupported in 32-bit processes.</value>
+  </data>
+  <data name="DistributedNotSupportedOnArm" xml:space="preserve">
+    <value>Distributed transactions are currently unsupported on ARM.</value>
   </data>
 </root>
