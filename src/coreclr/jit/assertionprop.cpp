@@ -1635,11 +1635,11 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     {
                         noway_assert(op2->gtOper == GT_CNS_DBL);
                         /* If we have an NaN value then don't record it */
-                        if (_isnan(op2->AsDblCon()->gtDconVal))
+                        if (_isnan(op2->AsDblCon()->DconValue()))
                         {
                             goto DONE_ASSERTION; // Don't make an assertion
                         }
-                        assertion.op2.dconVal = op2->AsDblCon()->gtDconVal;
+                        assertion.op2.dconVal = op2->AsDblCon()->DconValue();
                     }
 
                     //
