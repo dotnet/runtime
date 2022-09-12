@@ -16,7 +16,7 @@ namespace System.Net.Test.Common
             // See https://github.com/dotnet/runtime/pull/75424 for more details
             // IsSupported currently does not unload lttng. If it does in the future,
             // we may need to call some real Quic API here to get everything loaded properly
-            _ = QuicConnection.IsSupported && QuicListener.IsSupported;
+            _ = OperatingSystem.IsLinux() && QuicConnection.IsSupported;
         }
     }
 }
