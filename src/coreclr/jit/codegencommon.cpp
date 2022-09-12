@@ -1371,7 +1371,6 @@ FOUND_AM:
     if (rv2)
     {
         /* Make sure a GC address doesn't end up in 'rv2' */
-
         if (varTypeIsGC(rv2->TypeGet()))
         {
             noway_assert(rv1 && !varTypeIsGC(rv1->TypeGet()));
@@ -1379,72 +1378,7 @@ FOUND_AM:
             tmp = rv1;
             rv1 = rv2;
             rv2 = tmp;
-
             rev = !rev;
-        }
-
-        /* Special case: constant array index (that is range-checked) */
-
-        if (fold)
-        {
-            ssize_t  tmpMul;
-            GenTree* index;
-            bool     indexIsEffectivelyZero = false;
-
-            if ((rv2->gtOper == GT_MUL || rv2->gtOper == GT_LSH) && (rv2->AsOp()->gtOp2->IsCnsIntOrI()))
-            {
-                /* For valuetype arrays where we can't use the scaled address
-                   mode, rv2 will point to the scaled index. So we have to do
-                   more work */
-
-                tmpMul = compiler->optGetArrayRefScaleAndIndex(rv2, &index DEBUGARG(false));
-                if (mul)
-                {
-                    tmpMul *= mul;
-                }
-
-                if (tmpMul == 0)
-                {
-                    // "Index * 0" (if it wasn't folded earlier) means the index is zero
-                    indexIsEffectivelyZero = true;
-                }
-            }
-            else
-            {
-                /* May be a simple array. rv2 will points to the actual index */
-
-                index  = rv2;
-                tmpMul = mul;
-            }
-
-            if (indexIsEffectivelyZero)
-            {
-                mul = 0;
-                rv2 = nullptr;
-            }
-            /* Get hold of the array index and see if it's a constant */
-            else if (index->IsIntCnsFitsInI32())
-            {
-                /* Get hold of the index value */
-                ssize_t ixv = index->AsIntConCommon()->IconValue();
-
-                /* Scale the index if necessary */
-                if (tmpMul)
-                {
-                    ixv *= tmpMul;
-                }
-
-                if (FitsIn<INT32>(cns + ixv))
-                {
-                    /* Add the scaled index to the offset value */
-
-                    cns += ixv;
-
-                    /* There is no scaled operand any more */
-                    mul = 0;
-                    rv2 = nullptr;
-                }
-            }
         }
     }
 
