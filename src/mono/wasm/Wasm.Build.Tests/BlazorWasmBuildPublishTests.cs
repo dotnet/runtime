@@ -21,7 +21,7 @@ namespace Wasm.Build.Tests
             _enablePerTestCleanup = true;
         }
 
-        [Theory]
+        [Theory, TestCategory("no-workload")]
         [InlineData("Debug")]
         [InlineData("Release")]
         public void DefaultTemplate_WithoutWorkload(string config)

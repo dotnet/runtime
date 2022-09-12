@@ -1679,6 +1679,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
     // add the appropriate step block logic.
     //
     unsigned addedBlocks = 0;
+    bool     addedTemps  = 0;
 
     if (opts.IsOSR())
     {
@@ -1705,6 +1706,7 @@ PhaseStatus Compiler::fgPostImportationCleanup()
                 //
                 unsigned const entryStateVar   = lvaGrabTemp(false DEBUGARG("OSR entry state var"));
                 lvaTable[entryStateVar].lvType = TYP_INT;
+                addedTemps                     = true;
 
                 // Zero the entry state at method entry.
                 //
@@ -1828,11 +1830,11 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 
     // Did we alter any flow or EH?
     //
-    const bool madeChanges = (addedBlocks > 0) || (delCnt > 0) || (removedBlks > 0);
+    const bool madeFlowChanges = (addedBlocks > 0) || (delCnt > 0) || (removedBlks > 0);
 
     // Renumber the basic blocks if so.
     //
-    if (madeChanges)
+    if (madeFlowChanges)
     {
         JITDUMP("\nRenumbering the basic blocks for fgPostImportationCleanup\n");
         fgRenumberBlocks();
@@ -1841,6 +1843,10 @@ PhaseStatus Compiler::fgPostImportationCleanup()
 #ifdef DEBUG
     fgVerifyHandlerTab();
 #endif // DEBUG
+
+    // Did we make any changes?
+    //
+    const bool madeChanges = madeFlowChanges || addedTemps;
 
     return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
