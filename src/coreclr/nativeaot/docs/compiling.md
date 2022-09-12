@@ -52,7 +52,7 @@ To target win-arm64 on a Windows x64 host on an advanced scenario where the SDK 
 <PackageReference Include="Microsoft.DotNet.ILCompiler; runtime.win-x64.Microsoft.DotNet.ILCompiler" Version="8.0.0-preview.2.22103.2" />
 ```
 
-Note that it is important to use _the same version_ for both packages to avoid potential hard-to-debug issues (use the latest version from the [dotnet8](https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet7/NuGet/Microsoft.DotNet.ILCompiler/8.0.0-preview.2.22103.2/versions)). After adding the package reference, you may publish for win-arm64 as usual:
+Note that it is important to use _the same version_ for both packages to avoid potential hard-to-debug issues (use the latest version from the [dotnet8](https://dev.azure.com/dnceng/public/_artifacts/feed/dotnet8/NuGet/Microsoft.DotNet.ILCompiler/)). After adding the package reference, you may publish for win-arm64 as usual:
 ```bash
 > dotnet publish -r win-arm64 -c Release
 ```
