@@ -291,16 +291,9 @@ namespace System.Xml
             return HexConverter.FromChar(digit);
         }
 
-        internal static byte[] FromBinHexString(string s)
+        internal static byte[] FromBinHexString(ReadOnlySpan<char> s, bool allowOddCount)
         {
-            return FromBinHexString(s, true);
-        }
-
-        internal static byte[] FromBinHexString(string s, bool allowOddCount)
-        {
-            ArgumentNullException.ThrowIfNull(s);
-
-            return BinHexDecoder.Decode(s.AsSpan(), allowOddCount);
+            return BinHexDecoder.Decode(s, allowOddCount);
         }
 
         internal static string ToBinHexString(byte[] inArray)
@@ -761,28 +754,35 @@ namespace System.Xml
 
         public static bool ToBoolean(string s)
         {
-            s = TrimString(s);
-            if (s == "1" || s == "true") return true;
-            if (s == "0" || s == "false") return false;
-            throw new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Boolean"));
+            switch (s.AsSpan().Trim(WhitespaceChars))
+            {
+                case "1":
+                case "true":
+                    return true;
+                case "0":
+                case "false":
+                    return false;
+                default:
+                    throw new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Boolean"));
+            }
         }
 
         internal static Exception? TryToBoolean(string s, out bool result)
         {
-            s = TrimString(s);
-            if (s == "0" || s == "false")
+            switch (s.AsSpan().Trim(WhitespaceChars))
             {
-                result = false;
-                return null;
+                case "0":
+                case "false":
+                    result = false;
+                    return null;
+                case "1":
+                case "true":
+                    result = true;
+                    return null;
+                default:
+                    result = false;
+                    return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Boolean"));
             }
-            else if (s == "1" || s == "true")
-            {
-                result = true;
-                return null;
-            }
-
-            result = false;
-            return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Boolean"));
         }
 
         public static char ToChar(string s)
@@ -963,11 +963,17 @@ namespace System.Xml
 
         public static float ToSingle(string s)
         {
-            s = TrimString(s);
-            if (s == "-INF") return float.NegativeInfinity;
-            if (s == "INF") return float.PositiveInfinity;
-            float f = float.Parse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo);
-            if (f == 0 && s[0] == '-')
+            ReadOnlySpan<char> roS = s.AsSpan().Trim(WhitespaceChars);
+            switch (roS)
+            {
+                case "-INF":
+                    return float.NegativeInfinity;
+                case "INF":
+                    return float.PositiveInfinity;
+            }
+
+            float f = float.Parse(roS, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo);
+            if (f == 0 && roS[0] == '-')
             {
                 return -0f;
             }
@@ -977,23 +983,27 @@ namespace System.Xml
 
         internal static Exception? TryToSingle(string s, out float result)
         {
-            s = TrimString(s);
-            if (s == "-INF")
+            ReadOnlySpan<char> roS = s.AsSpan().Trim(WhitespaceChars);
+            switch (roS)
             {
-                result = float.NegativeInfinity;
-                return null;
-            }
-            else if (s == "INF")
-            {
-                result = float.PositiveInfinity;
-                return null;
-            }
-            else if (!float.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo, out result))
-            {
-                return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Single"));
+                case "-INF":
+                    result = float.NegativeInfinity;
+                    return null;
+                case "INF":
+                    result = float.PositiveInfinity;
+                    return null;
+                default:
+                    {
+                        if (!float.TryParse(roS, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo, out result))
+                        {
+                            return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Single"));
+                        }
+
+                        break;
+                    }
             }
 
-            if (result == 0 && s[0] == '-')
+            if (result == 0 && roS[0] == '-')
             {
                 result = -0f;
             }
@@ -1003,12 +1013,17 @@ namespace System.Xml
 
         public static double ToDouble(string s)
         {
-            s = TrimString(s);
-            if (s == "-INF") return double.NegativeInfinity;
-            if (s == "INF") return double.PositiveInfinity;
+            ReadOnlySpan<char> roS = s.AsSpan().Trim(WhitespaceChars);
+            switch (roS)
+            {
+                case "-INF":
+                    return double.NegativeInfinity;
+                case "INF":
+                    return double.PositiveInfinity;
+            }
 
-            double dVal = double.Parse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo);
-            if (dVal == 0 && s[0] == '-')
+            double dVal = double.Parse(roS, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo);
+            if (dVal == 0 && roS[0] == '-')
             {
                 return -0d;
             }
@@ -1018,23 +1033,27 @@ namespace System.Xml
 
         internal static Exception? TryToDouble(string s, out double result)
         {
-            s = TrimString(s);
-            if (s == "-INF")
+            ReadOnlySpan<char> roS = s.AsSpan().Trim(WhitespaceChars);
+            switch (roS)
             {
-                result = double.NegativeInfinity;
-                return null;
-            }
-            else if (s == "INF")
-            {
-                result = double.PositiveInfinity;
-                return null;
-            }
-            else if (!double.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo, out result))
-            {
-                return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Double"));
+                case "-INF":
+                    result = double.NegativeInfinity;
+                    return null;
+                case "INF":
+                    result = double.PositiveInfinity;
+                    return null;
+                default:
+                    {
+                        if (!double.TryParse(roS, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo, out result))
+                        {
+                            return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Double"));
+                        }
+
+                        break;
+                    }
             }
 
-            if (result == 0 && s[0] == '-')
+            if (result == 0 && roS[0] == '-')
             {
                 result = -0d;
             }
@@ -1046,11 +1065,10 @@ namespace System.Xml
         {
             if (o is string str)
             {
-                str = TrimString(str);
-                if (str.Length != 0 && str[0] != '+')
+                ReadOnlySpan<char> roS = str.AsSpan().Trim(WhitespaceChars);
+                if (roS.Length != 0 && roS[0] != '+')
                 {
-                    double d;
-                    if (double.TryParse(str, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out d))
+                    if (double.TryParse(roS, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out double d))
                     {
                         return d;
                     }
@@ -1085,21 +1103,16 @@ namespace System.Xml
 
         internal static string? ToXPathString(object? value)
         {
-            if (value is string s)
+            switch (value)
             {
-                return s;
-            }
-            else if (value is double)
-            {
-                return ((double)value).ToString("R", NumberFormatInfo.InvariantInfo);
-            }
-            else if (value is bool)
-            {
-                return (bool)value ? "true" : "false";
-            }
-            else
-            {
-                return Convert.ToString(value, NumberFormatInfo.InvariantInfo);
+                case string s:
+                    return s;
+                case double d:
+                    return d.ToString("R", NumberFormatInfo.InvariantInfo);
+                case bool b:
+                    return b ? "true" : "false";
+                default:
+                    return Convert.ToString(value, NumberFormatInfo.InvariantInfo);
             }
         }
 

@@ -588,7 +588,7 @@ namespace System.Xml.Schema
         {
             try
             {
-                return XmlConvert.FromBinHexString(XmlConvert.TrimString(value), false);
+                return XmlConvert.FromBinHexString(value.AsSpan().Trim(XmlConvert.WhitespaceChars), false);
             }
             catch (XmlException e)
             {
