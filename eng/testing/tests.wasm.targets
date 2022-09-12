@@ -27,6 +27,8 @@
     <_WasmStrictVersionMatch Condition="'$(ContinuousIntegrationBuild)' == 'true'">true</_WasmStrictVersionMatch>
     <XUnitUseRandomizedTestOrderer Condition="'$(XUnitUseRandomizedTestOrderer)' == '' and '$(IsTestProject)' == 'true'">true</XUnitUseRandomizedTestOrderer>
     <_UseWasmSymbolicator Condition="'$(TestTrimming)' != 'true'">true</_UseWasmSymbolicator>
+    <WasmIgnoreNet6WorkloadInstallErrors Condition="'$(WasmIgnoreNet6WorkloadInstallErrors)' == ''">true</WasmIgnoreNet6WorkloadInstallErrors>
+    <WasmIgnoreNet6WorkloadInstallErrors Condition="'$(WasmIgnoreNet6WorkloadInstallErrors)' != 'true'">false</WasmIgnoreNet6WorkloadInstallErrors>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
@@ -138,14 +140,31 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <WorkloadIdForTesting Include="wasm-tools"
+    <WorkloadIdForTesting Include="wasm-tools;wasm-experimental"
                           ManifestName="Microsoft.NET.Workload.Mono.ToolChain"
+                          Variant="latest"
                           Version="$(PackageVersion)"
                           VersionBand="$(SdkBandVersion)" />
-    <WorkloadIdForTesting Include="wasm-experimental"
-                          ManifestName="Microsoft.NET.Workload.Mono.ToolChain"
+
+    <WorkloadIdForTesting Include="wasm-tools-net7;wasm-experimental-net7"
+                          ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net7"
+                          Variant="net7"
                           Version="$(PackageVersion)"
                           VersionBand="$(SdkBandVersion)" />
+
+    <WorkloadIdForTesting Include="wasm-tools-net6"
+                          ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net6"
+                          Variant="net6"
+                          Version="$(PackageVersion)"
+                          VersionBand="$(SdkBandVersion)"
+                          IgnoreErrors="$(WasmIgnoreNet6WorkloadInstallErrors)" />
+
+    <WorkloadCombinationsToInstall Include="latest"   Variants="latest" />
+    <WorkloadCombinationsToInstall Include="net7"     Variants="net7" />
+    <WorkloadCombinationsToInstall Include="net7+latest"   Variants="net7;latest" />
+    <!--<WorkloadCombinationsToInstall Include="net6"     Variants="net6" />-->
+    <!--<WorkloadCombinationsToInstall Include="net6+7"   Variants="net6;net7" />-->
+    <!--<WorkloadCombinationsToInstall Include="none" />-->
 
     <WasmExtraFilesToDeploy Condition="'$(_UseWasmSymbolicator)' == 'true'" Include="$(MonoProjectRoot)wasm\data\wasm-symbol-patterns.txt" />
     <WasmExtraFilesToDeploy Condition="'$(_UseWasmSymbolicator)' == 'true'" Include="$(ArtifactsBinDir)WasmSymbolicator\$(Configuration)\$(NetCoreAppToolCurrent)\WasmSymbolicator.dll" />

@@ -518,6 +518,7 @@ export type RuntimeAPI = {
     runtimeId: number,
     runtimeBuildInfo: {
         productVersion: string,
+        gitHash: string,
         buildConfiguration: string,
     }
 } & APIType
