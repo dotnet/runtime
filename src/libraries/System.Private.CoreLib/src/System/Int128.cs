@@ -1250,7 +1250,7 @@ namespace System
         {
             Int128 upper = BigMul(left, right, out Int128 lower);
 
-            if (((upper != 0) || (lower < 0)) && (~upper != 0))
+            if (((upper != 0) || (lower < 0)) && ((~upper != 0) || (lower >= 0)))
             {
                 // The upper bits can safely be either Zero or AllBitsSet
                 // where the former represents a positive value and the
@@ -1272,7 +1272,7 @@ namespace System
 
             UInt128 upper = UInt128.BigMul((UInt128)(left), (UInt128)(right), out UInt128 ulower);
             lower = (Int128)(ulower);
-            return (Int128)(upper) - ((left >> 63) & right) - ((right >> 63) & left);
+            return (Int128)(upper) - ((left >> 127) & right) - ((right >> 127) & left);
         }
 
         //
