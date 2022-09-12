@@ -307,20 +307,16 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Gnu)]
         public void WriteLongName(TarEntryFormat format)
         {
-            string maxPathComponent = new string('a', 255);
-            WriteLongNameCore(format, maxPathComponent);
-
-            maxPathComponent = new string('a', 90) + new string('b', 165);
-            WriteLongNameCore(format, maxPathComponent);
-
-            maxPathComponent = new string('a', 165) + new string('b', 90);
-            WriteLongNameCore(format, maxPathComponent);
+            var r = new Random();
+            foreach (int length in new[] { 99, 100, 101, 199, 200, 201, 254, 255, 256 })
+            {
+                string name = string.Concat(Enumerable.Range(0, length).Select(_ => (char)('a' + r.Next(26))));
+                WriteLongNameCore(format, name);
+            }
         }
 
         private void WriteLongNameCore(TarEntryFormat format, string maxPathComponent)
         {
-            Assert.Equal(255, maxPathComponent.Length);
-
             TarEntry entry;
             MemoryStream ms = new();
             using (TarWriter writer = new(ms, true))
@@ -348,7 +344,7 @@ namespace System.Formats.Tar.Tests
 
             string GetExpectedNameForFormat(TarEntryFormat format, string expectedName)
             {
-                if (format is TarEntryFormat.V7) // V7 truncates names at 100 characters.
+                if (format is TarEntryFormat.V7 && expectedName.Length > 100) // V7 truncates names at 100 characters.
                 {
                     return expectedName.Substring(0, 100);
                 }
