@@ -28,7 +28,7 @@ LEAF_ENTRY JIT_WriteBarrier_Debug, _TEXT
         add     r10, [rax]
         PREPARE_EXTERNAL_VAR g_GCShadowEnd, r11
         cmp     r10, [r11]
-        ja      NoShadow
+        jnb     NoShadow
 
         // Write ref into real GC// see comment below about possibility of AV
         mov     [rdi], rsi

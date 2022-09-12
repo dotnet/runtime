@@ -279,7 +279,7 @@ ifdef WRITE_BARRIER_CHECK
         ; Check that our adjusted destination is somewhere in the shadow gc
         add     r10, [g_GCShadow]
         cmp     r10, [g_GCShadowEnd]
-        ja      NoShadow
+        jnb     NoShadow
 
         ; Write ref into real GC
         mov     [rdi], rcx

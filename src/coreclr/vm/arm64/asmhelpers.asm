@@ -473,15 +473,14 @@ ShadowUpdateDisabled
 CheckCardTable
         ; Branch to Exit if the reference is not in the Gen0 heap
         ;
-        adr      x12,  wbs_ephemeral_low
-        ldp      x12,  x16, [x12]
+        ldr      x12,  wbs_ephemeral_low
         cbz      x12,  SkipEphemeralCheck
-
         cmp      x15,  x12
         blo      Exit
 
-        cmp      x15,  x16
-        bhi      Exit
+        ldr      x12,  wbs_ephemeral_high
+        cmp      x15,  x12
+        bhs      Exit
 
 SkipEphemeralCheck
         ; Check if we need to update the card table
