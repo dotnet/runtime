@@ -21,7 +21,7 @@ namespace Wasm.Build.Tests
         {
         }
 
-        private void updateProgramCS()
+        private void UpdateProgramCS()
         {
             string programText = """
             Console.WriteLine("Hello, Console!");
@@ -188,7 +188,7 @@ namespace Wasm.Build.Tests
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
-            updateProgramCS();
+            UpdateProgramCS();
             UpdateConsoleMainJs();
             if (relinking)
                 AddItemsPropertiesToProject(projectFile, "<WasmBuildNative>true</WasmBuildNative>");
@@ -214,6 +214,73 @@ namespace Wasm.Build.Tests
             Assert.Contains("args[0] = x", output);
             Assert.Contains("args[1] = y", output);
             Assert.Contains("args[2] = z", output);
+        }
+
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        //[InlineData("Debug")]
+        [InlineData("Release")]
+        public void ConsoleRunTwiceOutsideProjectDirectory(string config)
+            => ConsoleRunWithAndThenWithoutBuild(config, runOutsideProjectDirectory: true);
+
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [InlineData("Debug", false)]
+        [InlineData("Debug", true)]
+        public void ConsoleRunTwiceWithCustomOutputPath(string config, bool runOutsideProjectDirectory)
+            => ConsoleRunWithAndThenWithoutBuild(config,
+                               $"<OutputPath>{Path.Combine(Path.GetTempPath(), Path.GetRandomFileName())}</OutputPath>",
+                               runOutsideProjectDirectory);
+
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        //[InlineData("Debug")]
+        [InlineData("Release", false)]
+        [InlineData("Release", true)]
+        public void ConsoleRunTwiceWithCustomWasmAppDir(string config, bool runOutsideProjectDirectory)
+            => ConsoleRunWithAndThenWithoutBuild(config,
+                               $"<WasmAppDir>{Path.Combine(Path.GetTempPath(), Path.GetRandomFileName())}</WasmAppDir>",
+                               runOutsideProjectDirectory);
+
+        private void ConsoleRunWithAndThenWithoutBuild(string config, string extraProperties = "", bool runOutsideProjectDirectory = false)
+        {
+            string id = $"console_{config}_{Path.GetRandomFileName()}";
+            string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
+
+            UpdateProgramCS();
+            UpdateConsoleMainJs();
+
+            if (!string.IsNullOrEmpty(extraProperties))
+                AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
+
+            string workingDir = runOutsideProjectDirectory ? Path.GetTempPath() : _projectDir!;
+
+            {
+                string runArgs = $"run -c {config} --project {projectFile}";
+                runArgs += " x y z";
+                var res = new RunCommand(s_buildEnv, _testOutput, label: id)
+                                    .WithWorkingDirectory(workingDir)
+                                    .WithEnvironmentVariables(s_buildEnv.EnvVars)
+                                    .ExecuteWithCapturedOutput(runArgs)
+                                    .EnsureExitCode(42);
+
+                Assert.Contains("args[0] = x", res.Output);
+                Assert.Contains("args[1] = y", res.Output);
+                Assert.Contains("args[2] = z", res.Output);
+            }
+
+            _testOutput.WriteLine($"{Environment.NewLine}[{id}] Running again with --no-build{Environment.NewLine}");
+
+            {
+                // Run with --no-build
+                string runArgs = $"run -c {config} --project {projectFile} --no-build";
+                runArgs += " x y z";
+                var res = new RunCommand(s_buildEnv, _testOutput, label: id)
+                                .WithWorkingDirectory(workingDir)
+                                .ExecuteWithCapturedOutput(runArgs)
+                                .EnsureExitCode(42);
+
+                Assert.Contains("args[0] = x", res.Output);
+                Assert.Contains("args[1] = y", res.Output);
+                Assert.Contains("args[2] = z", res.Output);
+            }
         }
 
         public static TheoryData<string, bool, bool> TestDataForConsolePublishAndRun()
@@ -242,7 +309,7 @@ namespace Wasm.Build.Tests
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
-            updateProgramCS();
+            UpdateProgramCS();
             UpdateConsoleMainJs();
 
             if (aot)
