@@ -11,7 +11,6 @@
 #include <assert.h>
 #include <string.h>
 #include <stdbool.h>
-#include <sys/random.h>
 
 c_static_assert(PAL_SSL_ERROR_NONE == SSL_ERROR_NONE);
 c_static_assert(PAL_SSL_ERROR_SSL == SSL_ERROR_SSL);
