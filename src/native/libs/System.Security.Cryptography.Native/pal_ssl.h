@@ -162,7 +162,7 @@ PALEXPORT void CryptoNative_SslSetPostHandshakeAuth(SSL* ssl, int32_t val);
 /*
 Sets session caching. 0 is disabled.
 */
-PALEXPORT int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, SslCtxNewSessionCallback newCb, SslCtxRemoveSessionCallback removeCb);
+PALEXPORT int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, int contextIdLength, unsigned char* contextId, SslCtxNewSessionCallback newSessionCb, SslCtxRemoveSessionCallback removeSessionCb);
 
 /*
 Returns name associated with given ssl session.
