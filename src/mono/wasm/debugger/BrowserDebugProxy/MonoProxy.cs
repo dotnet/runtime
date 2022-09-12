@@ -871,7 +871,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             var methodId = retDebuggerCmdReader.ReadInt32();
             var method = await context.SdbAgent.GetMethodInfo(methodId, token);
-            if (method == null)
+            if (method == null || method.Info.Source is null)
             {
                 return true;
             }
