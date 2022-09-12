@@ -549,11 +549,11 @@ namespace System.DirectoryServices.Protocols
                         IntPtr valPtr = Marshal.AllocHGlobal(structSize);
                         Marshal.StructureToPtr(managedBervalArray[i], valPtr, false);
 
-                        tempPtr = (IntPtr)((long)berValArray + IntPtr.Size * i);
+                        tempPtr = checked((IntPtr)((long)berValArray + IntPtr.Size * i));
                         Marshal.WriteIntPtr(tempPtr, valPtr);
                     }
 
-                    tempPtr = (IntPtr)((long)berValArray + IntPtr.Size * i);
+                    tempPtr = checked((IntPtr)((long)berValArray + IntPtr.Size * i));
                     Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
                 }
 

@@ -412,7 +412,7 @@ namespace System.Data.OleDb
                         tagDBLITERALINFO tag = new tagDBLITERALINFO();
                         for (int i = 0; i < literalCount; ++i, offset += ODB.SizeOf_tagDBLITERALINFO)
                         {
-                            Marshal.PtrToStructure((IntPtr)offset, tag);
+                            Marshal.PtrToStructure((nint)offset, tag);
 
                             DataRow row = table.NewRow();
                             row[literalName] = ((OleDbLiteral)tag.it).ToString();

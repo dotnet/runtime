@@ -167,7 +167,7 @@ namespace System.Diagnostics
                 int endAlignmentAdjustment = (8 - endAddressMod8) & 0x7;
                 newOffset += endAlignmentAdjustment;
 
-            } while (Interlocked.CompareExchange(ref *(int*)((IntPtr)_baseAddress).ToPointer(), newOffset, oldOffset) != oldOffset);
+            } while (Interlocked.CompareExchange(ref *(int*)(checked((IntPtr)_baseAddress)).ToPointer(), newOffset, oldOffset) != oldOffset);
 
             return oldOffset;
         }
@@ -285,7 +285,7 @@ namespace System.Diagnostics
             newCategoryEntryPointer->NextCategoryOffset = 0;
             newCategoryEntryPointer->FirstInstanceOffset = (int)((long)newInstanceEntryPointer - _baseAddress);
             newCategoryEntryPointer->CategoryNameOffset = (int)(nextPtr - _baseAddress);
-            SafeMarshalCopy(_categoryName, (IntPtr)nextPtr);
+            SafeMarshalCopy(_categoryName, checked((IntPtr)nextPtr));
             nextPtr += categoryNameLength;
 
             newInstanceEntryPointer->InstanceNameHashCode = instanceNameHashCode;
@@ -293,14 +293,14 @@ namespace System.Diagnostics
             newInstanceEntryPointer->FirstCounterOffset = (int)((long)newCounterEntryPointer - _baseAddress);
             newInstanceEntryPointer->RefCount = 1;
             newInstanceEntryPointer->InstanceNameOffset = (int)(nextPtr - _baseAddress);
-            SafeMarshalCopy(instanceName, (IntPtr)nextPtr);
+            SafeMarshalCopy(instanceName, checked((IntPtr)nextPtr));
             nextPtr += instanceNameLength;
 
             string counterName = (string)_categoryData.CounterNames[0];
             newCounterEntryPointer->CounterNameHashCode = GetWstrHashCode(counterName);
             SetValue(newCounterEntryPointer, 0);
             newCounterEntryPointer->CounterNameOffset = (int)(nextPtr - _baseAddress);
-            SafeMarshalCopy(counterName, (IntPtr)nextPtr);
+            SafeMarshalCopy(counterName, checked((IntPtr)nextPtr));
             nextPtr += (counterName.Length + 1) * 2;
 
             CounterEntry* previousCounterEntryPointer;
@@ -313,7 +313,7 @@ namespace System.Diagnostics
                 newCounterEntryPointer->CounterNameHashCode = GetWstrHashCode(counterName);
                 SetValue(newCounterEntryPointer, 0);
                 newCounterEntryPointer->CounterNameOffset = (int)(nextPtr - _baseAddress);
-                SafeMarshalCopy(counterName, (IntPtr)nextPtr);
+                SafeMarshalCopy(counterName, checked((IntPtr)nextPtr));
 
                 nextPtr += (counterName.Length + 1) * 2;
                 previousCounterEntryPointer->NextCounterOffset = (int)((long)newCounterEntryPointer - _baseAddress);
@@ -399,7 +399,7 @@ namespace System.Diagnostics
             newInstanceEntryPointer->FirstCounterOffset = (int)((long)newCounterEntryPointer - _baseAddress);
             newInstanceEntryPointer->RefCount = 1;
             newInstanceEntryPointer->InstanceNameOffset = (int)(nextPtr - _baseAddress);
-            SafeMarshalCopy(instanceName, (IntPtr)nextPtr);
+            SafeMarshalCopy(instanceName, checked((IntPtr)nextPtr));
 
             nextPtr += instanceNameLength;
 
@@ -438,7 +438,7 @@ namespace System.Diagnostics
                     string counterName = (string)_categoryData.CounterNames[i];
                     newCounterEntryPointer->CounterNameHashCode = GetWstrHashCode(counterName);
                     newCounterEntryPointer->CounterNameOffset = (int)(nextPtr - _baseAddress);
-                    SafeMarshalCopy(counterName, (IntPtr)nextPtr);
+                    SafeMarshalCopy(counterName, checked((IntPtr)nextPtr));
                     nextPtr += (counterName.Length + 1) * 2;
 
                     SetValue(newCounterEntryPointer, 0);
@@ -490,7 +490,7 @@ namespace System.Diagnostics
             newCounterEntryPointer->CounterNameHashCode = counterNameHashCode;
             newCounterEntryPointer->NextCounterOffset = 0;
             SetValue(newCounterEntryPointer, 0);
-            SafeMarshalCopy(counterName, (IntPtr)nextPtr);
+            SafeMarshalCopy(counterName, checked((IntPtr)nextPtr));
 
             Debug.Assert(nextPtr + counterNameLength - _baseAddress == freeMemoryOffset + totalSize, "We should have used all of the space we requested at this point");
 
@@ -1159,7 +1159,7 @@ namespace System.Diagnostics
                             try
                             {
                                 // Make copy with zero-term
-                                SafeMarshalCopy(instanceName, (IntPtr)instanceNamePtr);
+                                SafeMarshalCopy(instanceName, checked((IntPtr)instanceNamePtr));
                                 currentInstancePointer->InstanceNameHashCode = instanceNameHashCode;
 
                                 // return
@@ -1771,7 +1771,7 @@ namespace System.Diagnostics
         // SafeMarshalCopy always null terminates the char array
         // before copying it to native memory
         //
-        private static void SafeMarshalCopy(string str, IntPtr nativePointer)
+        private static void SafeMarshalCopy(string str, nint nativePointer)
         {
             // convert str to a char array and copy it to the unmanaged memory pointer
             char[] tmp = new char[str.Length + 1];

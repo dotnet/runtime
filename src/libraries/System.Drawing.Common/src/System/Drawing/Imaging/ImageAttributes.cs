@@ -452,8 +452,8 @@ namespace System.Drawing.Imaging
             {
                 for (index = 0; index < mapSize; index++)
                 {
-                    Marshal.StructureToPtr(map[index].OldColor.ToArgb(), (IntPtr)((long)memory + index * size * 2), false);
-                    Marshal.StructureToPtr(map[index].NewColor.ToArgb(), (IntPtr)((long)memory + index * size * 2 + size), false);
+                    Marshal.StructureToPtr(map[index].OldColor.ToArgb(), checked((IntPtr)((long)memory + index * size * 2)), false);
+                    Marshal.StructureToPtr(map[index].NewColor.ToArgb(), checked((IntPtr)((long)memory + index * size * 2 + size)), false);
                 }
 
                 Gdip.CheckStatus(Gdip.GdipSetImageAttributesRemapTable(

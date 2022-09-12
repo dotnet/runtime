@@ -517,7 +517,7 @@ namespace Microsoft.Win32
             }
         }
 
-        private static UserPreferenceCategory GetUserPreferenceCategory(int msg, IntPtr wParam, IntPtr lParam)
+        private static UserPreferenceCategory GetUserPreferenceCategory(int msg, nint wParam, IntPtr lParam)
         {
             UserPreferenceCategory pref = UserPreferenceCategory.General;
 
@@ -808,7 +808,7 @@ namespace Microsoft.Win32
         ///  Callback that handles the create timer
         ///  user message.
         /// </summary>
-        private IntPtr OnCreateTimer(IntPtr wParam)
+        private IntPtr OnCreateTimer(nint wParam)
         {
             IntPtr timerId = (IntPtr)s_randomTimerId.Next();
             IntPtr res = Interop.User32.SetTimer(_windowHandle, timerId, (int)wParam, IntPtr.Zero);
@@ -856,7 +856,7 @@ namespace Microsoft.Win32
         /// <summary>
         ///  Handler for WM_POWERBROADCAST.
         /// </summary>
-        private void OnPowerModeChanged(IntPtr wParam)
+        private void OnPowerModeChanged(nint wParam)
         {
             PowerModes mode;
 
@@ -1126,7 +1126,7 @@ namespace Microsoft.Win32
         /// <summary>
         ///  A standard Win32 window proc for our broadcast window.
         /// </summary>
-        private IntPtr WindowProc(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam)
+        private IntPtr WindowProc(IntPtr hWnd, int msg, nint wParam, IntPtr lParam)
         {
             switch (msg)
             {

@@ -136,7 +136,7 @@ internal static partial class Interop
                         _processId = pid,
                         _threadId = (ulong)process[i].ki_tid,
                         _basePriority = process[i].ki_nice,
-                        _startAddress = (IntPtr)process[i].ki_tdaddr
+                        _startAddress = process[i].ki_tdaddr
                     };
                     info._threadInfoList.Add(ti);
                 }

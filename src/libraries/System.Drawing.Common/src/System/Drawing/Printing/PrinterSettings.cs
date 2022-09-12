@@ -206,7 +206,7 @@ namespace System.Drawing.Printing
                 {
                     // The printer name is at offset 0
                     //
-                    IntPtr namePointer = (IntPtr)Marshal.ReadIntPtr((IntPtr)(checked((long)buffer + i * sizeofstruct)));
+                    IntPtr namePointer = (IntPtr)Marshal.ReadIntPtr(checked((IntPtr)((long)buffer + i * sizeofstruct)));
                     array[i] = Marshal.PtrToStringAuto(namePointer)!;
                 }
 
@@ -853,7 +853,7 @@ namespace System.Drawing.Printing
                 // by checking for a large enough buffer size before copying the extrainfo buffer
                 if (_extrabytes <= mode.dmDriverExtra)
                 {
-                    IntPtr pointeroffset = (IntPtr)(checked((long)pointer + (long)mode.dmSize));
+                    IntPtr pointeroffset = checked((IntPtr)((long)pointer + (long)mode.dmSize));
                     Marshal.Copy(_extrainfo, 0, pointeroffset, _extrabytes);
                 }
             }
@@ -928,11 +928,11 @@ namespace System.Drawing.Printing
 
             Marshal.WriteInt16(namesPointer, offset); // wDriverOffset
             offset += WriteOneDEVNAME(driver, namesPointer, offset);
-            Marshal.WriteInt16((IntPtr)(checked((long)namesPointer + 2)), offset); // wDeviceOffset
+            Marshal.WriteInt16(checked((IntPtr)((long)namesPointer + 2)), offset); // wDeviceOffset
             offset += WriteOneDEVNAME(printerName, namesPointer, offset);
-            Marshal.WriteInt16((IntPtr)(checked((long)namesPointer + 4)), offset); // wOutputOffset
+            Marshal.WriteInt16(checked((IntPtr)((long)namesPointer + 4)), offset); // wOutputOffset
             offset += WriteOneDEVNAME(outPort, namesPointer, offset);
-            Marshal.WriteInt16((IntPtr)(checked((long)namesPointer + 6)), offset); // wDefault
+            Marshal.WriteInt16(checked((IntPtr)((long)namesPointer + 6)), offset); // wDefault
 
             Interop.Kernel32.GlobalUnlock(handle);
             return handle;
@@ -1044,15 +1044,15 @@ namespace System.Drawing.Printing
             PaperSize[] result = new PaperSize[count];
             for (int i = 0; i < count; i++)
             {
-                string name = Marshal.PtrToStringAuto((IntPtr)(checked((long)namesBuffer + stringSize * i)), 64)!;
+                string name = Marshal.PtrToStringAuto(checked((IntPtr)((long)namesBuffer + stringSize * i)), 64)!;
                 int index = name.IndexOf('\0');
                 if (index > -1)
                 {
                     name = name.Substring(0, index);
                 }
-                short kind = Marshal.ReadInt16((IntPtr)(checked((long)kindsBuffer + i * 2)));
-                int width = Marshal.ReadInt32((IntPtr)(checked((long)dimensionsBuffer + i * 8)));
-                int height = Marshal.ReadInt32((IntPtr)(checked((long)dimensionsBuffer + i * 8 + 4)));
+                short kind = Marshal.ReadInt16(checked((IntPtr)((long)kindsBuffer + i * 2)));
+                int width = Marshal.ReadInt32(checked((IntPtr)((long)dimensionsBuffer + i * 8)));
+                int height = Marshal.ReadInt32(checked((IntPtr)((long)dimensionsBuffer + i * 8 + 4)));
                 result[i] = new PaperSize((PaperKind)kind, name,
                                           PrinterUnitConvert.Convert(width, PrinterUnit.TenthsOfAMillimeter, PrinterUnit.Display),
                                           PrinterUnitConvert.Convert(height, PrinterUnit.TenthsOfAMillimeter, PrinterUnit.Display));
@@ -1086,14 +1086,14 @@ namespace System.Drawing.Printing
             PaperSource[] result = new PaperSource[count];
             for (int i = 0; i < count; i++)
             {
-                string name = Marshal.PtrToStringAuto((IntPtr)(checked((long)namesBuffer + stringSize * i)), 24)!;
+                string name = Marshal.PtrToStringAuto(checked((IntPtr)((long)namesBuffer + stringSize * i)), 24)!;
                 int index = name.IndexOf('\0');
                 if (index > -1)
                 {
                     name = name.Substring(0, index);
                 }
 
-                short kind = Marshal.ReadInt16((IntPtr)(checked((long)kindsBuffer + 2 * i)));
+                short kind = Marshal.ReadInt16(checked((IntPtr)((long)kindsBuffer + 2 * i)));
                 result[i] = new PaperSource((PaperSourceKind)kind, name);
             }
 
@@ -1131,8 +1131,8 @@ namespace System.Drawing.Printing
 
             for (int i = 0; i < count; i++)
             {
-                int x = Marshal.ReadInt32((IntPtr)(checked((long)buffer + i * 8)));
-                int y = Marshal.ReadInt32((IntPtr)(checked((long)buffer + i * 8 + 4)));
+                int x = Marshal.ReadInt32(checked((IntPtr)((long)buffer + i * 8)));
+                int y = Marshal.ReadInt32(checked((IntPtr)((long)buffer + i * 8 + 4)));
                 result[i + 4] = new PrinterResolution(PrinterResolutionKind.Custom, x, y);
             }
 
@@ -1144,7 +1144,7 @@ namespace System.Drawing.Printing
         private static string ReadOneDEVNAME(IntPtr pDevnames, int slot)
         {
             int offset = checked(Marshal.SystemDefaultCharSize * Marshal.ReadInt16((IntPtr)(checked((long)pDevnames + slot * 2))));
-            string result = Marshal.PtrToStringAuto((IntPtr)(checked((long)pDevnames + offset)))!;
+            string result = Marshal.PtrToStringAuto(checked((IntPtr)((long)pDevnames + offset)))!;
             return result;
         }
 
@@ -1172,7 +1172,7 @@ namespace System.Drawing.Printing
             if (_extrabytes > 0)
             {
                 _extrainfo = new byte[_extrabytes];
-                Marshal.Copy((IntPtr)(checked((long)pointer + (long)mode.dmSize)), _extrainfo, 0, _extrabytes);
+                Marshal.Copy(checked((IntPtr)((long)pointer + (long)mode.dmSize)), _extrainfo, 0, _extrabytes);
             }
 
             if ((mode.dmFields & SafeNativeMethods.DM_COPIES) == SafeNativeMethods.DM_COPIES)
@@ -1237,11 +1237,11 @@ namespace System.Drawing.Printing
         private static short WriteOneDEVNAME(string str, IntPtr bufferStart, int index)
         {
             str ??= "";
-            IntPtr address = (IntPtr)(checked((long)bufferStart + index * Marshal.SystemDefaultCharSize));
+            IntPtr address = checked((IntPtr)((long)bufferStart + index * Marshal.SystemDefaultCharSize));
 
             char[] data = str.ToCharArray();
             Marshal.Copy(data, 0, address, data.Length);
-            Marshal.WriteInt16((IntPtr)(checked((long)address + data.Length * 2)), 0);
+            Marshal.WriteInt16(checked((IntPtr)((long)address + data.Length * 2)), 0);
 
             return checked((short)(str.Length + 1));
         }

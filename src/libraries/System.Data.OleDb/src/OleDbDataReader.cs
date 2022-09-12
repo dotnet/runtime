@@ -55,10 +55,10 @@ namespace System.Data.OleDb
         private bool _singleRow;
 
         // cached information for Reading (rowhandles/status)
-        private IntPtr _rowHandleFetchCount; // (>1 fails against jet)
+        private nint _rowHandleFetchCount; // (>1 fails against jet)
         private RowHandleBuffer? _rowHandleNativeBuffer;
 
-        private IntPtr _rowFetchedCount;
+        private nint _rowFetchedCount;
         private int _currentRow;
 
         private DataTable? _dbSchemaTable;
@@ -103,7 +103,7 @@ namespace System.Data.OleDb
             // if from ADODB, connection will be null
             if ((null == _connection) || (ChapterHandle.DB_NULL_HCHAPTER != chapterHandle))
             {
-                _rowHandleFetchCount = new IntPtr(1);
+                _rowHandleFetchCount = 1;
             }
 
             Initialize();
@@ -470,7 +470,7 @@ namespace System.Data.OleDb
             }
 
             OleDbHResult hr;
-            IntPtr columnCount = ADP.PtrZero; // column count
+            nint columnCount = ADP.PtrZero; // column count
             IntPtr columnInfos = ADP.PtrZero; // ptr to byvalue tagDBCOLUMNINFO[]
 
             using (DualCoTaskMem safehandle = new DualCoTaskMem(icolumnsInfo, out columnCount, out columnInfos, out hr))
@@ -481,7 +481,7 @@ namespace System.Data.OleDb
                 }
                 if (0 < (int)columnCount)
                 {
-                    BuildSchemaTableInfoTable(columnCount.ToInt32(), columnInfos, filterITypeInfo, filterChapters);
+                    BuildSchemaTableInfoTable((int)columnCount, columnInfos, filterITypeInfo, filterChapters);
                 }
             }
         }
@@ -767,7 +767,7 @@ namespace System.Data.OleDb
             }
 
             _currentRow = 0;
-            _rowFetchedCount = IntPtr.Zero;
+            _rowFetchedCount = 0;
 
             _dbSchemaTable = null;
             _visibleFieldCount = 0;
@@ -1200,7 +1200,7 @@ namespace System.Data.OleDb
             { throw e; }
         }
 
-        private static IntPtr AddRecordsAffected(IntPtr recordsAffected, IntPtr affected)
+        private static nint AddRecordsAffected(nint recordsAffected, nint affected)
         {
             if (ODB.IsRunningOnX86)
             {
@@ -1220,7 +1220,7 @@ namespace System.Data.OleDb
                 {
                     if (0 <= (long)recordsAffected)
                     {
-                        return (IntPtr)((long)recordsAffected + (long)affected);
+                        return (nint)((long)recordsAffected + (long)affected);
                     }
                     return affected;
                 }
@@ -1255,7 +1255,7 @@ namespace System.Data.OleDb
             List<OleDbException>? exceptions = null;
             if (null != imultipleResults)
             {
-                IntPtr affected;
+                nint affected;
                 OleDbHResult hr;
 
                 // MSOLAP provider doesn't move onto the next result when calling GetResult with IID_NULL, but does return S_OK with 0 affected records.
@@ -1456,7 +1456,7 @@ namespace System.Data.OleDb
 
             // making the check if (null != irowset) unnecessary
             // if necessary, get next group of row handles
-            if (IntPtr.Zero == _rowFetchedCount)
+            if (0 == _rowFetchedCount)
             { // starts at (-1 <= 0)
                 Debug.Assert(0 == _currentRow, "incorrect state for _currentRow");
                 Debug.Assert(0 <= _metadata.Length, "incorrect state for fieldCount");
@@ -1511,25 +1511,25 @@ namespace System.Data.OleDb
                 }
             }
 
-            if (IntPtr.Zero == _rowHandleFetchCount)
+            if (0 == _rowHandleFetchCount)
             {
-                _rowHandleFetchCount = new IntPtr(1);
+                _rowHandleFetchCount = 1;
 
                 object? maxRows = GetPropertyValue(ODB.DBPROP_MAXROWS);
-                if (maxRows is int)
+                if (maxRows is int intValue)
                 {
-                    _rowHandleFetchCount = new IntPtr((int)maxRows);
+                    _rowHandleFetchCount = intValue;
                     if ((ADP.PtrZero == _rowHandleFetchCount) || (20 <= (int)_rowHandleFetchCount))
                     {
-                        _rowHandleFetchCount = new IntPtr(20);
+                        _rowHandleFetchCount = 20;
                     }
                 }
-                else if (maxRows is long)
+                else if (maxRows is long longValue)
                 {
-                    _rowHandleFetchCount = new IntPtr((long)maxRows);
+                    _rowHandleFetchCount = (nint)longValue;
                     if ((ADP.PtrZero == _rowHandleFetchCount) || (20 <= (long)_rowHandleFetchCount))
                     {
-                        _rowHandleFetchCount = new IntPtr(20);
+                        _rowHandleFetchCount = 20;
                     }
                 }
             }
@@ -1762,7 +1762,7 @@ namespace System.Data.OleDb
                 ProcessResults(hr);
             }
             _isRead = ((OleDbHResult.DB_S_ENDOFROWSET != hr) || (0 < (int)_rowFetchedCount));
-            _rowFetchedCount = (IntPtr)Math.Max((int)_rowFetchedCount, 0);
+            _rowFetchedCount = Math.Max((int)_rowFetchedCount, 0);
         }
 
         private void GetRowDataFromHandle()
@@ -1817,7 +1817,7 @@ namespace System.Data.OleDb
                 //ProcessFailure(hr);
                 SafeNativeMethods.Wrapper.ClearErrorInfo();
             }
-            _rowFetchedCount = IntPtr.Zero;
+            _rowFetchedCount = 0;
             _currentRow = 0;
             _isRead = false;
         }
@@ -2360,7 +2360,7 @@ namespace System.Data.OleDb
                     }
                     else
                     {
-                        info.size = ADP.IntPtrToInt32((IntPtr)unchecked((long)columnsize.columnBinding.Value_UI8()));
+                        info.size = ADP.IntPtrToInt32((nint)unchecked((long)columnsize.columnBinding.Value_UI8()));
                     }
 
                     binding = numericprecision.columnBinding;
@@ -2590,7 +2590,7 @@ namespace System.Data.OleDb
 
         internal NativeDBType type = null!; // Late-initialized
 
-        internal IntPtr ordinal;
+        internal nint ordinal;
         internal int size;
 
         internal int flags;

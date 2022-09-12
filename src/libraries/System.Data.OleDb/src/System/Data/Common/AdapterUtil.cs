@@ -1261,10 +1261,10 @@ namespace System.Data.Common
                 return (IntPtr)checked(pbase.ToInt32() + offset);
             }
             Debug.Assert(8 == ADP.PtrSize, "8 != IntPtr.Size");
-            return (IntPtr)checked(pbase.ToInt64() + offset);
+            return (nint)(pbase.ToInt64() + offset);
         }
 
-        internal static int IntPtrToInt32(IntPtr value)
+        internal static int IntPtrToInt32(nint value)
         {
             if (4 == ADP.PtrSize)
             {

@@ -363,7 +363,7 @@ namespace System.Runtime.InteropServices
         public static IntPtr ReadIntPtr(object ptr, int ofs)
         {
 #if TARGET_64BIT
-            return (IntPtr)ReadInt64(ptr, ofs);
+            return (nint)ReadInt64(ptr, ofs);
 #else // 32
             return (IntPtr)ReadInt32(ptr, ofs);
 #endif
@@ -372,7 +372,7 @@ namespace System.Runtime.InteropServices
         public static IntPtr ReadIntPtr(IntPtr ptr, int ofs)
         {
 #if TARGET_64BIT
-            return (IntPtr)ReadInt64(ptr, ofs);
+            return (nint)ReadInt64(ptr, ofs);
 #else // 32
             return (IntPtr)ReadInt32(ptr, ofs);
 #endif
@@ -482,7 +482,9 @@ namespace System.Runtime.InteropServices
 #if TARGET_64BIT
             WriteInt64(ptr, ofs, (long)val);
 #else // 32
+#pragma warning disable CA2020 // Prevent from behavioral change
             WriteInt32(ptr, ofs, (int)val);
+#pragma warning restore CA2020
 #endif
         }
 
@@ -494,7 +496,9 @@ namespace System.Runtime.InteropServices
 #if TARGET_64BIT
             WriteInt64(ptr, ofs, (long)val);
 #else // 32
+#pragma warning disable CA2020 // Prevent from behavioral change
             WriteInt32(ptr, ofs, (int)val);
+#pragma warning restore CA2020
 #endif
         }
 

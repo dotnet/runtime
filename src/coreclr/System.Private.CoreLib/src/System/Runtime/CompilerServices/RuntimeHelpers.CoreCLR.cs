@@ -401,7 +401,7 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe void UnregisterForGCReporting(GCFrameRegistration* pRegistration);
 
-        internal static int GetHashCodeOfPtr(IntPtr ptr)
+        internal static int GetHashCodeOfPtr(nint ptr)
         {
             int hashCode = (int)ptr;
 

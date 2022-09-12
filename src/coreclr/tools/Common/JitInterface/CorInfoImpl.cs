@@ -680,7 +680,7 @@ namespace Internal.JitInterface
             return handle;
         }
 
-        private object HandleToObject(IntPtr handle)
+        private object HandleToObject(nint handle)
         {
 #if DEBUG
             handle = new IntPtr(~(long)s_handleHighBitSet & (long) handle);
@@ -3839,7 +3839,7 @@ namespace Internal.JitInterface
                     {
                         foreach (TypeSystemEntityOrUnknown typeVal in typeArray)
                         {
-                            IntPtr ptrVal;
+                            nint ptrVal;
 
                             if (typeVal.AsType != null && (typeFilter == null || typeFilter(typeVal.AsType)))
                             {

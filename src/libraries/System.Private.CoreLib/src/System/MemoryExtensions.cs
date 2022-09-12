@@ -2318,7 +2318,7 @@ namespace System
                 return false;
             }
 
-            IntPtr byteOffset = Unsafe.ByteOffset(
+            nint byteOffset = Unsafe.ByteOffset(
                 ref MemoryMarshal.GetReference(span),
                 ref MemoryMarshal.GetReference(other));
 

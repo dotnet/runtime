@@ -79,7 +79,7 @@ namespace System.Data.OleDb
 
     internal sealed class RowHandleBuffer : DbBuffer
     {
-        internal RowHandleBuffer(IntPtr rowHandleFetchCount) : base((int)rowHandleFetchCount * ADP.PtrSize)
+        internal RowHandleBuffer(nint rowHandleFetchCount) : base((int)rowHandleFetchCount * ADP.PtrSize)
         {
         }
 

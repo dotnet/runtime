@@ -77,11 +77,13 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IntPtr Exchange(ref IntPtr location1, IntPtr value)
         {
+#pragma warning disable CA2020 // Prevent from behavioral change
 #if TARGET_64BIT
             return (IntPtr)Interlocked.Exchange(ref Unsafe.As<IntPtr, long>(ref location1), (long)value);
 #else
             return (IntPtr)Interlocked.Exchange(ref Unsafe.As<IntPtr, int>(ref location1), (int)value);
 #endif
+#pragma warning restore CA2020
         }
 
         /// <summary>Sets a platform-specific handle or pointer to a specified value and returns the original value, as an atomic operation.</summary>
@@ -133,11 +135,13 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IntPtr CompareExchange(ref IntPtr location1, IntPtr value, IntPtr comparand)
         {
+#pragma warning disable CA2020 // Prevent from behavioral change
 #if TARGET_64BIT
             return (IntPtr)Interlocked.CompareExchange(ref Unsafe.As<IntPtr, long>(ref location1), (long)value, (long)comparand);
 #else
             return (IntPtr)Interlocked.CompareExchange(ref Unsafe.As<IntPtr, int>(ref location1), (int)value, (int)comparand);
 #endif
+#pragma warning restore CA2020
         }
 
         /// <summary>Compares two platform-specific handles or pointers for equality and, if they are equal, replaces the first one.</summary>

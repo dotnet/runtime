@@ -420,11 +420,11 @@ namespace System.Data.OleDb
         //[MarshalAs(UnmanagedType.Interface)]
         internal IntPtr pTypeInfo = (IntPtr)0;
 
-        internal IntPtr iOrdinal = (IntPtr)0;
+        internal nint iOrdinal = 0;
 
         internal int dwFlags;
 
-        internal IntPtr ulColumnSize = (IntPtr)0;
+        internal nint ulColumnSize = 0;
 
         internal short wType;
 

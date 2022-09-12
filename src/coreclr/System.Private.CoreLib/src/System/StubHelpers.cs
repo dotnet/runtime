@@ -382,7 +382,7 @@ namespace System.StubHelpers
         {
             if (IntPtr.Zero != pNative)
             {
-                Marshal.FreeCoTaskMem((IntPtr)(((long)pNative) - sizeof(uint)));
+                Marshal.FreeCoTaskMem(checked((IntPtr)(((long)pNative) - sizeof(uint))));
             }
         }
     }  // class VBByValStrMarshaler

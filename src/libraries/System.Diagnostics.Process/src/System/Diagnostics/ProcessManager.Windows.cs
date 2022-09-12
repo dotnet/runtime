@@ -576,7 +576,7 @@ namespace System.Diagnostics
             return temp;
         }
 
-        private static ThreadInfo GetThreadInfo(ReadOnlySpan<byte> instanceData, PERF_COUNTER_DEFINITION[] counters)
+        private static unsafe ThreadInfo GetThreadInfo(ReadOnlySpan<byte> instanceData, PERF_COUNTER_DEFINITION[] counters)
         {
             ThreadInfo threadInfo = new ThreadInfo();
             for (int i = 0; i < counters.Length; i++)
@@ -598,7 +598,7 @@ namespace System.Diagnostics
                         threadInfo._currentPriority = (int)value;
                         break;
                     case ValueId.StartAddress:
-                        threadInfo._startAddress = (IntPtr)value;
+                        threadInfo._startAddress = (void*)value;
                         break;
                     case ValueId.ThreadState:
                         threadInfo._threadState = (ThreadState)value;

@@ -663,7 +663,7 @@ namespace System.Data.Common
                 return (IntPtr)checked(pbase.ToInt32() + offset);
             }
             Debug.Assert(8 == ADP.PtrSize, "8 != IntPtr.Size"); // MDAC 73747
-            return (IntPtr)checked(pbase.ToInt64() + offset);
+            return checked((IntPtr)(pbase.ToInt64() + offset));
         }
     }
 }

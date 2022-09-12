@@ -565,11 +565,11 @@ namespace System.DirectoryServices.Protocols
                     {
                         IntPtr controlPtr = Marshal.AllocHGlobal(structSize);
                         Marshal.StructureToPtr(managedServerControls[i], controlPtr, false);
-                        tempPtr = (IntPtr)((long)serverControlArray + IntPtr.Size * i);
+                        tempPtr = checked((IntPtr)((long)serverControlArray + IntPtr.Size * i));
                         Marshal.WriteIntPtr(tempPtr, controlPtr);
                     }
 
-                    tempPtr = (IntPtr)((long)serverControlArray + IntPtr.Size * managedServerControls.Length);
+                    tempPtr = checked((IntPtr)((long)serverControlArray + IntPtr.Size * managedServerControls.Length));
                     Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
                 }
 
@@ -582,11 +582,11 @@ namespace System.DirectoryServices.Protocols
                     {
                         IntPtr controlPtr = Marshal.AllocHGlobal(structSize);
                         Marshal.StructureToPtr(managedClientControls[i], controlPtr, false);
-                        tempPtr = (IntPtr)((long)clientControlArray + IntPtr.Size * i);
+                        tempPtr = checked((IntPtr)((long)clientControlArray + IntPtr.Size * i));
                         Marshal.WriteIntPtr(tempPtr, controlPtr);
                     }
 
-                    tempPtr = (IntPtr)((long)clientControlArray + IntPtr.Size * managedClientControls.Length);
+                    tempPtr = checked((IntPtr)((long)clientControlArray + IntPtr.Size * managedClientControls.Length));
                     Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
                 }
 

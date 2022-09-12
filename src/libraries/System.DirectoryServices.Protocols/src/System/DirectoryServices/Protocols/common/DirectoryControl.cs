@@ -729,10 +729,10 @@ namespace System.DirectoryServices.Protocols
                 {
                     sortPtr = Marshal.AllocHGlobal(structSize);
                     Marshal.StructureToPtr(nativeSortKeys[i], sortPtr, false);
-                    tempPtr = (IntPtr)((long)memHandle + IntPtr.Size * i);
+                    tempPtr = checked((IntPtr)((long)memHandle + IntPtr.Size * i));
                     Marshal.WriteIntPtr(tempPtr, sortPtr);
                 }
-                tempPtr = (IntPtr)((long)memHandle + IntPtr.Size * i);
+                tempPtr = checked((IntPtr)((long)memHandle + IntPtr.Size * i));
                 Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
 
                 bool critical = IsCritical;
