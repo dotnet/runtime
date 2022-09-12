@@ -22,6 +22,10 @@ namespace Sample
                 new DotDouble(),
                 new SumUInt(),
                 new SumDouble(),
+                new MinFloat(),
+                new MaxFloat(),
+                new MinDouble(),
+                new MaxDouble(),
             };
         }
 
@@ -183,6 +187,84 @@ namespace Sample
 
             public override void RunStep() {
                 result = Vector128.Sum(vector1);
+            }
+        }
+
+        class MinFloat : VectorMeasurement
+        {
+            Vector128<float> vector1;
+            Vector128<float> vector2;
+            Vector128<float> result;
+
+            public override string Name => "Min float";
+
+            public MinFloat()
+            {
+                vector1 = Vector128.Create(12f, 34, 56, 78);
+                vector2 = Vector128.Create(13f, 32, 57, 77);
+                System.Console.WriteLine($"min float: {Vector128.Min(vector1, vector2)}");
+            }
+
+            public override void RunStep() {
+                result = Vector128.Min(vector1, vector2);
+            }
+        }
+
+        class MaxFloat : VectorMeasurement
+        {
+            Vector128<float> vector1;
+            Vector128<float> vector2;
+            Vector128<float> result;
+
+            public override string Name => "Max float";
+
+            public MaxFloat()
+            {
+                vector1 = Vector128.Create(12f, 34, 56, 78);
+                vector2 = Vector128.Create(13f, 32, 57, 77);
+            }
+
+            public override void RunStep() {
+                result = Vector128.Max(vector1, vector2);
+            }
+        }
+
+        class MinDouble : VectorMeasurement
+        {
+            Vector128<double> vector1;
+            Vector128<double> vector2;
+            Vector128<double> result;
+
+            public override string Name => "Min double";
+
+            public MinDouble()
+            {
+                vector1 = Vector128.Create(12d, 34);
+                vector2 = Vector128.Create(13d, 32);
+                System.Console.WriteLine($"min double: {Vector128.Min(vector1, vector2)}");
+            }
+
+            public override void RunStep() {
+                result = Vector128.Min(vector1, vector2);
+            }
+        }
+
+        class MaxDouble : VectorMeasurement
+        {
+            Vector128<double> vector1;
+            Vector128<double> vector2;
+            Vector128<double> result;
+
+            public override string Name => "Max double";
+
+            public MaxDouble()
+            {
+                vector1 = Vector128.Create(12d, 34);
+                vector2 = Vector128.Create(13d, 32);
+            }
+
+            public override void RunStep() {
+                result = Vector128.Max(vector1, vector2);
             }
         }
     }
