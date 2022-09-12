@@ -437,7 +437,7 @@ namespace System.Xml.Serialization
         internal static byte[]? ToByteArrayHex(string? value)
         {
             if (value == null) return null;
-            return XmlConvert.FromBinHexString(value.AsSpan().Trim(XmlConvert.WhitespaceChars), true);
+            return XmlConvert.FromBinHexString(value.AsSpan().Trim(), true);
         }
 
         internal static long ToEnum(string val, Hashtable vals, string? typeName, bool validate)

@@ -963,28 +963,28 @@ namespace System.Xml
 
         public static float ToSingle(string s)
         {
-            ReadOnlySpan<char> roS = s.AsSpan().Trim(WhitespaceChars);
-            switch (roS)
+            ReadOnlySpan<char> value = s.AsSpan().Trim(WhitespaceChars);
+            switch (value)
             {
                 case "-INF":
                     return float.NegativeInfinity;
                 case "INF":
                     return float.PositiveInfinity;
-            }
+                default:
+                    float f = float.Parse(value, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo);
+                    if (f == 0 && value[0] == '-')
+                    {
+                        return -0f;
+                    }
 
-            float f = float.Parse(roS, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo);
-            if (f == 0 && roS[0] == '-')
-            {
-                return -0f;
+                    return f;
             }
-
-            return f;
         }
 
         internal static Exception? TryToSingle(string s, out float result)
         {
-            ReadOnlySpan<char> roS = s.AsSpan().Trim(WhitespaceChars);
-            switch (roS)
+            ReadOnlySpan<char> value = s.AsSpan().Trim(WhitespaceChars);
+            switch (value)
             {
                 case "-INF":
                     result = float.NegativeInfinity;
@@ -993,48 +993,43 @@ namespace System.Xml
                     result = float.PositiveInfinity;
                     return null;
                 default:
+                    if (!float.TryParse(value, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo, out result))
                     {
-                        if (!float.TryParse(roS, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo, out result))
-                        {
-                            return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Single"));
-                        }
-
-                        break;
+                        return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Single"));
                     }
-            }
+                    if (result == 0 && value[0] == '-')
+                    {
+                        result = -0f;
+                    }
 
-            if (result == 0 && roS[0] == '-')
-            {
-                result = -0f;
+                    return null;
             }
-
-            return null;
         }
 
         public static double ToDouble(string s)
         {
-            ReadOnlySpan<char> roS = s.AsSpan().Trim(WhitespaceChars);
-            switch (roS)
+            ReadOnlySpan<char> value = s.AsSpan().Trim(WhitespaceChars);
+            switch (value)
             {
                 case "-INF":
                     return double.NegativeInfinity;
                 case "INF":
                     return double.PositiveInfinity;
-            }
+                default:
+                    double dVal = double.Parse(value, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo);
+                    if (dVal == 0 && value[0] == '-')
+                    {
+                        return -0d;
+                    }
 
-            double dVal = double.Parse(roS, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo);
-            if (dVal == 0 && roS[0] == '-')
-            {
-                return -0d;
+                    return dVal;
             }
-
-            return dVal;
         }
 
         internal static Exception? TryToDouble(string s, out double result)
         {
-            ReadOnlySpan<char> roS = s.AsSpan().Trim(WhitespaceChars);
-            switch (roS)
+            ReadOnlySpan<char> value = s.AsSpan().Trim(WhitespaceChars);
+            switch (value)
             {
                 case "-INF":
                     result = double.NegativeInfinity;
@@ -1043,62 +1038,55 @@ namespace System.Xml
                     result = double.PositiveInfinity;
                     return null;
                 default:
+                    if (!double.TryParse(value, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo, out result))
                     {
-                        if (!double.TryParse(roS, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, NumberFormatInfo.InvariantInfo, out result))
-                        {
-                            return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Double"));
-                        }
-
-                        break;
+                        return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Double"));
                     }
-            }
 
-            if (result == 0 && roS[0] == '-')
-            {
-                result = -0d;
-            }
+                    if (result == 0 && value[0] == '-')
+                    {
+                        result = -0d;
+                    }
 
-            return null;
+                    return null;
+            }
         }
 
         internal static double ToXPathDouble(object? o)
         {
-            if (o is string str)
+            switch (o)
             {
-                ReadOnlySpan<char> roS = str.AsSpan().Trim(WhitespaceChars);
-                if (roS.Length != 0 && roS[0] != '+')
-                {
-                    if (double.TryParse(roS, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out double d))
+                case string str:
                     {
-                        return d;
+                        ReadOnlySpan<char> value = str.AsSpan().Trim(WhitespaceChars);
+                        if (value.Length != 0 && value[0] != '+')
+                        {
+                            if (double.TryParse(value, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo, out double d))
+                            {
+                                return d;
+                            }
+                        }
+                        return double.NaN;
                     }
-                }
-                return double.NaN;
-            }
+                case double oDouble:
+                    return oDouble;
+                case bool oBool:
+                    return oBool ? 1.0 : 0.0;
+                default:
+                    try
+                    {
+                        return Convert.ToDouble(o, NumberFormatInfo.InvariantInfo);
+                    }
+                    catch (FormatException)
+                    {
+                    }
+                    catch (OverflowException)
+                    {
+                    }
+                    catch (ArgumentNullException) { }
 
-            if (o is double oDouble)
-            {
-                return oDouble;
+                    return double.NaN;
             }
-
-            if (o is bool oBool)
-            {
-                return oBool ? 1.0 : 0.0;
-            }
-
-            try
-            {
-                return Convert.ToDouble(o, NumberFormatInfo.InvariantInfo);
-            }
-            catch (FormatException)
-            {
-            }
-            catch (OverflowException)
-            {
-            }
-            catch (ArgumentNullException) { }
-
-            return double.NaN;
         }
 
         internal static string? ToXPathString(object? value)
