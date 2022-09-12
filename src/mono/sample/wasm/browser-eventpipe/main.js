@@ -16,14 +16,18 @@ async function doWork(startWork, stopWork, getIterationsDone) {
     btn.innerText = "Working";
     document.getElementById("out").innerHTML = '...';
 
+    console.log("TMP before delay...");
     await delay(5000); // let it run for 5 seconds
+    console.log("TMP afeter delay");
 
     document.getElementById("startWork").innerText = "Stopping";
     document.getElementById("out").innerHTML = '... ...';
 
     stopWork();
 
+    console.log("TMP getting the answer ...");
     const ret = await workPromise; // get the answer
+    console.log("TMP got the answer ...");
     const iterations = getIterationsDone(); // get how many times the loop ran
 
     btn = document.getElementById("startWork");
@@ -45,30 +49,41 @@ function getOnClickHandler(startWork, stopWork, getIterationsDone) {
 
 const isTest = (config) => config.environmentVariables["CI_TEST"] === "true";
 async function runTest({ StartAsyncWork, StopWork, GetIterationsDone }) {
+    console.log("TMP running test");
     const result = await doWork(StartAsyncWork, StopWork, GetIterationsDone);
+    console.log("TMP done work");
     const expectedResult = 55; // the default value of `inputN` is 10 (see index.html)
     return result === expectedResult;
 }
 
 async function main() {
+    console.log("TMP running main");
     const { MONO, Module, getAssemblyExports, getConfig } = await dotnet
         .withElementOnExit()
         .withExitCodeLogging()
         .create();
+    console.log("TMP created dotnet");
 
     globalThis.__Module = Module;
     globalThis.MONO = MONO;
 
+    console.log("TMP getting exports");
     const exports = await getAssemblyExports("Wasm.Browser.EventPipe.Sample.dll");
+    console.log("TMP got exports");
 
+    console.log("TMP setting up btn");
     const btn = document.getElementById("startWork");
     btn.style.backgroundColor = "rgb(192,255,192)";
     btn.onclick = getOnClickHandler(exports.Sample.Test.StartAsyncWork, exports.Sample.Test.StopWork, exports.Sample.Test.GetIterationsDone);
+    console.log("TMP set up btn");
 
     const config = getConfig();
     if (isTest(config)) {
+        console.log("TMP is test");
         const succeeded = await runTest(exports.Sample.Test);
+        console.log("TMP exitting...");
         exit(succeeded ? 0 : 1);
+        console.log("TMP exitted");
     }
 }
 
