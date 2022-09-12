@@ -141,6 +141,9 @@ namespace System.Xml
         private char[] _indentChars;
         private static readonly char[] s_defaultIndentChars = CreateDefaultIndentChars();
 
+        //char buffer for serializing primitive values
+        private char[] _primitivesBuffer = new char[36];
+
         private static char[] CreateDefaultIndentChars()
         {
             var result = new char[IndentArrayLength];
@@ -981,6 +984,117 @@ namespace System.Xml
             }
         }
 
+        // Override in order to handle Xml simple typed values and to pass resolver for QName values
+        public override void WriteValue(object value)
+        {
+            ArgumentNullException.ThrowIfNull(value);
+
+            Type sourceType = value.GetType();
+            switch (Type.GetTypeCode(sourceType))
+            {
+                case TypeCode.Int32:
+                    if (sourceType.IsEnum)
+                        base.WriteValue(value);
+                    else
+                        WriteWithBuffer((int)value, XmlConvert.TryFormat);
+                    break;
+                case TypeCode.Boolean:
+                    WriteWithBuffer((bool)value, XmlConvert.TryFormat);
+                    break;
+                case TypeCode.Int16:
+                    WriteWithBuffer((short)value, XmlConvert.TryFormat);
+                    break;
+                case TypeCode.Int64:
+                    WriteWithBuffer((long)value, XmlConvert.TryFormat);
+                    break;
+                case TypeCode.Single:
+                    WriteWithBuffer((float)value, XmlConvert.TryFormat);
+                    break;
+                case TypeCode.Double:
+                    WriteWithBuffer((double)value, XmlConvert.TryFormat);
+                    break;
+                case TypeCode.Decimal:
+                    WriteWithBuffer((decimal)value, XmlConvert.TryFormat);
+                    break;
+                case TypeCode.DateTime:
+                    WriteWithBuffer((DateTime)value, XmlConvert.TryFormat);
+                    break;
+                case TypeCode.Byte:
+                    WriteWithBuffer((byte)value, XmlConvert.TryFormat);
+                    break;
+                case TypeCode.SByte:
+                    WriteWithBuffer((sbyte)value, XmlConvert.TryFormat);
+                    break;
+                case TypeCode.UInt16:
+                    WriteWithBuffer((ushort)value, XmlConvert.TryFormat);
+                    break;
+                case TypeCode.UInt32:
+                    WriteWithBuffer((uint)value, XmlConvert.TryFormat);
+                    break;
+                case TypeCode.UInt64:
+                    WriteWithBuffer((ulong)value, XmlConvert.TryFormat);
+                    break;
+                case TypeCode.Char:
+                    WriteWithBuffer((char)value, XmlConvert.TryFormat);
+                    break;
+                default:
+                    //Guid is not supported in XmlUntypedConverter.Untyped and throws exception
+                    //if (sourceType == typeof(Guid))
+                    //{
+                    //    WriteWithBuffer((Guid)value, XmlConvert.TryFormat);
+                    //    break;
+                    //}
+                    if (sourceType == typeof(TimeSpan))
+                    {
+                        WriteWithBuffer((TimeSpan)value, XmlConvert.TryFormat);
+                        break;
+                    }
+                    if (sourceType == typeof(DateTimeOffset))
+                    {
+                        WriteWithBuffer((DateTimeOffset)value, XmlConvert.TryFormat);
+                        break;
+                    }
+
+                    base.WriteValue(value);
+                    break;
+            }
+        }
+
+        public override void WriteValue(bool value)
+        {
+            WriteWithBuffer(value, XmlConvert.TryFormat);
+        }
+
+        public override void WriteValue(int value)
+        {
+            WriteWithBuffer(value, XmlConvert.TryFormat);
+        }
+
+        public override void WriteValue(long value)
+        {
+            WriteWithBuffer(value, XmlConvert.TryFormat);
+        }
+
+        public override void WriteValue(double value)
+        {
+            WriteWithBuffer(value, XmlConvert.TryFormat);
+        }
+
+        public override void WriteValue(float value)
+        {
+            WriteWithBuffer(value, XmlConvert.TryFormat);
+        }
+
+        public override void WriteValue(decimal value)
+        {
+            WriteWithBuffer(value, XmlConvert.TryFormat);
+        }
+
+        public override void WriteValue(DateTime value)
+        {
+            WriteWithBuffer(value, XmlConvert.TryFormat);
+        }
+
         // Returns the state of the XmlWriter.
         public override WriteState WriteState
         {
@@ -1808,6 +1922,26 @@ namespace System.Xml
             // The Flush will call WriteRaw to write out the rest of the encoded characters
             _base64Encoder?.Flush();
             _flush = false;
+        }
+
+        private delegate bool GrowPrimitiveBufferDelegate<in T>(T value, Span<char> destination, out int charsWritten);
+        private void WriteWithBuffer<T>(T value, GrowPrimitiveBufferDelegate<T> checkFunc)
+        {
+            ArgumentNullException.ThrowIfNull(value);
+
+            //fast path without loop
+            if (checkFunc(value, _primitivesBuffer, out int charsWritten))
+            {
+                WriteChars(_primitivesBuffer, 0, charsWritten);
+                return;
+            }
+
+            while (!checkFunc(value, _primitivesBuffer, out charsWritten))
+            {
+                _primitivesBuffer = new char[_primitivesBuffer.Length * 2];
+            }
+
+            WriteChars(_primitivesBuffer, 0, charsWritten);
         }
     }
 }
