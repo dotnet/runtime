@@ -195,7 +195,7 @@ namespace System.Xml.Serialization
         }
 
         [RequiresUnreferencedCode("Calls WriteCheckDefault")]
-        private void WritePrimitive(string method, string name, string? ns, object? defaultValue, SourceInfo source, TypeMapping mapping, bool writeXsiType, bool isElement, bool isNullable)
+        private void WritePrimitive(string method, string name, string? ns, object? defaultValue, SourceInfo source, TypeMapping mapping, bool isNullable)
         {
             TypeDesc typeDesc = mapping.TypeDesc!;
             bool hasDefault = defaultValue != null && defaultValue != DBNull.Value && mapping.TypeDesc!.HasDefaultSupport;
@@ -252,20 +252,27 @@ namespace System.Xml.Serialization
             }
             else
             {
-                WritePrimitiveValue(typeDesc, source, out argType);
-                argTypes.Add(argType);
-            }
-
-            if (writeXsiType)
-            {
-                argTypes.Add(typeof(XmlQualifiedName));
-                ConstructorInfo XmlQualifiedName_ctor = typeof(XmlQualifiedName).GetConstructor(
-                    CodeGenerator.InstanceBindingFlags,
-                    new Type[] { typeof(string), typeof(string) }
+                if (!typeDesc.HasCustomFormatter && !(typeDesc == StringTypeDesc || typeDesc.FormatterName == "String"))
+                {
+                    MethodInfo XmlSerializationWriter_WriteTypedPrimitive = typeof(XmlSerializationWriter).GetMethod(
+                        "WriteTypedPrimitive",
+                        CodeGenerator.InstanceBindingFlags,
+                        new Type[] { typeof(string), typeof(string), typeof(object), typeof(bool) }
                     )!;
-                ilg.Ldstr(GetCSharpString(mapping.TypeName));
-                ilg.Ldstr(GetCSharpString(mapping.Namespace));
-                ilg.New(XmlQualifiedName_ctor);
+                    source.Load(typeof(object));
+                    ilg.Ldc(false);
+                    ilg.Call(XmlSerializationWriter_WriteTypedPrimitive);
+                    if (hasDefault)
+                    {
+                        ilg.EndIf();
+                    }
+                    return;
+                }
+                else
+                {
+                    WritePrimitiveValue(typeDesc, source, out argType);
+                    argTypes.Add(argType);
+                }
             }
 
             MethodInfo XmlSerializationWriter_method = typeof(XmlSerializationWriter).GetMethod(
@@ -1391,7 +1398,7 @@ namespace System.Xml.Serialization
             {
                 TypeDesc typeDesc = attribute.Mapping!.TypeDesc!;
                 source = source.CastTo(typeDesc);
-                WritePrimitive("WriteAttribute", attribute.Name, attribute.Form == XmlSchemaForm.Qualified ? attribute.Namespace : "", GetConvertedDefaultValue(source.Type, attribute.Default), source, attribute.Mapping, false, false, false);
+                WritePrimitive("WriteAttribute", attribute.Name, attribute.Form == XmlSchemaForm.Qualified ? attribute.Namespace : "", GetConvertedDefaultValue(source.Type, attribute.Default), source, attribute.Mapping, false);
             }
         }
 
@@ -1990,7 +1997,7 @@ namespace System.Xml.Serialization
             }
             else if (element.Mapping is EnumMapping)
             {
-                WritePrimitive("WriteElementString", name, ns, element.Default, source, element.Mapping, false, true, element.IsNullable);
+                WritePrimitive("WriteElementString", name, ns, element.Default, source, element.Mapping, element.IsNullable);
             }
             else if (element.Mapping is PrimitiveMapping primitiveMapping)
             {
@@ -2002,7 +2009,7 @@ namespace System.Xml.Serialization
                 {
                     string suffixRaw = primitiveMapping.TypeDesc!.XmlEncodingNotRequired ? "Raw" : "";
                     WritePrimitive(element.IsNullable ? ("WriteNullableStringLiteral" + suffixRaw) : ("WriteElementString" + suffixRaw),
-                                   name, ns, GetConvertedDefaultValue(source.Type, element.Default), source, primitiveMapping, false, true, element.IsNullable);
+                                   name, ns, GetConvertedDefaultValue(source.Type, element.Default), source, primitiveMapping, element.IsNullable);
                 }
             }
             else if (element.Mapping is StructMapping structMapping)
