@@ -17,16 +17,14 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="root">Configuration from which to retrieve sub-sections.</param>
         /// <param name="path">Key of a section of which children to retrieve.</param>
-        /// <param name="collectChildKeysIndependently">True to call providers GetChildKeys independently.</param>
         /// <returns>Immediate children sub-sections of section specified by key.</returns>
-        internal static IEnumerable<IConfigurationSection> GetChildrenImplementation(this IConfigurationRoot root, string? path, bool collectChildKeysIndependently)
+        internal static IEnumerable<IConfigurationSection> GetChildrenImplementation(this IConfigurationRoot root, string? path)
         {
             using ReferenceCountedProviders? reference = (root as ConfigurationManager)?.GetProvidersReference();
             IEnumerable<IConfigurationProvider> providers = reference?.Providers ?? root.Providers;
-            IEnumerable<string> keys = collectChildKeysIndependently
-                ? providers.SelectMany(p => p.GetChildKeys(Enumerable.Empty<string>(), path))
-                : providers.Aggregate(Enumerable.Empty<string>(), (seed, source) => source.GetChildKeys(seed, path));
-            IEnumerable<IConfigurationSection> children = keys
+            IEnumerable<IConfigurationSection> children = providers
+                .SelectMany(p => p.GetChildKeys(Enumerable.Empty<string>(), path))
+                .OrderBy(key => key, ConfigurationKeyComparer.Instance)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Select(key => root.GetSection(path == null ? key : ConfigurationPath.Combine(path, key)));
             if (reference is null)
