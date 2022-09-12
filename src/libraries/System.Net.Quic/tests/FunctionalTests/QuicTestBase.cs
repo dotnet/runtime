@@ -375,7 +375,7 @@ namespace System.Net.Quic.Tests
         {
             try
             {
-                using Socket s = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Tcp);
+                using Socket s = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
                 s.Bind(new IPEndPoint(IPAddress.IPv6Loopback, 0));
                 return true;
             }
