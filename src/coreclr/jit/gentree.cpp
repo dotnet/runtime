@@ -2401,7 +2401,7 @@ AGAIN:
             break;
 
         case GT_CNS_DBL:
-            if  (op1->AsDblCon()->gtDconVal == op2->AsDblCon()->gtDconVal)
+            if  (op1->AsDblCon()->DconValue() == op2->AsDblCon()->DconValue())
                 return true;
             break;
 #endif
@@ -2841,13 +2841,16 @@ AGAIN:
 #endif
                 break;
             case GT_CNS_DBL:
-                bits = *(UINT64*)(&tree->AsDblCon()->gtDconVal);
+            {
+                double dcon = tree->AsDblCon()->DconValue();
+                memcpy(&bits, &dcon, sizeof(dcon));
 #ifdef HOST_64BIT
                 add = bits;
 #else // 32-bit host
                 add      = genTreeHashAdd(uhi32(bits), ulo32(bits));
 #endif
                 break;
+            }
             case GT_CNS_STR:
                 add = tree->AsStrCon()->gtSconCPX;
                 break;
@@ -4616,7 +4619,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costSz = 2 + 8;
                 }
 #elif defined(TARGET_ARM64)
-                if (tree->IsFloatPositiveZero() || emitter::emitIns_valid_imm_for_fmov(tree->AsDblCon()->gtDconVal))
+                if (tree->IsFloatPositiveZero() || emitter::emitIns_valid_imm_for_fmov(tree->AsDblCon()->DconValue()))
                 {
                     // Zero and certain other immediates can be specially created with a single instruction
                     // These can be cheaply reconstituted but still take up 4-bytes of native codegen
@@ -8149,7 +8152,7 @@ GenTree* Compiler::gtClone(GenTree* tree, bool complexOK)
 
         case GT_CNS_DBL:
         {
-            copy = gtNewDconNode(tree->AsDblCon()->gtDconVal, tree->TypeGet());
+            copy = gtNewDconNode(tree->AsDblCon()->DconValue(), tree->TypeGet());
             break;
         }
 
@@ -8325,7 +8328,7 @@ GenTree* Compiler::gtCloneExpr(
 
             case GT_CNS_DBL:
             {
-                copy = gtNewDconNode(tree->AsDblCon()->gtDconVal, tree->TypeGet());
+                copy = gtNewDconNode(tree->AsDblCon()->DconValue(), tree->TypeGet());
                 goto DONE;
             }
 
@@ -11227,15 +11230,25 @@ void Compiler::gtDispConst(GenTree* tree)
             break;
 
         case GT_CNS_DBL:
-            if (*((__int64*)&tree->AsDblCon()->gtDconVal) == (__int64)I64(0x8000000000000000))
+        {
+            double dcon = tree->AsDblCon()->DconValue();
+            if (FloatingPointUtils::isNegativeZero(dcon))
             {
                 printf(" -0.00000");
             }
+            else if (FloatingPointUtils::isNaN(dcon))
+            {
+                uint64_t bits;
+                static_assert_no_msg(sizeof(bits) == sizeof(dcon));
+                memcpy(&bits, &dcon, sizeof(dcon));
+                printf(" %#.17g(0x%llx)\n", dcon, bits);
+            }
             else
             {
-                printf(" %#.17g", tree->AsDblCon()->gtDconVal);
+                printf(" %#.17g", dcon);
             }
             break;
+        }
 
         case GT_CNS_STR:
             printf("<string constant>");
@@ -14388,7 +14401,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 
                 // Fold constant DOUBLE unary operator.
 
-                d1 = op1->AsDblCon()->gtDconVal;
+                d1 = op1->AsDblCon()->DconValue();
 
                 switch (tree->OperGet())
                 {
@@ -15024,11 +15037,11 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
             }
 
             assert(op1->OperIs(GT_CNS_DBL));
-            d1 = op1->AsDblCon()->gtDconVal;
+            d1 = op1->AsDblCon()->DconValue();
 
             assert(varTypeIsFloating(op2->TypeGet()));
             assert(op2->OperIs(GT_CNS_DBL));
-            d2 = op2->AsDblCon()->gtDconVal;
+            d2 = op2->AsDblCon()->DconValue();
 
             // Special case - check if we have NaN operands.
             // For comparisons if not an unordered operation always return 0.
@@ -17199,7 +17212,7 @@ bool GenTreeVecCon::HandleArgForHWIntrinsicCreate(GenTree* arg, int argIdx, simd
         {
             if (arg->IsCnsFltOrDbl())
             {
-                simd32Val.f32[argIdx] = static_cast<float>(arg->AsDblCon()->gtDconVal);
+                simd32Val.f32[argIdx] = static_cast<float>(arg->AsDblCon()->DconValue());
                 return true;
             }
             else
@@ -17215,7 +17228,7 @@ bool GenTreeVecCon::HandleArgForHWIntrinsicCreate(GenTree* arg, int argIdx, simd
         {
             if (arg->IsCnsFltOrDbl())
             {
-                simd32Val.f64[argIdx] = static_cast<double>(arg->AsDblCon()->gtDconVal);
+                simd32Val.f64[argIdx] = static_cast<double>(arg->AsDblCon()->DconValue());
                 return true;
             }
             else
