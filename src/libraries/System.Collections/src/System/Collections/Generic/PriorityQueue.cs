@@ -251,6 +251,54 @@ namespace System.Collections.Generic
         }
 
         /// <summary>
+        ///  Removes the minimal element and then immediately adds the specified element with associated priority to the <see cref="PriorityQueue{TElement, TPriority}"/>,
+        /// </summary>
+        /// <param name="element">The element to add to the <see cref="PriorityQueue{TElement, TPriority}"/>.</param>
+        /// <param name="priority">The priority with which to associate the new element.</param>
+        /// <exception cref="InvalidOperationException">The queue is empty.</exception>
+        /// <returns>The minimal element removed before performing the enqueue operation.</returns>
+        /// <remarks>
+        ///  Implements an extract-then-insert heap operation that is generally more efficient
+        ///  than sequencing Dequeue and Enqueue operations: in the worst case scenario only one
+        ///  shift-down operation is required.
+        /// </remarks>
+        public TElement DequeueEnqueue(TElement element, TPriority priority)
+        {
+            if (_size == 0)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_EmptyQueue);
+            }
+
+            (TElement Element, TPriority Priority) root = _nodes[0];
+
+            if (_comparer == null)
+            {
+                if (Comparer<TPriority>.Default.Compare(priority, root.Priority) > 0)
+                {
+                    MoveDownDefaultComparer((element, priority), 0);
+                }
+                else
+                {
+                    _nodes[0] = (element, priority);
+                }
+            }
+            else
+            {
+                if (_comparer.Compare(priority, root.Priority) > 0)
+                {
+                    MoveDownCustomComparer((element, priority), 0);
+                }
+                else
+                {
+                    _nodes[0] = (element, priority);
+                }
+            }
+
+            _version++;
+            return root.Element;
+        }
+
+        /// <summary>
         ///  Removes the minimal element from the <see cref="PriorityQueue{TElement, TPriority}"/>,
         ///  and copies it to the <paramref name="element"/> parameter,
         ///  and its associated priority to the <paramref name="priority"/> parameter.

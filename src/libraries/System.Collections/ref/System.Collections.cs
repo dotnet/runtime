@@ -122,6 +122,7 @@ namespace System.Collections.Generic
         public System.Collections.Generic.PriorityQueue<TElement, TPriority>.UnorderedItemsCollection UnorderedItems { get { throw null; } }
         public void Clear() { }
         public TElement Dequeue() { throw null; }
+        public TElement DequeueEnqueue(TElement element, TPriority priority) { throw null; }
         public void Enqueue(TElement element, TPriority priority) { }
         public TElement EnqueueDequeue(TElement element, TPriority priority) { throw null; }
         public void EnqueueRange(System.Collections.Generic.IEnumerable<(TElement Element, TPriority Priority)> items) { }
