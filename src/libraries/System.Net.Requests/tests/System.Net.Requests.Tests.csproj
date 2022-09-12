@@ -9,18 +9,15 @@
     <NoWarn>$(NoWarn);SYSLIB0014</NoWarn>
     <!-- the res/xml/network_security_config.xml file comes from the System.Net.TestData package -->
     <IncludeNetworkSecurityConfig Condition="'$(TargetOS)' == 'Android'">true</IncludeNetworkSecurityConfig>
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
   </PropertyGroup>
-  <ItemGroup>
-    <AssemblyAttribute Include="System.Runtime.Versioning.RequiresPreviewFeaturesAttribute" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="HttpWebRequestTest.cs" />
     <Compile Include="HttpWebResponseTest.cs" />
+    <Compile Include="QuicLoad.cs" />
     <Compile Include="RequestStreamTest.cs" />
     <Compile Include="WebRequestTest.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\Capability.Quic.cs"
-             Link="Common\System\Net\Capability.Quic.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Capability.Security.cs"
              Link="Common\System\Net\Capability.Security.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.cs"
