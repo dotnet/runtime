@@ -11,6 +11,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdbool.h>
+#include <sys/random.h>
 
 c_static_assert(PAL_SSL_ERROR_NONE == SSL_ERROR_NONE);
 c_static_assert(PAL_SSL_ERROR_SSL == SSL_ERROR_SSL);
@@ -678,9 +679,16 @@ int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, SslCtxN
     {
         SSL_CTX_set_options(ctx, SSL_OP_NO_TICKET);
     }
-    else if (cacheSize >= 0)
+    else
     {
-        SSL_CTX_ctrl(ctx, SSL_CTRL_SET_SESS_CACHE_SIZE, (long)cacheSize, NULL);
+        unsigned char id[SSL_MAX_SID_CTX_LENGTH];
+        getrandom(id, sizeof(id), GRND_RANDOM);
+        SSL_CTX_set_session_id_context(ctx, id, sizeof(id));
+
+        if (cacheSize >= 0)
+        {
+            SSL_CTX_ctrl(ctx, SSL_CTRL_SET_SESS_CACHE_SIZE, (long)cacheSize, NULL);
+        }
     }
 
     if (newSessionCb != NULL)
