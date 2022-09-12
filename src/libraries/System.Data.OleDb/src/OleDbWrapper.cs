@@ -96,7 +96,7 @@ namespace System.Data.OleDb
                 {
                     throw ODB.ProviderUnavailable(constr.Provider, null);
                 }
-                Exception? e = OleDbConnection.ProcessResults(hr, null, null);
+                Exception? e = OleDbConnection.ProcessResults(hr, null);
                 Debug.Assert(null != e, "CreateProviderError");
                 throw e;
             }

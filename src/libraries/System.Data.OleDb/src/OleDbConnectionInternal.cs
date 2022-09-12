@@ -95,11 +95,11 @@ namespace System.Data.OleDb
                     // of an InfoMessageEvent.
                     if ((0 <= hr) && !_sessionwrp.IsInvalid)
                     { // process infonessage events
-                        OleDbConnection.ProcessResults(hr, connection, connection);
+                        OleDbConnection.ProcessResults(hr, connection);
                     }
                     else
                     {
-                        Exception? e = OleDbConnection.ProcessResults(hr, null, null);
+                        Exception? e = OleDbConnection.ProcessResults(hr, null);
                         Debug.Assert(null != e, "CreateSessionError");
                         throw e;
                     }
@@ -663,7 +663,7 @@ namespace System.Data.OleDb
         private void ProcessResults(OleDbHResult hr)
         {
             OleDbConnection? connection = Connection; // get value from weakref only once
-            Exception? e = OleDbConnection.ProcessResults(hr, connection, connection);
+            Exception? e = OleDbConnection.ProcessResults(hr, connection);
             if (null != e)
             { throw e; }
         }

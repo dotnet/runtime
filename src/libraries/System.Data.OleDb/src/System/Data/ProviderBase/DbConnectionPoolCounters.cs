@@ -199,10 +199,10 @@ namespace System.Data.ProviderBase
                     verboseCategoryName = categoryName;
                 }
             }
-            SoftConnectsPerSecond = new Counter(verboseCategoryName, instanceName, CreationData.SoftConnectsPerSecond.CounterName, CreationData.SoftConnectsPerSecond.CounterType);
-            SoftDisconnectsPerSecond = new Counter(verboseCategoryName, instanceName, CreationData.SoftDisconnectsPerSecond.CounterName, CreationData.SoftDisconnectsPerSecond.CounterType);
-            NumberOfActiveConnections = new Counter(verboseCategoryName, instanceName, CreationData.NumberOfActiveConnections.CounterName, CreationData.NumberOfActiveConnections.CounterType);
-            NumberOfFreeConnections = new Counter(verboseCategoryName, instanceName, CreationData.NumberOfFreeConnections.CounterName, CreationData.NumberOfFreeConnections.CounterType);
+            SoftConnectsPerSecond = new Counter(verboseCategoryName, instanceName, CreationData.SoftConnectsPerSecond.CounterName);
+            SoftDisconnectsPerSecond = new Counter(verboseCategoryName, instanceName, CreationData.SoftDisconnectsPerSecond.CounterName);
+            NumberOfActiveConnections = new Counter(verboseCategoryName, instanceName, CreationData.NumberOfActiveConnections.CounterName);
+            NumberOfFreeConnections = new Counter(verboseCategoryName, instanceName, CreationData.NumberOfFreeConnections.CounterName);
         }
         private static string? GetAssemblyName()
         {

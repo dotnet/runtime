@@ -911,7 +911,7 @@ namespace System.Data.OleDb
 
         private void ExecuteCommandTextErrorHandling(OleDbHResult hr)
         {
-            Exception? e = OleDbConnection.ProcessResults(hr, _connection, this);
+            Exception? e = OleDbConnection.ProcessResults(hr, _connection);
             if (null != e)
             {
                 e = ExecuteCommandTextSpecialErrorHandling(hr, e);
@@ -1228,14 +1228,14 @@ namespace System.Data.OleDb
 
         private void ProcessResults(OleDbHResult hr)
         {
-            Exception? e = OleDbConnection.ProcessResults(hr, _connection, this);
+            Exception? e = OleDbConnection.ProcessResults(hr, _connection);
             if (null != e)
             { throw e; }
         }
 
-        private void ProcessResultsNoReset(OleDbHResult hr)
+        private static void ProcessResultsNoReset(OleDbHResult hr)
         {
-            Exception? e = OleDbConnection.ProcessResults(hr, null, this);
+            Exception? e = OleDbConnection.ProcessResults(hr, null);
             if (null != e)
             { throw e; }
         }

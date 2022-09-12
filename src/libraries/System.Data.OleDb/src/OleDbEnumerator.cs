@@ -53,7 +53,7 @@ namespace System.Data.OleDb
             IntPtr propSets = ADP.PtrZero;
             OleDbHResult hr = srcrowset.GetSourcesRowset(ADP.PtrZero, ODB.IID_IRowset, propCount, propSets, out value);
 
-            Exception? f = OleDbConnection.ProcessResults(hr, null, null);
+            Exception? f = OleDbConnection.ProcessResults(hr, null);
             if (null != f)
             {
                 throw f;

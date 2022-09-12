@@ -59,7 +59,7 @@ namespace ILCompiler
             switch (node)
             {
                 case EETypeNode eeType:
-                    SerializeSimpleEntry(_types, eeType.Type, mangledName, objectData);
+                    SerializeSimpleEntry(_types, eeType.Type, objectData);
                     break;
                 case IMethodBodyNode methodBody:
                     var codeInfo = (INodeWithCodeInfo)node;
@@ -77,7 +77,7 @@ namespace ILCompiler
             }
         }
 
-        private void SerializeSimpleEntry(InstructionEncoder encoder, TypeSystemEntity entity, string mangledName, ObjectData blob)
+        private void SerializeSimpleEntry(InstructionEncoder encoder, TypeSystemEntity entity, ObjectData blob)
         {
             encoder.OpCode(ILOpCode.Ldtoken);
             encoder.Token(_emitter.EmitMetadataHandleForTypeSystemEntity(entity));

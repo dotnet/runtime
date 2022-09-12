@@ -8,6 +8,8 @@ using System.Security.Cryptography.X509Certificates;
 
 using PAL_SSLStreamStatus = Interop.AndroidCrypto.PAL_SSLStreamStatus;
 
+#pragma warning disable IDE0060
+
 namespace System.Net.Security
 {
     internal static class SslStreamPal
@@ -37,7 +39,7 @@ namespace System.Net.Security
         public static SecurityStatusPal InitializeSecurityContext(
             ref SafeFreeCredentials credential,
             ref SafeDeleteSslContext? context,
-            string? _1 /*targetName*/,
+            string? targetName,
             ReadOnlySpan<byte> inputBuffer,
             ref byte[]? outputBuffer,
             SslAuthenticationOptions sslAuthenticationOptions,
@@ -63,8 +65,8 @@ namespace System.Net.Security
         public static SecurityStatusPal EncryptMessage(
             SafeDeleteSslContext securityContext,
             ReadOnlyMemory<byte> input,
-            int _ /*headerSize*/,
-            int _1 /*trailerSize*/,
+            int headerSize,
+            int trailerSize,
             ref byte[] output,
             out int resultSize)
         {
@@ -154,7 +156,7 @@ namespace System.Net.Security
         }
 
         public static void QueryContextStreamSizes(
-            SafeDeleteContext? _ /*securityContext*/,
+            SafeDeleteContext? securityContext,
             out StreamSizes streamSizes)
         {
             streamSizes = StreamSizes.Default;

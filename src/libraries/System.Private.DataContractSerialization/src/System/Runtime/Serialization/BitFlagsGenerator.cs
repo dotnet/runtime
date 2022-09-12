@@ -68,7 +68,7 @@ namespace System.Runtime.Serialization
 
         public void LoadArray()
         {
-            LocalBuilder localArray = _ilg.DeclareLocal(Globals.TypeOfByteArray, "localArray");
+            LocalBuilder localArray = _ilg.DeclareLocal(Globals.TypeOfByteArray);
             _ilg.NewArray(typeof(byte), _locals.Length);
             _ilg.Store(localArray);
             for (int i = 0; i < _locals.Length; i++)
