@@ -246,17 +246,14 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(XmlSerializer.TrimSerializationWarning)]
         protected void WriteTypedPrimitive(string? name, string? ns, object o, bool xsiType)
         {
-            string typeNs = XmlSchema.Namespace;
-            string type;
-
-            void WriteFunc<T>(T value)
+            void WriteFunc<T>(T value, string lType, string lTypeNs = XmlSchema.Namespace)
             {
                 if (name == null)
-                    _w.WriteStartElement(type, typeNs);
+                    _w.WriteStartElement(lType, lTypeNs);
                 else
                     _w.WriteStartElement(name, ns);
 
-                if (xsiType) WriteXsiType(type, typeNs);
+                if (xsiType) WriteXsiType(lType, lTypeNs);
 
                 if (value == null)
                 {
@@ -298,115 +295,8 @@ namespace System.Xml.Serialization
                         _w.WriteValue((DateTimeOffset)(object)value);
                     else if (typeof(T) == typeof(byte[]))
                         XmlCustomFormatter.WriteArrayBase64(_w, (byte[])(object)value, 0, ((byte[])(object)value).Length);
-                    else
-                        throw CreateUnknownTypeException(typeof(T));
-                }
-
-                _w.WriteEndElement();
-            }
-            Type t = o.GetType();
-
-            switch (Type.GetTypeCode(t))
-            {
-                case TypeCode.String:
-                    type = "string";
-                    WriteFunc((string)o);
-                    break;
-                case TypeCode.Int32:
-                    type = "int";
-                    WriteFunc((int)o);
-                    break;
-                case TypeCode.Boolean:
-                    type = "boolean";
-                    WriteFunc((bool)o);
-                    break;
-                case TypeCode.Int16:
-                    type = "short";
-                    WriteFunc((short)o);
-                    break;
-                case TypeCode.Int64:
-                    type = "long";
-                    WriteFunc((long)o);
-                    break;
-                case TypeCode.Single:
-                    type = "float";
-                    WriteFunc((float)o);
-                    break;
-                case TypeCode.Double:
-                    type = "double";
-                    WriteFunc((double)o);
-                    break;
-                case TypeCode.Decimal:
-                    type = "decimal";
-                    WriteFunc((decimal)o);
-                    break;
-                case TypeCode.DateTime:
-                    type = "dateTime";
-                    WriteFunc(FromDateTime((DateTime)o));
-                    break;
-                case TypeCode.Char:
-                    type = "char";
-                    typeNs = UrtTypes.Namespace;
-                    WriteFunc((ushort)(char)o);
-                    break;
-                case TypeCode.Byte:
-                    type = "unsignedByte";
-                    WriteFunc((byte)o);
-                    break;
-                case TypeCode.SByte:
-                    type = "byte";
-                    WriteFunc((sbyte)o);
-                    break;
-                case TypeCode.UInt16:
-                    type = "unsignedShort";
-                    WriteFunc((ushort)o);
-                    break;
-                case TypeCode.UInt32:
-                    type = "unsignedInt";
-                    WriteFunc((uint)o);
-                    break;
-                case TypeCode.UInt64:
-                    type = "unsignedLong";
-                    WriteFunc(XmlConvert.ToString((ulong)o));
-                    break;
-
-                default:
-                    if (t == typeof(XmlQualifiedName))
+                    else if (typeof(T) == typeof(XmlNode[]))
                     {
-                        type = "QName";
-                        WriteFunc(FromXmlQualifiedName((XmlQualifiedName)o, false));
-                    }
-                    else if (t == typeof(byte[]))
-                    {
-                        type = "base64Binary";
-                        WriteFunc((byte[])o);
-                    }
-                    else if (t == typeof(Guid))
-                    {
-                        type = "guid";
-                        typeNs = UrtTypes.Namespace;
-                        //WriteFunc((Guid)o);
-                        WriteFunc(XmlConvert.ToString((Guid)o));
-                    }
-                    else if (t == typeof(TimeSpan))
-                    {
-                        type = "TimeSpan";
-                        typeNs = UrtTypes.Namespace;
-                        WriteFunc((TimeSpan)o);
-                    }
-                    else if (t == typeof(DateTimeOffset))
-                    {
-                        type = "dateTimeOffset";
-                        typeNs = UrtTypes.Namespace;
-                        WriteFunc((DateTimeOffset)o);
-                    }
-                    else if (typeof(XmlNode[]).IsAssignableFrom(t))
-                    {
-                        if (name == null)
-                            _w.WriteStartElement(Soap.UrType, XmlSchema.Namespace);
-                        else
-                            _w.WriteStartElement(name, ns);
-
                         XmlNode[] xmlNodes = (XmlNode[])o;
                         for (int i = 0; i < xmlNodes.Length; i++)
                         {
@@ -414,8 +304,87 @@ namespace System.Xml.Serialization
                                 continue;
                             xmlNodes[i].WriteTo(_w);
                         }
-                        _w.WriteEndElement();
-                        return;
+                    }
+                    else
+                        throw CreateUnknownTypeException(typeof(T));
+                }
+
+                _w.WriteEndElement();
+            }
+            Type t = o.GetType();
+            switch (Type.GetTypeCode(t))
+            {
+                case TypeCode.String:
+                    WriteFunc((string)o, "string");
+                    break;
+                case TypeCode.Int32:
+                    WriteFunc((int)o, "int");
+                    break;
+                case TypeCode.Boolean:
+                    WriteFunc((bool)o, "boolean");
+                    break;
+                case TypeCode.Int16:
+                    WriteFunc((short)o, "short");
+                    break;
+                case TypeCode.Int64:
+                    WriteFunc((long)o, "long");
+                    break;
+                case TypeCode.Single:
+                    WriteFunc((float)o, "float");
+                    break;
+                case TypeCode.Double:
+                    WriteFunc((double)o, "double");
+                    break;
+                case TypeCode.Decimal:
+                    WriteFunc((decimal)o, "decimal");
+                    break;
+                case TypeCode.DateTime:
+                    WriteFunc(FromDateTime((DateTime)o), "dateTime");
+                    break;
+                case TypeCode.Char:
+                    WriteFunc((ushort)(char)o, "char", UrtTypes.Namespace);
+                    break;
+                case TypeCode.Byte:
+                    WriteFunc((byte)o, "unsignedByte");
+                    break;
+                case TypeCode.SByte:
+                    WriteFunc((sbyte)o, "byte");
+                    break;
+                case TypeCode.UInt16:
+                    WriteFunc((ushort)o, "unsignedShort");
+                    break;
+                case TypeCode.UInt32:
+                    WriteFunc((uint)o, "unsignedInt");
+                    break;
+                case TypeCode.UInt64:
+                    WriteFunc(XmlConvert.ToString((ulong)o), "unsignedLong");
+                    break;
+
+                default:
+                    if (t == typeof(XmlQualifiedName))
+                    {
+                        WriteFunc(FromXmlQualifiedName((XmlQualifiedName)o, false), "QName");
+                    }
+                    else if (t == typeof(byte[]))
+                    {
+                        WriteFunc((byte[])o, "base64Binary");
+                    }
+                    else if (t == typeof(Guid))
+                    {
+                        //WriteFunc((Guid)o);
+                        WriteFunc(XmlConvert.ToString((Guid)o), "guid", UrtTypes.Namespace);
+                    }
+                    else if (t == typeof(TimeSpan))
+                    {
+                        WriteFunc((TimeSpan)o, "TimeSpan", UrtTypes.Namespace);
+                    }
+                    else if (t == typeof(DateTimeOffset))
+                    {
+                        WriteFunc((DateTimeOffset)o, "dateTimeOffset", UrtTypes.Namespace);
+                    }
+                    else if (typeof(XmlNode[]).IsAssignableFrom(t))
+                    {
+                        WriteFunc((XmlNode[])o, Soap.UrType);
                     }
                     else
                         throw CreateUnknownTypeException(t);
