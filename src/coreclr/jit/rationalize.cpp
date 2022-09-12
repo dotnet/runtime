@@ -126,7 +126,7 @@ void Rationalizer::RewriteSIMDIndir(LIR::Use& use)
 
             comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
         }
-        if (varDsc->lvPromotedStruct())
+        if (varDsc->lvPromoted)
         {
             comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::BlockOp));
         }

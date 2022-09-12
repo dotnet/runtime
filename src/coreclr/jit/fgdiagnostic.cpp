@@ -389,7 +389,7 @@ void Compiler::fgDumpTree(FILE* fgxFile, GenTree* const tree)
     }
     else if (tree->IsCnsFltOrDbl())
     {
-        fprintf(fgxFile, "%g", tree->AsDblCon()->gtDconVal);
+        fprintf(fgxFile, "%g", tree->AsDblCon()->DconValue());
     }
     else if (tree->IsLocal())
     {

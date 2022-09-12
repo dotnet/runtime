@@ -726,6 +726,8 @@ public:
     static double minimum(double val1, double val2);
 
     static float minimum(float val1, float val2);
+
+    static double normalize(double x);
 };
 
 // The CLR requires that critical section locks be initialized via its ClrCreateCriticalSection API...but

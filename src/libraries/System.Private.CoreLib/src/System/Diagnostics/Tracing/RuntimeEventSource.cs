@@ -75,10 +75,6 @@ namespace System.Diagnostics.Tracing
             base.WriteEvent((int)EventId.ProcessorCount, processorCount);
         }
 
-        [UnconditionalSuppressMessage ("ReflectionAnalysis", "IL2119",
-            Justification = "DAM on EventSource references the compiler-generated lambda methods some of which call PInvokes " +
-                            "which are considered potentially dangerous. Event source will not use these lambdas.")]
-
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
             if (command.Command == EventCommand.Enable)
