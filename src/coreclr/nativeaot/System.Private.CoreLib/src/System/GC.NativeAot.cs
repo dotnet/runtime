@@ -86,13 +86,13 @@ namespace System
         {
             // note - this throws an NRE if given a null weak reference. This isn't
             // documented, but it's the behavior of Desktop and CoreCLR.
-            object? handleRef = wo.Target;
-            if (handleRef == null)
+            object? obj = wo.Target;
+            if (obj == null)
             {
                 throw new ArgumentNullException(nameof(wo));
             }
 
-            return RuntimeImports.RhGetGeneration(handleRef);
+            return RuntimeImports.RhGetGeneration(obj);
         }
 
         // Forces a collection of all generations from 0 through Generation.

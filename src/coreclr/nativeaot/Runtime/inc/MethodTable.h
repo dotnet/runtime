@@ -133,7 +133,7 @@ private:
         };
     };
 
-    // used for component size for strings and arrays, type arg count for typedefs, other wise holds FlagsEx bits
+    // used for component size for strings and arrays, type arg count for typedefs, otherwise holds FlagsEx bits
     uint16_t              m_usComponentSize;
     uint16_t              m_usFlags;
     uint32_t              m_uBaseSize;
@@ -191,7 +191,7 @@ private:
     enum FlagsEx
     {
         HasEagerFinalizerFlag = 0x0001,
-        HasCriticalFinalizerFlag = 0x0002,   // NYI
+        HasCriticalFinalizerFlag = 0x0002,   // NYI, tracked by https://github.com/dotnet/runtime/issues/75106
     };
 
 public:

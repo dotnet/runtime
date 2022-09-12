@@ -87,7 +87,7 @@ namespace Internal.Runtime
     internal enum EETypeFlagsEx : ushort
     {
         HasEagerFinalizerFlag = 0x0001,
-        HasCriticalFinalizerFlag = 0x0002,   // NYI
+        HasCriticalFinalizerFlag = 0x0002,     // NYI, tracked by https://github.com/dotnet/runtime/issues/75106
     }
 
     internal enum EETypeKind : ushort

@@ -58,7 +58,7 @@ namespace Internal.TypeSystem
         HasEagerFinalizer    = 0x4000,
         HasCriticalFinalizer = 0x8000,
 
-        IsByRefLike = 0x10000,
+        IsByRefLike            = 0x10000,
         AttributeCacheComputed = 0x20000,
         IsIntrinsic            = 0x40000,
 
