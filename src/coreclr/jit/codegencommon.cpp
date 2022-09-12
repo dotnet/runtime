@@ -1387,7 +1387,7 @@ FOUND_AM:
 
         if (fold)
         {
-            ssize_t  tmpMul = 1;
+            ssize_t  tmpMul;
             GenTree* index;
 
             if ((rv2->gtOper == GT_MUL || rv2->gtOper == GT_LSH) && (rv2->AsOp()->gtOp2->IsCnsIntOrI()))
