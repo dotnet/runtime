@@ -1389,6 +1389,7 @@ FOUND_AM:
         {
             ssize_t  tmpMul;
             GenTree* index;
+            bool     indexIsEffectivelyZero = false;
 
             if ((rv2->gtOper == GT_MUL || rv2->gtOper == GT_LSH) && (rv2->AsOp()->gtOp2->IsCnsIntOrI()))
             {
@@ -1401,6 +1402,12 @@ FOUND_AM:
                 {
                     tmpMul *= mul;
                 }
+
+                if (tmpMul == 0)
+                {
+                    // "Index * 0" (if it wasn't folded earlier) means the index is zero
+                    indexIsEffectivelyZero = true;
+                }
             }
             else
             {
@@ -1410,14 +1417,22 @@ FOUND_AM:
                 tmpMul = mul;
             }
 
+            if (indexIsEffectivelyZero)
+            {
+                mul = 0;
+                rv2 = nullptr;
+            }
             /* Get hold of the array index and see if it's a constant */
-            if (index->IsIntCnsFitsInI32())
+            else if (index->IsIntCnsFitsInI32())
             {
                 /* Get hold of the index value */
                 ssize_t ixv = index->AsIntConCommon()->IconValue();
 
                 /* Scale the index if necessary */
-                ixv *= tmpMul;
+                if (tmpMul)
+                {
+                    ixv *= tmpMul;
+                }
 
                 if (FitsIn<INT32>(cns + ixv))
                 {
