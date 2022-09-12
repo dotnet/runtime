@@ -60,8 +60,8 @@
 
     <FailOnTestFailure Condition="'$(FailOnTestFailure)' == '' and '$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
 
-    <SdkForWorkloadTestingDirName Condition="'$(SdkForWorkloadTestingDirName)' == '' and '$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' == 'true'">dotnet-workload</SdkForWorkloadTestingDirName>
-    <SdkForWorkloadTestingDirName Condition="'$(SdkForWorkloadTestingDirName)' == '' and '$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' != 'true'">sdk-no-workload</SdkForWorkloadTestingDirName>
+    <SdkForWorkloadTestingDirName Condition="'$(SdkForWorkloadTestingDirName)' == '' and '$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' == 'true'">dotnet-net7+latest</SdkForWorkloadTestingDirName>
+    <SdkForWorkloadTestingDirName Condition="'$(SdkForWorkloadTestingDirName)' == '' and '$(NeedsWorkload)' == 'true' and '$(TestUsingWorkloads)' != 'true'">dotnet-none</SdkForWorkloadTestingDirName>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HelixType)' == ''">

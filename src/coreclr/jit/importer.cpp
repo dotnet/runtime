@@ -4432,14 +4432,14 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                     if (ni == NI_System_Math_Max)
                     {
-                        cnsNode->gtDconVal =
-                            FloatingPointUtils::maximum(cnsNode->gtDconVal, otherNode->AsDblCon()->gtDconVal);
+                        cnsNode->SetDconValue(
+                            FloatingPointUtils::maximum(cnsNode->DconValue(), otherNode->AsDblCon()->DconValue()));
                     }
                     else
                     {
                         assert(ni == NI_System_Math_Min);
-                        cnsNode->gtDconVal =
-                            FloatingPointUtils::minimum(cnsNode->gtDconVal, otherNode->AsDblCon()->gtDconVal);
+                        cnsNode->SetDconValue(
+                            FloatingPointUtils::minimum(cnsNode->DconValue(), otherNode->AsDblCon()->DconValue()));
                     }
 
                     retNode = cnsNode;
@@ -4530,11 +4530,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 if (callJitType == CORINFO_TYPE_FLOAT)
                 {
-                    vecCon->gtSimd16Val.f32[0] = (float)op1->AsDblCon()->gtDconVal;
+                    vecCon->gtSimd16Val.f32[0] = (float)op1->AsDblCon()->DconValue();
                 }
                 else
                 {
-                    vecCon->gtSimd16Val.f64[0] = op1->AsDblCon()->gtDconVal;
+                    vecCon->gtSimd16Val.f64[0] = op1->AsDblCon()->DconValue();
                 }
 
                 op1 = vecCon;
@@ -4848,7 +4848,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 {
                     impPopStack();
 
-                    double f64Cns = op1->AsDblCon()->gtDconVal;
+                    double f64Cns = op1->AsDblCon()->DconValue();
                     retNode       = gtNewLconNode(*reinterpret_cast<int64_t*>(&f64Cns));
                 }
 #if TARGET_64BIT
@@ -4915,7 +4915,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 if (op1->IsCnsFltOrDbl())
                 {
-                    float f32Cns = (float)op1->AsDblCon()->gtDconVal;
+                    float f32Cns = (float)op1->AsDblCon()->DconValue();
                     retNode      = gtNewIconNode(*reinterpret_cast<int32_t*>(&f32Cns));
                 }
                 else
@@ -17910,8 +17910,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     assert(info.compRetNativeType != TYP_VOID &&
                            (fgMoreThanOneReturnBlock() || impInlineInfo->HasGcRefLocals()));
 
-                    // If this method returns a ref type, track the actual types seen
-                    // in the returns.
+                    // If this method returns a ref type, track the actual types seen in the returns.
                     if (info.compRetType == TYP_REF)
                     {
                         bool                 isExact      = false;
@@ -17968,13 +17967,12 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
             else
             {
                 // compRetNativeType is TYP_STRUCT.
-                // This implies that struct return via RetBuf arg or multi-reg struct return
+                // This implies that struct return via RetBuf arg or multi-reg struct return.
 
                 GenTreeCall* iciCall = impInlineInfo->iciCall->AsCall();
 
                 // Assign the inlinee return into a spill temp.
-                // spill temp only exists if there are multiple return points
-                if (lvaInlineeReturnSpillTemp != BAD_VAR_NUM)
+                if (fgNeedReturnSpillTemp())
                 {
                     // in this case we have to insert multiple struct copies to the temp
                     // and the retexpr is just the temp.
@@ -17985,49 +17983,6 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                                      (unsigned)CHECK_SPILL_ALL);
                 }
 
-#if defined(TARGET_ARM) || defined(UNIX_AMD64_ABI)
-#if defined(TARGET_ARM)
-                // TODO-ARM64-NYI: HFA
-                // TODO-AMD64-Unix and TODO-ARM once the ARM64 functionality is implemented the
-                // next ifdefs could be refactored in a single method with the ifdef inside.
-                if (IsHfa(retClsHnd))
-                {
-// Same as !IsHfa but just don't bother with impAssignStructPtr.
-#else  // defined(UNIX_AMD64_ABI)
-                ReturnTypeDesc retTypeDesc;
-                retTypeDesc.InitializeStructReturnType(this, retClsHnd, info.compCallConv);
-                unsigned retRegCount = retTypeDesc.GetReturnRegCount();
-
-                if (retRegCount != 0)
-                {
-                    // If single eightbyte, the return type would have been normalized and there won't be a temp var.
-                    // This code will be called only if the struct return has not been normalized (i.e. 2 eightbytes -
-                    // max allowed.)
-                    assert(retRegCount == MAX_RET_REG_COUNT);
-                    // Same as !structDesc.passedInRegisters but just don't bother with impAssignStructPtr.
-                    CLANG_FORMAT_COMMENT_ANCHOR;
-#endif // defined(UNIX_AMD64_ABI)
-
-                    if (fgNeedReturnSpillTemp())
-                    {
-                        if (!impInlineInfo->retExpr)
-                        {
-#if defined(TARGET_ARM)
-                            impInlineInfo->retExpr = gtNewLclvNode(lvaInlineeReturnSpillTemp, info.compRetType);
-#else  // defined(UNIX_AMD64_ABI)
-                            // The inlinee compiler has figured out the type of the temp already. Use it here.
-                            impInlineInfo->retExpr =
-                                gtNewLclvNode(lvaInlineeReturnSpillTemp, lvaTable[lvaInlineeReturnSpillTemp].lvType);
-#endif // defined(UNIX_AMD64_ABI)
-                        }
-                    }
-                    else
-                    {
-                        impInlineInfo->retExpr = op2;
-                    }
-                }
-                else
-#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
                 ReturnTypeDesc retTypeDesc;
                 retTypeDesc.InitializeStructReturnType(this, retClsHnd, info.compCallConv);
                 unsigned retRegCount = retTypeDesc.GetReturnRegCount();
@@ -18035,34 +17990,11 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                 if (retRegCount != 0)
                 {
                     assert(!iciCall->ShouldHaveRetBufArg());
-                    assert(retRegCount >= 2);
-                    if (fgNeedReturnSpillTemp())
-                    {
-                        if (!impInlineInfo->retExpr)
-                        {
-                            // The inlinee compiler has figured out the type of the temp already. Use it here.
-                            impInlineInfo->retExpr =
-                                gtNewLclvNode(lvaInlineeReturnSpillTemp, lvaTable[lvaInlineeReturnSpillTemp].lvType);
-                        }
-                    }
-                    else
-                    {
-                        impInlineInfo->retExpr = op2;
-                    }
-                }
-                else
-#elif defined(TARGET_X86)
-                ReturnTypeDesc retTypeDesc;
-                retTypeDesc.InitializeStructReturnType(this, retClsHnd, info.compCallConv);
-                unsigned retRegCount = retTypeDesc.GetReturnRegCount();
+                    assert(retRegCount >= 2); // Otherwise "compRetNativeType" wouldn't have been TYP_STRUCT.
 
-                if (retRegCount != 0)
-                {
-                    assert(!iciCall->ShouldHaveRetBufArg());
-                    assert(retRegCount == MAX_RET_REG_COUNT);
                     if (fgNeedReturnSpillTemp())
                     {
-                        if (!impInlineInfo->retExpr)
+                        if (impInlineInfo->retExpr == nullptr)
                         {
                             // The inlinee compiler has figured out the type of the temp already. Use it here.
                             impInlineInfo->retExpr =
@@ -18074,16 +18006,15 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                         impInlineInfo->retExpr = op2;
                     }
                 }
-                else
-#endif // defined(TARGET_ARM64)
+                else // The struct was to be returned via a return buffer.
                 {
                     assert(iciCall->gtArgs.HasRetBuffer());
                     GenTree* dest = gtCloneExpr(iciCall->gtArgs.GetRetBufferArg()->GetEarlyNode());
-                    // spill temp only exists if there are multiple return points
+
                     if (fgNeedReturnSpillTemp())
                     {
-                        // if this is the first return we have seen set the retExpr
-                        if (!impInlineInfo->retExpr)
+                        // If this is the first return we have seen set the retExpr.
+                        if (impInlineInfo->retExpr == nullptr)
                         {
                             impInlineInfo->retExpr =
                                 impAssignStructPtr(dest, gtNewLclvNode(lvaInlineeReturnSpillTemp, info.compRetType),
@@ -18109,12 +18040,7 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
         return true;
     }
 
-    if (info.compRetType == TYP_VOID)
-    {
-        // return void
-        op1 = new (this, GT_RETURN) GenTreeOp(GT_RETURN, TYP_VOID);
-    }
-    else if (info.compRetBuffArg != BAD_VAR_NUM)
+    if (info.compRetBuffArg != BAD_VAR_NUM)
     {
         // Assign value to return buff (first param)
         GenTree* retBuffAddr =
@@ -18123,43 +18049,16 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
         op2 = impAssignStructPtr(retBuffAddr, op2, retClsHnd, (unsigned)CHECK_SPILL_ALL);
         impAppendTree(op2, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
 
-        // There are cases where the address of the implicit RetBuf should be returned explicitly (in RAX).
-        CLANG_FORMAT_COMMENT_ANCHOR;
-
-#if defined(TARGET_AMD64)
-
-        // x64 (System V and Win64) calling convention requires to
-        // return the implicit return buffer explicitly (in RAX).
-        // Change the return type to be BYREF.
-        op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
-#else // !defined(TARGET_AMD64)
-        // In case of non-AMD64 targets the profiler hook requires to return the implicit RetBuf explicitly (in RAX).
-        // In such case the return value of the function is changed to BYREF.
-        // If profiler hook is not needed the return type of the function is TYP_VOID.
-        if (compIsProfilerHookNeeded())
+        // There are cases where the address of the implicit RetBuf should be returned explicitly.
+        //
+        if (compMethodReturnsRetBufAddr())
         {
             op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
         }
-#if defined(TARGET_ARM64)
-        // On ARM64, the native instance calling convention variant
-        // requires the implicit ByRef to be explicitly returned.
-        else if (TargetOS::IsWindows && callConvIsInstanceMethodCallConv(info.compCallConv))
-        {
-            op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
-        }
-#endif
-#if defined(TARGET_X86)
-        else if (info.compCallConv != CorInfoCallConvExtension::Managed)
-        {
-            op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
-        }
-#endif
         else
         {
-            // return void
             op1 = new (this, GT_RETURN) GenTreeOp(GT_RETURN, TYP_VOID);
         }
-#endif // !defined(TARGET_AMD64)
     }
     else if (varTypeIsStruct(info.compRetType))
     {
@@ -18169,14 +18068,15 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
         noway_assert(info.compRetNativeType != TYP_STRUCT);
 #endif
         op2 = impFixupStructReturnType(op2, retClsHnd, info.compCallConv);
-        // return op2
-        var_types returnType = info.compRetType;
-        op1                  = gtNewOperNode(GT_RETURN, genActualType(returnType), op2);
+        op1 = gtNewOperNode(GT_RETURN, genActualType(info.compRetType), op2);
+    }
+    else if (info.compRetType != TYP_VOID)
+    {
+        op1 = gtNewOperNode(GT_RETURN, genActualType(info.compRetType), op2);
     }
     else
     {
-        // return op2
-        op1 = gtNewOperNode(GT_RETURN, genActualType(info.compRetType), op2);
+        op1 = new (this, GT_RETURN) GenTreeOp(GT_RETURN, TYP_VOID);
     }
 
     // We must have imported a tailcall and jumped to RET
