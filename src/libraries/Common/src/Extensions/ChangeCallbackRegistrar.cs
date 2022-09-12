@@ -7,7 +7,7 @@ using Microsoft.Extensions.FileProviders;
 
 namespace Microsoft.Extensions.Internal
 {
-    internal static partial class ChangeCallbackRegistrar
+    internal static class ChangeCallbackRegistrar
     {
         /// <summary>
         /// Registers for a callback that will be invoked when the entry has changed. <see cref="Primitives.IChangeToken.HasChanged"/>
@@ -28,7 +28,6 @@ namespace Microsoft.Extensions.Internal
             }
             catch (ObjectDisposedException)
             {
-                // Reset the flag so that we can indicate to future callers that this wouldn't work.
                 onFailure(onFailureState);
             }
 #else
