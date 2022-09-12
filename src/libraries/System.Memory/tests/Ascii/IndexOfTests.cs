@@ -8,7 +8,6 @@ using Xunit;
 
 namespace System.Buffers.Text.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/75125", TestRuntimes.Mono)]
     public static class IndexOfTests
     {
         [Fact]

@@ -134,13 +134,13 @@ namespace System.Buffers.Text
             }
 
             TValue firstValue = value[0];
-            if (!UnicodeUtility.IsAsciiCodePoint(uint.CreateTruncating(firstValue)))
+            char firstChar = (char)ushort.CreateTruncating(firstValue);
+            if (!IsAscii(firstChar))
             {
                 ThrowNonAsciiFound();
             }
-            TText valueHead = Unsafe.As<TValue, TText>(ref firstValue);
-            char differentCase = GetDifferentCaseOrSame(Unsafe.As<TValue, char>(ref firstValue));
-            TText valueHeadDifferentCase = Unsafe.As<char, TText>(ref differentCase);
+            TText valueHead = TText.CreateTruncating(firstValue);
+            TText valueHeadDifferentCase = TText.CreateTruncating((ushort)GetDifferentCaseOrSame(firstChar));
 
             int valueTailLength = value.Length - 1;
             if (valueTailLength == 0)
@@ -190,13 +190,13 @@ namespace System.Buffers.Text
             }
 
             TValue firstValue = value[0];
-            if (!UnicodeUtility.IsAsciiCodePoint(uint.CreateTruncating(firstValue)))
+            char firstChar = (char)ushort.CreateTruncating(firstValue);
+            if (!IsAscii(firstChar))
             {
                 ThrowNonAsciiFound();
             }
-            TText valueHead = Unsafe.As<TValue, TText>(ref firstValue);
-            char differentCase = GetDifferentCaseOrSame(Unsafe.As<TValue, char>(ref firstValue));
-            TText valueHeadDifferentCase = Unsafe.As<char, TText>(ref differentCase);
+            TText valueHead = TText.CreateTruncating(firstValue);
+            TText valueHeadDifferentCase = TText.CreateTruncating((ushort)GetDifferentCaseOrSame(firstChar));
 
             int valueTailLength = value.Length - 1;
             if (valueTailLength == 0)
