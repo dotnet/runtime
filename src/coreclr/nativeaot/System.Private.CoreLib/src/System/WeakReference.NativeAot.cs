@@ -57,12 +57,11 @@ namespace System
                 // thus the default implementation will never access Target concurrently with finalizing.
                 //
                 // There is a possibility that a derived type overrides the default finalizer and arranges concurrent access.
-                // There is nothing that we can do about that.
+                // There is nothing that we can do about that and a few other exotic ways to break this.
                 //
                 if (default(IntPtr) == h)
                     return default;
 
-                // unsafe cast is ok as the handle cannot be destroyed and recycled while we keep the instance alive
                 object? target = RuntimeImports.RhHandleGet(h) ?? TryGetComTarget();
 
                 // must keep the instance alive as long as we use the handle.
