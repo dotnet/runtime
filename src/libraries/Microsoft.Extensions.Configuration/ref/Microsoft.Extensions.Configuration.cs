@@ -35,7 +35,6 @@ namespace Microsoft.Extensions.Configuration
         public ConfigurationBuilder() { }
         public System.Collections.Generic.IDictionary<string, object> Properties { get { throw null; } }
         public System.Collections.Generic.IList<Microsoft.Extensions.Configuration.IConfigurationSource> Sources { get { throw null; } }
-        public bool CollectChildKeysIndependently { get { throw null; } set { } }
         public Microsoft.Extensions.Configuration.IConfigurationBuilder Add(Microsoft.Extensions.Configuration.IConfigurationSource source) { throw null; }
         public Microsoft.Extensions.Configuration.IConfigurationRoot Build() { throw null; }
     }
@@ -83,7 +82,6 @@ namespace Microsoft.Extensions.Configuration
     public partial class ConfigurationRoot : Microsoft.Extensions.Configuration.IConfiguration, Microsoft.Extensions.Configuration.IConfigurationRoot, System.IDisposable
     {
         public ConfigurationRoot(System.Collections.Generic.IList<Microsoft.Extensions.Configuration.IConfigurationProvider> providers) { }
-        public ConfigurationRoot(System.Collections.Generic.IList<Microsoft.Extensions.Configuration.IConfigurationProvider> providers, bool collectChildKeysIndependently) { }
         public string? this[string key] { get { throw null; } set { } }
         public System.Collections.Generic.IEnumerable<Microsoft.Extensions.Configuration.IConfigurationProvider> Providers { get { throw null; } }
         public void Dispose() { }
@@ -95,7 +93,6 @@ namespace Microsoft.Extensions.Configuration
     public partial class ConfigurationSection : Microsoft.Extensions.Configuration.IConfiguration, Microsoft.Extensions.Configuration.IConfigurationSection
     {
         public ConfigurationSection(Microsoft.Extensions.Configuration.IConfigurationRoot root, string path) { }
-        public ConfigurationSection(Microsoft.Extensions.Configuration.IConfigurationRoot root, string path, bool collectChildKeysIndependently) { }
         public string? this[string key] { get { throw null; } set { } }
         public string Key { get { throw null; } }
         public string Path { get { throw null; } }
