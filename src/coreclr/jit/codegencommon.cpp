@@ -1387,7 +1387,7 @@ FOUND_AM:
 
         if (fold)
         {
-            ssize_t  tmpMul;
+            ssize_t  tmpMul = 1;
             GenTree* index;
 
             if ((rv2->gtOper == GT_MUL || rv2->gtOper == GT_LSH) && (rv2->AsOp()->gtOp2->IsCnsIntOrI()))
@@ -1417,10 +1417,7 @@ FOUND_AM:
                 ssize_t ixv = index->AsIntConCommon()->IconValue();
 
                 /* Scale the index if necessary */
-                if (tmpMul)
-                {
-                    ixv *= tmpMul;
-                }
+                ixv *= tmpMul;
 
                 if (FitsIn<INT32>(cns + ixv))
                 {
