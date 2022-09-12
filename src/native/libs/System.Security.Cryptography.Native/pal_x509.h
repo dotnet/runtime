@@ -296,7 +296,7 @@ Shims the X509_STORE_CTX_set_verify_cb and X509_STORE_CTX_set_app_data functions
 PALEXPORT int32_t CryptoNative_X509StoreCtxSetVerifyCallback(X509_STORE_CTX* ctx, X509StoreVerifyCallback callback, void* appData);
 
 /*
-Shims the X509_STORE_CTX_get_app_data functions.
+Shims the X509_STORE_CTX_get_app_data function.
 */
 PALEXPORT void* CryptoNative_X509StoreCtxGetAppData(X509_STORE_CTX* ctx);
 
