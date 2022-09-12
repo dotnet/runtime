@@ -20,7 +20,7 @@ internal sealed unsafe partial class MsQuicApi
 
     private static readonly Version MsQuicVersion = new Version(2, 1);
 
-    private static readonly IntPtr MsQuicHandle = TryLoadMsQuic();
+    private static readonly IntPtr MsQuicHandle = TryLoadMsQuic(out IntPtr handle) ? handle : IntPtr.Zero;
 
     public MsQuicSafeHandle Registration { get; }
 
@@ -139,11 +139,9 @@ internal sealed unsafe partial class MsQuicApi
         return new MsQuicApi(apiTable);
     }
 
-    private static IntPtr TryLoadMsQuic() =>
-        (NativeLibrary.TryLoad($"{Interop.Libraries.MsQuic}.{MsQuicVersion.Major}", typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out IntPtr msQuicHandle) ||
-        NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle))
-            ? msQuicHandle
-            : IntPtr.Zero;
+    private static bool TryLoadMsQuic(out IntPtr msQuicHandle) =>
+        NativeLibrary.TryLoad($"{Interop.Libraries.MsQuic}.{MsQuicVersion.Major}", typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle) ||
+        NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle);
 
     private static bool TryOpenMsQuic(out QUIC_API_TABLE* apiTable, out int openStatus)
     {
