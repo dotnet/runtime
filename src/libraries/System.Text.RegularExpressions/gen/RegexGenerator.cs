@@ -11,6 +11,7 @@ using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-us")]
 
@@ -47,6 +48,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 // Find all MethodDeclarationSyntax nodes attributed with GeneratedRegex and gather the required information.
                 .ForAttributeWithMetadataName(
+                    context,
                     GeneratedRegexAttributeName,
                     (node, _) => node is MethodDeclarationSyntax,
                     GetSemanticTargetForGeneration)
