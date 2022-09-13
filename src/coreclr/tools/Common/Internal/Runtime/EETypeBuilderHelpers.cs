@@ -102,7 +102,7 @@ namespace Internal.Runtime
 
             if (type is MetadataType mdType &&
                             mdType.Module == mdType.Context.SystemModule &&
-                            (mdType.Name == "WeakReference" || mdType.Name == "WeakReference`1") &&
+                            mdType.Name is "WeakReference" or "WeakReference`1" &&
                             mdType.Namespace == "System")
             {
                 flagsEx |= (ushort)EETypeFlagsEx.HasEagerFinalizerFlag;
