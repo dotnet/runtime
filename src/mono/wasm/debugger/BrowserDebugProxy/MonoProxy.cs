@@ -398,7 +398,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         catch (Exception e)
                         {
                             logger.LogDebug($"Debugger.setBreakpointByUrl failed with exception: {e}");
-                            SendResponse(id, resp, token);
+                            SendResponse(id, Result.Err($"Debugger.setBreakpointByUrl failed with exception: {e}"), token);
                         }
                         return true;
                     }
