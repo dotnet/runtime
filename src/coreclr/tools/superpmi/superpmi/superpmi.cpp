@@ -367,18 +367,13 @@ int __cdecl main(int argc, char* argv[])
         }
 
         MetricsSummary baseMetrics;
-        CORJIT_FLAGS jitFlags;
+        bool isMinOpts;
         jittedCount++;
         st3.Start();
-        res = jit->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput, &baseMetrics, &jitFlags);
+        res = jit->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput, &baseMetrics, &isMinOpts);
         st3.Stop();
         LogDebug("Method %d compiled%s in %fms, result %d",
             reader->GetMethodContextIndex(), (o.nameOfJit2 == nullptr) ? "" : " by JIT1", st3.GetMilliseconds(), res);
-
-        bool isMinOpts =
-            jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_CODE) ||
-            jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MIN_OPT) ||
-            jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
 
         MetricsSummary& totalBaseMetricsOpts = isMinOpts ? totalBaseMetrics.MinOpts : totalBaseMetrics.FullOpts;
         MetricsSummary& totalDiffMetricsOpts = isMinOpts ? totalDiffMetrics.MinOpts : totalDiffMetrics.FullOpts;
@@ -405,8 +400,9 @@ int __cdecl main(int argc, char* argv[])
             crl    = mc->cr;
             mc->cr = new CompileResult();
 
+            bool isMinOptsDiff;
             st4.Start();
-            res2 = jit2->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput, &diffMetrics, &jitFlags);
+            res2 = jit2->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput, &diffMetrics, &isMinOptsDiff);
             st4.Stop();
             LogDebug("Method %d compiled by JIT2 in %fms, result %d", reader->GetMethodContextIndex(),
                      st4.GetMilliseconds(), res2);
