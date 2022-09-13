@@ -1107,23 +1107,22 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #endif
 	}
 	case SN_ConvertToInt32: 
-#ifdef TARGET_AMD64
-		if (arg0_type != MONO_TYPE_R4)
-			return NULL;
-
-		MonoClass* arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
-		int size = mono_class_value_size (arg_class, NULL);
-		if ( size != 16 ) 		// Works only with Vector128
-			return NULL;
-		
-		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_I4_X, INTRINS_SSE_CVTTPS2DQ, arg0_type, fsig, args);	
-#endif
 	case SN_ConvertToUInt32: {
-#ifdef TARGET_ARM64
 		if (arg0_type != MONO_TYPE_R4)
 			return NULL;
+#ifdef TARGET_ARM64
 		int op = id == SN_ConvertToInt32 ? OP_ARM64_FCVTZS : OP_ARM64_FCVTZU;
 		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
+#elif TARGET_AMD64
+		if (id == SN_ConvertToInt32) {
+			MonoClass* arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+			int size = mono_class_value_size (arg_class, NULL);
+			if ( size != 16 ) 		// Works only with Vector128
+				return NULL;
+		
+			return emit_simd_ins_for_sig (cfg, klass, OP_XOP_I4_X, INTRINS_SSE_CVTTPS2DQ, arg0_type, fsig, args);	
+		} else
+			return NULL;		
 #else
 		return NULL;
 #endif
