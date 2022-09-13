@@ -62,15 +62,19 @@
 // that upstream phases didn't leave the wrong flags.
 //
 // For profitability we first try and avoid code growth. We do this
-// by only substituting in cases where lcl has exactly one def and one use.
-// This info is computed for us but the RCS_Early ref counting done during
-// the immediately preceding fgMarkAddressExposedLocals phase.
+// by only substituting in cases where lcl has exactly one def and one use,
+// or if we can prove there is only one use for a given def. Some of this info
+// is computed for us by the RCS_Early ref counting done during the immediately
+// preceding fgMarkAddressExposedLocals phase.
 //
 // Because of this, once we've substituted "tree" we know that lcl is dead
 // and we can remove the assignment statement.
 //
 // Even with ref count screening, we don't know for sure where the
-// single use of local might be, so we have to seach for it.
+// single use of local might be, so we have to seach for it. We currently
+// only look in the immediately following statement, both to keep the search
+// cost low and to avoid needing to reason about the safety of code motion
+// across entire statements.
 //
 // We also take pains not to create overly large trees as the recursion
 // done by morph incorporates a lot of state; deep trees may lead to
@@ -198,6 +202,7 @@ public:
         , m_parentNode(nullptr)
         , m_lclNum(lclNum)
         , m_useCount(0)
+        , m_defCount(0)
         , m_useFlags(GTF_EMPTY)
         , m_accumulatedFlags(GTF_EMPTY)
         , m_treeSize(0)
@@ -217,7 +222,14 @@ public:
 
             if (lclNum == m_lclNum)
             {
-                m_useCount++;
+                if (isDef)
+                {
+                    m_defCount++;
+                }
+                else
+                {
+                    m_useCount++;
+                }
 
                 // Screen out contextual "uses"
                 //
@@ -273,6 +285,16 @@ public:
         return m_useCount;
     }
 
+    unsigned GetDefCount() const
+    {
+        return m_defCount;
+    }
+
+    unsigned GetRefCount() const
+    {
+        return m_useCount + m_defCount;
+    }
+
     GenTree* GetNode() const
     {
         return m_node;
@@ -309,6 +331,7 @@ private:
     GenTree*     m_parentNode;
     unsigned     m_lclNum;
     unsigned     m_useCount;
+    unsigned     m_defCount;
     GenTreeFlags m_useFlags;
     GenTreeFlags m_accumulatedFlags;
     unsigned     m_treeSize;
@@ -397,24 +420,30 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     //
     if (varDsc->lvPinned)
     {
-        JITDUMP(" pinned local\n");
+        JITDUMP(" V%02u pinned\n", lclNum);
         return false;
     }
 
-    // Only fwd sub if we expect no code duplication
-    // We expect one def and one use.
+    // Only fwd sub if there is one use. In the simple case
+    // we can use RCS_EARLY; if this is greater than 2 then
+    // there may be multiple uses.
     //
-    if (varDsc->lvRefCnt(RCS_EARLY) != 2)
+    unsigned short const refCount = varDsc->lvRefCnt(RCS_EARLY);
+    assert(refCount != 0);
+
+    if (refCount <= 1)
     {
-        JITDUMP(" not asg (single-use lcl)\n");
+        JITDUMP(" V%02 unused\n", lclNum);
         return false;
     }
+
+    bool const mustProveSingleUse = varDsc->lvRefCnt(RCS_EARLY) > 2;
 
     // And local is unalised
     //
     if (varDsc->IsAddressExposed())
     {
-        JITDUMP(" not asg (unaliased single-use lcl)\n");
+        JITDUMP(" V%02u address exposed\n", lclNum);
         return false;
     }
 
@@ -422,7 +451,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     //
     if (lvaIsImplicitByRefLocal(lclNum))
     {
-        JITDUMP(" implicit by-ref local\n");
+        JITDUMP(" V%02u is an implicit by-ref local\n", lclNum);
         return false;
     }
 
@@ -501,20 +530,49 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     gtUpdateStmtSideEffects(nextStmt);
     gtUpdateStmtSideEffects(stmt);
 
-    // Scan for the (single) use.
+    // If we must prove single use, we require that the next tree redefine lclNum.
+    //
+    if (mustProveSingleUse)
+    {
+        bool                 canCurrentDefLive = true;
+        GenTreeLclVarCommon* defNode           = nullptr;
+        bool                 isEntire          = false;
+        if (nextStmt->GetRootNode()->DefinesLocal(this, &defNode, &isEntire))
+        {
+            canCurrentDefLive = (defNode->GetLclNum() != lclNum) || !isEntire;
+        }
+
+        if (canCurrentDefLive)
+        {
+            JITDUMP(" V%02u refCount %u > 2 and next statement does not redef\n", lclNum, refCount);
+            return false;
+        }
+    }
+
+    // Scan for uses and defs.
     //
     ForwardSubVisitor fsv(this, lclNum);
     fsv.WalkTree(nextStmt->GetRootNodePointer(), nullptr);
 
-    // LclMorph (via RCS_Early) said there was just one use.
-    // It had better have gotten this right.
+    // Cross check with LclMorph (via RCS_Early) ref count.
     //
-    assert(fsv.GetUseCount() <= 1);
+    assert(fsv.GetRefCount() <= (unsigned)(refCount - 1));
+
+    if (fsv.GetUseCount() > 1)
+    {
+        JITDUMP(" multiple next stmt uses\n");
+        return false;
+    }
 
     if ((fsv.GetUseCount() == 0) || (fsv.GetNode() == nullptr))
     {
-        JITDUMP(" no next stmt use\n");
+        JITDUMP(" no next stmt uses\n");
         return false;
+    }
+
+    if (mustProveSingleUse && (fsv.GetDefCount() != 1))
+    {
+        JITDUMP(" multiple defs\n", lclNum);
     }
 
     JITDUMP(" [%06u] is only use of [%06u] (V%02u) ", dspTreeID(fsv.GetNode()), dspTreeID(lhsNode), lclNum);
@@ -764,6 +822,11 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
     JITDUMP(" -- fwd subbing [%06u]; new next stmt is\n", dspTreeID(fwdSubNode));
     DISPSTMT(nextStmt);
+
+    // Update the ref count. We've removed a def and a use.
+    //
+    assert(refCount >= 2);
+    varDsc->setLvRefCnt(refCount - 2, RCS_EARLY);
 
     return true;
 }
