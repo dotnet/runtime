@@ -4046,22 +4046,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     op1 = impPopStack().val;
                     // Replace helper with a more specialized helper that returns RuntimeType
                     if (typeHandleHelper == CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE)
-                    { 
-                        CORINFO_CLASS_HANDLE hClass =
-                            gtGetHelperArgClassHandle(op1->AsCall()->gtArgs.GetArgByIndex(0)->GetEarlyNode());
-                        if (!opts.IsReadyToRun() && (hClass != NO_CLASS_HANDLE))
-                        {
-                            void* ptr = info.compCompHnd->getRuntimeTypePointer(hClass);
-                            if (ptr != nullptr)
-                            {
-                                // Temp Hack: pretend we're a string literal :-)
-                                setMethodHasFrozenString();
-                                retNode = gtNewIconEmbHndNode(ptr, nullptr, GTF_ICON_STR_HDL, nullptr);
-                                retNode->gtType = TYP_REF;
-                                INDEBUG(retNode->AsIntCon()->gtTargetHandle = (size_t)ptr);
-                                break;
-                            }
-                        }
+                    {
                         typeHandleHelper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE;
                     }
                     else
@@ -22959,9 +22944,9 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
             return true;
         }
         // Non-0 const refs can only occur with frozen objects
-        assert(value->IsIconHandle(GTF_ICON_STR_HDL));
-        assert(doesMethodHaveFrozenString() ||
-               (compIsForInlining() && impInlineInfo->InlinerCompiler->doesMethodHaveFrozenString()));
+        assert(value->IsIconHandle(GTF_ICON_STR_HDL) || value->IsIconHandle(GTF_ICON_TYPE_HDL));
+        assert(doesMethodHaveFrozenObjects() ||
+               (compIsForInlining() && impInlineInfo->InlinerCompiler->doesMethodHaveFrozenObjects()));
     }
 
     // Try and get a class handle for the array

@@ -2716,7 +2716,8 @@ public:
     //  method will get the class object.  If it doesn't exist it will be created.
     //  GetManagedClassObjectIfExists() will return null if the Type object doesn't exist.
     OBJECTREF GetManagedClassObject();
-    OBJECTREF GetManagedClassObjectIfExists(bool* pIsPinned = nullptr);
+    OBJECTREF GetManagedClassObject(bool* pIsPinned);
+    OBJECTREF GetManagedClassObjectIfExists();
 
 
     // ------------------------------------------------------------------

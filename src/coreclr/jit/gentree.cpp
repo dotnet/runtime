@@ -6911,9 +6911,9 @@ GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenT
         // This indirection also is invariant.
         indNode->gtFlags |= GTF_IND_INVARIANT;
 
-        if (iconFlags == GTF_ICON_STR_HDL)
+        if ((iconFlags == GTF_ICON_STR_HDL) || (iconFlags == GTF_ICON_TYPE_HDL))
         {
-            // String literals are never null
+            // String literals and frozen type objects are never null
             indNode->gtFlags |= GTF_IND_NONNULL;
         }
     }
@@ -6990,7 +6990,7 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
     switch (iat)
     {
         case IAT_VALUE:
-            setMethodHasFrozenString();
+            setMethodHasFrozenObjects();
             tree         = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_STR_HDL, nullptr);
             tree->gtType = TYP_REF;
 #ifdef DEBUG
@@ -11114,6 +11114,10 @@ void Compiler::gtDispConst(GenTree* tree)
                     printf(" 0x%X [ICON_STR_HDL]", dspPtr(tree->AsIntCon()->gtIconVal));
                 }
             }
+            else if (tree->IsIconHandle(GTF_ICON_TYPE_HDL))
+            {
+                printf(" 0x%X [ICON_TYPE_HDL]", dspPtr(tree->AsIntCon()->gtIconVal));
+            }
             else
             {
                 ssize_t dspIconVal =
@@ -11172,8 +11176,9 @@ void Compiler::gtDispConst(GenTree* tree)
                         case GTF_ICON_STATIC_HDL:
                             printf(" static");
                             break;
+                        case GTF_ICON_TYPE_HDL:
                         case GTF_ICON_STR_HDL:
-                            unreached(); // This case is handled above
+                            unreached(); // These cases are handled above
                             break;
                         case GTF_ICON_CONST_PTR:
                             printf(" const ptr");

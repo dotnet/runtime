@@ -4167,6 +4167,10 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
         str                   = "string handle";
 #endif
     }
+    else if (flag == GTF_ICON_TYPE_HDL)
+    {
+        str = "Type handle";
+    }
     else if (flag == GTF_ICON_CLASS_HDL)
     {
         str = emitComp->eeGetClassName(reinterpret_cast<CORINFO_CLASS_HANDLE>(handle));

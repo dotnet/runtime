@@ -4229,7 +4229,7 @@ OBJECTREF MethodTable::GetManagedClassObject()
             // Allocate RuntimeType on a frozen segment
             FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
             size_t objSize = g_pRuntimeTypeClass->GetBaseSize();
-            refClass = ObjectToOBJECTREF(foh->TryAllocateObject(g_pRuntimeTypeClass, objSize));
+            refClass = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(foh->TryAllocateObject(g_pRuntimeTypeClass, objSize));
         }
 
         if (refClass == NULL)
@@ -4252,6 +4252,31 @@ OBJECTREF MethodTable::GetManagedClassObject()
         GCPROTECT_END();
     }
     RETURN(GetManagedClassObjectIfExists());
+}
+
+OBJECTREF MethodTable::GetManagedClassObject(bool* pIsPinned)
+{
+    CONTRACT(OBJECTREF) {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        INJECT_FAULT(COMPlusThrowOM());
+        POSTCONDITION(GetWriteableData()->m_hExposedClassObject != 0);
+    }
+    CONTRACT_END;
+
+    _ASSERT(pIsPinned != nullptr);
+
+    OBJECTREF objRef = NULL;
+    GCPROTECT_BEGIN(objRef);
+
+    objRef = GetManagedClassObject();
+    FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
+    *pIsPinned = foh->IsFromFrozenSegment(OBJECTREFToObject(objRef));
+
+    GCPROTECT_END();
+
+    return objRef;
 }
 
 #endif //!DACCESS_COMPILE

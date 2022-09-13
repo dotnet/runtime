@@ -5962,11 +5962,9 @@ void* CEEInfo::getRuntimeTypePointer(CORINFO_CLASS_HANDLE clsHnd)
         MethodTable* pMT = typeHnd.AsMethodTable();
         if (!typeHnd.IsCanonicalSubtype())
         {
-            // We probably don't want to allocate a RuntimeHelper as part of this query
-            // hence, use IfExists
             bool isPinned;
-            Object* obj = OBJECTREFToObject(pMT->GetManagedClassObjectIfExists(&isPinned));
-            if (obj != nullptr && isPinned)
+            Object* obj = OBJECTREFToObject(pMT->GetManagedClassObject(&isPinned));
+            if (isPinned)
             {
                 pointer = (void*)obj;
             }

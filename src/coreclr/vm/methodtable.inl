@@ -1336,7 +1336,7 @@ inline OBJECTHANDLE MethodTable::GetLoaderAllocatorObjectHandle()
 }
 
 //==========================================================================================
-FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists(bool* pIsPinned)
+FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists()
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -1354,14 +1354,6 @@ FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists(bool* pIsPinned
     }
 
     COMPILER_ASSUME(retVal != NULL);
-
-#ifndef DACCESS_COMPILE
-    if (pIsPinned != nullptr)
-    {
-        FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
-        *pIsPinned = foh->IsFromFrozenSegment(OBJECTREFToObject(retVal));
-    }
-#endif
 
     return retVal;
 }
