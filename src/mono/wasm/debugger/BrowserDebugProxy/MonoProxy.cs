@@ -361,7 +361,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                             SendResponse(id, resp, token);
                             return true;
                         }
-                        try {
+                        try
+                        {
                             string bpid = resp.Value["breakpointId"]?.ToString();
                             IEnumerable<object> locations = resp.Value["locations"]?.Values<object>();
                             var request = BreakpointRequest.Parse(bpid, args);
