@@ -1596,29 +1596,9 @@ namespace System.Security.Cryptography.Xml.Tests
         [InlineData(true)]
         public void VerifyXmlResolver(bool provideResolver)
         {
-            TcpListener listener;
-            int port = 9000;
-
-            while (true)
-            {
-                listener = new TcpListener(IPAddress.Loopback, port);
-
-                try
-                {
-                    listener.Start();
-                    break;
-                }
-                catch
-                {
-                }
-
-                port++;
-
-                if (port > 10000)
-                {
-                    throw new InvalidOperationException("Could not find an open port");
-                }
-            }
+            TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            int port = ((IPEndPoint)listener.LocalEndpoint).Port;
 
             string xml = $@"<!DOCTYPE foo [<!ENTITY xxe SYSTEM ""http://127.0.0.1:{port}/"" >]>
 <ExampleDoc>Example doc to be signed.&xxe;<Signature xmlns=""http://www.w3.org/2000/09/xmldsig#"">
@@ -1682,8 +1662,8 @@ namespace System.Security.Cryptography.Xml.Tests
                 Action requestReceived,
                 CancellationToken cancellationToken)
             {
-                const string Response =
-                    "HTTP/1.1 200 OK\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Length: 0\r\n\r\n";
+                static byte[] GetResponse() =>
+                    ("HTTP/1.1 200 OK\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Length: 0\r\n\r\n"u8).ToArray();
 
                 while (!cancellationToken.IsCancellationRequested)
                 {
@@ -1703,20 +1683,16 @@ namespace System.Security.Cryptography.Xml.Tests
                     }
 
                     using (socket)
+                    using (NetworkStream stream = new NetworkStream(socket))
                     {
                         requestReceived();
                         byte[] buf = new byte[1024];
-
-#if NETCOREAPP
-                        // The CoreFX XML libraries throw an exception if we don't drain the request
-                        // (unless we don't dispose the socket).
-                        // For some reason each ReceiveAsync only gets 10 bytes at a time,
-                        // so just keep reading.
                         int offset = 0;
 
+                        // Drain out the request.
                         do
                         {
-                            int read = await socket.ReceiveAsync(buf.AsMemory(offset), cancellationToken);
+                            int read = await stream.ReadAsync(buf, offset, buf.Length - offset, cancellationToken);
 
                             if (read <= 0)
                             {
@@ -1739,13 +1715,8 @@ namespace System.Security.Cryptography.Xml.Tests
                             }
                         } while (true);
 
-                        int len = Encoding.ASCII.GetBytes(Response, buf);
-                        await socket.SendAsync(buf.AsMemory(0, len), cancellationToken);
-#else
-                        cancellationToken.ThrowIfCancellationRequested();
-                        int len = Encoding.ASCII.GetBytes(Response, 0, Response.Length, buf, 0);
-                        socket.Send(buf, len, SocketFlags.None);
-#endif
+                        byte[] response = GetResponse();
+                        await stream.WriteAsync(response, 0, response.Length, cancellationToken);
                     }
                 }
             }
