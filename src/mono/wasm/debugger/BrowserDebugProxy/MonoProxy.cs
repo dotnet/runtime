@@ -397,8 +397,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                         catch (Exception e)
                         {
-                            logger.LogDebug($"Debugger.setBreakpointByUrl failed with exception: {e}");
-                            SendResponse(id, Result.Err($"Debugger.setBreakpointByUrl failed with exception: {e}"), token);
+                            logger.LogDebug($"Debugger.setBreakpointByUrl - {args} - failed with exception: {e}");
+                            SendResponse(id, Result.Err($"Debugger.setBreakpointByUrl - {args} - failed with exception: {e}"), token);
                         }
                         return true;
                     }
@@ -1456,6 +1456,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             var assembly_id = await context.SdbAgent.GetAssemblyId(asm_name, token);
             var methodId = await context.SdbAgent.GetMethodIdByToken(assembly_id, method_token, token);
+            //the breakpoint can be invalid because a race condition between the changes already applied on runtime and not applied yet on debugger side
             var breakpoint_id = await context.SdbAgent.SetBreakpointNoThrow(methodId, il_offset, token);
 
             if (breakpoint_id > 0)
