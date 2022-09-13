@@ -55,14 +55,12 @@ namespace Internal.TypeSystem
 
         HasFinalizerComputed = 0x1000,
         HasFinalizer         = 0x2000,
-        HasEagerFinalizer    = 0x4000,
-        HasCriticalFinalizer = 0x8000,
 
-        IsByRefLike            = 0x10000,
-        AttributeCacheComputed = 0x20000,
-        IsIntrinsic            = 0x40000,
+        IsByRefLike            = 0x04000,
+        AttributeCacheComputed = 0x08000,
+        IsIntrinsic            = 0x10000,
 
-        IsIDynamicInterfaceCastable         = 0x080000,
-        IsIDynamicInterfaceCastableComputed = 0x100000,
+        IsIDynamicInterfaceCastable         = 0x20000,
+        IsIDynamicInterfaceCastableComputed = 0x40000,
     }
 }

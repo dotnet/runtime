@@ -633,14 +633,6 @@ namespace Internal.TypeSystem
             }
         }
 
-        public bool HasEagerFinalizer
-        {
-            get
-            {
-                return (GetTypeFlags(TypeFlags.HasEagerFinalizer | TypeFlags.HasFinalizerComputed) & TypeFlags.HasEagerFinalizer) != 0;
-            }
-        }
-
         /// <summary>
         /// Gets the finalizer method (an override of the System.Object::Finalize method)
         /// if this type has one. Returns null if the type doesn't define one.

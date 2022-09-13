@@ -103,9 +103,6 @@ namespace Internal.TypeSystem
 
                 if (_typeDef.HasFinalizer)
                     flags |= TypeFlags.HasFinalizer;
-
-                if (_typeDef.Name == "WeakReference`1" && _typeDef.Namespace == "System")
-                    flags |= TypeFlags.HasEagerFinalizer;
             }
 
             if ((mask & TypeFlags.AttributeCacheComputed) != 0)
