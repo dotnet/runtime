@@ -1370,15 +1370,53 @@ FOUND_AM:
 
     if (rv2)
     {
-        /* Make sure a GC address doesn't end up in 'rv2' */
+        // Make sure a GC address doesn't end up in 'rv2'
         if (varTypeIsGC(rv2->TypeGet()))
         {
             noway_assert(rv1 && !varTypeIsGC(rv1->TypeGet()));
-
-            tmp = rv1;
-            rv1 = rv2;
-            rv2 = tmp;
+            std::swap(rv1, rv2);
             rev = !rev;
+        }
+
+        // Special case: constant array index (that is range-checked)
+        if (fold && rv2->OperIs(GT_MUL, GT_LSH) && (rv2->gtGetOp2()->IsCnsIntOrI()))
+        {
+            // For valuetype arrays where we can't use the scaled address
+            // mode, rv2 will point to the scaled index. So we have to do
+            // more work
+            GenTree* index;
+            ssize_t indexScale = compiler->optGetArrayRefScaleAndIndex(rv2, &index DEBUGARG(false));
+
+            // Apply accumulated scale if it exists
+            if (mul)
+            {
+                indexScale *= mul;
+            }
+
+            // "index * 0" means index is zero
+            if (indexScale == 0)
+            {
+                mul = 0;
+                rv2 = nullptr;
+            }
+            else if (index->IsIntCnsFitsInI32())
+            {
+                ssize_t constantIndex = index->AsIntConCommon()->IconValue() * indexScale;
+                if (constantIndex == 0)
+                {
+                    // while scale is a non-zero constant, the actual index is zero so drop it
+                    mul = 0;
+                    rv2 = nullptr;
+                }
+                else if (FitsIn<INT32>(cns + constantIndex))
+                {
+                    // Add the constant index to the accumulated offset value
+                    cns += constantIndex;
+                    // and get rid of index
+                    mul = 0;
+                    rv2 = nullptr;
+                }
+            }
         }
     }
 
