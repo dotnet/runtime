@@ -1721,6 +1721,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return false;
 
             var breakpointId = await context.SdbAgent.SetBreakpoint(scope.Method.DebugId, ilOffset.Offset, token);
+            if (breakpointId == -1)
+                return false;
+
             context.TempBreakpointForSetNextIP = breakpointId;
             await SendResume(sessionId, token);
             return true;

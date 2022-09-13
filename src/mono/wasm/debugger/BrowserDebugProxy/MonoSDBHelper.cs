@@ -1359,7 +1359,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write((byte)ModifierKind.LocationOnly);
             commandParamsWriter.Write(methodId);
             commandParamsWriter.Write(il_offset);
-            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdEventRequest.Set, commandParamsWriter, token);
+            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdEventRequest.Set, commandParamsWriter, token, false);
+            if (retDebuggerCmdReader.HasError)
+                return -1;
             return retDebuggerCmdReader.ReadInt32();
         }
 
