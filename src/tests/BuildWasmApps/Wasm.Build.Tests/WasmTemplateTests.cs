@@ -250,7 +250,7 @@ namespace Wasm.Build.Tests
             string id = $"browser_{config}_{Path.GetRandomFileName()}";
             string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
 
-            UpdateBrowserMainJs(DefaultTargetFramework);
+            UpdateBrowserMainJs();
 
             if (!string.IsNullOrEmpty(extraProperties))
                 AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
