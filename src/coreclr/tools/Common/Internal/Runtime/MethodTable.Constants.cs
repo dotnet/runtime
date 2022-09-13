@@ -58,25 +58,25 @@ namespace Internal.Runtime
         OptionalFieldsFlag = 0x0100,
 
         /// <summary>
-        /// The _usComponentSize is a number (not holding FlagsEx).
-        /// </summary>
-        HasComponentSizeFlag = 0x0200,
-
-        /// <summary>
         /// This type is generic.
         /// </summary>
-        IsGenericFlag = 0x0400,
+        IsGenericFlag = 0x0200,
 
         /// <summary>
         /// We are storing a EETypeElementType in the upper bits for unboxing enums.
         /// </summary>
-        ElementTypeMask = 0xf800,
-        ElementTypeShift = 11,
+        ElementTypeMask = 0x7C00,
+        ElementTypeShift = 10,
 
         /// <summary>
         /// Single mark to check TypeKind and two flags. When non-zero, casting is more complicated.
         /// </summary>
-        ComplexCastingMask = EETypeKindMask | RelatedTypeViaIATFlag | GenericVarianceFlag
+        ComplexCastingMask = EETypeKindMask | RelatedTypeViaIATFlag | GenericVarianceFlag,
+
+        /// <summary>
+        /// The _usComponentSize is a number (not holding FlagsEx).
+        /// </summary>
+        HasComponentSizeFlag = 0x8000,
     };
 
     /// <summary>

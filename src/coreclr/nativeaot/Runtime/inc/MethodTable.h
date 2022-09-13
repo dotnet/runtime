@@ -177,15 +177,15 @@ private:
         // This type has optional fields present.
         OptionalFieldsFlag      = 0x0100,
 
-        // The m_usComponentSize is a number (not holding FlagsEx).
-        HasComponentSizeFlag    = 0x0200,
-
         // This type is generic.
-        IsGenericFlag           = 0x0400,
+        IsGenericFlag           = 0x0200,
 
         // We are storing a EETypeElementType in the upper bits for unboxing enums
-        ElementTypeMask      = 0xf800,
-        ElementTypeShift     = 11,
+        ElementTypeMask      = 0x7C00,
+        ElementTypeShift     = 10,
+
+        // The m_usComponentSize is a number (not holding FlagsEx).
+        HasComponentSizeFlag = 0x8000,
     };
 
     enum FlagsEx
