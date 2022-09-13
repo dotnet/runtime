@@ -1017,29 +1017,18 @@ namespace Microsoft.Extensions.Configuration.Test
             configurationBuilder.Add(src1);
             configurationBuilder.Add(memConfigSrc2);
             var configSorted = configurationBuilder.Build();
-            configurationBuilder = new ConfigurationBuilder { CollectChildKeysIndependently = true };
-            configurationBuilder.Add(memConfigSrc2);
-            configurationBuilder.Add(src1);
-            var configNotSorted = configurationBuilder.Build();
 
             // Act
             var keysSorted = configSorted.GetChildren().Select(c => c.Key).ToList();
-            var keysNotSorted = configNotSorted.GetChildren().Select(c => c.Key).ToList();
 
             // Assert
             Assert.Equal(3, keysSorted.Count);
-            Assert.Equal(3, keysNotSorted.Count);
 
             // The keys should be sorted by the 2nd IConfigurationProvider
             // because it inherits from helper class ConfigurationProvider.
             Assert.Equal("key1", keysSorted[0]);
             Assert.Equal("key2", keysSorted[1]);
             Assert.Equal("key3", keysSorted[2]);
-
-            // The keys are output in the same order of input providers, and each provider determine the keys order internally
-            Assert.Equal("key2", keysNotSorted[0]);
-            Assert.Equal("key3", keysNotSorted[1]);
-            Assert.Equal("key1", keysNotSorted[2]);
         }
 
         private class OverrideGetChildKeysConfigurationProviders : TheoryData<IConfigurationProvider>
