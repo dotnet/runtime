@@ -20,6 +20,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest521(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -47,6 +48,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest522(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -63,6 +65,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest523(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -93,6 +96,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest524(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -185,6 +189,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest525(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -202,6 +207,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest526(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -219,6 +225,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest527(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -311,6 +318,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest528(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -403,6 +411,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest529(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -495,6 +504,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5210(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -587,6 +597,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5211(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -806,6 +817,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5212(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -823,6 +835,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5213(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -895,6 +908,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5214(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -967,6 +981,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5215(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -986,6 +1001,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5216(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -1001,6 +1017,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5217(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -1016,6 +1033,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5218(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -1034,6 +1052,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5219(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -1048,6 +1067,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5220(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -1062,6 +1082,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5221(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -1077,6 +1098,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5222(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -1094,6 +1116,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5223(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -1111,6 +1134,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5224(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -1128,6 +1152,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5225(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -1145,6 +1170,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5226(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -1162,6 +1188,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5227(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -1179,6 +1206,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5228(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -1196,6 +1224,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5229(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -1213,6 +1242,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5230(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -1227,6 +1257,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5231(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -1321,6 +1352,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5232(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -1338,6 +1370,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5233(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -1353,6 +1386,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5234(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -1368,6 +1402,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5235(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -1383,6 +1418,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5236(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -1398,6 +1434,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void LexicalStructureTest5237(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";

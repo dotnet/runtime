@@ -18,6 +18,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ComplexExpressionsTest272(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -34,6 +35,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ComplexExpressionsTest273(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -50,6 +52,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ComplexExpressionsTest274(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -67,6 +70,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ComplexExpressionsTest275(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -83,6 +87,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ComplexExpressionsTest276(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -100,6 +105,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ComplexExpressionsTest277(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -116,6 +122,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ComplexExpressionsTest278(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -133,6 +140,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ComplexExpressionsTest279(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
@@ -149,6 +157,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ComplexExpressionsTest2710(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
@@ -165,6 +174,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ComplexExpressionsTest2711(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
@@ -180,6 +190,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ComplexExpressionsTest2712(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";

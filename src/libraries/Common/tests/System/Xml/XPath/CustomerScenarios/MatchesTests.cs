@@ -18,6 +18,7 @@ namespace XPathTests.FunctionalTests.CustomerScenarios
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest311(Utils.NavigatorKind kind)
         {
             var xml = "xpC001.xml";
@@ -35,6 +36,7 @@ namespace XPathTests.FunctionalTests.CustomerScenarios
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest312(Utils.NavigatorKind kind)
         {
             var xml = "xpC001.xml";
@@ -52,6 +54,7 @@ namespace XPathTests.FunctionalTests.CustomerScenarios
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest313(Utils.NavigatorKind kind)
         {
             var xml = "xpC001.xml";
@@ -69,6 +72,7 @@ namespace XPathTests.FunctionalTests.CustomerScenarios
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest314(Utils.NavigatorKind kind)
         {
             var xml = "xpC001.xml";

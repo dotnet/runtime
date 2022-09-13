@@ -18,6 +18,7 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void RegressionTestsTest552(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -33,6 +34,7 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void RegressionTestsTest553(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -48,6 +50,7 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void RegressionTestsTest554(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -63,6 +66,7 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void RegressionTestsTest555(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -78,6 +82,7 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void RegressionTestsTest556(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -93,6 +98,7 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void RegressionTestsTest557(Utils.NavigatorKind kind)
         {
             var xml = "t98598.xml";
@@ -166,6 +172,7 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void RegressionTestsTest558(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -181,6 +188,7 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void RegressionTestsTest559(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -195,6 +203,7 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void RegressionTestsTest5510(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -209,6 +218,7 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void RegressionTestsTest5511(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -300,6 +310,7 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void RegressionTestsTest5512(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -314,6 +325,7 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void RegressionTestsTest5513(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -328,6 +340,7 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void RegressionTestsTest5514(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -342,6 +355,7 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void RegressionTestsTest5515(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -358,6 +372,7 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void RegressionTestsTest5516(Utils.NavigatorKind kind)
         {
             var xml = "t114730.xml";
@@ -372,6 +387,7 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void RegressionTestsTest5519(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -386,6 +402,7 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void RegressionTestsTest5520(Utils.NavigatorKind kind)
         {
             var xml = "bookstore.xml";
@@ -401,6 +418,7 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void RegressionTestsTest5523(Utils.NavigatorKind kind)
         {
             var xml = "bookstore.xml";
@@ -417,6 +435,7 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void RegressionTestsTest5524(Utils.NavigatorKind kind)
         {
             var xml = "bookstore.xml";
@@ -433,6 +452,7 @@ namespace XPathTests.FunctionalTests.MiscellaneousCases
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void RegressionTestsTest5525(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";

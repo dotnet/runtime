@@ -13,12 +13,15 @@ namespace XPathTests.Common
     {
         private static readonly ICreateNavigator s_xmlDocumentNavigatorCreator = new CreateNavigatorFromXmlDocument();
         private static readonly ICreateNavigator s_xmlReaderNavigatorCreator = new CreateNavigatorFromXmlReader();
+        private static readonly ICreateNavigator s_xdocumentNavigatorCreator = new CreateNavigatorComparer();
+
         public static readonly string ResourceFilesPath = "System.Xml.Tests.TestData.";
 
         public enum NavigatorKind
         {
             XmlDocument,
-            XPathDocument
+            XPathDocument,
+            XDocument,
         }
 
         private static ICreateNavigator NavigatorFromKind(NavigatorKind kind) =>
@@ -26,6 +29,7 @@ namespace XPathTests.Common
             {
                 NavigatorKind.XmlDocument => s_xmlDocumentNavigatorCreator,
                 NavigatorKind.XPathDocument => s_xmlReaderNavigatorCreator,
+                NavigatorKind.XDocument => s_xdocumentNavigatorCreator,
                 _ => throw new Exception($"Unknown kind: {kind}"),
             };
 

@@ -19,6 +19,7 @@ namespace XPathTests.FunctionalTests.Expressions.SetContextFunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest441(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
@@ -40,6 +41,7 @@ namespace XPathTests.FunctionalTests.Expressions.SetContextFunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest442(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
@@ -55,6 +57,7 @@ namespace XPathTests.FunctionalTests.Expressions.SetContextFunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest443(Utils.NavigatorKind kind)
         {
             var xml = "name4.xml";
@@ -77,6 +80,7 @@ namespace XPathTests.FunctionalTests.Expressions.SetContextFunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest444(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
@@ -98,6 +102,7 @@ namespace XPathTests.FunctionalTests.Expressions.SetContextFunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest445(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
@@ -118,6 +123,7 @@ namespace XPathTests.FunctionalTests.Expressions.SetContextFunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest446(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
@@ -139,6 +145,7 @@ namespace XPathTests.FunctionalTests.Expressions.SetContextFunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest447(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";

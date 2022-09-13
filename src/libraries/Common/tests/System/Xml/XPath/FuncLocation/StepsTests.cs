@@ -19,6 +19,7 @@ namespace XPathTests.FunctionalTests.Location
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void StepsTest141(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -34,6 +35,7 @@ namespace XPathTests.FunctionalTests.Location
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void StepsTest142(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -49,6 +51,7 @@ namespace XPathTests.FunctionalTests.Location
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void StepsTest143(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -64,6 +67,7 @@ namespace XPathTests.FunctionalTests.Location
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void StepsTest144(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -79,6 +83,7 @@ namespace XPathTests.FunctionalTests.Location
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void StepsTest145(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -94,6 +99,7 @@ namespace XPathTests.FunctionalTests.Location
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void StepsTest146(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -109,6 +115,7 @@ namespace XPathTests.FunctionalTests.Location
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void StepsTest147(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -124,6 +131,7 @@ namespace XPathTests.FunctionalTests.Location
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void StepsTest148(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -216,6 +224,7 @@ namespace XPathTests.FunctionalTests.Location
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void StepsTest149(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -293,6 +302,7 @@ namespace XPathTests.FunctionalTests.Location
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void StepsTest1410(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -385,6 +395,7 @@ namespace XPathTests.FunctionalTests.Location
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void StepsTest1411(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -412,6 +423,7 @@ namespace XPathTests.FunctionalTests.Location
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void StepsTest1412(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -435,6 +447,7 @@ namespace XPathTests.FunctionalTests.Location
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void StepsTest1413(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -462,6 +475,7 @@ namespace XPathTests.FunctionalTests.Location
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void StepsTest1414(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -477,6 +491,7 @@ namespace XPathTests.FunctionalTests.Location
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void StepsTest1415(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";

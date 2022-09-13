@@ -71,6 +71,7 @@ namespace XPathTests.XPathExpressionTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void Variation_1(Utils.NavigatorKind kind)
         {
             EvaluateTestsBoth(kind, "string(1)", "1");
@@ -83,6 +84,7 @@ namespace XPathTests.XPathExpressionTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void Variation_2(Utils.NavigatorKind kind)
         {
             EvaluateTestsBoth(kind, "number('1')", 1);
@@ -95,6 +97,7 @@ namespace XPathTests.XPathExpressionTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void Variation_3(Utils.NavigatorKind kind)
         {
             EvaluateTestsBoth(kind, "true()", true);
@@ -107,6 +110,7 @@ namespace XPathTests.XPathExpressionTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void Variation_5(Utils.NavigatorKind kind)
         {
             EvaluateTestsErrors(kind, string.Empty, "Xp_NodeSetExpected");
@@ -119,6 +123,7 @@ namespace XPathTests.XPathExpressionTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void Variation_6(Utils.NavigatorKind kind)
         {
             EvaluateTestsErrors(kind, "string(1, 2)", "Xp_InvalidNumArgs");
@@ -157,6 +162,7 @@ namespace XPathTests.XPathExpressionTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void Variation_7(Utils.NavigatorKind kind)
         {
             EvaluateTestCompiledNodeset(kind, "DocumentElement/child::*", new[] { "first", "second", "third", "last" });
@@ -170,6 +176,7 @@ namespace XPathTests.XPathExpressionTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void Variation_9(Utils.NavigatorKind kind)
         {
             EvaluateTestsErrors(kind, null, "Xp_ExprExpected");
@@ -182,6 +189,7 @@ namespace XPathTests.XPathExpressionTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void Variation_10(Utils.NavigatorKind kind)
         {
             EvaluateTestsErrors(kind, "DocumentElement/child:::*", "Xp_InvalidToken");
@@ -194,6 +202,7 @@ namespace XPathTests.XPathExpressionTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void Variation_11(Utils.NavigatorKind kind)
         {
             var navigator = Utils.CreateNavigator(kind, xml);
@@ -209,6 +218,7 @@ namespace XPathTests.XPathExpressionTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void Variation_12(Utils.NavigatorKind kind)
         {
             var navigator = Utils.CreateNavigator(kind, xml);

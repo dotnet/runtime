@@ -18,6 +18,7 @@ namespace XPathTests.FunctionalTests.Expressions.NodeSets
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest191(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
@@ -35,6 +36,7 @@ namespace XPathTests.FunctionalTests.Expressions.NodeSets
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest192(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
@@ -52,6 +54,7 @@ namespace XPathTests.FunctionalTests.Expressions.NodeSets
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest193(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
@@ -69,6 +72,7 @@ namespace XPathTests.FunctionalTests.Expressions.NodeSets
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest194(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
@@ -86,6 +90,7 @@ namespace XPathTests.FunctionalTests.Expressions.NodeSets
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest195(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
@@ -103,6 +108,7 @@ namespace XPathTests.FunctionalTests.Expressions.NodeSets
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest196(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
@@ -120,6 +126,7 @@ namespace XPathTests.FunctionalTests.Expressions.NodeSets
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest197(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";

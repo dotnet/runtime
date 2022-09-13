@@ -2555,9 +2555,18 @@ namespace System.Xml.XslTransformApiTests
     public class CTransformStrStrResolverTest : XsltApiTestCaseBase
     {
         private ITestOutputHelper _output;
+        private AllowDefaultResolverContext _resolverContext;
+
         public CTransformStrStrResolverTest(ITestOutputHelper output) : base(output)
         {
             _output = output;
+            _resolverContext = new AllowDefaultResolverContext();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            _resolverContext.Dispose();
         }
 
         //[Variation("Pass null XmlResolver, load style sheet with import/include, should not affect transform")]

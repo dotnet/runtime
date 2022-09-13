@@ -19,6 +19,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest71(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
@@ -36,6 +37,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest72(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
@@ -53,6 +55,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest73(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
@@ -70,6 +73,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest74(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
@@ -87,6 +91,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest75(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
@@ -104,6 +109,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest76(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
@@ -121,6 +127,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest77(Utils.NavigatorKind kind)
         {
             var xml = "xp002.xml";
@@ -138,6 +145,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest78(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
@@ -155,6 +163,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest79(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
@@ -172,6 +181,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest710(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
@@ -189,6 +199,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest711(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
@@ -206,6 +217,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest712(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
@@ -223,6 +235,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest713(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
@@ -240,6 +253,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest714(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
@@ -257,6 +271,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest715(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
@@ -274,6 +289,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest716(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
@@ -291,6 +307,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest717(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
@@ -308,6 +325,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest718(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
@@ -324,6 +342,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest719(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
@@ -341,6 +360,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest720(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -358,6 +378,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest721(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -375,6 +396,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest722(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -392,6 +414,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest723(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -409,6 +432,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest724(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -426,6 +450,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest725(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -443,6 +468,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest726(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -460,6 +486,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest727(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -477,6 +504,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest728(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -494,6 +522,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest729(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -511,6 +540,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest730(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -528,6 +558,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest731(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -545,6 +576,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest732(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -562,6 +594,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest733(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -578,6 +611,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest734(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -594,6 +628,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest735(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -611,6 +646,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest736(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -627,6 +663,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest737(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -643,6 +680,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest738(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -664,6 +702,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest739(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
@@ -681,6 +720,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest740(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";
@@ -698,6 +738,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest741(Utils.NavigatorKind kind)
         {
             var xml = "xp005.xml";

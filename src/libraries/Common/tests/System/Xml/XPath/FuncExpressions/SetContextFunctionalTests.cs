@@ -20,6 +20,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void SetContextFunctionalTestsTest431(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
@@ -51,6 +52,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void SetContextFunctionalTestsTest432(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
@@ -82,6 +84,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void SetContextFunctionalTestsTest433(Utils.NavigatorKind kind)
         {
             var xml = "name4.xml";
@@ -112,6 +115,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void SetContextFunctionalTestsTest434(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
@@ -130,6 +134,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void SetContextFunctionalTestsTest435(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";

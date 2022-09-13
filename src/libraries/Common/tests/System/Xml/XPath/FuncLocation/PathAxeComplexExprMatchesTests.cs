@@ -19,6 +19,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes.ComplexExpressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest41(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -36,6 +37,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes.ComplexExpressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest42(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -53,6 +55,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes.ComplexExpressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest43(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -74,6 +77,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes.ComplexExpressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest44(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -91,6 +95,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes.ComplexExpressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest45(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -112,6 +117,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes.ComplexExpressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest46(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -128,6 +134,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Axes.ComplexExpressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void MatchesTest47(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";

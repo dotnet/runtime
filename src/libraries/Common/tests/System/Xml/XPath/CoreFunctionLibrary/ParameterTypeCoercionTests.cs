@@ -18,6 +18,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ParameterTypeCoercionTest281(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -35,6 +36,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ParameterTypeCoercionTest282(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -52,6 +54,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ParameterTypeCoercionTest283(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -69,6 +72,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ParameterTypeCoercionTest284(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -86,6 +90,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ParameterTypeCoercionTest285(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -103,6 +108,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ParameterTypeCoercionTest286(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -120,6 +126,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ParameterTypeCoercionTest287(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -137,6 +144,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ParameterTypeCoercionTest288(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -154,6 +162,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ParameterTypeCoercionTest289(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -171,6 +180,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ParameterTypeCoercionTest2810(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -188,6 +198,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ParameterTypeCoercionTest2811(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -205,6 +216,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ParameterTypeCoercionTest2812(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -222,6 +234,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ParameterTypeCoercionTest2813(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -239,6 +252,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ParameterTypeCoercionTest2814(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -256,6 +270,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ParameterTypeCoercionTest2815(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -273,6 +288,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ParameterTypeCoercionTest2816(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -290,6 +306,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ParameterTypeCoercionTest2817(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -307,6 +324,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ParameterTypeCoercionTest2818(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -324,6 +342,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ParameterTypeCoercionTest2819(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -341,6 +360,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ParameterTypeCoercionTest2820(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -358,6 +378,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ParameterTypeCoercionTest2821(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -375,6 +396,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ParameterTypeCoercionTest2822(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -392,6 +414,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ParameterTypeCoercionTest2823(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -409,6 +432,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ParameterTypeCoercionTest2824(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -426,6 +450,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ParameterTypeCoercionTest2825(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -443,6 +468,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void ParameterTypeCoercionTest2826(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";

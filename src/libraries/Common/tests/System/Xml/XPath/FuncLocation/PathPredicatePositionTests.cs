@@ -20,6 +20,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest61(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -48,6 +49,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest62(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -85,6 +87,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest63(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -111,6 +114,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest64(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -139,6 +143,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest65(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -167,6 +172,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest66(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -194,6 +200,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest67(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -218,6 +225,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest68(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -283,6 +291,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest69(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -302,6 +311,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest610(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -320,6 +330,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest611(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -348,6 +359,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest612(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -374,6 +386,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest613(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -401,6 +414,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest614(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -427,6 +441,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest615(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -453,6 +468,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest616(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -481,6 +497,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest617(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -499,6 +516,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest618(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -526,6 +544,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest619(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -591,6 +610,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest620(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -656,6 +676,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest621(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -684,6 +705,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest622(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -700,6 +722,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest623(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -716,6 +739,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest624(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -742,6 +766,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest625(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -770,6 +795,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest626(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -798,6 +824,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest627(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -978,6 +1005,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest628(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -1129,6 +1157,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest629(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -1289,6 +1318,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest630(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -1304,6 +1334,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest631(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -1329,6 +1360,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest632(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -1344,6 +1376,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest633(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -1359,6 +1392,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest634(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -1374,6 +1408,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest635(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -1389,6 +1424,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest636(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -1404,6 +1440,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest637(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -1564,6 +1601,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest638(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -1579,6 +1617,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest639(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -1594,6 +1633,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest640(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -1754,6 +1794,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest641(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -1769,6 +1810,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest642(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -1884,6 +1926,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest643(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -1899,6 +1942,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest644(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -1914,6 +1958,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest645(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -1929,6 +1974,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest646(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -2089,6 +2135,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest647(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -2249,6 +2296,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest648(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -2264,6 +2312,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest649(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -2424,6 +2473,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest650(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -2584,6 +2634,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest651(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -2744,6 +2795,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest652(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -2818,6 +2870,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest653(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -2835,6 +2888,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest654(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -2852,6 +2906,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest655(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -2869,6 +2924,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest656(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -2886,6 +2942,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest657(Utils.NavigatorKind kind)
         {
             var xml = "numbers.xml";
@@ -2939,6 +2996,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest658(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -2968,6 +3026,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest659(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -2985,6 +3044,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest660(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -3013,6 +3073,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest661(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -3232,6 +3293,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest662(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -3333,6 +3395,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         [OuterLoop]
         public static void UsingPositionFunctionTest663(Utils.NavigatorKind kind)
         {
@@ -3623,6 +3686,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest664(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -3639,6 +3703,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest665(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -3677,6 +3742,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest666(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -3756,6 +3822,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest667(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
@@ -3785,6 +3852,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest668(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
@@ -3891,6 +3959,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest669(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
@@ -3918,6 +3987,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest670(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -4074,6 +4144,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest671(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -4217,6 +4288,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest672(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -4244,6 +4316,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest673(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -4335,6 +4408,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest674(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -4426,6 +4500,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest675(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -4506,6 +4581,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest676(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -4675,6 +4751,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest677(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -4777,6 +4854,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest678(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -4855,6 +4933,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest679(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -4946,6 +5025,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest680(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -4960,6 +5040,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest681(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -5051,6 +5132,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest682(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -5413,6 +5495,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest683(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -5503,6 +5586,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest684(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -5529,6 +5613,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest685(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -5619,6 +5704,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest686(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -5688,6 +5774,7 @@ namespace XPathTests.FunctionalTests.Location.Paths.Predicates
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void UsingPositionFunctionTest687(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";

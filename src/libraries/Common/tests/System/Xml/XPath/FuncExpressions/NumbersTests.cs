@@ -18,6 +18,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest211(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -34,6 +35,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest212(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -50,6 +52,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest213(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
@@ -67,6 +70,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest214(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
@@ -84,6 +88,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest215(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -100,6 +105,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest216(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -116,6 +122,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest217(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -132,6 +139,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest218(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -148,6 +156,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest219(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -164,6 +173,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest2110(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -180,6 +190,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest2111(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -196,6 +207,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest2112(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -212,6 +224,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest2113(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
@@ -229,6 +242,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest2114(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
@@ -246,6 +260,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest2115(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -262,6 +277,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest2116(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -278,6 +294,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest2117(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -294,6 +311,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest2118(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -310,6 +328,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest2119(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -326,6 +345,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest2120(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -342,6 +362,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest2121(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -357,6 +378,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest2122(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -372,6 +394,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest2123(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -387,6 +410,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest2124(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -402,6 +426,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest2125(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -417,6 +442,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest2126(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -433,6 +459,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest2127(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -449,6 +476,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest2128(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -465,6 +493,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumbersTest2129(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";

@@ -25,6 +25,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public void AbbreviatedSyntaxTest125(Utils.NavigatorKind kind)
         {
             var xml = "XQL_Orders_j1.xml";
@@ -40,6 +41,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public void GlobalizationTest5612(Utils.NavigatorKind kind)
         {
             var xml = "Russian_problem_chars.xml";
@@ -65,6 +67,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public void MatchesTest1136(Utils.NavigatorKind kind)
         {
             var xml = "XQL_Orders_j3.xml";
@@ -82,6 +85,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public void MatchesTest1137(Utils.NavigatorKind kind)
         {
             var xml = "XQL_Orders_j3.xml";
@@ -100,6 +104,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public void MatchesTest1138(Utils.NavigatorKind kind)
         {
             var xml = "xql_orders-flat-200a.xml";
@@ -117,6 +122,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public void PredicatesTest1038(Utils.NavigatorKind kind)
         {
             var xml = "XQL_Orders_j3.xml";
@@ -134,6 +140,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public void PredicatesTest1039(Utils.NavigatorKind kind)
         {
             var xml = "XQL_Orders_j3.xml";
@@ -161,6 +168,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public void PredicatesTest1040(Utils.NavigatorKind kind)
         {
             var xml = "XQL_Orders_j1.xml";
@@ -179,6 +187,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public void PredicatesTest1041(Utils.NavigatorKind kind)
         {
             var xml = "xql_orders-flat-200a.xml";

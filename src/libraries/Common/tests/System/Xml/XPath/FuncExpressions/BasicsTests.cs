@@ -21,6 +21,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void BasicsTest161(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
@@ -47,6 +48,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void BasicsTest162(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
@@ -73,6 +75,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void BasicsTest163(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
@@ -99,6 +102,7 @@ namespace XPathTests.FunctionalTests.Expressions
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void BasicsTest164(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";

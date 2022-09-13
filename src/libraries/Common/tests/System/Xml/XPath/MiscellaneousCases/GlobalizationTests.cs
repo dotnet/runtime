@@ -18,6 +18,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         [OuterLoop]
         public static void GlobalizationTest566(Utils.NavigatorKind kind)
         {
@@ -98,6 +99,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void GlobalizationTest567(Utils.NavigatorKind kind)
         {
             var xml = "turkish.xml";
@@ -149,6 +151,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void GlobalizationTest568(Utils.NavigatorKind kind)
         {
             var xml = "Thai_risky_chars.xml";
@@ -202,6 +205,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void GlobalizationTest569(Utils.NavigatorKind kind)
         {
             var xml = "JPN_problem_chars_1.xml";
@@ -389,6 +393,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void GlobalizationTest5610(Utils.NavigatorKind kind)
         {
             var xml = "JPN_problem_chars_2.xml";
@@ -468,6 +473,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void GlobalizationTest5613(Utils.NavigatorKind kind)
         {
             var xml = "KOR_problem_chars_b.xml";
@@ -538,6 +544,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void GlobalizationTest5614(Utils.NavigatorKind kind)
         {
             var xml = "Single_byte_problem_chars_b.xml";
@@ -608,6 +615,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void GlobalizationTest5615(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -624,6 +632,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void GlobalizationTest5616(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -640,6 +649,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void GlobalizationTest5617(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -656,6 +666,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void GlobalizationTest5618(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -672,6 +683,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void GlobalizationTest5619(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";

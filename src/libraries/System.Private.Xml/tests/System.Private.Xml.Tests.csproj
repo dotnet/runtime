@@ -437,8 +437,11 @@
 
   <ItemGroup>
     <Compile Include="XPath\XPathDocument\CreateNavigatorFromXmlReader.cs" />
-    <Compile Include="$(CommonTestPath)\\System\Xml\XPath\XmlDocument\CreateNavigatorFromXmlDocument.cs" Link="Common\\System\Xml\XPath\XmlDocument\CreateNavigatorFromXmlDocument.cs" />
-    <Compile Include="$(CommonTestPath)\\System\Xml\XPath\Common\FileHelper.cs" Link="Common\\System\Xml\XPath\Common\FileHelper.cs" />
+    <Compile Include="$(CommonTestPath)\System\Xml\XPath\XmlDocument\CreateNavigatorFromXmlDocument.cs" Link="Common\System\Xml\XPath\XmlDocument\CreateNavigatorFromXmlDocument.cs" />
+    <Compile Include="$(CommonTestPath)\System\Xml\XPath\XDocument\CreateNavigatorComparer.cs" Link="Common\System\Xml\XPath\XDocument\CreateNavigatorComparer.cs" />
+    <Compile Include="$(CommonTestPath)\System\Xml\XPath\XDocument\CreateNavigatorFromXDocument.cs" Link="Common\System\Xml\XPath\XDocument\CreateNavigatorFromXDocument.cs" />
+    <Compile Include="$(CommonTestPath)\System\Xml\XPath\XDocument\NavigatorComparer.cs" Link="Common\System\Xml\XPath\XDocument\NavigatorComparer.cs" />
+    <Compile Include="$(CommonTestPath)\System\Xml\XPath\Common\FileHelper.cs" Link="Common\System\Xml\XPath\Common\FileHelper.cs" />
     <Compile Include="$(CommonTestPath)\System\Xml\XPath\Common\ICreateNavigator.cs" Link="Common\System\Xml\XPath\Common\ICreateNavigator.cs" />
     <Compile Include="$(CommonTestPath)\System\Xml\XPath\Common\Utils.cs" Link="Common\System\Xml\XPath\Common\Utils.cs" />
     <Compile Include="$(CommonTestPath)\System\Xml\XPath\Common\XPathResult.cs" Link="Common\System\Xml\XPath\Common\XPathResult.cs" />

@@ -18,6 +18,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest261(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -34,6 +35,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest262(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -50,6 +52,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest263(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -66,6 +69,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest264(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -82,6 +86,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest265(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -98,6 +103,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest266(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -114,6 +120,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest267(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -130,6 +137,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest268(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -146,6 +154,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest269(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
@@ -163,6 +172,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest2610(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -179,6 +189,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest2611(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
@@ -196,6 +207,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest2612(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
@@ -213,6 +225,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest2613(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -229,6 +242,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest2614(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -245,6 +259,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest2615(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -261,6 +276,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest2616(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -277,6 +293,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest2617(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
@@ -294,6 +311,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest2618(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -310,6 +328,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest2619(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -326,6 +345,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest2620(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -342,6 +362,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest2621(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -358,6 +379,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest2622(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
@@ -375,6 +397,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest2623(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -391,6 +414,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest2624(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -407,6 +431,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest2625(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -423,6 +448,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest2626(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -439,6 +465,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest2627(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
@@ -455,6 +482,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest2628(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -472,6 +500,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest2629(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -488,6 +517,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NumberFunctionsTest2630(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";

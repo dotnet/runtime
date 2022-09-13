@@ -19,6 +19,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void AbbreviatedSyntaxTest121(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -143,6 +144,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void AbbreviatedSyntaxTest122(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -206,6 +208,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void AbbreviatedSyntaxTest123(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -330,6 +333,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void AbbreviatedSyntaxTest124(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -345,6 +349,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void AbbreviatedSyntaxTest126(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -378,6 +383,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void AbbreviatedSyntaxTest127(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -406,6 +412,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void AbbreviatedSyntaxTest129(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -428,6 +435,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void AbbreviatedSyntaxTest1210(Utils.NavigatorKind kind)
         {
             var xml = "91893.xml";
@@ -461,6 +469,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void AbbreviatedSyntaxTest1211(Utils.NavigatorKind kind)
         {
             var xml = "91893.xml";
@@ -504,6 +513,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void AbbreviatedSyntaxTest1212(Utils.NavigatorKind kind)
         {
             var xml = "91893.xml";
@@ -519,6 +529,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void AbbreviatedSyntaxTest1213(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";

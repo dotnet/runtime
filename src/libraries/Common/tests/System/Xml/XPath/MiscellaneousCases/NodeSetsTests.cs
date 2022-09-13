@@ -19,6 +19,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NodeSetsTest511(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -172,6 +173,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NodeSetsTest512(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
@@ -187,6 +189,7 @@ namespace XPathTests.FunctionalTests
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void NodeSetsTest513(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";

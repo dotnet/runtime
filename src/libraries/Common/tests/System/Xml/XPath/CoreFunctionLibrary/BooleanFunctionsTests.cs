@@ -19,6 +19,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void BooleanFunctionsTest251(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -35,6 +36,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void BooleanFunctionsTest252(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -51,6 +53,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void BooleanFunctionsTest253(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -67,6 +70,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void BooleanFunctionsTest254(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -83,6 +87,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void BooleanFunctionsTest255(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -99,6 +104,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void BooleanFunctionsTest256(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -115,6 +121,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void BooleanFunctionsTest257(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -131,6 +138,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void BooleanFunctionsTest258(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -147,6 +155,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void BooleanFunctionsTest259(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
@@ -164,6 +173,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void BooleanFunctionsTest2510(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
@@ -181,6 +191,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void BooleanFunctionsTest2511(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -197,6 +208,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void BooleanFunctionsTest2512(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -213,6 +225,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void BooleanFunctionsTest2513(Utils.NavigatorKind kind)
         {
             var xml = "xp004.xml";
@@ -230,6 +243,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void BooleanFunctionsTest2514(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -246,6 +260,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void BooleanFunctionsTest2515(Utils.NavigatorKind kind)
         {
             var xml = "dummy.xml";
@@ -262,6 +277,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void BooleanFunctionsTest2516(Utils.NavigatorKind kind)
         {
             var xml = "lang.xml";
@@ -279,6 +295,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void BooleanFunctionsTest2517(Utils.NavigatorKind kind)
         {
             var xml = "lang.xml";
@@ -296,6 +313,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void BooleanFunctionsTest2518(Utils.NavigatorKind kind)
         {
             var xml = "lang.xml";
@@ -313,6 +331,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void BooleanFunctionsTest2519(Utils.NavigatorKind kind)
         {
             var xml = "lang.xml";
@@ -330,6 +349,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void BooleanFunctionsTest2520(Utils.NavigatorKind kind)
         {
             var xml = "lang.xml";
@@ -347,6 +367,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         [Theory]
         [InlineData(Utils.NavigatorKind.XmlDocument)]
         [InlineData(Utils.NavigatorKind.XPathDocument)]
+        [InlineData(Utils.NavigatorKind.XDocument)]
         public static void BooleanFunctionsTest2521(Utils.NavigatorKind kind)
         {
             var xml = "lang.xml";
