@@ -87,6 +87,16 @@ namespace System.Threading.RateLimiting.Test
                     SegmentsPerWindow = 1,
                     AutoReplenishment = false
                 }));
+            Assert.Throws<ArgumentException>(
+                () => new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
+                {
+                    PermitLimit = 1,
+                    QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                    QueueLimit = 1,
+                    Window = TimeSpan.Zero,
+                    SegmentsPerWindow = 1,
+                    AutoReplenishment = false
+                }));
         }
 
         [Fact]

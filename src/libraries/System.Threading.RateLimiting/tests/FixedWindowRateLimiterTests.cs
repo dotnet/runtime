@@ -71,6 +71,15 @@ namespace System.Threading.RateLimiting.Test
                     Window = TimeSpan.FromMinutes(-2),
                     AutoReplenishment = false,
                 }));
+            Assert.Throws<ArgumentException>(
+                () => new FixedWindowRateLimiter(new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 1,
+                    QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                    QueueLimit = 1,
+                    Window = TimeSpan.Zero,
+                    AutoReplenishment = false,
+                }));
         }
 
         [Fact]
