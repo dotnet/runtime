@@ -30,7 +30,7 @@ public:
     Object* TryAllocateObject(PTR_MethodTable type, size_t objectSize);
 
 private:
-    CrstExplicitInit m_Crst;
+    Crst m_Crst;
     SArray<FrozenObjectSegment*> m_FrozenSegments;
     FrozenObjectSegment* m_CurrentSegment;
     bool m_Enabled;
