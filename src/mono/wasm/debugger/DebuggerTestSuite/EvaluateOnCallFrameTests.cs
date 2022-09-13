@@ -637,6 +637,7 @@ namespace DebuggerTests
 
                await EvaluateOnCallFrameAndCheck(id,
                    ("f.numList[i + 1]", TNumber(2)),
+                   ("f.textList[(2 * j) - 1]", TString("2")),
                    ("f.textList[j - 1]", TString("1")),
                    ("f.numArray[f.numList[j - 1]]", TNumber(2))
                 );
@@ -653,7 +654,7 @@ namespace DebuggerTests
                await EvaluateOnCallFrameAndCheck(id,
                    ("f.numArray2D[0, j - 1]", TNumber(1)), // 0, 0
                    ("f.numArray2D[f.idx1, i + j]", TNumber(4)), // 1, 1
-                   ("f.numArray2D[f.idx1 - j, i + j]", TNumber(2)), // 0, 1
+                   ("f.numArray2D[(f.idx1 - j) * 5, i + j]", TNumber(2)), // 0, 1
                    ("f.numArray2D[i + j, f.idx1 - 1]", TNumber(3)) // 1, 0
                 );
            });
