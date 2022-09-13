@@ -565,46 +565,46 @@ emit_sum_vector (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, 
 {
 	MonoClass* arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 	int size = mono_class_value_size (arg_class, NULL);
-	if ( size != 16 ) 		// Works only with Vector128
+	if (size != 16) 		// Works only with Vector128
 		return NULL;
 
 	int instc0 = -1;
 	switch (element_type) {
-		case MONO_TYPE_R4:
-			instc0 = INTRINS_SSE_HADDPS;
-			break;
-		case MONO_TYPE_R8:
-			instc0 = INTRINS_SSE_HADDPD;
-			break;
-		case MONO_TYPE_I1:
-		case MONO_TYPE_U1:
-			// byte, sbyte not supported yet
-			return NULL;
-		case MONO_TYPE_I2: 
-		case MONO_TYPE_U2:
-			instc0 = INTRINS_SSE_PHADDW;
-			break;
-		case MONO_TYPE_I4:
-		case MONO_TYPE_U4:
-			instc0 = INTRINS_SSE_PHADDD;
-			break;
-		case MONO_TYPE_I8:
-		case MONO_TYPE_U8: {
-			// Ssse3 doesn't have support for HorizontalAdd on i64
-			MonoInst* lower = emit_simd_ins_for_sig (cfg, klass, OP_XLOWER, 0, element_type, fsig, args);
-			MonoInst* upper = emit_simd_ins_for_sig (cfg, klass, OP_XUPPER, 0, element_type, fsig, args);	
+	case MONO_TYPE_R4:
+		instc0 = INTRINS_SSE_HADDPS;
+		break;
+	case MONO_TYPE_R8:
+		instc0 = INTRINS_SSE_HADDPD;
+		break;
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+		// byte, sbyte not supported yet
+		return NULL;
+	case MONO_TYPE_I2: 
+	case MONO_TYPE_U2:
+		instc0 = INTRINS_SSE_PHADDW;
+		break;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+		instc0 = INTRINS_SSE_PHADDD;
+		break;
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8: {
+		// Ssse3 doesn't have support for HorizontalAdd on i64
+		MonoInst* lower = emit_simd_ins_for_sig (cfg, klass, OP_XLOWER, 0, element_type, fsig, args);
+		MonoInst* upper = emit_simd_ins_for_sig (cfg, klass, OP_XUPPER, 0, element_type, fsig, args);	
 
-			// Sum lower and upper i64
-			args[0] = lower;
-			args[1] = upper;
-			fsig->param_count = 2;
-			MonoInst* ins = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_IADD, element_type, fsig, args);
+		// Sum lower and upper i64
+		args[0] = lower;
+		args[1] = upper;
+		fsig->param_count = 2;
+		MonoInst* ins = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_IADD, element_type, fsig, args);
 
-			return extract_first_element(cfg, klass, element_type, ins->dreg);
-		}
-		default: {
-			return NULL;
-		}
+		return extract_first_element(cfg, klass, element_type, ins->dreg);
+	}
+	default: {
+		return NULL;
+	}
 	}
 
 	MonoType* etype = mono_class_get_context (arg_class)->class_inst->type_argv [0];
