@@ -7,7 +7,21 @@
 #include "gcinterface.h"
 #include <sarray.h>
 
-class FrozenObjectHeap;
+// FrozenObjectHeapManager provides a simple API to allocate objects on GC's Frozen Segments, it can be used as 
+// an optimization to put certain types of objects there and rely on them to be effectively pinned so, for instance, 
+// jit can bake direct addresses of them in codegen and avoid extra indirect loads.
+//
+// Example: a string literal allocated on a normal heap looks like this in JIT for x64:
+//
+//  mov      rax, 0xD1FFAB1E ; pinned handle
+//  mov      rax, gword ptr [rax] ; actual string object
+//
+// and here is the same literal but allocated on a frozen segment:
+//
+//  mov      rax, 0xD1FFAB1E ; actual string object
+//
+
+class FrozenObjectSegment;
 
 class FrozenObjectHeapManager
 {
@@ -17,24 +31,21 @@ public:
 
 private:
     CrstExplicitInit m_Crst;
-    SArray<FrozenObjectHeap*> m_FrozenHeaps;
-    FrozenObjectHeap* m_CurrentHeap;
-    size_t m_HeapCommitChunkSize;
-    size_t m_HeapSize;
+    SArray<FrozenObjectSegment*> m_FrozenSegments;
+    FrozenObjectSegment* m_CurrentSegment;
+    bool m_Enabled;
 };
 
-class FrozenObjectHeap
+class FrozenObjectSegment
 {
 public:
-    FrozenObjectHeap(size_t reserveSize, size_t commitChunkSize);
+    FrozenObjectSegment();
     Object* TryAllocateObject(PTR_MethodTable type, size_t objectSize);
 
 private:
     uint8_t* m_pStart;
     uint8_t* m_pCurrent;
-    size_t m_CommitChunkSize;
     size_t m_SizeCommitted;
-    size_t m_SizeReserved;
     segment_handle m_SegmentHandle;
     INDEBUG(size_t m_ObjectsCount);
 };

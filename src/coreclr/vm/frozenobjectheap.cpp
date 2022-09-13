@@ -4,18 +4,22 @@
 #include "common.h"
 #include "frozenobjectheap.h"
 
+// Size to reserve for a frozen segment
+#define FOH_SEGMENT_SIZE (4 * 1024 * 1024)
+// Size to commit on demand in that reserved space
+#define FOH_COMMIT_SIZE (64 * 1024)
+
 FrozenObjectHeapManager::FrozenObjectHeapManager():
-    m_CurrentHeap(nullptr)
+    m_CurrentSegment(nullptr)
 {
     m_Crst.Init(CrstFrozenObjectHeap, CRST_UNSAFE_COOPGC);
-    m_HeapCommitChunkSize = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_FrozenSegmentCommitSize);
-    m_HeapSize = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_FrozenSegmentReserveSize);
+    m_Enabled = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_UseFrozenObjectHeap) != 0;
 }
 
 // Allocates an object of the give size (including header) on a frozen segment.
 // May return nullptr in the following cases:
-//   1) DOTNET_FrozenSegmentReserveSize is 0 (disabled)
-//   2) Object is too large (large than DOTNET_FrozenSegmentCommitSize)
+//   1) DOTNET_UseFrozenObjectHeap is 0 (disabled)
+//   2) Object is too large (large than FOH_COMMIT_SIZE)
 // in such cases caller is responsible to find a more appropriate heap to allocate it
 Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t objectSize)
 {
@@ -33,46 +37,46 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
 
     CrstHolder ch(&m_Crst);
 
-    // Quick way to disable Frozen Heaps
-    if (m_HeapSize == 0)
+    if (!m_Enabled)
     {
+        // Disabled via DOTNET_UseFrozenObjectHeap=0
         return nullptr;
     }
 
     _ASSERT(type != nullptr);
-    _ASSERT(m_HeapCommitChunkSize >= MIN_OBJECT_SIZE);
-    _ASSERT(m_HeapSize > m_HeapCommitChunkSize);
-    _ASSERT(m_HeapSize % m_HeapCommitChunkSize == 0);
+    _ASSERT(FOH_COMMIT_SIZE >= MIN_OBJECT_SIZE);
+    _ASSERT(FOH_SEGMENT_SIZE > FOH_COMMIT_SIZE);
+    _ASSERT(FOH_SEGMENT_SIZE % FOH_COMMIT_SIZE == 0);
 
     // NOTE: objectSize is expected be the full size including header
     _ASSERT(objectSize >= MIN_OBJECT_SIZE);
 
-    if (objectSize > m_HeapCommitChunkSize)
+    if (objectSize > FOH_COMMIT_SIZE)
     {
-        // The current design doesn't allow object larger than DOTNET_FrozenSegmentCommitSize and
+        // The current design doesn't allow objects larger than FOH_COMMIT_SIZE and
         // since FrozenObjectHeap is just an optimization, let's not fill it with huge objects.
         return nullptr;
     }
 
-    if (m_CurrentHeap == nullptr)
+    if (m_CurrentSegment == nullptr)
     {
         // Create the first heap on first allocation
-        m_CurrentHeap = new FrozenObjectHeap(m_HeapSize, m_HeapCommitChunkSize);
-        m_FrozenHeaps.Append(m_CurrentHeap);
-        _ASSERT(m_CurrentHeap != nullptr);
+        m_CurrentSegment = new FrozenObjectSegment();
+        m_FrozenSegments.Append(m_CurrentSegment);
+        _ASSERT(m_CurrentSegment != nullptr);
     }
 
-    Object* obj = m_CurrentHeap->TryAllocateObject(type, objectSize);
+    Object* obj = m_CurrentSegment->TryAllocateObject(type, objectSize);
 
     // The only case where it can be null is when the current heap is full and we need
     // to create a new one
     if (obj == nullptr)
     {
-        m_CurrentHeap = new FrozenObjectHeap(m_HeapSize, m_HeapCommitChunkSize);
-        m_FrozenHeaps.Append(m_CurrentHeap);
+        m_CurrentSegment = new FrozenObjectSegment();
+        m_FrozenSegments.Append(m_CurrentSegment);
 
         // Try again
-        obj = m_CurrentHeap->TryAllocateObject(type, objectSize);
+        obj = m_CurrentSegment->TryAllocateObject(type, objectSize);
 
         // This time it's not expected to be null
         _ASSERT(obj != nullptr);
@@ -82,25 +86,21 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
 }
 
 
-FrozenObjectHeap::FrozenObjectHeap(size_t reserveSize, size_t commitChunkSize):
+FrozenObjectSegment::FrozenObjectSegment():
     m_pStart(nullptr),
     m_pCurrent(nullptr),
-    m_CommitChunkSize(0),
     m_SizeCommitted(0),
     m_SegmentHandle(nullptr)
     COMMA_INDEBUG(m_ObjectsCount(0))
 {
-    m_SizeReserved = reserveSize;
-    m_CommitChunkSize = commitChunkSize;
-
-    void* alloc = ClrVirtualAlloc(nullptr, m_SizeReserved, MEM_RESERVE, PAGE_READWRITE);
+    void* alloc = ClrVirtualAlloc(nullptr, FOH_SEGMENT_SIZE, MEM_RESERVE, PAGE_READWRITE);
     if (alloc == nullptr)
     {
         ThrowOutOfMemory();
     }
 
     // Commit a chunk in advance
-    void* committedAlloc = ClrVirtualAlloc(alloc, m_CommitChunkSize, MEM_COMMIT, PAGE_READWRITE);
+    void* committedAlloc = ClrVirtualAlloc(alloc, FOH_COMMIT_SIZE, MEM_COMMIT, PAGE_READWRITE);
     if (committedAlloc == nullptr)
     {
         ClrVirtualFree(alloc, 0, MEM_RELEASE);
@@ -115,8 +115,8 @@ FrozenObjectHeap::FrozenObjectHeap(size_t reserveSize, size_t commitChunkSize):
     si.pvMem = committedAlloc;
     si.ibFirstObject = sizeof(ObjHeader);
     si.ibAllocated = si.ibFirstObject;
-    si.ibCommit = m_CommitChunkSize;
-    si.ibReserved = m_SizeReserved;
+    si.ibCommit = FOH_COMMIT_SIZE;
+    si.ibReserved = FOH_SEGMENT_SIZE;
 
     m_SegmentHandle = GCHeapUtilities::GetGCHeap()->RegisterFrozenSegment(&si);
     if (m_SegmentHandle == nullptr)
@@ -132,28 +132,28 @@ FrozenObjectHeap::FrozenObjectHeap(size_t reserveSize, size_t commitChunkSize):
     return;
 }
 
-Object* FrozenObjectHeap::TryAllocateObject(PTR_MethodTable type, size_t objectSize)
+Object* FrozenObjectSegment::TryAllocateObject(PTR_MethodTable type, size_t objectSize)
 {
-    _ASSERT(m_pStart != nullptr && m_SizeReserved > 0 && m_SegmentHandle != nullptr); // Expected to be inited
+    _ASSERT(m_pStart != nullptr && FOH_SEGMENT_SIZE > 0 && m_SegmentHandle != nullptr); // Expected to be inited
     _ASSERT(IS_ALIGNED(m_pCurrent, DATA_ALIGNMENT));
 
     uint8_t* obj = m_pCurrent;
-    if (reinterpret_cast<size_t>(m_pStart + m_SizeReserved) < reinterpret_cast<size_t>(obj + objectSize))
+    if (reinterpret_cast<size_t>(m_pStart + FOH_SEGMENT_SIZE) < reinterpret_cast<size_t>(obj + objectSize))
     {
-        // heap is full
+        // Segment is full
         return nullptr;
     }
 
     // Check if we need to commit a new chunk
     if (reinterpret_cast<size_t>(m_pStart + m_SizeCommitted) < reinterpret_cast<size_t>(obj + objectSize))
     {
-        _ASSERT(m_SizeCommitted + m_CommitChunkSize <= m_SizeReserved);
-        if (ClrVirtualAlloc(m_pStart + m_SizeCommitted, m_CommitChunkSize, MEM_COMMIT, PAGE_READWRITE) == nullptr)
+        _ASSERT(m_SizeCommitted + FOH_COMMIT_SIZE <= FOH_SEGMENT_SIZE);
+        if (ClrVirtualAlloc(m_pStart + m_SizeCommitted, FOH_COMMIT_SIZE, MEM_COMMIT, PAGE_READWRITE) == nullptr)
         {
             ClrVirtualFree(m_pStart, 0, MEM_RELEASE);
             ThrowOutOfMemory();
         }
-        m_SizeCommitted += m_CommitChunkSize;
+        m_SizeCommitted += FOH_COMMIT_SIZE;
     }
 
     INDEBUG(m_ObjectsCount++);

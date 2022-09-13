@@ -408,8 +408,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_BreakOnOutOfMemoryWithinRange, W("BreakOnOutOf
 ///
 /// Frozen segments (aka Frozen Object Heap)
 ///
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_FrozenSegmentReserveSize, W("FrozenSegmentReserveSize"), 0x400000, "Amount of memory to reserve for a frozen segment") // 4Mb
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_FrozenSegmentCommitSize, W("FrozenSegmentCommitSize"), 0x10000, "Amount of memory to commit on demand for frozen segments") // 64Kb
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_UseFrozenObjectHeap, W("UseFrozenObjectHeap"), 1, "Use frozen object heap for certain types of objects (e.g. string literals) as an optimization.")
 
 ///
 /// Log
