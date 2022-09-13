@@ -302,7 +302,7 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
         isSourceBuild: true
-        isPortableSourceBuild: false
+        isNonPortableSourceBuild: true
 
 # Portable Linux x64 Source Build
 
@@ -327,7 +327,7 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
         isSourceBuild: true
-        isPortableSourceBuild: true
+        isNonPortableSourceBuild: false
 
 # Linux s390x
 

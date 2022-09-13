@@ -22,7 +22,7 @@ parameters:
   dependOnEvaluatePaths: false
   isOfficialBuild: false
   isSourceBuild: false
-  isPortableSourceBuild: false
+  isNonPortableSourceBuild: false
   runtimeFlavor: 'coreclr'
   runtimeVariant: ''
   helixQueues: ''
@@ -141,7 +141,7 @@ jobs:
         parameters:
           platform:
             buildScript: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt)
-            nonPortable: ${{ parameters.isPortableSourceBuild }}
+            nonPortable: ${{ parameters.isNonPortableSourceBuild }}
             targetRid: ${{ parameters.targetRid }}
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'MacCatalyst') }}:
