@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-using System;
 using System.Xml;
 using System.Xml.XPath;
 using XPathTests.Common;
+using Xunit;
 
 namespace XPathTests.FunctionalTests.Location.Paths
 {
@@ -16,10 +15,12 @@ namespace XPathTests.FunctionalTests.Location.Paths
     {
         /// <summary>
         /// Combines ancestor-or-self axis with child axis
-        /// ancestor-or-self::*/child::text()
+        /// ancestor-or-self::*/child::text(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest21()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest21(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[3]/articles/story1/details";
@@ -67,15 +68,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines ancestor-or-self axis with ancestor axis
         /// ancestor-or-self::articles/ancestor::magazine
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest22()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest22(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine/articles/*";
@@ -94,16 +97,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines ancestor-or-self axis with descendant axis
-        /// ancestor-or-self::*/descendant::node()
+        /// ancestor-or-self::*/descendant::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
         [OuterLoop]
-        public static void AxesCombinationsTest23()
+        public static void AxesCombinationsTest23(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[3]/articles/story1/details";
@@ -1538,16 +1543,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines ancestor-or-self axis with descendant-or-self axis
-        /// ancestor-or-self::node()/descendant-or-self::node()
+        /// ancestor-or-self::node()/descendant-or-self::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
         [OuterLoop]
-        public static void AxesCombinationsTest24()
+        public static void AxesCombinationsTest24(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[3]/articles/story1/details/text()";
@@ -3006,15 +3013,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines ancestor-or-self axis with following axis
         /// ancestor-or-self::node()/following::book | ancestor-or-self::node()/following::magazine
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest25()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest25(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine/articles/story1/details";
@@ -3096,15 +3105,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines ancestor-or-self axis with following-sibling axis
         /// ancestor-or-self::magazine/following-sibling::magazine | ancestor-or-self::magazine/following-sibling::book
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest26()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest26(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine/articles/story1/details";
@@ -3186,15 +3197,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines ancestor-or-self axis with preceding axis
         /// ancestor-or-self::magazine/preceding::book | ancestor-or-self::magazine/following::book | ancestor-or-self::magazine/child::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest27()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest27(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine/articles";
@@ -3317,15 +3330,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines ancestor-or-self axis with preceding-sibling axis
-        /// ancestor-or-self::*/preceding-sibling::node()
+        /// ancestor-or-self::*/preceding-sibling::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest28()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest28(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[last()]";
@@ -3467,15 +3482,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines ancestor-or-self axis with preceding-sibling axis
         /// ancestor-or-self::*/preceding-sibling::node()[position()=0]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest29()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest29(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[last()]";
@@ -3483,15 +3500,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines ancestor-or-self axis with preceding-sibling axis.
         /// ancestor-or-self::*/preceding-sibling::node()[position()=1]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest210()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest210(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[last()]";
@@ -3505,15 +3524,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Should select the root node
         /// ancestor-or-self::*/ancestor::node()[last()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest211()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest211(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[last()]";
@@ -3528,15 +3549,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Should select the root node
         /// ancestor-or-self::*/node()[not self::*]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest212()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest212(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[last()]";
@@ -3566,15 +3589,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines ancestor-or-self with namespace axis
         /// NS41: ancestor-or-self::*/namespace::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest213()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest213(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
             var startingNodePath = "/default:store/default:booksection/NSbook:book[1]/NSbook:title";
@@ -3666,7 +3691,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
@@ -3674,8 +3699,10 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Complex expr
         /// (ancestor-or-self::* | self::node())
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest214()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest214(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine//text()";
@@ -3705,15 +3732,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines ancestor-or-self with self. Should select only elements
         /// ancestor-or-self::node()/self::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest215()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest215(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/*//node()";
@@ -3743,15 +3772,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combine ancestor-or-self with attribute
         /// (ancestor-or-self::node()/attribute::*)[position() =1 or position()=3]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest216()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest216(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[last()]";
@@ -3775,15 +3806,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines ancestor-or-self with parent axis
         /// ancestor-or-self::*/parent::node()[not self::*]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest217()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest217(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[last()]";
@@ -3798,15 +3831,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines child axis with ancestor axis
         /// child::degree/ancestor::node()[child::degree[@from]]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest218()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest218(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -3833,15 +3868,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines child axis with ancestor-or-self axis
-        /// child::text()/ancestor-or-self::node()
+        /// child::text()/ancestor-or-self::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest219()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest219(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book/author/award";
@@ -3902,15 +3939,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines child axis with child axis
         /// (child::book | child::magazine)/child::excerpt[child::p[child::emph]]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest220()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest220(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -3928,15 +3967,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines child axis with descendant axis
         /// child::degree/descendant::node()[name()='emph']
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest221()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest221(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -3953,15 +3994,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines child axis with descendant-or-self axis
         /// child::author/descendant-or-self::*[name()!='author']
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest222()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest222(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book";
@@ -4007,15 +4050,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines child axis with following axis
         /// child::degree/following::node()[self::text()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest223()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest223(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -4123,15 +4168,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines child axis with following-sibling axis
         /// child::node()/following-sibling::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest224()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest224(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book/author";
@@ -4177,15 +4224,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines child axis with preceding axis
         /// child::node()/preceding::node()[preceding-sibling::book and following-sibling::magazine]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest225()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest225(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -4310,15 +4359,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines child axis with preceding-sibling axis
         /// child::price/preceding-sibling::first-name [following::last-name]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest226()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest226(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -4398,15 +4449,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines child axis with self axis
         /// child::node()/self::node[self::text()[self::text()[self::text()]]]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest227()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest227(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book/author/last-name";
@@ -4415,15 +4468,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Text, HasNameTable = true, Value = "Bob"});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines child axis with parent axis
         /// child::story1()/parent::* [following::book and preceding-sibling::publisher or @abc]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest228()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest228(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine/articles";
@@ -4441,15 +4496,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines child axis with attribute axis
         /// child::node()/attribute::from [following::magazine]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest229()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest229(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -4465,15 +4522,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines child with namespace axis
         /// NS42: child::NSmovie:movie/namespace::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest230()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest230(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
             var startingNodePath = "/default:store/default:moviesection";
@@ -4507,7 +4566,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
@@ -4515,8 +4574,10 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines descendant axis with ancestor axis
         /// descendant::node()/ancestor::node[self::book or self::magazine and self::* and self::node()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest231()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest231(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -4662,16 +4723,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant axis with ancestor-or-self axis
         /// descendant::text()/ancestor-or-self::node() [following::text()]
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
         [OuterLoop]
-        public static void AxesCombinationsTest232()
+        public static void AxesCombinationsTest232(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -6078,16 +6141,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant axis with ancestor-or-self axis
         /// descendant::node()/ancestor-or-self::node() [following::text() or following::text()]
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
         [OuterLoop]
-        public static void AxesCombinationsTest233()
+        public static void AxesCombinationsTest233(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -7521,15 +7586,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant axis with child axis
         /// book/descendant::author/child::degree[@from="Harvard"][child::text()[string()="Ph.D."]]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest234()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest234(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -7558,15 +7625,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant axis with descendant axis
         /// descendant::*/descendant::node() [child::text()][following::book]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest235()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest235(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -8244,15 +8313,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant axis with descendant-or-self axis
         /// descendant::magazine[@frequency="monthly"]/descendant-or-self::*[descendant-or-self::*/child::text()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest236()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest236(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -8374,15 +8445,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant axis with following axis
         /// */descendant::*/following::my:magazine
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest237()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest237(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -8405,7 +8478,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
@@ -8413,8 +8486,10 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines descendant axis with following-sibling axis
         /// descendant::*/following-sibling::my:*[preceding::my:* and following-sibling::my:*]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest238()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest238(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -8461,16 +8536,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant axis with preceding axis
-        /// book/descendant::award/preceding::text()
+        /// book/descendant::award/preceding::text(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest239()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest239(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -8761,16 +8838,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant axis with preceding-sibling axis
         /// book/descendant::award/preceding-sibling::node()[following-sibling::* = preceding-sibling::*]
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
         [OuterLoop]
-        public static void AxesCombinationsTest240()
+        public static void AxesCombinationsTest240(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -8779,15 +8858,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// descendant axis only
         /// descendant::node()[preceding-sibling::* = following-sibling::*]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest241()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest241(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -8795,15 +8876,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant axis with self axis
         /// node()/descendant::node()/self::node [self::text() = false() and self::attribute=false()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest242()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest242(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -9896,30 +9979,34 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// I accidentally put fasle() instead of false(), so I should get an exception!
         /// Copy of node()/descendant::node()/self::node [self::text() = false() and self::attribute=fasle()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest243()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest243(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
             var testExpression = @"descendant::node()/self::node() [self::text() = false() and self::attribute=fasle()]";
 
-            Utils.XPathNodesetTestThrows<System.Xml.XPath.XPathException>(xml, testExpression,
+            Utils.XPathNodesetTestThrows<System.Xml.XPath.XPathException>(kind, xml, testExpression,
                 startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant axis with attribute axis
-        /// descendant::node()/attribute::node()
+        /// descendant::node()/attribute::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest244()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest244(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -10287,15 +10374,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant axis with attribute axis
-        /// descendant::node()/attribute::text()
+        /// descendant::node()/attribute::text(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest245()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest245(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -10303,15 +10392,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant axis with parent axis
         /// descendant::node()/parent::magazine[parent::bookstore[parent::node()]]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest246()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest246(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -10380,15 +10471,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines following-sibling axis with ancestor axis
-        /// */*/following-sibling::node()/ancestor::node()
+        /// */*/following-sibling::node()/ancestor::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest247()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest247(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -10599,16 +10692,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines following-sibling axis with ancestor-or-self axis
         /// node()/node()/following-sibling::node()/ancestor-or-self::node()[preceding::node() and following::node() and self::node() and preceding-sibling::node() and following-sibling::node()]
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
         [OuterLoop]
-        public static void AxesCombinationsTest248()
+        public static void AxesCombinationsTest248(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -11254,15 +11349,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines following-sibling axis with child axis
         /// following-sibling::magazine/child::node[self::*]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest249()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest249(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book";
@@ -11417,15 +11514,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines following-sibling axis with descendant axis
         /// following-sibling::*/descendant::node [parent::book or parent::my:*]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest250()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest250(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine";
@@ -11671,7 +11770,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
@@ -11679,8 +11778,10 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines following-sibling axis with descendant-or-self axis
         /// magazine/following-sibling::*[local-name()="magazine"]/descendant-or-self::node[local-name()="title" or local-name()=""]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest251()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest251(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -11815,15 +11916,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines following-sibling axis with following axis
-        /// book/following-sibling::node()[self::text()=false()]/following::node()
+        /// book/following-sibling::node()[self::text()=false()]/following::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest252()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest252(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -13038,15 +13141,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines following-sibling axis with following-sibling axis
-        /// */following-sibling::node()/following-sibling::node()
+        /// */following-sibling::node()/following-sibling::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest253()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest253(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -13244,15 +13349,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines following-sibling axis with preceding-sibling axis. Expected empty node-set
         /// */following-sibling::node()/preceding-sibling::node()[self::*=false()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest254()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest254(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -13277,15 +13384,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines following-sibling axis with ancestor axis
-        /// */following-sibling::my:*/self::node()
+        /// */following-sibling::my:*/self::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest255()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest255(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -13344,7 +13453,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
@@ -13352,8 +13461,10 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines following-sibling axis with attribute axis
         /// */following-sibling::node()/attribute::*[string()="monthly"]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest256()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest256(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -13401,15 +13512,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines following-sibling axis with parent axis
-        /// */following-sibling::node()/parent::node()
+        /// */following-sibling::node()/parent::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest257()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest257(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -13428,15 +13541,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines following-sibling axis with parent axis
         /// NS43: following-sibling::node()/namespace::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest258()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest258(Utils.NavigatorKind kind)
         {
             var xml = "namespaces.xml";
             var startingNodePath = "/default:companies/company[1]";
@@ -13463,7 +13578,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
@@ -13471,8 +13586,10 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines descendant-or-self axis with ancestor axis
         /// descendant-or-self::node()/ancestor::node[self::book or self::magazine and self::* and self::node()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest259()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest259(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -13618,15 +13735,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant-or-self axis with ancestor-or-self axis
         /// descendant-or-self::*/ancestor-or-self::*[3]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest260()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest260(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -13802,15 +13921,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant-or-self axis with child axis
-        /// descendant-or-self::*/child::text() | descendant-or-self::*/child::processing-instruction() | descendant-or-self::comment()
+        /// descendant-or-self::*/child::text() | descendant-or-self::*/child::processing-instruction() | descendant-or-self::comment(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest261()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest261(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -14161,16 +14282,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant-or-self axis with child axis
         /// descendant-or-self::*/child::text() | descendant-or-self::*/child::processing-instruction() | descendant-or-self::comment()|descendant-or-self::*/attribute::*
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
         [OuterLoop]
-        public static void AxesCombinationsTest262()
+        public static void AxesCombinationsTest262(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -14889,15 +15012,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant-or-self axis with descendant axis
-        /// descendant-or-self::node()/descendant::node()
+        /// descendant-or-self::node()/descendant::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest263()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest263(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -16332,16 +16457,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant-or-self axis with descendant-or-self axis
         /// descendant-or-self::node()[position()!=5]/descendant-or-self::node()[@attribute::*]
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
         [OuterLoop]
-        public static void AxesCombinationsTest264()
+        public static void AxesCombinationsTest264(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -16652,16 +16779,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant-or-self axis with following axis
         /// descendant-or-self::*/following::node()[position()!=7 and descendant-or-self::*]
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
         [OuterLoop]
-        public static void AxesCombinationsTest265()
+        public static void AxesCombinationsTest265(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -17734,16 +17863,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant-or-self axis with following-sibling axis
         /// descendant-or-self::node()/following-sibling::node()[name()='publication']
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
         [OuterLoop]
-        public static void AxesCombinationsTest266()
+        public static void AxesCombinationsTest266(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -17805,15 +17936,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant-or-self axis with preceding axis
-        /// descendant-or-self::node()[position()>=3 and position()<=15]/preceding::node()
+        /// descendant-or-self::node()[position()>=3 and position()<=15]/preceding::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest267()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest267(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -17867,16 +18000,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Text, HasNameTable = true, Value = "Bob"});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant-or-self axis with preceding-sibling axis
-        /// descendant-or-self::*[self::node]/preceding-sibling::node()
+        /// descendant-or-self::*[self::node]/preceding-sibling::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
         [OuterLoop]
-        public static void AxesCombinationsTest268()
+        public static void AxesCombinationsTest268(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -18784,15 +18919,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant-or-self axis with self axis
-        /// descendant-or-self::node()/self::attribute | descendant-or-self::processing-instruction()/self::comment() | //self::text()
+        /// descendant-or-self::node()/self::attribute | descendant-or-self::processing-instruction()/self::comment() | //self::text(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest269()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest269(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -19143,15 +19280,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant-or-self axis with attribute axis
         /// descendant-or-self::*/attribute::* [. = 'monthly' or string-length()>15]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest270()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest270(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -19199,15 +19338,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant-or-self axis with parent axis
-        /// descendant-or-self::node() [self::text() or self::comment() or self::@*]/parent::node()
+        /// descendant-or-self::node() [self::text() or self::comment() or self::@*]/parent::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest271()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest271(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -20285,22 +20426,24 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant-or-self axis with parent axis
         /// descendant-or-self::node() [self::text() or self::comment() or self::attribute::*]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest272()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest272(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
             var testExpression =
                 @"descendant-or-self::node() [self::text() or self::comment() or self::attribute::*]/parent::node()";
 
-            Utils.XPathNodesetTestThrows<System.Xml.XPath.XPathException>(xml, testExpression,
+            Utils.XPathNodesetTestThrows<System.Xml.XPath.XPathException>(kind, xml, testExpression,
                 startingNodePath: startingNodePath);
         }
 
@@ -20308,8 +20451,10 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines descendant-or-self with namespace axis
         /// NS44: descendant-or-self::*/namespace::*[string()="http://default1.htm"]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest273()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest273(Utils.NavigatorKind kind)
         {
             var xml = "ns_default.xml";
             var testExpression = @"descendant-or-self::*/namespace::*[string()=""http://default1.htm""]";
@@ -20331,15 +20476,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager);
         }
 
         /// <summary>
         /// Combines descendant-or-self with namespace axis
         /// NS45: descendant-or-self::default:*/namespace::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest274()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest274(Utils.NavigatorKind kind)
         {
             var xml = "ns_default.xml";
             var testExpression = @"descendant-or-self::default:*/namespace::*";
@@ -20377,15 +20524,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager);
         }
 
         /// <summary>
         /// Combines preceding-sibling axis with ancestor axis
-        /// preceding-sibling::node()/ancestor::node()
+        /// preceding-sibling::node()/ancestor::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest275()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest275(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[6]";
@@ -20411,15 +20560,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines preceding-sibling axis with ancestor-or-self axis
         /// preceding-sibling::node()/ancestor-or-self::node()[self::* and child::*]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest276()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest276(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[6]";
@@ -20544,15 +20695,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines preceding-sibling axis with child axis
         /// preceding-sibling::*/child::node()[child::node() and child::node()/following-sibling::node()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest277()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest277(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[5]";
@@ -20609,15 +20762,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines preceding-sibling axis with descendant axis
         /// preceding-sibling::*[name() = 'magazine or name()='book']/descendant::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest278()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest278(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[6]";
@@ -21213,15 +21368,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines preceding-sibling axis with descendant-or-self axis
         /// preceding-sibling::magazine/descendant-or-self::*[last() or position()!=1]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest279()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest279(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[6]";
@@ -21474,15 +21631,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines preceding-sibling axis with following axis
         /// preceding-sibling::*/following::node()[following::text()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest280()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest280(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[6]";
@@ -22814,15 +22973,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines preceding-sibling axis with following-sibling axis
         /// preceding-sibling::*[following-sibling::node()]/following-sibling::node()[following::text()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest281()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest281(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[6]";
@@ -23021,15 +23182,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines preceding-sibling axis with preceding axis
-        /// preceding-sibling::*/preceding::node()
+        /// preceding-sibling::*/preceding::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest282()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest282(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[6]";
@@ -23820,15 +23983,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines preceding-sibling axis with preceding-sibling axis
         /// preceding-sibling::magazine/preceding-sibling::magazine
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest283()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest283(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[6]";
@@ -23877,15 +24042,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines preceding-sibling axis with self axis
         /// preceding-sibling::node()/self::magazine
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest284()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest284(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[6]";
@@ -23944,15 +24111,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines preceding-sibling axis with attribute axis
         /// preceding-sibling::node()/attribute::*[name()='frequency' or name()='title']
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest285()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest285(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[6]";
@@ -24000,15 +24169,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines preceding-sibling axis with parent axis
         /// preceding-sibling::node()/parent::title
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest286()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest286(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[6]";
@@ -24027,15 +24198,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines preceding-sibling axis with parent axis
         /// NS46: preceding-sibling::node()/namespace::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest287()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest287(Utils.NavigatorKind kind)
         {
             var xml = "namespaces.xml";
             var startingNodePath = "/default:companies/company[2]";
@@ -24062,16 +24235,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
         /// <summary>
-        /// ancestor-or-self::*/descendant::node()
+        /// ancestor-or-self::*/descendant::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
         [OuterLoop]
-        public static void AxesCombinationsTest288()
+        public static void AxesCombinationsTest288(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[3]/articles/story1/details";
@@ -25506,15 +25681,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
-        /// ancestor-or-self::*/descendant-or-self::node()
+        /// ancestor-or-self::*/descendant-or-self::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
         [OuterLoop]
-        public static void AxesCombinationsTest289()
+        public static void AxesCombinationsTest289(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[3]/articles/story1/details";
@@ -26960,15 +27137,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
-        /// ancestor::node()/descendant::node()
+        /// ancestor::node()/descendant::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
         [OuterLoop]
-        public static void AxesCombinationsTest290()
+        public static void AxesCombinationsTest290(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[3]/articles/story1/details";
@@ -28420,14 +28599,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
-        /// ancestor-or-self::*/following::node()
+        /// ancestor-or-self::*/following::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest291()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest291(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[3]/articles/story1/details";
@@ -29340,14 +29521,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
-        /// ancestor-or-self::*/following-sibling::node()
+        /// ancestor-or-self::*/following-sibling::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest292()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest292(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[3]/articles/story1/details";
@@ -29512,14 +29695,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor-or-self::*/node()[self::* = false()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest293()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest293(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[last()]";
@@ -29549,14 +29734,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor::*/node()[self::* = false()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest294()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest294(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[last()]";
@@ -29582,14 +29769,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// parent::*/node()[self::* = false()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest295()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest295(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[last()]";
@@ -29615,14 +29804,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// preceding::*/node()[self::* = false()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest296()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest296(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[last()]";
@@ -29865,14 +30056,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor::*/descendant::node()[self::* = false()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest297()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest297(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[last()]";
@@ -30222,14 +30415,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor::*//node()[self::* = false()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest298()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest298(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[last()]";
@@ -30579,14 +30774,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor::*/following::node()[self::* = false()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest299()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest299(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[last()]";
@@ -30594,14 +30791,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// parent::*/node()[self::* = false()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2100()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2100(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[last()]";
@@ -30627,14 +30826,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// preceding::*/node()[self::* = false()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2101()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2101(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[last()]";
@@ -30877,14 +31078,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor::*/node()[self::* = true()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2102()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2102(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[last()]";
@@ -31077,14 +31280,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// preceding-sibling::*/preceding-sibling::node()[self::* = true()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2103()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2103(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[last()]";
@@ -31198,15 +31403,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// preceding::*/preceding-sibling::node()[self::* = true()]
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
         [OuterLoop]
-        public static void AxesCombinationsTest2104()
+        public static void AxesCombinationsTest2104(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[last()]";
@@ -31731,14 +31938,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor-or-self::*/parent::node()[ self::* = false()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2105()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2105(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[last()]";
@@ -31753,14 +31962,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor::*/parent::node()[ self::* = false()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2106()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2106(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[last()]";
@@ -31775,14 +31986,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor::*/preceding::node()[ self::* = false()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2107()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2107(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[last()]";
@@ -31796,14 +32009,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
-        /// ancestor-or-self::node()/child::node()
+        /// ancestor-or-self::node()/child::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2108()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2108(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc/Chap/Para/Para/Origin";
@@ -31920,14 +32135,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// descendant::node()/self::node() [self::text() = false() and self::attribute=false()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2109()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2109(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -33021,14 +33238,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// descendant::node()/self::text() [self::text() = true() and self::attribute=false()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2110()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2110(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -33378,14 +33597,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// descendant::node()/self::* [self::text() = false() and self::attribute=false()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2111()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2111(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -34478,14 +34699,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// descendant-or-self::node()/self::node() [self::text() = false() and self::attribute=false()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2112()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2112(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -35590,14 +35813,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// descendant::*/self::node()[self::* and not(self::comment()) or self::text() or self::processing-instruction()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2113()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2113(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -36691,15 +36916,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant-or-self axis with child axis
-        /// descendant-or-self::*/child::text()
+        /// descendant-or-self::*/child::text(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2114()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2114(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -37049,15 +37276,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines descendant with namespace axis
         /// NS47: descendant::default:*/namespace::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2115()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2115(Utils.NavigatorKind kind)
         {
             var xml = "ns_default.xml";
             var testExpression = @"descendant::default:*/namespace::*";
@@ -37095,14 +37324,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager);
         }
 
         /// <summary>
-        /// //text()
+        /// //text(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2116()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2116(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -37452,14 +37683,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
-        /// descendant-or-self::*/descendant::text()
+        /// descendant-or-self::*/descendant::text(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2117()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2117(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -37809,14 +38042,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
-        /// descendant-or-self::*/descendant-or-self::text()
+        /// descendant-or-self::*/descendant-or-self::text(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2118()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2118(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -38166,14 +38401,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
-        /// elem1/child::text()
+        /// elem1/child::text(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2119()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2119(Utils.NavigatorKind kind)
         {
             var xml = "xp012.xml";
             var startingNodePath = "/elem";
@@ -38183,14 +38420,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Text, HasNameTable = true, Value = "more text in elem1"});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
-        /// elem2/child::text()
+        /// elem2/child::text(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2120()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2120(Utils.NavigatorKind kind)
         {
             var xml = "xp012.xml";
             var startingNodePath = "/elem";
@@ -38198,14 +38437,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
-        /// descendant-or-self::*/child::text()
+        /// descendant-or-self::*/child::text(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2121()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2121(Utils.NavigatorKind kind)
         {
             var xml = "xp012.xml";
             var startingNodePath = "/elem";
@@ -38220,14 +38461,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
-        /// descendant-or-self::elem2/child::text()
+        /// descendant-or-self::elem2/child::text(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2122()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2122(Utils.NavigatorKind kind)
         {
             var xml = "xp012.xml";
             var startingNodePath = "/elem";
@@ -38237,14 +38480,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Text, HasNameTable = true, Value = "more text in elem2"});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
-        /// descendant-or-self::elem1/child::text()
+        /// descendant-or-self::elem1/child::text(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2123()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2123(Utils.NavigatorKind kind)
         {
             var xml = "xp012.xml";
             var startingNodePath = "/elem";
@@ -38254,14 +38499,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Text, HasNameTable = true, Value = "more text in elem1"});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// descendant-or-self::*|descendant-or-self::*/attribute::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2124()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2124(Utils.NavigatorKind kind)
         {
             var xml = "xp012.xml";
             var startingNodePath = "/elem";
@@ -38305,14 +38552,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// descendant-or-self::*/descendant-or-self::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2125()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2125(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -39416,14 +39665,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
-        /// descendant-or-self::node()/descendant-or-self::node()
+        /// descendant-or-self::node()/descendant-or-self::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2126()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2126(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -40869,14 +41120,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// descendant-or-self::*/descendant-or-self::*/@*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2127()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2127(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -41252,14 +41505,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// descendant::*/descendant-or-self::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2128()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2128(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -42352,14 +42607,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// descendant::*/descendant::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2129()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2129(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -43267,14 +43524,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// descendant-or-self::*/descendant::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2130()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2130(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -44367,45 +44626,51 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines namespace axis with child axis
-        /// NS48: //namespace::node()/child::node()
+        /// NS48: //namespace::node()/child::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2131()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2131(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var testExpression = @"//namespace::node()/child::node()";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Combines namespace axis with descendant axis
-        /// NS49: //namespace::node()/descendant::node()
+        /// NS49: //namespace::node()/descendant::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2132()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2132(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var testExpression = @"//namespace::node()/descendant::node()";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Combines namespace axis with parent axis
-        /// NS51: namespace::NSbook/parent::node()
+        /// NS51: namespace::NSbook/parent::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2134()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2134(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var startingNodePath = "/store/booksection";
@@ -44423,15 +44688,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines namespace axis with parent axis
-        /// NS52: //namespace::NSbook/parent::node()
+        /// NS52: //namespace::NSbook/parent::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2135()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2135(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var testExpression = @"//namespace::NSbook/parent::node()";
@@ -44532,15 +44799,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Combines namespace axis with ancestor axis
-        /// NS53: namespace::NSbook/ancestor::node()
+        /// NS53: namespace::NSbook/ancestor::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2136()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2136(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var startingNodePath = "/store/booksection/pre:book/pre:title";
@@ -44601,16 +44870,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines namespace axis with ancestor-or-self axis
-        /// NS54: namespace::NSbook/ancestor-or-self::node()
+        /// NS54: namespace::NSbook/ancestor-or-self::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2137()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2137(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var startingNodePath = "/store/booksection/pre:book/pre:title";
@@ -44679,16 +44950,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager,
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager,
                 startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines namespace axis with following-sibling axis
-        /// NS55: namespace::pre2/following-sibling::node()
+        /// NS55: namespace::pre2/following-sibling::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2138()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2138(Utils.NavigatorKind kind)
         {
             var xml = "ns_prefixes.xml";
             var startingNodePath = "/document/elem[2]";
@@ -44696,15 +44969,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines namespace axis with preceding-sibling axis
-        /// NS56: namespace::pre3/preceding-sibling::node()
+        /// NS56: namespace::pre3/preceding-sibling::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2139()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2139(Utils.NavigatorKind kind)
         {
             var xml = "ns_prefixes.xml";
             var startingNodePath = "/document/elem[2]";
@@ -44712,15 +44987,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines namespace axis with preceding axis
-        /// NS57: namespace::pre3/preceding::node()
+        /// NS57: namespace::pre3/preceding::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2140()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2140(Utils.NavigatorKind kind)
         {
             var xml = "ns_prefixes.xml";
             var startingNodePath = "/document/elem[2]";
@@ -44820,15 +45097,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines namespace axis with following axis
-        /// NS58: namespace::prefix/following::node()
+        /// NS58: namespace::prefix/following::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2141()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2141(Utils.NavigatorKind kind)
         {
             var xml = "ns_prefixes.xml";
             var startingNodePath = "/document/elem[1]";
@@ -44928,60 +45207,68 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Combines namespace axis with attribute axis
         /// NS59: //namespace::node()//@*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2142()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2142(Utils.NavigatorKind kind)
         {
             var xml = "ns_prefixes.xml";
             var testExpression = @"//namespace::node()//@*";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Combines namespace axis with self axis
         /// NS60: //namespace::node()//self::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2143()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2143(Utils.NavigatorKind kind)
         {
             var xml = "ns_prefixes.xml";
             var testExpression = @"//namespace::node()//self::*";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Combines namespace axis with namespace axis
-        /// NS61: //namespace::node()//namespace::node()
+        /// NS61: //namespace::node()//namespace::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2144()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2144(Utils.NavigatorKind kind)
         {
             var xml = "ns_prefixes.xml";
             var testExpression = @"//namespace::node()//namespace::node()";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Combines namespace axis with following axis
-        /// NS62: namespace::NSbook/following::node()
+        /// NS62: namespace::NSbook/following::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2145()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2145(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var testExpression = @"//namespace::NSbook/following::node()";
@@ -45205,14 +45492,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Comment, HasNameTable = true, Value = " Comment 6 "});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
-        /// NS63: //namespace::NSbook/following::node()
+        /// NS63: //namespace::NSbook/following::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2146()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2146(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var testExpression = @"//namespace::NSbook/following::node()";
@@ -45436,15 +45725,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Comment, HasNameTable = true, Value = " Comment 6 "});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// From 71209
         /// (bookstore/book | /bookstore)/descendant::title
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2147()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2147(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"(bookstore/book | /bookstore)/descendant::title";
@@ -45559,15 +45850,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 71209
         /// (bookstore/book |/bookstore/magazine)/descendant::title/parent::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2148()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2148(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"(bookstore/book |/bookstore/magazine)/descendant::title/parent::*";
@@ -45691,29 +45984,33 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 71209
         /// (bookstore/book |/bookstore/magazine | bookstore | bookstore::*[name()!='book' and name()!= 'magazine'])/descendant::title
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2149()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2149(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression =
                 @"(bookstore/book |/bookstore/magazine | bookstore | bookstore::*[name()!='book' and name()!= 'magazine'])/descendant::title";
 
-            Utils.XPathNodesetTestThrows<System.Xml.XPath.XPathException>(xml, testExpression);
+            Utils.XPathNodesetTestThrows<System.Xml.XPath.XPathException>(kind, xml, testExpression);
         }
 
         /// <summary>
         /// Regression case for 71209
         /// Copy of (bookstore/book |/bookstore/magazine | bookstore | bookstore/*[name()!='book' and name()!= 'magazine'])/descendant::title
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2150()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2150(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression =
@@ -45829,15 +46126,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 71209
         /// (bookstore/book |/bookstore/magazine | bookstore | bookstore//*//title)/descendant-or-self::title
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2151()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2151(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression =
@@ -45953,15 +46252,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 71209
-        /// (bookstore/book |/bookstore/magazine | bookstore | bookstore//*//title)/ancestor::node()
+        /// (bookstore/book |/bookstore/magazine | bookstore | bookstore//*//title)/ancestor::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2152()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2152(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression =
@@ -46116,15 +46417,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 71209
         /// (bookstore/book |/bookstore/magazine | bookstore | bookstore//*//title)/parent::node()[1]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2153()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2153(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression =
@@ -46279,15 +46582,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 71209
-        /// (bookstore/book |/bookstore/magazine | bookstore | bookstore//*//title)/following::node()
+        /// (bookstore/book |/bookstore/magazine | bookstore | bookstore//*//title)/following::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2154()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2154(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression =
@@ -47694,16 +47999,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 71209
-        /// (bookstore/book |/bookstore/magazine | bookstore | bookstore//*//title)/following-sibling::node()
+        /// (bookstore/book |/bookstore/magazine | bookstore | bookstore//*//title)/following-sibling::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
         [OuterLoop]
-        public static void AxesCombinationsTest2155()
+        public static void AxesCombinationsTest2155(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression =
@@ -48195,15 +48502,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 71209
-        /// (bookstore/book |/bookstore/magazine | bookstore | bookstore//*//title)/preceding::node()
+        /// (bookstore/book |/bookstore/magazine | bookstore | bookstore//*//title)/preceding::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2156()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2156(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression =
@@ -49319,15 +49628,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 71209
         /// (bookstore/book |/bookstore/magazine | bookstore | bookstore//*//title)/preceding-sibling::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2157()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2157(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression =
@@ -49473,15 +49784,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 71209
         /// (bookstore/book |/bookstore/magazine | bookstore | bookstore//*//title)/@*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2158()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2158(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"(bookstore/book |/bookstore/magazine | bookstore | bookstore//*//title)/@*";
@@ -49656,15 +49969,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 71209
         /// (bookstore/book |/bookstore/magazine | bookstore | bookstore//*//title)/self::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2159()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2159(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"(bookstore/book |/bookstore/magazine | bookstore | bookstore//*//title)/self::*";
@@ -49927,15 +50242,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 71209
         /// (bookstore/book |/bookstore/magazine | bookstore | bookstore//*//title)/descendant::* | ancestor::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2160()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2160(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression =
@@ -51028,15 +51345,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 71209
         /// (bookstore/book |/bookstore/magazine | bookstore | bookstore//*//title)[descendant-or-self::title]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2161()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2161(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression =
@@ -51280,15 +51599,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 71209
         /// (bookstore/book |/bookstore/magazine | bookstore | bookstore//*//title)/node()[ancestor::title | descendant::title]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2162()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2162(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression =
@@ -51472,14 +51793,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// (/bookstore/book[1] | /bookstore/book[1]/author)/child::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2163()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2163(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"(/bookstore/book[1] | /bookstore/book[1]/author)/child::*";
@@ -51551,14 +51874,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// (/bookstore/book | /bookstore/magazine[1]/author | bookstore)/child::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2164()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2164(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"(/bookstore/book | /bookstore/magazine[1]/author | bookstore)/child::*";
@@ -51956,14 +52281,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// (/bookstore/book | /bookstore/magazine[1]/author | bookstore)/child::*[last()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2165()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2165(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"(/bookstore/book | /bookstore/magazine[1]/author | bookstore)/child::*[last()]";
@@ -52047,14 +52374,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// (/bookstore/book | /bookstore/magazine[1]/author | bookstore)/child::*/ancestor::node()[last()]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2166()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2166(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression =
@@ -52069,14 +52398,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// bookstore/book[1]/author[1]/ancestor-or-self::*/following-sibling::*[1]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2167()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2167(Utils.NavigatorKind kind)
         {
             var xml = "data.xml";
             var testExpression = @"bookstore/book[1]/author[1]/ancestor-or-self::*/following-sibling::*[1]";
@@ -52105,14 +52436,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// ancestor::*/following::*[1]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2168()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2168(Utils.NavigatorKind kind)
         {
             var xml = "data.xml";
             var startingNodePath = "/bookstore/book[1]/author[1]/first-name";
@@ -52142,14 +52475,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor-or-self::*/following::*[1]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2169()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2169(Utils.NavigatorKind kind)
         {
             var xml = "data.xml";
             var startingNodePath = "/bookstore/book[1]/author[1]/first-name";
@@ -52189,14 +52524,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor::*/following-sibling::*[1]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2170()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2170(Utils.NavigatorKind kind)
         {
             var xml = "data.xml";
             var startingNodePath = "/bookstore/book[1]/author[1]/first-name";
@@ -52226,14 +52563,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor-or-self::*/following-sibling::*[1]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2171()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2171(Utils.NavigatorKind kind)
         {
             var xml = "data.xml";
             var startingNodePath = "/bookstore/book[1]/author[1]/first-name";
@@ -52273,14 +52612,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor::*/preceding-sibling::*[1]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2172()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2172(Utils.NavigatorKind kind)
         {
             var xml = "data.xml";
             var startingNodePath = "/bookstore/book[2]/author[1]/first-name";
@@ -52310,14 +52651,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor-or-self::*/preceding-sibling::*[1]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2173()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2173(Utils.NavigatorKind kind)
         {
             var xml = "data.xml";
             var startingNodePath = "/bookstore/book[2]/author[1]/first-name";
@@ -52347,14 +52690,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor::*/preceding::*[1]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2174()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2174(Utils.NavigatorKind kind)
         {
             var xml = "data.xml";
             var startingNodePath = "/bookstore/book[2]/author[1]/first-name";
@@ -52382,14 +52727,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// ancestor-or-self::*/preceding::*[1]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2175()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2175(Utils.NavigatorKind kind)
         {
             var xml = "data.xml";
             var startingNodePath = "/bookstore/book[2]/author[1]/first-name";
@@ -52417,14 +52764,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
-        /// (/comment() | /bookstore/book[2]/author[1]/publication/text())/following-sibling::node()
+        /// (/comment() | /bookstore/book[2]/author[1]/publication/text())/following-sibling::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2176()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2176(Utils.NavigatorKind kind)
         {
             var xml = "data1.xml";
             var testExpression =
@@ -52466,14 +52815,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true, XmlLang = "en-usabcd"});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
-        /// (/comment() | /bookstore/book[2]/author[1]/publication/text())/following-sibling::node()
+        /// (/comment() | /bookstore/book[2]/author[1]/publication/text())/following-sibling::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2177()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2177(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression =
@@ -52522,29 +52873,33 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// NS64: /namespace::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2178()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2178(Utils.NavigatorKind kind)
         {
             var xml = "namespaces.xml";
             var testExpression = @"/namespace::*";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 72027
-        /// (bookstore/book |/bookstore/magazine | bookstore | bookstore//*//title)/following::node()
+        /// (bookstore/book |/bookstore/magazine | bookstore | bookstore//*//title)/following::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2179()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2179(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression =
@@ -53951,14 +54306,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// ancestor::*/following-sibling::*[1]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2180()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2180(Utils.NavigatorKind kind)
         {
             var xml = "data.xml";
             var startingNodePath = "/bookstore/book[1]/author[1]/first-name";
@@ -53988,14 +54345,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
-        /// NSXX: namespace::*/following-sibling::node()
+        /// NSXX: namespace::*/following-sibling::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2181()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2181(Utils.NavigatorKind kind)
         {
             var xml = "ns_prefixes.xml";
             var startingNodePath = "/document/elem[2]";
@@ -54003,14 +54362,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
-        /// NSXX: namespace::*/following::node()
+        /// NSXX: namespace::*/following::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2182()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2182(Utils.NavigatorKind kind)
         {
             var xml = "ns_prefixes.xml";
             var startingNodePath = "/document/elem[2]";
@@ -54019,14 +54380,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// NSXX: //namespace::*[local-name()=""]/preceding::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2183()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2183(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
             var testExpression = @"//namespace::*[local-name()=""""]/preceding::*";
@@ -54155,14 +54518,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// NSXX: //namespace::NSbook
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2184()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2184(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
             var testExpression = @"//namespace::NSbook";
@@ -54241,14 +54606,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// NSXX: //namespace::NSmovie [parent::* [name()='NSmovie:movie']]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2185()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2185(Utils.NavigatorKind kind)
         {
             var xml = "name2.xml";
             var testExpression = @"//namespace::NSmovie [parent::* [name()='NSmovie:movie']]";
@@ -54274,30 +54641,34 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, namespaceManager: namespaceManager);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, namespaceManager: namespaceManager);
         }
 
         /// <summary>
         /// Regression case for 60400
         /// //@*/*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2186()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2186(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"//@*/*";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 60400
         /// //@*/parent::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2187()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2187(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"//@*/parent::*";
@@ -54607,15 +54978,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 60400
         /// //@*/following::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2188()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2188(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"//@*/following::*";
@@ -55707,15 +56080,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 60400
         /// //@*/preceding::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2189()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2189(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"//@*/preceding::*";
@@ -56784,75 +57159,85 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 60400
         /// //@*/preceding-sibling::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2190()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2190(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"//@*/preceding-sibling::*";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 60400
         /// //@*/following-sibling::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2191()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2191(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"//@*/following-sibling::*";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 60400
         /// //@*/descendant::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2192()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2192(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"//@*/descendant::*";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 60400
         /// //@*/descendant-or-self::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2193()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2193(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"//@*/descendant-or-self::*";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 60400
         /// //@*/ancestor::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2194()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2194(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"//@*/ancestor::*";
@@ -57201,15 +57586,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 60400
         /// //@*/ancestor-or-self::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2195()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2195(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"//@*/ancestor-or-self::*";
@@ -57558,30 +57945,34 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 60400
         /// //@*/self::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2196()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2196(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"//@*/self::*";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 63682
-        /// //comment()/preceding-sibling::node()
+        /// //comment()/preceding-sibling::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2197()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2197(Utils.NavigatorKind kind)
         {
             var xml = "test63682.xml";
             var testExpression = @"//comment()/preceding-sibling::node()";
@@ -57615,30 +58006,34 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 63682
         /// count(preceding-sibling::node())
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2198()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2198(Utils.NavigatorKind kind)
         {
             var xml = "test63682.xml";
             var startingNodePath = "//comment()[3]";
             var testExpression = @"count(preceding-sibling::node())";
             var expected = 3d;
 
-            Utils.XPathNumberTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNumberTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Regression case for 63682
-        /// //comment()/preceding::node()
+        /// //comment()/preceding::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2199()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2199(Utils.NavigatorKind kind)
         {
             var xml = "test63682.xml";
             var testExpression = @"//comment()/preceding::node()";
@@ -57672,15 +58067,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 63682
         /// descendant-or-self::*/following-sibling::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2200()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2200(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[4]";
@@ -57824,16 +58221,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Regression case for 63682
         /// //descendant-or-self::*/following-sibling::*
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
         [OuterLoop]
-        public static void AxesCombinationsTest2201()
+        public static void AxesCombinationsTest2201(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"//descendant-or-self::*/following-sibling::*";
@@ -58593,16 +58992,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 63682
         /// descendant-or-self::node()/following-sibling::node()[name()='publication']
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
         [OuterLoop]
-        public static void AxesCombinationsTest2202()
+        public static void AxesCombinationsTest2202(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -58664,15 +59065,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Regression case for 65291
         /// descendant-or-self::*/preceding-sibling::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2203()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2203(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[4]";
@@ -58810,15 +59213,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Regression case for 65291
         /// //descendant-or-self::*/preceding-sibling::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2204()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2204(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"//descendant-or-self::*/preceding-sibling::*";
@@ -59569,16 +59974,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 65291
         /// descendant-or-self::node()/preceding-sibling::node()[name()='publication']
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
         [OuterLoop]
-        public static void AxesCombinationsTest2205()
+        public static void AxesCombinationsTest2205(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -59640,16 +60047,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Regression case for 65291
-        /// descendant-or-self::*[self::node()]/preceding-sibling::node()
+        /// descendant-or-self::*[self::node()]/preceding-sibling::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
         [OuterLoop]
-        public static void AxesCombinationsTest2206()
+        public static void AxesCombinationsTest2206(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -60557,15 +60966,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Regression case for 65292
         /// ancestor-or-self::*/following-sibling::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2207()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2207(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[4]";
@@ -60663,16 +61074,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Regression case for 65292
         /// //ancestor-or-self::*/following-sibling::*
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
         [OuterLoop]
-        public static void AxesCombinationsTest2208()
+        public static void AxesCombinationsTest2208(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"//ancestor-or-self::*/following-sibling::*";
@@ -61432,15 +61845,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 65292
         /// ancestor-or-self::node()/following-sibling::node()[name()='publication']
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2209()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2209(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -61448,16 +61863,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Regression case for 65293
         /// preceding::*/preceding-sibling::node()[self::* = true()]
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
         [OuterLoop]
-        public static void AxesCombinationsTest2210()
+        public static void AxesCombinationsTest2210(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/magazine[last()]";
@@ -61982,16 +62399,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Regression case for 65293
-        /// preceding::*/preceding-sibling::node()
+        /// preceding::*/preceding-sibling::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
         [OuterLoop]
-        public static void AxesCombinationsTest2211()
+        public static void AxesCombinationsTest2211(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[6]/title";
@@ -62573,15 +62992,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 new XPathResultToken {NodeType = XPathNodeType.Whitespace, HasNameTable = true});
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Regression case for 65293
         /// preceding::*/preceding-sibling::magazine
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2212()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2212(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[6]/title";
@@ -62640,15 +63061,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Regression case for 67337
         /// /|//*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2213()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2213(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[6]/title";
@@ -63759,16 +64182,18 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Regression case for 67337
         /// //node|/|//node()/ancestor::*
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
         [OuterLoop]
-        public static void AxesCombinationsTest2214()
+        public static void AxesCombinationsTest2214(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore/book[6]/title";
@@ -64852,15 +65277,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Regression case for 70318
-        /// NSXX: //namespace::*/parent::node()
+        /// NSXX: //namespace::*/parent::node(Utils.NavigatorKind kind)
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2215()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2215(Utils.NavigatorKind kind)
         {
             var xml = "namespaces.xml";
             var testExpression = @"//namespace::*/parent::node()";
@@ -65018,14 +65445,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// (bookstore/book[1]/author | bookstore/book[2])/..
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2216()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2216(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"(bookstore/book[1]/author | bookstore/book[2])/..";
@@ -65054,15 +65483,17 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression for 71103
         /// (bookstore/book | bookstore/magazine)/*/..
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2217()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2217(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"(bookstore/book | bookstore/magazine)/*/..";
@@ -65206,46 +65637,52 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 73546
         /// //book/@*/descendant::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2218()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2218(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"//book/@*/descendant::*";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 73546
         /// //@*/descendant::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2219()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2219(Utils.NavigatorKind kind)
         {
             var xml = "name.xml";
             var testExpression = @"//@*/descendant::*";
             var expected = new XPathResult(0);
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// Regression case for 74132
         /// descendant::*/following-sibling::*[child::*]
         /// </summary>
-        [Fact]
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
         [OuterLoop]
-        public static void AxesCombinationsTest2220()
+        public static void AxesCombinationsTest2220(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -65580,14 +66017,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// bookstore/book[1]/author[1]/ancestor-or-self::*/following-sibling::*[1]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2221()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2221(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"bookstore/book[1]/author[1]/ancestor-or-self::*/following-sibling::*[1]";
@@ -65614,14 +66053,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// bookstore/book[1]/author[1]/ancestor-or-self::*/following::*[1]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2222()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2222(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"bookstore/book[1]/author[1]/ancestor-or-self::*/following::*[1]";
@@ -65648,14 +66089,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// bookstore/book[2]/author[1]/ancestor-or-self::*/following::*[2]
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2223()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2223(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var testExpression = @"bookstore/book[2]/author[1]/ancestor-or-self::*/following::*[2]";
@@ -65682,14 +66125,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// book/author/ancestor-or-self::*/following-sibling::*
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2224()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2224(Utils.NavigatorKind kind)
         {
             var xml = "books.xml";
             var startingNodePath = "/bookstore";
@@ -65946,14 +66391,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// descendant-or-self::node()/* causes NullReferenceException
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2225()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2225(Utils.NavigatorKind kind)
         {
             var xml = "test66246.xml";
             var testExpression = @"descendant-or-self::node()/*";
@@ -66077,14 +66524,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// descendant-or-self::node()/foo causes NullReferenceException
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2226()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2226(Utils.NavigatorKind kind)
         {
             var xml = "test66246.xml";
             var testExpression = @"descendant-or-self::node()/foo";
@@ -66118,14 +66567,16 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
 
         /// <summary>
         /// /descendant-or-self::node()/* causes NullReferenceException
         /// </summary>
-        [Fact]
-        public static void AxesCombinationsTest2227()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void AxesCombinationsTest2227(Utils.NavigatorKind kind)
         {
             var xml = "test66246.xml";
             var testExpression = @"/descendant-or-self::node()/*";
@@ -66249,7 +66700,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
                 });
             ;
 
-            Utils.XPathNodesetTest(xml, testExpression, expected);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected);
         }
     }
 }

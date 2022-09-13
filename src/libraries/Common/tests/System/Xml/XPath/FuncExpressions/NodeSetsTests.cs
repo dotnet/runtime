@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-using System;
-using System.Xml;
 using System.Xml.XPath;
 using XPathTests.Common;
+using Xunit;
 
 namespace XPathTests.FunctionalTests.Expressions
 {
@@ -18,8 +16,10 @@ namespace XPathTests.FunctionalTests.Expressions
         /// Expected: Selects all paraA and paraB element children of the context node.
         /// child::paraA | child::paraB
         /// </summary>
-        [Fact]
-        public static void NodeSetsTest181()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void NodeSetsTest181(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc";
@@ -54,15 +54,17 @@ namespace XPathTests.FunctionalTests.Expressions
                     Value = "\n   XPath test\n   Direct content\n "
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects all paraA, paraB and paraC element children of the context node.
         /// child::paraA | child::paraB | child::paraC
         /// </summary>
-        [Fact]
-        public static void NodeSetsTest182()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void NodeSetsTest182(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc";
@@ -106,15 +108,17 @@ namespace XPathTests.FunctionalTests.Expressions
                     Value = "\n   XPath test\n   Direct content\n "
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects all para element children and the parent of the context node.
         /// self::para | child::para
         /// </summary>
-        [Fact]
-        public static void NodeSetsTest183()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void NodeSetsTest183(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc";
@@ -150,15 +154,17 @@ namespace XPathTests.FunctionalTests.Expressions
                     Value = "\n   XPath test\n   Direct content\n "
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects all paraB element descendants of the paraA element children of the context node.
         /// paraA//paraB
         /// </summary>
-        [Fact]
-        public static void NodeSetsTest184()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void NodeSetsTest184(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc";
@@ -192,15 +198,17 @@ namespace XPathTests.FunctionalTests.Expressions
                     Value = "Second paragraph "
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects all paraB element descendants of the paraA element children in the document.
         /// //paraA//paraB
         /// </summary>
-        [Fact]
-        public static void NodeSetsTest185()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void NodeSetsTest185(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc";
@@ -234,15 +242,17 @@ namespace XPathTests.FunctionalTests.Expressions
                     Value = "Second paragraph "
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects all paraB element nodes with paraA parents that are children of the context node.
         /// paraA/paraB
         /// </summary>
-        [Fact]
-        public static void NodeSetsTest186()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void NodeSetsTest186(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc";
@@ -267,15 +277,17 @@ namespace XPathTests.FunctionalTests.Expressions
                     Value = "Second paragraph "
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects all paraB element nodes with paraA parents that are children of the document root.
         /// /paraA/paraB
         /// </summary>
-        [Fact]
-        public static void NodeSetsTest187()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void NodeSetsTest187(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc";
@@ -301,15 +313,17 @@ namespace XPathTests.FunctionalTests.Expressions
                     Value = "\n   XPath test\n   Direct content\n "
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
 
         /// <summary>
         /// Expected: Selects all bar element nodes with para/bar children.
         /// para/bar[para/bar] (Use location path as expression against context)
         /// </summary>
-        [Fact]
-        public static void NodeSetsTest188()
+        [Theory]
+        [InlineData(Utils.NavigatorKind.XmlDocument)]
+        [InlineData(Utils.NavigatorKind.XPathDocument)]
+        public static void NodeSetsTest188(Utils.NavigatorKind kind)
         {
             var xml = "xp001.xml";
             var startingNodePath = "/Doc";
@@ -325,7 +339,7 @@ namespace XPathTests.FunctionalTests.Expressions
                     Value = "First paragraph  Nested  Paragraph  End of first paragraph "
                 });
 
-            Utils.XPathNodesetTest(xml, testExpression, expected, startingNodePath: startingNodePath);
+            Utils.XPathNodesetTest(kind, xml, testExpression, expected, startingNodePath: startingNodePath);
         }
     }
 }
