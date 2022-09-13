@@ -10,8 +10,8 @@
 #define FOH_COMMIT_SIZE (64 * 1024)
 
 FrozenObjectHeapManager::FrozenObjectHeapManager():
-    m_CurrentSegment(nullptr),
     m_Crst(CrstFrozenObjectHeap, CRST_UNSAFE_COOPGC),
+    m_CurrentSegment(nullptr),
     m_Enabled(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_UseFrozenObjectHeap) != 0)
 {
 }
