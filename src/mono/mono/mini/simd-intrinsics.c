@@ -1113,7 +1113,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #ifdef TARGET_ARM64
 		int op = id == SN_ConvertToInt32 ? OP_ARM64_FCVTZS : OP_ARM64_FCVTZU;
 		return emit_simd_ins_for_sig (cfg, klass, op, -1, arg0_type, fsig, args);
-#elif TARGET_AMD64
+#elif defined(TARGET_AMD64)
 		if (id == SN_ConvertToInt32) {
 			MonoClass* arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 			int size = mono_class_value_size (arg_class, NULL);
