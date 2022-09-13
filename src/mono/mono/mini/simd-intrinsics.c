@@ -1466,7 +1466,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 #ifdef TARGET_ARM64
 		return emit_sum_vector (cfg, fsig->params [0], arg0_type, args [0]);		
-#elif TARGET_AMD64
+#elif defined(TARGET_AMD64)
 		return emit_sum_vector(cfg, klass, fsig, arg0_type, args);
 #else
 		return NULL;
