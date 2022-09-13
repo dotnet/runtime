@@ -4,7 +4,6 @@
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
-using System.Net.Quic;
 using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography;
