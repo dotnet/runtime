@@ -3838,9 +3838,15 @@ bool Compiler::gtIsLikelyRegVar(GenTree* tree)
 //
 bool Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode)
 {
-    // Relative of order of global / side effects can't be swapped.
-
     bool canSwap = true;
+
+    // Don't swap "CONST_HDL op CNS"
+    if (firstNode->IsIconHandle() && secondNode->IsIntegralConst())
+    {
+        canSwap = false;
+    }
+
+    // Relative of order of global / side effects can't be swapped.
 
     if (optValnumCSE_phase)
     {
