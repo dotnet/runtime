@@ -247,9 +247,12 @@ namespace Internal.Runtime
         [Intrinsic]
         internal static extern MethodTable* Of<T>();
 
-        // used for component size for strings and arrays, type arg count for typedefs, otherwise holds FlagsEx bits
-        private ushort _usComponentSize;
-        private ushort _usFlags;
+        // upper ushort is used for Flags
+        // lower ushort is used for
+        // - component size for strings and arrays,
+        // - type arg count for typedefs,
+        // - otherwise holds FlagsEx bits
+        private uint _uFlags;
         private uint _uBaseSize;
         private RelatedTypeUnion _relatedType;
         private ushort _usNumVtableSlots;
@@ -273,14 +276,15 @@ namespace Internal.Runtime
         {
             get
             {
-                return ((_usFlags & (ushort)EETypeFlags.HasComponentSizeFlag) != 0);
+                return (_uFlags & (uint)EETypeFlags.HasComponentSizeFlag) != 0;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
                 if (value)
                 {
-                    _usFlags |= (ushort)EETypeFlags.HasComponentSizeFlag;
+                    Debug.Assert(FlagsEx == 0);
+                    _uFlags |= (uint)EETypeFlags.HasComponentSizeFlag;
                 }
                 else
                 {
@@ -295,13 +299,13 @@ namespace Internal.Runtime
         {
             get
             {
-                return HasComponentSize ? _usComponentSize : (ushort)0;
+                return HasComponentSize ? (ushort)_uFlags : (ushort)0;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
                 Debug.Assert(HasComponentSize);
-                _usComponentSize = value;
+                _uFlags |= (uint)value;
             }
 #endif
         }
@@ -322,16 +326,16 @@ namespace Internal.Runtime
 #endif
         }
 
-        internal ushort Flags
+        internal uint Flags
         {
             get
             {
-                return _usFlags;
+                return _uFlags;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
-                _usFlags = value;
+                _uFlags = value;
             }
 #endif
         }
@@ -340,13 +344,13 @@ namespace Internal.Runtime
         {
             get
             {
-                return HasComponentSize ? (ushort)0 : _usComponentSize;
+                return HasComponentSize ? (ushort)0 : (ushort)_uFlags;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
                 Debug.Assert(!HasComponentSize);
-                _usComponentSize = value;
+                _uFlags |= (uint)value;
             }
 #endif
         }
@@ -411,7 +415,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return (EETypeKind)(_usFlags & (ushort)EETypeFlags.EETypeKindMask);
+                return (EETypeKind)(_uFlags & (uint)EETypeFlags.EETypeKindMask);
             }
         }
 
@@ -419,7 +423,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return ((_usFlags & (ushort)EETypeFlags.OptionalFieldsFlag) != 0);
+                return (_uFlags & (uint)EETypeFlags.OptionalFieldsFlag) != 0;
             }
         }
 
@@ -429,7 +433,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return ((_usFlags & (ushort)EETypeFlags.GenericVarianceFlag) != 0);
+                return (_uFlags & (uint)EETypeFlags.GenericVarianceFlag) != 0;
             }
         }
 
@@ -437,7 +441,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return ((_usFlags & (ushort)EETypeFlags.HasFinalizerFlag) != 0);
+                return (_uFlags & (uint)EETypeFlags.HasFinalizerFlag) != 0;
             }
         }
 
@@ -513,7 +517,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return ((_usFlags & (ushort)EETypeFlags.IsGenericFlag) != 0);
+                return (_uFlags & (uint)EETypeFlags.IsGenericFlag) != 0;
             }
         }
 
@@ -684,7 +688,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return (_usFlags & (ushort)EETypeFlags.IsDynamicTypeFlag) != 0;
+                return (_uFlags & (uint)EETypeFlags.IsDynamicTypeFlag) != 0;
             }
         }
 
@@ -727,7 +731,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return ((_usFlags & (ushort)EETypeFlags.RelatedTypeViaIATFlag) != 0);
+                return ((_uFlags & (uint)EETypeFlags.RelatedTypeViaIATFlag) != 0);
             }
         }
 
@@ -743,7 +747,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return ((_usFlags & (ushort)EETypeFlags.IDynamicInterfaceCastableFlag) != 0);
+                return ((_uFlags & (uint)EETypeFlags.IDynamicInterfaceCastableFlag) != 0);
             }
         }
 
@@ -768,18 +772,18 @@ namespace Internal.Runtime
         {
             get
             {
-                return ((_usFlags & (ushort)EETypeFlags.HasPointersFlag) != 0);
+                return ((_uFlags & (uint)EETypeFlags.HasPointersFlag) != 0);
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set
             {
                 if (value)
                 {
-                    _usFlags |= (ushort)EETypeFlags.HasPointersFlag;
+                    _uFlags |= (uint)EETypeFlags.HasPointersFlag;
                 }
                 else
                 {
-                    _usFlags &= (ushort)~EETypeFlags.HasPointersFlag;
+                    _uFlags &= (uint)~EETypeFlags.HasPointersFlag;
                 }
             }
 #endif
@@ -954,7 +958,7 @@ namespace Internal.Runtime
                 Debug.Assert(!IsParameterizedType);
                 Debug.Assert(!IsCloned);
                 Debug.Assert(IsCanonical);
-                _usFlags &= (ushort)~EETypeFlags.RelatedTypeViaIATFlag;
+                _uFlags &= (uint)~EETypeFlags.RelatedTypeViaIATFlag;
                 _relatedType._pBaseType = value;
             }
 #endif
@@ -1073,7 +1077,7 @@ namespace Internal.Runtime
             set
             {
                 Debug.Assert(IsDynamicType && IsParameterizedType);
-                _usFlags &= ((ushort)~EETypeFlags.RelatedTypeViaIATFlag);
+                _uFlags &= ((uint)~EETypeFlags.RelatedTypeViaIATFlag);
                 _relatedType._pRelatedParameterType = value;
             }
 #endif
@@ -1151,7 +1155,7 @@ namespace Internal.Runtime
             {
                 Debug.Assert(IsDynamicType);
 
-                _usFlags |= (ushort)EETypeFlags.OptionalFieldsFlag;
+                _uFlags |= (uint)EETypeFlags.OptionalFieldsFlag;
 
                 uint cbOptionalFieldsOffset = GetFieldOffset(EETypeField.ETF_OptionalFieldsPtr);
                 fixed (MethodTable* pThis = &this)
@@ -1387,7 +1391,7 @@ namespace Internal.Runtime
         {
             get
             {
-                return (EETypeElementType)((_usFlags & (ushort)EETypeFlags.ElementTypeMask) >> (ushort)EETypeFlags.ElementTypeShift);
+                return (EETypeElementType)((_uFlags & (uint)EETypeFlags.ElementTypeMask) >> (byte)EETypeFlags.ElementTypeShift);
             }
         }
 

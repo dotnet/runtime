@@ -41,23 +41,23 @@ namespace Internal.Runtime
             }
         }
 
-        public static ushort ComputeFlags(TypeDesc type)
+        public static uint ComputeFlags(TypeDesc type)
         {
-            ushort flags = type.IsParameterizedType ?
-                (ushort)EETypeKind.ParameterizedEEType : (ushort)EETypeKind.CanonicalEEType;
+            uint flags = type.IsParameterizedType ?
+                (uint)EETypeKind.ParameterizedEEType : (uint)EETypeKind.CanonicalEEType;
 
-            // The top 5 bits of flags are used to convey enum underlying type, primitive type, or mark the type as being System.Array
+            // 5 bits near the top of flags are used to convey enum underlying type, primitive type, or mark the type as being System.Array
             EETypeElementType elementType = ComputeEETypeElementType(type);
-            flags |= (ushort)((ushort)elementType << (ushort)EETypeFlags.ElementTypeShift);
+            flags |= ((uint)elementType << (byte)EETypeFlags.ElementTypeShift);
 
             if (type.IsArray || type.IsString)
             {
-                flags |= (ushort)EETypeFlags.HasComponentSizeFlag;
+                flags |= (uint)EETypeFlags.HasComponentSizeFlag;
             }
 
             if (type.IsGenericDefinition)
             {
-                flags |= (ushort)EETypeKind.GenericTypeDefEEType;
+                flags |= (uint)EETypeKind.GenericTypeDefEEType;
 
                 // Generic type definition EETypes don't set the other flags.
                 return flags;
@@ -65,31 +65,31 @@ namespace Internal.Runtime
 
             if (type.HasFinalizer)
             {
-                flags |= (ushort)EETypeFlags.HasFinalizerFlag;
+                flags |= (uint)EETypeFlags.HasFinalizerFlag;
             }
 
             if (type.IsDefType
                 && !type.IsCanonicalSubtype(CanonicalFormKind.Universal)
                 && ((DefType)type).ContainsGCPointers)
             {
-                flags |= (ushort)EETypeFlags.HasPointersFlag;
+                flags |= (uint)EETypeFlags.HasPointersFlag;
             }
             else if (type.IsArray && !type.IsCanonicalSubtype(CanonicalFormKind.Universal))
             {
                 var arrayElementType = ((ArrayType)type).ElementType;
                 if ((arrayElementType.IsValueType && ((DefType)arrayElementType).ContainsGCPointers) || arrayElementType.IsGCPointer)
                 {
-                    flags |= (ushort)EETypeFlags.HasPointersFlag;
+                    flags |= (uint)EETypeFlags.HasPointersFlag;
                 }
             }
 
             if (type.HasInstantiation)
             {
-                flags |= (ushort)EETypeFlags.IsGenericFlag;
+                flags |= (uint)EETypeFlags.IsGenericFlag;
 
                 if (type.HasVariance)
                 {
-                    flags |= (ushort)EETypeFlags.GenericVarianceFlag;
+                    flags |= (uint)EETypeFlags.GenericVarianceFlag;
                 }
             }
 
