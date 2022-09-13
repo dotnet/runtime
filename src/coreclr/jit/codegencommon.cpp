@@ -1373,7 +1373,6 @@ FOUND_AM:
         // Make sure a GC address doesn't end up in 'rv2'
         if (varTypeIsGC(rv2->TypeGet()))
         {
-            noway_assert(rv1 && !varTypeIsGC(rv1->TypeGet()));
             std::swap(rv1, rv2);
             rev = !rev;
         }

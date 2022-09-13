@@ -787,7 +787,7 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
 #if defined(TARGET_ARM64)
         if ((procInfo.format & UNWIND_ARM64_MODE_MASK) != UNWIND_ARM64_MODE_DWARF) {
             CompactUnwinder_arm64<LocalAddressSpace, Registers_REGDISPLAY> compactInst;
-            int stepRet = compactInst.stepWithCompactEncoding(procInfo.format, pc, _addressSpace, *(Registers_REGDISPLAY*)regs);
+            int stepRet = compactInst.stepWithCompactEncoding(procInfo.format, procInfo.start_ip, _addressSpace, *(Registers_REGDISPLAY*)regs);
             return stepRet == UNW_STEP_SUCCESS;
         } else {
             dwarfOffsetHint = procInfo.format & UNWIND_ARM64_DWARF_SECTION_OFFSET;
@@ -795,7 +795,7 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
 #elif defined(TARGET_AMD64)
         if ((procInfo.format & UNWIND_X86_64_MODE_MASK) != UNWIND_X86_64_MODE_DWARF) {
             CompactUnwinder_x86_64<LocalAddressSpace, Registers_REGDISPLAY> compactInst;
-            int stepRet = compactInst.stepWithCompactEncoding(procInfo.format, pc, _addressSpace, *(Registers_REGDISPLAY*)regs);
+            int stepRet = compactInst.stepWithCompactEncoding(procInfo.format, procInfo.start_ip, _addressSpace, *(Registers_REGDISPLAY*)regs);
             return stepRet == UNW_STEP_SUCCESS;
         } else {
             dwarfOffsetHint = procInfo.format & UNWIND_X86_64_DWARF_SECTION_OFFSET;
