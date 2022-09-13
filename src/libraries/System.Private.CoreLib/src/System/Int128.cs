@@ -1156,7 +1156,7 @@ namespace System
             }
 
             // We simplify the logic here by just doing unsigned division on the
-            // one's complement representation and then taking the correct sign.
+            // two's complement representation and then taking the correct sign.
 
             ulong sign = (left._upper ^ right._upper) & (1UL << 63);
 
@@ -1259,6 +1259,11 @@ namespace System
                 // However, when the upper bits are Zero, we also need to
                 // confirm the lower bits are positive, otherwise we have
                 // a positive value greater than MaxValue and should throw
+                //
+                // Likewise, when the upper bits are AllBitsSet, we also
+                // need to confirm the lower bits are negative, otherwise
+                // we have a large negative value less than MinValue and
+                // should throw.
 
                 ThrowHelper.ThrowOverflowException();
             }
