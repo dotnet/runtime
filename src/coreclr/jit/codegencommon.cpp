@@ -1379,18 +1379,15 @@ FOUND_AM:
         }
 
         // Special case: constant array index (that is range-checked)
-        if (fold && rv2->OperIs(GT_MUL, GT_LSH) && (rv2->gtGetOp2()->IsCnsIntOrI()))
+        if (fold)
         {
-            // For valuetype arrays where we can't use the scaled address
-            // mode, rv2 will point to the scaled index. So we have to do
-            // more work
-            GenTree* index;
-            ssize_t indexScale = compiler->optGetArrayRefScaleAndIndex(rv2, &index DEBUGARG(false));
+            // By default, assume index is rv2 and indexScale is mul (or 1 if mul is zero)
+            GenTree* index      = rv2;
+            ssize_t  indexScale = mul == 0 ? 1 : mul;
 
-            // Apply accumulated scale if it exists
-            if (mul)
+            if (rv2->OperIs(GT_MUL, GT_LSH) && (rv2->gtGetOp2()->IsCnsIntOrI()))
             {
-                indexScale *= mul;
+                indexScale *= compiler->optGetArrayRefScaleAndIndex(rv2, &index DEBUGARG(false));
             }
 
             // "index * 0" means index is zero
