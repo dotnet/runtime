@@ -59,4 +59,15 @@
     <Error Condition="'%(ReferencePath.ReferenceSourceTarget)' == 'ProjectReference' AND '%(ReferencePath.IsReferenceAssembly)' != 'true' AND '%(ReferencePath.ReferenceAssembly)' == ''"
            Text="Reference assemblies must only reference other reference assemblies and '%(ReferencePath.ProjectReferenceOriginalItemSpec)' is not a reference assembly project and does not set 'ProduceReferenceAssembly'." />
   </Target>
+
+  <Target Name="ReplaceCoreLibSrcWithRefAssemblyForCompilation"
+          AfterTargets="FindReferenceAssembliesForReferences"
+          Condition="'$(CompileUsingReferenceAssemblies)' != 'true' and '@(_coreLibProjectReference)' != ''">
+    <ItemGroup>
+      <_resolvedCoreLibProjectReference Include="@(_ResolvedProjectReferencePaths->WithMetadataValue('MSBuildSourceProjectFile','$(CoreLibProject)'))" />
+      <ReferencePathWithRefAssemblies Remove="@(_resolvedCoreLibProjectReference)" />
+      <ReferencePathWithRefAssemblies Include="@(_resolvedCoreLibProjectReference->Metadata('ReferenceAssembly'))" />
+    </ItemGroup>
+  </Target>
+
 </Project>
