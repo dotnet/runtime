@@ -41,20 +41,18 @@ void Lowering::LowerRotate(GenTree* tree)
 // Notes:
 //    This involves:
 //    - Handling of contained immediates.
-//    - Widening operations of unsigneds.
+//    - Widening some small stores.
 //
 void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 {
     // Most small locals (the exception is dependently promoted fields) have 4 byte wide stack slots, so
-    // we can widen the store, if profitable. This optimization is not relevant for register candidates.
-    //
-    // The widening is only (largely) profitable for 2 byte stores. We could widen bytes too but that
-    // would only be better when the constant is zero and reused, which we presume is not common enough.
+    // we can widen the store, if profitable. The widening is only (largely) profitable for 2 byte stores.
+    // We could widen bytes too but that would only be better when the constant is zero and reused, which
+    // we presume is not common enough.
     //
     if (storeLoc->OperIs(GT_STORE_LCL_VAR) && (genTypeSize(storeLoc) == 2) && storeLoc->Data()->IsCnsIntOrI())
     {
-        LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
-        if (varDsc->lvDoNotEnregister && !varDsc->lvIsStructField)
+        if (!comp->lvaGetDesc(storeLoc)->lvIsStructField)
         {
             storeLoc->gtType = TYP_INT;
         }
