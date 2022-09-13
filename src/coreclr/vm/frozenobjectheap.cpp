@@ -60,7 +60,7 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
 
     if (m_CurrentSegment == nullptr)
     {
-        // Create the first heap on first allocation
+        // Create the first segment on first allocation
         m_CurrentSegment = new FrozenObjectSegment();
         m_FrozenSegments.Append(m_CurrentSegment);
         _ASSERT(m_CurrentSegment != nullptr);
@@ -68,7 +68,7 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
 
     Object* obj = m_CurrentSegment->TryAllocateObject(type, objectSize);
 
-    // The only case where it can be null is when the current heap is full and we need
+    // The only case where it can be null is when the current segment is full and we need
     // to create a new one
     if (obj == nullptr)
     {
