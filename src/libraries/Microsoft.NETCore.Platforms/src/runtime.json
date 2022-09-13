@@ -23,6 +23,18 @@
         "linux-musl-x64"
       ]
     },
+    "alpine-x86": {
+      "#import": [
+        "alpine",
+        "linux-musl-x86"
+      ]
+    },
+    "alpine-s390x": {
+      "#import": [
+        "alpine",
+        "linux-musl-s390x"
+      ]
+    },
     "alpine.3.10": {
       "#import": [
         "alpine.3.9"
@@ -44,6 +56,18 @@
       "#import": [
         "alpine.3.10",
         "alpine.3.9-x64"
+      ]
+    },
+    "alpine.3.10-x86": {
+      "#import": [
+        "alpine.3.10",
+        "alpine.3.9-x86"
+      ]
+    },
+    "alpine.3.10-s390x": {
+      "#import": [
+        "alpine.3.10",
+        "alpine.3.9-s390x"
       ]
     },
     "alpine.3.11": {
@@ -69,6 +93,18 @@
         "alpine.3.10-x64"
       ]
     },
+    "alpine.3.11-x86": {
+      "#import": [
+        "alpine.3.11",
+        "alpine.3.10-x86"
+      ]
+    },
+    "alpine.3.11-s390x": {
+      "#import": [
+        "alpine.3.11",
+        "alpine.3.10-s390x"
+      ]
+    },
     "alpine.3.12": {
       "#import": [
         "alpine.3.11"
@@ -90,6 +126,18 @@
       "#import": [
         "alpine.3.12",
         "alpine.3.11-x64"
+      ]
+    },
+    "alpine.3.12-x86": {
+      "#import": [
+        "alpine.3.12",
+        "alpine.3.11-x86"
+      ]
+    },
+    "alpine.3.12-s390x": {
+      "#import": [
+        "alpine.3.12",
+        "alpine.3.11-s390x"
       ]
     },
     "alpine.3.13": {
@@ -115,6 +163,18 @@
         "alpine.3.12-x64"
       ]
     },
+    "alpine.3.13-x86": {
+      "#import": [
+        "alpine.3.13",
+        "alpine.3.12-x86"
+      ]
+    },
+    "alpine.3.13-s390x": {
+      "#import": [
+        "alpine.3.13",
+        "alpine.3.12-s390x"
+      ]
+    },
     "alpine.3.14": {
       "#import": [
         "alpine.3.13"
@@ -136,6 +196,18 @@
       "#import": [
         "alpine.3.14",
         "alpine.3.13-x64"
+      ]
+    },
+    "alpine.3.14-x86": {
+      "#import": [
+        "alpine.3.14",
+        "alpine.3.13-x86"
+      ]
+    },
+    "alpine.3.14-s390x": {
+      "#import": [
+        "alpine.3.14",
+        "alpine.3.13-s390x"
       ]
     },
     "alpine.3.15": {
@@ -161,6 +233,18 @@
         "alpine.3.14-x64"
       ]
     },
+    "alpine.3.15-x86": {
+      "#import": [
+        "alpine.3.15",
+        "alpine.3.14-x86"
+      ]
+    },
+    "alpine.3.15-s390x": {
+      "#import": [
+        "alpine.3.15",
+        "alpine.3.14-s390x"
+      ]
+    },
     "alpine.3.16": {
       "#import": [
         "alpine.3.15"
@@ -182,6 +266,53 @@
       "#import": [
         "alpine.3.16",
         "alpine.3.15-x64"
+      ]
+    },
+    "alpine.3.16-x86": {
+      "#import": [
+        "alpine.3.16",
+        "alpine.3.15-x86"
+      ]
+    },
+    "alpine.3.16-s390x": {
+      "#import": [
+        "alpine.3.16",
+        "alpine.3.15-s390x"
+      ]
+    },
+    "alpine.3.17": {
+      "#import": [
+        "alpine.3.16"
+      ]
+    },
+    "alpine.3.17-arm": {
+      "#import": [
+        "alpine.3.17",
+        "alpine.3.16-arm"
+      ]
+    },
+    "alpine.3.17-arm64": {
+      "#import": [
+        "alpine.3.17",
+        "alpine.3.16-arm64"
+      ]
+    },
+    "alpine.3.17-x64": {
+      "#import": [
+        "alpine.3.17",
+        "alpine.3.16-x64"
+      ]
+    },
+    "alpine.3.17-x86": {
+      "#import": [
+        "alpine.3.17",
+        "alpine.3.16-x86"
+      ]
+    },
+    "alpine.3.17-s390x": {
+      "#import": [
+        "alpine.3.17",
+        "alpine.3.16-s390x"
       ]
     },
     "alpine.3.6": {
@@ -207,6 +338,18 @@
         "alpine-x64"
       ]
     },
+    "alpine.3.6-x86": {
+      "#import": [
+        "alpine.3.6",
+        "alpine-x86"
+      ]
+    },
+    "alpine.3.6-s390x": {
+      "#import": [
+        "alpine.3.6",
+        "alpine-s390x"
+      ]
+    },
     "alpine.3.7": {
       "#import": [
         "alpine.3.6"
@@ -228,6 +371,18 @@
       "#import": [
         "alpine.3.7",
         "alpine.3.6-x64"
+      ]
+    },
+    "alpine.3.7-x86": {
+      "#import": [
+        "alpine.3.7",
+        "alpine.3.6-x86"
+      ]
+    },
+    "alpine.3.7-s390x": {
+      "#import": [
+        "alpine.3.7",
+        "alpine.3.6-s390x"
       ]
     },
     "alpine.3.8": {
@@ -253,6 +408,18 @@
         "alpine.3.7-x64"
       ]
     },
+    "alpine.3.8-x86": {
+      "#import": [
+        "alpine.3.8",
+        "alpine.3.7-x86"
+      ]
+    },
+    "alpine.3.8-s390x": {
+      "#import": [
+        "alpine.3.8",
+        "alpine.3.7-s390x"
+      ]
+    },
     "alpine.3.9": {
       "#import": [
         "alpine.3.8"
@@ -274,6 +441,18 @@
       "#import": [
         "alpine.3.9",
         "alpine.3.8-x64"
+      ]
+    },
+    "alpine.3.9-x86": {
+      "#import": [
+        "alpine.3.9",
+        "alpine.3.8-x86"
+      ]
+    },
+    "alpine.3.9-s390x": {
+      "#import": [
+        "alpine.3.9",
+        "alpine.3.8-s390x"
       ]
     },
     "android": {
