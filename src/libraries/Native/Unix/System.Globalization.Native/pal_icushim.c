@@ -29,7 +29,6 @@ FOR_ALL_ICU_FUNCTIONS
 #define SYMBOL_NAME_SIZE (128 + SYMBOL_CUSTOM_SUFFIX_SIZE)
 #define MaxICUVersionStringWithSuffixLength (MaxICUVersionStringLength + SYMBOL_CUSTOM_SUFFIX_SIZE)
 
-
 #if defined(TARGET_WINDOWS) || defined(TARGET_OSX) || defined(TARGET_ANDROID)
 
 #define MaxICUVersionStringLength 33
@@ -38,6 +37,7 @@ FOR_ALL_ICU_FUNCTIONS
 
 static void* libicuuc = NULL;
 static void* libicui18n = NULL;
+ucol_safeClone_func ucol_safeClone_ptr = NULL;
 
 #if defined (TARGET_UNIX)
 
@@ -380,6 +380,31 @@ static void ValidateICUDataCanLoad()
     }
 }
 
+static void InitializeUColClonePointers(char* symbolVersion)
+{
+    if (ucol_clone_ptr != NULL)
+    {
+        return;
+    }
+
+#if defined(TARGET_WINDOWS)
+    char symbolName[SYMBOL_NAME_SIZE];
+    sprintf_s(symbolName, SYMBOL_NAME_SIZE, "ucol_safeClone%s", symbolVersion);
+    ucol_safeClone_ptr = (ucol_safeClone_func)GetProcAddress((HMODULE)libicui18n, symbolName);
+#else
+    char symbolName[SYMBOL_NAME_SIZE];
+    sprintf(symbolName, "ucol_safeClone%s", symbolVersion);
+    ucol_safeClone_ptr = (ucol_safeClone_func)dlsym(libicui18n, symbolName);
+#endif // defined(TARGET_WINDOWS)
+
+    if (ucol_safeClone_ptr == NULL)
+    {
+        fprintf(stderr, "Cannot get the symbols of ICU APIs ucol_safeClone or ucol_clone.\n");
+        abort();
+    }
+}
+
+
 // GlobalizationNative_LoadICU
 // This method get called from the managed side during the globalization initialization.
 // This method shouldn't get called at all if we are running in globalization invariant mode
@@ -413,6 +438,9 @@ int32_t GlobalizationNative_LoadICU()
 
     FOR_ALL_ICU_FUNCTIONS
     ValidateICUDataCanLoad();
+
+    InitializeUColClonePointers(symbolVersion);
+
     return true;
 }
 
