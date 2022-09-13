@@ -411,8 +411,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 // indexing with expressions, e.g. x[a + 1]
                                 else
                                 {
-                                    SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(arg + @";", cancellationToken: token);
-                                    indexObject = await ExpressionEvaluator.EvaluateSimpleExpression(this, syntaxTree.ToString(), arg.ToString(), variableDefinitions, logger, token);
+                                    string expression = arg.ToString();
+                                    indexObject = await ExpressionEvaluator.EvaluateSimpleExpression(this, expression, expression, variableDefinitions, logger, token);
                                     string type = indexObject["type"].Value<string>();
                                     if (type != "number")
                                         throw new InvalidOperationException($"Cannot index with an object of type '{type}'");
