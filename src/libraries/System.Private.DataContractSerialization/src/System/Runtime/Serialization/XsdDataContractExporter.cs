@@ -85,11 +85,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (_dataContractSet == null)
-                {
-                    _dataContractSet = new DataContractSet(Options?.DataContractSurrogate, null, null);
-                }
-                return _dataContractSet;
+                return _dataContractSet ??= new DataContractSet(Options?.DataContractSurrogate, null, null);
             }
         }
 
@@ -103,6 +99,7 @@ namespace System.Runtime.Serialization
         /// Transforms the types contained in the specified collection of assemblies.
         /// </summary>
         /// <param name="assemblies">A <see cref="ICollection{T}"/> (of <see cref="Assembly"/>) that contains the types to export.</param>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public void Export(ICollection<Assembly> assemblies)
         {
@@ -137,6 +134,7 @@ namespace System.Runtime.Serialization
         /// Transforms the types contained in the <see cref="ICollection{T}"/> passed to this method.
         /// </summary>
         /// <param name="types">A <see cref="ICollection{T}"/> (of <see cref="Type"/>) that contains the types to export.</param>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public void Export(ICollection<Type> types)
         {
@@ -168,6 +166,7 @@ namespace System.Runtime.Serialization
         /// Transforms the specified .NET Framework type into an XML schema definition language (XSD) schema.
         /// </summary>
         /// <param name="type">The <see cref="Type"/> to transform into an XML schema.</param>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public void Export(Type type)
         {
@@ -194,6 +193,7 @@ namespace System.Runtime.Serialization
         /// </summary>
         /// <param name="type">The <see cref="Type"/> that was exported.</param>
         /// <returns>An <see cref="XmlQualifiedName"/> that represents the contract name of the type and its namespace.</returns>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public XmlQualifiedName GetSchemaTypeName(Type type)
         {
@@ -212,6 +212,7 @@ namespace System.Runtime.Serialization
         /// </summary>
         /// <param name="type">The type to return a schema for.</param>
         /// <returns>An <see cref="XmlSchemaType"/> that contains the XML schema.</returns>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public XmlSchemaType? GetSchemaType(Type type)
         {
@@ -230,6 +231,7 @@ namespace System.Runtime.Serialization
         /// </summary>
         /// <param name="type">The <see cref="Type"/> to query.</param>
         /// <returns>The <see cref="XmlQualifiedName"/> that represents the top-level name and namespace for this Type, which is written to the stream when writing this object.</returns>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public XmlQualifiedName? GetRootElementName(Type type)
         {
@@ -248,6 +250,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private Type GetSurrogatedType(Type type)
         {
@@ -257,6 +260,7 @@ namespace System.Runtime.Serialization
             return type;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void CheckAndAddType(Type type)
         {
@@ -265,12 +269,14 @@ namespace System.Runtime.Serialization
                 AddType(type);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void AddType(Type type)
         {
             DataContractSet.Add(type);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void Export()
         {
@@ -279,6 +285,7 @@ namespace System.Runtime.Serialization
             exporter.Export();
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void AddKnownTypes()
         {
@@ -304,6 +311,7 @@ namespace System.Runtime.Serialization
         /// </summary>
         /// <param name="assemblies">A <see cref="ICollection{T}"/> of <see cref="Assembly"/> that contains the assemblies with the types to export.</param>
         /// <returns>true if the types can be exported; otherwise, false.</returns>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public bool CanExport(ICollection<Assembly> assemblies)
         {
@@ -344,6 +352,7 @@ namespace System.Runtime.Serialization
         /// </summary>
         /// <param name="types">A <see cref="ICollection{T}"/> that contains the specified types to export.</param>
         /// <returns>true if the types can be exported; otherwise, false.</returns>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public bool CanExport(ICollection<Type> types)
         {
@@ -381,6 +390,7 @@ namespace System.Runtime.Serialization
         /// </summary>
         /// <param name="type">The <see cref="Type"/> to export.</param>
         /// <returns>true if the type can be exported; otherwise, false.</returns>
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public bool CanExport(Type type)
         {

@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Reflection.Metadata;
-using System.Runtime.CompilerServices;
 using Debug = System.Diagnostics.Debug;
 
 using Internal.NativeFormat;
@@ -173,7 +171,7 @@ namespace Internal.TypeSystem.Ecma
             return Add(hashCode, s);
         }
 
-        public unsafe override string GetString(byte* bytes, int byteCount)
+        public override unsafe string GetString(byte* bytes, int byteCount)
         {
             bool isAscii;
             int hashCode = TypeHashingAlgorithms.ComputeASCIINameHashCode(bytes, byteCount, out isAscii);

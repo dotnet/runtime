@@ -15,13 +15,15 @@ using Internal.TypeSystem.Ecma;
 
 using Internal.CommandLine;
 
+using ILCompiler.Dataflow;
+using ILLink.Shared;
+
 using Debug = System.Diagnostics.Debug;
 using InstructionSet = Internal.JitInterface.InstructionSet;
-using ILCompiler.Dataflow;
 
 namespace ILCompiler
 {
-    internal class Program
+    internal sealed class Program
     {
         private const string DefaultSystemModule = "System.Private.CoreLib";
 
@@ -103,6 +105,8 @@ namespace ILCompiler
         private IReadOnlyList<string> _singleWarnEnabledAssemblies = Array.Empty<string>();
         private IReadOnlyList<string> _singleWarnDisabledAssemblies = Array.Empty<string>();
         private bool _singleWarn;
+        private bool _noTrimWarn;
+        private bool _noAotWarn;
 
         private string _makeReproPath;
 
@@ -112,7 +116,7 @@ namespace ILCompiler
         {
         }
 
-        private void Help(string helpText)
+        private static void Help(string helpText)
         {
             Console.WriteLine();
             Console.Write(".NET Native IL Compiler");
@@ -228,6 +232,8 @@ namespace ILCompiler
                 syntax.DefineOption("nopreinitstatics", ref _noPreinitStatics, "Do not interpret static constructors at compile time");
                 syntax.DefineOptionList("nowarn", ref _suppressedWarnings, "Disable specific warning messages");
                 syntax.DefineOption("singlewarn", ref _singleWarn, "Generate single AOT/trimming warning per assembly");
+                syntax.DefineOption("notrimwarn", ref _noTrimWarn, "Disable warnings related to trimming");
+                syntax.DefineOption("noaotwarn", ref _noAotWarn, "Disable warnings related to AOT");
                 syntax.DefineOptionList("singlewarnassembly", ref _singleWarnEnabledAssemblies, "Generate single AOT/trimming warning for given assembly");
                 syntax.DefineOptionList("nosinglewarnassembly", ref _singleWarnDisabledAssemblies, "Expand AOT/trimming warnings for given assembly");
                 syntax.DefineOptionList("directpinvoke", ref _directPInvokes, "PInvoke to call directly");
@@ -270,13 +276,13 @@ namespace ILCompiler
                 string[] ValidArchitectures = new string[] { "arm", "arm64", "x86", "x64" };
                 string[] ValidOS = new string[] { "windows", "linux", "osx" };
 
-                Program.ComputeDefaultOptions(out TargetOS defaultOs, out TargetArchitecture defaultArch);
+                ComputeDefaultOptions(out TargetOS defaultOs, out TargetArchitecture defaultArch);
 
-                extraHelp.Add(String.Format("Valid switches for {0} are: '{1}'. The default value is '{2}'", "--targetos", String.Join("', '", ValidOS), defaultOs.ToString().ToLowerInvariant()));
+                extraHelp.Add(string.Format("Valid switches for {0} are: '{1}'. The default value is '{2}'", "--targetos", string.Join("', '", ValidOS), defaultOs.ToString().ToLowerInvariant()));
 
                 extraHelp.Add("");
 
-                extraHelp.Add(String.Format("Valid switches for {0} are: '{1}'. The default value is '{2}'", "--targetarch", String.Join("', '", ValidArchitectures), defaultArch.ToString().ToLowerInvariant()));
+                extraHelp.Add(string.Format("Valid switches for {0} are: '{1}'. The default value is '{2}'", "--targetarch", string.Join("', '", ValidArchitectures), defaultArch.ToString().ToLowerInvariant()));
 
                 extraHelp.Add("");
 
@@ -290,7 +296,7 @@ namespace ILCompiler
                     archString.Append(arch);
                     archString.Append(": ");
 
-                    TargetArchitecture targetArch = Program.GetTargetArchitectureFromArg(arch);
+                    TargetArchitecture targetArch = GetTargetArchitectureFromArg(arch);
                     bool first = true;
                     foreach (var instructionSet in Internal.JitInterface.InstructionSetFlags.ArchitectureToValidInstructionSets(targetArch))
                     {
@@ -470,7 +476,7 @@ namespace ILCompiler
                 {
                     string instructionSet = instructionSetParamsInput[i];
 
-                    if (String.IsNullOrEmpty(instructionSet))
+                    if (string.IsNullOrEmpty(instructionSet))
                         throw new CommandLineException("Instruction set must not be empty");
 
                     char firstChar = instructionSet[0];
@@ -502,7 +508,7 @@ namespace ILCompiler
 
             instructionSetSupportBuilder.ComputeInstructionSetFlags(out var supportedInstructionSet, out var unsupportedInstructionSet,
                 (string specifiedInstructionSet, string impliedInstructionSet) =>
-                    throw new CommandLineException(String.Format("Unsupported combination of instruction sets: {0}/{1}", specifiedInstructionSet, impliedInstructionSet)));
+                    throw new CommandLineException(string.Format("Unsupported combination of instruction sets: {0}/{1}", specifiedInstructionSet, impliedInstructionSet)));
 
             InstructionSetSupportBuilder optimisticInstructionSetSupportBuilder = new InstructionSetSupportBuilder(_targetArchitecture);
 
@@ -609,7 +615,7 @@ namespace ILCompiler
 
                 securityMitigationOptions = SecurityMitigationOptions.ControlFlowGuardAnnotations;
             }
-            else if (!String.IsNullOrEmpty(_guard))
+            else if (!string.IsNullOrEmpty(_guard))
             {
                 throw new CommandLineException($"Unrecognized mitigation option '{_guard}'");
             }
@@ -708,8 +714,8 @@ namespace ILCompiler
                 }
             }
 
-            _conditionallyRootedAssemblies = new List<string>(_conditionallyRootedAssemblies.Select(a => ILLinkify(a)));
-            _trimmedAssemblies = new List<string>(_trimmedAssemblies.Select(a => ILLinkify(a)));
+            _conditionallyRootedAssemblies = new List<string>(_conditionallyRootedAssemblies.Select(ILLinkify));
+            _trimmedAssemblies = new List<string>(_trimmedAssemblies.Select(ILLinkify));
 
             static string ILLinkify(string rootedAssembly)
             {
@@ -745,12 +751,12 @@ namespace ILCompiler
 
             CompilationBuilder builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup);
 
-            string compilationUnitPrefix = _multiFile ? System.IO.Path.GetFileNameWithoutExtension(_outputFilePath) : "";
+            string compilationUnitPrefix = _multiFile ? Path.GetFileNameWithoutExtension(_outputFilePath) : "";
             builder.UseCompilationUnitPrefix(compilationUnitPrefix);
 
             if (_mibcFilePaths.Count > 0)
                 ((RyuJitCompilationBuilder)builder).UseProfileData(_mibcFilePaths);
-            if (!String.IsNullOrEmpty(_jitPath))
+            if (!string.IsNullOrEmpty(_jitPath))
                 ((RyuJitCompilationBuilder)builder).UseJitPath(_jitPath);
 
             PInvokeILEmitterConfiguration pinvokePolicy = new ConfigurablePInvokePolicy(typeSystemContext.Target, _directPInvokes, _directPInvokeLists);
@@ -768,7 +774,13 @@ namespace ILCompiler
             }
             ilProvider = new FeatureSwitchManager(ilProvider, featureSwitches);
 
-            var logger = new Logger(Console.Out, ilProvider, _isVerbose, ProcessWarningCodes(_suppressedWarnings), _singleWarn, _singleWarnEnabledAssemblies, _singleWarnDisabledAssemblies);
+            var suppressedWarningCategories = new List<string>();
+            if (_noTrimWarn)
+                suppressedWarningCategories.Add(MessageSubCategory.TrimAnalysis);
+            if (_noAotWarn)
+                suppressedWarningCategories.Add(MessageSubCategory.AotAnalysis);
+
+            var logger = new Logger(Console.Out, ilProvider, _isVerbose, ProcessWarningCodes(_suppressedWarnings), _singleWarn, _singleWarnEnabledAssemblies, _singleWarnDisabledAssemblies, suppressedWarningCategories);
             CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider, logger);
 
             var stackTracePolicy = _emitStackTraceData ?
@@ -1018,7 +1030,7 @@ namespace ILCompiler
             return 0;
         }
 
-        private void DiffCompilationResults<T>(ref bool result, IEnumerable<T> set1, IEnumerable<T> set2, string prefix,
+        private static void DiffCompilationResults<T>(ref bool result, IEnumerable<T> set1, IEnumerable<T> set2, string prefix,
             string set1name, string set2name, Predicate<T> filter)
         {
             HashSet<T> diff = new HashSet<T>(set1);
@@ -1041,7 +1053,7 @@ namespace ILCompiler
             }
         }
 
-        private TypeDesc FindType(CompilerTypeSystemContext context, string typeName)
+        private static TypeDesc FindType(CompilerTypeSystemContext context, string typeName)
         {
             ModuleDesc systemModule = context.SystemModule;
 
@@ -1113,7 +1125,7 @@ namespace ILCompiler
                 string[] values = value.Split(new char[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
                 foreach (string id in values)
                 {
-                    if (!id.StartsWith("IL", StringComparison.Ordinal) || !ushort.TryParse(id.Substring(2), out ushort code))
+                    if (!id.StartsWith("IL", StringComparison.Ordinal) || !ushort.TryParse(id.AsSpan(2), out ushort code))
                         continue;
 
                     yield return code;

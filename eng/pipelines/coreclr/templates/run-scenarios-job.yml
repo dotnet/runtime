@@ -144,7 +144,7 @@ jobs:
     # copy wasm packs if running on wasm
     - script: >-
         mkdir -p $(librariesDownloadDir)/bin/wasm/data &&
-        cp -r $(librariesDownloadDir)/BrowserWasm/staging/dotnet-workload $(librariesDownloadDir)/bin/wasm &&
+        cp -r $(librariesDownloadDir)/BrowserWasm/staging/dotnet-net7+latest $(librariesDownloadDir)/bin/wasm &&
         cp src/mono/wasm/test-main.js $(librariesDownloadDir)/bin/wasm/data/test-main.js &&
         find $(librariesDownloadDir)/bin/wasm -type f -exec chmod 664 {} \;
       displayName: "Create wasm directory (Linux)"

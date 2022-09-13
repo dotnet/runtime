@@ -36,6 +36,7 @@ namespace System.Runtime.Serialization
 
         private XmlDocument XmlDoc => _xmlDoc ??= new XmlDocument();
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void Export()
         {
@@ -72,6 +73,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ExportDataContract(DataContract dataContract)
         {
@@ -112,6 +114,7 @@ namespace System.Runtime.Serialization
             return topLevelElement;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ExportClassDataContract(ClassDataContract classDataContract, XmlSchema schema)
         {
@@ -242,6 +245,7 @@ namespace System.Runtime.Serialization
             return actualTypeElement;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private XmlElement ExportGenericInfo(Type clrType, string elementName, string elementNs)
         {
@@ -329,6 +333,7 @@ namespace System.Runtime.Serialization
             return typeElement;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private XmlElement? ExportSurrogateData(object key)
         {
@@ -350,6 +355,7 @@ namespace System.Runtime.Serialization
             return (XmlElement?)XmlDoc.ReadNode(XmlReader.Create(new StringReader(stringWriter.ToString())));
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ExportCollectionDataContract(CollectionDataContract collectionDataContract, XmlSchema schema)
         {
@@ -411,6 +417,7 @@ namespace System.Runtime.Serialization
             return isDictionaryElement;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ExportEnumDataContract(EnumDataContract enumDataContract, XmlSchema schema)
         {
@@ -451,6 +458,7 @@ namespace System.Runtime.Serialization
             return isFlags ? (long)Math.Pow(2, index) : index;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ExportISerializableDataContract(ClassDataContract dataContract, XmlSchema schema)
         {
@@ -491,6 +499,7 @@ namespace System.Runtime.Serialization
             return extension;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void ExportXmlDataContract(XmlDataContract dataContract)
         {
@@ -578,6 +587,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static void GetXmlTypeInfo(Type type, out XmlQualifiedName xmlName, out XmlSchemaType? xsdType, out bool hasRoot)
         {
@@ -590,6 +600,7 @@ namespace System.Runtime.Serialization
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.InvalidXmlDataContractName, DataContract.GetClrTypeFullName(type))));
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private static bool InvokeSchemaProviderMethod(Type clrType, XmlSchemaSet schemas, out XmlQualifiedName xmlName, out XmlSchemaType? xsdType, out bool hasRoot)
         {

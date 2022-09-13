@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -16,6 +18,9 @@ namespace System.Formats.Tar.Tests
         // Default values are what a TarEntry created with its constructor will set
         protected const UnixFileMode DefaultFileMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead; // 644 in octal, internally used as default
         protected const UnixFileMode DefaultDirectoryMode = DefaultFileMode | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute; // 755 in octal, internally used as default
+
+        protected readonly UnixFileMode CreateDirectoryDefaultMode; // Mode of directories created using Directory.CreateDirectory(string).
+        protected readonly UnixFileMode UMask;
 
         // Mode assumed for files and directories on Windows.
         protected const UnixFileMode DefaultWindowsMode = DefaultFileMode | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute; // 755 in octal, internally used as default
@@ -85,6 +90,94 @@ namespace System.Formats.Tar.Tests
         protected const string PaxEaDevMajor = "devmajor";
         protected const string PaxEaDevMinor = "devminor";
 
+        private static readonly string[] V7TestCaseNames = new[]
+        {
+            "file",
+            "file_hardlink",
+            "file_symlink",
+            "folder_file",
+            "folder_file_utf8",
+            "folder_subfolder_file",
+            "foldersymlink_folder_subfolder_file",
+            "many_small_files"
+        };
+
+        private static readonly string[] UstarTestCaseNames = new[]
+        {
+            "longpath_splitable_under255",
+            "specialfiles" };
+
+        private static readonly string[] PaxAndGnuTestCaseNames = new[]
+        {
+            "file_longsymlink",
+            "longfilename_over100_under255",
+            "longpath_over255"
+        };
+
+        private static readonly string[] GoLangTestCaseNames = new[]
+        {
+            "empty",
+            "file-and-dir",
+            "gnu-long-nul",
+            "gnu-not-utf8",
+            "gnu-utf8",
+            "gnu",
+            "hardlink",
+            "nil-uid",
+            "pax-bad-hdr-file",
+            "pax-bad-mtime-file",
+            "pax-global-records",
+            "pax-nul-path",
+            "pax-nul-xattrs",
+            "pax-pos-size-file",
+            "pax-records",
+            "pax",
+            "star",
+            "trailing-slash",
+            "ustar-file-devs",
+            "ustar-file-reg",
+            "ustar",
+            "writer",
+            "xattrs"
+        };
+
+        private static readonly string[] NodeTarTestCaseNames = new[]
+        {
+            "bad-cksum",
+            "body-byte-counts",
+            "dir",
+            "emptypax",
+            "file",
+            "global-header",
+            "links-invalid",
+            "links-strip",
+            "links",
+            "long-paths",
+            "long-pax",
+            "next-file-has-long",
+            "null-byte",
+            "path-missing",
+            "trailing-slash-corner-case",
+            "utf8"
+        };
+
+        private static readonly string[] RsTarTestCaseNames = new[]
+        {
+            "7z_long_path",
+            "directory",
+            "duplicate_dirs",
+            "empty_filename",
+            "file_times",
+            "link",
+            "pax_size",
+            "pax",
+            "pax2",
+            "reading_files",
+            "simple_missing_last_header",
+            "simple",
+            "xattrs"
+        };
+
         protected enum CompressionMethod
         {
             // Archiving only, no compression
@@ -115,27 +208,44 @@ namespace System.Formats.Tar.Tests
 
         protected static bool IsNotLinuxBionic => !PlatformDetection.IsLinuxBionic;
 
+        protected TarTestsBase()
+        {
+            CreateDirectoryDefaultMode = Directory.CreateDirectory(GetRandomDirPath()).UnixFileMode; // '0777 & ~umask'
+            UMask = ~CreateDirectoryDefaultMode & (UnixFileMode)Convert.ToInt32("777",
+            8);
+        }
+
         protected static string GetTestCaseUnarchivedFolderPath(string testCaseName) =>
-            Path.Join(Directory.GetCurrentDirectory(), "unarchived", testCaseName);
+            Path.Join(Directory.GetCurrentDirectory(), "unarchived",
+            testCaseName);
 
         protected static string GetTarFilePath(CompressionMethod compressionMethod, TestTarFormat format, string testCaseName)
+            => GetTarFilePath(compressionMethod, format.ToString(), testCaseName);
+
+        protected static string GetTarFilePath(CompressionMethod compressionMethod, string testFolderName, string testCaseName)
         {
             (string compressionMethodFolder, string fileExtension) = compressionMethod switch
             {
-                CompressionMethod.Uncompressed => ("tar", ".tar"),
-                CompressionMethod.GZip => ("targz", ".tar.gz"),
+                CompressionMethod.Uncompressed => ("tar",
+            ".tar"),
+                CompressionMethod.GZip => ("targz",
+            ".tar.gz"),
                 _ => throw new InvalidOperationException($"Unexpected compression method: {compressionMethod}"),
             };
 
-            return Path.Join(Directory.GetCurrentDirectory(), compressionMethodFolder, format.ToString(), testCaseName + fileExtension);
+            return Path.Join(Directory.GetCurrentDirectory(), compressionMethodFolder, testFolderName, testCaseName + fileExtension);
         }
 
         // MemoryStream containing the copied contents of the specified file. Meant for reading and writing.
         protected static MemoryStream GetTarMemoryStream(CompressionMethod compressionMethod, TestTarFormat format, string testCaseName) =>
-            GetMemoryStream(GetTarFilePath(compressionMethod, format, testCaseName));
+            GetTarMemoryStream(compressionMethod, format.ToString(), testCaseName);
+
+        protected static MemoryStream GetTarMemoryStream(CompressionMethod compressionMethod, string testFolderName, string testCaseName) =>
+            GetMemoryStream(GetTarFilePath(compressionMethod, testFolderName, testCaseName));
 
         protected static string GetStrangeTarFilePath(string testCaseName) =>
-            Path.Join(Directory.GetCurrentDirectory(), "strange", testCaseName + ".tar");
+            Path.Join(Directory.GetCurrentDirectory(), "strange",
+            testCaseName + ".tar");
 
         protected static MemoryStream GetStrangeTarMemoryStream(string testCaseName) =>
             GetMemoryStream(GetStrangeTarFilePath(testCaseName));
@@ -178,6 +288,8 @@ namespace System.Formats.Tar.Tests
 
             // LinkName
             Assert.Equal(DefaultLinkName, hardLink.LinkName);
+            Assert.Throws<ArgumentNullException>(() => hardLink.LinkName = null);
+            Assert.Throws<ArgumentException>(() => hardLink.LinkName = string.Empty);
             hardLink.LinkName = TestLinkName;
         }
 
@@ -189,6 +301,8 @@ namespace System.Formats.Tar.Tests
 
             // LinkName
             Assert.Equal(DefaultLinkName, symbolicLink.LinkName);
+            Assert.Throws<ArgumentNullException>(() => symbolicLink.LinkName = null);
+            Assert.Throws<ArgumentException>(() => symbolicLink.LinkName = string.Empty);
             symbolicLink.LinkName = TestLinkName;
         }
 
@@ -291,6 +405,13 @@ namespace System.Formats.Tar.Tests
             if (isFromWriter)
             {
                 Assert.Null(entry.DataStream);
+
+                using (MemoryStream ms = new MemoryStream())
+                using (WrappedStream ws = new WrappedStream(ms, canRead: false, canWrite: true, canSeek: true))
+                {
+                    Assert.Throws<ArgumentException>(() => entry.DataStream = ws);
+                }
+
                 entry.DataStream = new MemoryStream();
                 // Verify it is not modified or wrapped in any way
                 Assert.True(entry.DataStream.CanRead);
@@ -326,7 +447,7 @@ namespace System.Formats.Tar.Tests
                 TarEntryFormat.Ustar => typeof(UstarTarEntry),
                 TarEntryFormat.Pax => typeof(PaxTarEntry),
                 TarEntryFormat.Gnu => typeof(GnuTarEntry),
-                _ => throw new FormatException($"Unrecognized format: {expectedFormat}"),
+                _ => throw new InvalidDataException($"Unrecognized format: {expectedFormat}"),
             };
         }
 
@@ -362,7 +483,7 @@ namespace System.Formats.Tar.Tests
                 TarEntryFormat.Ustar => new UstarTarEntry(entryType, entryName),
                 TarEntryFormat.Pax => new PaxTarEntry(entryType, entryName),
                 TarEntryFormat.Gnu => new GnuTarEntry(entryType, entryName),
-                _ => throw new FormatException($"Unexpected format: {targetFormat}")
+                _ => throw new InvalidDataException($"Unexpected format: {targetFormat}")
             };
 
         public static IEnumerable<object[]> GetFormatsAndLinks()
@@ -407,11 +528,20 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(fileMode, entry.Mode);
         }
 
-        protected static void AssertFileModeEquals(string path, UnixFileMode mode)
+        protected void AssertFileModeEquals(string path, UnixFileMode archiveMode)
         {
             if (!PlatformDetection.IsWindows)
             {
-                Assert.Equal(mode, File.GetUnixFileMode(path));
+                UnixFileMode expectedMode = archiveMode & ~UMask;
+
+                UnixFileMode actualMode = File.GetUnixFileMode(path);
+                // Ignore SetGroup: it may have been added to preserve group ownership.
+                if ((expectedMode & UnixFileMode.SetGroup) == 0)
+                {
+                    actualMode &= ~UnixFileMode.SetGroup;
+                }
+
+                Assert.Equal(expectedMode, actualMode);
             }
         }
 
@@ -443,6 +573,54 @@ namespace System.Formats.Tar.Tests
             }
 
             AssertFileModeEquals(destination, TestPermission1);
+        }
+
+        public static IEnumerable<object[]> GetNodeTarTestCaseNames()
+        {
+            foreach (string name in NodeTarTestCaseNames)
+            {
+                yield return new object[] { name };
+            }
+        }
+
+        public static IEnumerable<object[]> GetGoLangTarTestCaseNames()
+        {
+            foreach (string name in GoLangTestCaseNames)
+            {
+                yield return new object[] { name };
+            }
+        }
+
+        public static IEnumerable<object[]> GetRsTarTestCaseNames()
+        {
+            foreach (string name in RsTarTestCaseNames)
+            {
+                yield return new object[] { name };
+            }
+        }
+
+        public static IEnumerable<object[]> GetV7TestCaseNames()
+        {
+            foreach (string name in V7TestCaseNames)
+            {
+                yield return new object[] { name };
+            }
+        }
+
+        public static IEnumerable<object[]> GetUstarTestCaseNames()
+        {
+            foreach (string name in UstarTestCaseNames.Concat(V7TestCaseNames))
+            {
+                yield return new object[] { name };
+            }
+        }
+
+        public static IEnumerable<object[]> GetPaxAndGnuTestCaseNames()
+        {
+            foreach (string name in UstarTestCaseNames.Concat(V7TestCaseNames).Concat(PaxAndGnuTestCaseNames))
+            {
+                yield return new object[] { name };
+            }
         }
     }
 }

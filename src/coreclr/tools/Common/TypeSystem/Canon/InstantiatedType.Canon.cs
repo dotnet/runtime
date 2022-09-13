@@ -4,7 +4,7 @@
 namespace Internal.TypeSystem
 {
     // Implements canonicalization for generic instantiations
-    partial class InstantiatedType
+    public partial class InstantiatedType
     {
         public override bool IsCanonicalSubtype(CanonicalFormKind policy)
         {

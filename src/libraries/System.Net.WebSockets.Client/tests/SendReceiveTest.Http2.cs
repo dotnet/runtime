@@ -3,7 +3,6 @@
 
 using System.Linq;
 using System.Net.Http;
-using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,19 +10,29 @@ using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
-using static System.Net.Http.Functional.Tests.TestHelper;
-
 namespace System.Net.WebSockets.Client.Tests
 {
-    public class SendReceiveTest_Http2 : ClientWebSocketTestBase
+    public sealed class HttpClientSendReceiveTest_Http2 : SendReceiveTest_Http2
+    {
+        public HttpClientSendReceiveTest_Http2(ITestOutputHelper output) : base(output) { }
+
+        protected override bool UseHttpClient => true;
+    }
+
+    public sealed class InvokerSendReceiveTest_Http2 : SendReceiveTest_Http2
+    {
+        public InvokerSendReceiveTest_Http2(ITestOutputHelper output) : base(output) { }
+
+        protected override bool UseCustomInvoker => true;
+    }
+
+    public abstract class SendReceiveTest_Http2 : ClientWebSocketTestBase
     {
         public SendReceiveTest_Http2(ITestOutputHelper output) : base(output) { }
 
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
+        [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "System.Net.Sockets is not supported on this platform")]
-        public async Task ReceiveNoThrowAfterSend_NoSsl(bool useHandler)
+        public async Task ReceiveNoThrowAfterSend_NoSsl()
         {
             var clientMessage = new byte[] { 2, 3, 4 };
             var serverMessage = new byte[] { 4, 5, 6 };
@@ -33,16 +42,9 @@ namespace System.Net.WebSockets.Client.Tests
                 using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
                 {
                     cws.Options.HttpVersion = HttpVersion.Version20;
-                    cws.Options.HttpVersionPolicy = Http.HttpVersionPolicy.RequestVersionExact;
-                    if (useHandler)
-                    {
-                        var handler = new SocketsHttpHandler();
-                        await cws.ConnectAsync(uri, new HttpMessageInvoker(handler), cts.Token);
-                    }
-                    else
-                    {
-                        await cws.ConnectAsync(uri, cts.Token);
-                    }
+                    cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+
+                    await cws.ConnectAsync(uri, GetInvoker(), cts.Token);
 
                     await cws.SendAsync(clientMessage, WebSocketMessageType.Binary, true, cts.Token);
 
@@ -73,8 +75,7 @@ namespace System.Net.WebSockets.Client.Tests
                 byte[] constructMessage = prefix.Concat(serverMessage).ToArray();
                 await connection.SendResponseDataAsync(streamId, constructMessage, endStream: false);
 
-            }, new Http2Options() { WebSocketEndpoint = true, UseSsl = false }
-            );
+            }, new Http2Options() { WebSocketEndpoint = true, UseSsl = false });
         }
 
         [Fact]
@@ -88,10 +89,9 @@ namespace System.Net.WebSockets.Client.Tests
                 using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
                 {
                     cws.Options.HttpVersion = HttpVersion.Version20;
-                    cws.Options.HttpVersionPolicy = Http.HttpVersionPolicy.RequestVersionExact;
+                    cws.Options.HttpVersionPolicy = HttpVersionPolicy.RequestVersionExact;
 
-                    var handler = CreateSocketsHttpHandler(allowAllCertificates: true);
-                    await cws.ConnectAsync(uri, new HttpMessageInvoker(handler), cts.Token);
+                    await cws.ConnectAsync(uri, GetInvoker(), cts.Token);
 
                     await cws.SendAsync(new byte[] { 2, 3, 4 }, WebSocketMessageType.Binary, true, cts.Token);
 
@@ -113,8 +113,7 @@ namespace System.Net.WebSockets.Client.Tests
                 byte[] constructMessage = prefix.Concat(serverMessage).ToArray();
                 await connection.SendResponseDataAsync(streamId, constructMessage, endStream: false);
 
-            }, new Http2Options() { WebSocketEndpoint = true }
-            );
+            }, new Http2Options() { WebSocketEndpoint = true });
         }
     }
 }

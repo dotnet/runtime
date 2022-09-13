@@ -6782,7 +6782,7 @@ void emitter::emitDispImm(int imm, bool addComma, bool alwaysHex /* =false */, b
     {
         if (isAddrOffset)
         {
-            printf("%02XH", imm);
+            printf("0x%02X", imm);
         }
         else
         {
@@ -6794,7 +6794,7 @@ void emitter::emitDispImm(int imm, bool addComma, bool alwaysHex /* =false */, b
         // val <= -1000
         if (isAddrOffset)
         {
-            printf("-%02XH", -imm);
+            printf("-0x%02X", -imm);
         }
         else
         {
@@ -7739,7 +7739,7 @@ void emitter::emitDispLargeJmp(
     // Next, display the unconditional branch
 
     // Reset the local instrDesc
-    memset(&idJmp, 0, sizeof(idJmp));
+    memset(pidJmp, 0, sizeof(instrDescJmp));
 
     pidJmp->idIns(INS_b);
     pidJmp->idInsFmt(IF_T2_J2);

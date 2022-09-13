@@ -46,6 +46,8 @@ jobs:
       - windows_x64
 
 # superpmi-collect-job that targets macOS/arm64 depends on coreclr binaries produced by the macOS/x64 job
+# We don't collect osx-x64 (it's essentially the same as linux-x64). If we did, we'd add OSX_x64 in the
+# build-coreclr-and-libraries-job.yml above, and remove this.
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
@@ -69,8 +71,6 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
     buildConfig: checked
     platforms:
-    # Linux tests are built on the OSX machines.
-    # - OSX_x64
     - OSX_arm64
     - Linux_arm
     - Linux_arm64
@@ -91,8 +91,6 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
     buildConfig: checked
     platforms:
-    # Linux tests are built on the OSX machines.
-    # - OSX_x64
     - OSX_arm64
     - Linux_arm
     - Linux_arm64
@@ -100,30 +98,6 @@ jobs:
     - windows_x64
     - windows_x86
     - windows_arm64
-    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
-    helixQueueGroup: ci
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: outerloop
-      liveLibrariesBuildConfig: Release
-      collectionType: pmi
-      collectionName: coreclr_tests
-
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
-    buildConfig: checked
-    platforms:
-    # Linux tests are built on the OSX machines.
-    # - OSX_x64
-    - OSX_arm64
-    - Linux_arm
-    - Linux_arm64
-    - Linux_x64
-    - windows_x64
-    - windows_x86
-    - windows_arm64
-    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
     helixQueueGroup: ci
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
@@ -137,8 +111,6 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
     buildConfig: checked
     platforms:
-    # Linux tests are built on the OSX machines.
-    # - OSX_x64
     - OSX_arm64
     - Linux_arm
     - Linux_arm64
@@ -159,12 +131,9 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
     buildConfig: checked
     platforms:
-    # Linux tests are built on the OSX machines.
-    # - OSX_x64
     - OSX_arm64
-    #TODO: Need special handling of running "benchmark build" from inside TMP folder on helix machine.
-    # - Linux_arm
-    # - Linux_arm64
+    - Linux_arm
+    - Linux_arm64
     - Linux_x64
     - windows_x64
     - windows_x86
@@ -176,3 +145,25 @@ jobs:
       liveLibrariesBuildConfig: Release
       collectionType: run
       collectionName: benchmarks
+
+#
+# Collection of coreclr test run
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+    buildConfig: checked
+    platforms:
+    - OSX_arm64
+    - Linux_arm
+    - Linux_arm64
+    - Linux_x64
+    - windows_x64
+    - windows_x86
+    - windows_arm64
+    helixQueueGroup: superpmi
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    jobParameters:
+      testGroup: outerloop
+      liveLibrariesBuildConfig: Release
+      SuperPmiCollect: true

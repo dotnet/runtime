@@ -287,7 +287,7 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                if ((long)((nowTicks - _lastReplenishmentTick) * TickFrequency) < _options.Window.Ticks)
+                if (((nowTicks - _lastReplenishmentTick) * TickFrequency) < _options.Window.Ticks && !_options.AutoReplenishment)
                 {
                     return;
                 }
@@ -295,21 +295,14 @@ namespace System.Threading.RateLimiting
                 _lastReplenishmentTick = nowTicks;
 
                 int availableRequestCounters = _requestCount;
-                int maxPermits = _options.PermitLimit;
-                int resourcesToAdd;
 
-                if (availableRequestCounters < maxPermits)
-                {
-                    resourcesToAdd = maxPermits - availableRequestCounters;
-                }
-                else
+                if (availableRequestCounters >= _options.PermitLimit)
                 {
                     // All counters available, nothing to do
                     return;
                 }
 
-                _requestCount += resourcesToAdd;
-                Debug.Assert(_requestCount == _options.PermitLimit);
+                _requestCount = _options.PermitLimit;
 
                 // Process queued requests
                 while (_queue.Count > 0)

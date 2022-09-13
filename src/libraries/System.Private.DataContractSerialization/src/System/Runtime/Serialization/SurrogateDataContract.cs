@@ -13,6 +13,7 @@ namespace System.Runtime.Serialization.DataContracts
     {
         private readonly SurrogateDataContractCriticalHelper _helper;
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal SurrogateDataContract(Type type, ISerializationSurrogate serializationSurrogate)
             : base(new SurrogateDataContractCriticalHelper(type, serializationSurrogate))
@@ -22,6 +23,7 @@ namespace System.Runtime.Serialization.DataContracts
 
         internal ISerializationSurrogate SerializationSurrogate => _helper.SerializationSurrogate;
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
         {
@@ -58,6 +60,7 @@ namespace System.Runtime.Serialization.DataContracts
             SerializationSurrogate.GetObjectData(obj, serInfo, context);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
         {
@@ -83,6 +86,7 @@ namespace System.Runtime.Serialization.DataContracts
         {
             private readonly ISerializationSurrogate serializationSurrogate;
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal SurrogateDataContractCriticalHelper(
                 [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]

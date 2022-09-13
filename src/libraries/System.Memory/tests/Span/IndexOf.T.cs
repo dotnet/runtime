@@ -192,5 +192,60 @@ namespace System.SpanTests
             Span<string> theStrings = spanInput;
             Assert.Equal(expected, theStrings.IndexOf((string)null));
         }
+
+        [Fact]
+        public static void NotBitwiseEquatableUsesCustomIEquatableImplementationForActualComparison()
+        {
+            const byte Ten = 10, NotTen = 11;
+            for (int length = 1; length < 100; length++)
+            {
+                TwoBytes[] array = new TwoBytes[length];
+                for (int i = 0; i < length; i++)
+                {
+                    array[i] = new TwoBytes(Ten, (byte)i);
+                }
+
+                Span<TwoBytes> span = new Span<TwoBytes>(array);
+                ReadOnlySpan<TwoBytes> ros = new ReadOnlySpan<TwoBytes>(array);
+
+                ReadOnlySpan<TwoBytes> noMatch2 = new TwoBytes[2] { new TwoBytes(10, NotTen), new TwoBytes(10, NotTen) };
+                Assert.Equal(-1, span.IndexOfAny(noMatch2));
+                Assert.Equal(-1, ros.IndexOfAny(noMatch2));
+                Assert.Equal(-1, span.LastIndexOfAny(noMatch2));
+                Assert.Equal(-1, ros.LastIndexOfAny(noMatch2));
+
+                ReadOnlySpan<TwoBytes> noMatch3 = new TwoBytes[3] { new TwoBytes(10, NotTen), new TwoBytes(10, NotTen), new TwoBytes(10, NotTen) };
+                Assert.Equal(-1, span.IndexOfAny(noMatch3));
+                Assert.Equal(-1, ros.IndexOfAny(noMatch3));
+                Assert.Equal(-1, span.LastIndexOfAny(noMatch3));
+                Assert.Equal(-1, ros.LastIndexOfAny(noMatch3));
+
+                ReadOnlySpan<TwoBytes> match2 = new TwoBytes[2] { new TwoBytes(0, Ten), new TwoBytes(0, Ten) };
+                Assert.Equal(0, span.IndexOfAny(match2));
+                Assert.Equal(0, ros.IndexOfAny(match2));
+                Assert.Equal(0, span.LastIndexOfAny(match2));
+                Assert.Equal(0, ros.LastIndexOfAny(match2));
+
+                ReadOnlySpan<TwoBytes> match3 = new TwoBytes[3] { new TwoBytes(0, Ten), new TwoBytes(0, Ten), new TwoBytes(0, Ten) };
+                Assert.Equal(0, span.IndexOfAny(match3));
+                Assert.Equal(0, ros.IndexOfAny(match3));
+                Assert.Equal(0, span.LastIndexOfAny(match3));
+                Assert.Equal(0, ros.LastIndexOfAny(match3));
+            }
+        }
+
+        private readonly struct TwoBytes : IEquatable<TwoBytes>
+        {
+            private readonly byte _first, _second;
+
+            public TwoBytes(byte first, byte second)
+            {
+                _first = first;
+                _second = second;
+            }
+
+            // it compares different fields on purpose
+            public bool Equals(TwoBytes other) => _first == other._second && _second == other._first;
+        }
     }
 }

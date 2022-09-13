@@ -6,7 +6,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Threading.Tasks;
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
@@ -245,7 +244,7 @@ namespace Internal.TypeSystem
             if (sentinel == null)
                 return null;
 
-            var sw = new SpinWait();
+            var sw = default(SpinWait);
             while (true)
             {
                 TValue value = Volatile.Read(ref hashtable[tableIndex]);
@@ -594,7 +593,7 @@ namespace Internal.TypeSystem
         public TValue GetValueIfExists(TValue value)
         {
             if (value == null)
-                throw new ArgumentNullException();
+                throw new ArgumentNullException(nameof(value));
 
             TValue[] hashTableLocal = GetCurrentHashtable();
             Debug.Assert(hashTableLocal.Length > 0);

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
 
 using Internal.TypeSystem;
@@ -97,7 +96,9 @@ namespace Internal.Runtime
         // the rest of the padding data.
         // If paddings of greater than 7 bytes are necessary, then the high bits of the field represent that padding
         private const uint ValueTypePaddingLowMask = 0x7;
+#pragma warning disable CA1823 // Avoid unused private fields
         private const uint ValueTypePaddingHighMask = 0xFFFFFF00;
+#pragma warning restore CA1823 // Avoid unused private fields
         private const uint ValueTypePaddingMax = 0x07FFFFFF;
         private const int ValueTypePaddingHighShift = 8;
         private const uint ValueTypePaddingAlignmentMask = 0xF8;
