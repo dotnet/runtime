@@ -813,9 +813,7 @@ mono_arch_get_call_target (guint8 *code)
 #define PLT_MOV_REG_IMM8_SIZE (1 + sizeof (guint8))
 #define PLT_MOV_REG_IMM16_SIZE (2 + sizeof (guint16))
 #define PLT_MOV_REG_IMM32_SIZE (1 + sizeof (guint32))
-#ifdef MONO_VALIDATE_PLT_ENTRY_INDEX
 #define PLT_MOV_REG_IMM64_SIZE (2 + sizeof (guint64))
-#endif
 #define PLT_JMP_INST_SIZE 6
 
 static guchar
