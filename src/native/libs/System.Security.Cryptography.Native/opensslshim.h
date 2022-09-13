@@ -603,6 +603,8 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(X509_STORE_CTX_new) \
     REQUIRED_FUNCTION(X509_STORE_CTX_set_flags) \
     REQUIRED_FUNCTION(X509_STORE_CTX_set_verify_cb) \
+    REQUIRED_FUNCTION(X509_STORE_CTX_set_ex_data) \
+    REQUIRED_FUNCTION(X509_STORE_CTX_get_ex_data) \
     REQUIRED_FUNCTION(X509_STORE_free) \
     FALLBACK_FUNCTION(X509_STORE_get0_param) \
     REQUIRED_FUNCTION(X509_STORE_new) \
@@ -1084,6 +1086,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define X509_STORE_CTX_new X509_STORE_CTX_new_ptr
 #define X509_STORE_CTX_set_flags X509_STORE_CTX_set_flags_ptr
 #define X509_STORE_CTX_set_verify_cb X509_STORE_CTX_set_verify_cb_ptr
+#define X509_STORE_CTX_set_ex_data X509_STORE_CTX_set_ex_data_ptr
+#define X509_STORE_CTX_get_ex_data X509_STORE_CTX_get_ex_data_ptr
 #define X509_STORE_free X509_STORE_free_ptr
 #define X509_STORE_get0_param X509_STORE_get0_param_ptr
 #define X509_STORE_new X509_STORE_new_ptr

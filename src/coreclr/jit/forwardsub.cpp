@@ -660,17 +660,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         }
     }
 
-#ifdef FEATURE_SIMD
-    // Don't forward sub a SIMD call under a HW intrinsic node.
-    // LowerCallStruct is not prepared for this.
-    //
-    if (fwdSubNode->IsCall() && varTypeIsSIMD(fwdSubNode->TypeGet()) && fsv.GetParentNode()->OperIs(GT_HWINTRINSIC))
-    {
-        JITDUMP(" simd returning call; hw intrinsic\n");
-        return false;
-    }
-#endif // FEATURE_SIMD
-
     // There are implicit assumptions downstream on where/how multi-reg ops
     // can appear.
     //
