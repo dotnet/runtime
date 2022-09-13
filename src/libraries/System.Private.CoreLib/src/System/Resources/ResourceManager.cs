@@ -103,7 +103,6 @@ namespace System.Resources
 
         private Dictionary<string, ResourceSet>? _resourceSets;
         private readonly string? _moduleDir;          // For assembly-ignorant directory location
-        private readonly Type? _locationInfo;         // For Assembly or type-based directory layout
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         private readonly Type? _userResourceSet;      // Which ResourceSet instance to create
@@ -227,8 +226,7 @@ namespace System.Resources
             if (resourceSource is not RuntimeType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType);
 
-            _locationInfo = resourceSource;
-            MainAssembly = _locationInfo.Assembly;
+            MainAssembly = resourceSource.Assembly;
 
             string? nameSpace = resourceSource.Namespace;
             char c = Type.Delimiter;
