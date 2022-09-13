@@ -206,61 +206,30 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
 //
 // Notes:
 //    This involves:
-//    - Widening operations of unsigneds.
+//    - Widening small stores (on ARM).
 //
 void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 {
-    GenTree* op1 = storeLoc->gtGetOp1();
-    if ((storeLoc->gtOper == GT_STORE_LCL_VAR) && (op1->gtOper == GT_CNS_INT))
+#ifdef TARGET_ARM
+    // On ARM, small stores can cost a bit more in terms of code size so we try to widen them. This is legal
+    // as most small locals have 4-byte-wide stack homes, the common exception being (dependent) struct fields.
+    //
+    if (storeLoc->OperIs(GT_STORE_LCL_VAR) && varTypeIsSmall(storeLoc) && storeLoc->Data()->IsCnsIntOrI())
     {
-        // Try to widen the ops if they are going into a local var.
-        GenTreeIntCon* con    = op1->AsIntCon();
-        ssize_t        ival   = con->gtIconVal;
-        unsigned       varNum = storeLoc->GetLclNum();
-        LclVarDsc*     varDsc = comp->lvaGetDesc(varNum);
-
-        if (varDsc->lvIsSIMDType())
+        LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
+        if (!varDsc->lvIsStructField && (varDsc->GetStackSlotHomeType() == TYP_INT))
         {
-            noway_assert(storeLoc->gtType != TYP_STRUCT);
-        }
-        unsigned size = genTypeSize(storeLoc);
-        // If we are storing a constant into a local variable
-        // we extend the size of the store here
-        if ((size < 4) && !varTypeIsStruct(varDsc))
-        {
-            if (!varTypeIsUnsigned(varDsc))
-            {
-                if (genTypeSize(storeLoc) == 1)
-                {
-                    if ((ival & 0x7f) != ival)
-                    {
-                        ival = ival | 0xffffff00;
-                    }
-                }
-                else
-                {
-                    assert(genTypeSize(storeLoc) == 2);
-                    if ((ival & 0x7fff) != ival)
-                    {
-                        ival = ival | 0xffff0000;
-                    }
-                }
-            }
-
-            // TODO-CQ: if the field is promoted independently shouldn't we
-            // also be able to do this?
-            if (!varDsc->lvIsStructField && (varDsc->GetStackSlotHomeType() == TYP_INT))
-            {
-                storeLoc->gtType = TYP_INT;
-                con->SetIconValue(ival);
-            }
+            storeLoc->gtType = TYP_INT;
         }
     }
+#endif // TARGET_ARM
+
     if (storeLoc->OperIs(GT_STORE_LCL_FLD))
     {
         // We should only encounter this for lclVars that are lvDoNotEnregister.
         verifyLclFldDoNotEnregister(storeLoc->GetLclNum());
     }
+
     ContainCheckStoreLoc(storeLoc);
 }
 
