@@ -17,8 +17,8 @@ namespace System
         // handling a cached value of the handle then the handle could be freed and reused).
 
         // the instance fields are effectively readonly
-        private IntPtr m_handle;
-        private bool m_trackResurrection;
+        internal IntPtr m_handle;
+        private  bool m_trackResurrection;
 
         private void Create(object? target, bool trackResurrection)
         {
@@ -38,7 +38,19 @@ namespace System
         {
             get
             {
-                return Target != null;
+                IntPtr h = m_handle;
+
+                // In determining whether it is valid to use this object, we need to at least expose this
+                // without throwing an exception.
+                if (default(IntPtr) == h)
+                    return false;
+
+                bool result = (RuntimeImports.RhHandleGet(h) != null || TryGetComTarget() != null);
+
+                // must keep the instance alive as long as we use the handle.
+                GC.KeepAlive(this);
+
+                return result;
             }
         }
 
@@ -134,19 +146,16 @@ namespace System
             // Note: While WeakReference is formally a finalizable type, the finalizer does not actually run.
             //       Instead the instances are treated specially in GC when scanning for no longer strongly-reachable
             //       finalizable objects.
-            //
-            // It is possible that the finalizer runs for a derived type.
+            // Unlike WeakReference<T> case, it is possible that this finalizer runs for a derived type.
 
             Debug.Assert(this.GetType() != typeof(WeakReference));
 
-            // finalizers normally do not run concurrently since finalizer queue is single-threaded.
-            // however, since this is exposed to derived types, we do not know what can happen.
-            IntPtr handle = Interlocked.Exchange(ref m_handle, default(IntPtr));
+            IntPtr handle = m_handle;
             if (handle != default(IntPtr))
+            {
                 ((GCHandle)handle).Free();
-
-            // must keep the instance alive as long as we use the handle.
-            GC.KeepAlive(this);
+                m_handle = default(IntPtr);
+            }
         }
 
         //Returns a boolean indicating whether or not we're tracking objects until they're collected (true)
