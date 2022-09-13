@@ -10,10 +10,10 @@
 #define FOH_COMMIT_SIZE (64 * 1024)
 
 FrozenObjectHeapManager::FrozenObjectHeapManager():
-    m_CurrentSegment(nullptr)
+    m_CurrentSegment(nullptr),
+    m_Crst(CrstFrozenObjectHeap, CRST_UNSAFE_COOPGC),
+    m_Enabled(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_UseFrozenObjectHeap) != 0)
 {
-    m_Crst.Init(CrstFrozenObjectHeap, CRST_UNSAFE_COOPGC);
-    m_Enabled = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_UseFrozenObjectHeap) != 0;
 }
 
 // Allocates an object of the give size (including header) on a frozen segment.
