@@ -866,8 +866,7 @@ def run_tests(args,
         print("Setting RunningIlasmRoundTrip=1")
         os.environ["RunningIlasmRoundTrip"] = "1"
 
-    # By default, disasmchecks will only be enabled for Windows and Checked/Release builds.
-    if args.disasmchecks or (args.host_os == "windows" and args.build_type != "Debug"):
+    if args.disasmchecks:
         print("Running checks on the disassembly output.")
         print("Setting RunningDisasmChecks=1")
         os.environ["RunningDisasmChecks"] = "1"
