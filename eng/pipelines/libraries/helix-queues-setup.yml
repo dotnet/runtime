@@ -126,6 +126,7 @@ jobs:
     # tvOS devices
     - ${{ if in(parameters.platform, 'tvOS_arm64') }}:
       # split traffic for runtime-extra-platforms (which mostly runs on rolling builds)
+      # scouting queue for now
       - ${{ if ne(parameters.jobParameters.isExtraPlatforms, true) }}:
         - OSX.Amd64.AppleTV.Scouting.Open
       - ${{ if eq(parameters.jobParameters.isExtraPlatforms, true) }}:
