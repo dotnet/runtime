@@ -230,7 +230,8 @@ namespace Wasm.Build.Tests
 
             void AddTestData(bool forConsole, bool runOutsideProjectDirectory)
             {
-                data.Add(runOutsideProjectDirectory, forConsole, string.Empty);
+                // FIXME: Disabled for `main` right now, till 7.0 gets the fix
+                //data.Add(runOutsideProjectDirectory, forConsole, string.Empty);
 
                 data.Add(runOutsideProjectDirectory, forConsole,
                                 $"<OutputPath>{Path.Combine(Path.GetTempPath(), Path.GetRandomFileName())}</OutputPath>");
