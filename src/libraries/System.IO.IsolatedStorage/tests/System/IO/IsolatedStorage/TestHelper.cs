@@ -19,16 +19,15 @@ namespace System.IO.IsolatedStorage
 
             s_roots = new List<string>();
 
-            string hash;
             object identity;
-            Helper.GetDefaultIdentityAndHash(out identity, out hash, '.');
+            Helper.GetDefaultIdentityAndHash(out identity, '.');
 
             string userRoot = Helper.GetDataDirectory(IsolatedStorageScope.User);
             string randomUserRoot = Helper.GetRandomDirectory(userRoot, IsolatedStorageScope.User);
-            s_roots.Add(Path.Combine(randomUserRoot, hash));
+            s_roots.Add(randomUserRoot);
 
             // Application scope doesn't go under a random dir
-            s_roots.Add(Path.Combine(userRoot, hash));
+            s_roots.Add(userRoot);
 
             // https://github.com/dotnet/runtime/issues/2092
             // https://github.com/dotnet/runtime/issues/21742
