@@ -16,7 +16,6 @@
 #include "methodtable.h"
 #include "genericdict.h"
 #include "threadstatics.h"
-#include "frozenobjectheap.h"
 
 //==========================================================================================
 FORCEINLINE PTR_EEClass MethodTable::GetClass_NoLogging()
@@ -1354,7 +1353,6 @@ FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists()
     }
 
     COMPILER_ASSUME(retVal != NULL);
-
     return retVal;
 }
 

@@ -58,6 +58,7 @@
 #include "array.h"
 #include "castcache.h"
 #include "dynamicinterfacecastable.h"
+#include "frozenobjectheap.h"
 
 #ifdef FEATURE_INTERPRETER
 #include "interpreter.h"
