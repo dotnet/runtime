@@ -26,7 +26,8 @@ jobs:
         value: $[
           or(
             eq(variables['wasmDarcDependenciesChanged'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true))
+            eq(variables['wasmDarcMonoLLVMChanged'], true),
+            eq(dependencies.evaluate_paths.outputs['SetPathVars_run_wasmbuildtests.containsChange'], true))
           ]
     jobParameters:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
@@ -34,11 +35,6 @@ jobs:
       nameSuffix: WasmBuildTests
       buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmBuildTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs)
       timeoutInMinutes: 180
-      # if !alwaysRun, then:
-      #   if this is runtime-wasm (isWasmOnlyBuild):
-      #     - then run only if it would not have run on default pipelines (based
-      #       on path changes)
-      #     - else run based on path changes
       condition: >-
         or(
           eq(variables['alwaysRunVar'], true),

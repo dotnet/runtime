@@ -10,6 +10,7 @@ namespace Microsoft.WebAssembly.Diagnostics;
 public abstract class DebuggerProxyBase
 {
     public RunLoopExitState? ExitState { get; set; }
+    public string FooBar { get; set; }
 
     public virtual void Shutdown()
     {

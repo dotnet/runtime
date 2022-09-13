@@ -108,13 +108,26 @@ jobs:
         ${{ if eq(parameters.jobParameters.runtimeFlavor, 'coreclr') }}:
           value: CoreCLR
 
+      - name: allChangedDarcDependencies
+        value: $[ join('+',dependencies.evaluate_paths.outputs) ]
+
       - name: wasmDarcDependenciesChanged
-        ${{ if eq(parameters.archType, 'wasm') }}:
-          value: $[ or(
-                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Manifest-7_0_100'], true),
-                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_DotNet_Build_Tasks_Workloads'], true),
-                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.System_Runtime_TimeZoneData'], true),
-                      eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_ILLink_Tasks'], true)) ]
+        value: $[ or(
+                    eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_Workload_Emscripten_Manifest-8_0_100'], true),
+                    eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_DotNet_Build_Tasks_Workloads'], true),
+                    eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.System_Runtime_TimeZoneData'], true),
+                    eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_ILLink_Tasks'], true)) ]
+
+      - name: wasmDarcMonoLLVMChanged
+        value: $[ or(
+                    eq(dependencies.evaluate_paths_outputs['DarcDependenciesChanged.runtime_linux-arm64_Microsoft_NETCore_Runtime_Mono_LLVM_Sdk'], true),
+                    eq(dependencies.evaluate_paths_outputs['DarcDependenciesChanged.runtime_linux-arm64_Microsoft_NETCore_Runtime_Mono_LLVM_Tools'], true),
+                    eq(dependencies.evaluate_paths_outputs['DarcDependenciesChanged.runtime_linux-x64_Microsoft_NETCore_Runtime_Mono_LLVM_Sdk'], true),
+                    eq(dependencies.evaluate_paths_outputs['DarcDependenciesChanged.runtime_linux-x64_Microsoft_NETCore_Runtime_Mono_LLVM_Tools'], true),
+                    eq(dependencies.evaluate_paths_outputs['DarcDependenciesChanged.runtime_win-x64_Microsoft_NETCore_Runtime_Mono_LLVM_Sdk'], true),
+                    eq(dependencies.evaluate_paths_outputs['DarcDependenciesChanged.runtime_win-x64_Microsoft_NETCore_Runtime_Mono_LLVM_Tools'], true),
+                    eq(dependencies.evaluate_paths_outputs['DarcDependenciesChanged.runtime_osx_10_12-x64_Microsoft_NETCore_Runtime_Mono_LLVM_Sdk'], true),
+                    eq(dependencies.evaluate_paths_outputs['DarcDependenciesChanged.runtime_osx_10_12-x64_Microsoft_NETCore_Runtime_Mono_LLVM_Tools'], true)) ]
 
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
