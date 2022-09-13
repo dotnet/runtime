@@ -392,19 +392,19 @@ emit_simd_ins_for_unary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSignat
 		g_assert_not_reached ();
 	}
 	return emit_simd_ins_for_sig (cfg, klass, op, -1, arg_type, fsig, args);
-#elif TARGET_AMD64
+#elif defined(TARGET_AMD64)
 	int op = -1;
 	switch (id) {
-		case SN_Negate:
-		case SN_op_UnaryNegation: 
-			op = OP_AMD64_NEGATION;
-			break;
-		case SN_OnesComplement:
-		case SN_op_OnesComplement:
-			op = OP_AMD64_ONESCOMPLEMENT;
-			break;
-		default:
-			return NULL;
+	case SN_Negate:
+	case SN_op_UnaryNegation: 
+		op = OP_AMD64_NEGATION;
+		break;
+	case SN_OnesComplement:
+	case SN_op_OnesComplement:
+		op = OP_AMD64_ONESCOMPLEMENT;
+		break;
+	default:
+		return NULL;
 	}
 	return emit_simd_ins_for_sig (cfg, klass, op, -1, arg_type, fsig, args);
 #elif defined(TARGET_WASM)
