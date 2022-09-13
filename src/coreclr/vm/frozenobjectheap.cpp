@@ -85,6 +85,15 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
 #endif // !FEATURE_BASICFREEZE
 }
 
+// Does object belong to a frozen segment?
+bool FrozenObjectHeapManager::IsFromFrozenSegment(Object* object)
+{
+#ifdef FEATURE_BASICFREEZE
+    return GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(object);
+#else
+    return false;
+#endif
+}
 
 FrozenObjectSegment::FrozenObjectSegment():
     m_pStart(nullptr),

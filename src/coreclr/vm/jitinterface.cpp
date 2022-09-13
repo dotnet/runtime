@@ -5946,6 +5946,38 @@ CorInfoHelpFunc CEEInfo::getUnBoxHelper(CORINFO_CLASS_HANDLE clsHnd)
 }
 
 /***********************************************************************/
+void* CEEInfo::getRuntimeTypePointer(CORINFO_CLASS_HANDLE clsHnd)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    void* pointer = nullptr;
+
+    JIT_TO_EE_TRANSITION();
+
+    GCX_COOP();
+
+    TypeHandle typeHnd(clsHnd);
+    if (!typeHnd.IsNull() && !typeHnd.IsTypeDesc() && typeHnd.IsFullyLoaded())
+    {
+        MethodTable* pMT = typeHnd.AsMethodTable();
+        if (!typeHnd.IsCanonicalSubtype())
+        {
+            // We probably don't want to allocate a RuntimeHelper as part of this query
+            // hence, use IfExists
+            bool isPinned;
+            Object* obj = OBJECTREFToObject(pMT->GetManagedClassObjectIfExists(&isPinned));
+            if (obj != nullptr && isPinned)
+            {
+                pointer = (void*)obj;
+            }
+        }
+    }
+    EE_TO_JIT_TRANSITION();
+
+    return pointer;
+}
+
+/***********************************************************************/
 bool CEEInfo::getReadyToRunHelper(
         CORINFO_RESOLVED_TOKEN *        pResolvedToken,
         CORINFO_LOOKUP_KIND *           pGenericLookupKind,

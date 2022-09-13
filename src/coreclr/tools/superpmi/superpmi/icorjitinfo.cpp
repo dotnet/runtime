@@ -663,6 +663,13 @@ CorInfoHelpFunc MyICJI::getUnBoxHelper(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
+void* MyICJI::getRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("getRuntimeTypePointer");
+    void* result = jitInstance->mc->repGetRuntimeTypePointer(cls);
+    return result;
+}
+
 bool MyICJI::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                  CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                  CorInfoHelpFunc         id,

@@ -2186,6 +2186,29 @@ CorInfoHelpFunc MethodContext::repGetUnBoxHelper(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
+void MethodContext::recGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls, void* result)
+{
+    if (GetRuntimeTypePointer == nullptr)
+        GetRuntimeTypePointer = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    DWORDLONG key = CastHandle(cls);
+    DWORDLONG value = (DWORDLONG)result;
+    GetRuntimeTypePointer->Add(key, value);
+    DEBUG_REC(dmpGetRuntimeTypePointer(key, value));
+}
+void MethodContext::dmpGetRuntimeTypePointer(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetRuntimeTypePointer key cls-%016llX, value res-%016llX", key, value);
+}
+void* MethodContext::repGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
+{
+    DWORDLONG key = CastHandle(cls);
+    AssertMapAndKeyExist(GetRuntimeTypePointer, key, ": key %016llX", key);
+    DWORDLONG value = GetRuntimeTypePointer->Get(key);
+    DEBUG_REP(dmpGetRuntimeTypePointer(key, value));
+    return (void*)value;
+}
+
 void MethodContext::recGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                            CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                            CorInfoHelpFunc         id,

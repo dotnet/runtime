@@ -28,6 +28,7 @@ class FrozenObjectHeapManager
 public:
     FrozenObjectHeapManager();
     Object* TryAllocateObject(PTR_MethodTable type, size_t objectSize);
+    bool IsFromFrozenSegment(Object* object);
 
 private:
     Crst m_Crst;

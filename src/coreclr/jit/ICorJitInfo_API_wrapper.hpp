@@ -652,6 +652,15 @@ CorInfoHelpFunc WrapICorJitInfo::getUnBoxHelper(
     return temp;
 }
 
+void* WrapICorJitInfo::getRuntimeTypePointer(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(getRuntimeTypePointer);
+    void* temp = wrapHnd->getRuntimeTypePointer(cls);
+    API_LEAVE(getRuntimeTypePointer);
+    return temp;
+}
+
 bool WrapICorJitInfo::getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_LOOKUP_KIND* pGenericLookupKind,

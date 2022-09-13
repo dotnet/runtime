@@ -280,6 +280,9 @@ CorInfoHelpFunc getBoxHelper(
 CorInfoHelpFunc getUnBoxHelper(
           CORINFO_CLASS_HANDLE cls) override;
 
+void* getRuntimeTypePointer(
+          CORINFO_CLASS_HANDLE cls) override;
+
 bool getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_LOOKUP_KIND* pGenericLookupKind,

@@ -16,6 +16,7 @@
 #include "methodtable.h"
 #include "genericdict.h"
 #include "threadstatics.h"
+#include "frozenobjectheap.h"
 
 //==========================================================================================
 FORCEINLINE PTR_EEClass MethodTable::GetClass_NoLogging()
@@ -1335,7 +1336,7 @@ inline OBJECTHANDLE MethodTable::GetLoaderAllocatorObjectHandle()
 }
 
 //==========================================================================================
-FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists()
+FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists(bool* pIsPinned)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -1353,6 +1354,15 @@ FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists()
     }
 
     COMPILER_ASSUME(retVal != NULL);
+
+#ifndef DACCESS_COMPILE
+    if (pIsPinned != nullptr)
+    {
+        FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
+        *pIsPinned = foh->IsFromFrozenSegment(OBJECTREFToObject(retVal));
+    }
+#endif
+
     return retVal;
 }
 

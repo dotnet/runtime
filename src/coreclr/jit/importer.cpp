@@ -4046,7 +4046,22 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     op1 = impPopStack().val;
                     // Replace helper with a more specialized helper that returns RuntimeType
                     if (typeHandleHelper == CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE)
-                    {
+                    { 
+                        CORINFO_CLASS_HANDLE hClass =
+                            gtGetHelperArgClassHandle(op1->AsCall()->gtArgs.GetArgByIndex(0)->GetEarlyNode());
+                        if (!opts.IsReadyToRun() && (hClass != NO_CLASS_HANDLE))
+                        {
+                            void* ptr = info.compCompHnd->getRuntimeTypePointer(hClass);
+                            if (ptr != nullptr)
+                            {
+                                // Temp Hack: pretend we're a string literal :-)
+                                setMethodHasFrozenString();
+                                retNode = gtNewIconEmbHndNode(ptr, nullptr, GTF_ICON_STR_HDL, nullptr);
+                                retNode->gtType = TYP_REF;
+                                INDEBUG(retNode->AsIntCon()->gtTargetHandle = (size_t)ptr);
+                                break;
+                            }
+                        }
                         typeHandleHelper = CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE;
                     }
                     else

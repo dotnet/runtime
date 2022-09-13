@@ -2475,6 +2475,10 @@ public:
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
+    virtual void* getRuntimeTypePointer(
+            CORINFO_CLASS_HANDLE        cls
+            ) = 0;
+
     virtual bool getReadyToRunHelper(
             CORINFO_RESOLVED_TOKEN *        pResolvedToken,
             CORINFO_LOOKUP_KIND *           pGenericLookupKind,

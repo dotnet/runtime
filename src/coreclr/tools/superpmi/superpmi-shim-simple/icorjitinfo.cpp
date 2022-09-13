@@ -469,6 +469,12 @@ CorInfoHelpFunc interceptor_ICJI::getUnBoxHelper(
     return original_ICorJitInfo->getUnBoxHelper(cls);
 }
 
+void* interceptor_ICJI::getRuntimeTypePointer(
+          CORINFO_CLASS_HANDLE cls)
+{
+    return original_ICorJitInfo->getRuntimeTypePointer(cls);
+}
+
 bool interceptor_ICJI::getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_LOOKUP_KIND* pGenericLookupKind,
