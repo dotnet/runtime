@@ -447,7 +447,7 @@ jobs:
     platforms:
       - Browser_wasm
     nameSuffix: _Threading
-    extraBuildArgs: /p:WasmEnableThreads=true /p:_WasmPThreadPoolSize=16
+    extraBuildArgs: /p:WasmEnableThreads=true
     alwaysRun: ${{ variables.isRollingBuild }}
 
 - template: /eng/pipelines/common/templates/wasm-build-only.yml

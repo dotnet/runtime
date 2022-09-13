@@ -107,7 +107,7 @@ jobs:
         - Browser_wasm
         #- Browser_wasm_win
       nameSuffix: _Threading
-      extraBuildArgs: /p:WasmEnableThreads=true /p:_WasmPThreadPoolSize=16
+      extraBuildArgs: /p:WasmEnableThreads=true /p:_WasmPThreadPoolSize=8
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       # Always run for runtime-wasm because tests are not run in runtime
