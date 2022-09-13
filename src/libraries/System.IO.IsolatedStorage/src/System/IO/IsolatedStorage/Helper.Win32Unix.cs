@@ -30,7 +30,7 @@ namespace System.IO.IsolatedStorage
 
         [UnconditionalSuppressMessage("SingleFile", "IL3000:Avoid accessing Assembly file path when publishing as a single file",
             Justification = "Code handles single-file deployment by using the information of the .exe file")]
-        internal static void GetDefaultIdentityAndHash(out object identity, out string hash, char separator)
+        internal static void GetDefaultIdentityAndHash(out object identity, char separator)
         {
             // In .NET Framework IsolatedStorage uses identity from System.Security.Policy.Evidence to build
             // the folder structure on disk. It would use the "best" available evidence in this order:
@@ -56,10 +56,9 @@ namespace System.IO.IsolatedStorage
             {
                 AssemblyName assemblyName = assembly.GetName();
 
-                hash = IdentityHelper.GetNormalizedStrongNameHash(assemblyName)!;
+                string hash = IdentityHelper.GetNormalizedStrongNameHash(assemblyName)!;
                 if (hash != null)
                 {
-                    hash = "StrongName" + separator + hash;
                     identity = assemblyName;
                     return;
                 }
@@ -74,9 +73,7 @@ namespace System.IO.IsolatedStorage
                 location = Environment.ProcessPath;
             if (string.IsNullOrEmpty(location))
                 throw new IsolatedStorageException(SR.IsolatedStorage_Init);
-            Uri locationUri = new Uri(location);
-            hash = "Url" + separator + IdentityHelper.GetNormalizedUriHash(locationUri);
-            identity = locationUri;
+            identity = new Uri(location);
         }
 
         internal static string GetRandomDirectory(string rootDirectory, IsolatedStorageScope scope)
