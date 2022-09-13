@@ -50,6 +50,7 @@ namespace System.Threading
     {
         public AutoResetEvent(bool initialState) : base (default(bool), default(System.Threading.EventResetMode)) { }
     }
+#if !BUILDING_CORELIB_REFERENCE
     public partial class Barrier : System.IDisposable
     {
         public Barrier(int participantCount) { }
@@ -86,7 +87,9 @@ namespace System.Threading
         public BarrierPostPhaseException(string? message) { }
         public BarrierPostPhaseException(string? message, System.Exception? innerException) { }
     }
+#endif
     public delegate void ContextCallback(object? state);
+#if !BUILDING_CORELIB_REFERENCE
     public partial class CountdownEvent : System.IDisposable
     {
         public CountdownEvent(int initialCount) { }
@@ -117,6 +120,7 @@ namespace System.Threading
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool Wait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
+#endif
     public enum EventResetMode
     {
         AutoReset = 0,
@@ -147,6 +151,7 @@ namespace System.Threading
         public static void Run(System.Threading.ExecutionContext executionContext, System.Threading.ContextCallback callback, object? state) { }
         public static System.Threading.AsyncFlowControl SuppressFlow() { throw null; }
     }
+#if !BUILDING_CORELIB_REFERENCE
     public partial class HostExecutionContext : System.IDisposable
     {
         public HostExecutionContext() { }
@@ -163,6 +168,7 @@ namespace System.Threading
         public virtual void Revert(object previousState) { }
         public virtual object SetHostExecutionContext(System.Threading.HostExecutionContext hostExecutionContext) { throw null; }
     }
+#endif
     public static partial class Interlocked
     {
         public static int Add(ref int location1, int value) { throw null; }
@@ -235,6 +241,7 @@ namespace System.Threading
         public static T EnsureInitialized<T>([System.Diagnostics.CodeAnalysis.NotNullAttribute] ref T? target, System.Func<T> valueFactory) where T : class { throw null; }
         public static T EnsureInitialized<T>([System.Diagnostics.CodeAnalysis.NotNullAttribute] ref T? target, [System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("syncLock")] ref object? syncLock, System.Func<T> valueFactory) where T : class { throw null; }
     }
+#if !BUILDING_CORELIB_REFERENCE
     public partial struct LockCookie
     {
         private int _dummyPrimitive;
@@ -244,6 +251,7 @@ namespace System.Threading
         public static bool operator ==(System.Threading.LockCookie a, System.Threading.LockCookie b) { throw null; }
         public static bool operator !=(System.Threading.LockCookie a, System.Threading.LockCookie b) { throw null; }
     }
+#endif
     public partial class LockRecursionException : System.Exception
     {
         public LockRecursionException() { }
@@ -321,6 +329,7 @@ namespace System.Threading
         public void ReleaseMutex() { }
         public static bool TryOpenExisting(string name, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Threading.Mutex? result) { throw null; }
     }
+#if !BUILDING_CORELIB_REFERENCE
     public sealed partial class ReaderWriterLock : System.Runtime.ConstrainedExecution.CriticalFinalizerObject
     {
         public ReaderWriterLock() { }
@@ -345,6 +354,7 @@ namespace System.Threading
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Threading.LockCookie UpgradeToWriterLock(System.TimeSpan timeout) { throw null; }
     }
+#endif
     public partial class ReaderWriterLockSlim : System.IDisposable
     {
         public ReaderWriterLockSlim() { }
