@@ -182,7 +182,7 @@ namespace System.Security.Cryptography.Xml
 
             try
             {
-                Key!.ImportParameters(new DSAParameters
+                Key.ImportParameters(new DSAParameters
                 {
                     P = (pNode != null) ? Convert.FromBase64String(pNode.InnerText) : null,
                     Q = (qNode != null) ? Convert.FromBase64String(qNode.InnerText) : null,

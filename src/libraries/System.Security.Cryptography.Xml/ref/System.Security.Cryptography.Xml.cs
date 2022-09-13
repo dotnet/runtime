@@ -49,7 +49,7 @@ namespace System.Security.Cryptography.Xml
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public DSAKeyValue() { }
         public DSAKeyValue(System.Security.Cryptography.DSA key) { }
-        public System.Security.Cryptography.DSA? Key { get { throw null; } set { } }
+        public System.Security.Cryptography.DSA Key { get { throw null; } set { } }
         public override System.Xml.XmlElement GetXml() { throw null; }
         public override void LoadXml(System.Xml.XmlElement value) { }
     }
@@ -64,7 +64,7 @@ namespace System.Security.Cryptography.Xml
         public EncryptedKey() { }
         public string? CarriedKeyName { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
-        public string? Recipient { get { throw null; } set { } }
+        public string Recipient { get { throw null; } set { } }
         public System.Security.Cryptography.Xml.ReferenceList ReferenceList { get { throw null; } }
         public void AddReference(System.Security.Cryptography.Xml.DataReference dataReference) { }
         public void AddReference(System.Security.Cryptography.Xml.KeyReference keyReference) { }
