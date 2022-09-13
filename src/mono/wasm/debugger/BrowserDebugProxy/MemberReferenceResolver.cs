@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using System.IO;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
 using System.Net.WebSockets;
@@ -409,7 +411,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     }
                                     elementIdxStr += indexObject["value"].ToString();
                                 }
-                                // FixMe: indexing with expressions, e.g. x[a + 1]
+                                // indexing with expressions, e.g. x[a + 1]
+                                else
+                                {
+                                    SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(arg + @";", cancellationToken: token);
+                                    indexObject = await ExpressionEvaluator.EvaluateSimpleExpression(this, syntaxTree.ToString(), arg.ToString(), variableDefinitions, logger, token);
+                                    string type = indexObject["type"].Value<string>();
+                                    if (type != "number")
+                                        throw new InvalidOperationException($"Cannot index with an object of type '{type}'");
+                                    elementIdxStr += indexObject["value"].ToString();
+                                }
                             }
                         }
                     }
