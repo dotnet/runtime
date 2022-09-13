@@ -204,7 +204,10 @@ namespace System.Resources.Tests
         [Fact]
         public static void BaseName()
         {
-            var manager = new ResourceManager("System.Resources.Tests.Resources.TestResx", typeof(ResourceManagerTests).GetTypeInfo().Assembly);
+            var manager = new ResourceManager("System.Resources.Tests.Resources.TestResx", typeof(ResourceManagerTests).Assembly);
+            Assert.Equal("System.Resources.Tests.Resources.TestResx", manager.BaseName);
+
+            manager = new(typeof(System.Resources.Tests.Resources.TestResx));
             Assert.Equal("System.Resources.Tests.Resources.TestResx", manager.BaseName);
         }
 
