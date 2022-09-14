@@ -133,7 +133,7 @@ private:
         };
     };
 
-    // used for component size for strings and arrays, type arg count for typedefs, otherwise holds ExtendedFlags bits
+    // native code counterpart for _uFlags
     union
     {
         uint32_t              m_uFlags;
