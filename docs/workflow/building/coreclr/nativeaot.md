@@ -1,4 +1,4 @@
-# Native AOT Developer Workflow <!-- omit in toc -->
+# Native AOT Developer Workflow
 
 * [Building](#building)
   * [Using built binaries](#using-built-binaries)
@@ -97,8 +97,7 @@ To run an individual test (after it was built), navigate to the `artifacts\tests
 
 Sometimes it's handy to be able to rebuild the managed test manually or run the compilation under a debugger. A response file that was used to invoke the ahead of time compiler can be found in `$repo_root\artifacts\tests\coreclr\obj\[Windows|Linux|OSX].x64.[Debug|Release]\Managed`.
 
-<!-- LINK-UPDATES -->
-For more advanced scenarios, look for at [Building Test Subsets](../../testing/coreclr/windows-test-instructions.md#building-test-subsets) and [Generating Core_Root](../../testing/coreclr/windows-test-instructions.md#generating-core_root)
+For more advanced scenarios, look for at [Building the Tests](/docs/workflow/testing/coreclr/testing.md#building-the-tests) and [Building the Core_Root](../../testing/coreclr/testing.md#building-the-coreroot)
 
 ### Running library tests
 

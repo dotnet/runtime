@@ -1,4 +1,4 @@
-# Build CoreCLR on FreeBSD <!-- omit in toc -->
+# Build CoreCLR on FreeBSD
 
 * [Build using Docker](#build-using-docker)
 * [Build using cross-compilation on Linux](#build-using-cross-compilation-on-linux)

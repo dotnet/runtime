@@ -1,4 +1,4 @@
-# Using your build's Shipping Packages with the .NET SDK <!-- omit in toc -->
+# Using your build's Shipping Packages with the .NET SDK
 
 * [Requirements](#requirements)
   * [Build the Shipping Packages](#build-the-shipping-packages)

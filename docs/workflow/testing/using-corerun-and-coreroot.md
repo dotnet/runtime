@@ -1,4 +1,4 @@
-# Using Corerun To Run a .NET Application <!-- omit in toc -->
+# Using Corerun To Run a .NET Application
 
 * [Introduction](#introduction)
 * [The CoreRun](#the-corerun)

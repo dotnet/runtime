@@ -1,4 +1,4 @@
-# Debugging CoreCLR AOT Compilers <!-- omit in toc -->
+# Debugging CoreCLR AOT Compilers
 
 * [Important concerns to be aware of when debugging the managed compilers](#important-concerns-to-be-aware-of-when-debugging-the-managed-compilers)
 * [Built-in debugging aids in the managed compilers](#built-in-debugging-aids-in-the-managed-compilers)

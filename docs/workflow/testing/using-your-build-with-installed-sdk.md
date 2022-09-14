@@ -1,4 +1,4 @@
-# Using your .NET Runtime Build with the Installed SDK <!-- omit in toc -->
+# Using your .NET Runtime Build with the Installed SDK
 
 * [Introduction](#introduction)
   * [Acquire the latest development .NET SDK](#acquire-the-latest-development-net-sdk)

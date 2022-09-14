@@ -1,4 +1,4 @@
-# Requirements to build dotnet/runtime on Linux <!-- omit in toc -->
+# Requirements to build dotnet/runtime on Linux
 
 * [Docker](#docker)
 * [Environment](#environment)

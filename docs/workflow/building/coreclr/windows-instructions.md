@@ -1,4 +1,4 @@
-# Build CoreCLR on Windows <!-- omit in toc -->
+# Build CoreCLR on Windows
 
 * [Environment](#environment)
 * [Build the Runtime](#build-the-runtime)

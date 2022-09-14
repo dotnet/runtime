@@ -1,4 +1,4 @@
-# Debugging Compiler Dependency Analysis <!-- omit in toc -->
+# Debugging Compiler Dependency Analysis
 
 * [Dependency Graph Viewer](#dependency-graph-viewer)
   * [Graphs View](#graphs-view)

@@ -1,4 +1,4 @@
-# Debugging CoreCLR <!-- omit in toc -->
+# Debugging CoreCLR
 
 * [Debugging CoreCLR on Windows](#debugging-coreclr-on-windows)
   * [Using Visual Studio](#using-visual-studio)

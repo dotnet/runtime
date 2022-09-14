@@ -1,4 +1,4 @@
-# Requirements to build dotnet/runtime on MacOS <!-- omit in toc -->
+# Requirements to build dotnet/runtime on MacOS
 
 * [Environment](#environment)
   * [Xcode](#xcode)

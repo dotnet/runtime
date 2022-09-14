@@ -1,4 +1,4 @@
-# Build CoreCLR on Linux <!-- omit in toc -->
+# Build CoreCLR on Linux
 
 * [Build using Docker](#build-using-docker)
   * [Docker Images](#docker-images)

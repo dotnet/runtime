@@ -1,4 +1,4 @@
-# Building CoreCLR <!-- omit in toc -->
+# Building CoreCLR
 
 * [Introduction](#introduction)
 * [Common Building Options](#common-building-options)

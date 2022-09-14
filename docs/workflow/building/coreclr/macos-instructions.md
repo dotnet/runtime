@@ -1,4 +1,4 @@
-# Build CoreCLR on MacOS <!-- omit in toc -->
+# Build CoreCLR on MacOS
 
 * [Environment](#environment)
 * [Build the Runtime](#build-the-runtime)

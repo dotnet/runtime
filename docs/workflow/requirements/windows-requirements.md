@@ -1,4 +1,4 @@
-# Requirements to build dotnet/runtime on Windows <!-- omit in toc -->
+# Requirements to build dotnet/runtime on Windows
 
 * [Environment](#environment)
   * [Enable Long Paths](#enable-long-paths)

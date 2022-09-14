@@ -1,4 +1,4 @@
-# Cross-Building for Different Architectures and Operating Systems <!-- omit in toc -->
+# Cross-Building for Different Architectures and Operating Systems
 
 * [Windows Cross-Building](#windows-cross-building)
   * [Cross-Compiling for ARM32 and ARM64 on Windows](#cross-compiling-for-arm32-and-arm64-on-windows)

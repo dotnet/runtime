@@ -1,4 +1,4 @@
-# Testing Workloads <!-- omit in toc -->
+# Testing Workloads
 
 * [Multiple runtime packs](#multiple-runtime-packs)
 * [Limitations](#limitations)

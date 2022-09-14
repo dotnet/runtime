@@ -1,4 +1,4 @@
-# Building and Running CoreCLR Tests <!-- omit in toc -->
+# Building and Running CoreCLR Tests
 
 * [Requirements](#requirements)
 * [Overview](#overview)

@@ -1,4 +1,4 @@
-# Using Codespaces <!-- omit in toc -->
+# Using Codespaces
 
 * [Create a Codespace](#create-a-codespace)
 * [Updating dotnet/runtime's Codespaces Configuration](#updating-dotnetruntimes-codespaces-configuration)

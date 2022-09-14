@@ -1,4 +1,4 @@
-# Requirements to build dotnet/runtime on FreeBSD <!-- omit in toc -->
+# Requirements to build dotnet/runtime on FreeBSD
 
 * [Docker](#docker)
 * [Linux Environment](#linux-environment)

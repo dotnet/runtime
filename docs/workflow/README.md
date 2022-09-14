@@ -1,4 +1,4 @@
-# Workflow Guide <!-- omit in toc -->
+# Workflow Guide
 
 * [Build Requirements](#build-requirements)
 * [Getting Yourself Started](#getting-yourself-started)
