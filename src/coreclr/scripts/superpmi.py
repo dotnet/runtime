@@ -1837,11 +1837,17 @@ class SuperPMIReplayAsmDiffs:
                     color = "red" if diff > base else "green"
                     return "<span style=\"color:{}\">{}{:,d}</span>".format(color, plus_if_positive, diff - base)
 
-                diffed_contexts = sum(int(diff_metrics["Overall"]["Successful compiles"]) for (_, _, diff_metrics, _, _) in asm_diffs)
-                diffed_minopts_contexts = sum(int(diff_metrics["MinOpts"]["Successful compiles"]) for (_, _, diff_metrics, _, _) in asm_diffs)
-                diffed_opts_contexts = sum(int(diff_metrics["FullOpts"]["Successful compiles"]) for (_, _, diff_metrics, _, _) in asm_diffs)
-                missing_base_contexts = sum(int(base_metrics["Overall"]["Missing compiles"]) for (_, base_metrics, _, _, _) in asm_diffs)
-                missing_diff_contexts = sum(int(diff_metrics["Overall"]["Missing compiles"]) for (_, _, diff_metrics, _, _) in asm_diffs)
+                def sum_base(row, col):
+                    return sum(int(base_metrics[row][col]) for (_, base_metrics, _, _, _) in asm_diffs)
+
+                def sum_diff(row, col):
+                    return sum(int(diff_metrics[row][col]) for (_, _, diff_metrics, _, _) in asm_diffs)
+
+                diffed_contexts = sum_diff("Overall", "Successful compiles")
+                diffed_minopts_contexts = sum_diff("MinOpts", "Successful compiles")
+                diffed_opts_contexts = sum_diff("FullOpts", "Successful compiles")
+                missing_base_contexts = sum_base("Overall", "Missing compiles")
+                missing_diff_contexts = sum_diff("Overall", "Missing compiles")
 
                 write_fh.write("Diffs are based on <span style=\"color:#1460aa\">{:,d}</span> contexts (<span style=\"color:#1460aa\">{:,d}</span> MinOpts, <span style=\"color:#1460aa\">{:,d}</span> FullOpts).\n\n".format(
                     diffed_contexts, diffed_minopts_contexts, diffed_opts_contexts))
@@ -1851,12 +1857,12 @@ class SuperPMIReplayAsmDiffs:
                 write_fh.write("<span style=\"color:#d35400\">MISSED</span> contexts: base: <span style=\"color:{}\">{:,d}</span>, diff: <span style=\"color:{}\">{:,d}</span>\n\n".format(color_base, missing_base_contexts, color_diff, missing_diff_contexts))
 
                 if any(has_diff for (_, _, _, has_diff, _) in asm_diffs):
-                    def write_pivot_section(col):
+                    def write_pivot_section(row):
                         write_fh.write("\n<details>\n")
-                        sum_base = sum(int(base_metrics[col]["Diffed code bytes"]) for (_, base_metrics, _, _, _) in asm_diffs)
-                        sum_diff = sum(int(diff_metrics[col]["Diffed code bytes"]) for (_, _, diff_metrics, _, _) in asm_diffs)
+                        sum_base = sum(int(base_metrics[row]["Diffed code bytes"]) for (_, base_metrics, _, _, _) in asm_diffs)
+                        sum_diff = sum(int(diff_metrics[row]["Diffed code bytes"]) for (_, _, diff_metrics, _, _) in asm_diffs)
 
-                        write_fh.write("<summary>{} ({} bytes)</summary>\n\n".format(col, format_delta(sum_base, sum_diff)))
+                        write_fh.write("<summary>{} ({} bytes)</summary>\n\n".format(row, format_delta(sum_base, sum_diff)))
                         write_fh.write("|Collection|Base size (bytes)|Diff size (bytes)|\n")
                         write_fh.write("|---|--:|--:|\n")
                         for (mch_file, base_metrics, diff_metrics, has_diffs, _) in asm_diffs:
@@ -1865,10 +1871,10 @@ class SuperPMIReplayAsmDiffs:
 
                             write_fh.write("|{}|{:,d}|{}|\n".format(
                                 mch_file,
-                                int(base_metrics[col]["Diffed code bytes"]),
+                                int(base_metrics[row]["Diffed code bytes"]),
                                 format_delta(
-                                    int(base_metrics[col]["Diffed code bytes"]),
-                                    int(diff_metrics[col]["Diffed code bytes"]))))
+                                    int(base_metrics[row]["Diffed code bytes"]),
+                                    int(diff_metrics[row]["Diffed code bytes"]))))
 
                         write_fh.write("\n\n</details>\n")
 
