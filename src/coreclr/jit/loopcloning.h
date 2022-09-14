@@ -324,10 +324,9 @@ struct LcTypeTestOptInfo : public LcOptInfo
     unsigned lclNum;
     // handle being tested for
     CORINFO_CLASS_HANDLE clsHnd;
-    BasicBlock*          guardBlock;
 
-    LcTypeTestOptInfo(unsigned lclNum, CORINFO_CLASS_HANDLE clsHnd, BasicBlock* guardBlock)
-        : LcOptInfo(LcTypeTest), lclNum(lclNum), clsHnd(clsHnd), guardBlock(guardBlock)
+    LcTypeTestOptInfo(unsigned lclNum, CORINFO_CLASS_HANDLE clsHnd)
+        : LcOptInfo(LcTypeTest), lclNum(lclNum), clsHnd(clsHnd)
     {
     }
 };
@@ -337,22 +336,19 @@ struct LcMethodAddrTestOptInfo : public LcOptInfo
     // Invariant local whose target field(s) are tested
     unsigned delegateLclNum;
     // Invariant tree representing method address on the other side of the test
-    void*       methAddr;
-    bool        isSlot;
-    BasicBlock* guardBlock;
+    void* methAddr;
+    bool  isSlot;
 #ifdef DEBUG
     CORINFO_METHOD_HANDLE targetMethHnd;
 #endif
 
-    LcMethodAddrTestOptInfo(unsigned    delegateLclNum,
-                            void*       methAddr,
-                            bool        isSlot,
-                            BasicBlock* guardBlock DEBUG_ARG(CORINFO_METHOD_HANDLE targetMethHnd))
+    LcMethodAddrTestOptInfo(unsigned delegateLclNum,
+                            void*    methAddr,
+                            bool isSlot DEBUG_ARG(CORINFO_METHOD_HANDLE targetMethHnd))
         : LcOptInfo(LcMethodAddrTest)
         , delegateLclNum(delegateLclNum)
         , methAddr(methAddr)
-        , isSlot(isSlot)
-        , guardBlock(guardBlock) DEBUG_ARG(targetMethHnd(targetMethHnd))
+        , isSlot(isSlot) DEBUG_ARG(targetMethHnd(targetMethHnd))
     {
     }
 };

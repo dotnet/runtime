@@ -1111,9 +1111,14 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
                     LC_Ident::CreateIndirOfLocal(test->delegateLclNum, eeGetEEInfo()->offsetOfDelegateFirstTarget);
                 LC_Ident methAddr;
                 if (test->isSlot)
+                {
                     methAddr = LC_Ident::CreateIndirMethodAddrSlot(test->methAddr DEBUG_ARG(test->targetMethHnd));
+                }
                 else
+                {
                     methAddr = LC_Ident::CreateMethodAddr(test->methAddr DEBUG_ARG(test->targetMethHnd));
+                }
+
                 LC_Condition cond(GT_EQ, LC_Expr(objDeref), LC_Expr(methAddr));
 
                 context->EnsureObjDerefs(loopNum)->Push(objDeref);
@@ -2831,7 +2836,7 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
 
                 assert(compCurBB->lastStmt() == info->stmt);
                 info->context->EnsureLoopOptInfo(info->loopNum)
-                    ->Push(new (this, CMK_LoopOpt) LcTypeTestOptInfo(lclNum, clsHnd, compCurBB));
+                    ->Push(new (this, CMK_LoopOpt) LcTypeTestOptInfo(lclNum, clsHnd));
             }
         }
         else if (optIsHandleOrIndirOfHandle(relopOp2, GTF_ICON_FTN_ADDR))
@@ -2913,11 +2918,11 @@ Compiler::fgWalkResult Compiler::optCanOptimizeByLoopCloning(GenTree* tree, Loop
                     relopOp2->IsIconHandle() ? relopOp2->AsIntCon() : relopOp2->AsIndir()->Addr()->AsIntCon();
                 assert(iconHandle->IsIconHandle(GTF_ICON_FTN_ADDR));
                 assert(compCurBB->lastStmt() == info->stmt);
-                info->context->EnsureLoopOptInfo(info->loopNum)
-                    ->Push(new (this, CMK_LoopOpt)
-                               LcMethodAddrTestOptInfo(lclNum, (void*)iconHandle->IconValue(), relopOp2 != iconHandle,
-                                                       compCurBB DEBUG_ARG(
-                                                           (CORINFO_METHOD_HANDLE)iconHandle->gtTargetHandle)));
+                LcMethodAddrTestOptInfo* optInfo = new (this, CMK_LoopOpt)
+                    LcMethodAddrTestOptInfo(lclNum, (void*)iconHandle->IconValue(),
+                                            relopOp2 != iconHandle DEBUG_ARG(
+                                                            (CORINFO_METHOD_HANDLE)iconHandle->gtTargetHandle));
+                info->context->EnsureLoopOptInfo(info->loopNum)->Push(optInfo);
             }
         }
     }
