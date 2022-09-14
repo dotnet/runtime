@@ -6,19 +6,18 @@ using System.Diagnostics.CodeAnalysis;
 
 using BindingFlags = System.Reflection.BindingFlags;
 
-class Program
+class ILLinkDescriptor
 {
-
-    static int Main()
+    public static int Run()
     {
-        ThrowIfMemberNotPresent(typeof(Program), nameof(methodKeptViaDescriptor));
-        ThrowIfMemberNotPresent(typeof(Program), nameof(methodKeptViaStandaloneDescriptor));
-        ThrowIfMemberPresent(typeof(Program), nameof(methodNotKept));
-        ThrowIfMemberNotPresent(typeof(Program), nameof(fieldKeptViaDescriptor));
-        ThrowIfMemberNotPresent(typeof(Program), nameof(PropertyKeptViaDescriptor));
-        ThrowIfMemberNotPresent(typeof(Program), nameof(EventKeptViaDescriptor));
-        ThrowIfTypeNotPresent(typeof(Program), nameof(NestedTypeKeptViaDescriptor));
-        ThrowIfTypePresent(typeof(Program), nameof(NestedTypeNonKept));
+        ThrowIfMemberNotPresent(typeof(ILLinkDescriptor), nameof(methodKeptViaDescriptor));
+        ThrowIfMemberNotPresent(typeof(ILLinkDescriptor), nameof(methodKeptViaStandaloneDescriptor));
+        ThrowIfMemberPresent(typeof(ILLinkDescriptor), nameof(methodNotKept));
+        ThrowIfMemberNotPresent(typeof(ILLinkDescriptor), nameof(fieldKeptViaDescriptor));
+        ThrowIfMemberNotPresent(typeof(ILLinkDescriptor), nameof(PropertyKeptViaDescriptor));
+        ThrowIfMemberNotPresent(typeof(ILLinkDescriptor), nameof(EventKeptViaDescriptor));
+        ThrowIfTypeNotPresent(typeof(ILLinkDescriptor), nameof(NestedTypeKeptViaDescriptor));
+        ThrowIfTypePresent(typeof(ILLinkDescriptor), nameof(NestedTypeNonKept));
         return 100;
     }
 

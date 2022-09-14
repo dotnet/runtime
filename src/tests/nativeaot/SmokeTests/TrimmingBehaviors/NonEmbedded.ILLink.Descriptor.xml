@@ -1,6 +1,6 @@
 <linker>
-  <assembly fullname="EmbeddedDescriptor">
-    <type fullname="Program">
+  <assembly fullname="TrimmingBehaviors">
+    <type fullname="ILLinkDescriptor">
       <method name="methodKeptViaStandaloneDescriptor"/>
     </type>
   </assembly>

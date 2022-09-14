@@ -8,11 +8,10 @@ using System.Runtime.InteropServices;
 
 #pragma warning disable 649 // 'blah' is never assigned to
 #pragma warning disable 169 // 'blah' is never used
-#pragma warning disable 436 // conflicting type
 
-class Program
+class Dataflow
 {
-    static int Main()
+    public static int Run()
     {
         TestReturnValue.Run();
         TestFieldAccess.Run();
@@ -716,14 +715,4 @@ static class Helpers
         Justification = "That's the point")]
     public static Type GetNestedTypeSecretly(this Type t, string name)
         => t.GetNestedType(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-}
-
-namespace System.Diagnostics.CodeAnalysis
-{
-    internal sealed class DynamicallyAccessedMembersAttribute : Attribute
-    {
-        public DynamicallyAccessedMembersAttribute(DynamicallyAccessedMemberTypes memberTypes)
-        {
-        }
-    }
 }
