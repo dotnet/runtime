@@ -113,7 +113,6 @@ namespace System.Tests
         private delegate object ObjectDelegateWithSomeCustomConstantAttribute([SomeCustomConstant] object o);
 
         [Fact]
-        [SkipOnMono("https://github.com/dotnet/runtime/issues/49806")]
         public static void DynamicInvoke_MissingTypeForCustomConstantAttribute_Succeeds()
         {
             Assert.Equal("SomeValue", (string)(new ObjectDelegateWithSomeCustomConstantAttribute(SomeCustomConstantAttribute.Do).DynamicInvoke(Type.Missing)));
