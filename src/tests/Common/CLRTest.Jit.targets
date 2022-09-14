@@ -216,7 +216,8 @@ IF NOT DEFINED DoLink (
           Returns="$(HasBashDisasmCheck);$(BashDisasmOutputFile);$(BashDisasmCheckPostCommands)"
           DependsOnTargets="GetDisasmCheckData">
     <PropertyGroup>
-      <HasBashDisasmCheck>$(HasDisasmCheck)</HasBashDisasmCheck>
+      <!-- Disable disasm checks on non-windows for now -->
+      <HasBashDisasmCheck>false</HasBashDisasmCheck>
 
       <BashDisasmOutputFile>/dev/null</BashDisasmOutputFile>
       <BashDisasmOutputFile Condition="'$(HasBashDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm.out</BashDisasmOutputFile>
@@ -236,7 +237,7 @@ IF NOT DEFINED DoLink (
 ]]>)
       </BashDisasmCheckPostCommands>
 
-      <CLRTestBashPreCommands Condition="'$(HasBatchDisasmCheck)' == 'true'"><![CDATA[
+      <CLRTestBashPreCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
 @(DisasmCheckFiles -> '  $(ArtifactsDir)bin/SuperFileCheck/$(TargetArchitecture)/$(Configuration)/$(OutputRid)/SuperFileCheck --csharp-list-method-names "%(RelativeDir)%(FileName)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) > "$(BashDisasmListOutputFile)"
   ERRORLEVEL=$?
   export DOTNET_JitDisasm=$(cat $(BashDisasmListOutputFile))
@@ -267,6 +268,7 @@ IF NOT DEFINED DoLink (
       <BatchDisasmCheckPostCommands Condition="'$(HasBatchDisasmCheck)' == 'true'"><![CDATA[
 @(DisasmCheckFiles -> '  $(ArtifactsDir)bin\SuperFileCheck\$(TargetArchitecture)\$(Configuration)\$(OutputRid)\SuperFileCheck.exe --csharp "%(RelativeDir)%(FileName)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) --input-file "$(BatchDisasmOutputFile)"
   IF NOT "!ERRORLEVEL!" == "0" (
+    ECHO $(ArtifactsDir)bin\SuperFileCheck\$(TargetArchitecture)\$(Configuration)\$(OutputRid)\SuperFileCheck.exe --csharp "%(RelativeDir)%(FileName)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) --input-file "$(BatchDisasmOutputFile)"
     ECHO EXECUTION OF FILECHECK - FAILED !ERRORLEVEL!
     Exit /b 1
   )', '%0d%0a')
@@ -280,6 +282,7 @@ IF NOT DEFINED DoLink (
   set /p DOTNET_JitDisasm= < $(BatchDisasmListOutputFile)
   set DOTNET_JitDiffableDasm=1
   IF NOT "!ERRORLEVEL!" == "0" (
+    ECHO $(ArtifactsDir)bin\SuperFileCheck\$(TargetArchitecture)\$(Configuration)\$(OutputRid)\SuperFileCheck.exe --csharp-list-method-names "%(RelativeDir)%(FileName)" --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) > "$(BatchDisasmListOutputFile)"
     ECHO EXECUTION OF FILECHECK LISTING METHOD NAMES - FAILED !ERRORLEVEL!
     Exit /b 1
   )', '%0d%0a')
