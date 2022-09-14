@@ -12,7 +12,7 @@ namespace System.Xml.XmlDocumentTests
         [Fact]
         public void LoadDocumentFromFile()
         {
-            TextReader textReader = File.OpenText(@"XmlDocument\example.xml");
+            TextReader textReader = File.OpenText(Path.Combine("XmlDocument", "example.xml"));
             XmlReaderSettings settings = new XmlReaderSettings();
             settings.IgnoreWhitespace = true;
             settings.DtdProcessing = DtdProcessing.Ignore;
