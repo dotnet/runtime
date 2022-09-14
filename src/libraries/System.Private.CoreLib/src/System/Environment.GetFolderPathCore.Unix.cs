@@ -85,8 +85,32 @@ namespace System
             switch (folder)
             {
                 case SpecialFolder.UserProfile:
-                case SpecialFolder.MyDocuments: // same value as Personal
                     return home;
+                case SpecialFolder.Desktop:
+                case SpecialFolder.DesktopDirectory:
+                    return ReadXdgDirectory(home, "XDG_DESKTOP_DIR", "Desktop");
+                case SpecialFolder.Templates:
+                    return ReadXdgDirectory(home, "XDG_TEMPLATES_DIR", "Templates");
+#if TARGET_OSX
+                case SpecialFolder.ApplicationData:
+                    return Path.Combine(home, "Library", "Application Support");
+                case SpecialFolder.LocalApplicationData:
+                    return Path.Combine(home, "Library");
+                case SpecialFolder.MyDocuments: // same value as Personal
+                    return Path.Combine(home, "Documents");
+                case SpecialFolder.MyMusic:
+                    return Path.Combine(home, "Music");
+                case SpecialFolder.MyVideos:
+                    return Path.Combine(home, "Movies");
+                case SpecialFolder.MyPictures:
+                    return Path.Combine(home, "Pictures");
+                case SpecialFolder.Fonts:
+                    return Path.Combine(home, "Library", "Fonts");
+                case SpecialFolder.Favorites:
+                    return Path.Combine(home, "Library", "Favorites");
+                case SpecialFolder.InternetCache:
+                    return Path.Combine(home, "Library", "Caches");
+#else
                 case SpecialFolder.ApplicationData:
                     return GetXdgConfig(home);
                 case SpecialFolder.LocalApplicationData:
@@ -98,29 +122,12 @@ namespace System
                         data = Path.Combine(home, ".local", "share");
                     }
                     return data;
-
-                case SpecialFolder.Desktop:
-                case SpecialFolder.DesktopDirectory:
-                    return ReadXdgDirectory(home, "XDG_DESKTOP_DIR", "Desktop");
-                case SpecialFolder.Templates:
-                    return ReadXdgDirectory(home, "XDG_TEMPLATES_DIR", "Templates");
-                case SpecialFolder.MyVideos:
-                    return ReadXdgDirectory(home, "XDG_VIDEOS_DIR", "Videos");
-
-#if TARGET_OSX
-                case SpecialFolder.MyMusic:
-                    return Path.Combine(home, "Music");
-                case SpecialFolder.MyPictures:
-                    return Path.Combine(home, "Pictures");
-                case SpecialFolder.Fonts:
-                    return Path.Combine(home, "Library", "Fonts");
-                case SpecialFolder.Favorites:
-                    return Path.Combine(home, "Library", "Favorites");
-                case SpecialFolder.InternetCache:
-                    return Path.Combine(home, "Library", "Caches");
-#else
+                case SpecialFolder.MyDocuments: // same value as Personal
+                    return ReadXdgDirectory(home, "XDG_DOCUMENTS_DIR", "Documents");
                 case SpecialFolder.MyMusic:
                     return ReadXdgDirectory(home, "XDG_MUSIC_DIR", "Music");
+                case SpecialFolder.MyVideos:
+                    return ReadXdgDirectory(home, "XDG_VIDEOS_DIR", "Videos");
                 case SpecialFolder.MyPictures:
                     return ReadXdgDirectory(home, "XDG_PICTURES_DIR", "Pictures");
                 case SpecialFolder.Fonts:
