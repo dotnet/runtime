@@ -52,6 +52,7 @@ public abstract class PlatformMatrixBase : JobTemplateDefinition
         // Handled as an opt-in parameter to avoid excessive yaml.
         BooleanParameter("passPlatforms", false),
         StringParameter("container"),
+        BooleanParameter("shouldContinueOnError", false),
         ObjectParameter("jobParameters"),
         ObjectParameter("variables"),
     };
@@ -113,6 +114,7 @@ public abstract class PlatformMatrixBase : JobTemplateDefinition
             { "archType", platform.Architecture },
             { "targetRid", platform.TargetRid ?? platform.OsGroup.ToLowerInvariant() + platform.OsSubGroup?.Replace("_", "-") + "-" + platform.Architecture.ToLowerInvariant() },
             { "platform", platform.PlatformId ?? platform.OsGroup + platform.OsSubGroup + "_" + platform.Architecture },
+            { "shouldContinueOnError", parameters["shouldContinueOnError"] }
         };
 
         if (platform.OsSubGroup != null)
@@ -142,12 +144,6 @@ public abstract class PlatformMatrixBase : JobTemplateDefinition
             { "stagedBuild", parameters["stagedBuild"] },
             { "buildConfig", parameters["buildConfig"] },
             { "helixQueueGroup", parameters["helixQueueGroup"] },
-            { If.Equal(parameters["passPlatforms"], "true"),
-                new TemplateParameters
-                {
-                    { "platforms", parameters["platforms"] },
-                }
-            },
         };
 
         if (platform.CrossBuild)
@@ -174,7 +170,7 @@ public abstract class PlatformMatrixBase : JobTemplateDefinition
 
         return platform.RunForPlatforms != null
             ? If.Or(ContainsValue(platform.Name, parameters["platforms"]),
-                    In(parameters["platformGroup"], platform.RunForPlatforms))
+                    In(parameters["platformGroup"], platform.RunForPlatforms.ToArray()))
                 .JobTemplate("xplat-setup.yml", templateParameters)
 
             : If.ContainsValue(platform.Name, parameters["platforms"])

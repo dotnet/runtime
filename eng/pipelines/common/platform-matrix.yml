@@ -23,7 +23,6 @@ parameters:
   variables: []
 
 jobs:
-
 - ${{ if or(containsValue(parameters.platforms, 'Linux_arm'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
     parameters:
@@ -44,7 +43,7 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        crossrootfsDir: '/crossrootfs/arm'
+        crossrootfsDir: /crossrootfs/arm
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 - ${{ if containsValue(parameters.platforms, 'Linux_armv6') }}:
@@ -67,7 +66,7 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        crossrootfsDir: '/crossrootfs/armv6'
+        crossrootfsDir: /crossrootfs/armv6
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 
@@ -94,7 +93,7 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        crossrootfsDir: '/crossrootfs/arm64'
+        crossrootfsDir: /crossrootfs/arm64
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 
@@ -142,7 +141,7 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        crossrootfsDir: '/crossrootfs/arm'
+        crossrootfsDir: /crossrootfs/arm
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 
@@ -167,7 +166,7 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        crossrootfsDir: '/crossrootfs/arm64'
+        crossrootfsDir: /crossrootfs/arm64
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 
@@ -188,8 +187,6 @@ jobs:
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
-        # We build on Linux, but the test queue runs Windows, so
-        # we need to override the test script generation
         runScriptWindowsCmd: true
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
@@ -265,7 +262,7 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        crossrootfsDir: '/crossrootfs/x86'
+        crossrootfsDir: /crossrootfs/x86
         disableClrTest: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -313,7 +310,7 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        crossrootfsDir: '/crossrootfs/s390x'
+        crossrootfsDir: /crossrootfs/s390x
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 
@@ -337,7 +334,7 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        crossrootfsDir: '/crossrootfs/ppc64le'
+        crossrootfsDir: /crossrootfs/ppc64le
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 
@@ -422,7 +419,7 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        crossrootfsDir: '/crossrootfs/x64'
+        crossrootfsDir: /crossrootfs/x64
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 
@@ -764,7 +761,7 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         crossBuild: true
-        crossrootfsDir: '/crossrootfs/armel'
+        crossrootfsDir: /crossrootfs/armel
         disableClrTest: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
