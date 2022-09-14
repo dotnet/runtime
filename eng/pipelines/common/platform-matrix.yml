@@ -104,11 +104,11 @@ jobs:
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
       osGroup: Linux
-      osSubgroup: _musl
       archType: x64
       targetRid: linux-musl-x64
       platform: Linux_musl_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      osSubgroup: _musl
       container:
         image: alpine-3.13-WithNode-20210910135845-c401c85
         registry: mcr
@@ -127,11 +127,11 @@ jobs:
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
       osGroup: Linux
-      osSubgroup: _musl
       archType: arm
       targetRid: linux-musl-arm
       platform: Linux_musl_arm
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      osSubgroup: _musl
       container:
         image: ubuntu-16.04-cross-arm-alpine-20210923140502-78f7860
         registry: mcr
@@ -152,11 +152,11 @@ jobs:
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
       osGroup: Linux
-      osSubgroup: _musl
       archType: arm64
       targetRid: linux-musl-arm64
       platform: Linux_musl_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      osSubgroup: _musl
       container:
         image: ubuntu-16.04-cross-arm64-alpine-20210923140502-78f7860
         registry: mcr
@@ -177,11 +177,11 @@ jobs:
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
       osGroup: Linux
-      osSubgroup: _bionic
       archType: arm64
       targetRid: linux-bionic-arm64
       platform: Linux_bionic_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      osSubgroup: _bionic
       container:
         image: ubuntu-18.04-android-20220808192756-8fcaabc
         registry: mcr
@@ -201,11 +201,11 @@ jobs:
       helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
       variables: ${{ parameters.variables }}
       osGroup: Linux
-      osSubgroup: _bionic
       archType: x64
       targetRid: linux-bionic-x64
       platform: Linux_bionic_x64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+      osSubgroup: _bionic
       container:
         image: ubuntu-18.04-android-20220808192756-8fcaabc
         registry: mcr
