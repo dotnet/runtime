@@ -1615,45 +1615,45 @@ const char16_t* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
     return param.classNameWidePtr;
 }
 
-const WCHAR* Compiler::eeGetCPString(size_t strHandle)
+void Compiler::eePrintFrozenObjectDescription(const char* prefix, size_t handle)
 {
-#ifdef HOST_UNIX
-    return nullptr;
-#else
-    char buff[512 + sizeof(CORINFO_String)];
-
-    // make this bulletproof, so it works even if we are wrong.
-    if (ReadProcessMemory(GetCurrentProcess(), (void*)strHandle, buff, 4, nullptr) == 0)
+    auto typeOfHandle = *((CORINFO_CLASS_HANDLE*)handle);
+    if (impGetStringClass() == typeOfHandle)
     {
-        return (nullptr);
+        auto asString = (CORINFO_String*)handle;
+
+        const size_t maxLength = 63;
+        const size_t newLen    = min(maxLength, asString->stringLen);
+
+        // +1 for null terminator
+        WCHAR buf[maxLength + 1] = {0};
+        wcsncpy(buf, (WCHAR*)asString->chars, newLen);
+        for (size_t i = 0; i < newLen; i++)
+        {
+            // Escape \n and \r symbols
+            if (buf[i] == L'\n' || buf[i] == L'\r')
+            {
+                buf[i] = L' ';
+            }
+        }
+        if (asString->stringLen > maxLength)
+        {
+            // Append "..." for long strings
+            buf[maxLength - 3] = L'.';
+            buf[maxLength - 2] = L'.';
+            buf[maxLength - 1] = L'.';
+        }
+        printf("%s \"%S\"", prefix, buf);
     }
-
-    CORINFO_String* asString = nullptr;
-    if (impGetStringClass() == *((CORINFO_CLASS_HANDLE*)strHandle))
+    else if (impGetRuntimeTypeClass() == typeOfHandle)
     {
-        // strHandle is a frozen string
-        // We assume strHandle is never an "interior" pointer in a frozen string
-        // (jit is not expected to perform such foldings)
-        asString = (CORINFO_String*)strHandle;
+        auto asType = (CORINFO_RuntimeType*)handle;
+        printf("%s %s", prefix, eeGetClassName(asType->m_handle));
     }
     else
     {
-        // strHandle is a pinned handle to a string object
-        asString = *((CORINFO_String**)strHandle);
+        printf("%s unknown frozen object handle", prefix);
     }
-
-    if (ReadProcessMemory(GetCurrentProcess(), asString, buff, sizeof(buff), nullptr) == 0)
-    {
-        return (nullptr);
-    }
-
-    if (asString->stringLen >= 255 || asString->chars[asString->stringLen] != 0)
-    {
-        return nullptr;
-    }
-
-    return (WCHAR*)(asString->chars);
-#endif // HOST_UNIX
 }
 #else  // DEBUG
 void jitprintf(const char* fmt, ...)

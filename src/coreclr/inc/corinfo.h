@@ -1855,6 +1855,13 @@ struct CORINFO_String : public CORINFO_Object
     char16_t                chars[1];       // actually of variable size
 };
 
+struct CORINFO_RuntimeType : public CORINFO_Object
+{
+    void*                m_keepalive;
+    void*                m_cache;
+    CORINFO_CLASS_HANDLE m_handle;
+};
+
 struct CORINFO_Array : public CORINFO_Object
 {
     unsigned                length;

@@ -3034,6 +3034,13 @@ CORINFO_CLASS_HANDLE Compiler::impGetStringClass()
     return stringClass;
 }
 
+CORINFO_CLASS_HANDLE Compiler::impGetRuntimeTypeClass()
+{
+    CORINFO_CLASS_HANDLE stringClass = info.compCompHnd->getBuiltinClass(CLASSID_RUNTIME_TYPE);
+    assert(stringClass != (CORINFO_CLASS_HANDLE) nullptr);
+    return stringClass;
+}
+
 CORINFO_CLASS_HANDLE Compiler::impGetObjectClass()
 {
     CORINFO_CLASS_HANDLE objectClass = info.compCompHnd->getBuiltinClass(CLASSID_SYSTEM_OBJECT);
@@ -22944,7 +22951,7 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
             return true;
         }
         // Non-0 const refs can only occur with frozen objects
-        assert(value->IsIconHandle(GTF_ICON_STR_HDL) || value->IsIconHandle(GTF_ICON_TYPE_HDL));
+        assert(value->IsIconHandle(GTF_ICON_OBJ_HDL));
         assert(doesMethodHaveFrozenObjects() ||
                (compIsForInlining() && impInlineInfo->InlinerCompiler->doesMethodHaveFrozenObjects()));
     }

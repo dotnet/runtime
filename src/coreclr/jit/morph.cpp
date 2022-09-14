@@ -8324,7 +8324,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             if (ptr != nullptr)
             {
                 setMethodHasFrozenObjects();
-                GenTree* retNode = gtNewIconEmbHndNode(ptr, nullptr, GTF_ICON_TYPE_HDL, nullptr);
+                GenTree* retNode = gtNewIconEmbHndNode(ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
                 retNode->gtType  = TYP_REF;
                 INDEBUG(retNode->AsIntCon()->gtTargetHandle = (size_t)ptr);
                 return fgMorphTree(retNode);
@@ -11181,7 +11181,7 @@ DONE_MORPHING_CHILDREN:
             //
             if (!tree->AsIndir()->IsVolatile())
             {
-                if (op1->IsIconHandle(GTF_ICON_STR_HDL))
+                if (op1->IsIconHandle(GTF_ICON_OBJ_HDL))
                 {
                     tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
                 }

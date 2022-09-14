@@ -6911,7 +6911,7 @@ GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenT
         // This indirection also is invariant.
         indNode->gtFlags |= GTF_IND_INVARIANT;
 
-        if ((iconFlags == GTF_ICON_STR_HDL) || (iconFlags == GTF_ICON_TYPE_HDL))
+        if ((iconFlags == GTF_ICON_STR_HDL) || (iconFlags == GTF_ICON_OBJ_HDL))
         {
             // String literals and frozen type objects are never null
             indNode->gtFlags |= GTF_IND_NONNULL;
@@ -6991,7 +6991,7 @@ GenTree* Compiler::gtNewStringLiteralNode(InfoAccessType iat, void* pValue)
     {
         case IAT_VALUE:
             setMethodHasFrozenObjects();
-            tree         = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_STR_HDL, nullptr);
+            tree         = gtNewIconEmbHndNode(pValue, nullptr, GTF_ICON_OBJ_HDL, nullptr);
             tree->gtType = TYP_REF;
 #ifdef DEBUG
             tree->AsIntCon()->gtTargetHandle = (size_t)pValue;
@@ -11101,22 +11101,11 @@ void Compiler::gtDispConst(GenTree* tree)
         case GT_CNS_INT:
             if (tree->IsIconHandle(GTF_ICON_STR_HDL))
             {
-                const WCHAR* str = eeGetCPString(tree->AsIntCon()->gtIconVal);
-                // If *str points to a '\0' then don't print the string's values
-                if ((str != nullptr) && (*str != '\0'))
-                {
-                    printf(" 0x%X \"%S\"", dspPtr(tree->AsIntCon()->gtIconVal), str);
-                }
-                else // We can't print the value of the string
-                {
-                    // Note that eeGetCPString isn't currently implemented on Linux/ARM
-                    // and instead always returns nullptr
-                    printf(" 0x%X [ICON_STR_HDL]", dspPtr(tree->AsIntCon()->gtIconVal));
-                }
+                printf(" 0x%X [ICON_STR_HDL]", dspPtr(tree->AsIntCon()->gtIconVal));
             }
-            else if (tree->IsIconHandle(GTF_ICON_TYPE_HDL))
+            else if (tree->IsIconHandle(GTF_ICON_OBJ_HDL))
             {
-                printf(" 0x%X [ICON_TYPE_HDL]", dspPtr(tree->AsIntCon()->gtIconVal));
+                eePrintFrozenObjectDescription(" ", tree->AsIntCon()->gtIconVal);
             }
             else
             {
@@ -11176,7 +11165,7 @@ void Compiler::gtDispConst(GenTree* tree)
                         case GTF_ICON_STATIC_HDL:
                             printf(" static");
                             break;
-                        case GTF_ICON_TYPE_HDL:
+                        case GTF_ICON_OBJ_HDL:
                         case GTF_ICON_STR_HDL:
                             unreached(); // These cases are handled above
                             break;

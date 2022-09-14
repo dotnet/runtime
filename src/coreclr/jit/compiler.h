@@ -3522,6 +3522,7 @@ public:
     CORINFO_CLASS_HANDLE impGetRuntimeArgumentHandle();
     CORINFO_CLASS_HANDLE impGetTypeHandleClass();
     CORINFO_CLASS_HANDLE impGetStringClass();
+    CORINFO_CLASS_HANDLE impGetRuntimeTypeClass();
     CORINFO_CLASS_HANDLE impGetObjectClass();
 
     // Returns underlying type of handles returned by ldtoken instruction
@@ -7800,7 +7801,7 @@ public:
     const char* eeGetFieldName(CORINFO_FIELD_HANDLE fieldHnd, const char** classNamePtr = nullptr);
 
 #if defined(DEBUG)
-    const WCHAR* eeGetCPString(size_t stringHandle);
+    void eePrintFrozenObjectDescription(const char* prefix, size_t handle);
     unsigned eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd);
     const char16_t* eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd);
 #endif
