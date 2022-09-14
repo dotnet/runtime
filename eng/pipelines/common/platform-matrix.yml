@@ -24,7 +24,6 @@ parameters:
 
 jobs:
 
-# Linux arm
 - ${{ if or(containsValue(parameters.platforms, 'Linux_arm'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
     parameters:
@@ -48,7 +47,6 @@ jobs:
         crossrootfsDir: '/crossrootfs/arm'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Linux armv6
 - ${{ if containsValue(parameters.platforms, 'Linux_armv6') }}:
   - template: xplat-setup.yml
     parameters:
@@ -72,7 +70,6 @@ jobs:
         crossrootfsDir: '/crossrootfs/armv6'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Linux arm64
 
 - ${{ if or(containsValue(parameters.platforms, 'Linux_arm64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
@@ -100,7 +97,6 @@ jobs:
         crossrootfsDir: '/crossrootfs/arm64'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Linux musl x64
 
 - ${{ if or(containsValue(parameters.platforms, 'Linux_musl_x64'), eq(parameters.platformGroup, 'all')) }}:
   - template: xplat-setup.yml
@@ -124,7 +120,6 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Linux musl arm
 
 - ${{ if or(containsValue(parameters.platforms, 'Linux_musl_arm'), eq(parameters.platformGroup, 'all')) }}:
   - template: xplat-setup.yml
@@ -150,7 +145,6 @@ jobs:
         crossrootfsDir: '/crossrootfs/arm'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Linux musl arm64
 
 - ${{ if or(containsValue(parameters.platforms, 'Linux_musl_arm64'), eq(parameters.platformGroup, 'all')) }}:
   - template: xplat-setup.yml
@@ -176,7 +170,6 @@ jobs:
         crossrootfsDir: '/crossrootfs/arm64'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Linux Bionic arm64
 
 - ${{ if containsValue(parameters.platforms, 'Linux_bionic_arm64') }}:
   - template: xplat-setup.yml
@@ -203,7 +196,6 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Linux Bionic x64
 
 - ${{ if containsValue(parameters.platforms, 'Linux_bionic_x64') }}:
   - template: xplat-setup.yml
@@ -227,7 +219,6 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Linux x64
 
 - ${{ if or(containsValue(parameters.platforms, 'Linux_x64'), containsValue(parameters.platforms, 'CoreClrTestBuildHost'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
@@ -253,7 +244,6 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Linux x86
 
 - ${{ if containsValue(parameters.platforms, 'Linux_x86') }}:
   - template: xplat-setup.yml
@@ -279,7 +269,6 @@ jobs:
         disableClrTest: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Linux x64 Source Build
 
 - ${{ if containsValue(parameters.platforms, 'SourceBuild_Linux_x64') }}:
   - template: xplat-setup.yml
@@ -303,7 +292,6 @@ jobs:
         ${{ insert }}: ${{ parameters.jobParameters }}
         buildingOnSourceBuildImage: true
 
-# Linux s390x
 
 - ${{ if containsValue(parameters.platforms, 'Linux_s390x') }}:
   - template: xplat-setup.yml
@@ -328,7 +316,6 @@ jobs:
         crossrootfsDir: '/crossrootfs/s390x'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Linux PPC64le
 
 - ${{ if containsValue(parameters.platforms, 'Linux_ppc64le') }}:
   - template: xplat-setup.yml
@@ -353,7 +340,6 @@ jobs:
         crossrootfsDir: '/crossrootfs/ppc64le'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# WebAssembly
 
 - ${{ if containsValue(parameters.platforms, 'Browser_wasm') }}:
   - template: xplat-setup.yml
@@ -376,7 +362,6 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# WebAssembly Linux Firefox
 
 - ${{ if containsValue(parameters.platforms, 'Browser_wasm_firefox') }}:
   - template: xplat-setup.yml
@@ -399,7 +384,6 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# WebAssembly on Windows
 
 - ${{ if containsValue(parameters.platforms, 'Browser_wasm_win') }}:
   - template: xplat-setup.yml
@@ -419,7 +403,6 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# FreeBSD
 - ${{ if containsValue(parameters.platforms, 'FreeBSD_x64') }}:
   - template: xplat-setup.yml
     parameters:
@@ -442,7 +425,6 @@ jobs:
         crossrootfsDir: '/crossrootfs/x64'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Android x64
 
 - ${{ if containsValue(parameters.platforms, 'Android_x64') }}:
   - template: xplat-setup.yml
@@ -465,7 +447,6 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Android x86
 
 - ${{ if containsValue(parameters.platforms, 'Android_x86') }}:
   - template: xplat-setup.yml
@@ -488,7 +469,6 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Android arm
 
 - ${{ if containsValue(parameters.platforms, 'Android_arm') }}:
   - template: xplat-setup.yml
@@ -511,7 +491,6 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Android arm64
 
 - ${{ if containsValue(parameters.platforms, 'Android_arm64') }}:
   - template: xplat-setup.yml
@@ -534,7 +513,6 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Mac Catalyst x64
 
 - ${{ if containsValue(parameters.platforms, 'MacCatalyst_x64') }}:
   - template: xplat-setup.yml
@@ -554,7 +532,6 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Mac Catalyst arm64
 
 - ${{ if containsValue(parameters.platforms, 'MacCatalyst_arm64') }}:
   - template: xplat-setup.yml
@@ -574,7 +551,6 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# tvOS arm64
 
 - ${{ if containsValue(parameters.platforms, 'tvOS_arm64') }}:
   - template: xplat-setup.yml
@@ -594,7 +570,6 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# tvOS Simulator x64
 
 - ${{ if containsValue(parameters.platforms, 'tvOSSimulator_x64') }}:
   - template: xplat-setup.yml
@@ -614,7 +589,6 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# tvOS Simulator arm64
 
 - ${{ if containsValue(parameters.platforms, 'tvOSSimulator_arm64') }}:
   - template: xplat-setup.yml
@@ -634,7 +608,6 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# iOS arm
 
 - ${{ if containsValue(parameters.platforms, 'iOS_arm') }}:
   - template: xplat-setup.yml
@@ -654,7 +627,6 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# iOS arm64
 
 - ${{ if containsValue(parameters.platforms, 'iOS_arm64') }}:
   - template: xplat-setup.yml
@@ -674,7 +646,6 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# iOS Simulator x64
 
 - ${{ if containsValue(parameters.platforms, 'iOSSimulator_x64') }}:
   - template: xplat-setup.yml
@@ -694,7 +665,6 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# iOS Simulator x86
 
 - ${{ if containsValue(parameters.platforms, 'iOSSimulator_x86') }}:
   - template: xplat-setup.yml
@@ -715,7 +685,6 @@ jobs:
         managedTestBuildOsGroup: OSX
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# iOS Simulator arm64
 
 - ${{ if containsValue(parameters.platforms, 'iOSSimulator_arm64') }}:
   - template: xplat-setup.yml
@@ -735,7 +704,6 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# macOS arm64
 
 - ${{ if containsValue(parameters.platforms, 'OSX_arm64') }}:
   - template: xplat-setup.yml
@@ -756,7 +724,6 @@ jobs:
         crossBuild: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# macOS x64
 
 - ${{ if or(containsValue(parameters.platforms, 'OSX_x64'), eq(parameters.platformGroup, 'all')) }}:
   - template: xplat-setup.yml
@@ -776,7 +743,6 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Tizen armel
 
 - ${{ if containsValue(parameters.platforms, 'Tizen_armel') }}:
   - template: xplat-setup.yml
@@ -802,7 +768,6 @@ jobs:
         disableClrTest: true
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Windows x64
 
 - ${{ if or(containsValue(parameters.platforms, 'windows_x64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
@@ -822,7 +787,6 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Windows x86
 
 - ${{ if or(containsValue(parameters.platforms, 'windows_x86'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
@@ -842,7 +806,6 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Windows arm
 - ${{ if or(containsValue(parameters.platforms, 'windows_arm'), eq(parameters.platformGroup, 'all')) }}:
   - template: xplat-setup.yml
     parameters:
@@ -861,7 +824,6 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
-# Windows arm64
 
 - ${{ if or(containsValue(parameters.platforms, 'windows_arm64'), in(parameters.platformGroup, 'all', 'gcstress')) }}:
   - template: xplat-setup.yml
