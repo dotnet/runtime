@@ -5981,7 +5981,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         {
             if (strcmp(methodName, "get_IsHardwareAccelerated") == 0)
             {
-                result = IsBaselineSimdIsaSupported() ? NI_IsSupported_True : NI_IsSupported_False;
+                // This allows the relevant code paths to be dropped as dead code even
+                // on platforms where FEATURE_HW_INTRINSICS is not supported.
+
+                result = NI_IsSupported_False;
             }
             else if (gtIsRecursiveCall(method))
             {

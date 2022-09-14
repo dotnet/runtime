@@ -73,6 +73,11 @@ NamedIntrinsic SimdAsHWIntrinsicInfo::lookupId(CORINFO_SIG_INFO* sig,
         isInstanceMethod = true;
     }
 
+    if (strcmp(methodName, "get_IsHardwareAccelerated") == 0)
+    {
+        return IsBaselineSimdIsaSupported() ? NI_IsSupported_True : NI_IsSupported_False;
+    }
+
     for (int i = 0; i < (NI_SIMD_AS_HWINTRINSIC_END - NI_SIMD_AS_HWINTRINSIC_START - 1); i++)
     {
         const SimdAsHWIntrinsicInfo& intrinsicInfo = simdAsHWIntrinsicInfoArray[i];
