@@ -122,11 +122,6 @@ public abstract class PlatformMatrixBase : JobTemplateDefinition
             templateParameters["osSubgroup"] = platform.OsSubGroup;
         }
 
-        if (platform.HostedOs != null)
-        {
-            templateParameters["hostedOs"] = platform.HostedOs;
-        }
-
         if (platform.Container != null)
         {
             templateParameters["container"] = platform.Container is string name
@@ -145,6 +140,11 @@ public abstract class PlatformMatrixBase : JobTemplateDefinition
             { "buildConfig", parameters["buildConfig"] },
             { "helixQueueGroup", parameters["helixQueueGroup"] },
         };
+
+        if (platform.HostedOs != null)
+        {
+            jobParameters["hostedOs"] = platform.HostedOs;
+        }
 
         if (platform.CrossBuild)
         {

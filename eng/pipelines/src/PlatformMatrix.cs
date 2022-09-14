@@ -42,16 +42,36 @@ public class PlatformMatrix : PlatformMatrixBase
 
     public override string TargetFile => "eng/pipelines/common/platform-matrix.yml";
 
+    // TODO: We can extract container names somewhere in one place
+    private const string AndroidContainer = "ubuntu-18.04-android-20220808192756-8fcaabc";
+
     protected override List<Platform> Platforms => new()
     {
         new("Linux_arm", "Linux", "arm",
-            Container: "ubuntu-16.04-cross-20210719121212-8a8d3be",
+            Container: "ubuntu-18.04-cross-arm-20220907130538-70ed2e8",
             CrossBuild: true,
             CrossRootFsDir: "/crossrootfs/arm",
             RunForPlatforms: new[] { "all", "gcstress" }),
 
+        new("Linux_armv6", "Linux", "armv6",
+            Container: "ubuntu-20.04-cross-armv6-raspbian-10-20211208135931-e6e3ac4",
+            CrossBuild: true,
+            CrossRootFsDir: "/crossrootfs/armv6"),
+
         new("Linux_arm64", "Linux", "arm64",
-            Container: "ubuntu-16.04-cross-arm64-20210719121212-8a8d3be",
+            Container:
+                new TemplateParameters
+                {
+                    { If.Equal("parameters.container", "''"), new TemplateParameters
+                    {
+                        { "image", "ubuntu-18.04-cross-arm64-20220907130538-70ed2e8" }
+                    }},
+                    { If.NotEqual("parameters.container", "''"), new TemplateParameters
+                    {
+                        { "image", parameters["container"] }
+                    }},
+                    { "registry", "mcr" }
+                },
             CrossBuild: true,
             CrossRootFsDir: "/crossrootfs/arm64",
             RunForPlatforms: new[] { "all", "gcstress" }),
@@ -74,6 +94,17 @@ public class PlatformMatrix : PlatformMatrixBase
             CrossBuild: true,
             CrossRootFsDir: "/crossrootfs/arm64",
             RunForPlatforms: new[] { "all" }),
+
+        new("Linux_bionic_arm64", "Linux", "arm64",
+            OsSubGroup: "_bionic",
+            Container: "ubuntu-18.04-android-20220808192756-8fcaabc",
+            RuntimeFlavor: "mono",
+            AdditionalJobParams: new() { { "runScriptWindowsCmd", true } }),
+
+        new("Linux_bionic_arm64", "Linux", "x64",
+            OsSubGroup: "_bionic",
+            Container: "ubuntu-18.04-android-20220808192756-8fcaabc",
+            RuntimeFlavor: "mono"),
 
         new("Linux_x64", "Linux", "x64", "linux-x64",
             Container:
@@ -112,9 +143,19 @@ public class PlatformMatrix : PlatformMatrixBase
             CrossBuild: true,
             CrossRootFsDir: "/crossrootfs/s390x"),
 
+        new("Linux_ppc64le", "Linux", "ppc64le",
+            Container: "ubuntu-18.04-cross-ppc64le-20220531132048-b9de666",
+            CrossBuild: true,
+            CrossRootFsDir: "/crossrootfs/ppc64le"),
+
         new("Browser_wasm", "Browser", "wasm",
-            Container: "ubuntu-18.04-webassembly-20210531091624-f5c7a43",
+            Container: "ubuntu-18.04-webassembly-20220531132048-00a561c",
             HostedOs: "Linux"),
+
+        new("Browser_wasm_firefox", "Browser", "wasm",
+            PlatformId: "Browser_wasm_win",
+            HostedOs: "Linux",
+            Container: "ubuntu-18.04-webassembly-20220531132048-00a561c"),
 
         new("Browser_wasm_win", "Browser", "wasm",
             PlatformId: "Browser_wasm_win",
@@ -124,19 +165,19 @@ public class PlatformMatrix : PlatformMatrixBase
             Container: "ubuntu-18.04-cross-freebsd-12-20210917001307-f13d79e"),
 
         new("Android_x64", "Android", "x64",
-            Container: "ubuntu-18.04-android-20200422191843-e2c3f83",
+            Container: AndroidContainer,
             RuntimeFlavor: "mono"),
 
         new("Android_x86", "Android", "x86",
-            Container: "ubuntu-18.04-android-20200422191843-e2c3f83",
+            Container: AndroidContainer,
             RuntimeFlavor: "mono"),
 
         new("Android_arm", "Android", "arm",
-            Container: "ubuntu-18.04-android-20200422191843-e2c3f83",
+            Container: AndroidContainer,
             RuntimeFlavor: "mono"),
 
         new("Android_arm64", "Android", "arm64",
-            Container: "ubuntu-18.04-android-20200422191843-e2c3f83",
+            Container: AndroidContainer,
             RuntimeFlavor: "mono"),
 
         new("MacCatalyst_x64", "MacCatalyst", "x64",
