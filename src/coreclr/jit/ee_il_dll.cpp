@@ -1506,25 +1506,24 @@ const char* Compiler::eeGetFieldName(CORINFO_FIELD_HANDLE field, const char** cl
     return param.fieldOrMethodOrClassNamePtr;
 }
 
+//------------------------------------------------------------------------
+// eeGetClassName:
+//   Get the name (including namespace and instantiation) of a type.
+//   If missing information (in SPMI), then return a placeholder string.
+//
+// Return value:
+//   The name string.
+//
 const char* Compiler::eeGetClassName(CORINFO_CLASS_HANDLE clsHnd)
 {
-    FilterSuperPMIExceptionsParam_ee_il param;
-
-    param.pThis    = this;
-    param.pJitInfo = &info;
-    param.clazz    = clsHnd;
-
-    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
-        [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
-            pParam->fieldOrMethodOrClassNamePtr = pParam->pJitInfo->compCompHnd->getClassName(pParam->clazz);
-        },
-        &param);
-
-    if (!success)
+    StringPrinter printer(getAllocator(CMK_DebugOnly));
+    if (!eeRunFunctorWithSPMIErrorTrap([&]() { eePrintType(&printer, clsHnd, true, true); }))
     {
-        param.fieldOrMethodOrClassNamePtr = "hackishClassName";
+        printer.Truncate(0);
+        printer.Printf("hackishClassName");
     }
-    return param.fieldOrMethodOrClassNamePtr;
+
+    return printer.GetBuffer();
 }
 
 #endif // DEBUG || FEATURE_JIT_METHOD_PERF

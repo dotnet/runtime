@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
@@ -297,6 +298,58 @@ namespace System.Formats.Tar.Tests
                     Assert.NotEqual(overLimitTimestamp, gnuReadEntry.AccessTime);
                     Assert.NotEqual(overLimitTimestamp, gnuReadEntry.ChangeTime);
                 }
+            }
+        }
+
+        [Theory]
+        [InlineData(TarEntryFormat.V7)]
+        // [InlineData(TarEntryFormat.Ustar)] https://github.com/dotnet/runtime/issues/75360
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void WriteLongName(TarEntryFormat format)
+        {
+            var r = new Random();
+            foreach (int length in new[] { 99, 100, 101, 199, 200, 201, 254, 255, 256 })
+            {
+                string name = string.Concat(Enumerable.Range(0, length).Select(_ => (char)('a' + r.Next(26))));
+                WriteLongNameCore(format, name);
+            }
+        }
+
+        private void WriteLongNameCore(TarEntryFormat format, string maxPathComponent)
+        {
+            TarEntry entry;
+            MemoryStream ms = new();
+            using (TarWriter writer = new(ms, true))
+            {
+                TarEntryType entryType = format == TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
+                entry = InvokeTarEntryCreationConstructor(format, entryType, maxPathComponent);
+                writer.WriteEntry(entry);
+
+                entry = InvokeTarEntryCreationConstructor(format, entryType, Path.Join(maxPathComponent, maxPathComponent));
+                writer.WriteEntry(entry);
+            }
+
+            ms.Position = 0;
+            using TarReader reader = new(ms);
+
+            entry = reader.GetNextEntry();
+            string expectedName = GetExpectedNameForFormat(format, maxPathComponent);
+            Assert.Equal(expectedName, entry.Name);
+
+            entry = reader.GetNextEntry();
+            expectedName = GetExpectedNameForFormat(format, Path.Join(maxPathComponent, maxPathComponent));
+            Assert.Equal(expectedName, entry.Name);
+
+            Assert.Null(reader.GetNextEntry());
+
+            string GetExpectedNameForFormat(TarEntryFormat format, string expectedName)
+            {
+                if (format is TarEntryFormat.V7 && expectedName.Length > 100) // V7 truncates names at 100 characters.
+                {
+                    return expectedName.Substring(0, 100);
+                }
+                return expectedName;
             }
         }
     }

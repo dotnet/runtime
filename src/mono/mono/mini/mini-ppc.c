@@ -2732,6 +2732,9 @@ handle_thunk (MonoCompile *cfg, guchar *code, const guchar *target)
 		if (!cfg->arch.thunks) {
 			cfg->arch.thunks = cfg->thunks;
 			cfg->arch.thunks_size = cfg->thunk_area;
+#ifdef THUNK_ADDR_ALIGNMENT
+			cfg->arch.thunks = ALIGN_TO(cfg->arch.thunks, THUNK_ADDR_ALIGNMENT);
+#endif
 		}
 		thunks = cfg->arch.thunks;
 		thunks_size = cfg->arch.thunks_size;
@@ -3907,11 +3910,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (cfg->compile_aot && ins->sreg1 == ppc_r12) {
 				/* The trampolines clobber this */
 				ppc_mr (code, ppc_r29, ins->sreg1);
-				ppc_ldptr (code, ppc_r0, ins->inst_offset, ppc_r29);
+				ppc_ldptr (code, ppc_r12, ins->inst_offset, ppc_r29);
 			} else {
-				ppc_ldptr (code, ppc_r0, ins->inst_offset, ins->sreg1);
+				ppc_ldptr (code, ppc_r12, ins->inst_offset, ins->sreg1);
 			}
-			ppc_mtlr (code, ppc_r0);
+			ppc_mtlr (code, ppc_r12);
 			ppc_blrl (code);
 			/* FIXME: this should be handled somewhere else in the new jit */
 			code = emit_move_return_value (cfg, ins, code);
@@ -5556,6 +5559,14 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 	}
 
 	set_code_cursor (cfg, code);
+
+#ifdef THUNK_ADDR_ALIGNMENT
+	/* We need to align thunks_offset to 8 byte boundary, hence allocating first 8 bytes 
+	for padding purpose */
+	if (cfg->thunk_area != 0) {
+		cfg->thunk_area += THUNK_ADDR_ALIGNMENT;
+	}
+#endif
 }
 #endif
 
