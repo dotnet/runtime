@@ -235,7 +235,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     if (currentTestExecutor != 0)
                         testExecutorBuilder.AppendLine("}");
                     currentTestExecutor++;
-                    testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}(XUnitWrapperLibrary.TestSummary summary, XUnitWrapperLibrary.TestFilter filter, XUnitWrapperLibrary.TestOutputRecorder outputRecorder, System.Diagnostics.Stopwatch stopwatch){{");
+                    testExecutorBuilder.AppendLine($"static void TestExecutor{currentTestExecutor}(XUnitWrapperLibrary.TestSummary summary, XUnitWrapperLibrary.TestFilter filter, XUnitWrapperLibrary.TestOutputRecorder outputRecorder, System.Diagnostics.Stopwatch stopwatch){{");
                     builder.AppendLine($"TestExecutor{currentTestExecutor}(summary, filter, outputRecorder, stopwatch);");
                     testsLeftInCurrentTestExecutor = 100; // Break test executors into groups of 100, which empircally seems to work well
                 }
