@@ -342,10 +342,12 @@ The .NET Foundation licenses this file to you under the MIT license.
       <_IgnoreLinkerWarnings Condition="'$(TargetOS)' == 'OSX'">true</_IgnoreLinkerWarnings>
 
       <!-- some flags are not supported by older versions of linkers which we care about -->
-      <_UnsupportedLinkerOptionRegex>.*(nostart-stop-gc).*</_UnsupportedLinkerOptionRegex>
+      <_UnsupportedLinkerOptionPattern>(nostart-stop-gc)</_UnsupportedLinkerOptionPattern>
     </PropertyGroup>
 
-    <Exec Command="&quot;$(CppLinker)&quot; @(CustomLinkerArg, ' ')" Condition="'$(TargetOS)' != 'windows' and '$(NativeLib)' != 'Static'" IgnoreStandardErrorWarningFormat="$(_IgnoreLinkerWarnings)" CustomWarningRegularExpression="$(_UnsupportedLinkerOptionRegex)" />
+    <!-- redirect stdout to temporary stream so we can pipe stderr to filter out ignorable warnings then reset the streams; this method preserves status code -->
+    <Exec Command="((((&quot;$(CppLinker)&quot; @(CustomLinkerArg, ' ') 2&gt;&amp;1 1&gt;&amp;3; echo $? &gt;&amp;2) | grep -vE &apos;$(_UnsupportedLinkerOptionPattern)&apos;) 2&gt;&amp;1 1&gt;&amp;3) | (read xs; exit $xs)) 3&gt;&amp;1"
+      Condition="'$(TargetOS)' != 'windows' and '$(NativeLib)' != 'Static'" IgnoreStandardErrorWarningFormat="$(_IgnoreLinkerWarnings)" />
     <Exec Command="&quot;$(CppLibCreator)&quot; @(CustomLibArg, ' ')" Condition="'$(TargetOS)' != 'windows' and '$(NativeLib)' == 'Static'" />
 
     <WriteLinesToFile File="$(NativeIntermediateOutputPath)link.rsp" Lines="@(CustomLinkerArg)" Overwrite="true" Encoding="utf-8" Condition="'$(TargetOS)' == 'windows' and '$(NativeLib)' != 'Static'" />
