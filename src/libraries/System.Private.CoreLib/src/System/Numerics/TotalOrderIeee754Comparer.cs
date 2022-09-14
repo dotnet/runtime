@@ -98,17 +98,54 @@ namespace System.Numerics
                 // One or two of the values are NaN
                 // totalOrder defines that -qNaN < -sNaN < x < +sNaN < + qNaN
 
+                static bool IsQuietNaN(T value)
+                {
+                    // Determines if the value is signaling NaN (sNaN), or quiet NaN (qNaN).
+                    // Although in .NET we don't create sNaN values in arithmetic operations,
+                    // we should correctly handle it since the ordering is defined by IEEE 754.
+
+                    // For binary floating-points, qNaN is defined as the first bit of significant is 1
+                    // Revisit this when IEEE 754 decimals are added
+                    Span<byte> significants = stackalloc byte[value!.GetSignificandByteCount()];
+                    value.TryWriteSignificandLittleEndian(significants, out _);
+
+                    int bit = value.GetSignificandBitLength();
+                    return ((significants[bit / 8] >> (bit % 8)) & 1) != 0;
+                }
+
                 if (T.IsNaN(x))
                 {
                     if (T.IsNaN(y))
                     {
                         if (T.IsNegative(x))
                         {
-                            return T.IsNegative(y) ? 0 : -1;
+                            if (T.IsPositive(y))
+                            {
+                                return -1;
+                            }
+                            else if (IsQuietNaN(x))
+                            {
+                                return IsQuietNaN(y) ? 0 : 1;
+                            }
+                            else
+                            {
+                                return IsQuietNaN(y) ? -1 : 0;
+                            }
                         }
                         else
                         {
-                            return T.IsPositive(y) ? 0 : 1;
+                            if (T.IsNegative(y))
+                            {
+                                return 1;
+                            }
+                            else if (IsQuietNaN(x))
+                            {
+                                return IsQuietNaN(y) ? 0 : -1;
+                            }
+                            else
+                            {
+                                return IsQuietNaN(y) ? 1 : 0;
+                            }
                         }
                     }
                     else
