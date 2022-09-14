@@ -52,11 +52,13 @@
     <Nullable Condition="'$(Nullable)' == '' and '$(Language)' == 'C#'">annotations</Nullable>
   </PropertyGroup>
 
-  <!-- Unique assembly versions increases(3x) the compiler throughput during reference package updates. -->
   <PropertyGroup Condition="'$(IsGeneratorProject)' == 'true'">
+    <!-- Unique assembly versions increases(3x) the compiler throughput during reference package updates. -->
     <AutoGenerateAssemblyVersion>true</AutoGenerateAssemblyVersion>
     <!-- To suppress warnings about resetting the assembly version.-->
     <AssemblyVersion />
+    <!-- Enforce extended rules around API usages in analyzers and generators to ensure our generators follow best practices. -->
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
   </PropertyGroup>
 
   <ItemGroup>
