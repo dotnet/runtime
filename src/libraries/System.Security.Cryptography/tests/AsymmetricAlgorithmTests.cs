@@ -370,7 +370,7 @@ namespace System.Security.Cryptography.Tests
             PbeParameters expectedPbeParameters = new PbeParameters(
                 PbeEncryptionAlgorithm.Aes256Cbc,
                 HashAlgorithmName.SHA384,
-                RandomNumberGenerator.GetInt32(0, 100_000));
+                RandomNumberGenerator.GetInt32(1, 100_000));
 
             byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<char> password, PbeParameters pbeParameters)
             {
@@ -407,7 +407,7 @@ namespace System.Security.Cryptography.Tests
             PbeParameters expectedPbeParameters = new PbeParameters(
                 PbeEncryptionAlgorithm.Aes256Cbc,
                 HashAlgorithmName.SHA384,
-                RandomNumberGenerator.GetInt32(0, 100_000));
+                RandomNumberGenerator.GetInt32(1, 100_000));
 
             byte[] ExportEncryptedPkcs8PrivateKey(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
             {
@@ -444,7 +444,7 @@ namespace System.Security.Cryptography.Tests
             PbeParameters expectedPbeParameters = new PbeParameters(
                 PbeEncryptionAlgorithm.Aes256Cbc,
                 HashAlgorithmName.SHA384,
-                RandomNumberGenerator.GetInt32(0, 100_000));
+                RandomNumberGenerator.GetInt32(1, 100_000));
 
             bool TryExportEncryptedPkcs8PrivateKey(
                 ReadOnlySpan<char> password,
@@ -510,7 +510,7 @@ namespace System.Security.Cryptography.Tests
             PbeParameters expectedPbeParameters = new PbeParameters(
                 PbeEncryptionAlgorithm.Aes256Cbc,
                 HashAlgorithmName.SHA384,
-                RandomNumberGenerator.GetInt32(0, 100_000));
+                RandomNumberGenerator.GetInt32(1, 100_000));
 
             bool TryExportEncryptedPkcs8PrivateKey(
                 ReadOnlySpan<byte> passwordBytes,

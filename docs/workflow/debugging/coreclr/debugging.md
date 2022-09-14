@@ -66,7 +66,7 @@ Keeping with latest version of Visual Studio is recommended.
         },
         {
           "name": "CORE_LIBRARIES",
-          // for example net7.0-windows-Debug-x64
+          // for example net8.0-windows-Debug-x64
           "value": "${cmake.installRoot}\\..\\..\\runtime\\<tfm>-windows-<configuration>-<arch>\\"
         }
       ],

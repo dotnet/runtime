@@ -20,7 +20,7 @@ namespace ILCompiler
     public class MstatObjectDumper : ObjectDumper
     {
         private const int VersionMajor = 1;
-        private const int VersionMinor = 0;
+        private const int VersionMinor = 1;
 
         private readonly string _fileName;
         private readonly TypeSystemMetadataEmitter _emitter;
@@ -81,7 +81,8 @@ namespace ILCompiler
         {
             encoder.OpCode(ILOpCode.Ldtoken);
             encoder.Token(_emitter.EmitMetadataHandleForTypeSystemEntity(entity));
-            encoder.LoadString(_emitter.GetUserStringHandle(mangledName));
+            // Would like to do this but mangled names are very long and go over the 16 MB string limit quickly.
+            // encoder.LoadString(_emitter.GetUserStringHandle(mangledName));
             encoder.LoadConstantI4(blob.Data.Length);
         }
 
@@ -92,7 +93,8 @@ namespace ILCompiler
             {
                 methods.OpCode(ILOpCode.Ldtoken);
                 methods.Token(_emitter.EmitMetadataHandleForTypeSystemEntity(m.Key));
-                methods.LoadString(_emitter.GetUserStringHandle(m.Value.MangledName));
+                // Would like to do this but mangled names are very long and go over the 16 MB string limit quickly.
+                // methods.LoadString(_emitter.GetUserStringHandle(m.Value.MangledName));
                 methods.LoadConstantI4(m.Value.Size);
                 methods.LoadConstantI4(m.Value.GcInfoSize);
                 methods.LoadConstantI4(_methodEhInfo.GetValueOrDefault(m.Key));

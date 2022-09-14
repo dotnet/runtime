@@ -1,7 +1,7 @@
 {
   "version": "${WorkloadVersion}",
   "depends-on": {
-    "Microsoft.NET.Workload.Emscripten": "${EmscriptenVersion}"
+    "Microsoft.NET.Workload.Emscripten.net7": "${EmscriptenVersion}"
   },
   "workloads": {
     "wasm-tools": {
@@ -11,7 +11,7 @@
         "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.browser-wasm"
       ],
-      "extends": [ "microsoft-net-runtime-mono-tooling", "microsoft-net-sdk-emscripten" ],
+      "extends": [ "microsoft-net-runtime-mono-tooling", "microsoft-net-sdk-emscripten-net7" ],
       "platforms": [ "win-x64", "linux-x64", "osx-x64", "osx-arm64" ]
     },
     "wasm-experimental": {
@@ -142,8 +142,8 @@
       "description": "Shared native build tooling for Mono runtime",
       "packs": [
         "Microsoft.NET.Runtime.MonoAOTCompiler.Task",
-        "Microsoft.NET.Runtime.MonoTargets.Sdk",
-      ],
+        "Microsoft.NET.Runtime.MonoTargets.Sdk"
+      ]
     }
   },
   "packs": {
