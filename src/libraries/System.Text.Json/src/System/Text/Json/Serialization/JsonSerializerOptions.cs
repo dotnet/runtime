@@ -643,17 +643,31 @@ namespace System.Text.Json
             // Even if a resolver has already been specified, we need to root
             // the default resolver to gain access to the default converters.
             DefaultJsonTypeInfoResolver defaultResolver = DefaultJsonTypeInfoResolver.RootDefaultInstance();
-            _typeInfoResolver ??= defaultResolver;
+
+            switch (_typeInfoResolver)
+            {
+                case null:
+                    // Use the default reflection-based resolver if no resolver has been specified.
+                    _typeInfoResolver = defaultResolver;
+                    break;
+
+                case JsonSerializerContext ctx when AppContextSwitchHelper.IsSourceGenReflectionFallbackEnabled:
+                    // .NET 6 compatibility mode: enable fallback to reflection metadata for JsonSerializerContext
+                    _effectiveJsonTypeInfoResolver = JsonTypeInfoResolver.Combine(ctx, defaultResolver);
+                    break;
+            }
+
             MakeReadOnly();
             _isInitializedForReflectionSerializer = true;
         }
 
         internal bool IsInitializedForReflectionSerializer => _isInitializedForReflectionSerializer;
         private volatile bool _isInitializedForReflectionSerializer;
+        private IJsonTypeInfoResolver? _effectiveJsonTypeInfoResolver;
 
         private JsonTypeInfo? GetTypeInfoNoCaching(Type type)
         {
-            JsonTypeInfo? info = _typeInfoResolver?.GetTypeInfo(type, this);
+            JsonTypeInfo? info = (_effectiveJsonTypeInfoResolver ?? _typeInfoResolver)?.GetTypeInfo(type, this);
 
             if (info != null)
             {
