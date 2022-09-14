@@ -111,6 +111,19 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(DataContractSerializerHelper.SerializeAndDeserialize<DateTime>(DateTime.SpecifyKind(DateTime.MaxValue, DateTimeKind.Utc), @"<dateTime xmlns=""http://schemas.microsoft.com/2003/10/Serialization/"">9999-12-31T23:59:59.9999999Z</dateTime>"), DateTime.SpecifyKind(DateTime.MaxValue, DateTimeKind.Utc));
     }
 
+
+    [Fact]
+    public static void DCS_BinarySerializationOfDateTime()
+    {
+        DateTime dateTime = DateTime.Parse("2021-01-01");
+        MemoryStream ms = new();
+        DataContractSerializer dcs = new(dateTime.GetType());
+        using (XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(ms, null, null, ownsStream: true))
+            dcs.WriteObject(writer, dateTime);
+        var serializedBytes = ms.ToArray();
+        Assert.Equal(72, serializedBytes.Length);
+    }
+
     [Fact]
     public static void DCS_DecimalAsRoot()
     {
