@@ -93,9 +93,8 @@ namespace System
                     return ReadXdgDirectory(home, "XDG_TEMPLATES_DIR", "Templates");
 #if TARGET_OSX
                 case SpecialFolder.ApplicationData:
-                    return Path.Combine(home, "Library", "Application Support");
                 case SpecialFolder.LocalApplicationData:
-                    return Path.Combine(home, "Library");
+                    return Path.Combine(home, "Library", "Application Support");
                 case SpecialFolder.MyDocuments: // same value as Personal
                     return Path.Combine(home, "Documents");
                 case SpecialFolder.MyMusic:
