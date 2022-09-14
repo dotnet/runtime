@@ -54,7 +54,6 @@ function print_usage {
     echo '  --gcstresslevel=<n>              : Runs the tests with COMPlus_GCStress=n'
     echo '  --gcname=<n>                     : Runs the tests with COMPlus_GCName=n'
     echo '  --ilasmroundtrip                 : Runs ilasm round trip on the tests'
-    echo '  --disasmchecks                   : Runs disasm checks on the tests if they have them'
     echo '    0: None                                1: GC on all allocs and '"'easy'"' places'
     echo '    2: GC on transitions to preemptive GC  4: GC on every allowable JITed instr'
     echo '    8: GC on every allowable NGEN instr   16: GC only on a unique stack trace'
@@ -1041,7 +1040,6 @@ verbose=0
 doCrossgen=0
 jitdisasm=0
 ilasmroundtrip=
-disasmchecks=
 
 for i in "$@"
 do
@@ -1083,9 +1081,6 @@ do
             ;;
         --ilasmroundtrip)
             ((ilasmroundtrip = 1))
-            ;;
-        --disasmchecks)
-            ((disasmchecks = 1))
             ;;
         --testRootDir=*)
             testRootDir=${i#*=}
