@@ -248,9 +248,10 @@ namespace Microsoft.Extensions.Logging.Generators
                                             keepMethod = false;
                                         }
 
-                                        if (method.Body != null)
+                                        CSharpSyntaxNode? methodBody = method.Body as CSharpSyntaxNode ?? method.ExpressionBody;
+                                        if (methodBody != null)
                                         {
-                                            Diag(DiagnosticDescriptors.LoggingMethodHasBody, method.Body.GetLocation());
+                                            Diag(DiagnosticDescriptors.LoggingMethodHasBody, methodBody.GetLocation());
                                             keepMethod = false;
                                         }
 
