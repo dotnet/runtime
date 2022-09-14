@@ -673,7 +673,8 @@ namespace Microsoft.Extensions.Hosting.Tests
                 {
                     config.AddInMemoryCollection(new[]
                     {
-                        new KeyValuePair<string, string>(HostDefaults.ApplicationKey, "MyProjectReference")
+                        new KeyValuePair<string, string>(HostDefaults.ApplicationKey, "MyProjectReference"),
+                        new KeyValuePair<string, string>(HostDefaults.EnvironmentKey, Environments.Development)
                     });
                 })
                 .Build())
