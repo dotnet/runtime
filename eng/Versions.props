@@ -42,12 +42,12 @@
   </PropertyGroup>
   <PropertyGroup>
     <!-- Code analysis dependencies -->
-    <MicrosoftCodeAnalysisAnalyzersVersion>3.3.3</MicrosoftCodeAnalysisAnalyzersVersion>
-    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>4.4.0-1.final</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
-    <MicrosoftCodeAnalysisCSharpWorkspacesVersion>4.4.0-1.final</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
-    <MicrosoftCodeAnalysisCSharpVersion>4.4.0-1.final</MicrosoftCodeAnalysisCSharpVersion>
+    <MicrosoftCodeAnalysisAnalyzersVersion>3.3.4-beta1.22452.2</MicrosoftCodeAnalysisAnalyzersVersion>
+    <MicrosoftCodeAnalysisCSharpCodeStyleVersion>4.4.0-3.22452.8</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
+    <MicrosoftCodeAnalysisCSharpWorkspacesVersion>4.4.0-3.22452.8</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
+    <MicrosoftCodeAnalysisCSharpVersion>4.4.0-3.22452.8</MicrosoftCodeAnalysisCSharpVersion>
     <MicrosoftCodeAnalysisNetAnalyzersVersion>7.0.0-preview1.22452.2</MicrosoftCodeAnalysisNetAnalyzersVersion>
-    <MicrosoftCodeAnalysisVersion>4.4.0-1.final</MicrosoftCodeAnalysisVersion>
+    <MicrosoftCodeAnalysisVersion>4.4.0-3.22452.8</MicrosoftCodeAnalysisVersion>
     <!--
       TODO: Remove pinned version once arcade supplies a compiler that enables the repo to compile.
     -->
