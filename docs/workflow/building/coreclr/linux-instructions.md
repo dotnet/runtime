@@ -62,8 +62,6 @@ This table of images might often become stale as we change our images as our req
 | Alpine (x64, arm64 ROOTFS)        | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-alpine-20210923140502-78f7860` | `/crossrootfs/arm64` | -clang9       |
 | FreeBSD (x64 ROOTFS)              | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12-20220831130538-f13d79e`   | `/crossrootfs/x64`   | (default)     |
 
-Alternatively, for normal repo building you can use the latest (official releases and/or nightly) _SDK_ images found in their [official Microsoft Docker website](https://hub.docker.com/_/microsoft-dotnet-sdk/). Keep in mind that you might have to do additional setup for the _ROOTFS_ stuff if you want to do cross building for arm32/arm64 using those images. Instructions on how to do this can be found [here](/docs/workflow/building/coreclr/cross-building.md#linux-cross-building).
-
 ## Build using your own Environment
 
 Ensure you have all of the prerequisites installed from the [Linux Requirements](/docs/workflow/requirements/linux-requirements.md).
