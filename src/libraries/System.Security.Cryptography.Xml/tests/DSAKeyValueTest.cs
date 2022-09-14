@@ -41,14 +41,24 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void Ctor_Dsa_Null()
         {
+#if NET
             Assert.Throws<ArgumentNullException>("key", () => new DSAKeyValue(null));
+#else
+            DSAKeyValue dsaKeyValue = new DSAKeyValue(null);
+            Assert.Null(dsaKeyValue.Key);
+#endif
         }
 
         [Fact]
         public static void KeyProperty_SetNull()
         {
             DSAKeyValue dsaKeyValue = new DSAKeyValue();
+#if NET
             Assert.Throws<ArgumentNullException>("value", () => dsaKeyValue.Key = null);
+#else
+            dsaKeyValue.Key = null;
+            Assert.Null(dsaKeyValue.Key);
+#endif
         }
 
         [Fact]
