@@ -1851,8 +1851,8 @@ class SuperPMIReplayAsmDiffs:
                 write_fh.write("<span style=\"color:#d35400\">MISSED</span> contexts: base: <span style=\"color:{}\">{:,d}</span>, diff: <span style=\"color:{}\">{:,d}</span>\n\n".format(color_base, missing_base_contexts, color_diff, missing_diff_contexts))
 
                 if any(has_diff for (_, _, _, has_diff, _) in asm_diffs):
-                    def write_pivot_section(col, open):
-                        write_fh.write("\n<details{}>\n".format(" open" if open else ""))
+                    def write_pivot_section(col):
+                        write_fh.write("\n<details>\n")
                         sum_base = sum(int(base_metrics[col]["Diffed code bytes"]) for (_, base_metrics, _, _, _) in asm_diffs)
                         sum_diff = sum(int(diff_metrics[col]["Diffed code bytes"]) for (_, _, diff_metrics, _, _) in asm_diffs)
 
@@ -1872,9 +1872,9 @@ class SuperPMIReplayAsmDiffs:
 
                         write_fh.write("\n\n</details>\n")
 
-                    write_pivot_section("Overall", open=True)
-                    write_pivot_section("MinOpts", open=False)
-                    write_pivot_section("FullOpts", open=False)
+                    write_pivot_section("Overall")
+                    write_pivot_section("MinOpts")
+                    write_pivot_section("FullOpts")
                 else:
                     write_fh.write("No diffs found.\n")
 
@@ -2128,8 +2128,8 @@ class SuperPMIReplayThroughputDiff:
                     significant_diffs[mch_file] = is_significant(base, diff)
 
                 if any(significant_diffs[mch_file] for (mch_file, _, _) in tp_diffs):
-                    def write_pivot_section(col, open):
-                        write_fh.write("\n<details{}>\n".format(" open" if open else ""))
+                    def write_pivot_section(col):
+                        write_fh.write("\n<details>\n")
                         sum_base = sum(int(base_metrics[col]["Diff executed instructions"]) for (_, base_metrics, _) in tp_diffs)
                         sum_diff = sum(int(diff_metrics[col]["Diff executed instructions"]) for (_, _, diff_metrics) in tp_diffs)
 
@@ -2147,9 +2147,9 @@ class SuperPMIReplayThroughputDiff:
 
                         write_fh.write("\n\n</details>\n")
 
-                    write_pivot_section("Overall", open=True)
-                    write_pivot_section("MinOpts", open=False)
-                    write_pivot_section("FullOpts", open=False)
+                    write_pivot_section("Overall")
+                    write_pivot_section("MinOpts")
+                    write_pivot_section("FullOpts")
 
                 else:
                     write_fh.write("No significant throughput differences found\n")
