@@ -19,7 +19,7 @@ namespace
         return true;
     }
 
-    void log_error(const char* line, void* arg)
+    void log_error(const char* line)
     {
         pal::string_t lineStr;
         pal::clr_palstring(line, &lineStr);
@@ -61,6 +61,11 @@ pal::hresult_t coreclr_t::create(
     };
     properties.enumerate(callback);
 
+    if (coreclr_contract.coreclr_set_error_writer != nullptr)
+    {
+        coreclr_contract.coreclr_set_error_writer(log_error);
+    }
+
     pal::hresult_t hr;
     hr = coreclr_contract.coreclr_initialize(
         exe_path,
@@ -71,12 +76,13 @@ pal::hresult_t coreclr_t::create(
         &host_handle,
         &domain_id);
 
+    if (coreclr_contract.coreclr_set_error_writer != nullptr)
+    {
+        coreclr_contract.coreclr_set_error_writer(nullptr);
+    }
+
     if (!SUCCEEDED(hr))
     {
-        if (coreclr_contract.coreclr_get_error_info != nullptr)
-        {
-            coreclr_contract.coreclr_get_error_info(log_error, nullptr);
-        }
         return hr;
     }
 

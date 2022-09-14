@@ -48,23 +48,22 @@ CORECLR_HOSTING_API(coreclr_initialize,
             unsigned int* domainId);
 
 //
-// Type of the callback function called by the coreclr_get_error_info
+// Type of the callback function that can be set by the coreclr_set_error_writer
 //
-typedef void (*error_info_callback)(const char* line, void* arg);
+typedef void (*coreclr_error_writer_callback_fn) (const char *message);
 
 //
-// Initialize the CoreCLR. Creates and starts CoreCLR host and creates an app domain
+// Set callback for writing error logging
 //
 // Parameters:
-//  callBack                - callback that will be called for each line of the error info
-//  arg                     - argument to pass to the callback
+//  errorWriter             - callback that will be called for each line of the error info
+//                          - passing in NULL removes a callback that was previously set
 //
 // Returns:
-//  HRESULT indicating status of the operation. S_OK if the error info was successfully retrieved
+//  S_OK
 //
-CORECLR_HOSTING_API(coreclr_get_error_info,
-            error_info_callback callBack,
-            void* arg);
+CORECLR_HOSTING_API(coreclr_set_error_writer, 
+            coreclr_error_writer_callback_fn errorWriter);
 
 //
 // Shutdown CoreCLR. It unloads the app domain and stops the CoreCLR host.

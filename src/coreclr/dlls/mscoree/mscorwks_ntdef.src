@@ -21,7 +21,7 @@ EXPORTS
         ; Unix hosting API
         coreclr_create_delegate
         coreclr_execute_assembly
-        coreclr_get_error_info
+        coreclr_set_error_writer
         coreclr_initialize
         coreclr_shutdown
         coreclr_shutdown_2

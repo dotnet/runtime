@@ -9,7 +9,7 @@
 
 using host_handle_t = void*;
 
-typedef void (*error_info_callback)(const char* line, void* arg);
+typedef void (*coreclr_error_writer_callback_fn)(const char* line);
 
 // Prototype of the coreclr_initialize function from coreclr.dll
 using coreclr_initialize_fn = pal::hresult_t(STDMETHODCALLTYPE*)(
@@ -21,9 +21,8 @@ using coreclr_initialize_fn = pal::hresult_t(STDMETHODCALLTYPE*)(
     host_handle_t* hostHandle,
     unsigned int* domainId);
 
-using coreclr_get_error_info_fn = pal::hresult_t(STDMETHODCALLTYPE*)(
-    error_info_callback callBack,
-    void* arg);
+using coreclr_set_error_writer_fn = pal::hresult_t(STDMETHODCALLTYPE*)(
+    coreclr_error_writer_callback_fn callBack);
 
 // Prototype of the coreclr_shutdown function from coreclr.dll
 using coreclr_shutdown_fn = pal::hresult_t(STDMETHODCALLTYPE*)(
@@ -54,7 +53,7 @@ struct coreclr_resolver_contract_t
     pal::dll_t coreclr;
     coreclr_shutdown_fn coreclr_shutdown;
     coreclr_initialize_fn coreclr_initialize;
-    coreclr_get_error_info_fn coreclr_get_error_info;
+    coreclr_set_error_writer_fn coreclr_set_error_writer;
     coreclr_execute_assembly_fn coreclr_execute_assembly;
     coreclr_create_delegate_fn coreclr_create_delegate;
 };

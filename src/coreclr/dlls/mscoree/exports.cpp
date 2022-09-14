@@ -159,38 +159,30 @@ static void ConvertConfigPropertiesToUnicode(
     *propertyValuesWRef = propertyValuesW;
 }
 
+coreclr_error_writer_callback_fn g_errorWriter = nullptr;
+
+//
+// Set callback for writing error logging
+//
+// Parameters:
+//  errorWriter             - callback that will be called for each line of the error info
+//                          - passing in NULL removes a callback that was previously set
+//
+// Returns:
+//  S_OK
+//
+extern "C"
+DLLEXPORT
+int coreclr_set_error_writer(coreclr_error_writer_callback_fn error_writer)
+{
+    g_errorWriter = error_writer;
+    return S_OK;
+}
+
 #ifdef FEATURE_GDBJIT
 GetInfoForMethodDelegate getInfoForMethodDelegate = NULL;
 extern "C" int coreclr_create_delegate(void*, unsigned int, const char*, const char*, const char*, void**);
 #endif //FEATURE_GDBJIT
-
-//
-// Initialize the CoreCLR. Creates and starts CoreCLR host and creates an app domain
-//
-// Parameters:
-//  callBack                - callback that will be called for each line of the error info
-//  arg                     - argument to pass to the callback
-//
-// Returns:
-//  HRESULT indicating status of the operation. S_OK if the error info was successfully retrieved
-//
-extern "C"
-DLLEXPORT
-int coreclr_get_error_info(error_info_callback callBack, void* arg)
-{
-    const char hresultFormatString[] = "HRESULT 0x%08x at ";
-    char line[cchMaxAssertStackLevelStringLen + sizeof(hresultFormatString)];
-    int count = GetFailedHRLogEntryCount();;
-    for (int i = 0; i < count; i++)
-    {
-        FailedHRLogEntry* pEntry = GetFailedHRLogEntry(i);
-        int length = sprintf_s(line, sizeof(line), hresultFormatString, pEntry->hr);
-        VMToOSInterface::GetSymbolFromAddress(pEntry->address, line + length, sizeof(line) - length);
-        callBack(line, arg);
-    }
-    return S_OK;
-}
-
 //
 // Initialize the CoreCLR. Creates and starts CoreCLR host and creates an app domain
 //
@@ -274,10 +266,10 @@ int coreclr_initialize(
     InitializeStartupFlags(&startupFlags);
 
     hr = host->SetStartupFlags(startupFlags);
-    IfFailRet(hr);
+    IfFailGo(hr);
 
     hr = host->Start();
-    IfFailRet(hr);
+    IfFailGo(hr);
 
     hr = host->CreateAppDomainWithManager(
         appDomainFriendlyNameW,
@@ -313,6 +305,23 @@ int coreclr_initialize(
 
 #endif
     }
+
+ErrExit:
+    if (FAILED(hr) && g_errorWriter)
+    {
+        const char hresultFormatString[] = "HRESULT 0x%08x at ";
+        char line[cchMaxAssertStackLevelStringLen + sizeof(hresultFormatString)];
+        int count = GetFailedHRLogEntryCount();;
+        for (int i = 0; i < count; i++)
+        {
+            FailedHRLogEntry* pEntry = GetFailedHRLogEntry(i);
+            int length = sprintf_s(line, sizeof(line), hresultFormatString, pEntry->hr);
+            VMToOSInterface::GetSymbolFromAddress(pEntry->address, line + length, sizeof(line) - length);
+            g_errorWriter(line);
+        }
+
+    }
+
     return hr;
 }
 
