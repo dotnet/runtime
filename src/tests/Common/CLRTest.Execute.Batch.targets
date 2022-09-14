@@ -303,7 +303,7 @@ if defined RunCrossGen2 (
 )
 
 REM Change to runtime config check
-if NOT "$(BatchDisasmOutputFile)"=="" (
+if NOT "$(BatchDisasmOutputFile)"=="NUL" (
   ECHO %LAUNCHER% %ExePath% %CLRTestExecutionArguments% ^> $(BatchDisasmOutputFile)
   %LAUNCHER% %ExePath% %CLRTestExecutionArguments% > $(BatchDisasmOutputFile)
 ) ELSE (
