@@ -10192,11 +10192,13 @@ bool Compiler::optAnyChildNotRemoved(unsigned loopNum)
 //
 void Compiler::optMarkLoopRemoved(unsigned loopNum)
 {
-    JITDUMP("Marking loop " FMT_LP " removed\n", loopNum);
+#ifdef DEBUG
     if (verbose)
     {
+        printf("Marking loop " FMT_LP " removed\n", loopNum);
         optPrintLoopTable();
     }
+#endif
 
     assert(loopNum < optLoopCount);
     LoopDsc& loop = optLoopTable[loopNum];
@@ -10372,16 +10374,16 @@ void Compiler::optMarkLoopRemoved(unsigned loopNum)
         JITDUMP("Removed loop " FMT_LP " has one or more live children\n", loopNum);
     }
 
+    if (verbose)
+    {
+        printf("Removed " FMT_LP "\n", loopNum);
+        optPrintLoopTable();
+    }
+
 // Note: we can't call `fgDebugCheckLoopTable()` here because if there are live children, it will assert.
 // Assume the caller is going to fix up the table and `bbNatLoopNum` block annotations before the next time
 // `fgDebugCheckLoopTable()` is called.
 #endif // DEBUG
-
-    JITDUMP("Removed " FMT_LP "\n", loopNum);
-    if (verbose)
-    {
-        optPrintLoopTable();
-    }
 }
 
 ValueNum Compiler::optConservativeNormalVN(GenTree* tree)
