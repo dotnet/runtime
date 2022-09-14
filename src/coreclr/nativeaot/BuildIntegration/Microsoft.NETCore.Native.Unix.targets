@@ -112,8 +112,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-Wl,-u,_NativeAOT_StaticInitialization" Condition="'$(TargetOS)' == 'OSX' and '$(NativeLib)' == 'Shared'" />
       <LinkerArg Include="-Wl,--require-defined,NativeAOT_StaticInitialization" Condition="'$(TargetOS)' != 'OSX' and '$(NativeLib)' == 'Shared'" />
       <LinkerArg Include="-fuse-ld=lld" Condition="'$(UseLLVMLinker)' == 'true'" />
-      <!-- with llvm 13 ld.lld and binutils' ld, we get undefined symbol errors for '__start___modules', '__stop___modules' etc. following the guideline from https://lld.llvm.org/ELF/start-stop-gc -->
-      <LinkerArg Include="-Wl,-z,nostart-stop-gc" Condition="'$(TargetOS)' != 'OSX'" />
 
       <LinkerArg Include="@(NativeFramework->'-framework %(Identity)')" Condition="'$(TargetOS)' == 'OSX'" />
     </ItemGroup>

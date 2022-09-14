@@ -74,18 +74,30 @@ extern char __unbox_z __asm("section$end$__TEXT$__unbox");
 
 #else // __APPLE__
 
+#if defined(__has_attribute) && __has_attribute(retain)
+#define RETAIN_SECTION(name) __attribute__((retain,used,section(name)))
+#else
+#define RETAIN_SECTION(name)
+#endif
+
 extern "C" void * __start___modules[];
 extern "C" void * __stop___modules[];
+
+RETAIN_SECTION("__modules")
 static void * (&__modules_a)[] = __start___modules;
 static void * (&__modules_z)[] = __stop___modules;
 
 extern "C" char __start___managedcode;
 extern "C" char __stop___managedcode;
+
+RETAIN_SECTION("__managedcode")
 static char& __managedcode_a = __start___managedcode;
 static char& __managedcode_z = __stop___managedcode;
 
 extern "C" char __start___unbox;
 extern "C" char __stop___unbox;
+
+RETAIN_SECTION("__unbox")
 static char& __unbox_a = __start___unbox;
 static char& __unbox_z = __stop___unbox;
 
