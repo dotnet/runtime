@@ -21,13 +21,18 @@ namespace ILCompiler.DependencyAnalysis
     ///
     /// Field Size      | Contents
     /// ----------------+-----------------------------------
-    /// UInt16          | Component Size. For arrays this is the element type size, for strings it is 2 (.NET uses
-    ///                 | UTF16 character encoding), for generic type definitions it is the number of generic parameters,
-    ///                 | and 0 for all other types.
+    /// UInt32          | Flags field
+    ///                 | Flags for: IsValueType, IsCrossModule, HasPointers, HasOptionalFields, IsInterface, IsGeneric, etc ...
+    ///                 | EETypeKind (Normal, Array, Pointer type)
     ///                 |
-    /// UInt16          | EETypeKind (Normal, Array, Pointer type). Flags for: IsValueType, IsCrossModule, HasPointers,
-    ///                 | HasOptionalFields, IsInterface, IsGeneric. Top 5 bits are used for enum EETypeElementType to
-    ///                 | record whether it's back by an Int32, Int16 etc
+    ///                 | 5 bits near the top are used for enum EETypeElementType to record whether it's back by an Int32, Int16 etc
+    ///                 |
+    ///                 | The highest/sign bit indicates whether the lower Uint16 contains a number, which represents:
+    ///                 | - element type size for arrays,
+    ///                 | - char size for strings (normally 2, since .NET uses UTF16 character encoding),
+    ///                 | - for generic type definitions it is the number of generic parameters,
+    ///                 |
+    ///                 | If the sign bit is not set, then the lower Uint16 is used for additional ExtendedFlags
     ///                 |
     /// Uint32          | Base size.
     ///                 |

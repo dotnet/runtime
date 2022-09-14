@@ -20,7 +20,7 @@ namespace System
         //Creates a new WeakReference that keeps track of target.
         private void Create(T target, bool trackResurrection)
         {
-            m_handle = (IntPtr)GCHandle.Alloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
+            m_handle = RuntimeImports.RhHandleAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
             m_trackResurrection = trackResurrection;
 
             if (target != null)

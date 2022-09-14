@@ -250,8 +250,8 @@ namespace Internal.Runtime
         // upper ushort is used for Flags
         // lower ushort is used for
         // - component size for strings and arrays,
-        // - type arg count for typedefs,
-        // - otherwise holds FlagsEx bits
+        // - type arg count for generic type definitions MethodTables,
+        // - otherwise holds ExtendedFlags bits
         private uint _uFlags;
         private uint _uBaseSize;
         private RelatedTypeUnion _relatedType;
@@ -284,7 +284,7 @@ namespace Internal.Runtime
             {
                 if (value)
                 {
-                    Debug.Assert(FlagsEx == 0);
+                    Debug.Assert(ExtendedFlags == 0);
                     _uFlags |= (uint)EETypeFlags.HasComponentSizeFlag;
                 }
                 else
@@ -341,7 +341,7 @@ namespace Internal.Runtime
 #endif
         }
 
-        internal ushort FlagsEx
+        internal ushort ExtendedFlags
         {
             get
             {
@@ -351,7 +351,7 @@ namespace Internal.Runtime
             set
             {
                 Debug.Assert(!HasComponentSize);
-                Debug.Assert(FlagsEx == 0);
+                Debug.Assert(ExtendedFlags == 0);
                 _uFlags |= (uint)value;
             }
 #endif

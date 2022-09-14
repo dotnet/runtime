@@ -133,7 +133,7 @@ private:
         };
     };
 
-    // used for component size for strings and arrays, type arg count for typedefs, otherwise holds FlagsEx bits
+    // used for component size for strings and arrays, type arg count for typedefs, otherwise holds ExtendedFlags bits
     union
     {
         uint32_t              m_uFlags;
@@ -189,11 +189,11 @@ private:
         ElementTypeMask      = 0x7C000000,
         ElementTypeShift     = 26,
 
-        // The m_usComponentSize is a number (not holding FlagsEx).
+        // The m_usComponentSize is a number (not holding ExtendedFlags).
         HasComponentSizeFlag = 0x80000000,
     };
 
-    enum FlagsEx
+    enum ExtendedFlags
     {
         HasEagerFinalizerFlag = 0x0001,
         HasCriticalFinalizerFlag = 0x0002,   // NYI, tracked by https://github.com/dotnet/runtime/issues/75106

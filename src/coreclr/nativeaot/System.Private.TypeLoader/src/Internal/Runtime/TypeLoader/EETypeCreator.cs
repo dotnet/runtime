@@ -233,6 +233,7 @@ namespace Internal.Runtime.TypeLoader
                 }
                 else
                 {
+#if FEATURE_UNIVERSAL_GENERICS
                     flags = EETypeBuilderHelpers.ComputeFlags(state.TypeBeingBuilt);
                     Debug.Assert((flags & (uint)EETypeFlags.HasComponentSizeFlag) == 0);
                     flags |= EETypeBuilderHelpers.ComputeFlagsEx(state.TypeBeingBuilt);
@@ -265,6 +266,10 @@ namespace Internal.Runtime.TypeLoader
                     }
 
                     typeManager = PermanentAllocatedMemoryBlobs.GetPointerToIntPtr(moduleInfo.Handle.GetIntPtrUNSAFE());
+#else
+                    Debug.Fail("This code path should be unreachable (universal generics).");
+                    throw new UnreachableException();
+#endif
                 }
 
                 flags |= (uint)EETypeFlags.IsDynamicTypeFlag;
