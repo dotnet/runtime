@@ -61,6 +61,9 @@ pal::hresult_t coreclr_t::create(
     };
     properties.enumerate(callback);
 
+    // Can't use propagate_error_writer_t here because of the difference in encoding on Windows
+    // coreclr error writer always gets UTF8 string, but error writers in hostfxr/hostpolicy will use UTF16 on Windows
+    // and UTF8 everywhere else.
     if (coreclr_contract.coreclr_set_error_writer != nullptr)
     {
         coreclr_contract.coreclr_set_error_writer(log_error);
