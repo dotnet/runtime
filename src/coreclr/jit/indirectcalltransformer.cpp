@@ -540,27 +540,38 @@ private:
             checkBlock             = currBlock;
             checkBlock->bbJumpKind = BBJ_COND;
 
+            // The guard is going to dereference 'this'. This needs to happen
+            // after arguments have been evaluated if 'this' may be null, so we
+            // have to spill all arguments with side effects.
+            for (CallArg& arg : origCall->gtArgs.Args())
+            {
+                bool     spill = false;
+                GenTree* node  = arg.GetNode();
+
+                if (arg.GetWellKnownArg() == WellKnownArg::ThisPointer)
+                {
+                    // Guard is going to access this arg, spill it if it is
+                    // complex, regardless of side effects.
+                    spill = !node->IsLocal();
+                }
+                else
+                {
+                    spill = (arg.GetNode()->gtFlags & GTF_SIDE_EFFECT) != 0;
+                }
+
+                if (spill)
+                {
+                    unsigned   tmpNum  = compiler->lvaGrabTemp(true DEBUGARG("guarded devirt arg temp"));
+                    GenTree*   asgTree = compiler->gtNewTempAssign(tmpNum, arg.GetNode());
+                    Statement* asgStmt = compiler->fgNewStmtFromTree(asgTree, stmt->GetDebugInfo());
+                    compiler->fgInsertStmtAtEnd(checkBlock, asgStmt);
+
+                    arg.SetEarlyNode(compiler->gtNewLclvNode(tmpNum, genActualType(arg.GetNode())));
+                }
+            }
+
             CallArg* thisArg  = origCall->gtArgs.GetThisArg();
-            GenTree* thisTree = thisArg->GetNode();
-
-            // Create temp for this if the tree is costly.
-            if (thisTree->IsLocal())
-            {
-                thisTree = compiler->gtCloneExpr(thisTree);
-            }
-            else
-            {
-                const unsigned thisTempNum = compiler->lvaGrabTemp(true DEBUGARG("guarded devirt this temp"));
-                GenTree*       asgTree     = compiler->gtNewTempAssign(thisTempNum, thisTree);
-                Statement*     asgStmt     = compiler->fgNewStmtFromTree(asgTree, stmt->GetDebugInfo());
-                compiler->fgInsertStmtAtEnd(checkBlock, asgStmt);
-
-                thisTree = compiler->gtNewLclvNode(thisTempNum, TYP_REF);
-
-                // Propagate the new this to the call. Must be a new expr as the call
-                // will live on in the else block and thisTree is used below.
-                thisArg->SetEarlyNode(compiler->gtNewLclvNode(thisTempNum, TYP_REF));
-            }
+            GenTree* thisTree = compiler->gtCloneExpr(thisArg->GetNode());
 
             // Remember the current last statement. If we're doing a chained GDV, we'll clone/copy
             // all the code in the check block up to and including this statement.
