@@ -23,6 +23,17 @@ namespace System.Numerics
         /// <returns>
         /// A signed integer that indicates the relative
         /// values of <paramref name="x"/> and <paramref name="y"/>.
+        /// <list type="bullet">
+        ///   <item>
+        ///     <description>If less than 0, <paramref name="x" /> is less than <paramref name="y" />.</desciption>
+        ///   </item>
+        ///   <item>
+        ///     <description>If 0, <paramref name="x" /> equals <paramref name="y" />.</desciption>
+        ///   </item>
+        ///   <item>
+        ///     <description>If greater than 0, <paramref name="x" /> is greater than <paramref name="y" />.</desciption>
+        ///   </item>
+        /// </list>
         /// </returns>
         /// <remarks>
         /// IEEE754 specification defines totalOrder as a &lt;= semantic.
@@ -32,13 +43,9 @@ namespace System.Numerics
         {
             // IComparer contract is null < value
 
-            if (x is null && y is null)
+            if (x is null)
             {
-                return 0;
-            }
-            else if (x is null)
-            {
-                return -1;
+                return (y is null) ? 0 : -1;
             }
             else if (y is null)
             {
