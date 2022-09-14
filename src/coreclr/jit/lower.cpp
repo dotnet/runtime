@@ -2866,14 +2866,15 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
         // (== 1 or != 1) cases are transformed to (!= 0 or == 0) above
         // The compiler requires jumps to have relop operands, so we do not fold that case.
 
-        const bool optimizeToAnd = (op2Value == 0) && cmp->OperIs(GT_NE);
+        const bool optimizeToAnd    = (op2Value == 0) && cmp->OperIs(GT_NE);
         const bool optimizeToNotAnd = (op2Value == 0) && cmp->OperIs(GT_EQ);
 
-        if ((andOp2->IsIntegralConst(1)) && (genActualType(op1) == cmp->TypeGet()) && (optimizeToAnd || optimizeToNotAnd))
+        if ((andOp2->IsIntegralConst(1)) && (genActualType(op1) == cmp->TypeGet()) &&
+            (optimizeToAnd || optimizeToNotAnd))
         {
             LIR::Use cmpUse;
-            if (BlockRange().TryGetUse(cmp, &cmpUse) &&
-                !cmpUse.User()->OperIs(GT_JTRUE) && !cmpUse.User()->OperIsConditional())
+            if (BlockRange().TryGetUse(cmp, &cmpUse) && !cmpUse.User()->OperIs(GT_JTRUE) &&
+                !cmpUse.User()->OperIsConditional())
             {
                 GenTree* next = cmp->gtNext;
 
