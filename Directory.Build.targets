@@ -7,6 +7,19 @@
     <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
   </PropertyGroup>
 
+  <!--
+  When .NET gets built from source, make the SDK aware there are bootstrap packages
+  for Microsoft.NETCore.App.Runtime.<rid> and Microsoft.NETCore.App.Crossgen2.<rid>.
+  -->
+  <ItemGroup Condition=" '$(DotNetBuildFromSource)' == 'true' ">
+    <KnownFrameworkReference Update="Microsoft.NETCore.App">
+      <RuntimePackRuntimeIdentifiers>%(KnownFrameworkReference.RuntimePackRuntimeIdentifiers);$(NETCoreSdkRuntimeIdentifier)</RuntimePackRuntimeIdentifiers>
+    </KnownFrameworkReference>
+    <KnownCrossgen2Pack Update="Microsoft.NETCore.App.Crossgen2">
+      <Crossgen2RuntimeIdentifiers>%(KnownCrossgen2Pack.Crossgen2RuntimeIdentifiers);$(NETCoreSdkRuntimeIdentifier)</Crossgen2RuntimeIdentifiers>
+    </KnownCrossgen2Pack>
+  </ItemGroup>
+
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
   <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
   <Import Project="$(RepositoryEngineeringDir)generators.targets" />
