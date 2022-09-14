@@ -52,7 +52,7 @@ public class Program
 
 public interface Base
 {
-    public abstract void Test(long arg);
+    void Test(long arg);
 }
 
 public class C : Base
