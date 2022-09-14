@@ -346,9 +346,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_45929/test45929/*">
             <Issue>https://github.com/dotnet/runtime/issues/60152</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/GetTotalPauseDuration.csproj">
+        <ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/GetTotalPauseDuration/*">
             <Issue>https://github.com/dotnet/runtime/issues/74631</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/GetGCMemoryInfo/*">
+            <Issue>https://github.com/dotnet/runtime/issues/74902</Issue>
+        </ExcludeList>    
     </ItemGroup>
 
     <!-- The following are x64 Unix failures on CoreCLR. -->
@@ -1299,11 +1302,17 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/MaxGeneration/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/API/GCSettings/InputValidation/**">
+            <Issue>https://github.com/dotnet/runtime/issues/46666</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)GC/API/WeakReference/Finalize2/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)GC/API/WeakReference/Finalize2/**">
             <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/Features/LOHCompaction/lohpin/**">
+            <Issue>https://github.com/dotnet/runtime/issues/46666</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/ReflectObj/reflectobj/**">
             <Issue>needs triage</Issue>
@@ -1624,6 +1633,9 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/Dev11/Dev11_468598/Test_HndIndex_10_Reordered/**">
             <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_545500/**">
+            <Issue>https://github.com/dotnet/runtime/issues/34084</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/devdiv_902271/DevDiv_902271/**">
             <Issue>needs triage</Issue>
@@ -2458,6 +2470,13 @@
             <Issue>https://github.com/dotnet/runtime/issues/67675</Issue>
         </ExcludeList>
 
+
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/VectorConvert_r_Target_64Bit/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75359</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/VectorConvert_ro_Target_64Bit/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75359</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmfullaot' ">
@@ -2737,6 +2756,13 @@
             <Issue>https://github.com/dotnet/runtime/issues/67675</Issue>
         </ExcludeList>
 
+
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/VectorConvert_r_Target_64Bit/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75359</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/VectorConvert_ro_Target_64Bit/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75359</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and ('$(RuntimeVariant)' == 'llvmfullaot' or '$(RuntimeVariant)' == 'llvmaot')">
@@ -3119,6 +3145,9 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/GC/Scenarios/DoublinkList/dlbigleakthd/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/mandelbrot/mandelbrot-2/**">
+            <Issue>https://github.com/dotnet/runtime/issues/56814</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/spectralnorm/spectralnorm-3/**">
             <Issue>https://github.com/dotnet/runtime/issues/41472</Issue>
