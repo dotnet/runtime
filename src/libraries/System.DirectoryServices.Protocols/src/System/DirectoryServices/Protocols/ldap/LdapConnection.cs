@@ -578,11 +578,11 @@ namespace System.DirectoryServices.Protocols
                     {
                         IntPtr controlPtr = Marshal.AllocHGlobal(structSize);
                         Marshal.StructureToPtr(managedServerControls[i], controlPtr, false);
-                        tempPtr = checked((IntPtr)((long)serverControlArray + IntPtr.Size * i));
+                        tempPtr = serverControlArray + IntPtr.Size * i;
                         Marshal.WriteIntPtr(tempPtr, controlPtr);
                     }
 
-                    tempPtr = checked((IntPtr)((long)serverControlArray + IntPtr.Size * managedServerControls.Length));
+                    tempPtr = serverControlArray + IntPtr.Size * managedServerControls.Length;
                     Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
                 }
 
@@ -595,11 +595,11 @@ namespace System.DirectoryServices.Protocols
                     {
                         IntPtr controlPtr = Marshal.AllocHGlobal(structSize);
                         Marshal.StructureToPtr(managedClientControls[i], controlPtr, false);
-                        tempPtr = checked((IntPtr)((long)clientControlArray + IntPtr.Size * i));
+                        tempPtr = clientControlArray + IntPtr.Size * i;
                         Marshal.WriteIntPtr(tempPtr, controlPtr);
                     }
 
-                    tempPtr = checked((IntPtr)((long)clientControlArray + IntPtr.Size * managedClientControls.Length));
+                    tempPtr = clientControlArray + IntPtr.Size * managedClientControls.Length;
                     Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
                 }
 
@@ -690,10 +690,10 @@ namespace System.DirectoryServices.Protocols
                     {
                         IntPtr controlPtr = Marshal.AllocHGlobal(modStructSize);
                         Marshal.StructureToPtr(modifications[i], controlPtr, false);
-                        tempPtr = checked((IntPtr)((long)modArray + IntPtr.Size * i));
+                        tempPtr = modArray + IntPtr.Size * i;
                         Marshal.WriteIntPtr(tempPtr, controlPtr);
                     }
-                    tempPtr = checked((IntPtr)((long)modArray + IntPtr.Size * i));
+                    tempPtr = modArray + IntPtr.Size * i;
                     Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
 
                     if (request is AddRequest)
@@ -759,11 +759,11 @@ namespace System.DirectoryServices.Protocols
                         for (i = 0; i < attributeCount; i++)
                         {
                             IntPtr controlPtr = LdapPal.StringToPtr(searchRequest.Attributes[i]);
-                            tempPtr = checked((IntPtr)((long)searchAttributes + IntPtr.Size * i));
+                            tempPtr = searchAttributes + IntPtr.Size * i;
                             Marshal.WriteIntPtr(tempPtr, controlPtr);
                         }
 
-                        tempPtr = checked((IntPtr)((long)searchAttributes + IntPtr.Size * i));
+                        tempPtr = searchAttributes + IntPtr.Size * i;
                         Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
                     }
 
@@ -951,7 +951,7 @@ namespace System.DirectoryServices.Protocols
                 int issuerNumber = trustedCAs.cIssuers;
                 for (int i = 0; i < issuerNumber; i++)
                 {
-                    IntPtr tempPtr = checked((IntPtr)((long)trustedCAs.aIssuers + Marshal.SizeOf(typeof(CRYPTOAPI_BLOB)) * i));
+                    IntPtr tempPtr = trustedCAs.aIssuers + Marshal.SizeOf(typeof(CRYPTOAPI_BLOB)) * i;
                     CRYPTOAPI_BLOB info = (CRYPTOAPI_BLOB)Marshal.PtrToStructure(tempPtr, typeof(CRYPTOAPI_BLOB));
                     int dataLength = info.cbData;
 
@@ -1382,10 +1382,10 @@ namespace System.DirectoryServices.Protocols
                         // Need to free the memory allocated on the heap when we are done.
                         ptrToFree.Add(controlPtr);
                         Marshal.StructureToPtr(berValues[m], controlPtr, false);
-                        tempPtr = checked((IntPtr)((long)attributes[i].values + IntPtr.Size * m));
+                        tempPtr = attributes[i].values + IntPtr.Size * m;
                         Marshal.WriteIntPtr(tempPtr, controlPtr);
                     }
-                    tempPtr = checked((IntPtr)((long)attributes[i].values + IntPtr.Size * m));
+                    tempPtr = attributes[i].values + IntPtr.Size * m;
                     Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
                 }
             }

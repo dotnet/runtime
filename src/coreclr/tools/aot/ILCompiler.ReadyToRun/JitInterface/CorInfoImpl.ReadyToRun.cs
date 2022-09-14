@@ -2955,7 +2955,7 @@ namespace Internal.JitInterface
             if (_compilation.TypeSystemContext.Target.Architecture != TargetArchitecture.X64)
                 return;
 
-            object node = HandleToObject((IntPtr)entryPoint.addr);
+            object node = HandleToObject((void*)entryPoint.addr);
             if (node is not DelayLoadMethodImport imp)
                 return;
 

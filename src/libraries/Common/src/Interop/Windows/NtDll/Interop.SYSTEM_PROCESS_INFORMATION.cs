@@ -55,10 +55,10 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct CLIENT_ID
+        internal unsafe struct CLIENT_ID
         {
-            internal nint UniqueProcess;
-            internal nint UniqueThread;
+            internal void* UniqueProcess;
+            internal void* UniqueThread;
         }
     }
 }

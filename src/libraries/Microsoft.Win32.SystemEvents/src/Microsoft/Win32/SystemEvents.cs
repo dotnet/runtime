@@ -889,11 +889,11 @@ namespace Microsoft.Win32
         /// <summary>
         ///  Handler for WM_ENDSESSION.
         /// </summary>
-        private void OnSessionEnded(IntPtr wParam, IntPtr lParam)
+        private void OnSessionEnded(nint wParam, IntPtr lParam)
         {
             // wParam will be nonzero if the session is actually ending.  If
             // it was canceled then we do not want to raise the event.
-            if (wParam != (IntPtr)0)
+            if (wParam != 0)
             {
                 SessionEndReasons reason = SessionEndReasons.SystemShutdown;
 

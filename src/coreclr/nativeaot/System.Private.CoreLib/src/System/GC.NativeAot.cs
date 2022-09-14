@@ -625,7 +625,7 @@ namespace System
 
                 case RuntimeImports.GCConfigurationType.StringUtf8:
                     {
-                        string? dataAsString = Marshal.PtrToStringUTF8(checked((IntPtr)data));
+                        string? dataAsString = Marshal.PtrToStringUTF8((nint)data);
                         configurationDictionary[nameAsString] = dataAsString ?? string.Empty;
                         break;
                     }

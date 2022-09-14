@@ -292,7 +292,7 @@ namespace System.Speech.Recognition
 
                         // Get the ITN and Look for replacement phrase/
                         IntPtr itnBuffer = new((long)buffer + _serializedPhrase.ReplacementsOffset);
-                        for (int i = 0; i < _serializedPhrase.cReplacements; i++, itnBuffer = checked((IntPtr)((long)itnBuffer + Marshal.SizeOf<SPPHRASEREPLACEMENT>())))
+                        for (int i = 0; i < _serializedPhrase.cReplacements; i++, itnBuffer = (nint)((long)itnBuffer + Marshal.SizeOf<SPPHRASEREPLACEMENT>()))
                         {
                             SPPHRASEREPLACEMENT replacement = (SPPHRASEREPLACEMENT)Marshal.PtrToStructure<SPPHRASEREPLACEMENT>(itnBuffer);
                             string text = Marshal.PtrToStringUni(new IntPtr((long)buffer + replacement.pszReplacementText));

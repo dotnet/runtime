@@ -365,7 +365,7 @@ namespace System.Runtime.InteropServices
 #if TARGET_64BIT
             return (nint)ReadInt64(ptr, ofs);
 #else // 32
-            return (IntPtr)ReadInt32(ptr, ofs);
+            return (nint)ReadInt32(ptr, ofs);
 #endif
         }
 
@@ -374,7 +374,7 @@ namespace System.Runtime.InteropServices
 #if TARGET_64BIT
             return (nint)ReadInt64(ptr, ofs);
 #else // 32
-            return (IntPtr)ReadInt32(ptr, ofs);
+            return (nint)ReadInt32(ptr, ofs);
 #endif
         }
 

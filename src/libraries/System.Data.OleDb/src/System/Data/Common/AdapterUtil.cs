@@ -1254,14 +1254,9 @@ namespace System.Data.Common
             return true;
         }
 
-        internal static IntPtr IntPtrOffset(IntPtr pbase, int offset)
+        internal static IntPtr IntPtrOffset(nint pbase, int offset)
         {
-            if (4 == ADP.PtrSize)
-            {
-                return (IntPtr)checked(pbase.ToInt32() + offset);
-            }
-            Debug.Assert(8 == ADP.PtrSize, "8 != IntPtr.Size");
-            return (nint)(pbase.ToInt64() + offset);
+            return (nint)pbase + offset;
         }
 
         internal static int IntPtrToInt32(nint value)

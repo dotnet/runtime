@@ -37,7 +37,7 @@ namespace System
 
         internal bool IsUnmanagedFunctionPtr()
         {
-            return _invocationCount == (-1);
+            return _invocationCount == -1;
         }
 
         internal bool InvocationListLogicallyNull()

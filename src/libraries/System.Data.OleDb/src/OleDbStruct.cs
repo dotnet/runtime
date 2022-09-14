@@ -442,7 +442,7 @@ namespace System.Data.OleDb
         {
             StringBuilder builder = new StringBuilder();
             builder.AppendLine($"tagDBCOLUMNINFO: {Convert.ToString(pwszName, CultureInfo.InvariantCulture)}");
-            builder.AppendLine($"\t{iOrdinal.ToInt64().ToString(CultureInfo.InvariantCulture)}");
+            builder.AppendLine($"\t{((long)iOrdinal).ToString(CultureInfo.InvariantCulture)}");
             builder.AppendLine($"\t0x{dwFlags:X8}");
             builder.AppendLine($"\t{ulColumnSize}");
             builder.AppendLine($"\t0x{wType:X2}");

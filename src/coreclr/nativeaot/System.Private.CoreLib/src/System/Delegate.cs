@@ -100,14 +100,14 @@ namespace System
                 isInterpreterEntrypoint = true;
                 return IntPtr.Zero;
             }
-            else if (m_extraFunctionPointerOrData != IntPtr.Zero)
+            else if (m_extraFunctionPointerOrData != 0)
             {
                 if (GetThunk(OpenInstanceThunk) == m_functionPointer)
                 {
                     typeOfFirstParameterIfInstanceDelegate = ((OpenMethodResolver*)m_extraFunctionPointerOrData)->DeclaringType;
                     isOpenResolver = true;
                 }
-                return m_extraFunctionPointerOrData;
+                return (IntPtr)m_extraFunctionPointerOrData;
             }
             else
             {

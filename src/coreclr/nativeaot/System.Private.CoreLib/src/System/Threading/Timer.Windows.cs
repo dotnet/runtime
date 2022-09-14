@@ -22,7 +22,7 @@ namespace System.Threading
         }
 
         [UnmanagedCallersOnly]
-        private static void TimerCallback(IntPtr instance, nint context, IntPtr timer)
+        private static unsafe void TimerCallback(IntPtr instance, void* context, IntPtr timer)
         {
             int id = (int)context;
             var wrapper = ThreadPoolCallbackWrapper.Enter();
