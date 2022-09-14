@@ -60,8 +60,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             var builder = new ObjectDataBuilder(factory, relocsOnly);
 
-            // These need to be aligned the same as method pointers because they show up in same contexts
+            // These need to be aligned the same as method bodies because they show up in same contexts
             // (macOS ARM64 has even stricter alignment requirement for the linker, so round up to pointer size)
+            Debug.Assert(factory.Target.MinimumFunctionAlignment <= factory.Target.PointerSize);
             builder.RequireInitialAlignment(factory.Target.PointerSize);
 
             builder.AddSymbol(this);

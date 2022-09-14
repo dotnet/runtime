@@ -835,28 +835,11 @@ void MorphCopyBlockHelper::TrySpecialCases()
 
     if (m_transformationDecision == BlockTransformation::Undefined)
     {
-        if (m_src->IsCall())
+        if (m_src->IsCall() && m_dst->OperIs(GT_LCL_VAR) && m_dstVarDsc->CanBeReplacedWithItsField(m_comp))
         {
-            if (m_dst->OperIs(GT_OBJ))
-            {
-                GenTreeLclVar* lclVar = m_comp->fgMorphTryFoldObjAsLclVar(m_dst->AsObj());
-                if (lclVar != nullptr)
-                {
-                    m_dst        = lclVar;
-                    m_asg->gtOp1 = lclVar;
-                }
-            }
-            if (m_dst->OperIs(GT_LCL_VAR))
-            {
-                LclVarDsc* varDsc = m_comp->lvaGetDesc(m_dst->AsLclVar());
-                if (varTypeIsStruct(varDsc) && varDsc->CanBeReplacedWithItsField(m_comp))
-                {
-                    m_dst->gtFlags |= GTF_DONT_CSE;
-                    JITDUMP("Not morphing a single reg call return\n");
-                    m_transformationDecision = BlockTransformation::SkipCallSrc;
-                    m_result                 = m_asg;
-                }
-            }
+            JITDUMP("Not morphing a single reg call return\n");
+            m_transformationDecision = BlockTransformation::SkipCallSrc;
+            m_result                 = m_asg;
         }
     }
 }
