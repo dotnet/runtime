@@ -8,7 +8,7 @@ This guide will walk you through the requirements needed to build _dotnet/runtim
 
 ## Environment
 
-These instructions were tested on MacOS 12.5.1 (Monterey).
+Here are the components you will need to install and setup to work with the repo.
 
 ### Xcode
 

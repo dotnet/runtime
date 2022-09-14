@@ -52,8 +52,6 @@ These instructions were written quite a while ago, and they may or may not work 
 
 ### Environment
 
-These instructions are written assuming FreeBSD 10.1-RELEASE, since that's the release the team uses.
-
 These instructions assume you use the binary package tool `pkg` (analog to `apt-get` or `yum` on Linux) to install the environment. Compiling the dependencies from source using the ports tree might work too, but is untested.
 
 Minimum RAM required to build is 1GB. The build is known to fail on 512 MB VMs ([Issue 4069](https://github.com/dotnet/runtime/issues/4069)).

@@ -17,7 +17,7 @@ These instructions will lead you through the requirements to build _dotnet/runti
 
 ## Environment
 
-You must install several components to build the _dotnet/runtime_ repository. These instructions were tested on Windows 10 Enterprise, version 21H2.
+Here are the components you will need to install and setup to work with the repo.
 
 ### Enable Long Paths
 

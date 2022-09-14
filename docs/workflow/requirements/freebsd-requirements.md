@@ -44,8 +44,6 @@ These instructions were written quite a while ago, and they may or may not work 
 
 ### Toolchain Setup
 
-This was validated for and on FreeBSD 12.0.
-
 Building the _dotnet/runtime_ repo requires several tools to be installed.
 
 Install the following packages:

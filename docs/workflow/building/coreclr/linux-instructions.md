@@ -49,7 +49,6 @@ To do cross-building for ARM32 or ARM64 using Docker, you need to use either spe
 
 ### Docker Images
 
-<!-- LINK-UPDATES -->
 This table of images might often become stale as we change our images as our requirements change. The images used for our our official builds can be found in [the platform matrix](/eng/pipelines/common/platform-matrix.yml) of our Azure DevOps builds under the `container` key of the platform you plan to build.
 
 | OS                                | Target Arch     | Image location                                                                                       | crossrootfs location | Clang Version |
