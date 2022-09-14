@@ -4257,12 +4257,12 @@ OBJECTREF MethodTable::GetManagedClassObject()
 
 OBJECTREF MethodTable::GetManagedClassObject(bool* pIsPinned)
 {
-    CONTRACT(OBJECTREF) {
+    CONTRACT(OBJECTREF)
+    {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(GetWriteableData()->m_hExposedClassObject != 0);
     }
     CONTRACT_END;
 
@@ -4277,7 +4277,7 @@ OBJECTREF MethodTable::GetManagedClassObject(bool* pIsPinned)
 
     GCPROTECT_END();
 
-    return objRef;
+    RETURN(objRef);
 }
 
 #endif //!DACCESS_COMPILE
