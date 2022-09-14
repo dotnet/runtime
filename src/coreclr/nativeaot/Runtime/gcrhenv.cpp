@@ -335,8 +335,8 @@ void RedhawkGCInterface::WaitForGCCompletion()
 
 void MethodTable::InitializeAsGcFreeType()
 {
+    m_uFlags = ParameterizedEEType | HasComponentSizeFlag;
     m_usComponentSize = 1;
-    m_usFlags = ParameterizedEEType | HasComponentSizeFlag;
     m_uBaseSize = sizeof(Array) + SYNC_BLOCK_SKEW;
 }
 

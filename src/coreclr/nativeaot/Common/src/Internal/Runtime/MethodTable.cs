@@ -276,7 +276,8 @@ namespace Internal.Runtime
         {
             get
             {
-                return (_uFlags & (uint)EETypeFlags.HasComponentSizeFlag) != 0;
+                // return (_uFlags & (uint)EETypeFlags.HasComponentSizeFlag) != 0;
+                return (int)_uFlags < 0;
             }
 #if TYPE_LOADER_IMPLEMENTATION
             set

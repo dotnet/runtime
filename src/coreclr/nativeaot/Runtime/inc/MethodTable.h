@@ -134,10 +134,15 @@ private:
     };
 
     // used for component size for strings and arrays, type arg count for typedefs, otherwise holds FlagsEx bits
-    uint16_t              m_usComponentSize;
-    uint16_t              m_usFlags;
+    union
+    {
+        uint32_t              m_uFlags;
+        // lower uint16 of m_uFlags is ComponentSize, when HasComponentSize == true
+        // also accessed in asm allocation helpers
+        uint16_t              m_usComponentSize;
+    };
     uint32_t              m_uBaseSize;
-    RelatedTypeUnion    m_RelatedType;
+    RelatedTypeUnion      m_RelatedType;
     uint16_t              m_usNumVtableSlots;
     uint16_t              m_usNumInterfaces;
     uint32_t              m_uHashCode;
@@ -154,38 +159,38 @@ private:
         // There are four kinds of EETypes, the three of them regular types that use the full MethodTable encoding
         // plus a fourth kind used as a grab bag of unusual edge cases which are encoded in a smaller,
         // simplified version of MethodTable. See LimitedEEType definition below.
-        EETypeKindMask = 0x0003,
+        EETypeKindMask = 0x00030000,
 
         // This flag is set when m_pRelatedType is in a different module.  In that case, m_pRelatedType
         // actually points to a 'fake' MethodTable whose m_pRelatedType field lines up with an IAT slot in this
         // module, which then points to the desired MethodTable.  In other words, there is an extra indirection
         // through m_pRelatedType to get to the related type in the other module.
-        RelatedTypeViaIATFlag   = 0x0004,
+        RelatedTypeViaIATFlag   = 0x00040000,
 
-        IsDynamicTypeFlag       = 0x0008,
+        IsDynamicTypeFlag       = 0x00080000,
 
         // This MethodTable represents a type which requires finalization
-        HasFinalizerFlag        = 0x0010,
+        HasFinalizerFlag        = 0x00100000,
 
         // This type contain gc pointers
-        HasPointersFlag         = 0x0020,
+        HasPointersFlag         = 0x00200000,
 
         // This type is generic and one or more of it's type parameters is co- or contra-variant. This only
         // applies to interface and delegate types.
-        GenericVarianceFlag     = 0x0080,
+        GenericVarianceFlag     = 0x00800000,
 
         // This type has optional fields present.
-        OptionalFieldsFlag      = 0x0100,
+        OptionalFieldsFlag      = 0x01000000,
 
         // This type is generic.
-        IsGenericFlag           = 0x0200,
+        IsGenericFlag           = 0x02000000,
 
         // We are storing a EETypeElementType in the upper bits for unboxing enums
-        ElementTypeMask      = 0x7C00,
-        ElementTypeShift     = 10,
+        ElementTypeMask      = 0x7C000000,
+        ElementTypeShift     = 26,
 
         // The m_usComponentSize is a number (not holding FlagsEx).
-        HasComponentSizeFlag = 0x8000,
+        HasComponentSizeFlag = 0x80000000,
     };
 
     enum FlagsEx
@@ -198,10 +203,10 @@ public:
 
     enum Kinds
     {
-        CanonicalEEType         = 0x0000,
-        ClonedEEType            = 0x0001,
-        ParameterizedEEType     = 0x0002,
-        GenericTypeDefEEType    = 0x0003,
+        CanonicalEEType         = 0x00000000,
+        ClonedEEType            = 0x00010000,
+        ParameterizedEEType     = 0x00020000,
+        GenericTypeDefEEType    = 0x00030000,
     };
 
     uint32_t get_BaseSize()
@@ -217,7 +222,7 @@ public:
         { return get_Kind() == ClonedEEType; }
 
     bool IsRelatedTypeViaIAT()
-        { return ((m_usFlags & (uint16_t)RelatedTypeViaIATFlag) != 0); }
+        { return (m_uFlags & RelatedTypeViaIATFlag) != 0; }
 
     bool IsArray()
     {
@@ -254,17 +259,20 @@ public:
 
     bool HasFinalizer()
     {
-        return (m_usFlags & HasFinalizerFlag) != 0;
+        return (m_uFlags & HasFinalizerFlag) != 0;
     }
 
     bool HasEagerFinalizer()
     {
-        return (m_usComponentSize & HasEagerFinalizerFlag) && !HasComponentSize();
+        return (m_uFlags & HasEagerFinalizerFlag) && !HasComponentSize();
     }
 
     bool  HasComponentSize()
     {
-        return (m_usFlags & HasComponentSizeFlag) != 0;
+        static_assert(HasComponentSizeFlag == (1 << 31));
+        // return (m_uFlags & HasComponentSizeFlag) != 0;
+
+        return (int32_t)m_uFlags < 0;
     }
 
     uint16_t RawGetComponentSize()
@@ -279,12 +287,12 @@ public:
 
     bool HasReferenceFields()
     {
-        return (m_usFlags & HasPointersFlag) != 0;
+        return (m_uFlags & HasPointersFlag) != 0;
     }
 
     bool HasOptionalFields()
     {
-        return (m_usFlags & OptionalFieldsFlag) != 0;
+        return (m_uFlags & OptionalFieldsFlag) != 0;
     }
 
     bool IsEquivalentTo(MethodTable * pOtherEEType)
@@ -325,7 +333,7 @@ public:
         { return GetNumInterfaces() != 0; }
 
     bool IsGeneric()
-        { return (m_usFlags & IsGenericFlag) != 0; }
+        { return (m_uFlags & IsGenericFlag) != 0; }
 
     DynamicModule* get_DynamicModule();
 
@@ -345,10 +353,10 @@ public:
     // Mark or determine that a type is generic and one or more of it's type parameters is co- or
     // contra-variant. This only applies to interface and delegate types.
     bool HasGenericVariance()
-        { return (m_usFlags & GenericVarianceFlag) != 0; }
+        { return (m_uFlags & GenericVarianceFlag) != 0; }
 
     EETypeElementType GetElementType()
-        { return (EETypeElementType)((m_usFlags & ElementTypeMask) >> ElementTypeShift); }
+        { return (EETypeElementType)((m_uFlags & ElementTypeMask) >> ElementTypeShift); }
 
     // Determine whether a type is an instantiation of Nullable<T>.
     bool IsNullable()
@@ -356,7 +364,7 @@ public:
 
     // Determine whether a type was created by dynamic type loader
     bool IsDynamicType()
-        { return (m_usFlags & IsDynamicTypeFlag) != 0; }
+        { return (m_uFlags & IsDynamicTypeFlag) != 0; }
 
     uint32_t GetHashCode();
 

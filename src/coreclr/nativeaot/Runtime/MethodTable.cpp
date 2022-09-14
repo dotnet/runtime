@@ -137,7 +137,7 @@ bool MethodTable::Validate(bool assertOnFail /* default: true */)
 //-----------------------------------------------------------------------------------------------------------
 MethodTable::Kinds MethodTable::get_Kind()
 {
-	return (Kinds)(m_usFlags & (uint16_t)EETypeKindMask);
+	return (Kinds)(m_uFlags & (uint16_t)EETypeKindMask);
 }
 
 //-----------------------------------------------------------------------------------------------------------
