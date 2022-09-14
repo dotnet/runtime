@@ -446,14 +446,10 @@ jobs:
           ${{ elseif eq(variables['Build.Reason'], 'PullRequest') }}:
             scenarios:
             - no_tiered_compilation
-            - ${{ if ne(parameters.buildConfigUpper, 'Debug') }}:
-              - disasmchecks
           ${{ else }}:
             scenarios:
             - normal
             - no_tiered_compilation
-            - ${{ if ne(parameters.buildConfigUpper, 'Debug') }}:
-              - disasmchecks
 
         ${{ if in(parameters.testGroup, 'jitstress') }}:
           scenarios:

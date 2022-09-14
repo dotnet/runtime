@@ -7,7 +7,7 @@
 
 
   <!-- COMPlus_* variables that can be specified for a test scenario -->
-  <!-- There is a non-COMPlus variable here: RunningIlasmRoundTrip and RunningRunningDisasmChecks. When set to 1, this triggers CoreCLR round-trip or disasm-output testing.
+  <!-- There is a non-COMPlus variable here: RunningIlasmRoundTrip. When set to 1, this triggers CoreCLR round-trip testing.
        The value is read in the test wrapper scripts. When set in a __TestEnv script, it is set before it is read.
        The COMPlus_ processing handling below allows for variables not prefixed by 'COMPlus_'.
   -->
@@ -70,7 +70,6 @@
       COMPlus_JitForceControlFlowGuard;
       COMPlus_JitCFGUseDispatcher;
       RunningIlasmRoundTrip
-      RunningDisasmChecks
     </COMPlusVariables>
   </PropertyGroup>
   <ItemGroup>
@@ -210,7 +209,6 @@
     <TestEnvironment Include="jitcfg_dispatcher_never" JitForceControlFlowGuard="1" JitCFGUseDispatcher="0" />
     <TestEnvironment Include="jitcfg_gcstress0xc" JitForceControlFlowGuard="1" GCStress="0xC" />
     <TestEnvironment Include="ilasmroundtrip" RunningIlasmRoundTrip="1" />
-    <TestEnvironment Include="disasmchecks" RunningDisasmChecks="1" />
     <TestEnvironment Include="clrinterpreter" TieredCompilation="1" />
     <TestEnvironment Include="nopgo" JitDisablePGO="1" TieredCompilation="1" />
     <TestEnvironment Include="defaultpgo" TieredPGO="1" TieredCompilation="1" />

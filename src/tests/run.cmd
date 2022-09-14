@@ -354,7 +354,7 @@ if defined __IlasmRoundTrip (
     set RunningIlasmRoundTrip=1
 )
 
-if defined __DisasmChecks (
+if NOT %__BuildType% == "Debug" (
     echo %__MsgPrefix%Running disasm checks
     set RunningDisasmChecks=1
 )

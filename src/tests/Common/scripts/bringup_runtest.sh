@@ -1226,11 +1226,6 @@ if [[ -n "$ilasmroundtrip" ]]; then
     export RunningIlasmRoundTrip=1
 fi
 
-if [[ -n "$disasmchecks" ]]; then
-    echo "Running checks on the disassembly output"
-    export RunningDisasmChecks=1
-fi
-
 # If this is a coverage run, make sure the appropriate args have been passed
 if [[ "$CoreClrCoverage" == "ON" ]]
 then
