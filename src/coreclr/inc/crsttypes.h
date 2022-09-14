@@ -131,7 +131,8 @@ enum CrstType
     CrstUnwindInfoTableLock = 113,
     CrstVSDIndirectionCellLock = 114,
     CrstWrapperTemplate = 115,
-    kNumberOfCrstTypes = 116
+    CrstFrozenObjectHeap = 116,
+    kNumberOfCrstTypes = 117
 };
 
 #endif // __CRST_TYPES_INCLUDED
@@ -258,6 +259,7 @@ int g_rgCrstLevelMap[] =
     3,          // CrstUnwindInfoTableLock
     4,          // CrstVSDIndirectionCellLock
     3,          // CrstWrapperTemplate
+    0,          // CrstFrozenObjectHeap
 };
 
 // An array mapping CrstType to a stringized name.
@@ -379,6 +381,7 @@ LPCSTR g_rgCrstNameMap[] =
     "CrstUnwindInfoTableLock",
     "CrstVSDIndirectionCellLock",
     "CrstWrapperTemplate",
+    "CrstFrozenObjectHeap"
 };
 
 // Define a special level constant for unordered locks.

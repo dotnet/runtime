@@ -234,10 +234,14 @@ namespace Microsoft.Extensions.Hosting
 
             if (env.IsDevelopment() && env.ApplicationName is { Length: > 0 })
             {
-                var appAssembly = Assembly.Load(new AssemblyName(env.ApplicationName));
-                if (appAssembly is not null)
+                try
                 {
+                    var appAssembly = Assembly.Load(new AssemblyName(env.ApplicationName));
                     appConfigBuilder.AddUserSecrets(appAssembly, optional: true, reloadOnChange: reloadOnChange);
+                }
+                catch (FileNotFoundException)
+                {
+                    // The assembly cannot be found, so just skip it.
                 }
             }
 

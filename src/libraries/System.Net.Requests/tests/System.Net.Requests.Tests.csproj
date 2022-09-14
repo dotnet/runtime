@@ -9,6 +9,7 @@
     <NoWarn>$(NoWarn);SYSLIB0014</NoWarn>
     <!-- the res/xml/network_security_config.xml file comes from the System.Net.TestData package -->
     <IncludeNetworkSecurityConfig Condition="'$(TargetOS)' == 'Android'">true</IncludeNetworkSecurityConfig>
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
@@ -26,6 +27,8 @@
              Link="Common\System\Net\Configuration.Http.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Security.cs"
              Link="Common\System\Net\Configuration.Security.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\QuicLoad.cs"
+             Link="Common\System\Net\System\Net\QuicLoad.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackServer.cs"
              Link="Common\System\Net\Http\LoopbackServer.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\LoopbackServer.AuthenticationHelpers.cs"
