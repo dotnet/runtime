@@ -3,7 +3,7 @@
 
 # [Choice] .NET version: 6.0, 3.1
 ARG VARIANT="6.0-focal"
-FROM mcr.microsoft.com/vscode/devcontainers/dotnet:0-${VARIANT}
+FROM mcr.microsoft.com/devcontainers/dotnet:0-${VARIANT}
 
 # Setup the gh (GitHub) CLI signing key.
 RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg && \
