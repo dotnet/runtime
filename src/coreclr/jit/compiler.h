@@ -1830,6 +1830,7 @@ class Compiler
 
 #ifdef FEATURE_HW_INTRINSICS
     friend struct HWIntrinsicInfo;
+    friend struct SimdAsHWIntrinsicInfo;
 #endif // FEATURE_HW_INTRINSICS
 
 #ifndef TARGET_64BIT

@@ -51,7 +51,8 @@ const SimdAsHWIntrinsicInfo& SimdAsHWIntrinsicInfo::lookup(NamedIntrinsic id)
 //
 // Return Value:
 //    The NamedIntrinsic associated with methodName and classId
-NamedIntrinsic SimdAsHWIntrinsicInfo::lookupId(CORINFO_SIG_INFO* sig,
+NamedIntrinsic SimdAsHWIntrinsicInfo::lookupId(Compiler*         comp,
+                                               CORINFO_SIG_INFO* sig,
                                                const char*       className,
                                                const char*       methodName,
                                                const char*       enclosingClassName,
@@ -75,7 +76,7 @@ NamedIntrinsic SimdAsHWIntrinsicInfo::lookupId(CORINFO_SIG_INFO* sig,
 
     if (strcmp(methodName, "get_IsHardwareAccelerated") == 0)
     {
-        return IsBaselineSimdIsaSupported() ? NI_IsSupported_True : NI_IsSupported_False;
+        return comp->IsBaselineSimdIsaSupported() ? NI_IsSupported_True : NI_IsSupported_False;
     }
 
     for (int i = 0; i < (NI_SIMD_AS_HWINTRINSIC_END - NI_SIMD_AS_HWINTRINSIC_START - 1); i++)
