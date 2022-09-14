@@ -9,10 +9,11 @@ import dts from "rollup-plugin-dts";
 import consts from "rollup-plugin-consts";
 import { createFilter } from "@rollup/pluginutils";
 import * as fast_glob from "fast-glob";
+import gitCommitInfo from "git-commit-info";
 
 const configuration = process.env.Configuration;
 const isDebug = configuration !== "Release";
-const productVersion = process.env.ProductVersion || "7.0.0-dev";
+const productVersion = process.env.ProductVersion || "8.0.0-dev";
 const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace(/"/g, "") : "bin";
 const monoWasmThreads = process.env.MonoWasmThreads === "true" ? true : false;
 const monoDiagnosticsMock = process.env.MonoDiagnosticsMock === "true" ? true : false;
@@ -63,7 +64,16 @@ const inlineAssert = [
         pattern: /^\s*mono_assert/gm,
         failure: "previous regexp didn't inline all mono_assert statements"
     }];
-const outputCodePlugins = [regexReplace(inlineAssert), consts({ productVersion, configuration, monoWasmThreads, monoDiagnosticsMock }), typescript()];
+
+let gitHash;
+try {
+    const gitInfo = gitCommitInfo();
+    gitHash = gitInfo.hash;
+} catch (e) {
+    gitHash = "unknown";
+}
+
+const outputCodePlugins = [regexReplace(inlineAssert), consts({ productVersion, configuration, monoWasmThreads, monoDiagnosticsMock, gitHash }), typescript()];
 
 const externalDependencies = [
 ];

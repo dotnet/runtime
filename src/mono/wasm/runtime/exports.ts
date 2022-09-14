@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import ProductVersion from "consts:productVersion";
+import GitHash from "consts:gitHash";
 import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
 
@@ -56,6 +57,7 @@ function initializeImportsAndExports(
         Module: module,
         runtimeBuildInfo: {
             productVersion: ProductVersion,
+            gitHash: GitHash,
             buildConfiguration: BuildConfiguration
         },
         ...API,

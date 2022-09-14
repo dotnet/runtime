@@ -25,6 +25,7 @@ parameters:
   javascriptEngine: 'NoJS'
   helixTypeSuffix: ''             # optional -- appends to HelixType
   collectHelixLogsScript: ''      # optional -- script to collect the logs, and artifacts helpful for debugging failures
+  additionalSetupParameters: ''   # optional -- additional setup parameters that are job-specific
 
 jobs:
 - template: xplat-pipeline-job.yml
@@ -162,7 +163,7 @@ jobs:
       displayName: Performance Setup (Unix)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
-    - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments)
+    - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments) ${{ parameters.additionalSetupParameters }}
       displayName: Run ci setup script
       # Run perf testing in helix
     - template: /eng/pipelines/coreclr/templates/perf-send-to-helix.yml

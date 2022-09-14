@@ -94,7 +94,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['nonWasmRuntimeTestsContainsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
@@ -117,7 +117,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['nonWasmRuntimeTestsContainsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
@@ -136,7 +136,7 @@ jobs:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['nonWasmRuntimeTestsContainsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
@@ -210,7 +210,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['nonWasmRuntimeTestsContainsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 #
@@ -232,7 +232,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['nonWasmRuntimeTestsContainsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 #
@@ -256,7 +256,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['nonWasmRuntimeTestsContainsChange'], true),
           eq(variables['isFullMatrix'], true))
 
 #
@@ -418,13 +418,12 @@ jobs:
     alwaysRun: ${{ variables.isRollingBuild }}
 
 # Wasm.Build.Tests
-# Issue: https://github.com/dotnet/runtime/issues/75223
-#- template: /eng/pipelines/common/templates/wasm-build-tests.yml
-  #parameters:
-    #platforms:
-      #- Browser_wasm
-      #- Browser_wasm_win
-    #alwaysRun: ${{ variables.isRollingBuild }}
+- template: /eng/pipelines/common/templates/wasm-build-tests.yml
+  parameters:
+    platforms:
+      - Browser_wasm
+      - Browser_wasm_win
+    alwaysRun: ${{ variables.isRollingBuild }}
 
 # Wasm Debugger tests
 - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
@@ -751,7 +750,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['nonWasmRuntimeTestsContainsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
@@ -771,7 +770,7 @@ jobs:
       runtimeVariant: llvmaot
       condition: >-
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['nonWasmRuntimeTestsContainsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
@@ -939,7 +938,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['nonWasmRuntimeTestsContainsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
@@ -962,7 +961,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['nonWasmRuntimeTestsContainsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -982,7 +981,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['nonWasmRuntimeTestsContainsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -1016,7 +1015,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['nonWasmRuntimeTestsContainsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
@@ -1040,7 +1039,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['nonWasmRuntimeTestsContainsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
@@ -1063,7 +1062,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['nonWasmRuntimeTestsContainsChange'], true),
           eq(variables['isRollingBuild'], true))
 #
 # Mono CoreCLR runtime Test executions using live libraries and LLVM AOT
@@ -1088,7 +1087,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['nonWasmRuntimeTestsContainsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
@@ -1113,7 +1112,7 @@ jobs:
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+          eq(variables['nonWasmRuntimeTestsContainsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
