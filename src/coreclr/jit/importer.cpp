@@ -5981,7 +5981,15 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         {
             if (strcmp(methodName, "get_IsHardwareAccelerated") == 0)
             {
-                return IsBaselineSimdIsaSupported() ? NI_IsSupported_True : NI_IsSupported_False;
+                result = IsBaselineSimdIsaSupported() ? NI_IsSupported_True : NI_IsSupported_False;
+            }
+            else if (gtIsRecursiveCall(method))
+            {
+                // For the framework itself, any recursive intrinsics will either be
+                // only supported on a single platform or will be guarded by a relevant
+                // IsSupported check so the throw PNSE will be valid or dropped.
+
+                result = NI_Throw_PlatformNotSupportedException;
             }
         }
     }
