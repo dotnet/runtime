@@ -91,7 +91,6 @@ parser.add_argument("--il_link", dest="il_link", action="store_true", default=Fa
 parser.add_argument("--long_gc", dest="long_gc", action="store_true", default=False)
 parser.add_argument("--gcsimulator", dest="gcsimulator", action="store_true", default=False)
 parser.add_argument("--ilasmroundtrip", dest="ilasmroundtrip", action="store_true", default=False)
-parser.add_argument("--disasmchecks", dest="disasmchecks", action="store_true", default=False)
 parser.add_argument("--run_crossgen2_tests", dest="run_crossgen2_tests", action="store_true", default=False)
 parser.add_argument("--large_version_bubble", dest="large_version_bubble", action="store_true", default=False)
 parser.add_argument("--skip_test_run", dest="skip_test_run", action="store_true", default=False, help="Does not run tests.")
@@ -866,11 +865,6 @@ def run_tests(args,
         print("Setting RunningIlasmRoundTrip=1")
         os.environ["RunningIlasmRoundTrip"] = "1"
 
-    if args.disasmchecks:
-        print("Running checks on the disassembly output.")
-        print("Setting RunningDisasmChecks=1")
-        os.environ["RunningDisasmChecks"] = "1"
-
     if args.run_crossgen2_tests:
         print("Running tests R2R (Crossgen2)")
         print("Setting RunCrossGen2=true")
@@ -991,11 +985,6 @@ def setup_args(args):
                               "ilasmroundtrip",
                               lambda arg: True,
                               "Error setting ilasmroundtrip")
-
-    coreclr_setup_args.verify(args,
-                              "disasmchecks",
-                              lambda arg: True,
-                              "Error setting disasmchecks")
 
     coreclr_setup_args.verify(args,
                               "large_version_bubble",

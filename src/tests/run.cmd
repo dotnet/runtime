@@ -26,7 +26,6 @@ set __msbuildExtraArgs=
 set __LongGCTests=
 set __GCSimulatorTests=
 set __IlasmRoundTrip=
-set __DisasmChecks=
 set __PrintLastResultsOnly=
 set RunInUnloadableContext=
 set TieringTest=
@@ -59,7 +58,6 @@ if /i "%1" == "jitstressregs"                           (set COMPlus_JitStressRe
 if /i "%1" == "jitminopts"                              (set COMPlus_JITMinOpts=1&shift&goto Arg_Loop)
 if /i "%1" == "jitforcerelocs"                          (set COMPlus_ForceRelocs=1&shift&goto Arg_Loop)
 if /i "%1" == "ilasmroundtrip"                          (set __IlasmRoundTrip=1&shift&goto Arg_Loop)
-if /i "%1" == "disasmchecks"                            (set __DisasmChecks=1&shift&goto Arg_Loop)
 
 if /i "%1" == "printlastresultsonly"                    (set __PrintLastResultsOnly=1&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgen2tests"                       (set RunCrossGen2=true&shift&goto Arg_Loop)
@@ -124,10 +122,6 @@ if defined __GCSimulatorTests (
 
 if defined __IlasmRoundTrip (
     set __RuntestPyArgs=%__RuntestPyArgs% --ilasmroundtrip
-)
-
-if defined __DisasmChecks (
-    set __RuntestPyArgs=%__RuntestPyArgs% --disasmchecks
 )
 
 if defined __TestEnv (
@@ -410,7 +404,6 @@ echo                              16: GC only on a unique stack trace
 echo gcsimulator               - Run the GC Simulator tests
 echo longgc                    - Run the long-running GC tests
 echo ilasmroundtrip            - Runs ilasm round trip on the tests
-echo disasmchecks              - Runs checks on the disassembly output
 echo link ^<ILlink^>             - Runs the tests after linking via the IL linker ^<ILlink^>.
 echo printlastresultsonly      - Print the last test results without running tests.
 echo runincontext              - Run each tests in an unloadable AssemblyLoadContext
