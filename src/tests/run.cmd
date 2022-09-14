@@ -354,11 +354,6 @@ if defined __IlasmRoundTrip (
     set RunningIlasmRoundTrip=1
 )
 
-if NOT %__BuildType% == "Debug" (
-    echo %__MsgPrefix%Running disasm checks
-    set RunningDisasmChecks=1
-)
-
 exit /b 0
 
 REM =========================================================================================

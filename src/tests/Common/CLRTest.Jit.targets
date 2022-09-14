@@ -226,8 +226,6 @@ IF NOT DEFINED DoLink (
 
       <BashDisasmCheckPostCommands></BashDisasmCheckPostCommands>
       <BashDisasmCheckPostCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
-if [[ -n "$RunningDisasmChecks" ]]
-then
 @(DisasmCheckFiles -> '  $(ArtifactsDir)bin/SuperFileCheck/$(TargetArchitecture)/$(Configuration)/$(OutputRid)/SuperFileCheck --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) --input-file "$(BashDisasmOutputFile)"
   ERRORLEVEL=$?
   if [[ $ERRORLEVEL -ne 0 ]]
@@ -235,12 +233,10 @@ then
     echo EXECUTION OF FILECHECK - FAILED $ERRORLEVEL
     exit 1
   fi', '%0a')
-fi]]>)
+]]>)
       </BashDisasmCheckPostCommands>
 
       <CLRTestBashPreCommands Condition="'$(HasBatchDisasmCheck)' == 'true'"><![CDATA[
-if [[ -n "$RunningDisasmChecks" ]]
-then
 @(DisasmCheckFiles -> '  $(ArtifactsDir)bin/SuperFileCheck/$(TargetArchitecture)/$(Configuration)/$(OutputRid)/SuperFileCheck --csharp-list-method-names "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) > "$(BashDisasmListOutputFile)"
   ERRORLEVEL=$?
   export DOTNET_JitDisasm=$(cat $(BashDisasmListOutputFile))
@@ -250,7 +246,7 @@ then
     echo EXECUTION OF FILECHECK - FAILED $ERRORLEVEL
     exit 1
   fi', '%0a')
-fi]]>)
+]]>)
       </CLRTestBashPreCommands>
     </PropertyGroup>
   </Target>
@@ -269,19 +265,17 @@ fi]]>)
 
       <BatchDisasmCheckPostCommands></BatchDisasmCheckPostCommands>
       <BatchDisasmCheckPostCommands Condition="'$(HasBatchDisasmCheck)' == 'true'"><![CDATA[
-if DEFINED RunningDisasmChecks (
 @(DisasmCheckFiles -> '  $(ArtifactsDir)bin\SuperFileCheck\$(TargetArchitecture)\$(Configuration)\$(OutputRid)\SuperFileCheck.exe --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) --input-file "$(BatchDisasmOutputFile)"
   IF NOT "!ERRORLEVEL!" == "0" (
     ECHO EXECUTION OF FILECHECK - FAILED !ERRORLEVEL!
     Exit /b 1
   )', '%0d%0a')
-)]]>
+]]>
       </BatchDisasmCheckPostCommands>
 
       <CLRTestBatchPreCommands Condition="'$(HasBatchDisasmCheck)' == 'true'">
 <![CDATA[
       $(CLRTestBatchPreCommands)
-if DEFINED RunningDisasmChecks (
 @(DisasmCheckFiles -> '  $(ArtifactsDir)bin\SuperFileCheck\$(TargetArchitecture)\$(Configuration)\$(OutputRid)\SuperFileCheck.exe --csharp-list-method-names "%(Identity)" --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) > "$(BatchDisasmListOutputFile)"
   set /p DOTNET_JitDisasm= < $(BatchDisasmListOutputFile)
   set DOTNET_JitDiffableDasm=1
@@ -289,7 +283,7 @@ if DEFINED RunningDisasmChecks (
     ECHO EXECUTION OF FILECHECK LISTING METHOD NAMES - FAILED !ERRORLEVEL!
     Exit /b 1
   )', '%0d%0a')
-)]]>
+]]>
       </CLRTestBatchPreCommands>
     </PropertyGroup>
   </Target>
