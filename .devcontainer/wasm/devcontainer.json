@@ -10,6 +10,10 @@
 		}
 	},
 
+	"features": {
+		"ghcr.io/devcontainers/features/github-cli:1": {}
+	},
+
 	// Configure tool-specific properties.
 	"customizations": {
 		// Configure properties specific to VS Code.
