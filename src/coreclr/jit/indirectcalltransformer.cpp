@@ -545,28 +545,28 @@ private:
             // have to spill all arguments with side effects.
             for (CallArg& arg : origCall->gtArgs.Args())
             {
-                bool     spill = false;
-                GenTree* node  = arg.GetNode();
+                bool     spill   = false;
+                GenTree* argNode = arg.GetNode();
 
                 if (arg.GetWellKnownArg() == WellKnownArg::ThisPointer)
                 {
                     // Guard is going to access this arg, spill it if it is
                     // complex, regardless of side effects.
-                    spill = !node->IsLocal();
+                    spill = !argNode->IsLocal();
                 }
                 else
                 {
-                    spill = (arg.GetNode()->gtFlags & GTF_SIDE_EFFECT) != 0;
+                    spill = (argNode->gtFlags & GTF_SIDE_EFFECT) != 0;
                 }
 
                 if (spill)
                 {
                     unsigned   tmpNum  = compiler->lvaGrabTemp(true DEBUGARG("guarded devirt arg temp"));
-                    GenTree*   asgTree = compiler->gtNewTempAssign(tmpNum, arg.GetNode());
+                    GenTree*   asgTree = compiler->gtNewTempAssign(tmpNum, argNode);
                     Statement* asgStmt = compiler->fgNewStmtFromTree(asgTree, stmt->GetDebugInfo());
                     compiler->fgInsertStmtAtEnd(checkBlock, asgStmt);
 
-                    arg.SetEarlyNode(compiler->gtNewLclvNode(tmpNum, genActualType(arg.GetNode())));
+                    arg.SetEarlyNode(compiler->gtNewLclvNode(tmpNum, genActualType(argNode)));
                 }
             }
 
