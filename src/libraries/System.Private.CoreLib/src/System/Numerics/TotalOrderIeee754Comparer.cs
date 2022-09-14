@@ -71,23 +71,25 @@ namespace System.Numerics
             }
             else if (x == y)
             {
-                if (T.IsZero(x) && T.IsZero(y))
+                if (T.IsZero(x)) // only zeros are equal to zeros
                 {
-                    if (T.IsNegative(x) && T.IsPositive(y))
+                    // IEEE 754 numbers are either positive or negative. Skip check for the opposite.
+
+                    if (T.IsNegative(x))
                     {
-                        return -1;
-                    }
-                    else if (T.IsPositive(x) && T.IsNegative(y))
-                    {
-                        return 1;
+                        return T.IsNegative(y) ? 0 : -1;
                     }
                     else
                     {
-                        return 0;
+                        return T.IsPositive(y) ? 0 : 1;
                     }
                 }
                 else
                 {
+                    // Equivalant values are compared by their exponent parts,
+                    // and the value with smaller exponent is considered closer to zero.
+
+                    // This only applies to IEEE 754 decimals. Consider to add support if decimals are added into .NET.
                     return 0;
                 }
             }
@@ -96,25 +98,23 @@ namespace System.Numerics
                 // One or two of the values are NaN
                 // totalOrder defines that -qNaN < -sNaN < x < +sNaN < + qNaN
 
-                if (T.IsNaN(x) && T.IsNaN(y))
+                if (T.IsNaN(x))
                 {
-                    if (T.IsNegative(x) && T.IsPositive(y))
+                    if (T.IsNaN(y))
                     {
-                        return -1;
-                    }
-                    else if (T.IsPositive(x) && T.IsNegative(y))
-                    {
-                        return 1;
+                        if (T.IsNegative(x))
+                        {
+                            return T.IsNegative(y) ? 0 : -1;
+                        }
+                        else
+                        {
+                            return T.IsPositive(y) ? 0 : 1;
+                        }
                     }
                     else
                     {
-                        // The order of same category of NaN is undefined
-                        return 0;
+                        return T.IsPositive(x) ? 1 : -1;
                     }
-                }
-                else if (T.IsNaN(x))
-                {
-                    return T.IsPositive(x) ? 1 : -1;
                 }
                 else if (T.IsNaN(y))
                 {
@@ -122,9 +122,9 @@ namespace System.Numerics
                 }
                 else
                 {
-                    // T does not correctly implement IEEE 754 semantics
-                    // return 0 for this case
-                    return 0;
+                    // T does not correctly implement IEEE754 semantics
+                    ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidArgumentForComparison);
+                    return 0; // unreachable
                 }
             }
         }
