@@ -7142,6 +7142,27 @@ bool getILIntrinsicImplementationForInterlocked(MethodDesc * ftn,
     return true;
 }
 
+bool IsBitwiseEquatable(TypeHandle typeHandle, MethodTable * methodTable)
+{
+    if (!methodTable->IsValueType() || methodTable->ContainsPointers())
+    {
+        return false;
+    }
+
+    if (!CanCompareBitsOrUseFastGetHashCode(methodTable))
+    {
+        return false;
+    }
+
+    Instantiation inst(&typeHandle, 1);
+    if (typeHandle.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(inst)))
+    {
+        return false;
+    }
+
+    return true;
+}
+
 bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
     CORINFO_METHOD_INFO * methInfo)
 {
@@ -7192,8 +7213,9 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
         static const BYTE returnFalse[] = { CEE_LDC_I4_0, CEE_RET };
 
         // Ideally we could detect automatically whether a type is trivially equatable
-        // (i.e., its operator == could be implemented via memcmp). But for now we'll
-        // do the simple thing and hardcode the list of types we know fulfill this contract.
+        // (i.e., its operator == could be implemented via memcmp). The best we can do
+        // for now is hardcode a list of known supported types and then also include anything
+        // that doesn't provide its own object.Equals override / IEquatable<T> implementation.
         // n.b. This doesn't imply that the type's CompareTo method can be memcmp-implemented,
         // as a method like CompareTo may need to take a type's signedness into account.
 
@@ -7210,7 +7232,8 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
             || methodTable == CoreLibBinder::GetClass(CLASS__INTPTR)
             || methodTable == CoreLibBinder::GetClass(CLASS__UINTPTR)
             || methodTable == CoreLibBinder::GetClass(CLASS__RUNE)
-            || methodTable->IsEnum())
+            || methodTable->IsEnum()
+            || IsBitwiseEquatable(typeHandle, methodTable))
         {
             methInfo->ILCode = const_cast<BYTE*>(returnTrue);
         }

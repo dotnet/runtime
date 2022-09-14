@@ -1639,7 +1639,7 @@ static BOOL HasOverriddenMethod(MethodTable* mt, MethodTable* classMT, WORD meth
     return TRUE;
 }
 
-static BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt)
+BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt)
 {
     CONTRACTL
     {
