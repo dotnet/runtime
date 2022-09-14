@@ -270,25 +270,25 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>3453104731a7fd5af1b7613bb9dc9dfa6263b312</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.4.0-3.22452.8">
+    <Dependency Name="Microsoft.Net.Compilers.Toolset" Version="4.4.0-2.22463.8">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>0f10010387e53389173ca1d0f5b36e2ea2b512e3</Sha>
+      <Sha>76b6eb3e6b207a3bfe872f17b17008d2165da5f3</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis" Version="4.4.0-3.22452.8">
+    <Dependency Name="Microsoft.CodeAnalysis" Version="4.4.0-2.22463.8">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>0f10010387e53389173ca1d0f5b36e2ea2b512e3</Sha>
+      <Sha>76b6eb3e6b207a3bfe872f17b17008d2165da5f3</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.CSharp.CodeStyle" Version="4.4.0-3.22452.8">
+    <Dependency Name="Microsoft.CodeAnalysis.CSharp.CodeStyle" Version="4.4.0-2.22463.8">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>0f10010387e53389173ca1d0f5b36e2ea2b512e3</Sha>
+      <Sha>76b6eb3e6b207a3bfe872f17b17008d2165da5f3</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.4.0-3.22452.8">
+    <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.4.0-2.22463.8">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>0f10010387e53389173ca1d0f5b36e2ea2b512e3</Sha>
+      <Sha>76b6eb3e6b207a3bfe872f17b17008d2165da5f3</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.4.0-3.22452.8">
+    <Dependency Name="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.4.0-2.22463.8">
       <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>0f10010387e53389173ca1d0f5b36e2ea2b512e3</Sha>
+      <Sha>76b6eb3e6b207a3bfe872f17b17008d2165da5f3</Sha>
     </Dependency>
     <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4-beta1.22452.2">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
