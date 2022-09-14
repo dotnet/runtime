@@ -489,9 +489,9 @@ const char* interceptor_ICJI::getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls,
 CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index)
 {
     mc->cr->AddCall("getTypeInstantiationArgument");
-    CORINFO_CLASS_HANDLE temp = original_ICorJitInfo->getTypeInstantiationArgument(cls, index);
-    mc->recGetTypeInstantiationArgument(cls, temp, index);
-    return temp;
+    CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getTypeInstantiationArgument(cls, index);
+    mc->recGetTypeInstantiationArgument(cls, index, result);
+    return result;
 }
 
 // Append a (possibly truncated) textual representation of the type `cls` to a preallocated buffer.
@@ -1708,13 +1708,8 @@ void* interceptor_ICJI::getFieldAddress(CORINFO_FIELD_HANDLE field, void** ppInd
 CORINFO_CLASS_HANDLE interceptor_ICJI::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative)
 {
     mc->cr->AddCall("getStaticFieldCurrentClass");
-    bool                 localIsSpeculative = false;
-    CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getStaticFieldCurrentClass(field, &localIsSpeculative);
-    mc->recGetStaticFieldCurrentClass(field, localIsSpeculative, result);
-    if (pIsSpeculative != nullptr)
-    {
-        *pIsSpeculative = localIsSpeculative;
-    }
+    CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getStaticFieldCurrentClass(field, pIsSpeculative);
+    mc->recGetStaticFieldCurrentClass(field, (pIsSpeculative == nullptr) ? false : *pIsSpeculative, result);
     return result;
 }
 

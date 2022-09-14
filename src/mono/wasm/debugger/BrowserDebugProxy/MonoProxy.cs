@@ -607,10 +607,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             // GetAssemblyByName seems to work on file names
             AssemblyInfo assembly = store.GetAssemblyByName(aname);
-            if (assembly == null)
-                assembly = store.GetAssemblyByName(aname + ".exe");
-            if (assembly == null)
-                assembly = store.GetAssemblyByName(aname + ".dll");
+            assembly ??= store.GetAssemblyByName(aname + ".exe");
+            assembly ??= store.GetAssemblyByName(aname + ".dll");
             if (assembly == null)
             {
                 return Result.Err($"Assembly '{aname}' not found," +
@@ -813,8 +811,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             try {
                 var resolver = new MemberReferenceResolver(this, context, sessionId, mono_frame.Id, logger);
                 JObject retValue = await resolver.Resolve(condition, token);
-                if (retValue == null)
-                    retValue = await ExpressionEvaluator.CompileAndRunTheExpression(condition, resolver, logger, token);
+                retValue ??= await ExpressionEvaluator.CompileAndRunTheExpression(condition, resolver, logger, token);
                 if (retValue?["value"]?.Type == JTokenType.Boolean ||
                     retValue?["value"]?.Type == JTokenType.Integer ||
                     retValue?["value"]?.Type == JTokenType.Float) {
@@ -871,7 +868,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             var methodId = retDebuggerCmdReader.ReadInt32();
             var method = await context.SdbAgent.GetMethodInfo(methodId, token);
-            if (method == null)
+            if (method == null || method.Info.Source is null)
             {
                 return true;
             }
@@ -1371,10 +1368,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var resolver = new MemberReferenceResolver(this, context, msg_id, scopeId, logger);
 
                 JObject retValue = await resolver.Resolve(expression, token);
-                if (retValue == null)
-                {
-                    retValue = await ExpressionEvaluator.CompileAndRunTheExpression(expression, resolver, logger, token);
-                }
+                retValue ??= await ExpressionEvaluator.CompileAndRunTheExpression(expression, resolver, logger, token);
 
                 if (retValue != null)
                 {

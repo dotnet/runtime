@@ -166,13 +166,12 @@ void    AsmMan::AddFile(_In_ __nullterminated char* szName, DWORD dwAttr, BinStr
     Assembler* pAsm = (Assembler*)m_pAssembler;
     if(tmp==NULL)
     {
-        tmp = new AsmManFile;
+        tmp = new (nothrow) AsmManFile();
         if(tmp==NULL)
         {
             pAsm->report->error("\nOut of memory!\n");
             return;
         }
-        memset(tmp,0,sizeof(AsmManFile));
         if((dwAttr & 0x80000000)!=0) pAsm->m_fEntryPointPresent = TRUE;
         tmp->szName = szName;
         tmp->dwAttr = dwAttr;
@@ -256,9 +255,8 @@ void    AsmMan::StartAssembly(_In_ __nullterminated char* szName, _In_opt_z_ cha
     }
     else
     {
-        if((m_pCurAsmRef = new AsmManAssembly))
+        if((m_pCurAsmRef = new (nothrow) AsmManAssembly()))
         {
-            memset(m_pCurAsmRef,0,sizeof(AsmManAssembly));
             m_pCurAsmRef->usVerMajor = (USHORT)0xFFFF;
             m_pCurAsmRef->usVerMinor = (USHORT)0xFFFF;
             m_pCurAsmRef->usBuild = (USHORT)0xFFFF;
@@ -676,9 +674,8 @@ void    AsmMan::SetAssemblyAutodetect()
 
 void    AsmMan::StartComType(_In_ __nullterminated char* szName, DWORD dwAttr)
 {
-    if((m_pCurComType = new AsmManComType))
+    if((m_pCurComType = new (nothrow) AsmManComType()))
     {
-        memset(m_pCurComType,0,sizeof(AsmManComType));
         m_pCurComType->szName = szName;
         m_pCurComType->dwAttr = dwAttr;
         m_pCurComType->m_fNew = TRUE;
@@ -782,7 +779,7 @@ BOOL    AsmMan::SetComTypeClassTok(mdToken tkClass)
 
 void    AsmMan::StartManifestRes(_In_ __nullterminated char* szName, _In_ __nullterminated char* szAlias, DWORD dwAttr)
 {
-    if((m_pCurManRes = new AsmManRes))
+    if((m_pCurManRes = new (nothrow) AsmManRes()))
     {
         m_pCurManRes->szName = szName;
         m_pCurManRes->szAlias = szAlias;

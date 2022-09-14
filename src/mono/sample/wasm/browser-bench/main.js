@@ -45,6 +45,10 @@ function importTargetString(value) {
     return value + "A";
 }
 
+function importTargetManyArgs(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10) {
+    return 1 + arg1 + arg2 + arg3.length + arg4.length + arg7 + arg9 + arg10.valueOf();
+}
+
 async function importTargetTask(value) {
     await value;
     return;
@@ -75,6 +79,7 @@ class MainApp {
                     runJSExportString,
                     importTargetInt,
                     importTargetString,
+                    importTargetManyArgs,
                     importTargetTask,
                     importTargetThrows,
                 }

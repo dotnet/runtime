@@ -1,13 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\DefaultBrowserSample.targets" />
   <PropertyGroup>
-    <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
-    <WasmMainJSPath>main.js</WasmMainJSPath>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>embedded</DebugType>
-    <WasmDebugLevel>1</WasmDebugLevel>
     <WasmBuildNative>true</WasmBuildNative>
-    <GenerateRunScriptForSample Condition="'$(ArchiveTests)' == 'true'">true</GenerateRunScriptForSample>
-    <RunScriptCommand>$(ExecXHarnessCmd) wasm test-browser  --app=. --browser=Chrome $(XHarnessBrowserPathArg) --html-file=index.html --output-directory=$(XHarnessOutput) --web-server-use-cop -- $(MSBuildProjectName).dll</RunScriptCommand>
     <FeatureWasmPerfTracing>true</FeatureWasmPerfTracing>
     <FeatureWasmThreads Condition="false">true</FeatureWasmThreads>
     <NoWarn>$(NoWarn);CA2007</NoWarn> <!-- consider ConfigureAwait() -->

@@ -12,7 +12,6 @@
 //
 //  Implemented by:
 //    System.Reflection.dll on RH (may use ILMerging instead)
-//    mscorlib.dll on desktop
 //
 //  Consumed by:
 //    Reflection.Core.dll

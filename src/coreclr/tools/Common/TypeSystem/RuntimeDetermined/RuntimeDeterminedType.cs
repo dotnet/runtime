@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 
 using Debug = System.Diagnostics.Debug;
@@ -17,11 +16,11 @@ namespace Internal.TypeSystem
     /// The use of runtime determined types is limited to the dependency analysis and to communicating
     /// with the codegen backend during shared generic code generation. They should not show up within
     /// the system otherwise.
-    /// 
+    ///
     /// Runtime determined types behave mostly like the canonical type they are wrapping. Most of the overrides
     /// this type implements will forward the implementation to the <see cref="_rawCanonType"/>'s
     /// implementation.
-    /// 
+    ///
     /// Runtime determined types also behave like signature variables in the sense that they allow being
     /// substituted during signature instantiation.
     /// </remarks>
@@ -102,7 +101,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                return String.Concat(_runtimeDeterminedDetailsType.Name, "_", _rawCanonType.Namespace);
+                return string.Concat(_runtimeDeterminedDetailsType.Name, "_", _rawCanonType.Namespace);
             }
         }
 

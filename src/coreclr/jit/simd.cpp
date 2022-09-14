@@ -1255,7 +1255,7 @@ GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLAS
             structHandle = ti.GetClassHandleForValueClass();
         }
 
-        tree = impNormStructVal(tree, structHandle, (unsigned)CHECK_SPILL_ALL);
+        tree = impNormStructVal(tree, structHandle, CHECK_SPILL_ALL);
     }
 
     // Now set the type of the tree to the specialized SIMD struct type, if applicable.

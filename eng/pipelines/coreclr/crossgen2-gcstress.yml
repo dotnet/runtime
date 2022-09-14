@@ -51,7 +51,6 @@ jobs:
     jobParameters:
       testGroup: gcstress-extra
       readyToRun: true
-      crossgen2: true
       compositeBuildMode: true
       displayNameArgs: Composite
       liveLibrariesBuildConfig: Release

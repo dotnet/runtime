@@ -32,7 +32,7 @@ namespace Microsoft.Interop.JavaScript
                 ? Argument(IdentifierName(context.GetIdentifiers(info).native))
                 : _inner.AsArgument(info, context);
 
-            if (context.CurrentStage == StubCodeContext.Stage.Unmarshal && context.Direction == CustomTypeMarshallingDirection.In && info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubCodeContext.Stage.UnmarshalCapture && context.Direction == CustomTypeMarshallingDirection.In && info.IsManagedReturnPosition)
             {
                 yield return ToManagedMethod(target, source);
             }
@@ -47,7 +47,7 @@ namespace Microsoft.Interop.JavaScript
                 yield return x;
             }
 
-            if (context.CurrentStage == StubCodeContext.Stage.Invoke && context.Direction == CustomTypeMarshallingDirection.In && !info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubCodeContext.Stage.PinnedMarshal && context.Direction == CustomTypeMarshallingDirection.In && !info.IsManagedReturnPosition)
             {
                 yield return ToJSMethod(target, source);
             }

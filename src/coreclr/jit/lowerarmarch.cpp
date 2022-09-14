@@ -603,22 +603,7 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
         // STRUCT args (FIELD_LIST / OBJ / LCL_VAR / LCL_FLD) will always be contained.
         MakeSrcContained(putArgNode, src);
 
-        // TODO-ADDR: always perform this transformation in local morph and delete this code.
-        if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIsLocalAddr())
-        {
-            GenTreeLclVarCommon* lclAddrNode = src->AsObj()->Addr()->AsLclVarCommon();
-            unsigned             lclNum      = lclAddrNode->GetLclNum();
-            unsigned             lclOffs     = lclAddrNode->GetLclOffs();
-            ClassLayout*         layout      = src->AsObj()->GetLayout();
-
-            src->ChangeOper(GT_LCL_FLD);
-            src->AsLclFld()->SetLclNum(lclNum);
-            src->AsLclFld()->SetLclOffs(lclOffs);
-            src->AsLclFld()->SetLayout(layout);
-
-            BlockRange().Remove(lclAddrNode);
-        }
-        else if (src->OperIs(GT_LCL_VAR))
+        if (src->OperIs(GT_LCL_VAR))
         {
             // TODO-1stClassStructs: support struct enregistration here by retyping "src" to its register type for
             // the non-split case.
@@ -1095,7 +1080,7 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
         assert(varTypeIsFloating(node->GetSimdBaseType()));
         assert(castOp == nullptr);
 
-        const double dataValue = op1->AsDblCon()->gtDconVal;
+        const double dataValue = op1->AsDblCon()->DconValue();
         return comp->GetEmitter()->emitIns_valid_imm_for_fmov(dataValue);
     }
 
@@ -2141,7 +2126,8 @@ bool Lowering::IsValidCompareChain(GenTree* child, GenTree* parent)
             return IsValidCompareChain(child->AsOp()->gtGetOp2(), child) &&
                    IsValidCompareChain(child->AsOp()->gtGetOp1(), child);
         }
-        else if (child->OperIsCmpCompare())
+        else if (child->OperIsCmpCompare() && varTypeIsIntegral(child->gtGetOp1()) &&
+                 varTypeIsIntegral(child->gtGetOp2()))
         {
             // Can the child compare be contained.
             return IsSafeToContainMem(parent, child);
@@ -2203,7 +2189,8 @@ bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree
             child->SetContained();
             return true;
         }
-        else if (child->OperIsCmpCompare())
+        else if (child->OperIsCmpCompare() && varTypeIsIntegral(child->gtGetOp1()) &&
+                 varTypeIsIntegral(child->gtGetOp2()))
         {
             child->AsOp()->SetContained();
 
@@ -2449,7 +2436,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         assert(varTypeIsFloating(intrin.baseType));
 
-                        const double dataValue = intrin.op3->AsDblCon()->gtDconVal;
+                        const double dataValue = intrin.op3->AsDblCon()->DconValue();
 
                         if (comp->GetEmitter()->emitIns_valid_imm_for_fmov(dataValue))
                         {

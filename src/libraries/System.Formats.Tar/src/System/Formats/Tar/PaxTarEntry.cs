@@ -25,8 +25,6 @@ namespace System.Formats.Tar
         /// </summary>
         /// <param name="entryType">The type of the entry.</param>
         /// <param name="entryName">A string with the path and file name of this entry.</param>
-        /// <exception cref="ArgumentException"><paramref name="entryName"/> is null or empty.</exception>
-        /// <exception cref="InvalidOperationException">The entry type is not supported for creating an entry.</exception>
         /// <remarks><para>When creating an instance using the <see cref="PaxTarEntry(TarEntryType, string)"/> constructor, only the following entry types are supported:</para>
         /// <list type="bullet">
         /// <item>In all platforms: <see cref="TarEntryType.Directory"/>, <see cref="TarEntryType.HardLink"/>, <see cref="TarEntryType.SymbolicLink"/>, <see cref="TarEntryType.RegularFile"/>.</item>
@@ -47,6 +45,10 @@ namespace System.Formats.Tar
         /// <item>File length, under the name <c>size</c>, as an <see cref="int"/>, if the string representation of the number is larger than 12 bytes.</item>
         /// </list>
         /// </remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="entryName"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><para><paramref name="entryName"/> is empty.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="entryType"/> is not supported in the specified format.</para></exception>
         public PaxTarEntry(TarEntryType entryType, string entryName)
             : base(entryType, entryName, TarEntryFormat.Pax, isGea: false)
         {
@@ -62,9 +64,6 @@ namespace System.Formats.Tar
         /// <param name="entryType">The type of the entry.</param>
         /// <param name="entryName">A string with the path and file name of this entry.</param>
         /// <param name="extendedAttributes">An enumeration of string key-value pairs that represents the metadata to include in the Extended Attributes entry that precedes the current entry.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="extendedAttributes"/> is <see langword="null"/>.</exception>
-        /// <exception cref="ArgumentException"><paramref name="entryName"/> is null or empty.</exception>
-        /// <exception cref="InvalidOperationException">The entry type is not supported for creating an entry.</exception>
         /// <remarks>When creating an instance using the <see cref="PaxTarEntry(TarEntryType, string)"/> constructor, only the following entry types are supported:
         /// <list type="bullet">
         /// <item>In all platforms: <see cref="TarEntryType.Directory"/>, <see cref="TarEntryType.HardLink"/>, <see cref="TarEntryType.SymbolicLink"/>, <see cref="TarEntryType.RegularFile"/>.</item>
@@ -85,6 +84,10 @@ namespace System.Formats.Tar
         /// <item>File length, under the name <c>size</c>, as an <see cref="int"/>, if the string representation of the number is larger than 12 bytes.</item>
         /// </list>
         /// </remarks>
+        /// <exception cref="ArgumentNullException"><paramref name="extendedAttributes"/> or <paramref name="entryName"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><para><paramref name="entryName"/> is empty.</para>
+        /// <para>-or-</para>
+        /// <para><paramref name="entryType"/> is not supported in the specified format.</para></exception>
         public PaxTarEntry(TarEntryType entryType, string entryName, IEnumerable<KeyValuePair<string, string>> extendedAttributes)
             : base(entryType, entryName, TarEntryFormat.Pax, isGea: false)
         {
@@ -100,6 +103,9 @@ namespace System.Formats.Tar
         /// <summary>
         /// Initializes a new <see cref="PaxTarEntry"/> instance by converting the specified <paramref name="other"/> entry into the PAX format.
         /// </summary>
+        /// <exception cref="ArgumentException"><para><paramref name="other"/> is a <see cref="PaxGlobalExtendedAttributesTarEntry"/> and cannot be converted.</para>
+        /// <para>-or-</para>
+        /// <para>The entry type of <paramref name="other"/> is not supported for conversion to the PAX format.</para></exception>
         public PaxTarEntry(TarEntry other)
             : base(other, TarEntryFormat.Pax)
         {

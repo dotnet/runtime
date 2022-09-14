@@ -109,13 +109,6 @@ BOOL IsExceptionFromManagedCode(const EXCEPTION_RECORD * pExceptionRecord)
 #define SZ_UNHANDLED_EXCEPTION W("Unhandled exception.")
 #define SZ_UNHANDLED_EXCEPTION_CHARLEN ((sizeof(SZ_UNHANDLED_EXCEPTION) / sizeof(WCHAR)))
 
-
-typedef struct {
-    OBJECTREF pThrowable;
-    STRINGREF s1;
-    OBJECTREF pTmpThrowable;
-} ProtectArgsStruct;
-
 PEXCEPTION_REGISTRATION_RECORD GetCurrentSEHRecord();
 BOOL IsUnmanagedToManagedSEHHandler(EXCEPTION_REGISTRATION_RECORD*);
 
@@ -8387,7 +8380,7 @@ BOOL SetupWatsonBucketsForNonPreallocatedExceptions(OBJECTREF oThrowable /* = NU
     {
         OBJECTREF oThrowable;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.oThrowable = NULL;
     GCPROTECT_BEGIN(gc);
 
     // Get the throwable to be used
@@ -8511,7 +8504,7 @@ BOOL SetupWatsonBucketsForEscapingPreallocatedExceptions()
     {
         OBJECTREF oThrowable;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.oThrowable = NULL;
     GCPROTECT_BEGIN(gc);
 
     // Get the throwable corresponding to the escaping exception
@@ -8663,7 +8656,8 @@ void SetupWatsonBucketsForUEF(BOOL fUseLastThrownObject)
         OBJECTREF oThrowable;
         U1ARRAYREF oBuckets;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.oThrowable = NULL;
+    gc.oBuckets = NULL;
     GCPROTECT_BEGIN(gc);
 
     gc.oThrowable = fUseLastThrownObject ? pThread->LastThrownObject() : pThread->GetThrowable();
@@ -8812,10 +8806,8 @@ BOOL IsThrowableThreadAbortException(OBJECTREF oThrowable)
     {
         OBJECTREF oThrowable;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
-    GCPROTECT_BEGIN(gc);
-
     gc.oThrowable = oThrowable;
+    GCPROTECT_BEGIN(gc);
 
     fIsTAE = IsExceptionOfType(kThreadAbortException, &gc.oThrowable);
 
@@ -8872,10 +8864,8 @@ PTR_ExInfo GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable,
     {
         OBJECTREF oPreAllocThrowable;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
-    GCPROTECT_BEGIN(gc);
-
     gc.oPreAllocThrowable = oPreAllocThrowable;
+    GCPROTECT_BEGIN(gc);
 
     // Start walking the list to find the tracker corresponding
     // to the preallocated exception object.
@@ -8922,10 +8912,8 @@ PTR_EHWatsonBucketTracker GetWatsonBucketTrackerForPreallocatedException(OBJECTR
     {
         OBJECTREF oPreAllocThrowable;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
-    GCPROTECT_BEGIN(gc);
-
     gc.oPreAllocThrowable = oPreAllocThrowable;
+    GCPROTECT_BEGIN(gc);
 
     // Before doing anything, check if this is a thread abort exception. If it is,
     // then simply return the reference to the UE watson bucket tracker since it
@@ -9088,9 +9076,10 @@ BOOL SetupWatsonBucketsForFailFast(EXCEPTIONREF refException)
         OBJECTREF oInnerMostExceptionThrowable;
         U1ARRAYREF oBuckets;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
-    GCPROTECT_BEGIN(gc);
     gc.refException = refException;
+    gc.oInnerMostExceptionThrowable = NULL;
+    gc.oBuckets = NULL;
+    GCPROTECT_BEGIN(gc);
 
     Thread *pThread = GetThread();
 
@@ -9362,7 +9351,9 @@ void SetupInitialThrowBucketDetails(UINT_PTR adjustedIp)
         OBJECTREF oInnerMostExceptionThrowable;
         U1ARRAYREF refSourceWatsonBucketArray;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.oCurrentThrowable = NULL;
+    gc.oInnerMostExceptionThrowable = NULL;
+    gc.refSourceWatsonBucketArray = NULL;
 
     GCPROTECT_BEGIN(gc);
 
@@ -9968,7 +9959,9 @@ void SetStateForWatsonBucketing(BOOL fIsRethrownException, OBJECTHANDLE ohOrigin
         OBJECTREF oInnerMostExceptionThrowable;
         U1ARRAYREF refSourceWatsonBucketArray;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.oCurrentThrowable = NULL;
+    gc.oInnerMostExceptionThrowable = NULL;
+    gc.refSourceWatsonBucketArray = NULL;
     GCPROTECT_BEGIN(gc);
 
     Thread* pThread = GetThread();
@@ -10787,7 +10780,12 @@ void ExceptionNotifications::DeliverNotificationInternal(ExceptionNotificationHa
         OBJECTREF   oCurrentThrowable;
         OBJECTREF   oCurAppDomain;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.oNotificationDelegate = NULL;
+    gc.arrDelegates = NULL;
+    gc.oInnerDelegate = NULL;
+    gc.oEventArgs = NULL;
+    gc.oCurrentThrowable = NULL;
+    gc.oCurAppDomain = NULL;
 
     // This will hold the MethodDesc of the callback that will be invoked.
     MethodDesc *pMDDelegate = NULL;

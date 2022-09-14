@@ -111,11 +111,11 @@ namespace System.Runtime.Intrinsics
         public static Vector128<T> AndNot<T>(Vector128<T> left, Vector128<T> right)
             where T : struct => left & ~right;
 
-        /// <summary>Reinterprets a <see cref="Vector128{T}" /> as a new <see cref="Vector128{U}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector128{TFrom}" /> as a new <see cref="Vector128{TTo}" />.</summary>
         /// <typeparam name="TFrom">The type of the input vector.</typeparam>
         /// <typeparam name="TTo">The type of the vector <paramref name="vector" /> should be reinterpreted as.</typeparam>
         /// <param name="vector">The vector to reinterpret.</param>
-        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector128{U}" />.</returns>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector128{TTo}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="TFrom" />) or the type of the target (<typeparamref name="TTo" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

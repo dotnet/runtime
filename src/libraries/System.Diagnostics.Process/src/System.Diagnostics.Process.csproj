@@ -302,6 +302,8 @@
              Link="Common\Interop\Linux\Interop.ProcFsStat.ParseMapModules.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcFsStat.TryReadStatusFile.cs"
              Link="Common\Interop\Linux\Interop.ProcFsStat.TryReadStatusFile.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetBootTimeTicks.cs"
+             Link="Common\Interop\Linux\Interop.GetBootTimeTicks.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SchedGetSetAffinity.cs"
              Link="Common\Interop\Linux\Interop.SchedGetSetAffinity.cs" />
   </ItemGroup>

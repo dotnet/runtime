@@ -283,14 +283,14 @@ bool ModuleVersion::GetModuleVersion(Module * pModule)
 }
 
 ModuleRecord::ModuleRecord(unsigned lenName, unsigned lenAsmName)
+    : version{}
+    , jitMethodCount{}
+    , wLoadLevel{}
 {
     LIMITED_METHOD_CONTRACT;
 
-    memset(this, 0, sizeof(ModuleRecord));
-
     recordID = Pack8_24(MULTICOREJIT_MODULE_RECORD_ID, sizeof(ModuleRecord));
 
-    wLoadLevel = 0;
     // Extra data
     lenModuleName = (unsigned short) lenName;
     lenAssemblyName = (unsigned short) lenAsmName;

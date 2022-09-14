@@ -29,6 +29,15 @@ namespace Internal.Runtime.InteropServices
             if (!IsSupported)
                 throw new NotSupportedException(SR.NotSupported_CppCli);
 
+            LoadInMemoryAssemblyInContextWhenSupported(moduleHandle, assemblyPath);
+        }
+
+        // The call to `LoadInMemoryAssemblyInContextImpl` will produce a warning IL2026.
+        // It is intentionally left in the product, so developers get a warning when trimming an app which enabled `Internal.Runtime.InteropServices.InMemoryAssemblyLoader.IsSupported`.
+        // For runtime build the warning is suppressed in the ILLink.Suppressions.LibraryBuild.xml, but we only want to suppress it if the feature is enabled (IsSupported is true).
+        // The call is extracted into a separate method which is the sole target of the suppression.
+        private static unsafe void LoadInMemoryAssemblyInContextWhenSupported(IntPtr moduleHandle, IntPtr assemblyPath)
+        {
 #pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
             LoadInMemoryAssemblyInContextImpl(moduleHandle, assemblyPath);
 #pragma warning restore IL2026

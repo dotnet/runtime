@@ -28,8 +28,6 @@
 
 #include "wrappers.h"
 
-#include "nativeoverlapped.h"
-
 #include "appdomain.inl"
 #include "vmholder.h"
 #include "exceptmacros.h"
@@ -1975,36 +1973,37 @@ void Thread::HandleThreadStartupFailure()
 
     _ASSERTE(GetThreadNULLOk() != NULL);
 
-    struct ProtectArgs
+    struct
     {
         OBJECTREF pThrowable;
         OBJECTREF pReason;
-    } args;
-    memset(&args, 0, sizeof(ProtectArgs));
+    } gc;
+    gc.pThrowable = NULL;
+    gc.pReason = NULL;
 
-    GCPROTECT_BEGIN(args);
+    GCPROTECT_BEGIN(gc);
 
     MethodTable *pMT = CoreLibBinder::GetException(kThreadStartException);
-    args.pThrowable = AllocateObject(pMT);
+    gc.pThrowable = AllocateObject(pMT);
 
     MethodDescCallSite exceptionCtor(METHOD__THREAD_START_EXCEPTION__EX_CTOR);
 
     if (m_pExceptionDuringStartup)
     {
-        args.pReason = CLRException::GetThrowableFromException(m_pExceptionDuringStartup);
+        gc.pReason = CLRException::GetThrowableFromException(m_pExceptionDuringStartup);
         Exception::Delete(m_pExceptionDuringStartup);
         m_pExceptionDuringStartup = NULL;
     }
 
     ARG_SLOT args1[] = {
-        ObjToArgSlot(args.pThrowable),
-        ObjToArgSlot(args.pReason),
+        ObjToArgSlot(gc.pThrowable),
+        ObjToArgSlot(gc.pReason),
     };
     exceptionCtor.Call(args1);
 
     GCPROTECT_END(); //Prot
 
-    RaiseTheExceptionInternalOnly(args.pThrowable, FALSE);
+    RaiseTheExceptionInternalOnly(gc.pThrowable, FALSE);
 }
 
 #ifndef TARGET_UNIX

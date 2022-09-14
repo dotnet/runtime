@@ -89,6 +89,7 @@ namespace System.Xml.Tests
 
         //[Variation(Desc = "v4 - schema(Local)->schema(Local)", Priority = 1)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75183", TestPlatforms.Browser)]
         public void v4()
         {
             AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
@@ -104,6 +105,7 @@ namespace System.Xml.Tests
 
         //[Variation(Desc = "v5 - schema(Local)->schema(Local)->schema(Local)", Priority = 1)]
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75183", TestPlatforms.Browser)]
         public void v5()
         {
             AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
