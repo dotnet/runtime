@@ -206,7 +206,25 @@ namespace System.Collections.Tests
             public void BasicGetRange(T[] items, int index, int count, bool useSlice)
             {
                 List<T> list = new List<T>(items);
-                List<T> range = useSlice ? list[index..(index + count)] : list.GetRange(index, count);
+                List<T> range = useSlice ? list.Slice(index, count) : list.GetRange(index, count);
+
+                //ensure range is good
+                for (int i = 0; i < count; i++)
+                {
+                    Assert.Equal(range[i], items[i + index]); //String.Format("Err_170178aqhbpa Expected item: {0} at: {1} actual: {2}", items[i + index], i, range[i])
+                }
+
+                //ensure no side effects
+                for (int i = 0; i < items.Length; i++)
+                {
+                    Assert.Equal(list[i], items[i]); //String.Format("Err_00125698ahpap Expected item: {0} at: {1} actual: {2}", items[i], i, list[i])
+                }
+            }
+
+            public void BasicSliceSyntax(T[] items, int index, int count)
+            {
+                List<T> list = new List<T>(items);
+                List<T> range = list[index..(index + count)];
 
                 //ensure range is good
                 for (int i = 0; i < count; i++)
@@ -279,9 +297,9 @@ namespace System.Collections.Tests
                 {
                     AssertExtensions.Throws<ArgumentException>(null, () =>
                     {
-                        var index = bad[i];
-                        var count = bad[++i];
-                        return useSlice ? list[index..(index + count)] : list.GetRange(index, count);
+                        int index = bad[i];
+                        int count = bad[++i];
+                        return useSlice ? list.Slice(index, count) : list.GetRange(index, count);
                     }); //"ArgumentException expected."
                 }
 
@@ -306,9 +324,9 @@ namespace System.Collections.Tests
                 {
                     Assert.Throws<ArgumentOutOfRangeException>(() =>
                     {
-                        var index = bad[i];
-                        var count = bad[++i];
-                        return useSlice ? list[index..(index + count)] : list.GetRange(index, count);
+                        int index = bad[i];
+                        int count = bad[++i];
+                        return useSlice ? list.Slice(index, count) : list.GetRange(index, count);
                     }); //"ArgumentOutOfRangeException expected."
                 }
             }
@@ -880,6 +898,25 @@ namespace System.Collections.Tests
             StringDriver.BasicGetRange(stringArr1, 99, 1, useSlice);
             StringDriver.EnsureRangeIsReference(stringArr1, "SometestString101", 0, 10, useSlice);
             StringDriver.EnsureThrowsAfterModification(stringArr1, "str", 10, 10, useSlice);
+        }
+
+        [Fact]
+        public static void SlicingWorks()
+        {
+            Driver<int> IntDriver = new Driver<int>();
+            int[] intArr1 = new int[100];
+            for (int i = 0; i < 100; i++)
+                intArr1[i] = i;
+
+            IntDriver.BasicSliceSyntax(intArr1, 50, 50);
+            IntDriver.BasicSliceSyntax(intArr1, 0, 50);
+            IntDriver.BasicSliceSyntax(intArr1, 50, 25);
+            IntDriver.BasicSliceSyntax(intArr1, 0, 25);
+            IntDriver.BasicSliceSyntax(intArr1, 75, 25);
+            IntDriver.BasicSliceSyntax(intArr1, 0, 100);
+            IntDriver.BasicSliceSyntax(intArr1, 0, 99);
+            IntDriver.BasicSliceSyntax(intArr1, 1, 1);
+            IntDriver.BasicSliceSyntax(intArr1, 99, 1);
         }
 
         [Theory]
