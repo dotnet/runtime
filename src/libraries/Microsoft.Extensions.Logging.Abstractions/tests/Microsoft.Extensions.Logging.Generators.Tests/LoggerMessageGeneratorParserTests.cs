@@ -89,7 +89,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                     static partial void M1(ILogger logger);
 
                     [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
-                    static partial void M1(ILogger logger) => { }
+                    static partial void M1(ILogger logger) => throw new Exception();
                 }
             ");
 
