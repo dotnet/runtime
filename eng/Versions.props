@@ -41,12 +41,13 @@
     <MicrosoftCodeAnalysisVersion_4_4>4.4.0-1.22369.1</MicrosoftCodeAnalysisVersion_4_4>
   </PropertyGroup>
   <PropertyGroup>
-    <!-- Code analysis dependencies -->
+    <!-- dotnet/roslyn-analyzers dependencies -->
     <MicrosoftCodeAnalysisAnalyzersVersion>3.3.4-beta1.22452.2</MicrosoftCodeAnalysisAnalyzersVersion>
+    <MicrosoftCodeAnalysisNetAnalyzersVersion>7.0.0-preview1.22452.2</MicrosoftCodeAnalysisNetAnalyzersVersion>
+    <!-- dotnet/roslyn dependencies -->
     <MicrosoftCodeAnalysisCSharpCodeStyleVersion>4.4.0-2.22463.8</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
     <MicrosoftCodeAnalysisCSharpWorkspacesVersion>4.4.0-2.22463.8</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
     <MicrosoftCodeAnalysisCSharpVersion>4.4.0-2.22463.8</MicrosoftCodeAnalysisCSharpVersion>
-    <MicrosoftCodeAnalysisNetAnalyzersVersion>7.0.0-preview1.22452.2</MicrosoftCodeAnalysisNetAnalyzersVersion>
     <MicrosoftCodeAnalysisVersion>4.4.0-2.22463.8</MicrosoftCodeAnalysisVersion>
     <!--
       TODO: Remove pinned version once arcade supplies a compiler that enables the repo to compile.
