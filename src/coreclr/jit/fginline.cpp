@@ -1630,44 +1630,20 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
                         // For case (1)
                         //
-                        // Look for the following tree shapes
-                        // prejit: (IND (ADD (CONST, CALL(special dce helper...))))
-                        // jit   : (COMMA (CALL(special dce helper...), (FIELD ...)))
-                        if (argNode->gtOper == GT_COMMA)
+                        if (argNode->OperIs(GT_COMMA))
                         {
                             // Look for (COMMA (CALL(special dce helper...), (FIELD ...)))
-                            GenTree* op1 = argNode->AsOp()->gtOp1;
-                            GenTree* op2 = argNode->AsOp()->gtOp2;
+                            GenTree* op1 = argNode->gtGetOp1();
+                            GenTree* op2 = argNode->gtGetOp2();
                             if (op1->IsCall() &&
                                 ((op1->AsCall()->gtCallMoreFlags & GTF_CALL_M_HELPER_SPECIAL_DCE) != 0) &&
-                                (op2->gtOper == GT_FIELD) && ((op2->gtFlags & GTF_EXCEPT) == 0))
+                                (op2->OperIs(GT_FIELD)) && ((op2->gtFlags & GTF_EXCEPT) == 0))
                             {
                                 JITDUMP("\nPerforming special dce on unused arg [%06u]:"
                                         " actual arg [%06u] helper call [%06u]\n",
                                         argNode->gtTreeID, argNode->gtTreeID, op1->gtTreeID);
                                 // Drop the whole tree
                                 append = false;
-                            }
-                        }
-                        else if (argNode->gtOper == GT_IND)
-                        {
-                            // Look for (IND (ADD (CONST, CALL(special dce helper...))))
-                            GenTree* addr = argNode->AsOp()->gtOp1;
-
-                            if (addr->gtOper == GT_ADD)
-                            {
-                                GenTree* op1 = addr->AsOp()->gtOp1;
-                                GenTree* op2 = addr->AsOp()->gtOp2;
-                                if (op1->IsCall() &&
-                                    ((op1->AsCall()->gtCallMoreFlags & GTF_CALL_M_HELPER_SPECIAL_DCE) != 0) &&
-                                    op2->IsCnsIntOrI())
-                                {
-                                    // Drop the whole tree
-                                    JITDUMP("\nPerforming special dce on unused arg [%06u]:"
-                                            " actual arg [%06u] helper call [%06u]\n",
-                                            argNode->gtTreeID, argNode->gtTreeID, op1->gtTreeID);
-                                    append = false;
-                                }
                             }
                         }
                     }
