@@ -3883,15 +3883,6 @@ _SetMinOpts:
         }
     }
 
-#if TARGET_ARM
-    // A single JitStress=1 Linux ARM32 test fails when we expand virtual calls early
-    // JIT\HardwareIntrinsics\General\Vector128_1\Vector128_1_ro
-    //
-    opts.compExpandCallsEarly = (JitConfig.JitExpandCallsEarly() == 2);
-#else
-    opts.compExpandCallsEarly = (JitConfig.JitExpandCallsEarly() != 0);
-#endif
-
     fgCanRelocateEHRegions = true;
 }
 
