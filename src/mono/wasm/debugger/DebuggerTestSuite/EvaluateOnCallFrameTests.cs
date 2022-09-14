@@ -638,6 +638,7 @@ namespace DebuggerTests
                     ("f.numList[i + 1]", TNumber(2)),
                     ("f.textList[(2 * j) - 1]", TString("2")),
                     ("f.textList[j - 1]", TString("1")),
+                    //("f[\"longstring\"]", TBool(true)), FIXME: Broken case
                     ("f.numArray[f.numList[j - 1]]", TNumber(2))
                 );
             });
@@ -696,7 +697,6 @@ namespace DebuggerTests
                    ("f.textList[f.idx1]", TString("2")),
                    ("f.numArray[f.idx1]", TNumber(2)),
                    ("f.textArray[f.idx0]", TString("1")));
-
            });
 
         [Fact]
