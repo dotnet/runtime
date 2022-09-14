@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using Sharpliner;
 using Sharpliner.AzureDevOps;
 
 namespace Pipelines;
@@ -24,22 +23,6 @@ public record Platform(
 
 public class PlatformMatrix : PlatformMatrixBase
 {
-    // These fields can be used to restrict which build legs run in your PR.
-    //
-    // Set this to only dis/allow platforms that contain given substrings.
-    // E.g. add "linux" if you only want to filter platforms containing "linux" in their name.
-    // Then "dotnet build" this project and commit the YAML.
-    //
-    // First allowed platforms are filtered, then disallowed filter is applied.
-    //
-    // Example "Run all linux non-arm legs":
-    //   - allowed  = [ "linux" ]
-    //   - disallowed = [ "arm" ]
-    protected override List<string> AllowedPlatforms { get; } = new() { };
-    protected override List<string> DisallowedPlatforms { get; } = new() { };
-
-    public override TargetPathType TargetPathType => TargetPathType.RelativeToGitRoot;
-
     public override string TargetFile => "eng/pipelines/common/platform-matrix.yml";
 
     // TODO: We can extract container names somewhere in one place

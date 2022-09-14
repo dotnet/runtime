@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Sharpliner;
 using Sharpliner.AzureDevOps;
 using Sharpliner.AzureDevOps.ConditionedExpressions;
 
@@ -10,9 +11,11 @@ namespace Pipelines;
 
 public abstract class PlatformMatrixBase : JobTemplateDefinition
 {
+    public override TargetPathType TargetPathType => TargetPathType.RelativeToGitRoot;
+
     // Fill these three in an ancestor to generate a list of classes
-    protected abstract List<string> AllowedPlatforms { get; }
-    protected abstract List<string> DisallowedPlatforms { get; }
+    protected List<string> AllowedPlatforms => CiFiltering.AllowedPlatforms;
+    protected List<string> DisallowedPlatforms => CiFiltering.DisallowedPlatforms;
     protected abstract List<Platform> Platforms { get; }
 
     public override string[]? Header => base.Header!.Concat(new[]
