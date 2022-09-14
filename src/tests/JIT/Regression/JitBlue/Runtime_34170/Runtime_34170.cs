@@ -21,7 +21,7 @@ internal struct FloatNonAlignedFieldWithSmallOffset
 [StructLayout(LayoutKind.Explicit)]
 internal struct FloatNonAlignedFieldWithLargeOffset
 {
-    [FieldOffset(1021)]
+    [FieldOffset(0x10001)]
     public float field;
 
     public FloatNonAlignedFieldWithLargeOffset(float a)
@@ -45,7 +45,7 @@ internal struct DoubleNonAlignedFieldWithSmallOffset
 [StructLayout(LayoutKind.Explicit)]
 internal struct DoubleNonAlignedFieldWithLargeOffset
 {
-    [FieldOffset(1021)]
+    [FieldOffset(0x10001)]
     public double field;
 
     public DoubleNonAlignedFieldWithLargeOffset(float a)

@@ -12,6 +12,7 @@ export const cs_to_js_marshalers = new Map<MarshalerType, MarshalerToJs>();
 export const js_to_cs_marshalers = new Map<MarshalerType, MarshalerToCs>();
 export const bound_cs_function_symbol = Symbol.for("wasm bound_cs_function");
 export const bound_js_function_symbol = Symbol.for("wasm bound_js_function");
+export const imported_js_function_symbol = Symbol.for("wasm imported_js_function");
 
 /**
  * JSFunctionSignature is pointer to [

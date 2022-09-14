@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-
-using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem
 {
@@ -37,7 +34,7 @@ namespace Internal.TypeSystem
             return result;
         }
 
-        public unsafe override ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType defType, StaticLayoutKind layoutKind)
+        public override unsafe ComputedStaticFieldLayout ComputeStaticFieldLayout(DefType defType, StaticLayoutKind layoutKind)
         {
             // Static field layout for a RuntimeDeterminedType is not a supported operation
             throw new NotSupportedException();

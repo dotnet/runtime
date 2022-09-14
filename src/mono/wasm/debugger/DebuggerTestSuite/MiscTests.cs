@@ -735,23 +735,25 @@ namespace DebuggerTests
                     ?.Where(f => f["functionName"]?.Value<string>() == function_name)
                     ?.FirstOrDefault();
 
-        [ConditionalFact(nameof(RunningOnChrome))]
-        public async Task DebugLazyLoadedAssemblyWithPdb()
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData("lazy-debugger-test")]
+        [InlineData("lazy-debugger-test-chinese-char-in-path-ㄨ")]
+        public async Task DebugLazyLoadedAssemblyWithPdb(string assembly_name)
         {
             Task<JObject> bpResolved = WaitForBreakpointResolvedEvent();
             int line = 9;
             await SetBreakpoint(".*/lazy-debugger-test.cs$", line, 0, use_regex: true);
             await LoadAssemblyDynamically(
-                    Path.Combine(DebuggerTestAppPath, "lazy-debugger-test.dll"),
-                    Path.Combine(DebuggerTestAppPath, "lazy-debugger-test.pdb"));
+                    Path.Combine(DebuggerTestAppPath, $"{assembly_name}.dll"),
+                    Path.Combine(DebuggerTestAppPath, $"{assembly_name}.pdb"));
 
-            var source_location = "dotnet://lazy-debugger-test.dll/lazy-debugger-test.cs";
+            var source_location = $"dotnet://{assembly_name}.dll/lazy-debugger-test.cs";
             Assert.Contains(source_location, scripts.Values);
 
             await bpResolved;
 
             var pause_location = await EvaluateAndCheck(
-               "window.setTimeout(function () { invoke_static_method('[lazy-debugger-test] LazyMath:IntAdd', 5, 10); }, 1);",
+               "window.setTimeout(function () { invoke_static_method('[" + assembly_name + "] LazyMath:IntAdd', 5, 10); }, 1);",
                source_location, line, 8,
                "LazyMath.IntAdd");
             var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
@@ -1085,6 +1087,18 @@ namespace DebuggerTests
                     }
                 }
             );
+        }
+
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task SetBreakpointInProjectWithChineseCharactereInPath()
+        {
+            var bp = await SetBreakpointInMethod("debugger-test-chinese-char-in-path-ㄨ.dll", "DebuggerTests.CheckChineseCharacterInPath", "Evaluate", 1);
+            await EvaluateAndCheck(
+                $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-chinese-char-in-path-ㄨ] DebuggerTests.CheckChineseCharacterInPath:Evaluate'); }}, 1);",
+                "dotnet://debugger-test-chinese-char-in-path-ㄨ.dll/test.cs",
+                bp.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp.Value["locations"][0]["columnNumber"].Value<int>(),
+                $"DebuggerTests.CheckChineseCharacterInPath.Evaluate");
         }
     }
 }

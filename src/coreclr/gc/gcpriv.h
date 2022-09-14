@@ -3852,7 +3852,7 @@ public:
     PER_HEAP_ISOLATED
     VOLATILE(bool) full_gc_approach_event_set;
 
-    PER_HEAP_ISOLATED
+    PER_HEAP
     bool special_sweep_p;
 
 #ifdef BACKGROUND_GC
@@ -4962,8 +4962,10 @@ protected:
     PER_HEAP
     heap_segment* freeable_uoh_segment;
 
+#ifndef USE_REGIONS
     PER_HEAP_ISOLATED
     heap_segment* segment_standby_list;
+#endif
 
 #ifdef USE_REGIONS
     PER_HEAP_ISOLATED
