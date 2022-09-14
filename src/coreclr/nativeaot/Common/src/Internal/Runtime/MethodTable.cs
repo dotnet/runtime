@@ -351,6 +351,7 @@ namespace Internal.Runtime
             set
             {
                 Debug.Assert(!HasComponentSize);
+                Debug.Assert(FlagsEx == 0);
                 _uFlags |= (uint)value;
             }
 #endif

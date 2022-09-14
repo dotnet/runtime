@@ -104,7 +104,7 @@ bool MethodTable::Validate(bool assertOnFail /* default: true */)
             REPORT_FAILURE();
 
         // Component size cannot be zero in this case.
-        if (!HasComponentSize())
+        if (GetComponentSize() == 0)
             REPORT_FAILURE();
 
         if (get_IsValueType() ||

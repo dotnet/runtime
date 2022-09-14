@@ -22,7 +22,7 @@ namespace System
 
         private void Create(object? target, bool trackResurrection)
         {
-            m_handle = (IntPtr)GCHandle.Alloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
+            m_handle = RuntimeImport.RhpHandleAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
             m_trackResurrection = trackResurrection;
 
             if (target != null)

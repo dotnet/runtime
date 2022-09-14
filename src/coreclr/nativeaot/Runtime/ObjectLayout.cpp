@@ -62,7 +62,7 @@ size_t Object::GetSize()
 
     size_t s = pEEType->get_BaseSize();
     if (pEEType->HasComponentSize())
-        s += ((Array*)this)->GetArrayLength() * pEEType->RawGetComponentSize();
+        s += (size_t)((Array*)this)->GetArrayLength() * pEEType->RawGetComponentSize();
 
     return s;
 }
