@@ -28,8 +28,12 @@ all: build-all
 #
 #  If EMSDK_PATH is not set by the caller, download and setup a local emsdk install.
 #
-
+BUILD_ARCH := $(shell uname -s -m)
+ifeq ($(BUILD_ARCH), Linux aarch64)
+EMSCRIPTEN_VERSION := latest
+else
 EMSCRIPTEN_VERSION := $(shell cat $(TOP)/src/mono/wasm/emscripten-version.txt)
+endif
 EMSDK_LOCAL_PATH=emsdk
 EMCC=source $(EMSDK_PATH)/emsdk_env.sh 2>/dev/null && emcc
 
