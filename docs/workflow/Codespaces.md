@@ -9,7 +9,7 @@ dotnet/runtime runs a nightly GitHub Action to build the latest code in the repo
 
 ![New codespace button](https://docs.github.com/assets/cb-138303/images/help/codespaces/new-codespace-button.png)
 
-2. Click the drop-down at the size of the "Create codespace on main" button and select "Configure and create codespace"
+2. Click the drop-down at the side of the `Create codespace on main` button and select `Configure and create codespace`
 
 ![Configure and create codespace](https://docs.github.com/assets/cb-49317/images/help/codespaces/default-machine-type.png)
 
@@ -17,10 +17,10 @@ dotnet/runtime runs a nightly GitHub Action to build the latest code in the repo
 
 ![Dev container configuration](./codespace-dev-container-configuration.png)
 
-    - For "libraries" work, pick ".devcontainer/libraries/devcontainer.json".
-    - For "WASM" work, pick ".devcontainer/wasm/devcontainer.json".
+    - For `libraries` work, pick `.devcontainer/libraries/devcontainer.json`.
+    - For `WASM` work, pick `.devcontainer/wasm/devcontainer.json`.
 
-4. Select the Machine type. For dotnet/runtime, it is recommended to select at least a `4-core` machine. You can also verify that a "Prebuild" is ready.
+4. Select the Machine type. For `dotnet/runtime`, it is recommended to select at least a `4-core` machine. You can also verify that a `Prebuild` is ready.
 
 ![Codespace machine size](./codespace-machine-size.png)
 
@@ -32,7 +32,7 @@ dotnet/runtime runs a nightly GitHub Action to build the latest code in the repo
 The Codespaces configuration is spread across the following places:
 
 1. The [.devcontainer](../../.devcontainer) folder contains folders for each "development scenario":
-    - `libraries` - Used by developers working in src/libraries
+    - `libraries` - Used by developers working in `src/libraries`
     - `wasm` - Used by developers working on the browser-wasm workload
     - The `scripts` folder contains any scripts that are executed during the creation of the codespace. This has the build command that builds the entire repo for prebuilds.
 2. Each development scenario folder contains:
