@@ -780,53 +780,23 @@ namespace System.IO
             ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
-            if (_charPos == _charLen)
+            StringBuilder? sb = null;
+            bool spilledLineFeed = false;
+            while (true)
             {
-                if (ReadBuffer() == 0)
+                if (_charPos == _charLen)
                 {
-                    return null;
+                    if (ReadBuffer() == 0)
+                    {
+                        return sb?.ToString();
+                    }
+                }
+
+                if (TryReadLine(ref sb, ref spilledLineFeed, out string? result))
+                {
+                    return result;
                 }
             }
-
-            StringBuilder? sb = null;
-            do
-            {
-                int i = _charPos;
-                do
-                {
-                    char ch = _charBuffer[i];
-                    // Note the following common line feed chars:
-                    // \n - UNIX   \r\n - DOS   \r - Mac
-                    if (ch == '\r' || ch == '\n')
-                    {
-                        string s;
-                        if (sb != null)
-                        {
-                            sb.Append(_charBuffer, _charPos, i - _charPos);
-                            s = sb.ToString();
-                        }
-                        else
-                        {
-                            s = new string(_charBuffer, _charPos, i - _charPos);
-                        }
-                        _charPos = i + 1;
-                        if (ch == '\r' && (_charPos < _charLen || ReadBuffer() > 0))
-                        {
-                            if (_charBuffer[_charPos] == '\n')
-                            {
-                                _charPos++;
-                            }
-                        }
-                        return s;
-                    }
-                    i++;
-                } while (i < _charLen);
-
-                i = _charLen - _charPos;
-                sb ??= new StringBuilder(i + 80);
-                sb.Append(_charBuffer, _charPos, i);
-            } while (ReadBuffer() > 0);
-            return sb.ToString();
         }
 
         public override Task<string?> ReadLineAsync() =>
@@ -881,63 +851,89 @@ namespace System.IO
 
         private async Task<string?> ReadLineAsyncInternal(CancellationToken cancellationToken)
         {
-            if (_charPos == _charLen && (await ReadBufferAsync(cancellationToken).ConfigureAwait(false)) == 0)
+            StringBuilder? sb = null;
+            bool spilledLineFeed = false;
+            while (true)
             {
-                return null;
+                if (_charPos == _charLen)
+                {
+                    if ((await ReadBufferAsync(cancellationToken).ConfigureAwait(false)) == 0)
+                    {
+                        return sb?.ToString();
+                    }
+                }
+
+                if (TryReadLine(ref sb, ref spilledLineFeed, out string? result))
+                {
+                    return result;
+                }
+            }
+        }
+
+        private bool TryReadLine(ref StringBuilder? sb, ref bool spilledLineFeed, [NotNullWhen(true)] out string? result)
+        {
+            // Special case if the buffer runs out of space between \r and (potentially) \n
+            if (spilledLineFeed)
+            {
+                if (_charBuffer[_charPos] == '\n')
+                {
+                    _charPos++;
+                }
+
+                // sb cannot be null here
+                result = sb!.ToString();
+                return true;
             }
 
-            StringBuilder? sb = null;
+            ReadOnlySpan<char> segment = _charBuffer.AsSpan(_charPos, _charLen - _charPos);
 
-            do
+            int newLineIndex = segment.IndexOfAny('\r', '\n');
+            if ((uint)newLineIndex < (uint)segment.Length)
             {
-                char[] tmpCharBuffer = _charBuffer;
-                int tmpCharLen = _charLen;
-                int tmpCharPos = _charPos;
-                int i = tmpCharPos;
-
-                do
+                _charPos += newLineIndex + 1;
+                if (segment[newLineIndex] == '\r')
                 {
-                    char ch = tmpCharBuffer[i];
-
-                    // Note the following common line feed chars:
-                    // \n - UNIX   \r\n - DOS   \r - Mac
-                    if (ch == '\r' || ch == '\n')
+                    int nextCharIndex = newLineIndex + 1;
+                    if ((uint)nextCharIndex < (uint)segment.Length)
                     {
-                        string s;
-
-                        if (sb != null)
+                        if (segment[nextCharIndex] == '\n')
                         {
-                            sb.Append(tmpCharBuffer, tmpCharPos, i - tmpCharPos);
-                            s = sb.ToString();
+                            _charPos++;
                         }
-                        else
-                        {
-                            s = new string(tmpCharBuffer, tmpCharPos, i - tmpCharPos);
-                        }
-
-                        _charPos = tmpCharPos = i + 1;
-
-                        if (ch == '\r' && (tmpCharPos < tmpCharLen || (await ReadBufferAsync(cancellationToken).ConfigureAwait(false)) > 0))
-                        {
-                            tmpCharPos = _charPos;
-                            if (_charBuffer[tmpCharPos] == '\n')
-                            {
-                                _charPos = ++tmpCharPos;
-                            }
-                        }
-
-                        return s;
                     }
+                    else
+                    {
+                        Debug.Assert(_charPos == _charLen);
+                        // At the end of buffer, but there might be another line feed.
+                        // Stash the current string and consume the line feed next iteration
+                        sb ??= new StringBuilder(newLineIndex);
+                        sb.Append(segment.Slice(0, newLineIndex));
+                        spilledLineFeed = true;
 
-                    i++;
-                } while (i < tmpCharLen);
+                        result = null;
+                        return false;
+                    }
+                }
 
-                i = tmpCharLen - tmpCharPos;
-                sb ??= new StringBuilder(i + 80);
-                sb.Append(tmpCharBuffer, tmpCharPos, i);
-            } while (await ReadBufferAsync(cancellationToken).ConfigureAwait(false) > 0);
+                segment = segment.Slice(0, newLineIndex);
+                if (sb != null)
+                {
+                    sb.Append(segment);
+                    result = sb.ToString();
+                }
+                else
+                {
+                    result = new string(segment);
+                }
+                return true;
+            }
 
-            return sb.ToString();
+            sb ??= new StringBuilder(segment.Length + 80);
+            sb.Append(segment);
+            _charPos = _charLen;
+
+            result = null;
+            return false;
         }
 
         public override Task<string> ReadToEndAsync() => ReadToEndAsync(default);
