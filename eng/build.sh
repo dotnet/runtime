@@ -397,9 +397,15 @@ while [[ $# > 0 ]]; do
       shift 2
       ;;
 
-     -cross|*crossbuild=true*)
+     -cross)
       crossBuild=1
       arguments="$arguments /p:CrossBuild=True"
+      shift 1
+      ;;
+
+     *crossbuild=true*)
+      crossBuild=1
+      extraargs="$extraargs $1"
       shift 1
       ;;
 
