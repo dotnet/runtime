@@ -14,6 +14,7 @@
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
     <CLRTestKind>BuildOnly</CLRTestKind>
     <RunAnalyzers>false</RunAnalyzers>
+    <OutputPath>$(RuntimeBinDir)\SuperFileCheck</OutputPath>
   </PropertyGroup>
 
   <PropertyGroup>
