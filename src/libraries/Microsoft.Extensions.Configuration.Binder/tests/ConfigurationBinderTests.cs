@@ -250,6 +250,12 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
         public record struct RecordStructTypeOptions(string Color, int Length);
 
+        public record RecordOptionsWithNesting(int Number, RecordOptionsWithNesting.RecordNestedOptions Nested1,
+            RecordOptionsWithNesting.RecordNestedOptions Nested2 = null!)
+        {
+            public record RecordNestedOptions(string ValueA, int ValueB);
+        }
+
         // Here, the constructor has three parameters, but not all of those match
         // match to a property or field
         public class ClassWhereParametersDoNotMatchProperties
@@ -2354,6 +2360,29 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var options = config.Get<RecordStructTypeOptions>();
             Assert.Equal(42, options.Length);
             Assert.Equal("Green", options.Color);
+        }
+
+        [Fact]
+        public void CanBindNestedRecordOptions()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Number", "1"},
+                {"Nested1:ValueA", "Cool"},
+                {"Nested1:ValueB", "42"},
+                {"Nested2:ValueA", "Uncool"},
+                {"Nested2:ValueB", "24"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<RecordOptionsWithNesting>();
+            Assert.Equal(1, options.Number);
+            Assert.Equal("Cool", options.Nested1.ValueA);
+            Assert.Equal(42, options.Nested1.ValueB);
+            Assert.Equal("Uncool", options.Nested2.ValueA);
+            Assert.Equal(24, options.Nested2.ValueB);
         }
 
         [Fact]

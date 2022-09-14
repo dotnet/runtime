@@ -2334,7 +2334,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
         {
             emitter* emit       = GetEmitter();
             emitAttr size       = emitActualTypeSize(tree);
-            double   constValue = tree->AsDblCon()->gtDconVal;
+            double   constValue = tree->AsDblCon()->DconValue();
 
             // Make sure we use "movi reg, 0x00"  only for positive zero (0.0) and not for negative zero (-0.0)
             if (*(__int64*)&constValue == 0)
@@ -2412,8 +2412,14 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                         // Get a temp integer register to compute long address.
                         regNumber addrReg = tree->GetSingleTempReg();
 
-                        simd16_t             constValue = vecCon->gtSimd16Val;
-                        CORINFO_FIELD_HANDLE hnd        = emit->emitSimd16Const(constValue);
+                        simd16_t constValue = {};
+
+                        if (vecCon->TypeIs(TYP_SIMD12))
+                            memcpy(&constValue, &vecCon->gtSimd12Val, sizeof(simd12_t));
+                        else
+                            constValue = vecCon->gtSimd16Val;
+
+                        CORINFO_FIELD_HANDLE hnd = emit->emitSimd16Const(constValue);
 
                         emit->emitIns_R_C(INS_ldr, attr, targetReg, addrReg, hnd, 0);
                     }

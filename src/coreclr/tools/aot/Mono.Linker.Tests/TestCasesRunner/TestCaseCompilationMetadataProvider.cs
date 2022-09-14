@@ -58,7 +58,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return false;
 		}
 
-		bool IsRequirementMissing (TestRunCharacteristics requirement, TestRunCharacteristics testCaseRequirements)
+		private bool IsRequirementMissing (TestRunCharacteristics requirement, TestRunCharacteristics testCaseRequirements)
 		{
 			return testCaseRequirements.HasFlag (requirement) && !Characteristics.HasFlag (requirement);
 		}
@@ -90,7 +90,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public virtual string GetCSharpCompilerToUse ()
 		{
-			return GetOptionAttributeValue (nameof (SetupCSharpCompilerToUseAttribute), string.Empty)!.ToLower ();
+			return GetOptionAttributeValue (nameof (SetupCSharpCompilerToUseAttribute), string.Empty)!.ToLowerInvariant ();
 		}
 
 		public virtual IEnumerable<string> GetSetupCompilerArguments ()
@@ -107,7 +107,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				.Select (GetSourceAndRelativeDestinationValue);
 		}
 
-		static string GetReferenceDir ()
+		private static string GetReferenceDir ()
 		{
 			string runtimeDir = Path.GetDirectoryName (typeof (object).Assembly.Location)!;
 			string ncaVersion = Path.GetFileName (runtimeDir);

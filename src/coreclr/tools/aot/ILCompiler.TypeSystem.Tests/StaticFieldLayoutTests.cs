@@ -14,8 +14,8 @@ namespace TypeSystemTests
 {
     public class StaticFieldLayoutTests
     {
-        TestTypeSystemContext _context;
-        ModuleDesc _testModule;
+        private TestTypeSystemContext _context;
+        private ModuleDesc _testModule;
 
         public StaticFieldLayoutTests()
         {
