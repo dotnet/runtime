@@ -779,7 +779,7 @@ BOOL    AsmMan::SetComTypeClassTok(mdToken tkClass)
 
 void    AsmMan::StartManifestRes(_In_ __nullterminated char* szName, _In_ __nullterminated char* szAlias, DWORD dwAttr)
 {
-    if((m_pCurManRes = new AsmManRes))
+    if((m_pCurManRes = new (nothrow) AsmManRes()))
     {
         m_pCurManRes->szName = szName;
         m_pCurManRes->szAlias = szAlias;

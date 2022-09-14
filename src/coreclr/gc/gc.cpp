@@ -2715,10 +2715,11 @@ uint64_t gc_heap::total_loh_a_last_bgc = 0;
 #endif //BGC_SERVO_TUNING
 
 size_t gc_heap::eph_gen_starts_size = 0;
-heap_segment* gc_heap::segment_standby_list;
 #if defined(USE_REGIONS)
 region_free_list gc_heap::global_regions_to_decommit[count_free_region_kinds];
 region_free_list gc_heap::global_free_huge_regions;
+#else
+heap_segment* gc_heap::segment_standby_list;
 #endif //USE_REGIONS
 bool          gc_heap::use_large_pages_p = 0;
 #ifdef HEAP_BALANCE_INSTRUMENTATION
@@ -5751,11 +5752,7 @@ gc_heap::get_segment (size_t size, gc_oh_num oh)
 
     if (result)
     {
-        init_heap_segment (result, __this
-#ifdef USE_REGIONS
-            , 0, size, (uoh_p ? max_generation : 0)
-#endif //USE_REGIONS
-            );
+        init_heap_segment (result, __this);
 #ifdef BACKGROUND_GC
         if (is_bgc_in_progress())
         {
@@ -13652,7 +13649,9 @@ gc_heap::init_semi_shared()
         goto cleanup;
 #endif //FEATURE_BASICFREEZE
 
+#ifndef USE_REGIONS
     segment_standby_list = 0;
+#endif //USE_REGIONS
 
     if (!full_gc_approach_event.CreateManualEventNoThrow(FALSE))
     {
@@ -30416,11 +30415,6 @@ void gc_heap::plan_phase (int condemned_gen_number)
         if (condemned_gen_number >= (max_generation -1))
         {
 #ifdef MULTIPLE_HEAPS
-            // this needs be serialized just because we have one
-            // segment_standby_list/seg_table for all heaps. We should make it at least
-            // so that when hoarding is not on we don't need this join because
-            // decommitting memory can take a long time.
-            //must serialize on deleting segments
             gc_t_join.join(this, gc_join_rearrange_segs_compaction);
             if (gc_t_join.joined())
 #endif //MULTIPLE_HEAPS
@@ -44601,6 +44595,7 @@ HRESULT GCHeap::StaticShutdown()
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     }
 
+#ifndef USE_REGIONS
     //destroy all segments on the standby list
     while(gc_heap::segment_standby_list != 0)
     {
@@ -44612,6 +44607,7 @@ HRESULT GCHeap::StaticShutdown()
 #endif //MULTIPLE_HEAPS
         gc_heap::segment_standby_list = next_seg;
     }
+#endif // USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
 
