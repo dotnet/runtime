@@ -1902,6 +1902,9 @@ class SuperPMIReplayAsmDiffs:
                 write_fh.write("\n")
 
                 if any(has_diff for (_, _, _, has_diff, _) in asm_diffs):
+                    write_fh.write("---\n\n")
+                    write_fh.write("#### jit-analyze output\n")
+
                     for (mch_file, base_metrics, diff_metrics, has_diffs, jit_analyze_summary_file) in asm_diffs:
                         if not has_diffs or jit_analyze_summary_file is None:
                             continue
