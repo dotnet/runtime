@@ -669,6 +669,18 @@ namespace DebuggerTests
                 Assert.Equal("Unable to evaluate element access 'f.numList[\"a\" + 1]': Cannot index with an object of type 'string'", res.Error["message"]?.Value<string>());
             });
 
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task EvaluateIndexingByExpressionContainingUnknownIdentifier() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); 1 }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                // indexing with expression of a wrong type
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                var (_, res) = await EvaluateOnCallFrame(id, "f.numList[\"a\" + x]", expect_ok: false);
+                Assert.Equal("The name x does not exist in the current context", res.Error["result"]?["description"]?.Value<string>());
+            });
+
         [Fact]
         public async Task EvaluateIndexingByMemberVariables() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
