@@ -7,9 +7,9 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-class Program
+class DeadCodeElimination
 {
-    static int Main()
+    public static int Run()
     {
         SanityTest.Run();
         TestInstanceMethodOptimization.Run();
