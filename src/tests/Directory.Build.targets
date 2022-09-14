@@ -277,6 +277,9 @@
   </Target>
 
   <Target Name="GenerateMarkerFiles" BeforeTargets="AssignTargetPaths">
+    <PropertyGroup Condition="'$(NumberOfStripesToUseInStress)' == '' and '$(IsMergedTestRunnerAssembly)' == 'true'">
+      <NumberOfStripesToUseInStress>1</NumberOfStripesToUseInStress> <!-- Set a custom number of stripes in stress to allow very large merged groups to function in the presence of GCStress -->
+    </PropertyGroup>
 
     <!-- Generate a set of stress marker files to be used in stress scenarios in CI runs -->
     <ItemGroup Condition="'$(NumberOfStripesToUseInStress)' != '' and '$(IsMergedTestRunnerAssembly)' == 'true'">
@@ -382,11 +385,8 @@
       <SequenceOfIntegers Include="99"/>
 
       <MarkerFileIntegerSequence Include="@(SequenceOfIntegers)" Condition="%(Identity)&lt;$(NumberOfStripesToUseInStress)" />
-      <MarkerFile Include="@(MarkerFileIntegerSequence->'$(IntermediateOutputPath)\$(MSBuildProjectName).%(Identity).$(NumberOfStripesToUseInStress).MergedTestAssemblyForStress')">
+      <MarkerFile Include="@(MarkerFileIntegerSequence->'$(IntermediateOutputPath)\$(MSBuildProjectName).MergedTestAssembly.%(Identity).$(NumberOfStripesToUseInStress).MergedTestAssemblyForStress')">
         <Type>MergedStressTestAssembly</Type>
-      </MarkerFile>
-      <MarkerFile Include="@(MarkerFileIntegerSequence->'$(IntermediateOutputPath)\$(MSBuildProjectName).MergedTestAssemblyForStressExists')">
-        <Type>MergedTestAssemblyForStressExists</Type>
       </MarkerFile>
     </ItemGroup>
     <Error Condition="'$(NumberOfStripesToUseInStress)' != '' and $(NumberOfStripesToUseInStress)&gt;99" Text="Attempt to split into too many stripes. Either reduce stripe count, or add more entries to SequenceOfIntegers" />

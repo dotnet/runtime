@@ -281,8 +281,6 @@
   </Target>
 
   <Target Name="DiscoverMergedTestWrappers">
-    <ItemGroup Condition="'$(Scenario)">
-    </ItemGroup>
     <ItemGroup>
       <!-- Exclude WASM support files. They can interfere with our discovery process and create extra work items that don't work. -->
       <_MergedWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssembly" Exclude="$(TestBinDir)**\supportFiles\*.MergedTestAssembly" />
@@ -328,6 +326,8 @@
 
     <ItemGroup>
       <!-- We need to ensure that the test run script is marked as executable. -->
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' == 'true'" Include="set TEST_HARNESS_STRIPE_TO_EXECUTE=.0.1" />
+      <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="export TEST_HARNESS_STRIPE_TO_EXECUTE=.0.1" />
       <HelixCommandLines Condition="'$(TestWrapperTargetsWindows)' != 'true'" Include="chmod +x $(_MergedWrapperRunScriptRelative)" />
       <!-- Force assemblies to lazy-load for LLVM AOT test runs to enable using tests that fail at AOT time (and as a result can't be AOTd) -->
       <HelixCommandLines Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="$(_MergedWrapperRunScriptRelative) --aot-lazy-assembly-load" />
@@ -617,17 +617,53 @@
     </MergedPayloads>
   </ItemGroup>
 
+  <Target Name="FindStressMarkers" BeforeTargets="PrepareMergedStressHelixWorkItems">
+    <ItemGroup>
+      <_MergedStressWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssemblyForStress"/>
+    </ItemGroup>
+  </Target>
+
+<!-- before checkin, add a condition to only enable this when Scenario contains gcstress-->
+  <Target Name="PrepareMergedStressHelixWorkItems" 
+          BeforeTargets="PrepareMergedHelixWorkItems" 
+          Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true' and '$(TargetsMobile)' != 'true'"
+          Outputs="%(_MergedStressWrapperMarker.Identity).dummy">
+    <PropertyGroup>
+      <StressHelixJobsModeEnabled>true</StressHelixJobsModeEnabled>
+
+      <WithoutFinalExt>%(_MergedStressWrapperMarker.Filename)</WithoutFinalExt>
+      <TotalStripes>$([System.IO.Path]::GetExtension('$(WithoutFinalExt)'))</TotalStripes>
+      <WithoutFinalExt2>$([System.IO.Path]::GetFilenameWithoutExtension('$(WithoutFinalExt)'))</WithoutFinalExt2>
+      <ActiveStripe>$([System.IO.Path]::GetExtension('$(WithoutFinalExt2)'))</ActiveStripe>
+      <WithoutFinalExt3>$([System.IO.Path]::GetFilenameWithoutExtension('$(WithoutFinalExt2)'))</WithoutFinalExt3>
+      <MergedWrapperPayloadGroup>$([System.IO.Path]::GetFilenameWithoutExtension('$(WithoutFinalExt3)'))</MergedWrapperPayloadGroup>
+      <StripePayloadGroup>$(MergedWrapperPayloadGroup)$(ActiveStripe)$(TotalStripes)</StripePayloadGroup>
+      <FullName>%(_MergedStressWrapperMarker.Identity)</FullName>
+    </PropertyGroup>
+    <ItemGroup>
+      <HelixWorkItem Include="$(StripePayloadGroup)" Condition="'%(MergedPayloads.PayloadGroup)'=='$(MergedWrapperPayloadGroup)' and ! $(FullName.Contains('MergedPayloads'))">
+        <PayloadDirectory>%(MergedPayloads.PayloadDirectory)</PayloadDirectory>
+        <Command>$([System.String]::Copy('%(MergedPayloads.MergedTestHelixCommand)').Replace('TEST_HARNESS_STRIPE_TO_EXECUTE=.0.1','TEST_HARNESS_STRIPE_TO_EXECUTE=$(ActiveStripe)$(TotalStripes)'))</Command>
+        <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="PrepareMergedHelixWorkItems" BeforeTargets="CoreTest">
+    <ItemGroup>
+      <HelixWorkItem Include="%(MergedPayloads.PayloadGroup)" Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true' and '$(StressHelixJobsModeEnabled)'!= 'true'">
+        <PayloadDirectory>%(MergedPayloads.PayloadDirectory)</PayloadDirectory>
+        <Command>%(MergedPayloads.MergedTestHelixCommand)</Command>
+        <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
+  </Target>
+
   <ItemGroup>
     <HelixWorkItem Include="@(LegacyPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">
       <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
       <Command>dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs)</Command>
       <Command Condition=" '%(TestGroup)' != '' ">dotnet $(XUnitRunnerDll) %(XUnitWrapperDlls) $(XUnitRunnerArgs) -trait TestGroup=%(TestGroup)</Command>
-      <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
-    </HelixWorkItem>
-
-    <HelixWorkItem Include="@(MergedPayloads->Metadata('PayloadGroup'))" Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true'">
-      <PayloadDirectory>%(PayloadDirectory)</PayloadDirectory>
-      <Command>%(MergedTestHelixCommand)</Command>
       <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
     </HelixWorkItem>
 

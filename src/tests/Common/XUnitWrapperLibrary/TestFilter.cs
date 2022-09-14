@@ -145,6 +145,18 @@ public class TestFilter
             }
         }
 
+        var stripeEnvironment = Environment.GetEnvironmentVariable("TEST_HARNESS_STRIPE_TO_EXECUTE");
+        if (!String.IsNullOrEmpty(stripeEnvironment) && stripeEnvironment != ".0.1")
+        {
+            var stripes = stripeEnvironment.Split('.');
+            if (stripes.Length == 3)
+            {
+                Console.WriteLine($"Test striping enabled via TEST_HARNESS_STRIPE_TO_EXECUTE environment variable set to '{stripeEnvironment}'");
+                _stripe = Int32.Parse(stripes[1]);
+                _stripeCount = Int32.Parse(stripes[2]);
+            }
+        }
+
         if (filterString is not null)
         {
             if (filterString.IndexOfAny(new[] { '!', '(', ')', '~', '=' }) != -1)
