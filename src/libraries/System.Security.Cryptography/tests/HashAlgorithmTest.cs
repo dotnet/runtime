@@ -63,13 +63,13 @@ namespace System.Security.Cryptography.Tests
         public async Task ComputeHashAsync_SupportsCancellation()
         {
             using (CancellationTokenSource cancellationSource = new CancellationTokenSource())
-            using (PositionValueStream stream = new SelfCancellingStream(10000, cancellationSource))
+            using (PositionValueStream stream = new SelfCancelingStream(10000, cancellationSource))
             using (HashAlgorithm hash = new SummingTestHashAlgorithm())
             {
                 // The stream has a length longer than ComputeHashAsync's read buffer,
                 // so ReadAsync will get called multiple times.
                 // The first call succeeds, but moves the cancellation source to canceled,
-                // and the second call then fails with an OperationCanceledException, cancelling the
+                // and the second call then fails with an OperationCanceledException, canceling the
                 // whole operation.
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(
                     () => hash.ComputeHashAsync(stream, cancellationSource.Token));
@@ -82,7 +82,7 @@ namespace System.Security.Cryptography.Tests
         public void ComputeHashAsync_Disposed()
         {
             using (CancellationTokenSource cancellationSource = new CancellationTokenSource())
-            using (PositionValueStream stream = new SelfCancellingStream(10000, cancellationSource))
+            using (PositionValueStream stream = new SelfCancelingStream(10000, cancellationSource))
             using (HashAlgorithm hash = new SummingTestHashAlgorithm())
             {
                 hash.Dispose();
@@ -94,7 +94,7 @@ namespace System.Security.Cryptography.Tests
                         hash.ComputeHashAsync(stream);
                     });
 
-                // If SelfCancellingStream.Read (or ReadAsync) was called it will trip cancellation,
+                // If SelfCancelingStream.Read (or ReadAsync) was called it will trip cancellation,
                 // so use that as a signal for whether or not the stream was ever read from.
                 Assert.False(cancellationSource.IsCancellationRequested, "Stream.Read was invoked");
             }
@@ -135,11 +135,11 @@ namespace System.Security.Cryptography.Tests
             // implementations by verifying the right value is produced.
         }
 
-        private class SelfCancellingStream : PositionValueStream
+        private class SelfCancelingStream : PositionValueStream
         {
             private readonly CancellationTokenSource _cancellationSource;
 
-            public SelfCancellingStream(int totalCount, CancellationTokenSource cancellationSource)
+            public SelfCancelingStream(int totalCount, CancellationTokenSource cancellationSource)
                 : base(totalCount)
             {
                 _cancellationSource = cancellationSource;
