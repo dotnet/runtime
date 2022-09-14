@@ -202,11 +202,11 @@ namespace Internal.Runtime.Augments
             return d.GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out isOpenResolver, out isInterpreterEntrypoint);
         }
 
-        public static unsafe void GetDelegateData(Delegate delegateObj, out object firstParameter, out object helperObject, out IntPtr extraFunctionPointerOrData, out IntPtr functionPointer)
+        public static void GetDelegateData(Delegate delegateObj, out object firstParameter, out object helperObject, out IntPtr extraFunctionPointerOrData, out IntPtr functionPointer)
         {
             firstParameter = delegateObj.m_firstParameter;
             helperObject = delegateObj.m_helperObject;
-            extraFunctionPointerOrData = (IntPtr)delegateObj.m_extraFunctionPointerOrData;
+            extraFunctionPointerOrData = delegateObj.m_extraFunctionPointerOrData;
             functionPointer = delegateObj.m_functionPointer;
         }
 

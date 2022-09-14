@@ -778,7 +778,7 @@ namespace System.Speech.Recognition
             {
                 IntPtr smlBuffer = gc.AddrOfPinnedObject();
 
-                SPSEMANTICERRORINFO semanticError = Marshal.PtrToStructure<SPSEMANTICERRORINFO>(checked((IntPtr)((long)smlBuffer + (int)_serializedPhrase.SemanticErrorInfoOffset)));
+                SPSEMANTICERRORINFO semanticError = Marshal.PtrToStructure<SPSEMANTICERRORINFO>((nint)((long)smlBuffer + (int)_serializedPhrase.SemanticErrorInfoOffset));
 
                 string source = Marshal.PtrToStringUni(new IntPtr((long)smlBuffer + semanticError.pszSourceOffset));
                 string description = Marshal.PtrToStringUni(new IntPtr((long)smlBuffer + semanticError.pszDescriptionOffset));

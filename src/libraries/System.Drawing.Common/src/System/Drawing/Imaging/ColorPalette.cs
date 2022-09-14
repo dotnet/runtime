@@ -61,14 +61,14 @@ namespace System.Drawing.Imaging
 
             int size;
 
-            size = Marshal.ReadInt32(checked((IntPtr)((long)memory + 4)));  // Marshal.SizeOf(size.GetType())
+            size = Marshal.ReadInt32((nint)((long)memory + 4));  // Marshal.SizeOf(size.GetType())
 
             _entries = new Color[size];
 
             for (int i = 0; i < size; i++)
             {
                 // use Marshal.SizeOf()
-                int argb = Marshal.ReadInt32(checked((IntPtr)((long)memory + 8 + i * 4)));
+                int argb = Marshal.ReadInt32((nint)((long)memory + 8 + i * 4));
                 _entries[i] = Color.FromArgb(argb);
             }
         }
@@ -86,12 +86,12 @@ namespace System.Drawing.Imaging
 
             Marshal.WriteInt32(memory, 0, _flags);
             // use Marshal.SizeOf()
-            Marshal.WriteInt32(checked((IntPtr)((long)memory + 4)), 0, length);
+            Marshal.WriteInt32((nint)checked((long)memory + 4), 0, length);
 
             for (int i = 0; i < length; i++)
             {
                 // use Marshal.SizeOf()
-                Marshal.WriteInt32(checked((IntPtr)((long)memory + 4 * (i + 2))), 0, _entries[i].ToArgb());
+                Marshal.WriteInt32((nint)((long)memory + 4 * (i + 2)), 0, _entries[i].ToArgb());
             }
 
             return memory;

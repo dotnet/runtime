@@ -3609,7 +3609,7 @@ namespace Internal.JitInterface
 
                 default:
                     // Reloc points to something outside of the generated blocks
-                    var targetObject = HandleToObject((void*)target);
+                    var targetObject = HandleToObject(target);
 
 #if READYTORUN
                     if (targetObject is RequiresRuntimeJitIfUsedSymbol requiresRuntimeSymbol)
