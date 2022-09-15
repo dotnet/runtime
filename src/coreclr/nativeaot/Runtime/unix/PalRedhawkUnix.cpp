@@ -1212,21 +1212,45 @@ extern "C" void GetSystemTimeAsFileTime(FILETIME *lpSystemTimeAsFileTime)
 
 extern "C" UInt32_BOOL QueryPerformanceCounter(LARGE_INTEGER *lpPerformanceCount)
 {
-    // TODO: More efficient, platform-specific implementation
-    struct timeval tv;
-    if (gettimeofday(&tv, NULL) == -1)
+#if HAVE_CLOCK_GETTIME_NSEC_NP
+    lpPerformanceCount->QuadPart = (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
+#elif HAVE_CLOCK_MONOTONIC
+    struct timespec ts;
+    int result = clock_gettime(CLOCK_MONOTONIC, &ts);
+
+    if (result != 0)
     {
-        ASSERT_UNCONDITIONALLY("gettimeofday() failed");
+        ASSERT(!"clock_gettime(CLOCK_MONOTONIC) failed");
         return UInt32_FALSE;
     }
-    lpPerformanceCount->QuadPart =
-        (int64_t) tv.tv_sec * (int64_t) tccSecondsToMicroSeconds + (int64_t) tv.tv_usec;
+    else
+    {
+        lpPerformanceCount->QuadPart =
+            ((int64_t)(ts.tv_sec) * (int64_t)(tccSecondsToNanoSeconds)) + (int64_t)(ts.tv_nsec);
+    }
+#else
+#error "The PAL requires either mach_absolute_time() or clock_gettime(CLOCK_MONOTONIC) to be supported."
+#endif
+
     return UInt32_TRUE;
 }
 
 extern "C" UInt32_BOOL QueryPerformanceFrequency(LARGE_INTEGER *lpFrequency)
 {
-    lpFrequency->QuadPart = (int64_t) tccSecondsToMicroSeconds;
+#if HAVE_CLOCK_GETTIME_NSEC_NP
+    lpFrequency->QuadPart = (int64_t)(tccSecondsToNanoSeconds);
+#elif HAVE_CLOCK_MONOTONIC
+    // clock_gettime() returns a result in terms of nanoseconds rather than a count. This
+    // means that we need to either always scale the result by the actual resolution (to
+    // get a count) or we need to say the resolution is in terms of nanoseconds. We prefer
+    // the latter since it allows the highest throughput and should minimize error propagated
+    // to the user.
+
+    lpFrequency->QuadPart = (int64_t)(tccSecondsToNanoSeconds);
+#else
+#error "The PAL requires either mach_absolute_time() or clock_gettime(CLOCK_MONOTONIC) to be supported."
+#endif
+
     return UInt32_TRUE;
 }
 
