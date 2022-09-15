@@ -90,7 +90,7 @@ def append_diff_file(f, arch, file_name, full_file_path, asmdiffs):
             diffs_found = True
             f.write("## {} {}\n".format(diff_os, diff_arch))
             f.write(contents)
-            f.write("\n")
+            f.write("\n\n---\n\n")
 
     return diffs_found
 
@@ -137,7 +137,7 @@ def main(main_args):
             f.write("No diffs found\n")
 
         f.write("\n\n#Throughput impact on Windows {}\n\n".format(arch))
-        f.write("The following tables contain the impact on throughput " +
+        f.write("The following shows the impact on throughput " +
                 "in terms of number of instructions executed inside the JIT. " +
                 "Negative percentages/lower numbers are better.\n\n")
 

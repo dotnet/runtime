@@ -1410,6 +1410,8 @@ class SuperPMIReplay:
 # SuperPMI Replay/AsmDiffs
 ################################################################################
 
+def html_color(color, text):
+    return "<span style=\"color:{}\">{}</span>".format(color, text)
 
 class SuperPMIReplayAsmDiffs:
     """ SuperPMI Replay AsmDiffs class
@@ -1834,8 +1836,13 @@ class SuperPMIReplayAsmDiffs:
             with open(overall_md_summary_file, "w") as write_fh:
                 def format_delta(base, diff):
                     plus_if_positive = "+" if diff >= base else ""
-                    color = "red" if diff > base else "green"
-                    return "<span style=\"color:{}\">{}{:,d}</span>".format(color, plus_if_positive, diff - base)
+                    text = "{}{:,d}".format(plus_if_positive, diff - base)
+
+                    if diff != base:
+                        color = "red" if diff > base else "green"
+                        return html_color(color, text)
+
+                    return text
 
                 def sum_base(row, col):
                     return sum(int(base_metrics[row][col]) for (_, base_metrics, _, _, _) in asm_diffs)
@@ -1849,12 +1856,19 @@ class SuperPMIReplayAsmDiffs:
                 missing_base_contexts = sum_base("Overall", "Missing compiles")
                 missing_diff_contexts = sum_diff("Overall", "Missing compiles")
 
-                write_fh.write("Diffs are based on <span style=\"color:#1460aa\">{:,d}</span> contexts (<span style=\"color:#1460aa\">{:,d}</span> MinOpts, <span style=\"color:#1460aa\">{:,d}</span> FullOpts).\n\n".format(
-                    diffed_contexts, diffed_minopts_contexts, diffed_opts_contexts))
+                num_contexts_color = "#1460aa"
+                write_fh.write("Diffs are based on {} contexts ({} MinOpts, {} FullOpts).\n\n".format(
+                    html_color(num_contexts_color, "{:,d}".format(diffed_contexts)),
+                    html_color(num_contexts_color, "{:,d}".format(diffed_minopts_contexts)),
+                    html_color(num_contexts_color, "{:,d}".format(diffed_opts_contexts))))
 
-                color_base = "#d35400" if missing_base_contexts > 0 else "green"
-                color_diff = "#d35400" if missing_diff_contexts > 0 else "green"
-                write_fh.write("<span style=\"color:#d35400\">MISSED</span> contexts: base: <span style=\"color:{}\">{:,d}</span>, diff: <span style=\"color:{}\">{:,d}</span>\n\n".format(color_base, missing_base_contexts, color_diff, missing_diff_contexts))
+                missed_color = "#d35400"
+                base_color = missed_color if missing_base_contexts > 0 else "green"
+                diff_color = missed_color if missing_diff_contexts > 0 else "green"
+                write_fh.write("{} contexts: base: {}, diff: {}\n\n".format(
+                    html_color(missed_color, "MISSED"),
+                    html_color(base_color, "{:,d}".format(missing_base_contexts)),
+                    html_color(diff_color, "{:,d}".format(missing_diff_contexts))))
 
                 if any(has_diff for (_, _, _, has_diff, _) in asm_diffs):
                     def write_pivot_section(row):
@@ -2129,8 +2143,12 @@ class SuperPMIReplayThroughputDiff:
                     return check("Overall") or check("MinOpts") or check("FullOpts")
                 def format_pct(base_instructions, diff_instructions):
                     plus_if_positive = "+" if diff_instructions > base_instructions else ""
-                    color = "red" if diff_instructions > base_instructions else "green"
-                    return "<span style=\"color:{}\">{}{:.2f}%</span>".format(color, plus_if_positive, (diff_instructions - base_instructions) / base_instructions * 100)
+                    text = "{}{:.2f}%".format(plus_if_positive, (diff_instructions - base_instructions) / base_instructions * 100)
+                    if diff_instructions != base_instructions:
+                        color = "red" if diff_instructions > base_instructions else "green"
+                        return html_color(color, text)
+
+                    return text
 
                 significant_diffs = {}
                 for mch_file, base, diff in tp_diffs:
