@@ -48,7 +48,8 @@ namespace System.Xml
         // namespace resolver
         protected IXmlNamespaceResolver? _resolver;
 
-        private char[] _primitivesBuffer = new char[36];
+        //char buffer for serializing primitive values
+        private readonly char[] _primitivesBuffer = new char[128];
 
         //
         // XmlWriter implementation
@@ -149,16 +150,16 @@ namespace System.Xml
         // Forward call to WriteChars.
         public override void WriteCharEntity(char ch)
         {
-            _primitivesBuffer[0] = ch;
-            WriteChars(_primitivesBuffer, 0, 1);
+            XmlConvert.TryFormat((ushort)ch, _primitivesBuffer, out int charsWritten);
+            WriteChars(_primitivesBuffer, 0, charsWritten);
         }
 
         // Forward call to WriteChars.
         public override void WriteSurrogateCharEntity(char lowChar, char highChar)
         {
-            _primitivesBuffer[0] = lowChar;
-            _primitivesBuffer[1] = highChar;
-            WriteChars(_primitivesBuffer, 0, 2);
+            XmlConvert.TryFormat((ushort)lowChar, _primitivesBuffer, out int charsWritten);
+            XmlConvert.TryFormat((ushort)lowChar, _primitivesBuffer.AsSpan(charsWritten), out int charsWritten2);
+            WriteChars(_primitivesBuffer, 0, charsWritten + charsWritten2);
         }
 
         // Forward call to WriteString(string).
@@ -185,52 +186,52 @@ namespace System.Xml
             ArgumentNullException.ThrowIfNull(value);
 
             Type sourceType = value.GetType();
+            bool tryFormatResult = false;
+            int charsWritten = -1;
             switch (Type.GetTypeCode(sourceType))
             {
                 case TypeCode.Int32:
-                    if (sourceType.IsEnum)
-                        WriteString(XmlUntypedConverter.Untyped.ToString(value, _resolver));
-                    else
-                        WriteWithBuffer((int)value, XmlConvert.TryFormat);
+                    if (!sourceType.IsEnum)
+                        tryFormatResult = XmlConvert.TryFormat((int)value, _primitivesBuffer, out charsWritten);
                     break;
                 case TypeCode.Boolean:
-                    WriteWithBuffer((bool)value, XmlConvert.TryFormat);
+                    tryFormatResult = XmlConvert.TryFormat((bool)value, _primitivesBuffer, out charsWritten);
                     break;
                 case TypeCode.Int16:
-                    WriteWithBuffer((short)value, XmlConvert.TryFormat);
+                    tryFormatResult = XmlConvert.TryFormat((short)value, _primitivesBuffer, out charsWritten);
                     break;
                 case TypeCode.Int64:
-                    WriteWithBuffer((long)value, XmlConvert.TryFormat);
+                    tryFormatResult = XmlConvert.TryFormat((long)value, _primitivesBuffer, out charsWritten);
                     break;
                 case TypeCode.Single:
-                    WriteWithBuffer((float)value, XmlConvert.TryFormat);
+                    tryFormatResult = XmlConvert.TryFormat((float)value, _primitivesBuffer, out charsWritten);
                     break;
                 case TypeCode.Double:
-                    WriteWithBuffer((double)value, XmlConvert.TryFormat);
+                    tryFormatResult = XmlConvert.TryFormat((double)value, _primitivesBuffer, out charsWritten);
                     break;
                 case TypeCode.Decimal:
-                    WriteWithBuffer((decimal)value, XmlConvert.TryFormat);
+                    tryFormatResult = XmlConvert.TryFormat((decimal)value, _primitivesBuffer, out charsWritten);
                     break;
                 case TypeCode.DateTime:
-                    WriteWithBuffer((DateTime)value, XmlConvert.TryFormat);
+                    tryFormatResult = XmlConvert.TryFormat((DateTime)value, _primitivesBuffer, out charsWritten);
                     break;
                 case TypeCode.Byte:
-                    WriteWithBuffer((byte)value, XmlConvert.TryFormat);
+                    tryFormatResult = XmlConvert.TryFormat((byte)value, _primitivesBuffer, out charsWritten);
                     break;
                 case TypeCode.SByte:
-                    WriteWithBuffer((sbyte)value, XmlConvert.TryFormat);
+                    tryFormatResult = XmlConvert.TryFormat((sbyte)value, _primitivesBuffer, out charsWritten);
                     break;
                 case TypeCode.UInt16:
-                    WriteWithBuffer((ushort)value, XmlConvert.TryFormat);
+                    tryFormatResult = XmlConvert.TryFormat((ushort)value, _primitivesBuffer, out charsWritten);
                     break;
                 case TypeCode.UInt32:
-                    WriteWithBuffer((uint)value, XmlConvert.TryFormat);
+                    tryFormatResult = XmlConvert.TryFormat((uint)value, _primitivesBuffer, out charsWritten);
                     break;
                 case TypeCode.UInt64:
-                    WriteWithBuffer((ulong)value, XmlConvert.TryFormat);
+                    tryFormatResult = XmlConvert.TryFormat((ulong)value, _primitivesBuffer, out charsWritten);
                     break;
                 case TypeCode.Char:
-                    WriteWithBuffer((char)value, XmlConvert.TryFormat);
+                    tryFormatResult = XmlConvert.TryFormat((ushort)value, _primitivesBuffer, out charsWritten);
                     break;
                 default:
                     //Guid is not supported in XmlUntypedConverter.Untyped and throws exception
@@ -241,18 +242,19 @@ namespace System.Xml
                     //}
                     if (sourceType == typeof(TimeSpan))
                     {
-                        WriteWithBuffer((TimeSpan)value, XmlConvert.TryFormat);
-                        break;
+                        tryFormatResult = XmlConvert.TryFormat((TimeSpan)value, _primitivesBuffer, out charsWritten);
                     }
                     if (sourceType == typeof(DateTimeOffset))
                     {
-                        WriteWithBuffer((DateTimeOffset)value, XmlConvert.TryFormat);
-                        break;
+                        tryFormatResult = XmlConvert.TryFormat((DateTimeOffset)value, _primitivesBuffer, out charsWritten);
                     }
-
-                    WriteString(XmlUntypedConverter.Untyped.ToString(value, _resolver));
                     break;
             }
+
+            if (tryFormatResult)
+                WriteChars(_primitivesBuffer, 0, charsWritten);
+            else
+                WriteString(XmlUntypedConverter.Untyped.ToString(value, _resolver));
         }
 
         // Override in order to handle Xml simple typed values and to pass resolver for QName values
@@ -265,7 +267,8 @@ namespace System.Xml
         {
             // For compatibility with custom writers, XmlWriter writes DateTimeOffset as DateTime.
             // Our internal writers should use the DateTimeOffset-String conversion from XmlConvert.
-            WriteWithBuffer(value, XmlConvert.TryFormat);
+            XmlConvert.TryFormat(value, _primitivesBuffer, out int charsWritten);
+            WriteChars(_primitivesBuffer, 0, charsWritten);
         }
 
         // Copying to XmlRawWriter is not currently supported.
@@ -286,37 +289,44 @@ namespace System.Xml
 
         public override void WriteValue(bool value)
         {
-            WriteWithBuffer(value, XmlConvert.TryFormat);
+            XmlConvert.TryFormat(value, _primitivesBuffer, out int charsWritten);
+            WriteChars(_primitivesBuffer, 0, charsWritten);
         }
 
         public override void WriteValue(int value)
         {
-            WriteWithBuffer(value, XmlConvert.TryFormat);
+            XmlConvert.TryFormat(value, _primitivesBuffer, out int charsWritten);
+            WriteChars(_primitivesBuffer, 0, charsWritten);
         }
 
         public override void WriteValue(long value)
         {
-            WriteWithBuffer(value, XmlConvert.TryFormat);
+            XmlConvert.TryFormat(value, _primitivesBuffer, out int charsWritten);
+            WriteChars(_primitivesBuffer, 0, charsWritten);
         }
 
         public override void WriteValue(double value)
         {
-            WriteWithBuffer(value, XmlConvert.TryFormat);
+            XmlConvert.TryFormat(value, _primitivesBuffer, out int charsWritten);
+            WriteChars(_primitivesBuffer, 0, charsWritten);
         }
 
         public override void WriteValue(float value)
         {
-            WriteWithBuffer(value, XmlConvert.TryFormat);
+            XmlConvert.TryFormat(value, _primitivesBuffer, out int charsWritten);
+            WriteChars(_primitivesBuffer, 0, charsWritten);
         }
 
         public override void WriteValue(decimal value)
         {
-            WriteWithBuffer(value, XmlConvert.TryFormat);
+            XmlConvert.TryFormat(value, _primitivesBuffer, out int charsWritten);
+            WriteChars(_primitivesBuffer, 0, charsWritten);
         }
 
         public override void WriteValue(DateTime value)
         {
-            WriteWithBuffer(value, XmlConvert.TryFormat);
+            XmlConvert.TryFormat(value, _primitivesBuffer, out int charsWritten);
+            WriteChars(_primitivesBuffer, 0, charsWritten);
         }
 
         //
@@ -416,26 +426,6 @@ namespace System.Xml
         internal virtual void Close(WriteState currentState)
         {
             Close();
-        }
-
-        private delegate bool GrowPrimitiveBufferDelegate<in T>(T value, Span<char> destination, out int charsWritten);
-        private void WriteWithBuffer<T>(T value, GrowPrimitiveBufferDelegate<T> checkFunc)
-        {
-            ArgumentNullException.ThrowIfNull(value);
-
-            //fast path without loop
-            if (checkFunc(value, _primitivesBuffer, out int charsWritten))
-            {
-                WriteChars(_primitivesBuffer, 0, charsWritten);
-                return;
-            }
-
-            while (!checkFunc(value, _primitivesBuffer, out charsWritten))
-            {
-                _primitivesBuffer = new char[_primitivesBuffer.Length * 2];
-            }
-
-            WriteChars(_primitivesBuffer, 0, charsWritten);
         }
     }
 }

@@ -112,16 +112,16 @@ namespace System.Xml
         // Forward call to WriteCharsAsync.
         public override Task WriteCharEntityAsync(char ch)
         {
-            _primitivesBuffer[0] = ch;
-            return WriteCharsAsync(_primitivesBuffer, 0, 1);
+            XmlConvert.TryFormat((ushort)ch, _primitivesBuffer, out int charsWritten);
+            return WriteCharsAsync(_primitivesBuffer, 0, charsWritten);
         }
 
         // Forward call to WriteString(string).
         public override Task WriteSurrogateCharEntityAsync(char lowChar, char highChar)
         {
-            _primitivesBuffer[0] = lowChar;
-            _primitivesBuffer[1] = highChar;
-            return WriteCharsAsync(_primitivesBuffer, 0, 2);
+            XmlConvert.TryFormat((ushort)lowChar, _primitivesBuffer, out int charsWritten);
+            XmlConvert.TryFormat((ushort)lowChar, _primitivesBuffer.AsSpan(charsWritten), out int charsWritten2);
+            return WriteCharsAsync(_primitivesBuffer, 0, charsWritten + charsWritten2);
         }
 
         // Forward call to WriteString(string).
