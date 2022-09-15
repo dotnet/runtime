@@ -52,7 +52,19 @@ namespace System.Collections.Generic
 
         public HashSet(IEqualityComparer<T>? comparer)
         {
-            if (comparer is not null && comparer != EqualityComparer<T>.Default) // first check for null to avoid forcing default comparer instantiation unnecessarily
+            // For reference types, we always want to store a comparer instance, either
+            // the one provided, or if one wasn't provided, the default (accessing
+            // EqualityComparer<TKey>.Default with shared generics on every dictionary
+            // access can add measurable overhead).  For value types, if no comparer is
+            // provided, or if the default is provided, we'd prefer to use
+            // EqualityComparer<TKey>.Default.Equals on every use, enabling the JIT to
+            // devirtualize and possibly inline the operation.
+            if (!typeof(T).IsValueType)
+            {
+                _comparer = comparer ?? EqualityComparer<T>.Default;
+            }
+            else if (comparer is not null && // first check for null to avoid forcing default comparer instantiation unnecessarily
+                     comparer != EqualityComparer<T>.Default)
             {
                 _comparer = comparer;
             }
@@ -60,13 +72,10 @@ namespace System.Collections.Generic
             // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
             // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
             // hash buckets become unbalanced.
-            if (typeof(T) == typeof(string))
+            if (typeof(T) == typeof(string) &&
+                NonRandomizedStringEqualityComparer.GetStringComparer(_comparer!) is IEqualityComparer<string> stringComparer)
             {
-                IEqualityComparer<string>? stringComparer = NonRandomizedStringEqualityComparer.GetStringComparer(_comparer);
-                if (stringComparer is not null)
-                {
-                    _comparer = (IEqualityComparer<T>?)stringComparer;
-                }
+                _comparer = (IEqualityComparer<T>)stringComparer;
             }
         }
 
@@ -214,49 +223,25 @@ namespace System.Collections.Generic
 
                 if (comparer == null)
                 {
+                    Debug.Assert(typeof(T).IsValueType);
+
+                    // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
                     int hashCode = item != null ? item.GetHashCode() : 0;
-                    if (typeof(T).IsValueType)
+                    int i = GetBucketRef(hashCode) - 1; // Value in _buckets is 1-based
+                    while (i >= 0)
                     {
-                        // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
-                        int i = GetBucketRef(hashCode) - 1; // Value in _buckets is 1-based
-                        while (i >= 0)
+                        ref Entry entry = ref entries[i];
+                        if (entry.HashCode == hashCode && EqualityComparer<T>.Default.Equals(entry.Value, item))
                         {
-                            ref Entry entry = ref entries[i];
-                            if (entry.HashCode == hashCode && EqualityComparer<T>.Default.Equals(entry.Value, item))
-                            {
-                                return i;
-                            }
-                            i = entry.Next;
-
-                            collisionCount++;
-                            if (collisionCount > (uint)entries.Length)
-                            {
-                                // The chain of entries forms a loop, which means a concurrent update has happened.
-                                ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-                            }
+                            return i;
                         }
-                    }
-                    else
-                    {
-                        // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize (https://github.com/dotnet/runtime/issues/10050),
-                        // so cache in a local rather than get EqualityComparer per loop iteration.
-                        EqualityComparer<T> defaultComparer = EqualityComparer<T>.Default;
-                        int i = GetBucketRef(hashCode) - 1; // Value in _buckets is 1-based
-                        while (i >= 0)
-                        {
-                            ref Entry entry = ref entries[i];
-                            if (entry.HashCode == hashCode && defaultComparer.Equals(entry.Value, item))
-                            {
-                                return i;
-                            }
-                            i = entry.Next;
+                        i = entry.Next;
 
-                            collisionCount++;
-                            if (collisionCount > (uint)entries.Length)
-                            {
-                                // The chain of entries forms a loop, which means a concurrent update has happened.
-                                ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-                            }
+                        collisionCount++;
+                        if (collisionCount > (uint)entries.Length)
+                        {
+                            // The chain of entries forms a loop, which means a concurrent update has happened.
+                            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
                         }
                     }
                 }
@@ -922,7 +907,8 @@ namespace System.Collections.Generic
             {
                 if (typeof(T) == typeof(string))
                 {
-                    return (IEqualityComparer<T>)IInternalStringEqualityComparer.GetUnderlyingEqualityComparer((IEqualityComparer<string?>?)_comparer);
+                    Debug.Assert(_comparer is not null, "The comparer should never be null for a reference type.");
+                    return (IEqualityComparer<T>)IInternalStringEqualityComparer.GetUnderlyingEqualityComparer((IEqualityComparer<string?>)_comparer);
                 }
                 else
                 {
@@ -979,13 +965,8 @@ namespace System.Collections.Generic
                     ref Entry entry = ref entries[i];
                     if (entry.Next >= -1)
                     {
-                        entry.HashCode = entry.Value != null ? _comparer!.GetHashCode(entry.Value) : 0;
+                        entry.HashCode = entry.Value != null ? _comparer.GetHashCode(entry.Value) : 0;
                     }
-                }
-
-                if (ReferenceEquals(_comparer, EqualityComparer<T>.Default))
-                {
-                    _comparer = null;
                 }
             }
 
@@ -1098,51 +1079,28 @@ namespace System.Collections.Generic
 
             if (comparer == null)
             {
+                Debug.Assert(typeof(T).IsValueType);
+
                 hashCode = value != null ? value.GetHashCode() : 0;
                 bucket = ref GetBucketRef(hashCode);
                 int i = bucket - 1; // Value in _buckets is 1-based
-                if (typeof(T).IsValueType)
-                {
-                    // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
-                    while (i >= 0)
-                    {
-                        ref Entry entry = ref entries[i];
-                        if (entry.HashCode == hashCode && EqualityComparer<T>.Default.Equals(entry.Value, value))
-                        {
-                            location = i;
-                            return false;
-                        }
-                        i = entry.Next;
 
-                        collisionCount++;
-                        if (collisionCount > (uint)entries.Length)
-                        {
-                            // The chain of entries forms a loop, which means a concurrent update has happened.
-                            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-                        }
+                // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
+                while (i >= 0)
+                {
+                    ref Entry entry = ref entries[i];
+                    if (entry.HashCode == hashCode && EqualityComparer<T>.Default.Equals(entry.Value, value))
+                    {
+                        location = i;
+                        return false;
                     }
-                }
-                else
-                {
-                    // Object type: Shared Generic, EqualityComparer<TValue>.Default won't devirtualize (https://github.com/dotnet/runtime/issues/10050),
-                    // so cache in a local rather than get EqualityComparer per loop iteration.
-                    EqualityComparer<T> defaultComparer = EqualityComparer<T>.Default;
-                    while (i >= 0)
-                    {
-                        ref Entry entry = ref entries[i];
-                        if (entry.HashCode == hashCode && defaultComparer.Equals(entry.Value, value))
-                        {
-                            location = i;
-                            return false;
-                        }
-                        i = entry.Next;
+                    i = entry.Next;
 
-                        collisionCount++;
-                        if (collisionCount > (uint)entries.Length)
-                        {
-                            // The chain of entries forms a loop, which means a concurrent update has happened.
-                            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
-                        }
+                    collisionCount++;
+                    if (collisionCount > (uint)entries.Length)
+                    {
+                        // The chain of entries forms a loop, which means a concurrent update has happened.
+                        ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
                     }
                 }
             }
