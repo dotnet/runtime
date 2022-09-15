@@ -9,6 +9,10 @@
 			"VARIANT": "6.0-focal"
 		}
 	},
+	"hostRequirements": {
+		"cpus": 4,
+		"memory": "8gb"
+	},
 
 	"features": {
 		"ghcr.io/devcontainers/features/github-cli:1": {}
