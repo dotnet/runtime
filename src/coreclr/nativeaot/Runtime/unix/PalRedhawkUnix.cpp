@@ -1210,48 +1210,14 @@ extern "C" void GetSystemTimeAsFileTime(FILETIME *lpSystemTimeAsFileTime)
     lpSystemTimeAsFileTime->dwHighDateTime = (uint32_t)(result >> 32);
 }
 
-extern "C" UInt32_BOOL QueryPerformanceCounter(LARGE_INTEGER *lpPerformanceCount)
+extern "C" uint64_t PalQueryPerformanceCounter()
 {
-#if HAVE_CLOCK_GETTIME_NSEC_NP
-    lpPerformanceCount->QuadPart = (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
-#elif HAVE_CLOCK_MONOTONIC
-    struct timespec ts;
-    int result = clock_gettime(CLOCK_MONOTONIC, &ts);
-
-    if (result != 0)
-    {
-        ASSERT(!"clock_gettime(CLOCK_MONOTONIC) failed");
-        return UInt32_FALSE;
-    }
-    else
-    {
-        lpPerformanceCount->QuadPart =
-            ((int64_t)(ts.tv_sec) * (int64_t)(tccSecondsToNanoSeconds)) + (int64_t)(ts.tv_nsec);
-    }
-#else
-#error "The PAL requires either mach_absolute_time() or clock_gettime(CLOCK_MONOTONIC) to be supported."
-#endif
-
-    return UInt32_TRUE;
+    return GCToOSInterface::QueryPerformanceCounter();
 }
 
-extern "C" UInt32_BOOL QueryPerformanceFrequency(LARGE_INTEGER *lpFrequency)
+extern "C" uint64_t PalQueryPerformanceFrequency()
 {
-#if HAVE_CLOCK_GETTIME_NSEC_NP
-    lpFrequency->QuadPart = (int64_t)(tccSecondsToNanoSeconds);
-#elif HAVE_CLOCK_MONOTONIC
-    // clock_gettime() returns a result in terms of nanoseconds rather than a count. This
-    // means that we need to either always scale the result by the actual resolution (to
-    // get a count) or we need to say the resolution is in terms of nanoseconds. We prefer
-    // the latter since it allows the highest throughput and should minimize error propagated
-    // to the user.
-
-    lpFrequency->QuadPart = (int64_t)(tccSecondsToNanoSeconds);
-#else
-#error "The PAL requires either mach_absolute_time() or clock_gettime(CLOCK_MONOTONIC) to be supported."
-#endif
-
-    return UInt32_TRUE;
+    return GCToOSInterface::QueryPerformanceFrequency();
 }
 
 extern "C" uint64_t PalGetCurrentThreadIdForLogging()
