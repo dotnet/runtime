@@ -853,7 +853,7 @@ namespace System.Drawing.Printing
                 // by checking for a large enough buffer size before copying the extrainfo buffer
                 if (_extrabytes <= mode.dmDriverExtra)
                 {
-                    IntPtr pointeroffset = *(IntPtr*)((byte*)pointer + mode.dmSize);
+                    IntPtr pointeroffset = (IntPtr)((byte*)pointer + mode.dmSize);
                     Marshal.Copy(_extrainfo, 0, pointeroffset, _extrabytes);
                 }
             }

@@ -59,7 +59,7 @@ namespace System.Drawing.Imaging
 
             byte* pMemory = (byte*)memory;
 
-            _flags = *(int*)memory;
+            _flags = *(int*)pMemory;
 
             int size = *(int*)(pMemory + 4);
 
