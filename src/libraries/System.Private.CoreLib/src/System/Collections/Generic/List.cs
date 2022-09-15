@@ -634,11 +634,11 @@ namespace System.Collections.Generic
         /// <param name="length">The length of the range.</param>
         /// <returns>A shallow copy of a range of elements in the source <see cref="List{T}" />.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// <paramref name="index" /> is less than 0.
+        /// <paramref name="start" /> is less than 0.
         /// -or-
-        /// <paramref name="count" /> is less than 0.
+        /// <paramref name="length" /> is less than 0.
         /// </exception>
-        /// <exception cref="ArgumentException"><paramref name="index" /> and <paramref name="count" /> do not denote a valid range of elements in the <see cref="List{T}" />.</exception>
+        /// <exception cref="ArgumentException"><paramref name="start" /> and <paramref name="length" /> do not denote a valid range of elements in the <see cref="List{T}" />.</exception>
         public List<T> Slice(int start, int length) => GetRange(start, length);
 
         // Returns the index of the first occurrence of a given value in a range of
