@@ -18,6 +18,8 @@
     <KnownCrossgen2Pack Update="Microsoft.NETCore.App.Crossgen2">
       <Crossgen2RuntimeIdentifiers>%(KnownCrossgen2Pack.Crossgen2RuntimeIdentifiers);$(NETCoreSdkRuntimeIdentifier)</Crossgen2RuntimeIdentifiers>
     </KnownCrossgen2Pack>
+    <!-- Avoid references to Microsoft.AspNetCore.App.Runtime.<rid> -->
+    <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
