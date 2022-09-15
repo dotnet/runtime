@@ -1422,13 +1422,13 @@ void EEJitManager::SetCpuInfo()
     //      CORJIT_FLAG_USE_AVX_512BW
     //   CORJIT_FLAG_USE_AVX_512CD if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
     //      CORJIT_FLAG_USE_AVX512F
-    //      AVX512BW   - EBX bit 28
+    //      AVX512CD   - EBX bit 28
     //   CORJIT_FLAG_USE_AVX_512CD_VL if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
     //      CORJIT_FLAG_USE_AVX512F_VL
     //      CORJIT_FLAG_USE_AVX_512CD
     //   CORJIT_FLAG_USE_AVX_512DQ if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
     //      CORJIT_FLAG_USE_AVX512F
-    //      AVX512BW   - EBX bit 7
+    //      AVX512DQ   - EBX bit 7
     //   CORJIT_FLAG_USE_AVX_512DQ_VL if the following feature bit is set (input EAX of 0x07 and input ECX of 0):
     //      CORJIT_FLAG_USE_AVX512F_VL
     //      CORJIT_FLAG_USE_AVX_512DQ
@@ -1520,40 +1520,38 @@ void EEJitManager::SetCpuInfo()
                                                 {
                                                     CPUCompileFlags.Set(InstructionSet_AVX512F);
 
+                                                    bool isAVX512_VLSupported = false;
                                                     if ((cpuidInfo[EBX] & (1 << 31)) != 0)                 // AVX512VL
                                                     {
                                                         CPUCompileFlags.Set(InstructionSet_AVX512F_VL);
-
-                                                        if ((cpuidInfo[EBX] & (1 << 30)) != 0)             // AVX512BW
-                                                        {
-                                                            CPUCompileFlags.Set(InstructionSet_AVX512BW_VL);
-                                                        }
-
-                                                        if ((cpuidInfo[EBX] & (1 << 28)) != 0)             // AVX512CD
-                                                        {
-                                                            CPUCompileFlags.Set(InstructionSet_AVX512CD_VL);
-                                                        }
-
-                                                        if ((cpuidInfo[EBX] & (1 << 17)) != 0)             // AVX512DQ
-                                                        {
-                                                            CPUCompileFlags.Set(InstructionSet_AVX512DQ_VL);
-                                                        }
-
+                                                        isAVX512_VLSupported = true;
                                                     }
 
                                                     if ((cpuidInfo[EBX] & (1 << 30)) != 0)                 // AVX512BW
                                                     {
                                                         CPUCompileFlags.Set(InstructionSet_AVX512BW);
+                                                        if (isAVX512_VLSupported)                          // AVX512BW_VL
+                                                        {
+                                                            CPUCompileFlags.Set(InstructionSet_AVX512BW_VL);
+                                                        }
                                                     }
 
                                                     if ((cpuidInfo[EBX] & (1 << 28)) != 0)                 // AVX512CD
                                                     {
                                                         CPUCompileFlags.Set(InstructionSet_AVX512CD);
+                                                        if (isAVX512_VLSupported)                          // AVX512CD_VL
+                                                        {
+                                                            CPUCompileFlags.Set(InstructionSet_AVX512CD_VL);
+                                                        }
                                                     }
 
                                                     if ((cpuidInfo[EBX] & (1 << 17)) != 0)                 // AVX512DQ
                                                     {
                                                         CPUCompileFlags.Set(InstructionSet_AVX512DQ);
+                                                        if (isAVX512_VLSupported)                          // AVX512DQ_VL
+                                                        {
+                                                            CPUCompileFlags.Set(InstructionSet_AVX512DQ_VL);
+                                                        }
                                                     }
                                                 }
                                             }
