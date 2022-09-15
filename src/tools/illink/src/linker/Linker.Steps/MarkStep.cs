@@ -959,7 +959,7 @@ namespace Mono.Linker.Steps
 				}
 			}
 
-			MarkMembersVisibleToReflection (members, new DependencyInfo (DependencyKind.DynamicDependency, dynamicDependency.OriginalAttribute));
+			MarkMembersVisibleToReflection (members, new DependencyInfo (DependencyKind.DynamicDependency, context));
 		}
 
 		void MarkMembersVisibleToReflection (IEnumerable<IMetadataTokenProvider> members, in DependencyInfo reason)
