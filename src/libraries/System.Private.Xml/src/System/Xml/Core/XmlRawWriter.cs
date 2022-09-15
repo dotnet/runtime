@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.Xml.XPath;
 using System.Xml.Schema;
 using System.Collections;
-using System.Xml.Serialization;
 
 namespace System.Xml
 {
