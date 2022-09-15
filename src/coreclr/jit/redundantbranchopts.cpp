@@ -761,7 +761,7 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
     {
         const LoopDsc& loop = optLoopTable[loopNum];
 
-        if (loop.lpFlags & LPFLG_REMOVED)
+        if (loop.lpIsRemoved())
         {
             continue;
         }
