@@ -2,7 +2,7 @@
 
 ## Build
 
-You can build the applcation from Visual Studio or by dotnet cli
+You can build the application from Visual Studio or by dotnet cli
 
 ```
 dotnet build -c Debug/Release -r browser-wasm
@@ -12,7 +12,7 @@ After building the application, the result is in the `bin/$(Configuration)/net7.
 
 ## Run
 
-You can build the applcation from Visual Studio or by dotnet cli
+You can build the application from Visual Studio or by dotnet cli
 
 ```
 dotnet run -c Debug/Release -r browser-wasm
