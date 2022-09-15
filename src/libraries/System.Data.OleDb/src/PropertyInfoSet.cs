@@ -40,7 +40,7 @@ namespace System.Data.OleDb
             {
                 hr = idbProperties.GetPropertyInfo(propIDSetCount, propIDSet, out this.setCount, out base.handle, out this.descBuffer);
             }
-            if ((0 <= hr) && (ADP.PtrZero != handle))
+            if ((0 <= hr) && (0 != handle))
             {
                 SafeNativeMethods.Wrapper.ClearErrorInfo();
             }
@@ -63,7 +63,7 @@ namespace System.Data.OleDb
             try
             {
                 DangerousAddRef(ref mustRelease);
-                if (ADP.PtrZero != this.handle)
+                if (0 != this.handle)
                 {
                     propertyLookup = new Dictionary<string, OleDbPropertyInfo>(StringComparer.OrdinalIgnoreCase);
 

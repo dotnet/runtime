@@ -58,7 +58,7 @@ namespace System.Drawing.Imaging
             int length = _param.Length;
             IntPtr memory = Marshal.AllocHGlobal(length * size + IntPtr.Size);
 
-            Marshal.WriteIntPtr(memory, length);
+            Marshal.WriteIntPtr(memory, (nint)length);
 
             byte* arrayOffset = (byte*)memory + IntPtr.Size;
 

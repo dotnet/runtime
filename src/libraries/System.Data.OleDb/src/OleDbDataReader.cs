@@ -470,8 +470,8 @@ namespace System.Data.OleDb
             }
 
             OleDbHResult hr;
-            nint columnCount = ADP.PtrZero; // column count
-            IntPtr columnInfos = ADP.PtrZero; // ptr to byvalue tagDBCOLUMNINFO[]
+            nint columnCount = 0; // column count
+            IntPtr columnInfos = 0; // ptr to byvalue tagDBCOLUMNINFO[]
 
             using (DualCoTaskMem safehandle = new DualCoTaskMem(icolumnsInfo, out columnCount, out columnInfos, out hr))
             {
@@ -502,7 +502,7 @@ namespace System.Data.OleDb
             for (int i = 0, offset = 0; i < columnCount; ++i, offset += ODB.SizeOf_tagDBCOLUMNINFO)
             {
                 Marshal.PtrToStructure(ADP.IntPtrOffset(columnInfos, offset), dbColumnInfo);
-                if ((ODB.IsRunningOnX86 && 0 >= (int)dbColumnInfo.iOrdinal) || (!ODB.IsRunningOnX86 && 0 >= (long)dbColumnInfo.iOrdinal))
+                if (0 >= dbColumnInfo.iOrdinal)
                 {
                     continue;
                 }
@@ -532,15 +532,8 @@ namespace System.Data.OleDb
                 info.columnName = dbColumnInfo.pwszName;
                 info.type = dbType;
                 info.ordinal = dbColumnInfo.iOrdinal;
-                if (ODB.IsRunningOnX86)
-                {
-                    info.size = (int)dbColumnInfo.ulColumnSize;
-                }
-                else
-                {
-                    long maxsize = (long)dbColumnInfo.ulColumnSize;
-                    info.size = (((maxsize < 0) || (int.MaxValue < maxsize)) ? int.MaxValue : (int)maxsize);
-                }
+                long maxsize = (long)dbColumnInfo.ulColumnSize;
+                info.size = (((maxsize < 0) || (int.MaxValue < maxsize)) ? int.MaxValue : (int)maxsize);
                 info.flags = dbColumnInfo.dwFlags;
                 info.precision = dbColumnInfo.bPrecision;
                 info.scale = dbColumnInfo.bScale;
@@ -567,7 +560,7 @@ namespace System.Data.OleDb
                         break;
                     case ODB.DBKIND_GUID_NAME:
                     case ODB.DBKIND_NAME:
-                        if (ADP.PtrZero != dbColumnInfo.columnid.ulPropid)
+                        if (0 != dbColumnInfo.columnid.ulPropid)
                         {
                             info.idname = Marshal.PtrToStringUni(dbColumnInfo.columnid.ulPropid);
                         }
@@ -577,7 +570,7 @@ namespace System.Data.OleDb
                         }
                         break;
                     default:
-                        info.propid = ADP.PtrZero;
+                        info.propid = 0;
                         break;
                 }
                 metainfo[rowCount] = info;
@@ -618,7 +611,7 @@ namespace System.Data.OleDb
                 using (DualCoTaskMem prgOptColumns = new DualCoTaskMem(icolumnsRowset, out cOptColumns, out hr))
                 {
                     Debug.Assert((0 == hr) || prgOptColumns.IsInvalid, "GetAvailableCOlumns: unexpected return");
-                    hr = icolumnsRowset.GetColumnsRowset(ADP.PtrZero, cOptColumns, prgOptColumns, ref ODB.IID_IRowset, 0, ADP.PtrZero, out rowset);
+                    hr = icolumnsRowset.GetColumnsRowset(0, cOptColumns, prgOptColumns, ref ODB.IID_IRowset, 0, 0, out rowset);
                 }
 
                 Debug.Assert((0 <= hr) || (null == rowset), "if GetColumnsRowset failed, rowset should be null");
@@ -1202,30 +1195,15 @@ namespace System.Data.OleDb
 
         private static nint AddRecordsAffected(nint recordsAffected, nint affected)
         {
-            if (ODB.IsRunningOnX86)
+            if (0 <= affected)
             {
-                if (0 <= (int)affected)
+                if (0 <= recordsAffected)
                 {
-                    if (0 <= (int)recordsAffected)
-                    {
-                        return (IntPtr)((int)recordsAffected + (int)affected);
-                    }
-                    return affected;
+                    return recordsAffected + affected;
                 }
-                return recordsAffected;
+                return affected;
             }
-            else
-            {
-                if (0 <= (long)affected)
-                {
-                    if (0 <= (long)recordsAffected)
-                    {
-                        return (nint)((long)recordsAffected + (long)affected);
-                    }
-                    return affected;
-                }
-                return recordsAffected;
-            }
+            return recordsAffected;
         }
 
         public override int VisibleFieldCount
@@ -1266,7 +1244,7 @@ namespace System.Data.OleDb
                     {
                         break;
                     }
-                    hr = imultipleResults.GetResult(ADP.PtrZero, ODB.DBRESULTFLAG_DEFAULT, ref ODB.IID_NULL, out affected, out _);
+                    hr = imultipleResults.GetResult(0, ODB.DBRESULTFLAG_DEFAULT, ref ODB.IID_NULL, out affected, out _);
 
                     // If a provider doesn't support IID_NULL and returns E_NOINTERFACE we want to break out
                     // of the loop without throwing an exception.  Our behavior will match ADODB in that scenario
@@ -1357,7 +1335,7 @@ namespace System.Data.OleDb
                         Close();
                         break;
                     }
-                    hr = imultipleResults.GetResult(ADP.PtrZero, ODB.DBRESULTFLAG_DEFAULT, ref ODB.IID_IRowset, out affected, out result);
+                    hr = imultipleResults.GetResult(0, ODB.DBRESULTFLAG_DEFAULT, ref ODB.IID_IRowset, out affected, out result);
 
                     if ((0 <= hr) && (null != result))
                     {
@@ -1519,7 +1497,7 @@ namespace System.Data.OleDb
                 if (maxRows is int intValue)
                 {
                     _rowHandleFetchCount = intValue;
-                    if ((ADP.PtrZero == _rowHandleFetchCount) || (20 <= (int)_rowHandleFetchCount))
+                    if ((0 == _rowHandleFetchCount) || (20 <= (int)_rowHandleFetchCount))
                     {
                         _rowHandleFetchCount = 20;
                     }
@@ -1527,7 +1505,7 @@ namespace System.Data.OleDb
                 else if (maxRows is long longValue)
                 {
                     _rowHandleFetchCount = (nint)longValue;
-                    if ((ADP.PtrZero == _rowHandleFetchCount) || (20 <= (long)_rowHandleFetchCount))
+                    if ((0 == _rowHandleFetchCount) || (20 <= (long)_rowHandleFetchCount))
                     {
                         _rowHandleFetchCount = 20;
                     }
@@ -1809,7 +1787,7 @@ namespace System.Data.OleDb
 
             OleDbHResult hr;
             UnsafeNativeMethods.IRowset irowset = IRowset();
-            hr = irowset.ReleaseRows(_rowFetchedCount, _rowHandleNativeBuffer!, ADP.PtrZero, ADP.PtrZero, ADP.PtrZero);
+            hr = irowset.ReleaseRows(_rowFetchedCount, _rowHandleNativeBuffer!, 0, 0, 0);
 
             if (hr < 0)
             {
@@ -2498,7 +2476,7 @@ namespace System.Data.OleDb
                     info.isHidden = true;
                     visibleCount--;
                 }
-                else if ((ODB.IsRunningOnX86 && 0 >= (int)info.ordinal) || (!ODB.IsRunningOnX86 && 0 >= (long)info.ordinal))
+                else if (0 >= info.ordinal)
                 {
 #if DEBUG
                     if (AdapterSwitches.DataSchema.TraceVerbose)
@@ -2610,15 +2588,15 @@ namespace System.Data.OleDb
 
         int IComparable.CompareTo(object? obj)
         {
-            if (isHidden == (obj as MetaData)!.isHidden)
+            if (obj is MetaData m && isHidden == m.isHidden)
             {
                 if (ODB.IsRunningOnX86)
                 {
-                    return ((int)ordinal - (int)(obj as MetaData)!.ordinal);
+                    return (int)ordinal - (int)m.ordinal;
                 }
                 else
                 {
-                    long v = ((long)ordinal - (long)(obj as MetaData)!.ordinal);
+                    long v = (long)ordinal - m.ordinal;
                     return ((0 < v) ? 1 : ((v < 0) ? -1 : 0));
                 }
             }

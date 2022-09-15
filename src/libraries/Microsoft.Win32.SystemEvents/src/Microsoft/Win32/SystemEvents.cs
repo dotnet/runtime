@@ -517,17 +517,17 @@ namespace Microsoft.Win32
             }
         }
 
-        private static UserPreferenceCategory GetUserPreferenceCategory(int msg, nint wParam, IntPtr lParam)
+        private static UserPreferenceCategory GetUserPreferenceCategory(int msg, nint wParam, nint lParam)
         {
             UserPreferenceCategory pref = UserPreferenceCategory.General;
 
             if (msg == Interop.User32.WM_SETTINGCHANGE)
             {
-                if (lParam != IntPtr.Zero && Marshal.PtrToStringUni(lParam)!.Equals("Policy"))
+                if (lParam != 0 && Marshal.PtrToStringUni(lParam)!.Equals("Policy"))
                 {
                     pref = UserPreferenceCategory.Policy;
                 }
-                else if (lParam != IntPtr.Zero && Marshal.PtrToStringUni(lParam)!.Equals("intl"))
+                else if (lParam != 0 && Marshal.PtrToStringUni(lParam)!.Equals("intl"))
                 {
                     pref = UserPreferenceCategory.Locale;
                 }
@@ -889,7 +889,7 @@ namespace Microsoft.Win32
         /// <summary>
         ///  Handler for WM_ENDSESSION.
         /// </summary>
-        private void OnSessionEnded(nint wParam, IntPtr lParam)
+        private void OnSessionEnded(nint wParam, nint lParam)
         {
             // wParam will be nonzero if the session is actually ending.  If
             // it was canceled then we do not want to raise the event.
@@ -1126,14 +1126,14 @@ namespace Microsoft.Win32
         /// <summary>
         ///  A standard Win32 window proc for our broadcast window.
         /// </summary>
-        private IntPtr WindowProc(IntPtr hWnd, int msg, nint wParam, IntPtr lParam)
+        private IntPtr WindowProc(IntPtr hWnd, int msg, nint wParam, nint lParam)
         {
             switch (msg)
             {
                 case Interop.User32.WM_SETTINGCHANGE:
                     string? newString;
                     IntPtr newStringPtr = lParam;
-                    if (lParam != IntPtr.Zero)
+                    if (lParam != 0)
                     {
                         newString = Marshal.PtrToStringUni(lParam);
                         if (newString != null)
@@ -1173,7 +1173,7 @@ namespace Microsoft.Win32
                     {
                         try
                         {
-                            if (lParam != IntPtr.Zero)
+                            if (lParam != 0)
                             {
                                 Marshal.FreeHGlobal(lParam);
                             }
