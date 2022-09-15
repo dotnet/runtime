@@ -216,14 +216,14 @@ IF NOT DEFINED DoLink (
           Returns="$(HasBashDisasmCheck);$(BashDisasmOutputFile);$(BashDisasmCheckPostCommands)"
           DependsOnTargets="GetDisasmCheckData">
     <PropertyGroup>
-      <!-- Disable disasm checks on non-windows for now -->
       <HasBashDisasmCheck>false</HasBashDisasmCheck>
+      <HasBashDisasmCheck Condition="'$(HasDisasmCheck)' == 'true' and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'Linux'">true</HasBashDisasmCheck>
 
       <BashDisasmOutputFile>/dev/null</BashDisasmOutputFile>
-      <BashDisasmOutputFile Condition="'$(HasBashDisasmCheck)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">$(scriptPath)__jit_disasm.out</BashDisasmOutputFile>
+      <BashDisasmOutputFile Condition="'$(HasBashDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm.out</BashDisasmOutputFile>
 
       <BashDisasmListOutputFile>/dev/null</BashDisasmListOutputFile>
-      <BashDisasmListOutputFile Condition="'$(HasBashDisasmCheck)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">$(scriptPath)__jit_disasm_list.out</BashDisasmListOutputFile>
+      <BashDisasmListOutputFile Condition="'$(HasBashDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm_list.out</BashDisasmListOutputFile>
 
       <BashDisasmCheckPostCommands></BashDisasmCheckPostCommands>
       <BashDisasmCheckPostCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
@@ -256,13 +256,14 @@ IF NOT DEFINED DoLink (
           Returns="$(HasBatchDisasmCheck);$(BatchDisasmOutputFile);$(BatchDisasmCheckPostCommands)"
           DependsOnTargets="GetDisasmCheckData">
     <PropertyGroup>
-      <HasBatchDisasmCheck>$(HasDisasmCheck)</HasBatchDisasmCheck>
+      <HasBatchDisasmCheck>false</HasBatchDisasmCheck>
+      <HasBatchDisasmCheck Condition="'$(HasDisasmCheck)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">true</HasBatchDisasmCheck>
 
       <BatchDisasmOutputFile>NUL</BatchDisasmOutputFile>
-      <BatchDisasmOutputFile Condition="'$(HasBatchDisasmCheck)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">$(scriptPath)__jit_disasm.out</BatchDisasmOutputFile>
+      <BatchDisasmOutputFile Condition="'$(HasBatchDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm.out</BatchDisasmOutputFile>
 
       <BatchDisasmListOutputFile>NUL</BatchDisasmListOutputFile>
-      <BatchDisasmListOutputFile Condition="'$(HasBatchDisasmCheck)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">$(scriptPath)__jit_disasm_list.out</BatchDisasmListOutputFile>
+      <BatchDisasmListOutputFile Condition="'$(HasBatchDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm_list.out</BatchDisasmListOutputFile>
 
       <BatchDisasmCheckPostCommands></BatchDisasmCheckPostCommands>
       <BatchDisasmCheckPostCommands Condition="'$(HasBatchDisasmCheck)' == 'true'"><![CDATA[
