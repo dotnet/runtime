@@ -16,7 +16,6 @@ public class Program
     private static int CallFoo<T>(T val) where T : IFace
     {
         // This is testing that a constrained.callvirt through a T variable doesn't use a helper lookup.
-        // CHECK: THIS SHOULD FAIL
         // CHECK-NOT: CORINFO_HELP
         return val.Foo();
     }
