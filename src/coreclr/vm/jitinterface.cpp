@@ -7144,16 +7144,14 @@ bool getILIntrinsicImplementationForInterlocked(MethodDesc * ftn,
 
 bool IsBitwiseEquatable(TypeHandle typeHandle, MethodTable * methodTable)
 {
-    if (!methodTable->IsValueType() || methodTable->ContainsPointers())
+    if (!methodTable->IsValueType() ||
+        !CanCompareBitsOrUseFastGetHashCode(methodTable))
     {
         return false;
     }
 
-    if (!CanCompareBitsOrUseFastGetHashCode(methodTable))
-    {
-        return false;
-    }
-
+    // CanCompareBitsOrUseFastGetHashCode checks for an object.Equals override.
+    // We also need to check for an IEquatable<T> implementation.
     Instantiation inst(&typeHandle, 1);
     if (typeHandle.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(inst)))
     {
