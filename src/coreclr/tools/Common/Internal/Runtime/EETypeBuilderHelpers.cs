@@ -108,7 +108,7 @@ namespace Internal.Runtime
                 flagsEx |= (ushort)EETypeFlagsEx.HasEagerFinalizerFlag;
             }
 
-            if (HasCriticalFinalizer(type))
+            if (type.HasFinalizer && HasCriticalFinalizer(type))
             {
                 flagsEx |= (ushort)EETypeFlagsEx.HasCriticalFinalizerFlag;
             }
