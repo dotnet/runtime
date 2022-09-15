@@ -1,17 +1,13 @@
 # Disassembly output verification checks
 
 There are tests that the runtime executes that will be able to verify X64/ARM64 assembly output from the JIT.
-
 The tools used to accomplish this are LLVM FileCheck, SuperFileCheck, and the JIT's ability to output disassembly using `DOTNET_JitDisasm`. 
-
 LLVM FileCheck is built in https://www.github.com/dotnet/llvm-project and provides several packages for the various platforms. See more about LLVM FileCheck and its syntax here: https://llvm.org/docs/CommandGuide/FileCheck.html
-
 SuperFileCheck is a custom tool located in https://www.github.com/dotnet/runtime. It wraps LLVM FileCheck and provides a simplified workflow for writing these tests in a C# file by leveraging Roslyn's syntax tree APIs.
 
 # Converting an existing test to use disassembly checking
 
 We will use the existing test `JIT\Regression\JitBlue\Runtime_33972` as an example.
-
 The test's intent is to verify that on ARM64, the method `AdvSimd.CompareEqual` behaves correctly when a zero vector is passed as the second argument. Below are snippets of its use:
 ```csharp
     static Vector64<byte> AdvSimd_CompareEqual_Vector64_Byte_Zero(Vector64<byte> left)
@@ -23,9 +19,7 @@ The test's intent is to verify that on ARM64, the method `AdvSimd.CompareEqual` 
         if (!ValidateResult_Vector64<byte>(AdvSimd_CompareEqual_Vector64_Byte_Zero(Vector64<byte>.Zero), Byte.MaxValue))
             result = -1;
 ```
-
 Currently, the test only verifies that the behavior is correct. It does not verify that the optimal ARM64 instruction was actually used. So now we will add this verification.
-
 First we need to modify the project file `Runtime_33972.csproj`:
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
@@ -42,7 +36,6 @@ First we need to modify the project file `Runtime_33972.csproj`:
   </ItemGroup>
 </Project>
 ```
-
 Looking at the `ItemGroup`:
 ```xml
   <ItemGroup>
@@ -69,7 +62,6 @@ Finally, we need to write the assembly check and put the `[MethodImpl(MethodImpl
     }
 ```
 And that is it.
-
 A few notes about the above example:
 - `ARM64-FULL-LINE` checks to see if there is an exact line that matches the disassembly output of the method `AdvSimd_CompareEqual_Vector64_Byte_Zero` - leading and trailing spaces are ignored.
 - Method bodies that have FileCheck syntax, e.g. `ARM64-FULL-LINE:`/`X64:`/etc, must have the attribute `[MethodImpl(MethodImplOptions.NoInlining)]`. If it does not, then an error is reported.
@@ -79,4 +71,4 @@ A few notes about the above example:
 
 SuperFileCheck adds additional FileCheck syntax:
 - `<check-prefix>-FULL-LINE:` - same as using FileCheck's `<check-prefix>:`, but checks that the line matches exactly; leading and trailing whitespace is ignored.
-- `<check-prefix>-FULL-LINE-NEXT:` - same as using FileCheck's `<check-prefix>-NEXT:`, but checks that line matches exactly; leading and trailing whitespace is ignored.
+- `<check-prefix>-FULL-LINE-NEXT:` - same as using FileCheck's `<check-prefix>-NEXT:`, but checks that the line matches exactly; leading and trailing whitespace is ignored.
