@@ -9698,8 +9698,8 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
         return nullptr;
     }
 
-    // we don't optimize this statements because we might delete them (e.g. array range checks)
-    if (cond->OperIs(GT_LT, GT_GE) && (m_b1->bbFlags != BBF_IMPORTED || m_b2->bbFlags != BBF_IMPORTED))
+    // we don't optimize unsigned operations
+    if (cond->OperIs(GT_LT, GT_GE) && cond->IsUnsigned())
     {
         return nullptr;
     }
