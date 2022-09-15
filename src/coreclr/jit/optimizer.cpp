@@ -9692,14 +9692,8 @@ GenTree* OptBoolsDsc::optIsBoolComp(OptTestInfo* pOptTest)
     GenTree* cond = pOptTest->testTree->AsOp()->gtOp1;
 
     // The condition must be "!= 0" or "== 0" or >=0 or <0
-
-    if (!cond->OperIs(GT_EQ, GT_NE, GT_LT, GT_GE))
-    {
-        return nullptr;
-    }
-
-    // we don't optimize unsigned operations
-    if (cond->OperIs(GT_LT, GT_GE) && cond->IsUnsigned())
+    // we don't optimize unsigned < and >= operations
+    if (!cond->OperIs(GT_EQ, GT_NE) && (!cond->OperIs(GT_LT, GT_GE) || cond->IsUnsigned()))
     {
         return nullptr;
     }
