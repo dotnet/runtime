@@ -154,7 +154,8 @@ enum HWIntrinsicFlag : unsigned int
     HW_Flag_AvxOnlyCompatible = 0x40000,
 
     // MaybeCommutative
-    // - if a binary-op intrinsic is maybe commutative (e.g., Max or Min for float/double), its op1 can possibly be contained
+    // - if a binary-op intrinsic is maybe commutative (e.g., Max or Min for float/double), its op1 can possibly be
+    // contained
     HW_Flag_MaybeCommutative = 0x80000,
 
 #elif defined(TARGET_ARM64)
