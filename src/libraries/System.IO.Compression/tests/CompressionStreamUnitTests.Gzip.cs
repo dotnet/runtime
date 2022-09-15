@@ -275,7 +275,6 @@ namespace System.IO.Compression
         }
 
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/47563")]
         [Fact]
         public void StreamCorruption_IsDetected()
         {

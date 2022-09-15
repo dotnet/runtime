@@ -15,6 +15,7 @@ namespace System.IO.Compression
         private BrotliDecoder _decoder;
         private int _bufferOffset;
         private int _bufferCount;
+        private bool _nonEmptyInput;
 
         /// <summary>Reads a number of decompressed bytes into the specified byte array.</summary>
         /// <param name="buffer">The array used to store decompressed bytes.</param>
@@ -65,9 +66,12 @@ namespace System.IO.Compression
                 int bytesRead = _stream.Read(_buffer, _bufferCount, _buffer.Length - _bufferCount);
                 if (bytesRead <= 0)
                 {
+                    if (GetStrictValidationSetting() && _nonEmptyInput && !buffer.IsEmpty)
+                        ThrowTruncatedInvalidData();
                     break;
                 }
 
+                _nonEmptyInput = true;
                 _bufferCount += bytesRead;
 
                 if (_bufferCount > _buffer.Length)
@@ -150,10 +154,13 @@ namespace System.IO.Compression
                         int bytesRead = await _stream.ReadAsync(_buffer.AsMemory(_bufferCount), cancellationToken).ConfigureAwait(false);
                         if (bytesRead <= 0)
                         {
+                            if (GetStrictValidationSetting() && _nonEmptyInput && !buffer.IsEmpty)
+                                ThrowTruncatedInvalidData();
                             break;
                         }
 
                         _bufferCount += bytesRead;
+                        _nonEmptyInput = true;
 
                         if (_bufferCount > _buffer.Length)
                         {
@@ -227,9 +234,23 @@ namespace System.IO.Compression
             return false;
         }
 
+        private static bool GetStrictValidationSetting()
+        {
+            if (AppContext.TryGetSwitch("System.IO.Compression.UseStrictValidation", out bool strictValidation))
+            {
+                return strictValidation;
+            }
+
+            string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_COMPRESSION_STRICT_VALIDATION");
+            return envVar is not null && (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase));
+        }
+
         private static void ThrowInvalidStream() =>
             // The stream is either malicious or poorly implemented and returned a number of
             // bytes larger than the buffer supplied to it.
             throw new InvalidDataException(SR.BrotliStream_Decompress_InvalidStream);
+
+        private static void ThrowTruncatedInvalidData() =>
+            throw new InvalidDataException(SR.BrotliStream_Decompress_TruncatedData);
     }
 }

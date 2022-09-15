@@ -469,7 +469,6 @@ namespace System.IO.Compression
             Assert.True(optimalLength >= smallestLength);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/47563")]
         [Theory]
         [InlineData(TestScenario.ReadAsync)]
         [InlineData(TestScenario.Read)]
@@ -479,6 +478,8 @@ namespace System.IO.Compression
         [InlineData(TestScenario.ReadByteAsync)]
         public async Task StreamTruncation_IsDetected(TestScenario scenario)
         {
+            AppContext.SetSwitch("System.IO.Compression.UseStrictValidation", true);
+
             var buffer = new byte[16];
             byte[] source = Enumerable.Range(0, 64).Select(i => (byte)i).ToArray();
             byte[] compressedData;

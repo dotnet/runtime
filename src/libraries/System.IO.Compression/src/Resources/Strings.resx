@@ -278,6 +278,9 @@
   <data name="SplitSpanned" xml:space="preserve">
     <value>Split or spanned archives are not supported.</value>
   </data>
+  <data name="TruncatedData" xml:space="preserve">
+    <value>Found truncated data while decoding.</value>
+  </data>
   <data name="UnexpectedEndOfStream" xml:space="preserve">
     <value>Zip file corrupt: unexpected end of stream reached.</value>
   </data>
