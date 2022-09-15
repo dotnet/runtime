@@ -519,6 +519,8 @@ namespace DebuggerTests
             public int idx0;
             public int idx1;
 
+            public bool this[string key] => key.Length > 3;
+
             public void run()
             {
                 numList = new List<int> { 1, 2 };

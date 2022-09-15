@@ -1,6 +1,6 @@
 <!-- This project requires an explicit SDK version number because it is used on Helix,
       and global.json is not available. -->
-<Project Sdk="Microsoft.Build.NoTargets/1.0.53" DefaultTargets="WasmBuildApp">
+<Project Sdk="Microsoft.Build.NoTargets/3.5.0" DefaultTargets="WasmBuildApp">
   <Import Project="$(CORE_ROOT)\build\WasmApp.InTree.props" />
   <PropertyGroup>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>

@@ -1429,68 +1429,6 @@ CONTEXT_SetThreadContextOnPort(
     mach_msg_type_number_t StateCount;
     thread_state_flavor_t StateFlavor;
 
-    if (lpContext->ContextFlags & (CONTEXT_CONTROL|CONTEXT_INTEGER) & CONTEXT_AREA_MASK)
-    {
-#ifdef HOST_AMD64
-        x86_thread_state64_t State;
-        StateFlavor = x86_THREAD_STATE64;
-
-        State.__rax = lpContext->Rax;
-        State.__rbx = lpContext->Rbx;
-        State.__rcx = lpContext->Rcx;
-        State.__rdx = lpContext->Rdx;
-        State.__rdi = lpContext->Rdi;
-        State.__rsi = lpContext->Rsi;
-        State.__rbp = lpContext->Rbp;
-        State.__rsp = lpContext->Rsp;
-        State.__r8 = lpContext->R8;
-        State.__r9 = lpContext->R9;
-        State.__r10 = lpContext->R10;
-        State.__r11 = lpContext->R11;
-        State.__r12 = lpContext->R12;
-        State.__r13 = lpContext->R13;
-        State.__r14 = lpContext->R14;
-        State.__r15 = lpContext->R15;
-//        State.ss = lpContext->SegSs;
-        State.__rflags = lpContext->EFlags;
-        State.__rip = lpContext->Rip;
-        State.__cs = lpContext->SegCs;
-//        State.ds = lpContext->SegDs_PAL_Undefined;
-//        State.es = lpContext->SegEs_PAL_Undefined;
-        State.__fs = lpContext->SegFs;
-        State.__gs = lpContext->SegGs;
-#elif defined(HOST_ARM64)
-        arm_thread_state64_t State;
-        StateFlavor = ARM_THREAD_STATE64;
-
-        memcpy(&State.__x[0], &lpContext->X0, 29 * 8);
-        State.__cpsr = lpContext->Cpsr;
-        arm_thread_state64_set_fp(State, lpContext->Fp);
-        arm_thread_state64_set_sp(State, lpContext->Sp);
-        arm_thread_state64_set_lr_fptr(State, lpContext->Lr);
-        arm_thread_state64_set_pc_fptr(State, lpContext->Pc);
-#else
-#error Unexpected architecture.
-#endif
-
-        StateCount = sizeof(State) / sizeof(natural_t);
-
-        do
-        {
-            MachRet = thread_set_state(Port,
-                                       StateFlavor,
-                                       (thread_state_t)&State,
-                                       StateCount);
-        }
-        while (MachRet == KERN_ABORTED);
-
-        if (MachRet != KERN_SUCCESS)
-        {
-            ASSERT("thread_set_state(THREAD_STATE) failed: %d\n", MachRet);
-            goto EXIT;
-        }
-    }
-
     if (lpContext->ContextFlags & CONTEXT_ALL_FLOATING & CONTEXT_AREA_MASK)
     {
 
@@ -1526,26 +1464,6 @@ CONTEXT_SetThreadContextOnPort(
 #else
 #error Unexpected architecture.
 #endif
-
-        // If we're setting only one of the floating point or extended registers (of which Mach supports only
-        // the xmm values) then we don't have values for the other set. This is a problem since Mach only
-        // supports setting both groups as a single unit. So in this case we'll need to fetch the current
-        // values first.
-        if ((lpContext->ContextFlags & CONTEXT_ALL_FLOATING) !=
-            CONTEXT_ALL_FLOATING)
-        {
-            mach_msg_type_number_t StateCountGet = StateCount;
-            MachRet = thread_get_state(Port,
-                                       StateFlavor,
-                                       (thread_state_t)&State,
-                                       &StateCountGet);
-            if (MachRet != KERN_SUCCESS)
-            {
-                ASSERT("thread_get_state(FLOAT_STATE) failed: %d\n", MachRet);
-                goto EXIT;
-            }
-            _ASSERTE(StateCountGet == StateCount);
-        }
 
         if (lpContext->ContextFlags & CONTEXT_FLOATING_POINT & CONTEXT_AREA_MASK)
         {
@@ -1596,6 +1514,65 @@ CONTEXT_SetThreadContextOnPort(
         if (MachRet != KERN_SUCCESS)
         {
             ASSERT("thread_set_state(FLOAT_STATE) failed: %d\n", MachRet);
+            goto EXIT;
+        }
+    }
+
+    if (lpContext->ContextFlags & (CONTEXT_CONTROL|CONTEXT_INTEGER) & CONTEXT_AREA_MASK)
+    {
+#ifdef HOST_AMD64
+        x86_thread_state64_t State;
+        StateFlavor = x86_THREAD_STATE64;
+
+        State.__rax = lpContext->Rax;
+        State.__rbx = lpContext->Rbx;
+        State.__rcx = lpContext->Rcx;
+        State.__rdx = lpContext->Rdx;
+        State.__rdi = lpContext->Rdi;
+        State.__rsi = lpContext->Rsi;
+        State.__rbp = lpContext->Rbp;
+        State.__rsp = lpContext->Rsp;
+        State.__r8 = lpContext->R8;
+        State.__r9 = lpContext->R9;
+        State.__r10 = lpContext->R10;
+        State.__r11 = lpContext->R11;
+        State.__r12 = lpContext->R12;
+        State.__r13 = lpContext->R13;
+        State.__r14 = lpContext->R14;
+        State.__r15 = lpContext->R15;
+        State.__rflags = lpContext->EFlags;
+        State.__rip = lpContext->Rip;
+        State.__cs = lpContext->SegCs;
+        State.__fs = lpContext->SegFs;
+        State.__gs = lpContext->SegGs;
+#elif defined(HOST_ARM64)
+        arm_thread_state64_t State;
+        StateFlavor = ARM_THREAD_STATE64;
+
+        memcpy(&State.__x[0], &lpContext->X0, 29 * 8);
+        State.__cpsr = lpContext->Cpsr;
+        arm_thread_state64_set_fp(State, lpContext->Fp);
+        arm_thread_state64_set_sp(State, lpContext->Sp);
+        arm_thread_state64_set_lr_fptr(State, lpContext->Lr);
+        arm_thread_state64_set_pc_fptr(State, lpContext->Pc);
+#else
+#error Unexpected architecture.
+#endif
+
+        StateCount = sizeof(State) / sizeof(natural_t);
+
+        do
+        {
+            MachRet = thread_set_state(Port,
+                                       StateFlavor,
+                                       (thread_state_t)&State,
+                                       StateCount);
+        }
+        while (MachRet == KERN_ABORTED);
+
+        if (MachRet != KERN_SUCCESS)
+        {
+            ASSERT("thread_set_state(THREAD_STATE) failed: %d\n", MachRet);
             goto EXIT;
         }
     }
