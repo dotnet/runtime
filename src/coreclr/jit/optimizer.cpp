@@ -4755,17 +4755,32 @@ bool Compiler::optIfConvert(BasicBlock* block)
         return false;
     }
 
+    // Calculate size costs.
+    // First reclaculate existing costs to make sure they are up to date.
+    gtSetEvalOrder(last);
+    gtSetEvalOrder(asgNode);
+    // If the condition is against 0 then JTRUE will have no size cost as it'll be merged into the compare.
+    int currentCostSz =
+        asgNode->GetCostSz() + (cond->gtGetOp2()->IsIntegralConst(0) ? cond->GetCostSz() : last->GetCostSz());
+    int postOptCostSz =
+        asgNode->GetCostSz() + 1 /* GT_SELECT */ + cond->GetCostSz() + asgNode->AsOp()->gtOp1->GetCostSz();
+
 #ifdef DEBUG
     if (verbose)
     {
-        JITDUMP("Conditionally executing " FMT_BB " inside " FMT_BB "\n", middleBlock->bbNum, block->bbNum);
+        JITDUMP("\nConditionally executing " FMT_BB " inside " FMT_BB "\n", middleBlock->bbNum, block->bbNum);
         for (BasicBlock* dumpBlock = block; dumpBlock != middleBlock->bbNext; dumpBlock = dumpBlock->bbNext)
         {
             fgDumpBlock(dumpBlock);
         }
-        JITDUMP("\n");
     }
 #endif
+
+    if (postOptCostSz > currentCostSz)
+    {
+        JITDUMP("Aborting If Conversion: optimisation too expensive (%d>%d)\n", postOptCostSz, currentCostSz);
+        return false;
+    }
 
     // Duplicate the destination of the assign.
     // This will be used as the false result of the select node.
@@ -4850,7 +4865,7 @@ bool Compiler::optIfConvert(BasicBlock* block)
 #ifdef DEBUG
     if (verbose)
     {
-        JITDUMP("After if conversion\n");
+        JITDUMP("\nAfter if conversion\n");
         for (BasicBlock* dumpBlock = block; dumpBlock != middleBlock->bbNext; dumpBlock = dumpBlock->bbNext)
         {
             fgDumpBlock(dumpBlock);

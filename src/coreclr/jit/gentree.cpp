@@ -5804,6 +5804,9 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
             level = max(level, lvl2);
             costEx += tree->AsConditional()->gtOp2->GetCostEx();
             costSz += tree->AsConditional()->gtOp2->GetCostSz();
+
+            costEx += 1;
+            costSz += 1;
             break;
 
         default:
