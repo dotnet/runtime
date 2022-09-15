@@ -901,6 +901,7 @@ jobs:
     jobParameters:
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: Release
+      runOnlyIfDependenciesSucceeded: true
       condition:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
@@ -921,6 +922,7 @@ jobs:
     jobParameters:
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+      runOnlyIfDependenciesSucceeded: true
       condition:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
