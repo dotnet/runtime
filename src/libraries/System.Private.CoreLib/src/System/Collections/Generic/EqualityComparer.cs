@@ -130,9 +130,8 @@ namespace System.Collections.Generic
         public override int GetHashCode([DisallowNull] T obj) => obj?.GetHashCode() ?? 0;
 
         // Equals method for the comparer itself.
-        // If in the future this type is made sealed, change the is check to obj != null && GetType() == obj.GetType().
         public override bool Equals([NotNullWhen(true)] object? obj) =>
-            obj is GenericEqualityComparer<T>;
+            obj != null && GetType() == obj.GetType();
 
         // If in the future this type is made sealed, change typeof(...) to GetType().
         public override int GetHashCode() =>
@@ -212,16 +211,12 @@ namespace System.Collections.Generic
     public sealed partial class ByteEqualityComparer : EqualityComparer<byte>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override bool Equals(byte x, byte y)
-        {
-            return x == y;
-        }
+        public override bool Equals(byte x, byte y) =>
+            x == y;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode(byte b)
-        {
-            return b.GetHashCode();
-        }
+        public override int GetHashCode(byte b) =>
+            b.GetHashCode();
 
         // Equals method for the comparer itself.
         public override bool Equals([NotNullWhen(true)] object? obj) =>
@@ -253,10 +248,8 @@ namespace System.Collections.Generic
         // public override bool Equals(T x, T y) is runtime-specific
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode(T obj)
-        {
-            return obj.GetHashCode();
-        }
+        public override int GetHashCode(T obj) =>
+            obj.GetHashCode();
 
         // Equals method for the comparer itself.
         public override bool Equals([NotNullWhen(true)] object? obj) =>

@@ -113,15 +113,18 @@ namespace System.Collections.Generic
             // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
             // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
             // hash buckets become unbalanced.
-            if (ReferenceEquals(comparer, EqualityComparer<string>.Default))
+
+            if (comparer.Equals(EqualityComparer<string>.Default))
             {
                 return WrappedAroundDefaultComparer;
             }
-            else if (ReferenceEquals(comparer, StringComparer.Ordinal))
+
+            if (comparer.Equals(StringComparer.Ordinal))
             {
                 return WrappedAroundStringComparerOrdinal;
             }
-            else if (ReferenceEquals(comparer, StringComparer.OrdinalIgnoreCase))
+
+            if (comparer.Equals(StringComparer.OrdinalIgnoreCase))
             {
                 return WrappedAroundStringComparerOrdinalIgnoreCase;
             }
