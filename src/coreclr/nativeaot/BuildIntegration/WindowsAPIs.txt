@@ -1310,6 +1310,8 @@ kernel32!QueryFullProcessImageNameW
 kernel32!QueryIdleProcessorCycleTime
 kernel32!QueryIdleProcessorCycleTimeEx
 kernel32!QueryMemoryResourceNotification
+kernel32!QueryPerformanceCounter
+kernel32!QueryPerformanceFrequency
 kernel32!QueryProcessAffinityUpdateMode
 kernel32!QueryProcessCycleTime
 kernel32!QueryThreadCycleTime
