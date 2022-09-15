@@ -53,15 +53,15 @@ We want to add `<HasDisasmCheck>true</HasDisasmCheck>` as a child of the `Compil
 ```xml
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs">
-		<HasDisasmCheck>true</HasDisasmCheck>
-	</Compile>
+      <HasDisasmCheck>true</HasDisasmCheck>
+    </Compile>
   </ItemGroup>
 ```
 Doing this lets the test builder and runner know that this test has assembly that needs to be verified.
 
 Finally, we need to write the assembly check and put the `[MethodImpl(MethodImplOptions.NoInlining)]` attribute on the method `AdvSimd_CompareEqual_Vector64_Byte_Zero`:
 ```csharp
-	[MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining)]
     static Vector64<byte> AdvSimd_CompareEqual_Vector64_Byte_Zero(Vector64<byte> left)
     {
 		// ARM64-FULL-LINE: cmeq v0.8b, v0.8b, #0
