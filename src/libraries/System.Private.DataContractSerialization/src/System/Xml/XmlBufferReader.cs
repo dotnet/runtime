@@ -433,14 +433,10 @@ namespace System.Xml
             else
             {
                 int* pi = (int*)&value;
-                int flags = ReadInt32();
-                int hi32 = ReadInt32();
-                int low32 = ReadInt32();
-                int mid32 = ReadInt32();
-                pi[0] = flags;
-                pi[1] = hi32;
-                pi[2] = low32;
-                pi[3] = mid32;
+                pi[0] = GetInt32(offset + 12); // flags
+                pi[1] = GetInt32(offset + 8); // hi32
+                pi[2] = GetInt32(offset); // bottom-of-low64;
+                pi[3] = GetInt32(offset + 4); // top-of-low64;
             }
             return value;
         }
@@ -1037,14 +1033,14 @@ namespace System.Xml
 
         public unsafe float GetSingle(int offset)
         {
-            float value = BinaryPrimatives.ReadSingleLittleEndian(_buffer.AsSpan(offset, 4));
+            float value = BinaryPrimitives.ReadSingleLittleEndian(_buffer.AsSpan(offset, 4));
             DiagnosticUtility.DebugAssert(sizeof(float) == 4, "");
             return value;
         }
 
         public unsafe double GetDouble(int offset)
         {
-            double value = BinaryPrimatives.ReadDoubleLittleEndian(_buffer.AsSpan(offset, 8));
+            double value = BinaryPrimitives.ReadDoubleLittleEndian(_buffer.AsSpan(offset, 8));
             DiagnosticUtility.DebugAssert(sizeof(double) == 8, "");
             return value;
         }
@@ -1063,14 +1059,10 @@ namespace System.Xml
             else
             {
                 int* pi = (int*)&value;
-                int flags = GetInt32();
-                int hi32 = GetInt32();
-                int low32 = GetInt32();
-                int mid32 = GetInt32();
-                pi[0] = flags;
-                pi[1] = hi32;
-                pi[2] = low32;
-                pi[3] = mid32;
+                pi[0] = GetInt32(offset + 12); // flags
+                pi[1] = GetInt32(offset + 8); // hi32
+                pi[2] = GetInt32(offset); // bottom-of-low64;
+                pi[3] = GetInt32(offset + 4); // top-of-low64;
             }
 
             return value;
