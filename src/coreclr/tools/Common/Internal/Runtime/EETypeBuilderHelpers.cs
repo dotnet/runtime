@@ -108,7 +108,7 @@ namespace Internal.Runtime
                 flagsEx |= (ushort)EETypeFlagsEx.HasEagerFinalizerFlag;
             }
 
-            if (type.HasFinalizer && HasCriticalFinalizer(type))
+            if (HasCriticalFinalizer(type))
             {
                 flagsEx |= (ushort)EETypeFlagsEx.HasCriticalFinalizerFlag;
             }
@@ -118,21 +118,22 @@ namespace Internal.Runtime
 
         private static bool HasCriticalFinalizer(TypeDesc type)
         {
-            if (type is MetadataType mdType &&
+            do
+            {
+                if (!type.HasFinalizer)
+                    return false;
+
+                if (type is MetadataType mdType &&
                             mdType.Module == mdType.Context.SystemModule &&
                             mdType.Name == "CriticalFinalizerObject" &&
                             mdType.Namespace == "System.Runtime.ConstrainedExecution")
-            {
-                return true;
+                    return true;
+
+                type = type.BaseType;
             }
-            else if (type.HasBaseType)
-            {
-                return HasCriticalFinalizer(type.BaseType);
-            }
-            else
-            {
-                return false;
-            }
+            while (type != null);
+
+            return false;
         }
 
         // These masks and paddings have been chosen so that the ValueTypePadding field can always fit in a byte of data
