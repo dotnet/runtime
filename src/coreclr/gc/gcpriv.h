@@ -3938,9 +3938,6 @@ public:
     PER_HEAP_ISOLATED
     uint64_t gc_last_ephemeral_decommit_time;
 
-    PER_HEAP_ISOLATED
-    size_t ephemeral_elapsed;
-
 #ifdef SHORT_PLUGS
     PER_HEAP_ISOLATED
     double short_plugs_pad_ratio;
