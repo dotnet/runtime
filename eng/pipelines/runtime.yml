@@ -107,6 +107,7 @@ jobs:
     buildConfig: checked
     platforms:
     - Linux_x64
+    - Linux_armv6
     container: debian-11-gcc12-amd64-20220511124845-b7a6185
     jobParameters:
       testGroup: innerloop
