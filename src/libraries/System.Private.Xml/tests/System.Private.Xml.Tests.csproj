@@ -621,7 +621,8 @@
     </EmbeddedResource>
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="(('$(TargetOS)' != 'tvOS' and '$(TargetOS)' != 'iOS') or '$(RunDisablediOSTests)' == 'true') and
+                        ('$(TestNativeAot)' != 'true' or '$(RunDisabledNativeAotTests)' == 'true')" >
     <Compile Include="Xslt\XslCompiledTransformApi\Errata4.cs" />
     <Compile Include="Xslt\XslCompiledTransformApi\OutputSettings.cs" />
     <Compile Include="Xslt\XslCompiledTransformApi\TempFiles.cs" />
@@ -632,6 +633,9 @@
     <Compile Include="Xslt\XslCompiledTransformApi\XslTransformMultith.cs" />
     <Compile Include="Xslt\XslCompiledTransformApi\XsltSettings.cs" />
     <Compile Include="Xslt\XslCompiledTransformApi\XslCompiledTransform.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="Xslt\XslTransformApi\CXslTArgumentList.cs" />
     <Compile Include="Xslt\XslTransformApi\CXsltArgumentListMultith.cs" />
     <Compile Include="Xslt\XslTransformApi\CXslTransform.cs" />
