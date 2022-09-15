@@ -18,7 +18,8 @@ namespace System.Text.RegularExpressions
         /// </summary>
         internal static (string? SinglePrefix, List<TrieNode>? PrefixTrie) CreatePrefixMatcher(RegexNode node)
         {
-            if ((node.Options & (RegexOptions.RightToLeft | RegexOptions.NonBacktracking)) != 0)
+            if ((node.Options & (RegexOptions.RightToLeft | RegexOptions.NonBacktracking)) != 0
+                || !NodeStartsWithAlternation(node))
             {
                 // MultiStringMatcher is not supported in RightToLeft.
                 // And there's not much point in using it in the non-backtracking
@@ -38,6 +39,81 @@ namespace System.Text.RegularExpressions
                 }
             }
             return (null, null);
+
+            // Returns whether the regex node's fixed leading part contains an alternation.
+            static bool NodeStartsWithAlternation(RegexNode node)
+            {
+                return Impl(node, true) ?? false;
+
+                // Returns true if it found an alternation, false if it didn't
+                // but we can't keep looking, and null if it didn't but we can.
+                // We follow the logic of TrieBuilder to determine whether to continue.
+                static bool? Impl(RegexNode node, bool isFinal)
+                {
+                    if (!StackHelper.TryEnsureSufficientExecutionStack())
+                    {
+                        return false;
+                    }
+
+                    while (node.Kind is RegexNodeKind.Capture or RegexNodeKind.Atomic)
+                    {
+                        node = node.Child(0);
+                    }
+
+                    switch (node.Kind)
+                    {
+                        case RegexNodeKind.Bol:
+                        case RegexNodeKind.Eol:
+                        case RegexNodeKind.Boundary:
+                        case RegexNodeKind.ECMABoundary:
+                        case RegexNodeKind.NonBoundary:
+                        case RegexNodeKind.NonECMABoundary:
+                        case RegexNodeKind.Beginning:
+                        case RegexNodeKind.Start:
+                        case RegexNodeKind.EndZ:
+                        case RegexNodeKind.End:
+                        case RegexNodeKind.Empty:
+                        case RegexNodeKind.UpdateBumpalong:
+                        case RegexNodeKind.PositiveLookaround:
+                        case RegexNodeKind.NegativeLookaround:
+                        case RegexNodeKind.One:
+                        case RegexNodeKind.Multi:
+                        case RegexNodeKind.Set when IsSetSufficientlySmall(node.Str!):
+                            return null;
+                        case RegexNodeKind.Concatenate:
+                            bool? result = null;
+                            for (int i = 0; i < node.ChildCount() - 1 && result is null; i++)
+                            {
+                                result = Impl(node.Child(i), false);
+                            }
+                            if (result is null)
+                            {
+                                result = Impl(node.Child(node.ChildCount() - 1), isFinal);
+                            }
+                            return result;
+                        case RegexNodeKind.Alternate:
+                            return true;
+                        case RegexNodeKind.Oneloop:
+                        case RegexNodeKind.Oneloopatomic:
+                        case RegexNodeKind.Onelazy:
+                            // If the loop is not a constant one we stop with
+                            // a negative result, otherwise we continue.
+                            return node.M == node.N || (node.M, node.N, isFinal) is (0, 1, false) ? null : false;
+                        case RegexNodeKind.Setloop:
+                        case RegexNodeKind.Setloopatomic:
+                        case RegexNodeKind.Setlazy:
+                            return (node.M == node.N || (node.M, node.N, isFinal) is (0, 1, false)) && IsSetSufficientlySmall(node.Str!) ? null : false;
+                        case RegexNodeKind.Loop:
+                        case RegexNodeKind.Lazyloop:
+                            return (node.M == node.N || (node.M, node.N, isFinal) is (0, 1, false)) ? Impl(node.Child(0), isFinal) : false;
+                        default:
+                            return false;
+                    }
+
+                    static bool IsSetSufficientlySmall(string charClass) =>
+                        RegexCharClass.GetSetChars(charClass, stackalloc char[TrieBuilder.SetLimit]) > 0;
+                }
+            }
 
             static bool TrieStartsWithMatch(List<TrieNode> trie)
             {

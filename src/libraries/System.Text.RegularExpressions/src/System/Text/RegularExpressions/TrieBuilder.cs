@@ -33,7 +33,7 @@ namespace System.Text.RegularExpressions
         /// the trie would match <c>ac</c>, <c>ad</c>, <c>ae</c>, <c>bc</c>, <c>bd</c>
         /// and <c>be</c>.
         /// </remarks>
-        private const int SetLimit = 16;
+        internal const int SetLimit = 16;
 
         /// <summary>
         /// The maximum depth that a trie node can have. It is synonymous with the maximum length of a word in the trie.
