@@ -663,6 +663,8 @@ namespace System.Text.Json
 
         internal bool IsInitializedForReflectionSerializer => _isInitializedForReflectionSerializer;
         private volatile bool _isInitializedForReflectionSerializer;
+
+        // Only populated in .NET 6 compatibility mode encoding reflection fallback in source gen
         private IJsonTypeInfoResolver? _effectiveJsonTypeInfoResolver;
 
         private JsonTypeInfo? GetTypeInfoNoCaching(Type type)

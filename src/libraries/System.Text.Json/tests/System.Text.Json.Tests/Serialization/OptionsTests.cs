@@ -480,13 +480,15 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(true)]
         public static void Options_JsonSerializerContext_GetConverter_DoesNotFallBackToReflectionConverter(bool isCompatibilitySwitchExplicitlyDisabled)
         {
-            RemoteExecutor.Invoke(static (string isCompatibilitySwitchExplicitlyDisabled) =>
-            {
-                if (bool.Parse(isCompatibilitySwitchExplicitlyDisabled))
-                {
-                    AppContext.SetSwitch("System.Text.Json.Serialization.EnableSourceGenReflectionFallback", isEnabled: false);
-                }
+            var options = new RemoteInvokeOptions();
 
+            if (isCompatibilitySwitchExplicitlyDisabled)
+            {
+                options.RuntimeConfigurationOptions.Add("System.Text.Json.Serialization.EnableSourceGenReflectionFallback", false);
+            }
+
+            RemoteExecutor.Invoke(static () =>
+            {
                 JsonContext context = JsonContext.Default;
                 var unsupportedValue = new MyClass();
 
@@ -505,17 +507,23 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Throws<NotSupportedException>(() => context.Options.GetConverter(typeof(MyClass)));
                 Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(unsupportedValue, context.Options));
 
-            }, isCompatibilitySwitchExplicitlyDisabled.ToString()).Dispose();
+            }, options).Dispose();
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void Options_JsonSerializerContext_Net6CompatibilitySwitch_FallsBackToReflectionResolver()
         {
+            var options = new RemoteInvokeOptions
+            {
+                RuntimeConfigurationOptions =
+                {
+                    ["System.Text.Json.Serialization.EnableSourceGenReflectionFallback"] = true
+                }
+            };
+            
             RemoteExecutor.Invoke(static () =>
             {
-                AppContext.SetSwitch("System.Text.Json.Serialization.EnableSourceGenReflectionFallback", isEnabled: true);
-
                 var unsupportedValue = new MyClass { Value = "value" };
 
                 // JsonSerializerContext does not return metadata for the type
@@ -532,7 +540,7 @@ namespace System.Text.Json.Serialization.Tests
                 JsonConverter converter = JsonContext.Default.Options.GetConverter(typeof(MyClass));
                 Assert.IsAssignableFrom<JsonConverter<MyClass>>(converter);
 
-            }).Dispose();
+            }, options).Dispose();
         }
 
         [Fact]
