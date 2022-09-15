@@ -2,6 +2,7 @@ parameters:
   archType: ''
   osGroup: ''
   osSubgroup: ''
+  isOfficialBuild: false
 
 steps:
   # Always build the crossdac, that way we know in CI/PR if things break to build.
@@ -29,6 +30,12 @@ steps:
           **/*
           !**/sharedFramework/**/*
         TargetFolder: '$(buildMuslDacStagingPath)'
+
+    - template: /eng/pipelines/coreclr/templates/sign-diagnostic-files.yml
+      parameters:
+        basePath: $(crossDacArtifactPath)
+        isOfficialBuild: ${{ parameters.isOfficialBuild }}
+        timeoutInMinutes: 30
 
   - ${{ if eq(parameters.osGroup, 'Linux') }}:
     - task: CopyFiles@2
