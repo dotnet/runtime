@@ -303,13 +303,8 @@ if defined RunCrossGen2 (
 )
 
 REM Change to runtime config check
-if "$(HasBatchDisasmCheck)"=="true" (
-  ECHO %LAUNCHER% %ExePath% %CLRTestExecutionArguments% ^> $(BatchDisasmOutputFile)
-  %LAUNCHER% %ExePath% %CLRTestExecutionArguments% > $(BatchDisasmOutputFile)
-) ELSE (
-  ECHO %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
-  %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
-)
+ECHO %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
+%LAUNCHER% %ExePath% %CLRTestExecutionArguments%
 
 set CLRTestExitCode=!ERRORLEVEL!
 if defined RunCrossGen2 (

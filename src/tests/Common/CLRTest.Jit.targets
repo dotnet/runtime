@@ -217,7 +217,7 @@ IF NOT DEFINED DoLink (
           DependsOnTargets="GetDisasmCheckData">
     <PropertyGroup>
       <HasBashDisasmCheck>false</HasBashDisasmCheck>
-      <HasBashDisasmCheck Condition="'$(HasDisasmCheck)' == 'true' and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'Linux'">true</HasBashDisasmCheck>
+      <HasBashDisasmCheck Condition="'$(HasDisasmCheck)' == 'true' and '$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'Linux' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')">true</HasBashDisasmCheck>
 
       <BashDisasmOutputFile>/dev/null</BashDisasmOutputFile>
       <BashDisasmOutputFile Condition="'$(HasBashDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm.out</BashDisasmOutputFile>
@@ -244,6 +244,7 @@ fi
   ERRORLEVEL=$?
   export DOTNET_JitDisasm=$(cat $(BashDisasmListOutputFile))
   export DOTNET_JitDiffableDasm=1
+  export COMPlus_JitStdOutFile=$(BashDisasmOutputFile)
   if [[ $ERRORLEVEL -ne 0 ]]
   then
     echo EXECUTION OF FILECHECK - FAILED $ERRORLEVEL
@@ -286,6 +287,7 @@ IF NOT "%DOTNET_JitDisasm%" == "" (
 @(DisasmCheckFiles -> '  dotnet %CORE_ROOT%\SuperFileCheck\SuperFileCheck.dll --csharp-list-method-names "%(Identity)" --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) > "$(BatchDisasmListOutputFile)"
   set /p DOTNET_JitDisasm= < $(BatchDisasmListOutputFile)
   set DOTNET_JitDiffableDasm=1
+  set COMPlus_JitStdOutFile=$(BatchDisasmOutputFile)
   IF NOT "!ERRORLEVEL!" == "0" (
     ECHO %CORE_ROOT%\SuperFileCheck\SuperFileCheck.exe --csharp-list-method-names "%(Identity)" --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) > "$(BatchDisasmListOutputFile)"
     ECHO EXECUTION OF FILECHECK LISTING METHOD NAMES - FAILED !ERRORLEVEL!
