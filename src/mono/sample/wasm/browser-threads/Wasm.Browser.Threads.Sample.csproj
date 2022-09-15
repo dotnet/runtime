@@ -1,20 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\DefaultBrowserSample.targets" />
   <PropertyGroup>
-    <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
-    <WasmMainJSPath>main.js</WasmMainJSPath>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>embedded</DebugType>
-    <WasmDebugLevel>1</WasmDebugLevel>
-    <GenerateRunScriptForSample Condition="'$(ArchiveTests)' == 'true'">true</GenerateRunScriptForSample>
-    <RunScriptCommand>$(ExecXHarnessCmd) wasm test-browser  --app=. --browser=Chrome $(XHarnessBrowserPathArg) --html-file=index.html --output-directory=$(XHarnessOutput) --web-server-use-cop -- $(MSBuildProjectName).dll</RunScriptCommand>
+    <_SampleProject>Wasm.Browser.Threads.Sample.csproj</_SampleProject>
   </PropertyGroup>
-  <ItemGroup>
-    <WasmExtraFilesToDeploy Include="index.html" />
-  </ItemGroup>
-  <PropertyGroup>
-    <_SampleProject>Wasm.Browser.Sample.csproj</_SampleProject>
-  </PropertyGroup>
-  <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowser" />
 
   <Target Name="CheckThreadsEnabled" BeforeTargets="Compile" >
     <Warning Condition="'$(WasmEnableThreads)' != 'true'" Text="This sample requires threading" />

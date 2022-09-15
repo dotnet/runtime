@@ -14,21 +14,21 @@ namespace Wasm.Build.Tests
     public class BuildEnvironment
     {
         public string                           DotNet                        { get; init; }
-        public string                           RuntimePackDir                { get; init; }
-        public string                           WorkloadPacksVersion          { get; init; }
         public bool                             IsWorkload                    { get; init; }
         public string                           DefaultBuildArgs              { get; init; }
         public IDictionary<string, string>      EnvVars                       { get; init; }
         public string                           DirectoryBuildPropsContents   { get; init; }
         public string                           DirectoryBuildTargetsContents { get; init; }
-        public string                           RuntimeNativeDir              { get; init; }
         public string                           LogRootPath                   { get; init; }
 
         public string                           WorkloadPacksDir              { get; init; }
+        public string                           BuiltNuGetsPath               { get; init; }
 
         public static readonly string           RelativeTestAssetsPath = @"..\testassets\";
         public static readonly string           TestAssetsPath = Path.Combine(AppContext.BaseDirectory, "testassets");
         public static readonly string           TestDataPath = Path.Combine(AppContext.BaseDirectory, "data");
+
+        private static readonly Dictionary<string, string> s_runtimePackVersions = new();
 
         public BuildEnvironment()
         {
@@ -51,7 +51,7 @@ namespace Wasm.Build.Tests
                                                 "..",
                                                 "..",
                                                 "..",
-                                                "dotnet-workload");
+                                                "dotnet-net7+latest");
                 if (Directory.Exists(probePath))
                     sdkForWorkloadPath = Path.GetFullPath(probePath);
                 else
@@ -60,21 +60,20 @@ namespace Wasm.Build.Tests
             if (!Directory.Exists(sdkForWorkloadPath))
                 throw new Exception($"Could not find SDK_FOR_WORKLOAD_TESTING_PATH={sdkForWorkloadPath}");
 
-            if (!Path.IsPathRooted(sdkForWorkloadPath))
-                sdkForWorkloadPath = Path.GetFullPath(sdkForWorkloadPath);
+            sdkForWorkloadPath = Path.GetFullPath(sdkForWorkloadPath);
 
+            // FIXME:
+            foreach (string verStr in new[] { "8", "7", "6" })
+            {
+                string versionValue = Environment.GetEnvironmentVariable($"RUNTIME_PACK_VER{verStr}") ?? string.Empty;
+                s_runtimePackVersions[$"net{verStr}.0"] = versionValue;
+            }
+
+            WorkloadPacksDir = Path.Combine(sdkForWorkloadPath, "packs");
             EnvVars = new Dictionary<string, string>();
             bool workloadInstalled = EnvironmentVariables.SdkHasWorkloadInstalled != null && EnvironmentVariables.SdkHasWorkloadInstalled == "true";
             if (workloadInstalled)
             {
-                var workloadPacksVersion = EnvironmentVariables.WorkloadPacksVersion;
-                if (string.IsNullOrEmpty(workloadPacksVersion))
-                    throw new Exception($"Cannot test with workloads without WORKLOAD_PACKS_VER environment variable being set");
-
-                WorkloadPacksDir = Path.Combine(sdkForWorkloadPath, "packs");
-                WorkloadPacksVersion = workloadPacksVersion;
-
-                RuntimePackDir = Path.Combine(WorkloadPacksDir, "Microsoft.NETCore.App.Runtime.Mono.browser-wasm", WorkloadPacksVersion);
                 DirectoryBuildPropsContents = s_directoryBuildPropsForWorkloads;
                 DirectoryBuildTargetsContents = s_directoryBuildTargetsForWorkloads;
 
@@ -87,9 +86,6 @@ namespace Wasm.Build.Tests
             }
             else
             {
-                WorkloadPacksDir = "/dont-use-this-no-workload-installed";
-                WorkloadPacksVersion = "dont-use-this-no-workload-installed";
-                RuntimePackDir = "/dont-check-runtime-pack-dir-for-no-workloads-case";
                 var appRefDir = EnvironmentVariables.AppRefDir;
                 if (string.IsNullOrEmpty(appRefDir))
                     throw new Exception($"Cannot test with workloads without AppRefDir environment variable being set");
@@ -98,6 +94,11 @@ namespace Wasm.Build.Tests
                 DirectoryBuildPropsContents = s_directoryBuildPropsForLocal;
                 DirectoryBuildTargetsContents = s_directoryBuildTargetsForLocal;
             }
+
+            if (EnvironmentVariables.BuiltNuGetsPath is null || !Directory.Exists(EnvironmentVariables.BuiltNuGetsPath))
+                throw new Exception($"Cannot find 'BUILT_NUGETS_PATH={EnvironmentVariables.BuiltNuGetsPath}'");
+
+            BuiltNuGetsPath = EnvironmentVariables.BuiltNuGetsPath;
 
             // `runtime` repo's build environment sets these, and they
             // mess up the build for the test project, which is using a different
@@ -112,20 +113,25 @@ namespace Wasm.Build.Tests
             // helps with debugging
             EnvVars["WasmNativeStrip"] = "false";
 
+            // Works around an issue in msbuild due to which
+            // second, and subsequent builds fail without any details
+            // in the logs
+            EnvVars["DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER"] = "1";
+            DefaultBuildArgs += " /nr:false";
+
             if (OperatingSystem.IsWindows())
             {
                 EnvVars["WasmCachePath"] = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
                                                         ".emscripten-cache");
             }
 
-            RuntimeNativeDir = Path.Combine(RuntimePackDir, "runtimes", "browser-wasm", "native");
             DotNet = Path.Combine(sdkForWorkloadPath!, "dotnet");
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 DotNet += ".exe";
 
             if (!string.IsNullOrEmpty(EnvironmentVariables.TestLogPath))
             {
-                LogRootPath = EnvironmentVariables.TestLogPath;
+                LogRootPath = Path.GetFullPath(EnvironmentVariables.TestLogPath);
                 if (!Directory.Exists(LogRootPath))
                 {
                     Directory.CreateDirectory(LogRootPath);
@@ -136,6 +142,13 @@ namespace Wasm.Build.Tests
                 LogRootPath = Environment.CurrentDirectory;
             }
         }
+
+        // FIXME: error checks
+        public string GetRuntimePackVersion(string tfm = BuildTestBase.DefaultTargetFramework) => s_runtimePackVersions[tfm];
+        public string GetRuntimePackDir(string tfm = BuildTestBase.DefaultTargetFramework)
+            => Path.Combine(WorkloadPacksDir, "Microsoft.NETCore.App.Runtime.Mono.browser-wasm", GetRuntimePackVersion(tfm));
+        public string GetRuntimeNativeDir(string tfm = BuildTestBase.DefaultTargetFramework)
+            => Path.Combine(GetRuntimePackDir(tfm), "runtimes", "browser-wasm", "native");
 
         protected static string s_directoryBuildPropsForWorkloads = File.ReadAllText(Path.Combine(TestDataPath, "Workloads.Directory.Build.props"));
         protected static string s_directoryBuildTargetsForWorkloads = File.ReadAllText(Path.Combine(TestDataPath, "Workloads.Directory.Build.targets"));

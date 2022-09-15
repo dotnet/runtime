@@ -72,14 +72,12 @@ extern "C" DLLEXPORT void jitStartup(ICorJitHost* jitHost)
     assert(!JitConfig.isInitialized());
     JitConfig.initialize(jitHost);
 
-#ifdef DEBUG
     const WCHAR* jitStdOutFile = JitConfig.JitStdOutFile();
     if (jitStdOutFile != nullptr)
     {
         jitstdout = _wfopen(jitStdOutFile, W("a"));
         assert(jitstdout != nullptr);
     }
-#endif // DEBUG
 
 #if !defined(HOST_UNIX)
     if (jitstdout == nullptr)
@@ -1630,7 +1628,19 @@ const WCHAR* Compiler::eeGetCPString(size_t strHandle)
         return (nullptr);
     }
 
-    CORINFO_String* asString = *((CORINFO_String**)strHandle);
+    CORINFO_String* asString = nullptr;
+    if (impGetStringClass() == *((CORINFO_CLASS_HANDLE*)strHandle))
+    {
+        // strHandle is a frozen string
+        // We assume strHandle is never an "interior" pointer in a frozen string
+        // (jit is not expected to perform such foldings)
+        asString = (CORINFO_String*)strHandle;
+    }
+    else
+    {
+        // strHandle is a pinned handle to a string object
+        asString = *((CORINFO_String**)strHandle);
+    }
 
     if (ReadProcessMemory(GetCurrentProcess(), asString, buff, sizeof(buff), nullptr) == 0)
     {
@@ -1645,5 +1655,12 @@ const WCHAR* Compiler::eeGetCPString(size_t strHandle)
     return (WCHAR*)(asString->chars);
 #endif // HOST_UNIX
 }
-
-#endif // DEBUG
+#else  // DEBUG
+void jitprintf(const char* fmt, ...)
+{
+    va_list vl;
+    va_start(vl, fmt);
+    vfprintf(jitstdout, fmt, vl);
+    va_end(vl);
+}
+#endif // !DEBUG

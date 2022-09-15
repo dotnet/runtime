@@ -1617,7 +1617,7 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
 
         case GT_CNS_DBL:
             assert(varTypeIsFloating(type));
-            AsDblCon()->gtDconVal = static_cast<double>(value);
+            AsDblCon()->SetDconValue(static_cast<double>(value));
             break;
 
         default:

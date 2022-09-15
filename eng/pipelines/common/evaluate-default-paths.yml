@@ -17,6 +17,13 @@ parameters:
         src/tasks/WasmAppBuilder/*
         src/tasks/WasmBuildTasks/*
         src/tasks/WorkloadBuildTasks/*
+        src/tests/Common/wasm-test-runner/*
+    ]
+    _wasm_pipelines: [
+        eng/pipelines/*wasm*
+        eng/pipelines/common/templates/*wasm*
+        eng/pipelines/common/templates/runtime/wasm*
+        eng/pipelines/coreclr/*wasm*
     ]
 
 jobs:
@@ -45,6 +52,7 @@ jobs:
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*
       - eng/pipelines/common/evaluate-default-paths.yml
+      - ${{ parameters._const_paths._wasm_pipelines }}
 
     - subset: mono_excluding_wasm
       include:
@@ -54,6 +62,7 @@ jobs:
       - src/native/libs/System.IO.Compression.Native/*
       exclude:
       - ${{ parameters._const_paths._wasm_specific_only }}
+      - ${{ parameters._const_paths._wasm_pipelines }}
 
       - eng/Version.Details.xml
       - '*.md'
@@ -88,10 +97,21 @@ jobs:
       - eng/pipelines/mono/*
       - eng/pipelines/installer/*
       - eng/pipelines/common/evaluate-default-paths.yml
+      - ${{ parameters._const_paths._wasm_pipelines }}
 
     - subset: runtimetests
       include:
       - src/tests/*
+
+    - subset: non_runtimetests
+      exclude:
+      - src/tests/*
+      - ${{ parameters._const_paths._wasm_pipelines }}
+
+      # having this ensures that change in evaluate-default-paths.yml
+      # doesn't trigger jobs
+      - eng/pipelines/common/evaluate-default-paths.yml
+
     - subset: installer
       include:
       - docs/manpages/*
@@ -111,6 +131,7 @@ jobs:
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*
       - eng/pipelines/common/evaluate-default-paths.yml
+      - ${{ parameters._const_paths._wasm_pipelines }}
 
     # We have limited Apple Silicon testing capacity
     # We want PR testing on a narrower set of changes
@@ -141,12 +162,17 @@ jobs:
       - eng/testing/scenarios/BuildWasmAppsJobsList.txt
       - eng/testing/workloads-testing.targets
       - src/libraries/sendtohelix*
+      - src/libraries/System.Net.WebSockets.Client/*
+      - src/libraries/System.Runtime.InteropServices/*
+      - src/libraries/System.Runtime.InteropServices.JavaScript/*
       - src/mono/mono/*
       - src/mono/nuget/Microsoft.NET.Runtime.MonoAOTCompiler.Task/*
       - src/mono/nuget/Microsoft.NET.Runtime.MonoTargets.Sdk/*
       - src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
       - src/mono/nuget/Microsoft.NET.Runtime.wasm.Sample.Mono/*
       - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Manifest/*
+      - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.net6.Manifest/*
+      - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.net7.Manifest/*
       - src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
       - src/mono/wasm/build/*
       - src/mono/wasm/emscripten-version.txt
@@ -159,6 +185,8 @@ jobs:
     - subset: wasmdebuggertests
       include:
       - eng/testing/ProvisioningVersions.props
+      - src/libraries/System.Runtime.InteropServices/*
+      - src/libraries/System.Runtime.InteropServices.JavaScript/*
       - src/mono/mono/*
       - src/mono/wasm/debugger/*
       - src/mono/wasm/runtime/*
@@ -167,6 +195,11 @@ jobs:
       exclude:
       - src/mono/wasm/Wasm.Build.Tests/*
       - src/mono/wasm/debugger/*
+      - ${{ parameters._const_paths._wasm_pipelines }}
+
+      # having this ensures that change in evaluate-default-paths.yml
+      # doesn't trigger jobs
+      - eng/pipelines/common/evaluate-default-paths.yml
 
     - subset: wasm_wbt_or_dbg
       include:
@@ -179,10 +212,32 @@ jobs:
       # other paths that should also trigger wasm jobs
       - src/mono/*
 
+    # libraries with some wasm specific code
+    - subset: wasm_libraries
+      include:
+      - src/libraries/Common/*
+      - src/libraries/System.Console/*
+      - src/libraries/System.Diagnostics.FileVersionInfo/tests/*
+      - src/libraries/System.IO.Compression/*
+      - src/libraries/System.IO.MemoryMappedFiles/*
+      - src/libraries/System.Net.Http/*
+      - src/libraries/System.Net.Mail/*
+      - src/libraries/System.Net.Primitives/*
+      - src/libraries/System.Net.WebClient/*
+      - src/libraries/System.Net.WebProxy/*
+      - src/libraries/System.Net.WebSockets.Client/*
+      - src/libraries/System.Net.WebSockets/*
+      - src/libraries/System.Runtime.InteropServices.JavaScript/*
+      - src/libraries/System.Runtime.InteropServices/*
+      - src/libraries/System.Runtime.Serialization.Formatters/*
+      - src/libraries/System.Security.Cryptography/*
+      - src/libraries/System.Text.Encodings.Web/*
+
     # anything other than wasm-specific paths
     - subset: non_wasm
       exclude:
       - ${{ parameters._const_paths._wasm_specific_only }}
+      - ${{ parameters._const_paths._wasm_pipelines }}
 
       # having this ensures that change in evaluate-default-paths.yml won't
       # trigger non-onlywasm jobs
@@ -192,6 +247,7 @@ jobs:
     - subset: non_mono_and_wasm
       exclude:
       - ${{ parameters._const_paths._wasm_specific_only }}
+      - ${{ parameters._const_paths._wasm_pipelines }}
 
       - eng/testing/tests.mobile.targets
       - src/mono/*
@@ -202,6 +258,10 @@ jobs:
       - src/tasks/WasmAppBuilder/*
       - src/tasks/WasmBuildTasks/*
       - src/tasks/WorkloadBuildTasks/*
+
+      # having this ensures that change in evaluate-default-paths.yml
+      # doesn't trigger jobs
+      - eng/pipelines/common/evaluate-default-paths.yml
 
     - ${{ if ne(parameters.extraSubsets, '') }}:
       - ${{ parameters.extraSubsets }}

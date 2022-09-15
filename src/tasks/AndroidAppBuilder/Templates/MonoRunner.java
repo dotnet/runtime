@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.BufferedInputStream;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.time.OffsetDateTime;
@@ -90,7 +91,7 @@ public class MonoRunner extends Instrumentation
         unzipAssets(context, filesDir, "assets.zip");
 
         Log.i("DOTNET", "MonoRunner initialize,, entryPointLibName=" + entryPointLibName);
-        int localDateTimeOffset = OffsetDateTime.now().getOffset().getTotalSeconds();
+        int localDateTimeOffset = getLocalDateTimeOffset();
         return initRuntime(filesDir, cacheDir, testResultsDir, entryPointLibName, args, localDateTimeOffset);
     }
 
@@ -149,6 +150,15 @@ public class MonoRunner extends Instrumentation
             zipInputStream.close();
         } catch (IOException e) {
             Log.e("DOTNET", e.getLocalizedMessage());
+        }
+    }
+
+    static int getLocalDateTimeOffset() {
+        if (android.os.Build.VERSION.SDK_INT >= 26) {
+            return OffsetDateTime.now().getOffset().getTotalSeconds();
+        } else {
+            int offsetInMillis = Calendar.getInstance().getTimeZone().getRawOffset();
+            return offsetInMillis / 1000;
         }
     }
 

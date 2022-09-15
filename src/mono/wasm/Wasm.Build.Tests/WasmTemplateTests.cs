@@ -21,7 +21,7 @@ namespace Wasm.Build.Tests
         {
         }
 
-        private void updateProgramCS()
+        private void UpdateProgramCS()
         {
             string programText = """
             Console.WriteLine("Hello, Console!");
@@ -36,12 +36,16 @@ namespace Wasm.Build.Tests
             File.WriteAllText(path, text);
         }
 
-        private void UpdateBrowserMainJs()
+        private void UpdateBrowserMainJs(string targetFramework)
         {
             string mainJsPath = Path.Combine(_projectDir!, "main.js");
             string mainJsContent = File.ReadAllText(mainJsPath);
 
-            mainJsContent = mainJsContent.Replace(".create()", ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()");
+            // .withExitOnUnhandledError() is available only only >net7.0
+            mainJsContent = mainJsContent.Replace(".create()",
+                    targetFramework == "net8.0"
+                        ? ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().withExitOnUnhandledError().create()"
+                        : ".withConsoleForwarding().withElementOnExit().withExitCodeLogging().create()");
             File.WriteAllText(mainJsPath, mainJsContent);
         }
 
@@ -83,7 +87,7 @@ namespace Wasm.Build.Tests
             string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
-            UpdateBrowserMainJs();
+            UpdateBrowserMainJs(DefaultTargetFramework);
 
             var buildArgs = new BuildArgs(projectName, config, false, id, null);
             buildArgs = ExpandBuildArgs(buildArgs);
@@ -96,7 +100,7 @@ namespace Wasm.Build.Tests
                             HasV8Script: false,
                             MainJS: "main.js",
                             Publish: false,
-                            TargetFramework: "net7.0"
+                            TargetFramework: BuildTestBase.DefaultTargetFramework
                         ));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true);
@@ -106,7 +110,6 @@ namespace Wasm.Build.Tests
 
             File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
 
-            _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
 
             bool expectRelinking = config == "Release";
@@ -118,7 +121,7 @@ namespace Wasm.Build.Tests
                             HasV8Script: false,
                             MainJS: "main.js",
                             Publish: true,
-                            TargetFramework: "net7.0",
+                            TargetFramework: BuildTestBase.DefaultTargetFramework,
                             UseCache: false));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
@@ -146,7 +149,7 @@ namespace Wasm.Build.Tests
                         HasV8Script: false,
                         MainJS: "main.mjs",
                         Publish: false,
-                        TargetFramework: "net7.0"
+                        TargetFramework: BuildTestBase.DefaultTargetFramework
                         ));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true);
@@ -171,7 +174,7 @@ namespace Wasm.Build.Tests
                             HasV8Script: false,
                             MainJS: "main.mjs",
                             Publish: true,
-                            TargetFramework: "net7.0",
+                            TargetFramework: BuildTestBase.DefaultTargetFramework,
                             UseCache: false));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
@@ -188,7 +191,7 @@ namespace Wasm.Build.Tests
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
-            updateProgramCS();
+            UpdateProgramCS();
             UpdateConsoleMainJs();
             if (relinking)
                 AddItemsPropertiesToProject(projectFile, "<WasmBuildNative>true</WasmBuildNative>");
@@ -204,7 +207,7 @@ namespace Wasm.Build.Tests
                             HasV8Script: false,
                             MainJS: "main.mjs",
                             Publish: false,
-                            TargetFramework: "net7.0"
+                            TargetFramework: BuildTestBase.DefaultTargetFramework
                             ));
 
             AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !relinking);
@@ -214,6 +217,113 @@ namespace Wasm.Build.Tests
             Assert.Contains("args[0] = x", output);
             Assert.Contains("args[1] = y", output);
             Assert.Contains("args[2] = z", output);
+        }
+
+        public static TheoryData<bool, bool, string> TestDataForAppBundleDir()
+        {
+            var data = new TheoryData<bool, bool, string>();
+            AddTestData(forConsole: true, runOutsideProjectDirectory: false);
+            AddTestData(forConsole: true, runOutsideProjectDirectory: true);
+
+            AddTestData(forConsole: false, runOutsideProjectDirectory: false);
+            AddTestData(forConsole: false, runOutsideProjectDirectory: true);
+
+            void AddTestData(bool forConsole, bool runOutsideProjectDirectory)
+            {
+                // FIXME: Disabled for `main` right now, till 7.0 gets the fix
+                //data.Add(runOutsideProjectDirectory, forConsole, string.Empty);
+
+                data.Add(runOutsideProjectDirectory, forConsole,
+                                $"<OutputPath>{Path.Combine(Path.GetTempPath(), Path.GetRandomFileName())}</OutputPath>");
+                data.Add(runOutsideProjectDirectory, forConsole,
+                                $"<WasmAppDir>{Path.Combine(Path.GetTempPath(), Path.GetRandomFileName())}</WasmAppDir>");
+            }
+
+            return data;
+        }
+
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [MemberData(nameof(TestDataForAppBundleDir))]
+        public async Task RunWithDifferentAppBundleLocations(bool forConsole, bool runOutsideProjectDirectory, string extraProperties)
+            => await (forConsole
+                    ? ConsoleRunWithAndThenWithoutBuildAsync("Release", extraProperties, runOutsideProjectDirectory)
+                    : BrowserRunTwiceWithAndThenWithoutBuildAsync("Release", extraProperties, runOutsideProjectDirectory));
+
+        private async Task BrowserRunTwiceWithAndThenWithoutBuildAsync(string config, string extraProperties = "", bool runOutsideProjectDirectory = false)
+        {
+            string id = $"browser_{config}_{Path.GetRandomFileName()}";
+            string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
+
+            UpdateBrowserMainJs(DefaultTargetFramework);
+
+            if (!string.IsNullOrEmpty(extraProperties))
+                AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
+
+            string workingDir = runOutsideProjectDirectory ? Path.GetTempPath() : _projectDir!;
+
+            {
+                using var runCommand = new RunCommand(s_buildEnv, _testOutput)
+                                            .WithWorkingDirectory(workingDir);
+
+                await using var runner = new BrowserRunner();
+                var page = await runner.RunAsync(runCommand, $"run -c {config} --project {projectFile} --forward-console");
+                await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
+                Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
+            }
+
+            {
+                using var runCommand = new RunCommand(s_buildEnv, _testOutput)
+                                            .WithWorkingDirectory(workingDir);
+
+                await using var runner = new BrowserRunner();
+                var page = await runner.RunAsync(runCommand, $"run -c {config} --no-build --project {projectFile} --forward-console");
+                await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
+                Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
+            }
+        }
+
+        private Task ConsoleRunWithAndThenWithoutBuildAsync(string config, string extraProperties = "", bool runOutsideProjectDirectory = false)
+        {
+            string id = $"console_{config}_{Path.GetRandomFileName()}";
+            string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
+
+            UpdateProgramCS();
+            UpdateConsoleMainJs();
+
+            if (!string.IsNullOrEmpty(extraProperties))
+                AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
+
+            string workingDir = runOutsideProjectDirectory ? Path.GetTempPath() : _projectDir!;
+
+            {
+                string runArgs = $"run -c {config} --project {projectFile}";
+                runArgs += " x y z";
+                using var cmd = new RunCommand(s_buildEnv, _testOutput, label: id)
+                                    .WithWorkingDirectory(workingDir)
+                                    .WithEnvironmentVariables(s_buildEnv.EnvVars);
+                var res = cmd.ExecuteWithCapturedOutput(runArgs).EnsureExitCode(42);
+
+                Assert.Contains("args[0] = x", res.Output);
+                Assert.Contains("args[1] = y", res.Output);
+                Assert.Contains("args[2] = z", res.Output);
+            }
+
+            _testOutput.WriteLine($"{Environment.NewLine}[{id}] Running again with --no-build{Environment.NewLine}");
+
+            {
+                // Run with --no-build
+                string runArgs = $"run -c {config} --project {projectFile} --no-build";
+                runArgs += " x y z";
+                using var cmd = new RunCommand(s_buildEnv, _testOutput, label: id)
+                                .WithWorkingDirectory(workingDir);
+                var res = cmd.ExecuteWithCapturedOutput(runArgs).EnsureExitCode(42);
+
+                Assert.Contains("args[0] = x", res.Output);
+                Assert.Contains("args[1] = y", res.Output);
+                Assert.Contains("args[2] = z", res.Output);
+            }
+
+            return Task.CompletedTask;
         }
 
         public static TheoryData<string, bool, bool> TestDataForConsolePublishAndRun()
@@ -242,7 +352,7 @@ namespace Wasm.Build.Tests
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
-            updateProgramCS();
+            UpdateProgramCS();
             UpdateConsoleMainJs();
 
             if (aot)
@@ -268,7 +378,7 @@ namespace Wasm.Build.Tests
                             HasV8Script: false,
                             MainJS: "main.mjs",
                             Publish: true,
-                            TargetFramework: "net7.0",
+                            TargetFramework: BuildTestBase.DefaultTargetFramework,
                             UseCache: false));
 
             if (!aot)
@@ -301,10 +411,6 @@ namespace Wasm.Build.Tests
             string config = "Debug";
             string id = $"blazor_{config}_{Path.GetRandomFileName()}";
             string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
-            // string projectName = Path.GetFileNameWithoutExtension(projectFile);
-
-            // var buildArgs = new BuildArgs(projectName, config, false, id, null);
-            // buildArgs = ExpandBuildArgs(buildArgs);
 
             new DotNetCommand(s_buildEnv, _testOutput)
                     .WithWorkingDirectory(_projectDir!)
@@ -333,10 +439,7 @@ namespace Wasm.Build.Tests
             string id = $"browser_{config}_{Path.GetRandomFileName()}";
             CreateWasmTemplateProject(id, "wasmbrowser");
 
-            // var buildArgs = new BuildArgs(projectName, config, false, id, null);
-            // buildArgs = ExpandBuildArgs(buildArgs);
-
-            UpdateBrowserMainJs();
+            UpdateBrowserMainJs(DefaultTargetFramework);
 
             new DotNetCommand(s_buildEnv, _testOutput)
                     .WithWorkingDirectory(_projectDir!)
