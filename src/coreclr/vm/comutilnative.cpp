@@ -1645,7 +1645,7 @@ BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt)
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_COOPERATIVE;
+        MODE_ANY;
     } CONTRACTL_END;
 
     _ASSERTE(mt != NULL);
