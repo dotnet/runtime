@@ -133,9 +133,8 @@ namespace System.Collections.Generic
         public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj != null && GetType() == obj.GetType();
 
-        // If in the future this type is made sealed, change typeof(...) to GetType().
         public override int GetHashCode() =>
-            typeof(GenericEqualityComparer<T>).GetHashCode();
+            GetType().GetHashCode();
     }
 
     [Serializable]
