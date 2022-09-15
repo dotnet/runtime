@@ -12857,7 +12857,7 @@ void gc_heap::distribute_free_regions()
     // decommit size
     // we limit the elapsed time to 10 seconds to avoid spending too much time decommitting
     // if less than DECOMMIT_TIME_STEP_MILLISECONDS elapsed, we don't decommit -
-    // we dont't want to decommit fractions of regions here
+    // we don't want to decommit fractions of regions here
     dynamic_data* dd0 = dynamic_data_of (0);
     size_t ephemeral_elapsed = (size_t)((dd_time_clock (dd0) - gc_last_ephemeral_decommit_time) / 1000);
     if (ephemeral_elapsed >= DECOMMIT_TIME_STEP_MILLISECONDS)
