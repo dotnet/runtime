@@ -12643,6 +12643,7 @@ void gc_heap::distribute_free_regions()
     size_t num_decommit_regions_by_time = 0;
     size_t size_decommit_regions_by_time = 0;
     size_t heap_budget_in_region_units[MAX_SUPPORTED_CPUS][kind_count];
+    size_t min_heap_budget_in_region_units[MAX_SUPPORTED_CPUS][kind_count];
     size_t region_size[kind_count] = { global_region_allocator.get_region_alignment(), global_region_allocator.get_large_region_alignment() };
     region_free_list surplus_regions[kind_count];
     for (int kind = basic_free_region; kind < kind_count; kind++)
@@ -12689,9 +12690,10 @@ void gc_heap::distribute_free_regions()
         global_free_huge_regions.transfer_regions (&hp->free_regions[huge_free_region]);
 
         heap_budget_in_region_units[i][basic_free_region] = 0;
+        min_heap_budget_in_region_units[i][basic_free_region] = 0;
         heap_budget_in_region_units[i][large_free_region] = 0;
+        min_heap_budget_in_region_units[i][large_free_region] = 0;
     }
-
 
     for (int gen = soh_gen0; gen < total_generation_count; gen++)
     {
@@ -12721,6 +12723,11 @@ void gc_heap::distribute_free_regions()
             int kind = gen >= loh_generation;
             size_t budget_gen_in_region_units = (budget_gen + (region_size[kind] - 1)) / region_size[kind];
             dprintf (REGIONS_LOG, ("h%2d gen %d has an estimated growth of %Id bytes (%Id regions)", i, gen, budget_gen, budget_gen_in_region_units));
+            if (gen <= soh_gen2)
+            {
+                // preserve the budget for the previous generation - we should not go below that
+                min_heap_budget_in_region_units[i][kind] = heap_budget_in_region_units[i][kind];
+            }
             heap_budget_in_region_units[i][kind] += budget_gen_in_region_units;
             total_budget_in_region_units[kind] += budget_gen_in_region_units;
         }
@@ -12776,6 +12783,7 @@ void gc_heap::distribute_free_regions()
             if (balance != 0)
             {
                 ptrdiff_t curr_balance = 0;
+                ptrdiff_t rem_balance = 0;
                 for (int i = 0; i < n_heaps; i++)
                 {
                     curr_balance += balance;
@@ -12787,10 +12795,34 @@ void gc_heap::distribute_free_regions()
                         heap_budget_in_region_units[i][kind],
                         kind_name[kind],
                         adjustment_per_heap,
-                        max (0, new_budget)));
-                    heap_budget_in_region_units[i][kind] = max (0, new_budget);
+                        max ((ptrdiff_t)min_heap_budget_in_region_units[i][kind], new_budget)));
+                    heap_budget_in_region_units[i][kind] = max ((ptrdiff_t)min_heap_budget_in_region_units[i][kind], new_budget);
+                    rem_balance += new_budget - heap_budget_in_region_units[i][kind];
                 }
-                dprintf (REGIONS_LOG, ("left over balance: %Id", curr_balance));
+                assert (rem_balance <= 0);
+                dprintf (REGIONS_LOG, ("remaining balance: %Id %s regions", rem_balance, kind_name[kind]));
+
+                // if we have a left over deficit, distribute that to the heaps that still have more than the minimum
+                while (rem_balance < 0)
+                {
+                    for (int i = 0; i < n_heaps; i++)
+                    {
+                        if (heap_budget_in_region_units[i][kind] > min_heap_budget_in_region_units[i][kind])
+                        {
+                        dprintf (REGIONS_LOG, ("adjusting the budget for heap %d from %Id %s regions by %Id to %Id",
+                            i,
+                            heap_budget_in_region_units[i][kind],
+                            kind_name[kind],
+                            -1,
+                            heap_budget_in_region_units[i][kind] - 1));
+
+                            heap_budget_in_region_units[i][kind] -= 1;
+                            rem_balance += 1;
+                            if (rem_balance == 0)
+                                break;
+                        }
+                    }
+                }
             }
 #endif //MULTIPLE_HEAPS
         }
