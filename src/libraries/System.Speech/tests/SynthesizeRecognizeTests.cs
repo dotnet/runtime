@@ -38,6 +38,7 @@ namespace SampleSynthesisTests
             {
                 synth.SetOutputToWaveStream(ms);
                 var prompt = new Prompt("synthesizer");
+                synth.SetOutputToDefaultAudioDevice();
                 synth.Speak(prompt);
             }
 
