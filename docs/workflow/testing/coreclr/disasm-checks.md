@@ -64,7 +64,7 @@ Finally, we need to write the assembly check and put the `[MethodImpl(MethodImpl
     [MethodImpl(MethodImplOptions.NoInlining)]
     static Vector64<byte> AdvSimd_CompareEqual_Vector64_Byte_Zero(Vector64<byte> left)
     {
-		// ARM64-FULL-LINE: cmeq v0.8b, v0.8b, #0
+        // ARM64-FULL-LINE: cmeq v0.8b, v0.8b, #0
         return AdvSimd.CompareEqual(left, Vector64<byte>.Zero);
     }
 ```
