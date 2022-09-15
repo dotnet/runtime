@@ -5,7 +5,7 @@ using System.IO;
 using System.Text;
 using Xunit;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlReaderTests
 {
     public class MyXmlReader : XmlReader
     {

@@ -32,18 +32,6 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.ServiceModel.Syndication.TryParseDateTimeCallback.#ctor(System.Object,System.IntPtr)</Target>
-    <Left>lib/net6.0/System.ServiceModel.Syndication.dll</Left>
-    <Right>lib/net7.0/System.ServiceModel.Syndication.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.ServiceModel.Syndication.TryParseUriCallback.#ctor(System.Object,System.IntPtr)</Target>
-    <Left>lib/net6.0/System.ServiceModel.Syndication.dll</Left>
-    <Right>lib/net7.0/System.ServiceModel.Syndication.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.ServiceModel.Syndication.SyndicationFeed.get_Documentation</Target>
     <Left>lib/netstandard2.0/System.ServiceModel.Syndication.dll</Left>
     <Right>lib/net462/System.ServiceModel.Syndication.dll</Right>

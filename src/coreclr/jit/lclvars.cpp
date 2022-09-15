@@ -3115,11 +3115,21 @@ void Compiler::makeExtraStructQueries(CORINFO_CLASS_HANDLE structHandle, int lev
         // outside of the current version bubble.
         return;
     }
-    unsigned fieldCnt = info.compCompHnd->getClassNumInstanceFields(structHandle);
+
+    unsigned const fieldCnt = info.compCompHnd->getClassNumInstanceFields(structHandle);
     impNormStructType(structHandle);
 #ifdef TARGET_ARMARCH
     GetHfaType(structHandle);
 #endif
+
+    // Bypass fetching instance fields of ref classes for now,
+    // as it requires traversing the class hierarchy.
+    //
+    if ((typeFlags & CORINFO_FLG_VALUECLASS) == 0)
+    {
+        return;
+    }
+
     for (unsigned int i = 0; i < fieldCnt; i++)
     {
         CORINFO_FIELD_HANDLE fieldHandle      = info.compCompHnd->getFieldInClass(structHandle, i);

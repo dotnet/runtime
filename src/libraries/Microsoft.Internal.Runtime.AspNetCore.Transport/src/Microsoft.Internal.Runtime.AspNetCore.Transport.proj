@@ -6,8 +6,8 @@
     <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
     <IsPackable>true</IsPackable>
     <IncludeBuildOutput>true</IncludeBuildOutput>
-    <!-- Enable when the package shipped with NET6. -->
-    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
+    <!-- TODO: Enable APICompat: https://github.com/dotnet/runtime/issues/52562. -->
+    <EnablePackageValidation>false</EnablePackageValidation>
     <PackageDescription>Internal transport package to provide aspnetcore with the assemblies from dotnet/runtime that make up the Microsoft.AspNetCore.App shared framework.</PackageDescription>
     <!-- Reference elements are missing from the nuspec: https://github.com/NuGet/Home/issues/8684. -->
     <NoWarn>$(NoWarn);NU5131</NoWarn>
