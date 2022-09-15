@@ -4530,12 +4530,14 @@ void _mm_setcsr(unsigned int i);
 
 #ifdef  __cplusplus
 
+#if defined(HOST_ARM64) && defined(TARGET_ARM64)
 class CORJIT_FLAGS;
 
 PALIMPORT
 VOID
 PALAPI
 PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags);
+#endif // HOST_ARM64 && TARGET_ARM64
 
 #endif
 
