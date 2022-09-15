@@ -540,37 +540,42 @@ private:
             checkBlock             = currBlock;
             checkBlock->bbJumpKind = BBJ_COND;
 
-            // The guard is going to dereference 'this'. This needs to happen
-            // after arguments have been evaluated if 'this' may be null, so we
-            // have to spill all arguments with side effects.
+            // Find last arg with a side effect. All args with any effect
+            // before that will need to be spilled.
+            CallArg* lastSideEffArg = nullptr;
             for (CallArg& arg : origCall->gtArgs.Args())
             {
-                bool     spill   = false;
-                GenTree* argNode = arg.GetNode();
-
-                if (arg.GetWellKnownArg() == WellKnownArg::ThisPointer)
+                if ((arg.GetNode()->gtFlags & GTF_SIDE_EFFECT) != 0)
                 {
-                    // Guard is going to access this arg, spill it if it is
-                    // complex, regardless of side effects.
-                    spill = !argNode->IsLocal();
-                }
-                else
-                {
-                    spill = (argNode->gtFlags & GTF_SIDE_EFFECT) != 0;
-                }
-
-                if (spill)
-                {
-                    unsigned   tmpNum  = compiler->lvaGrabTemp(true DEBUGARG("guarded devirt arg temp"));
-                    GenTree*   asgTree = compiler->gtNewTempAssign(tmpNum, argNode);
-                    Statement* asgStmt = compiler->fgNewStmtFromTree(asgTree, stmt->GetDebugInfo());
-                    compiler->fgInsertStmtAtEnd(checkBlock, asgStmt);
-
-                    arg.SetEarlyNode(compiler->gtNewLclvNode(tmpNum, genActualType(argNode)));
+                    lastSideEffArg = &arg;
                 }
             }
 
-            CallArg* thisArg  = origCall->gtArgs.GetThisArg();
+            if (lastSideEffArg != nullptr)
+            {
+                for (CallArg& arg : origCall->gtArgs.Args())
+                {
+                    GenTree* argNode = arg.GetNode();
+                    if (((argNode->gtFlags & GTF_ALL_EFFECT) != 0) || compiler->gtHasLocalsWithAddrOp(argNode))
+                    {
+                        SpillArgToTempBeforeGuard(&arg);
+                    }
+
+                    if (&arg == lastSideEffArg)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            CallArg* thisArg = origCall->gtArgs.GetThisArg();
+            // We spill 'this' if it is complex, regardless of side effects. It
+            // is going to be used multiple times due to the guard.
+            if (!thisArg->GetNode()->IsLocal())
+            {
+                SpillArgToTempBeforeGuard(thisArg);
+            }
+
             GenTree* thisTree = compiler->gtCloneExpr(thisArg->GetNode());
 
             // Remember the current last statement. If we're doing a chained GDV, we'll clone/copy
@@ -672,6 +677,22 @@ private:
             GenTree*   jmpTree = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, compare);
             Statement* jmpStmt = compiler->fgNewStmtFromTree(jmpTree, stmt->GetDebugInfo());
             compiler->fgInsertStmtAtEnd(checkBlock, jmpStmt);
+        }
+
+        //------------------------------------------------------------------------
+        // SpillArgToTempBeforeGuard: spill an argument into a temp in the guard/check block.
+        //
+        // Parameters
+        //   arg - The arg to create a temp and assignment for.
+        //
+        void SpillArgToTempBeforeGuard(CallArg* arg)
+        {
+            unsigned   tmpNum  = compiler->lvaGrabTemp(true DEBUGARG("guarded devirt arg temp"));
+            GenTree*   asgTree = compiler->gtNewTempAssign(tmpNum, arg->GetNode());
+            Statement* asgStmt = compiler->fgNewStmtFromTree(asgTree, stmt->GetDebugInfo());
+            compiler->fgInsertStmtAtEnd(checkBlock, asgStmt);
+
+            arg->SetEarlyNode(compiler->gtNewLclvNode(tmpNum, genActualType(arg->GetNode())));
         }
 
         //------------------------------------------------------------------------
