@@ -3423,7 +3423,7 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
 
                 // Make sure we don't retype const gc handles to TYP_I_IMPL
                 // Although, it's possible for e.g. GTF_ICON_STATIC_HDL
-                if (!tree->IsIntegralConst(0) && tree->IsIconHandle(GTF_ICON_STR_HDL))
+                if (!newTree->IsIntegralConst(0) && newTree->IsIconHandle(GTF_ICON_STR_HDL))
                 {
                     newTree->ChangeType(TYP_REF);
                 }
