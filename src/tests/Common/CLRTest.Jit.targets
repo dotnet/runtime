@@ -220,10 +220,10 @@ IF NOT DEFINED DoLink (
       <HasBashDisasmCheck>false</HasBashDisasmCheck>
 
       <BashDisasmOutputFile>/dev/null</BashDisasmOutputFile>
-      <BashDisasmOutputFile Condition="'$(HasBashDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm.out</BashDisasmOutputFile>
+      <BashDisasmOutputFile Condition="'$(HasBashDisasmCheck)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">$(scriptPath)__jit_disasm.out</BashDisasmOutputFile>
 
       <BashDisasmListOutputFile>/dev/null</BashDisasmListOutputFile>
-      <BashDisasmListOutputFile Condition="'$(HasBashDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm_list.out</BashDisasmListOutputFile>
+      <BashDisasmListOutputFile Condition="'$(HasBashDisasmCheck)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">$(scriptPath)__jit_disasm_list.out</BashDisasmListOutputFile>
 
       <BashDisasmCheckPostCommands></BashDisasmCheckPostCommands>
       <BashDisasmCheckPostCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
@@ -259,10 +259,10 @@ IF NOT DEFINED DoLink (
       <HasBatchDisasmCheck>$(HasDisasmCheck)</HasBatchDisasmCheck>
 
       <BatchDisasmOutputFile>NUL</BatchDisasmOutputFile>
-      <BatchDisasmOutputFile Condition="'$(HasBatchDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm.out</BatchDisasmOutputFile>
+      <BatchDisasmOutputFile Condition="'$(HasBatchDisasmCheck)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">$(scriptPath)__jit_disasm.out</BatchDisasmOutputFile>
 
       <BatchDisasmListOutputFile>NUL</BatchDisasmListOutputFile>
-      <BatchDisasmListOutputFile Condition="'$(HasBatchDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm_list.out</BatchDisasmListOutputFile>
+      <BatchDisasmListOutputFile Condition="'$(HasBatchDisasmCheck)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">$(scriptPath)__jit_disasm_list.out</BatchDisasmListOutputFile>
 
       <BatchDisasmCheckPostCommands></BatchDisasmCheckPostCommands>
       <BatchDisasmCheckPostCommands Condition="'$(HasBatchDisasmCheck)' == 'true'"><![CDATA[
