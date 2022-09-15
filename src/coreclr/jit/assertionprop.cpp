@@ -3421,8 +3421,9 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
                 newTree = gtNewIconHandleNode(curAssertion->op2.u1.iconVal,
                                               curAssertion->op2.u1.iconFlags & GTF_ICON_HDL_MASK);
 
-                // Make sure we don't change TYP_REF to an integer for non-null handles
-                if (!tree->IsIntegralConst(0))
+                // Make sure we don't retype const gc handles to TYP_I_IMPL
+                // Although, it's possible for e.g. GTF_ICON_STATIC_HDL
+                if (!tree->IsIntegralConst(0) && tree->IsIconHandle(GTF_ICON_STR_HDL))
                 {
                     newTree->ChangeType(TYP_REF);
                 }
