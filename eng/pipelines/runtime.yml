@@ -314,17 +314,16 @@ jobs:
     buildConfig: release
     platforms:
     - Android_x64
-    - Browser_wasm
+    #- Browser_wasm - unused
     - tvOS_arm64
     - iOS_arm64
     - MacCatalyst_x64
     jobParameters:
       isOfficialBuild: ${{ variables.isOfficialBuild }}
+      # needed by crossaot
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
@@ -674,15 +673,13 @@ jobs:
       runtimeVariant: crossaot
       dependsOn:
       - mono_android_offsets
-      - mono_browser_offsets
+      #- mono_browser_offsets - unused
       monoCrossAOTTargetOS:
       - Android
-      - Browser
+      #- Browser - unused
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
@@ -697,13 +694,13 @@ jobs:
       runtimeVariant: crossaot
       dependsOn:
       - mono_android_offsets
-      - mono_browser_offsets
+      #- mono_browser_offsets - unused
       - mono_tvos_offsets
       - mono_ios_offsets
       - mono_maccatalyst_offsets
       monoCrossAOTTargetOS:
       - Android
-      - Browser
+      #- Browser - unused
       - tvOS
       - iOS
       - MacCatalyst
