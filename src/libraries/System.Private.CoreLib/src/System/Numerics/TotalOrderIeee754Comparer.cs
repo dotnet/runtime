@@ -134,19 +134,18 @@ namespace System.Numerics
                     // One or two of the values are NaN
                     // totalOrder defines that -qNaN < -sNaN < x < +sNaN < + qNaN
 
-                    static bool IsQuietNaN(T value)
+                    static int CompareSignificant(T x, T y)
                     {
-                        // Determines if the value is signaling NaN (sNaN), or quiet NaN (qNaN).
-                        // Although in .NET we don't create sNaN values in arithmetic operations,
-                        // we should correctly handle it since the ordering is defined by IEEE 754.
+                        // IEEE 754 totalOrder only defines the order of NaN type bit (the first bit of significant)
+                        // To match the integer semantic comparison above, here we compare all the significant bits
+                        // Revisit this if decimals are added
 
-                        // For binary floating-points, qNaN is defined as the first bit of significant is 1
-                        // Revisit this when IEEE 754 decimals are added
-                        Span<byte> significants = stackalloc byte[value!.GetSignificandByteCount()];
-                        value.TryWriteSignificandLittleEndian(significants, out _);
+                        Span<byte> significantX = stackalloc byte[x!.GetSignificandByteCount()];
+                        Span<byte> significantY = stackalloc byte[y!.GetSignificandByteCount()];
+                        x.WriteSignificandBigEndian(significantX);
+                        y.WriteSignificandBigEndian(significantY);
 
-                        int bit = value.GetSignificandBitLength();
-                        return ((significants[bit / 8] >> (bit % 8)) & 1) != 0;
+                        return significantX.SequenceCompareTo(significantY);
                     }
 
                     if (T.IsNaN(x))
@@ -155,33 +154,11 @@ namespace System.Numerics
                         {
                             if (T.IsNegative(x))
                             {
-                                if (T.IsPositive(y))
-                                {
-                                    return -1;
-                                }
-                                else if (IsQuietNaN(x))
-                                {
-                                    return IsQuietNaN(y) ? 0 : 1;
-                                }
-                                else
-                                {
-                                    return IsQuietNaN(y) ? -1 : 0;
-                                }
+                                return T.IsPositive(y) ? -1 : CompareSignificant(y, x);
                             }
                             else
                             {
-                                if (T.IsNegative(y))
-                                {
-                                    return 1;
-                                }
-                                else if (IsQuietNaN(x))
-                                {
-                                    return IsQuietNaN(y) ? 0 : -1;
-                                }
-                                else
-                                {
-                                    return IsQuietNaN(y) ? 1 : 0;
-                                }
+                                return T.IsNegative(y) ? 1 : CompareSignificant(x, y);
                             }
                         }
                         else
