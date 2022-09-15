@@ -11,17 +11,14 @@
     <Configurations>Debug;Release;Checked</Configurations>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
-    <CLRTestKind>BuildOnly</CLRTestKind>
-    <RunAnalyzers>false</RunAnalyzers>
     <OutputPath>$(RuntimeBinDir)\SuperFileCheck</OutputPath>
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Massage the RuntimeIdentifier into an JITTools package RID that we can download -->
-    <_jitToolsRidPlatformIndex>$(RuntimeIdentifier.LastIndexOf('-'))</_jitToolsRidPlatformIndex>
-    <JITToolsRidWithoutPlatform>$(RuntimeIdentifier.Substring(0, $(_jitToolsRidPlatformIndex)))</JITToolsRidWithoutPlatform>
-    <JITToolsRidPlatform>$(RuntimeIdentifier.Substring($(_jitToolsRidPlatformIndex)).TrimStart('-'))</JITToolsRidPlatform>
+    <!-- Massage the OutputRid into an JITTools package RID that we can download -->
+    <_jitToolsRidPlatformIndex>$(OutputRid.LastIndexOf('-'))</_jitToolsRidPlatformIndex>
+    <JITToolsRidWithoutPlatform>$(OutputRid.Substring(0, $(_jitToolsRidPlatformIndex)))</JITToolsRidWithoutPlatform>
+    <JITToolsRidPlatform>$(OutputRid.Substring($(_jitToolsRidPlatformIndex)).TrimStart('-'))</JITToolsRidPlatform>
 
     <!-- If it's not win/osx/linux-musl, it's a non-portable Linux. Treat as Linux. -->
     <JITToolsRidWithoutPlatform Condition="'$(JITToolsRidWithoutPlatform)' != 'win' and '$(JITToolsRidWithoutPlatform)' != 'osx' and '$(JITToolsRidWithoutPlatform)' != 'linux-musl'">linux</JITToolsRidWithoutPlatform>

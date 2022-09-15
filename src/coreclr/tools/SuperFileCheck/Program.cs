@@ -39,7 +39,17 @@ namespace SuperFileCheck
             var superFileCheckDir = Path.GetDirectoryName(superFileCheckPath);
             if (superFileCheckDir != null)
             {
-                FileCheckPath = Path.Combine(superFileCheckDir, "FileCheck");
+                var fileCheckPath =
+                    Directory.EnumerateFiles(Path.Combine(superFileCheckDir, "runtimes/"), "FileCheck*", SearchOption.AllDirectories)
+                    .FirstOrDefault();
+                if (fileCheckPath != null)
+                {
+                    FileCheckPath = fileCheckPath;
+                }
+                else
+                {
+                    FileCheckPath = Path.Combine(superFileCheckDir, "FileCheck");
+                }
             }
             else
             {
