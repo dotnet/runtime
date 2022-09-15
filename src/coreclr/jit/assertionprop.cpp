@@ -3421,8 +3421,11 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
                 newTree = gtNewIconHandleNode(curAssertion->op2.u1.iconVal,
                                               curAssertion->op2.u1.iconFlags & GTF_ICON_HDL_MASK);
 
-                // Make sure we don't change TYP_REF to an integer
-                newTree->ChangeType(tree->TypeGet());
+                // Make sure we don't change TYP_REF to an integer for non-null handles
+                if (!tree->IsIntegralConst(0))
+                {
+                    newTree->ChangeType(TYP_REF);
+                }
             }
             else
             {
