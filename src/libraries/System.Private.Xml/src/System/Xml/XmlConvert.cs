@@ -1658,7 +1658,7 @@ namespace System.Xml
             return CreateException(index == 0 ? SR.Xml_BadStartNameChar : SR.Xml_BadNameChar, XmlException.BuildCharExceptionArgs(name, index), exceptionType, 0, index + 1);
         }
 
-        public static bool TryFormat(bool value, Span<char> destination, out int charsWritten)
+        internal static bool TryFormat(bool value, Span<char> destination, out int charsWritten)
         {
             if (value)
             {
@@ -1692,7 +1692,7 @@ namespace System.Xml
             return true;
         }
 
-        public static bool TryFormat(char value, Span<char> destination, out int charsWritten)
+        internal static bool TryFormat(char value, Span<char> destination, out int charsWritten)
         {
             charsWritten = -1;
             if (destination.Length < 5) return false;
@@ -1702,56 +1702,52 @@ namespace System.Xml
             return true;
         }
 
-        public static bool TryFormat(decimal value, Span<char> destination, out int charsWritten)
+        internal static bool TryFormat(decimal value, Span<char> destination, out int charsWritten)
         {
             return value.TryFormat(destination, out charsWritten, default, NumberFormatInfo.InvariantInfo);
         }
 
-        [CLSCompliant(false)]
-        public static bool TryFormat(sbyte value, Span<char> destination, out int charsWritten)
+        internal static bool TryFormat(sbyte value, Span<char> destination, out int charsWritten)
         {
             return value.TryFormat(destination, out  charsWritten, default, CultureInfo.InvariantCulture);
         }
 
-        public static bool TryFormat(short value, Span<char> destination, out int charsWritten)
+        internal static bool TryFormat(short value, Span<char> destination, out int charsWritten)
         {
             return value.TryFormat(destination, out charsWritten, default, CultureInfo.InvariantCulture);
         }
 
-        public static bool TryFormat(int value, Span<char> destination, out int charsWritten)
+        internal static bool TryFormat(int value, Span<char> destination, out int charsWritten)
         {
             return value.TryFormat(destination, out charsWritten, default, CultureInfo.InvariantCulture);
         }
 
-        public static bool TryFormat(long value, Span<char> destination, out int charsWritten)
+        internal static bool TryFormat(long value, Span<char> destination, out int charsWritten)
         {
             return value.TryFormat(destination, out charsWritten, default, CultureInfo.InvariantCulture);
         }
 
-        public static bool TryFormat(byte value, Span<char> destination, out int charsWritten)
+        internal static bool TryFormat(byte value, Span<char> destination, out int charsWritten)
         {
             return value.TryFormat(destination, out charsWritten, default, CultureInfo.InvariantCulture);
         }
 
-        [CLSCompliant(false)]
-        public static bool TryFormat(ushort value, Span<char> destination, out int charsWritten)
+        internal static bool TryFormat(ushort value, Span<char> destination, out int charsWritten)
         {
             return value.TryFormat(destination, out charsWritten, default, CultureInfo.InvariantCulture);
         }
 
-        [CLSCompliant(false)]
-        public static bool TryFormat(uint value, Span<char> destination, out int charsWritten)
+        internal static bool TryFormat(uint value, Span<char> destination, out int charsWritten)
         {
             return value.TryFormat(destination, out charsWritten, default, CultureInfo.InvariantCulture);
         }
 
-        [CLSCompliant(false)]
-        public static bool TryFormat(ulong value, Span<char> destination, out int charsWritten)
+        internal static bool TryFormat(ulong value, Span<char> destination, out int charsWritten)
         {
             return value.TryFormat(destination, out charsWritten, default, CultureInfo.InvariantCulture);
         }
 
-        public static bool TryFormat(float value, Span<char> destination, out int charsWritten)
+        internal static bool TryFormat(float value, Span<char> destination, out int charsWritten)
         {
             if (float.IsNegativeInfinity(value))
             {
@@ -1796,7 +1792,7 @@ namespace System.Xml
             return value.TryFormat(destination, out charsWritten, "R", NumberFormatInfo.InvariantInfo);
         }
 
-        public static bool TryFormat(double value, Span<char> destination, out int charsWritten)
+        internal static bool TryFormat(double value, Span<char> destination, out int charsWritten)
         {
             if (double.IsNegativeInfinity(value))
             {
@@ -1841,17 +1837,17 @@ namespace System.Xml
             return value.TryFormat(destination, out charsWritten, "R", NumberFormatInfo.InvariantInfo);
         }
 
-        public static bool TryFormat(TimeSpan value, Span<char> destination, out int charsWritten)
+        internal static bool TryFormat(TimeSpan value, Span<char> destination, out int charsWritten)
         {
             return new XsdDuration(value).TryFormat(destination, out charsWritten);
         }
 
-        public static bool TryFormat(DateTime value, Span<char> destination, out int charsWritten)
+        internal static bool TryFormat(DateTime value, Span<char> destination, out int charsWritten)
         {
             return TryFormat(value, XmlDateTimeSerializationMode.RoundtripKind, destination, out charsWritten);
         }
 
-        public static bool TryFormat(DateTime value, XmlDateTimeSerializationMode dateTimeOption, Span<char> destination, out int charsWritten)
+        internal static bool TryFormat(DateTime value, XmlDateTimeSerializationMode dateTimeOption, Span<char> destination, out int charsWritten)
         {
             switch (dateTimeOption)
             {
@@ -1878,18 +1874,18 @@ namespace System.Xml
             return xsdDateTime.TryFormat(destination, out charsWritten);
         }
 
-        public static bool TryFormat(DateTimeOffset value, Span<char> destination, out int charsWritten)
+        internal static bool TryFormat(DateTimeOffset value, Span<char> destination, out int charsWritten)
         {
             XsdDateTime xsdDateTime = new XsdDateTime(value);
             return xsdDateTime.TryFormat(destination, out charsWritten);
         }
 
-        public static bool TryFormat(DateTimeOffset value, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format, Span<char> destination, out int charsWritten)
+        internal static bool TryFormat(DateTimeOffset value, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format, Span<char> destination, out int charsWritten)
         {
             return value.TryFormat(destination, out charsWritten, format, DateTimeFormatInfo.InvariantInfo);
         }
 
-        public static bool TryFormat(Guid value, Span<char> destination, out int charsWritten)
+        internal static bool TryFormat(Guid value, Span<char> destination, out int charsWritten)
         {
             return value.TryFormat(destination, out charsWritten);
         }
