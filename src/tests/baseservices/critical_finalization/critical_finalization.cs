@@ -5,12 +5,6 @@ class P {
 
 	static public int count = 0;
 
-	/*
-	public P () {
-		Console.WriteLine ("p");
-	}
-	*/
-
 	~P () {
 		count++;
 	}
