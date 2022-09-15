@@ -656,7 +656,7 @@ namespace System.Data.Common
             return ((null != inputString) ? inputString.Length : 0);
         }
 
-        internal static IntPtr IntPtrOffset(nint pbase, int offset)
+        internal static IntPtr IntPtrOffset(IntPtr pbase, int offset)
         {
             return (nint)pbase + offset;
         }

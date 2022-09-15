@@ -340,7 +340,7 @@ namespace Internal.JitInterface
                         Debug.Assert(pGenericLookupKind.needsRuntimeLookup);
 
                         ReadyToRunHelperId helperId = (ReadyToRunHelperId)pGenericLookupKind.runtimeLookupFlags;
-                        object helperArg = HandleToObject((void*)pGenericLookupKind.runtimeLookupArgs);
+                        object helperArg = HandleToObject(pGenericLookupKind.runtimeLookupArgs);
                         ISymbolNode helper = GetGenericLookupHelper(pGenericLookupKind.runtimeLookupKind, helperId, helperArg);
                         pLookup = CreateConstLookupToSymbol(helper);
                     }

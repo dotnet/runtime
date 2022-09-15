@@ -561,15 +561,16 @@ namespace System.DirectoryServices.Protocols
                 if (managedServerControls != null)
                 {
                     serverControlArray = Utility.AllocHGlobalIntPtrArray(managedServerControls.Length + 1);
+                    byte* pServerControlArray = (byte*)serverControlArray;
                     for (int i = 0; i < managedServerControls.Length; i++)
                     {
                         IntPtr controlPtr = Marshal.AllocHGlobal(structSize);
                         Marshal.StructureToPtr(managedServerControls[i], controlPtr, false);
-                        tempPtr = serverControlArray + IntPtr.Size * i;
+                        tempPtr = (IntPtr)(pServerControlArray + IntPtr.Size * i);
                         Marshal.WriteIntPtr(tempPtr, controlPtr);
                     }
 
-                    tempPtr = serverControlArray + IntPtr.Size * managedServerControls.Length;
+                    tempPtr = (IntPtr)(pServerControlArray + IntPtr.Size * managedServerControls.Length);
                     Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
                 }
 
@@ -578,15 +579,16 @@ namespace System.DirectoryServices.Protocols
                 if (managedClientControls != null)
                 {
                     clientControlArray = Utility.AllocHGlobalIntPtrArray(managedClientControls.Length + 1);
+                    byte* pClientControlArray = (byte*)clientControlArray;
                     for (int i = 0; i < managedClientControls.Length; i++)
                     {
                         IntPtr controlPtr = Marshal.AllocHGlobal(structSize);
                         Marshal.StructureToPtr(managedClientControls[i], controlPtr, false);
-                        tempPtr = clientControlArray + IntPtr.Size * i;
+                        tempPtr = (IntPtr)(pClientControlArray + IntPtr.Size * i);
                         Marshal.WriteIntPtr(tempPtr, controlPtr);
                     }
 
-                    tempPtr = clientControlArray + IntPtr.Size * managedClientControls.Length;
+                    tempPtr = (IntPtr)(pClientControlArray + IntPtr.Size * managedClientControls.Length);
                     Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
                 }
 

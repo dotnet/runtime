@@ -14,8 +14,6 @@ namespace System.Runtime.CompilerServices
 {
     public static partial class RuntimeHelpers
     {
-        private static int s_pointerHashSeed;
-
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void InitializeArray(Array array, RuntimeFieldHandle fldHandle);

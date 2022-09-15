@@ -707,7 +707,7 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        public override byte[] GetValue()
+        public override unsafe byte[] GetValue()
         {
             SortKeyInterop[] nativeSortKeys = new SortKeyInterop[_keys.Length];
             for (int i = 0; i < _keys.Length; ++i)
@@ -722,6 +722,7 @@ namespace System.DirectoryServices.Protocols
 
             try
             {
+                byte* pMemHandle = (byte*)memHandle;
                 IntPtr tempPtr = IntPtr.Zero;
                 IntPtr sortPtr = IntPtr.Zero;
                 int i = 0;
@@ -729,10 +730,10 @@ namespace System.DirectoryServices.Protocols
                 {
                     sortPtr = Marshal.AllocHGlobal(structSize);
                     Marshal.StructureToPtr(nativeSortKeys[i], sortPtr, false);
-                    tempPtr = memHandle + IntPtr.Size * i;
+                    tempPtr = (IntPtr)(pMemHandle + IntPtr.Size * i);
                     Marshal.WriteIntPtr(tempPtr, sortPtr);
                 }
-                tempPtr = memHandle + IntPtr.Size * i;
+                tempPtr = (IntPtr)(pMemHandle + IntPtr.Size * i);
                 Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
 
                 bool critical = IsCritical;

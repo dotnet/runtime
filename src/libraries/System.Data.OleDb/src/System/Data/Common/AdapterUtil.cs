@@ -1254,7 +1254,7 @@ namespace System.Data.Common
             return true;
         }
 
-        internal static IntPtr IntPtrOffset(nint pbase, int offset)
+        internal static IntPtr IntPtrOffset(IntPtr pbase, int offset)
         {
             return (nint)pbase + offset;
         }
