@@ -8,6 +8,7 @@ import cwraps from "./cwraps";
 import { assembly_load } from "./class-loader";
 import { mono_assert } from "./types";
 import { consoleWebSocket, mono_wasm_stringify_as_error_with_stack } from "./logging";
+import { ManagedError } from "./marshal";
 
 /**
  * Possible signatures are described here  https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/program-structure/main-command-line
@@ -109,7 +110,7 @@ function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
     if (runtimeHelpers.ExitStatus) {
         if (reason && !(reason instanceof runtimeHelpers.ExitStatus)) {
             if (!runtimeHelpers.config.logExitCode) {
-                if (reason instanceof Error)
+                if (reason instanceof Error || reason instanceof ManagedError)
                     Module.printErr(mono_wasm_stringify_as_error_with_stack(reason));
                 else if (typeof reason == "string")
                     Module.printErr(reason);
@@ -146,7 +147,7 @@ function appendElementOnExit(exit_code: number) {
 function logErrorOnExit(exit_code: number, reason?: any) {
     if (runtimeHelpers.config.logExitCode) {
         if (exit_code != 0 && reason) {
-            if (reason instanceof Error)
+            if (reason instanceof Error || reason instanceof ManagedError)
                 console.error(mono_wasm_stringify_as_error_with_stack(reason));
             else if (typeof reason == "string")
                 console.error(reason);

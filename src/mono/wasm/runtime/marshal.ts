@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { js_owned_gc_handle_symbol, teardown_managed_proxy } from "./gc-handles";
-import { Module } from "./imports";
+import { Module, runtimeHelpers } from "./imports";
 import { getF32, getF64, getI16, getI32, getI64Big, getU16, getU32, getU8, setF32, setF64, setI16, setI32, setI64Big, setU16, setU32, setU8 } from "./memory";
 import { mono_wasm_new_external_root } from "./roots";
 import { mono_assert, GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerArguments, JSFunctionSignature, JSMarshalerType, JSMarshalerArgument, MarshalerToJs, MarshalerToCs, WasmRoot } from "./types";
@@ -321,9 +321,15 @@ export class ManagedError extends Error implements IDisposable {
         super(message);
     }
 
-    get stack(): string | undefined {
-        //todo implement lazy managed stack strace from  this[js_owned_gc_handle_symbol]!
-        return super.stack;
+    get managedStack(): string | undefined {
+        const gc_handle = <GCHandle>(<any>this)[js_owned_gc_handle_symbol];
+        if (gc_handle) {
+            const managed_stack = runtimeHelpers.javaScriptExports.get_managed_stack_trace(gc_handle);
+            if (managed_stack) {
+                return managed_stack + "\n" + this.stack;
+            }
+        }
+        return this.stack;
     }
 
     dispose(): void {
@@ -335,7 +341,7 @@ export class ManagedError extends Error implements IDisposable {
     }
 
     toString(): string {
-        return `ManagedError(gc_handle: ${(<any>this)[js_owned_gc_handle_symbol]})`;
+        return this.managedStack || this.message;
     }
 }
 

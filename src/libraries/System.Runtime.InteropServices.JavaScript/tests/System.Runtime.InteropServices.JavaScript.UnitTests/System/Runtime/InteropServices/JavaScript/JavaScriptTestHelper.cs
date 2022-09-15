@@ -32,8 +32,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Console.WriteLine(message);
         }
 
+        [JSImport("catch1toString", "JavaScriptTestHelper")]
+        public static partial string catch1toString(string message, string functionName);
+
         [JSExport]
-        public static void Throw(string message)
+        public static void ThrowFromJSExport(string message)
         {
             throw new ArgumentException(message);
         }

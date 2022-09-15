@@ -3,6 +3,7 @@
 
 import BuildConfiguration from "consts:configuration";
 import { INTERNAL, Module, runtimeHelpers } from "./imports";
+import { ManagedError } from "./marshal";
 import { CharPtr, VoidPtr } from "./types/emscripten";
 
 const wasm_func_map = new Map<number, string>();
@@ -60,10 +61,11 @@ export function mono_wasm_symbolicate_string(message: string): string {
     }
 }
 
-export function mono_wasm_stringify_as_error_with_stack(err: Error | string): string {
+export function mono_wasm_stringify_as_error_with_stack(err: Error | ManagedError | string): string {
     let errObj: any = err;
-    if (!(err instanceof Error))
-        errObj = new Error(err);
+    if (!(errObj instanceof Error) && !(errObj instanceof ManagedError)) {
+        errObj = new Error(errObj);
+    }
 
     // Error
     return mono_wasm_symbolicate_string(errObj.stack);

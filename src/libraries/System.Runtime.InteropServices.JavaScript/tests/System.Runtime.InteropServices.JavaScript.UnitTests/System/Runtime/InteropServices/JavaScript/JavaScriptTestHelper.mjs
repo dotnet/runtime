@@ -110,6 +110,17 @@ export function throw0() {
     throw new Error('throw-0-msg');
 }
 
+export function catch1toString(message, functionName) {
+    const JavaScriptTestHelper = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper;
+    const fn = JavaScriptTestHelper[functionName];
+    try {
+        fn(message);
+        return "bad";
+    } catch (err) {
+        return err.toString();
+    }
+}
+
 export function throw1(arg1) {
     //console.log(`throw1(arg1:${arg1 !== null ? arg1 : '<null>'})`)
     throw new Error('throw1-msg ' + arg1);

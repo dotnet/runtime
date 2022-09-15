@@ -1372,9 +1372,18 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public void JsExportThrows()
         {
-            var ex = Assert.Throws<ArgumentException>(() => JavaScriptTestHelper.invoke1_String("-t-e-s-t-", nameof(JavaScriptTestHelper.Throw)));
+            var ex = Assert.Throws<ArgumentException>(() => JavaScriptTestHelper.invoke1_String("-t-e-s-t-", nameof(JavaScriptTestHelper.ThrowFromJSExport)));
             Assert.DoesNotContain("Unexpected error", ex.Message);
             Assert.Contains("-t-e-s-t-", ex.Message);
+        }
+
+        [Fact]
+        public void JsExportCatchToString()
+        {
+            var toString = JavaScriptTestHelper.catch1toString("-t-e-s-t-", nameof(JavaScriptTestHelper.ThrowFromJSExport));
+            Assert.DoesNotContain("Unexpected error", toString);
+            Assert.Contains("-t-e-s-t-", toString);
+            Assert.Contains("ThrowFromJSExport", toString);
         }
 
         #endregion Exception
@@ -1924,7 +1933,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             var exThrow1 = Assert.Throws<JSException>(() => throw1(value));
             Assert.Contains("throw1-msg", exThrow1.Message);
-            Assert.DoesNotContain(" at ", exThrow1.Message);
+            if (!typeof(Exception).IsAssignableFrom(typeof(T)))
+            {
+                Assert.DoesNotContain(" at ", exThrow1.Message);
+            }
             Assert.Contains(" at Module.throw1", exThrow1.StackTrace);
 
             // anything is a system.object, sometimes it would be JSObject wrapper
