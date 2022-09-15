@@ -52,7 +52,6 @@ jobs:
         - ${{ if eq(variables['isRollingBuild'], true) }}:
           - Linux_x64
           - Linux_arm
-          - Linux_armv6
           - Linux_arm64
           - Linux_musl_x64
           - Linux_musl_arm64
