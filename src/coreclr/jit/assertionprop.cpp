@@ -3420,6 +3420,9 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
                 // Here we have to allocate a new 'large' node to replace the old one
                 newTree = gtNewIconHandleNode(curAssertion->op2.u1.iconVal,
                                               curAssertion->op2.u1.iconFlags & GTF_ICON_HDL_MASK);
+
+                // Make sure we don't change TYP_REF to an integer
+                newTree->ChangeType(tree->TypeGet());
             }
             else
             {
