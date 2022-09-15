@@ -107,7 +107,6 @@ jobs:
     buildConfig: checked
     platforms:
     - Linux_x64
-    - Linux_armv6
     container: debian-11-gcc12-amd64-20220511124845-b7a6185
     jobParameters:
       testGroup: innerloop
@@ -339,6 +338,7 @@ jobs:
     - tvOSSimulator_x64
     - iOSSimulator_x86
     - Linux_arm
+    - Linux_armv6
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
@@ -643,6 +643,7 @@ jobs:
     # - Linux_musl_arm64
     - windows_x64
     - windows_x86
+    - Linux_armv6
     # - windows_arm
     # - windows_arm64
     jobParameters:
