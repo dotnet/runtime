@@ -96,7 +96,7 @@ enum
     UNW_AARCH64_V30 = UNW_ARM64_D30,
     UNW_AARCH64_V31 = UNW_ARM64_D31
 };
-#endif // defined(TARGET_OSX) && defined(TARGET_ARM64)
+#endif // defined(TARGET_OSX) && defined(HOST_ARM64)
 
 
 //----------------------------------------------------------------------
