@@ -95,8 +95,31 @@ void Compiler::eePrintType(StringPrinter*       printer,
     const char* className = info.compCompHnd->getClassNameFromMetadata(clsHnd, &namespaceName);
     if (className == nullptr)
     {
+        unsigned arrayRank = info.compCompHnd->getArrayRank(clsHnd);
+        if (arrayRank > 0)
+        {
+            CORINFO_CLASS_HANDLE childClsHnd;
+            CorInfoType childType = info.compCompHnd->getChildType(clsHnd, &childClsHnd);
+            if ((childType == CORINFO_TYPE_CLASS) || (childType == CORINFO_TYPE_VALUECLASS))
+            {
+                eePrintType(printer, childClsHnd, includeNamespace, includeInstantiation);
+            }
+            else
+            {
+                eePrintJitType(printer, JitType2PreciseVarType(childType));
+            }
+
+            printer->Printf("[");
+            for (unsigned i = 1; i < arrayRank; i++)
+            {
+                printer->Printf(",");
+            }
+            printer->Printf("]");
+            return;
+        }
+
         namespaceName = nullptr;
-        className     = "<unnamed>";
+        className = "<unnamed>";
     }
 
     if (includeNamespace && (namespaceName != nullptr) && (namespaceName[0] != '\0'))
