@@ -83,7 +83,6 @@ namespace System.Runtime.InteropServices
             _fullyInitialized = true;
         }
 
-#if !NATIVEAOT // NativeAOT doesn't correctly support CriticalFinalizerObject; separate implementation provided
         ~SafeHandle()
         {
             if (_fullyInitialized)
@@ -91,7 +90,6 @@ namespace System.Runtime.InteropServices
                 Dispose(disposing: false);
             }
         }
-#endif
 
         internal bool OwnsHandle => _ownsHandle;
 
