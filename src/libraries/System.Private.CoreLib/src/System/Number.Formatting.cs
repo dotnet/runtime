@@ -349,7 +349,7 @@ namespace System
             return sb.TryCopyTo(destination, out charsWritten);
         }
 
-        internal static unsafe void DecimalToNumber(ref decimal d, ref NumberBuffer number)
+        internal static unsafe void DecimalToNumber(scoped ref decimal d, ref NumberBuffer number)
         {
             byte* buffer = number.GetDigitsPointer();
             number.DigitsCount = DecimalPrecision;

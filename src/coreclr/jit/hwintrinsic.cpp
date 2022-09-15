@@ -383,8 +383,8 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
             NamedIntrinsic ni = intrinsicInfo.id;
 
 #if defined(TARGET_XARCH)
-            // on AVX1-only CPUs we only support NI_Vector256_Create intrinsic in Vector256
-            if (isLimitedVector256Isa && (ni != NI_Vector256_Create))
+            // on AVX1-only CPUs we only support a subset of intrinsics in Vector256
+            if (isLimitedVector256Isa && !AvxOnlyCompatible(ni))
             {
                 return NI_Illegal;
             }

@@ -500,10 +500,17 @@ namespace ILCompiler.Dataflow
 
         public static bool IsHoistedLocal(FieldDesc field)
         {
-            // Treat all fields on compiler-generated types as hoisted locals.
-            // This avoids depending on the name mangling scheme for hoisted locals.
-            var declaringTypeName = field.OwningType.Name;
-            return CompilerGeneratedNames.IsLambdaDisplayClass(declaringTypeName) || CompilerGeneratedNames.IsStateMachineType(declaringTypeName);
+            if (CompilerGeneratedNames.IsLambdaDisplayClass(field.OwningType.Name))
+                return true;
+
+            if (CompilerGeneratedNames.IsStateMachineType(field.OwningType.Name))
+            {
+                // Don't track the "current" field which is used for state machine return values,
+                // because this can be expensive to track.
+                return !CompilerGeneratedNames.IsStateMachineCurrentField(field.Name);
+            }
+
+            return false;
         }
 
         // "Nested function" refers to lambdas and local functions.

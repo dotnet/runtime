@@ -150,11 +150,8 @@ internal static partial class Interop
         }
 
         // This essentially wraps SSL_CTX* aka SSL_CTX_new + setting
-        internal static unsafe SafeSslContextHandle AllocateSslContext(SafeFreeSslCredentials credential, SslAuthenticationOptions sslAuthenticationOptions, SslProtocols protocols, bool enableResume)
+        internal static unsafe SafeSslContextHandle AllocateSslContext(SslAuthenticationOptions sslAuthenticationOptions, SslProtocols protocols, bool enableResume)
         {
-            SafeX509Handle? certHandle = credential.CertHandle;
-            SafeEvpPKeyHandle? certKeyHandle = credential.CertKeyHandle;
-
             // Always use SSLv23_method, regardless of protocols.  It supports negotiating to the highest
             // mutually supported version and can thus handle any of the set protocols, and we then use
             // SetProtocolOptions to ensure we only allow the ones requested.
@@ -225,17 +222,10 @@ internal static partial class Interop
                     Interop.Ssl.SslCtxSetAlpnSelectCb(sslCtx, &AlpnServerSelectCallback, IntPtr.Zero);
                 }
 
-                bool hasCertificateAndKey =
-                    certHandle != null && !certHandle.IsInvalid
-                    && certKeyHandle != null && !certKeyHandle.IsInvalid;
-
-                if (hasCertificateAndKey)
-                {
-                    SetSslCertificate(sslCtx, certHandle!, certKeyHandle!);
-                }
-
                 if (sslAuthenticationOptions.CertificateContext != null)
                 {
+                    SetSslCertificate(sslCtx, sslAuthenticationOptions.CertificateContext.CertificateHandle, sslAuthenticationOptions.CertificateContext.KeyHandle);
+
                     if (sslAuthenticationOptions.CertificateContext.IntermediateCertificates.Length > 0)
                     {
                         if (!Ssl.AddExtraChainCertificates(sslCtx, sslAuthenticationOptions.CertificateContext.IntermediateCertificates))
@@ -269,20 +259,16 @@ internal static partial class Interop
                 return;
             }
 
-            var credential = new SafeFreeSslCredentials(sslAuthenticationOptions.CertificateContext, sslAuthenticationOptions.EnabledSslProtocols, sslAuthenticationOptions.EncryptionPolicy, sslAuthenticationOptions.IsServer);
-            SafeX509Handle? certHandle = credential.CertHandle;
-            SafeEvpPKeyHandle? certKeyHandle = credential.CertKeyHandle;
+            Debug.Assert(sslAuthenticationOptions.CertificateContext.CertificateHandle != null);
+            Debug.Assert(sslAuthenticationOptions.CertificateContext.KeyHandle != null);
 
-            Debug.Assert(certHandle != null);
-            Debug.Assert(certKeyHandle != null);
-
-            int retVal = Ssl.SslUseCertificate(ssl, certHandle);
+            int retVal = Ssl.SslUseCertificate(ssl, sslAuthenticationOptions.CertificateContext.CertificateHandle);
             if (1 != retVal)
             {
                 throw CreateSslException(SR.net_ssl_use_cert_failed);
             }
 
-            retVal = Ssl.SslUsePrivateKey(ssl, certKeyHandle);
+            retVal = Ssl.SslUsePrivateKey(ssl, sslAuthenticationOptions.CertificateContext.KeyHandle);
             if (1 != retVal)
             {
                 throw CreateSslException(SR.net_ssl_use_private_key_failed);
@@ -295,11 +281,10 @@ internal static partial class Interop
                     throw CreateSslException(SR.net_ssl_use_cert_failed);
                 }
             }
-
         }
 
         // This essentially wraps SSL* SSL_new()
-        internal static SafeSslHandle AllocateSslHandle(SafeFreeSslCredentials credential, SslAuthenticationOptions sslAuthenticationOptions)
+        internal static SafeSslHandle AllocateSslHandle(SslAuthenticationOptions sslAuthenticationOptions)
         {
             SafeSslHandle? sslHandle = null;
             SafeSslContextHandle? sslCtxHandle = null;
@@ -352,7 +337,7 @@ internal static partial class Interop
             if (sslCtxHandle == null)
             {
                 // We did not get SslContext from cache
-                sslCtxHandle = newCtxHandle = AllocateSslContext(credential, sslAuthenticationOptions, protocols, cacheSslContext);
+                sslCtxHandle = newCtxHandle = AllocateSslContext(sslAuthenticationOptions, protocols, cacheSslContext);
 
                 if (cacheSslContext)
                 {
@@ -409,6 +394,9 @@ internal static partial class Interop
                     if (cacheSslContext && !string.IsNullOrEmpty(punyCode))
                     {
                         sslCtxHandle.TrySetSession(sslHandle, punyCode);
+                        bool ignored = false;
+                        sslCtxHandle.DangerousAddRef(ref ignored);
+                        sslHandle.SslContextHandle = sslCtxHandle;
                     }
 
                     // relevant to TLS 1.3 only: if user supplied a client cert or cert callback,

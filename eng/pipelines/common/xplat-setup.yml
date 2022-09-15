@@ -18,7 +18,7 @@ jobs:
     shouldContinueOnError: ${{ or(eq(parameters.shouldContinueOnError, true), and(ne(parameters.shouldContinueOnError, 'forceFalse'), endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest'))) }}
 
     # keep in sync with /eng/pipelines/common/variables.yml
-    dependOnEvaluatePaths: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging', 'runtime-community', 'runtime-extra-platforms')) }}
+    dependOnEvaluatePaths: ${{ and(eq(variables['Build.Reason'], 'PullRequest'), in(variables['Build.DefinitionName'], 'runtime', 'runtime-staging', 'runtime-community', 'runtime-extra-platforms', 'runtime-wasm', 'runtime-wasm-libtests', 'runtime-wasm-non-libtests', 'dotnet-linker-tests', 'runtime-dev-innerloop')) }}
 
     variables:
       # Disable component governance in our CI builds. These builds are not shipping nor
@@ -145,17 +145,17 @@ jobs:
 
         # OSX Build Pool (we don't have on-prem OSX BuildPool
         ${{ if in(parameters.osGroup, 'OSX', 'MacCatalyst', 'iOS', 'iOSSimulator', 'tvOS', 'tvOSSimulator') }}:
-          vmImage: 'macOS-11'
+          vmImage: 'macos-11-v3beta'
 
         # Official Build Windows Pool
         ${{ if and(eq(parameters.osGroup, 'windows'), ne(variables['System.TeamProject'], 'public')) }}:
           name: NetCore1ESPool-Internal
-          demands: ImageOverride -equals windows.vs2022preview.amd64
+          demands: ImageOverride -equals windows.vs2022.amd64
 
         # Public Windows Build Pool
         ${{ if and(or(eq(parameters.osGroup, 'windows'), eq(parameters.jobParameters.hostedOs, 'windows')), eq(variables['System.TeamProject'], 'public')) }}:
           name: NetCore1ESPool-Public
-          demands: ImageOverride -equals windows.vs2022preview.amd64.open
+          demands: ImageOverride -equals windows.vs2022.amd64.open
 
 
     ${{ if eq(parameters.helixQueuesTemplate, '') }}:

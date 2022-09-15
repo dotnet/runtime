@@ -203,7 +203,7 @@ namespace System.Net.Sockets
                                 {
                                     NetEventSource.Info(thisRef, canceled ?
                                         "Socket operation canceled." :
-                                        $"CancelIoEx failed with error '{Marshal.GetLastWin32Error()}'.");
+                                        $"CancelIoEx failed with error '{Marshal.GetLastPInvokeError()}'.");
                                 }
                             }
                             catch (ObjectDisposedException)
@@ -1026,7 +1026,7 @@ namespace System.Net.Sockets
             return sendPacketsDescriptorPinned;
         }
 
-        internal void LogBuffer(int size)
+        internal unsafe void LogBuffer(int size)
         {
             // This should only be called if tracing is enabled. However, there is the potential for a race
             // condition where tracing is disabled between a calling check and here, in which case the assert
@@ -1038,7 +1038,7 @@ namespace System.Net.Sockets
                 for (int i = 0; i < _bufferListInternal!.Count; i++)
                 {
                     WSABuffer wsaBuffer = _wsaBufferArrayPinned![i];
-                    NetEventSource.DumpBuffer(this, wsaBuffer.Pointer, Math.Min(wsaBuffer.Length, size));
+                    NetEventSource.DumpBuffer(this, new ReadOnlySpan<byte>((byte*)wsaBuffer.Pointer, Math.Min(wsaBuffer.Length, size)));
                     if ((size -= wsaBuffer.Length) <= 0)
                     {
                         break;

@@ -1,4 +1,7 @@
-import createDotnetRuntime from "./dotnet.js";
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+import { dotnet } from "./dotnet.js";
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -41,9 +44,7 @@ function getOnClickHandler(startWork, stopWork, getIterationsDone) {
 }
 
 async function main() {
-    const { MONO, Module, getAssemblyExports } = await createDotnetRuntime({
-        configSrc: "./mono-config.json",
-    });
+    const { MONO, Module, getAssemblyExports } = await dotnet.create()
     globalThis.__Module = Module;
     globalThis.MONO = MONO;
 

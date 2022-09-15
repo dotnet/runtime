@@ -648,7 +648,7 @@ struct etw_bucket_info
     uint32_t count;
     size_t size;
 
-    etw_bucket_info() {}
+    etw_bucket_info() = default;
 
     void set (uint16_t _index, uint32_t _count, size_t _size)
     {
@@ -1230,7 +1230,7 @@ public:
 
     uint8_t* get_next_marked();
 
-    ~mark_queue_t();
+    void verify_empty();
 };
 
 //class definition of the internal class

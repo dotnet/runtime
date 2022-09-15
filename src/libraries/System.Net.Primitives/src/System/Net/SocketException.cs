@@ -26,7 +26,7 @@ namespace System.Net.Sockets
             // Hence, no translation on the supplied code.  This does mean on Unix there's a difference between:
             //     new SocketException(); // will treat the last error as a native error code and translate it appropriately
             // and:
-            //     new SocketException(Marshal.GetLastWin32Error()); // will treat the last error as a SocketError, inappropriately
+            //     new SocketException(Marshal.GetLastPInvokeError()); // will treat the last error as a SocketError, inappropriately
             // but that's the least bad option right now.
         }
 

@@ -48,7 +48,7 @@ namespace System.Threading.RateLimiting
         /// <returns></returns>
         public static RateLimitPartition<TKey> GetNoLimiter<TKey>(TKey partitionKey)
         {
-            return Get(partitionKey, _ => NoopLimiter.Instance);
+            return Get(partitionKey, _ => new NoopLimiter());
         }
 
         /// <summary>

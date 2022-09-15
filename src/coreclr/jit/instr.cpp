@@ -22,7 +22,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "emit.h"
 
 /*****************************************************************************/
-#ifdef DEBUG
 
 //-----------------------------------------------------------------------------
 // genInsName: Returns the string representation of the given CPU instruction, as
@@ -147,15 +146,10 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
     return insName;
 }
 
-/*****************************************************************************/
-#endif // DEBUG
-
 /*****************************************************************************
  *
  *  Return the size string (e.g. "word ptr") appropriate for the given size.
  */
-
-#ifdef DEBUG
 
 const char* CodeGen::genSizeStr(emitAttr attr)
 {
@@ -212,8 +206,6 @@ const char* CodeGen::genSizeStr(emitAttr attr)
         return "unknw ptr ";
     }
 }
-
-#endif
 
 /*****************************************************************************
  *
@@ -773,7 +765,13 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     case TYP_SIMD12:
                     case TYP_SIMD16:
                     {
-                        simd16_t constValue = op->AsVecCon()->gtSimd16Val;
+                        simd16_t constValue = {};
+
+                        if (op->TypeIs(TYP_SIMD12))
+                            memcpy(&constValue, &op->AsVecCon()->gtSimd12Val, sizeof(simd12_t));
+                        else
+                            constValue = op->AsVecCon()->gtSimd16Val;
+
                         return OperandDesc(emit->emitSimd16Const(constValue));
                     }
 

@@ -19,6 +19,8 @@ protected:
     virtual void TrySpecialCases();
     virtual void MorphStructCases();
 
+    void PropagateAssertions();
+
     virtual const char* GetHelperName() const
     {
         return "MorphInitBlock";
@@ -125,7 +127,7 @@ GenTree* MorphInitBlockHelper::Morph()
 
     PrepareDst();
     PrepareSrc();
-
+    PropagateAssertions();
     TrySpecialCases();
 
     if (m_transformationDecision == BlockTransformation::Undefined)
@@ -273,6 +275,23 @@ void MorphInitBlockHelper::PrepareDst()
         }
     }
 #endif // DEBUG
+}
+
+//------------------------------------------------------------------------
+// PropagateAssertions: propagate assertions based on the original tree
+//
+// Notes:
+//    Once the init or copy tree is morphed, assertion gen can no
+//    longer recognize what it means.
+//
+//    So we generate assertions based on the original tree.
+//
+void MorphInitBlockHelper::PropagateAssertions()
+{
+    if (m_comp->optLocalAssertionProp)
+    {
+        m_comp->optAssertionGen(m_asg);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -1550,13 +1569,17 @@ GenTree* Compiler::fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree)
         if (size != 0)
         {
             GenTree* lhs = gtNewBlockVal(tree->Addr(), static_cast<unsigned>(size));
-            lhs->SetIndirExceptionFlags(this);
-
             GenTree* asg = gtNewAssignNode(lhs, tree->Data());
             asg->gtFlags |= (tree->gtFlags & (GTF_ALL_EFFECT | GTF_BLK_VOLATILE | GTF_BLK_UNALIGNED));
             INDEBUG(asg->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
 
             JITDUMP("MorphStoreDynBlock: transformed STORE_DYN_BLK into ASG(BLK, Data())\n");
+
+            GenTree* lclVarTree = fgIsIndirOfAddrOfLocal(lhs);
+            if (lclVarTree != nullptr)
+            {
+                lclVarTree->gtFlags |= GTF_VAR_DEF;
+            }
 
             return tree->OperIsCopyBlkOp() ? fgMorphCopyBlock(asg) : fgMorphInitBlock(asg);
         }

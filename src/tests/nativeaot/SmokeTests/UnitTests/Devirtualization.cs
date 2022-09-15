@@ -12,6 +12,7 @@ class Devirtualization
     {
         RegressionBug73076.Run();
         DevirtualizationCornerCaseTests.Run();
+        DevirtualizeIntoUnallocatedGenericType.Run();
 
         return 100;
     }
@@ -109,6 +110,30 @@ class Devirtualization
 
             TestIntf2(new Intf2Impl1(), 123);
             TestIntf2((IIntf2)Activator.CreateInstance(typeof(Intf2Impl2<>).MakeGenericType(typeof(object))), 456);
+        }
+    }
+
+    class DevirtualizeIntoUnallocatedGenericType
+    {
+        class Never { }
+
+        class SomeGeneric<T>
+        {
+            public virtual object GrabObject() => null;
+        }
+
+        sealed class SomeUnallocatedClass<T> : SomeGeneric<T>
+        {
+            public override object GrabObject() => new Never();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static SomeUnallocatedClass<object> GrabInst() => null;
+
+        public static void Run()
+        {
+            if (GrabInst() != null)
+                GrabInst().GrabObject();
         }
     }
 }

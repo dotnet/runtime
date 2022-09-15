@@ -156,25 +156,12 @@ inline void *__cdecl operator new(size_t, void *_P)
 
 #define _WINNT_
 
-// C++ standard, 18.1.5 - offsetof requires a POD (plain old data) struct or
-// union. Since offsetof is a macro, gcc doesn't actually check for improper
-// use of offsetof, it keys off of the -> from NULL (which is also invalid for
-// non-POD types by 18.1.5)
-//
-// As we have numerous examples of this behavior in our codebase,
-// making an offsetof which doesn't use 0.
-
-// PAL_safe_offsetof is a version of offsetof that protects against an
-// overridden operator&
-
-#define FIELD_OFFSET(type, field) __builtin_offsetof(type, field)
 #ifndef offsetof
 #define offsetof(type, field) __builtin_offsetof(type, field)
 #endif
-#define PAL_safe_offsetof(type, field) __builtin_offsetof(type, field)
 
 #define CONTAINING_RECORD(address, type, field) \
-    ((type *)((LONG_PTR)(address) - FIELD_OFFSET(type, field)))
+    ((type *)((LONG_PTR)(address) - offsetof(type, field)))
 
 #define ARGUMENT_PRESENT(ArgumentPointer)    (\
     (CHAR *)(ArgumentPointer) != (CHAR *)(NULL) )

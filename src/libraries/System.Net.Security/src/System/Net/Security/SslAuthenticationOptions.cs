@@ -41,7 +41,7 @@ namespace System.Net.Security
             // Common options.
             AllowRenegotiation = sslClientAuthenticationOptions.AllowRenegotiation;
             ApplicationProtocols = sslClientAuthenticationOptions.ApplicationProtocols;
-            CheckCertName = true;
+            CheckCertName = !(sslClientAuthenticationOptions.CertificateChainPolicy?.VerificationFlags.HasFlag(X509VerificationFlags.IgnoreInvalidName) == true);
             EnabledSslProtocols = FilterOutIncompatibleSslProtocols(sslClientAuthenticationOptions.EnabledSslProtocols);
             EncryptionPolicy = sslClientAuthenticationOptions.EncryptionPolicy;
             IsServer = false;

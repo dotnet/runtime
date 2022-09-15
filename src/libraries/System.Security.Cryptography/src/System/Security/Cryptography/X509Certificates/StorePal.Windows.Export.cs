@@ -106,14 +106,14 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 Interop.Crypt32.DATA_BLOB blob = new Interop.Crypt32.DATA_BLOB(IntPtr.Zero, 0);
                 if (!Interop.Crypt32.CertSaveStore(_certStore, Interop.Crypt32.CertEncodingType.All, dwSaveAs, Interop.Crypt32.CertStoreSaveTo.CERT_STORE_SAVE_TO_MEMORY, ref blob, 0))
-                    throw Marshal.GetLastWin32Error().ToCryptographicException();
+                    throw Marshal.GetLastPInvokeError().ToCryptographicException();
 
                 byte[] exportedData = new byte[blob.cbData];
                 fixed (byte* pExportedData = exportedData)
                 {
                     blob.pbData = new IntPtr(pExportedData);
                     if (!Interop.Crypt32.CertSaveStore(_certStore, Interop.Crypt32.CertEncodingType.All, dwSaveAs, Interop.Crypt32.CertStoreSaveTo.CERT_STORE_SAVE_TO_MEMORY, ref blob, 0))
-                        throw Marshal.GetLastWin32Error().ToCryptographicException();
+                        throw Marshal.GetLastPInvokeError().ToCryptographicException();
                 }
 
                 // When calling CertSaveStore to get the initial length, it returns a cbData that is big enough but

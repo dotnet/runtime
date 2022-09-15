@@ -3572,7 +3572,7 @@ sorted_table::clear()
 inline
 size_t get_skewed_basic_region_index_for_address (uint8_t* address)
 {
-    assert ((g_gc_lowest_address <= address) && (address < g_gc_highest_address));
+    assert ((g_gc_lowest_address <= address) && (address <= g_gc_highest_address));
     size_t skewed_basic_region_index = (size_t)address >> gc_heap::min_segment_size_shr;
     return skewed_basic_region_index;
 }
@@ -4475,8 +4475,12 @@ public:
         return ((ArrayBase *)this)->GetNumComponents();
     }
 
-    void Validate(BOOL bDeep=TRUE)
+    void Validate(BOOL bDeep=TRUE, BOOL bVerifyNextHeader = FALSE, BOOL bVerifySyncBlock = FALSE)
     {
+        // declaration of extra parameters just so the call site would need no #ifdefs
+        UNREFERENCED_PARAMETER(bVerifyNextHeader);
+        UNREFERENCED_PARAMETER(bVerifySyncBlock);
+
         MethodTable * pMT = GetMethodTable();
 
         _ASSERTE(pMT->SanityCheck());
@@ -6966,11 +6970,11 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
         check_commit_cs.Enter();
         committed_by_oh[bucket] -= size;
 #if defined(_DEBUG) && defined(MULTIPLE_HEAPS)
-            if (bucket < total_oh_count)
-            {
-                assert (g_heaps[h_number]->committed_by_oh_per_heap[bucket] >= size);
-                g_heaps[h_number]->committed_by_oh_per_heap[bucket] -= size;
-            }
+        if (bucket < total_oh_count)
+        {
+            assert (g_heaps[h_number]->committed_by_oh_per_heap[bucket] >= size);
+            g_heaps[h_number]->committed_by_oh_per_heap[bucket] -= size;
+        }
 #endif // _DEBUG && MULTIPLE_HEAPS
         dprintf (1, ("commit failed, updating %Id to %Id",
                 current_total_committed, (current_total_committed - size)));
@@ -11231,7 +11235,7 @@ void gc_heap::return_free_region (heap_segment* region)
 {
     gc_oh_num oh = heap_segment_oh (region);
     dprintf(3, ("commit-accounting:  from %d to free [%Ix, %Ix) for heap %d", oh, get_region_start (region), heap_segment_committed (region), heap_number));
-    if (heap_hard_limit_oh[soh])
+    if (heap_hard_limit)
     {
         size_t committed = heap_segment_committed (region) - get_region_start (region);
         if (committed > 0)
@@ -11317,7 +11321,7 @@ heap_segment* gc_heap::get_free_region (int gen_number, size_t size)
 
         gc_oh_num oh = gen_to_oh (gen_number);
         dprintf(3, ("commit-accounting:  from free to %d [%Ix, %Ix) for heap %d", oh, get_region_start (region), heap_segment_committed (region), heap_number));
-        if (heap_hard_limit_oh[soh])
+        if (heap_hard_limit)
         {
             size_t committed = heap_segment_committed (region) - get_region_start (region);
             if (committed > 0)
@@ -13682,8 +13686,8 @@ gc_heap::init_semi_shared()
 
     memset (full_gc_counts, 0, sizeof (full_gc_counts));
 
-    memset (&last_ephemeral_gc_info, 0, sizeof (last_ephemeral_gc_info));
-    memset (&last_full_blocking_gc_info, 0, sizeof (last_full_blocking_gc_info));
+    last_ephemeral_gc_info = {};
+    last_full_blocking_gc_info = {};
 #ifdef BACKGROUND_GC
     memset (&last_bgc_info, 0, sizeof (last_bgc_info));
 #endif //BACKGROUND_GC
@@ -14049,7 +14053,7 @@ gc_heap::init_gc_heap (int h_number)
 #ifdef MULTIPLE_HEAPS
 #ifdef _DEBUG
     memset (committed_by_oh_per_heap, 0, sizeof (committed_by_oh_per_heap));
-#endif    
+#endif
 
     g_heaps [h_number] = this;
 
@@ -20872,7 +20876,7 @@ BOOL gc_heap::should_proceed_with_gc()
             // The no_gc mode was already in progress yet we triggered another GC,
             // this effectively exits the no_gc mode.
             restore_data_for_no_gc();
-            
+
             memset (&current_no_gc_region_info, 0, sizeof (current_no_gc_region_info));
         }
         else
@@ -22927,7 +22931,7 @@ heap_segment* gc_heap::unlink_first_rw_region (int gen_idx)
     dprintf (REGIONS_LOG, ("unlink_first_rw_region on heap: %d gen: %d region: %Ix", heap_number, gen_idx, heap_segment_mem (region)));
 
 #if defined(_DEBUG) && defined(HOST_64BIT)
-    if (heap_hard_limit_oh[soh])
+    if (heap_hard_limit)
     {
         int old_oh = heap_segment_oh (region);
         int old_heap = heap_segment_heap (region)->heap_number;
@@ -22964,7 +22968,7 @@ void gc_heap::thread_rw_region_front (int gen_idx, heap_segment* region)
     dprintf (REGIONS_LOG, ("thread_rw_region_front on heap: %d gen: %d region: %Ix", heap_number, gen_idx, heap_segment_mem (region)));
 
 #if defined(_DEBUG) && defined(HOST_64BIT)
-    if (heap_hard_limit_oh[soh])
+    if (heap_hard_limit)
     {
         int new_oh = gen_to_oh (gen_idx);
         int new_heap = this->heap_number;
@@ -23981,7 +23985,7 @@ uint8_t* mark_queue_t::get_next_marked()
     return nullptr;
 }
 
-mark_queue_t::~mark_queue_t()
+void mark_queue_t::verify_empty()
 {
     for (size_t slot_index = 0; slot_index < slot_count; slot_index++)
     {
@@ -24679,12 +24683,7 @@ void gc_heap::set_background_overflow_p (uint8_t* oo)
     heap_segment* overflow_region = get_region_info_for_address (oo);
     overflow_region->flags |= heap_segment_flags_overflow;
     dprintf (3,("setting overflow flag for region %p", heap_segment_mem (overflow_region)));
-#ifdef MULTIPLE_HEAPS
-    gc_heap* overflow_heap = heap_segment_heap (overflow_region);
-#else
-    gc_heap* overflow_heap = nullptr;
-#endif
-    overflow_heap->background_overflow_p = TRUE;
+    background_overflow_p = TRUE;
 }
 #endif //USE_REGIONS
 
@@ -25331,13 +25330,13 @@ void gc_heap::background_process_mark_overflow_internal (uint8_t* min_add, uint8
 
             dprintf (2, ("h%d: SOH: ov-mo: %Id", heap_number, total_marked_objects));
             fire_overflow_event (min_add, max_add, total_marked_objects, i);
-            if (small_object_segments)
+            if (i >= soh_gen2)
             {
                 concurrent_print_time_delta (concurrent_p ? "Cov SOH" : "Nov SOH");
+                small_object_segments = FALSE;
             }
 
             total_marked_objects = 0;
-            small_object_segments = FALSE;
         }
     }
 }
@@ -26063,6 +26062,11 @@ void gc_heap::verify_region_to_generation_map()
             generation *gen = hp->generation_of (gen_number);
             for (heap_segment *region = generation_start_segment (gen); region != nullptr; region = heap_segment_next (region))
             {
+                if (heap_segment_read_only_p (region))
+                {
+                    // the region to generation map doesn't cover read only segments
+                    continue;
+                }
                 size_t region_index_start = get_basic_region_index_for_address (get_region_start (region));
                 size_t region_index_end = get_basic_region_index_for_address (heap_segment_reserved (region));
                 int gen_num = min (gen_number, soh_gen2);
@@ -26786,6 +26790,8 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
 #endif //MULTIPLE_HEAPS && !USE_REGIONS
 
     finalization_promoted_bytes = total_promoted_bytes - promoted_bytes_live;
+
+    mark_queue.verify_empty();
 
     dprintf(2,("---- End of mark phase ----"));
 }
@@ -28776,7 +28782,7 @@ uint8_t* gc_heap::find_next_marked (uint8_t* x, uint8_t* end,
 #ifdef FEATURE_EVENT_TRACE
 void gc_heap::init_bucket_info()
 {
-    memset (bucket_info, 0, sizeof (bucket_info));
+    *bucket_info = {};
 }
 
 void gc_heap::add_plug_in_condemned_info (generation* gen, size_t plug_size)
@@ -30487,7 +30493,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
 #endif //FEATURE_EVENT_TRACE
 
 #if defined(_DEBUG) && defined(USE_REGIONS)
-                if (heap_hard_limit_oh[soh])
+                if (heap_hard_limit)
                 {
                     size_t committed = 0;
                     for (int i = 0; i < total_generation_count; i++)
@@ -31612,9 +31618,12 @@ void gc_heap::sweep_region_in_plan (heap_segment* region,
     heap_segment_plan_allocated (region) = heap_segment_allocated (region);
 
     int plan_gen_num = heap_segment_plan_gen_num (region);
-    generation_allocation_size (generation_of (plan_gen_num)) += heap_segment_survived (region);
-    dprintf (REGIONS_LOG, ("sip: g%d alloc size is now %Id", plan_gen_num,
-        generation_allocation_size (generation_of (plan_gen_num))));
+    if (plan_gen_num < heap_segment_gen_num (region))
+    {
+        generation_allocation_size (generation_of (plan_gen_num)) += heap_segment_survived (region);
+        dprintf (REGIONS_LOG, ("sip: g%d alloc size is now %Id", plan_gen_num,
+            generation_allocation_size (generation_of (plan_gen_num))));
+    }
 }
 
 inline
@@ -33993,23 +34002,35 @@ void gc_heap::background_scan_dependent_handles (ScanContext *sc)
 
             if (!s_fScanRequired)
             {
-#ifndef USE_REGIONS
+#ifdef USE_REGIONS
+                BOOL all_heaps_background_overflow_p = FALSE;
+#else //USE_REGIONS
                 uint8_t* all_heaps_max = 0;
                 uint8_t* all_heaps_min = MAX_PTR;
+#endif //USE_REGIONS
                 int i;
                 for (i = 0; i < n_heaps; i++)
                 {
+#ifdef USE_REGIONS
+                    // in the regions case, compute the OR of all the per-heap flags
+                    if (g_heaps[i]->background_overflow_p)
+                        all_heaps_background_overflow_p = TRUE;
+#else //USE_REGIONS
                     if (all_heaps_max < g_heaps[i]->background_max_overflow_address)
                         all_heaps_max = g_heaps[i]->background_max_overflow_address;
                     if (all_heaps_min > g_heaps[i]->background_min_overflow_address)
                         all_heaps_min = g_heaps[i]->background_min_overflow_address;
+#endif //USE_REGIONS
                 }
                 for (i = 0; i < n_heaps; i++)
                 {
+#ifdef USE_REGIONS
+                    g_heaps[i]->background_overflow_p = all_heaps_background_overflow_p;
+#else //USE_REGIONS
                     g_heaps[i]->background_max_overflow_address = all_heaps_max;
                     g_heaps[i]->background_min_overflow_address = all_heaps_min;
+#endif //USE_REGIONS
                 }
-#endif //!USE_REGIONS
             }
 
             dprintf(2, ("Starting all gc thread mark stack overflow processing"));
@@ -34753,15 +34774,24 @@ void gc_heap::background_mark_phase ()
 
     enable_preemptive ();
 
-#if defined(MULTIPLE_HEAPS) && !defined(USE_REGIONS)
+#if defined(MULTIPLE_HEAPS)
     bgc_t_join.join(this, gc_join_concurrent_overflow);
     if (bgc_t_join.joined())
     {
+#ifdef USE_REGIONS
+        BOOL all_heaps_background_overflow_p = FALSE;
+#else //USE_REGIONS
         uint8_t* all_heaps_max = 0;
         uint8_t* all_heaps_min = MAX_PTR;
+#endif //USE_REGIONS
         int i;
         for (i = 0; i < n_heaps; i++)
         {
+#ifdef USE_REGIONS
+            // in the regions case, compute the OR of all the per-heap flags
+            if (g_heaps[i]->background_overflow_p)
+                all_heaps_background_overflow_p = TRUE;
+#else //USE_REGIONS
             dprintf (3, ("heap %d overflow max is %Ix, min is %Ix",
                 i,
                 g_heaps[i]->background_max_overflow_address,
@@ -34770,17 +34800,21 @@ void gc_heap::background_mark_phase ()
                 all_heaps_max = g_heaps[i]->background_max_overflow_address;
             if (all_heaps_min > g_heaps[i]->background_min_overflow_address)
                 all_heaps_min = g_heaps[i]->background_min_overflow_address;
-
+#endif //USE_REGIONS
         }
         for (i = 0; i < n_heaps; i++)
         {
+#ifdef USE_REGIONS
+            g_heaps[i]->background_overflow_p = all_heaps_background_overflow_p;
+#else //USE_REGIONS
             g_heaps[i]->background_max_overflow_address = all_heaps_max;
             g_heaps[i]->background_min_overflow_address = all_heaps_min;
+#endif //USE_REGIONS
         }
         dprintf(3, ("Starting all bgc threads after updating the overflow info"));
         bgc_t_join.restart();
     }
-#endif //MULTIPLE_HEAPS && !USE_REGIONS
+#endif //MULTIPLE_HEAPS
 
     disable_preemptive (true);
 
@@ -43987,7 +44021,7 @@ void gc_heap::verify_regions (bool can_verify_gen_num, bool concurrent_p)
         if (can_verify_gen_num &&
             can_verify_tail &&
             (i >= max_generation) &&
-            (heap_hard_limit_oh[soh] > 0))
+            heap_hard_limit)
         {
             int oh = i - max_generation;
             if (oh == soh)
@@ -45143,14 +45177,9 @@ HRESULT GCHeap::Initialize()
 // GC callback functions
 bool GCHeap::IsPromoted(Object* object)
 {
-#ifdef _DEBUG
-    if (object)
-    {
-        ((CObjectHeader*)object)->Validate();
-    }
-#endif //_DEBUG
-
     uint8_t* o = (uint8_t*)object;
+
+    bool is_marked;
 
     if (gc_heap::settings.condemned_generation == max_generation)
     {
@@ -45163,27 +45192,35 @@ bool GCHeap::IsPromoted(Object* object)
 #ifdef BACKGROUND_GC
         if (gc_heap::settings.concurrent)
         {
-            bool is_marked = (!((o < hp->background_saved_highest_address) && (o >= hp->background_saved_lowest_address))||
+            is_marked = (!((o < hp->background_saved_highest_address) && (o >= hp->background_saved_lowest_address))||
                             hp->background_marked (o));
-            return is_marked;
         }
         else
 #endif //BACKGROUND_GC
         {
-            return (!((o < hp->highest_address) && (o >= hp->lowest_address))
-                    || hp->is_mark_set (o));
+            is_marked = (!((o < hp->highest_address) && (o >= hp->lowest_address))
+                        || hp->is_mark_set (o));
         }
     }
     else
     {
 #ifdef USE_REGIONS
-        return (gc_heap::is_in_gc_range (o) ? (gc_heap::is_in_condemned_gc (o) ? gc_heap::is_mark_set (o) : true) : true);
+        is_marked = (gc_heap::is_in_gc_range (o) ? (gc_heap::is_in_condemned_gc (o) ? gc_heap::is_mark_set (o) : true) : true);
 #else
         gc_heap* hp = gc_heap::heap_of (o);
-        return (!((o < hp->gc_high) && (o >= hp->gc_low))
-                || hp->is_mark_set (o));
+        is_marked = (!((o < hp->gc_high) && (o >= hp->gc_low))
+                   || hp->is_mark_set (o));
 #endif //USE_REGIONS
     }
+
+#ifdef _DEBUG
+    if (o)
+    {
+        ((CObjectHeader*)o)->Validate(TRUE, TRUE, is_marked);
+    }
+#endif //_DEBUG
+
+    return is_marked;
 }
 
 size_t GCHeap::GetPromotedBytes(int heap_index)

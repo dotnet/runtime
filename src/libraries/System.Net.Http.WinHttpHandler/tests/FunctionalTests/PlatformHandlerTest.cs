@@ -333,6 +333,7 @@ namespace System.Net.Http.Functional.Tests
         public PlatformHandlerTest_Cookies_Http11_Http2(ITestOutputHelper output) : base(output) { }
     }
 
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version1607OrGreater))]
     public sealed class PlatformHandler_HttpClientHandler_MaxResponseHeadersLength_Http2_Test : HttpClientHandler_MaxResponseHeadersLength_Test
     {
         protected override Version UseVersion => HttpVersion20.Value;

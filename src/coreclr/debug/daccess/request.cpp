@@ -10,7 +10,6 @@
 //*****************************************************************************
 
 #include "stdafx.h"
-#include <win32threadpool.h>
 
 #include "typestring.h"
 #include <gccover.h>
@@ -268,91 +267,21 @@ VOID GetJITMethodInfo (EECodeInfo * pCodeInfo, JITTypes *pJITType, CLRDATA_ADDRE
 }
 
 HRESULT
-ClrDataAccess::GetWorkRequestData(CLRDATA_ADDRESS addr, struct DacpWorkRequestData *workRequestData)
+ClrDataAccess::GetHillClimbingLogEntry(CLRDATA_ADDRESS addr, struct DacpHillClimbingLogEntry* entry)
 {
-    if (addr == 0 || workRequestData == NULL)
-        return E_INVALIDARG;
-
-    SOSDacEnter();
-
-    WorkRequest *pRequest = PTR_WorkRequest(TO_TADDR(addr));
-    workRequestData->Function = (TADDR)(pRequest->Function);
-    workRequestData->Context = (TADDR)(pRequest->Context);
-    workRequestData->NextWorkRequest = (TADDR)(pRequest->next);
-
-    SOSDacLeave();
-    return hr;
+    return E_NOTIMPL;
 }
 
 HRESULT
-ClrDataAccess::GetHillClimbingLogEntry(CLRDATA_ADDRESS addr, struct DacpHillClimbingLogEntry *entry)
+ClrDataAccess::GetWorkRequestData(CLRDATA_ADDRESS addr, struct DacpWorkRequestData *workRequestData)
 {
-    if (addr == 0 || entry == NULL)
-        return E_INVALIDARG;
-
-    SOSDacEnter();
-
-    HillClimbingLogEntry *pLogEntry = PTR_HillClimbingLogEntry(TO_TADDR(addr));
-    entry->TickCount = pLogEntry->TickCount;
-    entry->NewControlSetting = pLogEntry->NewControlSetting;
-    entry->LastHistoryCount = pLogEntry->LastHistoryCount;
-    entry->LastHistoryMean = pLogEntry->LastHistoryMean;
-    entry->Transition = pLogEntry->Transition;
-
-    SOSDacLeave();
-    return hr;
+    return E_NOTIMPL;
 }
 
 HRESULT
 ClrDataAccess::GetThreadpoolData(struct DacpThreadpoolData *threadpoolData)
 {
-    if (threadpoolData == NULL)
-        return E_INVALIDARG;
-
-    SOSDacEnter();
-
-    threadpoolData->cpuUtilization = ThreadpoolMgr::cpuUtilization;
-    threadpoolData->MinLimitTotalWorkerThreads = ThreadpoolMgr::MinLimitTotalWorkerThreads;
-    threadpoolData->MaxLimitTotalWorkerThreads = ThreadpoolMgr::MaxLimitTotalWorkerThreads;
-
-    //
-    // Read ThreadpoolMgr::WorkerCounter
-    //
-    TADDR pCounter = DacGetTargetAddrForHostAddr(&ThreadpoolMgr::WorkerCounter,true);
-    ThreadpoolMgr::ThreadCounter counter;
-    DacReadAll(pCounter,&counter,sizeof(ThreadpoolMgr::ThreadCounter),true);
-    ThreadpoolMgr::ThreadCounter::Counts counts = counter.counts;
-
-    threadpoolData->NumWorkingWorkerThreads = counts.NumWorking;
-    threadpoolData->NumIdleWorkerThreads = counts.NumActive - counts.NumWorking;
-    threadpoolData->NumRetiredWorkerThreads = counts.NumRetired;
-
-    threadpoolData->FirstUnmanagedWorkRequest = HOST_CDADDR(ThreadpoolMgr::WorkRequestHead);
-
-    threadpoolData->HillClimbingLog = dac_cast<TADDR>(&HillClimbingLog);
-    threadpoolData->HillClimbingLogFirstIndex = HillClimbingLogFirstIndex;
-    threadpoolData->HillClimbingLogSize = HillClimbingLogSize;
-
-
-    //
-    // Read ThreadpoolMgr::CPThreadCounter
-    //
-    pCounter = DacGetTargetAddrForHostAddr(&ThreadpoolMgr::CPThreadCounter,true);
-    DacReadAll(pCounter,&counter,sizeof(ThreadpoolMgr::ThreadCounter),true);
-    counts = counter.counts;
-
-    threadpoolData->NumCPThreads = (LONG)(counts.NumActive + counts.NumRetired);
-    threadpoolData->NumFreeCPThreads = (LONG)(counts.NumActive - counts.NumWorking);
-    threadpoolData->MaxFreeCPThreads  = ThreadpoolMgr::MaxFreeCPThreads;
-    threadpoolData->NumRetiredCPThreads = (LONG)(counts.NumRetired);
-    threadpoolData->MaxLimitTotalCPThreads = ThreadpoolMgr::MaxLimitTotalCPThreads;
-    threadpoolData->CurrentLimitTotalCPThreads = (LONG)(counts.NumActive); //legacy: currently has no meaning
-    threadpoolData->MinLimitTotalCPThreads = ThreadpoolMgr::MinLimitTotalCPThreads;
-    threadpoolData->NumTimers = 0;
-    threadpoolData->AsyncTimerCallbackCompletionFPtr = NULL;
-
-    SOSDacLeave();
-    return hr;
+    return E_NOTIMPL;
 }
 
 HRESULT ClrDataAccess::GetThreadStoreData(struct DacpThreadStoreData *threadStoreData)
@@ -2963,7 +2892,7 @@ ClrDataAccess::GetOOMStaticData(struct DacpOomData *oomData)
 
     SOSDacEnter();
 
-    memset(oomData, 0, sizeof(DacpOomData));
+    *oomData = {};
 
     if (!GCHeapUtilities::IsServerHeap())
     {
@@ -2992,7 +2921,7 @@ ClrDataAccess::GetOOMData(CLRDATA_ADDRESS oomAddr, struct DacpOomData *data)
         return E_INVALIDARG;
 
     SOSDacEnter();
-    memset(data, 0, sizeof(DacpOomData));
+    *data = {};
 
     if (!GCHeapUtilities::IsServerHeap())
         hr = E_FAIL; // doesn't make sense to call this on WKS mode
@@ -3045,7 +2974,7 @@ ClrDataAccess::GetGCInterestingInfoStaticData(struct DacpGCInterestingInfoData *
     static_assert_no_msg(DAC_MAX_GC_MECHANISM_BITS_COUNT == MAX_GC_MECHANISM_BITS_COUNT);
 
     SOSDacEnter();
-    memset(data, 0, sizeof(DacpGCInterestingInfoData));
+    *data = {};
 
     if (g_heap_type != GC_HEAP_SVR)
     {
@@ -3078,7 +3007,7 @@ ClrDataAccess::GetGCInterestingInfoData(CLRDATA_ADDRESS interestingInfoAddr, str
         return E_INVALIDARG;
 
     SOSDacEnter();
-    memset(data, 0, sizeof(DacpGCInterestingInfoData));
+    *data = {};
 
     if (!GCHeapUtilities::IsServerHeap())
         hr = E_FAIL; // doesn't make sense to call this on WKS mode
@@ -3497,7 +3426,7 @@ ClrDataAccess::TraverseVirtCallStubHeap(CLRDATA_ADDRESS pAppDomain, VCSHeapType 
     SOSDacEnter();
 
     BaseDomain* pBaseDomain = PTR_BaseDomain(TO_TADDR(pAppDomain));
-    VirtualCallStubManager *pVcsMgr = PTR_VirtualCallStubManager((TADDR)pBaseDomain->GetLoaderAllocator()->GetVirtualCallStubManager());
+    VirtualCallStubManager *pVcsMgr = pBaseDomain->GetLoaderAllocator()->GetVirtualCallStubManager();
     if (!pVcsMgr)
     {
         hr = E_POINTER;
