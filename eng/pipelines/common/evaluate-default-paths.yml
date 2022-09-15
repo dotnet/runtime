@@ -25,9 +25,17 @@ parameters:
         eng/pipelines/common/templates/runtime/wasm*
         eng/pipelines/coreclr/*wasm*
     ]
+
     # src/workloads is only used in runtime-official builds
     # where evaluate-paths is not used
     _always_exclude: [
+        '*.md'
+        LICENSE.TXT
+        PATENTS.TXT
+        THIRD-PARTY-NOTICES.TXT
+        docs/*
+        eng/Version.Details.xml
+        eng/pipelines/*
         eng/pipelines/common/evaluate-default-paths.yml
         eng/pipelines/coreclr/*
         eng/pipelines/installer/*
@@ -48,12 +56,6 @@ jobs:
       - src/native/libs/System.Globalization.Native/*
       - src/native/libs/System.IO.Compression.Native/*
       exclude:
-      - eng/Version.Details.xml
-      - '*.md'
-      - LICENSE.TXT
-      - PATENTS.TXT
-      - THIRD-PARTY-NOTICES.TXT
-      - docs/*
       - src/installer/*
       - src/mono/*
       - src/libraries/*
@@ -73,12 +75,6 @@ jobs:
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
 
-      - eng/Version.Details.xml
-      - '*.md'
-      - LICENSE.TXT
-      - PATENTS.TXT
-      - THIRD-PARTY-NOTICES.TXT
-      - docs/*
       - src/installer/*
       - src/coreclr/*
       - src/libraries/*
@@ -87,12 +83,6 @@ jobs:
 
     - subset: libraries
       exclude:
-      - eng/Version.Details.xml
-      - '*.md'
-      - LICENSE.TXT
-      - PATENTS.TXT
-      - THIRD-PARTY-NOTICES.TXT
-      - docs/*
       - src/installer/*
       - src/mono/*
       - src/coreclr/*
@@ -115,12 +105,6 @@ jobs:
       include:
       - docs/manpages/*
       exclude:
-      - eng/Version.Details.xml
-      - '*.md'
-      - LICENSE.TXT
-      - PATENTS.TXT
-      - THIRD-PARTY-NOTICES.TXT
-      - docs/*
       - src/coreclr/*
       - src/mono/*
       - src/libraries/*
