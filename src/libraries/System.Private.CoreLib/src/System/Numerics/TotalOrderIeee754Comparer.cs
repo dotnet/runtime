@@ -48,120 +48,157 @@ namespace System.Numerics
         /// </remarks>
         public int Compare(T? x, T? y)
         {
-            // IComparer contract is null < value
+            if (typeof(T) == typeof(float))
+            {
+                return CompareIntegerSemantic(BitConverter.SingleToInt32Bits((float)(object)x!), BitConverter.SingleToInt32Bits((float)(object)y!));
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return CompareIntegerSemantic(BitConverter.DoubleToInt64Bits((double)(object)x!), BitConverter.DoubleToInt64Bits((double)(object)y!));
+            }
+            else if (typeof(T) == typeof(Half))
+            {
+                return CompareIntegerSemantic(BitConverter.HalfToInt16Bits((Half)(object)x!), BitConverter.HalfToInt16Bits((Half)(object)y!));
+            }
+            else
+            {
+                return CompareGeneric(x, y);
+            }
 
-            if (x is null)
+            static int CompareIntegerSemantic<TInteger>(TInteger x, TInteger y)
+                where TInteger : IBinaryInteger<TInteger>, ISignedNumber<TInteger>, IComparable<TInteger>
             {
-                return (y is null) ? 0 : -1;
-            }
-            else if (y is null)
-            {
-                return 1;
+                // In IEEE 754 binary floating-point representation, a number is represented as Sign|Exponent|Significant
+                // Normal numbers has an implicit 1. in front of the significant, so value with larger exponent will have larger absolute value
+                // Inf and NaN are defined as Exponent=All 1s, while Inf has Significant=0, sNaN has Significant=0xxx and qNaN has Significant=1xxx
+                // This also satisfies totalOrder definition which is +x < +Inf < +sNaN < +qNaN
+
+                // The order of NaNs of same category and same sign is implementation defined,
+                // here we define it as the order of exponent bits to simplify comparison
+
+                // Negative values are represented in sign-magnitude, instead of two's complement like integers
+                // Just negating the comparison result when both numbers are negative is enough
+
+                return (TInteger.IsNegative(x) && TInteger.IsNegative(y)) ? y.CompareTo(x) : x.CompareTo(y);
             }
 
-            // If < or > returns true, the result satisfies definition of totalOrder too
+            static int CompareGeneric(T? x, T? y)
+            {
+                // IComparer contract is null < value
 
-            if (x < y)
-            {
-                return -1;
-            }
-            else if (x > y)
-            {
-                return 1;
-            }
-            else if (x == y)
-            {
-                if (T.IsZero(x)) // only zeros are equal to zeros
+                if (x is null)
                 {
-                    // IEEE 754 numbers are either positive or negative. Skip check for the opposite.
+                    return (y is null) ? 0 : -1;
+                }
+                else if (y is null)
+                {
+                    return 1;
+                }
 
-                    if (T.IsNegative(x))
+                // If < or > returns true, the result satisfies definition of totalOrder too
+
+                if (x < y)
+                {
+                    return -1;
+                }
+                else if (x > y)
+                {
+                    return 1;
+                }
+                else if (x == y)
+                {
+                    if (T.IsZero(x)) // only zeros are equal to zeros
                     {
-                        return T.IsNegative(y) ? 0 : -1;
+                        // IEEE 754 numbers are either positive or negative. Skip check for the opposite.
+
+                        if (T.IsNegative(x))
+                        {
+                            return T.IsNegative(y) ? 0 : -1;
+                        }
+                        else
+                        {
+                            return T.IsPositive(y) ? 0 : 1;
+                        }
                     }
                     else
                     {
-                        return T.IsPositive(y) ? 0 : 1;
+                        // Equivalant values are compared by their exponent parts,
+                        // and the value with smaller exponent is considered closer to zero.
+
+                        // This only applies to IEEE 754 decimals. Consider to add support if decimals are added into .NET.
+                        return 0;
                     }
                 }
                 else
                 {
-                    // Equivalant values are compared by their exponent parts,
-                    // and the value with smaller exponent is considered closer to zero.
+                    // One or two of the values are NaN
+                    // totalOrder defines that -qNaN < -sNaN < x < +sNaN < + qNaN
 
-                    // This only applies to IEEE 754 decimals. Consider to add support if decimals are added into .NET.
-                    return 0;
-                }
-            }
-            else
-            {
-                // One or two of the values are NaN
-                // totalOrder defines that -qNaN < -sNaN < x < +sNaN < + qNaN
-
-                static bool IsQuietNaN(T value)
-                {
-                    // Determines if the value is signaling NaN (sNaN), or quiet NaN (qNaN).
-                    // Although in .NET we don't create sNaN values in arithmetic operations,
-                    // we should correctly handle it since the ordering is defined by IEEE 754.
-
-                    // For binary floating-points, qNaN is defined as the first bit of significant is 1
-                    // Revisit this when IEEE 754 decimals are added
-                    Span<byte> significants = stackalloc byte[value!.GetSignificandByteCount()];
-                    value.TryWriteSignificandLittleEndian(significants, out _);
-
-                    int bit = value.GetSignificandBitLength();
-                    return ((significants[bit / 8] >> (bit % 8)) & 1) != 0;
-                }
-
-                if (T.IsNaN(x))
-                {
-                    if (T.IsNaN(y))
+                    static bool IsQuietNaN(T value)
                     {
-                        if (T.IsNegative(x))
+                        // Determines if the value is signaling NaN (sNaN), or quiet NaN (qNaN).
+                        // Although in .NET we don't create sNaN values in arithmetic operations,
+                        // we should correctly handle it since the ordering is defined by IEEE 754.
+
+                        // For binary floating-points, qNaN is defined as the first bit of significant is 1
+                        // Revisit this when IEEE 754 decimals are added
+                        Span<byte> significants = stackalloc byte[value!.GetSignificandByteCount()];
+                        value.TryWriteSignificandLittleEndian(significants, out _);
+
+                        int bit = value.GetSignificandBitLength();
+                        return ((significants[bit / 8] >> (bit % 8)) & 1) != 0;
+                    }
+
+                    if (T.IsNaN(x))
+                    {
+                        if (T.IsNaN(y))
                         {
-                            if (T.IsPositive(y))
+                            if (T.IsNegative(x))
                             {
-                                return -1;
-                            }
-                            else if (IsQuietNaN(x))
-                            {
-                                return IsQuietNaN(y) ? 0 : 1;
+                                if (T.IsPositive(y))
+                                {
+                                    return -1;
+                                }
+                                else if (IsQuietNaN(x))
+                                {
+                                    return IsQuietNaN(y) ? 0 : 1;
+                                }
+                                else
+                                {
+                                    return IsQuietNaN(y) ? -1 : 0;
+                                }
                             }
                             else
                             {
-                                return IsQuietNaN(y) ? -1 : 0;
+                                if (T.IsNegative(y))
+                                {
+                                    return 1;
+                                }
+                                else if (IsQuietNaN(x))
+                                {
+                                    return IsQuietNaN(y) ? 0 : -1;
+                                }
+                                else
+                                {
+                                    return IsQuietNaN(y) ? 1 : 0;
+                                }
                             }
                         }
                         else
                         {
-                            if (T.IsNegative(y))
-                            {
-                                return 1;
-                            }
-                            else if (IsQuietNaN(x))
-                            {
-                                return IsQuietNaN(y) ? 0 : -1;
-                            }
-                            else
-                            {
-                                return IsQuietNaN(y) ? 1 : 0;
-                            }
+                            return T.IsPositive(x) ? 1 : -1;
                         }
+                    }
+                    else if (T.IsNaN(y))
+                    {
+                        return T.IsPositive(y) ? -1 : 1;
                     }
                     else
                     {
-                        return T.IsPositive(x) ? 1 : -1;
+                        // T does not correctly implement IEEE754 semantics
+                        ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidArgumentForComparison);
+                        return 0; // unreachable
                     }
-                }
-                else if (T.IsNaN(y))
-                {
-                    return T.IsPositive(y) ? -1 : 1;
-                }
-                else
-                {
-                    // T does not correctly implement IEEE754 semantics
-                    ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidArgumentForComparison);
-                    return 0; // unreachable
                 }
             }
         }
