@@ -4767,18 +4767,41 @@ bool Compiler::optIfConvert(BasicBlock* block)
     }
 #endif
 
-    // Duplicate the input of the assign.
+    // Duplicate the destination of the assign.
     // This will be used as the false result of the select node.
-    GenTree* destination = gtCloneExpr(asgNode->AsOp()->gtOp1);
-    destination->gtFlags &= GTF_EMPTY;
+    assert(asgNode->AsOp()->gtOp1->IsLocal());
+    GenTreeLclVarCommon* destination = asgNode->AsOp()->gtOp1->AsLclVarCommon();
+    GenTree*             falseInput  = gtCloneExpr(destination);
+    falseInput->gtFlags &= GTF_EMPTY;
+
+    // Create a new SSA entry for the false result.
+    {
+        // Get the SSA num of the destination.
+        unsigned lclNum            = destination->GetLclNum();
+        unsigned destinationSsaNum = destination->GetSsaNum();
+        assert(destinationSsaNum != SsaConfig::RESERVED_SSA_NUM);
+        LclSsaVarDsc* destinationSsaDef = lvaGetDesc(lclNum)->GetPerSsaData(destinationSsaNum);
+
+        // Create a new SSA num.
+        unsigned newSsaNum = lvaGetDesc(lclNum)->lvPerSsaData.AllocSsaNum(getAllocator(CMK_SSA));
+        assert(newSsaNum != SsaConfig::RESERVED_SSA_NUM);
+        LclSsaVarDsc* newSsaDef = lvaGetDesc(lclNum)->GetPerSsaData(newSsaNum);
+
+        // Copy across the SSA data.
+        newSsaDef->SetBlock(destinationSsaDef->GetBlock());
+        newSsaDef->SetAssignment(destinationSsaDef->GetAssignment());
+        newSsaDef->m_vnPair = destinationSsaDef->m_vnPair;
+        falseInput->AsLclVarCommon()->SetSsaNum(newSsaNum);
+
+        fgValueNumberTree(falseInput);
+    }
 
     // Invert the condition.
     cond->gtOper = GenTree::ReverseRelop(cond->gtOper);
 
     // Create a select node.
     GenTreeConditional* select =
-        gtNewConditionalNode(GT_SELECT, cond, asgNode->gtGetOp2(), destination, asgNode->TypeGet());
-    gtSetEvalOrder(select);
+        gtNewConditionalNode(GT_SELECT, cond, asgNode->gtGetOp2(), falseInput, asgNode->TypeGet());
 
     // Use the select as the source of the assignment.
     asgNode->AsOp()->gtOp2 = select;
@@ -4791,6 +4814,25 @@ bool Compiler::optIfConvert(BasicBlock* block)
     gtSetEvalOrder(last);
     fgSetStmtSeq(block->lastStmt());
 
+    // Before moving anything, fix up any SSAs in the middle block
+    for (Statement* const stmt : middleBlock->Statements())
+    {
+        for (GenTree* const node : stmt->TreeList())
+        {
+            if (node->IsLocal())
+            {
+                GenTreeLclVarCommon* lclVar = node->AsLclVarCommon();
+                unsigned             lclNum = lclVar->GetLclNum();
+                unsigned             ssaNum = lclVar->GetSsaNum();
+                if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
+                {
+                    LclSsaVarDsc* ssaDef = lvaGetDesc(lclNum)->GetPerSsaData(ssaNum);
+                    ssaDef->SetBlock(block);
+                }
+            }
+        }
+    }
+
     // Move the Asg to the end of the original block
     Statement* stmtList1 = block->firstStmt();
     Statement* stmtList2 = middleBlock->firstStmt();
@@ -4800,21 +4842,6 @@ bool Compiler::optIfConvert(BasicBlock* block)
     stmtList2->SetPrevStmt(stmtLast1);
     stmtList1->SetPrevStmt(stmtLast2);
     middleBlock->bbStmtList = nullptr;
-
-    // Fix up the SSA of assignment destination.
-    if (asgNode->AsOp()->gtOp1->IsLocal())
-    {
-        GenTreeLclVarCommon* lclVar = asgNode->AsOp()->gtOp1->AsLclVarCommon();
-        unsigned             lclNum = lclVar->GetLclNum();
-        unsigned             ssaNum = lclVar->GetSsaNum();
-
-        if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
-        {
-            LclSsaVarDsc* ssaDef = lvaTable[lclNum].GetPerSsaData(ssaNum);
-            noway_assert(ssaDef->GetBlock() == middleBlock);
-            ssaDef->SetBlock(block);
-        }
-    }
 
     // Update the flow from the original block.
     fgRemoveAllRefPreds(block->bbNext, block);
