@@ -51,11 +51,8 @@ internal static partial class Interop
                         wPid = managed.wPid;
                         vDriverVersion = managed.vDriverVersion;
                         Span<char> szPnameSpan = MemoryMarshal.CreateSpan(ref szPname[0], szPnameLength);
-                        if (managed.szPname is null)
-                        {
-                            szPnameSpan.Clear();
-                        }
-                        else
+                        szPnameSpan.Clear();
+                        if (managed.szPname is not null)
                         {
                             managed.szPname.CopyTo(szPnameSpan);
                         }
