@@ -99,7 +99,7 @@ void Compiler::eePrintType(StringPrinter*       printer,
         if (arrayRank > 0)
         {
             CORINFO_CLASS_HANDLE childClsHnd;
-            CorInfoType childType = info.compCompHnd->getChildType(clsHnd, &childClsHnd);
+            CorInfoType          childType = info.compCompHnd->getChildType(clsHnd, &childClsHnd);
             if ((childType == CORINFO_TYPE_CLASS) || (childType == CORINFO_TYPE_VALUECLASS))
             {
                 eePrintType(printer, childClsHnd, includeNamespace, includeInstantiation);
@@ -119,7 +119,7 @@ void Compiler::eePrintType(StringPrinter*       printer,
         }
 
         namespaceName = nullptr;
-        className = "<unnamed>";
+        className     = "<unnamed>";
     }
 
     if (includeNamespace && (namespaceName != nullptr) && (namespaceName[0] != '\0'))
@@ -341,27 +341,51 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd, bool includ
 
     });
 
-    if (!success)
+    if (success)
     {
-        // Try with bare minimum
-        p.Truncate(0);
-
-        success = eeRunFunctorWithSPMIErrorTrap([&]() {
-            eePrintMethod(&p, clsHnd, hnd,
-                          /* sig */ nullptr,
-                          /* includeNamespaces */ true,
-                          /* includeClassInstantiation */ false,
-                          /* includeMethodInstantiation */ false,
-                          /* includeSignature */ false, includeReturnType, includeThisSpecifier);
-        });
-
-        if (!success)
-        {
-            p.Truncate(0);
-            p.Printf("hackishClassName:hackishMethodName(?)");
-        }
+        return p.GetBuffer();
     }
 
+    // Try without signature
+    p.Truncate(0);
+
+    success = eeRunFunctorWithSPMIErrorTrap([&]() {
+        eePrintMethod(&p, clsHnd, hnd,
+                      /* sig */ nullptr,
+                      /* includeNamespaces */ true,
+                      /* includeClassInstantiation */ false,
+                      /* includeMethodInstantiation */ false,
+                      /* includeSignature */ false,
+                      /* includeReturnType */ false,
+                      /* includeThisSpecifier */ false);
+    });
+
+    if (success)
+    {
+        return p.GetBuffer();
+    }
+
+    // Try with bare minimum
+    p.Truncate(0);
+
+    success = eeRunFunctorWithSPMIErrorTrap([&]() {
+        eePrintMethod(&p, nullptr, hnd,
+                      /* sig */ nullptr,
+                      /* includeNamespaces */ true,
+                      /* includeClassInstantiation */ false,
+                      /* includeMethodInstantiation */ false,
+                      /* includeSignature */ false,
+                      /* includeReturnType */ false,
+                      /* includeThisSpecifier */ false);
+    });
+
+    if (success)
+    {
+        return p.GetBuffer();
+    }
+
+    p.Truncate(0);
+    p.Printf("hackishClassName:hackishMethodName(?)");
     return p.GetBuffer();
 }
 
