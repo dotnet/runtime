@@ -797,4 +797,15 @@ elseif (NOT CLR_CMAKE_HOST_BROWSER)
 
     enable_language(ASM)
 
+    # The following block is a workaround for a bug in CMake with Clang 14. CMake
+    # doesn't correctly set the toolchain option for clang assembler invocation. 
+    # It always sets the option to the old form -gcc-toolchain which is no longer
+    # accepted by Clang 14.
+    # The new form of the option has been supported since clang 3.4.0 and CMake
+    # uses the same version check for C and C++ when setting this option.
+    if(CMAKE_C_COMPILER_ID MATCHES "Clang" AND
+       CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 3.4.0 AND
+       CMAKE_ASM_COMPILE_OPTIONS_EXTERNAL_TOOLCHAIN STREQUAL "-gcc-toolchain ")
+      set(CMAKE_ASM_COMPILE_OPTIONS_EXTERNAL_TOOLCHAIN "--gcc-toolchain=")
+    endif()
 endif(CLR_CMAKE_HOST_WIN32)
