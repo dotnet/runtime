@@ -471,7 +471,7 @@ namespace System.Data.OleDb
 
             OleDbHResult hr;
             nint columnCount = 0; // column count
-            IntPtr columnInfos = 0; // ptr to byvalue tagDBCOLUMNINFO[]
+            IntPtr columnInfos = IntPtr.Zero; // ptr to byvalue tagDBCOLUMNINFO[]
 
             using (DualCoTaskMem safehandle = new DualCoTaskMem(icolumnsInfo, out columnCount, out columnInfos, out hr))
             {
@@ -560,7 +560,7 @@ namespace System.Data.OleDb
                         break;
                     case ODB.DBKIND_GUID_NAME:
                     case ODB.DBKIND_NAME:
-                        if (0 != dbColumnInfo.columnid.ulPropid)
+                        if (IntPtr.Zero != dbColumnInfo.columnid.ulPropid)
                         {
                             info.idname = Marshal.PtrToStringUni(dbColumnInfo.columnid.ulPropid);
                         }
@@ -570,7 +570,7 @@ namespace System.Data.OleDb
                         }
                         break;
                     default:
-                        info.propid = 0;
+                        info.propid = IntPtr.Zero;
                         break;
                 }
                 metainfo[rowCount] = info;
@@ -611,7 +611,7 @@ namespace System.Data.OleDb
                 using (DualCoTaskMem prgOptColumns = new DualCoTaskMem(icolumnsRowset, out cOptColumns, out hr))
                 {
                     Debug.Assert((0 == hr) || prgOptColumns.IsInvalid, "GetAvailableCOlumns: unexpected return");
-                    hr = icolumnsRowset.GetColumnsRowset(0, cOptColumns, prgOptColumns, ref ODB.IID_IRowset, 0, 0, out rowset);
+                    hr = icolumnsRowset.GetColumnsRowset(IntPtr.Zero, cOptColumns, prgOptColumns, ref ODB.IID_IRowset, 0, IntPtr.Zero, out rowset);
                 }
 
                 Debug.Assert((0 <= hr) || (null == rowset), "if GetColumnsRowset failed, rowset should be null");
@@ -1244,7 +1244,7 @@ namespace System.Data.OleDb
                     {
                         break;
                     }
-                    hr = imultipleResults.GetResult(0, ODB.DBRESULTFLAG_DEFAULT, ref ODB.IID_NULL, out affected, out _);
+                    hr = imultipleResults.GetResult(IntPtr.Zero, ODB.DBRESULTFLAG_DEFAULT, ref ODB.IID_NULL, out affected, out _);
 
                     // If a provider doesn't support IID_NULL and returns E_NOINTERFACE we want to break out
                     // of the loop without throwing an exception.  Our behavior will match ADODB in that scenario
@@ -1335,7 +1335,7 @@ namespace System.Data.OleDb
                         Close();
                         break;
                     }
-                    hr = imultipleResults.GetResult(0, ODB.DBRESULTFLAG_DEFAULT, ref ODB.IID_IRowset, out affected, out result);
+                    hr = imultipleResults.GetResult(IntPtr.Zero, ODB.DBRESULTFLAG_DEFAULT, ref ODB.IID_IRowset, out affected, out result);
 
                     if ((0 <= hr) && (null != result))
                     {
@@ -1787,7 +1787,7 @@ namespace System.Data.OleDb
 
             OleDbHResult hr;
             UnsafeNativeMethods.IRowset irowset = IRowset();
-            hr = irowset.ReleaseRows(_rowFetchedCount, _rowHandleNativeBuffer!, 0, 0, 0);
+            hr = irowset.ReleaseRows(_rowFetchedCount, _rowHandleNativeBuffer!, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
 
             if (hr < 0)
             {

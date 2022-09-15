@@ -432,7 +432,7 @@ namespace System.Data.OleDb
 
             // tagDBPARAMBINDINFO info for SetParameterInfo
             bindings.DataSourceType = dbtype.dbString.DangerousGetHandle(); // NOTE: This is a constant and isn't exposed publicly, so there really isn't a potential for Handle Recycling.
-            bindings.Name = 0;
+            bindings.Name = IntPtr.Zero;
             bindings.ParamSize = new IntPtr(size);
             bindings.Flags = GetBindFlags(direction);
             //bindings.Precision    = precision;

@@ -31,12 +31,12 @@ namespace System.Data.OleDb
             finally
             {
                 base.handle = Interop.Ole32.CoTaskMemAlloc(countOfBytes);
-                if (0 != base.handle)
+                if (IntPtr.Zero != base.handle)
                 {
                     SafeNativeMethods.ZeroMemory(base.handle, (int)countOfBytes);
                 }
             }
-            if (0 == base.handle)
+            if (IntPtr.Zero == base.handle)
             {
                 throw new OutOfMemoryException();
             }
@@ -131,13 +131,13 @@ namespace System.Data.OleDb
             // NOTE: The SafeHandle class guarantees this will be called exactly once and is non-interrutible.
             IntPtr ptr = base.handle;
             base.handle = IntPtr.Zero;
-            if (0 != ptr)
+            if (IntPtr.Zero != ptr)
             {
                 int count = this.propertySetCount;
                 for (int i = 0, offset = 0; i < count; ++i, offset += ODB.SizeOf_tagDBPROPSET)
                 {
                     IntPtr rgProperties = Marshal.ReadIntPtr(ptr, offset);
-                    if (0 != rgProperties)
+                    if (IntPtr.Zero != rgProperties)
                     {
                         int cProperties = Marshal.ReadInt32(ptr, offset + ADP.PtrSize);
 
@@ -244,7 +244,7 @@ namespace System.Data.OleDb
                 {
                     // must allocate and clear the memory without interruption
                     propset.rgProperties = Interop.Ole32.CoTaskMemAlloc(countOfBytes);
-                    if (0 != propset.rgProperties)
+                    if (IntPtr.Zero != propset.rgProperties)
                     {
                         // clearing is important so that we don't treat existing
                         // garbage as important information during releaseHandle
@@ -254,7 +254,7 @@ namespace System.Data.OleDb
                         Marshal.StructureToPtr(propset, propsetPtr, false/*deleteold*/);
                     }
                 }
-                if (0 == propset.rgProperties)
+                if (IntPtr.Zero == propset.rgProperties)
                 {
                     throw new OutOfMemoryException();
                 }

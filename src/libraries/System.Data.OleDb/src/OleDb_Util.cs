@@ -553,9 +553,9 @@ namespace System.Data.OleDb
         internal const uint DB_ALL_EXCEPT_LIKE = 3;
         internal const uint DB_SEARCHABLE = 4;
 
-        internal static readonly IntPtr DB_INVALID_HACCESSOR = 0;
-        internal static readonly IntPtr DB_NULL_HCHAPTER = 0;
-        internal static readonly IntPtr DB_NULL_HROW = 0;
+        internal static readonly IntPtr DB_INVALID_HACCESSOR = IntPtr.Zero;
+        internal static readonly IntPtr DB_NULL_HCHAPTER = IntPtr.Zero;
+        internal static readonly IntPtr DB_NULL_HROW = IntPtr.Zero;
 
         internal static readonly bool IsRunningOnX86 = RuntimeInformation.ProcessArchitecture == Architecture.X86;
 

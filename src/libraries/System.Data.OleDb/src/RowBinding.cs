@@ -280,7 +280,7 @@ namespace System.Data.OleDb
             Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
             ValidateCheck(offset, 2 * IntPtr.Size);
 
-            if (0 == pinnedValue)
+            if (IntPtr.Zero == pinnedValue)
             { // empty array scenario
                 pinnedValue = ADP.IntPtrOffset(base.handle, _emptyStringOffset);
             }
@@ -392,7 +392,7 @@ namespace System.Data.OleDb
 
         private unsafe void ResetValues(IntPtr buffer, object? iaccessor)
         {
-            Debug.Assert(0 != buffer && _needToReset && _haveData, "shouldn't be calling ResetValues");
+            Debug.Assert(IntPtr.Zero != buffer && _needToReset && _haveData, "shouldn't be calling ResetValues");
             for (int i = 0; i < _bindingCount; ++i)
             {
                 IntPtr ptr = ADP.IntPtrOffset(buffer, (i * ODB.SizeOf_tagDBBINDING));
@@ -471,7 +471,7 @@ namespace System.Data.OleDb
             Debug.Assert(0 == valueOffset % 8, "unexpected unaligned ptr offset");
 
             UnsafeNativeMethods.IChapteredRowset chapteredRowset = (iaccessor as UnsafeNativeMethods.IChapteredRowset)!;
-            IntPtr chapter = SafeNativeMethods.InterlockedExchangePointer(ADP.IntPtrOffset(buffer, valueOffset), 0);
+            IntPtr chapter = SafeNativeMethods.InterlockedExchangePointer(ADP.IntPtrOffset(buffer, valueOffset), IntPtr.Zero);
             if (ODB.DB_NULL_HCHAPTER != chapter)
             {
                 chapteredRowset.ReleaseChapter(chapter, out _);
@@ -492,18 +492,18 @@ namespace System.Data.OleDb
                 IntPtr currentValue = Marshal.ReadIntPtr(buffer, valueOffset);
                 IntPtr originalValue = Marshal.ReadIntPtr(buffer, valueOffset + ADP.PtrSize);
 
-                if ((0 != currentValue) && (currentValue != originalValue))
+                if ((IntPtr.Zero != currentValue) && (currentValue != originalValue))
                 {
                     Interop.OleAut32.SysFreeString(currentValue);
                 }
-                if (0 != originalValue)
+                if (IntPtr.Zero != originalValue)
                 {
                     Interop.OleAut32.SysFreeString(originalValue);
                 }
 
                 // for debugability - delay clearing memory until after FreeBSTR
-                Marshal.WriteIntPtr(buffer, valueOffset, 0);
-                Marshal.WriteIntPtr(buffer, valueOffset + ADP.PtrSize, 0);
+                Marshal.WriteIntPtr(buffer, valueOffset, IntPtr.Zero);
+                Marshal.WriteIntPtr(buffer, valueOffset + ADP.PtrSize, IntPtr.Zero);
             }
         }
 
@@ -528,8 +528,8 @@ namespace System.Data.OleDb
                 }
 
                 // for debugability - delay clearing memory until after CoTaskMemFree
-                Marshal.WriteIntPtr(buffer, valueOffset, 0);
-                Marshal.WriteIntPtr(buffer, valueOffset + ADP.PtrSize, 0);
+                Marshal.WriteIntPtr(buffer, valueOffset, IntPtr.Zero);
+                Marshal.WriteIntPtr(buffer, valueOffset + ADP.PtrSize, IntPtr.Zero);
             }
         }
 

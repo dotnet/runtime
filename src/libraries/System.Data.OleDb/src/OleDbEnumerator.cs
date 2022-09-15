@@ -50,8 +50,8 @@ namespace System.Data.OleDb
             }
 
             int propCount = 0;
-            IntPtr propSets = 0;
-            OleDbHResult hr = srcrowset.GetSourcesRowset(0, ODB.IID_IRowset, propCount, propSets, out value);
+            IntPtr propSets = IntPtr.Zero;
+            OleDbHResult hr = srcrowset.GetSourcesRowset(IntPtr.Zero, ODB.IID_IRowset, propCount, propSets, out value);
 
             Exception? f = OleDbConnection.ProcessResults(hr, null, null);
             if (null != f)
