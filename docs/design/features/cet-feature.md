@@ -21,7 +21,7 @@ CET compatibility is enabled in .NET 7. In order to receive the security benefit
 
 ## Considerations
 
-CET shadow stack compatibility in .NET is new within 7 and should work for most features an opt-in for x64 applications. 
+CET shadow stack compatibility in .NET is new within 7 and should work for most features an opt-in for x64 applications.
 
 When opted in as above, CET shadow stacks are enabled in compatibility mode. Strict mode should be supported unless the application uses native libraries which are not CET compliant.
 
