@@ -13080,7 +13080,7 @@ DONE:
                 break;
 
             case IF_RRW_CNS:
-                assert((id->idGCref() == GCT_BYREF) || (id->idGCref() == GCT_GCREF));
+                assert(id->idGCref() == GCT_BYREF);
 
 #ifdef DEBUG
                 regMaskTP regMask;
