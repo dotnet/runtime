@@ -2724,48 +2724,48 @@ AGAIN:
     return result;
 }
 
-struct AddrTakenDsc
-{
-    Compiler* comp;
-    bool      hasAddrTakenLcl;
-};
-
-/* static */
-Compiler::fgWalkResult Compiler::gtHasLocalsWithAddrOpCB(GenTree** pTree, fgWalkData* data)
-{
-    GenTree*  tree = *pTree;
-    Compiler* comp = data->compiler;
-
-    if (tree->gtOper == GT_LCL_VAR)
-    {
-        const LclVarDsc* varDsc = comp->lvaGetDesc(tree->AsLclVarCommon());
-
-        if (varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed())
-        {
-            ((AddrTakenDsc*)data->pCallbackData)->hasAddrTakenLcl = true;
-            return WALK_ABORT;
-        }
-    }
-
-    return WALK_CONTINUE;
-}
-
-/*****************************************************************************
- *
- *  Return true if this tree contains locals with lvHasLdAddrOp or IsAddressExposed()
- *  flag(s) set.
- */
-
+//------------------------------------------------------------------------------
+// gtHasLocalsWithAddrOp:
+//   Check if this tree contains locals with lvHasLdAddrOp or
+//   IsAddressExposed() flags set. Does a full tree walk.
+//
+// Paramters:
+//   tree - the tree
+//
+// Return Value:
+//    True if any sub tree is such a local.
+//
 bool Compiler::gtHasLocalsWithAddrOp(GenTree* tree)
 {
-    AddrTakenDsc desc;
+    struct LocalsWithAddrOpVisitor : GenTreeVisitor<LocalsWithAddrOpVisitor>
+    {
+        enum
+        {
+            DoPreOrder    = true,
+            DoLclVarsOnly = true,
+        };
 
-    desc.comp            = this;
-    desc.hasAddrTakenLcl = false;
+        bool HasAddrTakenLocal = false;
 
-    fgWalkTreePre(&tree, gtHasLocalsWithAddrOpCB, &desc);
+        LocalsWithAddrOpVisitor(Compiler* comp) : GenTreeVisitor(comp)
+        {
+        }
 
-    return desc.hasAddrTakenLcl;
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            LclVarDsc* varDsc = m_compiler->lvaGetDesc((*use)->AsLclVarCommon());
+            if (varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed())
+            {
+                HasAddrTakenLocal = true;
+            }
+
+            return WALK_CONTINUE;
+        }
+    };
+
+    LocalsWithAddrOpVisitor visitor(this);
+    visitor.WalkTree(&tree, nullptr);
+    return visitor.HasAddrTakenLocal;
 }
 
 #ifdef DEBUG
