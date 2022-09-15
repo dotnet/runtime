@@ -1281,14 +1281,14 @@ namespace System.Xml
 
         public override int ReadArray(string localName, string namespaceUri, short[] array, int offset, int count)
         {
-            if (IsStartArray(localName, namespaceUri, XmlBinaryNodeType.Int16TextWithEndElement) && BitConverter.IsLittleEndian)
+            if (BitConverter.IsLittleEndian && IsStartArray(localName, namespaceUri, XmlBinaryNodeType.Int16TextWithEndElement))
                 return ReadArray(array, offset, count);
             return base.ReadArray(localName, namespaceUri, array, offset, count);
         }
 
         public override int ReadArray(XmlDictionaryString localName, XmlDictionaryString namespaceUri, short[] array, int offset, int count)
         {
-            if (IsStartArray(localName, namespaceUri, XmlBinaryNodeType.Int16TextWithEndElement) && BitConverter.IsLittleEndian)
+            if (BitConverter.IsLittleEndian && IsStartArray(localName, namespaceUri, XmlBinaryNodeType.Int16TextWithEndElement))
                 return ReadArray(array, offset, count);
             return base.ReadArray(localName, namespaceUri, array, offset, count);
         }
@@ -1304,14 +1304,14 @@ namespace System.Xml
 
         public override int ReadArray(string localName, string namespaceUri, int[] array, int offset, int count)
         {
-            if (IsStartArray(localName, namespaceUri, XmlBinaryNodeType.Int32TextWithEndElement) && BitConverter.IsLittleEndian)
+            if (BitConverter.IsLittleEndian && IsStartArray(localName, namespaceUri, XmlBinaryNodeType.Int32TextWithEndElement))
                 return ReadArray(array, offset, count);
             return base.ReadArray(localName, namespaceUri, array, offset, count);
         }
 
         public override int ReadArray(XmlDictionaryString localName, XmlDictionaryString namespaceUri, int[] array, int offset, int count)
         {
-            if (IsStartArray(localName, namespaceUri, XmlBinaryNodeType.Int32TextWithEndElement) && BitConverter.IsLittleEndian)
+            if (BitConverter.IsLittleEndian && IsStartArray(localName, namespaceUri, XmlBinaryNodeType.Int32TextWithEndElement))
                 return ReadArray(array, offset, count);
             return base.ReadArray(localName, namespaceUri, array, offset, count);
         }
@@ -1327,14 +1327,14 @@ namespace System.Xml
 
         public override int ReadArray(string localName, string namespaceUri, long[] array, int offset, int count)
         {
-            if (IsStartArray(localName, namespaceUri, XmlBinaryNodeType.Int64TextWithEndElement) && BitConverter.IsLittleEndian)
+            if (BitConverter.IsLittleEndian && IsStartArray(localName, namespaceUri, XmlBinaryNodeType.Int64TextWithEndElement))
                 return ReadArray(array, offset, count);
             return base.ReadArray(localName, namespaceUri, array, offset, count);
         }
 
         public override int ReadArray(XmlDictionaryString localName, XmlDictionaryString namespaceUri, long[] array, int offset, int count)
         {
-            if (IsStartArray(localName, namespaceUri, XmlBinaryNodeType.Int64TextWithEndElement) && BitConverter.IsLittleEndian)
+            if (BitConverter.IsLittleEndian && IsStartArray(localName, namespaceUri, XmlBinaryNodeType.Int64TextWithEndElement))
                 return ReadArray(array, offset, count);
             return base.ReadArray(localName, namespaceUri, array, offset, count);
         }
@@ -1350,14 +1350,14 @@ namespace System.Xml
 
         public override int ReadArray(string localName, string namespaceUri, float[] array, int offset, int count)
         {
-            if (IsStartArray(localName, namespaceUri, XmlBinaryNodeType.FloatTextWithEndElement))
+            if (BitConverter.IsLittleEndian && IsStartArray(localName, namespaceUri, XmlBinaryNodeType.FloatTextWithEndElement))
                 return ReadArray(array, offset, count);
             return base.ReadArray(localName, namespaceUri, array, offset, count);
         }
 
         public override int ReadArray(XmlDictionaryString localName, XmlDictionaryString namespaceUri, float[] array, int offset, int count)
         {
-            if (IsStartArray(localName, namespaceUri, XmlBinaryNodeType.FloatTextWithEndElement))
+            if (BitConverter.IsLittleEndian && IsStartArray(localName, namespaceUri, XmlBinaryNodeType.FloatTextWithEndElement))
                 return ReadArray(array, offset, count);
             return base.ReadArray(localName, namespaceUri, array, offset, count);
         }
@@ -1373,14 +1373,14 @@ namespace System.Xml
 
         public override int ReadArray(string localName, string namespaceUri, double[] array, int offset, int count)
         {
-            if (IsStartArray(localName, namespaceUri, XmlBinaryNodeType.DoubleTextWithEndElement))
+            if (BitConverter.IsLittleEndian && IsStartArray(localName, namespaceUri, XmlBinaryNodeType.DoubleTextWithEndElement))
                 return ReadArray(array, offset, count);
             return base.ReadArray(localName, namespaceUri, array, offset, count);
         }
 
         public override int ReadArray(XmlDictionaryString localName, XmlDictionaryString namespaceUri, double[] array, int offset, int count)
         {
-            if (IsStartArray(localName, namespaceUri, XmlBinaryNodeType.DoubleTextWithEndElement))
+            if (BitConverter.IsLittleEndian && IsStartArray(localName, namespaceUri, XmlBinaryNodeType.DoubleTextWithEndElement))
                 return ReadArray(array, offset, count);
             return base.ReadArray(localName, namespaceUri, array, offset, count);
         }
@@ -1396,14 +1396,14 @@ namespace System.Xml
 
         public override int ReadArray(string localName, string namespaceUri, decimal[] array, int offset, int count)
         {
-            if (IsStartArray(localName, namespaceUri, XmlBinaryNodeType.DecimalTextWithEndElement))
+            if (BitConverter.IsLittleEndian && IsStartArray(localName, namespaceUri, XmlBinaryNodeType.DecimalTextWithEndElement))
                 return ReadArray(array, offset, count);
             return base.ReadArray(localName, namespaceUri, array, offset, count);
         }
 
         public override int ReadArray(XmlDictionaryString localName, XmlDictionaryString namespaceUri, decimal[] array, int offset, int count)
         {
-            if (IsStartArray(localName, namespaceUri, XmlBinaryNodeType.DecimalTextWithEndElement))
+            if (BitConverter.IsLittleEndian && IsStartArray(localName, namespaceUri, XmlBinaryNodeType.DecimalTextWithEndElement))
                 return ReadArray(array, offset, count);
             return base.ReadArray(localName, namespaceUri, array, offset, count);
         }

@@ -129,6 +129,7 @@
     <!-- There's no checked configuration on Mono. -->
     <MonoConfiguration Condition="'$(MonoConfiguration)' == '' and '$(RuntimeConfiguration.ToLower())' == 'checked'">Debug</MonoConfiguration>
     <LibrariesConfiguration Condition="'$(LibrariesConfiguration)' == ''">$(Configuration)</LibrariesConfiguration>
+    <HostConfiguration Condition="'$(HostConfiguration)' == ''">$(Configuration)</HostConfiguration>
   </PropertyGroup>
 
   <PropertyGroup Label="CalculateOS">
@@ -231,7 +232,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DotNetHostBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(OutputRid).$(Configuration)', 'corehost'))</DotNetHostBinDir>
+    <DotNetHostBinDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', '$(OutputRid).$(HostConfiguration)', 'corehost'))</DotNetHostBinDir>
   </PropertyGroup>
 
   <!--Feature switches -->

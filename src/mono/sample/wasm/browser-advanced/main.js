@@ -52,7 +52,6 @@ try {
     console.debug(`meaning: ${meaning}`);
     if (!exports.Sample.Test.IsPrime(meaning)) {
         document.getElementById("out").innerHTML = `${meaning} as computed on dotnet ver ${runtimeBuildInfo.productVersion}`;
-        console.debug(`ret: ${meaning}`);
     }
 
     let exit_code = await runMain(config.mainAssemblyName, []);

@@ -235,7 +235,6 @@
     <Compile Include="System\Threading\LockHolder.cs" />
     <Compile Include="System\Threading\Monitor.NativeAot.cs" />
     <Compile Include="System\Threading\ObjectHeader.cs" />
-    <Compile Include="System\Threading\Overlapped.cs" />
     <Compile Include="System\Threading\SyncTable.cs" />
     <Compile Include="System\Threading\Thread.NativeAot.cs" />
     <Compile Include="System\Threading\ThreadPool.NativeAot.cs" />

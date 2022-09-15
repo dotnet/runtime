@@ -14,6 +14,12 @@
                 "-----BEGIN PRIVATE KEY-----",
                 "-----BEGIN * PRIVATE KEY-----"
             ]
+        },
+        {
+            "_justification": "Suppression approved. Private key for testing purpose.",
+            "file": [
+                "src/tests/FunctionalTests/Android/Device_Emulator/gRPC/grpc-dotnet/testassets/Certs/InteropTests/server1.pfx"
+            ]
         }
     ]
 }

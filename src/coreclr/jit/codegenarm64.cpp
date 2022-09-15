@@ -2334,7 +2334,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
         {
             emitter* emit       = GetEmitter();
             emitAttr size       = emitActualTypeSize(tree);
-            double   constValue = tree->AsDblCon()->gtDconVal;
+            double   constValue = tree->AsDblCon()->DconValue();
 
             // Make sure we use "movi reg, 0x00"  only for positive zero (0.0) and not for negative zero (-0.0)
             if (*(__int64*)&constValue == 0)
@@ -2412,8 +2412,14 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                         // Get a temp integer register to compute long address.
                         regNumber addrReg = tree->GetSingleTempReg();
 
-                        simd16_t             constValue = vecCon->gtSimd16Val;
-                        CORINFO_FIELD_HANDLE hnd        = emit->emitSimd16Const(constValue);
+                        simd16_t constValue = {};
+
+                        if (vecCon->TypeIs(TYP_SIMD12))
+                            memcpy(&constValue, &vecCon->gtSimd12Val, sizeof(simd12_t));
+                        else
+                            constValue = vecCon->gtSimd16Val;
+
+                        CORINFO_FIELD_HANDLE hnd = emit->emitSimd16Const(constValue);
 
                         emit->emitIns_R_C(INS_ldr, attr, targetReg, addrReg, hnd, 0);
                     }
@@ -3351,8 +3357,19 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                 //
                 bool checkDividend = true;
 
-                // Do we have an immediate for the 'divisorOp'?
+                // Do we have an immediate for the 'divisorOp' or 'dividendOp'?
                 //
+                GenTree* dividendOp = tree->gtGetOp1();
+                if (dividendOp->IsCnsIntOrI())
+                {
+                    GenTreeIntConCommon* intConstTree  = dividendOp->AsIntConCommon();
+                    ssize_t              intConstValue = intConstTree->IconValue();
+                    if ((targetType == TYP_INT && intConstValue != INT_MIN) ||
+                        (targetType == TYP_LONG && intConstValue != INT64_MIN))
+                    {
+                        checkDividend = false; // We statically know that the dividend is not the minimum int
+                    }
+                }
                 if (divisorOp->IsCnsIntOrI())
                 {
                     GenTreeIntConCommon* intConstTree  = divisorOp->AsIntConCommon();
@@ -3378,7 +3395,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                     inst_JMP(EJ_ne, sdivLabel);
                     // If control flow continues past here the 'divisorReg' is known to be -1
 
-                    regNumber dividendReg = tree->gtGetOp1()->GetRegNum();
+                    regNumber dividendReg = dividendOp->GetRegNum();
                     // At this point the divisor is known to be -1
                     //
                     // Issue the 'adds  zr, dividendReg, dividendReg' instruction

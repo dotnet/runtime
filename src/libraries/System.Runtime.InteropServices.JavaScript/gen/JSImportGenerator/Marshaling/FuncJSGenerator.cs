@@ -48,12 +48,12 @@ namespace Microsoft.Interop.JavaScript
                 ? Argument(IdentifierName(context.GetIdentifiers(info).native))
                 : _inner.AsArgument(info, context);
 
-            var jsty = (JSFunctionTypeInfo)info.ManagedType;
+            var jsty = (JSFunctionTypeInfo)((JSMarshallingInfo)info.MarshallingAttributeInfo).TypeInfo;
             var sourceTypes = jsty.ArgsTypeInfo
-                .Select(a => ParseTypeName(a.FullTypeName))
+                .Select(a => a.Syntax)
                 .ToArray();
 
-            if (context.CurrentStage == StubCodeContext.Stage.Unmarshal && context.Direction == CustomTypeMarshallingDirection.In && info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubCodeContext.Stage.UnmarshalCapture && context.Direction == CustomTypeMarshallingDirection.In && info.IsManagedReturnPosition)
             {
                 yield return ToManagedMethod(target, source, jsty);
             }
@@ -68,7 +68,7 @@ namespace Microsoft.Interop.JavaScript
                 yield return x;
             }
 
-            if (context.CurrentStage == StubCodeContext.Stage.Invoke && context.Direction == CustomTypeMarshallingDirection.In && !info.IsManagedReturnPosition)
+            if (context.CurrentStage == StubCodeContext.Stage.PinnedMarshal && context.Direction == CustomTypeMarshallingDirection.In && !info.IsManagedReturnPosition)
             {
                 yield return ToJSMethod(target, source, jsty);
             }

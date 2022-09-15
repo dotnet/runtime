@@ -3,11 +3,8 @@
 
 using System.Runtime;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 using System.Threading;
 using System.Diagnostics;
-
-using Internal.Runtime.Augments;
 
 namespace System
 {
@@ -18,13 +15,15 @@ namespace System
         // Most methods using m_handle should use GC.KeepAlive(this) to avoid potential handle recycling
         // attacks (i.e. if the WeakReference instance is finalized away underneath you when you're still
         // handling a cached value of the handle then the handle could be freed and reused).
-        internal volatile IntPtr m_handle;
-        internal bool m_IsLongReference;
+
+        // the instance fields are effectively readonly
+        internal IntPtr m_handle;
+        private  bool m_trackResurrection;
 
         private void Create(object? target, bool trackResurrection)
         {
-            m_IsLongReference = trackResurrection;
-            m_handle = GCHandle.ToIntPtr(GCHandle.Alloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak));
+            m_handle = RuntimeImports.RhHandleAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
+            m_trackResurrection = trackResurrection;
 
             if (target != null)
             {
@@ -35,7 +34,6 @@ namespace System
 
         //Determines whether or not this instance of WeakReference still refers to an object
         //that has not been collected.
-        //
         public virtual bool IsAlive
         {
             get
@@ -49,95 +47,55 @@ namespace System
 
                 bool result = (RuntimeImports.RhHandleGet(h) != null || TryGetComTarget() != null);
 
-                // We want to ensure that if the target is live, then we will
-                // return it to the user. We need to keep this WeakReference object
-                // live so m_handle doesn't get set to 0 or reused.
-                // Since m_handle is volatile, the following statement will
-                // guarantee the weakref object is live till the following
-                // statement.
-                return (m_handle == default(IntPtr)) ? false : result;
-            }
-        }
+                // must keep the instance alive as long as we use the handle.
+                GC.KeepAlive(this);
 
-        //Returns a boolean indicating whether or not we're tracking objects until they're collected (true)
-        //or just until they're finalized (false).
-        //
-        public virtual bool TrackResurrection
-        {
-            get { return m_IsLongReference; }
+                return result;
+            }
         }
 
         //Gets the Object stored in the handle if it's accessible.
         // Or sets it.
-        //
         public virtual object? Target
         {
             get
             {
                 IntPtr h = m_handle;
-                // Should only happen when used illegally, like using a
-                // WeakReference from a finalizer.
+                // Should only happen for corner cases, like using a WeakReference from a finalizer.
+                // GC can finalize the instance if it becomes F-Reachable.
+                // That, however, cannot happen while we use the instance.
+                //
+                // A derived class will be finalized with an actual Finalize, but the finalizer queue is single threaded,
+                // thus the default implementation will never access Target concurrently with finalizing.
+                //
+                // There is a possibility that a derived type overrides the default finalizer and arranges concurrent access.
+                // There is nothing that we can do about that and a few other exotic ways to break this.
+                //
                 if (default(IntPtr) == h)
-                    return null;
+                    return default;
 
-                object? o = RuntimeImports.RhHandleGet(h) ?? TryGetComTarget();
+                object? target = RuntimeImports.RhHandleGet(h) ?? TryGetComTarget();
 
-                // We want to ensure that if the target is live, then we will
-                // return it to the user. We need to keep this WeakReference object
-                // live so m_handle doesn't get set to 0 or reused.
-                // Since m_handle is volatile, the following statement will
-                // guarantee the weakref object is live till the following
-                // statement.
-                return (m_handle == default(IntPtr)) ? null : o;
+                // must keep the instance alive as long as we use the handle.
+                GC.KeepAlive(this);
+
+                return target;
             }
 
             set
             {
                 IntPtr h = m_handle;
-                if (h == default(IntPtr))
+                // Should only happen for corner cases, like using a WeakReference from a finalizer.
+                // See the comment in the getter.
+                if (default(IntPtr) == h)
                     throw new InvalidOperationException(SR.InvalidOperation_HandleIsNotInitialized);
 
-#if false
-                // There is a race w/ finalization where m_handle gets set to
-                // NULL and the WeakReference becomes invalid.  Here we have to
-                // do the following in order:
-                //
-                // 1.  Get the old object value
-                // 2.  Get m_handle
-                // 3.  HndInterlockedCompareExchange(m_handle, newValue, oldValue);
-                //
-                // If the interlocked-cmp-exchange fails, then either we lost a race
-                // with another updater, or we lost a race w/ the finalizer.  In
-                // either case, we can just let the other guy win.
-                Object oldValue = RuntimeImports.RhHandleGet(h);
-                h = m_handle;
-                if (h == default(IntPtr))
-                    throw new InvalidOperationException(SR.InvalidOperation_HandleIsNotInitialized);
-                GCHandle.InternalCompareExchange(h, value, oldValue, false /* isPinned */);
-#else
-                // The above logic seems somewhat paranoid and even wrong.
-                //
-                // 1.  It's the GC rather than any finalizer that clears weak handles (indeed there's no guarantee any finalizer is involved
-                //     at all).
-                // 2.  Retrieving the object from the handle atomically creates a strong reference to it, so
-                //     as soon as we get the handle contents above (before it's even assigned into oldValue)
-                //     the only race we can be in is with another setter.
-                // 3.  We don't really care who wins in a race between two setters: last update wins is just
-                //     as good as first update wins. If there was a race with the "finalizer" though, we'd
-                //     probably want the setter to win (otherwise we could nullify a set just because it raced
-                //     with the old object becoming unreferenced).
-                //
-                // The upshot of all of this is that we can just go ahead and set the handle. I suspect that
-                // with further review I could prove that this class doesn't need to mess around with raw
-                // IntPtrs at all and can simply use GCHandle directly, avoiding all these internal calls.
-
-                // Check whether the new value is __COMObject. If so, add the new entry to conditional weak table.
+                // Update the conditionalweakTable in case the target is __ComObject.
                 TrySetComTarget(value);
-                RuntimeImports.RhHandleSet(h, value);
-#endif
 
-                // Ensure we don't have any handle recycling attacks in this
-                // method where the finalizer frees the handle.
+                RuntimeImports.RhHandleSet(h, value);
+
+                // must keep the instance alive as long as we use the handle.
                 GC.KeepAlive(this);
             }
         }
@@ -147,7 +105,6 @@ namespace System
         /// Hence we check in the conditionalweaktable maintained by the System.private.Interop.dll that maps weakreferenceInstance->nativeComObject to check whether the native COMObject is alive or not.
         /// and gets\create a new RCW in case it is alive.
         /// </summary>
-        /// <returns></returns>
         private static object? TryGetComTarget()
         {
 #if ENABLE_WINRT
@@ -168,7 +125,6 @@ namespace System
         /// This method notifies the System.private.Interop.dll to update the conditionalweaktable for weakreferenceInstance->target in case the target is __ComObject. This ensures that we have a means to
         /// go from the managed weak reference to the actual native object even though the managed counterpart might have been collected.
         /// </summary>
-        /// <param name="target"></param>
         private static void TrySetComTarget(object? target)
         {
 #if ENABLE_WINRT
@@ -187,13 +143,23 @@ namespace System
         // Free all system resources associated with this reference.
         ~WeakReference()
         {
-#pragma warning disable 420  // FYI - ref m_handle causes this.  I asked the C# team to add in "ref volatile T" as a parameter type in a future version.
-            IntPtr handle = Interlocked.Exchange(ref m_handle, default(IntPtr));
-#pragma warning restore 420
+            // Note: While WeakReference is formally a finalizable type, the finalizer does not actually run.
+            //       Instead the instances are treated specially in GC when scanning for no longer strongly-reachable
+            //       finalizable objects.
+            // Unlike WeakReference<T> case, it is possible that this finalizer runs for a derived type.
+
+            Debug.Assert(this.GetType() != typeof(WeakReference));
+
+            IntPtr handle = m_handle;
             if (handle != default(IntPtr))
+            {
                 ((GCHandle)handle).Free();
+                m_handle = default(IntPtr);
+            }
         }
 
-        private bool IsTrackResurrection() => m_IsLongReference;
+        //Returns a boolean indicating whether or not we're tracking objects until they're collected (true)
+        //or just until they're finalized (false).
+        private bool IsTrackResurrection() => m_trackResurrection;
     }
 }

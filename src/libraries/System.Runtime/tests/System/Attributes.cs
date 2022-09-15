@@ -331,10 +331,11 @@ namespace System.Tests
         {
             List<CustomAttributeData> customAttributes = typeof(GetCustomAttribute).Module.CustomAttributes.ToList();
             // [System.Security.UnverifiableCodeAttribute()]
+            // [System.Runtime.CompilerServices.RefSafetyRulesAttribute((Int32)11)]
             // [TestAttributes.FooAttribute()]
             // [TestAttributes.ComplicatedAttribute((Int32)1, Stuff = 2)]
             // [System.Diagnostics.DebuggableAttribute((Boolean)True, (Boolean)False)]
-            Assert.Equal(4, customAttributes.Count);
+            Assert.Equal(5, customAttributes.Count);
         }
 
         [Fact]

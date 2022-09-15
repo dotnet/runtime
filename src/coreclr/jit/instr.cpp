@@ -745,7 +745,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                 break;
 
             case GT_CNS_DBL:
-                return OperandDesc(emit->emitFltOrDblConst(op->AsDblCon()->gtDconVal, emitTypeSize(op)));
+                return OperandDesc(emit->emitFltOrDblConst(op->AsDblCon()->DconValue(), emitTypeSize(op)));
 
             case GT_CNS_INT:
                 assert(op->isContainedIntOrIImmed());
@@ -765,7 +765,13 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     case TYP_SIMD12:
                     case TYP_SIMD16:
                     {
-                        simd16_t constValue = op->AsVecCon()->gtSimd16Val;
+                        simd16_t constValue = {};
+
+                        if (op->TypeIs(TYP_SIMD12))
+                            memcpy(&constValue, &op->AsVecCon()->gtSimd12Val, sizeof(simd12_t));
+                        else
+                            constValue = op->AsVecCon()->gtSimd16Val;
+
                         return OperandDesc(emit->emitSimd16Const(constValue));
                     }
 

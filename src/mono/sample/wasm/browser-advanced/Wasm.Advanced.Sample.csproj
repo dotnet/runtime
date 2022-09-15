@@ -1,19 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
-    <WasmMainJSPath>main.js</WasmMainJSPath>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>embedded</DebugType>
-    <WasmDebugLevel>1</WasmDebugLevel>
-    <GenerateRunScriptForSample Condition="'$(ArchiveTests)' == 'true'">true</GenerateRunScriptForSample>
-    <RunScriptCommand>$(ExecXHarnessCmd) wasm test-browser  --app=. --browser=Chrome $(XHarnessBrowserPathArg) --html-file=index.html --output-directory=$(XHarnessOutput) -- $(MSBuildProjectName).dll</RunScriptCommand>
-  </PropertyGroup>
-  <ItemGroup>
-    <WasmExtraFilesToDeploy Include="index.html" />
-    <NativeFileReference Include="fibonacci.c" />
-  </ItemGroup>
+  <Import Project="..\DefaultBrowserSample.targets" />
   <PropertyGroup>
     <_SampleProject>Wasm.Advanced.Sample.csproj</_SampleProject>
+    <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
+    <PublishTrimmed>true</PublishTrimmed>
   </PropertyGroup>
-  <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowser" />
+  <ItemGroup>
+    <NativeFileReference Include="fibonacci.c" />
+    <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
+  </ItemGroup>
 </Project>

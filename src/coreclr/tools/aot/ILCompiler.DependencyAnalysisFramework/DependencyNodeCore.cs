@@ -3,9 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ILCompiler.DependencyAnalysisFramework
 {
@@ -98,9 +95,9 @@ namespace ILCompiler.DependencyAnalysisFramework
 
             public bool Equals(CombinedDependencyListEntry other)
             {
-                return Object.ReferenceEquals(Node, other.Node)
-                    && Object.ReferenceEquals(OtherReasonNode, other.OtherReasonNode)
-                    && Object.Equals(Reason, other.Reason);
+                return ReferenceEquals(Node, other.Node)
+                    && ReferenceEquals(OtherReasonNode, other.OtherReasonNode)
+                    && Equals(Reason, other.Reason);
             }
         }
 
@@ -124,7 +121,7 @@ namespace ILCompiler.DependencyAnalysisFramework
             get;
         }
 
-        public virtual int DependencyPhaseForDeferredStaticComputation { get; } = 0;
+        public virtual int DependencyPhaseForDeferredStaticComputation { get; }
 
         public abstract IEnumerable<DependencyListEntry> GetStaticDependencies(DependencyContextType context);
 

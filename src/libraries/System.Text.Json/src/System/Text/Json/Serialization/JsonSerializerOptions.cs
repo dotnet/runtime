@@ -53,7 +53,6 @@ namespace System.Text.Json
 
         // For any new option added, adding it to the options copied in the copy constructor below must be considered.
         private IJsonTypeInfoResolver? _typeInfoResolver;
-        private MemberAccessor? _memberAccessorStrategy;
         private JsonNamingPolicy? _dictionaryKeyPolicy;
         private JsonNamingPolicy? _jsonPropertyNamingPolicy;
         private JsonCommentHandling _readCommentHandling;
@@ -99,7 +98,6 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(options));
             }
 
-            _memberAccessorStrategy = options._memberAccessorStrategy;
             _dictionaryKeyPolicy = options._dictionaryKeyPolicy;
             _jsonPropertyNamingPolicy = options._jsonPropertyNamingPolicy;
             _readCommentHandling = options._readCommentHandling;
@@ -594,8 +592,8 @@ namespace System.Text.Json
         // Workaround https://github.com/dotnet/linker/issues/2715
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
             Justification = "Dynamic path is guarded by the runtime feature switch.")]
-        internal MemberAccessor MemberAccessorStrategy =>
-            _memberAccessorStrategy ??=
+        internal static MemberAccessor MemberAccessorStrategy =>
+            s_memberAccessorStrategy ??=
 #if NETCOREAPP
                 // if dynamic code isn't supported, fallback to reflection
                 RuntimeFeature.IsDynamicCodeSupported ?
@@ -606,6 +604,8 @@ namespace System.Text.Json
 #else
                     new ReflectionMemberAccessor();
 #endif
+
+        private static MemberAccessor? s_memberAccessorStrategy;
 
         /// <summary>
         /// Specifies whether the current instance has been locked for modification.

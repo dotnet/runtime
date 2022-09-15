@@ -1,14 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-using Xunit.Abstractions;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Xml.Tests;
 using System.Xml.XPath;
 using System.Xml.Xsl;
+using Xunit;
+using Xunit.Abstractions;
 
-namespace System.Xml.Tests
+namespace System.Xml.XslCompiledTransformApiTests
 {
     //[TestCase(Name = "XsltSettings-Retail", Desc = "This testcase tests the different settings on XsltSettings and the corresponding behavior in retail mode", Param = "Retail")]
     //[TestCase(Name = "XsltSettings-Debug", Desc = "This testcase tests the different settings on XsltSettings and the corresponding behavior in debug mode", Param = "Debug")]
@@ -84,9 +85,10 @@ namespace System.Xml.Tests
         [Theory]
         public void XsltSettings1_1_ExternalURI(object param0, object param1, object param2, object param3, object param4)
         {
-            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
-
-            XsltSettings1_1(param0, param1, param2, param3, param4);
+            using (new AllowDefaultResolverContext())
+            {
+                XsltSettings1_1(param0, param1, param2, param3, param4);
+            }
         }
 
         //[Variation(id = 18, Desc = "Test 6 with EnableDocumentFunction override, should work", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings2.xsl", false, false, true, false })]
@@ -94,9 +96,10 @@ namespace System.Xml.Tests
         [Theory]
         public void XsltSettings1_2_ExternalURI(object param0, object param1, object param2, object param3, object param4, object param5, object param6)
         {
-            AppContext.SetSwitch("Switch.System.Xml.AllowDefaultResolver", true);
-
-            XsltSettings1_2(param0, param1, param2, param3, param4, param5, param6);
+            using (new AllowDefaultResolverContext())
+            {
+                XsltSettings1_2(param0, param1, param2, param3, param4, param5, param6);
+            }
         }
 
         //[Variation(id = 2, Desc = "Test the script block with Default Settings, should fail", Pri = 0, Params = new object[] { "XsltSettings.xml", "XsltSettings1.xsl", false, false })]

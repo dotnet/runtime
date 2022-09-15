@@ -35,7 +35,7 @@ ASM_CONST(     E,    16, STRING_BASE_SIZE)
 ASM_CONST(3FFFFFDF,3FFFFFDF,MAX_STRING_LENGTH)
 
 ASM_OFFSET(    0,     0, MethodTable, m_usComponentSize)
-ASM_OFFSET(    2,     2, MethodTable, m_usFlags)
+ASM_OFFSET(    0,     0, MethodTable, m_uFlags)
 ASM_OFFSET(    4,     4, MethodTable, m_uBaseSize)
 ASM_OFFSET(   14,    18, MethodTable, m_VTable)
 

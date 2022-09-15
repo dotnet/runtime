@@ -10,18 +10,18 @@ namespace System.Security.Cryptography
     internal static class PemKeyHelpers
     {
         public delegate bool TryExportKeyAction<T>(T arg, Span<byte> destination, out int bytesWritten);
-        public delegate bool TryExportEncryptedKeyAction<T>(
+        public delegate bool TryExportEncryptedKeyAction<T, TPassword>(
             T arg,
-            ReadOnlySpan<char> password,
+            ReadOnlySpan<TPassword> password,
             PbeParameters pbeParameters,
             Span<byte> destination,
             out int bytesWritten);
 
-        public static unsafe bool TryExportToEncryptedPem<T>(
+        public static unsafe bool TryExportToEncryptedPem<T, TPassword>(
             T arg,
-            ReadOnlySpan<char> password,
+            ReadOnlySpan<TPassword> password,
             PbeParameters pbeParameters,
-            TryExportEncryptedKeyAction<T> exporter,
+            TryExportEncryptedKeyAction<T, TPassword> exporter,
             Span<char> destination,
             out int charsWritten)
         {

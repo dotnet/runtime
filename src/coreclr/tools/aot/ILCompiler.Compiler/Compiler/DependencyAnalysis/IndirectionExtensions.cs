@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Runtime;
-using Internal.TypeSystem;
-
-using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    static class IndirectionExtensions
+    internal static class IndirectionExtensions
     {
         /// <summary>
         /// Use this api to generate a reloc to a symbol that may be an indirection cell or not as a pointer
@@ -27,7 +24,7 @@ namespace ILCompiler.DependencyAnalysis
         public static void EmitRelativeRelocOrIndirectionReference(ref this ObjectDataBuilder builder, ISymbolNode symbol, int delta = 0, int indirectionBit = IndirectionConstants.IndirectionCellPointer)
         {
             if (symbol.RepresentsIndirectionCell)
-                delta = delta | indirectionBit;
+                delta |= indirectionBit;
 
             builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_RELPTR32, delta);
         }

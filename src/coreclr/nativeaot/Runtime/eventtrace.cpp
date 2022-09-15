@@ -3842,7 +3842,9 @@ void ETW::ExceptionLog::ExceptionThrown(CrawlFrame* pCf, BOOL bIsReThrownExcepti
             OBJECTREF innerExceptionObj;
             STRINGREF exceptionMessageRef;
         } gc;
-        ZeroMemory(&gc, sizeof(gc));
+        gc.exceptionObj = NULL;
+        gc.innerExceptionObj = NULL;
+        gc.exceptionMessageRef = NULL;
         GCPROTECT_BEGIN(gc);
 
         gc.exceptionObj = pThread->GetThrowable();

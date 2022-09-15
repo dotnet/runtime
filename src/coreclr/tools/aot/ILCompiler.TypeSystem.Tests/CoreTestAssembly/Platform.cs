@@ -61,6 +61,14 @@ namespace System
     public struct RuntimeFieldHandle { }
 
     public class Attribute { }
+    public class AttributeUsageAttribute : Attribute
+    {
+        public AttributeUsageAttribute(AttributeTargets targets) { }
+        public bool AllowMultiple { get; set; }
+        public bool Inherited { get; set; }
+    }
+
+    public enum AttributeTargets { }
 
     public class ThreadStaticAttribute : Attribute { }
 
