@@ -29,8 +29,11 @@ namespace SuperFileCheck
 
         static Program()
         {
-            // Determine the location of LLVM FileCheck as being next to
-            // the location of SuperFileCheck
+            // Determine the location of LLVM FileCheck.
+            // We first look through the "runtimes" directory relative to
+            // the location of SuperFileCheck to find FileCheck.
+            // If it cannot find it, then we assume FileCheck
+            // is in the same directory as SuperFileCheck.
             var superFileCheckPath = typeof(Program).Assembly.Location;
             if (String.IsNullOrEmpty(superFileCheckPath))
             {
@@ -152,6 +155,8 @@ namespace SuperFileCheck
                 .Where(x => x.IsKind(SyntaxKind.IdentifierToken)).First().ValueText;
         }
 
+        /// <summary>
+        /// Get all the descendant single line comment trivia items.
         static IEnumerable<SyntaxTrivia> GetDescendantSingleLineCommentTrivia(SyntaxNode node)
         {
             return
@@ -199,6 +204,9 @@ namespace SuperFileCheck
                 .ToArray();
         }
 
+        /// <summary>
+        /// Helper to expand FileCheck syntax.
+        /// </summary>
         static string? TryTransformDirective(string lineStr, string[] checkPrefixes, string syntaxDirective, string transformSuffix)
         {
             var index = lineStr.IndexOf(syntaxDirective);
@@ -220,6 +228,10 @@ namespace SuperFileCheck
             }
         }
 
+        /// <summary>
+        /// Will try to transform a line containing custom SuperFileCheck syntax, e.g. "CHECK-FULL-LINE:"
+        /// to the appropriate FileCheck syntax.
+        /// </summary>
         static string TransformLine(TextLine line, string[] checkPrefixes)
         {
             var text = line.Text;
@@ -247,11 +259,18 @@ namespace SuperFileCheck
             }
         }
 
+        /// <summary>
+        /// Will try to transform a method containing custom SuperFileCheck syntax, e.g. "CHECK-FULL-LINE:"
+        /// to the appropriate FileCheck syntax.
+        /// </summary>
         static string TransformMethod(MethodDeclarationSyntax methodDecl, string[] checkPrefixes)
         {
             return String.Join(Environment.NewLine, methodDecl.GetText().Lines.Select(x => TransformLine(x, checkPrefixes)));
         }
 
+        /// <summary>
+        /// Gets the starting line number of the method declaration.
+        /// </summary>
         static int GetMethodStartingLineNumber(MethodDeclarationSyntax methodDecl)
         {
             var leadingTrivia = methodDecl.GetLeadingTrivia();
@@ -265,6 +284,9 @@ namespace SuperFileCheck
             }
         }
 
+        /// <summary>
+        /// Returns only the method declaration text along with any SuperFileCheck transformations.
+        /// </summary>
         static string PreProcessMethod(MethodDeclarationInfo methodDeclInfo, string[] checkPrefixes)
         {
             var methodDecl = methodDeclInfo.Syntax;
@@ -294,6 +316,9 @@ namespace SuperFileCheck
             return tmpSrc.ToString();
         }
 
+        /// <summary>
+        /// Runs SuperFileCheck logic.
+        /// </summary>
 
         static async Task<FileCheckResult> RunSuperFileCheckAsync(MethodDeclarationInfo methodDeclInfo, string[] args, string[] checkPrefixes, string tmpFilePath)
         {
@@ -310,25 +335,42 @@ namespace SuperFileCheck
             }
         }
 
+        /// <summary>
+        /// Checks if the argument is --csharp.
+        /// </summary>
         static bool IsArgumentCSharp(string arg)
         {
             return arg.Equals(CommandLineArgumentCSharp);
         }
 
+        /// <summary>
+        /// Checks if the argument is --csharp-list-method-names.
+        /// </summary>
         static bool IsArgumentCSharpListMethodNames(string arg)
         {
             return arg.Equals(CommandLineArgumentCSharpListMethodNames);
         }
+
+        /// <summary>
+        /// Checks if the argument is a CSharp file path.
+        /// </summary>
         static bool IsArgumentCSharpFile(string arg)
         {
             return Path.GetExtension(arg).Contains(".cs", StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// Checks if the argument contains -h.
+        /// </summary>
         static bool ArgumentsContainHelp(string[] args)
         {
             return args.Any(x => x.Contains("-h"));
         }
 
+        /// <summary>
+        /// From the given arguments, find the first --check-prefixes argument and parse its value
+        /// in the form of an array.
+        /// </summary>
         static string[] ParseCheckPrefixes(string[] args)
         {
             var checkPrefixesArg = args.FirstOrDefault(x => x.StartsWith(CommandLineCheckPrefixesEqual));
@@ -360,6 +402,9 @@ namespace SuperFileCheck
             return checkPrefixes;
         }
 
+        /// <summary>
+        /// Prints error expecting a CSharp file.
+        /// </summary>
         static void PrintErrorExpectedCSharpFile()
         {
             Console.ForegroundColor = ConsoleColor.Red;
@@ -367,6 +412,9 @@ namespace SuperFileCheck
             Console.ResetColor();
         }
 
+        /// <summary>
+        /// Prints error indicating a duplicate method name was found.
+        /// </summary>
         static void PrintErrorDuplicateMethodName(string methodName)
         {
             Console.ForegroundColor = ConsoleColor.Red;
@@ -374,6 +422,9 @@ namespace SuperFileCheck
             Console.ResetColor();
         }
 
+        /// <summary>
+        /// Prints error indicating the method was not marked with attribute 'MethodImpl(MethodImplOptions.NoInlining)'.
+        /// </summary>
         static void PrintErrorMethodNoInlining(string methodName)
         {
             Console.ForegroundColor = ConsoleColor.Red;
@@ -381,6 +432,10 @@ namespace SuperFileCheck
             Console.ResetColor();
         }
 
+        /// <summary>
+        /// Prints error indicating that no methods were found to have any FileCheck syntax
+        /// of the given --check-prefixes.
+        /// </summary>
         static void PrintErrorNoMethodsFound(string[] checkPrefixes)
         {
             Console.ForegroundColor = ConsoleColor.Red;
@@ -392,6 +447,9 @@ namespace SuperFileCheck
             Console.ResetColor();
         }
 
+        /// <summary>
+        /// Prints error indicating that a --input-file was not found.
+        /// </summary>
         static void PrintErrorNoInputFileFound()
         {
             Console.ForegroundColor = ConsoleColor.Red;
@@ -399,6 +457,9 @@ namespace SuperFileCheck
             Console.ResetColor();
         }
 
+        /// <summary>
+        /// Prints command line help.
+        /// </summary>
         static void PrintHelp()
         {
             Console.Write(Environment.NewLine);
@@ -421,6 +482,10 @@ namespace SuperFileCheck
             Console.WriteLine($"                                   Prints nothing if no methods are found.");
             Console.WriteLine($"                                   Prefixes are determined by {CommandLineCheckPrefixes}.");
         }
+
+        /// <summary>
+        /// Try to find the first duplicate method name of the given method declarations.
+        /// </summary>
 
         static string? TryFindDuplicateMethodName(MethodDeclarationInfo[] methodDeclInfos)
         {
@@ -465,6 +530,10 @@ namespace SuperFileCheck
             return true;
         }
 
+        /// <summary>
+        /// Will print an error if the methods containing FileCheck syntax
+        /// is not marked with the attribute 'MethodImpl(MethodImplOptions.NoInlining)'.
+        /// </summary>
         static bool CheckMethodsHaveNoInlining(MethodDeclarationInfo[] methodDeclInfos)
         {
             return
@@ -481,8 +550,10 @@ namespace SuperFileCheck
                 });
         }
 
-        // The goal of SuperFileCheck is to make writing LLVM FileCheck tests against the
-        // NET Core Runtime easier in C#.
+        /// <summary>
+        /// The goal of SuperFileCheck is to make writing LLVM FileCheck tests against the
+        /// NET Core Runtime easier in C#.
+        /// </summary>
         static async Task<int> Main(string[] args)
         {
             if (args.Length >= 1)
