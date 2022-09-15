@@ -3,6 +3,7 @@
 
 using System.Text;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System
@@ -558,26 +559,51 @@ namespace System
         //
         // Is this a gen delim char from RFC 3986
         //
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool IsGenDelim(char ch)
         {
-            return (ch == ':' || ch == '/' || ch == '?' || ch == '#' || ch == '[' || ch == ']' || ch == '@');
+            if (Environment.Is64BitProcess)
+            {
+                if ((uint)(ch - '#') > (']' - '#'))
+                {
+                    return false;
+                }
+
+                const long BitMask =
+                    (1L << ':')
+                  | (1L << '/')
+                  | (1L << '?')
+                  | (1L << '#')
+                  | (1L << '[')
+                  | (1L << ']')
+                  | (1L << '@');
+
+                return ((1L << ch) & BitMask) != 0;
+            }
+            else
+            {
+                return (ch == ':' || ch == '/' || ch == '?' || ch == '#' || ch == '[' || ch == ']' || ch == '@');
+            }
         }
 
         internal static readonly char[] s_WSchars = new char[] { ' ', '\n', '\r', '\t' };
 
         internal static bool IsLWS(char ch)
         {
-            return (ch <= ' ') && (ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t');
-        }
+            ch -= '\t';
 
-        //
-        // Is this a Bidirectional control char.. These get stripped
-        //
-        internal static bool IsBidiControlCharacter(char ch)
-        {
-            return (ch == '\u200E' /*LRM*/ || ch == '\u200F' /*RLM*/ || ch == '\u202A' /*LRE*/ ||
-                    ch == '\u202B' /*RLE*/ || ch == '\u202C' /*PDF*/ || ch == '\u202D' /*LRO*/ ||
-                    ch == '\u202E' /*RLO*/);
+            if ((uint)ch > ' ' - '\t')
+            {
+                return false;
+            }
+
+            const int BitMask =
+                (1 << ' '  - '\t')
+              | (1 << '\n' - '\t')
+              | (1 << '\r' - '\t')
+              | (1 << '\t' - '\t');
+
+            return ((1 << ch) & BitMask) != 0;
         }
 
         //
@@ -590,7 +616,7 @@ namespace System
             int charsToRemove = 0;
             foreach (char c in strToClean)
             {
-                if ((uint)(c - '\u200E') <= ('\u202E' - '\u200E') && IsBidiControlCharacter(c))
+                if (IsBidiControlCharacter(c))
                 {
                     charsToRemove++;
                 }
@@ -614,13 +640,45 @@ namespace System
                     int destIndex = 0;
                     foreach (char c in strToClean)
                     {
-                        if ((uint)(c - '\u200E') > ('\u202E' - '\u200E') || !IsBidiControlCharacter(c))
+                        if (!IsBidiControlCharacter(c))
                         {
                             buffer[destIndex++] = c;
                         }
                     }
                     Debug.Assert(buffer.Length == destIndex);
                 });
+            }
+
+            //
+            // Is this a Bidirectional control char.. These get stripped
+            //
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static bool IsBidiControlCharacter(char ch)
+            {
+                if ((uint)(ch - '\u200E') > ('\u202E' - '\u200E'))
+                {
+                    return false;
+                }
+
+                if (Environment.Is64BitProcess)
+                {
+                    const long BitMask =
+                        (1 << '\u200E')     // LRM
+                      | (1 << '\u200F')     // RLM
+                      | (1 << '\u202A')     // LRE
+                      | (1 << '\u202B')     // RLE
+                      | (1 << '\u202C')     // PDF
+                      | (1 << '\u202D')     // LRO
+                      | (1 << '\u202E');    // RLO
+
+                    return ((1 << ch) & BitMask) != 0;
+                }
+                else
+                {
+                    return (ch == '\u200E' /*LRM*/ || ch == '\u200F' /*RLM*/ || ch == '\u202A' /*LRE*/ ||
+                            ch == '\u202B' /*RLE*/ || ch == '\u202C' /*PDF*/ || ch == '\u202D' /*LRO*/ ||
+                            ch == '\u202E' /*RLO*/);
+                }
             }
         }
     }
