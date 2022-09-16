@@ -62,20 +62,20 @@ namespace System.Collections.Generic
             if (!typeof(T).IsValueType)
             {
                 _comparer = comparer ?? EqualityComparer<T>.Default;
+
+                // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
+                // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
+                // hash buckets become unbalanced.
+                if (typeof(T) == typeof(string) &&
+                    NonRandomizedStringEqualityComparer.GetStringComparer(_comparer!) is IEqualityComparer<string> stringComparer)
+                {
+                    _comparer = (IEqualityComparer<T>)stringComparer;
+                }
             }
             else if (comparer is not null && // first check for null to avoid forcing default comparer instantiation unnecessarily
                      comparer != EqualityComparer<T>.Default)
             {
                 _comparer = comparer;
-            }
-
-            // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
-            // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
-            // hash buckets become unbalanced.
-            if (typeof(T) == typeof(string) &&
-                NonRandomizedStringEqualityComparer.GetStringComparer(_comparer!) is IEqualityComparer<string> stringComparer)
-            {
-                _comparer = (IEqualityComparer<T>)stringComparer;
             }
         }
 

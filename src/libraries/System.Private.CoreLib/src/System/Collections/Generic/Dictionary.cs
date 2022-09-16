@@ -62,20 +62,20 @@ namespace System.Collections.Generic
             if (!typeof(TKey).IsValueType)
             {
                 _comparer = comparer ?? EqualityComparer<TKey>.Default;
+
+                // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
+                // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
+                // hash buckets become unbalanced.
+                if (typeof(TKey) == typeof(string) &&
+                    NonRandomizedStringEqualityComparer.GetStringComparer(_comparer!) is IEqualityComparer<string> stringComparer)
+                {
+                    _comparer = (IEqualityComparer<TKey>)stringComparer;
+                }
             }
             else if (comparer is not null && // first check for null to avoid forcing default comparer instantiation unnecessarily
                      comparer != EqualityComparer<TKey>.Default)
             {
                 _comparer = comparer;
-            }
-
-            // Special-case EqualityComparer<string>.Default, StringComparer.Ordinal, and StringComparer.OrdinalIgnoreCase.
-            // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
-            // hash buckets become unbalanced.
-            if (typeof(TKey) == typeof(string) &&
-                NonRandomizedStringEqualityComparer.GetStringComparer(_comparer!) is IEqualityComparer<string> stringComparer)
-            {
-                _comparer = (IEqualityComparer<TKey>)stringComparer;
             }
         }
 
@@ -888,7 +888,8 @@ namespace System.Collections.Generic
                 {
                     ref Entry entry = ref entries[i];
 
-                    if (entry.hashCode == hashCode && (comparer?.Equals(entry.key, key) ?? EqualityComparer<TKey>.Default.Equals(entry.key, key)))
+                    if (entry.hashCode == hashCode &&
+                        (typeof(TKey).IsValueType && comparer == null ? EqualityComparer<TKey>.Default.Equals(entry.key, key) : comparer!.Equals(entry.key, key)))
                     {
                         if (last < 0)
                         {
@@ -960,7 +961,8 @@ namespace System.Collections.Generic
                 {
                     ref Entry entry = ref entries[i];
 
-                    if (entry.hashCode == hashCode && (comparer?.Equals(entry.key, key) ?? EqualityComparer<TKey>.Default.Equals(entry.key, key)))
+                    if (entry.hashCode == hashCode &&
+                        (typeof(TKey).IsValueType && comparer == null ? EqualityComparer<TKey>.Default.Equals(entry.key, key) : comparer!.Equals(entry.key, key)))
                     {
                         if (last < 0)
                         {

@@ -94,9 +94,11 @@ namespace System.Collections.Generic
             _getHashCode = getHashCode;
         }
 
-        public override bool Equals(T? x, T? y) => _equals(x, y);
+        public override bool Equals(T? x, T? y) =>
+            _equals(x, y);
 
-        public override int GetHashCode([DisallowNull] T obj) => _getHashCode(obj);
+        public override int GetHashCode([DisallowNull] T obj) =>
+            _getHashCode(obj);
 
         public override bool Equals(object? obj) =>
             obj is DelegateEqualityComparer<T> other &&
@@ -127,7 +129,8 @@ namespace System.Collections.Generic
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode([DisallowNull] T obj) => obj?.GetHashCode() ?? 0;
+        public override int GetHashCode([DisallowNull] T obj) =>
+            obj?.GetHashCode() ?? 0;
 
         // Equals method for the comparer itself.
         public override bool Equals([NotNullWhen(true)] object? obj) =>
@@ -166,7 +169,8 @@ namespace System.Collections.Generic
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode(T? obj) => obj.GetHashCode();
+        public override int GetHashCode(T? obj) =>
+            obj.GetHashCode();
 
         // Equals method for the comparer itself.
         public override bool Equals([NotNullWhen(true)] object? obj) =>
@@ -194,7 +198,8 @@ namespace System.Collections.Generic
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode([DisallowNull] T obj) => obj?.GetHashCode() ?? 0;
+        public override int GetHashCode([DisallowNull] T obj) =>
+            obj?.GetHashCode() ?? 0;
 
         // Equals method for the comparer itself.
         public override bool Equals([NotNullWhen(true)] object? obj) =>
