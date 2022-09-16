@@ -1210,7 +1210,7 @@ namespace System
                 // (E.g. ERROR_NO_DATA ("pipe is being closed") is returned when we write to a console that is closing;
                 // ERROR_BROKEN_PIPE ("pipe was closed") is returned when stdin was closed, which is not an error, but EOF.)
                 int errorCode = Marshal.GetLastPInvokeError();
-                if (errorCode == Interop.Errors.ERROR_NO_DATA || errorCode == Interop.Errors.ERROR_BROKEN_PIPE)
+                if (errorCode == Interop.Errors.ERROR_NO_DATA || errorCode == Interop.Errors.ERROR_BROKEN_PIPE || errorCode == Interop.Errors.ERROR_PIPE_NOT_CONNECTED)
                     return Interop.Errors.ERROR_SUCCESS;
                 return errorCode;
             }
