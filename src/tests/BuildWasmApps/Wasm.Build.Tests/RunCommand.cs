@@ -14,5 +14,7 @@ public class RunCommand : DotNetCommand
         WithEnvironmentVariable("DOTNET_INSTALL_DIR", Path.GetDirectoryName(buildEnv.DotNet)!);
         WithEnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0");
         WithEnvironmentVariable("DOTNET_SKIP_FIRST_TIME_EXPERIENCE", "1");
+        // workaround msbuild issue
+        WithEnvironmentVariable("DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER", "1");
     }
 }
