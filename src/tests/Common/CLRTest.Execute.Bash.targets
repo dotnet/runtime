@@ -286,6 +286,9 @@ else
   __Command+=" dotnet"
 fi
 
+# workaround msbuild issue
+export DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1
+
 $__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssemblyFileName=$(MsBuildProjectName).dll /p:TestBinDir=`pwd` $(CLRTestMSBuildArgs) || exit $?
 
    ]]>
