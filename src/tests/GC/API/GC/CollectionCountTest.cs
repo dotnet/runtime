@@ -9,6 +9,7 @@
  * by making sure result is at least the number of manual collections
  * (GC.Collect) per generation (must be at least, since the GC may collect
  * on it's own).
+ * foo
  */
 
 using System;

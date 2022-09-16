@@ -28,7 +28,8 @@ parameters:
     # where evaluate-paths is not used
     _always_exclude: [
         src/workloads/*
-        eng/pipelines/**/*yml
+        eng/pipelines/common/evaluate-default-paths.yml
+        eng/pipelines/**
     ]
 
 jobs:
@@ -56,7 +57,6 @@ jobs:
       - eng/pipelines/installer/*
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*
-      - eng/pipelines/common/evaluate-default-paths.yml
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
@@ -84,7 +84,6 @@ jobs:
       - eng/pipelines/installer/*
       - eng/pipelines/coreclr/*
       - eng/pipelines/libraries/*
-      - eng/pipelines/common/evaluate-default-paths.yml
       - ${{ parameters._const_paths._always_exclude }}
 
     - subset: libraries
@@ -103,7 +102,6 @@ jobs:
       - eng/pipelines/coreclr/*
       - eng/pipelines/mono/*
       - eng/pipelines/installer/*
-      - eng/pipelines/common/evaluate-default-paths.yml
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
@@ -130,7 +128,6 @@ jobs:
       - eng/pipelines/coreclr/*
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*
-      - eng/pipelines/common/evaluate-default-paths.yml
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
       - ${{ parameters._const_paths._always_exclude }}
@@ -193,17 +190,6 @@ jobs:
       - src/mono/wasm/debugger/*
       - src/mono/wasm/runtime/*
 
-    - subset: any_other_than_wasm_wbt_dbg
-      exclude:
-      - src/mono/wasm/Wasm.Build.Tests/*
-      - src/mono/wasm/debugger/*
-      - ${{ parameters._const_paths._wasm_pipelines }}
-      - ${{ parameters._const_paths._always_exclude }}
-
-      # having this ensures that change in evaluate-default-paths.yml
-      # doesn't trigger jobs
-      - eng/pipelines/common/evaluate-default-paths.yml
-
     # wasm/runtimetests need to be run
     - subset: run_wasm_runtimetests
       combined: true
@@ -219,23 +205,23 @@ jobs:
       - src/mono/wasm/debugger/*
       - src/mono/wasm/Wasm.Build.Tests/*
 
-    - subset: wasm
-      include:
-      - ${{ parameters._const_paths._wasm_specific_only }}
-      # other paths that should also trigger wasm jobs
-      - src/mono/*
-
+    # Wasm exception Wasm.build.Tests, and debugger
     - subset: wasm_specific_except_wbt_dbg
       combined: true
       include:
       - ${{ parameters._const_paths._wasm_specific_only }}
       exclude:
+      - eng/testing/scenarios/BuildWasmAppsJobsList.txt
+      - eng/testing/workloads-testing.targets
       - src/mono/mono/component/mini-wasm-debugger.c
       - src/mono/wasm/debugger/*
       - src/mono/wasm/Wasm.Build.Tests/*
+      - src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
+      - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Manifest/*
+      - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.net6.Manifest/*
 
     # libraries with some wasm specific code
-    - subset: run_wasm_libraries_tests
+    - subset: wasm_libraries
       include:
       - src/libraries/Common/*
       - src/libraries/System.Console/*
@@ -271,9 +257,6 @@ jobs:
       - src/tasks/WasmBuildTasks/*
       - src/tasks/WorkloadBuildTasks/*
 
-      # having this ensures that change in evaluate-default-paths.yml
-      # doesn't trigger jobs
-      - eng/pipelines/common/evaluate-default-paths.yml
       - ${{ parameters._const_paths._always_exclude }}
 
     - ${{ if ne(parameters.extraSubsets, '') }}:

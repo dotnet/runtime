@@ -92,11 +92,12 @@ jobs:
       timeoutInMinutes: 120
       nameSuffix: Runtime_Release
       buildArgs: -s mono+libs -c $(_BuildConfig) -p:WasmBuildNative=false
+      # run on any libraries change, wasm(but !wbt, !dbg) change, or ILLinker update
       condition:
         or(
           eq(variables['isRollingBuild'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_specific_except_wbt_dbg.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['DarcDependenciesChanged.Microsoft_NET_ILLink_Tasks'], true))
       extraStepsTemplate: /eng/pipelines/libraries/execute-trimming-tests-steps.yml
       extraStepsParameters:

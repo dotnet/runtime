@@ -2,7 +2,7 @@
   <Import Project="..\..\Directory.Build.props" />
 
   <PropertyGroup>
-    <!-- Clear AssemblyVersion as we need to align with the NuGet conventions, when empty arcade will do that for us. -->
+    <!-- Clear AssemblyVersion as we need to align with the NuGet conventions, when empty arcade will do that for us. foo -->
     <AssemblyVersion />
     <!-- Don't set platform too early as test app paths are currently hardcoded. -->
     <Platform Condition="'$(Platform)' == ''">$(TargetArchitecture)</Platform>

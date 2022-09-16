@@ -89,7 +89,6 @@ while [[ $# > 0 ]]; do
       ;;
     -combined)
       combined=true
-      shift
       ;;
     -subset)
       subset_name=$2
@@ -148,7 +147,7 @@ probePaths() {
 
   if [[ ${#exclude_paths[@]} -gt 0 ]]; then
     echo ""
-    echo "******* Probing $_subset exclude paths *******";
+    echo "******* Collecting $_subset exclude paths *******";
     for _path in "${exclude_paths[@]}"; do
       echo "$_path"
       if [[ -z "$exclude_path_string" ]]; then
@@ -161,7 +160,7 @@ probePaths() {
 
   if [[ ${#include_paths[@]} -gt 0 ]]; then
     echo ""
-    echo "******* Probing $_subset include paths *******";
+    echo "******* Collecting $_subset include paths *******";
     for _path in "${include_paths[@]}"; do
       echo "$_path"
       if [[ -z "$include_path_string" ]]; then
@@ -177,6 +176,7 @@ probePaths() {
     # finds all the changes in include files, then excludes the exclude files
     local combined_path_string="$include_path_string $exclude_path_string"
     echo "combined: $combined_path_string"
+    echo "******* Probing $_subset combined paths *******";
     if ! probePathsWithExitCode $combined_path_string; then
       found_applying_changes=true
       printMatchedPaths $combined_path_string
@@ -184,6 +184,7 @@ probePaths() {
   else
     # First try exclude
     if [[ ${#exclude_paths[@]} -gt 0 ]]; then
+      echo "******* Probing $_subset exclude paths *******";
       if ! probePathsWithExitCode $exclude_path_string; then
         found_applying_changes=true
         printMatchedPaths $exclude_path_string
@@ -192,6 +193,7 @@ probePaths() {
 
     # if no changes found, then try include
     if [[ $found_applying_changes != true && ${#include_paths[@]} -gt 0 ]]; then
+      echo "******* Probing $_subset include paths *******";
       if ! probePathsWithExitCode $include_path_string; then
         found_applying_changes=true
         printMatchedPaths $include_path_string
