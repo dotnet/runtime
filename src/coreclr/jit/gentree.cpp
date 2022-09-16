@@ -2757,6 +2757,7 @@ bool Compiler::gtHasLocalsWithAddrOp(GenTree* tree)
             if (varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed())
             {
                 HasAddrTakenLocal = true;
+                return WALK_ABORT;
             }
 
             return WALK_CONTINUE;
