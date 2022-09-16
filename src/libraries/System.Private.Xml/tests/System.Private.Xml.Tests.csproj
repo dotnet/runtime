@@ -664,10 +664,10 @@
     <ProjectReference Include="$(CommonTestPath)System\Xml\XmlDiff\XmlDiff.csproj" />
     <ProjectReference Include="XmlReaderLib\System.Xml.RW.XmlReaderLib.csproj" />
   </ItemGroup>
-  
+
   <ItemGroup>
     <TrimmerRootAssembly Include="SerializableAssembly" />
-    <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)XmlSerializer\ILLink.Descriptors.Serialization.xml" />
+    <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Serialization.xml" />
     <TrimmerRootDescriptor Include="ILLink.Descriptors.ModuleCore.xml" />
   </ItemGroup>
 

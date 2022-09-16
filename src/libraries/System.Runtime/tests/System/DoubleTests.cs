@@ -838,7 +838,7 @@ namespace System.Tests
             Assert.Throws<FormatException>(() => d.ToString("E000001000000000"));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // Requires a lot of memory
         [OuterLoop("Takes a long time, allocates a lot of memory")]
         public static void ToString_ValidLargeFormat()
         {
@@ -847,7 +847,6 @@ namespace System.Tests
             // Format precision limit is 999_999_999 (9 digits). Anything larger should throw.
             d.ToString("E999999999"); // Should not throw
             d.ToString("E00000999999999"); // Should not throw
-
         }
 
         [Theory]

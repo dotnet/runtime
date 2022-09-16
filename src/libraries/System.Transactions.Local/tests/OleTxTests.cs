@@ -464,8 +464,7 @@ public class OleTxTests : IClassFixture<OleTxTests.OleTxFixture>
     private static void Test(Action action)
     {
         // Temporarily skip on 32-bit where we have an issue.
-        // ARM64 issue: https://github.com/dotnet/runtime/issues/74170
-        if (!Environment.Is64BitProcess || PlatformDetection.IsArm64Process)
+        if (!Environment.Is64BitProcess)
         {
             return;
         }
