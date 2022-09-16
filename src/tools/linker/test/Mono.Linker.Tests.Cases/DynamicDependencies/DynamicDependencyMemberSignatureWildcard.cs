@@ -6,7 +6,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.DynamicDependencies
 {
 	[SetupCompileBefore ("library.dll", new[] { "Dependencies/DynamicDependencyMethodInAssemblyLibrary.cs" })]
-	[LogContains ("IL2037: Mono.Linker.Tests.Cases.DynamicDependencies.DynamicDependencyMemberSignatureWildcard.Dependency(): No members were resolved for '*'.")]
+	[ExpectedNoWarnings]
 	public class DynamicDependencyMemberSignatureWildcard
 	{
 		public static void Main ()
@@ -15,6 +15,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 		}
 
 		[Kept]
+		[ExpectedWarning ("IL2037", "'*'", "'Mono.Linker.Tests.Cases.DynamicDependencies.Dependencies.DynamicDependencyMethodInAssemblyLibrary'")]
 		[DynamicDependency ("*", "Mono.Linker.Tests.Cases.DynamicDependencies.Dependencies.DynamicDependencyMethodInAssemblyLibrary", "library")]
 		static void Dependency ()
 		{

@@ -58,19 +58,19 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 
 			[Kept]
 
-			[ExpectedWarning ("IL2037", "MissingMethod")]
+			[ExpectedWarning ("IL2037", "MissingMethod", "'Mono.Linker.Tests.Cases.DynamicDependencies.C'")]
 			[DynamicDependency ("MissingMethod", typeof (C))]
 
-			[ExpectedWarning ("IL2037", "Dependency2``1(``0,System.Int32,System.Object)")]
+			[ExpectedWarning ("IL2037", "Dependency2``1(``0,System.Int32,System.Object)", "'Mono.Linker.Tests.Cases.DynamicDependencies.C'")]
 			[DynamicDependency ("Dependency2``1(``0,System.Int32,System.Object)", typeof (C))]
 
-			[ExpectedWarning ("IL2037", "''")]
+			[ExpectedWarning ("IL2037", "''", "'Mono.Linker.Tests.Cases.DynamicDependencies.DynamicDependencyMethod.B'")]
 			[DynamicDependency ("")]
 
-			[ExpectedWarning ("IL2037", "#ctor()")]
+			[ExpectedWarning ("IL2037", "#ctor()", "'Mono.Linker.Tests.Cases.DynamicDependencies.DynamicDependencyMethod.NestedStruct'")]
 			[DynamicDependency ("#ctor()", typeof (NestedStruct))]
 
-			[ExpectedWarning ("IL2037", "#cctor()")]
+			[ExpectedWarning ("IL2037", "#cctor()", "'Mono.Linker.Tests.Cases.DynamicDependencies.C'")]
 			[DynamicDependency ("#cctor()", typeof (C))]
 
 			[ExpectedWarning ("IL2036", "NonExistentType")]
