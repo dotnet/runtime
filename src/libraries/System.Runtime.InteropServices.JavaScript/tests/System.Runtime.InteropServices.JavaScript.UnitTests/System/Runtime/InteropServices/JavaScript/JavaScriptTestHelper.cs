@@ -35,6 +35,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("catch1toString", "JavaScriptTestHelper")]
         public static partial string catch1toString(string message, string functionName);
 
+        [JSImport("catch1stack", "JavaScriptTestHelper")]
+        public static partial string catch1stack(string message, string functionName);
+
         [JSExport]
         public static void ThrowFromJSExport(string message)
         {

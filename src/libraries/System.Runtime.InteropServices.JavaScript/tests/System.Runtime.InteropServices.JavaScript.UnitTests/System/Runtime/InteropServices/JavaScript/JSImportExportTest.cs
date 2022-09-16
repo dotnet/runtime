@@ -1383,7 +1383,15 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var toString = JavaScriptTestHelper.catch1toString("-t-e-s-t-", nameof(JavaScriptTestHelper.ThrowFromJSExport));
             Assert.DoesNotContain("Unexpected error", toString);
             Assert.Contains("-t-e-s-t-", toString);
-            Assert.Contains("ThrowFromJSExport", toString);
+            Assert.DoesNotContain("ThrowFromJSExport", toString);
+        }
+
+        [Fact]
+        public void JsExportCatchStack()
+        {
+            var stack = JavaScriptTestHelper.catch1stack("-t-e-s-t-", nameof(JavaScriptTestHelper.ThrowFromJSExport));
+            Assert.Contains("ThrowFromJSExport", stack);
+            Assert.Contains("catch1stack", stack);
         }
 
         #endregion Exception
@@ -1933,10 +1941,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 
             var exThrow1 = Assert.Throws<JSException>(() => throw1(value));
             Assert.Contains("throw1-msg", exThrow1.Message);
-            if (!typeof(Exception).IsAssignableFrom(typeof(T)))
-            {
-                Assert.DoesNotContain(" at ", exThrow1.Message);
-            }
+            Assert.DoesNotContain(" at ", exThrow1.Message);
             Assert.Contains(" at Module.throw1", exThrow1.StackTrace);
 
             // anything is a system.object, sometimes it would be JSObject wrapper
