@@ -19,8 +19,8 @@ namespace System.IO.IsolatedStorage
         /// Examples:
         ///
         ///     User: @"C:\Users\jerem\AppData\Local\IsolatedStorage\10v31ho4.bo2\eeolfu22.f2w\"
-        ///     User|Roaming: @"C:\Users\jerem\AppData\Roaming\IsolatedStorage\"
-        ///     Machine: @"C:\ProgramData\IsolatedStorage\nin03cyc.wr0\o3j0urs3.0sn\"
+        ///     User|Roaming: @"C:\Users\jerem\AppData\Roaming\.isolated-storage\"
+        ///     Machine: @"C:\ProgramData\.isolated-storage\nin03cyc.wr0\o3j0urs3.0sn\"
         ///
         /// Identity for the current store gets tacked on after this.
         /// </summary>
