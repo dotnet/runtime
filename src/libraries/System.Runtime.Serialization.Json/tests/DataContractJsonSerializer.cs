@@ -17,6 +17,7 @@ using System.Text;
 using System.Xml;
 using System.Xml.Linq;
 using Xunit;
+using System.Runtime.Serialization.Tests;
 
 public static partial class DataContractJsonSerializerTests
 {

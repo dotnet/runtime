@@ -30,11 +30,6 @@ namespace System
             get;
         }
 
-        // Returns a boolean indicating whether or not we're tracking objects until they're collected (true)
-        // or just until they're finalized (false).
-        //
-        public virtual bool TrackResurrection => IsTrackResurrection();
-
         // Gets the Object stored in the handle if it's accessible.
         // Or sets it.
         //

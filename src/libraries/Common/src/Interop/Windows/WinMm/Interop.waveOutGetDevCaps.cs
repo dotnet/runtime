@@ -50,7 +50,9 @@ internal static partial class Interop
                         wMid = managed.wMid;
                         wPid = managed.wPid;
                         vDriverVersion = managed.vDriverVersion;
-                        managed.szPname.CopyTo(MemoryMarshal.CreateSpan(ref szPname[0], szPnameLength));
+                        Span<char> szPnameSpan = MemoryMarshal.CreateSpan(ref szPname[0], szPnameLength);
+                        szPnameSpan.Clear();
+                        managed.szPname?.CopyTo(szPnameSpan);
                         dwFormats = managed.dwFormats;
                         wChannels = managed.wChannels;
                         wReserved1 = managed.wReserved1;
