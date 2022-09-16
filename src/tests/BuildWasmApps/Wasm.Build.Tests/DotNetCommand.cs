@@ -16,7 +16,7 @@ namespace Wasm.Build.Tests
             _useDefaultArgs = useDefaultArgs;
             if (useDefaultArgs)
                 WithEnvironmentVariables(buildEnv.EnvVars);
-            // workaround msbuild issue
+            // workaround msbuild issue - https://github.com/dotnet/runtime/issues/74328
             WithEnvironmentVariable("DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER", "1");
         }
 
