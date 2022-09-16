@@ -11,5 +11,8 @@
     <Compile Include="$(MSBuildProjectName).cs">
       <HasDisasmCheck>true</HasDisasmCheck>
     </Compile>
+
+    <CLRTestEnvironmentVariable Include="COMPlus_TieredCompilation" Value="0" />
+    <CLRTestEnvironmentVariable Include="COMPlus_JitMinOpts" Value="0" />
   </ItemGroup>
 </Project>
