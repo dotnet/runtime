@@ -1,6 +1,14 @@
 # Disassembly output verification checks
 There are tests that the runtime executes that will be able to verify X64/ARM64 assembly output from the JIT.
 The tools used to accomplish this are LLVM FileCheck, SuperFileCheck, and the JIT's ability to output disassembly using `DOTNET_JitDisasm`. LLVM FileCheck is built in https://www.github.com/dotnet/llvm-project and provides several packages for the various platforms. See more about LLVM FileCheck and its syntax here: https://llvm.org/docs/CommandGuide/FileCheck.html. SuperFileCheck is a custom tool located in https://www.github.com/dotnet/runtime. It wraps LLVM FileCheck and provides a simplified workflow for writing these tests in a C# file by leveraging Roslyn's syntax tree APIs.
+# What is FileCheck?
+From https://www.llvm.org/docs/CommandGuide/FileCheck.html:
+
+> **FileCheck** reads two files (one from standard input, and one specified on the command line) and uses one
+to verify the other. This behavior is particularly useful for the testsuite, which wants to verify that the
+output of some tool (e.g. **llc**) contains the expected information (for example, a movsd from esp or
+whatever is interesting). This is similar to using **grep**, but it is optimized for matching multiple
+different inputs in one file in a specific order.
 # Converting an existing test to use disassembly checking
 We will use the existing test `JIT\Regression\JitBlue\Runtime_33972` as an example. The test's intent is to verify that on ARM64, the method `AdvSimd.CompareEqual` behaves correctly when a zero vector is passed as the second argument. Below are snippets of its use:
 ```csharp
