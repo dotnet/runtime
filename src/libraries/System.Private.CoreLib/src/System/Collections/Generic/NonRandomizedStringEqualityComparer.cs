@@ -114,17 +114,17 @@ namespace System.Collections.Generic
             // We use a non-randomized comparer for improved perf, falling back to a randomized comparer if the
             // hash buckets become unbalanced.
 
-            if (comparer.Equals(EqualityComparer<string>.Default))
+            if (ReferenceEquals(comparer, EqualityComparer<string>.Default))
             {
                 return WrappedAroundDefaultComparer;
             }
 
-            if (comparer.Equals(StringComparer.Ordinal))
+            if (ReferenceEquals(comparer, StringComparer.Ordinal))
             {
                 return WrappedAroundStringComparerOrdinal;
             }
 
-            if (comparer.Equals(StringComparer.OrdinalIgnoreCase))
+            if (ReferenceEquals(comparer, StringComparer.OrdinalIgnoreCase))
             {
                 return WrappedAroundStringComparerOrdinalIgnoreCase;
             }
