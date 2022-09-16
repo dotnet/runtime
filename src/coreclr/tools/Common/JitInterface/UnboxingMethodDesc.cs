@@ -79,7 +79,7 @@ namespace Internal.JitInterface
 
         protected override int ComputeHashCode()
         {
-            throw new NotSupportedException("This method may not be stored  as it is expected to only be used transiently in the JIT");
+            throw new NotSupportedException("This method may not be stored as it is expected to only be used transiently in the JIT");
         }
 
         int IJitHashableOnly.GetJitVisibleHashCode() => _jitVisibleHashCode;

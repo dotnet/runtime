@@ -998,8 +998,16 @@ namespace Internal.JitInterface
                 // it is a delegate.
 
                 // method or class might have the final bit
-                if (_compilation.IsEffectivelySealed(method))
-                    result |= CorInfoFlag.CORINFO_FLG_FINAL;
+                if (method.IsUnboxingThunk())
+                {
+                    if (_compilation.IsEffectivelySealed(method.GetUnboxedMethod()))
+                        result |= CorInfoFlag.CORINFO_FLG_FINAL;
+                }
+                else
+                {
+                    if (_compilation.IsEffectivelySealed(method))
+                        result |= CorInfoFlag.CORINFO_FLG_FINAL;
+                }
             }
             if (method.IsAbstract)
                 result |= CorInfoFlag.CORINFO_FLG_ABSTRACT;

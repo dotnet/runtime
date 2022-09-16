@@ -565,7 +565,7 @@ namespace ILCompiler
         }
 
         [ThreadStatic]
-        private int s_methodsCompiledPerThread = 0;
+        private static int s_methodsCompiledPerThread = 0;
 
         private SemaphoreSlim _compilationThreadSemaphore = new(0);
         private volatile IEnumerator<DependencyNodeCore<NodeFactory>> _currentCompilationMethodList;
@@ -818,8 +818,13 @@ namespace ILCompiler
                             else
                             {
                                 // Periodically create a new CorInfoImpl to clear out stale caches
-                                if ((s_methodsCompiledPerThread % 1000) == 0)
+                                // This is done as the CorInfoImpl holds a cache of data structures visible to the JIT
+                                // Those data structures include both structures which will last for the lifetime of the compilation
+                                // process, as well as various temporary structures that would really be better off with thread lifetime.
+                                if ((s_methodsCompiledPerThread % 3000) == 0)
+                                {
                                     createNewCorInfoImpl = true;
+                                }
                             }
                         }
 

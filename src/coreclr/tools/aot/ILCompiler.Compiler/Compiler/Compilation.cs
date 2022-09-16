@@ -81,7 +81,7 @@ namespace ILCompiler
         public virtual MethodIL GetMethodIL(MethodDesc method)
         {
             // Flush the cache when it grows too big
-            if (_methodILCache.Count > 3000) // This is a magic number found by compiling System.Private.CoreLib.dll that seems to be reasonable.
+            if (_methodILCache.Count > 1000)
                 _methodILCache = new ILCache(_methodILCache.ILProvider);
 
             return _methodILCache.GetOrCreateValue(method).MethodIL;
