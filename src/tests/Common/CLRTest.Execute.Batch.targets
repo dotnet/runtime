@@ -302,10 +302,8 @@ if defined RunCrossGen2 (
   call :TakeLock
 )
 
-REM Change to runtime config check
 ECHO %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
 %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
-
 set CLRTestExitCode=!ERRORLEVEL!
 if defined RunCrossGen2 (
   call :ReleaseLock
@@ -441,7 +439,6 @@ $(BatchCLRTestEnvironmentCompatibilityCheck)
 
 $(IlasmRoundTripBatchScript)
 
-REM Allow test environment variables or precommands to override the ExePath
 $(SuperPMICollectionBatchScript)
 
 REM Allow precommands to override the ExePath

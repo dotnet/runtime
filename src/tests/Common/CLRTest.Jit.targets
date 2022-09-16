@@ -242,7 +242,7 @@ fi
       <CLRTestBashPreCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
 @(DisasmCheckFiles -> '  $CORE_ROOT/SuperFileCheck/SuperFileCheck --csharp-list-method-names "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) > "$(BashDisasmListOutputFile)"
   ERRORLEVEL=$?
-  export DOTNET_JitDisasm=$(cat $(BashDisasmListOutputFile))
+  export DOTNET_JitDisasm=`cat $(BashDisasmListOutputFile)`
   export DOTNET_JitDiffableDasm=1
   export COMPlus_JitStdOutFile=$(BashDisasmOutputFile)
   if [[ $ERRORLEVEL -ne 0 ]]

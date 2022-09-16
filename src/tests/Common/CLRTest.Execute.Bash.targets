@@ -317,8 +317,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
   TakeLock
 fi
 
-# Change to runtime config check
-echo $LAUNCHER $ExePath $(printf "'%s' " "${CLRTestExecutionArguments[@]}")
+echo $LAUNCHER $ExePath %24(printf "'%s' " "${CLRTestExecutionArguments[@]}")
 $LAUNCHER $ExePath "${CLRTestExecutionArguments[@]}"
 
 CLRTestExitCode=$?
@@ -540,7 +539,6 @@ $(BashCLRTestEnvironmentCompatibilityCheck)
 $(BashCLRTestArgPrep)
 $(BashCLRTestExitCodePrep)
 $(IlasmRoundTripBashScript)
-# Allow test environment variables or precommands to override the ExePath
 $(SuperPMICollectionBashScript)
 # Allow precommands to override the ExePath
 ExePath=$(InputAssemblyName)
