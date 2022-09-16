@@ -140,7 +140,7 @@ namespace System.Reflection
                     if (attrs.Length > 0)
                         return attrs[0].Value;
                 }
-                else
+                else if (DefaultValueImpl == DBNull.Value)
                 {
                     /* look for a default value encoded using a custom attribute */
                     CustomConstantAttribute[] attrs = (CustomConstantAttribute[])GetCustomAttributes(typeof(CustomConstantAttribute), false);
