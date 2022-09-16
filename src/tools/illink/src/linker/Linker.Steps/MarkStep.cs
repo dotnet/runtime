@@ -947,14 +947,14 @@ namespace Mono.Linker.Steps
 			if (dynamicDependency.MemberSignature is string memberSignature) {
 				members = DocumentationSignatureParser.GetMembersByDocumentationSignature (type, memberSignature, Context, acceptName: true);
 				if (!members.Any ()) {
-					Context.LogWarning (ScopeStack.CurrentScope.Origin, DiagnosticId.NoMembersResolvedForMemberSignatureOrType, memberSignature);
+					Context.LogWarning (ScopeStack.CurrentScope.Origin, DiagnosticId.NoMembersResolvedForMemberSignatureOrType, memberSignature, type.GetDisplayName ());
 					return;
 				}
 			} else {
 				var memberTypes = dynamicDependency.MemberTypes;
 				members = type.GetDynamicallyAccessedMembers (Context, memberTypes);
 				if (!members.Any ()) {
-					Context.LogWarning (ScopeStack.CurrentScope.Origin, DiagnosticId.NoMembersResolvedForMemberSignatureOrType, memberTypes.ToString ());
+					Context.LogWarning (ScopeStack.CurrentScope.Origin, DiagnosticId.NoMembersResolvedForMemberSignatureOrType, memberTypes.ToString (), type.GetDisplayName ());
 					return;
 				}
 			}
