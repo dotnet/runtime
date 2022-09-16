@@ -4773,6 +4773,7 @@ bool Compiler::optIfConvert(BasicBlock* block)
         {
             fgDumpBlock(dumpBlock);
         }
+        JITDUMP("\n");
     }
 #endif
 
@@ -4842,7 +4843,11 @@ bool Compiler::optIfConvert(BasicBlock* block)
                 if (ssaNum != SsaConfig::RESERVED_SSA_NUM)
                 {
                     LclSsaVarDsc* ssaDef = lvaGetDesc(lclNum)->GetPerSsaData(ssaNum);
-                    ssaDef->SetBlock(block);
+                    if (ssaDef->GetBlock() == middleBlock)
+                    {
+                        JITDUMP("SSA def %d for V%02u moved from " FMT_BB " to " FMT_BB ".\n", ssaNum, lclNum, ssaDef->GetBlock()->bbNum, block->bbNum);
+                        ssaDef->SetBlock(block);
+                    }
                 }
             }
         }
