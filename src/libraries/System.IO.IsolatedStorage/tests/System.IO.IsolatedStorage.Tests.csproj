@@ -51,6 +51,10 @@
     <Compile Include="System\IO\IsolatedStorage\MoveFileTests.cs" />
     <Compile Include="System\IO\IsolatedStorage\OpenFileTests.cs" />
     <Compile Include="System\IO\IsolatedStorage\TestHelper.cs" />
+    <Compile Condition="'$(TargetPlatformIdentifier)' == 'Android' or '$(TargetPlatformIdentifier)' == 'iOS' or '$(TargetPlatformIdentifier)' == 'MacCatalyst' or '$(TargetPlatformIdentifier)' == 'tvOS'"
+             Include="System\IO\IsolatedStorage\TestHelper.AnyMobile.cs" />
+    <Compile Condition="'$(TargetPlatformIdentifier)' != 'Android' and '$(TargetPlatformIdentifier)' != 'iOS' and '$(TargetPlatformIdentifier)' != 'MacCatalyst' and '$(TargetPlatformIdentifier)' != 'tvOS'"
+             Include="System\IO\IsolatedStorage\TestHelper.NonMobile.cs" />
     <Compile Include="System\IO\IsolatedStorage\RemoveTests.cs" />
   </ItemGroup>
   <ItemGroup>
