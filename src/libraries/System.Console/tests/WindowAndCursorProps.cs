@@ -46,7 +46,7 @@ public class WindowAndCursorProps
     }
 
     [Theory]
-    [PlatformSpecific(TestPlatforms.Windows)]
+    [PlatformSpecific((TestPlatforms.Windows) | (TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.MacCatalyst & ~TestPlatforms.tvOS))]
     [InlineData(0)]
     [InlineData(-1)]
     public static void WindowWidth_SetInvalid_ThrowsArgumentOutOfRangeException(int value)
@@ -70,15 +70,8 @@ public class WindowAndCursorProps
         Helpers.RunInRedirectedOutput((data) => Console.WriteLine(Console.WindowWidth));
     }
 
-    [Fact]
-    [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]  // Expected behavior specific to Unix
-    public static void WindowWidth_SetUnix_ThrowsPlatformNotSupportedException()
-    {
-        Assert.Throws<PlatformNotSupportedException>(() => Console.WindowWidth = 100);
-    }
-
     [Theory]
-    [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior specific to Windows
+    [PlatformSpecific((TestPlatforms.Windows) | (TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.MacCatalyst & ~TestPlatforms.tvOS))]
     [InlineData(0)]
     [InlineData(-1)]
     public static void WindowHeight_SetInvalid_ThrowsArgumentOutOfRangeException(int value)
@@ -100,13 +93,6 @@ public class WindowAndCursorProps
         // Validate that Console.WindowHeight returns some value in a non-redirected o/p.
         Helpers.RunInNonRedirectedOutput((data) => Console.WriteLine(Console.WindowHeight));
         Helpers.RunInRedirectedOutput((data) => Console.WriteLine(Console.WindowHeight));
-    }
-
-    [Fact]
-    [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected behavior specific to Unix
-    public static void WindowHeight_SetUnix_ThrowsPlatformNotSupportedException()
-    {
-        Assert.Throws<PlatformNotSupportedException>(() => Console.WindowHeight = 100);
     }
 
     [Fact]
@@ -584,13 +570,6 @@ public class WindowAndCursorProps
                 Console.WindowHeight = origHeight;
             }
         }
-    }
-
-    [Fact]
-    [PlatformSpecific(TestPlatforms.AnyUnix)]
-    public void SetWindowSize_Unix_ThrowsPlatformNotSupportedException()
-    {
-        Assert.Throws<PlatformNotSupportedException>(() => Console.SetWindowSize(50, 50));
     }
 
     [Fact]

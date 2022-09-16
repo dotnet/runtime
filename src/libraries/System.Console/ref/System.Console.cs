@@ -69,10 +69,10 @@ namespace System
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         public static bool TreatControlCAsInput { get { throw null; } set { } }
-        public static int WindowHeight { [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")] get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
+        public static int WindowHeight { [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")] get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows"), System.Runtime.Versioning.SupportedOSPlatformAttribute("linux")] set { } }
         public static int WindowLeft { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
         public static int WindowTop { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
-        public static int WindowWidth { [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")] get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
+        public static int WindowWidth { [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios"), System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")] get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows"), System.Runtime.Versioning.SupportedOSPlatformAttribute("linux")] set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
@@ -148,6 +148,7 @@ namespace System
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void SetWindowPosition(int left, int top) { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("linux")]
         public static void SetWindowSize(int width, int height) { }
         public static void Write(bool value) { }
         public static void Write(char value) { }

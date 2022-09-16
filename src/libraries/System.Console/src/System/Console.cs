@@ -400,6 +400,7 @@ namespace System
             [UnsupportedOSPlatform("tvos")]
             get { return ConsolePal.WindowWidth; }
             [SupportedOSPlatform("windows")]
+            [SupportedOSPlatform("linux")]
             set { ConsolePal.WindowWidth = value; }
         }
 
@@ -411,6 +412,7 @@ namespace System
             [UnsupportedOSPlatform("tvos")]
             get { return ConsolePal.WindowHeight; }
             [SupportedOSPlatform("windows")]
+            [SupportedOSPlatform("linux")]
             set { ConsolePal.WindowHeight = value; }
         }
 
@@ -421,6 +423,7 @@ namespace System
         }
 
         [SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("linux")]
         public static void SetWindowSize(int width, int height)
         {
             ConsolePal.SetWindowSize(width, height);

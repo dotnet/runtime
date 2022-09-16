@@ -346,7 +346,10 @@ namespace System
                 GetWindowSize(out int width, out _);
                 return width;
             }
-            set { throw new PlatformNotSupportedException(); }
+            set
+            {
+                 SetWindowSize(value, WindowHeight);
+            }
         }
 
         public static int WindowHeight
@@ -356,7 +359,10 @@ namespace System
                 GetWindowSize(out _, out int height);
                 return height;
             }
-            set { throw new PlatformNotSupportedException(); }
+            set
+            {
+                SetWindowSize(WindowWidth, value);
+            }
         }
 
         private static void GetWindowSize(out int width, out int height)
@@ -392,7 +398,29 @@ namespace System
 
         public static void SetWindowSize(int width, int height)
         {
-            throw new PlatformNotSupportedException();
+            if (Console.IsOutputRedirected)
+                throw new IOException(SR.InvalidOperation_SetWindowSize);
+            if (width <= 0)
+                throw new ArgumentOutOfRangeException(nameof(width), width, SR.ArgumentOutOfRange_NeedPosNum);
+            if (height <= 0)
+                throw new ArgumentOutOfRangeException(nameof(height), height, SR.ArgumentOutOfRange_NeedPosNum);
+
+           lock (Console.Out)
+           {
+               Interop.Sys.WinSize winsize = default;
+               winsize.Row = (ushort)height;
+               winsize.Col = (ushort)width;
+               if (Interop.Sys.SetWindowSize(in winsize) == 0)
+               {
+                   s_windowWidth = winsize.Col;
+                   s_windowHeight = winsize.Row;
+               }
+               else
+               {
+                   Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                   throw Interop.GetExceptionForIoErrno(errorInfo);
+               }
+           }
         }
 
         public static bool CursorVisible
