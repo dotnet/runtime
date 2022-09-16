@@ -6216,6 +6216,12 @@ public:
             }
         }
 
+        // Returns "true" iff this is removed loop.
+        bool lpIsRemoved() const
+        {
+            return (lpFlags & LPFLG_REMOVED) != 0;
+        }
+
         // Returns "true" iff "*this" contains the blk.
         bool lpContains(BasicBlock* blk) const
         {
