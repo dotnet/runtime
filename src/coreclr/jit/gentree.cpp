@@ -18913,7 +18913,7 @@ bool GenTree::isCommutativeHWIntrinsic() const
 
 #ifdef TARGET_XARCH
     const GenTreeHWIntrinsic* node = AsHWIntrinsic();
-    NamedIntrinsic            id   = node->GetHWIntrinsicId();
+    NamedIntrinsic            id   = node->gtHWIntrinsicId;
 
     if (HWIntrinsicInfo::IsCommutative(id))
     {
