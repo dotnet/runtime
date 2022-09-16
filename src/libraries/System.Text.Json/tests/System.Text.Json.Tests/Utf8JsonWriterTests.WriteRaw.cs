@@ -333,7 +333,7 @@ namespace System.Text.Json.Tests
         /// Also see <see cref="WriteLargeJsonToStreamWithoutFlushing"/>
         /// </summary>
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [ConditionalFact(nameof(IsX64))]
+        [ConditionalFact(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         public void WriteRawLargeJsonToStreamWithoutFlushing()
         {
@@ -381,7 +381,7 @@ namespace System.Text.Json.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [ConditionalTheory(nameof(IsX64))]
+        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         [InlineData(JsonTokenType.String)]
         [InlineData(JsonTokenType.StartArray)]
@@ -471,7 +471,7 @@ namespace System.Text.Json.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [ConditionalTheory(nameof(IsX64))]
+        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [InlineData((int.MaxValue / 3) + 1)]
         [InlineData(int.MaxValue / 3 + 2)]
         [OuterLoop]
@@ -504,7 +504,7 @@ namespace System.Text.Json.Tests
         }
 
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [ConditionalFact(nameof(IsX64))]
+        [ConditionalFact(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         public static void WriteRawTranscodeFromUtf16ToUtf8TooLong()
         {
