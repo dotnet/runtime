@@ -49,10 +49,10 @@
     <MicrosoftCodeAnalysisAnalyzersVersion>3.3.4-beta1.22452.2</MicrosoftCodeAnalysisAnalyzersVersion>
     <MicrosoftCodeAnalysisNetAnalyzersVersion>7.0.0-preview1.22452.2</MicrosoftCodeAnalysisNetAnalyzersVersion>
     <!-- dotnet/roslyn dependencies -->
-    <MicrosoftCodeAnalysisCSharpWorkspacesVersion>4.4.0-2.22463.8</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
-    <MicrosoftCodeAnalysisCSharpVersion>4.4.0-2.22463.8</MicrosoftCodeAnalysisCSharpVersion>
-    <MicrosoftCodeAnalysisVersion>4.4.0-2.22463.8</MicrosoftCodeAnalysisVersion>
-    <MicrosoftNetCompilersToolsetVersion>4.4.0-2.22463.8</MicrosoftNetCompilersToolsetVersion>
+    <MicrosoftCodeAnalysisCSharpWorkspacesVersion>4.4.0-2.22464.20</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
+    <MicrosoftCodeAnalysisCSharpVersion>4.4.0-2.22464.20</MicrosoftCodeAnalysisCSharpVersion>
+    <MicrosoftCodeAnalysisVersion>4.4.0-2.22464.20</MicrosoftCodeAnalysisVersion>
+    <MicrosoftNetCompilersToolsetVersion>4.4.0-2.22464.20</MicrosoftNetCompilersToolsetVersion>
     <StaticCsVersion>0.2.0</StaticCsVersion>
     <!-- SDK dependencies -->
     <MicrosoftDotNetApiCompatTaskVersion>8.0.100-alpha.1.22462.3</MicrosoftDotNetApiCompatTaskVersion>
