@@ -3425,13 +3425,12 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
                 // Although, it's possible for e.g. GTF_ICON_STATIC_HDL
                 if (!newTree->IsIntegralConst(0) && newTree->IsIconHandle(GTF_ICON_STR_HDL))
                 {
-                    if (!tree->TypeIs(TYP_REF))
+                    if (tree->TypeIs(TYP_BYREF))
                     {
-                        assert(tree->TypeIs(TYP_BYREF));
                         // Conservatively don't allow propagation of ICON TYP_REF into BYREF
                         return nullptr;
                     }
-                    newTree->ChangeType(TYP_REF);
+                    newTree->ChangeType(newTree->TypeGet());
                 }
             }
             else
