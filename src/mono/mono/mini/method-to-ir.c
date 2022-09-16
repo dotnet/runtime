@@ -5649,13 +5649,11 @@ is_addressable_valuetype_load (MonoCompile* cfg, guint8* ip, MonoType* ldtype)
 	return is_load_instruction && is_in_previous_bb && is_struct;
 }
 
-gboolean
+static gboolean
 check_get_virtual_method_assumptions (MonoClass* klass, MonoMethod* method)
 {
 	if (((method->flags & METHOD_ATTRIBUTE_FINAL) || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL)))
 		return TRUE;
-
-	MonoMethod** vtable = m_class_get_vtable (klass);
 
 	if (method->slot == -1) {
 		if (method->is_inflated) {
@@ -5667,7 +5665,6 @@ check_get_virtual_method_assumptions (MonoClass* klass, MonoMethod* method)
 		}
 	}
 
-	MonoMethod* res = NULL;
 	if (method->slot != -1 && mono_class_is_interface (method->klass))  {
 		gboolean variance_used = FALSE;
 		int iface_offset = mono_class_interface_offset_with_variance (klass, method->klass, &variance_used);
@@ -7097,8 +7094,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case MONO_CEE_LDARG:
 		{
 			CHECK_ARG (n);
-
-			MonoMethod* callvirt_target ;
 			if (next_ip < end && is_addressable_valuetype_load (cfg, next_ip, cfg->arg_types[n])) {
 				EMIT_NEW_ARGLOADA (cfg, ins, n);
 			} else {
@@ -7106,7 +7101,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			*sp++ = ins;
 
-			if(callvirt_target = try_prepare_objaddr_callvirt_optimization (cfg, next_ip, end, method, generic_context, param_types[n]->data.klass))
+			MonoMethod* callvirt_target = try_prepare_objaddr_callvirt_optimization (cfg, next_ip, end, method, generic_context, param_types[n]->data.klass);
+			if(callvirt_target)
 			{
 				cmethod_override = callvirt_target;
 				//printf("--- ldarg+callvirt @ %s\n", mono_method_get_full_name(method));
@@ -7122,8 +7118,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case MONO_CEE_LDLOC:
 		{
 			CHECK_LOCAL (n);
-			
-			MonoMethod* callvirt_target;
 			if (next_ip < end && is_addressable_valuetype_load (cfg, next_ip, header->locals[n])) {
 				EMIT_NEW_LOCLOADA (cfg, ins, n);
 			} else {
