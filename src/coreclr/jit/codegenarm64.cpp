@@ -3357,8 +3357,19 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                 //
                 bool checkDividend = true;
 
-                // Do we have an immediate for the 'divisorOp'?
+                // Do we have an immediate for the 'divisorOp' or 'dividendOp'?
                 //
+                GenTree* dividendOp = tree->gtGetOp1();
+                if (dividendOp->IsCnsIntOrI())
+                {
+                    GenTreeIntConCommon* intConstTree  = dividendOp->AsIntConCommon();
+                    ssize_t              intConstValue = intConstTree->IconValue();
+                    if ((targetType == TYP_INT && intConstValue != INT_MIN) ||
+                        (targetType == TYP_LONG && intConstValue != INT64_MIN))
+                    {
+                        checkDividend = false; // We statically know that the dividend is not the minimum int
+                    }
+                }
                 if (divisorOp->IsCnsIntOrI())
                 {
                     GenTreeIntConCommon* intConstTree  = divisorOp->AsIntConCommon();
@@ -3384,7 +3395,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                     inst_JMP(EJ_ne, sdivLabel);
                     // If control flow continues past here the 'divisorReg' is known to be -1
 
-                    regNumber dividendReg = tree->gtGetOp1()->GetRegNum();
+                    regNumber dividendReg = dividendOp->GetRegNum();
                     // At this point the divisor is known to be -1
                     //
                     // Issue the 'adds  zr, dividendReg, dividendReg' instruction

@@ -955,6 +955,9 @@ public:
 
     // Gets all the names and values of the GC configurations.
     virtual void EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc) = 0;
+
+    // Updates given frozen segment
+    virtual void UpdateFrozenSegment(segment_handle seg, uint8_t* allocated, uint8_t* committed) = 0;
 };
 
 #ifdef WRITE_BARRIER_CHECK
