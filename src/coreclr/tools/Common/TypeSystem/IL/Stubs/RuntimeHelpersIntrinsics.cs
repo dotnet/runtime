@@ -76,23 +76,21 @@ namespace Internal.IL.Stubs
                         break;
                     default:
                         result = false;
-                        var mdType = elementType as MetadataType;
-                        if (mdType != null && mdType.Name == "Rune" && mdType.Namespace == "System.Text")
+                        if (elementType is MetadataType mdType)
                         {
-                            result = true;
-                        }
-                        else if (mdType != null && mdType.Name == "Char8" && mdType.Namespace == "System")
-                        {
-                            result = true;
-                        }
-                        else if (mdType.IsValueType && !ComparerIntrinsics.ImplementsIEquatable(mdType.GetTypeDefinition()))
-                        {
-                            MethodDesc objectEquals = mdType.Context.GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null);
-                            if (mdType.FindVirtualFunctionTargetMethodOnObjectType(objectEquals).OwningType != mdType &&
-                                ComparerIntrinsics.CanCompareValueTypeBits(mdType, objectEquals))
+                            if (mdType.Module == mdType.Context.SystemModule &&
+                                mdType.Namespace == "System.Text" &&
+                                mdType.Name == "Rune")
+                            {
+                                result = true;
+                            }
+                            else if (mdType.IsValueType && !ComparerIntrinsics.ImplementsIEquatable(mdType.GetTypeDefinition()))
                             {
                                 // Value type that can use memcmp and that doesn't override object.Equals or implement IEquatable<T>.Equals.
-                                result = true;
+                                MethodDesc objectEquals = mdType.Context.GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null);
+                                result =
+                                    mdType.FindVirtualFunctionTargetMethodOnObjectType(objectEquals).OwningType != mdType &&
+                                    ComparerIntrinsics.CanCompareValueTypeBits(mdType, objectEquals);
                             }
                         }
                         break;
