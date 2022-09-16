@@ -1544,12 +1544,6 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     GenTree* asgNode = gtNewAssignNode(dest, src);
     gtBlockOpInit(asgNode, dest, src, false);
 
-    // TODO-1stClassStructs: Clean up the settings of GTF_DONT_CSE on the lhs
-    // of assignments.
-    if ((destFlags & GTF_DONT_CSE) == 0)
-    {
-        dest->gtFlags &= ~(GTF_DONT_CSE);
-    }
     return asgNode;
 }
 
