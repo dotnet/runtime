@@ -25,7 +25,7 @@ namespace System.IO.IsolatedStorage.Tests
             {
                 Assert.StartsWith(@"Url.", hash);
             }
-            else if (identity.GetType() != typeof(Uri))
+            else
             {
                 Assert.IsType<AssemblyName>(identity);
                 Assert.StartsWith(@"StrongName.", hash);
