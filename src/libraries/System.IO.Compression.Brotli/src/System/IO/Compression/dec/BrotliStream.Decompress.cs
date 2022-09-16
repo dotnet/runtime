@@ -66,7 +66,7 @@ namespace System.IO.Compression
                 int bytesRead = _stream.Read(_buffer, _bufferCount, _buffer.Length - _bufferCount);
                 if (bytesRead <= 0)
                 {
-                    if (GetStrictValidationSetting() && _nonEmptyInput && !buffer.IsEmpty)
+                    if (UseStrictValidation && _nonEmptyInput && !buffer.IsEmpty)
                         ThrowTruncatedInvalidData();
                     break;
                 }
@@ -154,7 +154,7 @@ namespace System.IO.Compression
                         int bytesRead = await _stream.ReadAsync(_buffer.AsMemory(_bufferCount), cancellationToken).ConfigureAwait(false);
                         if (bytesRead <= 0)
                         {
-                            if (GetStrictValidationSetting() && _nonEmptyInput && !buffer.IsEmpty)
+                            if (UseStrictValidation && _nonEmptyInput && !buffer.IsEmpty)
                                 ThrowTruncatedInvalidData();
                             break;
                         }
@@ -234,16 +234,8 @@ namespace System.IO.Compression
             return false;
         }
 
-        private static bool GetStrictValidationSetting()
-        {
-            if (AppContext.TryGetSwitch("System.IO.Compression.UseStrictValidation", out bool strictValidation))
-            {
-                return strictValidation;
-            }
-
-            string? envVar = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_COMPRESSION_STRICT_VALIDATION");
-            return envVar is not null && (envVar == "1" || envVar.Equals("true", StringComparison.OrdinalIgnoreCase));
-        }
+        private static readonly bool UseStrictValidation =
+            AppContext.TryGetSwitch("System.IO.Compression.UseStrictValidation", out bool strictValidation) ? strictValidation : false;
 
         private static void ThrowInvalidStream() =>
             // The stream is either malicious or poorly implemented and returned a number of
