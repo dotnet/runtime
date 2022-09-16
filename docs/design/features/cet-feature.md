@@ -6,7 +6,7 @@ Intel's [Control-flow Enforcement Technology (CET)](https://newsroom.intel.com/e
 
 CET compatibility is enabled in .NET 7. In order to receive the security benefits of CET shadow stacks in .NET applications, ensure the following to opt into the feature for an executable:
 - Verify that your processor supports Intel CET. There are Intel and AMD processors currently available with the feature.
-- Get a recent build of Windows that has Hardware-enforced Stack Protection. The latest versions from [Windows Insider preview builds (Dev channel)](https://insider.windows.com/en-us/understand-flighting) have the feature.
+- Ensure that the application is running on a recent build of Windows 11 or Windows Server (Version 22H2) that has Hardware-enforced Stack Protection. The latest versions from [Windows Insider preview builds (Beta channel)](https://insider.windows.com/en-us/understand-flighting) have the feature.
 - Install [.NET 7](https://dotnet.microsoft.com/download/dotnet) RC1 or a more recent release
 - Build or publish your application targeting framework `net7.0` and runtime `win-x64`
 - Open the Windows Security app
