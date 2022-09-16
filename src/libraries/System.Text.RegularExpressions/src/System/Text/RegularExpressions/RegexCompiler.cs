@@ -85,7 +85,7 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_arrayResize = typeof(Array).GetMethod("Resize")!.MakeGenericMethod(typeof(int));
         private static readonly MethodInfo s_mathMinIntInt = typeof(Math).GetMethod("Min", new Type[] { typeof(int), typeof(int) })!;
         // Note:
-        // IsAsciiLetterLower, IsAsciiLetterUpper, IsAsciiDigit, and IsBetween aren't used here, as the IL generated for those
+        // Single-range helpers like IsAsciiLetterLower, IsAsciiLetterUpper, IsAsciiDigit, and IsBetween aren't used here, as the IL generated for those
         // single-range checks is as cheap as the method call, and there's no readability issue as with the source generator.
 
         /// <summary>The ILGenerator currently in use.</summary>

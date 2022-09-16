@@ -11,9 +11,9 @@ namespace TypeSystemTests
 {
     public class InstanceFieldLayoutTests
     {
-        TestTypeSystemContext _context;
-        ModuleDesc _testModule;
-        ModuleDesc _ilTestModule;
+        private TestTypeSystemContext _context;
+        private ModuleDesc _testModule;
+        private ModuleDesc _ilTestModule;
 
         public InstanceFieldLayoutTests()
         {

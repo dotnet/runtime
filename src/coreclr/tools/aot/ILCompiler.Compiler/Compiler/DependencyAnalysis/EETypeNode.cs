@@ -21,13 +21,18 @@ namespace ILCompiler.DependencyAnalysis
     ///
     /// Field Size      | Contents
     /// ----------------+-----------------------------------
-    /// UInt16          | Component Size. For arrays this is the element type size, for strings it is 2 (.NET uses
-    ///                 | UTF16 character encoding), for generic type definitions it is the number of generic parameters,
-    ///                 | and 0 for all other types.
+    /// UInt32          | Flags field
+    ///                 | Flags for: IsValueType, IsCrossModule, HasPointers, HasOptionalFields, IsInterface, IsGeneric, etc ...
+    ///                 | EETypeKind (Normal, Array, Pointer type)
     ///                 |
-    /// UInt16          | EETypeKind (Normal, Array, Pointer type). Flags for: IsValueType, IsCrossModule, HasPointers,
-    ///                 | HasOptionalFields, IsInterface, IsGeneric. Top 5 bits are used for enum EETypeElementType to
-    ///                 | record whether it's back by an Int32, Int16 etc
+    ///                 | 5 bits near the top are used for enum EETypeElementType to record whether it's back by an Int32, Int16 etc
+    ///                 |
+    ///                 | The highest/sign bit indicates whether the lower Uint16 contains a number, which represents:
+    ///                 | - element type size for arrays,
+    ///                 | - char size for strings (normally 2, since .NET uses UTF16 character encoding),
+    ///                 | - for generic type definitions it is the number of generic parameters,
+    ///                 |
+    ///                 | If the sign bit is not set, then the lower Uint16 is used for additional ExtendedFlags
     ///                 |
     /// Uint32          | Base size.
     ///                 |
@@ -565,7 +570,6 @@ namespace ILCompiler.DependencyAnalysis
             ComputeOptionalEETypeFields(factory, relocsOnly);
 
             OutputGCDesc(ref objData);
-            OutputComponentSize(ref objData);
             OutputFlags(factory, ref objData);
             objData.EmitInt(BaseSize);
             OutputRelatedType(factory, ref objData);
@@ -632,40 +636,14 @@ namespace ILCompiler.DependencyAnalysis
             Debug.Assert(GCDescSize == 0);
         }
 
-        private void OutputComponentSize(ref ObjectDataBuilder objData)
-        {
-            if (_type.IsArray)
-            {
-                TypeDesc elementType = ((ArrayType)_type).ElementType;
-                if (elementType == elementType.Context.UniversalCanonType)
-                {
-                    objData.EmitShort(0);
-                }
-                else
-                {
-                    int elementSize = elementType.GetElementSize().AsInt;
-                    // We validated that this will fit the short when the node was constructed. No need for nice messages.
-                    objData.EmitShort((short)checked((ushort)elementSize));
-                }
-            }
-            else if (_type.IsString)
-            {
-                objData.EmitShort(StringComponentSize.Value);
-            }
-            else
-            {
-                objData.EmitShort(0);
-            }
-        }
-
         private void OutputFlags(NodeFactory factory, ref ObjectDataBuilder objData)
         {
-            UInt16 flags = EETypeBuilderHelpers.ComputeFlags(_type);
+            uint flags = EETypeBuilderHelpers.ComputeFlags(_type);
 
             if (_type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
             {
                 // Generic array enumerators use special variance rules recognized by the runtime
-                flags |= (UInt16)EETypeFlags.GenericVarianceFlag;
+                flags |= (uint)EETypeFlags.GenericVarianceFlag;
             }
 
             if (factory.TypeSystemContext.IsGenericArrayInterfaceType(_type))
@@ -673,12 +651,12 @@ namespace ILCompiler.DependencyAnalysis
                 // Runtime casting logic relies on all interface types implemented on arrays
                 // to have the variant flag set (even if all the arguments are non-variant).
                 // This supports e.g. casting uint[] to ICollection<int>
-                flags |= (UInt16)EETypeFlags.GenericVarianceFlag;
+                flags |= (uint)EETypeFlags.GenericVarianceFlag;
             }
 
             if (_type.IsIDynamicInterfaceCastable)
             {
-                flags |= (UInt16)EETypeFlags.IDynamicInterfaceCastableFlag;
+                flags |= (uint)EETypeFlags.IDynamicInterfaceCastableFlag;
             }
 
             ISymbolNode relatedTypeNode = GetRelatedTypeNode(factory);
@@ -688,20 +666,53 @@ namespace ILCompiler.DependencyAnalysis
             // that it should indirect through the import address table
             if (relatedTypeNode != null && relatedTypeNode.RepresentsIndirectionCell)
             {
-                flags |= (UInt16)EETypeFlags.RelatedTypeViaIATFlag;
+                flags |= (uint)EETypeFlags.RelatedTypeViaIATFlag;
             }
 
             if (HasOptionalFields)
             {
-                flags |= (UInt16)EETypeFlags.OptionalFieldsFlag;
+                flags |= (uint)EETypeFlags.OptionalFieldsFlag;
             }
 
             if (this is ClonedConstructedEETypeNode)
             {
-                flags |= (UInt16)EETypeKind.ClonedEEType;
+                flags |= (uint)EETypeKind.ClonedEEType;
             }
 
-            objData.EmitShort((short)flags);
+            if (_type.IsArray || _type.IsString)
+            {
+                flags |= (uint)EETypeFlags.HasComponentSizeFlag;
+            }
+
+            //
+            // output ComponentSize or FlagsEx
+            //
+
+            if (_type.IsArray)
+            {
+                TypeDesc elementType = ((ArrayType)_type).ElementType;
+                if (elementType == elementType.Context.UniversalCanonType)
+                {
+                    // elementSize == 0
+                }
+                else
+                {
+                    int elementSize = elementType.GetElementSize().AsInt;
+                    // We validated that this will fit the short when the node was constructed. No need for nice messages.
+                    flags |= (uint)elementSize;
+                }
+            }
+            else if (_type.IsString)
+            {
+                flags |= StringComponentSize.Value;
+            }
+            else
+            {
+                ushort flagsEx = EETypeBuilderHelpers.ComputeFlagsEx(_type);
+                flags |= flagsEx;
+            }
+
+            objData.EmitUInt(flags);
         }
 
         protected virtual int BaseSize
@@ -1050,7 +1061,7 @@ namespace ILCompiler.DependencyAnalysis
             ComputeValueTypeFieldPadding();
         }
 
-        void ComputeRareFlags(NodeFactory factory, bool relocsOnly)
+        private void ComputeRareFlags(NodeFactory factory, bool relocsOnly)
         {
             uint flags = 0;
 
@@ -1102,7 +1113,7 @@ namespace ILCompiler.DependencyAnalysis
         /// To support boxing / unboxing, the offset of the value field of a Nullable type is recorded on the MethodTable.
         /// This is variable according to the alignment requirements of the Nullable&lt;T&gt; type parameter.
         /// </summary>
-        void ComputeNullableValueOffset()
+        private void ComputeNullableValueOffset()
         {
             if (!_type.IsNullable)
                 return;
@@ -1194,8 +1205,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (factory.TypeSystemContext.SupportsUniversalCanon
                     || (factory.TypeSystemContext.SupportsCanon && (type != type.ConvertToCanonForm(CanonicalFormKind.Specific))))
                 {
-                    if (dependencies == null)
-                        dependencies = new DependencyList();
+                    dependencies ??= new DependencyList();
 
                     dependencies.Add(factory.NecessaryTypeSymbol(type), "Static block owning type is necessary for canonically equivalent reflection");
                 }
@@ -1221,8 +1231,7 @@ namespace ILCompiler.DependencyAnalysis
                     MethodDesc universalCanonMethodNonCanonicalized = method.MakeInstantiatedMethod(new Instantiation(universalCanonArray));
                     MethodDesc universalCanonGVMMethod = universalCanonMethodNonCanonicalized.GetCanonMethodTarget(CanonicalFormKind.Universal);
 
-                    if (dependencies == null)
-                        dependencies = new DependencyList();
+                    dependencies ??= new DependencyList();
 
                     dependencies.Add(new DependencyListEntry(factory.MethodEntrypoint(universalCanonGVMMethod), "USG GVM Method"));
                 }

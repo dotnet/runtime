@@ -26,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis
             if (relocsOnly)
                 return;
 
-            // The interface dispatch cell has an alignment requirement of 2 * [Pointer size] as part of the 
+            // The interface dispatch cell has an alignment requirement of 2 * [Pointer size] as part of the
             // synchronization mechanism of the two values in the runtime.
             builder.RequireInitialAlignment(factory.Target.PointerSize * 2);
 
@@ -90,7 +90,7 @@ namespace ILCompiler.DependencyAnalysis
         /// <summary>
         /// Comparer that groups interface dispatch cells by their slot number.
         /// </summary>
-        private class DispatchCellComparer : IComparer<InterfaceDispatchCellNode>
+        private sealed class DispatchCellComparer : IComparer<InterfaceDispatchCellNode>
         {
             private readonly NodeFactory _factory;
             private readonly TypeSystemComparer _comparer = TypeSystemComparer.Instance;

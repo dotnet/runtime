@@ -5592,6 +5592,14 @@ call_intrins (EmitContext *ctx, int id, LLVMValueRef *args, const char *name)
 	return call_overloaded_intrins (ctx, id, 0, args, name);
 }
 
+static LLVMValueRef
+fcmp_and_select(LLVMBuilderRef builder, MonoInst* ins, LLVMValueRef l, LLVMValueRef r)
+{
+	LLVMRealPredicate op = ins->inst_c0 == OP_FMAX ? LLVMRealUGE : LLVMRealULE;
+	LLVMValueRef cmp = LLVMBuildFCmp (builder, op, l, r, "");
+	return LLVMBuildSelect (builder, cmp, l, r, "");
+}
+
 static void
 process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 {
@@ -6856,7 +6864,7 @@ MONO_RESTORE_WARNING
 		}
 
 		case OP_CHECK_THIS:
-			LLVMBuildLoad2 (builder, IntPtrType (), convert (ctx, lhs, pointer_type (IntPtrType ())), "");
+			LLVMBuildLoad2 (builder, LLVMInt8Type (), convert (ctx, lhs, pointer_type (LLVMInt8Type ())), "");
 			break;
 		case OP_OUTARG_VTRETADDR:
 			break;
@@ -7713,6 +7721,14 @@ MONO_RESTORE_WARNING
 			default:
 				element_ix = const_int32 (ins->inst_c0);
 			}
+
+#ifdef TARGET_WASM
+			// LLVM seems to return an invalid result when the input is undef (i.e. the result of an invalid shufflevector for example)
+			if (LLVMIsUndef (lhs)) {
+				values [ins->dreg] = LLVMConstNull (LLVMGetElementType (LLVMTypeOf (lhs)));
+				break;
+			}
+#endif
 			LLVMTypeRef lhs_t = LLVMTypeOf (lhs);
 			int vec_width = mono_llvm_get_prim_size_bits (lhs_t);
 			int elem_width = mono_llvm_get_prim_size_bits (elt_t);
@@ -7862,9 +7878,7 @@ MONO_RESTORE_WARNING
 					}
 					result = call_intrins (ctx, iid, min_max_args, dname);
 				} else {
-					LLVMRealPredicate op = ins->inst_c0 == OP_FMAX ? LLVMRealUGE : LLVMRealULE;
-					LLVMValueRef cmp = LLVMBuildFCmp (builder, op, l, r, "");
-					result = LLVMBuildSelect (builder, cmp, l, r, "");
+					result = fcmp_and_select (builder, ins, l, r);
 				}
 
 #elif defined(TARGET_ARM64)
@@ -7873,7 +7887,7 @@ MONO_RESTORE_WARNING
 				llvm_ovr_tag_t ovr_tag = ovr_tag_from_mono_vector_class (ins->klass);
 				result = call_overloaded_intrins (ctx, iid, ovr_tag, min_max_args, "");
 #else
-				NOT_IMPLEMENTED;
+				result = fcmp_and_select (builder, ins, l, r);
 #endif
 				break;
 			}
@@ -9683,7 +9697,57 @@ MONO_RESTORE_WARNING
 			break;
 		}
 #endif
+#if defined(TARGET_WASM)
+		case OP_WASM_SIMD_BITMASK: {
+			LLVMValueRef args [] = { lhs };
+			int nelems = LLVMGetVectorSize (LLVMTypeOf (lhs));
+			IntrinsicId intrins = (IntrinsicId)0;
+			switch (nelems) {
+			case 16:
+				intrins = INTRINS_WASM_BITMASK_V16;
+				break;
+			case 8:
+				intrins = INTRINS_WASM_BITMASK_V8;
+				break;
+			case 4:
+				intrins = INTRINS_WASM_BITMASK_V4;
+				break;
+			case 2:
+				intrins = INTRINS_WASM_BITMASK_V2;
+				break;
+			default:
+				g_assert_not_reached ();
+			}
+			values [ins->dreg] = call_intrins (ctx, intrins, args, "");
+			break;
+		}
+		case OP_WASM_SIMD_SHUFFLE: {
+			/* FIXME: this crashes 'WebAssembly Instruction Selection' pass in some cases */
+			LLVMValueRef args [18] = { lhs, rhs };
+			for (int i = 0; i < 16; i++) {
+				args[2 + i] = LLVMBuildZExt (builder, LLVMBuildExtractElement (builder, arg3, const_int32 (i), ""), LLVMInt32Type (), "");
+			}
+			values [ins->dreg] = call_intrins (ctx, INTRINS_WASM_SHUFFLE, args, "i8x16.shuffle");
+			break;
+		}
+		case OP_WASM_SIMD_SWIZZLE: {
+			int nelems = LLVMGetVectorSize (LLVMTypeOf (lhs));
+			if (nelems == 16) {
+				LLVMValueRef args [] = { lhs, rhs };
+				values [ins->dreg] = call_intrins (ctx, INTRINS_WASM_SWIZZLE, args, "");
+				break;
+			}
 
+			LLVMValueRef indexes [16];
+			for (int i = 0; i < nelems; ++i)
+				indexes [i] = LLVMBuildExtractElement (builder, rhs, const_int32 (i), "");
+			LLVMValueRef shuffle_val = LLVMConstNull (LLVMVectorType (i4_t, nelems));
+			for (int i = 0; i < nelems; ++i)
+				shuffle_val = LLVMBuildInsertElement (builder, shuffle_val, convert (ctx, indexes [i], i4_t), const_int32 (i), "");
+			values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs, LLVMGetUndef (LLVMTypeOf (lhs)), shuffle_val, "");
+			break;
+		}
+#endif
 #if defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 		case OP_XEQUAL: {
 			LLVMTypeRef t;

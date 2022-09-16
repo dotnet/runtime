@@ -9,22 +9,23 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
-using Internal.TypeSystem;
 
 namespace Internal.TypeSystem
 {
-    class TypeSystemMetadataEmitter
+#pragma warning disable CA1852
+    internal class TypeSystemMetadataEmitter
+#pragma warning restore CA1852
     {
-        MetadataBuilder _metadataBuilder;
-        BlobBuilder _ilBuilder;
-        MethodBodyStreamEncoder _methodBodyStream;
-        Dictionary<string, AssemblyReferenceHandle> _assemblyRefNameHandles = new Dictionary<string, AssemblyReferenceHandle>();
-        Dictionary<IAssemblyDesc, AssemblyReferenceHandle> _assemblyRefs = new Dictionary<IAssemblyDesc, AssemblyReferenceHandle>();
-        Dictionary<TypeDesc, EntityHandle> _typeRefs = new Dictionary<TypeDesc, EntityHandle>();
-        Dictionary<MethodDesc, EntityHandle> _methodRefs = new Dictionary<MethodDesc, EntityHandle>();
-        Dictionary<FieldDesc, EntityHandle> _fieldRefs = new Dictionary<FieldDesc, EntityHandle>();
-        Blob _mvidFixup;
-        BlobHandle _noArgsVoidReturnStaticMethodSigHandle;
+        private MetadataBuilder _metadataBuilder;
+        private BlobBuilder _ilBuilder;
+        private MethodBodyStreamEncoder _methodBodyStream;
+        private Dictionary<string, AssemblyReferenceHandle> _assemblyRefNameHandles = new Dictionary<string, AssemblyReferenceHandle>();
+        private Dictionary<IAssemblyDesc, AssemblyReferenceHandle> _assemblyRefs = new Dictionary<IAssemblyDesc, AssemblyReferenceHandle>();
+        private Dictionary<TypeDesc, EntityHandle> _typeRefs = new Dictionary<TypeDesc, EntityHandle>();
+        private Dictionary<MethodDesc, EntityHandle> _methodRefs = new Dictionary<MethodDesc, EntityHandle>();
+        private Dictionary<FieldDesc, EntityHandle> _fieldRefs = new Dictionary<FieldDesc, EntityHandle>();
+        private Blob _mvidFixup;
+        private BlobHandle _noArgsVoidReturnStaticMethodSigHandle;
         protected TypeSystemContext _typeSystemContext;
 
         public TypeSystemMetadataEmitter(AssemblyName assemblyName, TypeSystemContext context, AssemblyFlags flags = default(AssemblyFlags), byte[] publicKeyArray = null, AssemblyHashAlgorithm hashAlgorithm = AssemblyHashAlgorithm.None)
@@ -41,7 +42,7 @@ namespace Internal.TypeSystem
             _mvidFixup = mvid.Content;
 
             _metadataBuilder.AddModule(0, assemblyNameHandle, mvid.Handle, default(GuidHandle), default(GuidHandle));
-            _metadataBuilder.AddAssembly(assemblyNameHandle, assemblyName.Version ?? new Version(0,0,0,0), default(StringHandle), publicKey: publicKeyArray != null ? _metadataBuilder.GetOrAddBlob(publicKeyArray) : default(BlobHandle), flags, AssemblyHashAlgorithm.None);
+            _metadataBuilder.AddAssembly(assemblyNameHandle, assemblyName.Version ?? new Version(0, 0, 0, 0), default(StringHandle), publicKey: publicKeyArray != null ? _metadataBuilder.GetOrAddBlob(publicKeyArray) : default(BlobHandle), flags, AssemblyHashAlgorithm.None);
 
             _metadataBuilder.AddTypeDefinition(
                default(TypeAttributes),
@@ -167,7 +168,7 @@ namespace Internal.TypeSystem
                     throw new NotSupportedException();
             }
         }
-        
+
         public IEnumerable<KeyValuePair<TypeSystemEntity, EntityHandle>> TypeSystemEntitiesKnown
         {
             get
@@ -264,7 +265,6 @@ namespace Internal.TypeSystem
 
         private BlobHandle GetFieldSignatureBlobHandle(FieldDesc field)
         {
-            var fieldDef = field.GetTypicalFieldDefinition();
             var embeddedSigData = field.GetEmbeddedSignatureData();
             EmbeddedSignatureDataEmitter signatureDataEmitter;
             if (embeddedSigData != null && embeddedSigData.Length != 0)
@@ -455,9 +455,8 @@ namespace Internal.TypeSystem
             {
                 blobBuilder.WriteByte((byte)SignatureTypeCode.Void);
             }
-            else if (type is SignatureVariable)
+            else if (type is SignatureVariable sigVar)
             {
-                SignatureVariable sigVar = (SignatureVariable)type;
                 SignatureTypeCode code = sigVar.IsMethodSignatureVariable ? SignatureTypeCode.GenericMethodParameter : SignatureTypeCode.GenericTypeParameter;
                 blobBuilder.WriteByte((byte)code);
                 blobBuilder.WriteCompressedInteger(sigVar.Index);
@@ -470,9 +469,8 @@ namespace Internal.TypeSystem
                 foreach (var instantiationArg in type.Instantiation)
                     EncodeType(blobBuilder, instantiationArg, signatureDataEmitter);
             }
-            else if (type is MetadataType)
+            else if (type is MetadataType metadataType)
             {
-                var metadataType = (MetadataType)type;
                 // Must be class or valuetype
                 blobBuilder.WriteByte(type.IsValueType ? (byte)SignatureTypeKind.ValueType : (byte)SignatureTypeKind.Class);
                 int codedIndex = CodedIndex.TypeDefOrRef(GetTypeRef(metadataType));
@@ -486,12 +484,12 @@ namespace Internal.TypeSystem
             signatureDataEmitter.Pop();
         }
 
-        class EmbeddedSignatureDataEmitter
+        private sealed class EmbeddedSignatureDataEmitter
         {
-            EmbeddedSignatureData[] _embeddedData;
-            int _embeddedDataIndex;
-            Stack<int> _indexStack = new Stack<int>();
-            TypeSystemMetadataEmitter _metadataEmitter;
+            private EmbeddedSignatureData[] _embeddedData;
+            private int _embeddedDataIndex;
+            private Stack<int> _indexStack = new Stack<int>();
+            private TypeSystemMetadataEmitter _metadataEmitter;
 
             public static EmbeddedSignatureDataEmitter EmptySingleton = new EmbeddedSignatureDataEmitter(null, null);
 
@@ -536,11 +534,11 @@ namespace Internal.TypeSystem
 
                                 for (int i = 0; i < boundsStr.Length; i++)
                                 {
-                                    bounds[i] = Int32.Parse(boundsStr[i]);
+                                    bounds[i] = int.Parse(boundsStr[i]);
                                 }
                                 for (int i = 0; i < loBoundsStr.Length; i++)
                                 {
-                                    loBounds[i] = Int32.Parse(loBoundsStr[i]);
+                                    loBounds[i] = int.Parse(loBoundsStr[i]);
                                 }
 
                                 shapeEncoder.Shape(rank, ImmutableArray.Create(bounds), ImmutableArray.Create(loBounds));
@@ -636,7 +634,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        void EncodeMethodSignature(BlobBuilder signatureBuilder, MethodSignature sig, EmbeddedSignatureDataEmitter signatureDataEmitter)
+        private void EncodeMethodSignature(BlobBuilder signatureBuilder, MethodSignature sig, EmbeddedSignatureDataEmitter signatureDataEmitter)
         {
             signatureDataEmitter.Push();
             BlobEncoder signatureEncoder = new BlobEncoder(signatureBuilder);
@@ -672,7 +670,7 @@ namespace Internal.TypeSystem
             signatureDataEmitter.Pop();
         }
 
-        void EncodeFieldSignature(BlobBuilder signatureBuilder, TypeDesc fieldType, EmbeddedSignatureDataEmitter signatureDataEmitter)
+        private void EncodeFieldSignature(BlobBuilder signatureBuilder, TypeDesc fieldType, EmbeddedSignatureDataEmitter signatureDataEmitter)
         {
             signatureDataEmitter.Push();
             BlobEncoder signatureEncoder = new BlobEncoder(signatureBuilder);

@@ -28,7 +28,7 @@ namespace ILCompiler
         {
             return new PInvokeILProvider(_pInvokeILEmitterConfiguration, _interopStateManager);
         }
-        
+
         public sealed override void AddToReadyToRunHeader(ReadyToRunHeaderNode header, NodeFactory nodeFactory, ExternalReferencesTableNode commonFixupsTableNode)
         {
             var delegateMapNode = new DelegateMarshallingStubMapNode(commonFixupsTableNode, _interopStateManager);

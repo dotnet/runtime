@@ -23,12 +23,12 @@ namespace System.Text.Json.Serialization.Metadata
             PopulatePolymorphismMetadata();
             MapInterfaceTypesToCallbacks();
 
-            if (PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object)
+            if (converter.ConverterStrategy == ConverterStrategy.Object)
             {
                 AddPropertiesAndParametersUsingReflection();
             }
 
-            Func<object>? createObject = Options.MemberAccessorStrategy.CreateConstructor(typeof(T));
+            Func<object>? createObject = JsonSerializerOptions.MemberAccessorStrategy.CreateConstructor(typeof(T));
             SetCreateObjectIfCompatible(createObject);
             CreateObjectForExtensionDataProperty = createObject;
 
@@ -41,7 +41,7 @@ namespace System.Text.Json.Serialization.Metadata
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private void AddPropertiesAndParametersUsingReflection()
         {
-            Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
+            Debug.Assert(Converter.ConverterStrategy == ConverterStrategy.Object);
 
             const BindingFlags BindingFlags =
                 BindingFlags.Instance |

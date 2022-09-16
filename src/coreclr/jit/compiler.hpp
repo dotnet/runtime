@@ -1617,7 +1617,7 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
 
         case GT_CNS_DBL:
             assert(varTypeIsFloating(type));
-            AsDblCon()->gtDconVal = static_cast<double>(value);
+            AsDblCon()->SetDconValue(static_cast<double>(value));
             break;
 
         default:
@@ -3884,13 +3884,6 @@ inline Compiler::lvaPromotionType Compiler::lvaGetPromotionType(const LclVarDsc*
     {
         // The struct is a register candidate
         return PROMOTION_TYPE_INDEPENDENT;
-    }
-
-    // Has struct promotion for arguments been disabled using COMPlus_JitNoStructPromotion=2
-    if (fgNoStructParamPromotion)
-    {
-        // The struct parameter is not enregistered
-        return PROMOTION_TYPE_DEPENDENT;
     }
 
 // We have a parameter that could be enregistered

@@ -19,31 +19,306 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
+//------------------------------------------------------------------------
+// StringPrinter::Printf:
+//   Print a formatted string.
+//
+// Arguments:
+//    format - the format
+//
+void StringPrinter::Printf(const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+
+    while (true)
+    {
+        size_t bufferLeft = m_bufferMax - m_bufferIndex;
+        assert(bufferLeft >= 1); // always fit null terminator
+
+        va_list argsCopy;
+        va_copy(argsCopy, args);
+        int printed = _vsnprintf_s(m_buffer + m_bufferIndex, bufferLeft, _TRUNCATE, format, argsCopy);
+        va_end(argsCopy);
+
+        if (printed < 0)
+        {
+            // buffer too small
+            size_t newSize   = m_bufferMax * 2;
+            char*  newBuffer = m_alloc.allocate<char>(newSize);
+            memcpy(newBuffer, m_buffer, m_bufferIndex + 1); // copy null terminator too
+
+            m_buffer    = newBuffer;
+            m_bufferMax = newSize;
+        }
+        else
+        {
+            m_bufferIndex = m_bufferIndex + static_cast<size_t>(printed);
+            break;
+        }
+    }
+
+    va_end(args);
+}
+
 #if defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD)
 
-/*****************************************************************************/
-
-/*****************************************************************************
- *
- *  Filter wrapper to handle exception filtering.
- *  On Unix compilers don't support SEH.
- */
-
-struct FilterSuperPMIExceptionsParam_eeinterface
+//------------------------------------------------------------------------
+// eePrintJitType:
+//   Print a JIT type.
+//
+// Arguments:
+//    printer - the printer
+//    jitType - the JIT type
+//
+void Compiler::eePrintJitType(StringPrinter* printer, var_types jitType)
 {
-    Compiler*               pThis;
-    Compiler::Info*         pJitInfo;
-    bool                    hasThis;
-    size_t                  siglength;
-    CORINFO_SIG_INFO        sig;
-    CORINFO_ARG_LIST_HANDLE argLst;
-    CORINFO_METHOD_HANDLE   hnd;
-    const char*             returnType;
-    const char**            pArgNames;
-    EXCEPTION_POINTERS      exceptionPointers;
-};
+    printer->Printf("%s", varTypeName(jitType));
+}
 
-const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd)
+//------------------------------------------------------------------------
+// eePrintType:
+//   Print a type given by a class handle.
+//
+// Arguments:
+//    printer              - the printer
+//    clsHnd               - Handle for the class
+//    includeNamespace     - Whether to print namespaces before type names
+//    includeInstantiation - Whether to print the instantiation of the class
+//
+void Compiler::eePrintType(StringPrinter*       printer,
+                           CORINFO_CLASS_HANDLE clsHnd,
+                           bool                 includeNamespace,
+                           bool                 includeInstantiation)
+{
+    const char* namespaceName;
+    const char* className = info.compCompHnd->getClassNameFromMetadata(clsHnd, &namespaceName);
+    if (className == nullptr)
+    {
+        unsigned arrayRank = info.compCompHnd->getArrayRank(clsHnd);
+        if (arrayRank > 0)
+        {
+            CORINFO_CLASS_HANDLE childClsHnd;
+            CorInfoType          childType = info.compCompHnd->getChildType(clsHnd, &childClsHnd);
+            if ((childType == CORINFO_TYPE_CLASS) || (childType == CORINFO_TYPE_VALUECLASS))
+            {
+                eePrintType(printer, childClsHnd, includeNamespace, includeInstantiation);
+            }
+            else
+            {
+                eePrintJitType(printer, JitType2PreciseVarType(childType));
+            }
+
+            printer->Printf("[");
+            for (unsigned i = 1; i < arrayRank; i++)
+            {
+                printer->Printf(",");
+            }
+            printer->Printf("]");
+            return;
+        }
+
+        namespaceName = nullptr;
+        className     = "<unnamed>";
+    }
+
+    if (includeNamespace && (namespaceName != nullptr) && (namespaceName[0] != '\0'))
+    {
+        printer->Printf("%s.", namespaceName);
+    }
+
+    printer->Printf("%s", className);
+
+    if (!includeInstantiation)
+    {
+        return;
+    }
+
+    char pref = '[';
+    for (unsigned typeArgIndex = 0;; typeArgIndex++)
+    {
+        CORINFO_CLASS_HANDLE typeArg = info.compCompHnd->getTypeInstantiationArgument(clsHnd, typeArgIndex);
+
+        if (typeArg == NO_CLASS_HANDLE)
+        {
+            break;
+        }
+
+        printer->Printf("%c", pref);
+        pref = ',';
+        eePrintTypeOrJitAlias(printer, typeArg, includeNamespace, true);
+    }
+
+    if (pref != '[')
+    {
+        printer->Printf("]");
+    }
+}
+
+//------------------------------------------------------------------------
+// eePrintTypeOrJitAlias:
+//   Print a type given by a class handle. If the type is a primitive type,
+//   prints its JIT alias.
+//
+// Arguments:
+//    printer              - the printer
+//    clsHnd               - Handle for the class
+//    includeNamespace     - Whether to print namespaces before type names
+//    includeInstantiation - Whether to print the instantiation of the class
+//
+void Compiler::eePrintTypeOrJitAlias(StringPrinter*       printer,
+                                     CORINFO_CLASS_HANDLE clsHnd,
+                                     bool                 includeNamespace,
+                                     bool                 includeInstantiation)
+{
+    CorInfoType typ = info.compCompHnd->asCorInfoType(clsHnd);
+    if ((typ == CORINFO_TYPE_CLASS) || (typ == CORINFO_TYPE_VALUECLASS))
+    {
+        eePrintType(printer, clsHnd, includeNamespace, includeInstantiation);
+    }
+    else
+    {
+        eePrintJitType(printer, JitType2PreciseVarType(typ));
+    }
+}
+
+//------------------------------------------------------------------------
+// eePrintMethod:
+//   Print a method given by a method handle, its owning class handle and its
+//   signature.
+//
+// Arguments:
+//    printer                    - the printer
+//    clsHnd                     - Handle for the owning class, or NO_CLASS_HANDLE to not print the class.
+//    sig                        - The signature of the method.
+//    includeNamespaces          - Whether to print namespaces before type names.
+//    includeClassInstantiation  - Whether to print the class instantiation. Only valid when clsHnd is passed.
+//    includeMethodInstantiation - Whether to print the method instantiation. Requires the signature to be passed.
+//    includeSignature           - Whether to print the signature.
+//    includeReturnType          - Whether to include the return type at the end.
+//    includeThisSpecifier       - Whether to include a specifier at the end for whether the method is an instance
+//    method.
+//
+void Compiler::eePrintMethod(StringPrinter*        printer,
+                             CORINFO_CLASS_HANDLE  clsHnd,
+                             CORINFO_METHOD_HANDLE methHnd,
+                             CORINFO_SIG_INFO*     sig,
+                             bool                  includeNamespaces,
+                             bool                  includeClassInstantiation,
+                             bool                  includeMethodInstantiation,
+                             bool                  includeSignature,
+                             bool                  includeReturnType,
+                             bool                  includeThisSpecifier)
+{
+    if (clsHnd != NO_CLASS_HANDLE)
+    {
+        eePrintType(printer, clsHnd, includeNamespaces, includeClassInstantiation);
+        printer->Printf(":");
+    }
+
+    const char* methName = info.compCompHnd->getMethodName(methHnd, nullptr);
+    printer->Printf("%s", methName);
+
+    if (includeMethodInstantiation && (sig->sigInst.methInstCount > 0))
+    {
+        printer->Printf("[");
+        for (unsigned i = 0; i < sig->sigInst.methInstCount; i++)
+        {
+            if (i > 0)
+            {
+                printer->Printf(",");
+            }
+
+            eePrintTypeOrJitAlias(printer, sig->sigInst.methInst[i], includeNamespaces, true);
+        }
+        printer->Printf("]");
+    }
+
+    if (includeSignature)
+    {
+        printer->Printf("(");
+
+        CORINFO_ARG_LIST_HANDLE argLst = sig->args;
+        for (unsigned i = 0; i < sig->numArgs; i++)
+        {
+            if (i > 0)
+                printer->Printf(",");
+
+            CORINFO_CLASS_HANDLE vcClsHnd;
+            var_types type = JitType2PreciseVarType(strip(info.compCompHnd->getArgType(sig, argLst, &vcClsHnd)));
+            switch (type)
+            {
+                case TYP_REF:
+                case TYP_STRUCT:
+                {
+                    CORINFO_CLASS_HANDLE clsHnd = eeGetArgClass(sig, argLst);
+                    // For some SIMD struct types we can get a nullptr back from eeGetArgClass on Linux/X64
+                    if (clsHnd != NO_CLASS_HANDLE)
+                    {
+                        eePrintType(printer, clsHnd, includeNamespaces, true);
+                        break;
+                    }
+                }
+
+                    FALLTHROUGH;
+                default:
+                    eePrintJitType(printer, type);
+                    break;
+            }
+
+            argLst = info.compCompHnd->getArgNext(argLst);
+        }
+
+        printer->Printf(")");
+
+        if (includeReturnType)
+        {
+            var_types retType = JitType2PreciseVarType(sig->retType);
+            if (retType != TYP_VOID)
+            {
+                printer->Printf(":");
+                switch (retType)
+                {
+                    case TYP_REF:
+                    case TYP_STRUCT:
+                    {
+                        CORINFO_CLASS_HANDLE clsHnd = sig->retTypeClass;
+                        if (clsHnd != NO_CLASS_HANDLE)
+                        {
+                            eePrintType(printer, clsHnd, includeNamespaces, true);
+                            break;
+                        }
+                    }
+                        FALLTHROUGH;
+                    default:
+                        eePrintJitType(printer, retType);
+                        break;
+                }
+            }
+        }
+
+        // Does it have a 'this' pointer? Don't count explicit this, which has
+        // the this pointer type as the first element of the arg type list
+        if (includeThisSpecifier && sig->hasThis() && !sig->hasExplicitThis())
+        {
+            printer->Printf(":this");
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// eeGetMethodFullName:
+//   Get a string describing a method.
+//
+// Arguments:
+//    hnd                  - the method handle
+//    includeReturnType    - Whether to include the return type in the string
+//    includeThisSpecifier - Whether to include a specifier for whether this is an instance method.
+//
+// Returns:
+//   The string.
+//
+const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd, bool includeReturnType, bool includeThisSpecifier)
 {
     const char* className;
     const char* methodName = eeGetMethodName(hnd, &className);
@@ -52,195 +327,66 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd)
         return methodName;
     }
 
-    FilterSuperPMIExceptionsParam_eeinterface param;
-    param.returnType = nullptr;
-    param.pThis      = this;
-    param.hasThis    = false;
-    param.siglength  = 0;
-    param.hnd        = hnd;
-    param.pJitInfo   = &info;
+    StringPrinter        p(getAllocator(CMK_DebugOnly));
+    CORINFO_CLASS_HANDLE clsHnd  = NO_CLASS_HANDLE;
+    bool                 success = eeRunFunctorWithSPMIErrorTrap([&]() {
+        clsHnd = info.compCompHnd->getMethodClass(hnd);
+        CORINFO_SIG_INFO sig;
+        eeGetMethodSig(hnd, &sig);
+        eePrintMethod(&p, clsHnd, hnd, &sig,
+                      /* includeNamespaces */ true,
+                      /* includeClassInstantiation */ true,
+                      /* includeMethodInstantiation */ true,
+                      /* includeSignature */ true, includeReturnType, includeThisSpecifier);
 
-    size_t   length = 0;
-    unsigned i;
+    });
 
-    /* Generating the full signature is a two-pass process. First we have to walk
-       the components in order to assess the total size, then we allocate the buffer
-       and copy the elements into it.
-     */
-
-    /* Right now there is a race-condition in the EE, className can be nullptr */
-
-    /* initialize length with length of className and '.' */
-
-    if (className)
+    if (success)
     {
-        length = strlen(className) + 1;
-    }
-    else
-    {
-        assert(strlen("<NULL>.") == 7);
-        length = 7;
+        return p.GetBuffer();
     }
 
-    /* add length of methodName and opening bracket */
-    length += strlen(methodName) + 1;
+    // Try without signature
+    p.Truncate(0);
 
-    bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_eeinterface>(
-        [](FilterSuperPMIExceptionsParam_eeinterface* pParam) {
+    success = eeRunFunctorWithSPMIErrorTrap([&]() {
+        eePrintMethod(&p, clsHnd, hnd,
+                      /* sig */ nullptr,
+                      /* includeNamespaces */ true,
+                      /* includeClassInstantiation */ false,
+                      /* includeMethodInstantiation */ false,
+                      /* includeSignature */ false,
+                      /* includeReturnType */ false,
+                      /* includeThisSpecifier */ false);
+    });
 
-            /* figure out the signature */
-
-            pParam->pThis->eeGetMethodSig(pParam->hnd, &pParam->sig);
-
-            // allocate space to hold the class names for each of the parameters
-
-            if (pParam->sig.numArgs > 0)
-            {
-                pParam->pArgNames =
-                    pParam->pThis->getAllocator(CMK_DebugOnly).allocate<const char*>(pParam->sig.numArgs);
-            }
-            else
-            {
-                pParam->pArgNames = nullptr;
-            }
-
-            unsigned i;
-            pParam->argLst = pParam->sig.args;
-
-            for (i = 0; i < pParam->sig.numArgs; i++)
-            {
-                var_types type = pParam->pThis->eeGetArgType(pParam->argLst, &pParam->sig);
-                switch (type)
-                {
-                    case TYP_REF:
-                    case TYP_STRUCT:
-                    {
-                        CORINFO_CLASS_HANDLE clsHnd = pParam->pThis->eeGetArgClass(&pParam->sig, pParam->argLst);
-                        // For some SIMD struct types we can get a nullptr back from eeGetArgClass on Linux/X64
-                        if (clsHnd != NO_CLASS_HANDLE)
-                        {
-                            const char* clsName = pParam->pThis->eeGetClassName(clsHnd);
-                            if (clsName != nullptr)
-                            {
-                                pParam->pArgNames[i] = clsName;
-                                break;
-                            }
-                        }
-                    }
-                        FALLTHROUGH;
-                    default:
-                        pParam->pArgNames[i] = varTypeName(type);
-                        break;
-                }
-                pParam->siglength += strlen(pParam->pArgNames[i]);
-                pParam->argLst = pParam->pJitInfo->compCompHnd->getArgNext(pParam->argLst);
-            }
-
-            /* add ',' if there is more than one argument */
-
-            if (pParam->sig.numArgs > 1)
-            {
-                pParam->siglength += (pParam->sig.numArgs - 1);
-            }
-
-            var_types retType = JITtype2varType(pParam->sig.retType);
-            if (retType != TYP_VOID)
-            {
-                switch (retType)
-                {
-                    case TYP_REF:
-                    case TYP_STRUCT:
-                    {
-                        CORINFO_CLASS_HANDLE clsHnd = pParam->sig.retTypeClass;
-                        if (clsHnd != NO_CLASS_HANDLE)
-                        {
-                            const char* clsName = pParam->pThis->eeGetClassName(clsHnd);
-                            if (clsName != nullptr)
-                            {
-                                pParam->returnType = clsName;
-                                break;
-                            }
-                        }
-                    }
-                        FALLTHROUGH;
-                    default:
-                        pParam->returnType = varTypeName(retType);
-                        break;
-                }
-                pParam->siglength += strlen(pParam->returnType) + 1; // don't forget the delimiter ':'
-            }
-
-            // Does it have a 'this' pointer? Don't count explicit this, which has the this pointer type as the first
-            // element of the arg type list
-            if (pParam->sig.hasThis() && !pParam->sig.hasExplicitThis())
-            {
-                assert(strlen(":this") == 5);
-                pParam->siglength += 5;
-                pParam->hasThis = true;
-            }
-        },
-        &param);
-
-    if (!success)
+    if (success)
     {
-        param.siglength = 0;
+        return p.GetBuffer();
     }
 
-    /* add closing bracket and null terminator */
+    // Try with bare minimum
+    p.Truncate(0);
 
-    length += param.siglength + 2;
+    success = eeRunFunctorWithSPMIErrorTrap([&]() {
+        eePrintMethod(&p, nullptr, hnd,
+                      /* sig */ nullptr,
+                      /* includeNamespaces */ true,
+                      /* includeClassInstantiation */ false,
+                      /* includeMethodInstantiation */ false,
+                      /* includeSignature */ false,
+                      /* includeReturnType */ false,
+                      /* includeThisSpecifier */ false);
+    });
 
-    char* retName = getAllocator(CMK_DebugOnly).allocate<char>(length);
-
-    /* Now generate the full signature string in the allocated buffer */
-
-    if (className)
+    if (success)
     {
-        strcpy_s(retName, length, className);
-        strcat_s(retName, length, ":");
-    }
-    else
-    {
-        strcpy_s(retName, length, "<NULL>.");
-    }
-
-    strcat_s(retName, length, methodName);
-
-    // append the signature
-    strcat_s(retName, length, "(");
-
-    if (param.siglength > 0)
-    {
-        param.argLst = param.sig.args;
-
-        for (i = 0; i < param.sig.numArgs; i++)
-        {
-            var_types type = eeGetArgType(param.argLst, &param.sig);
-            strcat_s(retName, length, param.pArgNames[i]);
-            param.argLst = info.compCompHnd->getArgNext(param.argLst);
-            if (i + 1 < param.sig.numArgs)
-            {
-                strcat_s(retName, length, ",");
-            }
-        }
+        return p.GetBuffer();
     }
 
-    strcat_s(retName, length, ")");
-
-    if (param.returnType != nullptr)
-    {
-        strcat_s(retName, length, ":");
-        strcat_s(retName, length, param.returnType);
-    }
-
-    if (param.hasThis)
-    {
-        strcat_s(retName, length, ":this");
-    }
-
-    assert(strlen(retName) == (length - 1));
-
-    return (retName);
+    p.Truncate(0);
+    p.Printf("hackishClassName:hackishMethodName(?)");
+    return p.GetBuffer();
 }
 
 #endif // defined(DEBUG) || defined(FEATURE_JIT_METHOD_PERF) || defined(FEATURE_SIMD)

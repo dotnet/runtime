@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using System.IO;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
 using System.Net.WebSockets;
@@ -403,13 +405,19 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     memberAccessValues.TryGetValue(argParm.Identifier.Text, out indexObject);
 
                                     // x[a]
-                                    if (indexObject == null)
-                                    {
-                                        indexObject = await Resolve(argParm.Identifier.Text, token);
-                                    }
+                                    indexObject ??= await Resolve(argParm.Identifier.Text, token);
                                     elementIdxStr += indexObject["value"].ToString();
                                 }
-                                // FixMe: indexing with expressions, e.g. x[a + 1]
+                                // indexing with expressions, e.g. x[a + 1]
+                                else
+                                {
+                                    string expression = arg.ToString();
+                                    indexObject = await ExpressionEvaluator.EvaluateSimpleExpression(this, expression, expression, variableDefinitions, logger, token);
+                                    string type = indexObject["type"].Value<string>();
+                                    if (type != "number")
+                                        throw new InvalidOperationException($"Cannot index with an object of type '{type}'");
+                                    elementIdxStr += indexObject["value"].ToString();
+                                }
                             }
                         }
                     }

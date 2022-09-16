@@ -26,8 +26,6 @@ namespace System
             }
         }
 
-        public virtual bool TrackResurrection => IsTrackResurrection();
-
         ~WeakReference()
         {
             handle.Free();

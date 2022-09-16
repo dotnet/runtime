@@ -7,7 +7,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL.Stubs.StartupCode
 {
-    partial class AppContextInitializerMethod
+    public partial class AppContextInitializerMethod
     {
         protected override int ClassCode => 15749517;
 

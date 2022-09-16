@@ -3874,7 +3874,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
             assert(src->IsCnsFltOrDbl());
             GenTreeDblCon* dblCns = src->AsDblCon();
 
-            CORINFO_FIELD_HANDLE hnd = emitFltOrDblConst(dblCns->gtDconVal, emitTypeSize(dblCns));
+            CORINFO_FIELD_HANDLE hnd = emitFltOrDblConst(dblCns->DconValue(), emitTypeSize(dblCns));
             emitIns_R_C(ins, attr, dst->GetRegNum(), hnd, 0);
         }
     }
