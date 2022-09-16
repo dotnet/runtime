@@ -7,7 +7,7 @@ namespace System.IO.IsolatedStorage
 {
     public sealed partial class IsolatedStorageFile : IsolatedStorage, IDisposable
     {
-        private string GetIsolatesStorageRoot()
+        private string GetIsolatedStorageRoot()
         {
             StringBuilder root = new StringBuilder(Helper.GetRootDirectory(Scope));
             root.Append(SeparatorExternal);

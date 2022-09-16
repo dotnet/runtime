@@ -5,7 +5,7 @@ namespace System.IO.IsolatedStorage
 {
     public sealed partial class IsolatedStorageFile : IsolatedStorage, IDisposable
     {
-        private string GetIsolatesStorageRoot()
+        private string GetIsolatedStorageRoot()
         {
             return Helper.GetRootDirectory(Scope);
         }

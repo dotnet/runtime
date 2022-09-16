@@ -16,7 +16,7 @@
              Include="System\IO\IsolatedStorage\IsolatedStorageFile.NonMobile.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFileStream.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorage.cs" />
-    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageScope.cs" />    
+    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageScope.cs" />
     <Compile Include="System\IO\IsolatedStorage\Helper.cs" />
     <Compile Include="System\IO\IsolatedStorage\Helper.Win32Unix.cs" />
     <Compile Include="System\IO\IsolatedStorage\INormalizeForIsolatedStorage.cs" />
