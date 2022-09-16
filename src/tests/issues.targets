@@ -2741,6 +2741,39 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/SIMD/VectorConvert_ro_Target_64Bit/**">
             <Issue>https://github.com/dotnet/runtime/issues/75359</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Aes/Aes_ro/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Bmi1/Bmi1_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Bmi2.X64/Bmi2.X64_ro/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/General/VectorRet_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Pclmulqdq/Pclmulqdq_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse1/Shuffle_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse2/Sse2_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse3/Sse3_ro/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse41/MinHorizontal_ro/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse42/Crc32_ro/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Ssse3/Ssse3_r/**">
+            <Issue>https://github.com/dotnet/runtime/issues/75767</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmfullaot' ">
