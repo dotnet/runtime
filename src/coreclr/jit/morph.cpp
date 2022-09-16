@@ -14670,7 +14670,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                     // Some loops may have been already removed by
                     // loop unrolling or conditional folding
                     //
-                    if (loop.lpFlags & LPFLG_REMOVED)
+                    if (loop.lpIsRemoved())
                     {
                         continue;
                     }
