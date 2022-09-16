@@ -48,6 +48,6 @@ class T : P {
 			return 1;
 		if (Q.first_p_count < P.count)
 			return 1;
-		return 0;
+		return 100;
 	}
 }
