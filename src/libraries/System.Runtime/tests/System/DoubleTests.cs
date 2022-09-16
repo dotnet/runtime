@@ -1615,5 +1615,16 @@ namespace System.Tests
             AssertExtensions.Equal(-expectedResult, double.TanPi(-value), allowedVariance);
             AssertExtensions.Equal(+expectedResult, double.TanPi(+value), allowedVariance);
         }
+
+        [Theory]
+        [InlineData(+1e+20, 1e+20, 0.0)]
+        [InlineData(-1e+10, 1e+10, 0.0)]
+        [InlineData(-1e+20, 1e+20, 0.0)]
+        public static void Regression75651(double value, double expectedResult, double allowedVariance)
+        {
+            AssertExtensions.Equal(expectedResult, double.Hypot(1, value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, double.Hypot(1, value), allowedVariance);
+            AssertExtensions.Equal(expectedResult, double.Hypot(1, value), allowedVariance);
+        }
     }
 }
