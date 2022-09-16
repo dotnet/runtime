@@ -278,10 +278,6 @@
       <Uri>https://github.com/dotnet/roslyn</Uri>
       <Sha>76b6eb3e6b207a3bfe872f17b17008d2165da5f3</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.CSharp.CodeStyle" Version="4.4.0-2.22463.8">
-      <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>76b6eb3e6b207a3bfe872f17b17008d2165da5f3</Sha>
-    </Dependency>
     <Dependency Name="Microsoft.CodeAnalysis.CSharp" Version="4.4.0-2.22463.8">
       <Uri>https://github.com/dotnet/roslyn</Uri>
       <Sha>76b6eb3e6b207a3bfe872f17b17008d2165da5f3</Sha>
