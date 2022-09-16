@@ -71,7 +71,7 @@ inline bool compUnixX86Abi()
 
 #elif defined(TARGET_ARM64)
 #define REGMASK_BITS 64
-#define CSE_CONST_SHARED_LOW_BITS 12
+#define CSE_CONST_SHARED_LOW_BITS 14
 
 #elif defined(TARGET_LOONGARCH64)
 #define REGMASK_BITS 64
