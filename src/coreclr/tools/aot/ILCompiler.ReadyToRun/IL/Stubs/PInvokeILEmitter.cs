@@ -142,7 +142,7 @@ namespace Internal.IL.Stubs
 
         public PInvokeILStubMethodIL(ILStubMethodIL methodIL) : base(methodIL)
         {
-            IsMarshallingRequired = Marshaller.IsMarshallingRequired(methodIL.OwningMethod);
+            IsMarshallingRequired = MarshalHelpers.IsMarshallingRequired(methodIL.OwningMethod);
         }
     }
 }

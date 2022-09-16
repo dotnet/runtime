@@ -92,55 +92,5 @@ namespace Internal.TypeSystem.Interop
                 targetMethod.GetParameterMetadata(),
                 MarshalHelpers.IsRuntimeMarshallingEnabled(((MetadataType)targetMethod.OwningType).Module));
         }
-
-        public static Marshaller[] GetMarshallersForSignature(MethodSignature methodSig, ParameterMetadata[] paramMetadata, ModuleDesc moduleContext)
-        {
-            return GetMarshallers(
-                methodSig,
-                new PInvokeFlags(PInvokeAttributes.None),
-                paramMetadata,
-                MarshalHelpers.IsRuntimeMarshallingEnabled(moduleContext));
-        }
-
-        public static bool IsMarshallingRequired(MethodDesc targetMethod)
-        {
-            Debug.Assert(targetMethod.IsPInvoke);
-
-            if (targetMethod.IsUnmanagedCallersOnly)
-                return true;
-
-            PInvokeMetadata metadata = targetMethod.GetPInvokeMethodMetadata();
-            PInvokeFlags flags = metadata.Flags;
-
-            if (flags.SetLastError)
-                return true;
-
-            if (!flags.PreserveSig)
-                return true;
-
-            if (MarshalHelpers.ShouldCheckForPendingException(targetMethod.Context.Target, metadata))
-                return true;
-
-            var marshallers = GetMarshallersForMethod(targetMethod);
-            for (int i = 0; i < marshallers.Length; i++)
-            {
-                if (marshallers[i].IsMarshallingRequired())
-                    return true;
-            }
-
-            return false;
-        }
-
-        public static bool IsMarshallingRequired(MethodSignature methodSig, ParameterMetadata[] paramMetadata, ModuleDesc moduleContext)
-        {
-            Marshaller[] marshallers = GetMarshallersForSignature(methodSig, paramMetadata, moduleContext);
-            for (int i = 0; i < marshallers.Length; i++)
-            {
-                if (marshallers[i].IsMarshallingRequired())
-                    return true;
-            }
-
-            return false;
-        }
     }
 }

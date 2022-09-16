@@ -102,6 +102,11 @@ namespace ILCompiler
                 if (method.IsInternalCall)
                     continue;
 
+                // We will not root P/Invokes. We'll only compile them for ReadyToRun if
+                // they have a use where they are not inlined.
+                if (method.IsPInvoke)
+                    continue;
+
                 MethodDesc methodToRoot = method;
                 if (method.HasInstantiation)
                 {
