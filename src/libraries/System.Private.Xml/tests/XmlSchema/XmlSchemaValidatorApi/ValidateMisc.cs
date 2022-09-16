@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Text.RegularExpressions;
 using System.Xml.Schema;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlSchemaValidatorApiTests
 {
     public class TCValidateAfterAdd : CXmlSchemaValidatorTestCase
     {

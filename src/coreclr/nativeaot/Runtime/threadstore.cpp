@@ -538,7 +538,7 @@ bool ThreadStore::GetExceptionsForCurrentThread(Array* pOutputArray, int32_t* pW
     }
 
     // No input array provided, or it was of the wrong kind.  We'll fill out the count and return false.
-    if ((pOutputArray == NULL) || (pOutputArray->get_EEType()->get_ComponentSize() != POINTER_SIZE))
+    if ((pOutputArray == NULL) || (pOutputArray->get_EEType()->RawGetComponentSize() != POINTER_SIZE))
         goto Error;
 
     // Input array was not big enough.  We don't even partially fill it.

@@ -21,6 +21,7 @@ parameters:
   runtimeVariant: ''
   pool: ''
   pgoType: ''
+  runOnlyIfDependenciesSucceeded: false
 
   # The target names here should match container names in the resources section in our pipelines, like runtime.yml
   packageDistroList:
@@ -52,7 +53,12 @@ jobs:
     enableMicrobuild: true
     stagedBuild: ${{ parameters.stagedBuild }}
     pool: ${{ parameters.pool }}
-    condition: ${{ parameters.condition }}
+
+    ${{ if eq(parameters.runOnlyIfDependenciesSucceeded, true) }}:
+      condition: and(succeeded(), ${{ parameters.condition }})
+    ${{ if ne(parameters.runOnlyIfDependenciesSucceeded, true) }}:
+      condition: ${{ parameters.condition }}
+
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     disableClrTest: ${{ parameters.disableClrTest }}
     pgoType: ${{ parameters.pgoType }}

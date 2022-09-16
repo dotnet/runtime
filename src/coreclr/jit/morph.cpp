@@ -11161,6 +11161,11 @@ DONE_MORPHING_CHILDREN:
             //
             if (!tree->AsIndir()->IsVolatile())
             {
+                if (op1->IsIconHandle(GTF_ICON_STR_HDL))
+                {
+                    tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
+                }
+
                 /* Try to Fold *(&X) into X */
                 if (op1->gtOper == GT_ADDR)
                 {
@@ -14665,7 +14670,7 @@ Compiler::FoldResult Compiler::fgFoldConditional(BasicBlock* block)
                     // Some loops may have been already removed by
                     // loop unrolling or conditional folding
                     //
-                    if (loop.lpFlags & LPFLG_REMOVED)
+                    if (loop.lpIsRemoved())
                     {
                         continue;
                     }

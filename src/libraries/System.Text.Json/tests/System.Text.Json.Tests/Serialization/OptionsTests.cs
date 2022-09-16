@@ -475,9 +475,18 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public static void Options_JsonSerializerContext_GetConverter_DoesNotFallBackToReflectionConverter()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void Options_JsonSerializerContext_GetConverter_DoesNotFallBackToReflectionConverter(bool isCompatibilitySwitchExplicitlyDisabled)
         {
+            var options = new RemoteInvokeOptions();
+
+            if (isCompatibilitySwitchExplicitlyDisabled)
+            {
+                options.RuntimeConfigurationOptions.Add("System.Text.Json.Serialization.EnableSourceGenReflectionFallback", false);
+            }
+
             RemoteExecutor.Invoke(static () =>
             {
                 JsonContext context = JsonContext.Default;
@@ -498,7 +507,40 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Throws<NotSupportedException>(() => context.Options.GetConverter(typeof(MyClass)));
                 Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(unsupportedValue, context.Options));
 
-            }).Dispose();
+            }, options).Dispose();
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void Options_JsonSerializerContext_Net6CompatibilitySwitch_FallsBackToReflectionResolver()
+        {
+            var options = new RemoteInvokeOptions
+            {
+                RuntimeConfigurationOptions =
+                {
+                    ["System.Text.Json.Serialization.EnableSourceGenReflectionFallback"] = true
+                }
+            };
+            
+            RemoteExecutor.Invoke(static () =>
+            {
+                var unsupportedValue = new MyClass { Value = "value" };
+
+                // JsonSerializerContext does not return metadata for the type
+                Assert.Null(JsonContext.Default.GetTypeInfo(typeof(MyClass)));
+
+                // Serialization fails using the JsonSerializerContext overload
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(unsupportedValue, unsupportedValue.GetType(), JsonContext.Default));
+
+                // Serialization uses reflection fallback using the JsonSerializerOptions overload
+                string json = JsonSerializer.Serialize(unsupportedValue, JsonContext.Default.Options);
+                JsonTestHelper.AssertJsonEqual("""{"Value":"value", "Thing":null}""", json);
+
+                // A converter can be resolved when looking up JsonSerializerOptions
+                JsonConverter converter = JsonContext.Default.Options.GetConverter(typeof(MyClass));
+                Assert.IsAssignableFrom<JsonConverter<MyClass>>(converter);
+
+            }, options).Dispose();
         }
 
         [Fact]
