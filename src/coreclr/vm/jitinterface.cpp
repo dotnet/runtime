@@ -1302,7 +1302,7 @@ CorInfoHelpFunc CEEInfo::getSharedStaticsHelper(FieldDesc * pField, MethodTable 
         helper += delta;
     }
     else
-    if (!pFieldMT->HasClassConstructor() && !pFieldMT->HasBoxedRegularStatics())
+    if ((!pFieldMT->HasClassConstructor() || pFieldMT->IsClassInited()) && !pFieldMT->HasBoxedRegularStatics())
     {
         const int delta = CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR - CORINFO_HELP_GETSHARED_GCSTATIC_BASE;
 
