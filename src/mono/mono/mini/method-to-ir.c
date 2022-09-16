@@ -5649,6 +5649,105 @@ is_addressable_valuetype_load (MonoCompile* cfg, guint8* ip, MonoType* ldtype)
 	return is_load_instruction && is_in_previous_bb && is_struct;
 }
 
+gboolean
+check_get_virtual_method_assumptions (MonoClass* klass, MonoMethod* method)
+{
+	if (((method->flags & METHOD_ATTRIBUTE_FINAL) || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL)))
+		return TRUE;
+
+	MonoMethod** vtable = m_class_get_vtable (klass);
+
+	if (method->slot == -1) {
+		if (method->is_inflated) {
+			if (((MonoMethodInflated*)method)->declaring->slot == -1)
+				return FALSE;
+
+		} else {
+			return FALSE;
+		}
+	}
+
+	MonoMethod* res = NULL;
+	if (method->slot != -1 && mono_class_is_interface (method->klass))  {
+		gboolean variance_used = FALSE;
+		int iface_offset = mono_class_interface_offset_with_variance (klass, method->klass, &variance_used);
+		if (iface_offset <= 0)
+			return FALSE;
+    }
+	
+	if (method->is_inflated)
+		return FALSE;
+	
+	return TRUE;
+}
+
+/*
+ * try_prepare_objaddr_callvirt_optimization:
+ * 
+ * Determine in a load+callvirt optimization can be performed and if so,
+ * resolve the callvirt target method, so that it can behave as call.
+ * Returns null, if the optimization cannot be performed.
+ */
+static MonoMethod*
+try_prepare_objaddr_callvirt_optimization (MonoCompile *cfg, guchar *next_ip, guchar* end, MonoMethod *method, MonoGenericContext* generic_context, MonoClass *klass)
+{
+	// TODO: relax the _is_def requirement when gsharedvt is checked for
+	if (cfg->compile_aot || cfg->compile_llvm || !klass || !mono_class_is_def(klass))
+		return NULL;
+	
+	guchar* callvirt_ip;
+	guint32 callvirt_proc_token;
+	if (!(callvirt_ip = il_read_callvirt (next_ip, end, &callvirt_proc_token)) ||
+		!ip_in_bb(cfg, cfg->cbb, callvirt_ip))
+		return NULL;
+
+	// TODO: check if gsharedvt is required, return FALSE instantly if that is the case
+	
+
+	MonoMethod* iface_method = mini_get_method (cfg, method, callvirt_proc_token, NULL, generic_context);
+	MonoMethodSignature* iface_method_sig;
+	if(!(iface_method &&
+		(iface_method_sig = mono_method_signature_internal (iface_method)) &&
+		iface_method_sig->hasthis && 
+		iface_method_sig->param_count == 0 && 
+		!iface_method_sig->has_type_parameters &&
+		iface_method_sig->generic_param_count == 0))
+		return NULL;
+
+	if (!check_get_virtual_method_assumptions(klass, iface_method))
+		return NULL;
+
+	if(mono_class_has_variant_generic_params(iface_method->klass) ||
+		iface_method->is_generic ||
+		iface_method->dynamic ||
+		(iface_method->slot == -1 && !iface_method->is_inflated))
+		return NULL;
+
+	ERROR_DECL (struct_method_error);
+	MonoMethod* struct_method = mono_class_get_virtual_method (klass, iface_method, struct_method_error);
+
+	if (is_ok (struct_method_error)) {
+		if (!struct_method || !MONO_METHOD_IS_FINAL (struct_method))
+			return NULL;
+
+		MonoMethodSignature* struct_method_sig = mono_method_signature_internal (struct_method);
+		if (!struct_method_sig ||
+			struct_method_sig->has_type_parameters ||
+			!mono_method_can_access_method (method, struct_method)) {
+			return NULL;
+			}
+	} else {
+		mono_error_cleanup (struct_method_error);
+		return NULL;
+	}
+
+	//printf("   %s ===> %s\n",
+	//		mono_method_get_full_name(iface_method),
+	//		mono_method_get_full_name(struct_method));
+
+	return struct_method;
+}
+
 /*
  * handle_ctor_call:
  *
@@ -6224,6 +6323,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	gboolean emitted_funccall_seq_point = FALSE;
 	gboolean detached_before_ret = FALSE;
 	gboolean ins_has_side_effect;
+	MonoMethod* cmethod_override = NULL; // this is ised in call/callvirt handler to override the method to be called (e.g. from box handler)
 
 	if (!cfg->disable_inline)
 		cfg->disable_inline = (method->iflags & METHOD_IMPL_ATTRIBUTE_NOOPTIMIZATION) || is_jit_optimizer_disabled (method);
@@ -6995,22 +7095,35 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case MONO_CEE_LDARG_3:
 		case MONO_CEE_LDARG_S:
 		case MONO_CEE_LDARG:
+		{
 			CHECK_ARG (n);
+
+			MonoMethod* callvirt_target ;
 			if (next_ip < end && is_addressable_valuetype_load (cfg, next_ip, cfg->arg_types[n])) {
 				EMIT_NEW_ARGLOADA (cfg, ins, n);
 			} else {
 				EMIT_NEW_ARGLOAD (cfg, ins, n);
 			}
 			*sp++ = ins;
-			break;
 
+			if(callvirt_target = try_prepare_objaddr_callvirt_optimization (cfg, next_ip, end, method, generic_context, param_types[n]->data.klass))
+			{
+				cmethod_override = callvirt_target;
+				//printf("--- ldarg+callvirt @ %s\n", mono_method_get_full_name(method));
+			}
+
+			break;
+		}
 		case MONO_CEE_LDLOC_0:
 		case MONO_CEE_LDLOC_1:
 		case MONO_CEE_LDLOC_2:
 		case MONO_CEE_LDLOC_3:
 		case MONO_CEE_LDLOC_S:
 		case MONO_CEE_LDLOC:
+		{
 			CHECK_LOCAL (n);
+			
+			MonoMethod* callvirt_target;
 			if (next_ip < end && is_addressable_valuetype_load (cfg, next_ip, header->locals[n])) {
 				EMIT_NEW_LOCLOADA (cfg, ins, n);
 			} else {
@@ -7018,7 +7131,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			*sp++ = ins;
 			break;
-
+		}
 		case MONO_CEE_STLOC_0:
 		case MONO_CEE_STLOC_1:
 		case MONO_CEE_STLOC_2:
@@ -7457,11 +7570,24 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			HandleCallData cdata;
 			memset (&cdata, 0, sizeof (HandleCallData));
 
-			cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
+			// The method to be called may have already been resolved when handling a previous opcode. In that
+			// case, we ignore the operand and act as CALL, instead of CALLVIRT.
+			// E.g. #32166 (box+callvirt optimization)
+			if (cmethod_override) {
+				cmethod = cmethod_override;
+				cmethod_override = NULL;
+				virtual_ = FALSE;
+				//il_op = MONO_CEE_CALL;
+			} else {
+				cmethod = mini_get_method (cfg, method, token, NULL, generic_context);
+			}
 			CHECK_CFG_ERROR;
 
 			if (cfg->verbose_level > 3)
 				printf ("cmethod = %s\n", mono_method_get_full_name (cmethod));
+
+			//if(0 == strcmp("int HelloWorld.Program:Test (HelloWorld.B)", mono_method_get_full_name(method)))
+			//	printf("=== HERE ===\n");
 
 			MonoMethod *cil_method; cil_method = cmethod;
 			if (constrained_class) {
