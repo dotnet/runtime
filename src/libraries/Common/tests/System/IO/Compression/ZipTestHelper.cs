@@ -173,15 +173,15 @@ namespace System.IO.Compression.Tests
                 if (blocksToRead != -1 && blocksRead >= blocksToRead)
                     break;
 
-                ac = await ReadAllBytesAsync(ast, ad, 0, 4096);
-                bc = await ReadAllBytesAsync(bst, bd, 0, 4096);
+                ac = await ast.ReadAtLeastAsync(ad, 4096);
+                bc = await bst.ReadAtLeastAsync(bd, 4096);
 
                 if (ac != bc)
                 {
                     bd = NormalizeLineEndings(bd);
                 }
 
-                Assert.True(ArraysEqual<byte>(ad, bd, ac), "Stream contents not equal: " + ast.ToString() + ", " + bst.ToString());
+                AssertExtensions.SequenceEqual(ad, bd);
 
                 blocksRead++;
             } while (ac == bufSize);
