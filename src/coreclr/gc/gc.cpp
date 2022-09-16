@@ -2331,7 +2331,12 @@ size_t      gc_heap::heap_hard_limit = 0;
 size_t      gc_heap::heap_hard_limit_oh[total_oh_count];
 
 #ifdef USE_REGIONS
+
 size_t      gc_heap::regions_range = 0;
+
+size_t      gc_heap::heap_hard_limit_for_heap = 0;
+size_t      gc_heap::heap_hard_limit_for_bookkeeping = 0;
+
 #endif //USE_REGIONS
 
 bool        affinity_config_specified_p = false;
@@ -6898,6 +6903,14 @@ bool gc_heap::virtual_alloc_commit_for_heap (void* addr, size_t size, int h_numb
 
 bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_number, bool* hard_limit_exceeded_p)
 {
+    /**
+     * Here are all the possible cases for the commits:
+     *
+     * Case 1: This is for a particular generation - the bucket will be one of the gc_oh_num != unknown, and the h_number will be the right heap
+     * Case 2: This is for bookkeeping - the bucket will be recorded_committed_bookkeeping_bucket, and the h_number will be -1
+     *
+     * Note  : We never commit into free directly, so bucket != recorded_committed_free_bucket
+     */
 #ifndef HOST_64BIT
     assert (heap_hard_limit == 0);
 #endif //!HOST_64BIT
@@ -6913,21 +6926,41 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
         check_commit_cs.Enter();
         bool exceeded_p = false;
 
-        if (heap_hard_limit_oh[bucket] != 0)
+        if ((heap_hard_limit_oh[soh] != 0) && (bucket < total_oh_count) && (heap_hard_limit_oh[bucket] != 0))
         {
             if ((bucket < total_oh_count) && (committed_by_oh[bucket] + size) > heap_hard_limit_oh[bucket])
             {
                 exceeded_p = true;
             }
         }
-        else if ((current_total_committed + size) > heap_hard_limit)
+        else
         {
-            dprintf (1, ("%Id + %Id = %Id > limit %Id ",
-                current_total_committed, size,
-                (current_total_committed + size),
-                heap_hard_limit));
+            size_t base;
+            size_t limit;
+#ifdef USE_REGIONS
+            if (h_number < 0)
+            {
+                base = current_total_committed_bookkeeping;
+                limit = heap_hard_limit_for_bookkeeping;
+            }
+            else
+            {
+                base = current_total_committed - current_total_committed_bookkeeping;
+                limit = heap_hard_limit_for_heap;
+            }
+#else
+            base = current_total_committed;
+            limit = heap_hard_limit;
+#endif
+            if ((base + size) > limit)
+            {
+                dprintf (1, ("%Id + %Id = %Id > limit %Id ",
+                    base, size,
+                    (base + size),
+                    limit));
 
-            exceeded_p = true;
+                exceeded_p = true;
+            }
         }
 
         if (!exceeded_p)
@@ -6977,7 +7010,10 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
                 current_total_committed, (current_total_committed - size)));
         current_total_committed -= size;
         if (h_number < 0)
+        {
+            assert (current_total_committed_bookkeeping >= size);
             current_total_committed_bookkeeping -= size;
+        }
 
         check_commit_cs.Leave();
     }
@@ -6986,6 +7022,13 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
 
 bool gc_heap::virtual_decommit (void* address, size_t size, int bucket, int h_number)
 {
+    /**
+     * Here are all possible cases for the decommits:
+     *
+     * Case 1: This is for a particular generation - the bucket will be one of the gc_oh_num != unknown, and the h_number will be the right heap
+     * Case 2: This is for bookkeeping - the bucket will be recorded_committed_bookkeeping_bucket, and the h_number will be -1
+     * Case 3: This is for free - the bucket will be recorded_committed_free_bucket, and the h_number will be -1
+     */
 #ifndef HOST_64BIT
     assert (heap_hard_limit == 0);
 #endif //!HOST_64BIT
@@ -7009,9 +7052,13 @@ bool gc_heap::virtual_decommit (void* address, size_t size, int bucket, int h_nu
             g_heaps[h_number]->committed_by_oh_per_heap[bucket] -= size;
         }
 #endif // _DEBUG && MULTIPLE_HEAPS
+        assert (current_total_committed >= size);
         current_total_committed -= size;
-        if (h_number < 0)
+        if (bucket == recorded_committed_bookkeeping_bucket)
+        {
+            assert (current_total_committed_bookkeeping >= size);
             current_total_committed_bookkeeping -= size;
+        }
         check_commit_cs.Leave();
     }
 
@@ -8726,10 +8773,10 @@ bool gc_heap::on_used_changed (uint8_t* new_used)
             {
                 if (new_bookkeeping_covered_committed == new_used)
                 {
-                    dprintf (REGIONS_LOG, ("The minimal commit for the GC bookkeepping data structure failed, giving up"));
+                    dprintf (REGIONS_LOG, ("The minimal commit for the GC bookkeeping data structure failed, giving up"));
                     return false;
                 }
-                dprintf (REGIONS_LOG, ("The speculative commit for the GC bookkeepping data structure failed, retry for minimal commit"));
+                dprintf (REGIONS_LOG, ("The speculative commit for the GC bookkeeping data structure failed, retry for minimal commit"));
                 speculative_commit_tried = true;
             }
         }
@@ -13418,6 +13465,26 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
     GCConfig::SetConcurrentGC(false);
 #endif //BACKGROUND_GC
 #endif //WRITE_WATCH
+
+#ifdef USE_REGIONS
+    if (gc_heap::heap_hard_limit)
+    {
+        size_t gc_region_size = (size_t)1 << min_segment_size_shr;
+        size_t sizes[total_bookkeeping_elements];
+        size_t bookkeeping_size_per_region = 0;
+        uint8_t* temp_lowest_address = (uint8_t*)gc_region_size;
+        gc_heap::get_card_table_element_sizes(temp_lowest_address, temp_lowest_address + gc_region_size, sizes);
+        for (int i = 0; i < total_bookkeeping_elements; i++)
+        {
+            bookkeeping_size_per_region += sizes[i];
+        }
+        size_t total_size_per_region = gc_region_size + bookkeeping_size_per_region;
+        size_t max_region_count = gc_heap::heap_hard_limit / total_size_per_region; // implictly rounded down
+        gc_heap::heap_hard_limit_for_heap = max_region_count * gc_region_size;
+        gc_heap::heap_hard_limit_for_bookkeeping = max_region_count * bookkeeping_size_per_region;
+        dprintf (REGIONS_LOG, ("bookkeeping_size_per_region = %Id", bookkeeping_size_per_region));
+    }
+#endif //USE_REGIONS
 
 #ifdef BACKGROUND_GC
     // leave the first page to contain only segment info
@@ -31185,6 +31252,7 @@ void gc_heap::thread_final_regions (bool compact_p)
         else
         {
             start_region = get_free_region (gen_idx);
+            assert (start_region);
             thread_start_region (gen, start_region);
             dprintf (REGIONS_LOG, ("creating new gen%d at %Ix", gen_idx, heap_segment_mem (start_region)));
         }
