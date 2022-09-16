@@ -15,6 +15,11 @@ namespace SuperFileCheck
 
     internal readonly record struct FileCheckResult(int ExitCode, string StandardOutput, string StandardError);
 
+    internal class SuperFileCheckException : Exception
+    {
+        public SuperFileCheckException(string message): base(message) { }
+    }
+
     internal class Program
     {
         const string CommandLineArgumentCSharp = "--csharp";
@@ -37,7 +42,7 @@ namespace SuperFileCheck
             var superFileCheckPath = typeof(Program).Assembly.Location;
             if (String.IsNullOrEmpty(superFileCheckPath))
             {
-                throw new Exception("Invalid SuperFileCheck path.");
+                throw new SuperFileCheckException("Invalid SuperFileCheck path.");
             }
             var superFileCheckDir = Path.GetDirectoryName(superFileCheckPath);
             if (superFileCheckDir != null)
@@ -192,7 +197,7 @@ namespace SuperFileCheck
 
             if (trivia.Length > 0)
             {
-                throw new Exception("FileCheck syntax not allowed outside of a method.");
+                throw new SuperFileCheckException("FileCheck syntax not allowed outside of a method.");
             }
 
             return
@@ -214,18 +219,16 @@ namespace SuperFileCheck
             {
                 return null;
             }
-            else
+
+            var prefix = lineStr.Substring(0, index);
+
+            // Do not transform if the prefix is not part of --check-prefixes.
+            if (!checkPrefixes.Any(x => prefix.EndsWith(x)))
             {
-                var prefix = lineStr.Substring(0, index);
-
-                // Do not transform if the prefix is not part of --check-prefixes.
-                if (!checkPrefixes.Any(x => prefix.EndsWith(x)))
-                {
-                    return null;
-                }
-
-                return lineStr.Substring(0, index) + $"{transformSuffix}: {{{{^ *}}}}" + lineStr.Substring(index + syntaxDirective.Length) + "{{$}}";
+                return null;
             }
+
+            return lineStr.Substring(0, index) + $"{transformSuffix}: {{{{^ *}}}}" + lineStr.Substring(index + syntaxDirective.Length) + "{{$}}";
         }
 
         /// <summary>
@@ -250,12 +253,8 @@ namespace SuperFileCheck
                 }
 
                 result = TryTransformDirective(lineStr, checkPrefixes, SyntaxDirectiveFullLineNext, "-NEXT");
-                if (result != null)
-                {
-                    return result;
-                }
 
-                return lineStr;
+                return result ?? lineStr;
             }
         }
 
@@ -349,14 +348,6 @@ namespace SuperFileCheck
         static bool IsArgumentCSharpListMethodNames(string arg)
         {
             return arg.Equals(CommandLineArgumentCSharpListMethodNames);
-        }
-
-        /// <summary>
-        /// Checks if the argument is a CSharp file path.
-        /// </summary>
-        static bool IsArgumentCSharpFile(string arg)
-        {
-            return Path.GetExtension(arg).Contains(".cs", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -492,19 +483,9 @@ namespace SuperFileCheck
             var set = new HashSet<string>();
 
             var duplicateMethodDeclInfo =
-                methodDeclInfos.FirstOrDefault(x =>
-                {
-                    return !set.Add(x.Name);
-                });
+                methodDeclInfos.FirstOrDefault(x => !set.Add(x.Name));
 
-            if (duplicateMethodDeclInfo.Name != null)
-            {
-                return duplicateMethodDeclInfo.Name;
-            }
-            else
-            {
-                return null;
-            }
+            return duplicateMethodDeclInfo.Name;
         }
 
         /// <summary>
@@ -560,7 +541,7 @@ namespace SuperFileCheck
             {
                 if (IsArgumentCSharpListMethodNames(args[0]))
                 {
-                    if (args.Length == 1 || !IsArgumentCSharpFile(args[1]))
+                    if (args.Length == 1)
                     {
                         PrintErrorExpectedCSharpFile();
                         return 1;
@@ -595,7 +576,7 @@ namespace SuperFileCheck
 
                 if (IsArgumentCSharp(args[0]))
                 {
-                    if (args.Length == 1 || !IsArgumentCSharpFile(args[1]))
+                    if (args.Length == 1)
                     {
                         PrintErrorExpectedCSharpFile();
                         return 1;
@@ -658,21 +639,16 @@ namespace SuperFileCheck
                             foreach (var x in tasks)
                             {
                                 if (x.Result.ExitCode != 0)
+                                {
                                     didSucceed = false;
+                                }
                                 Console.Write(x.Result.StandardOutput);
                                 Console.ForegroundColor = ConsoleColor.Red;
                                 Console.Error.Write(x.Result.StandardError);
                                 Console.ResetColor();
                             }
 
-                            if (didSucceed)
-                            {
-                                return 0;
-                            }
-                            else
-                            {
-                                return 1;
-                            }
+                            return didSucceed ? 0 : 1;
                         }
                         else
                         {

@@ -225,20 +225,6 @@ IF NOT DEFINED DoLink (
       <BashDisasmListOutputFile>/dev/null</BashDisasmListOutputFile>
       <BashDisasmListOutputFile Condition="'$(HasBashDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm_list.out</BashDisasmListOutputFile>
 
-      <BashDisasmCheckPostCommands></BashDisasmCheckPostCommands>
-      <BashDisasmCheckPostCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
-if [[ -n $COMPlus_JitDisasm ]]; then
-  @(DisasmCheckFiles -> '  $CORE_ROOT/SuperFileCheck/SuperFileCheck --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) --input-file "$(BashDisasmOutputFile)"
-    ERRORLEVEL=$?
-    if [[ $ERRORLEVEL -ne 0 ]]
-    then
-      echo EXECUTION OF FILECHECK - FAILED $ERRORLEVEL
-      exit 1
-    fi', '%0a')
-fi
-]]>)
-      </BashDisasmCheckPostCommands>
-
       <CLRTestBashPreCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
 @(DisasmCheckFiles -> '  $CORE_ROOT/SuperFileCheck/SuperFileCheck --csharp-list-method-names "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) > "$(BashDisasmListOutputFile)"
   ERRORLEVEL=$?
@@ -252,6 +238,20 @@ fi
   fi', '%0a')
 ]]>)
       </CLRTestBashPreCommands>
+
+      <BashDisasmCheckPostCommands></BashDisasmCheckPostCommands>
+      <BashDisasmCheckPostCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
+if [[ -n $COMPlus_JitDisasm ]]; then
+  @(DisasmCheckFiles -> '  $CORE_ROOT/SuperFileCheck/SuperFileCheck --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) --input-file "$(BashDisasmOutputFile)"
+    ERRORLEVEL=$?
+    if [[ $ERRORLEVEL -ne 0 ]]
+    then
+      echo EXECUTION OF FILECHECK - FAILED $ERRORLEVEL
+      exit 1
+    fi', '%0a')
+fi
+]]>)
+      </BashDisasmCheckPostCommands>
     </PropertyGroup>
   </Target>
 
@@ -268,19 +268,6 @@ fi
       <BatchDisasmListOutputFile>NUL</BatchDisasmListOutputFile>
       <BatchDisasmListOutputFile Condition="'$(HasBatchDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm_list.out</BatchDisasmListOutputFile>
 
-      <BatchDisasmCheckPostCommands></BatchDisasmCheckPostCommands>
-      <BatchDisasmCheckPostCommands Condition="'$(HasBatchDisasmCheck)' == 'true'"><![CDATA[
-IF NOT "%COMPlus_JitDisasm%" == "" (
-  @(DisasmCheckFiles -> '  dotnet %CORE_ROOT%\SuperFileCheck\SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) --input-file "$(BatchDisasmOutputFile)"
-    IF NOT "!ERRORLEVEL!" == "0" (
-      ECHO dotnet %CORE_ROOT%\SuperFileCheck\SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) --input-file "$(BatchDisasmOutputFile)"
-      ECHO EXECUTION OF FILECHECK - FAILED !ERRORLEVEL!
-      Exit /b 1
-    )', '%0d%0a')
-)
-]]>
-      </BatchDisasmCheckPostCommands>
-
       <CLRTestBatchPreCommands Condition="'$(HasBatchDisasmCheck)' == 'true'">
 <![CDATA[
       $(CLRTestBatchPreCommands)
@@ -295,6 +282,19 @@ IF NOT "%COMPlus_JitDisasm%" == "" (
   )', '%0d%0a')
 ]]>
       </CLRTestBatchPreCommands>
+
+      <BatchDisasmCheckPostCommands></BatchDisasmCheckPostCommands>
+      <BatchDisasmCheckPostCommands Condition="'$(HasBatchDisasmCheck)' == 'true'"><![CDATA[
+IF NOT "%COMPlus_JitDisasm%" == "" (
+  @(DisasmCheckFiles -> '  dotnet %CORE_ROOT%\SuperFileCheck\SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) --input-file "$(BatchDisasmOutputFile)"
+    IF NOT "!ERRORLEVEL!" == "0" (
+      ECHO dotnet %CORE_ROOT%\SuperFileCheck\SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) --input-file "$(BatchDisasmOutputFile)"
+      ECHO EXECUTION OF FILECHECK - FAILED !ERRORLEVEL!
+      Exit /b 1
+    )', '%0d%0a')
+)
+]]>
+      </BatchDisasmCheckPostCommands>
     </PropertyGroup>
   </Target>
 
