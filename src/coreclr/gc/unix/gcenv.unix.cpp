@@ -1434,7 +1434,7 @@ int64_t GCToOSInterface::QueryPerformanceCounter()
 int64_t GCToOSInterface::QueryPerformanceFrequency()
 {
     // The counter frequency of gettimeofday is in microseconds.
-    return tccSecondsToMicroSeconds;
+    return tccSecondsToNanoSeconds;
 }
 
 // Get a time stamp with a low precision
