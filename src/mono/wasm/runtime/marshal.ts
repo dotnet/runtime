@@ -317,19 +317,24 @@ export class ManagedObject implements IDisposable {
 }
 
 export class ManagedError extends Error implements IDisposable {
+    private superStack: any;
     constructor(message: string) {
         super(message);
+        this.superStack = Object.getOwnPropertyDescriptor(this, "stack");
+        Object.defineProperty(this, "stack", {
+            get: this.getManageStack,
+        });
     }
 
-    get managedStack(): string | undefined {
-        const gc_handle = <GCHandle>(<any>this)[js_owned_gc_handle_symbol];
+    getManageStack() {
+        const gc_handle = (<any>this)[js_owned_gc_handle_symbol];
         if (gc_handle) {
             const managed_stack = runtimeHelpers.javaScriptExports.get_managed_stack_trace(gc_handle);
             if (managed_stack) {
-                return managed_stack + "\n" + this.stack;
+                return managed_stack + "\n" + this.superStack.value;
             }
         }
-        return this.stack;
+        return this.superStack.value;
     }
 
     dispose(): void {
@@ -338,10 +343,6 @@ export class ManagedError extends Error implements IDisposable {
 
     get isDisposed(): boolean {
         return (<any>this)[js_owned_gc_handle_symbol] === GCHandleNull;
-    }
-
-    toString(): string {
-        return this.managedStack || this.message;
     }
 }
 
