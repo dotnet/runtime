@@ -36,7 +36,7 @@ namespace Microsoft.Interop.Analyzers
                         if (targetSymbol is IMethodSymbol method)
                         {
                             // Sometimes an attribute is put on a symbol that is nested within the containing symbol.
-                            // For example, the ContainingSymbol for an AttributeSyntax on a local function have a ContainingSymbol of the method.
+                            // For example, the ContainingSymbol for an AttributeSyntax on a local function has a ContainingSymbol of the method.
                             // Since this method is internal and the callers don't care about attributes on local functions,
                             // we just allow this method to return null in those cases.
                             return method.GetReturnTypeAttributes().FirstOrDefault(attributeSyntaxLocationMatches);
@@ -53,8 +53,8 @@ namespace Microsoft.Interop.Analyzers
                 }
             }
             // Sometimes an attribute is put on a symbol that is nested within the containing symbol.
-            // For example, the ContainingSymbol for an AttributeSyntax on a parameter have a ContainingSymbol of the method
-            // and an AttributeSyntax on a local function have a ContainingSymbol of the containing method.
+            // For example, the ContainingSymbol for an AttributeSyntax on a parameter has a ContainingSymbol of the method
+            // and an AttributeSyntax on a local function has a ContainingSymbol of the containing method.
             // Since this method is internal and the callers don't care about attributes on parameters, we just allow
             // this method to return null in those cases.
             return targetSymbol.GetAttributes().FirstOrDefault(attributeSyntaxLocationMatches);
