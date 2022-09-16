@@ -501,6 +501,10 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(rgbHash != null);
 
+            // Read the SafeKeyHandle property to force the key to load
+            SafeCapiKeyHandle localHandle = SafeKeyHandle;
+            Debug.Assert(localHandle != null);
+
             return CapiHelper.SignValue(
                 SafeProvHandle,
                 _parameters.KeyNumber,
