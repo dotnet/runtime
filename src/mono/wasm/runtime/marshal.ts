@@ -320,10 +320,17 @@ export class ManagedError extends Error implements IDisposable {
     private superStack: any;
     constructor(message: string) {
         super(message);
-        this.superStack = Object.getOwnPropertyDescriptor(this, "stack");
+        this.superStack = Object.getOwnPropertyDescriptor(this, "stack"); // this works on Chrome
         Object.defineProperty(this, "stack", {
             get: this.getManageStack,
         });
+    }
+
+    getSuperStack() {
+        if (this.superStack) {
+            return this.superStack.value;
+        }
+        return super.stack; // this works on FF
     }
 
     getManageStack() {
@@ -331,10 +338,10 @@ export class ManagedError extends Error implements IDisposable {
         if (gc_handle) {
             const managed_stack = runtimeHelpers.javaScriptExports.get_managed_stack_trace(gc_handle);
             if (managed_stack) {
-                return managed_stack + "\n" + this.superStack.value;
+                return managed_stack + "\n" + this.getSuperStack();
             }
         }
-        return this.superStack.value;
+        return this.getSuperStack();
     }
 
     dispose(): void {

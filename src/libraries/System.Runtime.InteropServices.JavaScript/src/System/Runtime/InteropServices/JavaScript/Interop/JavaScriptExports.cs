@@ -208,7 +208,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 GCHandle exception_gc_handle = (GCHandle)arg_1.slot.GCHandle;
                 if (exception_gc_handle.Target is Exception exception)
                 {
-                    arg_return.ToJS(exception.ToString());
+                    arg_return.ToJS(exception.StackTrace);
                 }
                 else
                 {

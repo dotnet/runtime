@@ -105,7 +105,7 @@ export function retrieve1() {
     return val;
 }
 
-export function throw0() {
+export function throw0fn() {
     //console.log(`throw0()`)
     throw new Error('throw-0-msg');
 }
@@ -132,7 +132,7 @@ export function catch1stack(message, functionName) {
     }
 }
 
-export function throw1(arg1) {
+export function throw1fn(arg1) {
     //console.log(`throw1(arg1:${arg1 !== null ? arg1 : '<null>'})`)
     throw new Error('throw1-msg ' + arg1);
 }

@@ -1383,14 +1383,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var toString = JavaScriptTestHelper.catch1toString("-t-e-s-t-", nameof(JavaScriptTestHelper.ThrowFromJSExport));
             Assert.DoesNotContain("Unexpected error", toString);
             Assert.Contains("-t-e-s-t-", toString);
-            Assert.DoesNotContain("ThrowFromJSExport", toString);
+            Assert.DoesNotContain(nameof(JavaScriptTestHelper.ThrowFromJSExport), toString);
         }
 
         [Fact]
         public void JsExportCatchStack()
         {
             var stack = JavaScriptTestHelper.catch1stack("-t-e-s-t-", nameof(JavaScriptTestHelper.ThrowFromJSExport));
-            Assert.Contains("ThrowFromJSExport", stack);
+            Assert.Contains(nameof(JavaScriptTestHelper.ThrowFromJSExport), stack);
             Assert.Contains("catch1stack", stack);
         }
 
@@ -1937,12 +1937,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var exThrow0 = Assert.Throws<JSException>(() => JavaScriptTestHelper.throw0());
             Assert.Contains("throw-0-msg", exThrow0.Message);
             Assert.DoesNotContain(" at ", exThrow0.Message);
-            Assert.Contains(" at Module.throw0", exThrow0.StackTrace);
+            Assert.Contains("throw0fn", exThrow0.StackTrace);
 
             var exThrow1 = Assert.Throws<JSException>(() => throw1(value));
             Assert.Contains("throw1-msg", exThrow1.Message);
             Assert.DoesNotContain(" at ", exThrow1.Message);
-            Assert.Contains(" at Module.throw1", exThrow1.StackTrace);
+            Assert.Contains("throw1fn", exThrow1.StackTrace);
 
             // anything is a system.object, sometimes it would be JSObject wrapper
             if (typeof(T).IsPrimitive)
