@@ -4,7 +4,7 @@
 using System.Collections.Generic;
 using Xunit;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlNodeReaderTests
 {
     public class XmlNodeReaderMiscTests
     {

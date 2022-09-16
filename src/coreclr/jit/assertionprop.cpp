@@ -1155,8 +1155,14 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
 
                     if (op1Type == TYP_REF)
                     {
-                        assert(curAssertion->op2.u1.iconVal == 0);
-                        printf("null");
+                        if (curAssertion->op2.u1.iconVal == 0)
+                        {
+                            printf("null");
+                        }
+                        else
+                        {
+                            printf("[%08p]", dspPtr(curAssertion->op2.u1.iconVal));
+                        }
                     }
                     else
                     {
@@ -1635,11 +1641,11 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     {
                         noway_assert(op2->gtOper == GT_CNS_DBL);
                         /* If we have an NaN value then don't record it */
-                        if (_isnan(op2->AsDblCon()->gtDconVal))
+                        if (_isnan(op2->AsDblCon()->DconValue()))
                         {
                             goto DONE_ASSERTION; // Don't make an assertion
                         }
-                        assertion.op2.dconVal = op2->AsDblCon()->gtDconVal;
+                        assertion.op2.dconVal = op2->AsDblCon()->DconValue();
                     }
 
                     //
@@ -2646,8 +2652,10 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
         GenTree* objectNode      = call->gtArgs.GetArgByIndex(1)->GetNode();
         GenTree* methodTableNode = call->gtArgs.GetArgByIndex(0)->GetNode();
 
-        assert(objectNode->TypeGet() == TYP_REF);
-        assert(methodTableNode->TypeGet() == TYP_I_IMPL);
+        // objectNode can be TYP_I_IMPL in case if it's a constant handle
+        // (e.g. a string literal from frozen segments)
+        assert(objectNode->TypeIs(TYP_REF, TYP_I_IMPL));
+        assert(methodTableNode->TypeIs(TYP_I_IMPL));
 
         // Reverse the assertion
         assert((assertionKind == OAK_EQUAL) || (assertionKind == OAK_NOT_EQUAL));
@@ -3134,11 +3142,9 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 
         case TYP_REF:
         {
-            assert(vnStore->ConstantValue<size_t>(vnCns) == 0);
-            // Support onle ref(ref(0)), do not support other forms (e.g byref(ref(0)).
             if (tree->TypeGet() == TYP_REF)
             {
-                conValTree = gtNewIconNode(0, TYP_REF);
+                conValTree = gtNewIconNode(vnStore->ConstantValue<size_t>(vnCns), TYP_REF);
             }
         }
         break;
@@ -4285,8 +4291,14 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
             else if (op1->TypeGet() == TYP_REF)
             {
                 // The only constant of TYP_REF that ValueNumbering supports is 'null'
-                assert(vnStore->ConstantValue<size_t>(vnCns) == 0);
-                printf("null\n");
+                if (vnStore->ConstantValue<size_t>(vnCns) == 0)
+                {
+                    printf("null\n");
+                }
+                else
+                {
+                    printf("%d (gcref)\n", static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
+                }
             }
             else if (op1->TypeGet() == TYP_BYREF)
             {
@@ -4339,9 +4351,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         }
         else if (op1->TypeGet() == TYP_REF)
         {
-            op1->BashToConst(0, TYP_REF);
-            // The only constant of TYP_REF that ValueNumbering supports is 'null'
-            noway_assert(vnStore->ConstantValue<size_t>(vnCns) == 0);
+            op1->BashToConst(static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)), TYP_REF);
         }
         else if (op1->TypeGet() == TYP_BYREF)
         {
