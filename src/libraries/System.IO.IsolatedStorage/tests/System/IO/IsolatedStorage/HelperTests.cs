@@ -12,16 +12,23 @@ namespace System.IO.IsolatedStorage.Tests
         public void GetDefaultIdentityAndHash()
         {
             object identity;
-            Helper.GetDefaultIdentityAndHash(out identity, '.');
+            string hash;
+            Helper.GetDefaultIdentityAndHash(out identity, out hash, '.');
 
             Assert.NotNull(identity);
+            Assert.NotNull(hash);
 
             // We lie about the identity type when creating the folder structure as we're emulating the Evidence types
             // we don't have available in .NET Standard. We don't serialize the actual identity object, so the desktop
             // implementation will work with locations built off the hash.
-            if (identity.GetType() != typeof(Uri))
+            if (identity.GetType() == typeof(Uri))
+            {
+                Assert.StartsWith(@"Url.", hash);
+            }
+            else if (identity.GetType() != typeof(Uri))
             {
                 Assert.IsType<AssemblyName>(identity);
+                Assert.StartsWith(@"StrongName.", hash);
             }
         }
 

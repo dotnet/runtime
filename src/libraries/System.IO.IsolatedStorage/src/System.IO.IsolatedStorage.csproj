@@ -10,9 +10,13 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageException.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFile.cs" />
+    <Compile Condition="'$(TargetPlatformIdentifier)' == 'Android' or '$(TargetPlatformIdentifier)' == 'iOS' or '$(TargetPlatformIdentifier)' == 'MacCatalyst' or '$(TargetPlatformIdentifier)' == 'tvOS'"
+             Include="System\IO\IsolatedStorage\IsolatedStorageFile.AnyMobile.cs" />
+    <Compile Condition="'$(TargetPlatformIdentifier)' != 'Android' and '$(TargetPlatformIdentifier)' != 'iOS' and '$(TargetPlatformIdentifier)' != 'MacCatalyst' and '$(TargetPlatformIdentifier)' != 'tvOS'"
+             Include="System\IO\IsolatedStorage\IsolatedStorageFile.NonMobile.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFileStream.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorage.cs" />
-    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageScope.cs" />
+    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageScope.cs" />    
     <Compile Include="System\IO\IsolatedStorage\Helper.cs" />
     <Compile Include="System\IO\IsolatedStorage\Helper.Win32Unix.cs" />
     <Compile Include="System\IO\IsolatedStorage\INormalizeForIsolatedStorage.cs" />

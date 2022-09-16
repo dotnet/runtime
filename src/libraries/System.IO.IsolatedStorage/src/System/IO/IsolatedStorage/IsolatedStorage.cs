@@ -127,6 +127,11 @@ namespace System.IO.IsolatedStorage
 
         public abstract void Remove();
 
+        internal string? IdentityHash
+        {
+            get; private set;
+        }
+
         protected void InitStore(IsolatedStorageScope scope, Type appEvidenceType)
         {
             InitStore(scope, null, appEvidenceType);
@@ -137,7 +142,7 @@ namespace System.IO.IsolatedStorage
             VerifyScope(scope);
             Scope = scope;
 
-            Helper.GetDefaultIdentityAndHash(out object identity, SeparatorInternal);
+            Helper.GetDefaultIdentityAndHash(out object identity, out string hash, SeparatorInternal);
 
             if (Helper.IsApplication(scope))
             {
@@ -148,10 +153,13 @@ namespace System.IO.IsolatedStorage
                 if (Helper.IsDomain(scope))
                 {
                     _domainIdentity = identity;
+                    hash = string.Create(null, stackalloc char[128], $"{hash}{SeparatorExternal}{hash}");
                 }
 
                 _assemblyIdentity = identity;
             }
+
+            IdentityHash = hash;
         }
 
         private static void VerifyScope(IsolatedStorageScope scope)

@@ -40,9 +40,10 @@ namespace System.IO.IsolatedStorage
             // Evidence isn't currently available: https://github.com/dotnet/runtime/issues/18208
             // public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, Evidence domainEvidence, Type domainEvidenceType, Evidence assemblyEvidence, Type assemblyEvidenceType) { return default(IsolatedStorageFile); }
 
+            // InitStore will set up the IdentityHash
             InitStore(scope, null, null);
 
-            StringBuilder sb = new StringBuilder(Helper.GetRootDirectory(scope));
+            StringBuilder sb = new StringBuilder(GetIsolatesStorageRoot());
             sb.Append(SeparatorExternal);
 
             if (Helper.IsApplication(scope))
