@@ -57,7 +57,21 @@ And that is it. A few notes about the above example:
 - `ARM64-FULL-LINE` checks to see if there is an exact line that matches the disassembly output of the method `AdvSimd_CompareEqual_Vector64_Byte_Zero` - leading and trailing spaces are ignored.
 - Method bodies that have FileCheck syntax, e.g. `ARM64-FULL-LINE:`/`X64:`/etc, must have the attribute `[MethodImpl(MethodImplOptions.NoInlining)]`. If it does not, then an error is reported.
 - FileCheck syntax outside of a method body will also report an error.
-# Additional FileCheck syntax
-SuperFileCheck adds additional FileCheck syntax:
+# Additional functionality
+LLVM has a different setup where each test file is passed to `lit`, and `RUN:` lines inside the test specify
+configuration details such as architectures to run, FileCheck prefixes to use, etc.  In our case, the 
+files handle a lot of this with build conditionals and `.cmd`/`.sh` file generation.  Additionally, LLVM tests
+rely on the order of the compiler output corresponding to the order of the input functions in the test file.
+When running under the JIT, the compilation order is dependent on execution, not source order.
+
+Functionality that has been added or moved to MSBuild:
+- Conditionals controlling test execution
+- Automatic specificiation of `CHECK` and `<architecture>` as check prefixes
+
+Functionality that has been added or moved to SuperFileCheck:
+- Each function is run under a separate invocation of FileCheck. SuperFileCheck adds additional `CHECK` lines
+  that search for the beginning and end of the output for each function. This ensures that output from
+  different functions don't contaminate each other. The separate invocations remove any dependency on the
+  order of the functions.
 - `<check-prefix>-FULL-LINE:` - same as using FileCheck's `<check-prefix>:`, but checks that the line matches exactly; leading and trailing whitespace is ignored.
 - `<check-prefix>-FULL-LINE-NEXT:` - same as using FileCheck's `<check-prefix>-NEXT:`, but checks that the line matches exactly; leading and trailing whitespace is ignored.
