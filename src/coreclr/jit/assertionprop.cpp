@@ -3430,7 +3430,7 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
                         // Conservatively don't allow propagation of ICON TYP_REF into BYREF
                         return nullptr;
                     }
-                    newTree->ChangeType(newTree->TypeGet());
+                    newTree->ChangeType(tree->TypeGet());
                 }
             }
             else
