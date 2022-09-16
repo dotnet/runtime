@@ -5,14 +5,14 @@ namespace System.IO.IsolatedStorage
 {
     internal static partial class Helper
     {
-        private const string IsolatedStorageDirectoryName = "IsolatedStorage";
+        private const string IsolatedStorageDirectoryName = ".isolated-storage";
 
         private static string? s_machineRootDirectory;
         private static string? s_roamingUserRootDirectory;
         private static string? s_userRootDirectory;
 
         /// <summary>
-        /// The full root directory is the relevant special folder from Environment.GetFolderPath() plus "IsolatedStorage"
+        /// The full root directory is the relevant special folder from Environment.GetFolderPath() plus ".isolated-storage"
         /// and a set of random directory names if not roaming. (The random directories aren't created for WinRT as
         /// the FolderPath locations for WinRT are app isolated already.)
         ///
