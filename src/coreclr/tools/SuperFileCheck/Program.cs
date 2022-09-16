@@ -162,6 +162,7 @@ namespace SuperFileCheck
 
         /// <summary>
         /// Get all the descendant single line comment trivia items.
+        /// </summary>
         static IEnumerable<SyntaxTrivia> GetDescendantSingleLineCommentTrivia(SyntaxNode node)
         {
             return
@@ -477,7 +478,6 @@ namespace SuperFileCheck
         /// <summary>
         /// Try to find the first duplicate method name of the given method declarations.
         /// </summary>
-
         static string? TryFindDuplicateMethodName(MethodDeclarationInfo[] methodDeclInfos)
         {
             var set = new HashSet<string>();
