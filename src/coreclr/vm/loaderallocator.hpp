@@ -590,7 +590,7 @@ public:
     // Methods to retrieve a pointer to the COM+ string STRINGREF for a string constant.
     // If the string is not currently in the hash table it will be added and if the
     // copy string flag is set then the string will be copied before it is inserted.
-    STRINGREF *GetStringObjRefPtrFromUnicodeString(EEStringData *pStringData);
+    STRINGREF *GetStringObjRefPtrFromUnicodeString(EEStringData *pStringData, void** ppPinnedString = nullptr);
     void LazyInitStringLiteralMap();
     STRINGREF *IsStringInterned(STRINGREF *pString);
     STRINGREF *GetOrInternString(STRINGREF *pString);

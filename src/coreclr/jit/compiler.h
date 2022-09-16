@@ -981,23 +981,7 @@ public:
         lvStkOffs = offset;
     }
 
-    unsigned lvExactSize; // (exact) size of the type in bytes
-
-    // Is this a promoted struct?
-    // This method returns true only for structs (including SIMD structs), not for
-    // locals that are split on a 32-bit target.
-    // It is only necessary to use this:
-    //   1) if only structs are wanted, and
-    //   2) if Lowering has already been done.
-    // Otherwise lvPromoted is valid.
-    bool lvPromotedStruct()
-    {
-#if !defined(TARGET_64BIT)
-        return (lvPromoted && !varTypeIsLong(lvType));
-#else  // defined(TARGET_64BIT)
-        return lvPromoted;
-#endif // defined(TARGET_64BIT)
-    }
+    unsigned lvExactSize; // (exact) size of a STRUCT/SIMD/BLK local in bytes.
 
     unsigned lvSize() const;
 
@@ -3824,7 +3808,7 @@ public:
     void impInsertTreeBefore(GenTree* tree, const DebugInfo& di, Statement* stmtBefore);
     void impAssignTempGen(unsigned         tmp,
                           GenTree*         val,
-                          unsigned         curLevel   = (unsigned)CHECK_SPILL_NONE,
+                          unsigned         curLevel   = CHECK_SPILL_NONE,
                           Statement**      pAfterStmt = nullptr,
                           const DebugInfo& di         = DebugInfo(),
                           BasicBlock*      block      = nullptr);
@@ -5765,6 +5749,7 @@ private:
     GenTree* fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree);
     GenTree* fgMorphForRegisterFP(GenTree* tree);
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone = nullptr);
+    void fgTryReplaceStructLocalWithField(GenTree* tree);
     GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeCastOnAssignment(GenTreeOp* asg);
     GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
@@ -6229,6 +6214,12 @@ public:
             {
                 return false;
             }
+        }
+
+        // Returns "true" iff this is removed loop.
+        bool lpIsRemoved() const
+        {
+            return (lpFlags & LPFLG_REMOVED) != 0;
         }
 
         // Returns "true" iff "*this" contains the blk.

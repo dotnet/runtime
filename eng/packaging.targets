@@ -1,7 +1,7 @@
 <Project>
 
   <PropertyGroup>
-    <EnablePackageValidation>true</EnablePackageValidation>
+    <EnablePackageValidation Condition="'$(EnablePackageValidation)' == ''">true</EnablePackageValidation>
     <!-- Don't restore prebuilt packages during sourcebuild. -->
     <DisablePackageBaselineValidation Condition="'$(DotNetBuildFromSource)' == 'true'">true</DisablePackageBaselineValidation>
     <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$(NetCoreAppLatestStablePackageBaselineVersion)</PackageValidationBaselineVersion>
