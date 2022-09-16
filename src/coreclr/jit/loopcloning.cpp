@@ -1668,9 +1668,9 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
         return false;
     }
 
-    if (loop.lpFlags & LPFLG_REMOVED)
+    if (loop.lpIsRemoved())
     {
-        JITDUMP("Loop cloning: rejecting loop " FMT_LP ". It is marked LPFLG_REMOVED.\n", loopInd);
+        JITDUMP("Loop cloning: rejecting removed loop " FMT_LP ".\n", loopInd);
         return false;
     }
 

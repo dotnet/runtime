@@ -9,10 +9,10 @@ namespace Internal.TypeSystem.Ecma
 {
     public struct EcmaSignatureTranslator
     {
-        BlobReader _input;
-        BlobBuilder _output;
+        private BlobReader _input;
+        private BlobBuilder _output;
 
-        Func<int, int> _getAlternateStreamToken;
+        private Func<int, int> _getAlternateStreamToken;
 
         public EcmaSignatureTranslator(BlobReader input, BlobBuilder output, Func<int, int> getAlternateStreamToken)
         {
@@ -23,31 +23,31 @@ namespace Internal.TypeSystem.Ecma
 
         // Various parsing functions for processing through the locals of a function and translating them to the
         // alternate form with new tokens.
-        int ParseCompressedInt()
+        private int ParseCompressedInt()
         {
             int value = _input.ReadCompressedInteger();
             _output.WriteCompressedInteger(value);
             return value;
         }
 
-        int ParseCompressedSignedInt()
+        private int ParseCompressedSignedInt()
         {
             int value = _input.ReadCompressedSignedInteger();
             _output.WriteCompressedSignedInteger(value);
             return value;
         }
 
-        byte ParseByte()
+        private byte ParseByte()
         {
             byte value = _input.ReadByte();
             _output.WriteByte(value);
             return value;
         }
 
-        byte PeekByte()
+        private byte PeekByte()
         {
             byte value = _input.ReadByte();
-            _input.Offset = _input.Offset - 1;
+            _input.Offset--;
             return value;
         }
 
@@ -109,8 +109,7 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-
-        void ParseTypeHandle()
+        private void ParseTypeHandle()
         {
             int token = MetadataTokens.GetToken(_input.ReadTypeHandle());
             int newToken = _getAlternateStreamToken(token);
@@ -179,7 +178,7 @@ namespace Internal.TypeSystem.Ecma
                 case SignatureTypeCode.Array:
                     {
                         ParseType();
-                        var rank = ParseCompressedInt();
+                        /*var rank = */ParseCompressedInt();
 
                         var boundsCount = ParseCompressedInt();
                         for (int i = 0; i < boundsCount; i++)

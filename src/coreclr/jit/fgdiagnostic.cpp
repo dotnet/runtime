@@ -389,7 +389,7 @@ void Compiler::fgDumpTree(FILE* fgxFile, GenTree* const tree)
     }
     else if (tree->IsCnsFltOrDbl())
     {
-        fprintf(fgxFile, "%g", tree->AsDblCon()->gtDconVal);
+        fprintf(fgxFile, "%g", tree->AsDblCon()->DconValue());
     }
     else if (tree->IsLocal())
     {
@@ -467,7 +467,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     }
 
 #ifdef DEBUG
-    dumpFunction = JitConfig.JitDumpFg().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args);
+    dumpFunction = JitConfig.JitDumpFg().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args);
     filename     = JitConfig.JitDumpFgFile();
     pathname     = JitConfig.JitDumpFgDir();
 
@@ -1701,7 +1701,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 for (unsigned loopNum = 0; loopNum < optLoopCount; loopNum++)
                 {
                     const LoopDsc& loop = optLoopTable[loopNum];
-                    if (loop.lpFlags & LPFLG_REMOVED)
+                    if (loop.lpIsRemoved())
                     {
                         continue;
                     }
@@ -3721,7 +3721,7 @@ void Compiler::fgDebugCheckLoopTable()
         const LoopDsc& loop = optLoopTable[i];
 
         // Ignore removed loops
-        if (loop.lpFlags & LPFLG_REMOVED)
+        if (loop.lpIsRemoved())
         {
             continue;
         }
@@ -3759,7 +3759,7 @@ void Compiler::fgDebugCheckLoopTable()
                     continue;
                 }
                 const LoopDsc& otherLoop = optLoopTable[j];
-                if (otherLoop.lpFlags & LPFLG_REMOVED)
+                if (otherLoop.lpIsRemoved())
                 {
                     continue;
                 }
@@ -3778,8 +3778,16 @@ void Compiler::fgDebugCheckLoopTable()
             assert(loop.lpParent != BasicBlock::NOT_IN_LOOP);
             assert(loop.lpParent < optLoopCount);
             assert(loop.lpParent < i); // outer loops come before inner loops in the table
+
             const LoopDsc& parentLoop = optLoopTable[loop.lpParent];
-            assert((parentLoop.lpFlags & LPFLG_REMOVED) == 0); // don't allow removed parent loop?
+            assert(!parentLoop.lpIsRemoved()); // don't allow removed parent loop?
+
+            // Either there is no sibling or it should not be marked REMOVED.
+            assert((loop.lpSibling == BasicBlock::NOT_IN_LOOP) || !optLoopTable[loop.lpSibling].lpIsRemoved());
+
+            // Either there is no child or it should not be marked REMOVED.
+            assert((loop.lpChild == BasicBlock::NOT_IN_LOOP) || !optLoopTable[loop.lpChild].lpIsRemoved());
+
             assert(MappedChecks::lpContainedBy(blockNumMap, &loop, optLoopTable[loop.lpParent]));
         }
 
@@ -3793,10 +3801,7 @@ void Compiler::fgDebugCheckLoopTable()
                 assert(child < optLoopCount);
                 assert(i < child); // outer loops come before inner loops in the table
                 const LoopDsc& childLoop = optLoopTable[child];
-                if (childLoop.lpFlags & LPFLG_REMOVED) // removed child loop might still be in table
-                {
-                    continue;
-                }
+                assert(!childLoop.lpIsRemoved());
                 assert(MappedChecks::lpContains(blockNumMap, &loop, childLoop));
                 assert(childLoop.lpParent == i);
             }
@@ -3807,19 +3812,13 @@ void Compiler::fgDebugCheckLoopTable()
                  child = optLoopTable[child].lpSibling)
             {
                 const LoopDsc& childLoop = optLoopTable[child];
-                if (childLoop.lpFlags & LPFLG_REMOVED)
-                {
-                    continue;
-                }
+                assert(!childLoop.lpIsRemoved());
                 for (unsigned child2 = optLoopTable[child].lpSibling; //
                      child2 != BasicBlock::NOT_IN_LOOP;               //
                      child2 = optLoopTable[child2].lpSibling)
                 {
                     const LoopDsc& child2Loop = optLoopTable[child2];
-                    if (child2Loop.lpFlags & LPFLG_REMOVED)
-                    {
-                        continue;
-                    }
+                    assert(!child2Loop.lpIsRemoved());
                     assert(MappedChecks::lpFullyDisjoint(blockNumMap, &childLoop, child2Loop));
                 }
             }
@@ -3830,10 +3829,7 @@ void Compiler::fgDebugCheckLoopTable()
                  child = optLoopTable[child].lpSibling)
             {
                 const LoopDsc& childLoop = optLoopTable[child];
-                if (childLoop.lpFlags & LPFLG_REMOVED)
-                {
-                    continue;
-                }
+                assert(!childLoop.lpIsRemoved());
                 assert(loop.lpTop != childLoop.lpTop);
             }
         }
@@ -3916,7 +3912,7 @@ void Compiler::fgDebugCheckLoopTable()
         for (int i = optLoopCount - 1; i >= 0; i--)
         {
             // Ignore removed loops
-            if (optLoopTable[i].lpFlags & LPFLG_REMOVED)
+            if (optLoopTable[i].lpIsRemoved())
             {
                 continue;
             }

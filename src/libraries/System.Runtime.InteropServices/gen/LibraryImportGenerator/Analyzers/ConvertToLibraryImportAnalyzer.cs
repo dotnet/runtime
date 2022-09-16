@@ -88,7 +88,7 @@ namespace Microsoft.Interop.Analyzers
             AnyDiagnosticsSink diagnostics = new();
             StubEnvironment env = context.Compilation.CreateStubEnvironment();
             AttributeData dllImportAttribute = method.GetAttributes().First(attr => attr.AttributeClass.ToDisplayString() == TypeNames.DllImportAttribute);
-            SignatureContext targetSignatureContext = SignatureContext.Create(method, CreateInteropAttributeDataFromDllImport(dllImportData), env, diagnostics, dllImportAttribute, typeof(ConvertToLibraryImportAnalyzer).Assembly);
+            SignatureContext targetSignatureContext = SignatureContext.Create(method, DefaultMarshallingInfoParser.Create(env, diagnostics, method, CreateInteropAttributeDataFromDllImport(dllImportData), dllImportAttribute), env, typeof(ConvertToLibraryImportAnalyzer).Assembly);
 
             var generatorFactoryKey = LibraryImportGeneratorHelpers.CreateGeneratorFactory(env, new LibraryImportGeneratorOptions(context.Options.AnalyzerConfigOptionsProvider.GlobalOptions));
 
