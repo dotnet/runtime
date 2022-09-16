@@ -210,17 +210,19 @@ class LclSsaVarDsc
     // TODO-Cleanup: In the case of uninitialized variables the block is set to nullptr by
     // SsaBuilder and changed to fgFirstBB during value numbering. It would be useful to
     // investigate and perhaps eliminate this rather unexpected behavior.
-    BasicBlock* m_block;
+    BasicBlock* m_block = nullptr;
     // The GT_ASG node that generates the definition, or nullptr for definitions
     // of uninitialized variables.
-    GenTreeOp* m_asg;
+    GenTreeOp* m_asg = nullptr;
+    // The SSA number associated with the previous definition for partial (GTF_USEASG) defs.
+    unsigned m_useDefSsaNum = SsaConfig::RESERVED_SSA_NUM;
 
 public:
-    LclSsaVarDsc() : m_block(nullptr), m_asg(nullptr)
+    LclSsaVarDsc()
     {
     }
 
-    LclSsaVarDsc(BasicBlock* block) : m_block(block), m_asg(nullptr)
+    LclSsaVarDsc(BasicBlock* block) : m_block(block)
     {
     }
 
@@ -248,6 +250,16 @@ public:
     {
         assert((asg == nullptr) || asg->OperIs(GT_ASG));
         m_asg = asg;
+    }
+
+    unsigned GetUseDefSsaNum() const
+    {
+        return m_useDefSsaNum;
+    }
+
+    void SetUseDefSsaNum(unsigned ssaNum)
+    {
+        m_useDefSsaNum = ssaNum;
     }
 
     ValueNumPair m_vnPair;
@@ -4697,20 +4709,7 @@ public:
         return BasicBlockRangeList(startBlock, endBlock);
     }
 
-    // The presence of a partial definition presents some difficulties for SSA: this is both a use of some SSA name
-    // of "x", and a def of a new SSA name for "x".  The tree only has one local variable for "x", so it has to choose
-    // whether to treat that as the use or def.  It chooses the "use", and thus the old SSA name.  This map allows us
-    // to record/recover the "def" SSA number, given the lcl var node for "x" in such a tree.
-    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned> NodeToUnsignedMap;
-    NodeToUnsignedMap* m_opAsgnVarDefSsaNums;
-    NodeToUnsignedMap* GetOpAsgnVarDefSsaNums()
-    {
-        if (m_opAsgnVarDefSsaNums == nullptr)
-        {
-            m_opAsgnVarDefSsaNums = new (getAllocator()) NodeToUnsignedMap(getAllocator());
-        }
-        return m_opAsgnVarDefSsaNums;
-    }
+    unsigned GetSsaNumForLocalVarDef(GenTree* lcl, unsigned* pUseDefSsaNum = nullptr);
 
     // This map tracks nodes whose value numbers explicitly or implicitly depend on memory states.
     // The map provides the entry block of the most closely enclosing loop that
@@ -4738,12 +4737,6 @@ public:
 
     void optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, ValueNum memoryVN);
     void optCopyLoopMemoryDependence(GenTree* fromTree, GenTree* toTree);
-
-    // Requires that "lcl" has the GTF_VAR_DEF flag set.  Returns the SSA number of "lcl".
-    // Except: assumes that lcl is a def, and if it is
-    // a partial def (GTF_VAR_USEASG), looks up and returns the SSA number for the "def",
-    // rather than the "use" SSA number recorded in the tree "lcl".
-    inline unsigned GetSsaNumForLocalVarDef(GenTree* lcl);
 
     inline bool PreciseRefCountsRequired();
 
@@ -10470,7 +10463,7 @@ public:
         return compRoot->m_fieldSeqStore;
     }
 
-    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, FieldSeq*> NodeToFieldSeqMap;
+    typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, unsigned> NodeToUnsignedMap;
 
     NodeToUnsignedMap* m_memorySsaMap[MemoryKindCount];
 

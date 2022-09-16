@@ -4847,7 +4847,8 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
     assert(!GetMemorySsaMap(GcHeap)->Lookup(storeNode));
 
     LclVarDsc* varDsc       = lvaGetDesc(lclDefNode);
-    unsigned   lclDefSsaNum = GetSsaNumForLocalVarDef(lclDefNode);
+    unsigned   lclUseSsaNum = SsaConfig::RESERVED_SSA_NUM;
+    unsigned   lclDefSsaNum = GetSsaNumForLocalVarDef(lclDefNode, &lclUseSsaNum);
 
     if (lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
     {
@@ -4861,9 +4862,7 @@ void Compiler::fgValueNumberLocalStore(GenTree*             storeNode,
         else
         {
             assert((lclDefNode->gtFlags & GTF_VAR_USEASG) != 0);
-            // The "lclDefNode" node will be labeled with the SSA number of its "use" identity
-            // (we looked in a side table above for its "def" identity).  Look up that value.
-            ValueNumPair oldLclValue = varDsc->GetPerSsaData(lclDefNode->GetSsaNum())->m_vnPair;
+            ValueNumPair oldLclValue = varDsc->GetPerSsaData(lclUseSsaNum)->m_vnPair;
             newLclValue              = vnStore->VNPairForStore(oldLclValue, lclSize, offset, storeSize, value);
         }
 

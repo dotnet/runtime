@@ -11375,8 +11375,9 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             {
                 if (tree->gtFlags & GTF_VAR_USEASG)
                 {
-                    assert(tree->gtFlags & GTF_VAR_DEF);
-                    printf("ud:%d->%d", tree->AsLclVarCommon()->GetSsaNum(), GetSsaNumForLocalVarDef(tree));
+                    unsigned oldDefSsaNum;
+                    unsigned newDefSsaNum = GetSsaNumForLocalVarDef(tree, &oldDefSsaNum);
+                    printf("ud:%d->%d", oldDefSsaNum, newDefSsaNum);
                 }
                 else
                 {

@@ -1947,7 +1947,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 #endif // DEBUG
 
     vnStore                    = nullptr;
-    m_opAsgnVarDefSsaNums      = nullptr;
     m_nodeToLoopMemoryBlockMap = nullptr;
     fgSsaPassesCompleted       = 0;
     fgVNPassesCompleted        = 0;
@@ -5289,7 +5288,6 @@ void Compiler::ResetOptAnnotations()
     assert(JitConfig.JitOptRepeatCount() > 0);
     fgResetForSsa();
     vnStore               = nullptr;
-    m_opAsgnVarDefSsaNums = nullptr;
     m_blockToEHPreds      = nullptr;
     fgSsaPassesCompleted  = 0;
     fgVNPassesCompleted   = 0;

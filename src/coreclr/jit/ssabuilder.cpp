@@ -758,24 +758,19 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
             assert(!m_pCompiler->lvaGetDesc(lclNum)->lvPromoted);
             // This should have been marked as definition.
             assert((lclNode->gtFlags & GTF_VAR_DEF) != 0);
+            assert(((lclNode->gtFlags & GTF_VAR_USEASG) != 0) == !isFullDef);
 
             unsigned ssaNum = varDsc->lvPerSsaData.AllocSsaNum(m_allocator, block,
                                                                defNode->OperIs(GT_ASG) ? defNode->AsOp() : nullptr);
 
+            lclNode->SetSsaNum(ssaNum);
+
             if (!isFullDef)
             {
-                assert((lclNode->gtFlags & GTF_VAR_USEASG) != 0);
-
                 // This is a partial definition of a variable. The node records only the SSA number
-                // of the use that is implied by this partial definition. The SSA number of the new
-                // definition will be recorded in the m_opAsgnVarDefSsaNums map.
-                lclNode->SetSsaNum(m_renameStack.Top(lclNum));
-                m_pCompiler->GetOpAsgnVarDefSsaNums()->Set(lclNode, ssaNum);
-            }
-            else
-            {
-                assert((lclNode->gtFlags & GTF_VAR_USEASG) == 0);
-                lclNode->SetSsaNum(ssaNum);
+                // of the def. The SSA number of the old definition (the "use" portion) will be
+                // recorded in the SSA descriptor.
+                varDsc->GetPerSsaData(ssaNum)->SetUseDefSsaNum(m_renameStack.Top(lclNum));
             }
 
             m_renameStack.Push(block, lclNum, ssaNum);
