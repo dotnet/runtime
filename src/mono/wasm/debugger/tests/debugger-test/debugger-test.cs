@@ -1355,3 +1355,20 @@ public class ClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass : Debu
 
     public int myField;
 }
+public class ReadOnlySpanTest
+{
+    public static void Run()
+    {
+        Invoke(new string[] {"TEST"});
+        ReadOnlySpan<object> var1 = new ReadOnlySpan<object>();
+        System.Diagnostics.Debugger.Break();
+    }
+    public static void Invoke(object[] parameters)
+    {
+        CheckArguments(parameters);
+    }
+    public static void CheckArguments(ReadOnlySpan<object> parameters)
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+}
