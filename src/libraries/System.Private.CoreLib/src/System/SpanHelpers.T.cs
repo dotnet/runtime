@@ -1443,14 +1443,6 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int IndexOfChar(ref char searchSpace, char value, int length)
-            => IndexOfValueType(ref Unsafe.As<char, short>(ref searchSpace), (short)value, length);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int IndexOfValueType<T>(ref T searchSpace, T value, int length) where T : struct, INumber<T>
-            => IndexOfValueType<T, DontNegate<T>>(ref searchSpace, value, length);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int IndexOfAnyExceptValueType<T>(ref T searchSpace, T value, int length) where T : struct, INumber<T>
             => IndexOfValueType<T, Negate<T>>(ref searchSpace, value, length);
 
