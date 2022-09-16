@@ -374,12 +374,9 @@ namespace System.Formats.Tar
 
             if (_name.Length > FieldLengths.Name)
             {
-                int prefixBytesLength = Math.Min(_name.Length - FieldLengths.Name, FieldLengths.Name);
-                Span<byte> remaining = prefixBytesLength <= 256 ?
-                    stackalloc byte[prefixBytesLength] :
-                    new byte[prefixBytesLength];
-
-                int encoded = Encoding.ASCII.GetBytes(_name.AsSpan(FieldLengths.Name), remaining);
+                int prefixBytesLength = Math.Min(_name.Length - FieldLengths.Name, FieldLengths.Prefix);
+                Span<byte> remaining = stackalloc byte[prefixBytesLength];
+                int encoded = Encoding.ASCII.GetBytes(_name.AsSpan(FieldLengths.Name, prefixBytesLength), remaining);
                 Debug.Assert(encoded == remaining.Length);
 
                 checksum += WriteLeftAlignedBytesAndGetChecksum(remaining, buffer.Slice(FieldLocations.Prefix, FieldLengths.Prefix));
@@ -391,6 +388,9 @@ namespace System.Formats.Tar
         // Writes all the common fields shared by all formats into the specified spans.
         private int WriteCommonFields(Span<byte> buffer, long actualLength, TarEntryType actualEntryType)
         {
+            // Don't write an empty LinkName if the entry is a hardlink or symlink
+            Debug.Assert(!string.IsNullOrEmpty(_linkName) ^ (_typeFlag is not TarEntryType.SymbolicLink and not TarEntryType.HardLink));
+
             int checksum = 0;
 
             if (_mode > 0)
@@ -559,8 +559,16 @@ namespace System.Formats.Tar
                     // The format is:
                     //     "XX attribute=value\n"
                     // where "XX" is the number of characters in the entry, including those required for the count itself.
+                    // If prepending the length digits increases the number of digits, we need to expand.
                     int length = 3 + Encoding.UTF8.GetByteCount(attribute) + Encoding.UTF8.GetByteCount(value);
-                    length += CountDigits(length);
+                    int originalDigitCount = CountDigits(length), newDigitCount;
+                    length += originalDigitCount;
+                    while ((newDigitCount = CountDigits(length)) != originalDigitCount)
+                    {
+                        length += newDigitCount - originalDigitCount;
+                        originalDigitCount = newDigitCount;
+                    }
+                    Debug.Assert(length == CountDigits(length) + 3 + Encoding.UTF8.GetByteCount(attribute) + Encoding.UTF8.GetByteCount(value));
 
                     // Get a large enough buffer if we don't already have one.
                     if (span.Length < length)
@@ -569,8 +577,7 @@ namespace System.Formats.Tar
                         {
                             ArrayPool<byte>.Shared.Return(buffer);
                         }
-                        buffer = ArrayPool<byte>.Shared.Rent(length);
-                        span = buffer;
+                        span = buffer = ArrayPool<byte>.Shared.Rent(length);
                     }
 
                     // Format the contents.

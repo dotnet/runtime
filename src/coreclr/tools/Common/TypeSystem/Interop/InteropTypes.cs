@@ -3,8 +3,6 @@
 
 using Internal.IL;
 
-using Debug = System.Diagnostics.Debug;
-
 namespace Internal.TypeSystem.Interop
 {
     public static class InteropTypes
@@ -135,11 +133,6 @@ namespace Internal.TypeSystem.Interop
         public static bool IsSystemRuntimeIntrinsicsVector64T(TypeSystemContext context, TypeDesc type)
         {
             return IsCoreNamedType(context, type, "System.Runtime.Intrinsics", "Vector64`1");
-        }
-
-        public static bool IsInt128Type(TypeSystemContext context, TypeDesc type)
-        {
-            return IsCoreNamedType(context, type, "System", "Int128") || IsCoreNamedType(context, type, "System", "UInt128");
         }
 
         public static bool IsSystemRuntimeIntrinsicsVector128T(TypeSystemContext context, TypeDesc type)

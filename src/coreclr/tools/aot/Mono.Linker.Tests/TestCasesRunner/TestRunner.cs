@@ -4,7 +4,6 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Mono.Linker.Tests.TestCasesRunner;
 using Mono.Cecil;
 using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCases;
@@ -148,7 +147,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			builder.ProcessTestInputAssembly (compilationResult.InputAssemblyPath);
 		}
 
-		private T GetResultOfTaskThatMakesXUnitAssertions<T> (Task<T> task)
+		private static T GetResultOfTaskThatMakesXUnitAssertions<T> (Task<T> task)
 		{
 			try {
 				return task.Result;

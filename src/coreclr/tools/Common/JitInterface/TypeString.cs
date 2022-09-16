@@ -10,7 +10,7 @@ namespace Internal.JitInterface
     // This is a very rough equivalent of typestring.cpp in the CLR.
     // There's way more rules to capture. Hopefully, we'll only ever need this in the code to recognize SIMD intrisics
     // and we won't need to replicate all the details around escaping and such.
-    internal class TypeString : TypeNameFormatter
+    internal sealed class TypeString : TypeNameFormatter
     {
         public static TypeString Instance { get; } = new TypeString();
 
@@ -29,7 +29,7 @@ namespace Internal.JitInterface
 
         public override void AppendName(StringBuilder sb, SignatureTypeVariable type)
         {
-            sb.Append("!");
+            sb.Append('!');
             sb.Append(type.Index);
         }
 
@@ -59,7 +59,7 @@ namespace Internal.JitInterface
         public override void AppendName(StringBuilder sb, ByRefType type)
         {
             AppendName(sb, type.ParameterType);
-            sb.Append("&");
+            sb.Append('&');
         }
 
         public override void AppendName(StringBuilder sb, ArrayType type)

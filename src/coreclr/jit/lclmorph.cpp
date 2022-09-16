@@ -993,17 +993,17 @@ private:
             return IndirTransform::None;
         }
 
-        if (varDsc->lvPromoted)
-        {
-            // TODO-ADDR: For now we ignore promoted variables, they require additional
-            // changes in subsequent phases.
-            return IndirTransform::None;
-        }
-
-        // As we are only handling non-promoted STRUCT locals right now, the only
-        // possible transformation for non-STRUCT indirect uses is LCL_FLD.
         if (!varTypeIsStruct(indir))
         {
+            if (varDsc->lvPromoted)
+            {
+                // TODO-ADDR: support promoted locals here by moving the promotion morphing
+                // from pre-order to post-order.
+                return IndirTransform::None;
+            }
+
+            // As we are only handling non-promoted STRUCT locals right now, the only
+            // possible transformation for non-STRUCT indirect uses is LCL_FLD.
             assert(varDsc->TypeGet() == TYP_STRUCT);
             return IndirTransform::LclFld;
         }

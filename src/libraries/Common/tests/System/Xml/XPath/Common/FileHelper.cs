@@ -3,9 +3,6 @@
 
 using System;
 using System.IO;
-using System.Reflection;
-using System.Threading.Tasks;
-using Xunit;
 
 namespace XPathTests.Common
 {
@@ -17,7 +14,7 @@ namespace XPathTests.Common
             Stream s = typeof(FileHelper).Assembly.GetManifestResourceStream(xmlPath);
             if (s == null)
             {
-                throw new Exception("Couldn't find resource.");
+                throw new Exception($"Couldn't find resource: {xmlPath}. Available: {string.Join(Environment.NewLine, typeof(FileHelper).Assembly.GetManifestResourceNames())}");
             }
             return s;
         }

@@ -15,7 +15,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.Dataflow
 {
-    static class EcmaExtensions
+    internal static class EcmaExtensions
     {
         public static bool IsPublic(this MethodDesc method)
         {

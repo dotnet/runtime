@@ -361,37 +361,44 @@ namespace Microsoft.WebAssembly.Diagnostics
                             SendResponse(id, resp, token);
                             return true;
                         }
-
-                        string bpid = resp.Value["breakpointId"]?.ToString();
-                        IEnumerable<object> locations = resp.Value["locations"]?.Values<object>();
-                        var request = BreakpointRequest.Parse(bpid, args);
-
-                        // is the store done loading?
-                        bool loaded = context.Source.Task.IsCompleted;
-                        if (!loaded)
+                        try
                         {
-                            // Send and empty response immediately if not
-                            // and register the breakpoint for resolution
-                            context.BreakpointRequests[bpid] = request;
-                            SendResponse(id, resp, token);
+                            string bpid = resp.Value["breakpointId"]?.ToString();
+                            IEnumerable<object> locations = resp.Value["locations"]?.Values<object>();
+                            var request = BreakpointRequest.Parse(bpid, args);
+
+                            // is the store done loading?
+                            bool loaded = context.Source.Task.IsCompleted;
+                            if (!loaded)
+                            {
+                                // Send and empty response immediately if not
+                                // and register the breakpoint for resolution
+                                context.BreakpointRequests[bpid] = request;
+                                SendResponse(id, resp, token);
+                            }
+
+                            if (await IsRuntimeAlreadyReadyAlready(id, token))
+                            {
+                                DebugStore store = await RuntimeReady(id, token);
+
+                                Log("verbose", $"BP req {args}");
+                                await SetBreakpoint(id, store, request, !loaded, false, token);
+                            }
+
+                            if (loaded)
+                            {
+                                // we were already loaded so we should send a response
+                                // with the locations included and register the request
+                                context.BreakpointRequests[bpid] = request;
+                                var result = Result.OkFromObject(request.AsSetBreakpointByUrlResponse(locations));
+                                SendResponse(id, result, token);
+
+                            }
                         }
-
-                        if (await IsRuntimeAlreadyReadyAlready(id, token))
+                        catch (Exception e)
                         {
-                            DebugStore store = await RuntimeReady(id, token);
-
-                            Log("verbose", $"BP req {args}");
-                            await SetBreakpoint(id, store, request, !loaded, false, token);
-                        }
-
-                        if (loaded)
-                        {
-                            // we were already loaded so we should send a response
-                            // with the locations included and register the request
-                            context.BreakpointRequests[bpid] = request;
-                            var result = Result.OkFromObject(request.AsSetBreakpointByUrlResponse(locations));
-                            SendResponse(id, result, token);
-
+                            logger.LogDebug($"Debugger.setBreakpointByUrl - {args} - failed with exception: {e}");
+                            SendResponse(id, Result.Err($"Debugger.setBreakpointByUrl - {args} - failed with exception: {e}"), token);
                         }
                         return true;
                     }
@@ -607,10 +614,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             // GetAssemblyByName seems to work on file names
             AssemblyInfo assembly = store.GetAssemblyByName(aname);
-            if (assembly == null)
-                assembly = store.GetAssemblyByName(aname + ".exe");
-            if (assembly == null)
-                assembly = store.GetAssemblyByName(aname + ".dll");
+            assembly ??= store.GetAssemblyByName(aname + ".exe");
+            assembly ??= store.GetAssemblyByName(aname + ".dll");
             if (assembly == null)
             {
                 return Result.Err($"Assembly '{aname}' not found," +
@@ -813,8 +818,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             try {
                 var resolver = new MemberReferenceResolver(this, context, sessionId, mono_frame.Id, logger);
                 JObject retValue = await resolver.Resolve(condition, token);
-                if (retValue == null)
-                    retValue = await ExpressionEvaluator.CompileAndRunTheExpression(condition, resolver, logger, token);
+                retValue ??= await ExpressionEvaluator.CompileAndRunTheExpression(condition, resolver, logger, token);
                 if (retValue?["value"]?.Type == JTokenType.Boolean ||
                     retValue?["value"]?.Type == JTokenType.Integer ||
                     retValue?["value"]?.Type == JTokenType.Float) {
@@ -871,7 +875,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             var methodId = retDebuggerCmdReader.ReadInt32();
             var method = await context.SdbAgent.GetMethodInfo(methodId, token);
-            if (method == null)
+            if (method == null || method.Info.Source is null)
             {
                 return true;
             }
@@ -1371,10 +1375,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var resolver = new MemberReferenceResolver(this, context, msg_id, scopeId, logger);
 
                 JObject retValue = await resolver.Resolve(expression, token);
-                if (retValue == null)
-                {
-                    retValue = await ExpressionEvaluator.CompileAndRunTheExpression(expression, resolver, logger, token);
-                }
+                retValue ??= await ExpressionEvaluator.CompileAndRunTheExpression(expression, resolver, logger, token);
 
                 if (retValue != null)
                 {
@@ -1449,7 +1450,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             var assembly_id = await context.SdbAgent.GetAssemblyId(asm_name, token);
             var methodId = await context.SdbAgent.GetMethodIdByToken(assembly_id, method_token, token);
-            var breakpoint_id = await context.SdbAgent.SetBreakpoint(methodId, il_offset, token);
+            //the breakpoint can be invalid because a race condition between the changes already applied on runtime and not applied yet on debugger side
+            var breakpoint_id = await context.SdbAgent.SetBreakpointNoThrow(methodId, il_offset, token);
 
             if (breakpoint_id > 0)
             {
@@ -1539,8 +1541,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             ExecutionContext context = GetContext(sessionId);
             if (Interlocked.CompareExchange(ref context.ready, new TaskCompletionSource<DebugStore>(), null) != null)
                 return await context.ready.Task;
-
-            await context.SdbAgent.SendDebuggerAgentCommand(CmdEventRequest.ClearAllBreakpoints, null, token);
+            var res = await context.SdbAgent.SendDebuggerAgentCommand(CmdEventRequest.ClearAllBreakpoints, null, token, false);
+            if (res.HasError) //it's not a wasm page then the command returns an error
+                return null;
 
             if (context.PauseOnExceptions != PauseOnExceptionsKind.None && context.PauseOnExceptions != PauseOnExceptionsKind.Unset)
                 await context.SdbAgent.EnableExceptions(context.PauseOnExceptions, token);
@@ -1725,7 +1728,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (!ret)
                 return false;
 
-            var breakpointId = await context.SdbAgent.SetBreakpoint(scope.Method.DebugId, ilOffset.Offset, token);
+            var breakpointId = await context.SdbAgent.SetBreakpointNoThrow(scope.Method.DebugId, ilOffset.Offset, token);
+            if (breakpointId == -1)
+                return false;
+
             context.TempBreakpointForSetNextIP = breakpointId;
             await SendResume(sessionId, token);
             return true;

@@ -17,7 +17,7 @@ using AssemblyFlags = System.Reflection.AssemblyFlags;
 
 namespace ILCompiler.Metadata
 {
-    partial class Transform<TPolicy>
+    internal partial class Transform<TPolicy>
     {
         private EntityMap<ForwarderKey, TypeForwarder> _forwarders = new EntityMap<ForwarderKey, TypeForwarder>(EqualityComparer<ForwarderKey>.Default);
 
@@ -54,7 +54,7 @@ namespace ILCompiler.Metadata
             Cts.Ecma.EcmaModule module = key.Module;
             Ecma.MetadataReader reader = module.MetadataReader;
             Ecma.ExportedType exportedType = reader.GetExportedType(key.ExportedType);
-            
+
             record.Name = HandleString(reader.GetString(exportedType.Name));
 
             switch (exportedType.Implementation.Kind)
@@ -100,7 +100,9 @@ namespace ILCompiler.Metadata
             }
         }
 
+#pragma warning disable CA1067 // Override Object.Equals(object) when implementing IEquatable<T>
         private readonly struct ForwarderKey : IEquatable<ForwarderKey>
+#pragma warning restore CA1067 // Override Object.Equals(object) when implementing IEquatable<T>
         {
             public readonly Cts.Ecma.EcmaModule Module;
             public readonly Ecma.ExportedTypeHandle ExportedType;

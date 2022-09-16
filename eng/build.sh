@@ -26,6 +26,8 @@ usage()
   echo "                                  compiled with optimizations enabled."
   echo "                                  [Default: Debug]"
   echo "  --help (-h)                     Print help and exit."
+  echo "  --hostConfiguration (-hc)       Host build configuration: Debug, Release or Checked."
+  echo "                                  [Default: Debug]"
   echo "  --librariesConfiguration (-lc)  Libraries build configuration: Debug or Release."
   echo "                                  [Default: Debug]"
   echo "  --os                            Target operating system: windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS,"
@@ -62,8 +64,8 @@ usage()
   echo "Libraries settings:"
   echo "  --allconfigurations        Build packages for all build configurations."
   echo "  --coverage                 Collect code coverage when testing."
-  echo "  --framework (-f)           Build framework: net7.0 or net48."
-  echo "                             [Default: net7.0]"
+  echo "  --framework (-f)           Build framework: net8.0 or net48."
+  echo "                             [Default: net8.0]"
   echo "  --testnobuild              Skip building tests when invoking -test."
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all."
   echo ""
@@ -372,6 +374,26 @@ while [[ $# > 0 ]]; do
           ;;
       esac
       arguments="$arguments /p:LibrariesConfiguration=$val"
+      shift 2
+      ;;
+
+     -hostconfiguration|-hc)
+      if [ -z ${2+x} ]; then
+        echo "No host configuration supplied. See help (--help) for supported host configurations." 1>&2
+        exit 1
+      fi
+      passedHostConf="$(echo "$2" | tr "[:upper:]" "[:lower:]")"
+      case "$passedHostConf" in
+        debug|release|checked)
+          val="$(tr '[:lower:]' '[:upper:]' <<< ${passedHostConf:0:1})${passedHostConf:1}"
+          ;;
+        *)
+          echo "Unsupported host configuration '$2'."
+          echo "The allowed values are Debug, Release, and Checked."
+          exit 1
+          ;;
+      esac
+      arguments="$arguments /p:HostConfiguration=$val"
       shift 2
       ;;
 

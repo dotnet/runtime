@@ -320,6 +320,7 @@ set(VM_SOURCES_WKS
     fcall.cpp
     fieldmarshaler.cpp
     finalizerthread.cpp
+    frozenobjectheap.cpp
     gccover.cpp
     gcenv.ee.static.cpp
     gcenv.ee.common.cpp
@@ -341,7 +342,6 @@ set(VM_SOURCES_WKS
     multicorejit.cpp # Condition="'$(FeatureMulticoreJIT)' == 'true'
     multicorejitplayer.cpp # Condition="'$(FeatureMulticoreJIT)' == 'true'
     nativeeventsource.cpp
-    nativeoverlapped.cpp
     nativelibrary.cpp
     nativelibrarynative.cpp
     objectlist.cpp
@@ -425,6 +425,7 @@ set(VM_HEADERS_WKS
     fcall.h
     fieldmarshaler.h
     finalizerthread.h
+    frozenobjectheap.h
     gcenv.h
     gcenv.ee.h
     gcenv.os.h
@@ -444,8 +445,6 @@ set(VM_HEADERS_WKS
     multicorejit.h
     multicorejitimpl.h
     nativeeventsource.h
-    nativeoverlapped.h
-    nativelibrarynative.h
     objectlist.h
     olevariant.h
     pendingload.h
@@ -832,7 +831,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM)
 
     set(VM_SOURCES_WKS_ARCH
         ${ARCH_SOURCES_DIR}/profiler.cpp
-        ${ARCH_SOURCES_DIR}/armsinglestepper.cpp
+        ${ARCH_SOURCES_DIR}/singlestepper.cpp
         exceptionhandling.cpp
         gcinfodecoder.cpp
     )
@@ -858,7 +857,7 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
 
     if(CLR_CMAKE_HOST_UNIX)
         list(APPEND VM_SOURCES_WKS_ARCH
-            ${ARCH_SOURCES_DIR}/arm64singlestepper.cpp
+            ${ARCH_SOURCES_DIR}/singlestepper.cpp
         )
     endif(CLR_CMAKE_HOST_UNIX)
 elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)

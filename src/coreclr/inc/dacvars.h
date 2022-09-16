@@ -156,7 +156,6 @@ DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pExecutionEngineExceptionClass, ::g_p
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pDelegateClass, ::g_pDelegateClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pMulticastDelegateClass, ::g_pMulticastDelegateClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pFreeObjectMethodTable, ::g_pFreeObjectMethodTable)
-DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pOverlappedDataClass, ::g_pOverlappedDataClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pValueTypeClass, ::g_pValueTypeClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pEnumClass, ::g_pEnumClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pThreadClass, ::g_pThreadClass)

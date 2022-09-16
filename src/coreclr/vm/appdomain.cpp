@@ -22,6 +22,7 @@
 #include "assemblynative.hpp"
 #include "shimload.h"
 #include "stringliteralmap.h"
+#include "frozenobjectheap.h"
 #include "codeman.h"
 #include "comcallablewrapper.h"
 #include "eventtrace.h"
@@ -51,8 +52,6 @@
 
 #include "appdomain.inl"
 #include "typeparse.h"
-
-#include "nativeoverlapped.h"
 
 #ifndef TARGET_UNIX
 #include "dwreport.h"
@@ -99,7 +98,8 @@ CrstStatic          BaseDomain::m_SpecialStaticsCrst;
 int                 BaseDomain::m_iNumberOfProcessors = 0;
 
 // System Domain Statics
-GlobalStringLiteralMap* SystemDomain::m_pGlobalStringLiteralMap = NULL;
+GlobalStringLiteralMap*  SystemDomain::m_pGlobalStringLiteralMap = NULL;
+FrozenObjectHeapManager* SystemDomain::m_FrozenObjectHeapManager = NULL;
 
 DECLSPEC_ALIGN(16)
 static BYTE         g_pSystemDomainMemory[sizeof(SystemDomain)];
@@ -1190,6 +1190,24 @@ void SystemDomain::LazyInitGlobalStringLiteralMap()
     if (InterlockedCompareExchangeT<GlobalStringLiteralMap *>(&m_pGlobalStringLiteralMap, pGlobalStringLiteralMap, NULL) == NULL)
     {
         pGlobalStringLiteralMap.SuppressRelease();
+    }
+}
+
+void SystemDomain::LazyInitFrozenObjectsHeap()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM(););
+    }
+    CONTRACTL_END;
+
+    NewHolder<FrozenObjectHeapManager> pFoh(new FrozenObjectHeapManager());
+    if (InterlockedCompareExchangeT<FrozenObjectHeapManager*>(&m_FrozenObjectHeapManager, pFoh, nullptr) == nullptr)
+    {
+        pFoh.SuppressRelease();
     }
 }
 
@@ -3749,10 +3767,10 @@ void AppDomain::RaiseLoadingAssemblyEvent(DomainAssembly *pAssembly)
     {
         if (CoreLibBinder::GetField(FIELD__ASSEMBLYLOADCONTEXT__ASSEMBLY_LOAD)->GetStaticOBJECTREF() != NULL)
         {
-            struct _gc {
+            struct {
                 OBJECTREF    orThis;
             } gc;
-            ZeroMemory(&gc, sizeof(gc));
+            gc.orThis = NULL;
 
             ARG_SLOT args[1];
             GCPROTECT_BEGIN(gc);
@@ -3835,14 +3853,14 @@ AppDomain::RaiseUnhandledExceptionEvent(OBJECTREF *pThrowable, BOOL isTerminatin
     if (orDelegate == NULL)
         return FALSE;
 
-    struct _gc {
+    struct {
         OBJECTREF Delegate;
         OBJECTREF Sender;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.Delegate = orDelegate;
+    gc.Sender = NULL;
 
     GCPROTECT_BEGIN(gc);
-    gc.Delegate = orDelegate;
     if (orDelegate != NULL)
     {
         DistributeUnhandledExceptionReliably(&gc.Delegate, &gc.Sender, pThrowable, isTerminating);
@@ -4349,11 +4367,12 @@ DomainAssembly* AppDomain::RaiseTypeResolveEventThrowing(DomainAssembly* pAssemb
 
     GCX_COOP();
 
-    struct _gc {
+    struct {
         OBJECTREF AssemblyRef;
         STRINGREF str;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.AssemblyRef = NULL;
+    gc.str = NULL;
 
     GCPROTECT_BEGIN(gc);
 
@@ -4406,11 +4425,12 @@ Assembly* AppDomain::RaiseResourceResolveEvent(DomainAssembly* pAssembly, LPCSTR
 
     GCX_COOP();
 
-    struct _gc {
+    struct {
         OBJECTREF AssemblyRef;
         STRINGREF str;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.AssemblyRef = NULL;
+    gc.str = NULL;
 
     GCPROTECT_BEGIN(gc);
 
@@ -4467,11 +4487,12 @@ AppDomain::RaiseAssemblyResolveEvent(
 
     Assembly* pAssembly = NULL;
 
-    struct _gc {
+    struct {
         OBJECTREF AssemblyRef;
         STRINGREF str;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.AssemblyRef = NULL;
+    gc.str = NULL;
 
     GCPROTECT_BEGIN(gc);
     {
@@ -5076,26 +5097,7 @@ DomainLocalModule::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 }
 
 void
-BaseDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
-                              bool enumThis)
-{
-    SUPPORTS_DAC;
-    if (enumThis)
-    {
-        // This is wrong.  Don't do it.
-        // BaseDomain cannot be instantiated.
-        // The only thing this code can hope to accomplish is to potentially break
-        // memory enumeration walking through the derived class if we
-        // explicitly call the base class enum first.
-//        DAC_ENUM_VTHIS();
-    }
-
-    EMEM_OUT(("MEM: %p BaseDomain\n", dac_cast<TADDR>(this)));
-}
-
-void
-AppDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
-                             bool enumThis)
+AppDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, bool enumThis)
 {
     SUPPORTS_DAC;
 
@@ -5103,8 +5105,8 @@ AppDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
     {
         //sizeof(AppDomain) == 0xeb0
         DAC_ENUM_VTHIS();
+        EMEM_OUT(("MEM: %p AppDomain\n", dac_cast<TADDR>(this)));
     }
-    BaseDomain::EnumMemoryRegions(flags, false);
 
     // We don't need AppDomain name in triage dumps.
     if (flags != CLRDATA_ENUM_MEM_TRIAGE)
@@ -5112,6 +5114,11 @@ AppDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         m_friendlyName.EnumMemoryRegions(flags);
     }
 
+    if (flags == CLRDATA_ENUM_MEM_HEAP2)
+    {
+        GetLoaderAllocator()->EnumMemoryRegions(flags);
+    }
+    
     m_Assemblies.EnumMemoryRegions(flags);
     AssemblyIterator assem = IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
     CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
@@ -5123,16 +5130,19 @@ AppDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
 }
 
 void
-SystemDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
-                                bool enumThis)
+SystemDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, bool enumThis)
 {
     SUPPORTS_DAC;
     if (enumThis)
     {
         DAC_ENUM_VTHIS();
+        EMEM_OUT(("MEM: %p SystemAppomain\n", dac_cast<TADDR>(this)));
     }
-    BaseDomain::EnumMemoryRegions(flags, false);
 
+    if (flags == CLRDATA_ENUM_MEM_HEAP2)
+    {
+        GetLoaderAllocator()->EnumMemoryRegions(flags);
+    }
     if (m_pSystemPEAssembly.IsValid())
     {
         m_pSystemPEAssembly->EnumMemoryRegions(flags);

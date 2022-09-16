@@ -549,12 +549,6 @@ FCFuncStart(gMonitorFuncs)
     FCFuncElement("IsEnteredNative", ObjectNative::IsLockHeld)
 FCFuncEnd()
 
-FCFuncStart(gOverlappedFuncs)
-    FCFuncElement("AllocateNativeOverlapped", AllocateNativeOverlapped)
-    FCFuncElement("FreeNativeOverlapped", FreeNativeOverlapped)
-    FCFuncElement("GetOverlappedFromNative", GetOverlappedFromNative)
-FCFuncEnd()
-
 FCFuncStart(gRuntimeHelpers)
     FCFuncElement("GetObjectValue", ObjectNative::GetObjectValue)
     FCFuncElement("InitializeArray", ArrayNative::InitializeArray)
@@ -770,7 +764,6 @@ FCClassElement("Object", "System", gObjectFuncs)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("ObjectMarshaler", "System.StubHelpers", gObjectMarshalerFuncs)
 #endif
-FCClassElement("OverlappedData", "System.Threading", gOverlappedFuncs)
 
 FCClassElement("RuntimeAssembly", "System.Reflection", gRuntimeAssemblyFuncs)
 FCClassElement("RuntimeFieldHandle", "System", gCOMFieldHandleNewFuncs)

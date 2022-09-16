@@ -279,14 +279,14 @@ using System.Runtime.InteropServices;
 
 namespace Internal.JitInterface
 {
-    unsafe partial class CorInfoImpl
+    internal unsafe partial class CorInfoImpl
     {
 ");
 
             foreach (FunctionDecl decl in functionData)
             {
                 tw.WriteLine("        [UnmanagedCallersOnly]");
-                tw.Write($"        static {decl.ReturnType.UnmanagedTypeName} _{decl.FunctionName}(IntPtr thisHandle, IntPtr* ppException");
+                tw.Write($"        private static {decl.ReturnType.UnmanagedTypeName} _{decl.FunctionName}(IntPtr thisHandle, IntPtr* ppException");
                 foreach (Parameter param in decl.Parameters)
                 {
                     tw.Write($", {param.Type.UnmanagedTypeName} {param.Name}");
@@ -344,7 +344,7 @@ namespace Internal.JitInterface
 
             int total = functionData.Count();
             tw.WriteLine(@"
-        static IntPtr GetUnmanagedCallbacks()
+        private static IntPtr GetUnmanagedCallbacks()
         {
             void** callbacks = (void**)Marshal.AllocCoTaskMem(sizeof(IntPtr) * " + total + @");
 ");

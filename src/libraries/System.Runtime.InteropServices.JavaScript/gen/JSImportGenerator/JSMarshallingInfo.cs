@@ -6,26 +6,24 @@ using System.Runtime.InteropServices.JavaScript;
 
 namespace Microsoft.Interop.JavaScript
 {
-    internal record JSMarshallingInfo : MarshallingInfo
+    internal record JSMarshallingInfo(MarshallingInfo Inner, JSTypeInfo TypeInfo) : MarshallingInfo
     {
-        public MarshallingInfo Inner;
-        public JSTypeFlags JSType;
-        public JSTypeFlags[] JSTypeArguments;
-        public JSMarshallingInfo(MarshallingInfo inner)
-        {
-            Inner = inner;
-        }
         protected JSMarshallingInfo()
+            :this(NoMarshallingInfo.Instance, new JSInvalidTypeInfo())
         {
             Inner = null;
         }
+
+        public JSTypeFlags JSType { get; init; }
+        public JSTypeFlags[] JSTypeArguments { get; init; }
     }
 
     internal sealed record JSMissingMarshallingInfo : JSMarshallingInfo
     {
-        public JSMissingMarshallingInfo()
+        public JSMissingMarshallingInfo(JSTypeInfo typeInfo)
         {
             JSType = JSTypeFlags.Missing;
+            TypeInfo = typeInfo;
         }
     }
 }
