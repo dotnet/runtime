@@ -3581,6 +3581,11 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
             {
                 return true;
             }
+            else if ((call->gtFlags & GTF_CALL_HOISTABLE) != 0)
+            {
+                // If the call is marked as hoistable, then can be a CSE candidate.
+                return true;
+            }
             else
             {
                 // Calls generally cannot be CSE-ed
