@@ -8,33 +8,15 @@ namespace System.IO.IsolatedStorage
 {
     public static partial class TestHelper
     {
-        static TestHelper()
+        private static List<string> GetRoots()
         {
-            s_rootDirectoryProperty = typeof(IsolatedStorageFile).GetProperty("RootDirectory", BindingFlags.NonPublic | BindingFlags.Instance);
-
-            s_roots = new List<string>();
-
-            string hash;
-            object identity;
-            Helper.GetDefaultIdentityAndHash(out identity, out hash, '.');
-
+            List<string> roots = new List<string>();
             string userRoot = Helper.GetDataDirectory(IsolatedStorageScope.User);
             string randomUserRoot = Helper.GetRandomDirectory(userRoot, IsolatedStorageScope.User);
-            s_roots.Add(randomUserRoot);
+            roots.Add(randomUserRoot);
 
             // Application scope doesn't go under a random dir
-            s_roots.Add(userRoot);
-
-            // https://github.com/dotnet/runtime/issues/2092
-            // https://github.com/dotnet/runtime/issues/21742
-            if (OperatingSystem.IsWindows()
-                && !PlatformDetection.IsInAppContainer)
-            {
-                s_roots.Add(Helper.GetDataDirectory(IsolatedStorageScope.Machine));
-            }
-
-            // We don't expose Roaming yet
-            // Helper.GetDataDirectory(IsolatedStorageScope.Roaming);
+            roots.Add(userRoot);
         }
     }
 }

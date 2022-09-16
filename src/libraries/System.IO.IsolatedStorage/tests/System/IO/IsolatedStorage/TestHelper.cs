@@ -13,6 +13,16 @@ namespace System.IO.IsolatedStorage
         private static PropertyInfo s_rootDirectoryProperty;
         private static List<string> s_roots;
 
+        static TestHelper()
+        {
+            s_rootDirectoryProperty = typeof(IsolatedStorageFile).GetProperty("RootDirectory", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            s_roots = GetRoots();
+            
+            // We don't expose Roaming yet
+            // Helper.GetDataDirectory(IsolatedStorageScope.Roaming);
+        }
+
         /// <summary>
         /// Where the user's files go
         /// </summary>
