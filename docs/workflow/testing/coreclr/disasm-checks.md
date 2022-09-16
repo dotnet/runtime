@@ -59,10 +59,10 @@ And that is it. A few notes about the above example:
 - FileCheck syntax outside of a method body will also report an error.
 # Additional functionality
 LLVM has a different setup where each test file is passed to `lit`, and `RUN:` lines inside the test specify
-configuration details such as architectures to run, FileCheck prefixes to use, etc.  In our case, the 
+configuration details such as architectures to run, FileCheck prefixes to use, etc.  In our case, the build
 files handle a lot of this with build conditionals and `.cmd`/`.sh` file generation.  Additionally, LLVM tests
 rely on the order of the compiler output corresponding to the order of the input functions in the test file.
-When running under the JIT, the compilation order is dependent on execution, not source order.
+When running under the JIT, the compilation order is dependent on execution, not the source order.
 
 Functionality that has been added or moved to MSBuild:
 - Conditionals controlling test execution
