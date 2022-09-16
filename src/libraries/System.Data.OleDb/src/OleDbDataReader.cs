@@ -479,7 +479,7 @@ namespace System.Data.OleDb
                 {
                     ProcessResults(hr);
                 }
-                if (0 < (int)columnCount)
+                if (0 < checked((int)columnCount))
                 {
                     BuildSchemaTableInfoTable((int)columnCount, columnInfos, filterITypeInfo, filterChapters);
                 }
@@ -532,7 +532,7 @@ namespace System.Data.OleDb
                 info.columnName = dbColumnInfo.pwszName;
                 info.type = dbType;
                 info.ordinal = dbColumnInfo.iOrdinal;
-                long maxsize = (long)dbColumnInfo.ulColumnSize;
+                nint maxsize = dbColumnInfo.ulColumnSize;
                 info.size = (((maxsize < 0) || (int.MaxValue < maxsize)) ? int.MaxValue : (int)maxsize);
                 info.flags = dbColumnInfo.dwFlags;
                 info.precision = dbColumnInfo.bPrecision;
@@ -1497,7 +1497,7 @@ namespace System.Data.OleDb
                 if (maxRows is int intValue)
                 {
                     _rowHandleFetchCount = intValue;
-                    if ((0 == _rowHandleFetchCount) || (20 <= (int)_rowHandleFetchCount))
+                    if ((0 == _rowHandleFetchCount) || (20 <= _rowHandleFetchCount))
                     {
                         _rowHandleFetchCount = 20;
                     }
@@ -1505,7 +1505,7 @@ namespace System.Data.OleDb
                 else if (maxRows is long longValue)
                 {
                     _rowHandleFetchCount = (nint)longValue;
-                    if ((0 == _rowHandleFetchCount) || (20 <= (long)_rowHandleFetchCount))
+                    if ((0 == _rowHandleFetchCount) || (20 <= _rowHandleFetchCount))
                     {
                         _rowHandleFetchCount = 20;
                     }
@@ -1612,7 +1612,7 @@ namespace System.Data.OleDb
                 {
                     if (info.type.islong)
                     {
-                        maxLen = ADP.PtrSize;
+                        maxLen = IntPtr.Size;
                         getType = (short)((ushort)getType | (ushort)NativeDBType.BYREF);
                     }
                     else if (-1 == maxLen)
@@ -1622,14 +1622,14 @@ namespace System.Data.OleDb
                             || ((null != command) && command.Connection.PropertyGetProviderOwnedMemory())) {
                             bindings.MemOwner = DBMemOwner.ProviderOwned;
 
-                            bindings.MaxLen = ADP.PtrSize;
+                            bindings.MaxLen = IntPtr.Size;
                             bindings.DbType = (short) (getType | DbType.BYREF);
                         }
                         else*/
 
                         if (ODB.LargeDataSize < info.size)
                         {
-                            maxLen = ADP.PtrSize;
+                            maxLen = IntPtr.Size;
                             getType = (short)((ushort)getType | (ushort)NativeDBType.BYREF);
                         }
                         else if ((NativeDBType.WSTR == getType) && (-1 != info.size))
@@ -1649,7 +1649,7 @@ namespace System.Data.OleDb
                         || ((null != command) && command.Connection.PropertyGetProviderOwnedMemory())) {
                         bindings.MemOwner = DBMemOwner.ProviderOwned;
                     }*/
-                    maxLen = ADP.PtrSize;
+                    maxLen = IntPtr.Size;
                     getType = (short)((ushort)getType | (ushort)NativeDBType.BYREF);
                 }
 
@@ -2322,7 +2322,7 @@ namespace System.Data.OleDb
                         info.columnName = "";
                     }
 
-                    if (4 == ADP.PtrSize)
+                    if (4 == IntPtr.Size)
                     {
                         info.ordinal = (IntPtr)columnordinal.columnBinding.Value_UI4();
                     }
@@ -2332,13 +2332,13 @@ namespace System.Data.OleDb
                     }
                     short wType = unchecked((short)dbtype.columnBinding.Value_UI2());
 
-                    if (4 == ADP.PtrSize)
+                    if (4 == IntPtr.Size)
                     {
                         info.size = unchecked((int)columnsize.columnBinding.Value_UI4());
                     }
                     else
                     {
-                        info.size = ADP.IntPtrToInt32((nint)unchecked((long)columnsize.columnBinding.Value_UI8()));
+                        info.size = ADP.IntPtrToInt32((nint)columnsize.columnBinding.Value_UI8());
                     }
 
                     binding = numericprecision.columnBinding;

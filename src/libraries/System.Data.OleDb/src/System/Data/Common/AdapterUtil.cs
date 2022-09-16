@@ -899,7 +899,6 @@ namespace System.Data.Common
         internal const int DefaultCommandTimeout = 30;
         internal const int DefaultConnectionTimeout = DbConnectionStringDefaults.ConnectTimeout;
 
-        internal static readonly int PtrSize = IntPtr.Size;
         internal static readonly IntPtr RecordsUnaffected = new IntPtr(-1);
 
         internal const int CharSize = System.Text.UnicodeEncoding.CharSize;
@@ -1260,7 +1259,7 @@ namespace System.Data.Common
 
         internal static int IntPtrToInt32(nint value)
         {
-            if (4 == ADP.PtrSize)
+            if (4 == IntPtr.Size)
             {
                 return (int)value;
             }

@@ -206,7 +206,7 @@ namespace System.Drawing.Printing
                 for (int i = 0; i < count; i++)
                 {
                     // The printer name is at offset 0
-                    IntPtr namePointer = *(IntPtr*)(pBuffer + i * sizeofstruct);
+                    IntPtr namePointer = *(IntPtr*)(pBuffer + (nint)i * sizeofstruct);
                     array[i] = Marshal.PtrToStringAuto(namePointer)!;
                 }
 
@@ -1044,19 +1044,19 @@ namespace System.Drawing.Printing
 
             PaperSize[] result = new PaperSize[count];
             byte* pNamesBuffer = (byte*)namesBuffer;
-            byte* pKindsBuffer = (byte*)kindsBuffer;
-            byte* pDimensionsBuffer = (byte*)dimensionsBuffer;
+            short* pKindsBuffer = (short*)kindsBuffer;
+            int* pDimensionsBuffer = (int*)dimensionsBuffer;
             for (int i = 0; i < count; i++)
             {
-                string name = Marshal.PtrToStringAuto((nint)(pNamesBuffer + stringSize * i), 64)!;
+                string name = Marshal.PtrToStringAuto((nint)(pNamesBuffer + stringSize * (nint)i), 64)!;
                 int index = name.IndexOf('\0');
                 if (index > -1)
                 {
                     name = name.Substring(0, index);
                 }
-                short kind = *(short*)(pKindsBuffer + i * 2);
-                int width = *(int*)(pDimensionsBuffer + i * 8);
-                int height = *(int*)(pDimensionsBuffer + i * 8 + 4);
+                short kind = pKindsBuffer[i];
+                int width = pDimensionsBuffer[i * 2];
+                int height = pDimensionsBuffer[i * 2 + 1];
                 result[i] = new PaperSize((PaperKind)kind, name,
                                           PrinterUnitConvert.Convert(width, PrinterUnit.TenthsOfAMillimeter, PrinterUnit.Display),
                                           PrinterUnitConvert.Convert(height, PrinterUnit.TenthsOfAMillimeter, PrinterUnit.Display));
@@ -1088,18 +1088,18 @@ namespace System.Drawing.Printing
             FastDeviceCapabilities(SafeNativeMethods.DC_BINS, kindsBuffer, -1, printerName);
 
             byte* pNamesBuffer = (byte*)namesBuffer;
-            byte* pKindsBuffer = (byte*)kindsBuffer;
+            short* pKindsBuffer = (short*)kindsBuffer;
             PaperSource[] result = new PaperSource[count];
             for (int i = 0; i < count; i++)
             {
-                string name = Marshal.PtrToStringAuto((nint)(pNamesBuffer + stringSize * i), 24)!;
+                string name = Marshal.PtrToStringAuto((nint)(pNamesBuffer + stringSize * (nint)i), 24)!;
                 int index = name.IndexOf('\0');
                 if (index > -1)
                 {
                     name = name.Substring(0, index);
                 }
 
-                short kind = *(short*)(pKindsBuffer + 2 * i);
+                short kind = pKindsBuffer[i];
                 result[i] = new PaperSource((PaperSourceKind)kind, name);
             }
 
@@ -1151,7 +1151,7 @@ namespace System.Drawing.Printing
         private static unsafe string ReadOneDEVNAME(IntPtr pDevnames, int slot)
         {
             byte* bDevNames = (byte*)pDevnames;
-            int offset = checked(Marshal.SystemDefaultCharSize * Marshal.ReadInt16((IntPtr)(bDevNames + slot * 2)));
+            int offset = Marshal.SystemDefaultCharSize * ((ushort*)bDevNames)[slot];
             string result = Marshal.PtrToStringAuto((nint)(bDevNames + offset))!;
             return result;
         }
@@ -1245,7 +1245,7 @@ namespace System.Drawing.Printing
         private static unsafe short WriteOneDEVNAME(string str, IntPtr bufferStart, int index)
         {
             str ??= "";
-            byte* address = (byte*)bufferStart + index * Marshal.SystemDefaultCharSize;
+            byte* address = (byte*)bufferStart + (nint)index * Marshal.SystemDefaultCharSize;
 
             char[] data = str.ToCharArray();
             Marshal.Copy(data, 0, (nint)address, data.Length);

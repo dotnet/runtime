@@ -213,7 +213,7 @@ namespace System.ServiceProcess
                         for (int i = 0; i < numEnumerated; i++)
                         {
                             Interop.Advapi32.ENUM_SERVICE_STATUS status = new Interop.Advapi32.ENUM_SERVICE_STATUS();
-                            IntPtr structPtr = (IntPtr)(pEnumBuffer + (i * Marshal.SizeOf<Interop.Advapi32.ENUM_SERVICE_STATUS>()));
+                            IntPtr structPtr = (IntPtr)(pEnumBuffer + ((nint)i * Marshal.SizeOf<Interop.Advapi32.ENUM_SERVICE_STATUS>()));
                             Marshal.PtrToStructure(structPtr, status);
                             _dependentServices[i] = new ServiceController(_machineName, status);
                         }
@@ -774,14 +774,14 @@ namespace System.ServiceProcess
                     ref resumeHandle,
                     group);
 
-                byte* pMemory = (byte*)memory;
                 //
                 // Go through the block of memory it returned to us and select the results
                 //
                 services = new T[servicesReturned];
+                byte* pMemory = (byte*)memory;
                 for (int i = 0; i < servicesReturned; i++)
                 {
-                    IntPtr structPtr = (IntPtr)(pMemory + (i * Marshal.SizeOf<Interop.Advapi32.ENUM_SERVICE_STATUS_PROCESS>()));
+                    IntPtr structPtr = (IntPtr)(pMemory + ((nint)i * Marshal.SizeOf<Interop.Advapi32.ENUM_SERVICE_STATUS_PROCESS>()));
                     Interop.Advapi32.ENUM_SERVICE_STATUS_PROCESS status = new Interop.Advapi32.ENUM_SERVICE_STATUS_PROCESS();
                     Marshal.PtrToStructure(structPtr, status);
                     services[i] = selector(status);

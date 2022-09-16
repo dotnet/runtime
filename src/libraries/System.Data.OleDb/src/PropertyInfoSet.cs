@@ -120,7 +120,7 @@ namespace System.Data.OleDb
                     IntPtr infoPtr = Marshal.ReadIntPtr(ptr, offset);
                     if (IntPtr.Zero != infoPtr)
                     {
-                        int infoCount = Marshal.ReadInt32(ptr, offset + ADP.PtrSize);
+                        int infoCount = Marshal.ReadInt32(ptr, offset + IntPtr.Size);
 
                         for (int k = 0; k < infoCount; ++k)
                         {

@@ -332,7 +332,7 @@ namespace System.Data.OleDb
 
             if (dbtype.islong)
             { // long data (image, text, ntext)
-                bytecount = ADP.PtrSize;
+                bytecount = IntPtr.Size;
                 if (ShouldSerializeSize())
                 {
                     size = Size;
@@ -396,7 +396,7 @@ namespace System.Data.OleDb
 
                     if (ODB.LargeDataSize < bytecount)
                     {
-                        bytecount = ADP.PtrSize;
+                        bytecount = IntPtr.Size;
                         wtype |= NativeDBType.BYREF;
                     }
                 }
@@ -415,7 +415,7 @@ namespace System.Data.OleDb
                 }
                 else if (-1 == size)
                 {
-                    bytecount = ADP.PtrSize;
+                    bytecount = IntPtr.Size;
                     wtype |= NativeDBType.BYREF;
                 }
                 else

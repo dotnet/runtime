@@ -139,7 +139,7 @@ namespace System.Data.OleDb
                     IntPtr rgProperties = Marshal.ReadIntPtr(ptr, offset);
                     if (IntPtr.Zero != rgProperties)
                     {
-                        int cProperties = Marshal.ReadInt32(ptr, offset + ADP.PtrSize);
+                        int cProperties = Marshal.ReadInt32(ptr, offset + IntPtr.Size);
 
                         IntPtr vptr = ADP.IntPtrOffset(rgProperties, ODB.OffsetOf_tagDBPROP_Value);
                         for (int k = 0; k < cProperties; ++k, vptr = ADP.IntPtrOffset(vptr, ODB.SizeOf_tagDBPROP))
