@@ -76,4 +76,3 @@ jobs:
           creator: dotnet-bot
           interpreter: true
           testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-
