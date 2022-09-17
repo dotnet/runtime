@@ -61,7 +61,6 @@ struct CPU_Group_Info
 };
 
 static bool g_fEnableGCCPUGroups;
-static bool g_fHadSingleProcessorAtStartup;
 static DWORD g_nGroups;
 static DWORD g_nProcessors;
 static CPU_Group_Info *g_CPUGroupInfoArray;
@@ -220,26 +219,26 @@ void InitCPUGroupInfo()
     g_fEnableGCCPUGroups = false;
 
 #if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
-    if (!GCConfig::GetGCCpuGroup())
+    USHORT groupCount = 0;
+
+    // On Windows 11+ and Windows Server 2022+, a process is no longer restricted to a single processor group by default.
+    // If more than one processor group is available to the process (a non-affinitized process on Windows 11+),
+    // default to using multiple processor groups; otherwise, default to using a single processor group. This default
+    // behavior may be overridden by the configuration value below.
+    if (GetProcessGroupAffinity(GetCurrentProcess(), &groupCount, NULL) || GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+        groupCount = 1;
+
+    bool enableGCCPUGroups = GCConfig::GetGCCpuGroup(/* defaultValue */ groupCount > 1);
+
+    if (!enableGCCPUGroups)
         return;
 
     if (!InitCPUGroupInfoArray())
         return;
 
-    // only enable CPU groups if more than one group exists
+    // Enable processor groups only if more than one group exists
     g_fEnableGCCPUGroups = g_nGroups > 1;
 #endif // TARGET_AMD64 || TARGET_ARM64
-
-    // Determine if the process is affinitized to a single processor (or if the system has a single processor)
-    DWORD_PTR processAffinityMask, systemAffinityMask;
-    if (::GetProcessAffinityMask(::GetCurrentProcess(), &processAffinityMask, &systemAffinityMask))
-    {
-        if (processAffinityMask != 0 && // only one CPU group is involved
-            (processAffinityMask & (processAffinityMask - 1)) == 0) // only one bit is set
-        {
-            g_fHadSingleProcessorAtStartup = true;
-        }
-    }
 }
 
 void GetProcessMemoryLoad(LPMEMORYSTATUSEX pMSEX)
@@ -475,17 +474,12 @@ Exit:
     return cache_size;
 }
 
-bool CanEnableGCCPUGroups()
-{
-    return g_fEnableGCCPUGroups;
-}
-
 // Get the CPU group for the specified processor
 void GetGroupForProcessor(uint16_t processor_number, uint16_t* group_number, uint16_t* group_processor_number)
 {
     assert(g_fEnableGCCPUGroups);
 
-#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     WORD bTemp = 0;
     WORD bDiff = processor_number - bTemp;
 
@@ -1190,7 +1184,7 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
     // Locate heap_number-th available processor
     uint16_t procIndex = 0;
     size_t cnt = heap_number;
-    for (uint16_t i = 0; i < GCToOSInterface::GetTotalProcessorCount(); i++)
+    for (uint16_t i = 0; i < MAX_SUPPORTED_CPUS; i++)
     {
         if (g_processAffinitySet.Contains(i))
         {

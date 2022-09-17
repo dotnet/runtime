@@ -471,6 +471,7 @@ namespace System.Net.Sockets
     {
         public SocketException() { }
         public SocketException(int errorCode) { }
+        public SocketException(int errorCode, string? message) { }
         protected SocketException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public override int ErrorCode { get { throw null; } }
         public override string Message { get { throw null; } }

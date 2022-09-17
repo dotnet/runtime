@@ -13,15 +13,15 @@ using ILCompiler.DependencyAnalysisFramework;
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// Wrapper nodes for native layout vertex structures. These wrapper nodes are "abstract" as they do not 
+    /// Wrapper nodes for native layout vertex structures. These wrapper nodes are "abstract" as they do not
     /// generate any data. They are used to keep track of the dependency nodes required by a Vertex structure.
-    /// 
+    ///
     /// Any node in the graph that references data in the native layout blob needs to create one of these
     /// NativeLayoutVertexNode nodes, and track it as a dependency of itself.
-    /// Example: MethodCodeNodes that are saved to the table in the ExactMethodInstantiationsNode reference 
+    /// Example: MethodCodeNodes that are saved to the table in the ExactMethodInstantiationsNode reference
     /// signatures stored in the native layout blob, so a NativeLayoutPlacedSignatureVertexNode node is created
     /// and returned as a static dependency of the associated MethodCodeNode (in the GetStaticDependencies API).
-    /// 
+    ///
     /// Each NativeLayoutVertexNode that gets marked in the graph will register itself with the NativeLayoutInfoNode,
     /// so that the NativeLayoutInfoNode can write it later to the native layout blob during the call to its GetData API.
     /// </summary>
@@ -66,17 +66,17 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Any NativeLayoutVertexNode that needs to expose the native layout Vertex after it has been saved
     /// needs to derive from this NativeLayoutSavedVertexNode class.
-    /// 
+    ///
     /// A nativelayout Vertex should typically only be exposed for Vertex offset fetching purposes, after the native
     /// writer is saved (Vertex offsets get generated when the native writer gets saved).
-    /// 
+    ///
     /// It is important for whoever derives from this class to produce unified Vertices. Calling the WriteVertex method
     /// multiple times should always produce the same exact unified Vertex each time (hence the assert in SetSavedVertex).
     /// All nativewriter.Getxyz methods return unified Vertices.
-    /// 
-    /// When exposing a saved Vertex that is a result of a section placement operation (Section.Place(...)), always make 
-    /// sure a unified Vertex is being placed in the section (Section.Place creates a PlacedVertex structure that wraps the 
-    /// Vertex to be placed, so if the Vertex to be placed is unified, there will only be a single unified PlacedVertex 
+    ///
+    /// When exposing a saved Vertex that is a result of a section placement operation (Section.Place(...)), always make
+    /// sure a unified Vertex is being placed in the section (Section.Place creates a PlacedVertex structure that wraps the
+    /// Vertex to be placed, so if the Vertex to be placed is unified, there will only be a single unified PlacedVertex
     /// structure created for that placed Vertex).
     /// </summary>
     public abstract class NativeLayoutSavedVertexNode : NativeLayoutVertexNode
@@ -84,7 +84,7 @@ namespace ILCompiler.DependencyAnalysis
         public Vertex SavedVertex { get; private set; }
         protected Vertex SetSavedVertex(Vertex value)
         {
-            Debug.Assert(SavedVertex == null || Object.ReferenceEquals(SavedVertex, value));
+            Debug.Assert(SavedVertex == null || ReferenceEquals(SavedVertex, value));
             SavedVertex = value;
             return value;
         }
@@ -148,8 +148,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if ((_flags & MethodEntryFlags.SaveEntryPoint) != 0)
             {
-                bool unboxingStub;
-                IMethodNode methodEntryPointNode = GetMethodEntrypointNode(context, out unboxingStub);
+                IMethodNode methodEntryPointNode = GetMethodEntrypointNode(context, out _);
                 dependencies.Add(new DependencyListEntry(methodEntryPointNode, "NativeLayoutMethodEntryVertexNode entrypoint"));
             }
 
@@ -431,7 +430,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        sealed class NativeLayoutParameterizedTypeSignatureVertexNode : NativeLayoutTypeSignatureVertexNode
+        private sealed class NativeLayoutParameterizedTypeSignatureVertexNode : NativeLayoutTypeSignatureVertexNode
         {
             private NativeLayoutVertexNode _parameterTypeSig;
 
@@ -475,7 +474,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        sealed class NativeLayoutGenericVarSignatureVertexNode : NativeLayoutTypeSignatureVertexNode
+        private sealed class NativeLayoutGenericVarSignatureVertexNode : NativeLayoutTypeSignatureVertexNode
         {
             public NativeLayoutGenericVarSignatureVertexNode(NodeFactory factory, TypeDesc type) : base(type)
             {
@@ -502,7 +501,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        sealed class NativeLayoutInstantiatedTypeSignatureVertexNode : NativeLayoutTypeSignatureVertexNode
+        private sealed class NativeLayoutInstantiatedTypeSignatureVertexNode : NativeLayoutTypeSignatureVertexNode
         {
             private NativeLayoutTypeSignatureVertexNode _genericTypeDefSig;
             private NativeLayoutTypeSignatureVertexNode[] _instantiationArgs;
@@ -540,7 +539,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        sealed class NativeLayoutEETypeSignatureVertexNode : NativeLayoutTypeSignatureVertexNode
+        private sealed class NativeLayoutEETypeSignatureVertexNode : NativeLayoutTypeSignatureVertexNode
         {
             public NativeLayoutEETypeSignatureVertexNode(NodeFactory factory, TypeDesc type) : base(type)
             {
@@ -616,9 +615,9 @@ namespace ILCompiler.DependencyAnalysis
             // This vertex doesn't need to assert as marked, as it simply represents the concept of an existing vertex which has been placed.
 
             // Always use the NativeLayoutInfo blob for names and sigs, even if the associated types/methods are written elsewhere.
-            // This saves space, since we can Unify more signatures, allows optimizations in comparing sigs in the same module, and 
-            // prevents the dynamic type loader having to know about other native layout sections (since sigs contain types). If we are 
-            // using a non-native layout info writer, write the sig to the native layout info, and refer to it by offset in its own 
+            // This saves space, since we can Unify more signatures, allows optimizations in comparing sigs in the same module, and
+            // prevents the dynamic type loader having to know about other native layout sections (since sigs contain types). If we are
+            // using a non-native layout info writer, write the sig to the native layout info, and refer to it by offset in its own
             // section.  At runtime, we will assume all names and sigs are in the native layout and find it.
 
             Vertex signature = _signatureToBePlaced.WriteVertex(factory);
@@ -757,9 +756,8 @@ namespace ILCompiler.DependencyAnalysis
         private TypeSystemEntity _owningMethodOrType;
         public NativeLayoutDictionarySignatureNode(NodeFactory nodeFactory, TypeSystemEntity owningMethodOrType)
         {
-            if (owningMethodOrType is MethodDesc)
+            if (owningMethodOrType is MethodDesc owningMethod)
             {
-                MethodDesc owningMethod = (MethodDesc)owningMethodOrType;
                 Debug.Assert(owningMethod.IsCanonicalMethod(CanonicalFormKind.Universal) || nodeFactory.LazyGenericsPolicy.UsesLazyGenerics(owningMethod));
                 Debug.Assert(owningMethod.IsCanonicalMethod(CanonicalFormKind.Any));
                 Debug.Assert(owningMethod.HasInstantiation);
@@ -776,9 +774,8 @@ namespace ILCompiler.DependencyAnalysis
 
         private GenericContextKind ContextKind(NodeFactory factory)
         {
-            if (_owningMethodOrType is MethodDesc)
+            if (_owningMethodOrType is MethodDesc owningMethod)
             {
-                MethodDesc owningMethod = (MethodDesc)_owningMethodOrType;
                 Debug.Assert(owningMethod.HasInstantiation);
                 return GenericContextKind.FromMethodHiddenArg | GenericContextKind.NeedsUSGContext;
             }
@@ -800,7 +797,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             if ((ContextKind(context) & GenericContextKind.HasDeclaringType) != 0)
             {
-                return new DependencyListEntry[] 
+                return new DependencyListEntry[]
                 {
                     new DependencyListEntry(context.NativeLayout.TypeSignatureVertex((TypeDesc)_owningMethodOrType), "DeclaringType signature"),
                     new DependencyListEntry(context.GenericDictionaryLayout(_owningMethodOrType), "Dictionary Layout")
@@ -849,7 +846,7 @@ namespace ILCompiler.DependencyAnalysis
             return SetSavedVertex(factory.MetadataManager.NativeLayoutInfo.SignaturesSection.Place(signatureWithContextKind));
         }
 
-        protected override string GetName(NodeFactory factory) => $"Dictionary layout signature for {_owningMethodOrType.ToString()}";
+        protected override string GetName(NodeFactory factory) => $"Dictionary layout signature for {_owningMethodOrType}";
     }
 
     public sealed class NativeLayoutTemplateMethodLayoutVertexNode : NativeLayoutSavedVertexNode
@@ -885,7 +882,7 @@ namespace ILCompiler.DependencyAnalysis
             yield return new DependencyListEntry(context.GenericDictionaryLayout(_method), "Dictionary layout");
         }
 
-        private int CompareDictionaryEntries(KeyValuePair<int, NativeLayoutVertexNode> left, KeyValuePair<int, NativeLayoutVertexNode> right)
+        private static int CompareDictionaryEntries(KeyValuePair<int, NativeLayoutVertexNode> left, KeyValuePair<int, NativeLayoutVertexNode> right)
         {
             return left.Key - right.Key;
         }
@@ -898,7 +895,7 @@ namespace ILCompiler.DependencyAnalysis
 
             DictionaryLayoutNode associatedLayout = factory.GenericDictionaryLayout(_method);
             ICollection<NativeLayoutVertexNode> templateLayout = associatedLayout.GetTemplateEntries(factory);
-            
+
             if (!(_method.IsCanonicalMethod(CanonicalFormKind.Universal) || (factory.LazyGenericsPolicy.UsesLazyGenerics(_method))) && (templateLayout.Count > 0))
             {
                 List<NativeLayoutVertexNode> dictionaryVertices = new List<NativeLayoutVertexNode>();
@@ -953,7 +950,8 @@ namespace ILCompiler.DependencyAnalysis
 
         private ISymbolNode GetStaticsNode(NodeFactory context, out BagElementKind staticsBagKind)
         {
-            ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromStaticLayout(_type.GetClosestDefType()));
+            DefType closestCanonDefType = (DefType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific);
+            ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromStaticLayout(closestCanonDefType));
             staticsBagKind = BagElementKind.GcStaticDesc;
 
             return symbol;
@@ -961,7 +959,8 @@ namespace ILCompiler.DependencyAnalysis
 
         private ISymbolNode GetThreadStaticsNode(NodeFactory context, out BagElementKind staticsBagKind)
         {
-            ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromThreadStaticLayout(_type.GetClosestDefType()));
+            DefType closestCanonDefType = (DefType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific);
+            ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromThreadStaticLayout(closestCanonDefType));
             staticsBagKind = BagElementKind.ThreadStaticDesc;
 
             return symbol;
@@ -997,13 +996,14 @@ namespace ILCompiler.DependencyAnalysis
 
             if (!_isUniversalCanon)
             {
-                if (_type.GetClosestDefType().GCStaticFieldSize.AsInt > 0)
+                DefType closestCanonDefType = (DefType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific);
+                if (closestCanonDefType.GCStaticFieldSize.AsInt > 0)
                 {
                     BagElementKind ignored;
                     yield return new DependencyListEntry(GetStaticsNode(context, out ignored), "type gc static info");
                 }
 
-                if (_type.GetClosestDefType().ThreadGcStaticFieldSize.AsInt > 0)
+                if (closestCanonDefType.ThreadGcStaticFieldSize.AsInt > 0)
                 {
                     BagElementKind ignored;
                     yield return new DependencyListEntry(GetThreadStaticsNode(context, out ignored), "type thread static info");
@@ -1038,7 +1038,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_isUniversalCanon)
             {
-                // For universal canonical template types, we need to write out field layout information so that we 
+                // For universal canonical template types, we need to write out field layout information so that we
                 // can correctly compute the type sizes for dynamically created types at runtime, and construct
                 // their GCDesc info
                 foreach (FieldDesc field in _type.GetFields())
@@ -1087,13 +1087,11 @@ namespace ILCompiler.DependencyAnalysis
 
                         if (UniversalGenericParameterLayout.VTableMethodRequiresCallingConventionConverter(implMethod))
                         {
-                            if (vtableSignatureNodeEntries == null)
-                                vtableSignatureNodeEntries = new List<NativeLayoutVertexNode>();
+                            vtableSignatureNodeEntries ??= new List<NativeLayoutVertexNode>();
 
                             vtableSignatureNodeEntries.Add(context.NativeLayout.MethodSignatureVertex(declMethod.GetTypicalMethodDefinition().Signature));
                         }
-                    }
-                    , _type, _type, _type);
+                    }, _type, _type, _type);
 
                 if (vtableSignatureNodeEntries != null)
                 {
@@ -1124,16 +1122,14 @@ namespace ILCompiler.DependencyAnalysis
 
                         if (UniversalGenericParameterLayout.VTableMethodRequiresCallingConventionConverter(implMethod))
                         {
-                            if (conditionalDependencies == null)
-                                conditionalDependencies = new List<CombinedDependencyListEntry>();
+                            conditionalDependencies ??= new List<CombinedDependencyListEntry>();
 
                             conditionalDependencies.Add(
                                 new CombinedDependencyListEntry(context.NativeLayout.MethodSignatureVertex(declMethod.GetTypicalMethodDefinition().Signature),
                                                                 context.VirtualMethodUse(declMethod),
                                                                 "conditional vtable cctor sig"));
                         }
-                    }
-                    , _type, _type, _type);
+                    }, _type, _type, _type);
             }
 
             if (conditionalDependencies != null)
@@ -1142,7 +1138,7 @@ namespace ILCompiler.DependencyAnalysis
                 return Array.Empty<CombinedDependencyListEntry>();
         }
 
-        private int CompareDictionaryEntries(KeyValuePair<int, NativeLayoutVertexNode> left, KeyValuePair<int, NativeLayoutVertexNode> right)
+        private static int CompareDictionaryEntries(KeyValuePair<int, NativeLayoutVertexNode> left, KeyValuePair<int, NativeLayoutVertexNode> right)
         {
             return left.Key - right.Key;
         }
@@ -1161,7 +1157,7 @@ namespace ILCompiler.DependencyAnalysis
 
             DictionaryLayoutNode associatedLayout = factory.GenericDictionaryLayout(_type.ConvertToCanonForm(CanonicalFormKind.Specific).GetClosestDefType());
             ICollection<NativeLayoutVertexNode> templateLayout = associatedLayout.GetTemplateEntries(factory);
-            
+
             NativeWriter writer = GetNativeWriter(factory);
 
             // Interfaces
@@ -1202,29 +1198,29 @@ namespace ILCompiler.DependencyAnalysis
                 uint cctorStaticsIndex = factory.MetadataManager.NativeLayoutInfo.StaticsReferences.GetIndex(cctorSymbol);
                 layoutInfo.AppendUnsigned(BagElementKind.ClassConstructorPointer, cctorStaticsIndex);
 
-                typeFlags = typeFlags | Internal.NativeFormat.TypeFlags.HasClassConstructor;
+                typeFlags |= Internal.NativeFormat.TypeFlags.HasClassConstructor;
             }
 
             if (!_isUniversalCanon)
             {
-                DefType closestDefType = _type.GetClosestDefType();
-                if (closestDefType.NonGCStaticFieldSize.AsInt != 0)
+                DefType closestCanonDefType = (DefType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific);
+                if (closestCanonDefType.NonGCStaticFieldSize.AsInt != 0)
                 {
-                    layoutInfo.AppendUnsigned(BagElementKind.NonGcStaticDataSize, checked((uint)closestDefType.NonGCStaticFieldSize.AsInt));
+                    layoutInfo.AppendUnsigned(BagElementKind.NonGcStaticDataSize, checked((uint)closestCanonDefType.NonGCStaticFieldSize.AsInt));
                 }
 
-                if (closestDefType.GCStaticFieldSize.AsInt != 0)
+                if (closestCanonDefType.GCStaticFieldSize.AsInt != 0)
                 {
-                    layoutInfo.AppendUnsigned(BagElementKind.GcStaticDataSize, checked((uint)closestDefType.GCStaticFieldSize.AsInt));
+                    layoutInfo.AppendUnsigned(BagElementKind.GcStaticDataSize, checked((uint)closestCanonDefType.GCStaticFieldSize.AsInt));
                     BagElementKind staticDescBagType;
                     ISymbolNode staticsDescSymbol = GetStaticsNode(factory, out staticDescBagType);
                     uint gcStaticsSymbolIndex = factory.MetadataManager.NativeLayoutInfo.StaticsReferences.GetIndex(staticsDescSymbol);
                     layoutInfo.AppendUnsigned(staticDescBagType, gcStaticsSymbolIndex);
                 }
 
-                if (closestDefType.ThreadGcStaticFieldSize.AsInt != 0)
+                if (closestCanonDefType.ThreadGcStaticFieldSize.AsInt != 0)
                 {
-                    layoutInfo.AppendUnsigned(BagElementKind.ThreadStaticDataSize, checked((uint)closestDefType.ThreadGcStaticFieldSize.AsInt));
+                    layoutInfo.AppendUnsigned(BagElementKind.ThreadStaticDataSize, checked((uint)closestCanonDefType.ThreadGcStaticFieldSize.AsInt));
                     BagElementKind threadStaticDescBagType;
                     ISymbolNode threadStaticsDescSymbol = GetThreadStaticsNode(factory, out threadStaticDescBagType);
                     uint threadStaticsSymbolIndex = factory.MetadataManager.NativeLayoutInfo.StaticsReferences.GetIndex(threadStaticsDescSymbol);
@@ -1237,7 +1233,7 @@ namespace ILCompiler.DependencyAnalysis
                 // Determine if type has instantiation determined size
                 if (!_type.IsInterface && HasInstantiationDeterminedSize())
                 {
-                    typeFlags = typeFlags | Internal.NativeFormat.TypeFlags.HasInstantiationDeterminedSize;
+                    typeFlags |= Internal.NativeFormat.TypeFlags.HasInstantiationDeterminedSize;
                 }
             }
 
@@ -1290,7 +1286,7 @@ namespace ILCompiler.DependencyAnalysis
 
             if (_isUniversalCanon)
             {
-                // For universal canonical template types, we need to write out field layout information so that we 
+                // For universal canonical template types, we need to write out field layout information so that we
                 // can correctly compute the type sizes for dynamically created types at runtime, and construct
                 // their GCDesc info
                 VertexSequence fieldsSequence = null;
@@ -1302,7 +1298,7 @@ namespace ILCompiler.DependencyAnalysis
                         continue;
 
                     // NOTE: The order and contents of the signature vertices emitted here is what we consider a field ordinal for the
-                    // purpose of NativeLayoutFieldOffsetGenericDictionarySlotNode. 
+                    // purpose of NativeLayoutFieldOffsetGenericDictionarySlotNode.
 
                     FieldStorage fieldStorage = FieldStorage.Instance;
                     if (field.IsStatic)
@@ -1332,8 +1328,7 @@ namespace ILCompiler.DependencyAnalysis
 
                     Vertex staticFieldVertexData = writer.GetTuple(fieldTypeSignature.WriteVertex(factory), writer.GetUnsignedConstant((uint)fieldStorage));
 
-                    if (fieldsSequence == null)
-                        fieldsSequence = new VertexSequence();
+                    fieldsSequence ??= new VertexSequence();
                     fieldsSequence.Append(staticFieldVertexData);
                 }
 
@@ -1348,7 +1343,7 @@ namespace ILCompiler.DependencyAnalysis
                 // get invoked.
                 int currentVTableIndexUnused = 0;
                 VertexSequence vtableSignaturesSequence = null;
-                
+
                 ProcessVTableEntriesForCallingConventionSignatureGeneration(factory, VTableEntriesToProcess.AllInVTable, ref currentVTableIndexUnused,
                     (int vtableIndex, bool isSealedVTableSlot, MethodDesc declMethod, MethodDesc implMethod) =>
                     {
@@ -1357,8 +1352,7 @@ namespace ILCompiler.DependencyAnalysis
 
                         if (UniversalGenericParameterLayout.VTableMethodRequiresCallingConventionConverter(implMethod))
                         {
-                            if (vtableSignaturesSequence == null)
-                                vtableSignaturesSequence = new VertexSequence();
+                            vtableSignaturesSequence ??= new VertexSequence();
 
                             NativeLayoutVertexNode methodSignature = factory.NativeLayout.MethodSignatureVertex(declMethod.GetTypicalMethodDefinition().Signature);
                             Vertex signatureVertex = GetNativeWriter(factory).GetRelativeOffsetSignature(methodSignature.WriteVertex(factory));
@@ -1369,8 +1363,7 @@ namespace ILCompiler.DependencyAnalysis
 
                             vtableSignaturesSequence.Append(vtableSignatureEntry);
                         }
-                    }
-                    , _type, _type, _type);
+                    }, _type, _type, _type);
 
                 if (vtableSignaturesSequence != null)
                 {
@@ -1417,7 +1410,7 @@ namespace ILCompiler.DependencyAnalysis
 
         /// <summary>
         /// Process the vtable entries of a type by calling operation with the vtable index, declaring method, and implementing method
-        /// Process them in order from 0th entry to last. 
+        /// Process them in order from 0th entry to last.
         /// Skip generic virtual methods, as they are not present in the vtable itself
         /// Do not adjust vtable index for generic dictionary slot
         /// The vtable index is only actually valid if whichEntries is set to VTableEntriesToProcess.AllInVTable
@@ -1528,8 +1521,8 @@ namespace ILCompiler.DependencyAnalysis
 
     public abstract class NativeLayoutTypeSignatureBasedGenericDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
     {
-        NativeLayoutTypeSignatureVertexNode _signature;
-        TypeDesc _type;
+        private NativeLayoutTypeSignatureVertexNode _signature;
+        private TypeDesc _type;
 
         public NativeLayoutTypeSignatureBasedGenericDictionarySlotNode(NodeFactory factory, TypeDesc type)
         {
@@ -1658,8 +1651,8 @@ namespace ILCompiler.DependencyAnalysis
 
     public abstract class NativeLayoutStaticsGenericDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
     {
-        NativeLayoutTypeSignatureVertexNode _signature;
-        TypeDesc _type;
+        private NativeLayoutTypeSignatureVertexNode _signature;
+        private TypeDesc _type;
 
         public NativeLayoutStaticsGenericDictionarySlotNode(NodeFactory factory, TypeDesc type)
         {
@@ -1709,8 +1702,8 @@ namespace ILCompiler.DependencyAnalysis
 
     public sealed class NativeLayoutInterfaceDispatchGenericDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
     {
-        NativeLayoutTypeSignatureVertexNode _signature;
-        MethodDesc _method;
+        private NativeLayoutTypeSignatureVertexNode _signature;
+        private MethodDesc _method;
 
         public NativeLayoutInterfaceDispatchGenericDictionarySlotNode(NodeFactory factory, MethodDesc method)
         {
@@ -1754,10 +1747,10 @@ namespace ILCompiler.DependencyAnalysis
 
     public sealed class NativeLayoutMethodDictionaryGenericDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
     {
-        MethodDesc _method;
-        WrappedMethodDictionaryVertexNode _wrappedNode;
+        private MethodDesc _method;
+        private WrappedMethodDictionaryVertexNode _wrappedNode;
 
-        private class WrappedMethodDictionaryVertexNode : NativeLayoutMethodEntryVertexNode
+        private sealed class WrappedMethodDictionaryVertexNode : NativeLayoutMethodEntryVertexNode
         {
             public WrappedMethodDictionaryVertexNode(NodeFactory factory, MethodDesc method) :
                 base(factory, method, default(MethodEntryFlags))
@@ -1812,7 +1805,7 @@ namespace ILCompiler.DependencyAnalysis
 
     public sealed class NativeLayoutFieldOffsetGenericDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
     {
-        FieldDesc _field;
+        private FieldDesc _field;
 
         public NativeLayoutFieldOffsetGenericDictionarySlotNode(FieldDesc field)
         {
@@ -1846,7 +1839,7 @@ namespace ILCompiler.DependencyAnalysis
 
     public sealed class NativeLayoutFieldLdTokenGenericDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
     {
-        FieldDesc _field;
+        private FieldDesc _field;
 
         public NativeLayoutFieldLdTokenGenericDictionarySlotNode(FieldDesc field)
         {
@@ -1876,8 +1869,8 @@ namespace ILCompiler.DependencyAnalysis
 
     public sealed class NativeLayoutVTableOffsetGenericDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
     {
-        MethodDesc _method;
-        MethodDesc _slotDefiningMethod;
+        private MethodDesc _method;
+        private MethodDesc _slotDefiningMethod;
 
         public NativeLayoutVTableOffsetGenericDictionarySlotNode(MethodDesc method)
         {
@@ -1917,7 +1910,7 @@ namespace ILCompiler.DependencyAnalysis
 
     public sealed class NativeLayoutMethodLdTokenGenericDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
     {
-        MethodDesc _method;
+        private MethodDesc _method;
 
         public NativeLayoutMethodLdTokenGenericDictionarySlotNode(MethodDesc method)
         {
@@ -1953,8 +1946,8 @@ namespace ILCompiler.DependencyAnalysis
 
     public sealed class NativeLayoutCallingConventionConverterGenericDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
     {
-        Internal.TypeSystem.MethodSignature _signature;
-        CallingConventionConverterKind _converterKind;
+        private Internal.TypeSystem.MethodSignature _signature;
+        private CallingConventionConverterKind _converterKind;
 
         public NativeLayoutCallingConventionConverterGenericDictionarySlotNode(Internal.TypeSystem.MethodSignature signature, CallingConventionConverterKind converterKind)
         {
@@ -1962,7 +1955,7 @@ namespace ILCompiler.DependencyAnalysis
             _converterKind = converterKind;
         }
 
-        protected sealed override string GetName(NodeFactory factory) => 
+        protected sealed override string GetName(NodeFactory factory) =>
             "NativeLayoutCallingConventionConverterGenericDictionarySlotNode" + _converterKind.ToString() +
              _signature.GetName();
 
@@ -1994,9 +1987,9 @@ namespace ILCompiler.DependencyAnalysis
 
     public sealed class NativeLayoutConstrainedMethodDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
     {
-        MethodDesc _constrainedMethod;
-        TypeDesc _constraintType;
-        bool _directCall;
+        private MethodDesc _constrainedMethod;
+        private TypeDesc _constraintType;
+        private bool _directCall;
 
         public NativeLayoutConstrainedMethodDictionarySlotNode(MethodDesc constrainedMethod, TypeDesc constraintType, bool directCall)
         {
@@ -2010,7 +2003,7 @@ namespace ILCompiler.DependencyAnalysis
         protected sealed override string GetName(NodeFactory factory) =>
             "NativeLayoutConstrainedMethodDictionarySlotNode_"
             + (_directCall ? "Direct" : "")
-            + factory.NameMangler.GetMangledMethodName(_constrainedMethod) 
+            + factory.NameMangler.GetMangledMethodName(_constrainedMethod)
             + ","
             + factory.NameMangler.GetMangledTypeName(_constraintType);
 
@@ -2092,10 +2085,10 @@ namespace ILCompiler.DependencyAnalysis
 
     public sealed class NativeLayoutMethodEntrypointGenericDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
     {
-        MethodDesc _method;
-        WrappedMethodEntryVertexNode _wrappedNode;
+        private MethodDesc _method;
+        private WrappedMethodEntryVertexNode _wrappedNode;
 
-        private class WrappedMethodEntryVertexNode : NativeLayoutMethodEntryVertexNode
+        private sealed class WrappedMethodEntryVertexNode : NativeLayoutMethodEntryVertexNode
         {
             public bool _unboxingStub;
             public IMethodNode _functionPointerNode;
@@ -2155,7 +2148,7 @@ namespace ILCompiler.DependencyAnalysis
 
     public sealed class NativeLayoutIntegerDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
     {
-        int _value;
+        private int _value;
 
         public NativeLayoutIntegerDictionarySlotNode(int value)
         {
@@ -2184,7 +2177,7 @@ namespace ILCompiler.DependencyAnalysis
 
     public sealed class NativeLayoutPointerToOtherSlotDictionarySlotNode : NativeLayoutGenericDictionarySlotNode
     {
-        int _otherSlotIndex;
+        private int _otherSlotIndex;
 
         public NativeLayoutPointerToOtherSlotDictionarySlotNode(int otherSlotIndex)
         {
@@ -2221,7 +2214,7 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         protected override string GetName(NodeFactory context) => "NativeLayoutNotSupportedDictionarySlotNode";
-        
+
         protected override Vertex WriteSignatureVertex(NativeWriter writer, NodeFactory factory)
         {
             return writer.GetUnsignedConstant(0xDEADBEEF);

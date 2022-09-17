@@ -34,7 +34,7 @@ namespace System
     [StructLayout(LayoutKind.Auto)]
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct DateTimeOffset
+    public readonly partial struct DateTimeOffset
         : IComparable,
           ISpanFormattable,
           IComparable<DateTimeOffset>,
@@ -320,10 +320,6 @@ namespace System
             }
             _dateTime = _dateTime.AddMicroseconds(microsecond);
         }
-
-        // Returns a DateTimeOffset representing the current date and time. The
-        // resolution of the returned value depends on the system timer.
-        public static DateTimeOffset Now => ToLocalTime(DateTime.UtcNow, true);
 
         public static DateTimeOffset UtcNow
         {

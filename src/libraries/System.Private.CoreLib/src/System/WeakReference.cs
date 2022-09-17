@@ -41,5 +41,10 @@ namespace System
             info.AddValue("TrackedObject", Target, typeof(object)); // Do not rename (binary serialization)
             info.AddValue("TrackResurrection", IsTrackResurrection()); // Do not rename (binary serialization)
         }
+
+        // Returns a boolean indicating whether or not we're tracking objects until they're collected (true)
+        // or just until they're finalized (false).
+        //
+        public virtual bool TrackResurrection => IsTrackResurrection();
     }
 }

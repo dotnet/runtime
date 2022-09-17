@@ -1,17 +1,15 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
-using ILLink.Shared;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.Dataflow
 {
-    static class DiagnosticUtilities
+    internal static class DiagnosticUtilities
     {
         internal static Origin GetMethodParameterFromIndex(MethodDesc method, int parameterIndex)
         {
@@ -151,7 +149,7 @@ namespace ILCompiler.Dataflow
         /// Doesn't check the associated symbol for overrides and virtual methods because we should warn on mismatched between the property AND the accessors
         /// </summary>
         /// <param name="method">
-        ///	MethodDesc that is either an overriding member or an overridden/virtual member
+        /// MethodDesc that is either an overriding member or an overridden/virtual member
         /// </param>
         internal static bool IsOverrideInRequiresScope(this MethodDesc method, string requiresAttribute) =>
             method.IsInRequiresScope(requiresAttribute, false);

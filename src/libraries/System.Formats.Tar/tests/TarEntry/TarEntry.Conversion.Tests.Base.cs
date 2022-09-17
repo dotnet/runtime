@@ -184,7 +184,7 @@ namespace System.Formats.Tar.Tests
                 TarEntryFormat.Ustar => new UstarTarEntry(other),
                 TarEntryFormat.Pax => new PaxTarEntry(other),
                 TarEntryFormat.Gnu => new GnuTarEntry(other),
-                _ => throw new FormatException($"Unexpected format: {targetFormat}")
+                _ => throw new InvalidDataException($"Unexpected format: {targetFormat}")
             };
     }
 }

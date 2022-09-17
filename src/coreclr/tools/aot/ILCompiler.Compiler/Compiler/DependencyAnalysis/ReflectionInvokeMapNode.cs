@@ -51,8 +51,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(factory.MetadataManager.IsReflectionInvokable(method));
 
-            if (dependencies == null)
-                dependencies = new DependencyList();
+            dependencies ??= new DependencyList();
 
             dependencies.Add(factory.MaximallyConstructableType(method.OwningType), "Reflection invoke");
 

@@ -22,16 +22,19 @@ trigger:
 # there is no public pipeline associated with it.
 pr: none
 
+resources:
+  containers:
+  # Define auxilary containers used by the installer jobs
+  - container: debpkg
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-debpkg-20220504035737-cfdd435
+  - container: rpmpkg
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-rpmpkg-20210714125410-daa5116
+
 variables:
 - template: /eng/pipelines/common/variables.yml
 # TODO: (Consolidation) Switch away from old signing/validation variables from former Core-Setup. https://github.com/dotnet/runtime/issues/1027
 - name: TeamName
   value: dotnet-core-acquisition
-# Set the target blob feed for package publish during official and validation builds.
-- name: _DotNetArtifactsCategory
-  value: .NETCore
-- name: _DotNetValidationArtifactsCategory
-  value: .NETCoreValidation
 - name: PostBuildSign
   value: true
 
@@ -382,8 +385,10 @@ stages:
   #
   # Installer Build
   #
-  - template: /eng/pipelines/installer/installer-matrix.yml
+  - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
+      jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
+      buildConfig: Release
       jobParameters:
         liveRuntimeBuildConfig: release
         liveLibrariesBuildConfig: Release
@@ -424,8 +429,9 @@ stages:
   #
   # PGO Build
   #
-  - template: /eng/pipelines/installer/installer-matrix.yml
+  - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
+      jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
       buildConfig: Release
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
