@@ -1339,9 +1339,10 @@ FORCEINLINE OBJECTREF MethodTable::GetPinnedManagedClassObjectIfExists()
 {
     LIMITED_METHOD_CONTRACT;
 
-    LOADERHANDLE handle = GetWriteableData_NoLogging()->GetExposedClassObjectHandle();
-    // Lowest bit 0 means that ExposedClassObjectHandle points to a frozen object directly
-    if (handle != NULL && (((UINT_PTR)handle) & 0) == 0 && !this->GetLoaderAllocator()->CanUnload())
+    const LOADERHANDLE handle = GetWriteableData_NoLogging()->GetExposedClassObjectHandle();
+    // For a non-unloadable context, handle is expected to be either null (is not cached yet)
+    // or be a direct pointer to a frozen RuntimeType object
+    if (handle != NULL && !GetLoaderAllocator()->CanUnload())
     {
         Object* obj = (Object*)handle;
         _ASSERT(obj != nullptr);

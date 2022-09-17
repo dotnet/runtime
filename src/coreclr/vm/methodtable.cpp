@@ -4234,20 +4234,16 @@ OBJECTREF MethodTable::GetManagedClassObject()
             Object* obj = foh->TryAllocateObject(g_pRuntimeTypeClass, objSize);
             _ASSERTE(obj != NULL);
             refClass = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(obj);
-            refClass->SetType(TypeHandle(this));
             exposedClassObjectHandle = (LOADERHANDLE)obj;
-            _ASSERT((((UINT_PTR)obj) & 1) == 0);
         }
         else
         {
             refClass = (REFLECTCLASSBASEREF)AllocateObject(g_pRuntimeTypeClass);
             refClass->SetKeepAlive(pLoaderAllocator->GetExposedObject());
-            refClass->SetType(TypeHandle(this));
             exposedClassObjectHandle = pLoaderAllocator->AllocateHandle(refClass);
         }
+        refClass->SetType(TypeHandle(this));
 
-        _ASSERT(refClass != NULL);
-        
         // Let all threads fight over who wins using InterlockedCompareExchange.
         // Only the winner can set m_ExposedClassObject from NULL.
         if (InterlockedCompareExchangeT(&GetWriteableDataForWrite()->m_hExposedClassObject, exposedClassObjectHandle, static_cast<LOADERHANDLE>(NULL)))
