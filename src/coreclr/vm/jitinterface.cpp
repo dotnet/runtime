@@ -5962,11 +5962,15 @@ void* CEEInfo::getRuntimeTypePointer(CORINFO_CLASS_HANDLE clsHnd)
         MethodTable* pMT = typeHnd.AsMethodTable();
         if (!typeHnd.IsCanonicalSubtype())
         {
-            bool isPinned;
-            Object* obj = OBJECTREFToObject(pMT->GetManagedClassObject(&isPinned));
-            if (isPinned)
+            // Trigger allocation if it's not allocated yet
+            if (pMT->GetManagedClassObject() != NULL)
             {
-                pointer = (void*)obj;
+                // Check if we can rely on object being effectively pinned
+                OBJECTREF objRef = pMT->GetPinnedManagedClassObjectIfExists();
+                if (objRef != NULL)
+                {
+                    pointer = (void*)OBJECTREFToObject(objRef);
+                }
             }
         }
     }

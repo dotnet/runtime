@@ -4221,30 +4221,34 @@ OBJECTREF MethodTable::GetManagedClassObject()
         // Make sure that we have been restored
         CheckRestore();
 
-        REFLECTCLASSBASEREF  refClass = NULL;
+        REFLECTCLASSBASEREF refClass = NULL;
         GCPROTECT_BEGIN(refClass);
 
+        LOADERHANDLE exposedClassObjectHandle = NULL;
         LoaderAllocator* pLoaderAllocator = GetLoaderAllocator();
         if (!pLoaderAllocator->CanUnload())
         {
             // Allocate RuntimeType on a frozen segment
             FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
             size_t objSize = g_pRuntimeTypeClass->GetBaseSize();
-            refClass = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(foh->TryAllocateObject(g_pRuntimeTypeClass, objSize));
+            Object* obj = foh->TryAllocateObject(g_pRuntimeTypeClass, objSize);
+            refClass = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(obj);
+            refClass->SetType(TypeHandle(this));
+            exposedClassObjectHandle = (LOADERHANDLE)obj;
+            _ASSERT((((UINT_PTR)obj) & 1) == 0);
         }
         else
         {
             refClass = (REFLECTCLASSBASEREF)AllocateObject(g_pRuntimeTypeClass);
-            ((ReflectClassBaseObject*)OBJECTREFToObject(refClass))->SetKeepAlive(pLoaderAllocator->GetExposedObject());
+            refClass->SetKeepAlive(pLoaderAllocator->GetExposedObject());
+            refClass->SetType(TypeHandle(this));
+            exposedClassObjectHandle = pLoaderAllocator->AllocateHandle(refClass);
         }
+
         _ASSERT(refClass != NULL);
-
-        ((ReflectClassBaseObject*)OBJECTREFToObject(refClass))->SetType(TypeHandle(this));
-
+        
         // Let all threads fight over who wins using InterlockedCompareExchange.
         // Only the winner can set m_ExposedClassObject from NULL.
-        LOADERHANDLE exposedClassObjectHandle = pLoaderAllocator->AllocateHandle(refClass);
-
         if (InterlockedCompareExchangeT(&GetWriteableDataForWrite()->m_hExposedClassObject, exposedClassObjectHandle, static_cast<LOADERHANDLE>(NULL)))
         {
             pLoaderAllocator->FreeHandle(exposedClassObjectHandle);
@@ -4253,32 +4257,6 @@ OBJECTREF MethodTable::GetManagedClassObject()
         GCPROTECT_END();
     }
     RETURN(GetManagedClassObjectIfExists());
-}
-
-OBJECTREF MethodTable::GetManagedClassObject(bool* pIsPinned)
-{
-    CONTRACT(OBJECTREF)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
-    }
-    CONTRACT_END;
-
-    _ASSERT(pIsPinned != nullptr);
-
-    OBJECTREF objRef = NULL;
-    GCPROTECT_BEGIN(objRef);
-
-    objRef = GetManagedClassObject();
-
-    // Type objects in non-unloadable contexts are always "pinned" (allocated on FOH)
-    *pIsPinned = this->GetLoaderAllocator()->IsUnloaded();
-
-    GCPROTECT_END();
-
-    RETURN(objRef);
 }
 
 #endif //!DACCESS_COMPILE

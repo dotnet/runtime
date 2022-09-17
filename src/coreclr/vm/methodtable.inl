@@ -1335,6 +1335,29 @@ inline OBJECTHANDLE MethodTable::GetLoaderAllocatorObjectHandle()
 }
 
 //==========================================================================================
+OBJECTREF MethodTable::GetPinnedManagedClassObjectIfExists()
+{
+    CONTRACT(OBJECTREF)
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        INJECT_FAULT(COMPlusThrowOM());
+    }
+    CONTRACT_END;
+
+    LOADERHANDLE handle = GetWriteableData_NoLogging()->GetExposedClassObjectHandle();
+    // Lowest bit 0 means that ExposedClassObjectHandle points to a frozen object directly
+    if (handle != NULL && (((UINT_PTR)handle) & 0) == 0)
+    {
+        Object* obj = (Object*)handle;
+        _ASSERT(obj != nullptr);
+        return ObjectToOBJECTREF(obj);
+    }
+    return NULL;
+}
+
+//==========================================================================================
 FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists()
 {
     LIMITED_METHOD_CONTRACT;
@@ -1342,12 +1365,14 @@ FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists()
     // Logging will be done by the slow path
     LOADERHANDLE handle = GetWriteableData_NoLogging()->GetExposedClassObjectHandle();
 
-    OBJECTREF retVal;
+    // First, check if have a cached reference to an effectively pinned (allocated on FOH) object
+    OBJECTREF retVal = GetPinnedManagedClassObjectIfExists();
+    if (retVal != NULL)
+    {
+        return retVal;
+    }
 
-    // GET_LOADERHANDLE_VALUE_FAST macro is inlined here to let us give hint to the compiler
-    // when the return value is not null.
-    if (!LoaderAllocator::GetHandleValueFast(handle, &retVal) &&
-        !GetLoaderAllocator()->GetHandleValueFastPhase2(handle, &retVal))
+    if (!GetLoaderAllocator()->GetHandleValueFastPhase2(handle, &retVal))
     {
         return NULL;
     }
