@@ -175,6 +175,11 @@ int getStringLiteral(
           char16_t* buffer,
           int bufferSize) override;
 
+int objectToString(
+          void* handle,
+          char16_t* buffer,
+          int bufferSize) override;
+
 CorInfoType asCorInfoType(
           CORINFO_CLASS_HANDLE cls) override;
 

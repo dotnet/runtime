@@ -1815,6 +1815,14 @@ namespace Internal.JitInterface
             return str.Length;
         }
 
+#pragma warning disable CA1822 // Mark members as static
+        private int objectToString(void* handle, char* buffer, int size)
+#pragma warning restore CA1822 // Mark members as static
+        {
+            // TODO: implement
+            return -1;
+        }
+
         private CorInfoType asCorInfoType(CORINFO_CLASS_STRUCT_* cls)
         {
             var type = HandleToObject(cls);

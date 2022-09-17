@@ -1855,13 +1855,6 @@ struct CORINFO_String : public CORINFO_Object
     char16_t                chars[1];       // actually of variable size
 };
 
-struct CORINFO_RuntimeType : public CORINFO_Object
-{
-    void*                m_keepalive;
-    void*                m_cache;
-    CORINFO_CLASS_HANDLE m_handle;
-};
-
 struct CORINFO_Array : public CORINFO_Object
 {
     unsigned                length;
@@ -2268,6 +2261,13 @@ public:
     virtual int getStringLiteral (
             CORINFO_MODULE_HANDLE       module,     /* IN  */
             unsigned                    metaTOK,    /* IN  */
+            char16_t*                   buffer,     /* OUT */
+            int                         bufferSize  /* IN  */
+            ) = 0;
+
+    // Calls ToString() for given pinned/frozen object handle
+    virtual int objectToString (
+            void*                       handle,     /* IN  */
             char16_t*                   buffer,     /* OUT */
             int                         bufferSize  /* IN  */
             ) = 0;

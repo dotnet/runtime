@@ -1617,42 +1617,16 @@ const char16_t* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
 
 void Compiler::eePrintFrozenObjectDescription(const char* prefix, size_t handle)
 {
-    auto typeOfHandle = *((CORINFO_CLASS_HANDLE*)handle);
-    if (impGetStringClass() == typeOfHandle)
+    const int maxStrSize      = 128;
+    char16_t  str[maxStrSize] = {0};
+    int       realLength      = this->info.compCompHnd->objectToString((void*)handle, str, maxStrSize);
+    if (realLength >= 0)
     {
-        auto asString = (CORINFO_String*)handle;
-
-        const size_t maxLength = 63;
-        const size_t newLen    = min(maxLength, asString->stringLen);
-
-        // +1 for null terminator
-        WCHAR buf[maxLength + 1] = {0};
-        wcsncpy(buf, (WCHAR*)asString->chars, newLen);
-        for (size_t i = 0; i < newLen; i++)
-        {
-            // Escape \n and \r symbols
-            if (buf[i] == L'\n' || buf[i] == L'\r')
-            {
-                buf[i] = L' ';
-            }
-        }
-        if (asString->stringLen > maxLength)
-        {
-            // Append "..." for long strings
-            buf[maxLength - 3] = L'.';
-            buf[maxLength - 2] = L'.';
-            buf[maxLength - 1] = L'.';
-        }
-        printf("%s \"%S\"", prefix, buf);
-    }
-    else if (impGetRuntimeTypeClass() == typeOfHandle)
-    {
-        auto asType = (CORINFO_RuntimeType*)handle;
-        printf("%s %s", prefix, eeGetClassName(asType->m_handle));
+        printf("%s '%S'\n", prefix, str);
     }
     else
     {
-        printf("%s unknown frozen object handle", prefix);
+        printf("%s 'frozen object handle'\n", prefix, str);
     }
 }
 #else  // DEBUG

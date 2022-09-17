@@ -622,6 +622,10 @@ public:
     void dmpGetStringLiteral(DLDD key, DD value);
     int repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize);
 
+    void recObjectToString(void* handle, char16_t* buffer, int bufferSize, int length);
+    void dmpObjectToString(DLD key, DD value);
+    int repObjectToString(void* handle, char16_t* buffer, int bufferSize);
+
     void recGetHelperName(CorInfoHelpFunc funcNum, const char* result);
     void dmpGetHelperName(DWORD key, DWORD value);
     const char* repGetHelperName(CorInfoHelpFunc funcNum);
@@ -1134,6 +1138,7 @@ enum mcPackets
     Packet_GetLoongArch64PassStructInRegisterFlags = 194,
     Packet_GetExactClasses = 195,
     Packet_GetRuntimeTypePointer = 196,
+    Packet_ObjectToString = 197,
 };
 
 void SetDebugDumpVariables();

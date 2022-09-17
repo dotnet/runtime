@@ -374,6 +374,17 @@ int WrapICorJitInfo::getStringLiteral(
     return temp;
 }
 
+int WrapICorJitInfo::objectToString(
+          void* handle,
+          char16_t* buffer,
+          int bufferSize)
+{
+    API_ENTER(objectToString);
+    int temp = wrapHnd->objectToString(handle, buffer, bufferSize);
+    API_LEAVE(objectToString);
+    return temp;
+}
+
 CorInfoType WrapICorJitInfo::asCorInfoType(
           CORINFO_CLASS_HANDLE cls)
 {

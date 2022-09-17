@@ -453,6 +453,17 @@ int interceptor_ICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  *
     return temp;
 }
 
+int interceptor_ICJI::objectToString(void*     handle,    /* IN  */
+                                     char16_t* buffer,    /* OUT */
+                                     int       bufferSize /* IN  */
+                                     )
+{
+    mc->cr->AddCall("objectToString");
+    int temp = original_ICorJitInfo->objectToString(handle, buffer, bufferSize);
+    mc->recObjectToString(handle, buffer, bufferSize, temp);
+    return temp;
+}
+
 /**********************************************************************************/
 //
 // ICorClassInfo

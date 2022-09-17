@@ -715,6 +715,48 @@ int CEEInfo::getStringLiteral (
     return result;
 }
 
+int CEEInfo::objectToString (
+        void*     handle,
+        char16_t* buffer,
+        int       bufferSize)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    int result = -1;
+
+    JIT_TO_EE_TRANSITION();
+
+    Object* obj = (Object*)handle;
+
+    GCX_COOP();
+
+    StackSString stackStr;
+
+    // Currently only supported for String and RuntimeType
+    if (obj->GetMethodTable()->IsString())
+    {
+        ((StringObject*)obj)->GetSString(stackStr);
+    }
+    else if (obj->GetMethodTable() == g_pRuntimeTypeClass)
+    {
+        ((ReflectClassBaseObject*)obj)->GetType().GetName(stackStr);
+    }
+
+    if (stackStr.GetCount() > 0)
+    {
+        result = min(bufferSize, (int)stackStr.GetCount());
+        memcpy((BYTE*)buffer, stackStr.GetUnicode(), result * 2);
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return result;
+}
+
 /* static */
 size_t CEEInfo::findNameOfToken (Module* module,
                                                  mdToken metaTOK,
