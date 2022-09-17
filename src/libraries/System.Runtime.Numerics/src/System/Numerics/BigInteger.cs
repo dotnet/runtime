@@ -13,6 +13,7 @@ namespace System.Numerics
 {
     [Serializable]
     [TypeForwardedFrom("System.Numerics, Version=4.0.0.0, PublicKeyToken=b77a5c561934e089")]
+    [DebuggerDisplay("{GetDebuggerDisplay(),nq}")]
     public readonly struct BigInteger
         : ISpanFormattable,
           IComparable,
@@ -1589,6 +1590,41 @@ namespace System.Numerics
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
             return BigNumber.FormatBigInteger(this, format, NumberFormatInfo.GetInstance(provider));
+        }
+
+        private string GetDebuggerDisplay()
+        {
+            // For very big numbers, ToString can be too long or even timeout for Visual Studio to display
+            // Display an fast estimation value instead
+
+            // Use ToString for small values
+
+            if (_bits is null || _bits.Length <= 2)
+            {
+                return ToString();
+            }
+
+            // Estimate the value x as L*2^n, while L is the value of high bits, and n is the length of low bits
+            // Represent L as k*10^i, then x = L*2^n = k*10^(i+n*Log10(2))
+            // Let m=n*Log10(2), the final result would be x = (k*10^(m-[m]))*10^(i+[m])
+
+            ulong highBits = ((ulong)_bits[1] << kcbitUint) + _bits[0];
+            int lowBitsCount32 = _bits.Length - 2; // if Length > int.MaxValue/32, counting in bits can cause overflow
+            double exponentLow = lowBitsCount32 * kcbitUint * Math.Log10(2);
+
+            int exponent = (int)exponentLow;
+            double significand = (double)highBits * Math.Pow(10, exponentLow - exponent);
+
+            while (significand > 10.0)
+            {
+                significand /= 10.0;
+                exponent++;
+            }
+
+            string signStr = _sign == 0 ? "" : "-";
+
+            // Use about a half of the precision of double
+            return $"{signStr}{significand:F8}e+{exponent}";
         }
 
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
