@@ -236,7 +236,7 @@ IF NOT DEFINED DoLink (
     echo EXECUTION OF FILECHECK - FAILED $ERRORLEVEL
     exit 1
   fi', '%0a')
-]]>)
+]]>
       </CLRTestBashPreCommands>
 
       <BashDisasmCheckPostCommands></BashDisasmCheckPostCommands>
@@ -250,7 +250,7 @@ if [[ -n $COMPlus_JitDisasm ]]; then
       exit 1
     fi', '%0a')
 fi
-]]>)
+]]>
       </BashDisasmCheckPostCommands>
     </PropertyGroup>
   </Target>
