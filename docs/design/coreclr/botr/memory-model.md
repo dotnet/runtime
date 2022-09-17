@@ -9,19 +9,19 @@ In the course of multiple releases CLR implementation settled around a memory mo
 ## Alignment
 When managed by CLR runtime, variables of built-in primitive types are *properly aligned* according to the data type size. This applies to both heap and stack allocated memory.
 
-1-byte, 2-byte, 4-byte variables are stored at 1-byte, 2-byte, 4-byte boundary, respectively.  
-8-byte variables are 8-byte aligned on 64 bit platforms.  
-Native-sized integer types and pointers have alignment that matches their size on the given platform.  
+- 1-byte, 2-byte, 4-byte variables are stored at 1-byte, 2-byte, 4-byte boundary, respectively.
+- 8-byte variables are 8-byte aligned on 64 bit platforms.
+- Native-sized integer types and pointers have alignment that matches their size on the given platform.
 
 ## Atomic memory accesses.
 Memory accesses to *properly aligned* data of primitive types are always atomic. The value that is observed is always a result of complete read and write operations.
 
-## Unmanaged memory access. 
-As unmanaged pointers can point to any addressable memory, operations with such pointers may violate guarantees provided by the runtime and expose undefined or platform-specific behavior.  
-**Example:** memory accesses through pointers which are *not properly aligned* may be not atomic or cause faults depending on the platform and hardware configuration.   
+## Unmanaged memory access.
+As unmanaged pointers can point to any addressable memory, operations with such pointers may violate guarantees provided by the runtime and expose undefined or platform-specific behavior.
+**Example:** memory accesses through pointers which are *not properly aligned* may be not atomic or cause faults depending on the platform and hardware configuration.
 
-Although rare, unaligned access is a realistic scenario and thus there is some limited support for unaligned memory accesses, such as:  
-* `.unaligned` IL prefix 
+Although rare, unaligned access is a realistic scenario and thus there is some limited support for unaligned memory accesses, such as:
+* `.unaligned` IL prefix
 * `Unsafe.ReadUnaligned`, `Unsafe.WriteUnaligned` and ` Unsafe.CopyBlockUnaligned` helpers.
 
 These facilities ensure fault-free access to potentially unaligned locations, but do not ensure atomicity.
@@ -31,8 +31,8 @@ As of this writing there is no specific support for operating with incoherent me
 ## Sideeffects and optimizations of memory accesses.
 CLR assumes that the sideeffects of memory reads and writes include only changing and observing values at specified memory locations. This applies to all reads and writes - volatile or not. **This is different from ECMA model.**
 
-As a consequence: 
-* Speculative writes are not allowed. 
+As a consequence:
+* Speculative writes are not allowed.
 * Reads cannot be introduced.
 * Unused reads can be elided.
 * Adjacent nonvolatile reads from the same location can be coalesced.
