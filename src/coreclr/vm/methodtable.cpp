@@ -4235,6 +4235,7 @@ OBJECTREF MethodTable::GetManagedClassObject()
             size_t objSize = g_pRuntimeTypeClass->GetBaseSize();
             Object* obj = foh->TryAllocateObject(g_pRuntimeTypeClass, objSize);
             _ASSERTE(obj != NULL);
+            _ASSERTE((((SSIZE_T)obj) & 1) == 0);
             refClass = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(obj);
             refClass->SetType(TypeHandle(this));
             GetWriteableDataForWrite()->m_hExposedClassObject = (LOADERHANDLE)obj;
@@ -4245,6 +4246,8 @@ OBJECTREF MethodTable::GetManagedClassObject()
             refClass = (REFLECTCLASSBASEREF)AllocateObject(g_pRuntimeTypeClass);
             refClass->SetKeepAlive(pLoaderAllocator->GetExposedObject());
             LOADERHANDLE exposedClassObjectHandle = pLoaderAllocator->AllocateHandle(refClass);
+            // Set the lowest bit, we use it GetPinnedManagedClassObjectIfExists as a fast detection of the unloadable context
+            exposedClassObjectHandle |= 1;
             refClass->SetType(TypeHandle(this));
 
             // Let all threads fight over who wins using InterlockedCompareExchange.

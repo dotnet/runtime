@@ -99,6 +99,8 @@ struct LOADERHANDLE__
 };
 typedef TADDR LOADERHANDLE;
 
+typedef TADDR RUNTIMETYPEHANDLE;
+
 
 #ifdef DACCESS_COMPILE
 void OBJECTHANDLE_EnumMemoryRegions(OBJECTHANDLE handle);
