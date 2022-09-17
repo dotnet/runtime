@@ -3,7 +3,7 @@
 
 using OLEDB.Test.ModuleCore;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlConvertTests
 {
     internal class VerifyNameTests5 : CTestCase
     {
