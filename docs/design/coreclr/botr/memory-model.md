@@ -26,7 +26,7 @@ Although rare, unaligned access is a realistic scenario and thus there is some l
 
 These facilities ensure fault-free access to potentially unaligned locations, but do not ensure atomicity.
 
-As of this writing there is no specific support for operating with incoherent memory, device memory or similar. Passing non-ordinary memory to the runtime by the means of pointer operations or native interop will result in Undefined Behavior.
+As of this writing there is no specific support for operating with incoherent memory, device memory or similar. Passing non-ordinary memory to the runtime by the means of pointer operations or native interop results in Undefined Behavior.
 
 ## Sideeffects and optimizations of memory accesses.
 CLR assumes that the sideeffects of memory reads and writes include only changing and observing values at specified memory locations. This applies to all reads and writes - volatile or not. **This is different from ECMA model.**
@@ -43,7 +43,7 @@ It may be possible for an optimizing compiler to prove that some data is accessi
 
 ## Cross-thread access to local variables.
 -	There is no type-safe mechanism for accessing locations on one thread’s stack from another thread.
--	Accessing managed references located on the stack of a different thread by the means of unsafe code will result in Undefiled Behavior.
+-	Accessing managed references located on the stack of a different thread by the means of unsafe code will result in Undefined Behavior.
 
 ## Order of memory operations.
 * **Ordinary memory accesses**
@@ -95,7 +95,7 @@ Object assignment to a location potentially accessible by other threads is a rel
 The motivation is to ensure that storing an object reference to shared memory acts as a "committing point" to all modifications that are reachable through the instance reference. It also guarantees that a freshly allocated instance is valid (i.e. method table and necessary flags are set) when other threads, including background GC threads are able to access the instance.
 The reading thread does not need to perform an acquiring read before accessing the content of an instance since all supported platforms honor ordering of data-dependent reads.
 
-However, the ordering sideeffects of reference assignement should not be used for general ordering purposes because:
+However, the ordering sideeffects of reference assignment should not be used for general ordering purposes because:
 -	ordinary reference assignments are still treated as ordinary assignments and could be reordered by the compiler.
 -	an optimizing compiler can omit the release semantics if it can prove that the instance is not shared with other threads.
 
