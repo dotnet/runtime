@@ -740,20 +740,25 @@
     </MergedPayloads>
   </ItemGroup>
 
+  <PropertyGroup>
+    <!-- Enable stress work item striping on GCstress only -->
+    <StripeMergedStressWorkItems Condition="$(Scenario.Contains('gcstress'))">true</StripeMergedStressWorkItems>
+    <!-- Striping is only enabled for the desktop version of the test harness, disable it regardless of scenario on
+         other systems. -->
+    <StripeMergedStressWorkItems Condition="'$(TargetHasHelixXHarnessSdkSupport)' == 'true' or '$(TargetsMobile)' == 'true'">false</StripeMergedStressWorkItems>
+  </PropertyGroup>
+
   <Target Name="FindStressMarkers" BeforeTargets="PrepareMergedStressHelixWorkItems">
     <ItemGroup>
-      <_MergedStressWrapperMarker Include="$(TestBinDir)**\*.MergedTestAssemblyForStress"/>
+      <_MergedStressWrapperMarker Condition="'$(StripeMergedStressWorkItems)'=='true'" Include="$(TestBinDir)**\*.MergedTestAssemblyForStress"/>
     </ItemGroup>
   </Target>
 
-<!-- before checkin, add a condition to only enable this when Scenario contains gcstress-->
   <Target Name="PrepareMergedStressHelixWorkItems" 
           BeforeTargets="PrepareMergedHelixWorkItems" 
-          Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true' and '$(TargetsMobile)' != 'true'"
+          Condition="'$(StripeMergedStressWorkItems)'=='true'"
           Outputs="%(_MergedStressWrapperMarker.Identity).dummy">
     <PropertyGroup>
-      <StressHelixJobsModeEnabled>true</StressHelixJobsModeEnabled>
-
       <WithoutFinalExt>%(_MergedStressWrapperMarker.Filename)</WithoutFinalExt>
       <TotalStripes>$([System.IO.Path]::GetExtension('$(WithoutFinalExt)'))</TotalStripes>
       <WithoutFinalExt2>$([System.IO.Path]::GetFilenameWithoutExtension('$(WithoutFinalExt)'))</WithoutFinalExt2>
@@ -775,7 +780,7 @@
 
   <Target Name="PrepareMergedHelixWorkItems" BeforeTargets="CoreTest">
     <ItemGroup>
-      <HelixWorkItem Include="%(MergedPayloads.PayloadGroup)" Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true' and '$(StressHelixJobsModeEnabled)'!= 'true'">
+      <HelixWorkItem Include="%(MergedPayloads.PayloadGroup)" Condition="'$(TargetHasHelixXHarnessSdkSupport)' != 'true' and '$(StripeMergedStressWorkItems)'!= 'true'">
         <PayloadDirectory>%(MergedPayloads.PayloadDirectory)</PayloadDirectory>
         <Command>%(MergedPayloads.MergedTestHelixCommand)</Command>
         <Timeout Condition=" '$(TimeoutPerTestCollectionInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestCollectionInMinutes)))</Timeout>
