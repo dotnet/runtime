@@ -4232,6 +4232,7 @@ OBJECTREF MethodTable::GetManagedClassObject()
             FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
             size_t objSize = g_pRuntimeTypeClass->GetBaseSize();
             Object* obj = foh->TryAllocateObject(g_pRuntimeTypeClass, objSize);
+            _ASSERTE(obj != NULL);
             refClass = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(obj);
             refClass->SetType(TypeHandle(this));
             exposedClassObjectHandle = (LOADERHANDLE)obj;
