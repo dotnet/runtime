@@ -225,8 +225,8 @@ IF NOT DEFINED DoLink (
       <BashDisasmListOutputFile>/dev/null</BashDisasmListOutputFile>
       <BashDisasmListOutputFile Condition="'$(HasBashDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm_list.out</BashDisasmListOutputFile>
 
-      <CLRTestBashPreCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
-@(DisasmCheckFiles -> '  $CORE_ROOT/SuperFileCheck/SuperFileCheck --csharp-list-method-names "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) > "$(BashDisasmListOutputFile)"
+      <BashCLRTestPreCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
+@(DisasmCheckFiles -> '  dotnet $CORE_ROOT/SuperFileCheck/SuperFileCheck.dll --csharp-list-method-names "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) > "$(BashDisasmListOutputFile)"
   ERRORLEVEL=$?
   export COMPlus_JitDisasm=`cat $(BashDisasmListOutputFile)`
   export COMPlus_JitDiffableDasm=1
@@ -237,12 +237,12 @@ IF NOT DEFINED DoLink (
     exit 1
   fi', '%0a')
 ]]>
-      </CLRTestBashPreCommands>
+      </BashCLRTestPreCommands>
 
       <BashDisasmCheckPostCommands></BashDisasmCheckPostCommands>
       <BashDisasmCheckPostCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
 if [[ -n $COMPlus_JitDisasm ]]; then
-  @(DisasmCheckFiles -> '  $CORE_ROOT/SuperFileCheck/SuperFileCheck --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) --input-file "$(BashDisasmOutputFile)"
+  @(DisasmCheckFiles -> '  dotnet $CORE_ROOT/SuperFileCheck/SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) --input-file "$(BashDisasmOutputFile)"
     ERRORLEVEL=$?
     if [[ $ERRORLEVEL -ne 0 ]]
     then
