@@ -1341,7 +1341,7 @@ FORCEINLINE OBJECTREF MethodTable::GetPinnedManagedClassObjectIfExists()
 
     LOADERHANDLE handle = GetWriteableData_NoLogging()->GetExposedClassObjectHandle();
     // Lowest bit 0 means that ExposedClassObjectHandle points to a frozen object directly
-    if (handle != NULL && (((UINT_PTR)handle) & 0) == 0)
+    if (handle != NULL && (((UINT_PTR)handle) & 0) == 0 && !this->GetLoaderAllocator()->CanUnload())
     {
         Object* obj = (Object*)handle;
         _ASSERT(obj != nullptr);
