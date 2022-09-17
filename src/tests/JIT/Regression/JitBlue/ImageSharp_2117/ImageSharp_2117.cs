@@ -14,7 +14,7 @@ public unsafe class ImageSharp_2117
             Vector128<float> res1 = Sse.Max(Sse.LoadVector128((float*)(&fnan)), Vector128<float>.Zero);
             Vector128<float> res2 = Sse.Min(Sse.LoadVector128((float*)(&fnan)), Vector128<float>.Zero);
 
-            if (float.IsNaN(res1[0]) || float.IsNaN(res2[0]))
+            if (float.IsNaN(res1.GetElement(0)) || float.IsNaN(res2.GetElement(0)))
             {
                 return 0;
             }
@@ -26,7 +26,7 @@ public unsafe class ImageSharp_2117
             Vector128<double> res3 = Sse2.Max(Sse2.LoadVector128((double*)(&dnan)), Vector128<double>.Zero);
             Vector128<double> res4 = Sse2.Min(Sse2.LoadVector128((double*)(&dnan)), Vector128<double>.Zero);
 
-            if (double.IsNaN(res3[0]) || double.IsNaN(res4[0]))
+            if (double.IsNaN(res3.GetElement(0)) || double.IsNaN(res4.GetElement(0)))
             {
                 return 0;
             }
