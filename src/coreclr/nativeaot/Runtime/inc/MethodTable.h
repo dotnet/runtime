@@ -196,7 +196,7 @@ private:
     enum ExtendedFlags
     {
         HasEagerFinalizerFlag = 0x0001,
-        HasCriticalFinalizerFlag = 0x0002,   // NYI, tracked by https://github.com/dotnet/runtime/issues/75106
+        HasCriticalFinalizerFlag = 0x0002,
     };
 
 public:
@@ -265,6 +265,11 @@ public:
     bool HasEagerFinalizer()
     {
         return (m_uFlags & HasEagerFinalizerFlag) && !HasComponentSize();
+    }
+
+    bool HasCriticalFinalizer()
+    {
+        return (m_uFlags & HasCriticalFinalizerFlag) && !HasComponentSize();
     }
 
     bool  HasComponentSize()
@@ -391,7 +396,6 @@ public:
     uint32_t GetBaseSize() { return get_BaseSize(); }
     uint32_t ContainsPointers() { return HasReferenceFields(); }
     uint32_t ContainsPointersOrCollectible() { return HasReferenceFields(); }
-    bool HasCriticalFinalizer() { return false; }
     bool IsValueType() { return get_IsValueType(); }
     UInt32_BOOL SanityCheck() { return Validate(); }
 };

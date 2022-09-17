@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using BindingFlags = System.Reflection.BindingFlags;
 
-class Program
+class FeatureSwitches
 {
     // These are substituted using the XML file
     // We're testing that the basic blocks that are known to be unreachable don't get compiled.
@@ -14,7 +14,7 @@ class Program
     static int GetIntConstant() => 0;
     static bool s_isEnabled = IsEnabled();
 
-    static int Main()
+    public static int Run()
     {
         SanityTest.Run();
         SimpleTest.Run();
