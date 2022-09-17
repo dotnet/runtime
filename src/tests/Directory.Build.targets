@@ -543,7 +543,6 @@
   </ItemGroup>
 
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
-  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.NETCore.Native.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
 
   <Target Name="BuildNativeAot"
           DependsOnTargets="Build;LinkNativeIfBuildAndRun" />
