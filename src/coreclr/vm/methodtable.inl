@@ -1335,16 +1335,9 @@ inline OBJECTHANDLE MethodTable::GetLoaderAllocatorObjectHandle()
 }
 
 //==========================================================================================
-OBJECTREF MethodTable::GetPinnedManagedClassObjectIfExists()
+FORCEINLINE OBJECTREF MethodTable::GetPinnedManagedClassObjectIfExists()
 {
-    CONTRACT(OBJECTREF)
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
-    }
-    CONTRACT_END;
+    LIMITED_METHOD_CONTRACT;
 
     LOADERHANDLE handle = GetWriteableData_NoLogging()->GetExposedClassObjectHandle();
     // Lowest bit 0 means that ExposedClassObjectHandle points to a frozen object directly
