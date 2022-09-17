@@ -81,7 +81,7 @@ It may be possible for an optimizing compiler to prove that some data is accessi
   Operations with full-fence semantics:
      - `System.Thread.MemoryBarrier`
      - `System.Threading.Interlocked` methods
-     
+
 ## Process-wide barrier
 Process-wide barrier has full-fence semantics with an additional guarantee that each thread in the program effectively performs a full fence at arbitrary point synchronized with the process-wide barrier in such a way that effects of writes that precede both barriers are observable by memory operations that follow the barriers.
 
@@ -93,7 +93,7 @@ Synchronized methods have the same memory access semantics as if a lock is acqui
 ## Object assignment
 Object assignment to a location potentially accessible by other threads is a release with respect to write operations to the instance’s fields and metadata.
 The motivation is to ensure that storing an object reference to shared memory acts as a "committing point" to all modifications that are reachable through the instance reference. It also guarantees that a freshly allocated instance is valid (i.e. method table and necessary flags are set) when other threads, including background GC threads are able to access the instance.
-The reading thread does not need to perform an acquiring read before accessing the content of an instance since all supported platforms honor ordering of data-dependent reads. 
+The reading thread does not need to perform an acquiring read before accessing the content of an instance since all supported platforms honor ordering of data-dependent reads.
 
 However, the ordering sideeffects of reference assignement should not be used for general ordering purposes because:
 -	ordinary reference assignments are still treated as ordinary assignments and could be reordered by the compiler.
@@ -106,7 +106,7 @@ CLR does not specify any ordering effects to the instance constructors.
 All side effects of static constructor execution must happen before accessing any member of the type.
 
 ## Hardware considerations
-Currently supported implementations of CLR and system libraries make a few expectations about the hardware memory model. These conditions are present on all supported platforms and transparently passed to the user of the runtime. The future supported platforms will likely support these too as the large body of preexisting software will make it burdensome to break common assumptions. 
+Currently supported implementations of CLR and system libraries make a few expectations about the hardware memory model. These conditions are present on all supported platforms and transparently passed to the user of the runtime. The future supported platforms will likely support these too as the large body of preexisting software will make it burdensome to break common assumptions.
 
 * Naturally aligned reads and writes with sizes up to the platform pointer size are atomic.
 That applies even for locations targeted by overlapping aligned reads and writes of different sizes.
@@ -122,11 +122,11 @@ That applies even for locations targeted by overlapping aligned reads and writes
 *	It is possible to implement release consistency memory model.
 Either the platform defaults to release consistency or stronger (i.e. x64 is TSO, which is stronger), or provides means to implement release consistency via fencing operations.
 
-*	Memory ordering honors data dependency  
+*	Memory ordering honors data dependency
 **Example:** reading a field, will not use a cached value fetched from the location of the field prior obtaining a reference to the instance.
 (Some versions of Alpha processors did not support this, most current architectures do)
 
-## Examples and common patterns:  
+## Examples and common patterns:
 The following examples work correctly on all supported CLR implementations regardless of the target OS or architecture.
 
 *   Constructing an instance and sharing with another thread is safe and does not require explicit fences.
@@ -223,7 +223,7 @@ public MyClass GetSingleton()
 }
 ```
 
-* Communicating with another thread by checking a flag. 
+* Communicating with another thread by checking a flag.
 
 ```cs
 internal class Program
