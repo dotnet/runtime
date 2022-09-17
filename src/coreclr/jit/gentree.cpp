@@ -11121,8 +11121,15 @@ void Compiler::gtDispConst(GenTree* tree)
 
                 if (tree->TypeGet() == TYP_REF)
                 {
-                    assert(tree->AsIntCon()->gtIconVal == 0);
-                    printf(" null");
+                    if (tree->AsIntCon()->gtIconVal == 0)
+                    {
+                        printf(" null");
+                    }
+                    else
+                    {
+                        assert(doesMethodHaveFrozenString());
+                        printf(" 0x%llx", dspIconVal);
+                    }
                 }
                 else if ((tree->AsIntCon()->gtIconVal > -1000) && (tree->AsIntCon()->gtIconVal < 1000))
                 {
