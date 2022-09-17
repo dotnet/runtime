@@ -1819,8 +1819,14 @@ namespace Internal.JitInterface
         private int objectToString(void* handle, char* buffer, int size)
 #pragma warning restore CA1822 // Mark members as static
         {
-            // TODO: implement
-            return -1;
+            Debug.Assert(size >= 0);
+
+            // NOTE: this function is used for pinned/frozen handles
+
+            ReadOnlySpan<char> str = HandleToObject((IntPtr)handle).ToString();
+            int maxLength = Math.Min(size, str.Length);
+            str.CopyTo(new Span<char>(buffer, maxLength));
+            return maxLength;
         }
 
         private CorInfoType asCorInfoType(CORINFO_CLASS_STRUCT_* cls)

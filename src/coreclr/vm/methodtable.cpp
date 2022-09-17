@@ -4222,36 +4222,40 @@ OBJECTREF MethodTable::GetManagedClassObject()
         CheckRestore();
 
         REFLECTCLASSBASEREF refClass = NULL;
-        GCPROTECT_BEGIN(refClass);
 
-        LOADERHANDLE exposedClassObjectHandle = NULL;
         LoaderAllocator* pLoaderAllocator = GetLoaderAllocator();
         if (!pLoaderAllocator->CanUnload())
         {
+            CrstHolder exposedClassLock(AppDomain::GetMethodTableExposedClassObjectLock());
+
             // Allocate RuntimeType on a frozen segment
+            // Take a lock here since we don't want to allocate redundant objects which won't be collected
+
             FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
             size_t objSize = g_pRuntimeTypeClass->GetBaseSize();
             Object* obj = foh->TryAllocateObject(g_pRuntimeTypeClass, objSize);
             _ASSERTE(obj != NULL);
             refClass = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(obj);
-            exposedClassObjectHandle = (LOADERHANDLE)obj;
+            refClass->SetType(TypeHandle(this));
+            GetWriteableDataForWrite()->m_hExposedClassObject = (LOADERHANDLE)obj;
         }
         else
         {
+            GCPROTECT_BEGIN(refClass);
             refClass = (REFLECTCLASSBASEREF)AllocateObject(g_pRuntimeTypeClass);
             refClass->SetKeepAlive(pLoaderAllocator->GetExposedObject());
-            exposedClassObjectHandle = pLoaderAllocator->AllocateHandle(refClass);
-        }
-        refClass->SetType(TypeHandle(this));
+            LOADERHANDLE exposedClassObjectHandle = pLoaderAllocator->AllocateHandle(refClass);
+            refClass->SetType(TypeHandle(this));
 
-        // Let all threads fight over who wins using InterlockedCompareExchange.
-        // Only the winner can set m_ExposedClassObject from NULL.
-        if (InterlockedCompareExchangeT(&GetWriteableDataForWrite()->m_hExposedClassObject, exposedClassObjectHandle, static_cast<LOADERHANDLE>(NULL)))
-        {
-            pLoaderAllocator->FreeHandle(exposedClassObjectHandle);
+            // Let all threads fight over who wins using InterlockedCompareExchange.
+            // Only the winner can set m_ExposedClassObject from NULL.
+            if (InterlockedCompareExchangeT(&GetWriteableDataForWrite()->m_hExposedClassObject, exposedClassObjectHandle, static_cast<LOADERHANDLE>(NULL)))
+            {
+                // GC will collect unused instance
+                pLoaderAllocator->FreeHandle(exposedClassObjectHandle);
+            }
+            GCPROTECT_END();
         }
-
-        GCPROTECT_END();
     }
     RETURN(GetManagedClassObjectIfExists());
 }
