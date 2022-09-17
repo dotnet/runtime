@@ -466,11 +466,6 @@ extern "C" bool RhInitialize()
     return true;
 }
 
-COOP_PINVOKE_HELPER(void, RhpEnableConservativeStackReporting, ())
-{
-    GetRuntimeInstance()->EnableConservativeStackReporting();
-}
-
 //
 // Currently called only from a managed executable once Main returns, this routine does whatever is needed to
 // cleanup managed state before exiting. There's not a lot here at the moment since we're always about to let
