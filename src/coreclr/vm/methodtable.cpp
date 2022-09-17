@@ -4232,14 +4232,14 @@ OBJECTREF MethodTable::GetManagedClassObject()
             size_t objSize = g_pRuntimeTypeClass->GetBaseSize();
             refClass = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(foh->TryAllocateObject(g_pRuntimeTypeClass, objSize));
         }
-
-        if (refClass == NULL)
+        else
         {
             refClass = (REFLECTCLASSBASEREF)AllocateObject(g_pRuntimeTypeClass);
+            ((ReflectClassBaseObject*)OBJECTREFToObject(refClass))->SetKeepAlive(pLoaderAllocator->GetExposedObject());
         }
+        _ASSERT(refClass != NULL);
 
         ((ReflectClassBaseObject*)OBJECTREFToObject(refClass))->SetType(TypeHandle(this));
-        ((ReflectClassBaseObject*)OBJECTREFToObject(refClass))->SetKeepAlive(pLoaderAllocator->GetExposedObject());
 
         // Let all threads fight over who wins using InterlockedCompareExchange.
         // Only the winner can set m_ExposedClassObject from NULL.
@@ -4272,8 +4272,9 @@ OBJECTREF MethodTable::GetManagedClassObject(bool* pIsPinned)
     GCPROTECT_BEGIN(objRef);
 
     objRef = GetManagedClassObject();
-    FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
-    *pIsPinned = foh->IsFromFrozenSegment(OBJECTREFToObject(objRef));
+
+    // Type objects in non-unloadable contexts are always "pinned" (allocated on FOH)
+    *pIsPinned = this->GetLoaderAllocator()->IsUnloaded();
 
     GCPROTECT_END();
 
