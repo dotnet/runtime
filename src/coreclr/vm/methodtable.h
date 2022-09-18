@@ -299,8 +299,8 @@ struct MethodTableWriteableData
     };
     DWORD      m_dwFlags;                  // Lot of empty bits here.
 
-    // Either a direct RuntimeType instance reference or a slot index in LoaderAllocator's table
-    // a RuntimeType instance for this class. 
+    // Non-unloadable context: internal RuntimeType object handle
+    // Unloadable context: slot index in LoaderAllocator's pinned table
     RUNTIMETYPEHANDLE m_hExposedClassObject;
 
 #ifdef _DEBUG
@@ -2716,8 +2716,11 @@ public:
     OBJECTREF GetManagedClassObject();
     OBJECTREF GetManagedClassObjectIfExists();
     OBJECTREF GetPinnedManagedClassObjectIfExists();
-    static void AllocateRuntimeTypeObject(LoaderAllocator* allocator, RUNTIMETYPEHANDLE* pDest, TypeHandle type);
 
+    // Shared static helpers to allocate/cache RuntimeType objects
+    static void AllocateRuntimeTypeObject(LoaderAllocator* allocator, RUNTIMETYPEHANDLE* pDest, TypeHandle type);
+    static OBJECTREF GetRuntimeTypeObjectFromHandleFast(RUNTIMETYPEHANDLE handle);
+    static OBJECTREF GetRuntimeTypeObjectFromHandle(LoaderAllocator* allocator, RUNTIMETYPEHANDLE handle);
 
     // ------------------------------------------------------------------
     // Private part of MethodTable

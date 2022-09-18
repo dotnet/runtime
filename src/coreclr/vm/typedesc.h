@@ -251,18 +251,13 @@ public:
             MODE_COOPERATIVE;
         }
         CONTRACTL_END;
-
-        OBJECTREF objRet = NULL;
-        GET_LOADERHANDLE_VALUE_FAST(GetLoaderAllocator(), m_hExposedClassObject, &objRet);
-        return objRet;
+        return MethodTable::GetRuntimeTypeObjectFromHandle(GetLoaderAllocator(), m_hExposedClassObject);
     }
+
     OBJECTREF GetManagedClassObjectFast()
     {
         LIMITED_METHOD_CONTRACT;
-
-        OBJECTREF objRet = NULL;
-        LoaderAllocator::GetHandleValueFast(m_hExposedClassObject, &objRet);
-        return objRet;
+        return MethodTable::GetRuntimeTypeObjectFromHandleFast(m_hExposedClassObject);
     }
 
     TypeHandle GetModifiedType()
@@ -286,8 +281,13 @@ public:
 protected:
 
     // the m_typeAndFlags field in TypeDesc tell what kind of parameterized type we have
-    TypeHandle      m_Arg;              // The type that is being modified
-    LOADERHANDLE    m_hExposedClassObject;  // handle back to the internal reflection Type object
+
+    // The type that is being modified
+    TypeHandle        m_Arg; 
+
+    // Non-unloadable context: internal RuntimeType object handle
+    // Unloadable context: slot index in LoaderAllocator's pinned table
+    RUNTIMETYPEHANDLE m_hExposedClassObject;
 };
 
 /*************************************************************************/
@@ -368,18 +368,13 @@ public:
             MODE_COOPERATIVE;
         }
         CONTRACTL_END;
-
-        OBJECTREF objRet = NULL;
-        GET_LOADERHANDLE_VALUE_FAST(GetLoaderAllocator(), m_hExposedClassObject, &objRet);
-        return objRet;
+        return MethodTable::GetRuntimeTypeObjectFromHandle(GetLoaderAllocator(), m_hExposedClassObject);
     }
+
     OBJECTREF GetManagedClassObjectFast()
     {
         LIMITED_METHOD_CONTRACT;
-
-        OBJECTREF objRet = NULL;
-        LoaderAllocator::GetHandleValueFast(m_hExposedClassObject, &objRet);
-        return objRet;
+        return MethodTable::GetRuntimeTypeObjectFromHandleFast(m_hExposedClassObject);
     }
 
     // Load the owning type. Note that the result is not guaranteed to be full loaded
@@ -425,9 +420,10 @@ protected:
     // Constraints, determined on first call to GetConstraints
     Volatile<DWORD> m_numConstraints;    // -1 until number has been determined
     PTR_TypeHandle m_constraints;
-
-    // slot index back to the internal reflection Type object
-    LOADERHANDLE m_hExposedClassObject;
+  
+    // Non-unloadable context: internal RuntimeType object handle
+    // Unloadable context: slot index in LoaderAllocator's pinned table
+    RUNTIMETYPEHANDLE m_hExposedClassObject;
 
     // token for GenericParam entry
     mdGenericParam    m_token;

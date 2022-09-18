@@ -4274,6 +4274,44 @@ void MethodTable::AllocateRuntimeTypeObject(LoaderAllocator* allocator, RUNTIMET
     }
 }
 
+OBJECTREF MethodTable::GetRuntimeTypeObjectFromHandleFast(RUNTIMETYPEHANDLE handle)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // For a non-unloadable context, handle is expected to be either null (is not cached yet)
+    // or be a direct pointer to a frozen RuntimeType object
+    if (handle != NULL)
+    {
+        if ((handle & 1) == 0)
+        {
+            Object* obj = reinterpret_cast<Object*>(handle);
+            _ASSERT(obj != nullptr);
+            return ObjectToOBJECTREF(obj);
+        }
+    }
+    return NULL;
+}
+
+OBJECTREF MethodTable::GetRuntimeTypeObjectFromHandle(LoaderAllocator* allocator, RUNTIMETYPEHANDLE handle)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // First, check if we have a cached reference to an effectively pinned (allocated on FOH) object
+    OBJECTREF retVal = GetRuntimeTypeObjectFromHandleFast(handle);
+    if (retVal != NULL)
+    {
+        return retVal;
+    }
+
+    if (!allocator->GetHandleValueFastPhase2(handle, &retVal))
+    {
+        return NULL;
+    }
+
+    COMPILER_ASSUME(retVal != NULL);
+    return retVal;
+}
+
 #endif //!DACCESS_COMPILE
 
 //==========================================================================================

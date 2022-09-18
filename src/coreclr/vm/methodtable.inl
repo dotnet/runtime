@@ -1338,46 +1338,14 @@ inline OBJECTHANDLE MethodTable::GetLoaderAllocatorObjectHandle()
 FORCEINLINE OBJECTREF MethodTable::GetPinnedManagedClassObjectIfExists()
 {
     LIMITED_METHOD_CONTRACT;
-
-    const RUNTIMETYPEHANDLE handle = GetWriteableData_NoLogging()->GetExposedClassObjectHandle();
-    // For a non-unloadable context, handle is expected to be either null (is not cached yet)
-    // or be a direct pointer to a frozen RuntimeType object
-    if (handle != NULL)
-    {
-        if ((handle & 1) == 0)
-        {
-            Object* obj = reinterpret_cast<Object*>(handle);
-            _ASSERT(obj != nullptr);
-            _ASSERT(!this->GetLoaderAllocator()->CanUnload());
-            return ObjectToOBJECTREF(obj);
-        }
-        _ASSERT(this->GetLoaderAllocator()->CanUnload());
-    }
-    return NULL;
+    return GetRuntimeTypeObjectFromHandleFast(GetWriteableData_NoLogging()->GetExposedClassObjectHandle());
 }
 
 //==========================================================================================
 FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists()
 {
     LIMITED_METHOD_CONTRACT;
-
-    // Logging will be done by the slow path
-    LOADERHANDLE handle = GetWriteableData_NoLogging()->GetExposedClassObjectHandle();
-
-    // First, check if have a cached reference to an effectively pinned (allocated on FOH) object
-    OBJECTREF retVal = GetPinnedManagedClassObjectIfExists();
-    if (retVal != NULL)
-    {
-        return retVal;
-    }
-
-    if (!GetLoaderAllocator()->GetHandleValueFastPhase2(handle, &retVal))
-    {
-        return NULL;
-    }
-
-    COMPILER_ASSUME(retVal != NULL);
-    return retVal;
+    return GetRuntimeTypeObjectFromHandle(GetLoaderAllocator(), GetWriteableData_NoLogging()->GetExposedClassObjectHandle());
 }
 
 //==========================================================================================
