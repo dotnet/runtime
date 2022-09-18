@@ -4272,7 +4272,6 @@ void MethodTable::AllocateRuntimeTypeObject(LoaderAllocator* allocator, RUNTIMET
         }
         GCPROTECT_END();
     }
-    RETURN(GetManagedClassObjectIfExists());
 }
 
 #endif //!DACCESS_COMPILE
