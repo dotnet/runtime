@@ -53,7 +53,9 @@ namespace System
             Func<Assembly?, string, bool, Type?>? typeResolver)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver, false, false, ref stackMark);
+            return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver,
+                throwOnError: false, ignoreCase: false, prohibitAssemblyQualifiedName: false,
+                ref stackMark);
         }
 
         [RequiresUnreferencedCode("The type might be removed")]
@@ -65,7 +67,9 @@ namespace System
             bool throwOnError)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver, throwOnError, false, ref stackMark);
+            return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver,
+                throwOnError, ignoreCase: false, prohibitAssemblyQualifiedName: false,
+                ref stackMark);
         }
 
         [RequiresUnreferencedCode("The type might be removed")]
@@ -78,7 +82,9 @@ namespace System
             bool ignoreCase)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver, throwOnError, ignoreCase, ref stackMark);
+            return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver,
+                throwOnError, ignoreCase, prohibitAssemblyQualifiedName: false,
+                ref stackMark);
         }
 
         // Given a class handle, this will return the class for that handle.

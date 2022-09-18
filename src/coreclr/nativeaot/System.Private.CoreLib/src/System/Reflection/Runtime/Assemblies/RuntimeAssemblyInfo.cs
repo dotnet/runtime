@@ -1,26 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Concurrent;
-using System.IO;
-using System.Text;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
-using System.Runtime.Serialization;
+using System.IO;
 using System.Reflection.Runtime.General;
-using System.Reflection.Runtime.Modules;
 using System.Reflection.Runtime.TypeInfos;
-using System.Reflection.Runtime.TypeParsing;
-using System.Reflection.Runtime.CustomAttributes;
-using System.Collections.Generic;
+using System.Runtime.Serialization;
+using System.Security;
 
 using Internal.Reflection.Core;
 using Internal.Reflection.Core.Execution;
-using Internal.Reflection.Core.NonPortable;
-
-using System.Security;
 
 namespace System.Reflection.Runtime.Assemblies
 {
@@ -71,34 +63,12 @@ namespace System.Reflection.Runtime.Assemblies
         [RequiresUnreferencedCode("Types might be removed")]
         public sealed override Type GetType(string name, bool throwOnError, bool ignoreCase)
         {
-            if (name == null)
-                throw new ArgumentNullException();
-            if (name.Length == 0)
-                throw new ArgumentException();
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
-            TypeName typeName = TypeParser.ParseAssemblyQualifiedTypeName(name, throwOnError: throwOnError);
-            if (typeName == null)
-                return null;
-            if (typeName is AssemblyQualifiedTypeName)
-            {
-                if (throwOnError)
-                    throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly);  // Cannot specify an assembly qualifier in a typename passed to Assembly.GetType()
-                else
-                    return null;
-            }
-
-            CoreAssemblyResolver coreAssemblyResolver = GetRuntimeAssemblyIfExists;
-            CoreTypeResolver coreTypeResolver =
-                delegate (Assembly containingAssemblyIfAny, string coreTypeName)
-                {
-                    if (containingAssemblyIfAny == null)
-                        return GetTypeCore(coreTypeName, ignoreCase: ignoreCase);
-                    else
-                        return containingAssemblyIfAny.GetTypeCore(coreTypeName, ignoreCase: ignoreCase);
-                };
-            GetTypeOptions getTypeOptions = new GetTypeOptions(coreAssemblyResolver, coreTypeResolver, throwOnError: throwOnError, ignoreCase: ignoreCase);
-
-            return typeName.ResolveType(this, getTypeOptions);
+            return TypeNameParser.GetType(name,
+                throwOnError: throwOnError,
+                ignoreCase: ignoreCase,
+                prohibitAssemblyQualifiedName: true);
         }
 
 #pragma warning disable 0067  // Silence warning about ModuleResolve not being used.

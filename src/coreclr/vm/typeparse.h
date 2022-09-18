@@ -323,7 +323,6 @@ public:
     SArray<SString*>& GetNames() { WRAPPER_NO_CONTRACT; return m_names; }
     SArray<TypeName*>& GetGenericArguments() { WRAPPER_NO_CONTRACT; return m_genericArguments; }
     SArray<DWORD>& GetSignature() { WRAPPER_NO_CONTRACT; return m_signature; }
-    SAFEHANDLE GetSafeHandle();
 
 private:
     TypeName() : m_bIsGenericArgument(FALSE), m_count(0) { LIMITED_METHOD_CONTRACT; }
@@ -400,12 +399,5 @@ private:
     InlineSString<128> m_assembly;
     Factory<InlineSString<128> > m_nestNameFactory;
 };
-
-extern "C" void QCALLTYPE TypeName_CreateTypeNameParser (LPCWSTR wszTypeName, QCall::ObjectHandleOnStack pNames, BOOL throwOnError);
-extern "C" void QCALLTYPE TypeName_ReleaseTypeNameParser(TypeName * pTypeName);
-extern "C" void QCALLTYPE TypeName_GetNames             (TypeName * pTypeName, QCall::ObjectHandleOnStack pNames);
-extern "C" void QCALLTYPE TypeName_GetTypeArguments     (TypeName * pTypeName, QCall::ObjectHandleOnStack pTypeArguments);
-extern "C" void QCALLTYPE TypeName_GetModifiers         (TypeName * pTypeName, QCall::ObjectHandleOnStack pModifiers);
-extern "C" void QCALLTYPE TypeName_GetAssemblyName      (TypeName * pTypeName, QCall::StringHandleOnStack pAssemblyName);
 
 #endif

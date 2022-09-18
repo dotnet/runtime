@@ -616,16 +616,6 @@ extern "C" void QCALLTYPE RuntimeModule_GetType(QCall::ModuleHandle pModule, LPC
     // Load the class from this assembly (fail if it is in a different one).
     retTypeHandle = TypeName::GetTypeManaged(wszName, pAssembly, bThrowOnError, bIgnoreCase, prohibitAsmQualifiedName, NULL, (OBJECTREF*)keepAlive.m_ppObject);
 
-    // Verify that it's in 'this' module
-    // But, if it's in a different assembly than expected, that's okay, because
-    // it just means that it's been type forwarded.
-    if (!retTypeHandle.IsNull())
-    {
-        if ( (retTypeHandle.GetModule() != pModule) &&
-             (retTypeHandle.GetModule()->GetAssembly() == pModule->GetAssembly()) )
-            retTypeHandle = TypeHandle();
-    }
-
     if (!retTypeHandle.IsNull())
     {
         GCX_COOP();
