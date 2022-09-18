@@ -80,4 +80,7 @@ public:
 
 #endif //FEATURE_METADATA_IN_VM
 
+#define START_MD_PERF()
+#define STOP_MD_PERF(MDTag)
+
 #endif // __MDUtil__h__

@@ -19,7 +19,6 @@
 #include "corpriv.h"
 #include "importhelper.h"
 #include "mdlog.h"
-#include "mdperf.h"
 #include "stgio.h"
 
 //*****************************************************************************

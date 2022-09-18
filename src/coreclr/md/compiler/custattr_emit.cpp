@@ -16,7 +16,6 @@
 #include "rwutil.h"
 #include "mdlog.h"
 #include "importhelper.h"
-#include "mdperf.h"
 #include "posterror.h"
 #include "cahlprinternal.h"
 #include "custattr.h"
