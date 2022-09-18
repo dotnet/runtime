@@ -177,7 +177,7 @@ bool RedhawkGCInterface::InitializeSubsystems()
     g_heap_type = GC_HEAP_WKS;
 #endif
 
-    if (g_pRhConfig->GetGcConservativeStacks())
+    if (g_pRhConfig->GetgcConservative())
     {
         GetRuntimeInstance()->EnableConservativeStackReporting();
     }
