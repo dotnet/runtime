@@ -4228,17 +4228,20 @@ OBJECTREF MethodTable::GetManagedClassObject()
         {
             CrstHolder exposedClassLock(AppDomain::GetMethodTableExposedClassObjectLock());
 
-            // Allocate RuntimeType on a frozen segment
-            // Take a lock here since we don't want to allocate redundant objects which won't be collected
+            if (GetWriteableData()->m_hExposedClassObject == NULL)
+            {
+                // Allocate RuntimeType on a frozen segment
+                // Take a lock here since we don't want to allocate redundant objects which won't be collected
 
-            FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
-            size_t objSize = g_pRuntimeTypeClass->GetBaseSize();
-            Object* obj = foh->TryAllocateObject(g_pRuntimeTypeClass, objSize);
-            _ASSERTE(obj != NULL);
-            _ASSERTE((((SSIZE_T)obj) & 1) == 0);
-            refClass = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(obj);
-            refClass->SetType(TypeHandle(this));
-            GetWriteableDataForWrite()->m_hExposedClassObject = (RUNTIMETYPEHANDLE)obj;
+                FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
+                size_t objSize = g_pRuntimeTypeClass->GetBaseSize();
+                Object* obj = foh->TryAllocateObject(g_pRuntimeTypeClass, objSize);
+                _ASSERTE(obj != NULL);
+                _ASSERTE((((SSIZE_T)obj) & 1) == 0);
+                refClass = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(obj);
+                refClass->SetType(TypeHandle(this));
+                GetWriteableDataForWrite()->m_hExposedClassObject = (RUNTIMETYPEHANDLE)obj;
+            }
         }
         else
         {
