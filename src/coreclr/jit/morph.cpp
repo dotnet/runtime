@@ -8318,7 +8318,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     {
         GenTree*             argNode = call->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
         CORINFO_CLASS_HANDLE hClass  = gtGetHelperArgClassHandle(argNode);
-        if (!opts.IsReadyToRun() && (hClass != NO_CLASS_HANDLE) && !gtIsActiveCSE_Candidate(argNode))
+        if ((hClass != NO_CLASS_HANDLE) && !gtIsActiveCSE_Candidate(argNode))
         {
             void* ptr = info.compCompHnd->getRuntimeTypePointer(hClass);
             if (ptr != nullptr)

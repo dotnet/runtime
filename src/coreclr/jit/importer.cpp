@@ -3028,13 +3028,6 @@ CORINFO_CLASS_HANDLE Compiler::impGetStringClass()
     return stringClass;
 }
 
-CORINFO_CLASS_HANDLE Compiler::impGetRuntimeTypeClass()
-{
-    CORINFO_CLASS_HANDLE stringClass = info.compCompHnd->getBuiltinClass(CLASSID_RUNTIME_TYPE);
-    assert(stringClass != (CORINFO_CLASS_HANDLE) nullptr);
-    return stringClass;
-}
-
 CORINFO_CLASS_HANDLE Compiler::impGetObjectClass()
 {
     CORINFO_CLASS_HANDLE objectClass = info.compCompHnd->getBuiltinClass(CLASSID_SYSTEM_OBJECT);

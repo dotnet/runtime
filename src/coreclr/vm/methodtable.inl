@@ -1342,22 +1342,17 @@ FORCEINLINE OBJECTREF MethodTable::GetPinnedManagedClassObjectIfExists()
     const RUNTIMETYPEHANDLE handle = GetWriteableData_NoLogging()->GetExposedClassObjectHandle();
     // For a non-unloadable context, handle is expected to be either null (is not cached yet)
     // or be a direct pointer to a frozen RuntimeType object
-    if (handle != NULL && (handle & 1) == 0)
+    if (handle != NULL)
     {
-        Object* obj = (Object*)handle;
-        _ASSERT(obj != nullptr);
-        _ASSERT(GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj));
-        _ASSERT(!this->GetLoaderAllocator()->CanUnload());
-        INDEBUG(obj->Validate());
-        return ObjectToOBJECTREF(obj);
-    }
-
-#ifdef _DEBUG
-    if (handle != NULL && (handle & 1) != 0)
-    {
+        if ((handle & 1) == 0)
+        {
+            Object* obj = reinterpret_cast<Object*>(handle);
+            _ASSERT(obj != nullptr);
+            _ASSERT(!this->GetLoaderAllocator()->CanUnload());
+            return ObjectToOBJECTREF(obj);
+        }
         _ASSERT(this->GetLoaderAllocator()->CanUnload());
     }
-#endif
     return NULL;
 }
 

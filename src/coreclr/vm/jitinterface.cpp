@@ -5996,26 +5996,26 @@ void* CEEInfo::getRuntimeTypePointer(CORINFO_CLASS_HANDLE clsHnd)
 
     JIT_TO_EE_TRANSITION();
 
-    //GCX_COOP();
+    GCX_COOP();
 
-    //TypeHandle typeHnd(clsHnd);
-    //if (!typeHnd.IsNull() && !typeHnd.IsTypeDesc())
-    //{
-    //    MethodTable* pMT = typeHnd.AsMethodTable();
-    //    if (!typeHnd.IsCanonicalSubtype())
-    //    {
-    //        // Trigger allocation if it's not allocated yet
-    //        if (pMT->GetManagedClassObject() != NULL)
-    //        {
-    //            // Check if we can rely on object being effectively pinned
-    //            OBJECTREF objRef = pMT->GetPinnedManagedClassObjectIfExists();
-    //            if (objRef != NULL)
-    //            {
-    //                pointer = (void*)OBJECTREFToObject(objRef);
-    //            }
-    //        }
-    //    }
-    //}
+    TypeHandle typeHnd(clsHnd);
+    if (!typeHnd.IsNull() && !typeHnd.IsTypeDesc())
+    {
+       MethodTable* pMT = typeHnd.AsMethodTable();
+       if (!typeHnd.IsCanonicalSubtype())
+       {
+           // Trigger allocation if it's not allocated yet
+           if (pMT->GetManagedClassObject() != NULL)
+           {
+               // Check if we can rely on object being effectively pinned
+               OBJECTREF objRef = pMT->GetPinnedManagedClassObjectIfExists();
+               if (objRef != NULL)
+               {
+                   pointer = (void*)OBJECTREFToObject(objRef);
+               }
+           }
+       }
+    }
     EE_TO_JIT_TRANSITION();
 
     return pointer;
