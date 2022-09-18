@@ -1239,7 +1239,7 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
             ThreadStore::AttachCurrentThread(false);
         }
 
-        ThreadStore::RawGetCurrentThread()->SetGCSpecial(true);
+        ThreadStore::RawGetCurrentThread()->SetGCSpecial();
 
         auto realStartRoutine = pStartContext->m_pRealStartRoutine;
         void* realContext = pStartContext->m_pRealContext;

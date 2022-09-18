@@ -305,19 +305,12 @@ bool Thread::IsInitialized()
 // -----------------------------------------------------------------------------------------------------------
 // GC support APIs - do not use except from GC itself
 //
-void Thread::SetGCSpecial(bool isGCSpecial)
+void Thread::SetGCSpecial()
 {
     if (!IsInitialized())
         Construct();
 
-    if (isGCSpecial)
-    {
-        SetState(TSF_IsGcSpecialThread);
-    }
-    else
-    {
-        UNREACHABLE_MSG("GC thread should never switch back to become an ordinary thread.");
-    }
+    SetState(TSF_IsGcSpecialThread);
 }
 
 bool Thread::IsGCSpecial()
