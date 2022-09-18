@@ -532,7 +532,7 @@ namespace System.Text
         /// It is undefined what happens if the StringBuilder is modified while the chunk
         /// enumeration is incomplete.  StringBuilder is also not thread-safe, so operating
         /// on it with concurrent threads is illegal.  Finally the ReadOnlyMemory chunks returned
-        /// are NOT guarenteed to remain unchanged if the StringBuilder is modified, so do
+        /// are NOT guaranteed to remain unchanged if the StringBuilder is modified, so do
         /// not cache them for later use either.  This API's purpose is efficiently extracting
         /// the data of a CONSTANT StringBuilder.
         ///
@@ -1052,10 +1052,10 @@ namespace System.Text
             int nextCharIndex = m_ChunkLength;
             char[] chars = m_ChunkChars;
 
-            if ((uint)nextCharIndex < (uint)chars.Length)
+            if ((uint)chars.Length > (uint)nextCharIndex)
             {
                 chars[nextCharIndex] = value;
-                m_ChunkLength = nextCharIndex + 1;
+                m_ChunkLength++;
             }
             else
             {

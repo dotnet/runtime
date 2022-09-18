@@ -522,7 +522,7 @@ namespace System
                 //
                 // Check escaping for authority
                 //
-                // IPv6 hosts cannot be properly validated by CheckCannonical
+                // IPv6 hosts cannot be properly validated by CheckCanonical
                 if ((_flags & Flags.CanonicalDnsHost) == 0 && HostType != Flags.IPv6HostType)
                 {
                     idx = _info.Offset.User;

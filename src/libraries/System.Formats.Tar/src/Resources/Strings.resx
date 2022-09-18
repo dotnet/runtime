@@ -205,6 +205,9 @@
     <value>The entry is a symbolic link or a hard link but the LinkName field is null or empty.</value>
   </data>
   <data name="TarEntryTypeNotSupported" xml:space="preserve">
+    <value>Entry type '{0}' not supported.</value>
+  </data>
+  <data name="TarEntryTypeNotSupportedInFormat" xml:space="preserve">
     <value>Entry type '{0}' not supported in format '{1}'.</value>
   </data>
   <data name="TarEntryTypeNotSupportedForExtracting" xml:space="preserve">
@@ -232,7 +235,7 @@
     <value>A POSIX format was expected (Ustar or PAX), but could not be reliably determined for entry '{0}'.</value>
   </data>
   <data name="TarSizeFieldNegative" xml:space="preserve">
-    <value>The size field is negative in the tar entry '{0}'.</value>
+    <value>The size field is negative in a tar entry.</value>
   </data>
   <data name="TarSizeFieldTooLargeForEntryType" xml:space="preserve">
     <value>The value of the size field for the current entry of type '{0}' is beyond the expected length.</value>
@@ -254,5 +257,8 @@
   </data>
   <data name="IO_SeekBeforeBegin" xml:space="preserve">
     <value>An attempt was made to move the position before the beginning of the stream.</value>
+  </data>
+  <data name="TarInvalidNumber" xml:space="preserve">
+    <value>Unable to parse number.</value>
   </data>
 </root>

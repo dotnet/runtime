@@ -66,7 +66,7 @@ public sealed partial class QuicListener : IAsyncDisposable
     /// <summary>
     /// Handle to MsQuic listener object.
     /// </summary>
-    private MsQuicContextSafeHandle _handle;
+    private readonly MsQuicContextSafeHandle _handle;
 
     /// <summary>
     /// Set to non-zero once disposed. Prevents double and/or concurrent disposal.
@@ -93,6 +93,7 @@ public sealed partial class QuicListener : IAsyncDisposable
     /// </summary>
     public IPEndPoint LocalEndPoint { get; }
 
+    /// <inheritdoc />
     public override string ToString() => _handle.ToString();
 
     /// <summary>
@@ -105,13 +106,13 @@ public sealed partial class QuicListener : IAsyncDisposable
         try
         {
             QUIC_HANDLE* handle;
-            ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ListenerOpen(
-                MsQuicApi.Api.Registration.QuicHandle,
+            ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ListenerOpen(
+                MsQuicApi.Api.Registration,
                 &NativeCallback,
                 (void*)GCHandle.ToIntPtr(context),
                 &handle),
                 "ListenerOpen failed");
-            _handle = new MsQuicContextSafeHandle(handle, context, MsQuicApi.Api.ApiTable->ListenerClose, SafeHandleType.Listener);
+            _handle = new MsQuicContextSafeHandle(handle, context, SafeHandleType.Listener);
         }
         catch
         {
@@ -134,8 +135,8 @@ public sealed partial class QuicListener : IAsyncDisposable
             // Using the Unspecified family makes MsQuic handle connections from all IP addresses.
             address.Family = QUIC_ADDRESS_FAMILY_UNSPEC;
         }
-        ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ApiTable->ListenerStart(
-            _handle.QuicHandle,
+        ThrowHelper.ThrowIfMsQuicError(MsQuicApi.Api.ListenerStart(
+            _handle,
             alpnBuffers.Buffers,
             (uint)alpnBuffers.Count,
             &address),
@@ -152,34 +153,33 @@ public sealed partial class QuicListener : IAsyncDisposable
     /// <remarks>
     /// Note that <see cref="QuicListener" /> doesn't have a mechanism to report inbound connections that fail the handshake process.
     /// Such connections are only logged by the listener and never surfaced on the outside.
+    ///
+    /// Propagates exceptions from <see cref="QuicListenerOptions.ConnectionOptionsCallback"/>, including validation errors from misconfigured <see cref="QuicServerConnectionOptions"/>, e.g. <see cref="ArgumentException"/>.
+    /// Also propagates exceptions from failed connection handshake, e.g. <see cref="AuthenticationException"/>, <see cref="QuicException"/>.
     /// </remarks>
+    /// <param name="cancellationToken">A cancellation token that can be used to cancel the asynchronous operation.</param>
     /// <returns>A task that will contain a fully connected <see cref="QuicConnection" /> which successfully finished the handshake and is ready to be used.</returns>
     public async ValueTask<QuicConnection> AcceptConnectionAsync(CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_disposed == 1, this);
 
+        GCHandle keepObject = GCHandle.Alloc(this);
         try
         {
-            while (true)
+            PendingConnection pendingConnection = await _acceptQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+            await using (pendingConnection.ConfigureAwait(false))
             {
-                PendingConnection pendingConnection = await _acceptQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
-                await using (pendingConnection.ConfigureAwait(false))
-                {
-                    QuicConnection? connection = await pendingConnection.FinishHandshakeAsync(cancellationToken).ConfigureAwait(false);
-                    // Handshake failed, discard this connection and try to get another from the queue.
-                    if (connection is null)
-                    {
-                        continue;
-                    }
-
-                    return connection;
-                }
+                return await pendingConnection.FinishHandshakeAsync(cancellationToken).ConfigureAwait(false);
             }
         }
         catch (ChannelClosedException ex) when (ex.InnerException is not null)
         {
             ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
             throw;
+        }
+        finally
+        {
+            keepObject.Free();
         }
     }
 
@@ -267,7 +267,7 @@ public sealed partial class QuicListener : IAsyncDisposable
         {
             unsafe
             {
-                MsQuicApi.Api.ApiTable->ListenerStop(_handle.QuicHandle);
+                MsQuicApi.Api.ListenerStop(_handle);
             }
         }
 

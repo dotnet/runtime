@@ -1,10 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
-
 namespace Internal.JitInterface
 {
     // CorInfoHelpFunc defines the set of helpers (accessed via the ICorDynamicInfo::getHelperFtn())
@@ -54,9 +50,9 @@ namespace Internal.JitInterface
         CORINFO_HELP_NEWSFAST,          // allocator for small, non-finalizer, non-array object
         CORINFO_HELP_NEWSFAST_FINALIZE, // allocator for small, finalizable, non-array object
         CORINFO_HELP_NEWSFAST_ALIGN8,   // allocator for small, non-finalizer, non-array object, 8 byte aligned
-        CORINFO_HELP_NEWSFAST_ALIGN8_VC,// allocator for small, value class, 8 byte aligned
+        CORINFO_HELP_NEWSFAST_ALIGN8_VC, // allocator for small, value class, 8 byte aligned
         CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE, // allocator for small, finalizable, non-array object, 8 byte aligned
-        CORINFO_HELP_NEW_MDARR,// multi-dim array helper (with or without lower bounds - dimensions passed in as unmanaged array)
+        CORINFO_HELP_NEW_MDARR, // multi-dim array helper (with or without lower bounds - dimensions passed in as unmanaged array)
         CORINFO_HELP_NEWARR_1_DIRECT,   // helper for any one dimensional array creation
         CORINFO_HELP_NEWARR_1_OBJ,      // optimized 1-D object arrays
         CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
@@ -84,6 +80,8 @@ namespace Internal.JitInterface
         CORINFO_HELP_CHKCASTCLASS_SPECIAL, // Optimized helper for classes. Assumes that the trivial cases
                                            // has been taken care of by the inlined check
 
+        CORINFO_HELP_ISINSTANCEOF_EXCEPTION,
+
         CORINFO_HELP_BOX,               // Fast box helper. Only possible exception is OutOfMemory
         CORINFO_HELP_BOX_NULLABLE,      // special form of boxing for Nullable<T>
         CORINFO_HELP_UNBOX,
@@ -106,7 +104,7 @@ namespace Internal.JitInterface
         CORINFO_HELP_VERIFICATION,      // Throw a VerificationException
         CORINFO_HELP_FAIL_FAST,         // Kill the process avoiding any exceptions or stack and data dependencies (use for GuardStack unsafe buffer checks)
 
-        CORINFO_HELP_METHOD_ACCESS_EXCEPTION,//Throw an access exception due to a failed member/class access check.
+        CORINFO_HELP_METHOD_ACCESS_EXCEPTION, //Throw an access exception due to a failed member/class access check.
         CORINFO_HELP_FIELD_ACCESS_EXCEPTION,
         CORINFO_HELP_CLASS_ACCESS_EXCEPTION,
 
@@ -215,9 +213,9 @@ namespace Internal.JitInterface
         CORINFO_HELP_MEMCPY,                // Copy block of memory
 
         CORINFO_HELP_RUNTIMEHANDLE_METHOD,  // determine a type/field/method handle at run-time
-        CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG,// determine a type/field/method handle at run-time, with IBC logging
+        CORINFO_HELP_RUNTIMEHANDLE_METHOD_LOG, // determine a type/field/method handle at run-time, with IBC logging
         CORINFO_HELP_RUNTIMEHANDLE_CLASS,    // determine a type/field/method handle at run-time
-        CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG,// determine a type/field/method handle at run-time, with IBC logging
+        CORINFO_HELP_RUNTIMEHANDLE_CLASS_LOG, // determine a type/field/method handle at run-time, with IBC logging
 
         CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, // Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time
         CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL, // Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time, the type may be null
@@ -241,8 +239,8 @@ namespace Internal.JitInterface
         CORINFO_HELP_READYTORUN_DELEGATE_CTOR,
         CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE,
 
-        CORINFO_HELP_EE_PERSONALITY_ROUTINE,// Not real JIT helper. Used in native images.
-        CORINFO_HELP_EE_PERSONALITY_ROUTINE_FILTER_FUNCLET,// Not real JIT helper. Used in native images to detect filter funclets.
+        CORINFO_HELP_EE_PERSONALITY_ROUTINE, // Not real JIT helper. Used in native images.
+        CORINFO_HELP_EE_PERSONALITY_ROUTINE_FILTER_FUNCLET, // Not real JIT helper. Used in native images to detect filter funclets.
 
         // ASSIGN_REF_EAX - CHECKED_ASSIGN_REF_EBP: NOGC_WRITE_BARRIERS JIT helper calls
         //

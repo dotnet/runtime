@@ -42,6 +42,7 @@ extern bool g_debugRep;
 const char* toString(CorInfoType cit);
 
 #define METHOD_IDENTITY_INFO_SIZE 0x10000 // We assume that the METHOD_IDENTITY_INFO_SIZE will not exceed 64KB
+#define METHOD_IDENTITY_INFO_NON_NAME_RESERVE 0x400 // Reserve 1KB of METHOD_IDENTITY_INFO_SIZE for everything except for the method name.
 
 // Special "jit flags" for noting some method context features
 
@@ -374,6 +375,15 @@ public:
                                      CORINFO_ARG_LIST_HANDLE args,
                                      CORINFO_CLASS_HANDLE*   vcTypeRet,
                                      DWORD*                  exception);
+
+    void recGetExactClasses(CORINFO_CLASS_HANDLE  baseType,
+                            int                   maxExactClasses,
+                            CORINFO_CLASS_HANDLE* exactClsRet,
+                            int                   result);
+    void dmpGetExactClasses(DLD key, DLD value);
+    int repGetExactClasses(CORINFO_CLASS_HANDLE  baseType,
+                           int                   maxExactClasses,
+                           CORINFO_CLASS_HANDLE* exactClsRet);
 
     void recGetArgNext(CORINFO_ARG_LIST_HANDLE args, CORINFO_ARG_LIST_HANDLE result);
     void dmpGetArgNext(DWORDLONG key, DWORDLONG value);
@@ -787,8 +797,8 @@ public:
     void dmpGetClassNameFromMetadata(DLD key, DD value);
     const char* repGetClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char** namespaceName);
 
-    void recGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result, unsigned index);
-    void dmpGetTypeInstantiationArgument(DWORDLONG key, DWORDLONG value);
+    void recGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index, CORINFO_CLASS_HANDLE result);
+    void dmpGetTypeInstantiationArgument(DLD key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index);
 
     void recAppendClassName(int                  nBufLenIn,
@@ -1118,6 +1128,7 @@ enum mcPackets
     Packet_IsIntrinsic = 192,
     Packet_UpdateEntryPointForTailCall = 193,
     Packet_GetLoongArch64PassStructInRegisterFlags = 194,
+    Packet_GetExactClasses = 195,
 };
 
 void SetDebugDumpVariables();

@@ -10,7 +10,7 @@ namespace System.Xml
     internal static class XmlComplianceUtil
     {
         // Replaces \r\n, \n, \r and \t with single space (0x20) and then removes spaces
-        // at the beggining and the end of the string and replaces sequences of spaces
+        // at the beginning and the end of the string and replaces sequences of spaces
         // with a single space.
         public static string NonCDataNormalize(string value)
         {

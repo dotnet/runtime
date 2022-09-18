@@ -161,6 +161,9 @@ if(NOT AOT_TARGET_TRIPLE STREQUAL "")
   elseif(AOT_TARGET_TRIPLE STREQUAL "aarch64-linux-gnu")
     set(TARGET_SYSTEM_NAME "Linux")
     set(TARGET_ARCH "arm64")
+  elseif(AOT_TARGET_TRIPLE STREQUAL "riscv64-linux-gnu")
+    set(TARGET_SYSTEM_NAME "Linux")
+    set(TARGET_ARCH "riscv64")
   else()
     message(FATAL_ERROR "AOT target '${AOT_TARGET_TRIPLE}' not supported.")
   endif()
@@ -212,6 +215,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   set(HOST_LINUX 1)
   add_definitions(-D_GNU_SOURCE -D_REENTRANT)
   add_definitions(-D_THREAD_SAFE)
+  set(HAVE_CGROUP_SUPPORT 1)
   # Enable the "full RELRO" options (RELRO & BIND_NOW) at link time
   add_link_options(-Wl,-z,relro)
   add_link_options(-Wl,-z,now)
@@ -244,13 +248,14 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   set(INTERNAL_ZLIB 1)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "WASI")
   set(HOST_WASI 1)
-  add_definitions(-D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN)
+  add_definitions(-D_WASI_EMULATED_SIGNAL -D_WASI_EMULATED_MMAN -DHOST_WASI)
   add_definitions(-DNO_GLOBALIZATION_SHIM)
   add_definitions(-D_THREAD_SAFE)
+  add_definitions(-DGEN_PINVOKE)
   set(DISABLE_SHARED_LIBS 1)
   set(INTERNAL_ZLIB 1)
   set(DISABLE_EXECUTABLES 1)
-  set(DISABLE_COMPONENTS 1)
+  set(STATIC_COMPONENTS 1)
 
   set(WASI_DRIVER_SOURCES
     wasi/mono-wasi-driver/driver.c
@@ -381,6 +386,9 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "arm")
   set(HOST_ARM 1)
   # fixme: use separate defines for host/target
   set(NO_UNALIGNED_ACCESS 1)
+elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "riscv64")
+  set(HOST_RISCV 1)
+  set(HOST_RISCV64 1)
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "s390x")
   set(HOST_S390X 1)
 elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "wasm" OR CMAKE_SYSTEM_PROCESSOR STREQUAL "wasm32")
@@ -450,6 +458,12 @@ elseif(TARGET_ARCH MATCHES "arm")
   set(HAVE_ARMV5 1)
   set(HAVE_ARMV6 1)
   #set(HAVE_ARMV7 1) # TODO: figure out if we should set this
+elseif(TARGET_ARCH STREQUAL "riscv64")
+  set(TARGET_RISCV 1)
+  set(TARGET_RISCV64 1)
+  set(MONO_ARCHITECTURE "\"riscv64\"")
+  set(TARGET_SIZEOF_VOID_P 8)
+  set(SIZEOF_REGISTER 8)
 elseif(TARGET_ARCH STREQUAL "s390x")
   set(TARGET_S390X 1)
   set(MONO_ARCHITECTURE "\"s390x\"")
@@ -547,22 +561,6 @@ if(GCC)
 endif()
 
 ######################################
-# LLVM FLAGS AND LIBRARIES
-######################################
-
-# llvm-config --libs analysis core bitwriter mcjit orcjit
-set(MONO_llvm_core_libs_1100 "LLVMOrcJIT" "LLVMPasses" "LLVMCoroutines" "LLVMipo" "LLVMInstrumentation" "LLVMVectorize" "LLVMScalarOpts" "LLVMLinker" "LLVMIRReader" "LLVMAsmParser" "LLVMInstCombine" "LLVMFrontendOpenMP" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMOrcError" "LLVMJITLink" "LLVMMCJIT" "LLVMExecutionEngine" "LLVMTarget" "LLVMRuntimeDyld" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMBinaryFormat" "LLVMSupport" "LLVMDemangle")
-
-# llvm-config --libs x86codegen
-set(MONO_llvm_extra_libs_x86codegen_1100 "LLVMX86CodeGen" "LLVMCFGuard" "LLVMGlobalISel" "LLVMX86Desc" "LLVMX86Info" "LLVMMCDisassembler" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMBinaryFormat" "LLVMSupport" "LLVMDemangle")
-
-# llvm-config --libs armcodegen
-set(MONO_llvm_extra_libs_armcodegen_1100 "LLVMARMCodeGen" "LLVMCFGuard" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMARMDesc" "LLVMMCDisassembler" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBinaryFormat" "LLVMARMUtils" "LLVMARMInfo" "LLVMSupport" "LLVMDemangle")
-
-# llvm-config --libs aarch64codegen
-set(MONO_llvm_extra_libs_aarch64codegen_1100 "LLVMAArch64CodeGen" "LLVMCFGuard" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMAArch64Desc" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBinaryFormat" "LLVMAArch64Utils" "LLVMAArch64Info" "LLVMSupport" "LLVMDemangle")
-
-######################################
 # LLVM CHECKS
 ######################################
 set(LLVM_LIBS)
@@ -589,6 +587,24 @@ if(LLVM_PREFIX)
     file(STRINGS ${llvm_config_path} llvm_api_version_line REGEX "MONO_API_VERSION ")
     string(REGEX REPLACE ".*MONO_API_VERSION ([0-9]+)" "\\1" llvm_api_version ${llvm_api_version_line})
 
+    # llvm-config --libs analysis core bitwriter mcjit orcjit
+    set(MONO_llvm_core_libs "LLVMOrcJIT" "LLVMPasses" "LLVMCoroutines" "LLVMipo" "LLVMInstrumentation" "LLVMVectorize" "LLVMScalarOpts" "LLVMLinker" "LLVMIRReader" "LLVMAsmParser" "LLVMInstCombine" "LLVMFrontendOpenMP" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMJITLink" "LLVMMCJIT" "LLVMExecutionEngine" "LLVMTarget" "LLVMRuntimeDyld" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMBinaryFormat" "LLVMSupport" "LLVMDemangle")
+    if(${llvm_api_version} LESS 1200)
+      set(MONO_llvm_core_libs ${MONO_llvm_core_libs} "LLVMOrcError" "LLVMDebugInfoMSF")
+    else()
+      set(MONO_llvm_core_libs ${MONO_llvm_core_libs} "LLVMObjCARCOpts" "LLVMMCDisassembler" "LLVMOrcTargetProcess" "LLVMOrcShared" "LLVMDebugInfoDWARF")
+    endif()
+  
+    # llvm-config --libs x86codegen
+    set(MONO_llvm_extra_libs_x86codegen "LLVMX86CodeGen" "LLVMCFGuard" "LLVMGlobalISel" "LLVMX86Desc" "LLVMX86Info" "LLVMMCDisassembler" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMBinaryFormat" "LLVMSupport" "LLVMDemangle")
+
+    # llvm-config --libs armcodegen
+    set(MONO_llvm_extra_libs_armcodegen "LLVMARMCodeGen" "LLVMCFGuard" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMARMDesc" "LLVMMCDisassembler" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBinaryFormat" "LLVMARMUtils" "LLVMARMInfo" "LLVMSupport" "LLVMDemangle")
+
+    # llvm-config --libs aarch64codegen
+    set(MONO_llvm_extra_libs_aarch64codegen "LLVMAArch64CodeGen" "LLVMCFGuard" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMAArch64Desc" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBinaryFormat" "LLVMAArch64Utils" "LLVMAArch64Info" "LLVMSupport" "LLVMDemangle")
+
+
     # llvm-config --cflags
     set(llvm_cflags "")
     set(llvm_cxxflags "")
@@ -598,10 +614,10 @@ if(LLVM_PREFIX)
     set(llvm_system_libs "-lz" "-lrt" "-ldl" "-lpthread" "-lm")
 
     # llvm-config --libs analysis core bitwriter mcjit orcjit
-    set(llvm_core_libs ${MONO_llvm_core_libs_${llvm_api_version}})
+    set(llvm_core_libs ${MONO_llvm_core_libs})
 
     # Check codegen libs and add needed libraries.
-    set(llvm_extra ${MONO_llvm_extra_libs_${llvm_codegen_libs}_${llvm_api_version}})
+    set(llvm_extra ${MONO_llvm_extra_libs_${llvm_codegen_libs}})
     if("${llvm_extra}" STREQUAL "")
       message(FATAL_ERROR "FIXME: ${TARGET_ARCH}")
     endif()
@@ -652,14 +668,21 @@ endif()
 ######################################
 # ICU CHECKS
 ######################################
+if(HOST_OSX OR HOST_MACCAT OR HOST_IOS OR HOST_TVOS)
+  # FIXME: Handle errors
+  execute_process(COMMAND  brew --prefix OUTPUT_VARIABLE brew_prefix OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+  if((HOST_MACCAT OR HOST_IOS OR HOST_TVOS) AND "${CMAKE_SHARED_LINKER_FLAGS}" MATCHES "${brew_prefix}/opt/icu4c/lib")
+    message(FATAL_ERROR "Linker flags contain the Homebrew version of ICU which conflicts with the iOS/tvOS/MacCatalyst version: ${CMAKE_SHARED_LINKER_FLAGS}")
+  endif()
+endif()
+
 set(ICU_SHIM_PATH "${CLR_SRC_NATIVE_DIR}/libs/System.Globalization.Native")
 if(MONO_CROSS_COMPILE)
 elseif(HOST_OSX AND NOT HOST_MACCAT)
   include(FindPkgConfig)
-  # FIXME: Handle errors
-  # Defines ICU_INCLUDEDIR/ICU_LIBDIR
-  execute_process(COMMAND  brew --prefix OUTPUT_VARIABLE brew_prefix OUTPUT_STRIP_TRAILING_WHITESPACE)
   set(ENV{PKG_CONFIG_PATH} "{$PKG_CONFIG_PATH}:${brew_prefix}/lib/pkgconfig:${brew_prefix}/opt/icu4c/lib/pkgconfig")
+  # Defines ICU_INCLUDEDIR/ICU_LIBDIR
   pkg_check_modules(ICU icu-uc)
   set(OSX_ICU_LIBRARY_PATH /usr/lib/libicucore.dylib)
   set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")

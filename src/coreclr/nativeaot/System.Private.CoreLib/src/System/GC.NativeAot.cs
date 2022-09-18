@@ -86,15 +86,13 @@ namespace System
         {
             // note - this throws an NRE if given a null weak reference. This isn't
             // documented, but it's the behavior of Desktop and CoreCLR.
-            object? handleRef = RuntimeImports.RhHandleGet(wo.m_handle);
-            if (handleRef == null)
+            object? obj = RuntimeImports.RhHandleGet(wo.m_handle);
+            if (obj == null)
             {
                 throw new ArgumentNullException(nameof(wo));
             }
 
-            int result = RuntimeImports.RhGetGeneration(handleRef);
-            KeepAlive(wo);
-            return result;
+            return RuntimeImports.RhGetGeneration(obj);
         }
 
         // Forces a collection of all generations from 0 through Generation.
@@ -298,7 +296,7 @@ namespace System
         /// large object heap space is available.</param>
         /// <returns>True if the disallowing of garbage collection was successful, False otherwise</returns>
         /// <exception cref="ArgumentOutOfRangeException">If the amount of memory requested
-        /// is too large for the GC to accomodate</exception>
+        /// is too large for the GC to accommodate</exception>
         /// <exception cref="InvalidOperationException">If the GC is already in a NoGCRegion</exception>
         public static bool TryStartNoGCRegion(long totalSize, long lohSize)
         {
@@ -314,7 +312,7 @@ namespace System
         /// is performed if the requested amount of memory is not available</param>
         /// <returns>True if the disallowing of garbage collection was successful, False otherwise</returns>
         /// <exception cref="ArgumentOutOfRangeException">If the amount of memory requested
-        /// is too large for the GC to accomodate</exception>
+        /// is too large for the GC to accommodate</exception>
         /// <exception cref="InvalidOperationException">If the GC is already in a NoGCRegion</exception>
         public static bool TryStartNoGCRegion(long totalSize, bool disallowFullBlockingGC)
         {
@@ -332,7 +330,7 @@ namespace System
         /// is performed if the requested amount of memory is not available</param>
         /// <returns>True if the disallowing of garbage collection was successful, False otherwise</returns>
         /// <exception cref="ArgumentOutOfRangeException">If the amount of memory requested
-        /// is too large for the GC to accomodate</exception>
+        /// is too large for the GC to accommodate</exception>
         /// <exception cref="InvalidOperationException">If the GC is already in a NoGCRegion</exception>
         public static bool TryStartNoGCRegion(long totalSize, long lohSize, bool disallowFullBlockingGC)
         {
@@ -637,7 +635,7 @@ namespace System
         }
 
         /// <summary>
-        /// Gets the Configurations used by the Garbage Collector. The value of these configurations used don't neccessarily have to be the same as the ones that are passed by the user.
+        /// Gets the Configurations used by the Garbage Collector. The value of these configurations used don't necessarily have to be the same as the ones that are passed by the user.
         /// For example for the "GCHeapCount" configuration, if the user supplies a value higher than the number of CPUs, the configuration that will be used is that of the number of CPUs.
         /// <returns> A Read Only Dictionary with configuration names and values of the configuration as the keys and values of the dictionary, respectively.</returns>
         /// </summary>

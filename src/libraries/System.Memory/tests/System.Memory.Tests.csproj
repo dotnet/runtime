@@ -6,6 +6,9 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <RdXmlFile Include="default.rd.xml" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.Byte.cs" />
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.Char.cs" />
     <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.String.cs" />

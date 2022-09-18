@@ -9,30 +9,16 @@
     <!-- Disable RS2008: Enable analyzer release tracking
          Diagnostics in runtime use a different mechanism (docs/project/list-of-diagnostics.md) -->
     <NoWarn>RS2008;$(NoWarn)</NoWarn>
-    <AnalyzerLanguage>cs</AnalyzerLanguage>
-
-    <!-- Packaging properties -->
-    <!-- In the future LibraryImportGenerator might ship as part of a package, but meanwhile disable packaging. -->
-    <IsPackable>false</IsPackable>
-    <IncludeBuildOutput>false</IncludeBuildOutput>
-    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
-    <PackageProjectUrl>https://github.com/dotnet/runtime/tree/main/src/libraries/System.Runtime.InteropServices/gen/LibraryImportGenerator</PackageProjectUrl>
-    <Description>LibraryImportGenerator</Description>
-    <PackageTags>LibraryImportGenerator, analyzers</PackageTags>
+    <AnalyzerLanguage>cs</AnalyzerLanguage>    
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_4_X)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_4_4)" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="$(MicrosoftCodeAnalysisAnalyzersVersion)" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="$(TargetPath)" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-    <None Include="$(AssemblyName).props" Pack="true" PackagePath="build" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" Pack="true" PackagePath="analyzers/dotnet/cs" />
+    <ProjectReference Include="..\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -45,9 +31,9 @@
     <Compile Include="$(CommonPath)Roslyn\SyntaxValueProvider.ImmutableArrayValueComparer.cs" Link="Common\Roslyn\SyntaxValueProvider.ImmutableArrayValueComparer.cs" />
     <Compile Include="$(CommonPath)Roslyn\SyntaxValueProvider_ForAttributeWithMetadataName.cs" Link="Common\Roslyn\SyntaxValueProvider_ForAttributeWithMetadataName.cs" />
     <Compile Include="$(CommonPath)Roslyn\SyntaxValueProvider_ForAttributeWithSimpleName.cs" Link="Common\Roslyn\SyntaxValueProvider_ForAttributeWithSimpleName.cs" />
-    
+
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
   </ItemGroup>
-  
+
 </Project>

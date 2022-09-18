@@ -123,7 +123,7 @@ namespace BasicEventSourceTests
                     delegate ()
                     {
                         // We have had problems with timer ticks not being called back 100% reliably.
-                        // However timers really don't have a strong guarentee (only that the happen eventually)
+                        // However timers really don't have a strong guarantee (only that the happen eventually)
                         // So what we do is create a timer callback that simply counts the number of callbacks.
                         // This acts as a marker to show whether the timer callbacks are happening promptly.
                         // If we don't get enough of these tick callbacks then we don't require EventCounter to
@@ -174,7 +174,7 @@ namespace BasicEventSourceTests
                                 requestSum += (float)requestPayload["Mean"] * count;
                             requestMin = Math.Min(requestMin, (float)requestPayload["Min"]);
                             requestMax = Math.Max(requestMax, (float)requestPayload["Max"]);
-                            float requestIntevalSec = (float)requestPayload["IntervalSec"];
+                            float requestIntervalSec = (float)requestPayload["IntervalSec"];
 
                             var errorPayload = ValidateEventHeaderAndGetPayload(evts[j + 1]);
                             Assert.Equal("Error", errorPayload["Name"]);
@@ -185,10 +185,10 @@ namespace BasicEventSourceTests
                                 errorSum += (float)errorPayload["Mean"] * count;
                             errorMin = Math.Min(errorMin, (float)errorPayload["Min"]);
                             errorMax = Math.Max(errorMax, (float)errorPayload["Max"]);
-                            float errorIntevalSec = (float)requestPayload["IntervalSec"];
+                            float errorIntervalSec = (float)requestPayload["IntervalSec"];
 
-                            Assert.Equal(requestIntevalSec, errorIntevalSec);
-                            timeSum += requestIntevalSec;
+                            Assert.Equal(requestIntervalSec, errorIntervalSec);
+                            timeSum += requestIntervalSec;
                         }
 
                         EventTestHarness.LogWriteLine("Validating: Count={0} RequestSum={1:n3} TimeSum={2:n3} ", evts.Count, requestSum, timeSum);
@@ -212,7 +212,7 @@ namespace BasicEventSourceTests
                         ValidateSingleEventCounter(evts[0], "Request", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
                         ValidateSingleEventCounter(evts[1], "Error", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
 
-                        // We shoudl always get the unconditional callback at the start and end of the trace.
+                        // We should always get the unconditional callback at the start and end of the trace.
                         Assert.True(4 <= evts.Count, $"FAILURE EventCounter Multi-event: 4 <= {evts.Count} ticks: {num100msecTimerTicks} thread: {Environment.CurrentManagedThreadId}");
                         // We expect the timer to have gone off at least twice, plus the explicit poll at the beginning and end.
                         // Each one fires two events (one for requests, one for errors). so that is (2 + 2)*2 = 8

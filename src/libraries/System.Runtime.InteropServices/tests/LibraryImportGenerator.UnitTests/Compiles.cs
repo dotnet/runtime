@@ -227,6 +227,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<double>() };
             yield return new[] { ID(), CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<IntPtr>() };
             yield return new[] { ID(), CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<UIntPtr>() };
+            yield return new[] { ID(), CodeSnippets.GenericsStress };
         }
 
         public static IEnumerable<object[]> CustomCollections()
@@ -354,12 +355,16 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.CustomMarshallerParametersAndModifiers<UIntPtr>() };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.CustomMarshallerReturnValueLength<int>() };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.NativeToManagedOnlyOutParameter<int>() };
+            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.NativeToManagedFinallyOnlyOutParameter<int>() };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.NativeToManagedOnlyReturnValue<int>() };
+            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.NativeToManagedFinallyOnlyReturnValue<int>() };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.NestedMarshallerParametersAndModifiers<int>() };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.NonBlittableElementByValue };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.NonBlittableElementParametersAndModifiers };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.NonBlittableElementNativeToManagedOnlyOutParameter };
+            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.NonBlittableElementNativeToManagedFinallyOnlyOutParameter };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.NonBlittableElementNativeToManagedOnlyReturnValue };
+            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.NonBlittableElementNativeToManagedFinallyOnlyReturnValue };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.DefaultModeByValueInParameter };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.DefaultModeReturnValue };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateless.CustomElementMarshalling };
@@ -389,11 +394,15 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.CustomMarshallerParametersAndModifiers<UIntPtr>() };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.CustomMarshallerReturnValueLength<int>() };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.NativeToManagedOnlyOutParameter<int>() };
+            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.NativeToManagedFinallyOnlyOutParameter<int>() };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.NativeToManagedOnlyReturnValue<int>() };
+            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.NativeToManagedFinallyOnlyReturnValue<int>() };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.NonBlittableElementByValue };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.NonBlittableElementParametersAndModifiers };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.NonBlittableElementNativeToManagedOnlyOutParameter };
+            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.NonBlittableElementNativeToManagedFinallyOnlyOutParameter };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.NonBlittableElementNativeToManagedOnlyReturnValue };
+            yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.NonBlittableElementNativeToManagedFinallyOnlyReturnValue };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.DefaultModeByValueInParameter };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.DefaultModeReturnValue };
             yield return new[] { ID(), CodeSnippets.CustomCollectionMarshalling.Stateful.CustomElementMarshalling };
@@ -428,7 +437,7 @@ namespace LibraryImportGenerator.UnitTests
         }
         [Theory]
         [MemberData(nameof(CodeSnippetsToCompileWithPreprocessorSymbols))]
-        public async Task ValidateSnippetsWithPreprocessorDefintions(string id, string source, IEnumerable<string> preprocessorSymbols)
+        public async Task ValidateSnippetsWithPreprocessorDefinitions(string id, string source, IEnumerable<string> preprocessorSymbols)
         {
             TestUtils.Use(id);
             Compilation comp = await TestUtils.CreateCompilation(source, preprocessorSymbols: preprocessorSymbols);
@@ -624,6 +633,35 @@ namespace LibraryImportGenerator.UnitTests
         {
             TestUtils.Use(id);
             Compilation comp = await TestUtils.CreateCompilation(sources);
+            TestUtils.AssertPreSourceGeneratorCompilation(comp);
+
+            var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
+            Assert.Empty(generatorDiags);
+
+            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
+        }
+
+        public static IEnumerable<object[]> CodeSnippetsToCompileToValidateAllowUnsafeBlocks()
+        {
+            yield return new object[] { ID(), CodeSnippets.TrivialClassDeclarations, TestTargetFramework.Net, true };
+
+            {
+                string source = @"
+using System.Runtime.InteropServices;
+public class Basic { }
+";
+                yield return new object[] { ID(), source, TestTargetFramework.Standard, false };
+                yield return new object[] { ID(), source, TestTargetFramework.Framework, false };
+                yield return new object[] { ID(), source, TestTargetFramework.Net, false };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CodeSnippetsToCompileToValidateAllowUnsafeBlocks))]
+        public async Task ValidateRequireAllowUnsafeBlocksDiagnosticNoTrigger(string id, string source, TestTargetFramework framework, bool allowUnsafe)
+        {
+            TestUtils.Use(id);
+            Compilation comp = await TestUtils.CreateCompilation(source, framework, allowUnsafe: allowUnsafe);
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());

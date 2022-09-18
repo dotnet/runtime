@@ -123,6 +123,18 @@ bool Configuration::GetKnobBooleanValue(LPCWSTR name, const CLRConfig::ConfigDWO
     return (legacyValue != 0);
 }
 
+bool Configuration::GetKnobBooleanValue(LPCWSTR name, const CLRConfig::ConfigDWORDInfo& dwordInfo, bool defaultValue)
+{
+    bool returnedDefaultValue;
+    DWORD legacyValue = CLRConfig::GetConfigValue(dwordInfo, &returnedDefaultValue);
+    if (!returnedDefaultValue)
+    {
+        return (legacyValue != 0);
+    }
+
+    return GetKnobBooleanValue(name, defaultValue);
+}
+
 bool Configuration::GetKnobBooleanValue(LPCWSTR name, bool defaultValue)
 {
     LPCWSTR knobValue = GetConfigurationValue(name);

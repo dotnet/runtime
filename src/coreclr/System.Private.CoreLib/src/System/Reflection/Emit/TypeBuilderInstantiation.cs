@@ -107,7 +107,7 @@ namespace System.Reflection.Emit
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2055:UnrecognizedReflectionPattern",
             Justification = "The entire TypeBuilderInstantiation is serving the MakeGenericType implementation. " +
                             "Currently this is not supported by linker. Once it is supported the outercall (Type.MakeGenericType)" +
-                            "will validate that the types fullfill the necessary requirements of annotations on type parameters." +
+                            "will validate that the types fulfill the necessary requirements of annotations on type parameters." +
                             "As such the actual internals of the implementation are not interesting.")]
         private Type Substitute(Type[] substitutes)
         {
@@ -178,8 +178,6 @@ namespace System.Reflection.Emit
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2063:UnrecognizedReflectionPattern",
-            Justification = "Linker doesn't recognize always throwing method. https://github.com/mono/linker/issues/2025")]
         public override Type GetInterface(string name, bool ignoreCase) { throw new NotSupportedException(); }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]

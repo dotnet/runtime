@@ -826,7 +826,7 @@ namespace System
                 DayOfWeek day;
                 if (!TZif_ParseMDateRule(date, out month, out week, out day))
                 {
-                    throw new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_UnparseablePosixMDateString, date.ToString()));
+                    throw new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_UnparsablePosixMDateString, date.ToString()));
                 }
 
                 return TransitionTime.CreateFloatingDateRule(ParseTimeOfDay(time), month, week, day);
@@ -1318,7 +1318,7 @@ namespace System
                 // skip the 15 byte reserved field
 
                 // don't use the BitConverter class which parses data
-                // based on the Endianess of the machine architecture.
+                // based on the Endianness of the machine architecture.
                 // this data is expected to always be in "standard byte order",
                 // regardless of the machine it is being processed on.
 

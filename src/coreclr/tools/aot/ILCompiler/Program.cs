@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -14,12 +15,15 @@ using Internal.TypeSystem.Ecma;
 
 using Internal.CommandLine;
 
+using ILCompiler.Dataflow;
+using ILLink.Shared;
+
 using Debug = System.Diagnostics.Debug;
 using InstructionSet = Internal.JitInterface.InstructionSet;
 
 namespace ILCompiler
 {
-    internal class Program
+    internal sealed class Program
     {
         private const string DefaultSystemModule = "System.Private.CoreLib";
 
@@ -51,6 +55,7 @@ namespace ILCompiler
         private bool _noPreinitStatics;
         private bool _emitStackTraceData;
         private string _mapFileName;
+        private string _mstatFileName;
         private string _metadataLogFileName;
         private bool _noMetadataBlocking;
         private string _reflectionData;
@@ -71,6 +76,8 @@ namespace ILCompiler
         private IReadOnlyList<string> _codegenOptions = Array.Empty<string>();
 
         private IReadOnlyList<string> _rdXmlFilePaths = Array.Empty<string>();
+
+        private IReadOnlyList<string> _linkTrimFilePaths = Array.Empty<string>();
 
         private IReadOnlyList<string> _initAssemblies = Array.Empty<string>();
 
@@ -98,6 +105,8 @@ namespace ILCompiler
         private IReadOnlyList<string> _singleWarnEnabledAssemblies = Array.Empty<string>();
         private IReadOnlyList<string> _singleWarnDisabledAssemblies = Array.Empty<string>();
         private bool _singleWarn;
+        private bool _noTrimWarn;
+        private bool _noAotWarn;
 
         private string _makeReproPath;
 
@@ -107,10 +116,10 @@ namespace ILCompiler
         {
         }
 
-        private void Help(string helpText)
+        private static void Help(string helpText)
         {
             Console.WriteLine();
-            Console.Write("Microsoft (R) .NET Native IL Compiler");
+            Console.Write(".NET Native IL Compiler");
             Console.Write(" ");
             Console.Write(typeof(Program).GetTypeInfo().Assembly.GetName().Version);
             Console.WriteLine();
@@ -199,7 +208,9 @@ namespace ILCompiler
                 syntax.DefineOption("resilient", ref _resilient, "Ignore unresolved types, methods, and assemblies. Defaults to false");
                 syntax.DefineOptionList("codegenopt", ref _codegenOptions, "Define a codegen option");
                 syntax.DefineOptionList("rdxml", ref _rdXmlFilePaths, "RD.XML file(s) for compilation");
+                syntax.DefineOptionList("descriptor", ref _linkTrimFilePaths, "ILLinkTrim.Descriptor file(s) for compilation");
                 syntax.DefineOption("map", ref _mapFileName, "Generate a map file");
+                syntax.DefineOption("mstat", ref _mstatFileName, "Generate an mstat file");
                 syntax.DefineOption("metadatalog", ref _metadataLogFileName, "Generate a metadata log file");
                 syntax.DefineOption("nometadatablocking", ref _noMetadataBlocking, "Ignore metadata blocking for internal implementation details");
                 syntax.DefineOption("completetypemetadata", ref _completeTypesMetadata, "Generate complete metadata for types");
@@ -215,12 +226,14 @@ namespace ILCompiler
                 syntax.DefineOptionList("feature", ref _featureSwitches, "Feature switches to apply (format: 'Namespace.Name=[true|false]'");
                 syntax.DefineOptionList("runtimeopt", ref _runtimeOptions, "Runtime options to set");
                 syntax.DefineOption("parallelism", ref _parallelism, "Maximum number of threads to use during compilation");
-                syntax.DefineOption("instructionset", ref _instructionSet, "Instruction set to allow or disallow");
+                syntax.DefineOption("instruction-set", ref _instructionSet, "Instruction set to allow or disallow");
                 syntax.DefineOption("guard", ref _guard, "Enable mitigations. Options: 'cf': CFG (Control Flow Guard, Windows only)");
                 syntax.DefineOption("preinitstatics", ref _preinitStatics, "Interpret static constructors at compile time if possible (implied by -O)");
                 syntax.DefineOption("nopreinitstatics", ref _noPreinitStatics, "Do not interpret static constructors at compile time");
                 syntax.DefineOptionList("nowarn", ref _suppressedWarnings, "Disable specific warning messages");
                 syntax.DefineOption("singlewarn", ref _singleWarn, "Generate single AOT/trimming warning per assembly");
+                syntax.DefineOption("notrimwarn", ref _noTrimWarn, "Disable warnings related to trimming");
+                syntax.DefineOption("noaotwarn", ref _noAotWarn, "Disable warnings related to AOT");
                 syntax.DefineOptionList("singlewarnassembly", ref _singleWarnEnabledAssemblies, "Generate single AOT/trimming warning for given assembly");
                 syntax.DefineOptionList("nosinglewarnassembly", ref _singleWarnDisabledAssemblies, "Expand AOT/trimming warnings for given assembly");
                 syntax.DefineOptionList("directpinvoke", ref _directPInvokes, "PInvoke to call directly");
@@ -263,13 +276,13 @@ namespace ILCompiler
                 string[] ValidArchitectures = new string[] { "arm", "arm64", "x86", "x64" };
                 string[] ValidOS = new string[] { "windows", "linux", "osx" };
 
-                Program.ComputeDefaultOptions(out TargetOS defaultOs, out TargetArchitecture defaultArch);
+                ComputeDefaultOptions(out TargetOS defaultOs, out TargetArchitecture defaultArch);
 
-                extraHelp.Add(String.Format("Valid switches for {0} are: '{1}'. The default value is '{2}'", "--targetos", String.Join("', '", ValidOS), defaultOs.ToString().ToLowerInvariant()));
+                extraHelp.Add(string.Format("Valid switches for {0} are: '{1}'. The default value is '{2}'", "--targetos", string.Join("', '", ValidOS), defaultOs.ToString().ToLowerInvariant()));
 
                 extraHelp.Add("");
 
-                extraHelp.Add(String.Format("Valid switches for {0} are: '{1}'. The default value is '{2}'", "--targetarch", String.Join("', '", ValidArchitectures), defaultArch.ToString().ToLowerInvariant()));
+                extraHelp.Add(string.Format("Valid switches for {0} are: '{1}'. The default value is '{2}'", "--targetarch", string.Join("', '", ValidArchitectures), defaultArch.ToString().ToLowerInvariant()));
 
                 extraHelp.Add("");
 
@@ -283,7 +296,7 @@ namespace ILCompiler
                     archString.Append(arch);
                     archString.Append(": ");
 
-                    TargetArchitecture targetArch = Program.GetTargetArchitectureFromArg(arch);
+                    TargetArchitecture targetArch = GetTargetArchitectureFromArg(arch);
                     bool first = true;
                     foreach (var instructionSet in Internal.JitInterface.InstructionSetFlags.ArchitectureToValidInstructionSets(targetArch))
                     {
@@ -343,7 +356,7 @@ namespace ILCompiler
                 // + the original command line arguments
                 // + a rsp file that should work to directly run out of the zip file
 
-                Helpers.MakeReproPackage(_makeReproPath, _outputFilePath, args, argSyntax, new[] { "-r", "-m", "--rdxml", "--directpinvokelist" });
+                Helpers.MakeReproPackage(_makeReproPath, _outputFilePath, args, argSyntax, new[] { "-r", "-m", "--rdxml", "--directpinvokelist", "--descriptor" });
             }
 
             if (_reflectionData != null && Array.IndexOf(validReflectionDataOptions, _reflectionData) < 0)
@@ -463,7 +476,7 @@ namespace ILCompiler
                 {
                     string instructionSet = instructionSetParamsInput[i];
 
-                    if (String.IsNullOrEmpty(instructionSet))
+                    if (string.IsNullOrEmpty(instructionSet))
                         throw new CommandLineException("Instruction set must not be empty");
 
                     char firstChar = instructionSet[0];
@@ -495,7 +508,7 @@ namespace ILCompiler
 
             instructionSetSupportBuilder.ComputeInstructionSetFlags(out var supportedInstructionSet, out var unsupportedInstructionSet,
                 (string specifiedInstructionSet, string impliedInstructionSet) =>
-                    throw new CommandLineException(String.Format("Unsupported combination of instruction sets: {0}/{1}", specifiedInstructionSet, impliedInstructionSet)));
+                    throw new CommandLineException(string.Format("Unsupported combination of instruction sets: {0}/{1}", specifiedInstructionSet, impliedInstructionSet)));
 
             InstructionSetSupportBuilder optimisticInstructionSetSupportBuilder = new InstructionSetSupportBuilder(_targetArchitecture);
 
@@ -602,7 +615,7 @@ namespace ILCompiler
 
                 securityMitigationOptions = SecurityMitigationOptions.ControlFlowGuardAnnotations;
             }
-            else if (!String.IsNullOrEmpty(_guard))
+            else if (!string.IsNullOrEmpty(_guard))
             {
                 throw new CommandLineException($"Unrecognized mitigation option '{_guard}'");
             }
@@ -692,10 +705,17 @@ namespace ILCompiler
                 {
                     compilationRoots.Add(new RdXmlRootProvider(typeSystemContext, rdXmlFilePath));
                 }
+
+                foreach (var linkTrimFilePath in _linkTrimFilePaths)
+                {
+                    if (!File.Exists(linkTrimFilePath))
+                        throw new CommandLineException($"'{linkTrimFilePath}' doesn't exist");
+                    compilationRoots.Add(new ILCompiler.DependencyAnalysis.TrimmingDescriptorNode(linkTrimFilePath));
+                }
             }
 
-            _conditionallyRootedAssemblies = new List<string>(_conditionallyRootedAssemblies.Select(a => ILLinkify(a)));
-            _trimmedAssemblies = new List<string>(_trimmedAssemblies.Select(a => ILLinkify(a)));
+            _conditionallyRootedAssemblies = new List<string>(_conditionallyRootedAssemblies.Select(ILLinkify));
+            _trimmedAssemblies = new List<string>(_trimmedAssemblies.Select(ILLinkify));
 
             static string ILLinkify(string rootedAssembly)
             {
@@ -731,12 +751,12 @@ namespace ILCompiler
 
             CompilationBuilder builder = new RyuJitCompilationBuilder(typeSystemContext, compilationGroup);
 
-            string compilationUnitPrefix = _multiFile ? System.IO.Path.GetFileNameWithoutExtension(_outputFilePath) : "";
+            string compilationUnitPrefix = _multiFile ? Path.GetFileNameWithoutExtension(_outputFilePath) : "";
             builder.UseCompilationUnitPrefix(compilationUnitPrefix);
 
             if (_mibcFilePaths.Count > 0)
                 ((RyuJitCompilationBuilder)builder).UseProfileData(_mibcFilePaths);
-            if (!String.IsNullOrEmpty(_jitPath))
+            if (!string.IsNullOrEmpty(_jitPath))
                 ((RyuJitCompilationBuilder)builder).UseJitPath(_jitPath);
 
             PInvokeILEmitterConfiguration pinvokePolicy = new ConfigurablePInvokePolicy(typeSystemContext.Target, _directPInvokes, _directPInvokeLists);
@@ -754,7 +774,14 @@ namespace ILCompiler
             }
             ilProvider = new FeatureSwitchManager(ilProvider, featureSwitches);
 
-            var logger = new Logger(Console.Out, _isVerbose, ProcessWarningCodes(_suppressedWarnings), _singleWarn, _singleWarnEnabledAssemblies, _singleWarnDisabledAssemblies);
+            var suppressedWarningCategories = new List<string>();
+            if (_noTrimWarn)
+                suppressedWarningCategories.Add(MessageSubCategory.TrimAnalysis);
+            if (_noAotWarn)
+                suppressedWarningCategories.Add(MessageSubCategory.AotAnalysis);
+
+            var logger = new Logger(Console.Out, ilProvider, _isVerbose, ProcessWarningCodes(_suppressedWarnings), _singleWarn, _singleWarnEnabledAssemblies, _singleWarnDisabledAssemblies, suppressedWarningCategories);
+            CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider, logger);
 
             var stackTracePolicy = _emitStackTraceData ?
                 (StackTraceEmissionPolicy)new EcmaMethodStackTraceEmissionPolicy() : new NoStackTraceEmissionPolicy();
@@ -788,7 +815,7 @@ namespace ILCompiler
 
             DynamicInvokeThunkGenerationPolicy invokeThunkGenerationPolicy = new DefaultDynamicInvokeThunkGenerationPolicy();
 
-            var flowAnnotations = new ILLink.Shared.TrimAnalysis.FlowAnnotations(logger, ilProvider);
+            var flowAnnotations = new ILLink.Shared.TrimAnalysis.FlowAnnotations(logger, ilProvider, compilerGeneratedState);
 
             MetadataManager metadataManager = new UsageBasedMetadataManager(
                     compilationGroup,
@@ -827,8 +854,20 @@ namespace ILCompiler
                 .UseILProvider(ilProvider)
                 .UsePreinitializationManager(preinitManager);
 
-            ILScanResults scanResults = null;
+#if DEBUG
+            List<TypeDesc> scannerConstructedTypes = null;
+            List<MethodDesc> scannerCompiledMethods = null;
+#endif
+
             if (useScanner)
+            {
+                // Run the scanner in a separate stack frame so that there's no dangling references to
+                // it once we're done with it and it can be garbage collected.
+                RunScanner();
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            void RunScanner()
             {
                 ILScannerBuilder scannerBuilder = builder.GetILScannerBuilder()
                     .UseCompilationRoots(compilationRoots)
@@ -842,11 +881,43 @@ namespace ILCompiler
 
                 IILScanner scanner = scannerBuilder.ToILScanner();
 
-                scanResults = scanner.Scan();
+                ILScanResults scanResults = scanner.Scan();
+
+#if DEBUG
+                scannerCompiledMethods = new List<MethodDesc>(scanResults.CompiledMethodBodies);
+                scannerConstructedTypes = new List<TypeDesc>(scanResults.ConstructedEETypes);
+#endif
+
+                if (_scanDgmlLogFileName != null)
+                    scanResults.WriteDependencyLog(_scanDgmlLogFileName);
 
                 metadataManager = ((UsageBasedMetadataManager)metadataManager).ToAnalysisBasedMetadataManager();
 
                 interopStubManager = scanResults.GetInteropStubManager(interopStateManager, pinvokePolicy);
+
+                // If we have a scanner, feed the vtable analysis results to the compilation.
+                // This could be a command line switch if we really wanted to.
+                builder.UseVTableSliceProvider(scanResults.GetVTableLayoutInfo());
+
+                // If we have a scanner, feed the generic dictionary results to the compilation.
+                // This could be a command line switch if we really wanted to.
+                builder.UseGenericDictionaryLayoutProvider(scanResults.GetDictionaryLayoutInfo());
+
+                // If we have a scanner, we can drive devirtualization using the information
+                // we collected at scanning time (effectively sealing unsealed types if possible).
+                // This could be a command line switch if we really wanted to.
+                builder.UseDevirtualizationManager(scanResults.GetDevirtualizationManager());
+
+                // If we use the scanner's result, we need to consult it to drive inlining.
+                // This prevents e.g. devirtualizing and inlining methods on types that were
+                // never actually allocated.
+                builder.UseInliningPolicy(scanResults.GetInliningPolicy());
+
+                // Use an error provider that prevents us from re-importing methods that failed
+                // to import with an exception during scanning phase. We would see the same failure during
+                // compilation, but before RyuJIT gets there, it might ask questions that we don't
+                // have answers for because we didn't scan the entire method.
+                builder.UseMethodImportationErrorProvider(scanResults.GetMethodImportationErrorProvider());
             }
 
             DebugInformationProvider debugInfoProvider = _enableDebugInfo ?
@@ -874,40 +945,19 @@ namespace ILCompiler
                 .UseDebugInfoProvider(debugInfoProvider)
                 .UseDwarf5(_useDwarf5);
 
-            if (scanResults != null)
-            {
-                // If we have a scanner, feed the vtable analysis results to the compilation.
-                // This could be a command line switch if we really wanted to.
-                builder.UseVTableSliceProvider(scanResults.GetVTableLayoutInfo());
-
-                // If we have a scanner, feed the generic dictionary results to the compilation.
-                // This could be a command line switch if we really wanted to.
-                builder.UseGenericDictionaryLayoutProvider(scanResults.GetDictionaryLayoutInfo());
-
-                // If we have a scanner, we can drive devirtualization using the information
-                // we collected at scanning time (effectively sealing unsealed types if possible).
-                // This could be a command line switch if we really wanted to.
-                builder.UseDevirtualizationManager(scanResults.GetDevirtualizationManager());
-
-                // If we use the scanner's result, we need to consult it to drive inlining.
-                // This prevents e.g. devirtualizing and inlining methods on types that were
-                // never actually allocated.
-                builder.UseInliningPolicy(scanResults.GetInliningPolicy());
-
-                // Use an error provider that prevents us from re-importing methods that failed
-                // to import with an exception during scanning phase. We would see the same failure during
-                // compilation, but before RyuJIT gets there, it might ask questions that we don't
-                // have answers for because we didn't scan the entire method.
-                builder.UseMethodImportationErrorProvider(scanResults.GetMethodImportationErrorProvider());
-            }
-
             builder.UseResilience(_resilient);
 
             ICompilation compilation = builder.ToCompilation();
 
-            ObjectDumper dumper = _mapFileName != null ? new ObjectDumper(_mapFileName) : null;
+            List<ObjectDumper> dumpers = new List<ObjectDumper>();
 
-            CompilationResults compilationResults = compilation.Compile(_outputFilePath, dumper);
+            if (_mapFileName != null)
+                dumpers.Add(new XmlObjectDumper(_mapFileName));
+
+            if (_mstatFileName != null)
+                dumpers.Add(new MstatObjectDumper(_mstatFileName, typeSystemContext));
+
+            CompilationResults compilationResults = compilation.Compile(_outputFilePath, ObjectDumper.Compose(dumpers));
             if (_exportsFile != null)
             {
                 ExportsFileWriter defFileWriter = new ExportsFileWriter(typeSystemContext, _exportsFile);
@@ -925,11 +975,9 @@ namespace ILCompiler
             if (_dgmlLogFileName != null)
                 compilationResults.WriteDependencyLog(_dgmlLogFileName);
 
-            if (scanResults != null)
+#if DEBUG
+            if (scannerConstructedTypes != null)
             {
-                if (_scanDgmlLogFileName != null)
-                    scanResults.WriteDependencyLog(_scanDgmlLogFileName);
-
                 // If the scanner and compiler don't agree on what to compile, the outputs of the scanner might not actually be usable.
                 // We are going to check this two ways:
                 // 1. The methods and types generated during compilation are a subset of method and types scanned
@@ -937,9 +985,9 @@ namespace ILCompiler
 
                 // Check that methods and types generated during compilation are a subset of method and types scanned
                 bool scanningFail = false;
-                DiffCompilationResults(ref scanningFail, compilationResults.CompiledMethodBodies, scanResults.CompiledMethodBodies,
+                DiffCompilationResults(ref scanningFail, compilationResults.CompiledMethodBodies, scannerCompiledMethods,
                     "Methods", "compiled", "scanned", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || IsRelatedToInvalidInput(method));
-                DiffCompilationResults(ref scanningFail, compilationResults.ConstructedEETypes, scanResults.ConstructedEETypes,
+                DiffCompilationResults(ref scanningFail, compilationResults.ConstructedEETypes, scannerConstructedTypes,
                     "EETypes", "compiled", "scanned", type => !(type.GetTypeDefinition() is EcmaType));
 
                 static bool IsRelatedToInvalidInput(MethodDesc method)
@@ -963,15 +1011,16 @@ namespace ILCompiler
 
                     // We additionally skip methods in SIMD module because there's just too many intrisics to handle and IL scanner
                     // doesn't expand them. They would show up as noisy diffs.
-                    DiffCompilationResults(ref dummy, scanResults.CompiledMethodBodies, compilationResults.CompiledMethodBodies,
+                    DiffCompilationResults(ref dummy, scannerCompiledMethods, compilationResults.CompiledMethodBodies,
                     "Methods", "scanned", "compiled", method => !(method.GetTypicalMethodDefinition() is EcmaMethod) || method.OwningType.IsIntrinsic);
-                    DiffCompilationResults(ref dummy, scanResults.ConstructedEETypes, compilationResults.ConstructedEETypes,
+                    DiffCompilationResults(ref dummy, scannerConstructedTypes, compilationResults.ConstructedEETypes,
                         "EETypes", "scanned", "compiled", type => !(type.GetTypeDefinition() is EcmaType));
                 }
 
                 if (scanningFail)
                     throw new Exception("Scanning failure");
             }
+#endif
 
             if (debugInfoProvider is IDisposable)
                 ((IDisposable)debugInfoProvider).Dispose();
@@ -981,8 +1030,7 @@ namespace ILCompiler
             return 0;
         }
 
-        [System.Diagnostics.Conditional("DEBUG")]
-        private void DiffCompilationResults<T>(ref bool result, IEnumerable<T> set1, IEnumerable<T> set2, string prefix,
+        private static void DiffCompilationResults<T>(ref bool result, IEnumerable<T> set1, IEnumerable<T> set2, string prefix,
             string set1name, string set2name, Predicate<T> filter)
         {
             HashSet<T> diff = new HashSet<T>(set1);
@@ -1005,7 +1053,7 @@ namespace ILCompiler
             }
         }
 
-        private TypeDesc FindType(CompilerTypeSystemContext context, string typeName)
+        private static TypeDesc FindType(CompilerTypeSystemContext context, string typeName)
         {
             ModuleDesc systemModule = context.SystemModule;
 
@@ -1077,7 +1125,7 @@ namespace ILCompiler
                 string[] values = value.Split(new char[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
                 foreach (string id in values)
                 {
-                    if (!id.StartsWith("IL", StringComparison.Ordinal) || !ushort.TryParse(id.Substring(2), out ushort code))
+                    if (!id.StartsWith("IL", StringComparison.Ordinal) || !ushort.TryParse(id.AsSpan(2), out ushort code))
                         continue;
 
                     yield return code;

@@ -7,7 +7,7 @@
   <PropertyGroup>
     <IncrementalNativeBuild Condition="'$(IncrementalNativeBuild)' == ''">true</IncrementalNativeBuild>
     <BuildCoreHostDependsOn>GetProductVersions;GenerateNativeVersionFile</BuildCoreHostDependsOn>
-    <BuildCoreHostDependsOn Condition="'$(DisableSourceLink)' != 'true'">$(BuildCoreHostDependsOn);InitializeSourceControlInformationFromSourceControlManager</BuildCoreHostDependsOn>
+    <BuildCoreHostDependsOn Condition="'$(EnableSourceControlManagerQueries)' == 'true'">$(BuildCoreHostDependsOn);InitializeSourceControlInformationFromSourceControlManager</BuildCoreHostDependsOn>
     <IntermediateOutputRootPath>$(ArtifactsObjDir)$(OutputRid).$(Configuration)\</IntermediateOutputRootPath>
   </PropertyGroup>
 
@@ -18,10 +18,18 @@
   <Target Name="PrepareSingleFileHostWithEmbeddedDacPrereqs">
     <PropertyGroup>
       <SingleFileHostPath>$(CoreCLRArtifactsPath)/corehost/singlefilehost$(ExeSuffix)</SingleFileHostPath>
-      <SingleFileHostSymbolsPath>$(CoreCLRArtifactsPath)/corehost/PDB/singlefilehost$(SymbolsSuffix)</SingleFileHostSymbolsPath>
       <DacPath>$(CoreCLRArtifactsPath)/mscordaccore$(LibSuffix)</DacPath>
       <SingleFileHostDestinationPath>$(DotNetHostBinDir)/singlefilehost$(ExeSuffix)</SingleFileHostDestinationPath>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
+      <!-- Symbols for Windows are in a PDB subdirectory -->
+      <SingleFileHostSymbolsPath>$(CoreCLRArtifactsPath)/corehost/PDB/singlefilehost$(SymbolsSuffix)</SingleFileHostSymbolsPath>
       <SingleFileHostSymbolsDestinationPath>$(DotNetHostBinDir)/PDB/singlefilehost$(SymbolsSuffix)</SingleFileHostSymbolsDestinationPath>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(TargetOS)' != 'windows'">
+      <!-- Symbols for non-Windows are next to the binary -->
+      <SingleFileHostSymbolsPath>$(CoreCLRArtifactsPath)/corehost/singlefilehost$(SymbolsSuffix)</SingleFileHostSymbolsPath>
+      <SingleFileHostSymbolsDestinationPath>$(DotNetHostBinDir)/singlefilehost$(SymbolsSuffix)</SingleFileHostSymbolsDestinationPath>
     </PropertyGroup>
   </Target>
 
@@ -37,11 +45,14 @@
     Outputs="$(SingleFileHostDestinationPath);$(SingleFileHostSymbolsDestinationPath)"
     DependsOnTargets="ResolveProjectReferences"
     Condition="'$(RuntimeFlavor)' != 'Mono'">
-    <Copy SourceFiles="$(SingleFileHostPath);$(SingleFileHostSymbolsPath)" DestinationFiles="$(SingleFileHostDestinationPath);$(SingleFileHostSymbolsPath)" />
+    <Copy SourceFiles="$(SingleFileHostPath)" DestinationFiles="$(SingleFileHostDestinationPath)" />
     <Exec Condition="'$(TargetOS)' == 'windows'"
           Command="&quot;$(DotNetTool)&quot; exec @(InjectResourceTool) --bin &quot;$(DacPath)&quot; --image &quot;$(SingleFileHostDestinationPath)&quot; --name MINIDUMP_EMBEDDED_AUXILIARY_PROVIDER" />
+
+    <!-- Copy symbols if they exist. We may not have separate symbols if they were not stripped from the native binary itself. -->
+    <Copy SourceFiles="$(SingleFileHostSymbolsPath)" DestinationFiles="$(SingleFileHostSymbolsDestinationPath)" Condition="Exists('$(SingleFileHostSymbolsPath)')" />
   </Target>
-  
+
   <Target Name="PrepareSingleFileHostWithEmbeddedDac"
           DependsOnTargets="PrepareSingleFileHostWithEmbeddedDacPrereqs;PrepareSingleFileHostWithEmbeddedDacCore"
           AfterTargets="Build"/>

@@ -5,7 +5,7 @@ using Xunit;
 
 namespace System.Buffers.Binary.Tests
 {
-    public class ReverseEndianessUnitTests
+    public class ReverseEndiannessUnitTests
     {
         [Fact]
         public void ReverseEndianness_ByteAndSByte_DoesNothing()

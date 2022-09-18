@@ -1668,9 +1668,9 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
         return false;
     }
 
-    if (loop.lpFlags & LPFLG_REMOVED)
+    if (loop.lpIsRemoved())
     {
-        JITDUMP("Loop cloning: rejecting loop " FMT_LP ". It is marked LPFLG_REMOVED.\n", loopInd);
+        JITDUMP("Loop cloning: rejecting removed loop " FMT_LP ".\n", loopInd);
         return false;
     }
 
@@ -1715,7 +1715,7 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
     }
 
     // Is the first block after the last block of the loop a handler or filter start?
-    // Usually, we create a dummy block after the orginal loop, to skip over the loop clone
+    // Usually, we create a dummy block after the original loop, to skip over the loop clone
     // and go to where the original loop did.  That raises problems when we don't actually go to
     // that block; this is one of those cases.  This could be fixed fairly easily; for example,
     // we could add a dummy nop block after the (cloned) loop bottom, in the same handler scope as the

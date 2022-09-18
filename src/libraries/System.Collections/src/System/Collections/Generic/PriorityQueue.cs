@@ -310,7 +310,7 @@ namespace System.Collections.Generic
         /// <remarks>
         ///  Implements an insert-then-extract heap operation that is generally more efficient
         ///  than sequencing Enqueue and Dequeue operations: in the worst case scenario only one
-        ///  sift-down operation is required.
+        ///  shift-down operation is required.
         /// </remarks>
         public TElement EnqueueDequeue(TElement element, TPriority priority)
         {

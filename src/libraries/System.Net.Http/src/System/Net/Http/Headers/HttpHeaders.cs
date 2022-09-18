@@ -629,7 +629,7 @@ namespace System.Net.Http.Headers
             }
         }
 
-        [return: NotNullIfNotNull("source")]
+        [return: NotNullIfNotNull(nameof(source))]
         private static object? CloneStringHeaderInfoValues(object? source)
         {
             if (source == null)

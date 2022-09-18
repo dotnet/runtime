@@ -511,12 +511,12 @@ node, which builds `RefPositions` according to the liveness model described abov
 ```
 N037  t16 =    ┌──▌  LCL_VAR   ref    V04 arg3
 N039 t127 = ┌──▌  PUTARG_REG ref    REG rcx
-N041 t128 = │                 ┌──▌  LCL_VAR   ref    V04 arg3    (last use)     
-N043 t129 = │              ┌──▌  LEA(b+0)  byref 
-N045 t130 = │           ┌──▌  IND       long  
-N047 t131 = │        ┌──▌  LEA(b+72) long  
-N049 t132 = │     ┌──▌  IND       long  
-N051 t133 = │  ┌──▌  LEA(b+40) long  
+N041 t128 = │                 ┌──▌  LCL_VAR   ref    V04 arg3    (last use)
+N043 t129 = │              ┌──▌  LEA(b+0)  byref
+N045 t130 = │           ┌──▌  IND       long
+N047 t131 = │        ┌──▌  LEA(b+72) long
+N049 t132 = │     ┌──▌  IND       long
+N051 t133 = │  ┌──▌  LEA(b+40) long
 N053 t134 = ├──▌  IND       long   REG NA
 N055  t17 = ▌  CALLV ind int    System.Globalization.CultureInfo.get_LCID $242
 ```
@@ -1012,7 +1012,7 @@ exclusive:
 
 -   Always insert a `GTF_RELOAD` above a use of a spilled register (0x400).
 
--   Alyways spill (0x800). This mode is not fully functional, as there are
+-   Always spill (0x800). This mode is not fully functional, as there are
     cases where spill isn't actually supported (it should be possible to simply
     not spill in such cases).
 
@@ -1211,7 +1211,7 @@ term "EH Var" means a `lclVar` marked `lvLiveInOutOfHndlr`):
 -   Adjust the heuristics:
 
     1. For determining whether an EH var should be a candidate for register allocation,
-       e.g. if the defs outweight the uses.
+       e.g. if the defs outweigh the uses.
 
        - An initial investigation might only consider an EH var as a register candidate if it has a single use. One complication is that we sometimes generate better code for a non-register-candidate local than one that is always spilled (we don't support `RegOptional` defs).
        Thus, it would be better to identify *before* building intervals whether we should consider it a candidate, but the problem with that is that we don't necessarily know at that
@@ -1388,7 +1388,7 @@ Issue [\#6261](https://github.com/dotnet/runtime/issues/6261) has to do with `Re
 I don't think such cases should arise, but there may be some cleanup needed here.
 
 Issue [\#5793](https://github.com/dotnet/runtime/issues/5793) suggests adding a stress mode that
-allocates registers forr mullti-reg nodes in the reverse of the ABI requirements.
+allocates registers for multi-reg nodes in the reverse of the ABI requirements.
 
 Issue [#10691](https://github.com/dotnet/runtime/issues/10691) suggests adding a stress mode that
 deliberately trashes registers that are not currently occupied (e.g. at block boundaries).

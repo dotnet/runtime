@@ -653,15 +653,20 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
 
     GenTree*       varStr;
     GenTreeStrCon* cnsStr;
-    if (op1->OperIs(GT_CNS_STR))
-    {
-        cnsStr = op1->AsStrCon();
-        varStr = op2;
-    }
-    else
+    if (op2->OperIs(GT_CNS_STR))
     {
         cnsStr = op2->AsStrCon();
         varStr = op1;
+    }
+    else
+    {
+        if (startsWith)
+        {
+            // StartsWith is not commutative
+            return nullptr;
+        }
+        cnsStr = op1->AsStrCon();
+        varStr = op2;
     }
 
     bool needsNullcheck = true;
@@ -804,15 +809,20 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
 
     GenTree*       spanObj;
     GenTreeStrCon* cnsStr;
-    if (op1Str != nullptr)
-    {
-        cnsStr  = op1Str;
-        spanObj = op2;
-    }
-    else
+    if (op2Str != nullptr)
     {
         cnsStr  = op2Str;
         spanObj = op1;
+    }
+    else
+    {
+        if (startsWith)
+        {
+            // StartsWith is not commutative
+            return nullptr;
+        }
+        cnsStr  = op1Str;
+        spanObj = op2;
     }
 
     int      cnsLength = -1;
@@ -857,7 +867,7 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     if (unrolled != nullptr)
     {
         // We succeeded, fill the placeholders:
-        impAssignTempGen(spanObjRef, impGetStructAddr(spanObj, spanCls, (unsigned)CHECK_SPILL_NONE, true));
+        impAssignTempGen(spanObjRef, impGetStructAddr(spanObj, spanCls, CHECK_SPILL_NONE, true));
         impAssignTempGen(spanDataTmp, spanData);
         if (unrolled->OperIs(GT_QMARK))
         {

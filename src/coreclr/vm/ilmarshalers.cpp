@@ -1586,7 +1586,7 @@ void ILVBByValStrWMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILE
     pslILEmit->EmitDUP();
     pslILEmit->EmitADD();           // (length+1) * sizeof(WCHAR)
     pslILEmit->EmitDUP();
-    pslILEmit->EmitSTLOC(dwNumBytesLocal);      // len <- doesn't include size of the DWORD preceeding the string
+    pslILEmit->EmitSTLOC(dwNumBytesLocal);      // len <- doesn't include size of the DWORD preceding the string
     pslILEmit->EmitLDC(sizeof(DWORD));
     pslILEmit->EmitADD();           // (length+1) * sizeof(WCHAR) + sizeof(DWORD)
 
@@ -1615,7 +1615,7 @@ void ILVBByValStrWMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILE
     pslILEmit->EmitADD();
     EmitStoreNativeValue(pslILEmit);
 
-    // <emtpy>
+    // <empty>
 
     EmitLoadManagedValue(pslILEmit);        // src
     EmitLoadNativeValue(pslILEmit);         // dest
@@ -3838,7 +3838,7 @@ void ILAsAnyMarshalerBase::EmitClearNativeTemp(ILCodeStream* pslILEmit)
 
 // we can get away with putting the GetManagedType and GetNativeType on ILMngdMarshaler because
 // currently it is only used for reference marshaling where this is appropriate.  If it became
-// used for something else, we would want to move this down in the inheritence tree..
+// used for something else, we would want to move this down in the inheritance tree..
 LocalDesc ILMngdMarshaler::GetNativeType()
 {
     LIMITED_METHOD_CONTRACT;

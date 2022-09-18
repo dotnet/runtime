@@ -45,7 +45,7 @@ public:
     //  Committed range start
     static void* CommitDoubleMappedMemory(void* pStart, size_t size, bool isExecutable);
 
-    // Release a block of virtual memory previously commited by the CommitDoubleMappedMemory
+    // Release a block of virtual memory previously committed by the CommitDoubleMappedMemory
     // Parameters:
     //  mapperHandle - handle of the double mapped memory mapper to use
     //  pStart       - start address of the virtual address range to release. It must be one

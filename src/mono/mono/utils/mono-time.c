@@ -114,7 +114,7 @@ MONO_RESTORE_WARNING
 #include <time.h>
 
 /* Returns the number of milliseconds from boot time: this should be monotonic */
-/* Adapted from CoreCLR: https://github.com/dotnet/coreclr/blob/66d2738ea96fcce753dec1370e79a0c78f7b6adb/src/pal/src/misc/time.cpp */
+/* Adapted from CoreCLR: https://github.com/dotnet/runtime/blob/402aa8584ed18792d6bc6ed1869f7c31b38f8139/src/coreclr/pal/src/misc/time.cpp */
 gint64
 mono_msec_boottime (void)
 {

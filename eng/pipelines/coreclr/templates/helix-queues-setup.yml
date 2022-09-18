@@ -11,6 +11,13 @@ parameters:
   dependOnEvaluatePaths: false
   jobParameters: {}
 
+# parameters.jobParameters.helixQueueGroup values:
+# 'pr' -- pull request
+# 'ci' -- continuous integration ("merge")
+# 'libraries' -- libraries tests
+# 'cet' -- machines supporting CET technology
+# 'superpmi' -- for TeamProject 'internal', a smaller set of queues (one per architecture, not several) for SuperPMI collection
+
 jobs:
 - template: ${{ parameters.jobTemplate }}
   parameters:
@@ -45,7 +52,9 @@ jobs:
     - ${{ if eq(parameters.platform, 'Linux_arm') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - (Ubuntu.1804.Arm32.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440
-      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), in(parameters.jobParameters.helixQueueGroup, 'superpmi')) }}:
+        - (Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440
+      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), notIn(parameters.jobParameters.helixQueueGroup, 'superpmi')) }}:
         - (Debian.10.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-arm32v7-20210304164340-6616c63
         - (Debian.11.Arm32)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-arm32v7-20210304164347-5a7c380
         - (Ubuntu.1804.Arm32)Ubuntu.1804.Armarch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-bfcd90a-20200121150440
@@ -53,14 +62,16 @@ jobs:
     # Linux arm64
     - ${{ if eq(parameters.platform, 'Linux_arm64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - (Ubuntu.1804.Arm64.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20210531091519-97d8652
+        - (Ubuntu.1804.Arm64.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20220824230426-06f234f
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
-        - (Debian.10.Arm64.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-arm64v8-20210304164340-56c6673
-        - (Debian.11.Arm64.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-arm64v8-20210304164340-5a7c380
-      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Debian.10.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-arm64v8-20210304164340-56c6673
-        - (Debian.11.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-arm64v8-20210304164340-5a7c380
-        - (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20210531091519-97d8652
+        - (Debian.10.Arm64.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-arm64v8-20220818195427-06f234f
+        - (Debian.11.Arm64.Open)Ubuntu.1804.Armarch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-arm64v8-20220818195437-06f234f
+      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), in(parameters.jobParameters.helixQueueGroup, 'superpmi')) }}:
+        - (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20220824230426-06f234f
+      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), notIn(parameters.jobParameters.helixQueueGroup, 'superpmi')) }}:
+        - (Debian.10.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-arm64v8-20220818195427-06f234f
+        - (Debian.11.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-arm64v8-20220818195437-06f234f
+        - (Ubuntu.1804.Arm64)Ubuntu.1804.ArmArch@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-20220824230426-06f234f
 
     # Linux musl x64
     - ${{ if eq(parameters.platform, 'Linux_musl_x64') }}:
@@ -88,17 +99,19 @@ jobs:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
         - Ubuntu.1804.Amd64.Open
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
-        - (Debian.10.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-20210304164434-56c6673
-        - (Debian.11.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64-20210304164428-5a7c380
+        - (Debian.10.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-20220810215022-f344011
+        - (Debian.11.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64-20220810215032-f344011
         - Ubuntu.1804.Amd64.Open
         - (Centos.8.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-helix-20201229003624-c1bf759
         - RedHat.7.Amd64.Open
-      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Debian.10.Amd64)Ubuntu.1804.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-20210304164434-56c6673
-        - (Debian.11.Amd64)Ubuntu.1804.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64-20210304164428-5a7c380
+      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), in(parameters.jobParameters.helixQueueGroup, 'superpmi')) }}:
+        - Ubuntu.1804.Amd64
+      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), notIn(parameters.jobParameters.helixQueueGroup, 'superpmi')) }}:
+        - (Debian.10.Amd64)Ubuntu.1804.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-20220810215022-f344011
+        - (Debian.11.Amd64)Ubuntu.1804.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64-20220810215032-f344011
         - Ubuntu.1804.Amd64
         - (Centos.8.Amd64)Ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-helix-20201229003624-c1bf759
-        - (Fedora.34.Amd64)Ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-34-helix-20220708122731-4f64125
+        - (Fedora.34.Amd64)Ubuntu.1804.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-34-helix-20220809205730-e7e8d1c
         - RedHat.7.Amd64
 
     # OSX arm64
@@ -126,7 +139,9 @@ jobs:
           - (Windows.Nano.1809.Amd64.Open)windows.10.amd64.serverrs5.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1809-helix-amd64-08e8e40-20200107182504
           - Windows.7.Amd64.Open
           - Windows.10.Amd64.Open
-      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), in(parameters.jobParameters.helixQueueGroup, 'superpmi')) }}:
+        - Windows.10.Amd64.X86.Rt
+      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), notIn(parameters.jobParameters.helixQueueGroup, 'superpmi')) }}:
         - Windows.7.Amd64
         - Windows.81.Amd64
         - Windows.10.Amd64
@@ -140,7 +155,9 @@ jobs:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.jobParameters.helixQueueGroup, 'pr', 'ci', 'libraries')) }}:
         - Windows.7.Amd64.Open
         - Windows.10.Amd64.Open
-      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), in(parameters.jobParameters.helixQueueGroup, 'superpmi')) }}:
+        - Windows.10.Amd64.X86.Rt
+      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), notIn(parameters.jobParameters.helixQueueGroup, 'superpmi')) }}:
         - Windows.7.Amd64
         - Windows.81.Amd64
         - Windows.10.Amd64

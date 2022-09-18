@@ -17,7 +17,7 @@
       - $(RunAOTCompilation) - Defaults to false.
 
       - $(WasmDebugLevel)
-                              > 0 enables debugging and sets the debug log level to debug_level
+                              > 0 enables debugging and sets the debug log level to debugLevel
                               == 0 disables debugging and enables interpreter optimizations
                               < 0 enabled debugging and disables debug logging.
 
@@ -65,8 +65,8 @@
       - $(RunAOTCompilationAfterBuild)      - Run AOT compilation even after Build. By default, it is run only for publish.
                                               Defaults to false.
       - $(WasmAotProfilePath)               - Path to an AOT profile file.
-      - $(WasmExceptionHandling)            - Enable support for the WASM Exception Handling feature.
-      - $(WasmSIMD)                         - Enable support for the WASM SIMD feature.
+      - $(WasmEnableExceptionHandling)      - Enable support for the WASM Exception Handling feature.
+      - $(WasmEnableSIMD)                   - Enable support for the WASM SIMD feature.
 
       Public items:
       - @(WasmExtraFilesToDeploy) - Files to copy to $(WasmAppDir).
@@ -75,7 +75,7 @@
       - @(WasmNativeAsset)        - Native files to be added to `NativeAssets` in the bundle.
 
       - @(WasmExtraConfig)        - json elements to add to `mono-config.json`
-                                    Eg. <WasmExtraConfig Include="enable_profiler" Value="true" />
+                                    Eg. <WasmExtraConfig Include="enableProfiler" Value="true" />
 
                                     - Value attribute can have a number, bool, quoted string, or json string
 
@@ -86,8 +86,8 @@
 
   <PropertyGroup>
     <WasmDedup Condition="'$(WasmDedup)' == ''">false</WasmDedup>
-    <WasmExceptionHandling Condition="'$(WasmExceptionHandling)' == ''">false</WasmExceptionHandling>
-    <WasmSIMD Condition="'$(WasmSIMD)' == ''">false</WasmSIMD>
+    <WasmEnableExceptionHandling Condition="'$(WasmEnableExceptionHandling)' == ''">false</WasmEnableExceptionHandling>
+    <WasmEnableSIMD Condition="'$(WasmEnableSIMD)' == ''">false</WasmEnableSIMD>
 
     <!--<WasmStripAOTAssemblies Condition="'$(AOTMode)' == 'LLVMOnlyInterp'">false</WasmStripAOTAssemblies>-->
     <!--<WasmStripAOTAssemblies Condition="'$(WasmStripAOTAssemblies)' == ''">$(RunAOTCompilation)</WasmStripAOTAssemblies>-->
@@ -113,20 +113,34 @@
 
     <!-- if DebuggerSupport==true, then ensure that WasmDebugLevel isn't disabling debugging -->
     <WasmDebugLevel Condition="('$(WasmDebugLevel)' == '' or '$(WasmDebugLevel)' == '0') and ('$(DebuggerSupport)' == 'true' or '$(Configuration)' == 'Debug')">-1</WasmDebugLevel>
+  </PropertyGroup>
 
-    <!-- workaround: RuntimeIdentifierInference.targets is imported after this file, and updates OutputPath to include
-                     the RID. So, we don't have the correct final OutputPath here. But we need it for `dotnet run` to work,
-                     as it just reads the RunCommand after evaluation. -->
-    <_AppBundleDirForRunCommand Condition="Exists('$(WasmAppDir)/$(AssemblyName).runtimeconfig.json')">$(WasmAppDir)</_AppBundleDirForRunCommand>
-    <_AppBundleDirForRunCommand Condition="'$(_AppBundleDirForRunCommand)' == '' and Exists('$(OutputPath)/AppBundle')">$([MSBuild]::NormalizeDirectory($(OutputPath), 'AppBundle'))</_AppBundleDirForRunCommand>
-    <_AppBundleDirForRunCommand Condition="'$(_AppBundleDirForRunCommand)' == '' and Exists('$(OutputPath)/browser-wasm/AppBundle')">$([MSBuild]::NormalizeDirectory($(OutputPath), 'browser-wasm', 'AppBundle'))</_AppBundleDirForRunCommand>
-    <_AppBundleDirForRunCommand Condition="'$(_AppBundleDirForRunCommand)' == ''">OutputPath=$(OutputPath), OutDir=$(OutDir)</_AppBundleDirForRunCommand>
+  <PropertyGroup Label="Identify app bundle directory to run from">
+    <!-- Allow running from custom WasmAppDir -->
+    <_AppBundleDirForRunCommand Condition="'$(WasmAppDir)' != ''">$(WasmAppDir)</_AppBundleDirForRunCommand>
+
+    <!--
+      This is the default path. We have to build it explicitly because
+      RuntimeIdentifierInference.targets is imported after this file, and
+      updates OutputPath to include the RID. So, we don't have the correct
+      final OutputPath here. But we need it for `dotnet run` to work, as it
+      just reads the RunCommand after evaluation.
+
+      The path might not have been created yet, for example when creating a new project in VS, so don't use an Exists() check
+    -->
+    <_AppBundleDirForRunCommand Condition="'$(_AppBundleDirForRunCommand)' == ''">$([System.IO.Path]::Combine($(OutputPath), 'browser-wasm', 'AppBundle'))</_AppBundleDirForRunCommand>
+
+    <!-- Ensure the path is absolute. In case of VS, the cwd might not be the correct one, so explicitly
+         use $(MSBuildProjectDirectory). -->
+    <_AppBundleDirForRunCommand Condition="'$(_AppBundleDirForRunCommand)' != '' and !$([System.IO.Path]::IsPathRooted($(_AppBundleDirForRunCommand)))">$([System.IO.Path]::Combine($(MSBuildProjectDirectory), $(_AppBundleDirForRunCommand)))</_AppBundleDirForRunCommand>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(WasmGenerateAppBundle)' == 'true'">
     <RunCommand Condition="'$(DOTNET_HOST_PATH)' != '' and Exists($(DOTNET_HOST_PATH))">$(DOTNET_HOST_PATH)</RunCommand>
     <RunCommand Condition="'$(RunCommand)' == ''">dotnet</RunCommand>
-    <RunArguments Condition="'$(RunArguments)' == ''">exec $([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll')) --runtime-config $(_AppBundleDirForRunCommand)/$(AssemblyName).runtimeconfig.json $(WasmHostArguments)</RunArguments>
+
+    <_RuntimeConfigJsonPath>$([MSBuild]::NormalizePath($(_AppBundleDirForRunCommand), '$(AssemblyName).runtimeconfig.json'))</_RuntimeConfigJsonPath>
+    <RunArguments Condition="'$(RunArguments)' == ''">exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(WasmHostArguments)</RunArguments>
     <RunWorkingDirectory Condition="'$(RunWorkingDirectory)' == ''">$(_AppBundleDirForRunCommand)</RunWorkingDirectory>
   </PropertyGroup>
 
@@ -286,7 +300,6 @@
 
       <_HasDotnetWasm Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.wasm'">true</_HasDotnetWasm>
       <_HasDotnetJsWorker Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.worker.js'">true</_HasDotnetJsWorker>
-      <_HasDotnetJsCryptoWorker Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet-crypto-worker.js'">true</_HasDotnetJsCryptoWorker>
       <_HasDotnetJsSymbols Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js.symbols'">true</_HasDotnetJsSymbols>
       <_HasDotnetJs Condition="'%(WasmNativeAsset.FileName)%(WasmNativeAsset.Extension)' == 'dotnet.js'">true</_HasDotnetJs>
     </PropertyGroup>
@@ -296,7 +309,6 @@
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.wasm" Condition="'$(_HasDotnetWasm)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js" Condition="'$(_HasDotnetJs)' != 'true'" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.worker.js" Condition="'$(_HasDotnetJsWorker)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.worker.js')" />
-      <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet-crypto-worker.js" Condition="'$(_HasDotnetJsCryptoWorker)' != 'true' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet-crypto-worker.js')" />
       <WasmNativeAsset Include="$(MicrosoftNetCoreAppRuntimePackRidNativeDir)dotnet.js.symbols"
                        Condition="'$(WasmEmitSymbolMap)' == 'true' and
                                   '$(_HasDotnetJsSymbols)' != 'true' and
@@ -316,11 +328,16 @@
           DependsOnTargets="_WasmGenerateRuntimeConfig;_GetWasmGenerateAppBundleDependencies">
     <Error Condition="'$(WasmMainJSPath)' == ''" Text="%24(WasmMainJSPath) property needs to be set" />
 
+    <PropertyGroup>
+      <_WasmAppIncludeThreadsWorker Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true'">true</_WasmAppIncludeThreadsWorker>
+      <!-- TODO: set this from some user-facing property?  -1 means use the default baked into dotnet.js -->
+      <_WasmPThreadPoolSize Condition="'$(_WasmPThreadPoolSize)' == '' and ('$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true')">-1</_WasmPThreadPoolSize>
+    </PropertyGroup>
+
     <RemoveDir Directories="$(WasmAppDir)" />
     <WasmAppBuilder
       AppDir="$(WasmAppDir)"
       MainJS="$(WasmMainJSPath)"
-      WasmEnableES6="$(WasmEnableES6)"
       MainHTMLPath="$(WasmMainHTMLPath)"
       Assemblies="@(_WasmAssembliesInternal)"
       MainAssemblyName="$(WasmMainAssemblyFileName)"
@@ -335,7 +352,10 @@
       ExtraFilesToDeploy="@(WasmExtraFilesToDeploy)"
       ExtraConfig="@(WasmExtraConfig)"
       NativeAssets="@(WasmNativeAsset)"
-      DebugLevel="$(WasmDebugLevel)">
+      DebugLevel="$(WasmDebugLevel)"
+      IncludeThreadsWorker="$(_WasmAppIncludeThreadsWorker)"
+      PThreadPoolSize="$(_WasmPThreadPoolSize)"
+      >
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </WasmAppBuilder>
 

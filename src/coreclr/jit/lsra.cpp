@@ -1221,10 +1221,9 @@ BasicBlock* LinearScan::getNextBlock()
 //    None
 //
 // Return Value:
-//    None.
+//    Suitable phase status
 //
-
-void LinearScan::doLinearScan()
+PhaseStatus LinearScan::doLinearScan()
 {
     // Check to see whether we have any local variables to enregister.
     // We initialize this in the constructor based on opt settings,
@@ -1278,6 +1277,8 @@ void LinearScan::doLinearScan()
 #endif
 
     compiler->compLSRADone = true;
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 //------------------------------------------------------------------------
@@ -1615,7 +1616,7 @@ void LinearScan::identifyCandidates()
     // and those that meet the second.
     // The first threshold is used for methods that are heuristically deemed either to have light
     // fp usage, or other factors that encourage conservative use of callee-save registers, such
-    // as multiple exits (where there might be an early exit that woudl be excessively penalized by
+    // as multiple exits (where there might be an early exit that would be excessively penalized by
     // lots of prolog/epilog saves & restores).
     // The second threshold is used where there are factors deemed to make it more likely that fp
     // fp callee save registers will be needed, such as loops or many fp vars.
@@ -1744,7 +1745,7 @@ void LinearScan::identifyCandidates()
                 localVarIntervals[varDsc->lvVarIndex] = nullptr;
             }
             // The current implementation of multi-reg structs that are referenced collectively
-            // (i.e. by refering to the parent lclVar rather than each field separately) relies
+            // (i.e. by referring to the parent lclVar rather than each field separately) relies
             // on all or none of the fields being candidates.
             if (varDsc->lvIsStructField)
             {
@@ -2141,7 +2142,7 @@ VarToRegMap LinearScan::setInVarToRegMap(unsigned int bbNum, VarToRegMap srcVarT
 //    that is no longer necessary, and this method is simply retained as a check.
 //    The exception to the check-only behavior is when LSRA_EXTEND_LIFETIMES if set via
 //    COMPlus_JitStressRegs. In that case, this method is required, because even though
-//    the RefPositions will not be marked lastUse in that case, we still need to correclty
+//    the RefPositions will not be marked lastUse in that case, we still need to correctly
 //    mark the last uses on the tree nodes, which is done by this method.
 //
 #ifdef DEBUG
@@ -2721,7 +2722,11 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
 
         case GT_CNS_VEC:
         {
-            return GenTreeVecCon::Equals(refPosition->treeNode->AsVecCon(), otherTreeNode->AsVecCon());
+            return
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+                !Compiler::varTypeNeedsPartialCalleeSave(physRegRecord->assignedInterval->registerType) &&
+#endif
+                GenTreeVecCon::Equals(refPosition->treeNode->AsVecCon(), otherTreeNode->AsVecCon());
         }
 
         default:
@@ -2934,7 +2939,7 @@ void LinearScan::unassignDoublePhysReg(RegRecord* doubleRegRecord)
     // For a double register, we has following four cases.
     // Case 1: doubleRegRecLo is assigned to TYP_DOUBLE interval
     // Case 2: doubleRegRecLo and doubleRegRecHi are assigned to different TYP_FLOAT intervals
-    // Case 3: doubelRegRecLo is assgined to TYP_FLOAT interval and doubleRegRecHi is nullptr
+    // Case 3: doubleRegRecLo is assigned to TYP_FLOAT interval and doubleRegRecHi is nullptr
     // Case 4: doubleRegRecordLo is nullptr, and doubleRegRecordHi is assigned to a TYP_FLOAT interval
     if (doubleRegRecordLo->assignedInterval != nullptr)
     {
@@ -2946,7 +2951,7 @@ void LinearScan::unassignDoublePhysReg(RegRecord* doubleRegRecord)
         else
         {
             // Case 2: doubleRegRecLo and doubleRegRecHi are assigned to different TYP_FLOAT intervals
-            // Case 3: doubelRegRecLo is assgined to TYP_FLOAT interval and doubleRegRecHi is nullptr
+            // Case 3: doubleRegRecLo is assigned to TYP_FLOAT interval and doubleRegRecHi is nullptr
             assert(doubleRegRecordLo->assignedInterval->registerType == TYP_FLOAT);
             unassignPhysReg(doubleRegRecordLo, doubleRegRecordLo->assignedInterval->recentRefPosition);
 
@@ -3697,7 +3702,7 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
             // The importer will assign a GC type to the rhs of an assignment if the lhs type is a GC type,
             // even if the rhs is not. See the CEE_STLOC* case in impImportBlockCode(). As a result,
             // we can have a 'GT_LCL_VAR' node with a GC type, when the lclVar itself is an integer type.
-            // The emitter will mark this register as holding a GC type. Therfore we must spill this value.
+            // The emitter will mark this register as holding a GC type. Therefore, we must spill this value.
             // This was exposed on Arm32 with EH write-thru.
             if ((assignedInterval->recentRefPosition != nullptr) &&
                 (assignedInterval->recentRefPosition->treeNode != nullptr))
@@ -6681,15 +6686,19 @@ void LinearScan::resolveRegisters()
 
     // handle incoming arguments and special temps
     RefPositionIterator refPosIterator     = refPositions.begin();
-    RefPosition*        currentRefPosition = &refPosIterator;
+    RefPosition*        currentRefPosition = refPosIterator != refPositions.end() ? &refPosIterator : nullptr;
 
     if (enregisterLocalVars)
     {
         VarToRegMap entryVarToRegMap = inVarToRegMaps[compiler->fgFirstBB->bbNum];
-        for (; refPosIterator != refPositions.end() &&
-               (currentRefPosition->refType == RefTypeParamDef || currentRefPosition->refType == RefTypeZeroInit);
-             ++refPosIterator, currentRefPosition = &refPosIterator)
+        for (; refPosIterator != refPositions.end(); ++refPosIterator)
         {
+            currentRefPosition = &refPosIterator;
+            if (currentRefPosition->refType != RefTypeParamDef && currentRefPosition->refType != RefTypeZeroInit)
+            {
+                break;
+            }
+
             Interval* interval = currentRefPosition->getInterval();
             assert(interval != nullptr && interval->isLocalVar);
             resolveLocalRef(nullptr, nullptr, currentRefPosition);
@@ -6731,9 +6740,14 @@ void LinearScan::resolveRegisters()
             }
 
             // Handle the DummyDefs, updating the incoming var location.
-            for (; refPosIterator != refPositions.end() && currentRefPosition->refType == RefTypeDummyDef;
-                 ++refPosIterator, currentRefPosition = &refPosIterator)
+            for (; refPosIterator != refPositions.end(); ++refPosIterator)
             {
+                currentRefPosition = &refPosIterator;
+                if (currentRefPosition->refType != RefTypeDummyDef)
+                {
+                    break;
+                }
+
                 assert(currentRefPosition->isIntervalRef());
                 // Don't mark dummy defs as reload
                 currentRefPosition->reload = false;
@@ -6756,13 +6770,16 @@ void LinearScan::resolveRegisters()
         assert(refPosIterator != refPositions.end());
         assert(currentRefPosition->refType == RefTypeBB);
         ++refPosIterator;
-        currentRefPosition = &refPosIterator;
 
         // Handle the RefPositions for the block
-        for (; refPosIterator != refPositions.end() && currentRefPosition->refType != RefTypeBB &&
-               currentRefPosition->refType != RefTypeDummyDef;
-             ++refPosIterator, currentRefPosition = &refPosIterator)
+        for (; refPosIterator != refPositions.end(); ++refPosIterator)
         {
+            currentRefPosition = &refPosIterator;
+            if (currentRefPosition->refType == RefTypeBB || currentRefPosition->refType == RefTypeDummyDef)
+            {
+                break;
+            }
+
             currentLocation = currentRefPosition->nodeLocation;
 
             // Ensure that the spill & copy info is valid.
@@ -7959,7 +7976,7 @@ void LinearScan::resolveEdges()
 
     // The resolutionCandidateVars set was initialized with all the lclVars that are live-in to
     // any block. We now intersect that set with any lclVars that ever spilled or split.
-    // If there are no candidates for resoultion, simply return.
+    // If there are no candidates for resolution, simply return.
 
     VarSetOps::IntersectionD(compiler, resolutionCandidateVars, splitOrSpilledVars);
     if (VarSetOps::IsEmpty(compiler, resolutionCandidateVars))
@@ -9004,7 +9021,7 @@ static const char* getRefTypeShortName(RefType refType)
 }
 
 //------------------------------------------------------------------------
-// getScoreName: Returns the texual name of register score
+// getScoreName: Returns the textual name of register score
 const char* LinearScan::getScoreName(RegisterScore score)
 {
     switch (score)
@@ -9341,7 +9358,7 @@ void LinearScan::lsraDispNode(GenTree* tree, LsraTupleDumpMode mode, bool hasDes
             // i.e. in the "localDefUse" case.
             // There used to be an assert here that we wouldn't spill such a node.
             // However, we can have unused lclVars that wind up being the node at which
-            // it is spilled. This probably indicates a bug, but we don't realy want to
+            // it is spilled. This probably indicates a bug, but we don't really want to
             // assert during a dump.
             if (spillChar == 'S')
             {
@@ -9488,9 +9505,14 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
     if (mode != LSRA_DUMP_PRE)
     {
         printf("Incoming Parameters: ");
-        for (; refPosIterator != refPositions.end() && currentRefPosition->refType != RefTypeBB;
-             ++refPosIterator, currentRefPosition = &refPosIterator)
+        for (; refPosIterator != refPositions.end(); ++refPosIterator)
         {
+            currentRefPosition = &refPosIterator;
+            if (currentRefPosition->refType == RefTypeBB)
+            {
+                break;
+            }
+
             Interval* interval = currentRefPosition->getInterval();
             assert(interval != nullptr && interval->isLocalVar);
             printf(" V%02d", interval->varNum);
@@ -9530,11 +9552,15 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
         {
             bool printedBlockHeader = false;
             // We should find the boundary RefPositions in the order of exposed uses, dummy defs, and the blocks
-            for (; refPosIterator != refPositions.end() &&
-                   (currentRefPosition->refType == RefTypeExpUse || currentRefPosition->refType == RefTypeDummyDef ||
-                    (currentRefPosition->refType == RefTypeBB && !printedBlockHeader));
-                 ++refPosIterator, currentRefPosition = &refPosIterator)
+            for (; refPosIterator != refPositions.end(); ++refPosIterator)
             {
+                currentRefPosition = &refPosIterator;
+                if (currentRefPosition->refType != RefTypeExpUse && currentRefPosition->refType != RefTypeDummyDef &&
+                    !(currentRefPosition->refType == RefTypeBB && !printedBlockHeader))
+                {
+                    break;
+                }
+
                 Interval* interval = nullptr;
                 if (currentRefPosition->isIntervalRef())
                 {
@@ -9613,13 +9639,17 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                 // and combining the fixed regs with their associated def or use
                 bool         killPrinted        = false;
                 RefPosition* lastFixedRegRefPos = nullptr;
-                for (; refPosIterator != refPositions.end() &&
-                       (currentRefPosition->refType == RefTypeUse || currentRefPosition->refType == RefTypeFixedReg ||
-                        currentRefPosition->refType == RefTypeKill || currentRefPosition->refType == RefTypeDef) &&
-                       (currentRefPosition->nodeLocation == tree->gtSeqNum ||
-                        currentRefPosition->nodeLocation == tree->gtSeqNum + 1);
-                     ++refPosIterator, currentRefPosition = &refPosIterator)
+                for (; refPosIterator != refPositions.end(); ++refPosIterator)
                 {
+                    currentRefPosition = &refPosIterator;
+                    if (!(currentRefPosition->refType == RefTypeUse || currentRefPosition->refType == RefTypeFixedReg ||
+                          currentRefPosition->refType == RefTypeKill || currentRefPosition->refType == RefTypeDef) ||
+                        !(currentRefPosition->nodeLocation == tree->gtSeqNum ||
+                          currentRefPosition->nodeLocation == tree->gtSeqNum + 1))
+                    {
+                        break;
+                    }
+
                     Interval* interval = nullptr;
                     if (currentRefPosition->isIntervalRef())
                     {

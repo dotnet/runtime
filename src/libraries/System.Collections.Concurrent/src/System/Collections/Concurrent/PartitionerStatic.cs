@@ -178,7 +178,7 @@ namespace System.Collections.Concurrent
         /// <returns>A partitioner.</returns>
         /// <exception cref="System.ArgumentOutOfRangeException"> The <paramref name="toExclusive"/> argument is
         /// less than or equal to the <paramref name="fromInclusive"/> argument.</exception>
-        /// <remarks>if ProccessorCount == 1, for correct rangeSize calculation the const CoreOversubscriptionRate must be > 1 (avoid division by 1)</remarks>
+        /// <remarks>if ProcessorCount == 1, for correct rangeSize calculation the const CoreOversubscriptionRate must be > 1 (avoid division by 1)</remarks>
         public static OrderablePartitioner<Tuple<long, long>> Create(long fromInclusive, long toExclusive)
         {
             if (toExclusive <= fromInclusive) throw new ArgumentOutOfRangeException(nameof(toExclusive));
@@ -231,7 +231,7 @@ namespace System.Collections.Concurrent
         /// <returns>A partitioner.</returns>
         /// <exception cref="System.ArgumentOutOfRangeException"> The <paramref name="toExclusive"/> argument is
         /// less than or equal to the <paramref name="fromInclusive"/> argument.</exception>
-        /// <remarks>if ProccessorCount == 1, for correct rangeSize calculation the const CoreOversubscriptionRate must be > 1 (avoid division by 1),
+        /// <remarks>if ProcessorCount == 1, for correct rangeSize calculation the const CoreOversubscriptionRate must be > 1 (avoid division by 1),
         /// and the same issue could occur with rangeSize == -1 when fromInclusive = int.MinValue and toExclusive = int.MaxValue.</remarks>
         public static OrderablePartitioner<Tuple<int, int>> Create(int fromInclusive, int toExclusive)
         {

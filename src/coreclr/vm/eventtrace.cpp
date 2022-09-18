@@ -1942,7 +1942,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
 // Arguments:
 //      * thAsAddr - Type to batch
 //      * typeLogBehavior - Reminder of whether the type system log lock is held
-//          (useful if we need to recurively call back into TypeSystemLog), and whether
+//          (useful if we need to recursively call back into TypeSystemLog), and whether
 //          we even care to check if the type was already logged
 //
 
@@ -2837,7 +2837,7 @@ void ETW::TypeSystemLog::PostRegistrationInit()
         // Determine if a COMPLUS env var is overriding the frequency for the sampled
         // object allocated events
 
-        // Config value intentionally typed as string, b/c DWORD intepretation is hard-coded
+        // Config value intentionally typed as string, b/c DWORD interpretation is hard-coded
         // to hex, which is not what the user would expect.  This way I can force the
         // conversion to use decimal.
         NewArrayHolder<WCHAR> wszCustomObjectAllocationEventsPerTypePerSec(NULL);
@@ -2877,7 +2877,7 @@ void ETW::TypeSystemLog::OnKeywordsChanged()
 {
     LIMITED_METHOD_CONTRACT;
 
-    // If the desired frequencey for the GCSampledObjectAllocation events has changed,
+    // If the desired frequency for the GCSampledObjectAllocation events has changed,
     // update our state.
     s_fHeapAllocLowEventEnabledNow = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TRACE_LEVEL_INFORMATION, CLR_GCHEAPALLOCLOW_KEYWORD);
     s_fHeapAllocHighEventEnabledNow = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, TRACE_LEVEL_INFORMATION, CLR_GCHEAPALLOCHIGH_KEYWORD);
@@ -4184,7 +4184,6 @@ VOID ETW::EnumerationLog::EndRundown()
                                                                             TRACE_LEVEL_INFORMATION,
                                                                             CLR_RUNDOWNJITTEDMETHODILTONATIVEMAP_KEYWORD);
         BOOL bIsRichDebugInfoEnabled =
-            bIsIlToNativeMapsRundownEnabled &&
             ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, JittedMethodRichDebugInfo);
 
         if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context,
@@ -4762,7 +4761,9 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
             OBJECTREF innerExceptionObj;
             STRINGREF exceptionMessageRef;
         } gc;
-        ZeroMemory(&gc, sizeof(gc));
+        gc.exceptionObj = NULL;
+        gc.innerExceptionObj = NULL;
+        gc.exceptionMessageRef = NULL;
         GCPROTECT_BEGIN(gc);
 
         gc.exceptionObj = pThread->GetThrowable();
@@ -5554,7 +5555,7 @@ VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrC
             _ASSERTE(g_pDebugInterface != NULL);
             g_pDebugInterface->InitializeLazyDataIfNecessary();
 
-            ETW::MethodLog::SendMethodRichDebugInfo(pMethodDesc, pNativeCodeStartAddress, pConfig->GetCodeVersion().GetVersionId(), pConfig->GetCodeVersion().GetILCodeVersionId());
+            ETW::MethodLog::SendMethodRichDebugInfo(pMethodDesc, pNativeCodeStartAddress, pConfig->GetCodeVersion().GetVersionId(), pConfig->GetCodeVersion().GetILCodeVersionId(), NULL);
         }
 
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
@@ -6236,7 +6237,7 @@ static void GetCodeViewInfo(Module * pModule, CV_INFO_PDB70 * pCvInfoIL, CV_INFO
         if (cbDebugData < (offsetof(CV_INFO_PDB70, magic) + sizeof(((CV_INFO_PDB70*)0)->magic)))
         {
             // raw data too small to contain magic number at expected spot, so its format
-            // is not recognizeable. Skip
+            // is not recognizable. Skip
             continue;
         }
 
@@ -6517,6 +6518,22 @@ done:;
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
 }
 
+VOID ETW::MethodLog::SendNonDuplicateMethodDetailsEvent(MethodDesc* pMethodDesc, MethodDescSet* set)
+{
+    CONTRACTL {
+        THROWS;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    if (set == NULL || !set->Contains(pMethodDesc))
+    {
+        SendMethodDetailsEvent(pMethodDesc);
+
+        if (set != NULL)
+            set->Add(pMethodDesc);
+    }
+}
+
 /*****************************************************************/
 /* This routine is used to send an ETW event just before a method starts jitting*/
 /*****************************************************************/
@@ -6596,7 +6613,7 @@ VOID ETW::MethodLog::SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *n
 /****************************************************************************/
 /* This routine is used to send a method load/unload or rundown event                              */
 /****************************************************************************/
-VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptions, BOOL bIsJit, SString *namespaceOrClassName, SString *methodName, SString *methodSignature, PCODE pNativeCodeStartAddress, PrepareCodeConfig *pConfig)
+VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptions, BOOL bIsJit, SString *namespaceOrClassName, SString *methodName, SString *methodSignature, PCODE pNativeCodeStartAddress, PrepareCodeConfig *pConfig, MethodDescSet* sentMethodDetailsSet)
 {
     CONTRACTL {
         THROWS;
@@ -6677,7 +6694,7 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
     ulColdMethodFlags = ulMethodFlags | ETW::MethodLog::MethodStructs::ColdSection; // Method Extent (bits 28, 29, 30, 31)
     ulMethodFlags = ulMethodFlags | ETW::MethodLog::MethodStructs::HotSection;         // Method Extent (bits 28, 29, 30, 31)
 
-    // MethodDesc ==> Code Address ==>JitMananger
+    // MethodDesc ==> Code Address ==>JitManager
     TADDR start = PCODEToPINSTR(pNativeCodeStartAddress ? pNativeCodeStartAddress : pMethodDesc->GetNativeCode());
     if(start == 0) {
         // this method hasn't been jitted
@@ -6733,7 +6750,7 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
     szDtraceOutput2 = (PCWSTR)pMethodName;
     szDtraceOutput3 = (PCWSTR)pMethodSignature;
 
-    SendMethodDetailsEvent(pMethodDesc);
+    SendNonDuplicateMethodDetailsEvent(pMethodDesc, sentMethodDetailsSet);
 
     if((dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodLoad) ||
         (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::NgenMethodLoad))
@@ -6947,7 +6964,14 @@ VOID ETW::MethodLog::SendMethodILToNativeMapEvent(MethodDesc * pMethodDesc, DWOR
         FireEtwMethodDCEndILToNativeMap_V1(ullMethodIdentifier, nativeCodeId, 0, cMap, rguiILOffset, rguiNativeOffset, GetClrInstanceId(), ilCodeId);
 }
 
-VOID ETW::MethodLog::SendMethodRichDebugInfo(MethodDesc* pMethodDesc, PCODE pNativeCodeStartAddress, DWORD nativeCodeId, ReJITID ilCodeId)
+template<typename T>
+static void WriteToBuffer(BYTE** pBuffer, const T& val)
+{
+    memcpy(*pBuffer, &val, sizeof(T));
+    *pBuffer += sizeof(T);
+}
+
+VOID ETW::MethodLog::SendMethodRichDebugInfo(MethodDesc* pMethodDesc, PCODE pNativeCodeStartAddress, DWORD nativeCodeId, ReJITID ilCodeId, MethodDescSet* sentMethodDetailsSet)
 {
     CONTRACTL
     {
@@ -6976,20 +7000,48 @@ VOID ETW::MethodLog::SendMethodRichDebugInfo(MethodDesc* pMethodDesc, PCODE pNat
     ULONG32 numMappings = 0;
     if (DebugInfoManager::GetRichDebugInfo(request, fpNew, NULL, &inlineTree, &numInlineTree, &mappings, &numMappings))
     {
-        unsigned dataSize = 8 + numInlineTree * sizeof(ICorDebugInfo::InlineTreeNode) + numMappings * sizeof(ICorDebugInfo::RichOffsetMapping);
+        static_assert_no_msg((std::is_same<decltype(inlineTree->Method), CORINFO_METHOD_HANDLE>::value));
+        static_assert_no_msg((std::is_same<decltype(inlineTree->ILOffset), uint32_t>::value));
+        static_assert_no_msg((std::is_same<decltype(inlineTree->Child), uint32_t>::value));
+        static_assert_no_msg((std::is_same<decltype(inlineTree->Sibling), uint32_t>::value));
+
+        static_assert_no_msg((std::is_same<decltype(mappings->ILOffset), uint32_t>::value));
+        static_assert_no_msg((std::is_same<decltype(mappings->Inlinee), uint32_t>::value));
+        static_assert_no_msg((std::is_same<decltype(mappings->NativeOffset), uint32_t>::value));
+
+        const uint32_t inlineTreeNodeDataSize =
+            sizeof(CORINFO_METHOD_HANDLE) +
+            sizeof(uint32_t) * 3;
+
+        const uint32_t richOffsetMappingDataSize =
+            sizeof(uint32_t) * 3 +
+            1; // source type
+
+        unsigned dataSize = 8 + numInlineTree * inlineTreeNodeDataSize + numMappings * richOffsetMappingDataSize;
 
         InlineSBuffer<1024> buffer;
         buffer.Preallocate(dataSize);
 
         BYTE* pBuffer = &buffer[0];
-        memcpy(pBuffer, &numInlineTree, 4);
-        pBuffer += 4;
-        memcpy(pBuffer, &numMappings, 4);
-        pBuffer += 4;
-        memcpy(pBuffer, inlineTree, numInlineTree * sizeof(ICorDebugInfo::InlineTreeNode));
-        pBuffer += numInlineTree * sizeof(ICorDebugInfo::InlineTreeNode);
-        memcpy(pBuffer, mappings, numMappings * sizeof(ICorDebugInfo::RichOffsetMapping));
-        pBuffer += numMappings * sizeof(ICorDebugInfo::RichOffsetMapping);
+        WriteToBuffer(&pBuffer, numInlineTree);
+        WriteToBuffer(&pBuffer, numMappings);
+        for (uint32_t i = 0; i < numInlineTree; i++)
+        {
+            WriteToBuffer(&pBuffer, inlineTree[i].Method);
+            WriteToBuffer(&pBuffer, inlineTree[i].ILOffset);
+            WriteToBuffer(&pBuffer, inlineTree[i].Child);
+            WriteToBuffer(&pBuffer, inlineTree[i].Sibling);
+        }
+
+        for (uint32_t i = 0; i < numMappings; i++)
+        {
+            WriteToBuffer(&pBuffer, mappings[i].ILOffset);
+            WriteToBuffer(&pBuffer, mappings[i].Inlinee);
+            WriteToBuffer(&pBuffer, mappings[i].NativeOffset);
+            WriteToBuffer(&pBuffer, static_cast<uint8_t>(mappings[i].Source));
+        }
+
+        _ASSERTE(static_cast<size_t>(pBuffer - &buffer[0]) == static_cast<size_t>(dataSize));
 
         const uint32_t chunkSize = 40000;
         const uint32_t finalChunkFlag = 0x80000000;
@@ -7019,7 +7071,7 @@ VOID ETW::MethodLog::SendMethodRichDebugInfo(MethodDesc* pMethodDesc, PCODE pNat
         {
             MethodDesc* pInlineeMethodDesc = reinterpret_cast<MethodDesc*>(inlineTree[i].Method);
             if (pInlineeMethodDesc != pMethodDesc)
-                SendMethodDetailsEvent(pInlineeMethodDesc);
+                SendNonDuplicateMethodDetailsEvent(pInlineeMethodDesc, sentMethodDetailsSet);
         }
     }
 
@@ -7100,6 +7152,12 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
     _ASSERTE(pLoaderAllocatorFilter == nullptr || pLoaderAllocatorFilter->IsCollectible());
     _ASSERTE(pLoaderAllocatorFilter == nullptr || !fGetCodeIds);
 
+    // Set of methods for which we already have sent a MethodDetails event.
+    // Only used when sending rich debug info that would otherwise send a lot
+    // of duplicate events.
+    MethodDescSet sentMethodDetailsSet;
+    MethodDescSet* pSentMethodDetailsSet = fSendRichDebugInfoEvent ? &sentMethodDetailsSet : NULL;
+
     EEJitManager::CodeHeapIterator heapIterator(pLoaderAllocatorFilter);
     while (heapIterator.Next())
     {
@@ -7160,7 +7218,8 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
                     NULL,           // methodName
                     NULL,           // methodSignature
                     codeStart,
-                    &config);
+                    &config,
+                    pSentMethodDetailsSet);
             }
         }
 
@@ -7169,7 +7228,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
             ETW::MethodLog::SendMethodILToNativeMapEvent(pMD, dwEventOptions, codeStart, nativeCodeVersionId, ilCodeId);
 
         if (fSendRichDebugInfoEvent)
-            ETW::MethodLog::SendMethodRichDebugInfo(pMD, codeStart, nativeCodeVersion.GetVersionId(), ilCodeId);
+            ETW::MethodLog::SendMethodRichDebugInfo(pMD, codeStart, nativeCodeVersion.GetVersionId(), ilCodeId, pSentMethodDetailsSet);
 
         // When we're called to announce unloads, then the methodunload event itself must
         // come after any supplemental events, so that the method unload event is the
@@ -7340,7 +7399,7 @@ VOID ETW::EnumerationLog::IterateDomain(BaseDomain *pDomain, DWORD enumerationOp
 
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
     // Do not call IterateDomain() directly with an AppDomain.  Use
-    // IterateAppDomain(), whch wraps this function with a hold on the
+    // IterateAppDomain(), which wraps this function with a hold on the
     // SystemDomain lock, which ensures pDomain's type data doesn't disappear
     // on us.
     if (pDomain->IsAppDomain())
@@ -7636,6 +7695,8 @@ void ETW::CompilationLog::TieredCompilation::GetSettings(UINT32 *flagsRef)
         None = 0x0,
         QuickJit = 0x1,
         QuickJitForLoops = 0x2,
+        TieredPGO = 0x4,
+        ReadyToRun = 0x8,
     };
 
     UINT32 flags = (UINT32)Flags::None;
@@ -7647,6 +7708,18 @@ void ETW::CompilationLog::TieredCompilation::GetSettings(UINT32 *flagsRef)
             flags |= (UINT32)Flags::QuickJitForLoops;
         }
     }
+#ifdef FEATURE_PGO
+    if (g_pConfig->TieredPGO())
+    {
+        flags |= (UINT32)Flags::TieredPGO;
+    }
+#endif
+#ifdef FEATURE_READYTORUN
+    if (g_pConfig->ReadyToRun())
+    {
+        flags |= (UINT32)Flags::ReadyToRun;
+    }
+#endif
     *flagsRef = flags;
 }
 

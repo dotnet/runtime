@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -80,25 +79,40 @@ namespace Microsoft.Interop
 
         private ExpressionSyntax GetNumElementsExpressionFromMarshallingInfo(TypePositionInfo info, CountInfo count, StubCodeContext context)
         {
-            return count switch
+            switch (count)
             {
-                SizeAndParamIndexInfo(int size, SizeAndParamIndexInfo.UnspecifiedParam) => GetConstSizeExpression(size),
-                ConstSizeCountInfo(int size) => GetConstSizeExpression(size),
-                SizeAndParamIndexInfo(SizeAndParamIndexInfo.UnspecifiedConstSize, TypePositionInfo param) => CheckedExpression(SyntaxKind.CheckedExpression, GetExpressionForParam(param)),
-                SizeAndParamIndexInfo(int size, TypePositionInfo param) => CheckedExpression(SyntaxKind.CheckedExpression, BinaryExpression(SyntaxKind.AddExpression, GetConstSizeExpression(size), GetExpressionForParam(param))),
-                CountElementCountInfo(TypePositionInfo elementInfo) => CheckedExpression(SyntaxKind.CheckedExpression, GetExpressionForParam(elementInfo)),
-                _ => throw new MarshallingNotSupportedException(info, context)
+                case SizeAndParamIndexInfo(int size, SizeAndParamIndexInfo.UnspecifiedParam):
+                    return GetConstSizeExpression(size);
+                case ConstSizeCountInfo(int size):
+                    return GetConstSizeExpression(size);
+                case SizeAndParamIndexInfo(SizeAndParamIndexInfo.UnspecifiedConstSize, TypePositionInfo param):
                 {
-                    NotSupportedDetails = SR.ArraySizeMustBeSpecified
-                },
-            };
+                    ExpressionSyntax expr = GetExpressionForParam(param, out bool isIntType);
+                    return isIntType ? expr : CheckedExpression(SyntaxKind.CheckedExpression, expr);
+                }
+                case SizeAndParamIndexInfo(int size, TypePositionInfo param):
+                    return CheckedExpression(SyntaxKind.CheckedExpression,
+                        BinaryExpression(SyntaxKind.AddExpression,
+                            GetConstSizeExpression(size),
+                            GetExpressionForParam(param, out _)));
+                case CountElementCountInfo(TypePositionInfo elementInfo):
+                {
+                    ExpressionSyntax expr = GetExpressionForParam(elementInfo, out bool isIntType);
+                    return isIntType ? expr : CheckedExpression(SyntaxKind.CheckedExpression, expr);
+                }
+                default:
+                    throw new MarshallingNotSupportedException(info, context)
+                    {
+                        NotSupportedDetails = SR.ArraySizeMustBeSpecified
+                    };
+            }
 
             static LiteralExpressionSyntax GetConstSizeExpression(int size)
             {
                 return LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(size));
             }
 
-            ExpressionSyntax GetExpressionForParam(TypePositionInfo paramInfo)
+            ExpressionSyntax GetExpressionForParam(TypePositionInfo paramInfo, out bool isIntType)
             {
                 ExpressionSyntax numElementsExpression = GetIndexedNumElementsExpression(
                            context,
@@ -133,7 +147,10 @@ namespace Microsoft.Interop
                     };
                 }
 
-                return CastExpression(
+                isIntType = specialType.SpecialType == SpecialType.System_Int32;
+                return isIntType
+                    ? numElementsExpression
+                    : CastExpression(
                         PredefinedType(Token(SyntaxKind.IntKeyword)),
                         ParenthesizedExpression(numElementsExpression));
             }
@@ -218,7 +235,7 @@ namespace Microsoft.Interop
             ICustomTypeMarshallingStrategy marshallingStrategy;
             if (marshallerData.HasState)
             {
-                marshallingStrategy = new StatefulValueMarshalling(marshallerData.MarshallerType.Syntax, marshallerData.NativeType.Syntax, marshallerData.Shape);
+                marshallingStrategy = new StatefulValueMarshalling(marshallerData.MarshallerType, marshallerData.NativeType.Syntax, marshallerData.Shape);
                 if (marshallerData.Shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
                     marshallingStrategy = new StatefulCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax, marshallerData.BufferElementType.Syntax);
             }
@@ -232,7 +249,7 @@ namespace Microsoft.Interop
                     marshallingStrategy = new StatelessFreeMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax);
             }
 
-            IMarshallingGenerator marshallingGenerator = new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: false);
+            IMarshallingGenerator marshallingGenerator = new CustomTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: false);
 
             if (marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference))
             {
@@ -266,8 +283,13 @@ namespace Microsoft.Interop
 
             // Insert the unmanaged element type into the marshaller type
             TypeSyntax unmanagedElementType = elementMarshaller.AsNativeType(elementInfo).GetCompatibleGenericTypeParameterSyntax();
-            TypeSyntax marshallerTypeSyntax = marshallerData.MarshallerType.Syntax;
-            marshallerTypeSyntax = ReplacePlaceholderSyntaxWithUnmanagedTypeSyntax(marshallerTypeSyntax, marshalInfo, unmanagedElementType);
+            ManagedTypeInfo marshallerType = marshallerData.MarshallerType;
+            TypeSyntax marshallerTypeSyntax = ReplacePlaceholderSyntaxWithUnmanagedTypeSyntax(marshallerType.Syntax, marshalInfo, unmanagedElementType);
+            marshallerType = marshallerType with
+            {
+                FullTypeName = marshallerTypeSyntax.ToString(),
+                DiagnosticFormattedName = marshallerTypeSyntax.ToString(),
+            };
             TypeSyntax nativeTypeSyntax = ReplacePlaceholderSyntaxWithUnmanagedTypeSyntax(marshallerData.NativeType.Syntax, marshalInfo, unmanagedElementType);
 
             ICustomTypeMarshallingStrategy marshallingStrategy;
@@ -275,7 +297,7 @@ namespace Microsoft.Interop
 
             if (marshallerData.HasState)
             {
-                marshallingStrategy = new StatefulValueMarshalling(marshallerTypeSyntax, nativeTypeSyntax, marshallerData.Shape);
+                marshallingStrategy = new StatefulValueMarshalling(marshallerType, nativeTypeSyntax, marshallerData.Shape);
                 if (marshallerData.Shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
                 {
                     // Check if the buffer element type is actually the unmanaged element type
@@ -318,7 +340,7 @@ namespace Microsoft.Interop
                     marshallingStrategy = new StatelessFreeMarshalling(marshallingStrategy, marshallerTypeSyntax);
             }
 
-            IMarshallingGenerator marshallingGenerator = new CustomNativeTypeMarshallingGenerator(
+            IMarshallingGenerator marshallingGenerator = new CustomTypeMarshallingGenerator(
                 marshallingStrategy,
                 enableByValueContentsMarshalling: info.ManagedType is SzArrayType && (!elementIsBlittable || ElementTypeIsSometimesNonBlittable(elementInfo)));
 
@@ -346,8 +368,8 @@ namespace Microsoft.Interop
             NativeLinearCollectionMarshallingInfo marshalInfo,
             TypeSyntax unmanagedElementType)
             => originalTypeSyntax.ReplaceNodes(
-                        originalTypeSyntax.DescendantNodesAndSelf().OfType<TypeSyntax>().Where(t => t.IsEquivalentTo(marshalInfo.PlaceholderTypeParameter.Syntax)),
-                        (_, _) => unmanagedElementType);
+                    originalTypeSyntax.DescendantNodesAndSelf().OfType<TypeSyntax>().Where(t => t.IsEquivalentTo(marshalInfo.PlaceholderTypeParameter.Syntax)),
+                    (_, _) => unmanagedElementType);
 
         private void ValidateCustomNativeTypeMarshallingSupported(TypePositionInfo info, StubCodeContext context, NativeMarshallingAttributeInfo marshalInfo)
         {
@@ -384,7 +406,7 @@ namespace Microsoft.Interop
             if (!info.IsByRef
                 && !info.IsManagedReturnPosition
                 && context.SingleFrameSpansNativeContext
-                && !(marshalInfo.IsPinnableManagedType || marshalInfo.Marshallers.IsDefinedOrDefault(Options.InMode)))
+                && !marshalInfo.Marshallers.IsDefinedOrDefault(Options.InMode))
             {
                 throw new MarshallingNotSupportedException(info, context)
                 {

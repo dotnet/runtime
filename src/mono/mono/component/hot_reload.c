@@ -826,7 +826,7 @@ delta_info_initialize_mutants (const MonoImage *base, const BaselineInfo *base_i
 		}
 		/* The invariant is that once we made a copy in any previous generation, we'll make
 		 * a copy in this generation.  So subsequent generations can copy either from the
-		 * immediately preceeding generation or from the baseline if the preceeding
+		 * immediately preceding generation or from the baseline if the preceding
 		 * generation didn't make a copy. */
 
 		guint32 rows = count->prev_gen_rows + count->inserted_rows;
@@ -1095,7 +1095,7 @@ hot_reload_effective_table_slow (const MonoTableInfo **t, uint32_t idx G_GNUC_UN
  * single entry, and thus this would be an out-of-bounds access. That's where
  * the ENCMAP table comes into play: It will have an entry
  * `MONO_TOKEN_METHOD_DEF | 5`, so before accessing the new entry in the
- * minimal delta image, it has to be substracted. Thus the new relative index
+ * minimal delta image, it has to be subtracted. Thus the new relative index
  * is `1`, and no out-of-bounds acccess anymore.
  *
  * One can assume that ENCMAP is sorted (todo: verify this claim).
@@ -1620,8 +1620,8 @@ apply_enclog_pass1 (MonoImage *image_base, MonoImage *image_dmeta, DeltaInfo *de
 
 		/*
 		 * So the way a non-default func_code works is that it's attached to the EnCLog
-		 * record preceeding the new member defintion (so e.g. an addMethod code will be on
-		 * the preceeding MONO_TABLE_TYPEDEF enc record that identifies the parent type).
+		 * record preceding the new member definition (so e.g. an addMethod code will be on
+		 * the preceding MONO_TABLE_TYPEDEF enc record that identifies the parent type).
 		 */
 		switch (func_code) {
 			case ENC_FUNC_DEFAULT: /* default */
@@ -1984,14 +1984,14 @@ pass2_update_nested_classes (Pass2Context *ctx, MonoImage *image_base, MonoError
 
 }
 
-/* do actuall enclog application */
+/* do actual enclog application */
 static gboolean
 apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, MonoImage *image_dmeta, DeltaInfo *delta_info, gconstpointer dil_data, uint32_t dil_length, MonoError *error)
 {
 	MonoTableInfo *table_enclog = &image_dmeta->tables [MONO_TABLE_ENCLOG];
 	guint32 rows = table_info_get_rows (table_enclog);
 
-	/* NOTE: Suppressed colums
+	/* NOTE: Suppressed columns
 	 *
 	 * Certain column values in some tables in the deltas are not meant to be applied over the
 	 * previous generation. See CMiniMdRW::m_SuppressedDeltaColumns in CoreCLR.  For example the
@@ -2118,6 +2118,13 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 			if (func_code == ENC_FUNC_ADD_PARAM)
 				break;
 
+			if (!base_info->method_table_update)
+				base_info->method_table_update = g_hash_table_new (g_direct_hash, g_direct_equal);
+			if (!delta_info->method_table_update)
+				delta_info->method_table_update = g_hash_table_new (g_direct_hash, g_direct_equal);
+			if (!delta_info->method_ppdb_table_update)
+				delta_info->method_ppdb_table_update = g_hash_table_new (g_direct_hash, g_direct_equal);
+
 			if (is_addition) {
 				g_assertf (add_member_typedef, "EnC: new method added but I don't know the class, should be caught by pass1");
 				if (pass2_context_is_skeleton (ctx, add_member_typedef)) {
@@ -2138,14 +2145,6 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 				}
 				add_member_typedef = 0;
 			}
-
-			if (!base_info->method_table_update)
-				base_info->method_table_update = g_hash_table_new (g_direct_hash, g_direct_equal);
-			if (!delta_info->method_table_update)
-				delta_info->method_table_update = g_hash_table_new (g_direct_hash, g_direct_equal);
-			if (!delta_info->method_ppdb_table_update)
-
-				delta_info->method_ppdb_table_update = g_hash_table_new (g_direct_hash, g_direct_equal);
 
 			int mapped_token = hot_reload_relative_delta_index (image_dmeta, delta_info, mono_metadata_make_token (token_table, token_index));
 			guint32 rva = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_METHOD], mapped_token - 1, MONO_METHOD_RVA);

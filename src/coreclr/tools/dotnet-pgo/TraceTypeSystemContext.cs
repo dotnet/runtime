@@ -333,7 +333,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             return actualModuleData.Module;
                         }
                     }
-                    mappedViewAccessor = null; // Ownership has been transfered
+                    mappedViewAccessor = null; // Ownership has been transferred
                     pdbReader = null; // Ownership has been transferred
 
                     _moduleHashtable.AddOrGetExisting(moduleData);
@@ -364,7 +364,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             string pdbFileName = null;
             BlobContentId pdbContentId = default;
 
-            foreach (DebugDirectoryEntry debugEntry in peReader.ReadDebugDirectory())
+            foreach (DebugDirectoryEntry debugEntry in peReader.SafeReadDebugDirectory())
             {
                 if (debugEntry.Type != DebugDirectoryEntryType.CodeView)
                     continue;

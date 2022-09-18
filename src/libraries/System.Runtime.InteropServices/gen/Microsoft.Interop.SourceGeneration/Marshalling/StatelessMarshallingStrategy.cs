@@ -297,7 +297,36 @@ namespace Microsoft.Interop
         }
 
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
-        public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
+
+        public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context)
+        {
+            if (!_shape.HasFlag(MarshallerShape.GuaranteedUnmarshal))
+                yield break;
+
+            (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
+            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
+
+            yield return ExpressionStatement(
+                AssignmentExpression(
+                    SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName(numElementsIdentifier),
+                    _numElementsExpression));
+
+            // <managedIdentifier> = <marshallerType>.AllocateContainerForManagedElementsFinally(<nativeIdentifier>, <numElements>);
+            yield return ExpressionStatement(
+                AssignmentExpression(
+                    SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName(managedIdentifier),
+                    InvocationExpression(
+                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                            _marshallerTypeSyntax,
+                            IdentifierName(ShapeMemberNames.LinearCollection.Stateless.AllocateContainerForManagedElementsFinally)),
+                        ArgumentList(SeparatedList(new ArgumentSyntax[]
+                        {
+                            Argument(IdentifierName(nativeIdentifier)),
+                            Argument(IdentifierName(numElementsIdentifier))
+                        })))));
+        }
 
         public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
@@ -412,7 +441,7 @@ namespace Microsoft.Interop
 
         protected override InvocationExpressionSyntax GetManagedValuesSource(TypePositionInfo info, StubCodeContext context)
         {
-            // <marshallerType>.GetManagedValuesSource(<managedIdentifer>)
+            // <marshallerType>.GetManagedValuesSource(<managedIdentifier>)
             string managedIdentifier = context.GetIdentifiers(info).managed;
             return InvocationExpression(
                 MemberAccessExpression(
@@ -484,7 +513,36 @@ namespace Microsoft.Interop
         public TypeSyntax AsNativeType(TypePositionInfo info) => _nativeTypeSyntax;
 
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
-        public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context) => Array.Empty<StatementSyntax>();
+
+        public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context)
+        {
+            if (!_shape.HasFlag(MarshallerShape.GuaranteedUnmarshal))
+                yield break;
+
+            (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
+            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
+
+            yield return ExpressionStatement(
+                AssignmentExpression(
+                    SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName(numElementsIdentifier),
+                    _numElementsExpression));
+
+            // <managedIdentifier> = <marshallerType>.AllocateContainerForManagedElementsFinally(<nativeIdentifier>, <numElements>);
+            yield return ExpressionStatement(
+                AssignmentExpression(
+                    SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName(managedIdentifier),
+                    InvocationExpression(
+                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                            _marshallerTypeSyntax,
+                            IdentifierName(ShapeMemberNames.LinearCollection.Stateless.AllocateContainerForManagedElementsFinally)),
+                        ArgumentList(SeparatedList(new ArgumentSyntax[]
+                        {
+                            Argument(IdentifierName(nativeIdentifier)),
+                            Argument(IdentifierName(numElementsIdentifier))
+                        })))));
+        }
 
         public IEnumerable<StatementSyntax> GenerateMarshalStatements(TypePositionInfo info, StubCodeContext context)
         {
@@ -615,7 +673,7 @@ namespace Microsoft.Interop
 
         protected override InvocationExpressionSyntax GetManagedValuesSource(TypePositionInfo info, StubCodeContext context)
         {
-            // <marshallerType>.GetManagedValuesSource(<managedIdentifer>)
+            // <marshallerType>.GetManagedValuesSource(<managedIdentifier>)
             string managedIdentifier = context.GetIdentifiers(info).managed;
             return InvocationExpression(
                 MemberAccessExpression(

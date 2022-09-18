@@ -956,13 +956,13 @@ FCIMPL1(Object*, AssemblyNative::GetReferencedAssemblies, AssemblyBaseObject * p
 {
     FCALL_CONTRACT;
 
-    struct _gc {
+    struct {
         PTRARRAYREF ItemArray;
         ASSEMBLYNAMEREF pObj;
         ASSEMBLYREF refAssembly;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
-
+    gc.ItemArray = NULL;
+    gc.pObj = NULL;
     gc.refAssembly = (ASSEMBLYREF)ObjectToOBJECTREF(pAssemblyUNSAFE);
 
     if (gc.refAssembly == NULL)
@@ -1150,7 +1150,7 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PT
 
                 // Setup the managed proxy now, but do not actually transfer ownership to it.
                 // Once everything is setup and nothing can fail anymore, the ownership will be
-                // atomically transfered by call to LoaderAllocator::ActivateManagedTracking().
+                // atomically transferred by call to LoaderAllocator::ActivateManagedTracking().
                 loaderAllocator->SetupManagedTracking(&pManagedLoaderAllocator);
             }
 

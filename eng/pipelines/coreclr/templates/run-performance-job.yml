@@ -25,6 +25,7 @@ parameters:
   javascriptEngine: 'NoJS'
   helixTypeSuffix: ''             # optional -- appends to HelixType
   collectHelixLogsScript: ''      # optional -- script to collect the logs, and artifacts helpful for debugging failures
+  additionalSetupParameters: ''   # optional -- additional setup parameters that are job-specific
 
 jobs:
 - template: xplat-pipeline-job.yml
@@ -58,9 +59,42 @@ jobs:
 
     - IsInternal: ''
     - HelixApiAccessToken: ''
-    - HelixPreCommandStemWindows: 'set ORIGPYPATH=%PYTHONPATH%;py -m pip install -U pip;py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install -U pip;py -3 -m pip install azure.storage.blob==12.0.0;py -3 -m pip install azure.storage.queue==12.0.0;set "PERFLAB_UPLOAD_TOKEN=$(PerfCommandUploadToken)"'
-    - HelixPreCommandStemLinux: 'export ORIGPYPATH=$PYTHONPATH;export CRYPTOGRAPHY_ALLOW_OPENSSL_102=true;python3 -m pip install -U pip;sudo apt-get -y install python3-venv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install azure.storage.blob==12.0.0;pip3 install azure.storage.queue==12.0.0;sudo apt-get update;sudo apt -y install curl dirmngr apt-transport-https lsb-release ca-certificates;curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -;sudo apt-get -y install nodejs;sudo apt-get -y install npm;npm install --prefix $HELIX_WORKITEM_PAYLOAD jsvu -g;$HELIX_WORKITEM_PAYLOAD/bin/jsvu --os=linux64 --engines=v8,javascriptcore;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
-    - HelixPreCommandStemMusl: 'export ORIGPYPATH=$PYTHONPATH;sudo apk add icu-libs krb5-libs libgcc libintl libssl1.1 libstdc++ zlib cargo;sudo apk add libgdiplus --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing; python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install azure.storage.blob==12.7.1;pip3 install azure.storage.queue==12.1.5;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
+    - ${{ if and(eq(parameters.runtimeType, 'wasm'), in(variables['Build.Reason'], 'PullRequest')) }}:
+      - HelixPerfUploadTokenValue: ''
+    - ${{ if and(notin(variables['Build.Reason'], 'PullRequest'), ne(parameters.osGroup, 'windows')) }}:
+      - HelixPerfUploadTokenValue: '$(PerfCommandUploadTokenLinux)'
+    - ${{ if and(notin(variables['Build.Reason'], 'PullRequest'), eq(parameters.osGroup, 'windows')) }}:
+      - HelixPerfUploadTokenValue: '$(PerfCommandUploadToken)'
+    - ${{ if eq(parameters.runtimeType, 'wasm') }}:
+      - HelixPreCommandsWasmOnLinux: >-
+          sudo apt-get -y remove nodejs &&
+          curl -fsSL https://deb.nodesource.com/setup_14.x | sudo -E bash - &&
+          sudo apt-get -y install nodejs &&
+          npm install --prefix $HELIX_WORKITEM_PAYLOAD jsvu -g &&
+          $HELIX_WORKITEM_PAYLOAD/bin/jsvu --os=linux64 --engines=v8,javascriptcore
+    - ${{ if ne(parameters.runtimeType, 'wasm') }}:
+      - HelixPreCommandsWasmOnLinux: echo
+    - HelixPreCommandStemWindows: 'set ORIGPYPATH=%PYTHONPATH%;py -m pip install -U pip;py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install -U pip;py -3 -m pip install azure.storage.blob==12.0.0;py -3 -m pip install azure.storage.queue==12.0.0;set "PERFLAB_UPLOAD_TOKEN=$(HelixPerfUploadTokenValue)"'
+    - HelixPreCommandStemLinux: >-
+        export ORIGPYPATH=$PYTHONPATH
+        export CRYPTOGRAPHY_ALLOW_OPENSSL_102=true;
+        echo "** Installing prerequistes **";
+        python3 -m pip install --user -U pip &&
+        sudo apt-get -y install python3-venv &&
+        python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv &&
+        ls -l $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate &&
+        export PYTHONPATH= &&
+        python3 -m pip install --user -U pip &&
+        pip3 install --user azure.storage.blob==12.0.0 &&
+        pip3 install --user azure.storage.queue==12.0.0 &&
+        sudo apt-get update &&
+        sudo apt -y install curl dirmngr apt-transport-https lsb-release ca-certificates &&
+        $(HelixPreCommandsWasmOnLinux) &&
+        export DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1 &&
+        export PERFLAB_UPLOAD_TOKEN="$(HelixPerfUploadTokenValue)"
+        || export PERF_PREREQS_INSTALL_FAILED=1;
+        test "x$PERF_PREREQS_INSTALL_FAILED" = "x1" && echo "** Error: Failed to install prerequites **"
+    - HelixPreCommandStemMusl: 'export ORIGPYPATH=$PYTHONPATH;sudo apk add icu-libs krb5-libs libgcc libintl libssl1.1 libstdc++ zlib cargo;sudo apk add libgdiplus --repository http://dl-cdn.alpinelinux.org/alpine/edge/testing; python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/bin/activate;export PYTHONPATH=;python3 -m pip install -U pip;pip3 install azure.storage.blob==12.7.1;pip3 install azure.storage.queue==12.1.5;export PERFLAB_UPLOAD_TOKEN="$(HelixPerfUploadTokenValue)"'
     - ExtraMSBuildLogsWindows: 'set MSBUILDDEBUGCOMM=1;set "MSBUILDDEBUGPATH=%HELIX_WORKITEM_UPLOAD_ROOT%"'
     - ExtraMSBuildLogsLinux: 'export MSBUILDDEBUGCOMM=1;export "MSBUILDDEBUGPATH=$HELIX_WORKITEM_UPLOAD_ROOT"'
     - HelixPreCommand: ''
@@ -89,7 +123,7 @@ jobs:
         - HelixPreCommand: $(HelixPreCommandStemWindows);$(ExtraMSBuildLogsWindows)
         - HelixPostCommand: 'export PYTHONPATH=$ORIGPYPATH;${{ parameters.collectHelixLogsScript }}'
       - ${{ if ne(parameters.osGroup, 'windows') }}:
-        - HelixPreCommand: $(HelixPreCommandStemLinux);$(ExtraMSBuildLogsLinux);npm install --prefix $HELIX_WORKITEM_PAYLOAD jsvu -g;$HELIX_WORKITEM_PAYLOAD/bin/jsvu --os=linux64 --engines=v8,javascriptcore
+        - HelixPreCommand: $(HelixPreCommandStemLinux);$(ExtraMSBuildLogsLinux);
         - HelixPostCommand: 'export PYTHONPATH=$ORIGPYPATH;${{ parameters.collectHelixLogsScript }}'
 
     - ${{ if and(eq(parameters.codeGenType, 'Interpreter'), eq(parameters.runtimeType, 'mono')) }}:
@@ -130,7 +164,7 @@ jobs:
       displayName: Performance Setup (Unix)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
-    - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments)
+    - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(SetupArguments) ${{ parameters.additionalSetupParameters }}
       displayName: Run ci setup script
       # Run perf testing in helix
     - template: /eng/pipelines/coreclr/templates/perf-send-to-helix.yml

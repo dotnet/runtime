@@ -6,14 +6,14 @@ using Debug = System.Diagnostics.Debug;
 namespace Internal.TypeSystem
 {
     // Implements generic method canonicalization
-    partial class InstantiatedMethod
+    public partial class InstantiatedMethod
     {
         /// <summary>
         /// Stores a cached version of the canonicalized form of this method since
         /// calculating it is a recursive operation
         /// </summary>
-        InstantiatedMethod _specificCanonCache;
-        InstantiatedMethod _universalCanonCache;
+        private InstantiatedMethod _specificCanonCache;
+        private InstantiatedMethod _universalCanonCache;
 
         /// <summary>
         /// Returns the result of canonicalizing this method over the given kind of Canon
@@ -52,7 +52,7 @@ namespace Internal.TypeSystem
             return canonicalMethodResult;
         }
 
-        InstantiatedMethod GetCachedCanonValue(CanonicalFormKind kind)
+        private InstantiatedMethod GetCachedCanonValue(CanonicalFormKind kind)
         {
             switch (kind)
             {
@@ -68,7 +68,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        void SetCachedCanonValue(CanonicalFormKind kind, InstantiatedMethod value)
+        private void SetCachedCanonValue(CanonicalFormKind kind, InstantiatedMethod value)
         {
             switch (kind)
             {

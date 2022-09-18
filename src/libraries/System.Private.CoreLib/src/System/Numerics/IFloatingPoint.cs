@@ -9,7 +9,7 @@ namespace System.Numerics
         : IFloatingPointConstants<TSelf>,
           INumber<TSelf>,
           ISignedNumber<TSelf>
-        where TSelf : IFloatingPoint<TSelf>
+        where TSelf : IFloatingPoint<TSelf>?
     {
         /// <summary>Computes the ceiling of a value.</summary>
         /// <param name="x">The value whose ceiling is to be computed.</param>
@@ -36,7 +36,7 @@ namespace System.Numerics
         /// <param name="x">The value to round.</param>
         /// <param name="mode">The mode under which <paramref name="x" /> should be rounded.</param>
         /// <returns>The result of rounding <paramref name="x" /> to the nearest integer using <paramref name="mode" />.</returns>
-        static virtual TSelf Round(TSelf x, MidpointRounding mode) => TSelf.Round(x, digits: 0, MidpointRounding.ToEven);
+        static virtual TSelf Round(TSelf x, MidpointRounding mode) => TSelf.Round(x, digits: 0, mode);
 
         /// <summary>Rounds a value to a specified number of fractional-digits using the default rounding mode (<see cref="MidpointRounding.ToEven" />).</summary>
         /// <param name="x">The value to round.</param>
@@ -69,25 +69,25 @@ namespace System.Numerics
         /// <summary>Tries to write the current exponent, in big-endian format, to a given span.</summary>
         /// <param name="destination">The span to which the current exponent should be written.</param>
         /// <param name="bytesWritten">The number of bytes written to <paramref name="destination" />.</param>
-        /// <returns><c>true</c> if the exponent was succesfully written to <paramref name="destination" />; otherwise, <c>false</c>.</returns>
+        /// <returns><c>true</c> if the exponent was successfully written to <paramref name="destination" />; otherwise, <c>false</c>.</returns>
         bool TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten);
 
         /// <summary>Tries to write the current exponent, in little-endian format, to a given span.</summary>
         /// <param name="destination">The span to which the current exponent should be written.</param>
         /// <param name="bytesWritten">The number of bytes written to <paramref name="destination" />.</param>
-        /// <returns><c>true</c> if the exponent was succesfully written to <paramref name="destination" />; otherwise, <c>false</c>.</returns>
+        /// <returns><c>true</c> if the exponent was successfully written to <paramref name="destination" />; otherwise, <c>false</c>.</returns>
         bool TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten);
 
         /// <summary>Tries to write the current significand, in big-endian format, to a given span.</summary>
         /// <param name="destination">The span to which the current significand should be written.</param>
         /// <param name="bytesWritten">The number of bytes written to <paramref name="destination" />.</param>
-        /// <returns><c>true</c> if the significand was succesfully written to <paramref name="destination" />; otherwise, <c>false</c>.</returns>
+        /// <returns><c>true</c> if the significand was successfully written to <paramref name="destination" />; otherwise, <c>false</c>.</returns>
         bool TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten);
 
         /// <summary>Tries to write the current significand, in little-endian format, to a given span.</summary>
         /// <param name="destination">The span to which the current significand should be written.</param>
         /// <param name="bytesWritten">The number of bytes written to <paramref name="destination" />.</param>
-        /// <returns><c>true</c> if the significand was succesfully written to <paramref name="destination" />; otherwise, <c>false</c>.</returns>
+        /// <returns><c>true</c> if the significand was successfully written to <paramref name="destination" />; otherwise, <c>false</c>.</returns>
         bool TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten);
 
         /// <summary>Writes the current exponent, in big-endian format, to a given array.</summary>

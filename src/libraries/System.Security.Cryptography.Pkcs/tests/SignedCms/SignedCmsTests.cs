@@ -1090,7 +1090,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
                 if (newDocument)
                 {
-                    // These indicies are manually computable by observing the certificate sizes.
+                    // These indices are manually computable by observing the certificate sizes.
                     // But they'll be stable unless a cert changes.
                     u1Idx = 3;
                     u1CopyIdx = 4;

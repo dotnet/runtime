@@ -821,7 +821,7 @@ namespace System.Data
         /// </summary>
         public IEnumerator GetEnumerator()
         {
-            // V1.1 compatability: returning List<DataRowView>.GetEnumerator() from RowViewCache
+            // V1.1 compatibility: returning List<DataRowView>.GetEnumerator() from RowViewCache
             // prevents users from changing data without invalidating the enumerator
             // aka don't 'return this.RowViewCache.GetEnumerator()'
             var temp = new DataRowView[Count];

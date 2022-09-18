@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Workaround for overriding the XML comments related warnings that are being supressed repo wide (within arcade): -->
+    <!-- Workaround for overriding the XML comments related warnings that are being suppressed repo wide (within arcade): -->
     <!-- https://github.com/dotnet/arcade/blob/ea6addfdc65e5df1b2c036f11614a5f922e36267/src/Microsoft.DotNet.Arcade.Sdk/tools/ProjectDefaults.props#L90 -->
     <!-- For this project, we want warnings if there are public APIs/types without properly formatted XML comments (particularly CS1591). -->
     <NoWarn>CS8969</NoWarn>
@@ -18,9 +18,6 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <!-- For the inbox library (that is shipping with the product), this should always be true. -->
-    <!-- BUILDING_INBOX_LIBRARY is only false when building the netstandard compatible NuGet package. -->
-    <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
     <NoWarn Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) != '.NETCoreApp'">$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
 
@@ -39,6 +36,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="..\Common\JsonSourceGenerationMode.cs" Link="Common\System\Text\Json\Serialization\JsonSourceGenerationMode.cs" />
     <Compile Include="..\Common\JsonSourceGenerationOptionsAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonSourceGenerationOptionsAttribute.cs" />
     <Compile Include="..\Common\ReflectionExtensions.cs" Link="Common\System\Text\Json\Serialization\ReflectionExtensions.cs" />
+    <Compile Include="System\Text\Json\AppContextSwitchHelper.cs" />
     <Compile Include="System\Text\Json\BitStack.cs" />
     <Compile Include="System\Text\Json\Document\JsonDocument.cs" />
     <Compile Include="System\Text\Json\Document\JsonDocument.DbRow.cs" />
@@ -100,6 +98,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonNumberHandlingAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonPolymorphicAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonPropertyNameAttribute.cs" />
+    <Compile Include="System\Text\Json\Serialization\Attributes\JsonRequiredAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Attributes\JsonPropertyOrderAttribute.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\CastingConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ImmutableDictionaryOfTKeyTValueConverterWithReflection.cs" />
@@ -129,6 +128,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoKind.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\CustomJsonTypeInfoOfT.cs" />
     <Compile Include="System\Text\Json\Serialization\PolymorphicSerializationState.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriterCache.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceEqualsWrapper.cs" />
     <Compile Include="System\Text\Json\Serialization\ConverterStrategy.cs" />
     <Compile Include="System\Text\Json\Serialization\ConfigurationList.cs" />

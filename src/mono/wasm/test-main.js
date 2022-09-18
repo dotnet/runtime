@@ -23,140 +23,62 @@ if (is_node && process.versions.node.split(".")[0] < 14) {
     throw new Error(`NodeJS at '${process.execPath}' has too low version '${process.versions.node}'`);
 }
 
-// if the engine doesn't provide a console
-if (typeof (console) === "undefined") {
-    globalThis.console = {
-        log: globalThis.print,
-        clear: function () { }
-    };
-}
-const originalConsole = {
-    log: console.log,
-    error: console.error
-};
-
-let runArgs = {};
-let consoleWebSocket;
-
-function proxyConsoleMethod(prefix, func, asJson) {
-    return function () {
-        try {
-            const args = [...arguments];
-            let payload = args[0];
-            if (payload === undefined) payload = 'undefined';
-            else if (payload === null) payload = 'null';
-            else if (typeof payload === 'function') payload = payload.toString();
-            else if (typeof payload !== 'string') {
-                try {
-                    payload = JSON.stringify(payload);
-                } catch (e) {
-                    payload = payload.toString();
-                }
-            }
-
-            if (payload.startsWith("STARTRESULTXML")) {
-                originalConsole.log('Sending RESULTXML')
-                func(payload);
-            }
-            else if (asJson) {
-                func(JSON.stringify({
-                    method: prefix,
-                    payload: payload,
-                    arguments: args
-                }));
-            } else {
-                func([prefix + payload, ...args.slice(1)]);
-            }
-        } catch (err) {
-            originalConsole.error(`proxyConsole failed: ${err}`)
-        }
-    };
-};
-
-function set_exit_code(exit_code, reason) {
-    if (reason) {
-        if (reason instanceof Error)
-            console.error(stringify_as_error_with_stack(reason));
-        else if (typeof reason == "string")
-            console.error(reason);
-        else
-            console.error(JSON.stringify(reason));
-    }
-
-    if (is_browser) {
-        if (App.Module) {
-            // Notify the selenium script
-            App.Module.exit_code = exit_code;
-        }
-
-        //Tell xharness WasmBrowserTestRunner what was the exit code
-        const tests_done_elem = document.createElement("label");
-        tests_done_elem.id = "tests_done";
-        if (exit_code) tests_done_elem.style.background = "red";
-        tests_done_elem.innerHTML = exit_code.toString();
-        document.body.appendChild(tests_done_elem);
-
-        if (runArgs && runArgs.forwardConsole) {
-            const stop_when_ws_buffer_empty = () => {
-                if (consoleWebSocket.bufferedAmount == 0) {
-                    // tell xharness WasmTestMessagesProcessor we are done.
-                    // note this sends last few bytes into the same WS
-                    console.log("WASM EXIT " + exit_code);
-                }
-                else {
-                    setTimeout(stop_when_ws_buffer_empty, 100);
-                }
-            };
-            stop_when_ws_buffer_empty();
-        } else {
-            console.log("WASM EXIT " + exit_code);
-        }
-
-    } else if (App && App.INTERNAL) {
-        if (is_node) {
-            // NodeJS is lazy with flushing of console stream. 
-            // We need all of the output, so we force it to flush.
-            let _flush = function (_stream) {
-                return new Promise((resolve, reject) => {
-                    setTimeout(() => { reject(new Error("timed out waiting for stdout/stderr streams to flush")) }, 30000);
-                    _stream.on('error', (error) => reject(error));
-                    _stream.write('', function () { resolve() });
-                });
-            };
-            let stderrFlushed = _flush(process.stderr);
-            let stdoutFlushed = _flush(process.stdout);
-
-            Promise.all([stdoutFlushed, stderrFlushed])
-                .then(
-                    () => App.INTERNAL.mono_wasm_exit(exit_code),
-                    reason => {
-                        console.error(`flushing std* streams failed: ${reason}`);
-                        App.INTERNAL.mono_wasm_exit(123456);
-                    });
-        } else {
-            App.INTERNAL.mono_wasm_exit(exit_code);
+if (typeof globalThis.crypto === 'undefined') {
+    // **NOTE** this is a simple insecure polyfill for testing purposes only
+    // /dev/random doesn't work on js shells, so define our own
+    // See library_fs.js:createDefaultDevices ()
+    globalThis.crypto = {
+        getRandomValues: function (buffer) {
+            for (let i = 0; i < buffer.length; i++)
+                buffer[i] = (Math.random() * 256) | 0;
         }
     }
 }
 
-function stringify_as_error_with_stack(err) {
-    if (!err)
-        return "";
-
-    // FIXME:
-    if (App && App.INTERNAL)
-        return App.INTERNAL.mono_wasm_stringify_as_error_with_stack(err);
-
-    if (err.stack)
-        return err.stack;
-
-    if (typeof err == "string")
-        return err;
-
-    return JSON.stringify(err);
+let v8args;
+if (typeof arguments !== "undefined") {
+    // this must be captured in top level scope in V8
+    v8args = arguments;
 }
 
-function initRunArgs() {
+async function getArgs() {
+    let queryArguments = [];
+    if (is_node) {
+        queryArguments = process.argv.slice(2);
+    } else if (is_browser) {
+        // We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
+        const url = new URL(decodeURI(window.location));
+        let urlArguments = []
+        for (let param of url.searchParams) {
+            if (param[0] == "arg") {
+                urlArguments.push(param[1]);
+            }
+        }
+        queryArguments = urlArguments;
+    } else if (v8args !== undefined) {
+        queryArguments = Array.from(v8args);
+    } else if (typeof scriptArgs !== "undefined") {
+        queryArguments = Array.from(scriptArgs);
+    } else if (typeof WScript !== "undefined" && WScript.Arguments) {
+        queryArguments = Array.from(WScript.Arguments);
+    }
+
+    let runArgs;
+    if (queryArguments.length > 0) {
+        runArgs = processArguments(queryArguments);
+    } else {
+        const response = fetch('/runArgs.json')
+        if (!response.ok) {
+            console.debug(`could not load /args.json: ${response.status}. Ignoring`);
+        }
+        runArgs = await response.json();
+    }
+    runArgs = initRunArgs(runArgs);
+
+    return runArgs;
+}
+
+function initRunArgs(runArgs) {
     // set defaults
     runArgs.applicationArguments = runArgs.applicationArguments === undefined ? [] : runArgs.applicationArguments;
     runArgs.profilers = runArgs.profilers === undefined ? [] : runArgs.profilers;
@@ -166,12 +88,15 @@ function initRunArgs() {
     runArgs.enableGC = runArgs.enableGC === undefined ? true : runArgs.enableGC;
     runArgs.diagnosticTracing = runArgs.diagnosticTracing === undefined ? false : runArgs.diagnosticTracing;
     runArgs.debugging = runArgs.debugging === undefined ? false : runArgs.debugging;
+    runArgs.configSrc = runArgs.configSrc === undefined ? './mono-config.json' : runArgs.configSrc;
     // default'ing to true for tests, unless debugging
     runArgs.forwardConsole = runArgs.forwardConsole === undefined ? !runArgs.debugging : runArgs.forwardConsole;
+
+    return runArgs;
 }
 
-function processQueryArguments(incomingArguments) {
-    initRunArgs();
+function processArguments(incomingArguments) {
+    const runArgs = initRunArgs({});
 
     console.log("Incoming arguments: " + incomingArguments.join(' '));
     while (incomingArguments && incomingArguments.length > 0) {
@@ -190,7 +115,7 @@ function processQueryArguments(incomingArguments) {
             runArgs.runtimeArgs.push(arg);
         } else if (currentArg == "--disable-on-demand-gc") {
             runArgs.enableGC = false;
-        } else if (currentArg == "--diagnostic_tracing") {
+        } else if (currentArg == "--diagnostic-tracing") {
             runArgs.diagnosticTracing = true;
         } else if (currentArg.startsWith("--working-dir=")) {
             const arg = currentArg.substring("--working-dir=".length);
@@ -217,6 +142,9 @@ function processQueryArguments(incomingArguments) {
             } else {
                 console.warn("--fetch-random-delay only works on browser")
             }
+        } else if (currentArg.startsWith("--config-src=")) {
+            const arg = currentArg.substring("--config-src=".length);
+            runArgs.configSrc = arg;
         } else {
             break;
         }
@@ -231,280 +159,45 @@ function processQueryArguments(incomingArguments) {
     return runArgs;
 }
 
-function applyArguments() {
-    initRunArgs();
+// we may have dependencies on NPM packages, depending on the test case
+// some of them polyfill for browser built-in stuff
+function loadNodeModules(config, require, modulesToLoad) {
+    modulesToLoad.split(',').forEach(module => {
+        const { 0: moduleName, 1: globalAlias } = module.split(':');
 
+        let message = `Loading npm '${moduleName}'`;
+        let moduleExport = require(moduleName);
 
-    console.log("Application arguments: " + runArgs.applicationArguments.join(' '));
-
-    if (!!runArgs.forwardConsole) {
-        const methods = ["debug", "trace", "warn", "info", "error"];
-        for (let m of methods) {
-            if (typeof (console[m]) !== "function") {
-                console[m] = proxyConsoleMethod(`console.${m}: `, console.log, false);
-            }
+        if (globalAlias) {
+            message += ` and attaching to global as '${globalAlias}'`;
+            globalThis[globalAlias] = moduleExport;
+        } else if (moduleName == "node-fetch") {
+            message += ' and attaching to global';
+            globalThis.fetch = moduleExport.default;
+            globalThis.Headers = moduleExport.Headers;
+            globalThis.Request = moduleExport.Request;
+            globalThis.Response = moduleExport.Response;
+        } else if (moduleName == "node-abort-controller") {
+            message += ' and attaching to global';
+            globalThis.AbortController = moduleExport.AbortController;
         }
 
-        if (is_browser) {
-            const consoleUrl = `${window.location.origin}/console`.replace('http://', 'ws://');
-
-            consoleWebSocket = new WebSocket(consoleUrl);
-            consoleWebSocket.onopen = function (event) {
-                originalConsole.log("browser: Console websocket connected.");
-            };
-            consoleWebSocket.onerror = function (event) {
-                originalConsole.error(`websocket error: ${event}`, event);
-            };
-            consoleWebSocket.onclose = function (event) {
-                originalConsole.error(`websocket closed: ${event}`, event);
-            };
-
-            const send = (msg) => {
-                if (consoleWebSocket.readyState === WebSocket.OPEN) {
-                    consoleWebSocket.send(msg);
-                }
-                else {
-                    originalConsole.log(msg);
-                }
-            }
-
-            // redirect output early, so that when emscripten starts it's already redirected
-            for (let m of ["log", ...methods])
-                console[m] = proxyConsoleMethod(`console.${m}`, send, true);
-        }
-    }
+        console.log(message);
+    });
+    // Must be after loading npm modules.
+    config.environmentVariables["IsWebSocketSupported"] = ("WebSocket" in globalThis).toString().toLowerCase();
 }
+
+let mono_exit = (code, reason) => {
+    console.log(`test-main failed early ${code} ${reason}`);
+};
 
 async function loadDotnet(file) {
-    const cjsExport = new Promise((resolve) => {
-        globalThis.__onDotnetRuntimeLoaded = (createDotnetRuntime) => {
-            delete globalThis.__onDotnetRuntimeLoaded;
-            resolve(createDotnetRuntime);
-        };
-    });
-
-    const { default: createDotnetRuntime } = await import(file);
-    if (createDotnetRuntime) {
-        // this runs when loaded module was ES6
-        delete globalThis.__onDotnetRuntimeLoaded;
-        return createDotnetRuntime;
-    }
-
-    return await cjsExport;
+    return await import(file);
 }
-
-// this can't be function because of `arguments` scope
-let queryArguments = [];
-try {
-    if (is_node) {
-        queryArguments = process.argv.slice(2);
-    } else if (is_browser) {
-        // We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
-        const url = new URL(decodeURI(window.location));
-        let urlArguments = []
-        for (let param of url.searchParams) {
-            if (param[0] == "arg") {
-                urlArguments.push(param[1]);
-            }
-        }
-        queryArguments = urlArguments;
-    } else if (typeof arguments !== "undefined") {
-        queryArguments = Array.from(arguments);
-    } else if (typeof scriptArgs !== "undefined") {
-        queryArguments = Array.from(scriptArgs);
-    } else if (typeof WScript !== "undefined" && WScript.Arguments) {
-        queryArguments = Array.from(WScript.Arguments);
-    }
-} catch (e) {
-    console.error(e);
-}
-
-let loadDotnetPromise = loadDotnet('./dotnet.js');
-let argsPromise;
-
-if (queryArguments.length > 0) {
-    argsPromise = Promise.resolve(processQueryArguments(queryArguments));
-} else {
-    argsPromise = fetch('/runArgs.json')
-        .then(async (response) => {
-            if (!response.ok) {
-                console.debug(`could not load /args.json: ${response.status}. Ignoring`);
-            } else {
-                runArgs = await response.json();
-                console.debug(`runArgs: ${JSON.stringify(runArgs)}`);
-            }
-        })
-        .catch(error => console.error(`Failed to load args: ${stringify_as_error_with_stack(error)}`));
-}
-
-if (typeof globalThis.crypto === 'undefined') {
-    // **NOTE** this is a simple insecure polyfill for testing purposes only
-    // /dev/random doesn't work on js shells, so define our own
-    // See library_fs.js:createDefaultDevices ()
-    globalThis.crypto = {
-        getRandomValues: function (buffer) {
-            for (let i = 0; i < buffer.length; i++)
-                buffer[i] = (Math.random() * 256) | 0;
-        }
-    }
-}
-
-let toAbsoluteUrl = function (path, prefix) {
-    if (prefix.startsWith("/")) {
-        return path;
-    }
-    return prefix + path;
-}
-if (is_browser) {
-    const anchorTagForAbsoluteUrlConversions = document.createElement('a');
-    toAbsoluteUrl = function toAbsoluteUrl(path, prefix) {
-        anchorTagForAbsoluteUrlConversions.href = prefix + path;
-        return anchorTagForAbsoluteUrlConversions.href;
-    }
-}
-
-Promise.all([argsPromise, loadDotnetPromise]).then(async ([_, createDotnetRuntime]) => {
-    applyArguments();
-
-    return createDotnetRuntime(({ MONO, INTERNAL, BINDING, IMPORTS, EXPORTS, Module }) => ({
-        disableDotnet6Compatibility: true,
-        config: null,
-        configSrc: "./mono-config.json",
-        locateFile: toAbsoluteUrl,
-        onConfigLoaded: (config) => {
-            if (!Module.config) {
-                const err = new Error("Could not find ./mono-config.json. Cancelling run");
-                set_exit_code(1);
-                throw err;
-            }
-            // Have to set env vars here to enable setting MONO_LOG_LEVEL etc.
-            for (let variable in runArgs.environmentVariables) {
-                config.environment_variables[variable] = runArgs.environmentVariables[variable];
-            }
-            config.diagnostic_tracing = !!runArgs.diagnosticTracing;
-            if (!!runArgs.debugging) {
-                if (config.debug_level == 0)
-                    config.debug_level = -1;
-
-                config.wait_for_debugger = -1;
-            }
-
-            if (is_node) {
-                // we may have dependencies on NPM packages, depending on the test case
-                // some of them polyfill for browser built-in stuff
-                const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
-                if (modulesToLoad) {
-                    modulesToLoad.split(',').forEach(module => {
-                        const { 0: moduleName, 1: globalAlias } = module.split(':');
-
-                        let message = `Loading npm '${moduleName}'`;
-                        let moduleExport = INTERNAL.require(moduleName);
-
-                        if (globalAlias) {
-                            message += ` and attaching to global as '${globalAlias}'`;
-                            globalThis[globalAlias] = moduleExport;
-                        } else if (moduleName == "node-fetch") {
-                            message += ' and attaching to global';
-                            globalThis.fetch = moduleExport.default;
-                            globalThis.Headers = moduleExport.Headers;
-                            globalThis.Request = moduleExport.Request;
-                            globalThis.Response = moduleExport.Response;
-                        } else if (moduleName == "node-abort-controller") {
-                            message += ' and attaching to global';
-                            globalThis.AbortController = moduleExport.AbortController;
-                        }
-
-                        console.log(message);
-                    });
-                }
-            }
-
-            // Must be after loading npm modules.
-            config.environment_variables["IsWebSocketSupported"] = ("WebSocket" in globalThis).toString().toLowerCase();
-        },
-        preRun: () => {
-            if (!runArgs.enableGC) {
-                INTERNAL.mono_wasm_enable_on_demand_gc(0);
-            }
-        },
-        onDotnetReady: () => {
-            let wds = Module.FS.stat(runArgs.workingDirectory);
-            if (wds === undefined || !Module.FS.isDir(wds.mode)) {
-                set_exit_code(1, `Could not find working directory ${runArgs.workingDirectory}`);
-                return;
-            }
-
-            Module.FS.chdir(runArgs.workingDirectory);
-
-            App.init({ MONO, INTERNAL, BINDING, IMPORTS, EXPORTS, Module, runArgs });
-        },
-        onAbort: (error) => {
-            set_exit_code(1, stringify_as_error_with_stack(new Error()));
-        },
-    }));
-}).catch(function (err) {
-    set_exit_code(1, "failed to load the dotnet.js file.\n" + stringify_as_error_with_stack(err));
-});
 
 const App = {
-    init: async function ({ MONO, INTERNAL, BINDING, IMPORTS, EXPORTS, Module, runArgs }) {
-        Object.assign(App, { MONO, INTERNAL, BINDING, IMPORTS, EXPORTS, Module, runArgs });
-        console.info("Initializing.....");
-
-        for (let i = 0; i < runArgs.profilers.length; ++i) {
-            const init = Module.cwrap('mono_wasm_load_profiler_' + runArgs.profilers[i], 'void', ['string']);
-            init("");
-        }
-
-        if (runArgs.applicationArguments.length == 0) {
-            set_exit_code(1, "Missing required --run argument");
-            return;
-        }
-
-        if (runArgs.applicationArguments[0] == "--regression") {
-            const exec_regression = Module.cwrap('mono_wasm_exec_regression', 'number', ['number', 'string']);
-
-            let res = 0;
-            try {
-                res = exec_regression(10, runArgs.applicationArguments[1]);
-                console.log("REGRESSION RESULT: " + res);
-            } catch (e) {
-                console.error("ABORT: " + e);
-                console.error(e.stack);
-                res = 1;
-            }
-
-            if (res)
-                set_exit_code(1, "REGRESSION TEST FAILED");
-
-            return;
-        }
-
-        if (runArgs.runtimeArgs.length > 0)
-            INTERNAL.mono_wasm_set_runtime_options(runArgs.runtimeArgs);
-
-        if (runArgs.applicationArguments[0] == "--run") {
-            // Run an exe
-            if (runArgs.applicationArguments.length == 1) {
-                set_exit_code(1, "Error: Missing main executable argument.");
-                return;
-            }
-            try {
-                const main_assembly_name = runArgs.applicationArguments[1];
-                const app_args = runArgs.applicationArguments.slice(2);
-                const result = await App.MONO.mono_run_main(main_assembly_name, app_args);
-                set_exit_code(result);
-            } catch (error) {
-                if (error.name != "ExitStatus") {
-                    set_exit_code(1, error);
-                }
-            }
-        } else {
-            set_exit_code(1, "Unhandled argument: " + runArgs.applicationArguments[0]);
-        }
-    },
-
-    /** Runs a particular test
+    /** Runs a particular test in legacy interop tests
      * @type {(method_name: string, args: any[]=, signature: any=) => return number}
      */
     call_test_method: function (method_name, args, signature) {
@@ -512,9 +205,10 @@ const App = {
         if ((arguments.length > 2) && (typeof (signature) !== "string"))
             throw new Error("Invalid number of arguments for call_test_method");
 
-        const fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name;
+        const fqn = "[System.Runtime.InteropServices.JavaScript.Legacy.UnitTests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name;
         try {
-            return App.INTERNAL.call_static_method(fqn, args || [], signature);
+            const method = App.runtime.BINDING.bind_static_method(fqn, signature);
+            return method.apply(null, args || []);
         } catch (exc) {
             console.error("exception thrown in", fqn);
             throw exc;
@@ -527,27 +221,126 @@ const App = {
         args.push("MONO");
         args.push("BINDING");
         args.push("INTERNAL");
-        args.push("IMPORTS");
-        args.push("EXPORTS");
 
         const userFunction = new Function(...args, code);
         return function (...args) {
-            args[arg_count + 0] = globalThis.App.MONO;
-            args[arg_count + 1] = globalThis.App.BINDING;
-            args[arg_count + 2] = globalThis.App.INTERNAL;
-            args[arg_count + 3] = globalThis.App.IMPORTS;
-            args[arg_count + 4] = globalThis.App.EXPORTS;
+            args[arg_count + 0] = globalThis.App.runtime.MONO;
+            args[arg_count + 1] = globalThis.App.runtime.BINDING;
+            args[arg_count + 2] = globalThis.App.runtime.INTERNAL;
             return userFunction(...args);
         };
     },
+
     invoke_js(js_code) {
         const closedEval = function (Module, MONO, BINDING, INTERNAL, code) {
             return eval(code);
         };
-        const res = closedEval(globalThis.App.Module, globalThis.App.MONO, globalThis.App.BINDING, globalThis.App.INTERNAL, js_code);
+        const res = closedEval(globalThis.App.runtime.Module, globalThis.App.runtime.MONO, globalThis.App.runtime.BINDING, globalThis.App.runtime.INTERNAL, js_code);
         return (res === undefined || res === null || typeof res === "string")
             ? null
             : res.toString();
     }
 };
 globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.Tests.MarshalTests (among others) call the App.call_test_method directly
+
+async function run() {
+    try {
+        const { dotnet, exit, INTERNAL } = await loadDotnet('./dotnet.js');
+        mono_exit = exit;
+
+        const runArgs = await getArgs();
+        if (runArgs.applicationArguments.length == 0) {
+            mono_exit(1, "Missing required --run argument");
+            return;
+        }
+        console.log("Application arguments: " + runArgs.applicationArguments.join(' '));
+
+        dotnet
+            .withVirtualWorkingDirectory(runArgs.workingDirectory)
+            .withEnvironmentVariables(runArgs.environmentVariables)
+            .withDiagnosticTracing(runArgs.diagnosticTracing)
+            .withExitOnUnhandledError()
+            .withExitCodeLogging()
+            .withElementOnExit();
+
+        if (is_node) {
+            dotnet
+                .withEnvironmentVariable("NodeJSPlatform", process.platform)
+                .withAsyncFlushOnExit();
+
+            const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
+            if (modulesToLoad) {
+                dotnet.withModuleConfig({
+                    onConfigLoaded: (config) => {
+                        loadNodeModules(config, INTERNAL.require, modulesToLoad)
+                    }
+                })
+            }
+        }
+        if (is_browser) {
+            dotnet.withEnvironmentVariable("IsWebSocketSupported", "true");
+        }
+        if (runArgs.runtimeArgs.length > 0) {
+            dotnet.withRuntimeOptions(runArgs.runtimeArgs);
+        }
+        if (runArgs.debugging) {
+            dotnet.withDebugging(-1);
+            dotnet.withWaitingForDebugger(-1);
+        }
+        if (runArgs.forwardConsole) {
+            dotnet.withConsoleForwarding();
+        }
+        App.runtime = await dotnet.create();
+        App.runArgs = runArgs
+
+        console.info("Initializing dotnet version " + App.runtime.runtimeBuildInfo.productVersion + " commit hash " + App.runtime.runtimeBuildInfo.gitHash);
+
+        for (let i = 0; i < runArgs.profilers.length; ++i) {
+            const init = App.runtime.Module.cwrap('mono_wasm_load_profiler_' + runArgs.profilers[i], 'void', ['string']);
+            init("");
+        }
+
+
+        if (runArgs.applicationArguments[0] == "--regression") {
+            const exec_regression = App.runtime.Module.cwrap('mono_wasm_exec_regression', 'number', ['number', 'string']);
+
+            let res = 0;
+            try {
+                res = exec_regression(10, runArgs.applicationArguments[1]);
+                console.log("REGRESSION RESULT: " + res);
+            } catch (e) {
+                console.error("ABORT: " + e);
+                console.error(e.stack);
+                res = 1;
+            }
+
+            if (res) mono_exit(1, "REGRESSION TEST FAILED");
+
+            return;
+        }
+
+        if (runArgs.applicationArguments[0] == "--run") {
+            // Run an exe
+            if (runArgs.applicationArguments.length == 1) {
+                mono_exit(1, "Error: Missing main executable argument.");
+                return;
+            }
+            try {
+                const main_assembly_name = runArgs.applicationArguments[1];
+                const app_args = runArgs.applicationArguments.slice(2);
+                const result = await App.runtime.runMain(main_assembly_name, app_args);
+                mono_exit(result);
+            } catch (error) {
+                if (error.name != "ExitStatus") {
+                    mono_exit(1, error);
+                }
+            }
+        } else {
+            mono_exit(1, "Unhandled argument: " + runArgs.applicationArguments[0]);
+        }
+    } catch (err) {
+        mono_exit(1, err)
+    }
+}
+
+run();

@@ -566,6 +566,7 @@ extern "C" PCODE ComPreStubWorker(ComPrestubMethodFrame *pPFrame, UINT64 *pError
 #else
             *ppofsWriterHolder.GetRW() = ((UINT_PTR)pStub);
 #endif
+            ClrFlushInstructionCache(ppofs, sizeof(UINT_PTR), /* hasCodeExecutedBefore */ true);
 
             // Return the address of the prepad. The prepad will regenerate the hidden parameter and due
             // to the update above will execute the new stub code the second time around.
@@ -1110,7 +1111,7 @@ void SimpleComCallWrapper::SetUpCPListHelper(MethodTable **apSrcItfMTs, int cSrc
 
     // Finally, we set the connection point list in the simple wrapper. If
     // no other thread already set it, we set pCPList to NULL to indicate
-    // that ownership has been transfered to the simple wrapper.
+    // that ownership has been transferred to the simple wrapper.
     if (InterlockedCompareExchangeT(&m_pCPList, pCPList.GetValue(), NULL) == NULL)
         pCPList.SuppressRelease();
 }
@@ -3626,7 +3627,7 @@ BOOL ComMethodTable::LayOutInterfaceMethodTable(MethodTable* pClsMT)
         else
         {
             // We need to set the entry points to the Dispatch versions which determine
-            // which implmentation to use at runtime based on the class that implements
+            // which implementation to use at runtime based on the class that implements
             // the interface.
             pDispVtable->m_GetIDsOfNames    = (SLOT)Dispatch_GetIDsOfNames_Wrapper;
             pDispVtable->m_Invoke           = (SLOT)Dispatch_Invoke_Wrapper;
@@ -3804,7 +3805,7 @@ void ComMethodTable::LayOutBasicMethodTable()
 
 //--------------------------------------------------------------------------
 // Retrieves the DispatchInfo associated with the COM method table. If
-// the DispatchInfo has not been initialized yet then it is initilized.
+// the DispatchInfo has not been initialized yet then it is initialized.
 //--------------------------------------------------------------------------
 DispatchInfo *ComMethodTable::GetDispatchInfo()
 {
@@ -3850,7 +3851,8 @@ void ComMethodTable::SetITypeInfo(ITypeInfo *pNew)
     }
     CONTRACTL_END;
 
-    if (InterlockedCompareExchangeT(&m_pITypeInfo, pNew, NULL) == NULL)
+    ExecutableWriterHolder<ComMethodTable> comMTWriterHolder(this, sizeof(ComMethodTable));
+    if (InterlockedCompareExchangeT(&comMTWriterHolder.GetRW()->m_pITypeInfo, pNew, NULL) == NULL)
     {
         SafeAddRef(pNew);
     }

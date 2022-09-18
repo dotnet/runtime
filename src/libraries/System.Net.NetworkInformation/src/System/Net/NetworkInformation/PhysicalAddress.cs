@@ -215,7 +215,7 @@ namespace System.Net.NetworkInformation
                     }
                     else if ((i - (segments - 1)) % validSegmentLength != 0)
                     {
-                        // segments - 1 = num of delimeters. Return false if new segment isn't the validSegmentLength
+                        // segments - 1 = num of delimiters. Return false if new segment isn't the validSegmentLength
                         return false;
                     }
 

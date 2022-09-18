@@ -145,7 +145,7 @@ namespace Microsoft.Interop
                     // Since the MarshalUsing attribute doesn't exist on downlevel platforms where we don't support arrays,
                     // this case is unlikely to come in supported scenarios, but could come up with a custom CoreLib implementation
                     // 2. User provides a MarsalAs attribute with the ArraySubType field set to UnmanagedType.CustomMarshaler
-                    // As mentioned above, we don't support ICustomMarshaler in the generator so we fail to forward the attribute instead of partially fowarding it.
+                    // As mentioned above, we don't support ICustomMarshaler in the generator so we fail to forward the attribute instead of partially forwarding it.
                     return false;
                 }
 

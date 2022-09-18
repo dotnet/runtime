@@ -23,6 +23,8 @@ monoaot_path=
 run_categories="Libraries Runtime"
 csproj="src\benchmarks\micro\MicroBenchmarks.csproj"
 configurations="CompliationMode=$compilation_mode RunKind=$kind"
+perf_fork=""
+perf_fork_branch="main"
 run_from_perf_repo=false
 use_core_run=true
 use_baseline_core_run=true
@@ -35,6 +37,8 @@ javascript_engine="v8"
 iosmono=false
 iosllvmbuild=""
 maui_version=""
+only_sanity=false
+dotnet_versions=""
 
 while (($# > 0)); do
   lowerI="$(echo $1 | tr "[:upper:]" "[:lower:]")"
@@ -145,6 +149,10 @@ while (($# > 0)); do
       use_latest_dotnet=true
       shift 1
       ;;
+    --dotnetversions)
+      dotnet_versions="$2"
+      shift 2
+      ;;
     --iosmono)
       iosmono=true
       shift 1
@@ -156,6 +164,18 @@ while (($# > 0)); do
     --mauiversion)
       maui_version=$2
       shift 2
+      ;;
+    --perffork)
+      perf_fork=$2
+      shift 2
+      ;;
+    --perfforkbranch)
+      perf_fork_branch=$2
+      shift 2
+      ;;
+    --only-sanity)
+      only_sanity=true
+      shift 1
       ;;
     *)
       echo "Common settings:"
@@ -181,12 +201,13 @@ while (($# > 0)); do
       echo "  --wasmbundle                   Path to the wasm bundle containing the dotnet, and data needed for helix payload"
       echo "  --wasmaot                      Indicate wasm aot"
       echo "  --latestdotnet                 --dotnet-versions will not be specified. --dotnet-versions defaults to LKG version in global.json "
+      echo "  --dotnetversions               Passed as '--dotnet-versions <value>' to the setup script"
       echo "  --alpine                       Set for runs on Alpine"
       echo "  --iosmono                      Set for ios Mono/Maui runs"
       echo "  --iosllvmbuild                 Set LLVM for iOS Mono/Maui runs"
       echo "  --mauiversion                  Set the maui version for Mono/Maui runs"
       echo ""
-      exit 0
+      exit 1
       ;;
   esac
 done
@@ -295,13 +316,21 @@ fi
 common_setup_arguments="--channel $cleaned_branch_name --queue $queue --build-number $build_number --build-configs $configurations --architecture $architecture"
 setup_arguments="--repository https://github.com/$repository --branch $branch --get-perf-hash --commit-sha $commit_sha $common_setup_arguments"
 
+if [[ "$internal" != true ]]; then
+    setup_arguments="$setup_arguments --not-in-lab"
+fi
+
 if [[ "$run_from_perf_repo" == true ]]; then
     payload_directory=
     workitem_directory=$source_directory
     performance_directory=$workitem_directory
     setup_arguments="--perf-hash $commit_sha $common_setup_arguments"
 else
-    git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance.git $performance_directory
+    if [[ -n "$perf_fork" ]]; then
+        git clone --branch $perf_fork_branch --depth 1 --quiet $perf_fork $performance_directory
+    else
+        git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance.git $performance_directory
+    fi
     # uncomment to use BenchmarkDotNet sources instead of nuget packages
     # git clone https://github.com/dotnet/BenchmarkDotNet.git $benchmark_directory
 
@@ -331,6 +360,10 @@ if [[ -n "$mono_dotnet" && "$monoaot" == "false" ]]; then
     mv $mono_dotnet $mono_dotnet_path
 fi
 
+if [[ -n "$dotnet_versions" ]]; then
+    setup_arguments="$setup_arguments --dotnet-versions $dotnet_versions"
+fi
+
 if [[ "$monoaot" == "true" ]]; then
     monoaot_dotnet_path=$payload_directory/monoaot
     mv $monoaot_path $monoaot_dotnet_path
@@ -351,13 +384,17 @@ fi
 
 if [[ "$iosmono" == "true" ]]; then
     if [[ "$iosllvmbuild" == "True" ]]; then
-        # LLVM Mono .app
-        mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/llvm $payload_directory/iosHelloWorld
-        mkdir -p $payload_directory/iosHelloWorldZip/llvmzip && cp -rv $source_directory/iosHelloWorldZip/llvmzip $payload_directory/iosHelloWorldZip
+        if [[ "$kind" != "ios_scenarios_net6" ]]; then
+            # LLVM Mono .app
+            mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/llvm $payload_directory/iosHelloWorld
+            mkdir -p $payload_directory/iosHelloWorldZip/llvmzip && cp -rv $source_directory/iosHelloWorldZip/llvmzip $payload_directory/iosHelloWorldZip
+        fi
     else
         # NoLLVM Mono .app, Maui iOS IPA, Maui Maccatalyst, Maui iOS Podcast IPA
-        mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nollvm $payload_directory/iosHelloWorld
-        mkdir -p $payload_directory/iosHelloWorldZip/nollvmzip && cp -rv $source_directory/iosHelloWorldZip/nollvmzip $payload_directory/iosHelloWorldZip
+        if [[ "$kind" != "ios_scenarios_net6" ]]; then
+            mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nollvm $payload_directory/iosHelloWorld
+            mkdir -p $payload_directory/iosHelloWorldZip/nollvmzip && cp -rv $source_directory/iosHelloWorldZip/nollvmzip $payload_directory/iosHelloWorldZip
+        fi
         mkdir -p $payload_directory/MauiMacCatalystDefault && cp -rv $source_directory/MauiMacCatalystDefault/MauiMacCatalystDefault.app $payload_directory/MauiMacCatalystDefault
         mkdir -p $payload_directory/MauiBlazorMacCatalystDefault && cp -rv $source_directory/MauiBlazorMacCatalystDefault/MauiBlazorMacCatalystDefault.app $payload_directory/MauiBlazorMacCatalystDefault
         cp -v $source_directory/MauiiOSDefaultIPA/MauiiOSDefault.ipa $payload_directory/MauiiOSDefault.ipa
@@ -409,3 +446,4 @@ Write-PipelineSetVariable -name "Compare" -value "$compare" -is_multi_job_variab
 Write-PipelineSetVariable -name "MonoDotnet" -value "$using_mono" -is_multi_job_variable false
 Write-PipelineSetVariable -name "WasmDotnet" -value "$using_wasm" -is_multi_job_variable false
 Write-PipelineSetVariable -Name 'iOSLlvmBuild' -Value "$iosllvmbuild" -is_multi_job_variable false
+Write-PipelineSetVariable -name "OnlySanityCheck" -value "$only_sanity" -is_multi_job_variable false

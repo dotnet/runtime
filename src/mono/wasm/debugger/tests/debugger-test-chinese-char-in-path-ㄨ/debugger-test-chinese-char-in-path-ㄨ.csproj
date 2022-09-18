@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- pdb2pdb.exe does not seem to support special characters in the path, and exits with -1 -->
+    <PublishWindowsPdb>false</PublishWindowsPdb>
+  </PropertyGroup>
+</Project>

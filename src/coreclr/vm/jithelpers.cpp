@@ -1257,7 +1257,7 @@ NOINLINE HCIMPL1(void, JIT_InitClass_Framed, MethodTable* pMT)
 
     // We don't want to be calling JIT_InitClass at all for perf reasons
     // on the Global Class <Module> as the Class loading logic ensures that we
-    // already have initialized the Gloabl Class <Module>
+    // already have initialized the Global Class <Module>
     CONSISTENCY_CHECK(!pMT->IsGlobalClass());
 
     pMT->CheckRestore();
@@ -2124,7 +2124,7 @@ BOOL ObjIsInstanceOfCore(Object *pObject, TypeHandle toTypeHnd, BOOL throwCastEx
         // to a given type.
         if (pMT->IsICastable())
         {
-            // Make actuall call to ICastableHelpers.IsInstanceOfInterface(obj, interfaceTypeObj, out exception)
+            // Make actual call to ICastableHelpers.IsInstanceOfInterface(obj, interfaceTypeObj, out exception)
             OBJECTREF exception = NULL;
             GCPROTECT_BEGIN(exception);
 
@@ -2420,7 +2420,7 @@ HCIMPL1(StringObject*, FramedAllocateString, DWORD stringLength)
 HCIMPLEND
 
 /*********************************************************************/
-OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok)
+OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void** ppPinnedString)
 {
     CONTRACTL {
         THROWS;
@@ -2431,7 +2431,7 @@ OBJECTHANDLE ConstructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken meta
     _ASSERTE(TypeFromToken(metaTok) == mdtString);
 
     Module* module = GetModule(scopeHnd);
-    return module->ResolveStringRef(metaTok);
+    return module->ResolveStringRef(metaTok, ppPinnedString);
 }
 
 /*********************************************************************/
@@ -2776,7 +2776,7 @@ NOINLINE HCIMPL2(LPVOID, Unbox_Helper_Framed, MethodTable* pMT1, Object* obj)
             (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
             (pMT2->IsEnum() || pMT2->IsTruePrimitive()))
     {
-        // we allow enums and their primitive type to be interchangable
+        // we allow enums and their primitive type to be interchangeable
         result = objRef->GetData();
     }
     else if (pMT1->IsEquivalentTo(pMT2))
@@ -2810,7 +2810,7 @@ HCIMPL2(LPVOID, Unbox_Helper, CORINFO_CLASS_HANDLE type, Object* obj)
 
     MethodTable* pMT2 = obj->GetMethodTable();
 
-    // we allow enums and their primitive type to be interchangable.
+    // we allow enums and their primitive type to be interchangeable.
     // if suspension is requested, defer to the framed helper.
     if (pMT1->GetInternalCorElementType() == pMT2->GetInternalCorElementType() &&
             (pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
@@ -2832,7 +2832,6 @@ HCIMPL2_IV(LPVOID, JIT_GetRefAny, CORINFO_CLASS_HANDLE type, TypedByRef typedByR
     FCALL_CONTRACT;
 
     TypeHandle clsHnd(type);
-
     // <TODO>@TODO right now we check for precisely the correct type.
     // do we want to allow inheritance?  (watch out since value
     // classes inherit from object but do not normal object layout).</TODO>
@@ -2841,6 +2840,16 @@ HCIMPL2_IV(LPVOID, JIT_GetRefAny, CORINFO_CLASS_HANDLE type, TypedByRef typedByR
     }
 
     return(typedByRef.data);
+}
+HCIMPLEND
+
+
+/*************************************************************/
+HCIMPL2(BOOL, JIT_IsInstanceOfException, CORINFO_CLASS_HANDLE type, Object* obj)
+{
+    FCALL_CONTRACT;
+    TypeHandle clsHnd(type);
+    return ExceptionIsOfRightType(clsHnd, obj->GetTypeHandle());
 }
 HCIMPLEND
 
@@ -2855,7 +2864,7 @@ HCIMPLEND
 // JIT_GenericHandle and its cache
 //
 // Perform a "polytypic" operation related to shared generic code at runtime, possibly filling in an entry in
-// either a generic dictionary cache assocaited with a descriptor or placing an entry in the global
+// either a generic dictionary cache associated with a descriptor or placing an entry in the global
 // JitGenericHandle cache.
 //
 // A polytypic operation is one such as
@@ -2885,7 +2894,7 @@ HCIMPLEND
 //         !SharedByGenericMethodInstantiations but will be SharedByGenericClassInstantiations). Let's say
 //         this code is C<repr>::m().
 //     * the type D will be a descendent of type C. In particular D<exact> will relate to some type C<exact'>
-//         where C<repr> is the represntative instantiation of C<exact>'
+//         where C<repr> is the representative instantiation of C<exact>'
 //     * the relevant dictionary will be the one attached to C<exact'>.
 //
 // The JitGenericHandleCache is a global data structure shared across all application domains. It is only
@@ -3028,7 +3037,7 @@ void ClearJitGenericHandleCache(AppDomain *pDomain)
     if (g_pJitGenericHandleCache)
     {
         // It's not necessary to take the lock here because this function should only be called when EE is suspended,
-        // the lock is only taken to fullfill the threadsafety check and to be consistent. If the lock becomes a problem, we
+        // the lock is only taken to fulfill the threadsafety check and to be consistent. If the lock becomes a problem, we
         // could put it in a "ifdef _DEBUG" block
         CrstHolder lock(&g_pJitGenericHandleCacheCrst);
         EEHashTableIteration iter;
@@ -4727,7 +4736,7 @@ HCIMPL0(void, JIT_RareDisableHelper)
 HCIMPLEND
 
 /*********************************************************************/
-// This is called by the JIT after every instruction in fully interuptable
+// This is called by the JIT after every instruction in fully interruptible
 // code to make certain our GC tracking is OK
 HCIMPL0(VOID, JIT_StressGC_NOP)
 {
@@ -4789,8 +4798,7 @@ HCIMPL1_RAW(Object*, JIT_CheckObj, Object* obj)
     if (obj != 0) {
         MethodTable* pMT = obj->GetMethodTable();
         if (!pMT->ValidateWithPossibleAV()) {
-            _ASSERTE(!"Bad Method Table");
-            FreeBuildDebugBreak();
+            _ASSERTE_ALL_BUILDS(!"Bad Method Table");
         }
     }
     return obj;
@@ -5563,7 +5571,7 @@ HCIMPL2(void, JIT_DelegateProfile32, Object *obj, ICorJitInfo::HandleHistogram32
 HCIMPLEND
 
 // Version of helper above used when the count is 64-bit
-HCIMPL3(void, JIT_DelegateProfile64, Object *obj, CORINFO_METHOD_HANDLE baseMethod, ICorJitInfo::HandleHistogram64* methodProfile)
+HCIMPL2(void, JIT_DelegateProfile64, Object *obj, ICorJitInfo::HandleHistogram64* methodProfile)
 {
     FCALL_CONTRACT;
     FC_GC_POLL_NOT_NEEDED();

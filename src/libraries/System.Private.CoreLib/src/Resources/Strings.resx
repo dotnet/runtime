@@ -1,17 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
+  <!--
+    Microsoft ResX Schema
+
     Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
     associated with the data types.
-    
+
     Example:
-    
+
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-                
-    There are any number of "resheader" rows that contain simple 
+
+    There are any number of "resheader" rows that contain simple
     name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
     mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
     extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-    
+
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-    
+
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
+    value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -699,8 +699,8 @@
   <data name="Arg_RanksAndBounds" xml:space="preserve">
     <value>Number of lengths and lowerBounds must match.</value>
   </data>
-  <data name="Arg_RegGetOverflowBug" xml:space="preserve">
-    <value>RegistryKey.GetValue does not allow a String that has a length greater than Int32.MaxValue.</value>
+  <data name="Arg_RegValueTooLarge" xml:space="preserve">
+    <value>RegistryKey.GetValue does not support values with more than Int32.MaxValue bytes.</value>
   </data>
   <data name="Arg_RegKeyNotFound" xml:space="preserve">
     <value>The specified registry key does not exist.</value>
@@ -774,7 +774,7 @@
   <data name="Arg_TypeLoadNullStr" xml:space="preserve">
     <value>A null or zero length string does not represent a valid Type.</value>
   </data>
-  <data name="Arg_TypeRefPrimitve" xml:space="preserve">
+  <data name="Arg_TypeRefPrimitive" xml:space="preserve">
     <value>TypedReferences cannot be redefined as primitives. Field name '{0}'.</value>
   </data>
   <data name="Arg_TypeUnloadedException" xml:space="preserve">
@@ -1243,8 +1243,8 @@
   <data name="Argument_InvalidParamInfo" xml:space="preserve">
     <value>Invalid type for ParameterInfo member in Attribute class.</value>
   </data>
-  <data name="Argument_InvalidPathChars" xml:space="preserve">
-    <value>Illegal characters in path.</value>
+  <data name="Argument_NullCharInPath" xml:space="preserve">
+    <value>Null character in path.</value>
   </data>
   <data name="Argument_InvalidResourceCultureName" xml:space="preserve">
     <value>The given culture name '{0}' cannot be used to locate a resource file. Resource filenames must consist of only letters, numbers, hyphens or underscores.</value>
@@ -2413,10 +2413,10 @@
   <data name="InvalidOperation_CannotRegisterSecondResolver" xml:space="preserve">
     <value>A resolver is already set for the assembly.</value>
   </data>
-  <data name="InvalidOperation_CannotRestoreUnsupressedFlow" xml:space="preserve">
+  <data name="InvalidOperation_CannotRestoreUnsuppressedFlow" xml:space="preserve">
     <value>Cannot restore context flow when it is not suppressed.</value>
   </data>
-  <data name="InvalidOperation_CannotSupressFlowMultipleTimes" xml:space="preserve">
+  <data name="InvalidOperation_CannotSuppressFlowMultipleTimes" xml:space="preserve">
     <value>Context flow is already suppressed.</value>
   </data>
   <data name="InvalidOperation_CannotUseAFCMultiple" xml:space="preserve">
@@ -2499,6 +2499,10 @@
   </data>
   <data name="InvalidOperation_NativeOverlappedReused" xml:space="preserve">
     <value>NativeOverlapped cannot be reused for multiple operations.</value>
+  </data>
+  <data name="InvalidOperation_NestedControlledExecutionRun" xml:space="preserve">
+    <value>The thread is already executing the ControlledExecution.Run method.</value>
+    <comment>{Locked="ControlledExecution.Run"}</comment>
   </data>
   <data name="InvalidOperation_NoMultiModuleAssembly" xml:space="preserve">
     <value>You cannot have more than one dynamic module in each dynamic assembly in this version of the runtime.</value>
@@ -2611,7 +2615,7 @@
   <data name="InvalidTimeZone_NoTTInfoStructures" xml:space="preserve">
     <value>There are no ttinfo structures in the tzfile.  At least one ttinfo structure is required in order to construct a TimeZoneInfo object.</value>
   </data>
-  <data name="InvalidTimeZone_UnparseablePosixMDateString" xml:space="preserve">
+  <data name="InvalidTimeZone_UnparsablePosixMDateString" xml:space="preserve">
     <value>'{0}' is not a valid POSIX-TZ-environment-variable MDate rule.  A valid rule has the format 'Mm.w.d'.</value>
   </data>
   <data name="InvariantFailed" xml:space="preserve">
@@ -2709,6 +2713,9 @@
   </data>
   <data name="IO_UnknownFileName" xml:space="preserve">
     <value>[Unknown]</value>
+  </data>
+  <data name="IO_MaxAttemptsReached" xml:space="preserve">
+    <value>Unable to complete the operation after the maximum number of attempts.</value>
   </data>
   <data name="Lazy_CreateValue_NoParameterlessCtorForT" xml:space="preserve">
     <value>The lazily-initialized type does not have a public, parameterless constructor.</value>
@@ -3925,6 +3932,9 @@
   <data name="InvalidProgram_CallVirtFinalize" xml:space="preserve">
     <value>Object.Finalize() can not be called directly. It is only callable by the runtime.</value>
   </data>
+  <data name="InvalidProgram_MultipleCallConv" xml:space="preserve">
+    <value>Multiple unmanaged calling conventions are specified. Only a single calling convention is supported.</value>
+  </data>
   <data name="Delegate_GarbageCollected" xml:space="preserve">
     <value>The corresponding delegate has been garbage collected. Please make sure the delegate is still referenced by managed code when you are using the marshalled native function pointer.</value>
   </data>
@@ -3950,10 +3960,10 @@
     <value>Must not be greater than the length of the buffer.</value>
   </data>
   <data name="StructMarshalling_MissingInteropData" xml:space="preserve">
-    <value>{0} is missing structure marshalling data. To enable structure marshalling data, add a MarshalStructure directive to the application rd.xml file. For more information, please visit http://go.microsoft.com/fwlink/?LinkID=393965</value>
+    <value>'{0}' is missing structure marshalling data. This can happen for code that is not compatible with AOT. Inspect and fix AOT related warnings that were generated when the app was published. For more information see https://aka.ms/nativeaot-compatibility</value>
   </data>
   <data name="DelegateMarshalling_MissingInteropData" xml:space="preserve">
-    <value>{0} is missing delegate marshalling data. To enable delegate marshalling data, add a MarshalDelegate directive to the application rd.xml file. For more information, please visit http://go.microsoft.com/fwlink/?LinkID=393965</value>
+    <value>'{0}' is missing delegate marshalling data. This can happen for code that is not compatible with AOT. Inspect and fix AOT related warnings that were generated when the app was published. For more information see https://aka.ms/nativeaot-compatibility</value>
   </data>
   <data name="Argument_AssemblyGetTypeCannotSpecifyAssembly" xml:space="preserve">
     <value>Type names passed to Assembly.GetType() must not specify an assembly.</value>
@@ -3987,5 +3997,8 @@
   </data>
   <data name="FileNotFound_AssemblyNotFound" xml:space="preserve">
     <value>Cannot load assembly '{0}'. No metadata found for this assembly.</value>
+  </data>
+  <data name="Argument_DirectorySeparatorInvalid" xml:space="preserve">
+    <value>The value may not contain directory separator characters.</value>
   </data>
 </root>

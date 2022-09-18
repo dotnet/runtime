@@ -630,7 +630,7 @@ ep_event_block_base_write_event (
 		uint32_t total_size = 1 + bytes_written + data_len;
 
 		if (write_pointer + total_size >= block->end_of_the_buffer) {
-			// TODO: Orignal EP updates blocks write pointer continiously, doing the same here before
+			// TODO: Original EP updates blocks write pointer continuously, doing the same here before
 			//bailing out. Question is if that is intentional or just a side effect of directly updating
 			//the member.
 			block->write_pointer = write_pointer;

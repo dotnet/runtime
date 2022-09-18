@@ -3,8 +3,8 @@
 
 namespace Internal.TypeSystem.Interop
 {
-    // Functionality related to determinstic ordering of types
-    partial class PInvokeDelegateWrapper
+    // Functionality related to deterministic ordering of types
+    public partial class PInvokeDelegateWrapper
     {
         protected override int ClassCode => -262930217;
 

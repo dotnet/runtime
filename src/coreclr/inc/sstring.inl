@@ -1488,7 +1488,7 @@ inline COUNT_T SString::GetBufferSizeInCharIncludeNullChar() const
 
 //----------------------------------------------------------------------------
 // Assert helper
-// Asser that the iterator is within the given string.
+// Assert that the iterator is within the given string.
 //----------------------------------------------------------------------------
 inline CHECK SString::CheckIteratorRange(const CIterator &i) const
 {
@@ -1500,7 +1500,7 @@ inline CHECK SString::CheckIteratorRange(const CIterator &i) const
 
 //----------------------------------------------------------------------------
 // Assert helper
-// Asser that the iterator is within the given string.
+// Assert that the iterator is within the given string.
 //----------------------------------------------------------------------------
 inline CHECK SString::CheckIteratorRange(const CIterator &i, COUNT_T length) const
 {
@@ -1836,7 +1836,7 @@ inline void SString::ConvertToFixed() const
 
 //-----------------------------------------------------------------------------
 // Convert the internal representation to be an iteratable one (current
-// requirements here are that it be trivially convertable to unicode chars.)
+// requirements here are that it be trivially convertible to unicode chars.)
 //-----------------------------------------------------------------------------
 inline void SString::ConvertToIteratable() const
 {

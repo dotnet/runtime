@@ -79,7 +79,7 @@ namespace System
                     return false;
                 }
 
-                // Those delegate kinds with thunks put themselves into the m_firstParamter, so we can't
+                // Those delegate kinds with thunks put themselves into the m_firstParameter, so we can't
                 // blindly compare the m_firstParameter fields for equality.
                 if (object.ReferenceEquals(m_firstParameter, this))
                 {

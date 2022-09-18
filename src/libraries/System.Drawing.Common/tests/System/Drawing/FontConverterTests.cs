@@ -81,7 +81,7 @@ namespace System.ComponentModel.TypeConverterTests
             Assert.Null(font);
         }
 
-        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDrawingSupported), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public void GetFontPropsSorted()
         {
             // The order provided since .NET Framework

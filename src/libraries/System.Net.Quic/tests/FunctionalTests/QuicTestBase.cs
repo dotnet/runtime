@@ -16,7 +16,7 @@ using System.Net.Sockets;
 
 namespace System.Net.Quic.Tests
 {
-    public abstract class QuicTestBase
+    public abstract class QuicTestBase : IDisposable
     {
         public const long DefaultStreamErrorCodeClient = 123456;
         public const long DefaultStreamErrorCodeServer = 654321;
@@ -28,10 +28,13 @@ namespace System.Net.Quic.Tests
 
         public static bool IsSupported => QuicListener.IsSupported && QuicConnection.IsSupported;
 
+        private static readonly Lazy<bool> _isIPv6Available = new Lazy<bool>(GetIsIPv6Available);
+        public static bool IsIPv6Available => _isIPv6Available.Value;
+
         public static SslApplicationProtocol ApplicationProtocol { get; } = new SslApplicationProtocol("quictest");
 
-        public X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
-        public X509Certificate2 ClientCertificate = System.Net.Test.Common.Configuration.Certificates.GetClientCertificate();
+        public readonly X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
+        public readonly X509Certificate2 ClientCertificate = System.Net.Test.Common.Configuration.Certificates.GetClientCertificate();
 
         public ITestOutputHelper _output;
         public const int PassingTestTimeoutMilliseconds = 4 * 60 * 1000;
@@ -41,6 +44,13 @@ namespace System.Net.Quic.Tests
         {
             _output = output;
         }
+
+        public void Dispose()
+        {
+            ServerCertificate.Dispose();
+            ClientCertificate.Dispose();
+        }
+
         public bool RemoteCertificateValidationCallback(object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors)
         {
             Assert.Equal(ServerCertificate.GetCertHash(), certificate?.GetCertHash());
@@ -168,35 +178,46 @@ namespace System.Net.Quic.Tests
 
             QuicConnection clientConnection = null;
             ValueTask<QuicConnection> serverTask = listener.AcceptConnectionAsync();
-            while (retry > 0)
+            try
             {
-                retry--;
-                try
+                while (retry > 0)
                 {
-                    clientConnection = await CreateQuicConnection(clientOptions).ConfigureAwait(false);
-                    break;
-                }
-                catch (QuicException ex) when (ex.HResult == (int)SocketError.ConnectionRefused)
-                {
-                    _output.WriteLine($"ConnectAsync to {clientConnection.RemoteEndPoint} failed with {ex.Message}");
-                    await Task.Delay(delay);
-                    delay *= 2;
-
-                    if (retry == 0)
+                    retry--;
+                    try
                     {
-                        Debug.Fail($"ConnectAsync to {clientConnection.RemoteEndPoint} failed with {ex.Message}");
-                        throw ex;
+                        clientConnection = await CreateQuicConnection(clientOptions).ConfigureAwait(false);
+                        break;
+                    }
+                    catch (QuicException ex) when (ex.HResult == (int)SocketError.ConnectionRefused)
+                    {
+                        _output.WriteLine($"ConnectAsync to {clientOptions.RemoteEndPoint} failed with {ex.Message}");
+                        await Task.Delay(delay);
+                        delay *= 2;
+
+                        if (retry == 0)
+                        {
+                            Debug.Fail($"ConnectAsync to {clientOptions.RemoteEndPoint} failed with {ex.Message}");
+                            throw ex;
+                        }
                     }
                 }
-            }
 
-            QuicConnection serverConnection = await serverTask.ConfigureAwait(false);
-            if (disposeListener)
+                QuicConnection serverConnection = await serverTask.ConfigureAwait(false);
+                if (disposeListener)
+                {
+                    await listener.DisposeAsync();
+                }
+
+                return (clientConnection, serverConnection);
+            }
+            catch
             {
-                await listener.DisposeAsync();
+                if (clientConnection is not null)
+                {
+                    await clientConnection.DisposeAsync();
+                }
+                throw;
             }
-
-            return (clientConnection, serverTask.Result);
         }
 
         internal async Task PingPong(QuicConnection client, QuicConnection server)
@@ -347,6 +368,20 @@ namespace System.Net.Quic.Tests
             finally
             {
                 ArrayPool<byte>.Shared.Return(buffer);
+            }
+        }
+
+        internal static bool GetIsIPv6Available()
+        {
+            try
+            {
+                using Socket s = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
+                s.Bind(new IPEndPoint(IPAddress.IPv6Loopback, 0));
+                return true;
+            }
+            catch (SocketException)
+            {
+                return false;
             }
         }
     }

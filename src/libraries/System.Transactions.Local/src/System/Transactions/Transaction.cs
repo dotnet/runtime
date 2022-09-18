@@ -6,7 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Threading;
-using System.Transactions.Distributed;
+using System.Transactions.Oletx;
 
 namespace System.Transactions
 {
@@ -276,7 +276,7 @@ namespace System.Transactions
             }
         }
 
-        internal Transaction(DistributedTransaction distributedTransaction)
+        internal Transaction(OletxTransaction distributedTransaction)
         {
             _isoLevel = distributedTransaction.IsolationLevel;
             _internalTransaction = new InternalTransaction(this, distributedTransaction);
@@ -566,7 +566,7 @@ namespace System.Transactions
             if (etwLog.IsEnabled())
             {
                 etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
-                etwLog.TransactionRollback(this, "Transaction");
+                etwLog.TransactionRollback(TraceSourceType.TraceSourceLtm, TransactionTraceId, "Transaction");
             }
 
             ObjectDisposedException.ThrowIf(Disposed, this);
@@ -590,7 +590,7 @@ namespace System.Transactions
             if (etwLog.IsEnabled())
             {
                 etwLog.MethodEnter(TraceSourceType.TraceSourceLtm, this);
-                etwLog.TransactionRollback(this, "Transaction");
+                etwLog.TransactionRollback(TraceSourceType.TraceSourceLtm, TransactionTraceId, "Transaction");
             }
 
             ObjectDisposedException.ThrowIf(Disposed, this);
@@ -965,7 +965,7 @@ namespace System.Transactions
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
-                etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, this);
+                etwLog.MethodEnter(TraceSourceType.TraceSourceOleTx, this);
             }
 
             ObjectDisposedException.ThrowIf(Disposed, this);
@@ -996,7 +996,7 @@ namespace System.Transactions
 
                 if (etwLog.IsEnabled())
                 {
-                    etwLog.MethodExit(TraceSourceType.TraceSourceDistributed, this);
+                    etwLog.MethodExit(TraceSourceType.TraceSourceOleTx, this);
                 }
 
                 return enlistment;
@@ -1041,7 +1041,7 @@ namespace System.Transactions
             }
         }
 
-        internal DistributedTransaction? Promote()
+        internal OletxTransaction? Promote()
         {
             lock (_internalTransaction)
             {
@@ -1090,7 +1090,7 @@ namespace System.Transactions
         private static readonly AsyncLocal<ContextKey?> s_currentTransaction = new AsyncLocal<ContextKey?>();
 
         // ConditionalWeakTable is used to automatically remove the entries that are no longer referenced. This will help prevent leaks in async nested TransactionScope
-        // usage and when child nested scopes are not syncronized properly.
+        // usage and when child nested scopes are not synchronized properly.
         private static readonly ConditionalWeakTable<ContextKey, ContextData> s_contextDataTable = new ConditionalWeakTable<ContextKey, ContextData>();
 
         //

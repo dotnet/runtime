@@ -30,10 +30,20 @@ namespace System.Net.WebSockets
         private HttpVersionPolicy _versionPolicy = HttpVersionPolicy.RequestVersionOrLower;
         private bool _collectHttpResponseDetails;
 
+        internal bool AreCompatibleWithCustomInvoker() =>
+            !UseDefaultCredentials &&
+            Credentials is null &&
+            (_clientCertificates?.Count ?? 0) == 0 &&
+            RemoteCertificateValidationCallback is null &&
+            Cookies is null &&
+            (Proxy is null || Proxy == WebSocketHandle.DefaultWebProxy.Instance);
+
         internal ClientWebSocketOptions() { } // prevent external instantiation
 
         #region HTTP Settings
 
+        /// <summary>Gets or sets the HTTP version to use.</summary>
+        /// <value>The HTTP message version. The default value is <c>1.1</c>.</value>
         public Version HttpVersion
         {
             get => _version;
@@ -46,6 +56,8 @@ namespace System.Net.WebSockets
             }
         }
 
+        /// <summary>Gets or sets the policy that determines how <see cref="ClientWebSocketOptions.HttpVersion" /> is interpreted and how the final HTTP version is negotiated with the server.</summary>
+        /// <value>The version policy used when the HTTP connection is established.</value>
         public HttpVersionPolicy HttpVersionPolicy
         {
             get => _versionPolicy;
@@ -233,6 +245,9 @@ namespace System.Net.WebSockets
             _buffer = buffer;
         }
 
+        /// <summary>
+        /// Indicates whether <see cref="ClientWebSocket.HttpStatusCode" /> and <see cref="ClientWebSocket.HttpResponseHeaders" /> should be set when establishing the connection.
+        /// </summary>
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool CollectHttpResponseDetails
         {

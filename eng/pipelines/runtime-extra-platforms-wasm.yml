@@ -4,8 +4,11 @@
 #   /azp run runtime-wasm
 
 parameters:
+  isExtraPlatformsBuild: false
   isWasmOnlyBuild: false
   isRollingBuild: false
+  excludeLibTests: false
+  excludeNonLibTests: false
 
 jobs:
 
@@ -15,15 +18,6 @@ jobs:
 # - rest are covered by runtime, and runtime-staging
 #
 - ${{ if eq(parameters.isRollingBuild, true) }}:
-  # EAT Library tests - only run on linux
-  - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
-    parameters:
-      platforms:
-        - Browser_wasm
-      nameSuffix: _EAT
-      runAOT: false
-      alwaysRun: true
-
   # AOT Library tests
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
     parameters:
@@ -46,23 +40,53 @@ jobs:
       runAOT: true
       alwaysRun: true
 
+  # Wasm Debugger tests - firefox
+  #  - disabled from rolling builds
+  #- template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
+    #parameters:
+      #platforms:
+        #- Browser_wasm_firefox
+      #browser: firefox
+      ## ff tests are unstable currently
+      #shouldContinueOnError: true
+      #alwaysRun: true
+
+  # Disabled for now
+  #- template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
+    #parameters:
+      #runProfile: 'v8'
+      #onlySanityCheck: true
+
 #
 # ********** For !rolling builds, IOW - PR builds *************
 # - run everything, if relevant paths changed
 # - For runtime-wasm, force run all the jobs
 #
-- ${{ if ne(parameters.isRollingBuild, true) }}:
+- ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeLibTests, true)) }}:
   # Library tests
+  # these run on runtime also
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
       platforms:
         - Browser_wasm
       # Don't run for rolling builds, as this is covered
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       scenarios:
         - normal
         - WasmTestOnBrowser
-        - WasmTestOnNodeJs
+
+  # this only runs on the extra pipeline
+  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+    parameters:
+      platforms:
+        - Browser_wasm
+      nameSuffix: _NodeJs
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      scenarios:
+        - WasmTestOnNodeJS
 
   # Library tests - Windows
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
@@ -70,10 +94,11 @@ jobs:
       platforms:
         - Browser_wasm_win
       # Don't run for rolling builds, as this is covered
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       scenarios:
         - WasmTestOnBrowser
-        - WasmTestOnNodeJs
+        - WasmTestOnNodeJS
 
   # Library tests with full threading 
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
@@ -82,15 +107,18 @@ jobs:
         - Browser_wasm
         #- Browser_wasm_win
       nameSuffix: _Threading
-      extraBuildArgs: /p:WasmEnableThreads=true
-      # Don't run for rolling builds, as this is covered
+      extraBuildArgs: /p:WasmEnableThreads=true /p:_WasmPThreadPoolSize=8
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      # Always run for runtime-wasm because tests are not run in runtime
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+
       # NOTE - Since threading is experimental, we don't want to block mainline work
       shouldContinueOnError: true
       scenarios:
         - normal
         - WasmTestOnBrowser
-        - WasmTestOnNodeJs
+        - WasmTestOnNodeJS
 
   # Library tests with internal threads only
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
@@ -100,14 +128,17 @@ jobs:
         #- Browser_wasm_win
       nameSuffix: _Threading_PerfTracing
       extraBuildArgs: /p:WasmEnablePerfTracing=true
-      # Don't run for rolling builds, as this is covered
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      # Always run for runtime-wasm because tests are not run in runtime
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+
       # NOTE - Since threading is experimental, we don't want to block mainline work
       shouldContinueOnError: true
       scenarios:
         - normal
         - WasmTestOnBrowser
-        - WasmTestOnNodeJs
+        - WasmTestOnNodeJS
 
   # EAT Library tests - only run on linux
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -116,7 +147,8 @@ jobs:
         - Browser_wasm
       nameSuffix: _EAT
       runAOT: false
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
 
   # AOT Library tests
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -126,6 +158,8 @@ jobs:
         - Browser_wasm_win
       nameSuffix: _AOT
       runAOT: true
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
 
   # High resource AOT Library tests
@@ -138,15 +172,19 @@ jobs:
       extraBuildArgs: /p:TestAssemblies=false /p:RunHighAOTResourceRequiringTestsOnly=true
       buildAOTOnHelix: false
       runAOT: true
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
 
+- ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeNonLibTests, true)) }}:
   # Wasm.Build.Tests
   - template: /eng/pipelines/common/templates/wasm-build-tests.yml
     parameters:
       platforms:
         - Browser_wasm
         - Browser_wasm_win
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
 
   # Debugger tests
   - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
@@ -154,19 +192,29 @@ jobs:
       platforms:
         - Browser_wasm
         - Browser_wasm_win
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
 
   - template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
     parameters:
       platforms:
         - Browser_wasm
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
 
   - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
     parameters:
       platforms:
         - Browser_wasm_firefox
       browser: firefox
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
       # ff tests are unstable currently
       shouldContinueOnError: true
+
+  # Disable for now
+  #- template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
+    #parameters:
+      #runProfile: 'v8'
+      #onlySanityCheck: true

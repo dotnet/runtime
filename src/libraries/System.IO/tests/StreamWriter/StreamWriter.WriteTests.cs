@@ -78,7 +78,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void WriteCustomLenghtStrings()
+        public void WriteCustomLengthStrings()
         {
             char[] chArr = TestDataProvider.CharData;
 

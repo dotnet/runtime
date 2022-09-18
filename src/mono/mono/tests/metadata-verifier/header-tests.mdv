@@ -105,11 +105,11 @@ pe-optional-header-standard-fields {
 	valid offset pe-optional-header + 4 set-uint 0
 	valid offset pe-optional-header + 4 set-uint 0x999999
 
-	#Intialized data size is just an informative field as well, nobody cares
+	#Initialized data size is just an informative field as well, nobody cares
 	valid offset pe-optional-header + 8 set-uint 0
 	valid offset pe-optional-header + 8 set-uint 0x999999
 
-	#Unintialized data size is just an informative field as well, nobody cares
+	#Uninitialized data size is just an informative field as well, nobody cares
 	valid offset pe-optional-header + 12 set-uint 0
 	valid offset pe-optional-header + 12 set-uint 0x999999
 

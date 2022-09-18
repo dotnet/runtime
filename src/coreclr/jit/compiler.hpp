@@ -830,42 +830,23 @@ inline Statement* Compiler::gtNewStmt(GenTree* expr, const DebugInfo& di)
     return stmt;
 }
 
-/*****************************************************************************/
-
-inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, bool doSimplifications)
+inline GenTree* Compiler::gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1)
 {
     assert((GenTree::OperKind(oper) & (GTK_UNOP | GTK_BINOP)) != 0);
     assert((GenTree::OperKind(oper) & GTK_EXOP) ==
            0); // Can't use this to construct any types that extend unary/binary operator.
     assert(op1 != nullptr || oper == GT_RETFILT || oper == GT_NOP || (oper == GT_RETURN && type == TYP_VOID));
 
-    if (doSimplifications)
+    if (oper == GT_ADDR)
     {
-        // We do some simplifications here. If this gets to be too many, try a switch...
-        if (oper == GT_IND)
+        if (op1->OperIsIndir())
         {
-            // IND(ADDR(IND(x)) == IND(x)
-            if (op1->OperIs(GT_ADDR))
-            {
-                GenTree* indir = op1->AsUnOp()->gtGetOp1();
-                if (indir->OperIs(GT_IND))
-                {
-                    op1 = indir->AsIndir()->Addr();
-                }
-            }
+            assert(op1->IsValue());
+            return op1->AsIndir()->Addr();
         }
-        else if (oper == GT_ADDR)
-        {
-            if (op1->OperIs(GT_IND))
-            {
-                return op1->AsOp()->gtOp1;
-            }
-            else
-            {
-                // Addr source can't be CSE-ed.
-                op1->SetDoNotCSE();
-            }
-        }
+
+        assert(op1->OperIsLocalRead() || op1->OperIs(GT_FIELD));
+        op1->SetDoNotCSE();
     }
 
     GenTree* node = new (this, oper) GenTreeOp(oper, type, op1, nullptr);
@@ -1339,8 +1320,6 @@ inline void GenTree::gtBashToNOP()
     gtFlags &= ~(GTF_ALL_EFFECT | GTF_REVERSE_OPS);
 }
 
-/*****************************************************************************/
-
 inline GenTree* Compiler::gtUnusedValNode(GenTree* expr)
 {
     return gtNewOperNode(GT_COMMA, TYP_VOID, expr, gtNewNothingNode());
@@ -1617,7 +1596,7 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
 
         case GT_CNS_DBL:
             assert(varTypeIsFloating(type));
-            AsDblCon()->gtDconVal = static_cast<double>(value);
+            AsDblCon()->SetDconValue(static_cast<double>(value));
             break;
 
         default:
@@ -1903,7 +1882,7 @@ inline void LclVarDsc::incRefCnts(weight_t weight, Compiler* comp, RefCountState
     }
 
     Compiler::lvaPromotionType promotionType = DUMMY_INIT(Compiler::PROMOTION_TYPE_NONE);
-    if (varTypeIsStruct(lvType))
+    if (varTypeIsPromotable(lvType))
     {
         promotionType = comp->lvaGetPromotionType(this);
     }
@@ -1950,7 +1929,7 @@ inline void LclVarDsc::incRefCnts(weight_t weight, Compiler* comp, RefCountState
         }
     }
 
-    if (varTypeIsStruct(lvType) && propagate)
+    if (varTypeIsPromotable(lvType) && propagate)
     {
         // For promoted struct locals, increment lvRefCnt on its field locals as well.
         if (promotionType == Compiler::PROMOTION_TYPE_INDEPENDENT ||
@@ -3886,13 +3865,6 @@ inline Compiler::lvaPromotionType Compiler::lvaGetPromotionType(const LclVarDsc*
         return PROMOTION_TYPE_INDEPENDENT;
     }
 
-    // Has struct promotion for arguments been disabled using COMPlus_JitNoStructPromotion=2
-    if (fgNoStructParamPromotion)
-    {
-        // The struct parameter is not enregistered
-        return PROMOTION_TYPE_DEPENDENT;
-    }
-
 // We have a parameter that could be enregistered
 #if defined(TARGET_ARM)
     // TODO-Cleanup: return INDEPENDENT for arm32.
@@ -4393,6 +4365,21 @@ void GenTree::VisitOperands(TVisitor visitor)
             return;
         }
 
+        case GT_SELECT:
+        {
+            GenTreeConditional* const cond = this->AsConditional();
+            if (visitor(cond->gtCond) == VisitResult::Abort)
+            {
+                return;
+            }
+            if (visitor(cond->gtOp1) == VisitResult::Abort)
+            {
+                return;
+            }
+            visitor(cond->gtOp2);
+            return;
+        }
+
         // Binary nodes
         default:
             assert(this->OperIsBinary());
@@ -4603,7 +4590,7 @@ inline void LclVarDsc::setLvRefCnt(unsigned short newValue, RefCountState state)
 }
 
 //------------------------------------------------------------------------------
-// lvRefCntWtd: access wighted reference count for this local var
+// lvRefCntWtd: access weighted reference count for this local var
 //
 // Arguments:
 //    state: the requestor's expected ref count state; defaults to RCS_NORMAL
@@ -4702,6 +4689,10 @@ inline bool Compiler::compCanHavePatchpoints(const char** reason)
     else if (opts.IsReversePInvoke())
     {
         whyNot = "OSR can't handle reverse pinvoke";
+    }
+    else if (!info.compIsStatic && !lvaIsOriginalThisReadOnly())
+    {
+        whyNot = "OSR can't handle modifiable this";
     }
 #else
     whyNot = "OSR feature not defined in build";

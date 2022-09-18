@@ -145,7 +145,7 @@ namespace System.Reflection.Runtime.MethodInfos
             if (typeArguments.Length != GenericTypeParameters.Length)
                 throw new ArgumentException(SR.Format(SR.Argument_NotEnoughGenArguments, typeArguments.Length, GenericTypeParameters.Length));
             RuntimeMethodInfo methodInfo = (RuntimeMethodInfo)RuntimeConstructedGenericMethodInfo.GetRuntimeConstructedGenericMethodInfo(this, genericTypeArguments);
-            MethodInvoker _ = methodInfo.MethodInvoker; // For compatibility with other Make* apis, trigger any MissingMetadataExceptions now rather than later.
+            MethodInvoker _ = methodInfo.MethodInvoker; // For compatibility with other Make* apis, trigger any missing metadata exceptions now rather than later.
             return methodInfo;
         }
 
@@ -298,32 +298,7 @@ namespace System.Reflection.Runtime.MethodInfos
         {
             MethodInvoker invoker = _common.GetUncachedMethodInvoker(methodArguments, exceptionPertainant, out Exception exception);
             if (invoker == null)
-            {
-                // If we have byref-like types in the signature, the reason we couldn't find an invoker
-                // is that.
-                bool hasByRefLikeParameter = false;
-                foreach (ParameterInfo parameter in GetParametersNoCopy())
-                {
-                    if (Unwrap(parameter.ParameterType).IsByRefLike)
-                    {
-                        hasByRefLikeParameter = true;
-                    }
-                }
-
-                if (hasByRefLikeParameter || Unwrap(ReturnType).IsByRefLike)
-                {
-                    throw new NotSupportedException(SR.NotSupported_ByRefLike);
-                }
-
-                static Type Unwrap(Type t)
-                {
-                    while (t.HasElementType)
-                        t = t.GetElementType()!;
-                    return t;
-                }
-
                 throw exception;
-            }
 
             return invoker;
         }

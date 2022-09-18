@@ -112,4 +112,4 @@ The type system implementation is found in:
 
 ## Notable differences from CoreCLR type system
 
-* `MethodDesc` has exact generic instantations where possible in managed type system. The code sharing policy in managed type system is one of the pluggable algorithms and it does not affect `MethodDesc` identity. The code sharing policy in the CoreCLR type system is coupled with `MethodDesc` identity. See https://github.com/dotnet/runtime/pull/45744 for an example how this difference manifests itself.
+* `MethodDesc` has exact generic instantiations where possible in managed type system. The code sharing policy in managed type system is one of the pluggable algorithms and it does not affect `MethodDesc` identity. The code sharing policy in the CoreCLR type system is coupled with `MethodDesc` identity. See https://github.com/dotnet/runtime/pull/45744 for an example how this difference manifests itself.

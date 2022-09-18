@@ -3022,7 +3022,7 @@ TypeHandle ClassLoader::CreateTypeHandleForTypeKey(TypeKey* pKey, AllocMemTracke
                 ThrowTypeLoadException(pKey, IDS_CLASSLOAD_GENERAL);
             }
 
-            // We do allow parametrized types of ByRefLike types. Languages may restrict them to produce safe or verifiable code,
+            // We do allow parameterized types of ByRefLike types. Languages may restrict them to produce safe or verifiable code,
             // but there is not a good reason for restricting them in the runtime.
 
             BYTE* mem = (BYTE*) pamTracker->Track(pLoaderModule->GetAssembly()->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(sizeof(ParamTypeDesc))));

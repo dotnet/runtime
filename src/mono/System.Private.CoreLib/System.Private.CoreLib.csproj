@@ -10,7 +10,7 @@
     <!-- Force System.Private.CoreLib.dll into a special IL output directory -->
     <OutputPath>$(RuntimeBinDir)IL/</OutputPath>
     <Configurations>Debug;Release;Checked</Configurations>
-    <Platforms>x64;x86;arm;armv6;arm64;s390x;wasm;ppc64le</Platforms>
+    <Platforms>x64;x86;arm;armv6;arm64;riscv64;s390x;wasm;ppc64le</Platforms>
 
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
@@ -67,6 +67,10 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_ARM64</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'riscv64'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DefineConstants>$(DefineConstants);TARGET_RISCV64</DefineConstants>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 's390x'">
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_S390X</DefineConstants>
@@ -121,8 +125,8 @@
     <DefineConstants>$(DefineConstants);MONO_FEATURE_SRE</DefineConstants>
 
     <FeatureMono>true</FeatureMono>
-    <FeatureWasmThreads Condition="'$(TargetsBrowser)' == 'true' and '$(WasmEnableThreads)' == 'true'">true</FeatureWasmThreads>
-    <FeatureWasmPerfTracing Condition="'$(TargetsBrowser)' == 'true' and ('$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true')">true</FeatureWasmPerfTracing>
+    <FeatureWasmThreads Condition="'$(TargetsBrowser)' == 'true' and ('$(WasmEnableThreads)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread')">true</FeatureWasmThreads>
+    <FeatureWasmPerfTracing Condition="'$(TargetsBrowser)' == 'true' and ('$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace')">true</FeatureWasmPerfTracing>
     <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
     <FeatureManagedEtw>true</FeatureManagedEtw>
     <FeaturePortableTimer Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableTimer>
@@ -254,6 +258,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\AssemblyExtensions.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\MetadataUpdater.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\ControlledExecution.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\DependentHandle.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\GCSettings.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\JitInfo.Mono.cs" />
@@ -273,7 +278,6 @@
       <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Threading\Overlapped.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Mono.cs" />
   </ItemGroup>
@@ -354,5 +358,13 @@
       <FileWrites Include="@(EventingSourceFile)" />
     </ItemGroup>
   </Target>
+
+  <!-- Import refererence assembly and ApiCompat logic -->
+  <PropertyGroup>
+    <IsSourceProject>true</IsSourceProject>
+    <ApiCompatValidateBaseline>true</ApiCompatValidateBaseline>
+  </PropertyGroup>
+  <Import Project="$(RepositoryEngineeringDir)resolveContract.props" />
+  <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
 
 </Project>

@@ -33,7 +33,7 @@ namespace System.Security.Cryptography
             HashSizeValue = HashSizeInBits;
         }
 
-        [SuppressMessage("Microsoft.Security", "CA5350", Justification = "This is the implementaton of SHA1")]
+        [SuppressMessage("Microsoft.Security", "CA5350", Justification = "This is the implementation of SHA1")]
         public static new SHA1 Create() => new Implementation();
 
         [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]

@@ -90,10 +90,10 @@ namespace System.Net
         private Dictionary<ulong, DisconnectAsyncResult> DisconnectResults =>
             LazyInitializer.EnsureInitialized(ref _disconnectResults, () => new Dictionary<ulong, DisconnectAsyncResult>());
 
-        private void SetUrlGroupProperty(Interop.HttpApi.HTTP_SERVER_PROPERTY property, IntPtr info, uint infosize)
+        private unsafe void SetUrlGroupProperty(Interop.HttpApi.HTTP_SERVER_PROPERTY property, void* info, uint infosize)
         {
             Debug.Assert(_urlGroupId != 0, "SetUrlGroupProperty called with invalid url group id");
-            Debug.Assert(info != IntPtr.Zero, "SetUrlGroupProperty called with invalid pointer");
+            Debug.Assert(info != null, "SetUrlGroupProperty called with invalid pointer");
 
             //
             // Set the url group property using Http Api.
@@ -111,7 +111,7 @@ namespace System.Net
 
         internal void SetServerTimeout(int[] timeouts, uint minSendBytesPerSecond)
         {
-            ValidateV2Property(); // CheckDispose and initilize HttpListener in the case of app.config timeouts
+            ValidateV2Property(); // CheckDispose and initialize HttpListener in the case of app.config timeouts
 
             Interop.HttpApi.HTTP_TIMEOUT_LIMIT_INFO timeoutinfo = default;
 
@@ -128,11 +128,9 @@ namespace System.Net
                 (ushort)timeouts[(int)Interop.HttpApi.HTTP_TIMEOUT_TYPE.HeaderWait];
             timeoutinfo.MinSendRate = minSendBytesPerSecond;
 
-            IntPtr infoptr = new IntPtr(&timeoutinfo);
-
             SetUrlGroupProperty(
                 Interop.HttpApi.HTTP_SERVER_PROPERTY.HttpServerTimeoutsProperty,
-                infoptr, (uint)Marshal.SizeOf(typeof(Interop.HttpApi.HTTP_TIMEOUT_LIMIT_INFO)));
+                &timeoutinfo, (uint)sizeof(Interop.HttpApi.HTTP_TIMEOUT_LIMIT_INFO));
         }
 
         public HttpListenerTimeoutManager TimeoutManager
@@ -307,10 +305,8 @@ namespace System.Net
             info.Flags = Interop.HttpApi.HTTP_FLAGS.HTTP_PROPERTY_FLAG_PRESENT;
             info.RequestQueueHandle = _currentSession!.RequestQueueHandle.DangerousGetHandle();
 
-            IntPtr infoptr = new IntPtr(&info);
-
             SetUrlGroupProperty(Interop.HttpApi.HTTP_SERVER_PROPERTY.HttpServerBindingProperty,
-                infoptr, (uint)Marshal.SizeOf(typeof(Interop.HttpApi.HTTP_BINDING_INFO)));
+                &info, (uint)sizeof(Interop.HttpApi.HTTP_BINDING_INFO));
         }
 
         private void DetachRequestQueueFromUrlGroup()
@@ -328,11 +324,9 @@ namespace System.Net
             info.Flags = Interop.HttpApi.HTTP_FLAGS.NONE;
             info.RequestQueueHandle = IntPtr.Zero;
 
-            IntPtr infoptr = new IntPtr(&info);
-
             uint statusCode = Interop.HttpApi.HttpSetUrlGroupProperty(_urlGroupId,
                 Interop.HttpApi.HTTP_SERVER_PROPERTY.HttpServerBindingProperty,
-                infoptr, (uint)Marshal.SizeOf(typeof(Interop.HttpApi.HTTP_BINDING_INFO)));
+                &info, (uint)sizeof(Interop.HttpApi.HTTP_BINDING_INFO));
 
             if (statusCode != Interop.HttpApi.ERROR_SUCCESS)
             {

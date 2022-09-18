@@ -74,7 +74,7 @@ namespace System.Reflection.Emit
 
         private byte[] guid;
         private TypeBuilder? global_type;
-        private Type? global_type_created;
+        private bool global_type_created;
         // name_cache keys are display names
         private Dictionary<ITypeName, TypeBuilder> name_cache;
         private Dictionary<string, int> us_string_cache;
@@ -96,13 +96,14 @@ namespace System.Reflection.Emit
             table_idx = get_next_table_index(0x00, 1);
             name_cache = new Dictionary<ITypeName, TypeBuilder>();
             us_string_cache = new Dictionary<string, int>(512);
+            this.global_type_created = false;
 
             basic_init(this);
 
             CreateGlobalType();
 
             TypeBuilder tb = new TypeBuilder(this, TypeAttributes.Abstract, 0xFFFFFF); /*last valid token*/
-            Type? type = tb.CreateType();
+            Type? type = tb.CreateTypeInfo();
             set_wrappers_type(this, type);
         }
 
@@ -121,10 +122,13 @@ namespace System.Reflection.Emit
 
         public void CreateGlobalFunctions()
         {
-            if (global_type_created != null)
+            if (global_type_created)
                 throw new InvalidOperationException("global methods already created");
             if (global_type != null)
-                global_type_created = global_type.CreateType()!;
+            {
+                global_type_created = true;
+                global_type.CreateTypeInfo();
+            }
         }
 
         public FieldBuilder DefineInitializedData(string name, byte[] data, FieldAttributes attributes)
@@ -148,7 +152,7 @@ namespace System.Reflection.Emit
         private FieldBuilder DefineDataImpl(string name, int size, FieldAttributes attributes)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
-            if (global_type_created != null)
+            if (global_type_created)
                 throw new InvalidOperationException("global fields already created");
             if ((size <= 0) || (size >= 0x3f0000))
                 throw new ArgumentException("Data size must be > 0 and < 0x3f0000", null as string);
@@ -201,7 +205,7 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(name);
             if ((attributes & MethodAttributes.Static) == 0)
                 throw new ArgumentException("global methods must be static");
-            if (global_type_created != null)
+            if (global_type_created)
                 throw new InvalidOperationException("global methods already created");
             CreateGlobalType();
             MethodBuilder mb = global_type!.DefineMethod(name, attributes, callingConvention, returnType, requiredReturnTypeCustomModifiers, optionalReturnTypeCustomModifiers, parameterTypes, requiredParameterTypeCustomModifiers, optionalParameterTypeCustomModifiers);
@@ -216,7 +220,7 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(name);
             if ((attributes & MethodAttributes.Static) == 0)
                 throw new ArgumentException("global methods must be static");
-            if (global_type_created != null)
+            if (global_type_created)
                 throw new InvalidOperationException("global methods already created");
             CreateGlobalType();
             MethodBuilder mb = global_type!.DefinePInvokeMethod(name, dllName, entryName, attributes, callingConvention, returnType, parameterTypes, nativeCallConv, nativeCharSet);
@@ -244,8 +248,6 @@ namespace System.Reflection.Emit
             num_types++;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
-            Justification = "Reflection.Emit is not subject to trimming")]
         private TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
             ArgumentNullException.ThrowIfNull(name, "fullname");
@@ -739,7 +741,7 @@ namespace System.Reflection.Emit
 
         internal void CreateGlobalType()
         {
-            global_type ??= new TypeBuilder(this, 0, 1);
+            global_type ??= new TypeBuilder(this, 0, 1, true);
         }
 
         public override Assembly Assembly
@@ -775,14 +777,16 @@ namespace System.Reflection.Emit
 
         internal IntPtr GetUnderlyingNativeHandle() { return _impl; }
 
+        protected override ModuleHandle GetModuleHandleImpl() => new ModuleHandle(_impl);
+
         [RequiresUnreferencedCode("Methods might be removed")]
         protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
-            if (global_type_created == null)
+            if (!global_type_created)
                 return null;
             if (types == null)
-                return global_type_created.GetMethod(name);
-            return global_type_created.GetMethod(name, bindingAttr, binder, callConvention, types, modifiers);
+                return global_type!.AsType().GetMethod(name);
+            return global_type!.AsType().GetMethod(name, bindingAttr, binder, callConvention, types, modifiers);
         }
 
         [RequiresUnreferencedCode("Trimming changes metadata tokens")]
@@ -886,25 +890,25 @@ namespace System.Reflection.Emit
         [RequiresUnreferencedCode("Fields might be removed")]
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
-            if (global_type_created == null)
+            if (!global_type_created)
                 throw new InvalidOperationException("Module-level fields cannot be retrieved until after the CreateGlobalFunctions method has been called for the module.");
-            return global_type_created.GetField(name, bindingAttr);
+            return global_type!.AsType().GetField(name, bindingAttr);
         }
 
         [RequiresUnreferencedCode("Fields might be removed")]
         public override FieldInfo[] GetFields(BindingFlags bindingFlags)
         {
-            if (global_type_created == null)
+            if (!global_type_created)
                 throw new InvalidOperationException("Module-level fields cannot be retrieved until after the CreateGlobalFunctions method has been called for the module.");
-            return global_type_created.GetFields(bindingFlags);
+            return global_type!.AsType().GetFields(bindingFlags);
         }
 
         [RequiresUnreferencedCode("Methods might be removed")]
         public override MethodInfo[] GetMethods(BindingFlags bindingFlags)
         {
-            if (global_type_created == null)
+            if (!global_type_created)
                 throw new InvalidOperationException("Module-level methods cannot be retrieved until after the CreateGlobalFunctions method has been called for the module.");
-            return global_type_created.GetMethods(bindingFlags);
+            return global_type!.AsType().GetMethods(bindingFlags);
         }
 
         public override int MetadataToken

@@ -237,12 +237,6 @@ SSL_CTX* CryptoNative_SslCtxCreate(const SSL_METHOD* method)
                 return NULL;
             }
         }
-
-        // Opportunistically request the server present a stapled OCSP response.
-        if (SSL_CTX_ctrl(ctx, SSL_CTRL_SET_TLSEXT_STATUS_REQ_TYPE, TLSEXT_STATUSTYPE_ocsp, NULL) != 1)
-        {
-            ERR_clear_error();
-        }
     }
 
     return ctx;
@@ -365,7 +359,18 @@ void CryptoNative_SslCtxSetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
 SSL* CryptoNative_SslCreate(SSL_CTX* ctx)
 {
     ERR_clear_error();
-    return SSL_new(ctx);
+    SSL* ret = SSL_new(ctx);
+
+    if (ret != NULL)
+    {
+        // Opportunistically request the server present a stapled OCSP response.
+        if (SSL_ctrl(ret, SSL_CTRL_SET_TLSEXT_STATUS_REQ_TYPE, TLSEXT_STATUSTYPE_ocsp, NULL) != 1)
+        {
+            ERR_clear_error();
+        }
+    }
+
+    return ret;
 }
 
 int32_t CryptoNative_SslGetError(SSL* ssl, int32_t ret)
@@ -650,7 +655,7 @@ void CryptoNative_SslSetVerifyPeer(SSL* ssl)
     SSL_set_verify(ssl, SSL_VERIFY_PEER, verify_callback);
 }
 
-int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, SslCtxNewSessionCallback newSessionCb, SslCtxRemoveSessionCallback removeSessionCb)
+int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, int contextIdLength, uint8_t* contextId, SslCtxNewSessionCallback newSessionCb, SslCtxRemoveSessionCallback removeSessionCb)
 {
     int retValue = 1;
     if (mode && !API_EXISTS(SSL_SESSION_get0_hostname))
@@ -676,6 +681,11 @@ int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, SslCtxN
     else if (cacheSize >= 0)
     {
         SSL_CTX_ctrl(ctx, SSL_CTRL_SET_SESS_CACHE_SIZE, (long)cacheSize, NULL);
+    }
+
+    if (contextIdLength > 0 && contextId != NULL)
+    {
+        SSL_CTX_set_session_id_context(ctx, contextId, contextIdLength <= SSL_MAX_SID_CTX_LENGTH ? (unsigned int)contextIdLength : SSL_MAX_SID_CTX_LENGTH);
     }
 
     if (newSessionCb != NULL)

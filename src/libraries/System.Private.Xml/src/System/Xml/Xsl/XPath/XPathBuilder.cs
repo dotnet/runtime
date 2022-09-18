@@ -69,7 +69,7 @@ namespace System.Xml.Xsl.XPath
             numFixupCurrent = numFixupPosition = numFixupLast = 0;
         }
 
-        [return: NotNullIfNotNull("result")]
+        [return: NotNullIfNotNull(nameof(result))]
         public virtual QilNode? EndBuild(QilNode? result)
         {
             if (result == null)
@@ -423,7 +423,7 @@ namespace System.Xml.Xsl.XPath
             {
                 result = _f.BaseFactory.DocOrderDistinct(result);
                 // To make grouping operator NOP we should always return path expressions in DOD.
-                // I can't use Pattern factory here becasue Predicate() depends on fact that DOD() is
+                // I can't use Pattern factory here because Predicate() depends on fact that DOD() is
                 //     outmost node in reverse steps
             }
             return result;
@@ -946,7 +946,7 @@ namespace System.Xml.Xsl.XPath
             // This happens in all cortasian productions now.
             // Excample "a/b=c". 'c' is added inside 'b'
 
-            // I belive some optimisation is posible and would be nice to have.
+            // I belive some optimisation is possible and would be nice to have.
             // We may change the way we generating cortasian product.
 
             protected override QilNode Visit(QilNode n) {

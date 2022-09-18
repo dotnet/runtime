@@ -184,6 +184,33 @@ set(libunwind_loongarch_la_SOURCES_loongarch
 	loongarch64/Gis_signal_frame.c loongarch64/Gregs.c loongarch64/Gresume.c loongarch64/Gstep.c
 )
 
+# The list of files that go into libunwind and libunwind-riscv:
+set(libunwind_la_SOURCES_riscv_common
+    ${libunwind_la_SOURCES_common}
+    riscv/is_fpreg.c
+    riscv/regname.c
+)
+
+# The list of files that go into libunwind:
+set(libunwind_la_SOURCES_riscv
+    ${libunwind_la_SOURCES_riscv_common}
+    ${libunwind_la_SOURCES_local}
+    riscv/Lget_proc_info.c  riscv/Linit.c  riscv/Lis_signal_frame.c
+    riscv/Lstep.c
+    riscv/getcontext.S
+    riscv/Lget_save_loc.c
+    riscv/Linit_local.c   riscv/Lregs.c
+    riscv/Lcreate_addr_space.c  riscv/Lglobal.c  riscv/Linit_remote.c  riscv/Lresume.c
+)
+
+set(libunwind_riscv_la_SOURCES_riscv
+    ${libunwind_la_SOURCES_riscv_common}
+    ${libunwind_la_SOURCES_generic}
+	riscv/Gcreate_addr_space.c riscv/Gget_proc_info.c riscv/Gget_save_loc.c
+	riscv/Gglobal.c riscv/Ginit.c riscv/Ginit_local.c riscv/Ginit_remote.c
+	riscv/Gis_signal_frame.c riscv/Gregs.c riscv/Gresume.c riscv/Gstep.c
+)
+
 # The list of files that go into libunwind and libunwind-aarch64:
 set(libunwind_la_SOURCES_aarch64_common
     ${libunwind_la_SOURCES_common}
@@ -345,10 +372,10 @@ set(libunwind_la_SOURCES_ppc64le_common
 set(libunwind_la_SOURCES_ppc64le
     ${libunwind_la_SOURCES_ppc64le_common}
     ${libunwind_la_SOURCES_local}
-    ppc64/setcontext.S 
+    ppc64/setcontext.S
     ppc64/Lapply_reg_state.c ppc64/Lreg_states_iterate.c
     ppc64/Lcreate_addr_space.c ppc/Lget_save_loc.c ppc64/Lglobal.c
-    ppc64/Linit.c ppc/Linit_local.c 
+    ppc64/Linit.c ppc/Linit_local.c
     ppc64/Lregs.c ppc64/Lresume.c
     ppc/Lis_signal_frame.c ppc64/Lstep.c
 )
@@ -403,6 +430,11 @@ if(CLR_CMAKE_HOST_UNIX)
         set(libunwind_remote_la_SOURCES             ${libunwind_loongarch_la_SOURCES_loongarch})
         set(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
         list(APPEND libunwind_setjmp_la_SOURCES     loongarch64/siglongjmp.S)
+    elseif(CLR_CMAKE_HOST_ARCH_RISCV64)
+        set(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_riscv})
+        set(libunwind_remote_la_SOURCES             ${libunwind_riscv_la_SOURCES_riscv})
+        set(libunwind_elf_la_SOURCES                ${libunwind_elf64_la_SOURCES})
+        list(APPEND libunwind_setjmp_la_SOURCES     riscv/siglongjmp.S)
     endif()
 
     if(CLR_CMAKE_HOST_OSX)

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Numerics;
 using System.Diagnostics;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -12,13 +13,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (dwStatus == CertTrustErrorStatus.CERT_TRUST_NO_ERROR)
                 return Array.Empty<X509ChainStatus>();
 
-            int count = 0;
-            for (uint bits = (uint)dwStatus; bits != 0; bits >>= 1)
-            {
-                if ((bits & 0x1) != 0)
-                    count++;
-            }
-
+            int count = BitOperations.PopCount((uint)dwStatus);
             X509ChainStatus[] chainStatus = new X509ChainStatus[count];
             int index = 0;
 

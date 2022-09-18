@@ -2,23 +2,12 @@
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
 
   <PropertyGroup>
-    <MicrosoftDotNetBuildTasksInstallersTaskTargetFramework Condition="'$(MSBuildRuntimeType)' == 'Core'">net7.0</MicrosoftDotNetBuildTasksInstallersTaskTargetFramework>
-    <MicrosoftDotNetBuildTasksInstallersTaskTargetFramework Condition="'$(DotNetBuildFromSource)' == 'true'">net5.0</MicrosoftDotNetBuildTasksInstallersTaskTargetFramework>
-    <MicrosoftDotNetBuildTasksInstallersTaskTargetFramework Condition="'$(MSBuildRuntimeType)' != 'Core'">net472</MicrosoftDotNetBuildTasksInstallersTaskTargetFramework>
-    <MicrosoftDotNetBuildTasksInstallersTaskAssembly>$(NuGetPackageRoot)microsoft.dotnet.build.tasks.installers\$(MicrosoftDotNetBuildTasksInstallersVersion)\tools\$(MicrosoftDotNetBuildTasksInstallersTaskTargetFramework)\Microsoft.DotNet.Build.Tasks.Installers.dll</MicrosoftDotNetBuildTasksInstallersTaskAssembly>
-  </PropertyGroup>
-
-  <UsingTask AssemblyFile="$(PkgMicrosoft_DotNet_Build_Tasks_Workloads)\tools\net472\Microsoft.DotNet.Build.Tasks.Workloads.dll" TaskName="GenerateManifestMsi" />
-  <UsingTask AssemblyFile="$(PkgMicrosoft_DotNet_Build_Tasks_Workloads)\tools\net472\Microsoft.DotNet.Build.Tasks.Workloads.dll" TaskName="GenerateVisualStudioWorkload" />
-  <UsingTask TaskName="GenerateMsiVersion" AssemblyFile="$(MicrosoftDotNetBuildTasksInstallersTaskAssembly)" />
-  <UsingTask TaskName="CreateLightCommandPackageDrop" AssemblyFile="$(MicrosoftDotNetBuildTasksInstallersTaskAssembly)" />
-
-  <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <IncludeBuildOutput>false</IncludeBuildOutput>
 
     <WorkloadIntermediateOutputPath>$(ArtifactsObjDir)workloads/</WorkloadIntermediateOutputPath>
+    <VSTemp>$(WorkloadIntermediateOutputPath)VS/</VSTemp>
     <WorkloadOutputPath>$(ArtifactsBinDir)workloads/</WorkloadOutputPath>
     <WorkloadOutputPath Condition="'$(workloadArtifactsPath)' != ''">$(workloadArtifactsPath)/</WorkloadOutputPath>
     <PackageSource>$(ArtifactsShippingPackagesDir)</PackageSource>
@@ -43,7 +32,7 @@
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Workloads" Version="$(MicrosoftDotNetBuildTasksWorkloadsPackageVersion)" GeneratePathProperty="true" />
     <PackageReference Include="Microsoft.Signed.WiX" Version="$(WixPackageVersion)" GeneratePathProperty="true" />
     <PackageReference Include="MicroBuild.Plugins.SwixBuild.Dotnet" Version="$(SwixPackageVersion)" GeneratePathProperty="true" />
-    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Installers" Version="$(MicrosoftDotNetBuildTasksInstallersVersion)" GeneratePathProperty="True" />
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Installers" Version="$(MicrosoftDotNetBuildTasksInstallersVersion)" GeneratePathProperty="true" />
   </ItemGroup>
 
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
@@ -52,43 +41,76 @@
     <ItemGroup>
       <!-- Overrides for Visual Studio setup generation. If the workload definition IDs change,
            these must be updated. -->
-      <ComponentResources Include="microsoft-net-runtime-mono-tooling" Title=".NET Shared Mobile Build Tools"
+      <_ComponentResources Include="microsoft-net-runtime-mono-tooling" Title=".NET Shared Mobile Build Tools"
                           Description="Shared build tasks for mobile platform development."/>
-      <ComponentResources Include="wasm-tools" Title=".NET WebAssembly Build Tools"
+      <_ComponentResources Include="wasm-tools" Title=".NET WebAssembly Build Tools"
                           Description="Build tools for WebAssembly ahead-of-time (AoT) compilation and native linking."/>
-      <ComponentResources Include="microsoft-net-runtime-android" Title=".NET Android Build Tools"
+      <_ComponentResources Include="microsoft-net-runtime-android" Title=".NET Android Build Tools"
                           Description="Build tools for Android compilation and native linking."/>
-      <ComponentResources Include="microsoft-net-runtime-android-aot" Title=".NET Android Build Tools (AoT)"
+      <_ComponentResources Include="microsoft-net-runtime-android-aot" Title=".NET Android Build Tools (AoT)"
                           Description="Build tools for Android ahead-of-time (AoT) compilation and native linking."/>
-      <ComponentResources Include="microsoft-net-runtime-ios" Title=".NET iOS Build Tools"
+      <_ComponentResources Include="microsoft-net-runtime-ios" Title=".NET iOS Build Tools"
                           Description="Build tools for iOS compilation and native linking."/>
-      <ComponentResources Include="microsoft-net-runtime-tvos" Title=".NET tvOS Build Tools"
+      <_ComponentResources Include="microsoft-net-runtime-tvos" Title=".NET tvOS Build Tools"
                           Description="Build tools for tvOS compilation and native linking."/>
-      <ComponentResources Include="microsoft-net-runtime-maccatalyst" Title=".NET Mac Catalyst Build Tools"
+      <_ComponentResources Include="microsoft-net-runtime-maccatalyst" Title=".NET Mac Catalyst Build Tools"
                           Description="Build tools for Mac Catalyst compilation and native linking."/>
-      <ComponentResources Include="runtimes-ios" Title=".NET iOS Runtimes"
+      <_ComponentResources Include="runtimes-ios" Title=".NET iOS Runtimes"
                           Description=".NET runtime components for iOS execution."/>
-      <ComponentResources Include="runtimes-tvos" Title=".NET tvOS Build Tools"
+      <_ComponentResources Include="runtimes-tvos" Title=".NET tvOS Build Tools"
                           Description=".NET runtime components for tvOS execution."/>
-      <ComponentResources Include="runtimes-maccatalyst" Title=".NET Mac Catalyst Build Tools"
+      <_ComponentResources Include="runtimes-maccatalyst" Title=".NET Mac Catalyst Build Tools"
                           Description=".NET runtime components for Mac Catalyst execution."/>
-      <ComponentResources Include="runtimes-windows" Title=".NET Windows Runtimes"
+      <_ComponentResources Include="runtimes-windows" Title=".NET Windows Runtimes"
                           Description=".NET runtime components for Windows execution."/>
-      
 
-      <!-- Visual Studio components must be versioned. Build tasks will fall back to cobbling a version number from
-           the manifest information unless it's overridden. -->
-      <ComponentVersions Include="microsoft-net-runtime-mono-tooling" Version="$(FileVersion)" />
-      <ComponentVersions Include="wasm-tools" Version="$(FileVersion)" />
-      <ComponentVersions Include="microsoft-net-runtime-android" Version="$(FileVersion)" />
-      <ComponentVersions Include="microsoft-net-runtime-android-aot" Version="$(FileVersion)" />
-      <ComponentVersions Include="microsoft-net-runtime-ios" Version="$(FileVersion)" />
-      <ComponentVersions Include="microsoft-net-runtime-tvos" Version="$(FileVersion)" />
-      <ComponentVersions Include="microsoft-net-runtime-maccatalyst" Version="$(FileVersion)" />
-      <ComponentVersions Include="runtimes-ios" Version="$(FileVersion)" />
-      <ComponentVersions Include="runtimes-tvos" Version="$(FileVersion)" />
-      <ComponentVersions Include="runtimes-maccatalyst" Version="$(FileVersion)" />
-      <ComponentVersions Include="runtimes-windows" Version="$(FileVersion)" />
+      <_ComponentResources Include="microsoft-net-runtime-mono-tooling-net7" Title=".NET 7.0 Shared Mobile Build Tools"
+                          Description="Shared build tasks for mobile platform development."/>
+      <_ComponentResources Include="wasm-tools-net7" Title=".NET 7.0 WebAssembly Build Tools"
+                          Description="Build tools for net6.0 WebAssembly ahead-of-time (AoT) compilation and native linking."/>
+      <_ComponentResources Include="microsoft-net-runtime-android-net7" Title=".NET 7.0 Android Build Tools"
+                          Description="Build tools for net6.0 Android compilation and native linking."/>
+      <_ComponentResources Include="microsoft-net-runtime-android-aot-net7" Title=".NET 7.0 Android Build Tools (AoT)"
+                          Description="Build tools for net6.0 Android ahead-of-time (AoT) compilation and native linking."/>
+      <_ComponentResources Include="microsoft-net-runtime-ios-net7" Title=".NET 7.0 iOS Build Tools"
+                          Description="Build tools for net7.0 iOS compilation and native linking."/>
+      <_ComponentResources Include="microsoft-net-runtime-tvos-net7" Title=".NET 7.0 tvOS Build Tools"
+                          Description="Build tools for net7.0 tvOS compilation and native linking."/>
+      <_ComponentResources Include="microsoft-net-runtime-maccatalyst-net7" Title=".NET 7.0 Mac Catalyst Build Tools"
+                          Description="Build tools for net7.0 Mac Catalyst compilation and native linking."/>
+      <_ComponentResources Include="runtimes-ios-net7" Title=".NET 7.0 iOS Runtimes"
+                          Description=".NET 7.0 runtime components for iOS execution."/>
+      <_ComponentResources Include="runtimes-tvos-net7" Title=".NET 7.0 tvOS Build Tools"
+                          Description=".NET 7.0 runtime components for tvOS execution."/>
+      <_ComponentResources Include="runtimes-maccatalyst-net7" Title=".NET 7.0 Mac Catalyst Build Tools"
+                          Description=".NET 7.0 runtime components for Mac Catalyst execution."/>
+      <_ComponentResources Include="runtimes-windows-net7" Title=".NET 7.0 Windows Runtimes"
+                          Description=".NET 7.0 runtime components for Windows execution."/>
+
+      <_ComponentResources Include="microsoft-net-runtime-mono-tooling-net6" Title=".NET 6.0 Shared Mobile Build Tools"
+                          Description="Shared build tasks for mobile platform development."/>
+      <_ComponentResources Include="wasm-tools-net6" Title=".NET 6.0 WebAssembly Build Tools"
+                          Description="Build tools for net6.0 WebAssembly ahead-of-time (AoT) compilation and native linking."/>
+      <_ComponentResources Include="microsoft-net-runtime-android-net6" Title=".NET 6.0 Android Build Tools"
+                          Description="Build tools for net6.0 Android compilation and native linking."/>
+      <_ComponentResources Include="microsoft-net-runtime-android-aot-net6" Title=".NET 6.0 Android Build Tools (AoT)"
+                          Description="Build tools for net6.0 Android ahead-of-time (AoT) compilation and native linking."/>
+      <_ComponentResources Include="microsoft-net-runtime-ios-net6" Title=".NET 6.0 iOS Build Tools"
+                          Description="Build tools for net6.0 iOS compilation and native linking."/>
+      <_ComponentResources Include="microsoft-net-runtime-tvos-net" Title=".NET 6.0 tvOS Build Tools"
+                          Description="Build tools for net6.0 tvOS compilation and native linking."/>
+      <_ComponentResources Include="microsoft-net-runtime-maccatalyst-net6" Title=".NET 6.0 Mac Catalyst Build Tools"
+                          Description="Build tools for net6.0 Mac Catalyst compilation and native linking."/>
+      <_ComponentResources Include="runtimes-ios-net6" Title=".NET 6.0 iOS Runtimes"
+                          Description=".NET 6.0 runtime components for iOS execution."/>
+      <_ComponentResources Include="runtimes-tvos-net6" Title=".NET 6.0 tvOS Build Tools"
+                          Description=".NET 6.0 runtime components for tvOS execution."/>
+      <_ComponentResources Include="runtimes-maccatalyst-net6" Title=".NET 6.0 Mac Catalyst Build Tools"
+                          Description=".NET 6.0 runtime components for Mac Catalyst execution."/>
+      <_ComponentResources Include="runtimes-windows-net6" Title=".NET 6.0 Windows Runtimes"
+                          Description=".NET 6.0 runtime components for Windows execution."/>
+
+      <ComponentResources Include="@(_ComponentResources)" Version="$(FileVersion)"/>
     </ItemGroup>
 
     <!-- BAR requires having version information in blobs -->
@@ -98,6 +120,13 @@
 
     <!-- Shorten package names to avoid long path issues in Visual Studio -->
     <ItemGroup>
+      <!-- These need to be in order - matching rules will try in order. -->
+      <ShortNames Include="Microsoft.NET.Workload.Mono.ToolChain.net">
+        <Replacement>Mono.</Replacement>
+      </ShortNames>
+      <ShortNames Include="Microsoft.NET.Workload.Mono.ToolChain.">
+        <Replacement>Mono.</Replacement>
+      </ShortNames>
       <ShortNames Include="microsoft.netcore.app.runtime;Microsoft.NETCore.App.Runtime;microsoft.net.runtime;Microsoft.NET.Runtime">
         <Replacement>Microsoft</Replacement>
       </ShortNames>
@@ -107,50 +136,39 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ManifestPackages Include="$(PackageSource)Microsoft.NET.Workload.Mono.ToolChain.Manifest-*.nupkg" />
+      <ManifestPackages Include="$(PackageSource)Microsoft.NET.Workload.Mono.ToolChain.*Manifest-*.nupkg" MsiVersion="$(MsiVersion)"/>
     </ItemGroup>
 
-    <GenerateManifestMsi
-        IntermediateBaseOutputPath="$(IntermediateOutputPath)"
-        OutputPath="$(OutputPath)"
-        MsiVersion="$(MsiVersion)"
-        WixToolsetPath="$(WixToolsetPath)"
-        WorkloadManifestPackage="%(ManifestPackages.Identity)"
-        ShortNames="@(ShortNames)" >
-      <Output TaskParameter="Msis" ItemName="ManifestMsis" />
-    </GenerateManifestMsi>
-
-    <GenerateVisualStudioWorkload IntermediateBaseOutputPath="$(WorkloadIntermediateOutputPath)"
-                                  WixToolsetPath="$(WixToolsetPath)"
-                                  GenerateMsis="true"
-                                  ComponentVersions="@(ComponentVersions)"
-                                  OutputPath="$(WorkloadOutputPath)"
-                                  PackagesPath="$(PackageSource)"
-                                  ShortNames="@(ShortNames)"
-                                  WorkloadPackages="@(ManifestPackages)">
+    <CreateVisualStudioWorkload BaseIntermediateOutputPath="$(WorkloadIntermediateOutputPath)"
+                                AllowMissingPacks="True"
+                                BaseOutputPath="$(WorkloadOutputPath)"
+                                ComponentResources="$(ComponentResources)"
+                                PackageSource="$(PackageSource)"
+                                ShortNames="@(ShortNames)"
+                                WorkloadManifestPackageFiles="@(ManifestPackages)"
+                                WixToolsetPath="$(WixToolsetPath)"
+                                ManifestMsiVersion="$(MsiVersion)">
       <Output TaskParameter="SwixProjects" ItemName="SwixProjects" />
       <Output TaskParameter="Msis" ItemName="Msis" />
-    </GenerateVisualStudioWorkload>
+    </CreateVisualStudioWorkload>
 
     <!-- Build all the SWIX projects. This requires full framework MSBuild-->
-    <MSBuild Projects="%(ManifestMsis.SwixProject)" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=$(VersionedVisualStudioSetupInsertionPath)" />
-    <MSBuild Projects="@(SwixProjects)" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=$(VersionedVisualStudioSetupInsertionPath)" />
+    <MSBuild Projects="@(SwixProjects)" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=$(VSTemp)%(SwixProjects.SdkFeatureBand)" />
+
+    <!-- Create payload package for VSDROP creation -->
+    <ItemGroup>
+      <SdkFeatureBand Include="%(SwixProjects.SdkFeatureBand)" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(ArtifactsNonShippingPackagesDir)" />
+    <MakeDir Directories="$(VisualStudioSetupInsertionPath)" />
+    <ZipDirectory Overwrite="true" DestinationFile="$(VisualStudioSetupInsertionPath)Workloads.VSDrop.%(SdkFeatureBand.Identity).$(PackageVersion).zip" SourceDirectory="$(VSTemp)%(SdkFeatureBand.Identity)"/>
 
     <!-- Gather .wixobj files for post-build signing. We'll have to batch since we generated multiple MSIs in the previous step. -->
-    <MSBuild Projects="$(MSBuildProjectFile)" Properties="_WixObjDir=%(ManifestMsis.WixObj);_Msi=%(ManifestMsis.Identity)" Targets="CreateWixPack" />
     <MSBuild Projects="$(MSBuildProjectFile)" Properties="_WixObjDir=%(Msis.WixObj);_Msi=%(Msis.Identity)" Targets="CreateWixPack" />
-
-    <!-- Build the Visual Studio manifest project. -->
-    <!-- This is currently a manual endeavor. Building it in CI brings .NET Framework dependencies that make machine servicing harder. -->
-    <!-- <ItemGroup>
-      <VisualStudioManifestProjects Include="mono_wasm_mobile.vsmanproj" />
-    </ItemGroup> -->
-
-    <MSBuild Projects="@(VisualStudioManifestProjects)" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=$(VersionedVisualStudioSetupInsertionPath);OutputPath=$(VersionedVisualStudioSetupInsertionPath)" />
 
     <!-- Build all the MSI payload packages for NuGet. -->
     <ItemGroup>
-      <MsiPackageProjects Include="%(ManifestMsis.PackageProject)" />
       <MsiPackageProjects Include="%(Msis.PackageProject)" />
     </ItemGroup>
 
@@ -181,15 +199,7 @@
       <SwixProjects Include="$(WorkloadIntermediateOutputPath)**\*.swixproj" />
     </ItemGroup>
 
-    <MSBuild Projects="@(SwixProjects)" BuildInParallel="true" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=$(VersionedVisualStudioSetupInsertionPath)" />
-  </Target>
-
-  <Target Name="BuildVisualStudioManifest">
-    <ItemGroup>
-      <VisualStudioManifestProjects Include="Microsoft.NET.vsmanproj" />
-    </ItemGroup>
-
-    <MSBuild Projects="@(VisualStudioManifestProjects)" BuildInParallel="true" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=$(VersionedVisualStudioSetupInsertionPath);OutputPath=$(VersionedVisualStudioSetupInsertionPath)" />
+    <MSBuild Projects="@(SwixProjects)" BuildInParallel="true" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=$(VisualStudioSetupInsertionPath)" />
   </Target>
 
   <Target Name="_GetVersionProps">

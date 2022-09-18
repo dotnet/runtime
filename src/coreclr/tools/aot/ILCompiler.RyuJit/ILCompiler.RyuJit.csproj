@@ -15,6 +15,7 @@
          binaries are up to date and which are stale. -->
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <Configurations>Debug;Release;Checked</Configurations>
+    <RunAnalyzers>true</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>
@@ -81,6 +82,9 @@
     </Compile>
     <Compile Include="..\..\Common\JitInterface\SystemVStructClassificator.cs">
       <Link>JitInterface\SystemVStructClassificator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\JitInterface\LoongArch64PassStructInRegister.cs">
+      <Link>JitInterface\LoongArch64PassStructInRegister.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\Pgo\TypeSystemEntityOrUnknown.cs">
       <Link>Pgo\TypeSystemEntityOrUnknown.cs</Link>

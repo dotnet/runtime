@@ -931,7 +931,7 @@ HRESULT PrettyPrintSigWorkerInternal(
     CONTRACTL_END
 
     HRESULT     hr = S_OK;
-    unsigned    numArgs;     // Count of arugments to function, or count of local vars.
+    unsigned    numArgs;     // Count of arguments to function, or count of local vars.
     unsigned numTyArgs = 0;
     PCCOR_SIGNATURE typeEnd = typePtr + typeLen;
     bool needComma = false;

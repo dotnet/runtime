@@ -463,7 +463,7 @@ void GCToOSInterface::Shutdown()
 }
 
 // Get numeric id of the current thread if possible on the
-// current platform. It is indended for logging purposes only.
+// current platform. It is intended for logging purposes only.
 // Return:
 //  Numeric id of the current thread, as best we can retrieve it.
 uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()
@@ -584,12 +584,6 @@ void GCToOSInterface::FlushProcessWriteBuffers()
 // otherwise raises a SIGTRAP.
 void GCToOSInterface::DebugBreak()
 {
-    // __has_builtin is only defined by clang. GCC doesn't have a debug
-    // trap intrinsic anyway.
-#ifndef __has_builtin
- #define __has_builtin(x) 0
-#endif // __has_builtin
-
 #if __has_builtin(__builtin_debugtrap)
     __builtin_debugtrap();
 #else
@@ -639,7 +633,7 @@ void GCToOSInterface::YieldThread(uint32_t switchCount)
 static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, uint32_t hugePagesFlag = 0)
 {
     assert(!(flags & VirtualReserveFlags::WriteWatch) && "WriteWatch not supported on Unix");
-    if (alignment == 0)
+    if (alignment < OS_PAGE_SIZE)
     {
         alignment = OS_PAGE_SIZE;
     }
@@ -764,7 +758,7 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
     // TODO: This can fail, however the GC does not handle the failure gracefully
     // Explicitly calling mmap instead of mprotect here makes it
     // that much more clear to the operating system that we no
-    // longer need these pages. Also, GC depends on re-commited pages to
+    // longer need these pages. Also, GC depends on re-committed pages to
     // be zeroed-out.
     return mmap(address, size, PROT_NONE, MAP_FIXED | MAP_ANON | MAP_PRIVATE, -1, 0) != NULL;
 }
@@ -1229,7 +1223,7 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit(bool* is_restricted)
         return 0;
     }
 
-    return pages * pageSize;
+    return (uint64_t)pages * (uint64_t)pageSize;
 #elif HAVE_SYSCTL
     int mib[3];
     mib[0] = CTL_HW;
@@ -1416,17 +1410,22 @@ void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memor
 //  The counter value
 int64_t GCToOSInterface::QueryPerformanceCounter()
 {
-    // TODO: This is not a particularly efficient implementation - we certainly could
-    // do much more specific platform-dependent versions if we find that this method
-    // runs hot. However, most likely it does not.
-    struct timeval tv;
-    if (gettimeofday(&tv, NULL) == -1)
+#if HAVE_CLOCK_GETTIME_NSEC_NP
+    return (int64_t)clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
+#elif HAVE_CLOCK_MONOTONIC
+    struct timespec ts;
+    int result = clock_gettime(CLOCK_MONOTONIC, &ts);
+
+    if (result != 0)
     {
-        assert(!"gettimeofday() failed");
-        // TODO (segilles) unconditional asserts
-        return 0;
+        assert(!"clock_gettime(CLOCK_MONOTONIC) failed");
+        __UNREACHABLE();
     }
-    return (int64_t) tv.tv_sec * (int64_t) tccSecondsToMicroSeconds + (int64_t) tv.tv_usec;
+
+    return ((int64_t)(ts.tv_sec) * (int64_t)(tccSecondsToNanoSeconds)) + (int64_t)(ts.tv_nsec);
+#else
+#error " clock_gettime(CLOCK_MONOTONIC) or clock_gettime_nsec_np() must be supported."
+#endif
 }
 
 // Get a frequency of the high precision performance counter
@@ -1435,7 +1434,7 @@ int64_t GCToOSInterface::QueryPerformanceCounter()
 int64_t GCToOSInterface::QueryPerformanceFrequency()
 {
     // The counter frequency of gettimeofday is in microseconds.
-    return tccSecondsToMicroSeconds;
+    return tccSecondsToNanoSeconds;
 }
 
 // Get a time stamp with a low precision

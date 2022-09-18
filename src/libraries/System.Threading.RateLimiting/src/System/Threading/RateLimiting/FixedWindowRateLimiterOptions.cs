@@ -9,68 +9,39 @@ namespace System.Threading.RateLimiting
     public sealed class FixedWindowRateLimiterOptions
     {
         /// <summary>
-        /// Initializes the <see cref="FixedWindowRateLimiterOptions"/>.
-        /// </summary>
-        /// <param name="permitLimit">Maximum number of requests that can be served in the window.</param>
-        /// <param name="queueProcessingOrder"></param>
-        /// <param name="queueLimit">Maximum number of unprocessed request counters waiting via <see cref="RateLimiter.WaitAndAcquireAsync(int, CancellationToken)"/>.</param>
-        /// <param name="window">
-        /// Specifies how often request counters can be replenished. Replenishing is triggered either by an internal timer if <paramref name="autoReplenishment"/> is true, or by calling <see cref="FixedWindowRateLimiter.TryReplenish"/>.
-        /// </param>
-        /// <param name="autoReplenishment">
-        /// Specifies whether request replenishment will be handled by the <see cref="FixedWindowRateLimiter"/> or by another party via <see cref="FixedWindowRateLimiter.TryReplenish"/>.
-        /// </param>
-        /// <exception cref="ArgumentOutOfRangeException">When <paramref name="permitLimit"/> or <paramref name="queueLimit"/> are less than 0. </exception>
-        public FixedWindowRateLimiterOptions(
-            int permitLimit,
-            QueueProcessingOrder queueProcessingOrder,
-            int queueLimit,
-            TimeSpan window,
-            bool autoReplenishment = true)
-        {
-            if (permitLimit < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(permitLimit));
-            }
-            if (queueLimit < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(queueLimit));
-            }
-
-            PermitLimit = permitLimit;
-            QueueProcessingOrder = queueProcessingOrder;
-            QueueLimit = queueLimit;
-            Window = window;
-            AutoReplenishment = autoReplenishment;
-        }
-
-        /// <summary>
         /// Specifies the time window that takes in the requests.
+        /// Must be set to a value >= <see cref="TimeSpan.Zero" /> by the time these options are passed to the constructor of <see cref="FixedWindowRateLimiter"/>.
         /// </summary>
-        public TimeSpan Window { get; }
+        /// <remarks><see cref="TimeSpan.Zero"/> means the limiter will never replenish.</remarks>
+        public TimeSpan Window { get; set; } = TimeSpan.Zero;
 
         /// <summary>
         /// Specified whether the <see cref="FixedWindowRateLimiter"/> is automatically refresh counters or if someone else
         /// will be calling <see cref="FixedWindowRateLimiter.TryReplenish"/> to refresh counters.
         /// </summary>
-        public bool AutoReplenishment { get; }
+        /// <value>
+        /// <see langword="true" /> by default.
+        /// </value>
+        public bool AutoReplenishment { get; set; } = true;
 
         /// <summary>
         /// Maximum number of permit counters that can be allowed in a window.
+        /// Must be set to a value > 0 by the time these options are passed to the constructor of <see cref="FixedWindowRateLimiter"/>.
         /// </summary>
-        public int PermitLimit { get; }
+        public int PermitLimit { get; set; }
 
         /// <summary>
-        /// Determines the behaviour of <see cref="RateLimiter.WaitAndAcquireAsync"/> when not enough resources can be leased.
+        /// Determines the behaviour of <see cref="RateLimiter.AcquireAsync"/> when not enough resources can be leased.
         /// </summary>
         /// <value>
         /// <see cref="QueueProcessingOrder.OldestFirst"/> by default.
         /// </value>
-        public QueueProcessingOrder QueueProcessingOrder { get; }
+        public QueueProcessingOrder QueueProcessingOrder { get; set; } = QueueProcessingOrder.OldestFirst;
 
         /// <summary>
         /// Maximum cumulative permit count of queued acquisition requests.
+        /// Must be set to a value >= 0 by the time these options are passed to the constructor of <see cref="FixedWindowRateLimiter"/>.
         /// </summary>
-        public int QueueLimit { get; }
+        public int QueueLimit { get; set; }
     }
 }

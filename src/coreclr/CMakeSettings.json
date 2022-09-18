@@ -1,0 +1,101 @@
+﻿{
+  "environments": [
+    {
+      "artifactsBin": "${projectDir}\\..\\..\\artifacts\\bin\\coreclr",
+      "artifactsObj": "${projectDir}\\..\\..\\artifacts\\obj\\coreclr"
+    }
+  ],
+  "configurations": [
+    {
+      "name": "windows.x64.Debug",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "buildRoot": "${env.artifactsObj}\\${name}",
+      "installRoot": "${env.artifactsBin}\\${name}",
+      "cmakeCommandArgs": "-DCLR_CMAKE_HOST_ARCH=x64",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x64" ]
+    },
+    {
+      "name": "windows.x64.Release",
+      "generator": "Ninja",
+      "configurationType": "Release",
+      "buildRoot": "${env.artifactsObj}\\${name}",
+      "installRoot": "${env.artifactsBin}\\${name}",
+      "cmakeCommandArgs": "-DCLR_CMAKE_HOST_ARCH=x64",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x64" ]
+    },
+    {
+      "name": "windows.x86.Debug",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "buildRoot": "${env.artifactsObj}\\${name}",
+      "installRoot": "${env.artifactsBin}\\${name}",
+      "cmakeCommandArgs": "-DCLR_CMAKE_HOST_ARCH=x86",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x86" ]
+    },
+    {
+      "name": "windows.x86.Release",
+      "generator": "Ninja",
+      "configurationType": "Release",
+      "buildRoot": "${env.artifactsObj}\\${name}",
+      "installRoot": "${env.artifactsBin}\\${name}",
+      "cmakeCommandArgs": "-DCLR_CMAKE_HOST_ARCH=x86",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x86" ]
+    },
+    {
+      "name": "windows.arm.Debug",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "buildRoot": "${env.artifactsObj}\\${name}",
+      "installRoot": "${env.artifactsBin}\\${name}",
+      "cmakeCommandArgs": "-DCLR_CMAKE_HOST_ARCH=arm",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_arm" ]
+    },
+    {
+      "name": "windows.arm.Release",
+      "generator": "Ninja",
+      "configurationType": "Release",
+      "buildRoot": "${env.artifactsObj}\\${name}",
+      "installRoot": "${env.artifactsBin}\\${name}",
+      "cmakeCommandArgs": "-DCLR_CMAKE_HOST_ARCH=arm",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_arm" ],
+      "variables": []
+    },
+    {
+      "name": "windows.arm64.Debug",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "buildRoot": "${env.artifactsObj}\\${name}",
+      "installRoot": "${env.artifactsBin}\\${name}",
+      "cmakeCommandArgs": "-DCLR_CMAKE_HOST_ARCH=arm64",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_arm64" ],
+      "variables": []
+    },
+    {
+      "name": "windows.arm64.Release",
+      "generator": "Ninja",
+      "configurationType": "Release",
+      "buildRoot": "${env.artifactsObj}\\${name}",
+      "installRoot": "${env.artifactsBin}\\${name}",
+      "cmakeCommandArgs": "-DCLR_CMAKE_HOST_ARCH=arm64",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_arm64" ],
+      "variables": []
+    }
+  ]
+}

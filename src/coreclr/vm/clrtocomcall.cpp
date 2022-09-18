@@ -116,7 +116,7 @@ ComPlusCallInfo *ComPlusCall::PopulateComPlusCallMethodDesc(MethodDesc* pMD, DWO
     // Determine if this is a special COM event call.
     BOOL fComEventCall = pItfMT->IsComEventItfType();
 
-    // Determine if the call needs to do early bound to late bound convertion.
+    // Determine if the call needs to do early bound to late bound conversion.
     BOOL fLateBound = !fComEventCall && pItfMT->IsInterface() && pItfMT->GetComInterfaceType() == ifDispatch;
 
     if (fLateBound)
@@ -300,13 +300,14 @@ UINT32 CLRToCOMEventCallWorker(ComPlusMethodFrame* pFrame, ComPlusCallMethodDesc
     }
     CONTRACTL_END;
 
-    struct _gc {
+    struct {
         OBJECTREF EventProviderTypeObj;
         OBJECTREF EventProviderObj;
         OBJECTREF ThisObj;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
-
+    gc.EventProviderTypeObj = NULL;
+    gc.EventProviderObj = NULL;
+    gc.ThisObj = NULL;
 
     LOG((LF_STUBS, LL_INFO1000, "Calling CLRToCOMEventCallWorker %s::%s \n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 
@@ -598,7 +599,14 @@ UINT32 CLRToCOMLateBoundWorker(
         OBJECTREF RetValType;
         OBJECTREF RetVal;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.MemberName = NULL;
+    gc.ItfTypeObj = NULL;
+    gc.Args = NULL;
+    gc.ArgsIsByRef = NULL;
+    gc.ArgsTypes = NULL;
+    gc.ArgsWrapperTypes = NULL;
+    gc.RetValType = NULL;
+    gc.RetVal = NULL;
     GCPROTECT_BEGIN(gc);
     {
         // Retrieve the exposed type object for the interface.

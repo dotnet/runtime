@@ -1,30 +1,23 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { MonoObject, MonoString } from "./export-types";
-import { EXPORTS, Module, runtimeHelpers } from "./imports";
-import { generate_arg_marshal_to_cs } from "./marshal-to-cs";
-import { marshal_exception_to_js, generate_arg_marshal_to_js } from "./marshal-to-js";
+import { Module, runtimeHelpers } from "./imports";
+import { bind_arg_marshal_to_cs } from "./marshal-to-cs";
+import { marshal_exception_to_js, bind_arg_marshal_to_js } from "./marshal-to-js";
 import {
-    JSMarshalerArguments, JavaScriptMarshalerArgSize, JSFunctionSignature,
-    JSMarshalerTypeSize, JSMarshalerSignatureHeaderSize,
-    get_arg, get_sig, set_arg_type,
-    get_signature_argument_count, is_args_exception, bound_cs_function_symbol, get_signature_version, MarshalerType,
+    get_arg, get_sig, get_signature_argument_count, is_args_exception,
+    bound_cs_function_symbol, get_signature_version, alloc_stack_frame, get_signature_type,
 } from "./marshal";
-import { parseFQN, wrap_error_root } from "./method-calls";
-import { mono_wasm_new_external_root, mono_wasm_new_root } from "./roots";
+import { mono_wasm_new_external_root } from "./roots";
 import { conv_string, conv_string_root } from "./strings";
-import { mono_assert, MonoObjectRef, MonoStringRef } from "./types";
+import { mono_assert, MonoObjectRef, MonoStringRef, MonoString, MonoObject, MonoMethod, JSMarshalerArguments, JSFunctionSignature, BoundMarshalerToCs, BoundMarshalerToJs } from "./types";
 import { Int32Ptr } from "./types/emscripten";
-import cwraps, { wrap_c_function } from "./cwraps";
-import { find_method } from "./method-binding";
+import cwraps from "./cwraps";
 import { assembly_load } from "./class-loader";
-
-const exportedMethods = new Map<string, Function>();
+import { wrap_error_root } from "./invoke-js";
 
 export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, signature_hash: number, signature: JSFunctionSignature, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
     const fqn_root = mono_wasm_new_external_root<MonoString>(fully_qualified_name), resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
-    const anyModule = Module as any;
     try {
         const version = get_signature_version(signature);
         mono_assert(version === 1, () => `Signature version ${version} mismatch.`);
@@ -33,8 +26,8 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
         const js_fqn = conv_string_root(fqn_root)!;
         mono_assert(js_fqn, "fully_qualified_name must be string");
 
-        if (runtimeHelpers.config.diagnostic_tracing) {
-            console.trace(`MONO_WASM: Binding [JSExport] ${js_fqn}`);
+        if (runtimeHelpers.diagnosticTracing) {
+            console.debug(`MONO_WASM: Binding [JSExport] ${js_fqn}`);
         }
 
         const { assembly, namespace, classname, methodname } = parseFQN(js_fqn);
@@ -48,78 +41,48 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
             throw new Error("Could not find class: " + namespace + ":" + classname + " in assembly " + assembly);
 
         const wrapper_name = `__Wrapper_${methodname}_${signature_hash}`;
-        const method = find_method(klass, wrapper_name, -1);
+        const method = cwraps.mono_wasm_assembly_find_method(klass, wrapper_name, -1);
         if (!method)
             throw new Error(`Could not find method: ${wrapper_name} in ${klass} [${assembly}]`);
 
-        const closure: any = {
-            method, get_arg, signature,
-            stackSave: anyModule.stackSave, stackAlloc: anyModule.stackAlloc, stackRestore: anyModule.stackRestore,
-            conv_string,
-            mono_wasm_new_root, init_void, init_result, /*init_argument,*/ marshal_exception_to_js, is_args_exception,
-            mono_wasm_invoke_method_bound: wrap_c_function("mono_wasm_invoke_method_bound"),
-        };
-        const bound_js_function_name = "_bound_cs_" + `${namespace}_${classname}_${methodname}`.replace(/\./g, "_").replace(/\//g, "_");
-        let body = `//# sourceURL=https://mono-wasm.invalid/${bound_js_function_name} \n`;
-        let bodyToCs = "";
-        let converter_names = "";
-
+        const arg_marshalers: (BoundMarshalerToCs)[] = new Array(args_count);
         for (let index = 0; index < args_count; index++) {
-            const arg_offset = (index + 2) * JavaScriptMarshalerArgSize;
-            const sig_offset = (index + 2) * JSMarshalerTypeSize + JSMarshalerSignatureHeaderSize;
             const sig = get_sig(signature, index + 2);
-            const { converters, call_body } = generate_arg_marshal_to_cs(sig, index + 2, arg_offset, sig_offset, `arguments[${index}]`, closure);
-            converter_names += converters;
-            bodyToCs += call_body;
-        }
-        const { converters: res_converters, call_body: res_call_body, marshaler_type: res_marshaler_type } = generate_arg_marshal_to_js(get_sig(signature, 1), 1, JavaScriptMarshalerArgSize, JSMarshalerTypeSize + JSMarshalerSignatureHeaderSize, "js_result", closure);
-        converter_names += res_converters;
-
-        body += `const { method, get_arg, signature, stackSave, stackAlloc, stackRestore, mono_wasm_new_root, conv_string, init_void, init_result, init_argument, marshal_exception_to_js, is_args_exception, mono_wasm_invoke_method_bound ${converter_names} } = closure;\n`;
-        // TODO named arguments instead of arguments keyword
-        body += `return function ${bound_js_function_name} () {\n`;
-        if (res_marshaler_type === MarshalerType.String) {
-            body += "let root = null;\n";
-        }
-        body += "const sp = stackSave();\n";
-        body += "try {\n";
-        body += `  const args = stackAlloc(${(args_count + 2) * JavaScriptMarshalerArgSize});\n`;
-        if (res_marshaler_type !== MarshalerType.Void && res_marshaler_type !== MarshalerType.Discard) {
-            if (res_marshaler_type === MarshalerType.String) {
-                body += "  root = mono_wasm_new_root(0);\n";
-                body += "  init_result(args);\n";
-            }
-            else {
-                body += "  init_result(args);\n";
-            }
-        } else {
-            body += "  init_void(args);\n";
+            const marshaler_type = get_signature_type(sig);
+            const arg_marshaler = bind_arg_marshal_to_cs(sig, marshaler_type, index + 2);
+            mono_assert(arg_marshaler, "ERR43: argument marshaler must be resolved");
+            arg_marshalers[index] = arg_marshaler;
         }
 
-        body += bodyToCs;
+        const res_sig = get_sig(signature, 1);
+        const res_marshaler_type = get_signature_type(res_sig);
+        const res_converter = bind_arg_marshal_to_js(res_sig, res_marshaler_type, 1);
 
-        body += "  const fail = mono_wasm_invoke_method_bound(method, args);\n";
-        body += "  if (fail) throw new Error(\"ERR22: Unexpected error: \" + conv_string(fail));\n";
-        body += "  if (is_args_exception(args)) throw marshal_exception_to_js(get_arg(args, 0));\n";
-        if (res_marshaler_type !== MarshalerType.Void && res_marshaler_type !== MarshalerType.Discard) {
-            body += res_call_body;
+        const closure: BindingClosure = {
+            method,
+            args_count,
+            arg_marshalers,
+            res_converter,
+        };
+        let bound_fn: Function;
+        if (args_count == 0 && !res_converter) {
+            bound_fn = bind_fn_0V(closure);
+        }
+        else if (args_count == 1 && !res_converter) {
+            bound_fn = bind_fn_1V(closure);
+        }
+        else if (args_count == 1 && res_converter) {
+            bound_fn = bind_fn_1R(closure);
+        }
+        else if (args_count == 2 && res_converter) {
+            bound_fn = bind_fn_2R(closure);
+        }
+        else {
+            bound_fn = bind_fn(closure);
         }
 
-        if (res_marshaler_type !== MarshalerType.Void && res_marshaler_type !== MarshalerType.Discard) {
-            body += "return js_result;\n";
-        }
+        (<any>bound_fn)[bound_cs_function_symbol] = true;
 
-        body += "} finally {\n";
-        body += "  stackRestore(sp);\n";
-        if (res_marshaler_type === MarshalerType.String) {
-            body += "  if(root) root.release()\n";
-        }
-        body += "}}";
-        const factory = new Function("closure", body);
-        const bound_fn = factory(closure);
-        bound_fn[bound_cs_function_symbol] = true;
-
-        exportedMethods.set(js_fqn, bound_fn);
         _walk_exports_to_set_function(assembly, namespace, classname, methodname, signature_hash, bound_fn);
     }
     catch (ex: any) {
@@ -131,49 +94,136 @@ export function mono_wasm_bind_cs_function(fully_qualified_name: MonoStringRef, 
     }
 }
 
-function init_void(args: JSMarshalerArguments) {
-    mono_assert(args && (<any>args) % 8 == 0, "Arg alignment");
-    const exc = get_arg(args, 0);
-    set_arg_type(exc, MarshalerType.None);
-
-    const res = get_arg(args, 1);
-    set_arg_type(res, MarshalerType.None);
+function bind_fn_0V(closure: BindingClosure) {
+    const method = closure.method;
+    (<any>closure) = null;
+    return function bound_fn_0V() {
+        const sp = Module.stackSave();
+        try {
+            const args = alloc_stack_frame(2);
+            // call C# side
+            invoke_method_and_handle_exception(method, args);
+        } finally {
+            Module.stackRestore(sp);
+        }
+    };
 }
 
-function init_result(args: JSMarshalerArguments) {
-    mono_assert(args && (<any>args) % 8 == 0, "Arg alignment");
-    const exc = get_arg(args, 0);
-    set_arg_type(exc, MarshalerType.None);
+function bind_fn_1V(closure: BindingClosure) {
+    const method = closure.method;
+    const marshaler1 = closure.arg_marshalers[0]!;
+    (<any>closure) = null;
+    return function bound_fn_1V(arg1: any) {
+        const sp = Module.stackSave();
+        try {
+            const args = alloc_stack_frame(3);
+            marshaler1(args, arg1);
 
-    const res = get_arg(args, 1);
-    set_arg_type(res, MarshalerType.None);
+            // call C# side
+            invoke_method_and_handle_exception(method, args);
+        } finally {
+            Module.stackRestore(sp);
+        }
+    };
+}
+
+function bind_fn_1R(closure: BindingClosure) {
+    const method = closure.method;
+    const marshaler1 = closure.arg_marshalers[0]!;
+    const res_converter = closure.res_converter!;
+    (<any>closure) = null;
+    return function bound_fn_1R(arg1: any) {
+        const sp = Module.stackSave();
+        try {
+            const args = alloc_stack_frame(3);
+            marshaler1(args, arg1);
+
+            // call C# side
+            invoke_method_and_handle_exception(method, args);
+
+            const js_result = res_converter(args);
+            return js_result;
+        } finally {
+            Module.stackRestore(sp);
+        }
+    };
+}
+
+function bind_fn_2R(closure: BindingClosure) {
+    const method = closure.method;
+    const marshaler1 = closure.arg_marshalers[0]!;
+    const marshaler2 = closure.arg_marshalers[1]!;
+    const res_converter = closure.res_converter!;
+    (<any>closure) = null;
+    return function bound_fn_2R(arg1: any, arg2: any) {
+        const sp = Module.stackSave();
+        try {
+            const args = alloc_stack_frame(4);
+            marshaler1(args, arg1);
+            marshaler2(args, arg2);
+
+            // call C# side
+            invoke_method_and_handle_exception(method, args);
+
+            const js_result = res_converter(args);
+            return js_result;
+        } finally {
+            Module.stackRestore(sp);
+        }
+    };
+}
+
+function bind_fn(closure: BindingClosure) {
+    const args_count = closure.args_count;
+    const arg_marshalers = closure.arg_marshalers;
+    const res_converter = closure.res_converter;
+    const method = closure.method;
+    (<any>closure) = null;
+    return function bound_fn(...js_args: any[]) {
+        const sp = Module.stackSave();
+        try {
+            const args = alloc_stack_frame(2 + args_count);
+            for (let index = 0; index < args_count; index++) {
+                const marshaler = arg_marshalers[index];
+                if (marshaler) {
+                    const js_arg = js_args[index];
+                    marshaler(args, js_arg);
+                }
+            }
+
+            // call C# side
+            invoke_method_and_handle_exception(method, args);
+
+            if (res_converter) {
+                const js_result = res_converter(args);
+                return js_result;
+            }
+        } finally {
+            Module.stackRestore(sp);
+        }
+    };
+}
+
+type BindingClosure = {
+    args_count: number,
+    method: MonoMethod,
+    arg_marshalers: (BoundMarshalerToCs)[],
+    res_converter: BoundMarshalerToJs | undefined,
+}
+
+export function invoke_method_and_handle_exception(method: MonoMethod, args: JSMarshalerArguments): void {
+    const fail = cwraps.mono_wasm_invoke_method_bound(method, args);
+    if (fail) throw new Error("ERR24: Unexpected error: " + conv_string(fail));
+    if (is_args_exception(args)) {
+        const exc = get_arg(args, 0);
+        throw marshal_exception_to_js(exc);
+    }
 }
 
 export const exportsByAssembly: Map<string, any> = new Map();
-
 function _walk_exports_to_set_function(assembly: string, namespace: string, classname: string, methodname: string, signature_hash: number, fn: Function): void {
-    let scope: any = EXPORTS;
     const parts = `${namespace}.${classname}`.replace(/\//g, ".").split(".");
-
-    for (let i = 0; i < parts.length; i++) {
-        const part = parts[i];
-        if (part != "") {
-            let newscope = scope[part];
-            if (typeof newscope === "undefined") {
-                newscope = {};
-                scope[part] = newscope;
-            }
-            mono_assert(newscope, () => `${part} not found while looking up ${classname}`);
-            scope = newscope;
-        }
-    }
-
-    if (!scope[methodname]) {
-        scope[methodname] = fn;
-    }
-    scope[`${methodname}.${signature_hash}`] = fn;
-
-    // do it again for per assemly scope
+    let scope: any = undefined;
     let assemblyScope = exportsByAssembly.get(assembly);
     if (!assemblyScope) {
         assemblyScope = {};
@@ -201,10 +251,39 @@ function _walk_exports_to_set_function(assembly: string, namespace: string, clas
 }
 
 export async function mono_wasm_get_assembly_exports(assembly: string): Promise<any> {
-    const asm = assembly_load(assembly);
-    if (!asm)
-        throw new Error("Could not find assembly: " + assembly);
-    cwraps.mono_wasm_runtime_run_module_cctor(asm);
+    mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "The runtime must be initialized.");
+    const result = exportsByAssembly.get(assembly);
+    if (!result) {
+        const asm = assembly_load(assembly);
+        if (!asm)
+            throw new Error("Could not find assembly: " + assembly);
+        cwraps.mono_wasm_runtime_run_module_cctor(asm);
+    }
 
     return exportsByAssembly.get(assembly) || {};
+}
+
+export function parseFQN(fqn: string)
+    : { assembly: string, namespace: string, classname: string, methodname: string } {
+    const assembly = fqn.substring(fqn.indexOf("[") + 1, fqn.indexOf("]")).trim();
+    fqn = fqn.substring(fqn.indexOf("]") + 1).trim();
+
+    const methodname = fqn.substring(fqn.indexOf(":") + 1);
+    fqn = fqn.substring(0, fqn.indexOf(":")).trim();
+
+    let namespace = "";
+    let classname = fqn;
+    if (fqn.indexOf(".") != -1) {
+        const idx = fqn.lastIndexOf(".");
+        namespace = fqn.substring(0, idx);
+        classname = fqn.substring(idx + 1);
+    }
+
+    if (!assembly.trim())
+        throw new Error("No assembly name specified " + fqn);
+    if (!classname.trim())
+        throw new Error("No class name specified " + fqn);
+    if (!methodname.trim())
+        throw new Error("No method name specified " + fqn);
+    return { assembly, namespace, classname, methodname };
 }

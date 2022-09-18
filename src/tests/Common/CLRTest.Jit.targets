@@ -29,6 +29,12 @@ WARNING:   When setting properties based on their current state (for example:
   ***********************************************************************************************
   -->
 
+  <PropertyGroup>
+    <_IlasmSwitches Condition="'$(DebugType)' == 'Full' and '$(Optimize)' != 'True'">$(_IlasmSwitches) -DEBUG</_IlasmSwitches>
+    <_IlasmSwitches Condition="'$(DebugType)' == 'Impl' and '$(Optimize)' != 'True'">$(_IlasmSwitches) -DEBUG=IMPL</_IlasmSwitches>
+    <_IlasmSwitches Condition="'$(DebugType)' == 'PdbOnly' and '$(Optimize)' != 'True'">$(_IlasmSwitches) -DEBUG</_IlasmSwitches>
+  </PropertyGroup>
+
   <Target Name="GetIlasmRoundTripBashScript"
           Returns="$(IlasmRoundTripBashScript);$(BashIlrtTestLaunchCmds)">
     <PropertyGroup>
@@ -180,6 +186,70 @@ IF NOT DEFINED DoLink (
       </BatchIlrtTestLaunchCmds>
     </PropertyGroup>
   </Target>
+
+  <!--
+  ***********************************************************************************************
+  SuperPMI collection of CoreCLR tests
+  ***********************************************************************************************
+  
+  You shouldn't have to escape characters in a CDATA block, but it appears that you do actually need
+  to escape semicolons with %3B here.
+  -->
+
+  <Target Name="GetSuperPMICollectionBashScript"
+          Returns="$(SuperPMICollectionBashScript)">
+    <PropertyGroup>
+      <SuperPMICollectionBashScript><![CDATA[
+# SuperPMI collection
+if [ ! -z $spmi_enable_collection ]%3B
+then
+  # spmi_collect_dir needs to be set before this script is run, if SuperPMI collection is enabled.
+  if [ -z $spmi_collect_dir ]%3B
+  then
+    echo "ERROR - spmi_collect_dir not defined"
+    exit 1
+  fi
+  mkdir -p $spmi_collect_dir
+  export spmi_file_extension=so
+  if [[ "$OSTYPE" == "darwin"* ]]%3B then
+    export spmi_file_extension=dylib
+  fi
+  export spmi_jitlib=$CORE_ROOT/libclrjit.$spmi_file_extension
+  export SuperPMIShimLogPath=$spmi_collect_dir
+  export SuperPMIShimPath=$spmi_jitlib
+  export COMPlus_EnableExtraSuperPmiQueries=1
+  export COMPlus_JitPath=$CORE_ROOT/libsuperpmi-shim-collector.$spmi_file_extension
+fi
+]]>
+      </SuperPMICollectionBashScript>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="GetSuperPMICollectionBatchScript"
+          Returns="$(SuperPMICollectionBatchScript)">
+    <PropertyGroup>
+      <SuperPMICollectionBatchScript><![CDATA[
+REM SuperPMI collection
+if not defined spmi_enable_collection goto :skip_spmi_enable_collection
+REM spmi_collect_dir needs to be set before this script is run, if SuperPMI collection is enabled.
+if not defined spmi_collect_dir echo ERROR: spmi_collect_dir not defined&goto :skip_spmi_enable_collection
+if not exist %spmi_collect_dir% mkdir %spmi_collect_dir%
+set spmi_jitlib=%CORE_ROOT%\clrjit.dll
+set SuperPMIShimLogPath=%spmi_collect_dir%
+set SuperPMIShimPath=%spmi_jitlib%
+set COMPlus_EnableExtraSuperPmiQueries=1
+set COMPlus_JitPath=%CORE_ROOT%\superpmi-shim-collector.dll
+:skip_spmi_enable_collection
+]]>
+      </SuperPMICollectionBatchScript>
+    </PropertyGroup>
+  </Target>
+
+  <!--
+  ***********************************************************************************************
+  GCStress settings
+  ***********************************************************************************************
+  -->
 
   <PropertyGroup Condition="$(RunWithGcStress) != ''" >
     <CLRTestBatchPreCommands>

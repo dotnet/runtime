@@ -63,7 +63,7 @@
 // For Windows and OSX, we will maintain the last highest RID-Platform we are known to support for them as the
 // degree of compat across their respective releases is usually high.
 //
-// We cannot maintain the same (compat) invariant for linux and thus, we will fallback to using lowest RID-Plaform.
+// We cannot maintain the same (compat) invariant for linux and thus, we will fallback to using lowest RID-Platform.
 #if defined(TARGET_WINDOWS)
 #define LIB_PREFIX
 #define MAKE_LIBNAME(NAME) (_X(NAME) _X(".dll"))
@@ -300,6 +300,7 @@ namespace pal
         armv6,
         loongarch64,
         ppc64le,
+        riscv64,
         s390X,
         x64,
         x86,

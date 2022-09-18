@@ -221,7 +221,7 @@ RefPosition* LinearScan::newRefPositionRaw(LsraLocation nodeLocation, GenTree* t
 //       on the defRefPosition, we leave the register requirements on the defRefPosition as-is, and set
 //       the useRefPosition to the def registers, for similar reasons to case #3.
 //    5. If both the defRefPosition and the useRefPosition specify single registers, but both have conflicts,
-//       We set the candiates on defRefPosition to be all regs of the appropriate type, and since they are
+//       We set the candidates on defRefPosition to be all regs of the appropriate type, and since they are
 //       single registers, codegen can insert the copy.
 //    6. Finally, if the RefPositions specify disjoint subsets of the registers (or the use is fixed but
 //       has a conflict), we must insert a copy.  The copy will be inserted before the use if the
@@ -2044,11 +2044,6 @@ void LinearScan::UpdateRegStateForStructArg(LclVarDsc* argDsc)
 //    The argument is live on entry to the function
 //    (or is untracked and therefore assumed live)
 //
-// Notes:
-//    This relies on a method in regAlloc.cpp that is shared between LSRA
-//    and regAlloc.  It is further abstracted here because regState is updated
-//    separately for tracked and untracked variables in LSRA.
-//
 void LinearScan::updateRegStateForArg(LclVarDsc* argDsc)
 {
 #if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64)
@@ -2204,7 +2199,7 @@ void LinearScan::buildIntervals()
             RefPosition* pos = newRefPosition(interval, MinLocation, RefTypeParamDef, nullptr, mask);
             pos->setRegOptional(true);
         }
-        else if (varTypeIsStruct(argDsc->lvType))
+        else if (argDsc->lvPromoted)
         {
             for (unsigned fieldVarNum = argDsc->lvFieldLclStart;
                  fieldVarNum < argDsc->lvFieldLclStart + argDsc->lvFieldCnt; ++fieldVarNum)
@@ -2236,7 +2231,7 @@ void LinearScan::buildIntervals()
     {
         LclVarDsc* argDsc = compiler->lvaGetDesc(argNum);
 
-        if (argDsc->lvPromotedStruct())
+        if (argDsc->lvPromoted)
         {
             for (unsigned fieldVarNum = argDsc->lvFieldLclStart;
                  fieldVarNum < argDsc->lvFieldLclStart + argDsc->lvFieldCnt; ++fieldVarNum)
@@ -2729,7 +2724,7 @@ void LinearScan::validateIntervals()
 }
 #endif // DEBUG
 
-#if defined(TARGET_XARCH) || defined(FEATURE_HW_INTRINSICS)
+#ifndef TARGET_ARM
 //------------------------------------------------------------------------
 // setTgtPref: Set a  preference relationship between the given Interval
 //             and a Use RefPosition.
@@ -2760,7 +2755,8 @@ void setTgtPref(Interval* interval, RefPosition* tgtPrefUse)
         }
     }
 }
-#endif // TARGET_XARCH || FEATURE_HW_INTRINSICS
+#endif // !TARGET_ARM
+
 //------------------------------------------------------------------------
 // BuildDef: Build a RefTypeDef RefPosition for the given node
 //
@@ -2841,13 +2837,16 @@ RefPosition* LinearScan::BuildDef(GenTree* tree, regMaskTP dstCandidates, int mu
         RefInfoListNode* refInfo = listNodePool.GetNode(defRefPosition, tree);
         defList.Append(refInfo);
     }
-#if defined(TARGET_XARCH) || defined(FEATURE_HW_INTRINSICS)
+
+#ifndef TARGET_ARM
     setTgtPref(interval, tgtPrefUse);
     setTgtPref(interval, tgtPrefUse2);
-#endif // TARGET_XARCH
+#endif // !TARGET_ARM
+
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     assert(!interval->isPartiallySpilled);
 #endif
+
     return defRefPosition;
 }
 
@@ -3142,9 +3141,10 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
     }
 #endif // FEATURE_HW_INTRINSICS
 #ifdef TARGET_ARM64
-    if (node->OperIs(GT_MUL))
+    if (node->OperIs(GT_MUL) || node->OperIsCmpCompare() || node->OperIs(GT_AND))
     {
-        // Can be contained for MultiplyAdd on arm64
+        // Can be contained for MultiplyAdd on arm64.
+        // Compare and AND may be contained due to If Conversion.
         return BuildBinaryUses(node->AsOp(), candidates);
     }
     if (node->OperIs(GT_NEG, GT_CAST, GT_LSH))
@@ -3307,6 +3307,40 @@ int LinearScan::BuildBinaryUses(GenTreeOp* node, regMaskTP candidates)
         srcCount += BuildOperandUses(op2, candidates);
     }
     return srcCount;
+}
+
+//------------------------------------------------------------------------
+// BuildCastUses: Build uses for a cast's source, preferencing it as appropriate.
+//
+// Arguments:
+//    cast       - The cast node to build uses for
+//    candidates - The candidate registers for the uses
+//
+// Return Value:
+//    The number of actual register operands.
+//
+int LinearScan::BuildCastUses(GenTreeCast* cast, regMaskTP candidates)
+{
+    GenTree* src = cast->CastOp();
+
+    // Casts can have contained memory operands.
+    if (src->isContained())
+    {
+        return BuildOperandUses(src, candidates);
+    }
+
+    RefPosition* srcUse = BuildUse(src, candidates);
+
+#ifdef TARGET_64BIT
+    // A long -> int cast is a copy - the code generator will elide
+    // it if the source and destination registers are the same.
+    if (src->TypeIs(TYP_LONG) && cast->TypeIs(TYP_INT))
+    {
+        tgtPrefUse = srcUse;
+    }
+#endif // TARGET_64BIT
+
+    return 1;
 }
 
 //------------------------------------------------------------------------
@@ -3492,7 +3526,7 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
 
     // Second, use source registers.
 
-    if (op1->IsMultiRegNode() && (op1->GetMultiRegCount(compiler) > 1))
+    if (op1->IsMultiRegNode())
     {
         // This is the case where the source produces multiple registers.
         // This must be a store lclvar.
@@ -3523,11 +3557,11 @@ int LinearScan::BuildStoreLoc(GenTreeLclVarCommon* storeLoc)
     else if (op1->isContained() && op1->OperIs(GT_BITCAST))
     {
         GenTree*     bitCastSrc   = op1->gtGetOp1();
-        RegisterType registerType = bitCastSrc->TypeGet();
+        RegisterType registerType = regType(bitCastSrc->TypeGet());
         singleUseRef              = BuildUse(bitCastSrc, allRegs(registerType));
 
         Interval* srcInterval = singleUseRef->getInterval();
-        assert(srcInterval->registerType == registerType);
+        assert(regType(srcInterval->registerType) == registerType);
         srcCount = 1;
     }
 #ifndef TARGET_64BIT
@@ -3644,13 +3678,7 @@ int LinearScan::BuildReturn(GenTree* tree)
 #ifdef TARGET_ARM64
         if (varTypeIsSIMD(tree) && !op1->IsMultiRegLclVar())
         {
-            useCandidates = allSIMDRegs();
-            if (op1->OperGet() == GT_LCL_VAR)
-            {
-                assert(op1->TypeGet() != TYP_SIMD32);
-                useCandidates = RBM_DOUBLERET;
-            }
-            BuildUse(op1, useCandidates);
+            BuildUse(op1, RBM_DOUBLERET);
             return 1;
         }
 #endif // TARGET_ARM64
@@ -3775,7 +3803,7 @@ bool LinearScan::supportsSpecialPutArg()
 #if defined(DEBUG) && defined(TARGET_X86)
     // On x86, `LSRA_LIMIT_CALLER` is too restrictive to allow the use of special put args: this stress mode
     // leaves only three registers allocatable--eax, ecx, and edx--of which the latter two are also used for the
-    // first two integral arguments to a call. This can leave us with too few registers to succesfully allocate in
+    // first two integral arguments to a call. This can leave us with too few registers to successfully allocate in
     // situations like the following:
     //
     //     t1026 =    lclVar    ref    V52 tmp35        u:3 REG NA <l:$3a1, c:$98d>
@@ -3838,32 +3866,6 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
     bool     isSpecialPutArg = false;
     int      srcCount        = 1;
     GenTree* op1             = node->gtGetOp1();
-
-    // First, handle the GT_OBJ case, which loads into the arg register
-    // (so we don't set the use to prefer that register for the source address).
-    if (op1->OperIs(GT_OBJ))
-    {
-        GenTreeObj* obj  = op1->AsObj();
-        GenTree*    addr = obj->Addr();
-        unsigned    size = obj->GetLayout()->GetSize();
-        assert(size <= MAX_PASS_SINGLEREG_BYTES);
-        if (addr->OperIsLocalAddr())
-        {
-            // We don't need a source register.
-            assert(addr->isContained());
-            srcCount = 0;
-        }
-        else if (!isPow2(size))
-        {
-            // We'll need an internal register to do the odd-size load.
-            // This can only happen with integer registers.
-            assert(genIsValidIntReg(argReg));
-            buildInternalIntRegisterDefForNode(node);
-            BuildUse(addr);
-            buildInternalRegisterUses();
-        }
-        return srcCount;
-    }
 
     // To avoid redundant moves, have the argument operand computed in the
     // register in which the argument is passed to the call.

@@ -8,12 +8,12 @@
 //
 // -- CLASSES --
 //
-// LegalPolicy          - partial class providing common legality checks
-// DefaultPolicy        - default inliner policy
-// ExtendedDefaltPolicy - a more aggressive and profile-driven variation of DefaultPolicy
-// DiscretionaryPolicy  - default variant with uniform size policy
-// ModelPolicy          - policy based on statistical modelling
-// ProfilePolicy        - policy based on statistical modelling and profile feedback
+// LegalPolicy           - partial class providing common legality checks
+// DefaultPolicy         - default inliner policy
+// ExtendedDefaultPolicy - a more aggressive and profile-driven variation of DefaultPolicy
+// DiscretionaryPolicy   - default variant with uniform size policy
+// ModelPolicy           - policy based on statistical modelling
+// ProfilePolicy         - policy based on statistical modelling and profile feedback
 //
 // These experimental policies are available only in
 // DEBUG or release+INLINE_DATA builds of the jit.

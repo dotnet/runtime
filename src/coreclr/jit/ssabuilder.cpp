@@ -1396,7 +1396,7 @@ void SsaBuilder::RenameVariables()
     }
 
     // Initialize the memory ssa numbers for unreachable blocks. ValueNum expects
-    // memory ssa numbers to have some intitial value.
+    // memory ssa numbers to have some initial value.
     for (BasicBlock* const block : m_pCompiler->Blocks())
     {
         if (block->bbIDom == nullptr)
@@ -1606,7 +1606,7 @@ void SsaBuilder::SetupBBRoot()
     // it shouldn't matter...)
     bbRoot->inheritWeight(oldFirst);
 
-    // There's an artifical incoming reference count for the first BB.  We're about to make it no longer
+    // There's an artificial incoming reference count for the first BB.  We're about to make it no longer
     // the first BB, so decrement that.
     assert(oldFirst->bbRefs > 0);
     oldFirst->bbRefs--;
@@ -1643,11 +1643,6 @@ bool SsaBuilder::IncludeInSsa(unsigned lclNum)
     }
     // lvPromoted structs are never tracked...
     assert(!varDsc->lvPromoted);
-
-    if (varDsc->lvOverlappingFields)
-    {
-        return false; // Don't use SSA on structs that have overlapping fields
-    }
 
     if (varDsc->lvIsStructField &&
         (m_pCompiler->lvaGetParentPromotionType(lclNum) != Compiler::PROMOTION_TYPE_INDEPENDENT))

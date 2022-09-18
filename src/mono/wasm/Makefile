@@ -5,6 +5,7 @@ escape_quote = $(subst ",\",$(1))
 
 ifneq ($(V),)
 MSBUILD_ARGS+=/p:MonoVerboseBuild=true
+MSBUILD_ARGS+=-bl
 endif
 
 DOTNET=$(TOP)/dotnet.sh
@@ -96,7 +97,7 @@ run-tests-%:
 	EMSDK_PATH=$(EMSDK_PATH) PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
 run-build-tests:
-	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/tests/BuildWasmApps/Wasm.Build.Tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
+	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/mono/wasm//Wasm.Build.Tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
 run-browser-tests-%:
 	PATH="$(GECKODRIVER):$(CHROMEDRIVER):$(PATH)" XHARNESS_COMMAND="test-browser --browser=$(XHARNESS_BROWSER)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test $(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
@@ -104,7 +105,7 @@ run-browser-tests-%:
 build-debugger-tests-helix:
 	$(DOTNET) build -restore -bl:$(TOP)/artifacts/log/$(CONFIG)/Wasm.Debugger.Tests.binlog \
 	/p:ContinuousIntegrationBuild=true /p:ArchiveTests=true \
-	$(TOP)/src/tests/BuildWasmApps/Wasm.Debugger.Tests/Wasm.Debugger.Tests.csproj \
+	$(TOP)/src/mono/wasm/debugger/Wasm.Debugger.Tests/Wasm.Debugger.Tests.csproj \
 	$(_MSBUILD_WASM_BUILD_ARGS) $(MSBUILD_ARGS)
 
 submit-debugger-tests-helix: build-debugger-tests-helix
@@ -130,7 +131,7 @@ submit-tests-helix:
 run-debugger-tests:
 	rm -f $(TOP)/artifacts/bin/DebuggerTestSuite/x64/Debug/*log; \
 	if [ ! -z "$(TEST_FILTER)" ]; then \
-	$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(TOP)/artifacts/log/$(CONFIG) --filter "Category!=failing&FullyQualifiedName~$(TEST_FILTER)" $(TEST_ARGS); \
+	$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(TOP)/artifacts/log/$(CONFIG) --filter "Category!=failing&FullyQualifiedName$(TEST_FILTER)" $(TEST_ARGS); \
 	else \
 		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS) "-l:trx;LogFileName=DebuggerTestsResults.xml" --results-directory $(TOP)/artifacts/log/$(CONFIG) --filter "Category!=failing" $(TEST_ARGS); \
 	fi
@@ -139,3 +140,6 @@ build-dbg-proxy:
 	$(DOTNET) build $(TOP)/src/mono/wasm/debugger/BrowserDebugHost $(MSBUILD_ARGS)
 build-dbg-testsuite:
 	$(DOTNET) build $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS)
+
+patch-deterministic:
+	cd emsdk/upstream/emscripten/ && patch -p1 < ../../../runtime/deterministic.diff

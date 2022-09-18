@@ -7,7 +7,7 @@ namespace System.Numerics
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     /// <typeparam name="TResult">The type that contains the result of negating <typeparamref name="TSelf" />.</typeparam>
     public interface IUnaryNegationOperators<TSelf, TResult>
-        where TSelf : IUnaryNegationOperators<TSelf, TResult>
+        where TSelf : IUnaryNegationOperators<TSelf, TResult>?
     {
         /// <summary>Computes the unary negation of a value.</summary>
         /// <param name="value">The value for which to compute its unary negation.</param>

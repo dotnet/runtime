@@ -12,7 +12,7 @@ namespace System.IO.Ports.Tests
     public class Handshake_Property : PortsTest
     {
         //The default number of bytes to read/write to verify the speed of the port
-        //and that the bytes were transfered successfully
+        //and that the bytes were transferred successfully
         private static readonly int s_DEFAULT_BYTE_SIZE = TCSupport.MinimumBlockingByteCount;
 
         //The number of bytes to send when send XOn or XOff, the actual XOn/XOff char will be inserted somewhere

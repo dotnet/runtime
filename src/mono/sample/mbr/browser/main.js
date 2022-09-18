@@ -1,14 +1,14 @@
-import createDotnetRuntime from './dotnet.js'
+import { dotnet } from './dotnet.js'
 
 try {
-    const { BINDING } = await createDotnetRuntime(({ MONO }) => ({
-        configSrc: "./mono-config.json",
-        onConfigLoaded: () => {
-            MONO.config.environment_variables["DOTNET_MODIFIABLE_ASSEMBLIES"] = "debug";
-        },
-    }));
-    const update = BINDING.bind_static_method("[WasmDelta] Sample.Test:Update");
-    const testMeaning = BINDING.bind_static_method("[WasmDelta] Sample.Test:TestMeaning");
+    const { getAssemblyExports } = await dotnet
+        .withEnvironmentVariable("DOTNET_MODIFIABLE_ASSEMBLIES", "debug")
+        .create();
+
+    const exports = await getAssemblyExports("WasmDelta.dll");
+    const update = exports.Sample.Test.Update;
+    const testMeaning = exports.Sample.Test.TestMeaning;
+    
     const outElement = document.getElementById("out");
     document.getElementById("update").addEventListener("click", function () {
         update();

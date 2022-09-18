@@ -151,9 +151,7 @@ CONFIG_STRING_INFO(INTERNAL_BreakOnInteropStubSetup, W("BreakOnInteropStubSetup"
 CONFIG_STRING_INFO(INTERNAL_BreakOnInteropVTableBuild, W("BreakOnInteropVTableBuild"), "Specifies a type name for which an assert should be thrown when building interop v-table.")
 CONFIG_STRING_INFO(INTERNAL_BreakOnMethodName, W("BreakOnMethodName"), "Very useful for debugging method override placement code.")
 CONFIG_DWORD_INFO(INTERNAL_BreakOnNotify, W("BreakOnNotify"), 0, "")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_BreakOnRetailAssert, W("BreakOnRetailAssert"), 0, "Used for debugging \"retail\" asserts (fatal errors)")
 CONFIG_DWORD_INFO(INTERNAL_BreakOnSecondPass, W("BreakOnSecondPass"), 0, "")
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_BreakOnSO, W("BreakOnSO"), 0, "")
 CONFIG_STRING_INFO(INTERNAL_BreakOnStructMarshalSetup, W("BreakOnStructMarshalSetup"), "Throws an assert when field marshalers for the given type with layout are about to be created.")
 CONFIG_DWORD_INFO(INTERNAL_BreakOnUEF, W("BreakOnUEF"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_BreakOnUncaughtException, W("BreakOnUncaughtException"), 0, "")
@@ -207,7 +205,6 @@ CONFIG_DWORD_INFO(INTERNAL_DbgTrapOnSkip, W("DbgTrapOnSkip"), 0, "Allows breakin
 CONFIG_DWORD_INFO(INTERNAL_DbgWaitTimeout, W("DbgWaitTimeout"), 1, "Specifies the timeout value for waits")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_DbgWFDETimeout, W("DbgWFDETimeout"), 25, "Specifies the timeout value for wait when waiting for a debug event")
 CONFIG_DWORD_INFO(INTERNAL_RaiseExceptionOnAssert, W("RaiseExceptionOnAssert"), 0, "Raise a first chance (if set to 1) or second chance (if set to 2) exception on asserts.")
-CONFIG_DWORD_INFO(INTERNAL_DebugBreakOnAssert, W("DebugBreakOnAssert"), 0, "If DACCESS_COMPILE is defined, break on asserts.")
 CONFIG_DWORD_INFO(INTERNAL_DebugBreakOnVerificationFailure, W("DebugBreakOnVerificationFailure"), 0, "Halts the jit on verification failure")
 CONFIG_STRING_INFO(INTERNAL_DebuggerBreakPoint, W("DebuggerBreakPoint"), "Allows counting various debug events")
 CONFIG_STRING_INFO(INTERNAL_DebugVerify, W("DebugVerify"), "Control for tracing in peverify")
@@ -234,6 +231,8 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_MiniMdBufferCapacity, W("MiniMdBufferCapacity"
 
 CONFIG_DWORD_INFO(INTERNAL_DbgNativeCodeBpBindsAcrossVersions, W("DbgNativeCodeBpBindsAcrossVersions"), 0, "If non-zero causes native breakpoints at offset 0 to bind in all tiered compilation versions of the given method")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_RichDebugInfo, W("RichDebugInfo"), 0, "If non-zero store some additional debug information for each jitted method")
+
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_OutOfProcessSetContext, W("OutOfProcessSetContext"), 0, "If enabled the debugger will not modify thread contexts in-process.  Enabled by default when CET is enabled for the process.")
 
 ///
 /// Diagnostics (internal general-purpose)
@@ -407,6 +406,11 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_NGenReserveForJumpStubs, W("NGenReserveForJump
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_BreakOnOutOfMemoryWithinRange, W("BreakOnOutOfMemoryWithinRange"), 0, "Break before out of memory within range exception is thrown")
 
 ///
+/// Frozen segments (aka Frozen Object Heap)
+///
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_UseFrozenObjectHeap, W("UseFrozenObjectHeap"), 1, "Use frozen object heap for certain types of objects (e.g. string literals) as an optimization.")
+
+///
 /// Log
 ///
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_LogEnable, W("LogEnable"), 0, "Turns on the traditional CLR log.")
@@ -455,10 +459,6 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_Monitor_SpinCount, W("Monitor_SpinCount"), 0x1
 ///
 /// Native Binder
 ///
-
-CONFIG_DWORD_INFO(INTERNAL_NgenBind_ZapForbid,             W("NgenBind_ZapForbid"), 0, "Assert if an assembly succeeds in binding to a native image")
-CONFIG_STRING_INFO(INTERNAL_NgenBind_ZapForbidExcludeList, W("NgenBind_ZapForbidExcludeList"), "")
-CONFIG_STRING_INFO(INTERNAL_NgenBind_ZapForbidList,        W("NgenBind_ZapForbidList"), "")
 
 CONFIG_DWORD_INFO(INTERNAL_SymDiffDump, W("SymDiffDump"), 0, "Used to create the map file while binding the assembly. Used by SemanticDiffer")
 
@@ -534,8 +534,6 @@ RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_ProcessorCount, W("PROCESSOR_COUNT"), 0, "S
 ///
 /// Threadpool
 ///
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_UsePortableThreadPool, W("ThreadPool_UsePortableThreadPool"), 1, "Uses the managed portable thread pool implementation instead of the unmanaged one.")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_UsePortableThreadPoolForIO, W("ThreadPool_UsePortableThreadPoolForIO"), 1, "Uses the managed portable thread pool implementation instead of the unmanaged one for async IO.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_ForceMinWorkerThreads, W("ThreadPool_ForceMinWorkerThreads"), 0, "Overrides the MinThreads setting for the ThreadPool worker pool")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_ForceMaxWorkerThreads, W("ThreadPool_ForceMaxWorkerThreads"), 0, "Overrides the MaxThreads setting for the ThreadPool worker pool")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_DisableStarvationDetection, W("ThreadPool_DisableStarvationDetection"), 0, "Disables the ThreadPool feature that forces new threads to be added when workitems run for too long")
@@ -589,7 +587,7 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TC_QuickJitForLoops, W("TC_QuickJitForLoops
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TC_AggressiveTiering, W("TC_AggressiveTiering"), 0, "Transition through tiers aggressively.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_BackgroundWorkerTimeoutMs, W("TC_BackgroundWorkerTimeoutMs"), TC_BackgroundWorkerTimeoutMs, "How long in milliseconds the background worker thread may remain idle before exiting.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_CallCountThreshold, W("TC_CallCountThreshold"), TC_CallCountThreshold, "Number of times a method must be called in tier 0 after which it is promoted to the next tier.")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_CallCountingDelayMs, W("TC_CallCountingDelayMs"), TC_CallCountingDelayMs, "A perpetual delay in milliseconds that is applied call counting in tier 0 and jitting at higher tiers, while there is startup-like activity.")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_CallCountingDelayMs, W("TC_CallCountingDelayMs"), TC_CallCountingDelayMs, "A perpetual delay in milliseconds that is applied to call counting in tier 0 and jitting at higher tiers, while there is startup-like activity.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_DelaySingleProcMultiplier, W("TC_DelaySingleProcMultiplier"), TC_DelaySingleProcMultiplier, "Multiplier for TC_CallCountingDelayMs that is applied on a single-processor machine or when the process is affinitized to a single processor.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_CallCounting, W("TC_CallCounting"), 1, "Enabled by default (only activates when TieredCompilation is also enabled). If disabled immediately backpatches prestub, and likely prevents any promotion to higher tiers")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_UseCallCountingStubs, W("TC_UseCallCountingStubs"), 1, "Uses call counting stubs for faster call counting.")
@@ -754,6 +752,14 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,  W("EnableHWIntrinsic"),  1
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAES,          W("EnableAES"),          1, "Allows AES+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX,          W("EnableAVX"),          1, "Allows AVX+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX2,         W("EnableAVX2"),         1, "Allows AVX2+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512BW,     W("EnableAVX512BW"),     1, "Allows AVX512BW+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512BW_VL,  W("EnableAVX512BW_VL"),  1, "Allows AVX512BW_VL+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512CD,     W("EnableAVX512CD"),     1, "Allows AVX512CD+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512CD_VL,  W("EnableAVX512CD_VL"),  1, "Allows AVX512CD_VL+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512DQ,     W("EnableAVX512DQ"),     1, "Allows AVX512DQ+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512DQ_VL,  W("EnableAVX512DQ_VL"),  1, "Allows AVX512DQ_VL+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512F,      W("EnableAVX512F"),      1, "Allows AVX512F+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512F_VL,   W("EnableAVX512F_VL"),   1, "Allows AVX512F_VL+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVXVNNI,      W("EnableAVXVNNI"),      1, "Allows AVX VNNI+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableBMI1,         W("EnableBMI1"),         1, "Allows BMI1+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableBMI2,         W("EnableBMI2"),         1, "Allows BMI2+ hardware intrinsics to be disabled")

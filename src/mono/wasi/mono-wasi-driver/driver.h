@@ -3,6 +3,7 @@
 
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/object.h>
+#include <mono/metadata/loader.h>
 
 void mono_wasm_load_runtime (const char *unused, int debug_level);
 int mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned int size);
