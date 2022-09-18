@@ -4238,7 +4238,7 @@ OBJECTREF MethodTable::GetManagedClassObject()
             _ASSERTE((((SSIZE_T)obj) & 1) == 0);
             refClass = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(obj);
             refClass->SetType(TypeHandle(this));
-            GetWriteableDataForWrite()->m_hExposedClassObject = (LOADERHANDLE)obj;
+            GetWriteableDataForWrite()->m_hExposedClassObject = (RUNTIMETYPEHANDLE)obj;
         }
         else
         {
