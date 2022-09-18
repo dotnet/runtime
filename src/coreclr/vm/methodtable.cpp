@@ -4220,48 +4220,57 @@ OBJECTREF MethodTable::GetManagedClassObject()
     {
         // Make sure that we have been restored
         CheckRestore();
+        AllocateRuntimeTypeObject(GetLoaderAllocator(), (RUNTIMETYPEHANDLE*)&GetWriteableData()->m_hExposedClassObject, TypeHandle(this));
+    }
+    RETURN(GetManagedClassObjectIfExists());
+}
 
-        REFLECTCLASSBASEREF refClass = NULL;
+//======================================================================================
+// Allocates a RuntimeType object with the given TypeHandle. If the LoaderAllocator
+// represents a not-unloadable context, it allocates the object on a frozen segment
+// so the direct reference will be stored to the pDest argument. In case of unloadable
+// context, an index to the pinned table will be saved.
+//======================================================================================
+void MethodTable::AllocateRuntimeTypeObject(LoaderAllocator* allocator, RUNTIMETYPEHANDLE* pDest, TypeHandle type)
+{
+    REFLECTCLASSBASEREF refClass = NULL;
 
-        LoaderAllocator* pLoaderAllocator = GetLoaderAllocator();
-        if (!pLoaderAllocator->CanUnload())
+    if (!allocator->CanUnload())
+    {
+        CrstHolder exposedClassLock(AppDomain::GetMethodTableExposedClassObjectLock());
+
+        if (*pDest == NULL)
         {
-            CrstHolder exposedClassLock(AppDomain::GetMethodTableExposedClassObjectLock());
+            // Allocate RuntimeType on a frozen segment
+            // Take a lock here since we don't want to allocate redundant objects which won't be collected
 
-            if (GetWriteableData()->m_hExposedClassObject == NULL)
-            {
-                // Allocate RuntimeType on a frozen segment
-                // Take a lock here since we don't want to allocate redundant objects which won't be collected
-
-                FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
-                size_t objSize = g_pRuntimeTypeClass->GetBaseSize();
-                Object* obj = foh->TryAllocateObject(g_pRuntimeTypeClass, objSize);
-                _ASSERTE(obj != NULL);
-                _ASSERTE((((SSIZE_T)obj) & 1) == 0);
-                refClass = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(obj);
-                refClass->SetType(TypeHandle(this));
-                GetWriteableDataForWrite()->m_hExposedClassObject = (RUNTIMETYPEHANDLE)obj;
-            }
+            FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
+            Object* obj = foh->TryAllocateObject(g_pRuntimeTypeClass, g_pRuntimeTypeClass->GetBaseSize());
+            _ASSERTE(obj != NULL);
+            _ASSERTE((((SSIZE_T)obj) & 1) == 0);
+            refClass = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(obj);
+            refClass->SetType(type);
+            *pDest = (RUNTIMETYPEHANDLE)obj;
         }
-        else
+    }
+    else
+    {
+        GCPROTECT_BEGIN(refClass);
+        refClass = (REFLECTCLASSBASEREF)AllocateObject(g_pRuntimeTypeClass);
+        refClass->SetKeepAlive(allocator->GetExposedObject());
+        LOADERHANDLE exposedClassObjectHandle = allocator->AllocateHandle(refClass);
+        // Set the lowest bit, we use it GetPinnedManagedClassObjectIfExists as a fast detection of the unloadable context
+        exposedClassObjectHandle |= 1;
+        refClass->SetType(type);
+
+        // Let all threads fight over who wins using InterlockedCompareExchange.
+        // Only the winner can set m_ExposedClassObject from NULL.
+        if (InterlockedCompareExchangeT(pDest, exposedClassObjectHandle, static_cast<LOADERHANDLE>(NULL)))
         {
-            GCPROTECT_BEGIN(refClass);
-            refClass = (REFLECTCLASSBASEREF)AllocateObject(g_pRuntimeTypeClass);
-            refClass->SetKeepAlive(pLoaderAllocator->GetExposedObject());
-            LOADERHANDLE exposedClassObjectHandle = pLoaderAllocator->AllocateHandle(refClass);
-            // Set the lowest bit, we use it GetPinnedManagedClassObjectIfExists as a fast detection of the unloadable context
-            exposedClassObjectHandle |= 1;
-            refClass->SetType(TypeHandle(this));
-
-            // Let all threads fight over who wins using InterlockedCompareExchange.
-            // Only the winner can set m_ExposedClassObject from NULL.
-            if (InterlockedCompareExchangeT(&GetWriteableDataForWrite()->m_hExposedClassObject, exposedClassObjectHandle, static_cast<LOADERHANDLE>(NULL)))
-            {
-                // GC will collect unused instance
-                pLoaderAllocator->FreeHandle(exposedClassObjectHandle);
-            }
-            GCPROTECT_END();
+            // GC will collect unused instance
+            allocator->FreeHandle(exposedClassObjectHandle);
         }
+        GCPROTECT_END();
     }
     RETURN(GetManagedClassObjectIfExists());
 }

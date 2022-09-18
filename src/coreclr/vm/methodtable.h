@@ -2716,6 +2716,7 @@ public:
     OBJECTREF GetManagedClassObject();
     OBJECTREF GetManagedClassObjectIfExists();
     OBJECTREF GetPinnedManagedClassObjectIfExists();
+    static void AllocateRuntimeTypeObject(LoaderAllocator* allocator, RUNTIMETYPEHANDLE* pDest, TypeHandle type);
 
 
     // ------------------------------------------------------------------
