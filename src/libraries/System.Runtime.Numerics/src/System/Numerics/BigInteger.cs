@@ -1612,11 +1612,24 @@ namespace System.Numerics
             int lowBitsCount32 = _bits.Length - 2; // if Length > int.MaxValue/32, counting in bits can cause overflow
             double exponentLow = lowBitsCount32 * kcbitUint * Math.Log10(2);
 
-            int exponent = (int)exponentLow;
+            // Max possible value of BigInteger is 2^(32*Array.MaxLength)-1 which is larger than 10^(2^35)
+            // Use long to avoid potential overflow
+            long exponent = (int)exponentLow;
             double significand = (double)highBits * Math.Pow(10, exponentLow - exponent);
 
             while (significand >= 10.0)
             {
+                significand /= 10.0;
+                exponent++;
+            }
+
+            // The digits can be incorrect because of floating point errors and estimation in Log and Exp
+            // Keep some digits in the significand. 8 is arbitrarily chose, about half of the precision of double
+            significand = Math.Round(significand, 8);
+
+            if (significand >= 10.0)
+            {
+                // 9.9999999999999 can be rounded to 10, make the display to be more natural
                 significand /= 10.0;
                 exponent++;
             }
