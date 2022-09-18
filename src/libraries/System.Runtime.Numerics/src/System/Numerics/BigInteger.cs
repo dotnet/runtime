@@ -1615,7 +1615,7 @@ namespace System.Numerics
             int exponent = (int)exponentLow;
             double significand = (double)highBits * Math.Pow(10, exponentLow - exponent);
 
-            while (significand > 10.0)
+            while (significand >= 10.0)
             {
                 significand /= 10.0;
                 exponent++;
