@@ -1779,15 +1779,6 @@ namespace System
         #region Static Members
 
         #region Internal
-        internal static RuntimeType? GetType(string typeName, bool throwOnError, bool ignoreCase,
-            ref StackCrawlMark stackMark)
-        {
-            ArgumentNullException.ThrowIfNull(typeName);
-
-            return RuntimeTypeHandle.GetTypeByName(
-                typeName, throwOnError, ignoreCase, ref stackMark);
-        }
-
         [RequiresUnreferencedCode("Trimming changes metadata tokens")]
         internal static MethodBase? GetMethodBase(RuntimeModule scope, int typeMetadataToken)
         {
@@ -1808,7 +1799,7 @@ namespace System
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "The code in this method looks up the method by name, but it always starts with a method handle." +
-                            "To get here something somwhere had to get the method handle and thus the method must exist.")]
+                            "To get here something somewhere had to get the method handle and thus the method must exist.")]
         internal static MethodBase? GetMethodBase(RuntimeType? reflectedType, RuntimeMethodHandleInternal methodHandle)
         {
             Debug.Assert(!methodHandle.IsNullHandle());

@@ -420,14 +420,10 @@ namespace System.Reflection
             string className, // throw on null strings regardless of the value of "throwOnError"
             bool throwOnError, bool ignoreCase)
         {
-            ArgumentNullException.ThrowIfNull(className);
+            ArgumentException.ThrowIfNullOrEmpty(className);
 
-            RuntimeType? retType = null;
-            object? keepAlive = null;
-            RuntimeModule thisAsLocal = this;
-            GetType(new QCallModule(ref thisAsLocal), className, throwOnError, ignoreCase, ObjectHandleOnStack.Create(ref retType), ObjectHandleOnStack.Create(ref keepAlive));
-            GC.KeepAlive(keepAlive);
-            return retType;
+            return TypeNameParser.GetType(className, topLevelAssembly: Assembly,
+                throwOnError: throwOnError, ignoreCase: ignoreCase);
         }
 
         [RequiresAssemblyFiles(UnknownStringMessageInRAF)]

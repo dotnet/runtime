@@ -788,10 +788,6 @@ DEFINE_METHOD(SAFE_HANDLE,          RELEASE_HANDLE,         ReleaseHandle,      
 DEFINE_METHOD(SAFE_HANDLE,          DISPOSE,                Dispose,                    IM_RetVoid)
 DEFINE_METHOD(SAFE_HANDLE,          DISPOSE_BOOL,           Dispose,                    IM_Bool_RetVoid)
 
-
-DEFINE_CLASS(SAFE_TYPENAMEPARSER_HANDLE,    System,         SafeTypeNameParserHandle)
-DEFINE_METHOD(SAFE_TYPENAMEPARSER_HANDLE,   CTOR,   .ctor,  IM_RetVoid)
-
 DEFINE_CLASS(SECURITY_EXCEPTION,    Security,               SecurityException)
 
 DEFINE_CLASS_U(Diagnostics,                StackFrameHelper,   StackFrameHelper)

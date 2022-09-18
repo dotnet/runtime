@@ -1589,6 +1589,9 @@ Module* SystemDomain::GetCallersModule(StackCrawlMark* stackMark)
     }
     CONTRACTL_END;
 
+    if (stackMark == NULL)
+        return NULL;
+
     GCX_COOP();
 
     CallersDataWithStackMark cdata;

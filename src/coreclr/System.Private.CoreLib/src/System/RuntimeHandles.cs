@@ -544,12 +544,6 @@ namespace System
             ObjectHandleOnStack assemblyLoadContext,
             ObjectHandleOnStack type, ObjectHandleOnStack keepalive);
 
-        // Wrapper function to reduce the need for ifdefs.
-        internal static RuntimeType? GetTypeByName(string name, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
-        {
-            return GetTypeByName(name, throwOnError, ignoreCase, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext!);
-        }
-
         internal static RuntimeType? GetTypeByName(string name, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark,
                                                   AssemblyLoadContext assemblyLoadContext)
         {

@@ -711,20 +711,20 @@ namespace System.Runtime.Loader
         }
 
         // This method is called by the VM
-        private static RuntimeAssembly? OnTypeResolve(RuntimeAssembly assembly, string typeName)
+        internal static RuntimeAssembly? OnTypeResolve(RuntimeAssembly? assembly, string typeName)
         {
             return InvokeResolveEvent(TypeResolve, assembly, typeName);
         }
 
         // This method is called by the VM.
-        private static RuntimeAssembly? OnAssemblyResolve(RuntimeAssembly assembly, string assemblyFullName)
+        private static RuntimeAssembly? OnAssemblyResolve(RuntimeAssembly? assembly, string assemblyFullName)
         {
             return InvokeResolveEvent(AssemblyResolve, assembly, assemblyFullName);
         }
 
         [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
             Justification = "The code handles the Assembly.Location equals null")]
-        private static RuntimeAssembly? InvokeResolveEvent(ResolveEventHandler? eventHandler, RuntimeAssembly assembly, string name)
+        private static RuntimeAssembly? InvokeResolveEvent(ResolveEventHandler? eventHandler, RuntimeAssembly? assembly, string name)
         {
             if (eventHandler == null)
                 return null;

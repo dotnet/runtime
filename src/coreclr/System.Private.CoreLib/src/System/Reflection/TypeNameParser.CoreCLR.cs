@@ -1,0 +1,239 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
+using System.Text;
+using System.Threading;
+
+namespace System.Reflection
+{
+    internal unsafe ref partial struct TypeNameParser
+    {
+        private ReadOnlySpan<char> _input;
+        private int _index;
+        private int _errorIndex; // Position for error reporting
+
+        private Func<AssemblyName, Assembly?>? _assemblyResolver;
+        private Func<Assembly?, string, bool, Type?>? _typeResolver;
+        private bool _throwOnError;
+        private bool _ignoreCase;
+        private bool _extensibleParser;
+        private Assembly? _requestingAssembly;
+        private Assembly? _topLevelAssembly;
+
+        [RequiresUnreferencedCode("The type might be removed")]
+        internal static Type? GetType(
+            string typeName,
+            Assembly requestingAssembly,
+            bool throwOnError = false,
+            bool ignoreCase = false)
+        {
+            return GetType(typeName, assemblyResolver: null, typeResolver: null, requestingAssembly: requestingAssembly,
+                throwOnError: throwOnError, ignoreCase: ignoreCase, extensibleParser: false);
+        }
+
+        [RequiresUnreferencedCode("The type might be removed")]
+        internal static Type? GetType(
+            string typeName,
+            Func<AssemblyName, Assembly?>? assemblyResolver,
+            Func<Assembly?, string, bool, Type?>? typeResolver,
+            Assembly? requestingAssembly,
+            bool throwOnError = false,
+            bool ignoreCase = false,
+            bool extensibleParser = true)
+        {
+            ArgumentNullException.ThrowIfNull(typeName);
+
+            // Compat: Empty name throws TypeLoadException instead of
+            // the natural ArgumentException
+            if (typeName.Length == 0)
+            {
+                if (throwOnError)
+                    throw new TypeLoadException(SR.Arg_TypeLoadNullStr);
+                else
+                    return null;
+            }
+
+            return new TypeNameParser(typeName)
+            {
+                _assemblyResolver = assemblyResolver,
+                _typeResolver = typeResolver,
+                _throwOnError = throwOnError,
+                _ignoreCase = ignoreCase,
+                _extensibleParser = extensibleParser,
+                _requestingAssembly = requestingAssembly
+            }.Parse();
+        }
+
+        [RequiresUnreferencedCode("The type might be removed")]
+        internal static Type? GetType(
+            string typeName,
+            bool throwOnError,
+            bool ignoreCase,
+            Assembly topLevelAssembly)
+        {
+            return new TypeNameParser(typeName)
+            {
+                _throwOnError = throwOnError,
+                _ignoreCase = ignoreCase,
+                _topLevelAssembly = topLevelAssembly,
+                _requestingAssembly = topLevelAssembly
+            }.Parse();
+        }
+
+        private bool CheckTopLevelAssemblyQualifiedName()
+        {
+            if (_topLevelAssembly != null)
+            {
+                if (_throwOnError)
+                    throw new ArgumentException(SR.Argument_AssemblyGetTypeCannotSpecifyAssembly);
+                return false;
+            }
+            return true;
+        }
+
+        private Assembly? ResolveAssembly(string assemblyName)
+        {
+            Assembly? assembly;
+            if (_assemblyResolver != null)
+            {
+                assembly = _assemblyResolver(new AssemblyName(assemblyName));
+                if (assembly == null && _throwOnError)
+                {
+                    throw new FileNotFoundException(SR.Format(SR.FileNotFound_ResolveAssembly, assemblyName));
+                }
+            }
+            else
+            {
+                assembly = RuntimeAssembly.InternalLoad(new AssemblyName(assemblyName), ref Unsafe.NullRef<StackCrawlMark>(), AssemblyLoadContext.CurrentContextualReflectionContext,
+                    requestingAssembly: (RuntimeAssembly?)_requestingAssembly, throwOnFileNotFound: _throwOnError);
+            }
+            return assembly;
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "TypeNameParser.GetType is marked as RequiresUnreferencedCode.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
+            Justification = "TypeNameParser.GetType is marked as RequiresUnreferencedCode.")]
+        private Type? GetType(string typeName, ReadOnlySpan<string> nestedTypeNames, string? assemblyNameIfAny)
+        {
+            Assembly? assembly;
+
+            if (assemblyNameIfAny != null)
+            {
+                assembly = ResolveAssembly(assemblyNameIfAny);
+                if (assembly == null)
+                    return null;
+            }
+            else
+            {
+                assembly = _topLevelAssembly;
+            }
+
+            Type? type;
+
+            // Resolve the top level type.
+            if (_typeResolver != null)
+            {
+                string escapedTypeName = EscapeTypeName(typeName);
+
+                type = _typeResolver(assembly, escapedTypeName, _ignoreCase);
+
+                if (type == null)
+                {
+                    if (_throwOnError)
+                    {
+                        throw new TypeLoadException(assembly == null ?
+                            SR.Format(SR.TypeLoad_ResolveType, escapedTypeName) :
+                            SR.Format(SR.TypeLoad_ResolveTypeFromAssembly, escapedTypeName, assembly.FullName));
+                    }
+                    return null;
+                }
+            }
+            else
+            {
+                if (assembly == null)
+                {
+                    return GetTypeFromDefaultAssemblies(typeName, nestedTypeNames);
+                }
+
+                if (assembly is RuntimeAssembly runtimeAssembly)
+                {
+                    // Compat: Non-extensible parser allows ambiguous matches with ignore case lookup
+                    if (!_extensibleParser || !_ignoreCase)
+                    {
+                        return runtimeAssembly.GetTypeCore(typeName, nestedTypeNames, throwOnError: _throwOnError, ignoreCase: _ignoreCase);
+                    }
+                    type = runtimeAssembly.GetTypeCore(typeName, default, throwOnError: _throwOnError, ignoreCase: _ignoreCase);
+                }
+                else
+                {
+                    // This is a third-party Assembly object. Emulate GetTypeCore() by calling the public GetType()
+                    // method. This is wasteful because it'll probably reparse a type string that we've already parsed
+                    // but it can't be helped.
+                    type = assembly.GetType(EscapeTypeName(typeName), throwOnError: _throwOnError, ignoreCase: _ignoreCase);
+                }
+
+                if (type == null)
+                    return null;
+            }
+
+            for (int i = 0; i < nestedTypeNames.Length; i++)
+            {
+                BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public;
+                if (_ignoreCase)
+                    bindingFlags |= BindingFlags.IgnoreCase;
+
+                type = type.GetNestedType(nestedTypeNames[i], bindingFlags);
+
+                if (type == null)
+                {
+                    if (_throwOnError)
+                    {
+                        throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveNestedType,
+                            nestedTypeNames[i], (i > 0) ? nestedTypeNames[i - 1] : typeName));
+                    }
+                    return null;
+                }
+            }
+
+            return type;
+        }
+
+        private Type? GetTypeFromDefaultAssemblies(string typeName, ReadOnlySpan<string> nestedTypeNames)
+        {
+            RuntimeAssembly? requestingAssembly = (RuntimeAssembly?)_requestingAssembly;
+            if (requestingAssembly != null)
+            {
+                Type? type = ((RuntimeAssembly)requestingAssembly).GetTypeCore(typeName, nestedTypeNames, throwOnError: false, ignoreCase: _ignoreCase);
+                if (type != null)
+                    return type;
+            }
+
+            RuntimeAssembly coreLib = (RuntimeAssembly)typeof(object).Assembly;
+            if (requestingAssembly != coreLib)
+            {
+                Type? type = ((RuntimeAssembly)coreLib).GetTypeCore(typeName, nestedTypeNames, throwOnError: false, ignoreCase: _ignoreCase);
+                if (type != null)
+                    return type;
+            }
+
+            RuntimeAssembly? resolvedAssembly = AssemblyLoadContext.OnTypeResolve(requestingAssembly, EscapeTypeName(typeName, nestedTypeNames));
+            if (resolvedAssembly != null)
+            {
+                Type? type = resolvedAssembly.GetTypeCore(typeName, nestedTypeNames, throwOnError: false, ignoreCase: _ignoreCase);
+                if (type != null)
+                    return type;
+            }
+
+            if (_throwOnError)
+                throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveTypeFromAssembly, EscapeTypeName(typeName), (requestingAssembly ?? coreLib).FullName));
+
+            return null;
+        }
+    }
+}

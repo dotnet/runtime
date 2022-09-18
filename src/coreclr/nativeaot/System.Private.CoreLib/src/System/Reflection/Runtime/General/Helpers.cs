@@ -95,25 +95,6 @@ namespace System.Reflection.Runtime.General
             return null;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Calling Assembly.GetType on a third-party Assembly class.")]
-        public static Type GetTypeCore(this Assembly assembly, string name, bool ignoreCase)
-        {
-            if (assembly is RuntimeAssemblyInfo runtimeAssembly)
-            {
-                // Not a recursion - this one goes to the actual instance method on RuntimeAssembly.
-                return runtimeAssembly.GetTypeCore(name, ignoreCase: ignoreCase);
-            }
-            else
-            {
-                // This is a third-party Assembly object. We can emulate GetTypeCore() by calling the public GetType()
-                // method. This is wasteful because it'll probably reparse a type string that we've already parsed
-                // but it can't be helped.
-                string escapedName = name.EscapeTypeNameIdentifier();
-                return assembly.GetType(escapedName, throwOnError: false, ignoreCase: ignoreCase);
-            }
-        }
-
         public static TypeLoadException CreateTypeLoadException(string typeName, Assembly assemblyIfAny)
         {
             if (assemblyIfAny == null)
