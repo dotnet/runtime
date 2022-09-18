@@ -13,7 +13,7 @@ namespace System.Numerics
 {
     [Serializable]
     [TypeForwardedFrom("System.Numerics, Version=4.0.0.0, PublicKeyToken=b77a5c561934e089")]
-    [DebuggerDisplay("{GetDebuggerDisplay(),nq}")]
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public readonly struct BigInteger
         : ISpanFormattable,
           IComparable,
@@ -1592,52 +1592,55 @@ namespace System.Numerics
             return BigNumber.FormatBigInteger(this, format, NumberFormatInfo.GetInstance(provider));
         }
 
-        private string GetDebuggerDisplay()
+        private string DebuggerDisplay
         {
-            // For very big numbers, ToString can be too long or even timeout for Visual Studio to display
-            // Display an fast estimation value instead
-
-            // Use ToString for small values
-
-            if (_bits is null || _bits.Length <= 2)
+            get
             {
-                return ToString();
+                // For very big numbers, ToString can be too long or even timeout for Visual Studio to display
+                // Display an fast estimation value instead
+
+                // Use ToString for small values
+
+                if (_bits is null || _bits.Length <= 2)
+                {
+                    return ToString();
+                }
+
+                // Estimate the value x as L*2^n, while L is the value of high bits, and n is the length of low bits
+                // Represent L as k*10^i, then x = L*2^n = k*10^(i+n*Log10(2))
+                // Let m=n*Log10(2), the final result would be x = (k*10^(m-[m]))*10^(i+[m])
+
+                ulong highBits = ((ulong)_bits[^1] << kcbitUint) + _bits[^2];
+                int lowBitsCount32 = _bits.Length - 2; // if Length > int.MaxValue/32, counting in bits can cause overflow
+                double exponentLow = lowBitsCount32 * kcbitUint * Math.Log10(2);
+
+                // Max possible value of BigInteger is 2^(32*Array.MaxLength)-1 which is larger than 10^(2^35)
+                // Use long to avoid potential overflow
+                long exponent = (int)exponentLow;
+                double significand = (double)highBits * Math.Pow(10, exponentLow - exponent);
+
+                while (significand >= 10.0)
+                {
+                    significand /= 10.0;
+                    exponent++;
+                }
+
+                // The digits can be incorrect because of floating point errors and estimation in Log and Exp
+                // Keep some digits in the significand. 8 is arbitrarily chose, about half of the precision of double
+                significand = Math.Round(significand, 8);
+
+                if (significand >= 10.0)
+                {
+                    // 9.9999999999999 can be rounded to 10, make the display to be more natural
+                    significand /= 10.0;
+                    exponent++;
+                }
+
+                string signStr = _sign < 0 ? "-" : "";
+
+                // Use about a half of the precision of double
+                return $"{signStr}{significand:F8}e+{exponent}";
             }
-
-            // Estimate the value x as L*2^n, while L is the value of high bits, and n is the length of low bits
-            // Represent L as k*10^i, then x = L*2^n = k*10^(i+n*Log10(2))
-            // Let m=n*Log10(2), the final result would be x = (k*10^(m-[m]))*10^(i+[m])
-
-            ulong highBits = ((ulong)_bits[1] << kcbitUint) + _bits[0];
-            int lowBitsCount32 = _bits.Length - 2; // if Length > int.MaxValue/32, counting in bits can cause overflow
-            double exponentLow = lowBitsCount32 * kcbitUint * Math.Log10(2);
-
-            // Max possible value of BigInteger is 2^(32*Array.MaxLength)-1 which is larger than 10^(2^35)
-            // Use long to avoid potential overflow
-            long exponent = (int)exponentLow;
-            double significand = (double)highBits * Math.Pow(10, exponentLow - exponent);
-
-            while (significand >= 10.0)
-            {
-                significand /= 10.0;
-                exponent++;
-            }
-
-            // The digits can be incorrect because of floating point errors and estimation in Log and Exp
-            // Keep some digits in the significand. 8 is arbitrarily chose, about half of the precision of double
-            significand = Math.Round(significand, 8);
-
-            if (significand >= 10.0)
-            {
-                // 9.9999999999999 can be rounded to 10, make the display to be more natural
-                significand /= 10.0;
-                exponent++;
-            }
-
-            string signStr = _sign == 0 ? "" : "-";
-
-            // Use about a half of the precision of double
-            return $"{signStr}{significand:F8}e+{exponent}";
         }
 
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
