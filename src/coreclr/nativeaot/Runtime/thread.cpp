@@ -309,10 +309,15 @@ void Thread::SetGCSpecial(bool isGCSpecial)
 {
     if (!IsInitialized())
         Construct();
+
     if (isGCSpecial)
+    {
         SetState(TSF_IsGcSpecialThread);
+    }
     else
-        ClearState(TSF_IsGcSpecialThread);
+    {
+        UNREACHABLE_MSG("GC thread should never switch back to become an ordinary thread.");
+    }
 }
 
 bool Thread::IsGCSpecial()
@@ -600,6 +605,12 @@ void Thread::Hijack()
     if (m_hPalThread == INVALID_HANDLE_VALUE)
     {
         // cannot proceed
+        return;
+    }
+
+    if (IsGCSpecial())
+    {
+        // GC threads can not be forced to run preemptively, so we will not try.
         return;
     }
 
