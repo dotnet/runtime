@@ -143,9 +143,8 @@ struct RelopImplicationRule
 //
 // clang-format off
 //
-#define V(x) (VNFunc)GT_##x
-#define U1(x) VNF_##x
-#define U(x) U1(x)##_UN
+#define V(x) (VNFunc)GT_ ## x
+#define U(x) VNF_ ## x ## _UN
 
 static const RelopImplicationRule s_implicationRules[] =
 {
