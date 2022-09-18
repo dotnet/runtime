@@ -6,8 +6,8 @@
     <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">6.0.0</PackageValidationBaselineVersion>
     <!-- PackDependsOn is the right hook in a targets file if the NuGet.Build.Tasks.Pack nuget package is used, otherwise
          BeforePack must be used. Setting both to ensure that we are always running before other targets. -->
-    <PackDependsOn>AddNETStandardCompatErrorFileForPackaging;IncludeAnalyzersInPackage;$(PackDependsOn)</PackDependsOn>
-    <BeforePack>AddNETStandardCompatErrorFileForPackaging;IncludeAnalyzersInPackage;$(BeforePack)</BeforePack>
+    <PackDependsOn>IncludeAnalyzersInPackage;AddNETStandardCompatErrorFileForPackaging;$(PackDependsOn)</PackDependsOn>
+    <BeforePack>IncludeAnalyzersInPackage;AddNETStandardCompatErrorFileForPackaging;$(BeforePack)</BeforePack>
     <SymbolPackageOutputPath>$(PackageOutputPath)</SymbolPackageOutputPath>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddRuntimeSpecificFilesToPackage;IncludePrivateProjectReferencesWithPackAttributeInPackage</TargetsForTfmSpecificContentInPackage>
     <TargetsForTfmSpecificDebugSymbolsInPackage>$(TargetsForTfmSpecificDebugSymbolsInPackage);AddRuntimeSpecificSymbolToPackage</TargetsForTfmSpecificDebugSymbolsInPackage>
@@ -175,9 +175,8 @@
           Condition="'@(AnalyzerReference)' != '' and '$(IncludeMultiTargetRoslynComponentTargets)' == 'true'"
           DependsOnTargets="GenerateMultiTargetRoslynComponentTargetsFile">
     <ItemGroup>
-      <Content Include="$(MultiTargetRoslynComponentTargetsFileIntermediatePath)"
-               PackagePath="build\$(PackageId).targets"
-               Pack="True" />
+      <Content Include="$(MultiTargetRoslynComponentTargetsFileIntermediatePath)" PackagePath="buildTransitive\netstandard2.0\$(PackageId).targets" />
+      <Content Include="$(MultiTargetRoslynComponentTargetsFileIntermediatePath)" PackagePath="buildTransitive\%(NETStandardCompatError.Supported)\$(PackageId).targets" Condition="'@(NETStandardCompatError)' != ''" />
     </ItemGroup>
   </Target>
 
@@ -224,6 +223,7 @@
   </Target>
 </Project>]]>
       </_NETStandardCompatErrorFileContent>
+      <_NETStandardCompatErrorPlaceholderFilePackagePath>buildTransitive$([System.IO.Path]::DirectorySeparatorChar)%(NETStandardCompatError.Supported)</_NETStandardCompatErrorPlaceholderFilePackagePath>
     </PropertyGroup>
 
     <WriteLinesToFile File="$(_NETStandardCompatErrorFilePath)"
@@ -232,12 +232,19 @@
                       WriteOnlyWhenDifferent="true" />
 
     <ItemGroup>
+      <_PackageBuildFile Include="@(None->Metadata('PackagePath'));
+                                  @(Content->Metadata('PackagePath'))" />
+      <_PackageBuildFile PackagePathWithoutFilename="$([System.IO.Path]::GetDirectoryName('%(Identity)'))" />
+
       <None Include="$(_NETStandardCompatErrorFilePath)"
             PackagePath="buildTransitive\%(NETStandardCompatError.Identity)"
             Pack="true" />
+      <!-- Add the placeholder file to the supported target framework buildTransitive folder, if it's empty. -->
       <None Include="$(PlaceholderFile)"
-            PackagePath="buildTransitive\%(NETStandardCompatError.Supported)"
-            Pack="true" />
+            PackagePath="$(_NETStandardCompatErrorPlaceholderFilePackagePath)\"
+            Pack="true"
+            Condition="'@(_PackageBuildFile)' == '' or
+                       !@(_PackageBuildFile->AnyHaveMetadataValue('PackagePathWithoutFilename', '$(_NETStandardCompatErrorPlaceholderFilePackagePath)'))" />
       <FileWrites Include="$(_NETStandardCompatErrorFilePath)" />
     </ItemGroup>
   </Target>

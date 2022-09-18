@@ -17,8 +17,8 @@ Microsoft.Extensions.Logging.LogLevel
 Microsoft.Extensions.Logging.Logger&lt;T&gt;
 Microsoft.Extensions.Logging.LoggerMessage
 Microsoft.Extensions.Logging.Abstractions.NullLogger</PackageDescription>
-    <ServicingVersion>2</ServicingVersion>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <ServicingVersion>3</ServicingVersion>
   </PropertyGroup>
 
   <ItemGroup>
