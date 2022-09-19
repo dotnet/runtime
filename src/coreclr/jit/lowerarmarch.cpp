@@ -158,40 +158,72 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 //
 bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) const
 {
+    // The node we're checking should be one of the two child nodes
+    assert((parentNode->gtGetOp1() == childNode) || (parentNode->gtGetOp2() == childNode));
+
+    // We cannot contain if the parent node
+    // * is contained
+    // * is not operating on an integer
+    // * is already marking a child node as contained
+    // * is required to throw on overflow
+
     if (parentNode->isContained())
         return false;
 
     if (!varTypeIsIntegral(parentNode))
         return false;
 
-    if (parentNode->gtFlags & GTF_SET_FLAGS)
+    if (parentNode->gtGetOp1()->isContained() || parentNode->gtGetOp2()->isContained())
         return false;
 
-    GenTree* op1 = parentNode->gtGetOp1();
-    GenTree* op2 = parentNode->gtGetOp2();
-
-    if (op2 != childNode)
+    if (parentNode->gtOverflow())
         return false;
 
-    if (op1->isContained() || op2->isContained())
+    // We cannot contain if the child node:
+    // * is not operating on an integer
+    // * is required to set a flag
+    // * is required to throw on overflow
+
+    if (!varTypeIsIntegral(childNode))
         return false;
 
-    if (!varTypeIsIntegral(op2))
+    if ((childNode->gtFlags & GTF_SET_FLAGS) != 0)
         return false;
 
-    if (op2->gtFlags & GTF_SET_FLAGS)
+    if (childNode->gtOverflow())
         return false;
 
-    // Find "a + b * c" or "a - b * c".
-    if (parentNode->OperIs(GT_ADD, GT_SUB) && op2->OperIs(GT_MUL))
+    GenTree* matchedOp = nullptr;
+
+    if (childNode->OperIs(GT_MUL))
     {
-        if (parentNode->gtOverflow())
+        if (childNode->gtGetOp1()->isContained() || childNode->gtGetOp2()->isContained())
+        {
+            // Cannot contain if either of the childs operands is already contained
             return false;
+        }
 
-        if (op2->gtOverflow())
+        if ((parentNode->gtFlags & GTF_SET_FLAGS) != 0)
+        {
+            // Cannot contain if the parent operation needs to set flags
             return false;
+        }
 
-        return !op2->gtGetOp1()->isContained() && !op2->gtGetOp2()->isContained();
+        if (parentNode->OperIs(GT_ADD))
+        {
+            // Find "c + (a * b)" or "(a * b) + c"
+            return true;
+        }
+
+        if (parentNode->OperIs(GT_SUB))
+        {
+            // Find "c - (a * b)"
+            assert(childNode == parentNode->gtGetOp2());
+            return true;
+        }
+
+        // TODO: Handle mneg
+        return false;
     }
 
     return false;
