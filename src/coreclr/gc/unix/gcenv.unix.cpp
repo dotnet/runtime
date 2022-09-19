@@ -1442,6 +1442,9 @@ int64_t GCToOSInterface::QueryPerformanceFrequency()
 //  Time stamp in milliseconds
 uint32_t GCToOSInterface::GetLowPrecisionTimeStamp()
 {
+#if HAVE_CLOCK_GETTIME_NSEC_NP
+    return (uint32_t)(clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / tccMilliSecondsToNanoSeconds);
+#else
     // TODO(segilles) this is pretty naive, we can do better
     uint64_t retval = 0;
     struct timeval tv;
@@ -1455,6 +1458,7 @@ uint32_t GCToOSInterface::GetLowPrecisionTimeStamp()
     }
 
     return retval;
+#endif
 }
 
 // Gets the total number of processors on the machine, not taking
