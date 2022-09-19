@@ -2622,7 +2622,7 @@ namespace System
         {
             uint notEqualsElements = equals.ExtractMostSignificantBits();
             int index = 31 - BitOperations.LeadingZeroCount(notEqualsElements); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
-            return (int)(offset / Unsafe.SizeOf<T>()) + index;
+            return (int)offset + index;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2630,7 +2630,7 @@ namespace System
         {
             uint notEqualsElements = equals.ExtractMostSignificantBits();
             int index = 31 - BitOperations.LeadingZeroCount(notEqualsElements); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
-            return (int)(offset / Unsafe.SizeOf<T>()) + index;
+            return (int)offset + index;
         }
 
         private interface INegator<T> where T : struct
