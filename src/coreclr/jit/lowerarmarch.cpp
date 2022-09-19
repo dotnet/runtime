@@ -1878,13 +1878,33 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
     GenTree* op1 = node->gtGetOp1();
     GenTree* op2 = node->gtGetOp2();
 
-    // Check and make op2 contained (if it is a containable immediate)
-    CheckImmedAndMakeContained(node, op2);
+    if (CheckImmedAndMakeContained(node, op2))
+    {
+        return;
+    }
+
+    if (node->OperIsCommutative() && CheckImmedAndMakeContained(node, op1))
+    {
+        MakeSrcContained(node, op1);
+        std::swap(node->gtOp1, node->gtOp2);
+        return;
+    }
 
 #ifdef TARGET_ARM64
-    if (comp->opts.OptimizationEnabled() && IsContainableBinaryOp(node, op2))
+    if (comp->opts.OptimizationEnabled())
     {
-        MakeSrcContained(node, op2);
+        if (IsContainableBinaryOp(node, op2))
+        {
+            MakeSrcContained(node, op2);
+            return;
+        }
+
+        if (node->OperIsCommutative() && IsContainableBinaryOp(node, op1))
+        {
+            MakeSrcContained(node, op1);
+            std::swap(node->gtOp1, node->gtOp2);
+            return;
+        }
     }
 
     // Change ADD TO ADDEX for ADD(X, CAST(Y)) or ADD(CAST(X), Y) where CAST is int->long
