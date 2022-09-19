@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Diagnostics;
 
 using Internal.TypeSystem;
@@ -42,18 +41,23 @@ namespace Internal.Runtime
             }
         }
 
-        public static ushort ComputeFlags(TypeDesc type)
+        public static uint ComputeFlags(TypeDesc type)
         {
-            ushort flags = type.IsParameterizedType ?
-                (ushort)EETypeKind.ParameterizedEEType : (ushort)EETypeKind.CanonicalEEType;
+            uint flags = type.IsParameterizedType ?
+                (uint)EETypeKind.ParameterizedEEType : (uint)EETypeKind.CanonicalEEType;
 
-            // The top 5 bits of flags are used to convey enum underlying type, primitive type, or mark the type as being System.Array
+            // 5 bits near the top of flags are used to convey enum underlying type, primitive type, or mark the type as being System.Array
             EETypeElementType elementType = ComputeEETypeElementType(type);
-            flags |= (ushort)((ushort)elementType << (ushort)EETypeFlags.ElementTypeShift);
+            flags |= ((uint)elementType << (byte)EETypeFlags.ElementTypeShift);
+
+            if (type.IsArray || type.IsString)
+            {
+                flags |= (uint)EETypeFlags.HasComponentSizeFlag;
+            }
 
             if (type.IsGenericDefinition)
             {
-                flags |= (ushort)EETypeKind.GenericTypeDefEEType;
+                flags |= (uint)EETypeKind.GenericTypeDefEEType;
 
                 // Generic type definition EETypes don't set the other flags.
                 return flags;
@@ -61,35 +65,75 @@ namespace Internal.Runtime
 
             if (type.HasFinalizer)
             {
-                flags |= (ushort)EETypeFlags.HasFinalizerFlag;
+                flags |= (uint)EETypeFlags.HasFinalizerFlag;
             }
 
             if (type.IsDefType
                 && !type.IsCanonicalSubtype(CanonicalFormKind.Universal)
                 && ((DefType)type).ContainsGCPointers)
             {
-                flags |= (ushort)EETypeFlags.HasPointersFlag;
+                flags |= (uint)EETypeFlags.HasPointersFlag;
             }
             else if (type.IsArray && !type.IsCanonicalSubtype(CanonicalFormKind.Universal))
             {
                 var arrayElementType = ((ArrayType)type).ElementType;
                 if ((arrayElementType.IsValueType && ((DefType)arrayElementType).ContainsGCPointers) || arrayElementType.IsGCPointer)
                 {
-                    flags |= (ushort)EETypeFlags.HasPointersFlag;
+                    flags |= (uint)EETypeFlags.HasPointersFlag;
                 }
             }
 
             if (type.HasInstantiation)
             {
-                flags |= (ushort)EETypeFlags.IsGenericFlag;
+                flags |= (uint)EETypeFlags.IsGenericFlag;
 
                 if (type.HasVariance)
                 {
-                    flags |= (ushort)EETypeFlags.GenericVarianceFlag;
+                    flags |= (uint)EETypeFlags.GenericVarianceFlag;
                 }
             }
 
             return flags;
+        }
+
+        public static ushort ComputeFlagsEx(TypeDesc type)
+        {
+            ushort flagsEx = 0;
+
+            if (type is MetadataType mdType &&
+                            mdType.Module == mdType.Context.SystemModule &&
+                            mdType.Name is "WeakReference" or "WeakReference`1" &&
+                            mdType.Namespace == "System")
+            {
+                flagsEx |= (ushort)EETypeFlagsEx.HasEagerFinalizerFlag;
+            }
+
+            if (HasCriticalFinalizer(type))
+            {
+                flagsEx |= (ushort)EETypeFlagsEx.HasCriticalFinalizerFlag;
+            }
+
+            return flagsEx;
+        }
+
+        private static bool HasCriticalFinalizer(TypeDesc type)
+        {
+            do
+            {
+                if (!type.HasFinalizer)
+                    return false;
+
+                if (type is MetadataType mdType &&
+                            mdType.Module == mdType.Context.SystemModule &&
+                            mdType.Name == "CriticalFinalizerObject" &&
+                            mdType.Namespace == "System.Runtime.ConstrainedExecution")
+                    return true;
+
+                type = type.BaseType;
+            }
+            while (type != null);
+
+            return false;
         }
 
         // These masks and paddings have been chosen so that the ValueTypePadding field can always fit in a byte of data
@@ -97,7 +141,9 @@ namespace Internal.Runtime
         // the rest of the padding data.
         // If paddings of greater than 7 bytes are necessary, then the high bits of the field represent that padding
         private const uint ValueTypePaddingLowMask = 0x7;
+#pragma warning disable CA1823 // Avoid unused private fields
         private const uint ValueTypePaddingHighMask = 0xFFFFFF00;
+#pragma warning restore CA1823 // Avoid unused private fields
         private const uint ValueTypePaddingMax = 0x07FFFFFF;
         private const int ValueTypePaddingHighShift = 8;
         private const uint ValueTypePaddingAlignmentMask = 0xF8;

@@ -1800,7 +1800,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
         {
             emitter* emit       = GetEmitter();
             emitAttr size       = emitActualTypeSize(tree);
-            double   constValue = tree->AsDblCon()->gtDconVal;
+            double   constValue = tree->AsDblCon()->DconValue();
 
             // Make sure we use "daddiu reg, zero, 0x00"  only for positive zero (0.0)
             // and not for negative zero (-0.0)
@@ -2973,7 +2973,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
         {
             emitAttr attr0 = emitTypeSize(layout->GetGCPtrType(i + 0));
             emitAttr attr1 = emitTypeSize(layout->GetGCPtrType(i + 1));
-            if (i + 2 >= slots)
+            if ((i + 2) == slots)
             {
                 attrSrcAddr = EA_8BYTE;
                 attrDstAddr = EA_8BYTE;
@@ -3020,7 +3020,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
                 // Check if the next slot's type is also TYP_GC_NONE and use two ld/sd
                 if ((i + 1 < slots) && !layout->IsGCPtr(i + 1))
                 {
-                    if (i + 2 >= slots)
+                    if ((i + 2) == slots)
                     {
                         attrSrcAddr = EA_8BYTE;
                         attrDstAddr = EA_8BYTE;
@@ -5195,8 +5195,8 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTm
     }
     else
     {
-        GetEmitter()->emitIns_I_la(EA_PTRSIZE, REG_R21, spDelta);
-        GetEmitter()->emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, REG_R21);
+        GetEmitter()->emitIns_I_la(EA_PTRSIZE, regTmp, spDelta);
+        GetEmitter()->emitIns_R_R_R(INS_add_d, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, regTmp);
     }
 }
 
@@ -8545,7 +8545,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     // - Generate fully interruptible code for loops that contains calls
     // - Generate fully interruptible code for leaf methods
     //
-    // Given the limited benefit from this optimization (<10k for mscorlib NGen image), the extra complexity
+    // Given the limited benefit from this optimization (<10k for SPCL NGen image), the extra complexity
     // is not worth it.
     //
 
@@ -9313,7 +9313,17 @@ void CodeGen::genFnPrologCalleeRegArgs()
                     // So, after we save `A7` on the stack in prolog, it has to copy the stack slot of the split struct
                     // which was passed by the caller. Here we load the stack slot to `REG_SCRATCH`, and save it
                     // on the stack following the `A7` in prolog.
-                    GetEmitter()->emitIns_R_R_Imm(INS_ld_d, size, REG_SCRATCH, REG_SPBASE, genTotalFrameSize());
+                    if (emitter::isValidSimm12(genTotalFrameSize()))
+                    {
+                        GetEmitter()->emitIns_R_R_I(INS_ld_d, size, REG_SCRATCH, REG_SPBASE, genTotalFrameSize());
+                    }
+                    else
+                    {
+                        assert(!EA_IS_RELOC(size));
+                        GetEmitter()->emitIns_I_la(size, REG_SCRATCH, genTotalFrameSize());
+                        GetEmitter()->emitIns_R_R_R(INS_ldx_d, size, REG_SCRATCH, REG_SPBASE, REG_SCRATCH);
+                    }
+
                     if (emitter::isValidSimm12(baseOffset))
                     {
                         GetEmitter()->emitIns_S_R(INS_st_d, size, REG_SCRATCH, varNum, TARGET_POINTER_SIZE);

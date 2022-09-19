@@ -16,6 +16,7 @@
     <Configurations>Debug;Release;Checked</Configurations>
 
     <NoWarn Condition="'$(DotNetBuildFromSource)' == 'true'">$(NoWarn);CS8524</NoWarn>
+    <RunAnalyzers>true</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>
@@ -177,6 +178,9 @@
     <Compile Include="..\..\Common\TypeSystem\CodeGen\NativeStructType.CodeGen.cs">
       <Link>TypeSystem\CodeGen\NativeStructType.CodeGen.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\TypeSystem\MetadataEmitter\TypeSystemMetadataEmitter.cs">
+      <Link>TypeSystem\MetadataEmitter\TypeSystemMetadataEmitter.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\Internal\Runtime\GCDescEncoder.cs">
       <Link>Common\GCDescEncoder.cs</Link>
     </Compile>
@@ -307,7 +311,6 @@
     <Compile Include="..\..\Common\Compiler\InternalCompilerErrorException.cs" Link="Compiler\InternalCompilerErrorException.cs" />
     <Compile Include="..\..\Common\Compiler\MethodExtensions.cs" Link="Compiler\MethodExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\NameMangler.cs" Link="Compiler\NameMangler.cs" />
-    <Compile Include="..\..\Common\Compiler\PropertyPseudoDesc.cs" Link="Compiler\PropertyPseudoDesc.cs" />
     <Compile Include="..\..\Common\Compiler\SingleMethodRootProvider.cs" Link="Compiler\SingleMethodRootProvider.cs" />
     <Compile Include="..\..\Common\Compiler\TypeExtensions.cs" Link="Compiler\TypeExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\VectorFieldLayoutAlgorithm.cs" Link="Compiler\VectorFieldLayoutAlgorithm.cs" />
@@ -317,6 +320,7 @@
     <Compile Include="Compiler\BlockedInternalsBlockingPolicy.cs" />
     <Compile Include="Compiler\BodySubstitution.cs" />
     <Compile Include="Compiler\BodySubstitutionParser.cs" />
+    <Compile Include="Compiler\PseudoDescExtensions.cs" />
     <Compile Include="Compiler\CompilationBuilder.Aot.cs" />
     <Compile Include="Compiler\CompilationModuleGroup.Aot.cs" />
     <Compile Include="Compiler\CompilerTypeSystemContext.Aot.cs" />
@@ -394,6 +398,7 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_X86\X86TentativeMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TentativeInstanceMethodNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\TentativeMethodNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\TrimmingDescriptorNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\VariantInterfaceMethodUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\CustomAttributeBasedDependencyAlgorithm.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FieldMetadataNode.cs" />
@@ -404,8 +409,8 @@
     <Compile Include="Compiler\DynamicInvokeThunkGenerationPolicy.cs" />
     <Compile Include="Compiler\EmptyInteropStubManager.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ImportedNodeProvider.cs" />
-    <Compile Include="Compiler\EventPseudoDesc.cs" />
     <Compile Include="Compiler\ExpectedIsaFeaturesRootProvider.cs" />
+    <Compile Include="Compiler\EventPseudoDesc.cs" />
     <Compile Include="Compiler\ExternSymbolMappedField.cs" />
     <Compile Include="Compiler\FeatureSettings.cs" />
     <Compile Include="Compiler\FeatureSwitchManager.cs" />
@@ -422,6 +427,7 @@
     <Compile Include="Compiler\IInliningPolicy.cs" />
     <Compile Include="Compiler\ManifestResourceBlockingPolicy.cs" />
     <Compile Include="Compiler\MethodImportationErrorProvider.cs" />
+    <Compile Include="Compiler\MstatObjectDumper.cs" />
     <Compile Include="Compiler\NoMetadataBlockingPolicy.cs" />
     <Compile Include="Compiler\DependencyAnalysis\FrozenObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\GCStaticsPreInitDataNode.cs" />
@@ -573,6 +579,7 @@
     <Compile Include="Compiler\SingleMethodCompilationModuleGroup.cs" />
     <Compile Include="Compiler\ILAssemblyGeneratingMethodDebugInfoProvider.cs" />
     <Compile Include="Compiler\StackTraceEmissionPolicy.cs" />
+    <Compile Include="Compiler\PropertyPseudoDesc.cs" />
     <Compile Include="Compiler\PreinitializationManager.cs" />
     <Compile Include="Compiler\TypePreinit.cs" />
     <Compile Include="Compiler\TypePreserve.cs" />
@@ -592,6 +599,7 @@
     <Compile Include="Compiler\Logging\DocumentationSignatureParser.cs" />
     <Compile Include="Compiler\Logging\MessageContainer.cs" />
     <Compile Include="Compiler\Logging\MessageOrigin.cs" />
+    <Compile Include="Compiler\XmlObjectDumper.cs" />
     <Compile Include="IL\ILImporter.Scanner.cs" />
     <Compile Include="IL\Stubs\PInvokeILProvider.cs" />
     <Compile Include="IL\Stubs\StartupCode\AppContextInitializerMethod.cs" />

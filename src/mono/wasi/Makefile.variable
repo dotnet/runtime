@@ -1,8 +1,16 @@
 TOP=$(realpath $(CURDIR)/../../..)
 CONFIG?=Release
+RUNTIME_CONFIG?=Release
 WASI_SDK_VERSION=12
 
-WASI_OBJ_DIR=$(TOP)/artifacts/obj/mono/Wasi.$(CONFIG)
-WASI_BIN_DIR=$(TOP)/artifacts/bin/mono/Wasi.$(CONFIG)
+WASI_OBJ_DIR=$(TOP)/artifacts/obj/mono/Wasi.$(RUNTIME_CONFIG)
+WASI_BIN_DIR=$(TOP)/artifacts/bin/mono/Wasi.$(RUNTIME_CONFIG)
 WASI_SDK_ROOT=$(WASI_OBJ_DIR)/wasi-sdk-$(WASI_SDK_VERSION).0
 WASI_SDK_CLANG=$(WASI_SDK_ROOT)/bin/clang
+
+WASMTIME_VERSION=v0.39.1
+WASMTIME_DIR_NAME=wasmtime-$(WASMTIME_VERSION)-x86_64-linux
+WASMTIME_DIR=$(TOP)/artifacts/bin/$(WASMTIME_DIR_NAME)
+
+NINJA_VERSION=v1.11.0
+NINJA_DIR=$(TOP)/artifacts/bin/ninja

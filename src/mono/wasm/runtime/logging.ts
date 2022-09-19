@@ -62,8 +62,9 @@ export function mono_wasm_symbolicate_string(message: string): string {
 
 export function mono_wasm_stringify_as_error_with_stack(err: Error | string): string {
     let errObj: any = err;
-    if (!(err instanceof Error))
-        errObj = new Error(err);
+    if (!(errObj instanceof Error)) {
+        errObj = new Error(errObj);
+    }
 
     // Error
     return mono_wasm_symbolicate_string(errObj.stack);
@@ -106,6 +107,8 @@ export function mono_wasm_trace_logger(log_domain_ptr: CharPtr, log_level_ptr: C
     }
 }
 
+export let consoleWebSocket: WebSocket;
+
 export function setup_proxy_console(id: string, console: Console, origin: string): void {
     // this need to be copy, in order to keep reference to original methods
     const originalConsole = {
@@ -129,7 +132,7 @@ export function setup_proxy_console(id: string, console: Console, origin: string
                     }
                 }
 
-                if (typeof payload === "string")
+                if (typeof payload === "string" && id !== "main")
                     payload = `[${id}] ${payload}`;
 
                 if (asJson) {
@@ -156,7 +159,7 @@ export function setup_proxy_console(id: string, console: Console, origin: string
 
     const consoleUrl = `${origin}/console`.replace("https://", "wss://").replace("http://", "ws://");
 
-    const consoleWebSocket = new WebSocket(consoleUrl);
+    consoleWebSocket = new WebSocket(consoleUrl);
     consoleWebSocket.addEventListener("open", () => {
         originalConsole.log(`browser: [${id}] Console websocket connected.`);
     });

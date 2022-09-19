@@ -136,6 +136,12 @@ public:
 #ifdef FEATURE_GC_STRESS
         TSF_IsRandSeedSet       = 0x00000040,       // set to indicate the random number generator for GCStress was inited
 #endif // FEATURE_GC_STRESS
+
+#ifdef FEATURE_SUSPEND_REDIRECTION
+        TSF_Redirected          = 0x00000080,       // Set to indicate the thread is redirected and will inevitably
+                                                    // suspend once resumed.
+                                                    // If we see this flag, we skip hijacking as an optimization.
+#endif //FEATURE_SUSPEND_REDIRECTION
     };
 private:
 
@@ -197,13 +203,11 @@ public:
 
     void                Hijack();
     void                Unhijack();
+    bool                IsHijacked();
+
 #ifdef FEATURE_GC_STRESS
     static void         HijackForGcStress(PAL_LIMITED_CONTEXT * pSuspendCtx);
 #endif // FEATURE_GC_STRESS
-    bool                IsHijacked();
-    void *              GetHijackedReturnAddress();
-    void *              GetUnhijackedReturnAddress(void** ppvReturnAddressLocation);
-    bool                DangerousCrossThreadIsHijacked();
 
     bool                IsSuppressGcStressSet();
     void                SetSuppressGcStress();
@@ -230,7 +234,7 @@ public:
 #endif // DACCESS_COMPILE
 #ifdef FEATURE_GC_STRESS
     void                SetRandomSeed(uint32_t seed);
-    uint32_t              NextRand();
+    uint32_t            NextRand();
     bool                IsRandInited();
 #endif // FEATURE_GC_STRESS
     PTR_ExInfo          GetCurExInfo();
@@ -259,7 +263,7 @@ public:
     //
     // GC support APIs - do not use except from GC itself
     //
-    void SetGCSpecial(bool isGCSpecial);
+    void SetGCSpecial();
     bool IsGCSpecial();
     bool CatchAtSafePoint();
 

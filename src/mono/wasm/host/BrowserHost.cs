@@ -67,7 +67,7 @@ internal sealed class BrowserHost
         var runArgsJson = new RunArgumentsJson(applicationArguments: _args.AppArgs,
                                                runtimeArguments: _args.CommonConfig.RuntimeArguments,
                                                environmentVariables: envVars,
-                                               forwardConsole: _args.ForwardConsoleOutput ?? false,
+                                               forwardConsoleToWS: _args.ForwardConsoleOutput ?? false,
                                                debugging: _args.CommonConfig.Debugging);
         runArgsJson.Save(Path.Combine(_args.CommonConfig.AppPath, "runArgs.json"));
 
@@ -76,8 +76,7 @@ internal sealed class BrowserHost
                                                                            _args.CommonConfig.HostProperties.WebServerPort,
                                                                            token);
 
-        string[] fullUrls = BuildUrls(serverURLs,
-                                      _args.UseQueryStringToPassArguments ? _args.AppArgs : Array.Empty<string>());
+        string[] fullUrls = BuildUrls(serverURLs, _args.AppArgs);
         Console.WriteLine();
         foreach (string url in fullUrls)
             Console.WriteLine($"App url: {url}");

@@ -15,8 +15,6 @@ namespace ILCompiler
 {
     public class NativeAotNameMangler : NameMangler
     {
-        private SHA256 _sha256;
-
 #if !READYTORUN
         private readonly bool _mangleForCplusPlus;
 
@@ -32,12 +30,12 @@ namespace ILCompiler
 
         public override string CompilationUnitPrefix
         {
-            set { _compilationUnitPrefix = SanitizeNameWithHash(value); }
             get
             {
                 Debug.Assert(_compilationUnitPrefix != null);
                 return _compilationUnitPrefix;
             }
+            set { _compilationUnitPrefix = SanitizeNameWithHash(value); }
         }
 
         //
@@ -50,29 +48,25 @@ namespace ILCompiler
             {
                 char c = s[i];
 
-                if (((c >= 'a') && (c <= 'z')) || ((c >= 'A') && (c <= 'Z')))
+                if (char.IsAsciiLetter(c))
                 {
-                    if (sb != null)
-                        sb.Append(c);
+                    sb?.Append(c);
                     continue;
                 }
 
-                if ((c >= '0') && (c <= '9'))
+                if (char.IsAsciiDigit(c))
                 {
                     // C identifiers cannot start with a digit. Prepend underscores.
                     if (i == 0)
                     {
-                        if (sb == null)
-                            sb = new StringBuilder(s.Length + 2);
-                        sb.Append("_");
+                        sb ??= new StringBuilder(s.Length + 2);
+                        sb.Append('_');
                     }
-                    if (sb != null)
-                        sb.Append(c);
+                    sb?.Append(c);
                     continue;
                 }
 
-                if (sb == null)
-                    sb = new StringBuilder(s, 0, i, s.Length);
+                sb ??= new StringBuilder(s, 0, i, s.Length);
 
                 // For CppCodeGen, replace "." (C# namespace separator) with "::" (C++ namespace separator)
                 if (typeName && c == '.' && _mangleForCplusPlus)
@@ -83,7 +77,7 @@ namespace ILCompiler
 
                 // Everything else is replaced by underscore.
                 // TODO: We assume that there won't be collisions with our own or C++ built-in identifiers.
-                sb.Append("_");
+                sb.Append('_');
             }
 
             string sanitizedName = (sb != null) ? sb.ToString() : s;
@@ -121,16 +115,11 @@ namespace ILCompiler
                 byte[] hash;
                 lock (this)
                 {
-                    if (_sha256 == null)
-                    {
-                        // Use SHA256 hash here to provide a high degree of uniqueness to symbol names without requiring them to be long
-                        // This hash function provides an exceedingly high likelihood that no two strings will be given equal symbol names
-                        // This is not considered used for security purpose; however collisions would be highly unfortunate as they will cause compilation
-                        // failure.
-                        _sha256 = SHA256.Create();
-                    }
-
-                    hash = _sha256.ComputeHash(GetBytesFromString(literal));
+                    // Use SHA256 hash here to provide a high degree of uniqueness to symbol names without requiring them to be long
+                    // This hash function provides an exceedingly high likelihood that no two strings will be given equal symbol names
+                    // This is not considered used for security purpose; however collisions would be highly unfortunate as they will cause compilation
+                    // failure.
+                    hash = SHA256.HashData(GetBytesFromString(literal));
                 }
 
                 mangledName += "_" + BitConverter.ToString(hash).Replace("-", "");
@@ -151,7 +140,7 @@ namespace ILCompiler
         /// <param name="origName">Name to check for uniqueness.</param>
         /// <param name="set">Set of names already used.</param>
         /// <returns>A name based on <param name="origName"/> that is not part of <param name="set"/>.</returns>
-        private string DisambiguateName(string origName, ISet<string> set)
+        private static string DisambiguateName(string origName, ISet<string> set)
         {
             int iter = 0;
             string result = origName;
@@ -193,10 +182,8 @@ namespace ILCompiler
         /// <returns>Mangled name for <param name="type"/>.</returns>
         private string ComputeMangledTypeName(TypeDesc type)
         {
-            if (type is EcmaType)
+            if (type is EcmaType ecmaType)
             {
-                EcmaType ecmaType = (EcmaType)type;
-
                 string assemblyName = ((EcmaAssembly)ecmaType.EcmaModule).GetName().Name;
                 bool isSystemPrivate = assemblyName.StartsWith("System.Private.");
 
@@ -204,7 +191,7 @@ namespace ILCompiler
                 // but we already have a problem due to running SanitizeName without disambiguating the result
                 // This problem needs a better fix.
                 if (isSystemPrivate && !_mangleForCplusPlus)
-                    assemblyName = "S.P." + assemblyName.Substring(15);
+                    assemblyName = string.Concat("S.P.", assemblyName.AsSpan(15));
                 string prependAssemblyName = SanitizeName(assemblyName);
 
                 var deduplicator = new HashSet<string>();

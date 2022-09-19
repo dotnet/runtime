@@ -119,12 +119,7 @@
     </ItemGroup>
   </Target>
 
-
   <Target Name="_AndroidGenerateAppBundle" DependsOnTargets="_AndroidGenerateRuntimeConfig">
-
-    <PropertyGroup>
-      <RuntimeComponents Condition="'$(RuntimeComponents)' == ''" >marshal-ilgen</RuntimeComponents>
-    </PropertyGroup>
 
     <AndroidAppBuilderTask
         RuntimeIdentifier="$(RuntimeIdentifier)"

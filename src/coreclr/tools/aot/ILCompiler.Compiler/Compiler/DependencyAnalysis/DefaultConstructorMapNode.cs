@@ -2,22 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
-using System.Collections.Generic;
 
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.NativeFormat;
 
-using ILCompiler.DependencyAnalysisFramework;
-
 namespace ILCompiler.DependencyAnalysis
 {
     /// <summary>
-    /// DefaultConstructorMap blob, containing information on default constructor entrypoints of all types used 
+    /// DefaultConstructorMap blob, containing information on default constructor entrypoints of all types used
     /// by lazy generic instantiations.
     /// </summary>
-    internal class DefaultConstructorMapNode : ObjectNode, ISymbolDefinitionNode
+    internal sealed class DefaultConstructorMapNode : ObjectNode, ISymbolDefinitionNode
     {
         private ObjectAndOffsetSymbolNode _endSymbol;
         private ExternalReferencesTableNode _externalReferences;

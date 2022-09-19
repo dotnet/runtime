@@ -532,7 +532,7 @@ public class LoadDebuggerTest {
     }
 }
 
-public class HiddenSequencePointTest {
+public partial class HiddenSequencePointTest {
     public static void StepOverHiddenSP()
     {
         Console.WriteLine("first line");
@@ -604,7 +604,7 @@ public class LoadDebuggerTestALC {
             Console.WriteLine($"Loaded - {loadedAssembly}");
 
         }
-        public static void RunMethod(string className, string methodName)
+        public static void RunMethod(string className, string methodName, string methodName2, string methodName3)
         {
             var ty = typeof(System.Reflection.Metadata.MetadataUpdater);
             var mi = ty.GetMethod("GetCapabilities", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static, Array.Empty<Type>());
@@ -624,13 +624,13 @@ public class LoadDebuggerTestALC {
             ApplyUpdate(loadedAssembly, 1);
 
             myType = loadedAssembly.GetType($"ApplyUpdateReferencedAssembly.{className}");
-            myMethod = myType.GetMethod(methodName);
+            myMethod = myType.GetMethod(methodName2);
             myMethod.Invoke(null, null);
 
             ApplyUpdate(loadedAssembly, 2);
 
             myType = loadedAssembly.GetType($"ApplyUpdateReferencedAssembly.{className}");
-            myMethod = myType.GetMethod(methodName);
+            myMethod = myType.GetMethod(methodName3);
             myMethod.Invoke(null, null);
         }
 
@@ -1258,4 +1258,100 @@ public class InspectIntPtr
 
         System.Diagnostics.Debugger.Break();
     }
+}
+
+public partial class HiddenSequencePointTest {
+    public static void StepOverHiddenSP3()
+    {
+        MethodWithHiddenLinesAtTheEnd3();
+        System.Diagnostics.Debugger.Break();
+    }
+    public static void MethodWithHiddenLinesAtTheEnd3()
+    {
+        Console.WriteLine ($"MethodWithHiddenLinesAtTheEnd");
+#line hidden
+        Console.WriteLine ($"debugger shouldn't be able to step here");
+    }
+#line default
+}
+
+public class ClassInheritsFromClassWithoutDebugSymbols : DebuggerTests.ClassWithoutDebugSymbolsToInherit
+{
+    public static void Run()
+    {
+        var myVar = new ClassInheritsFromClassWithoutDebugSymbols();
+        myVar.CallMethod();
+    }
+
+    public void CallMethod()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+    public int myField2;
+    public int myField;
+}
+
+[System.Diagnostics.DebuggerNonUserCode]
+public class ClassNonUserCodeToInherit
+{
+    private int propA {get;}
+    public int propB {get;}
+    protected int propC {get;}
+    private int d;
+    public int e;
+    protected int f;
+    private int G
+    {
+        get {return f + 1;}
+    }
+    private int H => f;
+
+    public ClassNonUserCodeToInherit()
+    {
+        propA = 10;
+        propB = 20;
+        propC = 30;
+        d = 40;
+        e = 50;
+        f = 60;
+        Console.WriteLine(propA);
+        Console.WriteLine(propB);
+        Console.WriteLine(propC);
+        Console.WriteLine(d);
+        Console.WriteLine(e);
+        Console.WriteLine(f);
+    }
+}
+
+public class ClassInheritsFromNonUserCodeClass : ClassNonUserCodeToInherit
+{
+    public static void Run()
+    {
+        var myVar = new ClassInheritsFromNonUserCodeClass();
+        myVar.CallMethod();
+    }
+
+    public void CallMethod()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    public int myField2;
+    public int myField;
+}
+
+public class ClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass : DebuggerTests.ClassNonUserCodeToInheritThatInheritsFromNormalClass
+{
+    public static void Run()
+    {
+        var myVar = new ClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass();
+        myVar.CallMethod();
+    }
+
+    public void CallMethod()
+    {
+        System.Diagnostics.Debugger.Break();
+    }
+
+    public int myField;
 }

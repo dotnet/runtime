@@ -14,7 +14,7 @@ namespace System.Text.Json.Serialization.Converters
     /// </summary>
     internal class LargeObjectWithParameterizedConstructorConverter<T> : ObjectWithParameterizedConstructorConverter<T> where T : notnull
     {
-        protected sealed override bool ReadAndCacheConstructorArgument(ref ReadStack state, ref Utf8JsonReader reader, JsonParameterInfo jsonParameterInfo)
+        protected sealed override bool ReadAndCacheConstructorArgument(scoped ref ReadStack state, ref Utf8JsonReader reader, JsonParameterInfo jsonParameterInfo)
         {
             Debug.Assert(jsonParameterInfo.ShouldDeserialize);
             Debug.Assert(jsonParameterInfo.Options != null);

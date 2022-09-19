@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO.Compression;
 using System.Reflection;
@@ -22,7 +21,7 @@ namespace ILCompiler.IBC
 {
     public static class MIbcProfileParser
     {
-        private class MetadataLoaderForPgoData : IPgoSchemaDataLoader<TypeSystemEntityOrUnknown, TypeSystemEntityOrUnknown>
+        private sealed class MetadataLoaderForPgoData : IPgoSchemaDataLoader<TypeSystemEntityOrUnknown, TypeSystemEntityOrUnknown>
         {
             private readonly EcmaMethodIL _ilBody;
 
@@ -148,7 +147,7 @@ namespace ILCompiler.IBC
         /// See comment above ReadMIbcGroup for details of the group format
         ///
         /// The mibcGroupName is in the following format "Assembly_{definingAssemblyName};{OtherAssemblyName};{OtherAssemblyName};...; (OtherAssemblyName is ; delimited)
-        /// 
+        ///
         /// </summary>
         /// <returns></returns>
         public enum MibcGroupParseRules
@@ -169,8 +168,7 @@ namespace ILCompiler.IBC
             if (parseRule == MibcGroupParseRules.AllGroups)
                 assemblyNamesInVersionBubble = null;
 
-            if (crossModuleInlineModules == null)
-                crossModuleInlineModules = s_EmptyHash;
+            crossModuleInlineModules ??= s_EmptyHash;
 
             var mibcModule = EcmaModule.Create(tsc, peReader, null, null, new CustomCanonResolver(tsc));
 
@@ -198,7 +196,7 @@ namespace ILCompiler.IBC
                     case ILOpcode.ldtoken:
                         int token = ilReader.ReadILToken();
 
-                        if (String.IsNullOrEmpty(mibcGroupName))
+                        if (string.IsNullOrEmpty(mibcGroupName))
                             break;
 
                         string[] assembliesByName = mibcGroupName.Split(';');
@@ -304,11 +302,11 @@ namespace ILCompiler.IBC
                         throw new InvalidOperationException($"Unexpected opcode: {opcode}");
                 }
             }
-            
+
             return MibcConfig.FromKeyValueMap(keyValue);
         }
 
-        enum MibcGroupParseState
+        private enum MibcGroupParseState
         {
             LookingForNextMethod,
             LookingForOptionalData,
@@ -343,7 +341,7 @@ namespace ILCompiler.IBC
         ///
         /// This format is designed to be extensible to hold more data as we add new per method profile data without breaking existing parsers.
         /// </summary>
-        static IEnumerable<MethodProfileData> ReadMIbcGroup(TypeSystemContext tsc, EcmaMethod method)
+        private static IEnumerable<MethodProfileData> ReadMIbcGroup(TypeSystemContext tsc, EcmaMethod method)
         {
             EcmaMethodIL ilBody = EcmaMethodIL.Create(method);
             MetadataLoaderForPgoData metadataLoader = new MetadataLoaderForPgoData(ilBody);
@@ -357,14 +355,13 @@ namespace ILCompiler.IBC
             int profileEntryFound = 0;
             double exclusiveWeight = 0;
             Dictionary<MethodDesc, int> weights = null;
-            bool processIntValue = false;
             List<long> instrumentationDataLongs = null;
             PgoSchemaElem[] pgoSchemaData = null;
 
             while (ilReader.HasNext)
             {
                 ILOpcode opcode = ilReader.ReadILOpcode();
-                processIntValue = false;
+                bool processIntValue = false;
                 switch (opcode)
                 {
                     case ILOpcode.ldtoken:
@@ -376,12 +373,10 @@ namespace ILCompiler.IBC
                             }
                             else
                             {
-                                metadataObject = null;
                                 try
                                 {
                                     metadataObject = ilBody.GetObject(token, NotFoundBehavior.ReturnNull);
-                                    if (metadataObject == null)
-                                        metadataObject = metadataNotResolvable;
+                                    metadataObject ??= metadataNotResolvable;
                                 }
                                 catch (TypeSystemException)
                                 {
@@ -607,9 +602,9 @@ namespace ILCompiler.IBC
         /// Use this implementation of IModuleResolver to provide a module resolver which overrides resolution of System.Private.Canon module to point to a module
         /// that can resolve the CanonTypes out of the core library as CanonType.
         /// </summary>
-        class CustomCanonResolver : IModuleResolver
+        private sealed class CustomCanonResolver : IModuleResolver
         {
-            private class CanonModule : ModuleDesc, IAssemblyDesc
+            private sealed class CanonModule : ModuleDesc, IAssemblyDesc
             {
                 public CanonModule(TypeSystemContext wrappedContext) : base(wrappedContext, null)
                 {
@@ -653,9 +648,9 @@ namespace ILCompiler.IBC
                 }
             }
 
-            CanonModule _canonModule;
-            AssemblyName _canonModuleName;
-            IModuleResolver _wrappedResolver;
+            private CanonModule _canonModule;
+            private AssemblyName _canonModuleName;
+            private IModuleResolver _wrappedResolver;
 
             public CustomCanonResolver(TypeSystemContext wrappedContext)
             {

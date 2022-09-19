@@ -79,6 +79,20 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Contains("Overflow: value 9007199254740991 is out of -2147483648 2147483647 range", ex.Message);
         }
 
+        [Fact]
+        public unsafe void OptimizedPaths()
+        {
+            JavaScriptTestHelper.optimizedReached = 0;
+            JavaScriptTestHelper.invoke0V();
+            Assert.Equal(1, JavaScriptTestHelper.optimizedReached);
+            JavaScriptTestHelper.invoke1V(42);
+            Assert.Equal(43, JavaScriptTestHelper.optimizedReached);
+            Assert.Equal(124, JavaScriptTestHelper.invoke1R(123));
+            Assert.Equal(43 + 123, JavaScriptTestHelper.optimizedReached);
+            Assert.Equal(32, JavaScriptTestHelper.invoke2R(15, 16));
+            Assert.Equal(43 + 123 + 31, JavaScriptTestHelper.optimizedReached);
+        }
+
 
         #region Get/Set Property
 
@@ -1199,7 +1213,62 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public void JsExportStringNoNs()
         {
             var actual = JavaScriptTestHelper.invoke2_String("test", nameof(JavaScriptTestHelperNoNamespace.EchoString));
-            Assert.Equal("test!", actual);
+            Assert.Equal("test51", actual);
+        }
+
+        [Fact]
+        public void JsExportStructClassRecords()
+        {
+            var actual = JavaScriptTestHelper.invokeStructClassRecords("test");
+            Assert.Equal(48, actual.Length);
+            Assert.Equal("test11", actual[0]);
+            Assert.Equal("test12", actual[1]);
+            Assert.Equal("test13", actual[2]);
+            Assert.Equal("test14", actual[3]);
+            Assert.Equal("test15", actual[4]);
+            Assert.Equal("test16", actual[5]);
+            Assert.Equal("test17", actual[6]);
+            Assert.Equal("test18", actual[7]);
+            Assert.Equal("test19", actual[8]);
+            Assert.Equal("test21", actual[9]);
+            Assert.Equal("test22", actual[10]);
+            Assert.Equal("test23", actual[11]);
+            Assert.Equal("test24", actual[12]);
+            Assert.Equal("test25", actual[13]);
+            Assert.Equal("test31", actual[14]);
+            Assert.Equal("test32", actual[15]);
+            Assert.Equal("test33", actual[16]);
+            Assert.Equal("test34", actual[17]);
+            Assert.Equal("test35", actual[18]);
+            Assert.Equal("test41", actual[19]);
+            Assert.Equal("test42", actual[20]);
+            Assert.Equal("test43", actual[21]);
+            Assert.Equal("test44", actual[22]);
+            Assert.Equal("test45", actual[23]);
+            Assert.Equal("test51", actual[24]);
+            Assert.Equal("test52", actual[25]);
+            Assert.Equal("test53", actual[26]);
+            Assert.Equal("test54", actual[27]);
+            Assert.Equal("test55", actual[28]);
+            Assert.Equal("test56", actual[29]);
+            Assert.Equal("test57", actual[30]);
+            Assert.Equal("test58", actual[31]);
+            Assert.Equal("test59", actual[32]);
+            Assert.Equal("test61", actual[33]);
+            Assert.Equal("test62", actual[34]);
+            Assert.Equal("test63", actual[35]);
+            Assert.Equal("test64", actual[36]);
+            Assert.Equal("test65", actual[37]);
+            Assert.Equal("test71", actual[38]);
+            Assert.Equal("test72", actual[39]);
+            Assert.Equal("test73", actual[40]);
+            Assert.Equal("test74", actual[41]);
+            Assert.Equal("test75", actual[42]);
+            Assert.Equal("test81", actual[43]);
+            Assert.Equal("test82", actual[44]);
+            Assert.Equal("test83", actual[45]);
+            Assert.Equal("test84", actual[46]);
+            Assert.Equal("test85", actual[47]);
         }
 
         [Fact]
@@ -1303,9 +1372,26 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [Fact]
         public void JsExportThrows()
         {
-            var ex = Assert.Throws<ArgumentException>(() => JavaScriptTestHelper.invoke1_String("-t-e-s-t-", nameof(JavaScriptTestHelper.Throw)));
+            var ex = Assert.Throws<ArgumentException>(() => JavaScriptTestHelper.invoke1_String("-t-e-s-t-", nameof(JavaScriptTestHelper.ThrowFromJSExport)));
             Assert.DoesNotContain("Unexpected error", ex.Message);
             Assert.Contains("-t-e-s-t-", ex.Message);
+        }
+
+        [Fact]
+        public void JsExportCatchToString()
+        {
+            var toString = JavaScriptTestHelper.catch1toString("-t-e-s-t-", nameof(JavaScriptTestHelper.ThrowFromJSExport));
+            Assert.DoesNotContain("Unexpected error", toString);
+            Assert.Contains("-t-e-s-t-", toString);
+            Assert.DoesNotContain(nameof(JavaScriptTestHelper.ThrowFromJSExport), toString);
+        }
+
+        [Fact]
+        public void JsExportCatchStack()
+        {
+            var stack = JavaScriptTestHelper.catch1stack("-t-e-s-t-", nameof(JavaScriptTestHelper.ThrowFromJSExport));
+            Assert.Contains(nameof(JavaScriptTestHelper.ThrowFromJSExport), stack);
+            Assert.Contains("catch1stack", stack);
         }
 
         #endregion Exception
@@ -1851,12 +1937,12 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             var exThrow0 = Assert.Throws<JSException>(() => JavaScriptTestHelper.throw0());
             Assert.Contains("throw-0-msg", exThrow0.Message);
             Assert.DoesNotContain(" at ", exThrow0.Message);
-            Assert.Contains(" at Module.throw0", exThrow0.StackTrace);
+            Assert.Contains("throw0fn", exThrow0.StackTrace);
 
             var exThrow1 = Assert.Throws<JSException>(() => throw1(value));
             Assert.Contains("throw1-msg", exThrow1.Message);
             Assert.DoesNotContain(" at ", exThrow1.Message);
-            Assert.Contains(" at Module.throw1", exThrow1.StackTrace);
+            Assert.Contains("throw1fn", exThrow1.StackTrace);
 
             // anything is a system.object, sometimes it would be JSObject wrapper
             if (typeof(T).IsPrimitive)

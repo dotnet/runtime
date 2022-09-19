@@ -66,7 +66,7 @@ namespace System.Runtime.Serialization
 
         public string ToString(IFormatProvider provider)
         {
-            return "DateTime: " + this.UtcDateTime + ", Offset: " + this.OffsetMinutes;
+            return "DateTime: " + UtcDateTime + ", Offset: " + OffsetMinutes;
         }
     }
 }

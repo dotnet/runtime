@@ -500,7 +500,7 @@ public:
     ValueNum VNZeroForType(var_types typ);
 
     // Returns the value number for a zero-initialized struct.
-    ValueNum VNForZeroObj(CORINFO_CLASS_HANDLE structHnd);
+    ValueNum VNForZeroObj(ClassLayout* layout);
 
     // Returns the value number for one of the given "typ".
     // It returns NoVN for a "typ" that has no one value, such as TYP_REF.
@@ -633,6 +633,9 @@ public:
     ValueNum VNForFunc(
         var_types typ, VNFunc func, ValueNum op1VNwx, ValueNum op2VNwx, ValueNum op3VNwx, ValueNum op4VNwx);
 
+    // Skip all folding checks.
+    ValueNum VNForFuncNoFolding(var_types typ, VNFunc func, ValueNum op1VNwx, ValueNum op2VNwx);
+
     ValueNum VNForMapSelect(ValueNumKind vnk, var_types type, ValueNum map, ValueNum index);
 
     ValueNum VNForMapPhysicalSelect(ValueNumKind vnk, var_types type, ValueNum map, unsigned offset, unsigned size);
@@ -698,6 +701,22 @@ public:
         else
         {
             conservativeFuncVN = VNForFunc(typ, func, op1VN.GetConservative(), op2VN.GetConservative());
+        }
+
+        return ValueNumPair(liberalFuncVN, conservativeFuncVN);
+    }
+    ValueNumPair VNPairForFuncNoFolding(var_types typ, VNFunc func, ValueNumPair op1VN, ValueNumPair op2VN)
+    {
+        ValueNum liberalFuncVN = VNForFuncNoFolding(typ, func, op1VN.GetLiberal(), op2VN.GetLiberal());
+        ValueNum conservativeFuncVN;
+
+        if (op1VN.BothEqual() && op2VN.BothEqual())
+        {
+            conservativeFuncVN = liberalFuncVN;
+        }
+        else
+        {
+            conservativeFuncVN = VNForFuncNoFolding(typ, func, op1VN.GetConservative(), op2VN.GetConservative());
         }
 
         return ValueNumPair(liberalFuncVN, conservativeFuncVN);
@@ -784,8 +803,13 @@ public:
                                bool         srcIsUnsigned    = false,
                                bool         hasOverflowCheck = false);
 
-    ValueNum VNForBitCast(ValueNum srcVN, var_types castToType);
-    ValueNumPair VNPairForBitCast(ValueNumPair srcVNPair, var_types castToType);
+    ValueNum EncodeBitCastType(var_types castToType, unsigned size);
+
+    var_types DecodeBitCastType(ValueNum castToTypeVN, unsigned* pSize);
+
+    ValueNum VNForBitCast(ValueNum srcVN, var_types castToType, unsigned size);
+
+    ValueNumPair VNPairForBitCast(ValueNumPair srcVNPair, var_types castToType, unsigned size);
 
     ValueNum VNForFieldSeq(FieldSeq* fieldSeq);
 
@@ -939,12 +963,9 @@ public:
     // Returns true iff the VN represents a relop
     bool IsVNRelop(ValueNum vn);
 
-    // Given VN(x > y), return VN(y > x), VN(x <= y) or VN(y >= x)
-    //
-    // If vn is not a relop, return NoVN.
-    //
     enum class VN_RELATION_KIND
     {
+        VRK_Inferred,   // (x ?  y)
         VRK_Same,       // (x >  y)
         VRK_Swap,       // (y >  x)
         VRK_Reverse,    // (x <= y)
@@ -955,6 +976,10 @@ public:
     static const char* VNRelationString(VN_RELATION_KIND vrk);
 #endif
 
+    // Given VN(x > y), return VN(y > x), VN(x <= y) or VN(y >= x)
+    //
+    // If vn is not a relop, return NoVN.
+    //
     ValueNum GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk);
 
     // Convert a vartype_t to the value number's storage type for that vartype_t.

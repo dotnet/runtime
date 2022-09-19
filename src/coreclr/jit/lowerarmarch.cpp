@@ -206,61 +206,30 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
 //
 // Notes:
 //    This involves:
-//    - Widening operations of unsigneds.
+//    - Widening small stores (on ARM).
 //
 void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 {
-    GenTree* op1 = storeLoc->gtGetOp1();
-    if ((storeLoc->gtOper == GT_STORE_LCL_VAR) && (op1->gtOper == GT_CNS_INT))
+#ifdef TARGET_ARM
+    // On ARM, small stores can cost a bit more in terms of code size so we try to widen them. This is legal
+    // as most small locals have 4-byte-wide stack homes, the common exception being (dependent) struct fields.
+    //
+    if (storeLoc->OperIs(GT_STORE_LCL_VAR) && varTypeIsSmall(storeLoc) && storeLoc->Data()->IsCnsIntOrI())
     {
-        // Try to widen the ops if they are going into a local var.
-        GenTreeIntCon* con    = op1->AsIntCon();
-        ssize_t        ival   = con->gtIconVal;
-        unsigned       varNum = storeLoc->GetLclNum();
-        LclVarDsc*     varDsc = comp->lvaGetDesc(varNum);
-
-        if (varDsc->lvIsSIMDType())
+        LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
+        if (!varDsc->lvIsStructField && (varDsc->GetStackSlotHomeType() == TYP_INT))
         {
-            noway_assert(storeLoc->gtType != TYP_STRUCT);
-        }
-        unsigned size = genTypeSize(storeLoc);
-        // If we are storing a constant into a local variable
-        // we extend the size of the store here
-        if ((size < 4) && !varTypeIsStruct(varDsc))
-        {
-            if (!varTypeIsUnsigned(varDsc))
-            {
-                if (genTypeSize(storeLoc) == 1)
-                {
-                    if ((ival & 0x7f) != ival)
-                    {
-                        ival = ival | 0xffffff00;
-                    }
-                }
-                else
-                {
-                    assert(genTypeSize(storeLoc) == 2);
-                    if ((ival & 0x7fff) != ival)
-                    {
-                        ival = ival | 0xffff0000;
-                    }
-                }
-            }
-
-            // TODO-CQ: if the field is promoted independently shouldn't we
-            // also be able to do this?
-            if (!varDsc->lvIsStructField && (varDsc->GetStackSlotHomeType() == TYP_INT))
-            {
-                storeLoc->gtType = TYP_INT;
-                con->SetIconValue(ival);
-            }
+            storeLoc->gtType = TYP_INT;
         }
     }
+#endif // TARGET_ARM
+
     if (storeLoc->OperIs(GT_STORE_LCL_FLD))
     {
         // We should only encounter this for lclVars that are lvDoNotEnregister.
         verifyLclFldDoNotEnregister(storeLoc->GetLclNum());
     }
+
     ContainCheckStoreLoc(storeLoc);
 }
 
@@ -307,11 +276,13 @@ GenTree* Lowering::LowerMul(GenTreeOp* mul)
             mul->SetUnsigned();
         }
 
+        op1->CastOp()->ClearContained(); // Uncontain any memory operands.
         mul->gtOp1 = op1->CastOp();
         BlockRange().Remove(op1);
 
         if (op2->OperIs(GT_CAST))
         {
+            op2->AsCast()->CastOp()->ClearContained(); // Uncontain any memory operands.
             mul->gtOp2 = op2->AsCast()->CastOp();
             BlockRange().Remove(op2);
         }
@@ -601,22 +572,7 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
         // STRUCT args (FIELD_LIST / OBJ / LCL_VAR / LCL_FLD) will always be contained.
         MakeSrcContained(putArgNode, src);
 
-        // TODO-ADDR: always perform this transformation in local morph and delete this code.
-        if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIsLocalAddr())
-        {
-            GenTreeLclVarCommon* lclAddrNode = src->AsObj()->Addr()->AsLclVarCommon();
-            unsigned             lclNum      = lclAddrNode->GetLclNum();
-            unsigned             lclOffs     = lclAddrNode->GetLclOffs();
-            ClassLayout*         layout      = src->AsObj()->GetLayout();
-
-            src->ChangeOper(GT_LCL_FLD);
-            src->AsLclFld()->SetLclNum(lclNum);
-            src->AsLclFld()->SetLclOffs(lclOffs);
-            src->AsLclFld()->SetLayout(layout);
-
-            BlockRange().Remove(lclAddrNode);
-        }
-        else if (src->OperIs(GT_LCL_VAR))
+        if (src->OperIs(GT_LCL_VAR))
         {
             // TODO-1stClassStructs: support struct enregistration here by retyping "src" to its register type for
             // the non-split case.
@@ -1093,7 +1049,7 @@ bool Lowering::IsValidConstForMovImm(GenTreeHWIntrinsic* node)
         assert(varTypeIsFloating(node->GetSimdBaseType()));
         assert(castOp == nullptr);
 
-        const double dataValue = op1->AsDblCon()->gtDconVal;
+        const double dataValue = op1->AsDblCon()->DconValue();
         return comp->GetEmitter()->emitIns_valid_imm_for_fmov(dataValue);
     }
 
@@ -1881,6 +1837,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
             if (cast->gtGetOp1()->TypeIs(TYP_INT) && cast->TypeIs(TYP_LONG) && !cast->gtOverflow())
             {
                 node->ChangeOper(GT_ADDEX);
+                cast->AsCast()->CastOp()->ClearContained(); // Uncontain any memory operands.
                 MakeSrcContained(node, cast);
             }
         }
@@ -2024,11 +1981,63 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
 //
 void Lowering::ContainCheckCast(GenTreeCast* node)
 {
-#ifdef TARGET_ARM
     GenTree*  castOp     = node->CastOp();
     var_types castToType = node->CastToType();
-    var_types srcType    = castOp->TypeGet();
 
+    if (comp->opts.OptimizationEnabled() && !node->gtOverflow() && varTypeIsIntegral(castOp) &&
+        varTypeIsIntegral(castToType))
+    {
+        // Most integral casts can be re-expressed as loads, except those that would be changing the sign.
+        if (!varTypeIsSmall(castOp) || (varTypeIsUnsigned(castOp) == node->IsZeroExtending()))
+        {
+            bool srcIsContainable = false;
+
+            // Make sure to only contain indirections codegen can handle.
+            if (castOp->OperIs(GT_IND))
+            {
+                GenTreeIndir* indir = castOp->AsIndir();
+
+                if (!indir->IsVolatile() && !indir->IsUnaligned())
+                {
+                    GenTree* addr = indir->Addr();
+
+                    if (!addr->isContained())
+                    {
+                        srcIsContainable = true;
+                    }
+                    else if (addr->OperIs(GT_LEA) && !addr->AsAddrMode()->HasIndex())
+                    {
+                        var_types loadType = varTypeIsSmall(castToType) ? castToType : castOp->TypeGet();
+
+                        if (emitter::emitIns_valid_imm_for_ldst_offset(addr->AsAddrMode()->Offset(),
+                                                                       emitTypeSize(loadType)))
+                        {
+                            srcIsContainable = true;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                assert(castOp->OperIsLocalRead() || !IsContainableMemoryOp(castOp));
+                srcIsContainable = true;
+            }
+
+            if (srcIsContainable && IsSafeToContainMem(node, castOp))
+            {
+                if (IsContainableMemoryOp(castOp))
+                {
+                    MakeSrcContained(node, castOp);
+                }
+                else
+                {
+                    castOp->SetRegOptional();
+                }
+            }
+        }
+    }
+
+#ifdef TARGET_ARM
     if (varTypeIsLong(castOp))
     {
         assert(castOp->OperGet() == GT_LONG);
@@ -2086,7 +2095,8 @@ bool Lowering::IsValidCompareChain(GenTree* child, GenTree* parent)
             return IsValidCompareChain(child->AsOp()->gtGetOp2(), child) &&
                    IsValidCompareChain(child->AsOp()->gtGetOp1(), child);
         }
-        else if (child->OperIsCmpCompare())
+        else if (child->OperIsCmpCompare() && varTypeIsIntegral(child->gtGetOp1()) &&
+                 varTypeIsIntegral(child->gtGetOp2()))
         {
             // Can the child compare be contained.
             return IsSafeToContainMem(parent, child);
@@ -2148,7 +2158,8 @@ bool Lowering::ContainCheckCompareChain(GenTree* child, GenTree* parent, GenTree
             child->SetContained();
             return true;
         }
-        else if (child->OperIsCmpCompare())
+        else if (child->OperIsCmpCompare() && varTypeIsIntegral(child->gtGetOp1()) &&
+                 varTypeIsIntegral(child->gtGetOp2()))
         {
             child->AsOp()->SetContained();
 
@@ -2394,7 +2405,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         assert(varTypeIsFloating(intrin.baseType));
 
-                        const double dataValue = intrin.op3->AsDblCon()->gtDconVal;
+                        const double dataValue = intrin.op3->AsDblCon()->DconValue();
 
                         if (comp->GetEmitter()->emitIns_valid_imm_for_fmov(dataValue))
                         {

@@ -2462,6 +2462,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			*op = MINT_LDC_I4_0;
 	} else if (in_corlib &&
 			(!strncmp ("System.Runtime.Intrinsics.Arm", klass_name_space, 29) ||
+			!strncmp ("System.Runtime.Intrinsics.PackedSimd", klass_name_space, 36) ||
 			!strncmp ("System.Runtime.Intrinsics.X86", klass_name_space, 29)) &&
 			!strcmp (tm, "get_IsSupported")) {
 		*op = MINT_LDC_I4_0;
@@ -2469,6 +2470,16 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		(!strncmp ("System.Runtime.Intrinsics.Arm", klass_name_space, 29) ||
 		!strncmp ("System.Runtime.Intrinsics.X86", klass_name_space, 29))) {
 		interp_generate_void_throw (td, MONO_JIT_ICALL_mono_throw_platform_not_supported);
+	} else if (in_corlib &&
+			   (!strncmp ("System.Numerics", klass_name_space, 15) &&
+				!strcmp ("Vector", klass_name) &&
+				!strcmp (tm, "get_IsHardwareAccelerated"))) {
+		*op = MINT_LDC_I4_0;
+	} else if (in_corlib &&
+			   (!strncmp ("System.Runtime.Intrinsics", klass_name_space, 25) &&
+				!strncmp ("Vector", klass_name, 6) &&
+				!strcmp (tm, "get_IsHardwareAccelerated"))) {
+		*op = MINT_LDC_I4_0;
 	}
 
 	return FALSE;

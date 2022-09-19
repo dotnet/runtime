@@ -1524,7 +1524,7 @@ namespace System.Text.Json
             return true;
         }
 
-        private ConsumeNumberResult ConsumeNegativeSign(ref ReadOnlySpan<byte> data, ref int i)
+        private ConsumeNumberResult ConsumeNegativeSign(ref ReadOnlySpan<byte> data, scoped ref int i)
         {
             byte nextByte = data[i];
 
@@ -1551,7 +1551,7 @@ namespace System.Text.Json
             return ConsumeNumberResult.OperationIncomplete;
         }
 
-        private ConsumeNumberResult ConsumeZero(ref ReadOnlySpan<byte> data, ref int i)
+        private ConsumeNumberResult ConsumeZero(ref ReadOnlySpan<byte> data, scoped ref int i)
         {
             Debug.Assert(data[i] == (byte)'0');
             i++;
@@ -1590,7 +1590,7 @@ namespace System.Text.Json
             return ConsumeNumberResult.OperationIncomplete;
         }
 
-        private ConsumeNumberResult ConsumeIntegerDigits(ref ReadOnlySpan<byte> data, ref int i)
+        private ConsumeNumberResult ConsumeIntegerDigits(ref ReadOnlySpan<byte> data, scoped ref int i)
         {
             byte nextByte = default;
             for (; i < data.Length; i++)
@@ -1623,7 +1623,7 @@ namespace System.Text.Json
             return ConsumeNumberResult.OperationIncomplete;
         }
 
-        private ConsumeNumberResult ConsumeDecimalDigits(ref ReadOnlySpan<byte> data, ref int i)
+        private ConsumeNumberResult ConsumeDecimalDigits(ref ReadOnlySpan<byte> data, scoped ref int i)
         {
             if (i >= data.Length)
             {
@@ -1645,7 +1645,7 @@ namespace System.Text.Json
             return ConsumeIntegerDigits(ref data, ref i);
         }
 
-        private ConsumeNumberResult ConsumeSign(ref ReadOnlySpan<byte> data, ref int i)
+        private ConsumeNumberResult ConsumeSign(ref ReadOnlySpan<byte> data, scoped ref int i)
         {
             if (i >= data.Length)
             {
@@ -2059,7 +2059,7 @@ namespace System.Text.Json
             return ConsumeTokenResult.NotEnoughDataRollBackState;
         }
 
-        private bool SkipAllComments(ref byte marker)
+        private bool SkipAllComments(scoped ref byte marker)
         {
             while (marker == JsonConstants.Slash)
             {
@@ -2094,7 +2094,7 @@ namespace System.Text.Json
             return false;
         }
 
-        private bool SkipAllComments(ref byte marker, ExceptionResource resource)
+        private bool SkipAllComments(scoped ref byte marker, ExceptionResource resource)
         {
             while (marker == JsonConstants.Slash)
             {

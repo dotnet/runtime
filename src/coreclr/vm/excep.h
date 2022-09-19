@@ -744,14 +744,11 @@ bool IsGcMarker(T_CONTEXT *pContext, EXCEPTION_RECORD *pExceptionRecord);
 
 bool ShouldHandleManagedFault(
                         EXCEPTION_RECORD*               pExceptionRecord,
-                        T_CONTEXT*                        pContext,
+                        T_CONTEXT*                      pContext,
                         EXCEPTION_REGISTRATION_RECORD*  pEstablisherFrame,
                         Thread*                         pThread);
 
-void HandleManagedFault(EXCEPTION_RECORD*               pExceptionRecord,
-                        T_CONTEXT*                        pContext,
-                        EXCEPTION_REGISTRATION_RECORD*  pEstablisherFrame,
-                        Thread*                         pThread);
+void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, T_CONTEXT* pContext);
 
 LONG WatsonLastChance(
     Thread              *pThread,
@@ -778,7 +775,7 @@ void SetReversePInvokeEscapingUnhandledExceptionStatus(BOOL fIsUnwinding,
 #ifdef TARGET_X86
                                                        EXCEPTION_REGISTRATION_RECORD * pEstablisherFrame
 #elif defined(FEATURE_EH_FUNCLETS)
-                                                       ULONG64 pEstablisherFrame
+                                                       PVOID pEstablisherFrame
 #else
 #error Unsupported platform
 #endif

@@ -71,6 +71,7 @@ namespace BrowserDebugProxy
                 FieldAttributes.Public => "result",
                 _ => "internal"
             };
+
             if (field.IsBackingField)
             {
                 fieldValue["__isBackingField"] = true;
@@ -237,6 +238,9 @@ namespace BrowserDebugProxy
                 JObject fieldValue = await ReadFieldValue(sdbHelper, retDebuggerCmdReader, field, id.Value, typeInfo, valtype, isOwn, parentTypeId, getCommandOptions, token);
                 numFieldsRead++;
 
+                if (typeInfo.Info.IsNonUserCode && getCommandOptions.HasFlag(GetObjectCommandOptions.JustMyCode) && field.Attributes.HasFlag(FieldAttributes.Private))
+                    continue;
+
                 if (!Enum.TryParse(fieldValue["__state"].Value<string>(), out DebuggerBrowsableState fieldState)
                     || fieldState == DebuggerBrowsableState.Collapsed)
                 {
@@ -310,7 +314,7 @@ namespace BrowserDebugProxy
             int typeId,
             string typeName,
             ArraySegment<byte> getterParamsBuffer,
-            bool isAutoExpandable,
+            GetObjectCommandOptions getCommandOptions,
             DotnetObjectId objectId,
             bool isValueType,
             bool isOwn,
@@ -346,6 +350,10 @@ namespace BrowserDebugProxy
                 MethodAttributes getterAttrs = getterInfo.Info.Attributes;
                 MethodAttributes getterMemberAccessAttrs = getterAttrs & MethodAttributes.MemberAccessMask;
                 MethodAttributes vtableLayout = getterAttrs & MethodAttributes.VtableLayoutMask;
+
+                if (typeInfo.Info.IsNonUserCode && getCommandOptions.HasFlag(GetObjectCommandOptions.JustMyCode) && getterMemberAccessAttrs == MethodAttributes.Private)
+                    continue;
+
                 bool isNewSlot = (vtableLayout & MethodAttributes.NewSlot) == MethodAttributes.NewSlot;
 
                 typePropertiesBrowsableInfo.TryGetValue(propName, out DebuggerBrowsableState? state);
@@ -453,7 +461,7 @@ namespace BrowserDebugProxy
             {
                 string returnTypeName = await sdbHelper.GetReturnType(getMethodId, token);
                 JObject propRet = null;
-                if (isAutoExpandable || (state is DebuggerBrowsableState.RootHidden && IsACollectionType(returnTypeName)))
+                if (getCommandOptions.HasFlag(GetObjectCommandOptions.AutoExpandable) || getCommandOptions.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute) || (state is DebuggerBrowsableState.RootHidden && IsACollectionType(returnTypeName)))
                 {
                     try
                     {
@@ -567,13 +575,16 @@ namespace BrowserDebugProxy
             for (int i = 0; i < typeIdsCnt; i++)
             {
                 int typeId = typeIdsIncludingParents[i];
+
                 int parentTypeId = i + 1 < typeIdsCnt ? typeIdsIncludingParents[i + 1] : -1;
                 string typeName = await sdbHelper.GetTypeName(typeId, token);
                 // 0th id is for the object itself, and then its ancestors
                 bool isOwn = i == 0;
+
                 IReadOnlyList<FieldTypeClass> thisTypeFields = await sdbHelper.GetTypeFields(typeId, token);
                 if (!includeStatic)
                     thisTypeFields = thisTypeFields.Where(f => !f.Attributes.HasFlag(FieldAttributes.Static)).ToList();
+
                 if (thisTypeFields.Count > 0)
                 {
                     var allFields = await ExpandFieldValues(
@@ -596,7 +607,7 @@ namespace BrowserDebugProxy
                     typeId,
                     typeName,
                     getPropertiesParamBuffer,
-                    getCommandType.HasFlag(GetObjectCommandOptions.ForDebuggerProxyAttribute),
+                    getCommandType,
                     id,
                     isValueType: false,
                     isOwn,

@@ -1243,7 +1243,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<double>.TryConvertToChecked<TOther>(double value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<double>.TryConvertToChecked<TOther>(double value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1304,26 +1304,26 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<double>.TryConvertToSaturating<TOther>(double value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<double>.TryConvertToSaturating<TOther>(double value, [MaybeNullWhen(false)] out TOther result)
         {
             return TryConvertTo<TOther>(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<double>.TryConvertToTruncating<TOther>(double value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<double>.TryConvertToTruncating<TOther>(double value, [MaybeNullWhen(false)] out TOther result)
         {
             return TryConvertTo<TOther>(value, out result);
         }
 
-        private static bool TryConvertTo<TOther>(double value, [NotNullWhen(true)] out TOther result)
+        private static bool TryConvertTo<TOther>(double value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
@@ -1402,7 +1402,7 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
@@ -1562,7 +1562,7 @@ namespace System
                     else
                     {
                         // x or y is insignificant compared to the other
-                        result = x + y;
+                        result = ax + ay;
                     }
                 }
             }

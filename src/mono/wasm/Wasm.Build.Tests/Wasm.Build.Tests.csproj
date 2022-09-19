@@ -1,0 +1,111 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <SkipXunitTrimmerDescriptor>true</SkipXunitTrimmerDescriptor>
+    <IsTestProject>true</IsTestProject>
+    <BundleXunitRunner>true</BundleXunitRunner>
+    <TestFramework>xunit</TestFramework>
+    <EnableDefaultItems>true</EnableDefaultItems>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <DefineConstants Condition="'$(ContinuousIntegrationBuild)' != 'true'">TEST_DEBUG_CONFIG_ALSO</DefineConstants>
+    <!-- This project should not build against the live built .NETCoreApp targeting pack as it contributes to the build itself. -->
+    <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
+
+    <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == ''">true</TestUsingWorkloads>
+    <InstallWorkloadForTesting>true</InstallWorkloadForTesting>
+    <InstallChromeForTests Condition="'$(InstallChromeForTests)' == '' and '$(ContinuousIntegrationBuild)' != 'true' and Exists('/.dockerenv')">true</InstallChromeForTests>
+
+    <!-- don't run any wasm build steps -->
+    <IsWasmProject>false</IsWasmProject>
+    <UseDefaultTestHost>true</UseDefaultTestHost>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)testing\provisioning.targets" />
+
+  <PropertyGroup>
+    <RunScriptInputName Condition="'$(OS)' == 'Windows_NT'">RunScriptTemplate.cmd</RunScriptInputName>
+    <RunScriptInputName Condition="'$(OS)' != 'Windows_NT'">RunScriptTemplate.sh</RunScriptInputName>
+
+    <RunScriptInputPath>$(MSBuildThisFileDirectory)data\$(RunScriptInputName)</RunScriptInputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Playwright" Version="1.21.0" />
+    <Compile Include="$(MonoProjectRoot)wasm\debugger\DebuggerTestSuite\BrowserLocator.cs" />
+
+    <None Include="$(RepoRoot)\src\mono\wasm\test-main.js" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\testassets\**\*" Link="testassets\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="data\**\*" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript">
+    <ItemGroup Condition="'$(TestUsingWorkloads)' == 'true'">
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WORKLOAD_PACKS_VER=$(Version)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WORKLOAD_PACKS_VER=$(Version)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
+      <!-- TEST_USING_WORKLOADS - this is set per helix job, in sendtohelixhelp.proj -->
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BASE_DIR=%24{HELIX_CORRELATION_PAYLOAD}" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BASE_DIR=%HELIX_CORRELATION_PAYLOAD%" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/chrome-linux/chrome" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BROWSER_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux/playwright.sh" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="chmod +x $HELIX_WORKITEM_ROOT/.playwright/node/linux/node" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' == 'true'">-notrait category=no-workload</_XUnitTraitArg>
+      <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BASE_DIR=$(ArtifactsBinDir)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BASE_DIR=$(ArtifactsBinDir)" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)/" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER8" />
+      <_RuntimePackVersions Include="$(PackageVersionNet7)" EnvVarName="RUNTIME_PACK_VER7" />
+      <_RuntimePackVersions Include="$(PackageVersionNet6)" EnvVarName="RUNTIME_PACK_VER6" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export %(_RuntimePackVersions.EnvVarName)=&quot;%(_RuntimePackVersions.Identity)&quot;" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set &quot;%(_RuntimePackVersions.EnvVarName)=%(_RuntimePackVersions.Identity)&quot;" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="set_env_vars" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="CALL :SetEnvVars" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">dotnet exec xunit.console.dll $(AssemblyName).dll -xml %24XHARNESS_OUT/testResults.xml</RunScriptCommand>
+      <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">dotnet.exe exec xunit.console.dll $(AssemblyName).dll -xml %XHARNESS_OUT%\testResults.xml</RunScriptCommand>
+
+      <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT'">$(RunScriptCommand) %24HELIX_XUNIT_ARGS</RunScriptCommand>
+      <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' == 'Windows_NT'">$(RunScriptCommand) %HELIX_XUNIT_ARGS%</RunScriptCommand>
+
+      <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(RunScriptCommand) -nocolor</RunScriptCommand>
+      <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' == 'Windows_NT'">$(RunScriptCommand) -parallel none</RunScriptCommand>
+      <RunScriptCommand>$(RunScriptCommand) -verbose</RunScriptCommand>
+
+      <RunScriptCommand Condition="'$(XUnitMethodName)' != ''">$(RunScriptCommand) -method $(XUnitMethodName)</RunScriptCommand>
+      <RunScriptCommand Condition="'$(XUnitClassName)' != ''">$(RunScriptCommand) -class $(XUnitClassName)</RunScriptCommand>
+
+      <!-- this allows use of test attributes from dotnet.xunitextensions -->
+      <RunScriptCommand>$(RunScriptCommand) -notrait category=IgnoreForCI -notrait category=failing</RunScriptCommand>
+
+      <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">$(RunScriptCommand) %XUnitTraitArg%</RunScriptCommand>
+      <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$(RunScriptCommand) %24XUnitTraitArg</RunScriptCommand>
+    </PropertyGroup>
+  </Target>
+</Project>

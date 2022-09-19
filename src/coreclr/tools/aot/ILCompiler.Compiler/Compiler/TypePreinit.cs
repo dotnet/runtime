@@ -1426,7 +1426,7 @@ namespace ILCompiler
             }
         }
 
-        private bool TryHandleIntrinsicCall(MethodDesc method, Value[] parameters, out Value retVal)
+        private static bool TryHandleIntrinsicCall(MethodDesc method, Value[] parameters, out Value retVal)
         {
             retVal = default;
 
@@ -1450,7 +1450,7 @@ namespace ILCompiler
             return false;
         }
 
-        private TypeDesc GetArgType(MethodDesc method, int index)
+        private static TypeDesc GetArgType(MethodDesc method, int index)
         {
             var sig = method.Signature;
             int offset = 0;
@@ -1467,7 +1467,7 @@ namespace ILCompiler
             return sig[index - offset];
         }
 
-        class Stack : Stack<StackEntry>
+        private sealed class Stack : Stack<StackEntry>
         {
             private readonly TargetDetails _target;
 
@@ -1767,7 +1767,7 @@ namespace ILCompiler
 
             public abstract void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory);
 
-            private T ThrowInvalidProgram<T>()
+            private static T ThrowInvalidProgram<T>()
             {
                 ThrowHelper.ThrowInvalidProgramException();
                 return default;
@@ -1788,7 +1788,7 @@ namespace ILCompiler
         }
 
         // Also represents pointers and function pointer.
-        private class ValueTypeValue : BaseValueTypeValue, IAssignableValue
+        private sealed class ValueTypeValue : BaseValueTypeValue, IAssignableValue
         {
             public readonly byte[] InstanceBytes;
 
@@ -1878,7 +1878,7 @@ namespace ILCompiler
             public static ValueTypeValue FromDouble(double value) => new ValueTypeValue(BitConverter.GetBytes(value));
         }
 
-        private class RuntimeFieldHandleValue : BaseValueTypeValue, IInternalModelingOnlyValue
+        private sealed class RuntimeFieldHandleValue : BaseValueTypeValue, IInternalModelingOnlyValue
         {
             public FieldDesc Field { get; private set; }
 
@@ -1905,7 +1905,7 @@ namespace ILCompiler
             }
         }
 
-        private class MethodPointerValue : BaseValueTypeValue, IInternalModelingOnlyValue
+        private sealed class MethodPointerValue : BaseValueTypeValue, IInternalModelingOnlyValue
         {
             public MethodDesc PointedToMethod { get; }
 
@@ -1932,7 +1932,7 @@ namespace ILCompiler
             }
         }
 
-        private class ByRefValue : Value, IHasInstanceFields
+        private sealed class ByRefValue : Value, IHasInstanceFields
         {
             public readonly byte[] PointedToBytes;
             public readonly int PointedToOffset;
@@ -2024,7 +2024,9 @@ namespace ILCompiler
                     this);
         }
 
+#pragma warning disable CA1852
         private class DelegateInstance : AllocatedReferenceTypeValue, ISerializableReference
+#pragma warning restore CA1852
         {
             private readonly MethodDesc _methodPointed;
             private readonly ReferenceTypeValue _firstParameter;
@@ -2095,7 +2097,9 @@ namespace ILCompiler
             }
         }
 
+#pragma warning disable CA1852
         private class ArrayInstance : AllocatedReferenceTypeValue, ISerializableReference
+#pragma warning restore CA1852
         {
             private readonly int _elementCount;
             private readonly int _elementSize;
@@ -2181,7 +2185,7 @@ namespace ILCompiler
             }
         }
 
-        private class ForeignTypeInstance : AllocatedReferenceTypeValue
+        private sealed class ForeignTypeInstance : AllocatedReferenceTypeValue
         {
             public ReferenceTypeValue Data { get; }
 
@@ -2206,7 +2210,7 @@ namespace ILCompiler
             public override ReferenceTypeValue ToForeignInstance(int baseInstructionCounter) => this;
         }
 
-        private class StringInstance : ReferenceTypeValue
+        private sealed class StringInstance : ReferenceTypeValue
         {
             private readonly string _value;
 
@@ -2224,7 +2228,9 @@ namespace ILCompiler
             public override ReferenceTypeValue ToForeignInstance(int baseInstructionCounter) => this;
         }
 
+#pragma warning disable CA1852
         private class ObjectInstance : AllocatedReferenceTypeValue, IHasInstanceFields, ISerializableReference
+#pragma warning restore CA1852
         {
             private readonly byte[] _data;
 

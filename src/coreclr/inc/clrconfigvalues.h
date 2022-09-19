@@ -406,6 +406,11 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_NGenReserveForJumpStubs, W("NGenReserveForJump
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_BreakOnOutOfMemoryWithinRange, W("BreakOnOutOfMemoryWithinRange"), 0, "Break before out of memory within range exception is thrown")
 
 ///
+/// Frozen segments (aka Frozen Object Heap)
+///
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_UseFrozenObjectHeap, W("UseFrozenObjectHeap"), 1, "Use frozen object heap for certain types of objects (e.g. string literals) as an optimization.")
+
+///
 /// Log
 ///
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_LogEnable, W("LogEnable"), 0, "Turns on the traditional CLR log.")
@@ -529,8 +534,6 @@ RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_ProcessorCount, W("PROCESSOR_COUNT"), 0, "S
 ///
 /// Threadpool
 ///
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_UsePortableThreadPool, W("ThreadPool_UsePortableThreadPool"), 1, "Uses the managed portable thread pool implementation instead of the unmanaged one.")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_UsePortableThreadPoolForIO, W("ThreadPool_UsePortableThreadPoolForIO"), 1, "Uses the managed portable thread pool implementation instead of the unmanaged one for async IO.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_ForceMinWorkerThreads, W("ThreadPool_ForceMinWorkerThreads"), 0, "Overrides the MinThreads setting for the ThreadPool worker pool")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_ForceMaxWorkerThreads, W("ThreadPool_ForceMaxWorkerThreads"), 0, "Overrides the MaxThreads setting for the ThreadPool worker pool")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ThreadPool_DisableStarvationDetection, W("ThreadPool_DisableStarvationDetection"), 0, "Disables the ThreadPool feature that forces new threads to be added when workitems run for too long")
@@ -749,6 +752,14 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,  W("EnableHWIntrinsic"),  1
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAES,          W("EnableAES"),          1, "Allows AES+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX,          W("EnableAVX"),          1, "Allows AVX+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX2,         W("EnableAVX2"),         1, "Allows AVX2+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512BW,     W("EnableAVX512BW"),     1, "Allows AVX512BW+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512BW_VL,  W("EnableAVX512BW_VL"),  1, "Allows AVX512BW_VL+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512CD,     W("EnableAVX512CD"),     1, "Allows AVX512CD+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512CD_VL,  W("EnableAVX512CD_VL"),  1, "Allows AVX512CD_VL+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512DQ,     W("EnableAVX512DQ"),     1, "Allows AVX512DQ+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512DQ_VL,  W("EnableAVX512DQ_VL"),  1, "Allows AVX512DQ_VL+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512F,      W("EnableAVX512F"),      1, "Allows AVX512F+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512F_VL,   W("EnableAVX512F_VL"),   1, "Allows AVX512F_VL+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVXVNNI,      W("EnableAVXVNNI"),      1, "Allows AVX VNNI+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableBMI1,         W("EnableBMI1"),         1, "Allows BMI1+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableBMI2,         W("EnableBMI2"),         1, "Allows BMI2+ hardware intrinsics to be disabled")

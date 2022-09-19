@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -74,7 +73,7 @@ namespace ILCompiler.Dataflow
 
             // NativeAOT doesn't have a fully capable type name resolver yet
             // Once this is implemented don't forget to wire up marking of type forwards which are used in generic parameters
-            if (!ILCompiler.DependencyAnalysis.ReflectionMethodBodyScanner.ResolveType(typeName, callingModule, diagnosticContext.Origin.MemberDefinition!.Context, out TypeDesc foundType, out ModuleDesc referenceModule))
+            if (!DependencyAnalysis.ReflectionMethodBodyScanner.ResolveType(typeName, callingModule, diagnosticContext.Origin.MemberDefinition!.Context, out TypeDesc foundType, out ModuleDesc referenceModule))
             {
                 type = default;
                 return false;
@@ -111,7 +110,7 @@ namespace ILCompiler.Dataflow
             RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, Factory, method, memberWithRequirements.ToString());
         }
 
-        void MarkField(in MessageOrigin origin, FieldDesc field, Origin memberWithRequirements)
+        private void MarkField(in MessageOrigin origin, FieldDesc field, Origin memberWithRequirements)
         {
             if (!_enabled)
                 return;
@@ -132,7 +131,7 @@ namespace ILCompiler.Dataflow
                 MarkMethod(origin, property.SetMethod, memberWithRequirements);
         }
 
-        void MarkEvent(in MessageOrigin origin, EventPseudoDesc @event, Origin memberWithRequirements)
+        private void MarkEvent(in MessageOrigin origin, EventPseudoDesc @event, Origin memberWithRequirements)
         {
             if (!_enabled)
                 return;
@@ -192,7 +191,7 @@ namespace ILCompiler.Dataflow
             }
         }
 
-        void CheckAndWarnOnReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity, Origin memberWithRequirements)
+        private void CheckAndWarnOnReflectionAccess(in MessageOrigin origin, TypeSystemEntity entity, Origin memberWithRequirements)
         {
             if (entity.DoesMemberRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out CustomAttributeValue<TypeDesc>? requiresAttribute))
             {

@@ -19,6 +19,7 @@
 #include "mono/metadata/assembly.h"
 #include "mono/metadata/assembly-internals.h"
 #include "mono/metadata/class-init.h"
+#include "mono/metadata/class-init-internals.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/dynamic-image-internals.h"
 #include "mono/metadata/dynamic-stream-internals.h"
@@ -3231,7 +3232,6 @@ static gboolean
 fix_partial_generic_class (MonoClass *klass, MonoError *error)
 {
 	MonoClass *gklass = mono_class_get_generic_class (klass)->container_class;
-	int i;
 
 	error_init (error);
 
@@ -3255,58 +3255,6 @@ fix_partial_generic_class (MonoClass *klass, MonoError *error)
 		}
 	}
 
-	if (!mono_class_get_generic_class (klass)->need_sync)
-		return TRUE;
-
-	int mcount = mono_class_get_method_count (klass);
-	int gmcount = mono_class_get_method_count (gklass);
-	if (mcount != gmcount) {
-		mono_class_set_method_count (klass, gmcount);
-		klass->methods = (MonoMethod **)mono_image_alloc (klass->image, sizeof (MonoMethod*) * (gmcount + 1));
-
-		for (i = 0; i < gmcount; i++) {
-			klass->methods [i] = mono_class_inflate_generic_method_full_checked (
-				gklass->methods [i], klass, mono_class_get_context (klass), error);
-			mono_error_assert_ok (error);
-		}
-	}
-
-	if (klass->interface_count && klass->interface_count != gklass->interface_count) {
-		klass->interface_count = gklass->interface_count;
-		klass->interfaces = (MonoClass **)mono_image_alloc (klass->image, sizeof (MonoClass*) * gklass->interface_count);
-		klass->interfaces_packed = NULL; /*make setup_interface_offsets happy*/
-
-		MonoClass **gklass_interfaces = m_class_get_interfaces (gklass);
-		for (i = 0; i < gklass->interface_count; ++i) {
-			MonoType *iface_type = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (gklass_interfaces [i]), mono_class_get_context (klass), error);
-			return_val_if_nok (error, FALSE);
-
-			klass->interfaces [i] = mono_class_from_mono_type_internal (iface_type);
-			mono_metadata_free_type (iface_type);
-
-			if (!ensure_runtime_vtable (klass->interfaces [i], error))
-				return FALSE;
-		}
-		klass->interfaces_inited = 1;
-	}
-
-	int fcount = mono_class_get_field_count (klass);
-	int gfcount = mono_class_get_field_count (gklass);
-	if (fcount != gfcount) {
-		mono_class_set_field_count (klass, gfcount);
-		klass->fields = image_g_new0 (klass->image, MonoClassField, gfcount);
-
-		for (i = 0; i < gfcount; i++) {
-			klass->fields [i] = gklass->fields [i];
-			m_field_set_parent (&klass->fields [i], klass);
-			klass->fields [i].type = mono_class_inflate_generic_type_checked (gklass->fields [i].type, mono_class_get_context (klass), error);
-			return_val_if_nok (error, FALSE);
-		}
-	}
-
-	/*We can only finish with this klass once it's parent has as well*/
-	if (gklass->wastypebuilder)
-		klass->wastypebuilder = TRUE;
 	return TRUE;
 }
 
@@ -3402,7 +3350,8 @@ ensure_runtime_vtable (MonoClass *klass, MonoError *error)
 				im->slot = slot_num++;
 		}
 
-		klass->interfaces_packed = NULL; /*make setup_interface_offsets happy*/
+		/* make mono_class_setup_interface_offsets do work */
+		mono_class_setup_invalidate_interface_offsets (klass);
 		mono_class_setup_interface_offsets (klass);
 		mono_class_setup_interface_id (klass);
 	}

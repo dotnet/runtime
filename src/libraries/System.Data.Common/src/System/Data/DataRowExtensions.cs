@@ -151,14 +151,22 @@ namespace System.Data
                     if (!RuntimeFeature.IsDynamicCodeSupported)
                         return NullableFieldUsingReflection;
 
-#pragma warning disable IL3050 // There is a path that is safe for AOT executed when IsDynamicCodeSupported is false.
-                    return typeof(UnboxT<T>)
-                        .GetMethod("NullableField", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!
-                        .MakeGenericMethod(Nullable.GetUnderlyingType(typeof(T))!)
-                        .CreateDelegate<Func<object, T>>();
-#pragma warning restore IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
+                    return CreateWhenDynamicCodeSupported();
                 }
                 return NonNullableField;
+
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2090:MakeGenericMethod",
+                    Justification = "'NullableField<TElem> where TElem : struct' implies 'TElem : new()'. Nullable does not make use of new() so it is safe." +
+                    "The warning is only issued when IsDynamicCodeSupported is true.")]
+                static Func<object, T?> CreateWhenDynamicCodeSupported()
+                {
+#pragma warning disable IL3050 // There is a path that is safe for AOT executed when IsDynamicCodeSupported is false.
+                    return typeof(UnboxT<T>)
+                       .GetMethod("NullableField", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!
+                       .MakeGenericMethod(Nullable.GetUnderlyingType(typeof(T))!)
+                       .CreateDelegate<Func<object, T>>();
+#pragma warning restore IL3050 // Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.
+                }
             }
 
             private static T? NonNullableField(object value)

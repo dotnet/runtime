@@ -221,11 +221,8 @@ namespace BrowserDebugProxy
                 RemovePropertiesFrom(result.OtherMembers);
             }
 
-            if (result == null)
-            {
-                // 4 - fields + properties
-                result = _combinedResult.Clone();
-            }
+            // 4 - fields + properties
+            result ??= _combinedResult.Clone();
 
             return result;
 
@@ -293,7 +290,7 @@ namespace BrowserDebugProxy
                     typeId,
                     className,
                     Buffer,
-                    autoExpand,
+                    autoExpand ? GetObjectCommandOptions.AutoExpandable : GetObjectCommandOptions.None,
                     Id,
                     isValueType: true,
                     isOwn: i == 0,

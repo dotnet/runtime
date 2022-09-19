@@ -11,8 +11,8 @@ namespace System.Formats.Tar
     // Windows specific methods for the TarWriter class.
     public sealed partial class TarWriter : IDisposable
     {
-        // Creating archives in Windows always sets the mode to 777
-        private const UnixFileMode DefaultWindowsMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.UserExecute;
+        // Windows files don't have a mode. Use a mode of 755 for directories and files.
+        private const UnixFileMode DefaultWindowsMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute;
 
         // Windows specific implementation of the method that reads an entry from disk and writes it into the archive stream.
         private TarEntry ConstructEntryForWriting(string fullPath, string entryName, FileOptions fileOptions)
@@ -22,15 +22,15 @@ namespace System.Formats.Tar
             FileAttributes attributes = File.GetAttributes(fullPath);
 
             TarEntryType entryType;
-            if (attributes.HasFlag(FileAttributes.ReparsePoint))
+            if ((attributes & FileAttributes.ReparsePoint) != 0)
             {
                 entryType = TarEntryType.SymbolicLink;
             }
-            else if (attributes.HasFlag(FileAttributes.Directory))
+            else if ((attributes & FileAttributes.Directory) != 0)
             {
                 entryType = TarEntryType.Directory;
             }
-            else if (attributes.HasFlag(FileAttributes.Normal) || attributes.HasFlag(FileAttributes.Archive))
+            else if ((attributes & (FileAttributes.Normal | FileAttributes.Archive)) != 0)
             {
                 entryType = Format is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
             }
@@ -45,10 +45,10 @@ namespace System.Formats.Tar
                 TarEntryFormat.Ustar => new UstarTarEntry(entryType, entryName),
                 TarEntryFormat.Pax => new PaxTarEntry(entryType, entryName),
                 TarEntryFormat.Gnu => new GnuTarEntry(entryType, entryName),
-                _ => throw new FormatException(string.Format(SR.TarInvalidFormat, Format)),
+                _ => throw new InvalidDataException(string.Format(SR.TarInvalidFormat, Format)),
             };
 
-            FileSystemInfo info = attributes.HasFlag(FileAttributes.Directory) ? new DirectoryInfo(fullPath) : new FileInfo(fullPath);
+            FileSystemInfo info = (attributes & FileAttributes.Directory) != 0 ? new DirectoryInfo(fullPath) : new FileInfo(fullPath);
 
             entry._header._mTime = info.LastWriteTimeUtc;
             entry._header._aTime = info.LastAccessTimeUtc;
@@ -63,16 +63,8 @@ namespace System.Formats.Tar
 
             if (entry.EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile)
             {
-                FileStreamOptions options = new()
-                {
-                    Mode = FileMode.Open,
-                    Access = FileAccess.Read,
-                    Share = FileShare.Read,
-                    Options = fileOptions
-                };
-
                 Debug.Assert(entry._header._dataStream == null);
-                entry._header._dataStream = new FileStream(fullPath, options);
+                entry._header._dataStream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, fileOptions);
             }
 
             return entry;

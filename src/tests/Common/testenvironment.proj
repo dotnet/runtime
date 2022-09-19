@@ -66,6 +66,7 @@
       COMPlus_JitRandomGuardedDevirtualization;
       COMPlus_JitRandomEdgeCounts;
       COMPlus_JitRandomOnStackReplacement;
+      COMPlus_JitRandomlyCollect64BitCounts;
       COMPlus_JitForceControlFlowGuard;
       COMPlus_JitCFGUseDispatcher;
       RunningIlasmRoundTrip
@@ -174,6 +175,11 @@
     <TestEnvironment Include="jitstress2_jitstressregs0x10" JitStress="2" JitStressRegs="0x10" />
     <TestEnvironment Include="jitstress2_jitstressregs0x80" JitStress="2" JitStressRegs="0x80" />
     <TestEnvironment Include="jitstress2_jitstressregs0x1000" JitStress="2" JitStressRegs="0x1000" />
+    <!-- There are multiple cases of `jitstress_random_*` so a single pipeline can run random JitStress multiple times without fear
+         of a problem due to repeating the same scenario name. Note that this file is invoked with only one of these at a time.
+    -->
+    <TestEnvironment Include="jitstress_random_1" JitStress="random" />
+    <TestEnvironment Include="jitstress_random_2" JitStress="random" />
     <TestEnvironment Include="jitelthookenabled" JitELTHookEnabled="1" />
     <TestEnvironment Include="jitelthookenabled_tiered" JitELTHookEnabled="1" TieredCompilation="1" />
     <TestEnvironment Include="tailcallstress" TailcallStress="1" />
@@ -209,15 +215,27 @@
     <TestEnvironment Include="dynamicpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" />
     <TestEnvironment Include="fullpgo" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0"/>
     <TestEnvironment Include="fullpgo_methodprofiling" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitDelegateProfiling="1" JitVTableProfiling="1" />
-    <TestEnvironment Include="fullpgo_random_gdv" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1"/>
-    <TestEnvironment Include="fullpgo_random_gdv_methodprofiling_only" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitClassProfiling="0" JitDelegateProfiling="1" JitVTableProfiling="1" />
-    <TestEnvironment Include="fullpgo_random_edge" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomEdgeCounts="1"/>
-    <TestEnvironment Include="fullpgo_random_gdv_edge" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitRandomEdgeCounts="1"/>
+    <TestEnvironment Include="fullpgo_random_gdv" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitRandomlyCollect64BitCounts="1" />
+    <TestEnvironment Include="fullpgo_random_gdv_methodprofiling_only" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitClassProfiling="0" JitDelegateProfiling="1" JitVTableProfiling="1" JitRandomlyCollect64BitCounts="1" />
+    <TestEnvironment Include="fullpgo_random_edge" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomEdgeCounts="1" JitRandomlyCollect64BitCounts="1" />
+    <TestEnvironment Include="fullpgo_random_gdv_edge" TieredPGO="1" TieredCompilation="1" TC_QuickJitForLoops="1" ReadyToRun="0" JitRandomGuardedDevirtualization="1" JitRandomEdgeCounts="1" JitRandomlyCollect64BitCounts="1" />
     <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' == 'true'" GCName="clrgc.dll"/>
     <TestEnvironment Include="gcstandalone" Condition="'$(TargetsWindows)' != 'true'" GCName="libclrgc.so"/>
     <TestEnvironment Include="gcstandaloneserver" Condition="'$(TargetsWindows)' == 'true'" gcServer="1" GCName="clrgc.dll"/>
     <TestEnvironment Include="gcstandaloneserver" Condition="'$(TargetsWindows)' != 'true'" gcServer="1" GCName="libclrgc.so"/>
   </ItemGroup>
+
+  <!-- Create a random number for use by random JitStress. Note that we want to define a random value here,
+       instead of letting the JIT create one, so the random number shows up in the log file for use reproducing
+       any failures. The number doesn't need to be too random for the purpose of JitStress. We only create a single
+       random number because we don't expect to need multiple different random numbers for different COMPlus
+       variables. The number is hexadecimal because that's how CLR config values are interpreted.
+       Using the milliseconds component of the current time is the current random number. That only gives us a
+       range of 0-999. Probably better, if it matters, would be to use `Ticks` and "mod" it into an appropriate range.
+  -->
+  <PropertyGroup>
+    <RandomNumber>$([System.DateTime]::Now.Millisecond.ToString("x"))</RandomNumber>
+  </PropertyGroup>
 
   <!-- We use target batching on the COMPlusVariable items to iterate over the all COMPlus_* environment variables
        that can be specified by a test scenario. -->
@@ -238,10 +256,13 @@
 
        2) Otherwise, the test scenario defines such COMPlus_* environment variable and the specified value
           of this variable can be extracted by using Metadata() item function.
+      
+       3) This is where we process a pseudo-value of "random" in the COMPlus table into an actual random number.
       -->
 
       <_COMPlusVariable Include="$(_COMPlusVariable)" Condition="@(_TestEnvironmentWithMetadata->Count()) == 1">
-        <Value>@(_TestEnvironmentWithMetadata->Metadata($(_COMPlusVariableMetadataName)))</Value>
+        <Value Condition="'@(_TestEnvironmentWithMetadata->Metadata($(_COMPlusVariableMetadataName)))' == 'random'">$(RandomNumber)</Value>
+        <Value Condition="'@(_TestEnvironmentWithMetadata->Metadata($(_COMPlusVariableMetadataName)))' != 'random'">@(_TestEnvironmentWithMetadata->Metadata($(_COMPlusVariableMetadataName)))</Value>
       </_COMPlusVariable>
     </ItemGroup>
 
@@ -273,7 +294,8 @@
       <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'monointerpreter'" Include="export MONO_ENV_OPTIONS=--interpreter" />
 
       <!-- Use Mono LLVM JIT when JIT-compiling the non-AOT-compiled parts of the runtime tests -->
-      <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'llvmaot'" Include="export MONO_ENV_OPTIONS=--llvm" />
+      <!-- FIXME: temporarily disable LLVM JIT and use mini JIT until LLVM JIT support is brought back -->
+      <_TestEnvFileLine Condition="'false' == 'true' and '$(RuntimeVariant)' == 'llvmaot'" Include="export MONO_ENV_OPTIONS=--llvm" />
 
       <!-- Use Mono in Full AOT mode when running the full-AOT-compiled runtime tests -->
       <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="export MONO_ENV_OPTIONS=--full-aot" />

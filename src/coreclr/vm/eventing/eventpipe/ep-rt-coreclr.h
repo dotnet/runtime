@@ -11,7 +11,6 @@
 #include <eventpipe/ep-session-provider.h>
 #include "fstream.h"
 #include "typestring.h"
-#include "win32threadpool.h"
 #include "clrversion.h"
 
 #undef EP_INFINITE_WAIT
@@ -1659,15 +1658,6 @@ ep_rt_config_value_get_output_streaming (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 	return CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeOutputStreaming) != 0;
-}
-
-static
-inline
-bool
-ep_rt_config_value_get_use_portable_thread_pool (void)
-{
-	STATIC_CONTRACT_NOTHROW;
-	return ThreadpoolMgr::UsePortableThreadPool ();
 }
 
 /*

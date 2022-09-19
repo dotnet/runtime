@@ -34,9 +34,7 @@ extern ICorJitHost* g_jitHost;
 #define COLUMN_FLAGS (COLUMN_KINDS + 32)
 #endif
 
-#if defined(DEBUG)
 unsigned Compiler::jitTotalMethodCompiled = 0;
-#endif // defined(DEBUG)
 
 #if defined(DEBUG)
 LONG Compiler::jitNestingLevel = 0;
@@ -1771,6 +1769,7 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compCompHnd    = compHnd;
     info.compMethodHnd  = methodHnd;
     info.compMethodInfo = methodInfo;
+    info.compClassHnd   = compHnd->getMethodClass(methodHnd);
 
 #ifdef DEBUG
     bRangeAllowStress = false;
@@ -1790,17 +1789,10 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     info.compClassName  = nullptr;
     info.compFullName   = nullptr;
 
-    const char* classNamePtr;
-    const char* methodName;
-
-    methodName          = eeGetMethodName(methodHnd, &classNamePtr);
-    unsigned len        = (unsigned)roundUp(strlen(classNamePtr) + 1);
-    info.compClassName  = getAllocator(CMK_DebugOnly).allocate<char>(len);
-    info.compMethodName = methodName;
-    strcpy_s((char*)info.compClassName, len, classNamePtr);
-
-    info.compFullName  = eeGetMethodFullName(methodHnd);
-    info.compPerfScore = 0.0;
+    info.compMethodName = eeGetMethodName(methodHnd, nullptr);
+    info.compClassName  = eeGetClassName(info.compClassHnd);
+    info.compFullName   = eeGetMethodFullName(methodHnd);
+    info.compPerfScore  = 0.0;
 
     info.compMethodSuperPMIIndex = g_jitHost->getIntConfigValue(W("SuperPMIMethodContextNumber"), -1);
 #endif // defined(DEBUG) || defined(LATE_DISASM) || DUMP_FLOWGRAPHS
@@ -1838,8 +1830,9 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     // Initialize this to the first phase to run.
     mostRecentlyActivePhase = PHASE_PRE_IMPORT;
 
-    // Initially, no phase checks are active.
+    // Initially, no phase checks are active, and all dumps are enabled.
     activePhaseChecks = PhaseChecks::CHECK_NONE;
+    activePhaseDumps  = PhaseDumps::DUMP_ALL;
 
 #ifdef FEATURE_TRACELOGGING
     // Make sure JIT telemetry is initialized as soon as allocations can be made
@@ -1897,16 +1890,17 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
         codeGen = nullptr;
     }
 
-    compJmpOpUsed         = false;
-    compLongUsed          = false;
-    compTailCallUsed      = false;
-    compTailPrefixSeen    = false;
-    compLocallocSeen      = false;
-    compLocallocUsed      = false;
-    compLocallocOptimized = false;
-    compQmarkRationalized = false;
-    compQmarkUsed         = false;
-    compFloatingPointUsed = false;
+    compJmpOpUsed                = false;
+    compLongUsed                 = false;
+    compTailCallUsed             = false;
+    compTailPrefixSeen           = false;
+    compMayConvertTailCallToLoop = false;
+    compLocallocSeen             = false;
+    compLocallocUsed             = false;
+    compLocallocOptimized        = false;
+    compQmarkRationalized        = false;
+    compQmarkUsed                = false;
+    compFloatingPointUsed        = false;
 
     compSuppressedZeroInit = false;
 
@@ -2270,10 +2264,9 @@ void Compiler::compSetProcessor()
     // the total sum of flags is still valid.
 
     CORINFO_InstructionSetFlags instructionSetFlags = jitFlags.GetInstructionSetFlags();
-
-    opts.compSupportsISA         = 0;
-    opts.compSupportsISAReported = 0;
-    opts.compSupportsISAExactly  = 0;
+    opts.compSupportsISA.Reset();
+    opts.compSupportsISAReported.Reset();
+    opts.compSupportsISAExactly.Reset();
 
 #if defined(TARGET_XARCH)
     instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
@@ -2370,10 +2363,7 @@ unsigned ReinterpretHexAsDecimal(unsigned in)
 
 void Compiler::compInitOptions(JitFlags* jitFlags)
 {
-#ifdef UNIX_AMD64_ABI
-    opts.compNeedToAlignFrame = false;
-#endif // UNIX_AMD64_ABI
-    memset(&opts, 0, sizeof(opts));
+    opts = {};
 
     if (compIsForInlining())
     {
@@ -2539,7 +2529,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_ALT_JIT))
     {
-        if (pfAltJit->contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        if (pfAltJit->contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
         {
             opts.altJit = true;
         }
@@ -2620,7 +2610,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     //
     if (compIsForImportOnly() && (!altJitConfig || opts.altJit))
     {
-        if (JitConfig.JitImportBreak().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        if (JitConfig.JitImportBreak().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
         {
             assert(!"JitImportBreak reached");
         }
@@ -2635,7 +2625,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         //
         if (!compIsForInlining())
         {
-            if (JitConfig.JitDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            if (JitConfig.JitDump().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             {
                 verboseDump = true;
             }
@@ -2870,32 +2860,32 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
                 opts.dspOrder = true;
             }
 
-            if (JitConfig.JitGCDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            if (JitConfig.JitGCDump().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             {
                 opts.dspGCtbls = true;
             }
 
-            if (JitConfig.JitDisasm().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            if (JitConfig.JitDisasm().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             {
                 opts.disAsm = true;
             }
 
-            if (JitConfig.JitDisasm().contains("SPILLED", nullptr, nullptr))
+            if (JitConfig.JitDisasmSpilled())
             {
                 opts.disAsmSpilled = true;
             }
 
-            if (JitConfig.JitUnwindDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            if (JitConfig.JitUnwindDump().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             {
                 opts.dspUnwind = true;
             }
 
-            if (JitConfig.JitEHDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            if (JitConfig.JitEHDump().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             {
                 opts.dspEHTable = true;
             }
 
-            if (JitConfig.JitDebugDump().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+            if (JitConfig.JitDebugDump().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             {
                 opts.dspDebugInfo = true;
             }
@@ -2933,7 +2923,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             opts.compLongAddress = true;
         }
 
-        if (JitConfig.JitOptRepeat().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        if (JitConfig.JitOptRepeat().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
         {
             opts.optRepeat = true;
         }
@@ -2943,7 +2933,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         // JitEarlyExpandMDArraysFilter.
         if (JitConfig.JitEarlyExpandMDArrays() == 0)
         {
-            if (JitConfig.JitEarlyExpandMDArraysFilter().contains(info.compMethodName, info.compClassName,
+            if (JitConfig.JitEarlyExpandMDArraysFilter().contains(info.compMethodHnd, info.compClassHnd,
                                                                   &info.compMethodInfo->args))
             {
                 opts.compJitEarlyExpandMDArrays = true;
@@ -2984,7 +2974,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         printf(""); // in our logic this causes a flush
     }
 
-    if (JitConfig.JitBreak().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+    if (JitConfig.JitBreak().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
     {
         assert(!"JitBreak reached");
     }
@@ -2996,8 +2986,8 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
 
     if (verbose ||
-        JitConfig.JitDebugBreak().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args) ||
-        JitConfig.JitBreak().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        JitConfig.JitDebugBreak().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args) ||
+        JitConfig.JitBreak().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
     {
         compDebugBreak = true;
     }
@@ -3016,14 +3006,9 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         s_pJitFunctionFileInitialized = true;
     }
 #else  // DEBUG
-    if (!JitConfig.JitDisasm().isEmpty())
+    if (JitConfig.JitDisasm().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
     {
-        const char* methodName = info.compCompHnd->getMethodName(info.compMethodHnd, nullptr);
-        const char* className  = info.compCompHnd->getClassName(info.compClassHnd);
-        if (JitConfig.JitDisasm().contains(methodName, className, &info.compMethodInfo->args))
-        {
-            opts.disAsm = true;
-        }
+        opts.disAsm = true;
     }
 #endif // !DEBUG
 
@@ -3191,27 +3176,42 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         // JitForceProcedureSplitting is used to force procedure splitting on checked assemblies.
         // This is useful for debugging on a checked build.  Note that we still only do procedure
         // splitting in the zapper.
-        if (JitConfig.JitForceProcedureSplitting().contains(info.compMethodName, info.compClassName,
+        if (JitConfig.JitForceProcedureSplitting().contains(info.compMethodHnd, info.compClassHnd,
                                                             &info.compMethodInfo->args))
         {
             opts.compProcedureSplitting = true;
         }
 
         // JitNoProcedureSplitting will always disable procedure splitting.
-        if (JitConfig.JitNoProcedureSplitting().contains(info.compMethodName, info.compClassName,
+        if (JitConfig.JitNoProcedureSplitting().contains(info.compMethodHnd, info.compClassHnd,
                                                          &info.compMethodInfo->args))
         {
             opts.compProcedureSplitting = false;
         }
         //
         // JitNoProcedureSplittingEH will disable procedure splitting in functions with EH.
-        if (JitConfig.JitNoProcedureSplittingEH().contains(info.compMethodName, info.compClassName,
+        if (JitConfig.JitNoProcedureSplittingEH().contains(info.compMethodHnd, info.compClassHnd,
                                                            &info.compMethodInfo->args))
         {
             opts.compProcedureSplittingEH = false;
         }
 #endif
     }
+
+#ifdef TARGET_64BIT
+    opts.compCollect64BitCounts = JitConfig.JitCollect64BitCounts() != 0;
+
+#ifdef DEBUG
+    if (JitConfig.JitRandomlyCollect64BitCounts() != 0)
+    {
+        CLRRandom rng;
+        rng.Init(info.compMethodHash() ^ JitConfig.JitRandomlyCollect64BitCounts() ^ 0x3485e20e);
+        opts.compCollect64BitCounts = rng.Next(2) == 0;
+    }
+#endif
+#else
+    opts.compCollect64BitCounts = false;
+#endif
 
 #ifdef DEBUG
 
@@ -3306,7 +3306,7 @@ bool Compiler::compJitHaltMethod()
     /* This method returns true when we use an INS_BREAKPOINT to allow us to step into the generated native code */
     /* Note that this these two "Jit" environment variables also work for ngen images */
 
-    if (JitConfig.JitHalt().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+    if (JitConfig.JitHalt().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
     {
         return true;
     }
@@ -3410,7 +3410,7 @@ bool Compiler::compStressCompileHelper(compStressArea stressArea, unsigned weigh
     }
 
     if (!JitConfig.JitStressOnly().isEmpty() &&
-        !JitConfig.JitStressOnly().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        !JitConfig.JitStressOnly().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
     {
         return false;
     }
@@ -3693,7 +3693,7 @@ void Compiler::compSetOptimizationLevel()
 
     if (!theMinOptsValue)
     {
-        if (JitConfig.JitMinOptsName().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        if (JitConfig.JitMinOptsName().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
         {
             theMinOptsValue = true;
         }
@@ -3882,15 +3882,6 @@ _SetMinOpts:
             codeGen->SetAlignLoops(JitConfig.JitAlignLoops() == 1);
         }
     }
-
-#if TARGET_ARM
-    // A single JitStress=1 Linux ARM32 test fails when we expand virtual calls early
-    // JIT\HardwareIntrinsics\General\Vector128_1\Vector128_1_ro
-    //
-    opts.compExpandCallsEarly = (JitConfig.JitExpandCallsEarly() == 2);
-#else
-    opts.compExpandCallsEarly = (JitConfig.JitExpandCallsEarly() != 0);
-#endif
 
     fgCanRelocateEHRegions = true;
 }
@@ -4082,8 +4073,9 @@ bool Compiler::compRsvdRegCheck(FrameLayoutState curState)
 //
 const char* Compiler::compGetTieringName(bool wantShortName) const
 {
-    const bool tier0 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
-    const bool tier1 = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
+    const bool tier0         = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0);
+    const bool tier1         = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1);
+    const bool instrumenting = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR);
 
     if (!opts.compMinOptsIsSet)
     {
@@ -4097,13 +4089,13 @@ const char* Compiler::compGetTieringName(bool wantShortName) const
 
     if (tier0)
     {
-        return "Tier0";
+        return instrumenting ? "Instrumented Tier0" : "Tier0";
     }
     else if (tier1)
     {
         if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_OSR))
         {
-            return "Tier1-OSR";
+            return instrumenting ? "Instrumented Tier1-OSR" : "Tier1-OSR";
         }
         else
         {
@@ -4150,6 +4142,31 @@ const char* Compiler::compGetTieringName(bool wantShortName) const
 }
 
 //------------------------------------------------------------------------
+// compGetPgoSourceName: get a string describing PGO source
+//
+// Returns:
+//   String describing describing PGO source (e.g. Dynamic, Static, etc)
+//
+const char* Compiler::compGetPgoSourceName() const
+{
+    switch (fgPgoSource)
+    {
+        case ICorJitInfo::PgoSource::Static:
+            return "Static PGO";
+        case ICorJitInfo::PgoSource::Dynamic:
+            return "Dynamic PGO";
+        case ICorJitInfo::PgoSource::Blend:
+            return "Blend PGO";
+        case ICorJitInfo::PgoSource::Text:
+            return "Textual PGO";
+        case ICorJitInfo::PgoSource::Sampling:
+            return "Sample-based PGO";
+        default:
+            return "";
+    }
+}
+
+//------------------------------------------------------------------------
 // compGetStressMessage: get a string describing jitstress capability
 //   for this method
 //
@@ -4171,8 +4188,7 @@ const char* Compiler::compGetStressMessage() const
         {
             // Or is it excluded via name?
             if (!JitConfig.JitStressOnly().isEmpty() ||
-                !JitConfig.JitStressOnly().contains(info.compMethodName, info.compClassName,
-                                                    &info.compMethodInfo->args))
+                !JitConfig.JitStressOnly().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
             {
                 // Not excluded -- stress can happen
                 stressMessage = " JitStress";
@@ -4361,37 +4377,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_INDXCALL, &Compiler::fgTransformIndirectCalls);
 
-    // PostImportPhase: cleanup inlinees
+    // Cleanup un-imported BBs, cleanup un-imported or
+    // partially imported try regions, add OSR step blocks.
     //
-    auto postImportPhase = [this]() {
-
-        // If this is a viable inline candidate
-        if (compIsForInlining() && !compDonotInline())
-        {
-            // Filter out unimported BBs in the inlinee
-            //
-            fgPostImportationCleanup();
-
-            // Update type of return spill temp if we have gathered
-            // better info when importing the inlinee, and the return
-            // spill temp is single def.
-            if (fgNeedReturnSpillTemp())
-            {
-                CORINFO_CLASS_HANDLE retExprClassHnd = impInlineInfo->retExprClassHnd;
-                if (retExprClassHnd != nullptr)
-                {
-                    LclVarDsc* returnSpillVarDsc = lvaGetDesc(lvaInlineeReturnSpillTemp);
-
-                    if (returnSpillVarDsc->lvSingleDef)
-                    {
-                        lvaUpdateClass(lvaInlineeReturnSpillTemp, retExprClassHnd,
-                                       impInlineInfo->retExprClassHndIsExact);
-                    }
-                }
-            }
-        }
-    };
-    DoPhase(this, PHASE_POST_IMPORT, postImportPhase);
+    DoPhase(this, PHASE_POST_IMPORT, &Compiler::fgPostImportationCleanup);
 
     // If we're importing for inlining, we're done.
     if (compIsForInlining())
@@ -4422,101 +4411,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         return;
     }
 
-#if !FEATURE_EH
-    // If we aren't yet supporting EH in a compiler bring-up, remove as many EH handlers as possible, so
-    // we can pass tests that contain try/catch EH, but don't actually throw any exceptions.
-    fgRemoveEH();
-#endif // !FEATURE_EH
-
-    // We could allow ESP frames. Just need to reserve space for
-    // pushing EBP if the method becomes an EBP-frame after an edit.
-    // Note that requiring a EBP Frame disallows double alignment.  Thus if we change this
-    // we either have to disallow double alignment for E&C some other way or handle it in EETwain.
-
-    if (opts.compDbgEnC)
-    {
-        codeGen->setFramePointerRequired(true);
-
-        // We don't care about localloc right now. If we do support it,
-        // EECodeManager::FixContextForEnC() needs to handle it smartly
-        // in case the localloc was actually executed.
-        //
-        // compLocallocUsed            = true;
-    }
-
-    // Start phases that are broadly called morphing, and includes
-    // global morph, as well as other phases that massage the trees so
-    // that we can generate code out of them.
+    // Prepare for the morph phases
     //
-    auto morphInitPhase = [this]() {
-
-        // Initialize the BlockSet epoch
-        NewBasicBlockEpoch();
-
-        fgOutgoingArgTemps = nullptr;
-
-        // Insert call to class constructor as the first basic block if
-        // we were asked to do so.
-        if (info.compCompHnd->initClass(nullptr /* field */, nullptr /* method */,
-                                        impTokenLookupContextHandle /* context */) &
-            CORINFO_INITCLASS_USE_HELPER)
-        {
-            fgEnsureFirstBBisScratch();
-            fgNewStmtAtBeg(fgFirstBB, fgInitThisClass());
-        }
-
-#ifdef DEBUG
-        if (opts.compGcChecks)
-        {
-            for (unsigned i = 0; i < info.compArgsCount; i++)
-            {
-                if (lvaGetDesc(i)->TypeGet() == TYP_REF)
-                {
-                    // confirm that the argument is a GC pointer (for debugging (GC stress))
-                    GenTree* op = gtNewLclvNode(i, TYP_REF);
-                    op          = gtNewHelperCallNode(CORINFO_HELP_CHECK_OBJ, TYP_VOID, op);
-
-                    fgEnsureFirstBBisScratch();
-                    fgNewStmtAtEnd(fgFirstBB, op);
-
-                    if (verbose)
-                    {
-                        printf("\ncompGcChecks tree:\n");
-                        gtDispTree(op);
-                    }
-                }
-            }
-        }
-#endif // DEBUG
-
-#if defined(DEBUG) && defined(TARGET_XARCH)
-        if (opts.compStackCheckOnRet)
-        {
-            lvaReturnSpCheck = lvaGrabTempWithImplicitUse(false DEBUGARG("ReturnSpCheck"));
-            lvaSetVarDoNotEnregister(lvaReturnSpCheck, DoNotEnregisterReason::ReturnSpCheck);
-            lvaGetDesc(lvaReturnSpCheck)->lvType = TYP_I_IMPL;
-        }
-#endif // defined(DEBUG) && defined(TARGET_XARCH)
-
-#if defined(DEBUG) && defined(TARGET_X86)
-        if (opts.compStackCheckOnCall)
-        {
-            lvaCallSpCheck                     = lvaGrabTempWithImplicitUse(false DEBUGARG("CallSpCheck"));
-            lvaGetDesc(lvaCallSpCheck)->lvType = TYP_I_IMPL;
-        }
-#endif // defined(DEBUG) && defined(TARGET_X86)
-
-        // Update flow graph after importation.
-        // Removes un-imported blocks, trims EH, and ensures correct OSR entry flow.
-        //
-        fgPostImportationCleanup();
-    };
-    DoPhase(this, PHASE_MORPH_INIT, morphInitPhase);
-
-#ifdef DEBUG
-    // Inliner could add basic blocks. Check that the flowgraph data is up-to-date
-    fgDebugCheckBBlist(false, false);
-#endif // DEBUG
+    DoPhase(this, PHASE_MORPH_INIT, &Compiler::fgMorphInit);
 
     // Inline callee methods into this root method
     //
@@ -4650,24 +4547,16 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         // Run an early flow graph simplification pass
         //
-        auto earlyUpdateFlowGraphPhase = [this]() {
-            constexpr bool doTailDup = false;
-            fgUpdateFlowGraph(doTailDup);
-        };
-        DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, earlyUpdateFlowGraphPhase);
+        DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
     }
 
     // Promote struct locals
     //
-    auto promoteStructsPhase = [this]() {
+    DoPhase(this, PHASE_PROMOTE_STRUCTS, &Compiler::fgPromoteStructs);
 
-        // For x64 and ARM64 we need to mark irregular parameters
-        lvaRefCountState = RCS_EARLY;
-        fgResetImplicitByRefRefCount();
-
-        fgPromoteStructs();
-    };
-    DoPhase(this, PHASE_PROMOTE_STRUCTS, promoteStructsPhase);
+    // Enable early ref counting of locals
+    //
+    lvaRefCountState = RCS_EARLY;
 
     // Figure out what locals are address-taken.
     //
@@ -4729,29 +4618,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // GS security checks for unsafe buffers
     //
-    auto gsPhase = [this]() {
-        unsigned prevBBCount = fgBBcount;
-        if (getNeedsGSSecurityCookie())
-        {
-            gsGSChecksInitCookie();
-
-            if (compGSReorderStackLayout)
-            {
-                gsCopyShadowParams();
-            }
-
-            // If we needed to create any new BasicBlocks then renumber the blocks
-            if (fgBBcount > prevBBCount)
-            {
-                fgRenumberBlocks();
-            }
-        }
-        else
-        {
-            JITDUMP("No GS security needed\n");
-        }
-    };
-    DoPhase(this, PHASE_GS_COOKIE, gsPhase);
+    DoPhase(this, PHASE_GS_COOKIE, &Compiler::gsPhase);
 
     // Compute the block and edge weights
     //
@@ -4935,25 +4802,18 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
             if (doRangeAnalysis)
             {
-                auto rangePhase = [this]() {
-                    RangeCheck rc(this);
-                    rc.OptimizeRangeChecks();
-                };
-
                 // Bounds check elimination via range analysis
                 //
-                DoPhase(this, PHASE_OPTIMIZE_INDEX_CHECKS, rangePhase);
+                DoPhase(this, PHASE_OPTIMIZE_INDEX_CHECKS, &Compiler::rangeCheckPhase);
             }
 
             if (fgModified)
             {
                 // update the flowgraph if we modified it during the optimization phase
                 //
-                auto optUpdateFlowGraphPhase = [this]() {
-                    constexpr bool doTailDup = false;
-                    fgUpdateFlowGraph(doTailDup);
-                };
-                DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, optUpdateFlowGraphPhase);
+                // Note: this invalidates loops, dominators and reachability
+                //
+                DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
 
                 // Recompute the edge weight if we have modified the flow graph
                 //
@@ -4969,11 +4829,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             RecomputeLoopInfo();
         }
     }
-
-#ifdef DEBUG
-    // Run this before we potentially tear down dominators.
-    fgDebugCheckLinks(compStressCompile(STRESS_REMORPH_TREES, 50));
-#endif
 
     // Dominator and reachability sets are no longer valid.
     // The loop table is no longer valid.
@@ -5071,6 +4926,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     DoPhase(this, PHASE_ALIGN_LOOPS, &Compiler::placeLoopAlignInstructions);
 #endif
 
+    // The common phase checks and dumps are no longer relevant past this point.
+    //
+    activePhaseChecks = PhaseChecks::CHECK_NONE;
+    activePhaseDumps  = PhaseDumps::DUMP_NONE;
+
     // Generate code
     codeGen->genGenerateCode(methodCodePtr, methodCodeSize);
 
@@ -5106,9 +4966,32 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     compJitTelemetry.NotifyEndOfCompilation();
 #endif
 
-#if defined(DEBUG)
-    ++Compiler::jitTotalMethodCompiled;
-#endif // defined(DEBUG)
+    unsigned methodsCompiled = (unsigned)InterlockedIncrement((LONG*)&Compiler::jitTotalMethodCompiled);
+
+    if (JitConfig.JitDisasmSummary() && !compIsForInlining())
+    {
+        char osrBuffer[20] = {0};
+        if (opts.IsOSR())
+        {
+            // Tiering name already includes "OSR", we just want the IL offset
+            sprintf_s(osrBuffer, 20, " @0x%x", info.compILEntry);
+        }
+
+#ifdef DEBUG
+        const char* fullName = info.compFullName;
+#else
+        const char* fullName =
+            eeGetMethodFullName(info.compMethodHnd, /* includeReturnType */ false, /* includeThisSpecifier */ false);
+#endif
+
+        char debugPart[128] = {0};
+        INDEBUG(sprintf_s(debugPart, 128, ", hash=0x%08x%s", info.compMethodHash(), compGetStressMessage()));
+
+        const bool hasProf = fgHaveProfileData();
+        printf("%4d: JIT compiled %s [%s%s%s%s, IL size=%u, code size=%u%s]\n", methodsCompiled, fullName,
+               compGetTieringName(), osrBuffer, hasProf ? " with " : "", hasProf ? compGetPgoSourceName() : "",
+               info.compILCodeSize, *methodCodeSize, debugPart);
+    }
 
     compFunctionTraceEnd(*methodCodePtr, *methodCodeSize, false);
     JITDUMP("Method code size: %d\n", (unsigned)(*methodCodeSize));
@@ -5130,25 +5013,32 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #if FEATURE_LOOP_ALIGN
 
 //------------------------------------------------------------------------
-// placeLoopAlignInstructions: Iterate over all the blocks and determine
-//      the best position to place the 'align' instruction. Inserting 'align'
-//      instructions after an unconditional branch is preferred over inserting
-//      in the block before the loop. In case there are multiple blocks
-//      having 'jmp', the one that has lower weight is preferred.
-//      If the block having 'jmp' is hotter than the block before the loop,
-//      the align will still be placed after 'jmp' because the processor should
-//      be smart enough to not fetch extra instruction beyond jmp.
+// placeLoopAlignInstructions: determine where to place alignment padding
 //
-void Compiler::placeLoopAlignInstructions()
+// Returns:
+//    Suitable phase status
+//
+// Notes:
+//    Iterate over all the blocks and determine
+//    the best position to place the 'align' instruction. Inserting 'align'
+//    instructions after an unconditional branch is preferred over inserting
+//    in the block before the loop. In case there are multiple blocks
+//    having 'jmp', the one that has lower weight is preferred.
+//    If the block having 'jmp' is hotter than the block before the loop,
+//    the align will still be placed after 'jmp' because the processor should
+//    be smart enough to not fetch extra instruction beyond jmp.
+//
+PhaseStatus Compiler::placeLoopAlignInstructions()
 {
     if (loopAlignCandidates == 0)
     {
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     JITDUMP("Inside placeLoopAlignInstructions for %d loops.\n", loopAlignCandidates);
 
     // Add align only if there were any loops that needed alignment
+    bool                   madeChanges           = false;
     weight_t               minBlockSoFar         = BB_MAX_WEIGHT;
     BasicBlock*            bbHavingAlign         = nullptr;
     BasicBlock::loopNumber currentAlignedLoopNum = BasicBlock::NOT_IN_LOOP;
@@ -5158,6 +5048,7 @@ void Compiler::placeLoopAlignInstructions()
         // Adding align instruction in prolog is not supported
         // hence just remove that loop from our list.
         fgFirstBB->unmarkLoopAlign(this DEBUG_ARG("prolog block"));
+        madeChanges = true;
     }
 
     int loopsToProcess = loopAlignCandidates;
@@ -5206,6 +5097,7 @@ void Compiler::placeLoopAlignInstructions()
                 if ((block->bbNatLoopNum != BasicBlock::NOT_IN_LOOP) && (block->bbNatLoopNum == loopTop->bbNatLoopNum))
                 {
                     loopTop->unmarkLoopAlign(this DEBUG_ARG("loop block appears before top of loop"));
+                    madeChanges = true;
                 }
                 else
                 {
@@ -5223,6 +5115,7 @@ void Compiler::placeLoopAlignInstructions()
 
             if (bbHavingAlign != nullptr)
             {
+                madeChanges = true;
                 bbHavingAlign->bbFlags |= BBF_HAS_ALIGN;
             }
 
@@ -5238,6 +5131,8 @@ void Compiler::placeLoopAlignInstructions()
     }
 
     assert(loopsToProcess == 0);
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 #endif
 
@@ -5461,13 +5356,13 @@ bool Compiler::skipMethod()
         return true;
     }
 
-    if (JitConfig.JitExclude().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+    if (JitConfig.JitExclude().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
     {
         return true;
     }
 
     if (!JitConfig.JitInclude().isEmpty() &&
-        !JitConfig.JitInclude().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args))
+        !JitConfig.JitInclude().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
     {
         return true;
     }
@@ -5773,9 +5668,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     {
         impTokenLookupContextHandle = impInlineInfo->tokenLookupContextHandle;
 
-        assert(impInlineInfo->inlineCandidateInfo->clsHandle == info.compCompHnd->getMethodClass(info.compMethodHnd));
-        info.compClassHnd = impInlineInfo->inlineCandidateInfo->clsHandle;
-
+        assert(impInlineInfo->inlineCandidateInfo->clsHandle == info.compClassHnd);
         assert(impInlineInfo->inlineCandidateInfo->clsAttr == info.compCompHnd->getClassAttribs(info.compClassHnd));
         // printf("%x != %x\n", impInlineInfo->inlineCandidateInfo->clsAttr,
         // info.compCompHnd->getClassAttribs(info.compClassHnd));
@@ -5785,7 +5678,6 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     {
         impTokenLookupContextHandle = METHOD_BEING_COMPILED_CONTEXT();
 
-        info.compClassHnd  = info.compCompHnd->getMethodClass(info.compMethodHnd);
         info.compClassAttr = info.compCompHnd->getClassAttribs(info.compClassHnd);
     }
 
@@ -6710,24 +6602,6 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     }
 
 #ifdef DEBUG
-    if ((JitConfig.DumpJittedMethods() == 1) && !compIsForInlining())
-    {
-        enum
-        {
-            BUFSIZE = 20
-        };
-        char osrBuffer[BUFSIZE] = {0};
-        if (opts.IsOSR())
-        {
-            // Tiering name already includes "OSR", we just want the IL offset
-            //
-            sprintf_s(osrBuffer, BUFSIZE, " @0x%x", info.compILEntry);
-        }
-
-        printf("Compiling %4d %s::%s, IL size = %u, hash=0x%08x %s%s%s\n", Compiler::jitTotalMethodCompiled,
-               info.compClassName, info.compMethodName, info.compILCodeSize, info.compMethodHash(),
-               compGetTieringName(), osrBuffer, compGetStressMessage());
-    }
     if (compIsForInlining())
     {
         compGenTreeID   = impInlineInfo->InlinerCompiler->compGenTreeID;
@@ -10139,6 +10013,10 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                 m_returnSpCheck++;
                 break;
 
+            case DoNotEnregisterReason::CallSpCheck:
+                m_callSpCheck++;
+                break;
+
             case DoNotEnregisterReason::SimdUserForcesDep:
                 m_simdUserForcesDep++;
                 break;
@@ -10261,6 +10139,7 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_swizzleArg, notEnreg);
     PRINT_STATS(m_blockOpRet, notEnreg);
     PRINT_STATS(m_returnSpCheck, notEnreg);
+    PRINT_STATS(m_callSpCheck, notEnreg);
     PRINT_STATS(m_simdUserForcesDep, notEnreg);
 
     fprintf(fout, "\nAddr exposed details:\n");

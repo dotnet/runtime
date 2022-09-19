@@ -38,7 +38,7 @@ namespace System.Net.Http
         // Header decoding.
         private QPackDecoder _headerDecoder;
         private HeaderState _headerState;
-        private long _headerBudgetRemaining;
+        private int _headerBudgetRemaining;
 
         /// <summary>Reusable array used to get the values for each header being written to the wire.</summary>
         private string[] _headerValues = Array.Empty<string>();
@@ -73,7 +73,7 @@ namespace System.Net.Http
             _sendBuffer = new ArrayBuffer(initialSize: 64, usePool: true);
             _recvBuffer = new ArrayBuffer(initialSize: 64, usePool: true);
 
-            _headerBudgetRemaining = connection.Pool.Settings._maxResponseHeadersLength * 1024L; // _maxResponseHeadersLength is in KiB.
+            _headerBudgetRemaining = connection.Pool.Settings.MaxResponseHeadersByteLength;
             _headerDecoder = new QPackDecoder(maxHeadersLength: (int)Math.Min(int.MaxValue, _headerBudgetRemaining));
 
             _requestBodyCancellationSource = new CancellationTokenSource();
@@ -842,11 +842,11 @@ namespace System.Net.Http
             // https://tools.ietf.org/html/draft-ietf-quic-http-24#section-4.1.1
             if (headersLength > _headerBudgetRemaining)
             {
-                _stream.Abort(QuicAbortDirection.Write, (long)Http3ErrorCode.ExcessiveLoad);
-                throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _connection.Pool.Settings._maxResponseHeadersLength * 1024L));
+                _stream.Abort(QuicAbortDirection.Read, (long)Http3ErrorCode.ExcessiveLoad);
+                throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _connection.Pool.Settings.MaxResponseHeadersByteLength));
             }
 
-            _headerBudgetRemaining -= headersLength;
+            _headerBudgetRemaining -= (int)headersLength;
 
             while (headersLength != 0)
             {

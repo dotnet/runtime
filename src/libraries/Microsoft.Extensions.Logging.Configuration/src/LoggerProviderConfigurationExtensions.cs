@@ -13,6 +13,7 @@ namespace Microsoft.Extensions.Logging.Configuration
     /// </summary>
     public static class LoggerProviderOptions
     {
+        internal const string RequiresDynamicCodeMessage = "Binding TOptions to configuration values may require generating dynamic code at runtime.";
         internal const string TrimmingRequiresUnreferencedCodeMessage = "TOptions's dependent types may have their members trimmed. Ensure all required members are preserved.";
 
         /// <summary>
@@ -21,6 +22,7 @@ namespace Microsoft.Extensions.Logging.Configuration
         /// <param name="services">The <see cref="IServiceCollection"/> to register on.</param>
         /// <typeparam name="TOptions">The options class </typeparam>
         /// <typeparam name="TProvider">The provider class</typeparam>
+        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(TrimmingRequiresUnreferencedCodeMessage)]
         public static void RegisterProviderOptions<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TOptions, TProvider>(IServiceCollection services) where TOptions : class
         {

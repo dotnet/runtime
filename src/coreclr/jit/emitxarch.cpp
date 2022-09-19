@@ -3874,7 +3874,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
             assert(src->IsCnsFltOrDbl());
             GenTreeDblCon* dblCns = src->AsDblCon();
 
-            CORINFO_FIELD_HANDLE hnd = emitFltOrDblConst(dblCns->gtDconVal, emitTypeSize(dblCns));
+            CORINFO_FIELD_HANDLE hnd = emitFltOrDblConst(dblCns->DconValue(), emitTypeSize(dblCns));
             emitIns_R_C(ins, attr, dst->GetRegNum(), hnd, 0);
         }
     }
@@ -8710,7 +8710,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
             }
             else if (disp < 1000)
             {
-                printf("%d", (unsigned)disp);
+                printf("%02XH", (unsigned)disp);
             }
             else if (disp <= 0xFFFF)
             {
@@ -8729,7 +8729,7 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
             }
             else if (disp > -1000)
             {
-                printf("-%d", (unsigned)-disp);
+                printf("-%02XH", (unsigned)-disp);
             }
             else if (disp >= -0xFFFF)
             {
