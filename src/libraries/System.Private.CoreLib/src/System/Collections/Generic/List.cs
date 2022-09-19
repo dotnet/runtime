@@ -866,7 +866,7 @@ namespace System.Collections.Generic
             return Array.LastIndexOf(_items, item, index, count);
         }
 
-        // Removes the element at the given index. The size of the list is
+        // Removes the first occurrence given element, if found. The size of the list is
         // decreased by one.
         public bool Remove(T item)
         {
