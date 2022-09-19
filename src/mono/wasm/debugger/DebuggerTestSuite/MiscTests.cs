@@ -1067,7 +1067,11 @@ namespace DebuggerTests
                         {
                             myField = TNumber(0),
                             myField2 = TNumber(0),
-                        }, "this_props", num_fields: 2);
+                            propB = TGetter("propB"),
+                            propC = TGetter("propC"),
+                            e = TNumber(50),
+                            f = TNumber(60),
+                        }, "this_props", num_fields: 6);
                     }
                     else
                     {

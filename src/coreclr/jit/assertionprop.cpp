@@ -3420,6 +3420,18 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
                 // Here we have to allocate a new 'large' node to replace the old one
                 newTree = gtNewIconHandleNode(curAssertion->op2.u1.iconVal,
                                               curAssertion->op2.u1.iconFlags & GTF_ICON_HDL_MASK);
+
+                // Make sure we don't retype const gc handles to TYP_I_IMPL
+                // Although, it's possible for e.g. GTF_ICON_STATIC_HDL
+                if (!newTree->IsIntegralConst(0) && newTree->IsIconHandle(GTF_ICON_STR_HDL))
+                {
+                    if (tree->TypeIs(TYP_BYREF))
+                    {
+                        // Conservatively don't allow propagation of ICON TYP_REF into BYREF
+                        return nullptr;
+                    }
+                    newTree->ChangeType(tree->TypeGet());
+                }
             }
             else
             {
