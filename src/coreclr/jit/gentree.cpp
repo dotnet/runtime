@@ -23374,6 +23374,150 @@ regNumber GenTree::ExtractTempReg(regMaskTP mask /* = (regMaskTP)-1 */)
 }
 
 //------------------------------------------------------------------------
+// GetNum: Get the SSA number for a given field.
+//
+// Arguments:
+//    compiler - The Compiler instance
+//    index    - The field index
+//
+// Return Value:
+//    The SSA number corresponding to the field at "index".
+//
+unsigned SsaNumInfo::GetNum(Compiler* compiler, unsigned index) const
+{
+    assert(IsComposite());
+    if (HasCompactFormat())
+    {
+        return (m_value >> (index * BITS_PER_SIMPLE_NUM)) & SIMPLE_NUM_MASK;
+    }
+
+    // We expect this case to be very rare (outside stress).
+    return *GetOutlinedNumSlot(compiler, index);
+}
+
+//------------------------------------------------------------------------
+// GetOutlinedNumSlot: Get a pointer the "outlined" SSA number for a field.
+//
+// Arguments:
+//    compiler - The Compiler instance
+//    index    - The field index
+//
+// Return Value:
+//    Pointer to the SSA number corresponding to the field at "index".
+//
+unsigned* SsaNumInfo::GetOutlinedNumSlot(Compiler* compiler, unsigned index) const
+{
+    assert(IsComposite() && !HasCompactFormat());
+
+    // The "outlined" format for a composite number encodes a 30-bit-sized index.
+    // First, extract it: this will need "bit stitching" from the two parts.
+    unsigned outIndexLow  = m_value & OUTLINED_INDEX_LOW_MASK;
+    unsigned outIndexHigh = (m_value & OUTLINED_INDEX_HIGH_MASK) >> 1;
+    unsigned outIndex     = outIndexLow | outIndexHigh;
+
+    return &compiler->m_outlinedCompositeSsaNums->GetRefNoExpand(outIndex + index);
+}
+
+//------------------------------------------------------------------------
+// NumCanBeEncodedCompactly: Can the given field ref be encoded compactly?
+//
+// Arguments:
+//    ssaNum - The SSA number
+//    index  - The field index
+//
+// Return Value:
+//    Whether the ref of the field at "index" can be encoded through the
+//    "compact" encoding scheme.
+//
+// Notes:
+//    Under stress, we randomly reduce the number of refs that can be
+//    encoded compactly, to stress the outlined encoding logic.
+//
+/* static */ bool SsaNumInfo::NumCanBeEncodedCompactly(unsigned index, unsigned ssaNum)
+{
+#ifdef DEBUG
+    if (JitTls::GetCompiler()->compStressCompile(Compiler::STRESS_SSA_INFO, 20))
+    {
+        return (ssaNum - 2) < index;
+    }
+#endif // DEBUG
+
+    assert(index < MAX_NumOfFieldsInPromotableStruct);
+
+    return (ssaNum <= MAX_SIMPLE_NUM) &&
+           ((index < SIMPLE_NUM_COUNT) || (SIMPLE_NUM_COUNT <= MAX_NumOfFieldsInPromotableStruct));
+}
+
+//------------------------------------------------------------------------
+// Composite: Form a composite SSA number, one capable of representing refs
+//    to more than one SSA local.
+//
+// Arguments:
+//    baseNum      - The SSA number to base the new one on (composite/invalid)
+//    compiler     - The Compiler instance
+//    parentLclNum - The promoted local representing a "whole" ref
+//    index        - The field index
+//    ssaNum       - The SSA number
+//
+// Return Value:
+//    A new, always composite, SSA number that represents all of the refs
+//    in "baseNum", with the field at "index" set to "ssaNum".
+//
+// Notes:
+//    It is assumed that the new number represents the same "whole" ref as
+//    the old one (the same parent local). If the SSA number needs to be
+//    reset fully, a new, RESERVED one should be created, and composed from
+//    with the appropriate parent reference.
+//
+/* static */ SsaNumInfo SsaNumInfo::Composite(
+    SsaNumInfo baseNum, Compiler* compiler, unsigned parentLclNum, unsigned index, unsigned ssaNum)
+{
+    assert(baseNum.IsInvalid() || baseNum.IsComposite());
+    assert(compiler->lvaGetDesc(parentLclNum)->lvPromoted);
+
+    if (NumCanBeEncodedCompactly(index, ssaNum) && (baseNum.IsInvalid() || baseNum.HasCompactFormat()))
+    {
+        unsigned ssaNumEncoded = ssaNum << (index * BITS_PER_SIMPLE_NUM);
+        if (baseNum.IsInvalid())
+        {
+            return SsaNumInfo(COMPOSITE_ENCODING_BIT | ssaNumEncoded);
+        }
+
+        return SsaNumInfo(ssaNumEncoded | baseNum.m_value);
+    }
+
+    if (!baseNum.IsInvalid())
+    {
+        *baseNum.GetOutlinedNumSlot(compiler, index) = ssaNum;
+        return baseNum;
+    }
+
+    // This is the only path where we can encounter a null table.
+    if (compiler->m_outlinedCompositeSsaNums == nullptr)
+    {
+        CompAllocator alloc                  = compiler->getAllocator(CMK_SSA);
+        compiler->m_outlinedCompositeSsaNums = new (alloc) JitExpandArrayStack<unsigned>(alloc);
+    }
+
+    // Allocate a new chunk for the field numbers. Once allocated, it cannot be expanded.
+    int                            count              = compiler->lvaGetDesc(parentLclNum)->lvFieldCnt;
+    JitExpandArrayStack<unsigned>* table              = compiler->m_outlinedCompositeSsaNums;
+    int                            outIdx             = table->Size();
+    unsigned*                      pLastSlot          = &table->GetRef(outIdx + count - 1); // This will grow the table.
+    pLastSlot[-(count - 1) + static_cast<int>(index)] = ssaNum;
+
+    // Split the index if it does not fit into a small encoding.
+    if ((outIdx & ~OUTLINED_INDEX_LOW_MASK) != 0)
+    {
+        int outIdxLow  = outIdx & OUTLINED_INDEX_LOW_MASK;
+        int outIdxHigh = (outIdx << 1) & OUTLINED_INDEX_HIGH_MASK;
+        outIdx         = outIdxLow | outIdxHigh;
+    }
+
+    return SsaNumInfo(COMPOSITE_ENCODING_BIT | OUTLINED_ENCODING_BIT | outIdx);
+}
+
+//------------------------------------------------------------------------
 // GetLclOffs: if `this` is a field or a field address it returns offset
 // of the field inside the struct, for not a field it returns 0.
 //

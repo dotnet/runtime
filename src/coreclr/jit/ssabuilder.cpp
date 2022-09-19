@@ -83,6 +83,11 @@ void Compiler::fgResetForSsa()
         m_memorySsaMap[memoryKind] = nullptr;
     }
 
+    if (m_outlinedCompositeSsaNums != nullptr)
+    {
+        m_outlinedCompositeSsaNums->Reset();
+    }
+
     for (BasicBlock* const blk : Blocks())
     {
         // Eliminate phis.
