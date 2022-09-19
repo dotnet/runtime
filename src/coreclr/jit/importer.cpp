@@ -12429,29 +12429,27 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
             // Jit can only inline expand the normal CHKCASTCLASS helper.
             canExpandInline = (helper == CORINFO_HELP_CHKCASTCLASS);
         }
-        else
+        else if (helper == CORINFO_HELP_ISINSTANCEOFCLASS)
         {
-            if (helper == CORINFO_HELP_ISINSTANCEOFCLASS)
+            // If the class is exact, the jit can expand the IsInst check inline.
+            canExpandInline = isClassExact;
+        }
+
+        if (isClassExact && ((helper == CORINFO_HELP_ISINSTANCEOFARRAY) || (helper == CORINFO_HELP_CHKCASTARRAY)))
+        {
+            // We have "obj isinst/castclass T[]" and in case if T is sealed we can still perform
+            // the fast pMT check (in case if T[] -> obj.GetType is legal in jit-time)
+            bool                 isExact = false;
+            bool                 nonNull = false;
+            CORINFO_CLASS_HANDLE op1Cls  = gtGetClassHandle(op1, &isExact, &nonNull);
+            if (op1Cls != NO_CLASS_HANDLE)
             {
-                // If the class is exact, the jit can expand the IsInst check inline.
-                canExpandInline = isClassExact;
-            }
-            else if ((helper == CORINFO_HELP_ISINSTANCEOFARRAY) && isClassExact)
-            {
-                // We have "obj is T[]" and in case if T is sealed we can still perform
-                // the fast pMT check (in case if T[] -> obj.GetType is jit-time legal)
-                bool                 isExact = false;
-                bool                 nonNull = false;
-                CORINFO_CLASS_HANDLE op1Cls  = gtGetClassHandle(op1, &isExact, &nonNull);
-                if (op1Cls != NO_CLASS_HANDLE)
+                CORINFO_CLASS_HANDLE elementCls = NO_CLASS_HANDLE;
+                info.compCompHnd->getChildType(pResolvedToken->hClass, &elementCls);
+                if ((elementCls != NO_CLASS_HANDLE) && impIsClassExact(elementCls))
                 {
-                    CORINFO_CLASS_HANDLE elementCls = NO_CLASS_HANDLE;
-                    info.compCompHnd->getChildType(pResolvedToken->hClass, &elementCls);
-                    if ((elementCls != NO_CLASS_HANDLE) && impIsClassExact(elementCls))
-                    {
-                        canExpandInline = info.compCompHnd->compareTypesForCast(pResolvedToken->hClass, op1Cls) ==
-                                          TypeCompareState::Must;
-                    }
+                    canExpandInline =
+                        info.compCompHnd->compareTypesForCast(pResolvedToken->hClass, op1Cls) == TypeCompareState::Must;
                 }
             }
         }
