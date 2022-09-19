@@ -12439,19 +12439,14 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         {
             // We have "obj isinst/castclass T[]" and in case if T is sealed we can still perform
             // the fast pMT check (in case if T[] -> obj.GetType is legal in jit-time)
-            bool                 isExact = false;
-            bool                 nonNull = false;
-            CORINFO_CLASS_HANDLE op1Cls  = gtGetClassHandle(op1, &isExact, &nonNull);
-            if (op1Cls != NO_CLASS_HANDLE)
+
+            CORINFO_CLASS_HANDLE elementCls = NO_CLASS_HANDLE;
+            info.compCompHnd->getChildType(pResolvedToken->hClass, &elementCls);
+            if ((elementCls != NO_CLASS_HANDLE) && impIsClassExact(elementCls))
             {
-                CORINFO_CLASS_HANDLE elementCls = NO_CLASS_HANDLE;
-                info.compCompHnd->getChildType(pResolvedToken->hClass, &elementCls);
-                if ((elementCls != NO_CLASS_HANDLE) && impIsClassExact(elementCls))
-                {
-                    canExpandInline =
-                        info.compCompHnd->isSDArray(pResolvedToken->hClass) &&
-                        info.compCompHnd->compareTypesForCast(pResolvedToken->hClass, op1Cls) == TypeCompareState::Must;
-                }
+                // Check if elementCls is not something shared
+                canExpandInline =
+                    info.compCompHnd->compareTypesForEquality(elementCls, elementCls) == TypeCompareState::Must;
             }
         }
 
