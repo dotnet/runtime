@@ -129,7 +129,7 @@
     <ItemGroup>
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="full" />
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nimt-trampolines=2000" />
-      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="ntrampolines=10000" />
+      <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="ntrampolines=20000" />
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nrgctx-fetch-trampolines=256" />
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="ngsharedvt-trampolines=4400" />
       <MonoAotOption Condition="'$(MonoFullAot)' == 'true'" Include="nftnptr-arg-trampolines=4000" />
