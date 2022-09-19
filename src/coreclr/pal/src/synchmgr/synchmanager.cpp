@@ -1519,6 +1519,7 @@ namespace CorUnix
         if (NO_ERROR == palErr)
         {
             pSynchManager->m_dwWorkerThreadTid = (DWORD)osThreadId;
+#if defined(__linux__) || defined(__FreeBSD__)
             palErr = InternalSetThreadDescription(pthrCurrent,
                                                   hWorkerThread,
                                                   W(".NET SynchManager"));
@@ -1526,7 +1527,7 @@ namespace CorUnix
             {
                 ERROR("Unable to set worker thread name\n");
             }
-
+#endif
             palErr = InternalGetThreadDataFromHandle(pthrCurrent,
                                                      hWorkerThread,
                                                      &pSynchManager->m_pthrWorker,

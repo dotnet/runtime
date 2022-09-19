@@ -1311,10 +1311,12 @@ LExit:
 
     DebuggerRCThread* t = (DebuggerRCThread*)g_pRCThread;
 
+#if defined(__linux__) || defined(__FreeBSD__)
     if (FAILED(SetThreadDescription(t->m_thread, W(".NET Debugger"))))
     {
         LOG((LF_CORDB, LL_INFO10000, "DebuggerRCThread name set failed\n"));
     }
+#endif
 
     t->ThreadProc(); // this thread is local, go and become the helper
 

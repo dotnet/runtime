@@ -156,8 +156,9 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB, AppDomainEnumer
         Release();
         return E_OUTOFMEMORY;
     }
-
+#if defined(__linux__) || defined(__FreeBSD__)
     SetThreadDescription(m_hTransportThread, W(".NET Debug Transport"));
+#endif
     return S_OK;
 }
 
