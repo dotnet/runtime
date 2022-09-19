@@ -1884,13 +1884,14 @@ class SuperPMIReplayAsmDiffs:
                     html_color(num_contexts_color, "{:,d}".format(diffed_minopts_contexts)),
                     html_color(num_contexts_color, "{:,d}".format(diffed_opts_contexts))))
 
-                missed_color = "#d35400"
-                base_color = missed_color if missing_base_contexts > 0 else "green"
-                diff_color = missed_color if missing_diff_contexts > 0 else "green"
-                write_fh.write("{} contexts: base: {}, diff: {}\n\n".format(
-                    html_color(missed_color, "MISSED"),
-                    html_color(base_color, "{:,d}".format(missing_base_contexts)),
-                    html_color(diff_color, "{:,d}".format(missing_diff_contexts))))
+                if missing_base_contexts > 0 or missing_diff_contexts > 0:
+                    missed_color = "#d35400"
+                    base_color = missed_color if missing_base_contexts > 0 else "green"
+                    diff_color = missed_color if missing_diff_contexts > 0 else "green"
+                    write_fh.write("{} contexts: base: {}, diff: {}\n\n".format(
+                        html_color(missed_color, "MISSED"),
+                        html_color(base_color, "{:,d}".format(missing_base_contexts)),
+                        html_color(diff_color, "{:,d}".format(missing_diff_contexts))))
 
                 if any(has_diff for (_, _, _, has_diff, _) in asm_diffs):
                     def write_pivot_section(row):
