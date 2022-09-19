@@ -2030,9 +2030,7 @@ ep_rt_thread_create (
 				DWORD thread_id = 0;
 				HANDLE server_thread = ::CreateThread (nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(thread_func), nullptr, 0, &thread_id);
 				if (server_thread != NULL) {
-#if defined(__linux__) || defined(__FreeBSD__)
-					::SetThreadDescription(server_thread, W(".NET EventPipe"));
-#endif
+					::SetThreadName(server_thread, W(".NET EventPipe"));
 					::CloseHandle (server_thread);
 					if (id)
 						*reinterpret_cast<DWORD *>(id) = thread_id;
