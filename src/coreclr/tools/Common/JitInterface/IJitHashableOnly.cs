@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using Internal.TypeSystem;
 
-namespace Internal.TypeSystem
+namespace Internal.JitInterface
 {
     public class JitObjectComparer : IEqualityComparer<object>
     {
@@ -34,6 +34,10 @@ namespace Internal.TypeSystem
     // Implementors of this should throw an exception in their implementation of
     // ComputeHashCode so that the normal GetHashCode function does not work.
     // This is used to prevent putting these objects into long lived storage.
+    //
+    // The goal here is to make it difficult to accidentally store a type into
+    // another hashtable that isn't associated with the JIT itself, but still
+    // allow the jit side code use standard collections.
     public interface IJitHashableOnly
     {
         int GetJitVisibleHashCode();
