@@ -10,7 +10,6 @@ namespace Mono.Linker.Tests.Cases.References
 	/// Because of that, `copied` needs to have it's reference to `library` removed even though we specified an assembly action of `copy`
 	/// </summary>
 	[SetupLinkerAction ("copy", "copied")]
-	[SetupLinkerArgument ("--keep-facades", "false")]
 	[SetupCompileBefore ("library.dll", new[] { "Dependencies/AssemblyOnlyUsedByUsing_Lib.cs" })]
 
 	// When csc is used, `copied.dll` will have a reference to `library.dll`

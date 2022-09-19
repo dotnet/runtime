@@ -40,8 +40,7 @@ namespace Mono.Linker
 				context.LogError (null, DiagnosticId.XmlException, rsc.Name, ex.ToString ());
 			}
 
-			if (marker != null)
-				marker.Mark ();
+			marker?.Mark ();
 		}
 
 		public static SubstitutionInfo? ProcessSubstitutions (AssemblyDefinition assembly, LinkContext context)

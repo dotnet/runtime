@@ -7,7 +7,6 @@ using Mono.Linker.Tests.Cases.TypeForwarding.Dependencies;
 namespace Mono.Linker.Tests.Cases.TypeForwarding
 {
 	[SetupLinkerDefaultAction ("copyused")]
-	[KeepTypeForwarderOnlyAssemblies ("false")]
 
 	[SetupCompileBefore ("Forwarder.dll", new[] { "Dependencies/ReferenceImplementationLibrary.cs" }, defines: new[] { "INCLUDE_REFERENCE_IMPL" })]
 

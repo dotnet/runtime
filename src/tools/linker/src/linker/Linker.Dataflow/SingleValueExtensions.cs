@@ -30,9 +30,7 @@ namespace ILLink.Shared.TrimAnalysis
 
 			seenNodes.Add (node);
 
-			if (allNodesSeen != null) {
-				allNodesSeen.Add (node);
-			}
+			allNodesSeen?.Add (node);
 
 			bool foundCycle = false;
 			switch (node) {

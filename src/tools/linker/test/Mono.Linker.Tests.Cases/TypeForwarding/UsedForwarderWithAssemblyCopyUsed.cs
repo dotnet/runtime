@@ -9,7 +9,6 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 	// copyused - Forwarder.dll and Implementation.dll
 	[SetupLinkerAction ("link", "test")]
 	[SetupLinkerDefaultAction ("copyused")]
-	[KeepTypeForwarderOnlyAssemblies ("false")]
 
 	[SetupCompileBefore ("Forwarder.dll", new[] { "Dependencies/ReferenceImplementationLibrary.cs" }, defines: new[] { "INCLUDE_REFERENCE_IMPL" })]
 
@@ -19,6 +18,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 
 	[RemovedAssembly ("Forwarder.dll")]
 	[KeptMemberInAssembly ("Implementation.dll", typeof (ImplementationLibrary), "GetSomeValue()")]
+	[RemovedAssemblyReference ("test", "Forwarder")]
 	class UsedForwarderWithAssemblyCopyUsed
 	{
 		static void Main ()

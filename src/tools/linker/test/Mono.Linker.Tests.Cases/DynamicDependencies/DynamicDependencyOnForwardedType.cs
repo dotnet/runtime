@@ -16,6 +16,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 	[SetupCompileBefore ("FacadeAssembly.dll", new[] { "Dependencies/ReferenceImplementationLibrary.cs" })]
 	[SetupCompileAfter ("ImplementationLibrary.dll", new[] { "Dependencies/ImplementationLibrary.cs" })]
 	[SetupCompileAfter ("FacadeAssembly.dll", new[] { "Dependencies/FacadeAssembly.cs" }, new[] { "ImplementationLibrary.dll" })]
+	[KeptAssembly ("FacadeAssembly.dll")]
 	[LogDoesNotContain ("IL2036")]
 	public class DynamicDependencyOnForwardedType
 	{

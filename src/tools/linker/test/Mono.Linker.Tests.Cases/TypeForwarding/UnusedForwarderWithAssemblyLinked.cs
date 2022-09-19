@@ -6,9 +6,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 {
 	// Actions:
 	// link - This assembly, Forwarder.dll and Implementation.dll
-	// --keep-facades
 	[SetupLinkerDefaultAction ("link")]
-	[KeepTypeForwarderOnlyAssemblies ("true")]
 
 	[SetupCompileBefore ("Forwarder.dll", new[] { "Dependencies/ReferenceImplementationLibrary.cs" }, defines: new[] { "INCLUDE_REFERENCE_IMPL" })]
 
@@ -16,10 +14,9 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 	[SetupCompileAfter ("Implementation.dll", new[] { "Dependencies/ImplementationLibrary.cs" })]
 	[SetupCompileAfter ("Forwarder.dll", new[] { "Dependencies/ForwarderLibrary.cs" }, references: new[] { "Implementation.dll" })]
 
-	[KeptAssembly ("Forwarder.dll")]
-	[RemovedForwarder ("Forwarder.dll", "ImplementationLibrary")]
+	[RemovedAssembly ("Forwarder.dll")]
 	[RemovedAssembly ("Implementation.dll")]
-	class UnusedForwarderWithAssemblyLinkedAndFacadesKept
+	class UnusedForwarderWithAssemblyLinked
 	{
 		static void Main ()
 		{

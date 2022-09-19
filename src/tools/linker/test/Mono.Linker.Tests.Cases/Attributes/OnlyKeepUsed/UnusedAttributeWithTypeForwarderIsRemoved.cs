@@ -5,13 +5,12 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
 {
-	[KeepTypeForwarderOnlyAssemblies ("true")]
 	[SetupLinkerArgument ("--used-attrs-only", "true")]
 	[SetupCompileBefore ("library.dll", new[] { "Dependencies/UnusedAttributeWithTypeForwarderIsRemoved_Lib.cs" })]
 	[SetupCompileAfter ("implementation.dll", new[] { "Dependencies/UnusedAttributeWithTypeForwarderIsRemoved_Lib.cs" })]
 	[SetupCompileAfter ("library.dll", new[] { "Dependencies/UnusedAttributeWithTypeForwarderIsRemoved_Forwarder.cs" }, new[] { "implementation.dll" })]
 
-	[RemovedTypeInAssembly ("library.dll", typeof (UnusedAttributeWithTypeForwarderIsRemoved_LibAttribute))]
+	[RemovedAssembly ("library.dll")]
 	[RemovedTypeInAssembly ("implementation.dll", typeof (UnusedAttributeWithTypeForwarderIsRemoved_LibAttribute))]
 	class UnusedAttributeWithTypeForwarderIsRemoved
 	{

@@ -352,12 +352,6 @@ namespace Mono.Linker
 
 						continue;
 
-					case "--keep-facades":
-						if (!GetBoolParam (token, l => context.KeepTypeForwarderOnlyAssemblies = l))
-							return -1;
-
-						continue;
-
 					case "--keep-dep-attributes":
 						if (!GetBoolParam (token, l => set_optimizations.Add ((CodeOptimizations.RemoveDynamicDependencyAttribute, null, !l))))
 							return -1;
@@ -617,9 +611,6 @@ namespace Mono.Linker
 
 						context.OutputDirectory = outputDirectory;
 
-						continue;
-					case "t":
-						context.KeepTypeForwarderOnlyAssemblies = true;
 						continue;
 					case "x": {
 							if (!GetStringParam (token, out string? xmlFile))
@@ -1335,7 +1326,6 @@ namespace Mono.Linker
 			Console.WriteLine ("  --custom-data KEY=VALUE   Populates context data set with user specified key-value pair");
 			Console.WriteLine ("  --deterministic           Produce a deterministic output for modified assemblies");
 			Console.WriteLine ("  --ignore-descriptors      Skips reading embedded descriptors (short -z). Defaults to false");
-			Console.WriteLine ("  --keep-facades            Keep assemblies with type-forwarders (short -t). Defaults to false");
 			Console.WriteLine ("  --skip-unresolved         Ignore unresolved types, methods, and assemblies. Defaults to false");
 			Console.WriteLine ("  --output-pinvokes PATH    Output a JSON file with all modules and entry points of the P/Invokes found");
 			Console.WriteLine ("  --verbose                 Log messages indicating progress and warnings");
@@ -1422,8 +1412,7 @@ namespace Mono.Linker
 
 		public void Dispose ()
 		{
-			if (context != null)
-				context.Dispose ();
+			context?.Dispose ();
 		}
 	}
 }
