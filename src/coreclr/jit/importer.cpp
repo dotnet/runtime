@@ -5960,17 +5960,36 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             result = NI_System_Numerics_BitOperations_PopCount;
         }
     }
-#ifdef FEATURE_HW_INTRINSICS
     else if (strcmp(namespaceName, "System.Numerics") == 0)
     {
+#ifdef FEATURE_HW_INTRINSICS
         CORINFO_SIG_INFO sig;
         info.compCompHnd->getMethodSig(method, &sig);
 
         int sizeOfVectorT = getSIMDVectorRegisterByteLength();
 
-        result = SimdAsHWIntrinsicInfo::lookupId(&sig, className, methodName, enclosingClassName, sizeOfVectorT);
-    }
+        result = SimdAsHWIntrinsicInfo::lookupId(this, &sig, className, methodName, enclosingClassName, sizeOfVectorT);
 #endif // FEATURE_HW_INTRINSICS
+
+        if (result == NI_Illegal)
+        {
+            if (strcmp(methodName, "get_IsHardwareAccelerated") == 0)
+            {
+                // This allows the relevant code paths to be dropped as dead code even
+                // on platforms where FEATURE_HW_INTRINSICS is not supported.
+
+                result = NI_IsSupported_False;
+            }
+            else if (gtIsRecursiveCall(method))
+            {
+                // For the framework itself, any recursive intrinsics will either be
+                // only supported on a single platform or will be guarded by a relevant
+                // IsSupported check so the throw PNSE will be valid or dropped.
+
+                result = NI_Throw_PlatformNotSupportedException;
+            }
+        }
+    }
     else if (strcmp(namespaceName, "System.Runtime.CompilerServices") == 0)
     {
         if (strcmp(className, "Unsafe") == 0)

@@ -305,14 +305,12 @@ bool Thread::IsInitialized()
 // -----------------------------------------------------------------------------------------------------------
 // GC support APIs - do not use except from GC itself
 //
-void Thread::SetGCSpecial(bool isGCSpecial)
+void Thread::SetGCSpecial()
 {
     if (!IsInitialized())
         Construct();
-    if (isGCSpecial)
-        SetState(TSF_IsGcSpecialThread);
-    else
-        ClearState(TSF_IsGcSpecialThread);
+
+    SetState(TSF_IsGcSpecialThread);
 }
 
 bool Thread::IsGCSpecial()
@@ -600,6 +598,12 @@ void Thread::Hijack()
     if (m_hPalThread == INVALID_HANDLE_VALUE)
     {
         // cannot proceed
+        return;
+    }
+
+    if (IsGCSpecial())
+    {
+        // GC threads can not be forced to run preemptively, so we will not try.
         return;
     }
 

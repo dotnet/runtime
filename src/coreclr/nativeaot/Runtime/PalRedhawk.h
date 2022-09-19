@@ -744,6 +744,9 @@ REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalDetachThread(void* thread);
 
 REDHAWK_PALIMPORT uint64_t PalGetCurrentThreadIdForLogging();
 
+REDHAWK_PALIMPORT uint64_t PalQueryPerformanceCounter();
+REDHAWK_PALIMPORT uint64_t PalQueryPerformanceFrequency();
+
 REDHAWK_PALIMPORT void PalPrintFatalError(const char* message);
 
 #ifdef TARGET_UNIX
