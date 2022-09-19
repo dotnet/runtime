@@ -789,6 +789,173 @@ namespace System
             return ulong.TrailingZeroCount(value._lower);
         }
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadBigEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
+        static bool IBinaryInteger<Int128>.TryReadBigEndian(ReadOnlySpan<byte> source, bool isUnsigned, out Int128 value)
+        {
+            Int128 result = default;
+
+            if (source.Length != 0)
+            {
+                // Propagate the most significant bit so we have `0` or `-1`
+                sbyte sign = (sbyte)(source[0]);
+                sign >>= 31;
+                Debug.Assert((sign == 0) || (sign == -1));
+
+                // We need to also track if the input data is unsigned
+                isUnsigned |= (sign == 0);
+
+                if (isUnsigned && sbyte.IsNegative(sign) && (source.Length >= Size))
+                {
+                    // When we are unsigned and the most significant bit is set, we are a large positive
+                    // and therefore definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                if (source.Length > Size)
+                {
+                    if (source[..^Size].IndexOfAnyExcept((byte)sign) >= 0)
+                    {
+                        // When we are unsigned and have any non-zero leading data or signed with any non-set leading
+                        // data, we are a large positive/negative, respectively, and therefore definitely out of range
+
+                        value = result;
+                        return false;
+                    }
+
+                    if (isUnsigned == sbyte.IsNegative((sbyte)source[^Size]))
+                    {
+                        // When the most significant bit of the value being set/clear matches whether we are unsigned
+                        // or signed then we are a large positive/negative and therefore definitely out of range
+
+                        value = result;
+                        return false;
+                    }
+                }
+
+                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+
+                if (source.Length >= Size)
+                {
+                    sourceRef = ref Unsafe.Add(ref sourceRef, source.Length - Size);
+
+                    // We have at least 16 bytes, so just read the ones we need directly
+                    result = Unsafe.ReadUnaligned<Int128>(ref sourceRef);
+
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        result = BinaryPrimitives.ReverseEndianness(result);
+                    }
+                }
+                else
+                {
+                    // We have between 1 and 15 bytes, so construct the relevant value directly
+                    // since the data is in Big Endian format, we can just read the bytes and
+                    // shift left by 8-bits for each subsequent part
+
+                    for (int i = 0; i < source.Length; i++)
+                    {
+                        result <<= 8;
+                        result |= Unsafe.Add(ref sourceRef, i);
+                    }
+
+                    if (!isUnsigned)
+                    {
+                        result |= ((One << ((Size * 8) - 1)) >> (((Size - source.Length) * 8) - 1));
+                    }
+                }
+            }
+
+            value = result;
+            return true;
+        }
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadLittleEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
+        static bool IBinaryInteger<Int128>.TryReadLittleEndian(ReadOnlySpan<byte> source, bool isUnsigned, out Int128 value)
+        {
+            Int128 result = default;
+
+            if (source.Length != 0)
+            {
+                // Propagate the most significant bit so we have `0` or `-1`
+                sbyte sign = (sbyte)(source[^1]);
+                sign >>= 31;
+                Debug.Assert((sign == 0) || (sign == -1));
+
+                // We need to also track if the input data is unsigned
+                isUnsigned |= (sign == 0);
+
+                if (isUnsigned && sbyte.IsNegative(sign) && (source.Length >= Size))
+                {
+                    // When we are unsigned and the most significant bit is set, we are a large positive
+                    // and therefore definitely out of range
+
+                    value = result;
+                    return false;
+                }
+
+                if (source.Length > Size)
+                {
+                    if (source[Size..].IndexOfAnyExcept((byte)sign) >= 0)
+                    {
+                        // When we are unsigned and have any non-zero leading data or signed with any non-set leading
+                        // data, we are a large positive/negative, respectively, and therefore definitely out of range
+
+                        value = result;
+                        return false;
+                    }
+
+                    if (isUnsigned == sbyte.IsNegative((sbyte)source[Size - 1]))
+                    {
+                        // When the most significant bit of the value being set/clear matches whether we are unsigned
+                        // or signed then we are a large positive/negative and therefore definitely out of range
+
+                        value = result;
+                        return false;
+                    }
+                }
+
+                ref byte sourceRef = ref MemoryMarshal.GetReference(source);
+
+                if (source.Length >= Size)
+                {
+                    // We have at least 16 bytes, so just read the ones we need directly
+                    result = Unsafe.ReadUnaligned<Int128>(ref sourceRef);
+
+                    if (!BitConverter.IsLittleEndian)
+                    {
+                        result = BinaryPrimitives.ReverseEndianness(result);
+                    }
+                }
+                else
+                {
+                    // We have between 1 and 15 bytes, so construct the relevant value directly
+                    // since the data is in Little Endian format, we can just read the bytes and
+                    // shift left by 8-bits for each subsequent part, then reverse endianness to
+                    // ensure the order is correct. This is more efficient than iterating in reverse
+                    // due to current JIT limitations
+
+                    for (int i = 0; i < source.Length; i++)
+                    {
+                        result <<= 8;
+                        result |= Unsafe.Add(ref sourceRef, i);
+                    }
+
+                    result <<= ((Size - source.Length) * 8);
+                    result = BinaryPrimitives.ReverseEndianness(result);
+
+                    if (!isUnsigned)
+                    {
+                        result |= ((One << ((Size * 8) - 1)) >> (((Size - source.Length) * 8) - 1));
+                    }
+                }
+            }
+
+            value = result;
+            return true;
+        }
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
         int IBinaryInteger<Int128>.GetShortestBitLength()
         {
@@ -869,6 +1036,9 @@ namespace System
         // IBinaryNumber
         //
 
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.AllBitsSet" />
+        static Int128 IBinaryNumber<Int128>.AllBitsSet => new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
+
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
         public static bool IsPow2(Int128 value) => (PopCount(value) == 1U) && IsPositive(value);
 
@@ -907,7 +1077,7 @@ namespace System
         // IComparisonOperators
         //
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(Int128 left, Int128 right)
         {
             if (IsNegative(left) == IsNegative(right))
@@ -921,7 +1091,7 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(Int128 left, Int128 right)
         {
             if (IsNegative(left) == IsNegative(right))
@@ -935,7 +1105,7 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(Int128 left, Int128 right)
         {
             if (IsNegative(left) == IsNegative(right))
@@ -949,7 +1119,7 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(Int128 left, Int128 right)
         {
             if (IsNegative(left) == IsNegative(right))
@@ -986,7 +1156,7 @@ namespace System
             }
 
             // We simplify the logic here by just doing unsigned division on the
-            // one's complement representation and then taking the correct sign.
+            // two's complement representation and then taking the correct sign.
 
             ulong sign = (left._upper ^ right._upper) & (1UL << 63);
 
@@ -1002,17 +1172,13 @@ namespace System
 
             UInt128 result = (UInt128)(left) / (UInt128)(right);
 
-            if (result == 0U)
-            {
-                sign = 0;
-            }
-            else if (sign != 0)
+            if (sign != 0)
             {
                 result = ~result + 1U;
             }
 
             return new Int128(
-                result.Upper | sign,
+                result.Upper,
                 result.Lower
             );
         }
@@ -1024,10 +1190,10 @@ namespace System
         // IEqualityOperators
         //
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Equality(TSelf, TOther)" />
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
         public static bool operator ==(Int128 left, Int128 right) => (left._lower == right._lower) && (left._upper == right._upper);
 
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Inequality(TSelf, TOther)" />
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Inequality(TSelf, TOther)" />
         public static bool operator !=(Int128 left, Int128 right) => (left._lower != right._lower) || (left._upper != right._upper);
 
         //
@@ -1057,36 +1223,8 @@ namespace System
         /// <inheritdoc cref="IModulusOperators{TSelf, TOther, TResult}.op_Modulus(TSelf, TOther)" />
         public static Int128 operator %(Int128 left, Int128 right)
         {
-            // We simplify the logic here by just doing unsigned modulus on the
-            // one's complement representation and then taking the correct sign.
-
-            ulong sign = (left._upper ^ right._upper) & (1UL << 63);
-
-            if (IsNegative(left))
-            {
-                left = ~left + 1U;
-            }
-
-            if (IsNegative(right))
-            {
-                right = ~right + 1U;
-            }
-
-            UInt128 result = (UInt128)(left) % (UInt128)(right);
-
-            if (result == 0U)
-            {
-                sign = 0;
-            }
-            else if (sign != 0)
-            {
-                result = ~result + 1U;
-            }
-
-            return new Int128(
-                result.Upper | sign,
-                result.Lower
-            );
+            Int128 quotient = left / right;
+            return left - (quotient * right);
         }
 
         //
@@ -1103,76 +1241,43 @@ namespace System
         /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
         public static Int128 operator *(Int128 left, Int128 right)
         {
-            // We simplify the logic here by just doing unsigned multiplication on
-            // the one's complement representation and then taking the correct sign.
-
-            ulong sign = (left._upper ^ right._upper) & (1UL << 63);
-
-            if (IsNegative(left))
-            {
-                left = ~left + 1U;
-            }
-
-            if (IsNegative(right))
-            {
-                right = ~right + 1U;
-            }
-
-            UInt128 result = (UInt128)(left) * (UInt128)(right);
-
-            if (result == 0U)
-            {
-                sign = 0;
-            }
-            else if (sign != 0)
-            {
-                result = ~result + 1U;
-            }
-
-            return new Int128(
-                result.Upper | sign,
-                result.Lower
-            );
+            // Multiplication is the same for signed and unsigned provided the "upper" bits aren't needed
+            return (Int128)((UInt128)(left) * (UInt128)(right));
         }
 
         /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
         public static Int128 operator checked *(Int128 left, Int128 right)
         {
-            // We simplify the logic here by just doing unsigned multiplication on
-            // the one's complement representation and then taking the correct sign.
+            Int128 upper = BigMul(left, right, out Int128 lower);
 
-            ulong sign = (left._upper ^ right._upper) & (1UL << 63);
-
-            if (IsNegative(left))
+            if (((upper != 0) || (lower < 0)) && ((~upper != 0) || (lower >= 0)))
             {
-                left = ~left + 1U;
-            }
+                // The upper bits can safely be either Zero or AllBitsSet
+                // where the former represents a positive value and the
+                // latter a negative value.
+                //
+                // However, when the upper bits are Zero, we also need to
+                // confirm the lower bits are positive, otherwise we have
+                // a positive value greater than MaxValue and should throw
+                //
+                // Likewise, when the upper bits are AllBitsSet, we also
+                // need to confirm the lower bits are negative, otherwise
+                // we have a large negative value less than MinValue and
+                // should throw.
 
-            if (IsNegative(right))
-            {
-                right = ~right + 1U;
-            }
-
-            UInt128 result = checked((UInt128)(left) * (UInt128)(right));
-
-            if ((long)(result.Upper) < 0)
-            {
                 ThrowHelper.ThrowOverflowException();
             }
 
-            if (result == 0U)
-            {
-                sign = 0;
-            }
-            else if (sign != 0)
-            {
-                result = ~result + 1U;
-            }
+            return lower;
+        }
 
-            return new Int128(
-                result.Upper | sign,
-                result.Lower
-            );
+        internal static Int128 BigMul(Int128 left, Int128 right, out Int128 lower)
+        {
+            // This follows the same logic as is used in `long Math.BigMul(long, long, out long)`
+
+            UInt128 upper = UInt128.BigMul((UInt128)(left), (UInt128)(right), out UInt128 ulower);
+            lower = (Int128)(ulower);
+            return (Int128)(upper) - ((left >> 127) & right) - ((right >> 127) & left);
         }
 
         //
@@ -1275,6 +1380,63 @@ namespace System
                 }
             }
             return value;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Int128 CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Int128 result;
+
+            if (typeof(TOther) == typeof(Int128))
+            {
+                result = (Int128)(object)value;
+            }
+            else if (!TryConvertFromChecked(value, out result) && !TOther.TryConvertToChecked(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Int128 CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Int128 result;
+
+            if (typeof(TOther) == typeof(Int128))
+            {
+                result = (Int128)(object)value;
+            }
+            else if (!TryConvertFromSaturating(value, out result) && !TOther.TryConvertToSaturating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Int128 CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            Int128 result;
+
+            if (typeof(TOther) == typeof(Int128))
+            {
+                result = (Int128)(object)value;
+            }
+            else if (!TryConvertFromTruncating(value, out result) && !TOther.TryConvertToTruncating(value, out result))
+            {
+                ThrowHelper.ThrowNotSupportedException();
+            }
+
+            return result;
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
@@ -1416,7 +1578,11 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<Int128>.TryConvertFromChecked<TOther>(TOther value, out Int128 result)
+        static bool INumberBase<Int128>.TryConvertFromChecked<TOther>(TOther value, out Int128 result) => TryConvertFromChecked(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromChecked<TOther>(TOther value, out Int128 result)
+            where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1484,7 +1650,11 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<Int128>.TryConvertFromSaturating<TOther>(TOther value, out Int128 result)
+        static bool INumberBase<Int128>.TryConvertFromSaturating<TOther>(TOther value, out Int128 result) => TryConvertFromSaturating(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromSaturating<TOther>(TOther value, out Int128 result)
+            where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1555,7 +1725,11 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<Int128>.TryConvertFromTruncating<TOther>(TOther value, out Int128 result)
+        static bool INumberBase<Int128>.TryConvertFromTruncating<TOther>(TOther value, out Int128 result) => TryConvertFromTruncating(value, out result);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryConvertFromTruncating<TOther>(TOther value, out Int128 result)
+            where TOther : INumberBase<TOther>
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1626,7 +1800,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<Int128>.TryConvertToChecked<TOther>(Int128 value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<Int128>.TryConvertToChecked<TOther>(Int128 value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1687,14 +1861,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<Int128>.TryConvertToSaturating<TOther>(Int128 value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<Int128>.TryConvertToSaturating<TOther>(Int128 value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1761,14 +1935,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<Int128>.TryConvertToTruncating<TOther>(Int128 value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<Int128>.TryConvertToTruncating<TOther>(Int128 value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1830,7 +2004,7 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
@@ -1845,7 +2019,7 @@ namespace System
         // IShiftOperators
         //
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_LeftShift(TSelf, int)" />
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_LeftShift(TSelf, TOther)" />
         public static Int128 operator <<(Int128 value, int shiftAmount)
         {
             // C# automatically masks the shift amount for UInt64 to be 0x3F. So we
@@ -1878,7 +2052,7 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_RightShift(TSelf, TOther)" />
         public static Int128 operator >>(Int128 value, int shiftAmount)
         {
             // C# automatically masks the shift amount for UInt64 to be 0x3F. So we
@@ -1892,7 +2066,7 @@ namespace System
                 // and so the lower bits are just the upper shifted by the remaining
                 // masked amount
 
-                ulong lower = value._upper >> shiftAmount;
+                ulong lower = (ulong)((long)value._upper >> shiftAmount);
                 ulong upper = (ulong)((long)value._upper >> 63);
 
                 return new Int128(upper, lower);
@@ -1913,7 +2087,7 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
+        /// <inheritdoc cref="IShiftOperators{TSelf, TOther, TResult}.op_UnsignedRightShift(TSelf, TOther)" />
         public static Int128 operator >>>(Int128 value, int shiftAmount)
         {
             // C# automatically masks the shift amount for UInt64 to be 0x3F. So we

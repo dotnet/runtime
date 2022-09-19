@@ -18,6 +18,7 @@ namespace System.Diagnostics.Tracing
         public static class Keywords
         {
             public const EventKeywords AppContext = (EventKeywords)0x1;
+            public const EventKeywords ProcessorCount = (EventKeywords)0x2;
         }
 
         private static RuntimeEventSource? s_RuntimeEventSource;
@@ -58,7 +59,8 @@ namespace System.Diagnostics.Tracing
 
         private enum EventId : int
         {
-            AppContextSwitch = 1
+            AppContextSwitch = 1,
+            ProcessorCount = 2
         }
 
         [Event((int)EventId.AppContextSwitch, Level = EventLevel.Informational, Keywords = Keywords.AppContext)]
@@ -67,9 +69,12 @@ namespace System.Diagnostics.Tracing
             base.WriteEvent((int)EventId.AppContextSwitch, switchName, value);
         }
 
-        [UnconditionalSuppressMessage ("ReflectionAnalysis", "IL2119",
-            Justification = "DAM on EventSource references the compiler-generated lambda methods some of which call PInvokes " +
-                            "which are considered potentially dangerous. Event source will not use these lambdas.")]
+        [Event((int)EventId.ProcessorCount, Level = EventLevel.Informational, Keywords = Keywords.ProcessorCount)]
+        internal void ProcessorCount(int processorCount)
+        {
+            base.WriteEvent((int)EventId.ProcessorCount, processorCount);
+        }
+
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
             if (command.Command == EventCommand.Enable)
@@ -79,7 +84,7 @@ namespace System.Diagnostics.Tracing
                 // overhead by at all times even when counters aren't enabled.
 
                 // On disable, PollingCounters will stop polling for values so it should be fine to leave them around.
-                _cpuTimeCounter ??= new PollingCounter("cpu-usage", this, () => RuntimeEventSourceHelper.GetCpuUsage()) { DisplayName = "CPU Usage", DisplayUnits = "%" };
+                _cpuTimeCounter ??= new PollingCounter("cpu-usage", this, RuntimeEventSourceHelper.GetCpuUsage) { DisplayName = "CPU Usage", DisplayUnits = "%" };
                 _workingSetCounter ??= new PollingCounter("working-set", this, () => ((double)Environment.WorkingSet / 1_000_000)) { DisplayName = "Working Set", DisplayUnits = "MB" };
                 _gcHeapSizeCounter ??= new PollingCounter("gc-heap-size", this, () => ((double)GC.GetTotalMemory(false) / 1_000_000)) { DisplayName = "GC Heap Size", DisplayUnits = "MB" };
                 _gen0GCCounter ??= new IncrementingPollingCounter("gen-0-gc-count", this, () => GC.CollectionCount(0)) { DisplayName = "Gen 0 GC Count", DisplayRateTimeScale = new TimeSpan(0, 1, 0) };
@@ -109,6 +114,7 @@ namespace System.Diagnostics.Tracing
                 _jitTimeCounter ??= new IncrementingPollingCounter("time-in-jit", this, () => System.Runtime.JitInfo.GetCompilationTime().TotalMilliseconds) { DisplayName = "Time spent in JIT", DisplayUnits = "ms", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
 
                 AppContext.LogSwitchValues(this);
+                ProcessorCount(Environment.ProcessorCount);
             }
 
         }

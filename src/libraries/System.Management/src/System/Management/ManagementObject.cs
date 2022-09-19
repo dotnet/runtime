@@ -502,10 +502,7 @@ namespace System.Management
         {
             get
             {
-                if (scope == null)
-                    return scope = ManagementScope._Clone(null);
-                else
-                    return scope;
+                return scope ??= ManagementScope._Clone(null);
             }
             set
             {
@@ -557,10 +554,7 @@ namespace System.Management
         {
             get
             {
-                if (path == null)
-                    return path = ManagementPath._Clone(null);
-                else
-                    return path;
+                return path ??= ManagementPath._Clone(null);
             }
             set
             {
@@ -624,10 +618,7 @@ namespace System.Management
         {
             get
             {
-                if (options == null)
-                    return options = ObjectGetOptions._Clone(null);
-                else
-                    return options;
+                return options ??= ObjectGetOptions._Clone(null);
             }
             set
             {
@@ -804,8 +795,7 @@ namespace System.Management
                 }
                 finally
                 {
-                    if (securityHandler != null)
-                        securityHandler.Reset();
+                    securityHandler?.Reset();
                 }
             }
         }
@@ -924,8 +914,7 @@ namespace System.Management
                                             sink.Stub);
 
 
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (status < 0)
                 {
@@ -1075,8 +1064,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
             }
 
             //Create collection object
@@ -1308,8 +1296,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
             }
 
             //Create collection object
@@ -1415,8 +1402,7 @@ namespace System.Management
                                                         sink.Stub);
 
 
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (status < 0)
                 {
@@ -1523,8 +1509,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (ppwbemCallResult != IntPtr.Zero)                    // Cleanup from allocations above.
                     Marshal.FreeHGlobal(ppwbemCallResult);
@@ -1597,10 +1582,7 @@ namespace System.Management
             {
             }
 
-            if (newPath == null)
-                newPath = new ManagementPath();
-
-            return newPath;
+            return newPath ?? new ManagementPath();
         }
 
         /// <summary>
@@ -1666,8 +1648,7 @@ namespace System.Management
                 }
 
 
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (status < 0)
                 {
@@ -1826,8 +1807,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (ppwbemCallResult != IntPtr.Zero)                    // Cleanup from allocations above.
                     Marshal.FreeHGlobal(ppwbemCallResult);
@@ -1925,8 +1905,7 @@ namespace System.Management
                 }
 
 
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (status < 0)
                 {
@@ -2001,8 +1980,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
             }
         }
 
@@ -2060,8 +2038,7 @@ namespace System.Management
                 }
 
 
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (status < 0)
                 {
@@ -2334,8 +2311,7 @@ namespace System.Management
                 }
                 finally
                 {
-                    if (securityHandler != null)
-                        securityHandler.Reset();
+                    securityHandler?.Reset();
                 }
             }
 
@@ -2395,8 +2371,7 @@ namespace System.Management
                     inParams,
                     sink.Stub);
 
-                if (securityHandler != null)
-                    securityHandler.Reset();
+                securityHandler?.Reset();
 
                 if (status < 0)
                 {
@@ -2682,8 +2657,7 @@ namespace System.Management
                         }
                         finally
                         {
-                            if (securityHandler != null)
-                                securityHandler.Reset();
+                            securityHandler?.Reset();
                         }
                     }
                 }

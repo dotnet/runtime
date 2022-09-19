@@ -853,7 +853,7 @@ namespace System.DirectoryServices.AccountManagement
         private static void ElapsedTimeFromWinNTConverter(DirectoryEntry de, string suggestedWinNTProperty, Principal p, string propertyName)
         {
             // These properties are expressed as "seconds passed since the event of interest".  So to convert
-            // to a DateTime, we substract them from DateTime.UtcNow.
+            // to a DateTime, we subtract them from DateTime.UtcNow.
 
             PropertyValueCollection values = de.Properties[suggestedWinNTProperty];
 

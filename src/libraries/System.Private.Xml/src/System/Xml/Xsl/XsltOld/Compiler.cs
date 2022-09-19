@@ -344,7 +344,7 @@ namespace System.Xml.Xsl.XsltOld
                         }
                         else if (variable.Stylesheetid < oldVar.Stylesheetid)
                         {
-                            // newly defined var is more importent
+                            // newly defined var is more important
                             varScope.InsertVariable(variable);
                             return oldVar.VarKey;
                         }
@@ -372,10 +372,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void AddNamespaceAlias(string StylesheetURI, NamespaceInfo AliasInfo)
         {
-            if (_globalNamespaceAliasTable == null)
-            {
-                _globalNamespaceAliasTable = new Hashtable();
-            }
+            _globalNamespaceAliasTable ??= new Hashtable();
             NamespaceInfo? duplicate = _globalNamespaceAliasTable[StylesheetURI] as NamespaceInfo;
             if (duplicate == null || AliasInfo.stylesheetId <= duplicate.stylesheetId)
             {
@@ -806,7 +803,7 @@ namespace System.Xml.Xsl.XsltOld
         private static void getTextLex(string avt, ref int start, StringBuilder lex)
         {
             Debug.Assert(avt.Length != start, "Empty string not supposed here");
-            Debug.Assert(lex.Length == 0, "Builder shoud to be reset here");
+            Debug.Assert(lex.Length == 0, "Builder should to be reset here");
             int avtLength = avt.Length;
             int i;
             for (i = start; i < avtLength; i++)
@@ -846,8 +843,8 @@ namespace System.Xml.Xsl.XsltOld
             const int InLiteralA = 1;      // Inside literal in expression, apostrophe delimited
             const int InLiteralQ = 2;      // Inside literal in expression, quote delimited
             Debug.Assert(avt.Length != start, "Empty string not supposed here");
-            Debug.Assert(lex.Length == 0, "Builder shoud to be reset here");
-            Debug.Assert(avt[start] == '{', "We calling getXPathLex() only after we realy meet {");
+            Debug.Assert(lex.Length == 0, "Builder should to be reset here");
+            Debug.Assert(avt[start] == '{', "We calling getXPathLex() only after we really meet {");
             int avtLength = avt.Length;
             int state = InExp;
             for (int i = start + 1; i < avtLength; i++)
@@ -863,7 +860,7 @@ namespace System.Xml.Xsl.XsltOld
                             case '}':
                                 i++; // include '}'
                                 if (i == start + 2)
-                                { // empty XPathExpresion
+                                { // empty XPathExpression
                                     throw XsltException.Create(SR.Xslt_EmptyAvtExpr, avt);
                                 }
                                 lex.Append(avt, start + 1, i - start - 2); // avt without {}

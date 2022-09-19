@@ -31,6 +31,11 @@ namespace System.Security.Cryptography.Pkcs
         {
         }
 
+        internal Pkcs9SigningTime(ReadOnlySpan<byte> encodedSigningTime)
+            : base(Oids.SigningTimeOid.CopyOid(), encodedSigningTime)
+        {
+        }
+
         //
         // Public properties.
         //

@@ -1241,7 +1241,14 @@ void MethodContext::recGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes, DW
 void MethodContext::dmpGetJitFlags(DWORD key, DD value)
 {
     CORJIT_FLAGS* jitflags = (CORJIT_FLAGS*)GetJitFlags->GetBuffer(value.A);
-    printf("GetJitFlags key %u sizeInBytes-%u jitFlags-%016llX instructionSetFlags-%016llX", key, value.B, jitflags->GetFlagsRaw(), jitflags->GetInstructionSetFlagsRaw());
+    printf("GetJitFlags key %u sizeInBytes-%u jitFlags-%016llX instructionSetFlags-", key, value.B, jitflags->GetFlagsRaw());
+
+    uint64_t *raw = jitflags->GetInstructionSetFlagsRaw();
+    const int flagsFieldCount = jitflags->GetInstructionFlagsFieldCount();
+    for (int i = flagsFieldCount - 1; i >= 0; i--)
+    {
+        printf("%016llX", raw[i]);
+    }
     GetJitFlags->Unlock();
 }
 DWORD MethodContext::repGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
@@ -1252,6 +1259,7 @@ DWORD MethodContext::repGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
     DEBUG_REP(dmpGetJitFlags(0, value));
 
     CORJIT_FLAGS* resultFlags = (CORJIT_FLAGS*)GetJitFlags->GetBuffer(value.A);
+    Assert(sizeInBytes >= value.B);
     memcpy(jitFlags, resultFlags, value.B);
     InitReadyToRunFlag(resultFlags);
     return value.B;
@@ -2703,6 +2711,42 @@ CorInfoTypeWithMod MethodContext::repGetArgType(CORINFO_SIG_INFO*       sig,
     return temp;
 }
 
+void MethodContext::recGetExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet, int result)
+{
+    if (GetExactClasses == nullptr)
+        GetExactClasses = new LightWeightMap<DLD, DLD>();
+
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(baseType);
+    key.B = maxExactClasses;
+
+    DLD value;
+    ZeroMemory(&value, sizeof(value));
+    value.A = CastHandle(*exactClsRet);
+    value.B = result;
+
+    GetExactClasses->Add(key, value);
+}
+void MethodContext::dmpGetExactClasses(DLD key, DLD value)
+{
+    printf("GetExactClasses key baseType-%016llX, key maxExactCls %u, value exactCls %016llX, value exactClsCount %u",
+        key.A, key.B, value.A, value.B);
+}
+int MethodContext::repGetExactClasses(CORINFO_CLASS_HANDLE baseType, int maxExactClasses, CORINFO_CLASS_HANDLE* exactClsRet)
+{
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(baseType);
+    key.B = maxExactClasses;
+
+    AssertMapAndKeyExist(GetExactClasses, key, ": key %016llX %08X", key.A, key.B);
+
+    DLD value = GetExactClasses->Get(key);
+    *exactClsRet = (CORINFO_CLASS_HANDLE)value.A;
+    return value.B;
+}
+
 void MethodContext::recGetArgNext(CORINFO_ARG_LIST_HANDLE args, CORINFO_ARG_LIST_HANDLE result)
 {
     if (GetArgNext == nullptr)
@@ -2773,7 +2817,7 @@ void MethodContext::recGetArgClass(CORINFO_SIG_INFO*       sig,
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
 
     // Only setting values for CORINFO_SIG_INFO things the EE seems to pay attention to... this is necessary since some of the values
-    // are unset and fail our precise comparisions...
+    // are unset and fail our precise comparisons...
 
     SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INST_HandleArray(sig->sigInst.classInstCount, sig->sigInst.classInst, SigInstHandleMap, &key.sigInst_classInstCount, &key.sigInst_classInst_Index);
     SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INST_HandleArray(sig->sigInst.methInstCount, sig->sigInst.methInst, SigInstHandleMap, &key.sigInst_methInstCount, &key.sigInst_methInst_Index);
@@ -6418,27 +6462,33 @@ const char* MethodContext::repGetClassNameFromMetadata(CORINFO_CLASS_HANDLE cls,
 }
 
 void MethodContext::recGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls,
-                                                    CORINFO_CLASS_HANDLE result,
-                                                    unsigned             index)
+                                                    unsigned             index,
+                                                    CORINFO_CLASS_HANDLE result)
 {
     if (GetTypeInstantiationArgument == nullptr)
-        GetTypeInstantiationArgument = new LightWeightMap<DWORDLONG, DWORDLONG>();
+        GetTypeInstantiationArgument = new LightWeightMap<DLD, DWORDLONG>();
 
-    DWORDLONG key = CastHandle(cls);
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(cls);
+    key.B = index;
     DWORDLONG value = CastHandle(result);
     GetTypeInstantiationArgument->Add(key, value);
     DEBUG_REC(dmpGetTypeInstantiationArgument(key, value));
 }
-void MethodContext::dmpGetTypeInstantiationArgument(DWORDLONG key, DWORDLONG value)
+void MethodContext::dmpGetTypeInstantiationArgument(DLD key, DWORDLONG value)
 {
-    printf("GetTypeInstantiationArgument key - classNonNull-%llu, value NonNull-%llu", key, value);
+    printf("GetTypeInstantiationArgument key - classNonNull-%llu, index-%u, value NonNull-%llu", key.A, key.B, value);
     GetTypeInstantiationArgument->Unlock();
 }
 CORINFO_CLASS_HANDLE MethodContext::repGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index)
 {
     CORINFO_CLASS_HANDLE result = nullptr;
 
-    DWORDLONG key = CastHandle(cls);
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(cls);
+    key.B = index;
 
     int itemIndex = -1;
     if (GetTypeInstantiationArgument != nullptr)
@@ -6958,16 +7008,32 @@ int MethodContext::dumpMethodIdentityInfoToBuffer(char* buff, int len, bool igno
 
     char* obuff = buff;
 
-    // Add the Method Signature
-    int t = sprintf_s(buff, len, "%s -- ", CallUtils::GetMethodFullName(this, pInfo->ftn, pInfo->args, ignoreMethodName));
+    // Add the Method Signature. Be careful about potentially huge method signatures; truncate if necessary.
+    const char* methodFullName = CallUtils::GetMethodFullName(this, pInfo->ftn, pInfo->args, ignoreMethodName);
+    int t = _snprintf_s(buff, len - METHOD_IDENTITY_INFO_NON_NAME_RESERVE, _TRUNCATE, "%s -- ", methodFullName);
+    if (t == -1)
+    {
+        // We truncated the name string, meaning we wrote exactly `len - METHOD_IDENTITY_INFO_NON_NAME_RESERVE` characters
+        // (including the terminating null). We advance the buffer pointer by this amount, not including that terminating null.
+        t = len - METHOD_IDENTITY_INFO_NON_NAME_RESERVE - 1;
+    }
     buff += t;
     len -= t;
 
     // Add Calling convention information, CorInfoOptions, CorInfoRegionKind, jit flags, and ISA flags.
-    t = sprintf_s(buff, len, "CallingConvention: %d, CorInfoOptions: %d, CorInfoRegionKind: %d, JitFlags %016llx, ISA Flags %016llx", pInfo->args.callConv,
-                  pInfo->options, pInfo->regionKind, corJitFlags.GetFlagsRaw(), corJitFlags.GetInstructionSetFlagsRaw());
+    t = sprintf_s(buff, len, "CallingConvention: %d, CorInfoOptions: %d, CorInfoRegionKind: %d, JitFlags %016llx, ISA Flags", pInfo->args.callConv,
+                  pInfo->options, pInfo->regionKind, corJitFlags.GetFlagsRaw());
     buff += t;
     len -= t;
+
+    uint64_t *raw = corJitFlags.GetInstructionSetFlagsRaw();
+    const int flagsFieldCount = corJitFlags.GetInstructionFlagsFieldCount();
+    for (int i = flagsFieldCount - 1; i >= 0; i--)
+    {
+        t = sprintf_s(buff, len, " %016llX", raw[i]);
+        buff += t;
+        len -= t;
+    }
 
     // Hash the IL Code for this method and append it to the ID info
     char ilHash[MD5_HASH_BUFFER_SIZE];

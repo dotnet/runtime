@@ -29,6 +29,7 @@ namespace System.Security.Cryptography
 
             if (errorCode != ErrorCode.ERROR_SUCCESS)
             {
+                providerHandle.Dispose();
                 throw errorCode.ToCryptographicException();
             }
 

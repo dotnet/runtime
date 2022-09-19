@@ -41,7 +41,7 @@ public:
     // and a null declaring Type is passed then the type context will
     // be a representative context, not an exact one.
     // This is sufficient for most purposes, e.g. GC and field layout, because
-    // these operations are "parametric", i.e. behave the same for all shared types.
+    // these operations are "parameteric", i.e. behave the same for all shared types.
     //
     // If declaringType is non-null, then the MethodDesc is assumed to be
     // shared between generic classes, and the type handle is used to give the
@@ -85,14 +85,14 @@ public:
     inline SigTypeContext(FieldDesc *pFD, TypeHandle declaringType = TypeHandle())
     { WRAPPER_NO_CONTRACT; InitTypeContext(pFD,declaringType,this); }
 
-    // Copy contructor - try not to use this.  The C++ compiler is not doing a good job
+    // Copy constructor - try not to use this.  The C++ compiler is not doing a good job
     // of copy-constructor based code, and we've had perf regressions when using this too
     // much for this simple objects.  Use an explicit call to InitTypeContext instead,
     // or use GetOptionalTypeContext.
     inline SigTypeContext(const SigTypeContext &c)
     { WRAPPER_NO_CONTRACT; InitTypeContext(&c,this); }
 
-    // Copy contructor from a possibly-NULL pointer.
+    // Copy constructor from a possibly-NULL pointer.
     inline SigTypeContext(const SigTypeContext *c)
     { WRAPPER_NO_CONTRACT; InitTypeContext(c,this); }
 
@@ -135,7 +135,7 @@ inline void SigTypeContext::InitTypeContext(Instantiation classInst,
 }
 
 
-// Copy contructor from a possibly-NULL pointer.
+// Copy constructor from a possibly-NULL pointer.
 inline void SigTypeContext::InitTypeContext(const SigTypeContext *c,SigTypeContext *pRes)
 {
     LIMITED_METHOD_DAC_CONTRACT;

@@ -280,11 +280,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedSites == null)
-                {
-                    _cachedSites = new ReadOnlySiteCollection(GetSites());
-                }
-                return _cachedSites;
+                return _cachedSites ??= new ReadOnlySiteCollection(GetSites());
             }
         }
 
@@ -293,11 +289,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedADAMInstances == null)
-                {
-                    _cachedADAMInstances = FindAllAdamInstances();
-                }
-                return _cachedADAMInstances;
+                return _cachedADAMInstances ??= FindAllAdamInstances();
             }
         }
 
@@ -306,11 +298,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedApplicationPartitions == null)
-                {
-                    _cachedApplicationPartitions = new ApplicationPartitionCollection(GetApplicationPartitions());
-                }
-                return _cachedApplicationPartitions;
+                return _cachedApplicationPartitions ??= new ApplicationPartitionCollection(GetApplicationPartitions());
             }
         }
 
@@ -339,11 +327,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedSchemaRoleOwner == null)
-                {
-                    _cachedSchemaRoleOwner = GetRoleOwner(AdamRole.SchemaRole);
-                }
-                return _cachedSchemaRoleOwner;
+                return _cachedSchemaRoleOwner ??= GetRoleOwner(AdamRole.SchemaRole);
             }
         }
 
@@ -352,11 +336,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedNamingRoleOwner == null)
-                {
-                    _cachedNamingRoleOwner = GetRoleOwner(AdamRole.NamingRole);
-                }
-                return _cachedNamingRoleOwner;
+                return _cachedNamingRoleOwner ??= GetRoleOwner(AdamRole.NamingRole);
             }
         }
 
@@ -641,10 +621,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (entry != null)
-                {
-                    entry.Dispose();
-                }
+                entry?.Dispose();
             }
 
             // create a new context object for the adam instance passing on  the
@@ -686,11 +663,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (resCol != null)
-                {
-                    // call dispose on search result collection
-                    resCol.Dispose();
-                }
+                // call dispose on search result collection
+                resCol?.Dispose();
             }
             return sites;
         }
@@ -759,11 +733,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (resCol != null)
-                {
-                    // call dispose on search result collection
-                    resCol.Dispose();
-                }
+                // call dispose on search result collection
+                resCol?.Dispose();
             }
             return appNCs;
         }

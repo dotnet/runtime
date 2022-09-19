@@ -26,7 +26,7 @@ namespace System.Globalization
         **Arguments:    None.
         **Exceptions:
         **Note:
-        **  The HijriCalendar has a user-overidable calculation.  That is, use can set a value from the control
+        **  The HijriCalendar has a user-overridable calculation.  That is, use can set a value from the control
         **  panel, so that the calculation of the Hijri Calendar can move ahead or backwards from -2 to +2 days.
         **
         **  The valid string values in the registry are:

@@ -9,18 +9,22 @@ using System.Threading.Tasks;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace DebuggerTests
 {
     // TODO: static async, static method args
     public class EvaluateOnCallFrameTests : DebuggerTests
     {
+        public EvaluateOnCallFrameTests(ITestOutputHelper testOutput) : base(testOutput)
+        {}
+
         public static IEnumerable<object[]> InstanceMethodsTestData(string type_name)
         {
-            yield return new object[] { type_name, "InstanceMethod", "InstanceMethod", false };
-            yield return new object[] { type_name, "GenericInstanceMethod", "GenericInstanceMethod<int>", false };
-            yield return new object[] { type_name, "InstanceMethodAsync", "MoveNext", true };
-            yield return new object[] { type_name, "GenericInstanceMethodAsync", "MoveNext", true };
+            yield return new object[] { type_name, "InstanceMethod", $"{type_name}.InstanceMethod", false };
+            yield return new object[] { type_name, "GenericInstanceMethod", $"{type_name}.GenericInstanceMethod<int>", false };
+            yield return new object[] { type_name, "InstanceMethodAsync", $"{type_name}.InstanceMethodAsync", true };
+            yield return new object[] { type_name, "GenericInstanceMethodAsync", $"{type_name}.GenericInstanceMethodAsync<int>", true };
 
             // TODO: { "DebuggerTests.EvaluateTestsGeneric`1", "Instance", 9, "EvaluateTestsGenericStructInstanceMethod", prefix }
         }
@@ -34,12 +38,6 @@ namespace DebuggerTests
                 yield return new object[] { "NewInstance.", 3 }.Concat(data).ToArray();
                 yield return new object[] { "this.NewInstance.", 3 }.Concat(data).ToArray();
             }
-        }
-
-        public static IEnumerable<object[]> EvaluateStaticClassFromStaticMethodTestData(string type_name)
-        {
-            yield return new object[] { type_name, "EvaluateAsyncMethods", "EvaluateAsyncMethods", true };
-            yield return new object[] { type_name, "EvaluateMethods", "EvaluateMethods", false };
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
@@ -88,7 +86,7 @@ namespace DebuggerTests
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                var DTProp = new DateTime(2010, 9, 8, 7, 6, 5).AddMinutes(10);
-               Console.WriteLine ($"------- test running the bits..");
+               _testOutput.WriteLine ($"------- test running the bits..");
                await EvaluateOnCallFrameAndCheck(id,
                    ("g", TNumber(400)),
                    ("h", TNumber(123)),
@@ -101,7 +99,7 @@ namespace DebuggerTests
                    ("me.DTProp.Second + (me.IntProp - 5)", TNumber(DTProp.Second + 4)))
                     .ConfigureAwait(false);
 
-               Console.WriteLine ($"------- test done!");
+               _testOutput.WriteLine ($"------- test done!");
            });
 
         [Theory]
@@ -132,7 +130,7 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateStaticLocalsWithDeepMemberAccess() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateTestsClass", "EvaluateLocals", 9, "EvaluateLocals",
+            "DebuggerTests.EvaluateTestsClass", "EvaluateLocals", 9, "DebuggerTests.EvaluateTestsClass.EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateTestsClass:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
            {
@@ -149,7 +147,7 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateLocalsAsync() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.Point", "AsyncInstanceMethod", 1, "MoveNext",
+            "DebuggerTests.Point", "AsyncInstanceMethod", 1, "DebuggerTests.Point.AsyncInstanceMethod",
             "window.setTimeout(function() { invoke_static_method_async ('[debugger-test] DebuggerTests.ArrayTestsClass:EntryPointForStructMethod', true); })",
             wait_for_event_fn: async (pause_location) =>
            {
@@ -225,7 +223,7 @@ namespace DebuggerTests
         [InlineData("this.")]
         public async Task InheritedAndPrivateMembersInAClass(string prefix)
         => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.GetPropertiesTests.DerivedClass", "InstanceMethod", 1, "InstanceMethod",
+            "DebuggerTests.GetPropertiesTests.DerivedClass", "InstanceMethod", 1, "DebuggerTests.GetPropertiesTests.DerivedClass.InstanceMethod",
             $"window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] DebuggerTests.GetPropertiesTests.DerivedClass:run');}}, 1);",
             wait_for_event_fn: async (pause_location) =>
            {
@@ -257,7 +255,7 @@ namespace DebuggerTests
 
         [Fact]
         public async Task EvaluateSimpleExpressions() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateTestsClass.TestEvaluate", "run", 9, "run",
+            "DebuggerTests.EvaluateTestsClass.TestEvaluate", "run", 9, "DebuggerTests.EvaluateTestsClass.TestEvaluate.run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateTestsClass:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
            {
@@ -290,10 +288,10 @@ namespace DebuggerTests
 
         public static TheoryData<string, string, string> ShadowMethodArgsTestData => new TheoryData<string, string, string>
         {
-            { "DebuggerTests.EvaluateTestsClassWithProperties", "EvaluateShadow", "EvaluateShadow" },
-            { "DebuggerTests.EvaluateTestsClassWithProperties", "EvaluateShadowAsync", "MoveNext" },
-            { "DebuggerTests.EvaluateTestsStructWithProperties", "EvaluateShadow", "EvaluateShadow" },
-            { "DebuggerTests.EvaluateTestsStructWithProperties", "EvaluateShadowAsync", "MoveNext" },
+            { "DebuggerTests.EvaluateTestsClassWithProperties", "EvaluateShadow", "DebuggerTests.EvaluateTestsClassWithProperties.EvaluateShadow" },
+            { "DebuggerTests.EvaluateTestsClassWithProperties", "EvaluateShadowAsync", "DebuggerTests.EvaluateTestsClassWithProperties.EvaluateShadowAsync" },
+            { "DebuggerTests.EvaluateTestsStructWithProperties", "EvaluateShadow", "DebuggerTests.EvaluateTestsStructWithProperties.EvaluateShadow" },
+            { "DebuggerTests.EvaluateTestsStructWithProperties", "EvaluateShadowAsync", "DebuggerTests.EvaluateTestsStructWithProperties.EvaluateShadowAsync" },
         };
 
         [Theory]
@@ -325,7 +323,7 @@ namespace DebuggerTests
         [InlineData("DebuggerTests.EvaluateTestsStructWithProperties", true)]
         [InlineData("DebuggerTests.EvaluateTestsClassWithProperties", false)]
         public async Task EvaluateOnPreviousFrames(string type_name, bool is_valuetype) => await CheckInspectLocalsAtBreakpointSite(
-            type_name, "EvaluateShadow", 1, "EvaluateShadow",
+            type_name, "EvaluateShadow", 1, $"{type_name}.EvaluateShadow",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] {type_name}:run'); }})",
             wait_for_event_fn: async (pause_location) =>
            {
@@ -354,7 +352,7 @@ namespace DebuggerTests
                }
 
                await SetBreakpointInMethod("debugger-test.dll", type_name, "SomeMethod", 1);
-               pause_location = await SendCommandAndCheck(null, "Debugger.resume", null, 0, 0, "SomeMethod");
+               pause_location = await SendCommandAndCheck(null, "Debugger.resume", null, 0, 0,  $"{type_name}.SomeMethod");
 
                // At SomeMethod
 
@@ -436,7 +434,7 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task NegativeTestsInInstanceMethod() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateTestsClass.TestEvaluate", "run", 9, "run",
+            "DebuggerTests.EvaluateTestsClass.TestEvaluate", "run", 9, "DebuggerTests.EvaluateTestsClass.TestEvaluate.run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateTestsClass:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
            {
@@ -455,7 +453,7 @@ namespace DebuggerTests
 
                   ("me.foo", "ReferenceError"),
 
-                  ("this.a + non_existant", "ReferenceError"),
+                  ("this.a + non_existent", "ReferenceError"),
 
                   ("this.NullIfAIsNotZero.foo", "ReferenceError"),
                   ("NullIfAIsNotZero.foo", "ReferenceError"));
@@ -463,7 +461,7 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task NegativeTestsInStaticMethod() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateTestsClass", "EvaluateLocals", 9, "EvaluateLocals",
+            "DebuggerTests.EvaluateTestsClass", "EvaluateLocals", 9, "DebuggerTests.EvaluateTestsClass.EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateTestsClass:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
            {
@@ -478,7 +476,7 @@ namespace DebuggerTests
         [Fact]
         public async Task EvaluatePropertyThatThrows()
         => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateTestsClassWithProperties", "InstanceMethod", /*line_offset*/1, "InstanceMethod",
+            "DebuggerTests.EvaluateTestsClassWithProperties", "InstanceMethod", /*line_offset*/1, "DebuggerTests.EvaluateTestsClassWithProperties.InstanceMethod",
             $"window.setTimeout(function() {{ invoke_static_method_async('[debugger-test] DebuggerTests.EvaluateTestsClassWithProperties:run');}}, 1);",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -499,7 +497,7 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateSimpleMethodCallsError() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "run",
+            "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate.run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
             wait_for_event_fn: async (pause_location) =>
            {
@@ -516,20 +514,18 @@ namespace DebuggerTests
                    res.Error["result"]?["description"]?.Value<string>());
 
                (_, res) = await EvaluateOnCallFrame(id, "this.CallMethodWithParm(\"1\")", expect_ok: false );
-               Assert.Contains("Unable to evaluate method 'this.CallMethodWithParm(\"1\")'", res.Error["message"]?.Value<string>());
+               Assert.Contains("No implementation of method 'CallMethodWithParm' matching 'this.CallMethodWithParm(\"1\")' found in type DebuggerTests.EvaluateMethodTestsClass.TestEvaluate.", res.Error["result"]?["description"]?.Value<string>());
 
                (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjNull.MyMethod()", expect_ok: false );
                Assert.Equal("Expression 'this.ParmToTestObjNull.MyMethod' evaluated to null", res.Error["message"]?.Value<string>());
 
                (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjException.MyMethod()", expect_ok: false );
-               Assert.Contains(
-                    "Cannot evaluate '(this.ParmToTestObjException.MyMethod()\n)'",
-                    res.Error["result"]?["description"]?.Value<string>());
+               Assert.Equal("Method 'MyMethod' not found in type 'string'", res.Error["result"]?["description"]?.Value<string>());
            });
 
         [Fact]
         public async Task EvaluateSimpleMethodCallsWithoutParms() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "run",
+            "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate.run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
             wait_for_event_fn: async (pause_location) =>
            {
@@ -547,7 +543,7 @@ namespace DebuggerTests
 
         [Fact]
         public async Task EvaluateSimpleMethodCallsWithConstParms() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "run",
+            "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate.run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
             wait_for_event_fn: async (pause_location) =>
            {
@@ -571,7 +567,7 @@ namespace DebuggerTests
 
         [Fact]
         public async Task EvaluateSimpleMethodCallsWithVariableParms() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "run",
+            "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate.run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
             wait_for_event_fn: async (pause_location) =>
            {
@@ -587,10 +583,23 @@ namespace DebuggerTests
                     ("this.CallMethodWithObj(this.objToTest)", TNumber(10)));
            });
 
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task EvaluateIndexingNegative() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); 1 }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                var (_, res) = await EvaluateOnCallFrame(id, "f.idx0[2]", expect_ok: false );
+                Assert.Equal("Unable to evaluate element access 'f.idx0[2]': Cannot apply indexing with [] to a primitive object of type 'number'", res.Error["message"]?.Value<string>());
+                (_, res) = await EvaluateOnCallFrame(id, "f[1]", expect_ok: false );
+                Assert.Equal( "Unable to evaluate element access 'f[1]': Type 'DebuggerTests.EvaluateLocalsWithIndexingTests.TestEvaluate' cannot be indexed.", res.Error["message"]?.Value<string>());
+           });
+
         [Fact]
-        public async Task EvaluateExpressionsWithElementAccessByConstant() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 5, "EvaluateLocals",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
+        public async Task EvaluateIndexingsByConstant() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
@@ -603,9 +612,9 @@ namespace DebuggerTests
            });
 
         [Fact]
-        public async Task EvaluateExpressionsWithElementAccessByLocalVariable() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 5, "EvaluateLocals",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
+        public async Task EvaluateIndexingByLocalVariable() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
@@ -619,9 +628,64 @@ namespace DebuggerTests
            });
 
         [Fact]
-        public async Task EvaluateExpressionsWithElementAccessByMemberVariables() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 5, "EvaluateLocals",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
+        public async Task EvaluateIndexingByExpression() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("f.numList[i + 1]", TNumber(2)),
+                    ("f.textList[(2 * j) - 1]", TString("2")),
+                    ("f.textList[j - 1]", TString("1")),
+                    //("f[\"longstring\"]", TBool(true)), FIXME: Broken case
+                    ("f.numArray[f.numList[j - 1]]", TNumber(2))
+                );
+            });
+
+        [Fact]
+        public async Task EvaluateIndexingByExpressionMultidimensional() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithMultidimensionalIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithMultidimensionalIndexingTests.EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithMultidimensionalIndexingTests:EvaluateLocals'); })",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("f.numArray2D[0, j - 1]", TNumber(1)), // 0, 0
+                    ("f.numArray2D[f.idx1, i + j]", TNumber(4)), // 1, 1
+                    ("f.numArray2D[(f.idx1 - j) * 5, i + j]", TNumber(2)), // 0, 1
+                    ("f.numArray2D[i + j, f.idx1 - 1]", TNumber(3)) // 1, 0
+                );
+            });
+
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task EvaluateIndexingByExpressionNegative() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); 1 }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                // indexing with expression of a wrong type
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                var (_, res) = await EvaluateOnCallFrame(id, "f.numList[\"a\" + 1]", expect_ok: false );
+                Assert.Equal("Unable to evaluate element access 'f.numList[\"a\" + 1]': Cannot index with an object of type 'string'", res.Error["message"]?.Value<string>());
+            });
+
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task EvaluateIndexingByExpressionContainingUnknownIdentifier() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); 1 }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                // indexing with expression of a wrong type
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                var (_, res) = await EvaluateOnCallFrame(id, "f.numList[\"a\" + x]", expect_ok: false);
+                Assert.Equal("The name x does not exist in the current context", res.Error["result"]?["description"]?.Value<string>());
+            });
+
+        [Fact]
+        public async Task EvaluateIndexingByMemberVariables() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
@@ -633,13 +697,12 @@ namespace DebuggerTests
                    ("f.textList[f.idx1]", TString("2")),
                    ("f.numArray[f.idx1]", TNumber(2)),
                    ("f.textArray[f.idx0]", TString("1")));
-
            });
 
         [Fact]
-        public async Task EvaluateExpressionsWithElementAccessNested() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 5, "EvaluateLocals",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
+        public async Task EvaluateIndexingNested() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
@@ -654,9 +717,74 @@ namespace DebuggerTests
            });
 
         [ConditionalFact(nameof(RunningOnChrome))]
-        public async Task EvaluateExpressionsWithElementAccessMultidimentional() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithElementAccessTests", "EvaluateLocals", 5, "EvaluateLocals",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithElementAccessTests:EvaluateLocals'); })",
+        public async Task EvaluateIndexingMultidimensional() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithMultidimensionalIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithMultidimensionalIndexingTests.EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithMultidimensionalIndexingTests:EvaluateLocals'); })",
+            wait_for_event_fn: async (pause_location) =>
+           {
+               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+               await EvaluateOnCallFrameAndCheck(id,
+                   ("j", TNumber(1)),
+                   ("f.idx1", TNumber(1)),
+                   ("f.numArray2D[0, 0]", TNumber(1)),
+                   ("f.numArray2D[0, 1]", TNumber(2)),
+                   ("f.numArray2D[1,  0]", TNumber(3)),
+                   ("f.numArray2D[1  ,1]", TNumber(4)),
+                   ("f.numArray3D[0, 0, 0]", TNumber(1)),
+                   ("f.numArray3D[0 ,0  ,1]", TNumber(2)),
+                   ("f.numArray3D[0  ,0,    2]", TNumber(3)),
+                   ("f.numArray3D[1,  1,        0]", TNumber(10)),
+                   ("f.numArray3D[1, 1,  1]", TNumber(11)),
+                   ("f.numArray3D[1 , 1, 2]", TNumber(12)),
+                   ("f.numArray2D[0,0]", TNumber(1)),
+                   ("f.numArray2D[0,1]", TNumber(2)),
+                   ("f.numArray2D[1,0]", TNumber(3)),
+                   ("f.numArray2D[1,1]", TNumber(4)),
+                   ("f.numArray3D[0,0,0]", TNumber(1)),
+                   ("f.numArray3D[0,0,1]", TNumber(2)),
+                   ("f.numArray3D[0,0,2]", TNumber(3)),
+                   ("f.numArray3D[1,1,0]", TNumber(10)),
+                   ("f.numArray3D[1,1,1]", TNumber(11)),
+                   ("f.numArray3D[1,1,2]", TNumber(12)),
+                   ("f.textArray2D[0,0]", TString("one")),
+                   ("f.textArray2D[0,1]", TString("two")),
+                   ("f.textArray2D[1,0]", TString("three")),
+                   ("f.textArray2D[1,1]", TString("four")),
+                   ("f.numArray2D[i,i]", TNumber(1)),
+                   ("f.numArray2D[i,j]", TNumber(2)),
+                   ("f.numArray2D[j,i]", TNumber(3)),
+                   ("f.numArray2D[j,j]", TNumber(4)),
+                   ("f.numArray3D[i,i,i]", TNumber(1)),
+                   ("f.numArray3D[i,i,j]", TNumber(2)),
+                   ("f.numArray3D[i,i,2]", TNumber(3)),
+                   ("f.numArray3D[j,j,i]", TNumber(10)),
+                   ("f.numArray3D[j,j,1]", TNumber(11)),
+                   ("f.numArray3D[j,j,2]", TNumber(12)),
+                   ("f.textArray2D[i,i]", TString("one")),
+                   ("f.textArray2D[i,j]", TString("two")),
+                   ("f.textArray2D[j,i]", TString("three")),
+                   ("f.textArray2D[j,j]", TString("four")),
+                   ("f.numArray2D[f.idx0,f.idx0]", TNumber(1)),
+                   ("f.numArray2D[f.idx0,f.idx1]", TNumber(2)),
+                   ("f.numArray2D[f.idx1,f.idx0]", TNumber(3)),
+                   ("f.numArray2D[f.idx1,f.idx1]", TNumber(4)),
+                   ("f.numArray3D[f.idx0,f.idx0,f.idx0]", TNumber(1)),
+                   ("f.numArray3D[f.idx0,f.idx0,f.idx1]", TNumber(2)),
+                   ("f.numArray3D[f.idx0,f.idx0,2]", TNumber(3)),
+                   ("f.numArray3D[f.idx1,f.idx1,f.idx0]", TNumber(10)),
+                   ("f.numArray3D[f.idx1,f.idx1,f.idx1]", TNumber(11)),
+                   ("f.numArray3D[f.idx1,f.idx1,2]", TNumber(12)),
+                   ("f.textArray2D[f.idx0,f.idx0]", TString("one")),
+                   ("f.textArray2D[f.idx0,f.idx1]", TString("two")),
+                   ("f.textArray2D[f.idx1,f.idx0]", TString("three")),
+                   ("f.textArray2D[f.idx1,f.idx1]", TString("four")));
+           });
+
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task EvaluateIndexingJagged() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
            {
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
@@ -681,7 +809,7 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateSimpleMethodCallsCheckChangedValue() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "run",
+            "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate.run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
             wait_for_event_fn: async (pause_location) =>
            {
@@ -699,142 +827,176 @@ namespace DebuggerTests
                CheckNumber(props, "a", 11);
            });
 
-        [Fact]
-        public async Task EvaluateStaticClass() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "run",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
-            wait_for_event_fn: async (pause_location) =>
-           {
-               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-
-               var frame = pause_location["callFrames"][0];
-
-               await EvaluateOnCallFrameAndCheck(id,
-                   ("DebuggerTests.EvaluateStaticClass.StaticField1", TNumber(10)));
-               await EvaluateOnCallFrameAndCheck(id,
-                   ("DebuggerTests.EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")));
-               await EvaluateOnCallFrameAndCheck(id,
-                   ("DebuggerTests.EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
-           });
-
         [Theory]
-        [MemberData(nameof(EvaluateStaticClassFromStaticMethodTestData), parameters: "DebuggerTests.EvaluateMethodTestsClass")]
-        // [MemberData(nameof(EvaluateStaticClassFromStaticMethodTestData), parameters: "EvaluateMethodTestsClass")]
-        public async Task EvaluateStaticClassFromStaticMethod(string type, string method, string bp_function_name, bool is_async)
-        => await CheckInspectLocalsAtBreakpointSite(
-            type, method, 1, bp_function_name,
-            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] {type}:{method}'); }})",
-            wait_for_event_fn: async (pause_location) =>
-           {
-               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-
-               var frame = pause_location["callFrames"][0];
-
-               await EvaluateOnCallFrameAndCheck(id,
-                   ("EvaluateStaticClass.StaticField1", TNumber(10)),
-                   ("EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")),
-                   ("EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")),
-                   ("DebuggerTests.EvaluateStaticClass.StaticField1", TNumber(10)),
-                   ("DebuggerTests.EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")),
-                   ("DebuggerTests.EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
-           });
-
-        [Fact]
-        public async Task EvaluateNonStaticClassWithStaticFields() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateMethodTestsClass", "EvaluateAsyncMethods", 3, "EvaluateAsyncMethods",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateAsyncMethods'); })",
-            wait_for_event_fn: async (pause_location) =>
-           {
-               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-
-               var frame = pause_location["callFrames"][0];
-
-               await EvaluateOnCallFrameAndCheck(id,
-                   ("DebuggerTests.EvaluateNonStaticClassWithStaticFields.StaticField1", TNumber(10)),
-                   ("DebuggerTests.EvaluateNonStaticClassWithStaticFields.StaticProperty1", TString("StaticProperty1")),
-                   ("DebuggerTests.EvaluateNonStaticClassWithStaticFields.StaticPropertyWithError", TString("System.Exception: not implemented")),
-                   ("EvaluateNonStaticClassWithStaticFields.StaticField1", TNumber(10)),
-                   ("EvaluateNonStaticClassWithStaticFields.StaticProperty1", TString("StaticProperty1")),
-                   ("EvaluateNonStaticClassWithStaticFields.StaticPropertyWithError", TString("System.Exception: not implemented")));
-           });
+        [InlineData("DebuggerTestsV2.EvaluateStaticFieldsInStaticClass", "Run", "DebuggerTestsV2", "EvaluateStaticFieldsInStaticClass", "EvaluateMethods", 1, 2)]
+        [InlineData("DebuggerTests.EvaluateStaticFieldsInStaticClass", "Run", "DebuggerTests", "EvaluateStaticFieldsInStaticClass", "EvaluateMethods", 1, 1)]
+        [InlineData("DebuggerTests.EvaluateStaticFieldsInStaticClass", "RunAsync", "DebuggerTests", "EvaluateStaticFieldsInStaticClass", "EvaluateMethodsAsync", 1, 1)]
+        [InlineData("DebuggerTests.EvaluateStaticFieldsInInstanceClass", "RunStatic", "DebuggerTests", "EvaluateStaticFieldsInInstanceClass", "EvaluateMethods", 1, 7)]
+        [InlineData("DebuggerTests.EvaluateStaticFieldsInInstanceClass", "RunStaticAsync", "DebuggerTests", "EvaluateStaticFieldsInInstanceClass", "EvaluateMethodsAsync", 1, 7)]
+        [InlineData("DebuggerTests.EvaluateStaticFieldsInInstanceClass", "Run", "DebuggerTests", "EvaluateStaticFieldsInInstanceClass", "EvaluateMethods", 1, 7)]
+        [InlineData("DebuggerTests.EvaluateStaticFieldsInInstanceClass", "RunAsync", "DebuggerTests", "EvaluateStaticFieldsInInstanceClass", "EvaluateMethodsAsync", 1, 7)]
+        public async Task EvaluateStaticFields(
+            string bpLocation, string bpMethod, string namespaceName, string className, string triggeringMethod, int bpLine, int expectedInt) =>
+            await CheckInspectLocalsAtBreakpointSite(
+                bpLocation, bpMethod, bpLine, $"{bpLocation}.{bpMethod}",
+                $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:{triggeringMethod}'); }})",
+                wait_for_event_fn: async (pause_location) =>
+                {
+                    var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                    foreach (var pad in new[] { String.Empty, "  " })
+                    {
+                        await EvaluateOnCallFrameAndCheck(id,
+                            ($"{pad}{namespaceName}.{className}.StaticField", TNumber(expectedInt * 10)),
+                            ($"{pad}{namespaceName}{pad}.{className}.{pad}StaticProperty", TString($"StaticProperty{expectedInt}")),
+                            ($"{namespaceName}.{pad}{className}.StaticPropertyWithError", TString($"System.Exception: not implemented {expectedInt}")),
+                            ($"{pad}{className}.{pad}StaticField", TNumber(expectedInt * 10)),
+                            ($"{pad}{pad}{className}.StaticProperty", TString($"StaticProperty{expectedInt}")),
+                            ($"{pad}{className}.StaticPropertyWithError", TString($"System.Exception: not implemented {expectedInt}")),
+                            ($"{pad}StaticField{pad}", TNumber(expectedInt * 10)),
+                            ($"{pad}StaticProperty", TString($"StaticProperty{expectedInt}")),
+                            ($"{pad}StaticPropertyWithError", TString($"System.Exception: not implemented {expectedInt}"))
+                        );
+                    }
+                });
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateStaticClassesNested() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateMethodTestsClass", "EvaluateMethods", 3, "EvaluateMethods",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
-            wait_for_event_fn: async (pause_location) =>
-           {
-               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-
-               var frame = pause_location["callFrames"][0];
-
-               await EvaluateOnCallFrameAndCheck(id,
-                   ("DebuggerTests.EvaluateStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticField1", TNumber(3)),
-                   ("DebuggerTests.EvaluateStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticProperty1", TString("StaticProperty3")),
-                   ("DebuggerTests.EvaluateStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticPropertyWithError", TString("System.Exception: not implemented 3")),
-                   ("EvaluateStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticField1", TNumber(3)),
-                   ("EvaluateStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticProperty1", TString("StaticProperty3")),
-                   ("EvaluateStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticPropertyWithError", TString("System.Exception: not implemented 3")));
-           });
-
-        [Fact]
-        public async Task EvaluateStaticClassesNestedWithNoNamespace() => await CheckInspectLocalsAtBreakpointSite(
-            "NoNamespaceClass", "EvaluateMethods", 1, "EvaluateMethods",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] NoNamespaceClass:EvaluateMethods'); })",
-            wait_for_event_fn: async (pause_location) =>
-           {
-               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-
-               var frame = pause_location["callFrames"][0];
-
-               await EvaluateOnCallFrameAndCheck(id,
-                   ("NoNamespaceClass.NestedClass1.NestedClass2.NestedClass3.StaticField1", TNumber(30)),
-                   ("NoNamespaceClass.NestedClass1.NestedClass2.NestedClass3.StaticProperty1", TString("StaticProperty30")),
-                   ("NoNamespaceClass.NestedClass1.NestedClass2.NestedClass3.StaticPropertyWithError", TString("System.Exception: not implemented 30")));
-           });
-
-        [ConditionalFact(nameof(RunningOnChrome))]
-        public async Task EvaluateStaticClassesFromDifferentNamespaceInDifferentFrames() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTestsV2.EvaluateStaticClass", "Run", 1, "Run",
+            "DebuggerTests.EvaluateMethodTestsClass", "EvaluateMethods", 3, "DebuggerTests.EvaluateMethodTestsClass.EvaluateMethods",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
             wait_for_event_fn: async (pause_location) =>
             {
-                var id_top = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                var frame = pause_location["callFrames"][0];
-
-                await EvaluateOnCallFrameAndCheck(id_top,
-                    ("EvaluateStaticClass.StaticField1", TNumber(20)),
-                    ("EvaluateStaticClass.StaticProperty1", TString("StaticProperty2")),
-                    ("EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
-
-                var id_second = pause_location["callFrames"][1]["callFrameId"].Value<string>();
-
-                await EvaluateOnCallFrameAndCheck(id_second,
-                    ("EvaluateStaticClass.StaticField1", TNumber(10)),
-                    ("EvaluateStaticClass.StaticProperty1", TString("StaticProperty1")),
-                    ("EvaluateStaticClass.StaticPropertyWithError", TString("System.Exception: not implemented")));
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                foreach (var pad in new[] { String.Empty, "  " })
+                {
+                    await EvaluateOnCallFrameAndCheck(id,
+                        ($"{pad}DebuggerTests{pad}.EvaluateStaticFieldsInStaticClass.NestedClass1.{pad}NestedClass2.NestedClass3.{pad}StaticField", TNumber(3)),
+                        ($"{pad}DebuggerTests.EvaluateStaticFieldsInStaticClass.NestedClass1.NestedClass2.NestedClass3.StaticProperty", TString("StaticProperty3")),
+                        ($"{pad}{pad}DebuggerTests.{pad}EvaluateStaticFieldsInStaticClass.NestedClass1.NestedClass2.NestedClass3.{pad}StaticPropertyWithError", TString("System.Exception: not implemented 3")),
+                        ($"EvaluateStaticFieldsInStaticClass.{pad}NestedClass1.{pad}NestedClass2.NestedClass3.StaticField", TNumber(3)),
+                        ($"EvaluateStaticFieldsInStaticClass.NestedClass1.{pad}{pad}NestedClass2.NestedClass3.{pad}StaticProperty", TString("StaticProperty3")),
+                        ($"{pad}EvaluateStaticFieldsInStaticClass.NestedClass1.{pad}NestedClass2.{pad}NestedClass3.StaticPropertyWithError", TString("System.Exception: not implemented 3")));
+                }
             });
+
+        [Fact]
+        public async Task EvaluateStaticClassesNestedWithNoNamespace() => await CheckInspectLocalsAtBreakpointSite(
+            "NoNamespaceClass", "EvaluateMethods", 1, "NoNamespaceClass.EvaluateMethods",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] NoNamespaceClass:EvaluateMethods'); })",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                foreach (var pad in new[] { String.Empty, "  " })
+                {
+                    await EvaluateOnCallFrameAndCheck(id,
+                        ($"{pad}NoNamespaceClass.NestedClass1.NestedClass2.{pad}NestedClass3.StaticField", TNumber(30)),
+                        ($"NoNamespaceClass.NestedClass1.{pad}NestedClass2.NestedClass3.StaticProperty", TString("StaticProperty30")),
+                        ($"NoNamespaceClass.{pad}NestedClass1.NestedClass2.NestedClass3.{pad}StaticPropertyWithError", TString("System.Exception: not implemented 30")));
+                }
+            });
+
+        [Fact]
+        public async Task EvaluateStaticClassesNestedWithSameNames() => await CheckInspectLocalsAtBreakpointSite(
+            "NestedWithSameNames.B.NestedWithSameNames.B", "Run", 1, "NestedWithSameNames.B.NestedWithSameNames.B.Run",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] NestedWithSameNames:Evaluate'); })",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                foreach (var pad in new[] { String.Empty, "  " })
+                {
+                    await EvaluateOnCallFrameAndCheck(id,
+                        ($"{pad}NestedWithSameNames", TNumber(90)),
+                        ($"B.{pad}NestedWithSameNames", TNumber(90)),
+                        ($"{pad}B.{pad}StaticField", TNumber(40)),
+                        ($"{pad}{pad}B.StaticProperty", TString("StaticProperty4")),
+                        ($"B.{pad}StaticPropertyWithError{pad}", TString("System.Exception: not implemented V4"))
+                    );
+                    await CheckEvaluateFail(id,
+                        ($"{pad}NestedWithSameNames.B.{pad}StaticField", GetPrimitiveHasNoMembersMessage("B")),
+                        ($"NestedWithSameNames.{pad}B.StaticProperty", GetPrimitiveHasNoMembersMessage("B")),
+                        ($"{pad}NestedWithSameNames{pad}.{pad}B.StaticPropertyWithError", GetPrimitiveHasNoMembersMessage("B")),
+                        ($"{pad}NestedWithSameNames.B.{pad}NestedWithSameNames", GetPrimitiveHasNoMembersMessage("B")),
+                        ($"B.NestedWithSameNames.{pad}B{pad}.StaticField", GetPrimitiveHasNoMembersMessage("B")),
+                        ($"{pad}B.NestedWithSameNames.{pad}B.StaticProperty", GetPrimitiveHasNoMembersMessage("B")),
+                        ($"B.NestedWithSameNames{pad}.B.{pad}StaticPropertyWithError", GetPrimitiveHasNoMembersMessage("B")),
+                        ($"{pad}NestedWithSameNames.B{pad}.NestedWithSameNames.B{pad}.NestedWithSameNames{pad}", GetPrimitiveHasNoMembersMessage("B")),
+                        ($"NestedWithSameNames.B{pad}.{pad}{pad}NestedWithDifferentName.B.{pad}StaticField", GetPrimitiveHasNoMembersMessage("B")),
+                        ($"{pad}NestedWithSameNames.B.NestedWithDifferentName.B.StaticProperty", GetPrimitiveHasNoMembersMessage("B")),
+                        ($"NestedWithSameNames.{pad}B.{pad}NestedWithDifferentName.B.{pad}StaticPropertyWithError", GetPrimitiveHasNoMembersMessage("B"))
+                    );
+                }
+                string GetPrimitiveHasNoMembersMessage(string name) => $"Cannot find member '{name}' on a primitive type";
+            });
+
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData("DebuggerTests", "EvaluateStaticFieldsInInstanceClass", 7, true)]
+        [InlineData("DebuggerTestsV2", "EvaluateStaticFieldsInStaticClass", 2, false)]
+        public async Task EvaluateStaticFieldsFromDifferentNamespaceInDifferentFrames(
+            string namespaceName, string className, int expectedInt, bool isFromDifferentNamespace) =>
+            await CheckInspectLocalsAtBreakpointSite(
+                "DebuggerTestsV2.EvaluateStaticFieldsInStaticClass", "Run", 1, "DebuggerTestsV2.EvaluateStaticFieldsInStaticClass.Run",
+                "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
+                wait_for_event_fn: async (pause_location) =>
+                {
+                    var id_top = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                    var id_second = pause_location["callFrames"][1]["callFrameId"].Value<string>();
+                    int expectedIntInPrevFrame = isFromDifferentNamespace ? 7 : 1;
+
+                    foreach (var pad in new[] { String.Empty, "  " })
+                    {
+                        await EvaluateOnCallFrameAndCheck(id_top,
+                            ($"{pad}StaticField", TNumber(20)),
+                            ($"{pad}{namespaceName}.{pad}{className}.StaticField{pad}", TNumber(expectedInt * 10)),
+                            ($"{pad}StaticProperty", TString($"StaticProperty2")),
+                            ($"{pad}{namespaceName}.{pad}{className}.StaticProperty", TString($"StaticProperty{expectedInt}")),
+                            ($"{pad}StaticPropertyWithError", TString($"System.Exception: not implemented 2")),
+                            ($"{pad}{namespaceName}{pad}.{pad}{className}.StaticPropertyWithError", TString($"System.Exception: not implemented {expectedInt}"))
+                        );
+
+                        if (!isFromDifferentNamespace)
+                        {
+                            await EvaluateOnCallFrameAndCheck(id_top,
+                                ($"{pad}{className}.StaticField", TNumber(expectedInt * 10)),
+                                ($"{className}{pad}.StaticProperty{pad}", TString($"StaticProperty{expectedInt}")),
+                                ($"{className}{pad}.{pad}StaticPropertyWithError", TString($"System.Exception: not implemented {expectedInt}"))
+                            );
+                        }
+
+                        await EvaluateOnCallFrameAndCheck(id_second,
+                            ($"{pad}{namespaceName}.{pad}{className}.{pad}StaticField", TNumber(expectedInt * 10)),
+                            ($"{pad}{className}.StaticField", TNumber(expectedIntInPrevFrame * 10)),
+                            ($"{namespaceName}{pad}.{pad}{className}.StaticProperty", TString($"StaticProperty{expectedInt}")),
+                            ($"{pad}{className}.StaticProperty", TString($"StaticProperty{expectedIntInPrevFrame}")),
+                            ($"{pad}{namespaceName}.{className}.StaticPropertyWithError", TString($"System.Exception: not implemented {expectedInt}")),
+                            ($"{className}{pad}.StaticPropertyWithError{pad}", TString($"System.Exception: not implemented {expectedIntInPrevFrame}"))
+                        );
+
+                        await CheckEvaluateFail(id_second,
+                            ($"{pad}StaticField", GetNonExistingVarMessage("StaticField")),
+                            ($"{pad}{pad}StaticProperty", GetNonExistingVarMessage("StaticProperty")),
+                            ($"{pad}StaticPropertyWithError{pad}", GetNonExistingVarMessage("StaticPropertyWithError"))
+                        );
+                    }
+                    string GetNonExistingVarMessage(string name) => $"The name {name} does not exist in the current context";
+                });
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateStaticClassInvalidField() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "run",
+            "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate.run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
             wait_for_event_fn: async (pause_location) =>
-           {
-               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-               var frame = pause_location["callFrames"][0];
+                var (_, res) = await EvaluateOnCallFrame(id, "DebuggerTests.EvaluateStaticFieldsInStaticClass.StaticProperty2", expect_ok: false);
+                AssertEqual("Failed to resolve member access for DebuggerTests.EvaluateStaticFieldsInStaticClass.StaticProperty2", res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
 
-               var (_, res) = await EvaluateOnCallFrame(id, "DebuggerTests.EvaluateStaticClass.StaticProperty2", expect_ok: false);
-               AssertEqual("Failed to resolve member access for DebuggerTests.EvaluateStaticClass.StaticProperty2", res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
-
-               (_, res) = await EvaluateOnCallFrame(id, "DebuggerTests.InvalidEvaluateStaticClass.StaticProperty2", expect_ok: false);
-               AssertEqual("Failed to resolve member access for DebuggerTests.InvalidEvaluateStaticClass.StaticProperty2", res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
-           });
+                (_, res) = await EvaluateOnCallFrame(id, "DebuggerTests.InvalidEvaluateStaticClass.StaticProperty2", expect_ok: false);
+                AssertEqual("Failed to resolve member access for DebuggerTests.InvalidEvaluateStaticClass.StaticProperty2", res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
+            });
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task AsyncLocalsInContinueWithBlock() => await CheckInspectLocalsAtBreakpointSite(
-           "DebuggerTests.AsyncTests.ContinueWithTests", "ContinueWithStaticAsync", 4, "<ContinueWithStaticAsync>b__3_0",
+           "DebuggerTests.AsyncTests.ContinueWithTests", "ContinueWithStaticAsync", 4, "DebuggerTests.AsyncTests.ContinueWithTests.ContinueWithStaticAsync.AnonymousMethod__3_0",
            "window.setTimeout(function() { invoke_static_method('[debugger-test] DebuggerTests.AsyncTests.ContinueWithTests:RunAsync'); })",
            wait_for_event_fn: async (pause_location) =>
            {
@@ -854,7 +1016,7 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateConstantValueUsingRuntimeEvaluate() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateTestsClass", "EvaluateLocals", 9, "EvaluateLocals",
+            "DebuggerTests.EvaluateTestsClass", "EvaluateLocals", 9, "DebuggerTests.EvaluateTestsClass.EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateTestsClass:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
            {
@@ -871,12 +1033,17 @@ namespace DebuggerTests
         [InlineData("EvaluateBrowsableClass", "TestEvaluatePropertiesNone", "testPropertiesNone", 10)]
         [InlineData("EvaluateBrowsableStruct", "TestEvaluateFieldsNone", "testFieldsNone", 10)]
         [InlineData("EvaluateBrowsableStruct", "TestEvaluatePropertiesNone", "testPropertiesNone", 10)]
-        [InlineData("EvaluateBrowsableStaticClass", "TestEvaluateFieldsNone", "testFieldsNone", 10)]
-        [InlineData("EvaluateBrowsableStaticClass", "TestEvaluatePropertiesNone", "testPropertiesNone", 10)]
-        [InlineData("EvaluateBrowsableCustomPropertiesClass", "TestEvaluatePropertiesNone", "testPropertiesNone", 5, true)]
+        [InlineData("EvaluateBrowsableClassStatic", "TestEvaluateFieldsNone", "testFieldsNone", 10)]
+        [InlineData("EvaluateBrowsableClassStatic", "TestEvaluatePropertiesNone", "testPropertiesNone", 10)]
+        [InlineData("EvaluateBrowsableStructStatic", "TestEvaluateFieldsNone", "testFieldsNone", 10)]
+        [InlineData("EvaluateBrowsableStructStatic", "TestEvaluatePropertiesNone", "testPropertiesNone", 10)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesClass", "TestEvaluatePropertiesNone", "testPropertiesNone", 5, true)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesStruct", "TestEvaluatePropertiesNone", "testPropertiesNone", 5, true)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesClassStatic", "TestEvaluatePropertiesNone", "testPropertiesNone", 5, true)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesStructStatic", "TestEvaluatePropertiesNone", "testPropertiesNone", 5, true)]
         public async Task EvaluateBrowsableNone(
-            string outerClassName, string className, string localVarName, int breakLine, bool isCustomGetter = false) => await CheckInspectLocalsAtBreakpointSite(
-            $"DebuggerTests.{outerClassName}", "Evaluate", breakLine, "Evaluate",
+            string outerClassName, string className, string localVarName, int breakLine, bool allMembersAreProperties = false) => await CheckInspectLocalsAtBreakpointSite(
+            $"DebuggerTests.{outerClassName}", "Evaluate", breakLine, $"DebuggerTests.{outerClassName}.Evaluate",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.{outerClassName}:Evaluate'); 1 }})",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -886,7 +1053,7 @@ namespace DebuggerTests
                 await CheckValue(testNone, TObject($"DebuggerTests.{outerClassName}.{className}"), nameof(testNone));
                 var testNoneProps = await GetProperties(testNone["objectId"]?.Value<string>());
 
-                if (isCustomGetter)
+                if (allMembersAreProperties)
                     await CheckProps(testNoneProps, new
                     {
                         list = TGetter("list", TObject("System.Collections.Generic.List<int>", description: "Count = 2")),
@@ -915,11 +1082,16 @@ namespace DebuggerTests
         [InlineData("EvaluateBrowsableClass", "TestEvaluatePropertiesNever", "testPropertiesNever", 10)]
         [InlineData("EvaluateBrowsableStruct", "TestEvaluateFieldsNever", "testFieldsNever", 10)]
         [InlineData("EvaluateBrowsableStruct", "TestEvaluatePropertiesNever", "testPropertiesNever", 10)]
-        [InlineData("EvaluateBrowsableStaticClass", "TestEvaluateFieldsNever", "testFieldsNever", 10)]
-        [InlineData("EvaluateBrowsableStaticClass", "TestEvaluatePropertiesNever", "testPropertiesNever", 10)]
-        [InlineData("EvaluateBrowsableCustomPropertiesClass", "TestEvaluatePropertiesNever", "testPropertiesNever", 5)]
+        [InlineData("EvaluateBrowsableClassStatic", "TestEvaluateFieldsNever", "testFieldsNever", 10)]
+        [InlineData("EvaluateBrowsableClassStatic", "TestEvaluatePropertiesNever", "testPropertiesNever", 10)]
+        [InlineData("EvaluateBrowsableStructStatic", "TestEvaluateFieldsNever", "testFieldsNever", 10)]
+        [InlineData("EvaluateBrowsableStructStatic", "TestEvaluatePropertiesNever", "testPropertiesNever", 10)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesClass", "TestEvaluatePropertiesNever", "testPropertiesNever", 5)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesStruct", "TestEvaluatePropertiesNever", "testPropertiesNever", 5)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesClassStatic", "TestEvaluatePropertiesNever", "testPropertiesNever", 5)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesStructStatic", "TestEvaluatePropertiesNever", "testPropertiesNever", 5)]
         public async Task EvaluateBrowsableNever(string outerClassName, string className, string localVarName, int breakLine) => await CheckInspectLocalsAtBreakpointSite(
-            $"DebuggerTests.{outerClassName}", "Evaluate", breakLine, "Evaluate",
+            $"DebuggerTests.{outerClassName}", "Evaluate", breakLine, $"DebuggerTests.{outerClassName}.Evaluate",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.{outerClassName}:Evaluate'); 1 }})",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -938,12 +1110,17 @@ namespace DebuggerTests
         [InlineData("EvaluateBrowsableClass", "TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed", 10)]
         [InlineData("EvaluateBrowsableStruct", "TestEvaluateFieldsCollapsed", "testFieldsCollapsed", 10)]
         [InlineData("EvaluateBrowsableStruct", "TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed", 10)]
-        [InlineData("EvaluateBrowsableStaticClass", "TestEvaluateFieldsCollapsed", "testFieldsCollapsed", 10)]
-        [InlineData("EvaluateBrowsableStaticClass", "TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed", 10)]
-        [InlineData("EvaluateBrowsableCustomPropertiesClass", "TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed", 5, true)]
+        [InlineData("EvaluateBrowsableClassStatic", "TestEvaluateFieldsCollapsed", "testFieldsCollapsed", 10)]
+        [InlineData("EvaluateBrowsableClassStatic", "TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed", 10)]
+        [InlineData("EvaluateBrowsableStructStatic", "TestEvaluateFieldsCollapsed", "testFieldsCollapsed", 10)]
+        [InlineData("EvaluateBrowsableStructStatic", "TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed", 10)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesClass", "TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed", 5, true)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesStruct", "TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed", 5, true)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesClassStatic", "TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed", 5, true)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesStructStatic", "TestEvaluatePropertiesCollapsed", "testPropertiesCollapsed", 5, true)]
         public async Task EvaluateBrowsableCollapsed(
-            string outerClassName, string className, string localVarName, int breakLine, bool isCustomGetter = false) => await CheckInspectLocalsAtBreakpointSite(
-            $"DebuggerTests.{outerClassName}", "Evaluate", breakLine, "Evaluate",
+            string outerClassName, string className, string localVarName, int breakLine, bool allMembersAreProperties = false) => await CheckInspectLocalsAtBreakpointSite(
+            $"DebuggerTests.{outerClassName}", "Evaluate", breakLine, $"DebuggerTests.{outerClassName}.Evaluate",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.{outerClassName}:Evaluate'); 1 }})",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -952,7 +1129,7 @@ namespace DebuggerTests
                 var (testCollapsed, _) = await EvaluateOnCallFrame(id, localVarName);
                 await CheckValue(testCollapsed, TObject($"DebuggerTests.{outerClassName}.{className}"), nameof(testCollapsed));
                 var testCollapsedProps = await GetProperties(testCollapsed["objectId"]?.Value<string>());
-                if (isCustomGetter)
+                if (allMembersAreProperties)
                     await CheckProps(testCollapsedProps, new
                     {
                         listCollapsed = TGetter("listCollapsed", TObject("System.Collections.Generic.List<int>", description: "Count = 2")),
@@ -981,12 +1158,17 @@ namespace DebuggerTests
         [InlineData("EvaluateBrowsableClass", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 10)]
         [InlineData("EvaluateBrowsableStruct", "TestEvaluateFieldsRootHidden", "testFieldsRootHidden", 10)]
         [InlineData("EvaluateBrowsableStruct", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 10)]
-        [InlineData("EvaluateBrowsableStaticClass", "TestEvaluateFieldsRootHidden", "testFieldsRootHidden", 10)]
-        [InlineData("EvaluateBrowsableStaticClass", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 10)]
-        [InlineData("EvaluateBrowsableCustomPropertiesClass", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 5)]
+        [InlineData("EvaluateBrowsableClassStatic", "TestEvaluateFieldsRootHidden", "testFieldsRootHidden", 10)]
+        [InlineData("EvaluateBrowsableClassStatic", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 10)]
+        [InlineData("EvaluateBrowsableStructStatic", "TestEvaluateFieldsRootHidden", "testFieldsRootHidden", 10)]
+        [InlineData("EvaluateBrowsableStructStatic", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 10)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesClass", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 5)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesStruct", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 5)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesClassStatic", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 5)]
+        [InlineData("EvaluateBrowsableNonAutoPropertiesStructStatic", "TestEvaluatePropertiesRootHidden", "testPropertiesRootHidden", 5)]
         public async Task EvaluateBrowsableRootHidden(
             string outerClassName, string className, string localVarName, int breakLine) => await CheckInspectLocalsAtBreakpointSite(
-            $"DebuggerTests.{outerClassName}", "Evaluate", breakLine, "Evaluate",
+            $"DebuggerTests.{outerClassName}", "Evaluate", breakLine, $"DebuggerTests.{outerClassName}.Evaluate",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.{outerClassName}:Evaluate'); 1 }})",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -1043,7 +1225,7 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateStaticAttributeInAssemblyNotRelatedButLoaded() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateTestsClass", "EvaluateLocals", 9, "EvaluateLocals",
+            "DebuggerTests.EvaluateTestsClass", "EvaluateLocals", 9, "DebuggerTests.EvaluateTestsClass.EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateTestsClass:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
            {
@@ -1054,7 +1236,7 @@ namespace DebuggerTests
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateLocalObjectFromAssemblyNotRelatedButLoaded()
          => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateTestsClass", "EvaluateLocalsFromAnotherAssembly", 5, "EvaluateLocalsFromAnotherAssembly",
+            "DebuggerTests.EvaluateTestsClass", "EvaluateLocalsFromAnotherAssembly", 5, "DebuggerTests.EvaluateTestsClass.EvaluateLocalsFromAnotherAssembly",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateTestsClass:EvaluateLocalsFromAnotherAssembly'); })",
             wait_for_event_fn: async (pause_location) =>
            {
@@ -1064,7 +1246,7 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task StructureGetters() =>  await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.StructureGetters", "Evaluate", 2, "Evaluate",
+            "DebuggerTests.StructureGetters", "Evaluate", 2, $"DebuggerTests.StructureGetters.Evaluate",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.StructureGetters:Evaluate'); })",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -1079,7 +1261,7 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateMethodWithDefaultParam() => await CheckInspectLocalsAtBreakpointSite(
-            $"DebuggerTests.DefaultParamMethods", "Evaluate", 2, "Evaluate",
+            $"DebuggerTests.DefaultParamMethods", "Evaluate", 2, "DebuggerTests.DefaultParamMethods.Evaluate",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.DefaultParamMethods:Evaluate'); 1 }})",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -1131,13 +1313,13 @@ namespace DebuggerTests
                    );
 
                 var (_, res) = await EvaluateOnCallFrame(id, "test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true, 1.23f)", expect_ok: false);
-                AssertEqual("Unable to evaluate method 'GetDefaultAndRequiredParamMixedTypes'. Too many arguments passed.", 
+                AssertEqual("Unable to evaluate method 'GetDefaultAndRequiredParamMixedTypes'. Too many arguments passed.",
                     res.Error["result"]["description"]?.Value<string>(), "wrong error message");
             });
 
         [Fact]
         public async Task EvaluateMethodWithLinq() => await CheckInspectLocalsAtBreakpointSite(
-            $"DebuggerTests.DefaultParamMethods", "Evaluate", 2, "Evaluate",
+            $"DebuggerTests.DefaultParamMethods", "Evaluate", 2, "DebuggerTests.DefaultParamMethods.Evaluate",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.DefaultParamMethods:Evaluate'); 1 }})",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -1149,13 +1331,13 @@ namespace DebuggerTests
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateNullObjectPropertiesPositive() => await CheckInspectLocalsAtBreakpointSite(
-            $"DebuggerTests.EvaluateNullableProperties", "Evaluate", 6, "Evaluate",
+            $"DebuggerTests.EvaluateNullableProperties", "Evaluate", 11, "DebuggerTests.EvaluateNullableProperties.Evaluate",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.EvaluateNullableProperties:Evaluate'); 1 }})",
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-                // we have no way of returning int? for null values, 
+                // we have no way of returning int? for null values,
                 // so we return the last non-null class name
                 await EvaluateOnCallFrameAndCheck(id,
                    ("list.Count", TNumber(1)),
@@ -1168,45 +1350,47 @@ namespace DebuggerTests
                    ("tc!.MemberList!.Count", TNumber(2)),
                    ("tc?.MemberListNull?.Count", TObject("System.Collections.Generic.List<int>", is_null: true)),
                    ("tc.MemberListNull?.Count", TObject("System.Collections.Generic.List<int>", is_null: true)),
-                   ("tcNull?.MemberListNull?.Count", TObject("DebuggerTests.EvaluateNullableProperties.TestClass", is_null: true)));
+                   ("tcNull?.MemberListNull?.Count", TObject("DebuggerTests.EvaluateNullableProperties.TestClass", is_null: true)),
+                   ("str!.Length", TNumber(9)),
+                   ("str?.Length", TNumber(9)),
+                   ("str_null?.Length", TObject("string", is_null: true))
+                );
             });
 
-        [ConditionalFact(nameof(RunningOnChrome))]
+        [Fact]
         public async Task EvaluateNullObjectPropertiesNegative() => await CheckInspectLocalsAtBreakpointSite(
-            $"DebuggerTests.EvaluateNullableProperties", "Evaluate", 6, "Evaluate",
+            $"DebuggerTests.EvaluateNullableProperties", "Evaluate", 6, "DebuggerTests.EvaluateNullableProperties.Evaluate",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.EvaluateNullableProperties:Evaluate'); 1 }})",
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                await CheckEvaluateFail("list.Count.x", "Cannot find member 'x' on a primitive type");
-                await CheckEvaluateFail("listNull.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("listNull!.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("tcNull.MemberListNull.Count", GetNullReferenceErrorOn("\"MemberListNull\""));
-                await CheckEvaluateFail("tc.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("tcNull?.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("listNull?.Count.NonExistingProperty", GetNullReferenceErrorOn("\"NonExistingProperty\""));
-                await CheckEvaluateFail("tc?.MemberListNull! .Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("tc?. MemberListNull!.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("tc?.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("tc! .MemberListNull!.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("tc!.MemberListNull. Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("tcNull?.Sibling.MemberListNull?.Count", GetNullReferenceErrorOn("\"MemberListNull?\""));
-                await CheckEvaluateFail("listNull?", "Expected expression.");
-                await CheckEvaluateFail("listNull!.Count", GetNullReferenceErrorOn("\"Count\""));
-                await CheckEvaluateFail("x?.p", "Operation '?' not allowed on primitive type - 'x?'");
+                await CheckEvaluateFail(id,
+                    ("list.Count.x", "Cannot find member 'x' on a primitive type"),
+                    ("listNull.Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("listNull!.Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("tcNull.MemberListNull.Count", GetNullReferenceErrorOn("\"MemberListNull\"")),
+                    ("tc.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("tcNull?.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("listNull?.Count.NonExistingProperty", GetNullReferenceErrorOn("\"NonExistingProperty\"")),
+                    ("tc?.MemberListNull! .Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("tc?. MemberListNull!.Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("tc?.MemberListNull.Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("tc! .MemberListNull!.Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("tc!.MemberListNull. Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("tcNull?.Sibling.MemberListNull?.Count", GetNullReferenceErrorOn("\"MemberListNull?\"")),
+                    ("listNull?", "Expected expression."),
+                    ("listNull!.Count", GetNullReferenceErrorOn("\"Count\"")),
+                    ("x?.p", "Operation '?' not allowed on primitive type - 'x?'"),
+                    ("str_null.Length", GetNullReferenceErrorOn("\"Length\"")),
+                    ("str_null!.Length", GetNullReferenceErrorOn("\"Length\""))
+                );
 
                 string GetNullReferenceErrorOn(string name) => $"Expression threw NullReferenceException trying to access {name} on a null-valued object.";
-
-                async Task CheckEvaluateFail(string expr, string message)
-                {
-                    (_, Result _res) = await EvaluateOnCallFrame(id, expr, expect_ok: false);
-                    AssertEqual(message, _res.Error["result"]?["description"]?.Value<string>(), $"Expression '{expr}' - wrong error message");
-                }
             });
 
         [Fact]
         public async Task EvaluateMethodsOnPrimitiveTypesReturningPrimitives() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.PrimitiveTypeMethods", "Evaluate", 11, "Evaluate",
+            "DebuggerTests.PrimitiveTypeMethods", "Evaluate", 11, "DebuggerTests.PrimitiveTypeMethods.Evaluate",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.PrimitiveTypeMethods:Evaluate'); })",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -1219,7 +1403,6 @@ namespace DebuggerTests
                     ("test.propBool.ToString()", TString("True")),
                     ("test.propChar.ToString()", TString("X")),
                     ("test.propString.ToString()", TString("s_t_r")),
-                    ("test.propString.Split('*', 3, System.StringSplitOptions.RemoveEmptyEntries)", TObject("System.String[]")),
                     ("test.propString.EndsWith('r')", TBool(true)),
                     ("test.propString.StartsWith('S')", TBool(false)),
                     ("localInt.ToString()", TString("2")),
@@ -1231,15 +1414,15 @@ namespace DebuggerTests
                     ("localBool.GetTypeCode()", TObject("System.TypeCode", "Boolean")),
                     ("localChar.ToString()", TString("Y")),
                     ("localString.ToString()", TString("S*T*R")),
-                    ("localString.Split('*', 3, System.StringSplitOptions.TrimEntries)", TObject("System.String[]")),
                     ("localString.EndsWith('r')", TBool(false)),
-                    ("localString.StartsWith('S')", TBool(true)));
+                    ("localString.StartsWith('S')", TBool(true))
+                );
              });
 
         [Fact]
-        public async Task EvaluateMethodsOnPrimitiveTypesReturningPrimitivesCultureDependant() =>  
+        public async Task EvaluateMethodsOnPrimitiveTypesReturningPrimitivesCultureDependant() =>
             await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.PrimitiveTypeMethods", "Evaluate", 11, "Evaluate",
+            "DebuggerTests.PrimitiveTypeMethods", "Evaluate", 11, "DebuggerTests.PrimitiveTypeMethods.Evaluate",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.PrimitiveTypeMethods:Evaluate'); })",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -1249,7 +1432,7 @@ namespace DebuggerTests
                 var (floatLocalVal, _) = await EvaluateOnCallFrame(id, "localFloat");
                 var (doubleLocalVal, _) = await EvaluateOnCallFrame(id, "localDouble");
 
-                // expected value depends on the debugger's user culture and is equal to 
+                // expected value depends on the debugger's user culture and is equal to
                 // description of the number that also respects user's culture settings
                 await EvaluateOnCallFrameAndCheck(id,
                     ("test.propFloat.ToString()", TString(floatMemberVal["description"]?.Value<string>())),
@@ -1261,22 +1444,22 @@ namespace DebuggerTests
 
         [Fact]
         public async Task EvaluateMethodsOnPrimitiveTypesReturningObjects() =>  await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.PrimitiveTypeMethods", "Evaluate", 11, "Evaluate",
+            "DebuggerTests.PrimitiveTypeMethods", "Evaluate", 11, "DebuggerTests.PrimitiveTypeMethods.Evaluate",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.PrimitiveTypeMethods:Evaluate'); })",
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                 var (res, _) = await EvaluateOnCallFrame(id, "test.propString.Split('_', 3, System.StringSplitOptions.TrimEntries)");
-                var props = res["value"] ?? await GetProperties(res["objectId"]?.Value<string>()); // in firefox getProps is necessary
-                var expected_props = new [] { TString("s"), TString("t"), TString("r") };
+                var props = await GetProperties(res["objectId"]?.Value<string>());
+                var expected_props = new[] { TString("s"), TString("t"), TString("r") };
                 await CheckProps(props, expected_props, "props#1");
 
                 (res, _) = await EvaluateOnCallFrame(id, "localString.Split('*', 3, System.StringSplitOptions.RemoveEmptyEntries)");
-                props = res["value"] ?? await GetProperties(res["objectId"]?.Value<string>());
-                expected_props = new [] { TString("S"), TString("T"), TString("R") };
+                props = await GetProperties(res["objectId"]?.Value<string>());
+                expected_props = new[] { TString("S"), TString("T"), TString("R") };
                 await CheckProps(props, expected_props, "props#2");
-             });
+            });
 
         [Theory]
         [InlineData("DefaultMethod", "IDefaultInterface", "Evaluate")]
@@ -1284,7 +1467,7 @@ namespace DebuggerTests
         [InlineData("DefaultMethodAsync", "IDefaultInterface", "EvaluateAsync", true)]
         public async Task EvaluateLocalsInDefaultInterfaceMethod(string pauseMethod, string methodInterface, string entryMethod, bool isAsync = false) =>
             await CheckInspectLocalsAtBreakpointSite(
-            methodInterface, pauseMethod, 2, isAsync ? "MoveNext" : pauseMethod,
+            methodInterface, pauseMethod, 2, methodInterface + "." + pauseMethod,
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DefaultInterfaceMethod:{entryMethod}'); }})",
             wait_for_event_fn: async (pause_location) =>
             {
@@ -1300,15 +1483,31 @@ namespace DebuggerTests
         [InlineData("DefaultMethodAsyncStatic", "IDefaultInterface", "EvaluateAsyncStatic", true)]
         public async Task EvaluateLocalsInDefaultInterfaceMethodStatic(string pauseMethod, string methodInterface, string entryMethod, bool isAsync = false) =>
             await CheckInspectLocalsAtBreakpointSite(
-            methodInterface, pauseMethod, 2, isAsync ? "MoveNext" : pauseMethod,
+            methodInterface, pauseMethod, 2, methodInterface + "." + pauseMethod,
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DefaultInterfaceMethod:{entryMethod}'); }})",
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                 await EvaluateOnCallFrameAndCheck(id,
                     ("localString", TString($"{pauseMethod}()")),
-                    ("IDefaultInterface.defaultInterfaceMember", TString("defaultInterfaceMember")) //without interface name: "defaultInterfaceMember" fails; Issue #70135
+                    ("IDefaultInterface.defaultInterfaceMember", TString("defaultInterfaceMember")),
+                    ("defaultInterfaceMember", TString("defaultInterfaceMember"))
                 );
             });
+
+        [Fact]
+        public async Task EvaluateStringProperties() => await CheckInspectLocalsAtBreakpointSite(
+             $"DebuggerTests.TypeProperties", "Run", 3, "DebuggerTests.TypeProperties.Run",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.TypeProperties:Run'); 1 }})",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                   ("localString.Length", TNumber(5)),
+                   ("localString[1]", TChar('B')),
+                   ("instance.str.Length", TNumber(5)),
+                   ("instance.str[3]", TChar('c'))
+                );
+           });
     }
 }

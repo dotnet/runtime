@@ -7,7 +7,7 @@
 **
 ** Purpose: Create an environment variable and then use getenv to get
 ** a pointer to it.  Check that the pointer is valid and that the string
-** is what we expected.  Also check that searching for a non-existent 
+** is what we expected.  Also check that searching for a non-existent
 ** variable will cause getenv to return NULL. Also check that function
 ** passes when the parameter has it's casing changed (e.g upper case)
 **
@@ -24,12 +24,12 @@ PALTEST(c_runtime_getenv_test1_paltest_getenv_test1, "c_runtime/getenv/test1/pal
     const char* VariableValue = "The value";
     char* result;
 
-   
+
     if (0 != (PAL_Initialize(argc, argv)))
     {
         return FAIL;
     }
-    
+
     /* Use _putenv to set an environment variable.  This ensures that the
        variable we're testing on is always present.
     */
@@ -43,12 +43,12 @@ PALTEST(c_runtime_getenv_test1_paltest_getenv_test1, "c_runtime/getenv/test1/pal
     /* Call getenv -- ensure it doesn't return NULL and the string it returns
        is the value we set above.
     */
-    
+
     result = getenv(VariableName);
     if(result == NULL)
     {
         Fail("ERROR: The result of getenv on a valid Environment Variable "
-             "was NULL, which indicates the environment varaible was not "
+             "was NULL, which indicates the environment variable was not "
              "found.\n");
     }
 
@@ -60,8 +60,8 @@ PALTEST(c_runtime_getenv_test1_paltest_getenv_test1, "c_runtime/getenv/test1/pal
              VariableValue,
              result);
     }
-    
-    /* Try calling getenv on an environment variable which doesn't 
+
+    /* Try calling getenv on an environment variable which doesn't
        exist.
     */
     result = getenv("SomeEnvironmentVariableThatReallyDoesNotExist");

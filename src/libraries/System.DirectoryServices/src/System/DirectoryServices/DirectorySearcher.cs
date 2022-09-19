@@ -233,17 +233,8 @@ namespace System.DirectoryServices
         /// </devdoc>
         [Editor("System.Windows.Forms.Design.StringCollectionEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
                 "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
-        public StringCollection PropertiesToLoad
-        {
-            get
-            {
-                if (_propertiesToLoad == null)
-                {
-                    _propertiesToLoad = new StringCollection();
-                }
-                return _propertiesToLoad;
-            }
-        }
+        public StringCollection PropertiesToLoad =>
+            _propertiesToLoad ??= new StringCollection();
 
         /// <devdoc>
         /// Gets or sets how referrals are chased.
@@ -413,8 +404,7 @@ namespace System.DirectoryServices
             get => _attributeScopeQuery;
             set
             {
-                if (value == null)
-                    value = "";
+                value ??= "";
 
                 // user explicitly set AttributeScopeQuery and value is not null or empty string
                 if (value.Length != 0)

@@ -17,8 +17,6 @@ namespace System.Reflection.Runtime.General
             Justification = "Just instantiating over formals for desktop compat reasons")]
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
             Justification = "Just instantiating over formals for desktop compat reasons")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "Looking at interface list is safe because we wouldn't remove reflection-visible interface from a reflection-visible type")]
         public static bool IsAssignableFrom(Type toTypeInfo, Type fromTypeInfo)
         {
             if (toTypeInfo == null)
@@ -237,7 +235,7 @@ namespace System.Reflection.Runtime.General
         //    A can cast to B under variance rules.
         //
         //    A and B are both integers or enums and have the same reduced type (i.e. represent the same-sized integer, ignoring signed/unsigned differences.)
-        //        "char" is not interchangable with short/ushort. "bool" is not interchangable with byte/sbyte.
+        //        "char" is not interchangeable with short/ushort. "bool" is not interchangeable with byte/sbyte.
         //
         // For desktop compat, A& and A* follow the same rules.
         //

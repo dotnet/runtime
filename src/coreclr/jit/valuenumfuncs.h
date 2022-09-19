@@ -20,8 +20,11 @@ ValueNumFuncDef(PtrToLoc, 2, false, true, false)            // Pointer (byref) t
 ValueNumFuncDef(PtrToArrElem, 4, false, false, false)       // Pointer (byref) to an array element.  Args: 0: array elem type eq class var_types value, VN's of: 1: array, 2: index, 3: offset.
 ValueNumFuncDef(PtrToStatic, 3, false, true, false)         // Pointer (byref) to a static variable (or possibly a field thereof, if the static variable is a struct).
                                                             // Args: 0: (VN of) the box's address if the static is "boxed",
-                                                            //       1: (VN of) the field sequence, of which the first element is the static itself.
+                                                            //       1: (VN of) the field sequence,
                                                             //       2: (VN of) offset for the constituent struct fields
+
+ValueNumFuncDef(MDArrLength, 2, false, false, false)        // MD array len, Args: 0: array, 1: dimension
+ValueNumFuncDef(MDArrLowerBound, 2, false, false, false)    // MD array lower bound, Args: 0: array, 1: dimension
 
 ValueNumFuncDef(InitVal, 1, false, false, false)    // An input arg, or init val of a local Args: 0: a constant VN.
 

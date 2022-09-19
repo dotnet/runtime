@@ -86,8 +86,7 @@ namespace System.Reflection.TypeLoading.Ecma
             for (int position = -1; position < numParameters; position++)
             {
                 Type parameterType = position == -1 ? sig.ReturnType : sig.ParameterTypes[position];
-                if (methodSig[position] == null)
-                    methodSig[position] = new RoThinMethodParameter(roMethodBase, position, parameterType);
+                methodSig[position] ??= new RoThinMethodParameter(roMethodBase, position, parameterType);
             }
 
             return methodSig;

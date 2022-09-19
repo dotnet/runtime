@@ -417,59 +417,6 @@ void SString::SetUTF8(const UTF8 *string, COUNT_T count)
 }
 
 //-----------------------------------------------------------------------------
-// Set this string to a copy of the given ANSI string
-//-----------------------------------------------------------------------------
-void SString::SetANSI(const ANSI *string)
-{
-    SS_CONTRACT_VOID
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckPointer(string, NULL_OK));
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    SS_CONTRACT_END;
-
-    if (string == NULL || *string == 0)
-        Clear();
-    else
-    {
-        Resize((COUNT_T) strlen(string), REPRESENTATION_ANSI);
-        strcpy_s(GetRawANSI(), GetBufferSizeInCharIncludeNullChar(), string);
-    }
-
-    SS_RETURN;
-}
-
-//-----------------------------------------------------------------------------
-// Set this string to a copy of the first count characters of the given
-// ANSI string.
-//-----------------------------------------------------------------------------
-void SString::SetANSI(const ANSI *string, COUNT_T count)
-{
-    SS_CONTRACT_VOID
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckPointer(string, NULL_OK));
-        PRECONDITION(CheckCount(count));
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    SS_CONTRACT_END;
-
-    if (count == 0)
-        Clear();
-    else
-    {
-        Resize(count, REPRESENTATION_ANSI);
-        strncpy_s(GetRawANSI(), GetBufferSizeInCharIncludeNullChar(), string, count);
-        GetRawANSI()[count] = 0;
-    }
-
-    SS_RETURN;
-}
-
-//-----------------------------------------------------------------------------
 // Set this string to a copy of the given UTF16 string transcoded to UTF8
 //-----------------------------------------------------------------------------
 void SString::SetAndConvertToUTF8(const WCHAR *string)
@@ -868,10 +815,6 @@ void SString::ConvertToUnicode(SString &s) const
         ConvertASCIIToUnicode(s);
         RETURN;
 
-    case REPRESENTATION_ANSI:
-        page = CP_ACP;
-        break;
-
     default:
         UNREACHABLE();
     }
@@ -883,58 +826,6 @@ void SString::ConvertToUnicode(SString &s) const
     s.Resize(length-1, REPRESENTATION_UNICODE);
 
     length = WszMultiByteToWideChar(page, 0, GetRawANSI(), GetRawCount()+1, s.GetRawUnicode(), length);
-    if (length == 0)
-        ThrowLastError();
-
-    RETURN;
-}
-
-//-----------------------------------------------------------------------------
-// Set s to be a copy of this string's contents, but in the ANSI format.
-//-----------------------------------------------------------------------------
-void SString::ConvertToANSI(SString &s) const
-{
-    CONTRACT_VOID
-    {
-        PRECONDITION(s.Check());
-        POSTCONDITION(s.IsRepresentation(REPRESENTATION_ANSI));
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACT_END;
-
-    switch (GetRepresentation())
-    {
-    case REPRESENTATION_EMPTY:
-        s.Clear();
-        RETURN;
-
-    case REPRESENTATION_ASCII:
-    case REPRESENTATION_ANSI:
-        s.Set(*this);
-        RETURN;
-
-    case REPRESENTATION_UTF8:
-        // No direct conversion to ANSI
-        ConvertToUnicode();
-        FALLTHROUGH;
-
-    case REPRESENTATION_UNICODE:
-        break;
-
-    default:
-        UNREACHABLE();
-    }
-
-    // @todo: use WC_NO_BEST_FIT_CHARS
-    COUNT_T length = WszWideCharToMultiByte(CP_ACP, 0, GetRawUnicode(), GetRawCount()+1,
-                                        NULL, 0, NULL, NULL);
-
-    s.Resize(length-1, REPRESENTATION_ANSI);
-
-    // @todo: use WC_NO_BEST_FIT_CHARS
-    length = WszWideCharToMultiByte(CP_ACP, 0, GetRawUnicode(), GetRawCount()+1,
-                                    s.GetRawANSI(), length, NULL, NULL);
     if (length == 0)
         ThrowLastError();
 
@@ -965,11 +856,6 @@ COUNT_T SString::ConvertToUTF8(SString &s) const
     case REPRESENTATION_UTF8:
         s.Set(*this);
         RETURN s.GetRawCount()+1;
-
-    case REPRESENTATION_ANSI:
-        // No direct conversion from ANSI to UTF8
-        ConvertToUnicode();
-        FALLTHROUGH;
 
     case REPRESENTATION_UNICODE:
         break;
@@ -1109,7 +995,6 @@ BOOL SString::Find(CIterator &i, const SString &s) const
         }
         break;
 
-    case REPRESENTATION_ANSI:
     case REPRESENTATION_ASCII:
         {
             COUNT_T count = source.GetRawCount();
@@ -1179,7 +1064,6 @@ BOOL SString::Find(CIterator &i, WCHAR c) const
         }
         break;
 
-    case REPRESENTATION_ANSI:
     case REPRESENTATION_ASCII:
         {
             const CHAR *start = i.GetASCII();
@@ -1250,7 +1134,6 @@ BOOL SString::FindBack(CIterator &i, const SString &s) const
         }
         break;
 
-    case REPRESENTATION_ANSI:
     case REPRESENTATION_ASCII:
         {
             COUNT_T count = source.GetRawCount();
@@ -1327,7 +1210,6 @@ BOOL SString::FindBack(CIterator &i, WCHAR c) const
         }
         break;
 
-    case REPRESENTATION_ANSI:
     case REPRESENTATION_ASCII:
         {
             const CHAR *start = GetRawASCII() + GetRawCount() - 1;
@@ -1456,7 +1338,6 @@ int SString::Compare(const SString &s) const
         break;
 
     case REPRESENTATION_ASCII:
-    case REPRESENTATION_ANSI:
         result = strncmp(GetRawASCII(), source.GetRawASCII(), smaller);
         break;
 
@@ -1517,7 +1398,6 @@ int SString::CompareCaseInsensitive(const SString &s) const
     switch (GetRepresentation())
     {
     case REPRESENTATION_UNICODE:
-    case REPRESENTATION_ANSI:
         result = CaseCompareHelper(GetRawUnicode(), source.GetRawUnicode(), smaller, FALSE, TRUE);
         break;
 
@@ -1571,7 +1451,6 @@ BOOL SString::Equals(const SString &s) const
         RETURN (wcsncmp(GetRawUnicode(), source.GetRawUnicode(), count) == 0);
 
     case REPRESENTATION_ASCII:
-    case REPRESENTATION_ANSI:
         RETURN (strncmp(GetRawASCII(), source.GetRawASCII(), count) == 0);
 
     case REPRESENTATION_EMPTY:
@@ -1612,7 +1491,6 @@ BOOL SString::EqualsCaseInsensitive(const SString &s) const
     switch (GetRepresentation())
     {
     case REPRESENTATION_UNICODE:
-    case REPRESENTATION_ANSI:
         RETURN (CaseCompareHelper(GetRawUnicode(), source.GetRawUnicode(), count, FALSE, TRUE) == 0);
 
     case REPRESENTATION_ASCII:
@@ -1661,7 +1539,6 @@ BOOL SString::Match(const CIterator &i, const SString &s) const
         RETURN (wcsncmp(i.GetUnicode(), source.GetRawUnicode(), count) == 0);
 
     case REPRESENTATION_ASCII:
-    case REPRESENTATION_ANSI:
         RETURN (strncmp(i.GetASCII(), source.GetRawASCII(), count) == 0);
 
     case REPRESENTATION_EMPTY:
@@ -1703,7 +1580,6 @@ BOOL SString::MatchCaseInsensitive(const CIterator &i, const SString &s) const
     switch (GetRepresentation())
     {
     case REPRESENTATION_UNICODE:
-    case REPRESENTATION_ANSI:
         RETURN (CaseCompareHelper(i.GetUnicode(), source.GetRawUnicode(), count, FALSE, TRUE) == 0);
 
     case REPRESENTATION_ASCII:
@@ -1824,26 +1700,6 @@ void SString::UpperCase()
 }
 
 //-----------------------------------------------------------------------------
-// Get a const pointer to the internal buffer as an ANSI string.
-//-----------------------------------------------------------------------------
-const CHAR *SString::GetANSI(AbstractScratchBuffer &scratch) const
-{
-    SS_CONTRACT(const CHAR *)
-    {
-        INSTANCE_CHECK_NULL;
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    SS_CONTRACT_END;
-
-    if (IsRepresentation(REPRESENTATION_ANSI))
-        SS_RETURN GetRawANSI();
-
-    ConvertToANSI((SString&)scratch);
-    SS_RETURN ((SString&)scratch).GetRawANSI();
-}
-
-//-----------------------------------------------------------------------------
 // Safe version of sprintf.
 // Prints formatted ansi text w/ var args to this buffer.
 //-----------------------------------------------------------------------------
@@ -1945,6 +1801,9 @@ void SString::VPrintf(const CHAR *format, va_list args)
     }
     CONTRACT_END;
 
+    // This method overrides the content of the SString, so it can come in with any format.
+    // We're going to change the representation here.
+
     va_list ap;
     // sprintf gives us no means to know how many characters are written
     // other than guessing and trying
@@ -1953,14 +1812,14 @@ void SString::VPrintf(const CHAR *format, va_list args)
     {
         // First, try to use the existing buffer
         va_copy(ap, args);
-        int result = _vsnprintf_s(GetRawANSI(), GetRawCount()+1, _TRUNCATE, format, ap);
+        int result = _vsnprintf_s(GetRawUTF8(), GetRawCount()+1, _TRUNCATE, format, ap);
         va_end(ap);
 
         if (result >=0)
         {
             // Succeeded in writing. Now resize -
-            Resize(result, REPRESENTATION_ANSI, PRESERVE);
-            SString sss(Ansi, format);
+            Resize(result, REPRESENTATION_UTF8, PRESERVE);
+            SString sss(Utf8, format);
             INDEBUG(CheckForFormatStringGlobalizationIssues(sss, *this));
             RETURN;
         }
@@ -1978,20 +1837,20 @@ void SString::VPrintf(const CHAR *format, va_list args)
     {
         // Double the previous guess - eventually we will get enough space
         guess *= 2;
-        Resize(guess, REPRESENTATION_ANSI);
+        Resize(guess, REPRESENTATION_UTF8);
 
         // Clear errno to avoid false alarms
         errno = 0;
 
         va_copy(ap, args);
-        int result = _vsnprintf_s(GetRawANSI(), GetRawCount()+1, _TRUNCATE, format, ap);
+        int result = _vsnprintf_s(GetRawUTF8(), GetRawCount()+1, _TRUNCATE, format, ap);
         va_end(ap);
 
         if (result >= 0)
         {
             // Succeed in writing. Shrink the buffer to fit exactly.
-            Resize(result, REPRESENTATION_ANSI, PRESERVE);
-            SString sss(Ansi, format);
+            Resize(result, REPRESENTATION_UTF8, PRESERVE);
+            SString sss(Utf8, format);
             INDEBUG(CheckForFormatStringGlobalizationIssues(sss, *this));
             RETURN;
         }
@@ -2303,7 +2162,6 @@ const SString &SString::GetCompatibleString(const SString &s, SString &scratch, 
         return scratch;
 
     case REPRESENTATION_UTF8:
-    case REPRESENTATION_ANSI:
         // These should all be impossible since we have an CIterator on us.
     default:
         UNREACHABLE_MSG("Unexpected string representation");
@@ -2337,13 +2195,6 @@ const SString &SString::GetCompatibleString(const SString &s, SString &scratch) 
     {
     case REPRESENTATION_EMPTY:
         return s;
-
-    case REPRESENTATION_ANSI:
-        if (s.IsRepresentation(REPRESENTATION_ANSI))
-            return s;
-
-        s.ConvertToANSI(scratch);
-        return scratch;
 
     case REPRESENTATION_ASCII:
         if (s.IsRepresentation(REPRESENTATION_ASCII))
@@ -2512,7 +2363,6 @@ void * SString::DacGetRawContent() const
         case REPRESENTATION_UNICODE:
         case REPRESENTATION_UTF8:
         case REPRESENTATION_ASCII:
-        case REPRESENTATION_ANSI:
             // Note: no need to call DacInstantiateString because we know the exact length already.
             return SBuffer::DacGetRawContent();
 
@@ -2631,7 +2481,6 @@ bool SString::DacGetUnicode(COUNT_T                                   cBufChars,
             iPage = CP_UTF8;
             FALLTHROUGH;
         case REPRESENTATION_ASCII:
-        case REPRESENTATION_ANSI:
             // iPage defaults to CP_ACP.
             if (pcNeedChars)
             {

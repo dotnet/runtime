@@ -8,7 +8,7 @@ namespace ILCompiler.DependencyAnalysis
 {
     /// Part of Node factory that deals with nodes describing results of generic lookups.
     /// See: <see cref="GenericLookupResult"/>.
-    partial class NodeFactory
+    public partial class NodeFactory
     {
         /// <summary>
         /// Helper class that provides a level of grouping for all the generic lookup result kinds.
@@ -134,7 +134,7 @@ namespace ILCompiler.DependencyAnalysis
 
             public GenericLookupResult UnwrapNullableType(TypeDesc type)
             {
-                // An actual unwrap nullable lookup is only required if the type is exactly a runtime 
+                // An actual unwrap nullable lookup is only required if the type is exactly a runtime
                 // determined type associated with System.__UniversalCanon itself, or if it's
                 // a runtime determined instance of Nullable.
                 if (type.IsRuntimeDeterminedType && (

@@ -278,6 +278,7 @@ METHOD(ComputeCrc32C)
 // X86Base
 METHOD(BitScanForward)
 METHOD(BitScanReverse)
+METHOD(Pause)
 // Crypto
 METHOD(FixedRotate)
 METHOD(HashUpdateChoose)
@@ -618,3 +619,9 @@ METHOD(MultiplyRoundedDoublingScalarBySelectedScalarAndAddSaturateHigh)
 METHOD(MultiplyRoundedDoublingScalarBySelectedScalarAndSubtractSaturateHigh)
 // Arm.Dp
 METHOD(DotProductBySelectedQuadruplet)
+// Wasm
+METHOD(Bitmask)
+METHOD(Splat)
+METHOD(ExtractLane)
+METHOD(ReplaceLane)
+METHOD(Swizzle)

@@ -81,7 +81,7 @@ struct StubUnwindInfoHeaderSuffix
     UCHAR nUnwindInfoSize;  // Size of unwind info in bytes
 };
 
-// Variable-sized struct that preceeds a Stub when the stub requires unwind
+// Variable-sized struct that precedes a Stub when the stub requires unwind
 // information.  Followed by a StubUnwindInfoHeaderSuffix.
 typedef DPTR(struct StubUnwindInfoHeader) PTR_StubUnwindInfoHeader;
 struct StubUnwindInfoHeader

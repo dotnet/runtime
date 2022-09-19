@@ -35,10 +35,7 @@ namespace System.Linq.Expressions
 
         private int GetId(object o)
         {
-            if (_ids == null)
-            {
-                _ids = new Dictionary<object, int>();
-            }
+            _ids ??= new Dictionary<object, int>();
 
             int id;
             if (!_ids.TryGetValue(o, out id))

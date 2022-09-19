@@ -1,13 +1,15 @@
 parameters:
   alwaysRun: false
+  buildAndRunWasi: false
   extraBuildArgs: ''
   extraHelixArgs: ''
   isExtraPlatformsBuild: false
+  isWasmOnlyBuild: false
   nameSuffix: ''
   platforms: []
-  runSmokeOnlyArg: ''
   scenarios: ['normal']
   shouldContinueOnError: false
+  shouldRunSmokeOnly: false 
 
 jobs:
 
@@ -24,33 +26,56 @@ jobs:
     shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
     variables:
       # map dependencies variables to local variables
-      - name: librariesContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'] ]
-      - name: monoContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'] ]
       - name: alwaysRunVar
         value: ${{ parameters.alwaysRun }}
-      - name: allWasmContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'] ]
+      - name: shouldRunOnDefaultPipelines
+        value: $[
+          or(
+            eq(variables['wasmDarcDependenciesChanged'], true),
+            and(
+              ne(variables['onlyWBTOrDbgTestHaveChanges'], true),
+              or(
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_libraries.containsChange'], true),
+                and(
+                  eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm.containsChange'], true),
+                  eq(dependencies.evaluate_paths.outputs['SetPathVars_non_runtimetests.containsChange'], true)))))
+          ]
+      - name: onlyWBTOrDbgTestHaveChanges
+        value:
+          and(
+            eq(dependencies.evaluate_paths.outputs.SetPathVars_wasm_wbt_or_dbg.containsChange, true),
+            ne(dependencies.evaluate_paths.outputs.SetPathVars_any_other_than_wasm_wbt_dbg.containsChange, true))
+      - name: _wasmRunSmokeTestsOnlyArg
+        value: /p:RunSmokeTestsOnly=${{ eq(parameters.shouldRunSmokeOnly, true) }}
     jobParameters:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
       nameSuffix: LibraryTests${{ parameters.nameSuffix }}
-      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) ${{ parameters.runSmokeOnlyArg }} ${{ parameters.extraBuildArgs }}
+      buildArgs: -s mono+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) ${{ parameters.extraBuildArgs }}
       timeoutInMinutes: 240
-      # always run for runtime-wasm builds (triggered manually)
-      # Always run for rolling builds
-      # Else run on path changes
+      # if !alwaysRun, then:
+      #   if this is runtime-wasm (isWasmOnlyBuild):
+      #     - then run only if it would not have run on default pipelines (based
+      #       on path changes)
+      #     - else run based on path changes
       condition: >-
         or(
           eq(variables['alwaysRunVar'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true))
+          eq(variables['isDefaultPipeline'], variables['shouldRunOnDefaultPipelines']))
       # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
+      extraStepsTemplate: /eng/pipelines/common/templates/additional-steps-then-helix.yml
       extraStepsParameters:
+        additionalSteps:
+          - ${{ if eq(parameters.buildAndRunWasi, true) }}:
+            - script: >-
+                make -C src/mono/wasi provision-deps all &&
+                make -C src/mono/wasi/sample/console run
+              name: build_wasi
+              displayName: Build Wasi, and run a sample
+
         creator: dotnet-bot
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-        extraHelixArguments: /p:BrowserHost=$(_hostedOs) ${{ parameters.runSmokeOnlyArg }} ${{ parameters.extraHelixArgs }}
+        extraHelixArguments: /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) ${{ parameters.extraHelixArgs }}
         scenarios: ${{ parameters.scenarios }}

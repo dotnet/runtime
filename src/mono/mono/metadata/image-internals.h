@@ -10,8 +10,8 @@
 #include <mono/metadata/loader-internals.h>
 
 typedef struct {
-	int dont_care_about_cli : 1;
-	int dont_care_about_pecoff : 1;
+	gboolean dont_care_about_cli : 1;
+	gboolean dont_care_about_pecoff : 1;
 } MonoImageLoadOptions;
 
 typedef struct {

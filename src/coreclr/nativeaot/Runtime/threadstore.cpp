@@ -82,7 +82,7 @@ ThreadStore * ThreadStore::Create(RuntimeInstance * pRuntimeInstance)
     if (NULL == pNewThreadStore)
         return NULL;
 
-    if (!pNewThreadStore->m_SuspendCompleteEvent.CreateManualEventNoThrow(true))
+    if (!PalRegisterHijackCallback(Thread::HijackCallback))
         return NULL;
 
     pNewThreadStore->m_pRuntimeInstance = pRuntimeInstance;
@@ -148,7 +148,7 @@ void ThreadStore::AttachCurrentThread()
     AttachCurrentThread(true);
 }
 
-void ThreadStore::DetachCurrentThread()
+void ThreadStore::DetachCurrentThread(bool shutdownStarted)
 {
     // The thread may not have been initialized because it may never have run managed code before.
     Thread * pDetachingThread = RawGetCurrentThread();
@@ -165,11 +165,21 @@ void ThreadStore::DetachCurrentThread()
     }
 
     {
+        // remove the thread from the list.
+        // this must be done even when shutdown is in progress.
+        // departing threads will be releasing their TLS storage and if not removed,
+        // will corrupt the thread list, while some prior to shutdown detach might still be in progress.
         ThreadStore* pTS = GetThreadStore();
         ReaderWriterLock::WriteHolder write(&pTS->m_Lock);
         ASSERT(rh::std::count(pTS->m_ThreadList.Begin(), pTS->m_ThreadList.End(), pDetachingThread) == 1);
         pTS->m_ThreadList.RemoveFirst(pDetachingThread);
         pDetachingThread->Detach();
+    }
+
+    // the rest of cleanup is not necessary if we are shutting down.
+    if (shutdownStarted)
+    {
+        return;
     }
 
     pDetachingThread->Destroy();
@@ -196,6 +206,30 @@ void ThreadStore::UnlockThreadStore()
     m_Lock.ReleaseReadLock();
 }
 
+// exponential spinwait with an approximate time limit for waiting in microsecond range.
+// when iteration == -1, only usecLimit is used
+void SpinWait(int iteration, int usecLimit)
+{
+    int64_t startTicks = PalQueryPerformanceCounter();
+    int64_t ticksPerSecond = PalQueryPerformanceFrequency();
+    int64_t endTicks = startTicks + (usecLimit * ticksPerSecond) / 1000000;
+
+    int l = min((unsigned)iteration, 30);
+    for (int i = 0; i < l; i++)
+    {
+        for (int j = 0; j < (1 << i); j++)
+        {
+            System_YieldProcessor();
+        }
+
+        int64_t currentTicks = PalQueryPerformanceCounter();
+        if (currentTicks > endTicks)
+        {
+            break;
+        }
+    }
+}
+
 void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
 {
     Thread * pThisThread = GetCurrentThreadIfAvailable();
@@ -208,7 +242,6 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
     {
         GCHeapUtilities::GetGCHeap()->ResetWaitForGCEvent();
     }
-    m_SuspendCompleteEvent.Reset();
 
     // set the global trap for pinvoke leave and return
     RhpTrapThreads |= (uint32_t)TrapThreadsFlags::TrapThreads;
@@ -217,11 +250,16 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
     // reason for this is that we essentially implement Dekker's algorithm, which requires write ordering.
     PalFlushProcessWriteBuffers();
 
-    bool keepWaiting;
-    YieldProcessorNormalizationInfo normalizationInfo;
-    do
+    int retries = 0;
+    int prevRemaining = 0;
+    int remaining = 0;
+    bool observeOnly = false;
+
+    while(true)
     {
-        keepWaiting = false;
+        prevRemaining = remaining;
+        remaining = 0;
+
         FOREACH_THREAD(pTargetThread)
         {
             if (pTargetThread == pThisThread)
@@ -229,39 +267,50 @@ void ThreadStore::SuspendAllThreads(bool waitForGCEvent)
 
             if (!pTargetThread->CacheTransitionFrameForSuspend())
             {
-                // We drive all threads to preemptive mode by hijacking them with return-address hijack.
-                keepWaiting = true;
-                pTargetThread->Hijack();
-            }
-            else if (pTargetThread->DangerousCrossThreadIsHijacked())
-            {
-                // Once a thread is safely in preemptive mode, we must wait until it is also
-                // unhijacked.  This is done because, otherwise, we might race on into the
-                // stackwalk and find the hijack still on the stack, which will cause the
-                // stackwalking code to crash.
-                keepWaiting = true;
+                remaining++;
+                if (!observeOnly)
+                {
+                    pTargetThread->Hijack();
+                }
             }
         }
         END_FOREACH_THREAD
 
-        if (keepWaiting)
+        if (!remaining)
+            break;
+
+        // if we see progress or have just done a hijacking pass
+        // do not hijack in the next iteration
+        if (remaining < prevRemaining || !observeOnly)
         {
-            if (PalSwitchToThread() == 0 && g_RhNumberOfProcessors > 1)
+            // 5 usec delay, then check for more progress
+            SpinWait(-1, 5);
+            observeOnly = true;
+        }
+        else
+        {
+            SpinWait(retries++, 100);
+            observeOnly = false;
+
+            // make sure our spining is not starving other threads, but not too often,
+            // this can cause a 1-15 msec delay, depending on OS, and that is a lot while
+            // very rarely needed, since threads are supposed to be releasing their CPUs
+            if ((retries & 127) == 0)
             {
-                // No threads are scheduled on this processor.  Perhaps we're waiting for a thread
-                // that's scheduled on another processor.  If so, let's give it a little time
-                // to make forward progress.
-                // Note that we do not call Sleep, because the minimum granularity of Sleep is much
-                // too long (we probably don't need a 15ms wait here).  Instead, we'll just burn some
-                // cycles.
-    	        // @TODO: need tuning for spin
-                YieldProcessorNormalizedForPreSkylakeCount(normalizationInfo, 10000);
+                PalSwitchToThread();
             }
         }
+    }
 
-    } while (keepWaiting);
-
-    m_SuspendCompleteEvent.Set();
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+    // Flush the store buffers on all CPUs, to ensure that all changes made so far are seen
+    // by the GC threads. This only matters on weak memory ordered processors as
+    // the strong memory ordered processors wouldn't have reordered the relevant writes.
+    // This is needed to synchronize threads that were running in preemptive mode thus were
+    // left alone by suspension to flush their writes that they made before they switched to
+    // preemptive mode.
+    PalFlushProcessWriteBuffers();
+#endif //TARGET_ARM || TARGET_ARM64
 }
 
 void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
@@ -272,6 +321,16 @@ void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
     }
     END_FOREACH_THREAD
 
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+        // Flush the store buffers on all CPUs, to ensure that they all see changes made
+        // by the GC threads. This only matters on weak memory ordered processors as
+        // the strong memory ordered processors wouldn't have reordered the relevant reads.
+        // This is needed to synchronize threads that were running in preemptive mode while
+        // the runtime was suspended and that will return to cooperative mode after the runtime
+        // is restarted.
+        PalFlushProcessWriteBuffers();
+#endif //TARGET_ARM || TARGET_ARM64
+
     RhpTrapThreads &= ~(uint32_t)TrapThreadsFlags::TrapThreads;
 
     RhpSuspendingThread = NULL;
@@ -281,13 +340,6 @@ void ThreadStore::ResumeAllThreads(bool waitForGCEvent)
     }
     UnlockThreadStore();
 } // ResumeAllThreads
-
-void ThreadStore::WaitForSuspendComplete()
-{
-    uint32_t waitResult = m_SuspendCompleteEvent.Wait(INFINITE, false);
-    if (waitResult == WAIT_FAILED)
-        RhFailFast();
-}
 
 #ifndef DACCESS_COMPILE
 
@@ -481,7 +533,7 @@ bool ThreadStore::GetExceptionsForCurrentThread(Array* pOutputArray, int32_t* pW
     }
 
     // No input array provided, or it was of the wrong kind.  We'll fill out the count and return false.
-    if ((pOutputArray == NULL) || (pOutputArray->get_EEType()->get_ComponentSize() != POINTER_SIZE))
+    if ((pOutputArray == NULL) || (pOutputArray->get_EEType()->RawGetComponentSize() != POINTER_SIZE))
         goto Error;
 
     // Input array was not big enough.  We don't even partially fill it.

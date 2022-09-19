@@ -68,8 +68,8 @@
 #error The Volatile type is currently only defined for Visual C++ and GNU C++
 #endif
 
-#if defined(__GNUC__) && !defined(HOST_X86) && !defined(HOST_AMD64) && !defined(HOST_ARM) && !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_S390X) && !defined(HOST_POWERPC64)
-#error The Volatile type is currently only defined for GCC when targeting x86, AMD64, ARM, ARM64, LOONGARCH64, PPC64LE, or S390X CPUs
+#if defined(__GNUC__) && !defined(HOST_X86) && !defined(HOST_AMD64) && !defined(HOST_ARM) && !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_RISCV64) && !defined(HOST_S390X) && !defined(HOST_POWERPC64)
+#error The Volatile type is currently only defined for GCC when targeting x86, AMD64, ARM, ARM64, LOONGARCH64, RISCV64, PPC64LE, or S390X CPUs
 #endif
 
 #if defined(__GNUC__)
@@ -81,6 +81,8 @@
 #define VOLATILE_MEMORY_BARRIER() asm volatile ("dmb ish" : : : "memory")
 #elif defined(HOST_LOONGARCH64)
 #define VOLATILE_MEMORY_BARRIER() asm volatile ("dbar 0 " : : : "memory")
+#elif defined(HOST_RISCV64)
+#define VOLATILE_MEMORY_BARRIER() asm volatile ("fence rw,rw" : : : "memory")
 #else
 //
 // For GCC, we prevent reordering by the compiler by inserting the following after a volatile
@@ -340,7 +342,7 @@ private:
 
 public:
     //
-    // Default constructor.  Results in an unitialized value!
+    // Default constructor.  Results in an uninitialized value!
     //
     inline Volatile()
     {

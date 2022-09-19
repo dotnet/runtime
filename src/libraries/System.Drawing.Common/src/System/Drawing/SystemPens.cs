@@ -76,12 +76,7 @@ namespace System.Drawing
             idx--;
             Debug.Assert(idx >= 0 && idx < systemPens.Length, "System colors have been added but our system color array has not been expanded.");
 
-            if (systemPens[idx] == null)
-            {
-                systemPens[idx] = new Pen(c, true);
-            }
-
-            return systemPens[idx];
+            return systemPens[idx] ??= new Pen(c, true);
         }
     }
 }

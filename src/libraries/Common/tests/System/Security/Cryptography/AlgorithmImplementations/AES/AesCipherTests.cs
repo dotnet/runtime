@@ -567,7 +567,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 Assert.Throws<CryptographicException>(() =>
                 {
                     using (MemoryStream input = new MemoryStream(encryptedBytes))
-                    using (CryptoStream cryptoStream = new CryptoStream(input, aes.CreateDecryptor(), CryptoStreamMode.Read))
+                    using (ICryptoTransform decryptor = aes.CreateDecryptor())
+                    using (CryptoStream cryptoStream = new CryptoStream(input, decryptor, CryptoStreamMode.Read))
                     using (MemoryStream output = new MemoryStream())
                     {
                         cryptoStream.CopyTo(output);
@@ -616,7 +617,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 Assert.Throws<CryptographicException>(() =>
                 {
                     using (MemoryStream input = new MemoryStream(encryptedBytes))
-                    using (CryptoStream cryptoStream = new CryptoStream(input, aes.CreateDecryptor(), CryptoStreamMode.Read))
+                    using (ICryptoTransform decryptor = aes.CreateDecryptor())
+                    using (CryptoStream cryptoStream = new CryptoStream(input, decryptor, CryptoStreamMode.Read))
                     using (MemoryStream output = new MemoryStream())
                     {
                         cryptoStream.CopyTo(output);
@@ -939,17 +941,24 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 feedbackSize: 128);
         }
 
+        public static IEnumerable<object[]> AesZeroPadData
+        {
+            get
+            {
+                yield return new object[] { CipherMode.CBC };
+
+                if (!PlatformDetection.IsWindows7)
+                {
+                    // Windows 7 does not support CFB128.
+                    yield return new object[] { CipherMode.CFB };
+                }
+            }
+        }
+
         [Theory]
-        [InlineData(CipherMode.CBC)]
-        [InlineData(CipherMode.CFB)]
+        [MemberData(nameof(AesZeroPadData))]
         public static void AesZeroPad(CipherMode cipherMode)
         {
-            if (cipherMode == CipherMode.CFB && PlatformDetection.IsWindows7)
-            {
-                // Windows 7 does not support CFB128.
-                return;
-            }
-
             byte[] decryptedBytes;
             byte[] expectedAnswer;
 
@@ -971,7 +980,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 byte[] encryptedBytes;
 
                 using (MemoryStream input = new MemoryStream(s_multiBlockBytes))
-                using (CryptoStream cryptoStream = new CryptoStream(input, aes.CreateEncryptor(), CryptoStreamMode.Read))
+                using (ICryptoTransform encryptor = aes.CreateEncryptor())
+                using (CryptoStream cryptoStream = new CryptoStream(input, encryptor, CryptoStreamMode.Read))
                 using (MemoryStream output = new MemoryStream())
                 {
                     cryptoStream.CopyTo(output);
@@ -979,7 +989,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 }
 
                 using (MemoryStream input = new MemoryStream(encryptedBytes))
-                using (CryptoStream cryptoStream = new CryptoStream(input, aes.CreateDecryptor(), CryptoStreamMode.Read))
+                using (ICryptoTransform decryptor = aes.CreateDecryptor())
+                using (CryptoStream cryptoStream = new CryptoStream(input, decryptor, CryptoStreamMode.Read))
                 using (MemoryStream output = new MemoryStream())
                 {
                     cryptoStream.CopyTo(output);
@@ -1037,7 +1048,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             byte[] encryptedBytes;
 
             using (MemoryStream input = new MemoryStream(s_multiBlockBytes))
-            using (CryptoStream cryptoStream = new CryptoStream(input, aes.CreateEncryptor(), CryptoStreamMode.Read))
+            using (ICryptoTransform encryptor = aes.CreateEncryptor())
+            using (CryptoStream cryptoStream = new CryptoStream(input, encryptor, CryptoStreamMode.Read))
             using (MemoryStream output = new MemoryStream())
             {
                 cryptoStream.CopyTo(output);
@@ -1047,7 +1059,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             Assert.NotEqual(s_multiBlockBytes, encryptedBytes);
 
             using (MemoryStream input = new MemoryStream(encryptedBytes))
-            using (CryptoStream cryptoStream = new CryptoStream(input, aes.CreateDecryptor(), CryptoStreamMode.Read))
+            using (ICryptoTransform decryptor = aes.CreateDecryptor())
+            using (CryptoStream cryptoStream = new CryptoStream(input, decryptor, CryptoStreamMode.Read))
             using (MemoryStream output = new MemoryStream())
             {
                 cryptoStream.CopyTo(output);
@@ -1084,7 +1097,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 }
 
                 using (MemoryStream input = new MemoryStream(encryptedBytes))
-                using (CryptoStream cryptoStream = new CryptoStream(input, aes.CreateDecryptor(), CryptoStreamMode.Read))
+                using (ICryptoTransform decryptor = aes.CreateDecryptor())
+                using (CryptoStream cryptoStream = new CryptoStream(input, decryptor, CryptoStreamMode.Read))
                 using (MemoryStream output = new MemoryStream())
                 {
                     cryptoStream.CopyTo(output);
@@ -1168,7 +1182,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         private static byte[] AesEncryptDirectKey(Aes aes, byte[] key, byte[] iv, byte[] plainBytes)
         {
             using (MemoryStream output = new MemoryStream())
-            using (CryptoStream cryptoStream = new CryptoStream(output, aes.CreateEncryptor(key, iv), CryptoStreamMode.Write))
+            using (ICryptoTransform encryptor = aes.CreateEncryptor(key, iv))
+            using (CryptoStream cryptoStream = new CryptoStream(output, encryptor, CryptoStreamMode.Write))
             {
                 cryptoStream.Write(plainBytes, 0, plainBytes.Length);
                 cryptoStream.FlushFinalBlock();
@@ -1180,7 +1195,8 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         private static byte[] AesDecryptDirectKey(Aes aes, byte[] key, byte[] iv, byte[] cipherBytes)
         {
             using (MemoryStream output = new MemoryStream())
-            using (CryptoStream cryptoStream = new CryptoStream(output, aes.CreateDecryptor(key, iv), CryptoStreamMode.Write))
+            using (ICryptoTransform decryptor = aes.CreateDecryptor(key, iv))
+            using (CryptoStream cryptoStream = new CryptoStream(output, decryptor, CryptoStreamMode.Write))
             {
                 cryptoStream.Write(cipherBytes, 0, cipherBytes.Length);
                 cryptoStream.FlushFinalBlock();

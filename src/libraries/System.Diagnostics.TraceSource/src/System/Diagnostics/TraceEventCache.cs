@@ -51,18 +51,7 @@ namespace System.Diagnostics
             }
         }
 
-        public string Callstack
-        {
-            get
-            {
-                if (_stackTrace == null)
-                {
-                    _stackTrace = Environment.StackTrace;
-                }
-
-                return _stackTrace;
-            }
-        }
+        public string Callstack => _stackTrace ??= Environment.StackTrace;
 
         public Stack LogicalOperationStack
         {

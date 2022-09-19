@@ -154,14 +154,14 @@ namespace System.ComponentModel.Composition.ReflectionModel
                         _metadataItemMethod,
                         Expression.Constant(CompositionConstants.ProductDefinitionMetadataName));
 
-                // ProductImportDefinition.Contraint((ExportDefinition)exportDefinition.Metadata["ProductDefinition"])
+                // ProductImportDefinition.Constraint((ExportDefinition)exportDefinition.Metadata["ProductDefinition"])
                 Expression productMatchExpression =
                     Expression.Invoke(productImportDefinition.Constraint,
                         Expression.Convert(productExportDefinitionExpression, typeof(ExportDefinition)));
 
-                // baseContraint(exportDefinition) &&
+                // baseConstraint(exportDefinition) &&
                 // exportDefinition.Metadata.ContainsKey("ProductDefinition") &&
-                // ProductImportDefinition.Contraint((ExportDefinition)exportDefinition.Metadata["ProductDefinition"])
+                // ProductImportDefinition.Constraint((ExportDefinition)exportDefinition.Metadata["ProductDefinition"])
                 Expression<Func<ExportDefinition, bool>> constraint =
                      Expression.Lambda<Func<ExportDefinition, bool>>(
                         Expression.AndAlso(

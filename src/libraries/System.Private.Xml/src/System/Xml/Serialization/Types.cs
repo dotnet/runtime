@@ -166,17 +166,8 @@ namespace System.Xml.Serialization
             get { return _fullName; }
         }
 
-        internal string CSharpName
-        {
-            get
-            {
-                if (_cSharpName == null)
-                {
-                    _cSharpName = _type == null ? CodeIdentifier.GetCSharpName(_fullName) : CodeIdentifier.GetCSharpName(_type);
-                }
-                return _cSharpName;
-            }
-        }
+        internal string CSharpName =>
+            _cSharpName ??= _type == null ? CodeIdentifier.GetCSharpName(_fullName) : CodeIdentifier.GetCSharpName(_type);
 
         internal XmlSchemaType? DataType
         {
@@ -393,10 +384,8 @@ namespace System.Xml.Serialization
                     throw new NotSupportedException(SR.Format(SR.XmlSerializerUnsupportedType, FullName));
                 }
             }
-            if (_baseTypeDesc != null)
-                _baseTypeDesc.CheckSupported();
-            if (_arrayElementTypeDesc != null)
-                _arrayElementTypeDesc.CheckSupported();
+            _baseTypeDesc?.CheckSupported();
+            _arrayElementTypeDesc?.CheckSupported();
         }
 
         internal void CheckNeedConstructor()
@@ -419,12 +408,7 @@ namespace System.Xml.Serialization
             get { return _weight; }
         }
 
-        internal TypeDesc CreateArrayTypeDesc()
-        {
-            if (_arrayTypeDesc == null)
-                _arrayTypeDesc = new TypeDesc(null, $"{_name}[]", $"{_fullName}[]", TypeKind.Array, null, TypeFlags.Reference | (_flags & TypeFlags.UseReflection), this);
-            return _arrayTypeDesc;
-        }
+        internal TypeDesc CreateArrayTypeDesc() => _arrayTypeDesc ??= new TypeDesc(null, $"{_name}[]", $"{_fullName}[]", TypeKind.Array, null, TypeFlags.Reference | (_flags & TypeFlags.UseReflection), this);
 
         internal TypeDesc? BaseTypeDesc
         {
@@ -510,10 +494,6 @@ namespace System.Xml.Serialization
             "token"
         };
 
-        [UnconditionalSuppressMessage ("ReflectionAnalysis", "IL2118",
-            Justification = "DAM on AddPrimitive references methods of DateTime, which has a compiler-generated local function " +
-                            "LowGranularityNonCachedFallback that calls PInvokes which are considered potentially dangerous. " +
-                            "XML serialization will not access this local function.")]
         static TypeScope()
         {
             AddPrimitive(typeof(string), "string", "String", TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.CanBeTextValue | TypeFlags.Reference | TypeFlags.HasDefaultConstructor);
@@ -609,10 +589,6 @@ namespace System.Xml.Serialization
             return false;
         }
 
-        [UnconditionalSuppressMessage ("ReflectionAnalysis", "IL2118",
-            Justification = "DAM on AddPrimitive references methods of DateTime, which has a compiler-generated local function " +
-                            "LowGranularityNonCachedFallback that calls PInvokes which are considered potentially dangerous. " +
-                            "XML serialization will not access this local function.")]
         private static void AddSoapEncodedTypes(string ns)
         {
             AddSoapEncodedPrimitive(typeof(string), "normalizedString", ns, "String", new XmlQualifiedName("normalizedString", XmlSchema.Namespace), TypeFlags.AmbiguousDataType | TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.Reference | TypeFlags.HasDefaultConstructor);
@@ -637,7 +613,7 @@ namespace System.Xml.Serialization
             AddSoapEncodedPrimitive(typeof(uint), "unsignedInt", ns, "UInt32", new XmlQualifiedName("string", XmlSchema.Namespace), TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.XmlEncodingNotRequired);
             AddSoapEncodedPrimitive(typeof(ulong), "unsignedLong", ns, "UInt64", new XmlQualifiedName("string", XmlSchema.Namespace), TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.XmlEncodingNotRequired);
 
-            // Types without direct mapping (ambigous)
+            // Types without direct mapping (ambiguous)
             AddSoapEncodedPrimitive(typeof(DateTime), "date", ns, "Date", new XmlQualifiedName("string", XmlSchema.Namespace), TypeFlags.AmbiguousDataType | TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.HasCustomFormatter | TypeFlags.XmlEncodingNotRequired);
             AddSoapEncodedPrimitive(typeof(DateTime), "time", ns, "Time", new XmlQualifiedName("string", XmlSchema.Namespace), TypeFlags.AmbiguousDataType | TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.HasCustomFormatter | TypeFlags.XmlEncodingNotRequired);
 
@@ -735,18 +711,14 @@ namespace System.Xml.Serialization
             {
                 throw new InvalidOperationException(SR.Format(SR.XmlUnsupportedOpenGenericType, type));
             }
-            TypeDesc? typeDesc = (TypeDesc?)s_primitiveTypes[type];
-            if (typeDesc == null)
-            {
-                typeDesc = (TypeDesc?)_typeDescs[type];
-                if (typeDesc == null)
-                {
-                    typeDesc = ImportTypeDesc(type, source, directReference);
-                }
-            }
+
+            TypeDesc typeDesc =
+                (TypeDesc?)s_primitiveTypes[type] ??
+                (TypeDesc?)_typeDescs[type] ??
+                ImportTypeDesc(type, source, directReference);
+
             if (throwOnError)
                 typeDesc.CheckSupported();
-
 
             return typeDesc;
         }
@@ -824,10 +796,7 @@ namespace System.Xml.Serialization
             {
                 kind = TypeKind.Enum;
                 flags |= TypeFlags.Unsupported;
-                if (exception == null)
-                {
-                    exception = new NotSupportedException(SR.Format(SR.XmlSerializerUnsupportedType, type.FullName));
-                }
+                exception ??= new NotSupportedException(SR.Format(SR.XmlSerializerUnsupportedType, type.FullName));
             }
             else if (type == typeof(void))
             {
@@ -845,10 +814,7 @@ namespace System.Xml.Serialization
                 if (type.GetArrayRank() > 1)
                 {
                     flags |= TypeFlags.Unsupported;
-                    if (exception == null)
-                    {
-                        exception = new NotSupportedException(SR.Format(SR.XmlUnsupportedRank, type.FullName));
-                    }
+                    exception ??= new NotSupportedException(SR.Format(SR.XmlUnsupportedRank, type.FullName));
                 }
                 arrayElementType = type.GetElementType();
                 flags |= TypeFlags.HasDefaultConstructor;
@@ -867,10 +833,7 @@ namespace System.Xml.Serialization
             {
                 kind = TypeKind.Primitive;
                 flags |= TypeFlags.Unsupported;
-                if (exception == null)
-                {
-                    exception = new NotSupportedException(SR.Format(SR.XmlSerializerUnsupportedType, type.FullName));
-                }
+                exception ??= new NotSupportedException(SR.Format(SR.XmlSerializerUnsupportedType, type.FullName));
             }
             else if (type.IsEnum)
             {
@@ -937,10 +900,7 @@ namespace System.Xml.Serialization
             {
                 kind = TypeKind.Void;
                 flags |= TypeFlags.Unsupported;
-                if (exception == null)
-                {
-                    exception = new NotSupportedException(SR.Format(SR.XmlSerializerUnsupportedType, type.FullName));
-                }
+                exception ??= new NotSupportedException(SR.Format(SR.XmlSerializerUnsupportedType, type.FullName));
             }
 
             // check to see if the type has public default constructor for classes
@@ -1176,10 +1136,7 @@ namespace System.Xml.Serialization
             {
                 if (ShouldBeReplaced(pair.Value, structMapping.TypeDesc!.Type!, out replacedInfo))
                 {
-                    if (replaceList == null)
-                    {
-                        replaceList = new Dictionary<string, MemberInfo>();
-                    }
+                    replaceList ??= new Dictionary<string, MemberInfo>();
 
                     replaceList.Add(pair.Key, replacedInfo);
                 }

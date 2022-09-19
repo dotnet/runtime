@@ -63,7 +63,7 @@ Project maintainers will merge changes that improve the product significantly an
 
 Maintainers will not merge changes that have narrowly-defined benefits, due to compatibility risk. The .NET Core codebase is used by several Microsoft products (for example, ASP.NET Core, .NET Framework 4.x, Windows Universal Apps) to enable execution of managed code. Other companies are building products on top of .NET, too. We may revert changes if they are found to be breaking.
 
-Contributions must also satisfy the other published guidelines defined in this document.
+Contributions must also satisfy the other published guidelines defined in this document as well as in [pr-guide docs](docs/pr-guide.md).
 
 ### DOs and DON'Ts
 
@@ -121,9 +121,9 @@ We use and recommend the following workflow:
     - The next official build will automatically include your change.
     - You can delete the branch you used for making the change.
 
-### Up for Grabs
+### Help Wanted (Up for Grabs)
 
-The team marks the most straightforward issues as [up for grabs](https://github.com/dotnet/runtime/labels/up-for-grabs). This set of issues is the place to start if you are interested in contributing but new to the codebase.
+The team marks the most straightforward issues as [help wanted](https://github.com/dotnet/runtime/labels/help%20wanted). This set of issues is the place to start if you are interested in contributing but new to the codebase.
 
 ### Commit Messages
 

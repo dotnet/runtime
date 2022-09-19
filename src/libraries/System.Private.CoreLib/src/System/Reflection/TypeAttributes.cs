@@ -3,7 +3,7 @@
 
 namespace System.Reflection
 {
-    // This Enum matchs the CorTypeAttr defined in CorHdr.h
+    // This Enum matches the CorTypeAttr defined in CorHdr.h
     [Flags]
     public enum TypeAttributes
     {

@@ -38,7 +38,9 @@ namespace System.Security.Cryptography
 
             if (key == null || key.IsInvalid)
             {
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
+                Exception e = Interop.Crypto.CreateOpenSslCryptographicException();
+                key?.Dispose();
+                throw e;
             }
 
             // The Import* methods above may have polluted the error queue even if in the end they succeeded.
@@ -183,10 +185,16 @@ namespace System.Security.Cryptography
             SafeEcKeyHandle? key = Interop.Crypto.EcKeyCreateByOid(oid);
 
             if (key == null || key.IsInvalid)
+            {
+                key?.Dispose();
                 throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, oid));
+            }
 
             if (!Interop.Crypto.EcKeyGenerateKey(key))
+            {
+                key.Dispose();
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
 
             return key;
         }

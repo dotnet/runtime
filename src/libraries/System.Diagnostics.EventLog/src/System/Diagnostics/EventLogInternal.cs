@@ -1066,6 +1066,7 @@ namespace System.Diagnostics
                 {
                     e = new Win32Exception();
                 }
+                handle.Dispose();
                 throw new InvalidOperationException(SR.Format(SR.CantOpenLog, logname, currentMachineName, e?.Message ?? ""));
             }
 
@@ -1089,6 +1090,7 @@ namespace System.Diagnostics
                 {
                     e = new Win32Exception();
                 }
+                handle.Dispose();
                 throw new InvalidOperationException(SR.Format(SR.CantOpenLogAccess, sourceName), e);
             }
             writeHandle = handle;
@@ -1180,10 +1182,7 @@ namespace System.Diagnostics
             {
                 try
                 {
-                    if (interestedComponents[i] != null)
-                    {
-                        interestedComponents[i].CompletionCallback(null);
-                    }
+                    interestedComponents[i]?.CompletionCallback(null);
                 }
                 catch (ObjectDisposedException)
                 {

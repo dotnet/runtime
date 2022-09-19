@@ -140,7 +140,7 @@
 // And similarly for the $SubjVal - we end up with a nice $Add($ObjVal, $SubjVal) feeding the return.
 //
 // While the above example focuses on fields, the idea is universal to all supported location types. Statics are
-// modeled as straight indicies into the heap (MapSelect($Heap, $Field) returns the value of the field for them),
+// modeled as straight indices into the heap (MapSelect($Heap, $Field) returns the value of the field for them),
 // arrays - like fields, but with the primiary selector being not the first field, but the "equivalence class" of
 // an array, i. e. the type of its elements, taking into account things like "int[]" being legally aliasable as
 // "uint[]". Physical maps are used to number local fields.
@@ -314,6 +314,9 @@ private:
     // Returns "true" iff "vnf" should be folded by evaluating the func with constant arguments.
     bool VNEvalShouldFold(var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN);
 
+    // Value number a type comparison
+    ValueNum VNEvalFoldTypeCompare(var_types type, VNFunc func, ValueNum arg0VN, ValueNum arg1VN);
+
     // return vnf(v0)
     template <typename T>
     static T EvalOp(VNFunc vnf, T v0);
@@ -458,6 +461,11 @@ public:
     // that happens to be the same...
     ValueNum VNForHandle(ssize_t cnsVal, GenTreeFlags iconFlags);
 
+    void AddToEmbeddedHandleMap(ssize_t embeddedHandle, ssize_t compileTimeHandle)
+    {
+        m_embeddedToCompileTimeHandleMap.AddOrUpdate(embeddedHandle, compileTimeHandle);
+    }
+
     // And the single constant for an object reference type.
     static ValueNum VNForNull()
     {
@@ -492,7 +500,7 @@ public:
     ValueNum VNZeroForType(var_types typ);
 
     // Returns the value number for a zero-initialized struct.
-    ValueNum VNForZeroObj(CORINFO_CLASS_HANDLE structHnd);
+    ValueNum VNForZeroObj(ClassLayout* layout);
 
     // Returns the value number for one of the given "typ".
     // It returns NoVN for a "typ" that has no one value, such as TYP_REF.
@@ -513,7 +521,7 @@ public:
     bool VNCheckAscending(ValueNum item, ValueNum xs1);
 
     // Returns the VN representing the union of the two exception sets "xs0" and "xs1".
-    // These must be VNForEmtpyExcSet() or applications of VNF_ExcSetCons, obeying
+    // These must be VNForEmptyExcSet() or applications of VNF_ExcSetCons, obeying
     // the ascending order invariant. (which is preserved in the result)
     ValueNum VNExcSetUnion(ValueNum xs0, ValueNum xs1);
 
@@ -526,7 +534,7 @@ public:
 
     ValueNumPair VNPExcSetIntersection(ValueNumPair xs0vnp, ValueNumPair xs1vnp);
 
-    // Returns true if every exeception singleton in the vnCandidateSet is also present
+    // Returns true if every exception singleton in the vnCandidateSet is also present
     // in the vnFullSet.
     // Both arguments must be either VNForEmptyExcSet() or applications of VNF_ExcSetCons.
     bool VNExcIsSubset(ValueNum vnFullSet, ValueNum vnCandidateSet);
@@ -603,7 +611,7 @@ public:
 
     // If "vn" is a "VNF_ValWithExc(norm, excSet)" value, returns the "excSet" argument; otherwise,
     // we return a special Value Number representing the empty exception set.
-    // The exeception set value is the value number of the set of possible exceptions.
+    // The exception set value is the value number of the set of possible exceptions.
     ValueNum VNExceptionSet(ValueNum vn);
 
     ValueNumPair VNPExceptionSet(ValueNumPair vn);
@@ -624,6 +632,9 @@ public:
     // The following four-op VNForFunc is used for VNF_PtrToArrElem, elemTypeEqVN, arrVN, inxVN, fldSeqVN
     ValueNum VNForFunc(
         var_types typ, VNFunc func, ValueNum op1VNwx, ValueNum op2VNwx, ValueNum op3VNwx, ValueNum op4VNwx);
+
+    // Skip all folding checks.
+    ValueNum VNForFuncNoFolding(var_types typ, VNFunc func, ValueNum op1VNwx, ValueNum op2VNwx);
 
     ValueNum VNForMapSelect(ValueNumKind vnk, var_types type, ValueNum map, ValueNum index);
 
@@ -665,26 +676,86 @@ public:
     }
     ValueNumPair VNPairForFunc(var_types typ, VNFunc func, ValueNumPair opVN)
     {
-        return ValueNumPair(VNForFunc(typ, func, opVN.GetLiberal()), VNForFunc(typ, func, opVN.GetConservative()));
+        ValueNum liberalFuncVN = VNForFunc(typ, func, opVN.GetLiberal());
+        ValueNum conservativeFuncVN;
+
+        if (opVN.BothEqual())
+        {
+            conservativeFuncVN = liberalFuncVN;
+        }
+        else
+        {
+            conservativeFuncVN = VNForFunc(typ, func, opVN.GetConservative());
+        }
+        return ValueNumPair(liberalFuncVN, conservativeFuncVN);
     }
     ValueNumPair VNPairForFunc(var_types typ, VNFunc func, ValueNumPair op1VN, ValueNumPair op2VN)
     {
-        return ValueNumPair(VNForFunc(typ, func, op1VN.GetLiberal(), op2VN.GetLiberal()),
-                            VNForFunc(typ, func, op1VN.GetConservative(), op2VN.GetConservative()));
+        ValueNum liberalFuncVN = VNForFunc(typ, func, op1VN.GetLiberal(), op2VN.GetLiberal());
+        ValueNum conservativeFuncVN;
+
+        if (op1VN.BothEqual() && op2VN.BothEqual())
+        {
+            conservativeFuncVN = liberalFuncVN;
+        }
+        else
+        {
+            conservativeFuncVN = VNForFunc(typ, func, op1VN.GetConservative(), op2VN.GetConservative());
+        }
+
+        return ValueNumPair(liberalFuncVN, conservativeFuncVN);
+    }
+    ValueNumPair VNPairForFuncNoFolding(var_types typ, VNFunc func, ValueNumPair op1VN, ValueNumPair op2VN)
+    {
+        ValueNum liberalFuncVN = VNForFuncNoFolding(typ, func, op1VN.GetLiberal(), op2VN.GetLiberal());
+        ValueNum conservativeFuncVN;
+
+        if (op1VN.BothEqual() && op2VN.BothEqual())
+        {
+            conservativeFuncVN = liberalFuncVN;
+        }
+        else
+        {
+            conservativeFuncVN = VNForFuncNoFolding(typ, func, op1VN.GetConservative(), op2VN.GetConservative());
+        }
+
+        return ValueNumPair(liberalFuncVN, conservativeFuncVN);
     }
     ValueNumPair VNPairForFunc(var_types typ, VNFunc func, ValueNumPair op1VN, ValueNumPair op2VN, ValueNumPair op3VN)
     {
-        return ValueNumPair(VNForFunc(typ, func, op1VN.GetLiberal(), op2VN.GetLiberal(), op3VN.GetLiberal()),
-                            VNForFunc(typ, func, op1VN.GetConservative(), op2VN.GetConservative(),
-                                      op3VN.GetConservative()));
+        ValueNum liberalFuncVN = VNForFunc(typ, func, op1VN.GetLiberal(), op2VN.GetLiberal(), op3VN.GetLiberal());
+        ValueNum conservativeFuncVN;
+
+        if (op1VN.BothEqual() && op2VN.BothEqual() && op3VN.BothEqual())
+        {
+            conservativeFuncVN = liberalFuncVN;
+        }
+        else
+        {
+            conservativeFuncVN =
+                VNForFunc(typ, func, op1VN.GetConservative(), op2VN.GetConservative(), op3VN.GetConservative());
+        }
+
+        return ValueNumPair(liberalFuncVN, conservativeFuncVN);
     }
     ValueNumPair VNPairForFunc(
         var_types typ, VNFunc func, ValueNumPair op1VN, ValueNumPair op2VN, ValueNumPair op3VN, ValueNumPair op4VN)
     {
-        return ValueNumPair(VNForFunc(typ, func, op1VN.GetLiberal(), op2VN.GetLiberal(), op3VN.GetLiberal(),
-                                      op4VN.GetLiberal()),
-                            VNForFunc(typ, func, op1VN.GetConservative(), op2VN.GetConservative(),
-                                      op3VN.GetConservative(), op4VN.GetConservative()));
+        ValueNum liberalFuncVN =
+            VNForFunc(typ, func, op1VN.GetLiberal(), op2VN.GetLiberal(), op3VN.GetLiberal(), op4VN.GetLiberal());
+        ValueNum conservativeFuncVN;
+
+        if (op1VN.BothEqual() && op2VN.BothEqual() && op3VN.BothEqual() && op4VN.BothEqual())
+        {
+            conservativeFuncVN = liberalFuncVN;
+        }
+        else
+        {
+            conservativeFuncVN = VNForFunc(typ, func, op1VN.GetConservative(), op2VN.GetConservative(),
+                                           op3VN.GetConservative(), op4VN.GetConservative());
+        }
+
+        return ValueNumPair(liberalFuncVN, conservativeFuncVN);
     }
 
     ValueNum VNForExpr(BasicBlock* block, var_types type = TYP_UNKNOWN);
@@ -732,22 +803,21 @@ public:
                                bool         srcIsUnsigned    = false,
                                bool         hasOverflowCheck = false);
 
-    ValueNum VNForBitCast(ValueNum srcVN, var_types castToType);
+    ValueNum EncodeBitCastType(var_types castToType, unsigned size);
 
-    bool IsVNNotAField(ValueNum vn);
+    var_types DecodeBitCastType(ValueNum castToTypeVN, unsigned* pSize);
 
-    ValueNum VNForFieldSeq(FieldSeqNode* fieldSeq);
+    ValueNum VNForBitCast(ValueNum srcVN, var_types castToType, unsigned size);
 
-    FieldSeqNode* FieldSeqVNToFieldSeq(ValueNum vn);
+    ValueNumPair VNPairForBitCast(ValueNumPair srcVNPair, var_types castToType, unsigned size);
 
-    ValueNum FieldSeqVNAppend(ValueNum innerFieldSeqVN, FieldSeqNode* outerFieldSeq);
+    ValueNum VNForFieldSeq(FieldSeq* fieldSeq);
 
-    // If "opA" has a PtrToLoc, PtrToArrElem, or PtrToStatic application as its value numbers, and "opB" is an integer
-    // with a "fieldSeq", returns the VN for the pointer form extended with the field sequence; or else NoVN.
+    FieldSeq* FieldSeqVNToFieldSeq(ValueNum vn);
+
     ValueNum ExtendPtrVN(GenTree* opA, GenTree* opB);
-    // If "opA" has a PtrToLoc, PtrToArrElem, or PtrToStatic application as its value numbers, returns the VN for the
-    // pointer form extended with "fieldSeq"; or else NoVN.
-    ValueNum ExtendPtrVN(GenTree* opA, FieldSeqNode* fieldSeq, ssize_t offset);
+
+    ValueNum ExtendPtrVN(GenTree* opA, FieldSeq* fieldSeq, ssize_t offset);
 
     // Queries on value numbers.
     // All queries taking value numbers require that those value numbers are valid, that is, that
@@ -848,10 +918,10 @@ public:
     // Check if "vn" IsVNNewArr and return <= 0 if arr size cannot be determined, else array size.
     int GetNewArrSize(ValueNum vn);
 
-    // Check if "vn" is "a.len"
+    // Check if "vn" is "a.Length" or "a.GetLength(n)"
     bool IsVNArrLen(ValueNum vn);
 
-    // If "vn" is VN(a.len) then return VN(a); NoVN if VN(a) can't be determined.
+    // If "vn" is VN(a.Length) or VN(a.GetLength(n)) then return VN(a); NoVN if VN(a) can't be determined.
     ValueNum GetArrForLenVn(ValueNum vn);
 
     // Return true with any Relop except for == and !=  and one operand has to be a 32-bit integer constant.
@@ -893,12 +963,9 @@ public:
     // Returns true iff the VN represents a relop
     bool IsVNRelop(ValueNum vn);
 
-    // Given VN(x > y), return VN(y > x), VN(x <= y) or VN(y >= x)
-    //
-    // If vn is not a relop, return NoVN.
-    //
     enum class VN_RELATION_KIND
     {
+        VRK_Inferred,   // (x ?  y)
         VRK_Same,       // (x >  y)
         VRK_Swap,       // (y >  x)
         VRK_Reverse,    // (x <= y)
@@ -909,6 +976,10 @@ public:
     static const char* VNRelationString(VN_RELATION_KIND vrk);
 #endif
 
+    // Given VN(x > y), return VN(y > x), VN(x <= y) or VN(y >= x)
+    //
+    // If vn is not a relop, return NoVN.
+    //
     ValueNum GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk);
 
     // Convert a vartype_t to the value number's storage type for that vartype_t.
@@ -1040,10 +1111,6 @@ public:
     // the function application it represents; otherwise, return "false."
     bool GetVNFunc(ValueNum vn, VNFuncApp* funcApp);
 
-    // Requires that "vn" represents a "GC heap address" the sum of a "TYP_REF" value and some integer
-    // value.  Returns the TYP_REF value.
-    ValueNum VNForRefInAddr(ValueNum vn);
-
     // Returns "true" iff "vn" is a valid value number -- one that has been previously returned.
     bool VNIsValid(ValueNum vn);
 
@@ -1074,8 +1141,8 @@ public:
     // Prints a representation of a MemOpaque state on standard out.
     void vnDumpMemOpaque(Compiler* comp, VNFuncApp* memOpaque);
 
-    // Requires "valWithExc" to be a value with an exeception set VNFuncApp.
-    // Prints a representation of the exeception set on standard out.
+    // Requires "valWithExc" to be a value with an exception set VNFuncApp.
+    // Prints a representation of the exception set on standard out.
     void vnDumpValWithExc(Compiler* comp, VNFuncApp* valWithExc);
 
     // Requires "excSeq" to be a ExcSetCons sequence.
@@ -1179,14 +1246,13 @@ private:
 
     enum ChunkExtraAttribs : BYTE
     {
-        CEA_Const,     // This chunk contains constant values.
-        CEA_Handle,    // This chunk contains handle constants.
-        CEA_NotAField, // This chunk contains "not a field" values.
-        CEA_Func0,     // Represents functions of arity 0.
-        CEA_Func1,     // ...arity 1.
-        CEA_Func2,     // ...arity 2.
-        CEA_Func3,     // ...arity 3.
-        CEA_Func4,     // ...arity 4.
+        CEA_Const,  // This chunk contains constant values.
+        CEA_Handle, // This chunk contains handle constants.
+        CEA_Func0,  // Represents functions of arity 0.
+        CEA_Func1,  // ...arity 1.
+        CEA_Func2,  // ...arity 2.
+        CEA_Func3,  // ...arity 3.
+        CEA_Func4,  // ...arity 4.
         CEA_Count
     };
 
@@ -1346,6 +1412,9 @@ private:
         }
         return m_handleMap;
     }
+
+    typedef SmallHashTable<ssize_t, ssize_t> EmbeddedToCompileTimeHandleMap;
+    EmbeddedToCompileTimeHandleMap m_embeddedToCompileTimeHandleMap;
 
     struct LargePrimitiveKeyFuncsFloat : public JitLargePrimitiveKeyFuncs<float>
     {
@@ -1811,7 +1880,7 @@ inline bool ValueNumStore::VNFuncIsComparison(VNFunc vnf)
 {
     if (vnf >= VNF_Boundary)
     {
-        // For integer types we have unsigned comparisions, and
+        // For integer types we have unsigned comparisons, and
         // for floating point types these are the unordered variants.
         //
         return ((vnf == VNF_LT_UN) || (vnf == VNF_LE_UN) || (vnf == VNF_GE_UN) || (vnf == VNF_GT_UN));

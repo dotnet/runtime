@@ -8,7 +8,7 @@ namespace System.Numerics
     /// <typeparam name="TOther">The type that will divide <typeparamref name="TSelf" />.</typeparam>
     /// <typeparam name="TResult">The type that contains the quotient of <typeparamref name="TSelf" /> and <typeparamref name="TOther" />.</typeparam>
     public interface IDivisionOperators<TSelf, TOther, TResult>
-        where TSelf : IDivisionOperators<TSelf, TOther, TResult>
+        where TSelf : IDivisionOperators<TSelf, TOther, TResult>?
     {
         /// <summary>Divides two values together to compute their quotient.</summary>
         /// <param name="left">The value which <paramref name="right" /> divides.</param>

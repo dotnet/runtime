@@ -9,8 +9,8 @@ parameters:
   crossrootfsDir: ''
   readyToRun: false
   liveLibrariesBuildConfig: ''
-  crossgen2: false
   compositeBuildMode: false
+  useCodeFlowEnforcement: ''
   helixQueues: ''
   condition: true
   stagedBuild: false
@@ -24,6 +24,7 @@ parameters:
   shouldContinueOnError: false
   dependsOn: []
   dependOnEvaluatePaths: false
+  SuperPmiCollect: false
 
 ### Test run job
 
@@ -76,6 +77,9 @@ jobs:
             - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}', parameters.runtimeFlavor, parameters.runtimeVariant, parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
         - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
           - ${{ format('libraries_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.liveLibrariesBuildConfig) }}
+      # SuperPMI collection needs to run mcs.exe on the AzDO machine. Assume that's an x64 machine, and download an x64 product build if needed.
+      - ${{ if and(eq(parameters.SuperPmiCollect, true), ne(parameters.archType, 'x64')) }}:
+          - ${{ format('coreclr_{0}_product_build_{1}{2}_{3}_{4}', '', parameters.osGroup, parameters.osSubgroup, 'x64', parameters.buildConfig) }}
 
     # Compute job name from template parameters
     ${{ if in(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
@@ -112,6 +116,13 @@ jobs:
       - name: runtimeVariantArg
         value: '/p:RuntimeVariant=${{ parameters.runtimeVariant }}'
 
+    - name: codeFlowEnforcementArg
+      value: ''
+
+    - ${{ if ne(parameters.useCodeFlowEnforcement, '') }}:
+      - name: codeFlowEnforcementArg
+        value: '/p:UseCodeFlowEnforcement=${{ parameters.useCodeFlowEnforcement }}'
+
     - name: crossgenArg
       value: ''
     - name: LogNamePrefix
@@ -119,15 +130,9 @@ jobs:
 
     - ${{ if eq(parameters.readyToRun, true) }}:
       - name: crossgenArg
-      # Switch R2R to use cg2 by default
         value: 'crossgen2'
       - name: LogNamePrefix
-        value: TestRunLogs_R2R
-      - ${{ if eq(parameters.crossgen2, true) }}:
-        - name: crossgenArg
-          value: 'crossgen2'
-        - name: LogNamePrefix
-          value: TestRunLogs_R2R_CG2
+        value: TestRunLogs_R2R_CG2
       - ${{ if eq(parameters.compositeBuildMode, true) }}:
         - name: crossgenArg
           value: 'composite'
@@ -146,6 +151,36 @@ jobs:
         - name: testTreeFilterArg
           value: '-tree:GC/Scenarios/GCSimulator'
 
+    # Variables used for SuperPMI collection
+    - ${{ if eq(parameters.SuperPmiCollect, true) }}:
+      - MchFileTag: '${{ parameters.osGroup }}.${{ parameters.archType }}.${{ parameters.buildConfig }}'
+      - name: CollectionType
+        value: 'run'
+      - name: CollectionName
+        value: 'coreclr_tests'
+      - ${{ if eq(parameters.osGroup, 'windows') }}:
+        - name: PythonScript
+          value: 'py -3'
+        - name: PipScript
+          value: 'py -3 -m pip'
+        - name: MchFilesLocation
+          value: '$(Build.SourcesDirectory)\artifacts\helixresults\'
+        - name: MergedMchFileLocation
+          value: '$(Build.SourcesDirectory)\artifacts\spmi_collection\'
+        - name: SpmiLogsLocation
+          value: '$(Build.SourcesDirectory)\artifacts\spmi_logs\'
+      - ${{ if ne(parameters.osGroup, 'windows') }}:
+        - name: PythonScript
+          value: 'python3'
+        - name: PipScript
+          value: 'pip3'
+        - name: MchFilesLocation
+          value: '$(Build.SourcesDirectory)/artifacts/helixresults/'
+        - name: MergedMchFileLocation
+          value: '$(Build.SourcesDirectory)/artifacts/spmi_collection/'
+        - name: SpmiLogsLocation
+          value: '$(Build.SourcesDirectory)/artifacts/spmi_logs/'
+
     # Set job timeouts
     #
     # "timeoutPerTestCollectionInMinutes" is the time needed for the "biggest" xUnit test collection to complete.
@@ -158,8 +193,8 @@ jobs:
     # Note that "timeoutInMinutes" is an Azure DevOps Pipelines parameter for a "job" that specifies the
     # total time allowed for a job, and is specified lower down. Make sure you set it properly for any new testGroup.
     #
-    # Please note that for Crossgen / Crossgen2 R2R runs, the "test running time" also includes the
-    # time needed to compile the test into native code with the Crossgen compiler.
+    # Please note that for Crossgen2 R2R runs, the "test running time" also includes the
+    # time needed to compile the test into native code with the Crossgen2 compiler.
 
     - name: timeoutPerTestInMinutes
       value: 10
@@ -168,7 +203,7 @@ jobs:
     - ${{ if in(parameters.testGroup, 'outerloop') }}:
       - name: timeoutPerTestCollectionInMinutes
         value: 120
-    - ${{ if eq(parameters.crossgen2, true) }}:
+    - ${{ if eq(parameters.readyToRun, true) }}:
         - name: timeoutPerTestCollectionInMinutes
           value: 90
         - name: timeoutPerTestInMinutes
@@ -179,7 +214,7 @@ jobs:
       # gc reliability may take up to 2 hours to shutdown. Some scenarios have very long iteration times.
       - name: timeoutPerTestInMinutes
         value: 240
-    - ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-isas-arm', 'jitstress-isas-x86', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'jitelthookenabled' ) }}:
+    - ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-random', 'jitstress-isas-arm', 'jitstress-isas-x86', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'jitelthookenabled' ) }}:
       - name: timeoutPerTestCollectionInMinutes
         value: 120
       - name: timeoutPerTestInMinutes
@@ -223,7 +258,7 @@ jobs:
 
     # TODO: update these numbers as they were determined long ago
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
-      ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.archType, 'arm64')) }}:
+      ${{ if eq(parameters.archType, 'arm64') }}:
         timeoutInMinutes: 300
       ${{ else }}:
         timeoutInMinutes: 200
@@ -231,7 +266,7 @@ jobs:
       timeoutInMinutes: 270
     ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
       timeoutInMinutes: 480
-    ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-isas-arm', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'gcstress0x3-gcstress0xc', 'ilasm') }}:
+    ${{ if in(parameters.testGroup, 'jitstress', 'jitstress-random', 'jitstress-isas-arm', 'jitstressregs-x86', 'jitstressregs', 'jitstress2-jitstressregs', 'gcstress0x3-gcstress0xc', 'ilasm') }}:
       timeoutInMinutes: 390
     ${{ if in(parameters.testGroup, 'gcstress-extra', 'r2r-extra', 'clrinterpreter', 'pgo') }}:
       timeoutInMinutes: 510
@@ -270,7 +305,7 @@ jobs:
 
 
     - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
-      # We need to explictly download CoreCLR for Mono
+      # We need to explicitly download CoreCLR for Mono
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
           unpackFolder: $(coreClrProductRootFolderPath)
@@ -297,12 +332,22 @@ jobs:
         displayName: 'native test artifacts'
 
 
+    # SuperPMI collection: Download x64 coreclr if running on non-x64 configuration (needed for mcs.exe)
+    - ${{ if and(eq(parameters.SuperPmiCollect, true), ne(parameters.archType, 'x64')) }}:
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: '$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)'
+          artifactFileName: 'CoreCLRProduct___$(osGroup)$(osSubgroup)_x64_$(buildConfig)$(archiveExtension)'
+          artifactName: 'CoreCLRProduct___$(osGroup)$(osSubgroup)_x64_$(buildConfig)'
+          displayName: 'CoreCLR product build (x64)'
+
+
     # Publish native test components to test output folder. Sadly we cannot do this
     # during product build (so that we could zip up the files in their final test location
     # and directly unzip them there after download). Unfortunately the logic to copy
     # the native artifacts to the final test folders is dependent on availability of the
-    # managed test artifacts.
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(testTreeFilterArg) $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg)
+    # managed test artifacts. This step also generates the final test execution scripts.
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) copynativeonly $(logRootNameArg)Native $(testTreeFilterArg) $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(priorityArg) $(librariesOverrideArg) $(codeFlowEnforcementArg)
       displayName: Copy native test components to test output folder
 
 
@@ -312,7 +357,7 @@ jobs:
 
 
     # Compose the Core_Root folder containing all artifacts needed for running
-    # CoreCLR tests. This step also compiles the framework using Crossgen / Crossgen2
+    # CoreCLR tests. This step also compiles the framework using Crossgen2
     # in ReadyToRun jobs.
     - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) generatelayoutonly $(logRootNameArg)Layout $(runtimeFlavorArgs) $(crossgenArg) $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(librariesOverrideArg) $(runtimeVariantArg)
       displayName: Generate CORE_ROOT
@@ -352,6 +397,7 @@ jobs:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
         shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
         runtimeVariant: ${{ parameters.runtimeVariant }}
+        SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
 
         ${{ if eq(variables['System.TeamProject'], 'public') }}:
           creator: $(Build.DefinitionName)
@@ -377,8 +423,7 @@ jobs:
         timeoutPerTestInMinutes: $(timeoutPerTestInMinutes)
         timeoutPerTestCollectionInMinutes: $(timeoutPerTestCollectionInMinutes)
 
-        runCrossGen: ${{ and(eq(parameters.readyToRun, true), ne(parameters.crossgen2, true)) }}
-        runCrossGen2: ${{ and(eq(parameters.readyToRun, true), eq(parameters.crossgen2, true)) }}
+        runCrossGen2: ${{ eq(parameters.readyToRun, true) }}
         ${{ if and(ne(parameters.testGroup, 'innerloop'), eq(parameters.runtimeFlavor, 'coreclr')) }}:
           runPALTestsDir: '$(coreClrProductRootFolderPath)/paltests'
 
@@ -415,6 +460,10 @@ jobs:
           - jitstress2_tiered
           - zapdisable
           - tailcallstress
+        ${{ if in(parameters.testGroup, 'jitstress-random') }}:
+          scenarios:
+          - jitstress_random_1
+          - jitstress_random_2
         ${{ if in(parameters.testGroup, 'jitstress-isas-arm') }}:
           scenarios:
           - jitstress_isas_incompletehwintrinsic
@@ -599,3 +648,74 @@ jobs:
         artifactName: '${{ parameters.runtimeFlavor }}_${{ parameters.runtimeVariant }}_$(LogNamePrefix)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.testGroup }}'
       continueOnError: true
       condition: always()
+
+    ########################################################################################################
+    #
+    # Finalize SuperPMI collection: (1) merge all MCH files generated by all Helix jobs, (2) upload MCH file to Azure Storage, (3) upload log files
+    # Note that all these steps are "condition: always()" because we want to upload as much of the collection
+    # as possible, even if there were test failures.
+    #
+    ########################################################################################################
+
+    - ${{ if eq(parameters.SuperPmiCollect, true) }}:
+
+      # Create required directories for merged mch collection and superpmi logs
+      - ${{ if ne(parameters.osGroup, 'windows') }}:
+        - script: |
+            mkdir -p $(MergedMchFileLocation)
+            mkdir -p $(SpmiLogsLocation)
+          displayName: Create SuperPMI directories
+          condition: always()
+      - ${{ if eq(parameters.osGroup, 'windows') }}:
+        - script: |
+            mkdir $(MergedMchFileLocation)
+            mkdir $(SpmiLogsLocation)
+          displayName: Create SuperPMI directories
+          condition: always()
+
+      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py merge-mch -log_level DEBUG -pattern $(MchFilesLocation)$(CollectionName).$(CollectionType)*.mch  -output_mch_path $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch
+        displayName: 'Merge $(CollectionName)-$(CollectionType) SuperPMI collections'
+        condition: always()
+
+      - template: /eng/pipelines/common/upload-artifact-step.yml
+        parameters:
+          rootFolder: $(MergedMchFileLocation)
+          includeRootFolder: false
+          archiveType: $(archiveType)
+          tarCompression: $(tarCompression)
+          archiveExtension: $(archiveExtension)
+          artifactName: 'SuperPMI_Collection_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+          displayName: 'Upload artifacts SuperPMI $(CollectionName)-$(CollectionType) collection'
+          condition: always()
+
+      # Ensure the Python azure-storage-blob package is installed before doing the upload.
+      - script: $(PipScript) install --user --upgrade pip && $(PipScript) install --user azure.storage.blob==12.5.0 --force-reinstall
+        displayName: Upgrade Pip to latest and install azure-storage-blob Python package
+        condition: always()
+
+      - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/superpmi.py upload -log_level DEBUG -arch $(archType) -build_type $(buildConfig) -mch_files $(MergedMchFileLocation)$(CollectionName).$(CollectionType).$(MchFileTag).mch -core_root $(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).x64.$(buildConfigUpper)
+        displayName: 'Upload SuperPMI $(CollectionName)-$(CollectionType) collection to Azure Storage'
+        condition: always()
+        env:
+          CLRJIT_AZ_KEY: $(clrjit_key1) # secret key stored as variable in pipeline
+
+      - task: CopyFiles@2
+        displayName: Copying superpmi.log of all partitions
+        inputs:
+          sourceFolder: '$(MchFilesLocation)'
+          contents: '**/$(CollectionName).$(CollectionType)*.log'
+          targetFolder: '$(SpmiLogsLocation)'
+        condition: always()
+
+      - task: PublishPipelineArtifact@1
+        displayName: Publish SuperPMI logs
+        inputs:
+          targetPath: $(SpmiLogsLocation)
+          artifactName: 'SuperPMI_Logs_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+        condition: always()
+
+    ########################################################################################################
+    #
+    # End of SuperPMI processing
+    #
+    ########################################################################################################

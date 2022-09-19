@@ -160,7 +160,7 @@ Namespace Microsoft.VisualBasic
         '               payment for a given period.  The payment is part of
         '               a series of regular payments described by the other
         '               arguments.  The value is returned.  The function
-        '               Raises an expection if params are invalid. This function
+        '               Raises an exception if params are invalid. This function
         '               calls FV and PMT. It calculates value of annuity (FV) at the
         '               beginning of period for which IPMT is desired. Since interest
         '               rate is constant FV*rate would give IPMT.

@@ -33,7 +33,7 @@ internal static partial class Interop
         internal static unsafe partial void SslCtxSetAlpnSelectCb(SafeSslContextHandle ctx, delegate* unmanaged<IntPtr, byte**, byte*, byte*, uint, IntPtr, int> callback, IntPtr arg);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCtxSetCaching")]
-        internal static unsafe partial int SslCtxSetCaching(SafeSslContextHandle ctx, int mode, int cacheSize, delegate* unmanaged<IntPtr, IntPtr, int> neewSessionCallback, delegate* unmanaged<IntPtr, IntPtr, void> removeSessionCallback);
+        internal static unsafe partial int SslCtxSetCaching(SafeSslContextHandle ctx, int mode, int cacheSize, int contextIdLength, Span<byte> contextId, delegate* unmanaged<IntPtr, IntPtr, int> neewSessionCallback, delegate* unmanaged<IntPtr, IntPtr, void> removeSessionCallback);
 
         internal static bool AddExtraChainCertificates(SafeSslContextHandle ctx, X509Certificate2[] chain)
         {
@@ -128,7 +128,7 @@ namespace Microsoft.Win32.SafeHandles
                 return false;
             }
 
-            string? targetName = Marshal.PtrToStringAnsi(namePtr);
+            string? targetName = Marshal.PtrToStringUTF8(namePtr);
             Debug.Assert(targetName != null);
 
             if (!string.IsNullOrEmpty(targetName))
@@ -162,7 +162,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             Debug.Assert(_sslSessions != null);
 
-            string? targetName = Marshal.PtrToStringAnsi(namePtr);
+            string? targetName = Marshal.PtrToStringUTF8(namePtr);
             Debug.Assert(targetName != null);
 
             if (_sslSessions != null && targetName != null)

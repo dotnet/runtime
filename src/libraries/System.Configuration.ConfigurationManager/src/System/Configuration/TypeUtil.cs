@@ -100,12 +100,7 @@ namespace System.Configuration
                 }
             }
 
-            if (type == null)
-            {
-                type = GetImplicitType(typeString);
-            }
-
-            return type;
+            return type ?? GetImplicitType(typeString);
         }
 
         // Ask the host to get the type specified by typeString. If it fails, try to retrieve it
@@ -127,12 +122,7 @@ namespace System.Configuration
                 }
             }
 
-            if (type == null)
-            {
-                type = GetImplicitType(typeString);
-            }
-
-            return type;
+            return type ?? GetImplicitType(typeString);
         }
 
         internal static T CreateInstance<T>(string typeString)

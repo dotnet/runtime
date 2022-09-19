@@ -70,7 +70,11 @@ namespace System.ComponentModel
         // not merge them into the attribute set for a class.
         private static readonly Type[] s_skipInterfaceAttributeList = InitializeSkipInterfaceAttributeList();
 
-        [UnconditionalSuppressMessage ("ReflectionAnalysis", "IL2045:AttributeRemoval",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2121:RedundantSuppression",
+            Justification = "Removal of the attributes depends on the System.Runtime.InteropServices.BuiltInComInterop.IsSupported feature switch." +
+            "Building with feature switch enabled will not trigger attribute removal making the suppression unnecessary." +
+            "When disabled, the attributes are removed and the suppression is necessary.")]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2045:AttributeRemoval",
             Justification = "The ComVisibleAttribute is marked for removal and it's referenced here. Since this array" +
                             "contains only attributes which are going to be ignored, removing such attribute" +
                             "will not break the functionality in any way.")]
@@ -578,10 +582,7 @@ namespace System.ComponentModel
             {
                 PropertyDescriptor[] propertyArray = ReflectGetExtendedProperties(extenders[idx]);
 
-                if (propertyList == null)
-                {
-                    propertyList = new List<PropertyDescriptor>(propertyArray.Length * extenders.Length);
-                }
+                propertyList ??= new List<PropertyDescriptor>(propertyArray.Length * extenders.Length);
 
                 for (int propIdx = 0; propIdx < propertyArray.Length; propIdx++)
                 {
@@ -916,10 +917,7 @@ namespace System.ComponentModel
                 if (td == null && createIfNeeded)
                 {
                     td = new ReflectedTypeData(type);
-                    if (_typeData == null)
-                    {
-                        _typeData = new Hashtable();
-                    }
+                    _typeData ??= new Hashtable();
                     _typeData[type] = td;
                 }
             }
@@ -1423,10 +1421,7 @@ namespace System.ComponentModel
                 // Interfaces do not derive from object, so we
                 // must handle the case of no hash entry here.
                 //
-                if (hashEntry == null)
-                {
-                    hashEntry = table[typeof(object)];
-                }
+                hashEntry ??= table[typeof(object)];
 
                 // If the entry is a type, create an instance of it and then
                 // replace the entry. This way we only need to create once.

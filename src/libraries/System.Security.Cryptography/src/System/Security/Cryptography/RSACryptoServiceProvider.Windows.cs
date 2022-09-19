@@ -377,7 +377,7 @@ namespace System.Security.Cryptography
         /// <param name="keyBlob"></param>
         public void ImportCspBlob(byte[] keyBlob)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             SafeCapiKeyHandle safeKeyHandle;
 
             if (IsPublic(keyBlob))
@@ -411,7 +411,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> source,
             out int bytesRead)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             base.ImportEncryptedPkcs8PrivateKey(passwordBytes, source, out bytesRead);
         }
 
@@ -420,7 +420,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> source,
             out int bytesRead)
         {
-            ThrowIfDisposed();
+            ObjectDisposedException.ThrowIf(_disposed, this);
             base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
         }
 
@@ -672,14 +672,6 @@ namespace System.Security.Cryptography
         private static Exception PaddingModeNotSupported()
         {
             return new CryptographicException(SR.Cryptography_InvalidPaddingMode);
-        }
-
-        private void ThrowIfDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(DSACryptoServiceProvider));
-            }
         }
     }
 }

@@ -397,7 +397,7 @@ namespace System.Text.Json.Serialization.Metadata
                 typeof(ReflectionEmitMemberAccessor).Module,
                 skipVisibility: true);
 
-        [return: NotNullIfNotNull("method")]
+        [return: NotNullIfNotNull(nameof(method))]
         private static T? CreateDelegate<T>(DynamicMethod? method) where T : Delegate =>
             (T?)method?.CreateDelegate(typeof(T));
     }

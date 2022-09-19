@@ -30,6 +30,8 @@ uint32_t PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, uint32_t a
 }
 
 #include "gcenv.h"
+#include "gcenv.ee.h"
+#include "gcconfig.h"
 
 
 #define REDHAWK_PALEXPORT extern "C"
@@ -71,30 +73,36 @@ void InitializeCurrentProcessCpuCount()
     }
     else
     {
-        DWORD_PTR pmask, smask;
-
-        if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
+        if (GCToOSInterface::CanEnableGCCPUGroups())
         {
-            count = 1;
+            count = GCToOSInterface::GetTotalProcessorCount();
         }
         else
         {
-            pmask &= smask;
-            count = 0;
+            DWORD_PTR pmask, smask;
 
-            while (pmask)
+            if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
             {
-                pmask &= (pmask - 1);
-                count++;
+                count = 1;
             }
+            else
+            {
+                count = 0;
 
-            // GetProcessAffinityMask can return pmask=0 and smask=0 on systems with more
-            // than 64 processors, which would leave us with a count of 0.  Since the GC
-            // expects there to be at least one processor to run on (and thus at least one
-            // heap), we'll return 64 here if count is 0, since there are likely a ton of
-            // processors available in that case.
-            if (count == 0)
-                count = 64;
+                while (pmask)
+                {
+                    pmask &= (pmask - 1);
+                    count++;
+                }
+
+                // GetProcessAffinityMask can return pmask=0 and smask=0 on systems with more
+                // than 64 processors, which would leave us with a count of 0.  Since the GC
+                // expects there to be at least one processor to run on (and thus at least one
+                // heap), we'll return 64 here if count is 0, since there are likely a ton of
+                // processors available in that case.
+                if (count == 0)
+                    count = 64;
+            }
         }
 
         JOBOBJECT_CPU_RATE_CONTROL_INFORMATION cpuRateControl;
@@ -120,10 +128,7 @@ void InitializeCurrentProcessCpuCount()
 
             if (0 < maxRate && maxRate < MAXIMUM_CPU_RATE)
             {
-                SYSTEM_INFO systemInfo;
-                GetSystemInfo(&systemInfo);
-
-                DWORD cpuLimit = (maxRate * systemInfo.dwNumberOfProcessors + MAXIMUM_CPU_RATE - 1) / MAXIMUM_CPU_RATE;
+                DWORD cpuLimit = (maxRate * GCToOSInterface::GetTotalProcessorCount() + MAXIMUM_CPU_RATE - 1) / MAXIMUM_CPU_RATE;
                 if (cpuLimit < count)
                     count = cpuLimit;
             }
@@ -145,6 +150,8 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
     {
         return false;
     }
+
+    GCConfig::Initialize();
 
     if (!GCToOSInterface::Initialize())
     {
@@ -209,6 +216,16 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalDetachThread(void* thread)
 
     FlsSetValue(g_flsIndex, NULL);
     return true;
+}
+
+extern "C" uint64_t PalQueryPerformanceCounter()
+{
+    return GCToOSInterface::QueryPerformanceCounter();
+}
+
+extern "C" uint64_t PalQueryPerformanceFrequency()
+{
+    return GCToOSInterface::QueryPerformanceFrequency();
 }
 
 extern "C" uint64_t PalGetCurrentThreadIdForLogging()
@@ -430,111 +447,45 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalRestoreContext(CONTEXT * pCtx)
     RtlRestoreContext(pCtx, NULL);
 }
 
-REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetThreadContext(HANDLE hThread, _Out_ PAL_LIMITED_CONTEXT * pCtx)
+static PalHijackCallback g_pHijackCallback;
+
+REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalRegisterHijackCallback(_In_ PalHijackCallback callback)
 {
-    CONTEXT win32ctx;
+    ASSERT(g_pHijackCallback == NULL);
+    g_pHijackCallback = callback;
 
-    win32ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_EXCEPTION_REQUEST;
-
-    if (!GetThreadContext(hThread, &win32ctx))
-        return false;
-
-    // The CONTEXT_SERVICE_ACTIVE and CONTEXT_EXCEPTION_ACTIVE output flags indicate we suspended the thread
-    // at a point where the kernel cannot guarantee a completely accurate context. We'll fail the request in
-    // this case (which should force our caller to resume the thread and try again -- since this is a fairly
-    // narrow window we're highly likely to succeed next time).
-    // Note: in some cases (x86 WOW64, ARM32 on ARM64) the OS will not set the CONTEXT_EXCEPTION_REPORTING flag
-    // if the thread is executing in kernel mode (i.e. in the middle of a syscall or exception handling).
-    // Therefore, we should treat the absence of the CONTEXT_EXCEPTION_REPORTING flag as an indication that
-    // it is not safe to manipulate with the current state of the thread context.
-    if ((win32ctx.ContextFlags & CONTEXT_EXCEPTION_REPORTING) == 0 ||
-        (win32ctx.ContextFlags & (CONTEXT_SERVICE_ACTIVE | CONTEXT_EXCEPTION_ACTIVE)))
-        return false;
-
-#ifdef HOST_X86
-    pCtx->IP = win32ctx.Eip;
-    pCtx->Rsp = win32ctx.Esp;
-    pCtx->Rbp = win32ctx.Ebp;
-    pCtx->Rdi = win32ctx.Edi;
-    pCtx->Rsi = win32ctx.Esi;
-    pCtx->Rax = win32ctx.Eax;
-    pCtx->Rbx = win32ctx.Ebx;
-#elif defined(HOST_AMD64)
-    pCtx->IP = win32ctx.Rip;
-    pCtx->Rsp = win32ctx.Rsp;
-    pCtx->Rbp = win32ctx.Rbp;
-    pCtx->Rdi = win32ctx.Rdi;
-    pCtx->Rsi = win32ctx.Rsi;
-    pCtx->Rax = win32ctx.Rax;
-    pCtx->Rbx = win32ctx.Rbx;
-    pCtx->R12 = win32ctx.R12;
-    pCtx->R13 = win32ctx.R13;
-    pCtx->R14 = win32ctx.R14;
-    pCtx->R15 = win32ctx.R15;
-#elif defined(HOST_ARM)
-    pCtx->IP = win32ctx.Pc;
-    pCtx->R0 = win32ctx.R0;
-    pCtx->R4 = win32ctx.R4;
-    pCtx->R5 = win32ctx.R5;
-    pCtx->R6 = win32ctx.R6;
-    pCtx->R7 = win32ctx.R7;
-    pCtx->R8 = win32ctx.R8;
-    pCtx->R9 = win32ctx.R9;
-    pCtx->R10 = win32ctx.R10;
-    pCtx->R11 = win32ctx.R11;
-    pCtx->SP = win32ctx.Sp;
-    pCtx->LR = win32ctx.Lr;
-#elif defined(HOST_ARM64)
-    pCtx->IP = win32ctx.Pc;
-    pCtx->X0 = win32ctx.X0;
-    pCtx->X1 = win32ctx.X1;
-    // TODO: Copy X2-X7 when we start supporting HVA's
-    pCtx->X19 = win32ctx.X19;
-    pCtx->X20 = win32ctx.X20;
-    pCtx->X21 = win32ctx.X21;
-    pCtx->X22 = win32ctx.X22;
-    pCtx->X23 = win32ctx.X23;
-    pCtx->X24 = win32ctx.X24;
-    pCtx->X25 = win32ctx.X25;
-    pCtx->X26 = win32ctx.X26;
-    pCtx->X27 = win32ctx.X27;
-    pCtx->X28 = win32ctx.X28;
-    pCtx->SP = win32ctx.Sp;
-    pCtx->LR = win32ctx.Lr;
-    pCtx->FP = win32ctx.Fp;
-#else
-#error Unsupported platform
-#endif
     return true;
 }
 
-
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_ PalHijackCallback callback, _In_opt_ void* pCallbackContext)
+REDHAWK_PALEXPORT void REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_opt_ void* pThreadToHijack)
 {
-    if (hThread == INVALID_HANDLE_VALUE)
-    {
-        return (uint32_t)E_INVALIDARG;
-    }
-
+    _ASSERTE(hThread != INVALID_HANDLE_VALUE);
     if (SuspendThread(hThread) == (DWORD)-1)
     {
-        return HRESULT_FROM_WIN32(GetLastError());
+        return;
     }
 
-    PAL_LIMITED_CONTEXT ctx;
-    HRESULT result;
-    if (!PalGetThreadContext(hThread, &ctx))
+    CONTEXT win32ctx;
+    win32ctx.ContextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_EXCEPTION_REQUEST;
+
+    if (GetThreadContext(hThread, &win32ctx))
     {
-        result = HRESULT_FROM_WIN32(GetLastError());
-    }
-    else
-    {
-        result = callback(hThread, &ctx, pCallbackContext) ? S_OK : E_FAIL;
+        // The CONTEXT_SERVICE_ACTIVE and CONTEXT_EXCEPTION_ACTIVE output flags indicate we suspended the thread
+        // at a point where the kernel cannot guarantee a completely accurate context. We'll fail the request in
+        // this case (which should force our caller to resume the thread and try again -- since this is a fairly
+        // narrow window we're highly likely to succeed next time).
+        // Note: in some cases (x86 WOW64, ARM32 on ARM64) the OS will not set the CONTEXT_EXCEPTION_REPORTING flag
+        // if the thread is executing in kernel mode (i.e. in the middle of a syscall or exception handling).
+        // Therefore, we should treat the absence of the CONTEXT_EXCEPTION_REPORTING flag as an indication that
+        // it is not safe to manipulate with the current state of the thread context.
+        if ((win32ctx.ContextFlags & CONTEXT_EXCEPTION_REPORTING) != 0 &&
+            ((win32ctx.ContextFlags & (CONTEXT_SERVICE_ACTIVE | CONTEXT_EXCEPTION_ACTIVE)) == 0))
+        {
+            g_pHijackCallback(&win32ctx, pThreadToHijack);
+        }
     }
 
     ResumeThread(hThread);
-
-    return result;
 }
 
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, BOOL highPriority)
@@ -622,6 +573,31 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalIsAvxEnabled()
     return TRUE;
 }
 
+REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalIsAvx512Enabled()
+{
+    typedef DWORD64(WINAPI* PGETENABLEDXSTATEFEATURES)();
+    PGETENABLEDXSTATEFEATURES pfnGetEnabledXStateFeatures = NULL;
+
+    HMODULE hMod = LoadLibraryExW(L"kernel32", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if (hMod == NULL)
+        return FALSE;
+
+    pfnGetEnabledXStateFeatures = (PGETENABLEDXSTATEFEATURES)GetProcAddress(hMod, "GetEnabledXStateFeatures");
+
+    if (pfnGetEnabledXStateFeatures == NULL)
+    {
+        return FALSE;
+    }
+
+    DWORD64 FeatureMask = pfnGetEnabledXStateFeatures();
+    if ((FeatureMask & XSTATE_MASK_AVX512) == 0)
+    {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 REDHAWK_PALEXPORT void* REDHAWK_PALAPI PalAddVectoredExceptionHandler(uint32_t firstHandler, _In_ PVECTORED_EXCEPTION_HANDLER vectoredHandler)
 {
     return AddVectoredExceptionHandler(firstHandler, vectoredHandler);
@@ -656,6 +632,11 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddre
 {
     DWORD oldProtect;
     return VirtualProtect(pAddress, size, protect, &oldProtect);
+}
+
+REDHAWK_PALEXPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size)
+{
+    FlushInstructionCache(GetCurrentProcess(), pAddress, size);
 }
 
 REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer)

@@ -87,6 +87,8 @@ public:
     uintptr_t GetConservativeUpperBoundForOutgoingArgs(MethodInfo *   pMethodInfo,
                                                         REGDISPLAY *   pRegisterSet);
 
+    bool IsUnwindable(PTR_VOID pvAddress);
+
     bool GetReturnAddressHijackInfo(MethodInfo *    pMethodInfo,
                                     REGDISPLAY *    pRegisterSet,       // in
                                     PTR_PTR_VOID *  ppvRetAddrLocation, // out

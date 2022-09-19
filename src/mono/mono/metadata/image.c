@@ -980,7 +980,7 @@ mono_has_pdb_checksum (char *raw_data, uint32_t raw_data_len)
 				debug_dir.major_version   = read16(data + 8);
 				debug_dir.minor_version   = read16(data + 10);
 				debug_dir.type            = read32(data + 12);
-				if (debug_dir.type == DEBUG_DIR_PDB_CHECKSUM || debug_dir.type == DEBUG_DIR_REPRODUCIBLE)
+				if (debug_dir.type == DEBUG_DIR_PDB_CHECKSUM || debug_dir.type == DEBUG_DIR_ENTRY_CODEVIEW)
 					return TRUE;
 			}
 		}

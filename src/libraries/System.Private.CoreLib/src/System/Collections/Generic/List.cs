@@ -627,6 +627,20 @@ namespace System.Collections.Generic
             return list;
         }
 
+        /// <summary>
+        /// Creates a shallow copy of a range of elements in the source <see cref="List{T}" />.
+        /// </summary>
+        /// <param name="start">The zero-based <see cref="List{T}" /> index at which the range starts.</param>
+        /// <param name="length">The length of the range.</param>
+        /// <returns>A shallow copy of a range of elements in the source <see cref="List{T}" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="start" /> is less than 0.
+        /// -or-
+        /// <paramref name="length" /> is less than 0.
+        /// </exception>
+        /// <exception cref="ArgumentException"><paramref name="start" /> and <paramref name="length" /> do not denote a valid range of elements in the <see cref="List{T}" />.</exception>
+        public List<T> Slice(int start, int length) => GetRange(start, length);
+
         // Returns the index of the first occurrence of a given value in a range of
         // this list. The list is searched forwards from beginning to end.
         // The elements of the list are compared to the given value using the
@@ -852,8 +866,8 @@ namespace System.Collections.Generic
             return Array.LastIndexOf(_items, item, index, count);
         }
 
-        // Removes the element at the given index. The size of the list is
-        // decreased by one.
+        // Removes the first occurrence of the given element, if found.
+        // The size of the list is decreased by one if successful.
         public bool Remove(T item)
         {
             int index = IndexOf(item);

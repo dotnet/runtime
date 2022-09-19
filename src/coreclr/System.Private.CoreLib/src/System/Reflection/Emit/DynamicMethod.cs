@@ -208,7 +208,7 @@ namespace System.Reflection.Emit
                 false);
         }
 
-        // helpers for intialization
+        // helpers for initialization
 
         private static void CheckConsistency(MethodAttributes attributes, CallingConventions callingConvention)
         {
@@ -821,11 +821,13 @@ namespace System.Reflection.Emit
                     Type[] parameterTypes = m_owner.m_parameterTypes;
                     RuntimeParameterInfo[] parameters = new RuntimeParameterInfo[parameterTypes.Length];
                     for (int i = 0; i < parameterTypes.Length; i++)
+                    {
                         parameters[i] = new RuntimeParameterInfo(this, null, parameterTypes[i], i);
-                    if (m_parameters == null)
-                        // should we interlockexchange?
-                        m_parameters = parameters;
+                    }
+
+                    m_parameters ??= parameters; // should we Interlocked.CompareExchange?
                 }
+
                 return m_parameters;
             }
         }

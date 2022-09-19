@@ -62,20 +62,14 @@ namespace System.Xml.Xsl.XsltOld
                 _mode.Equals(template.Mode)
             );
 
-            if (this.templates == null)
-            {
-                this.templates = new ArrayList();
-            }
+            this.templates ??= new ArrayList();
 
             this.templates.Add(template);
         }
 
         internal void ProcessTemplates()
         {
-            if (this.templates != null)
-            {
-                this.templates.Sort(s_TemplateComparer);
-            }
+            this.templates?.Sort(s_TemplateComparer);
         }
 
         internal TemplateAction? FindTemplate(Processor processor, XPathNavigator navigator)

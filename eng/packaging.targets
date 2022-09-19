@@ -1,7 +1,7 @@
 <Project>
 
   <PropertyGroup>
-    <EnablePackageValidation>true</EnablePackageValidation>
+    <EnablePackageValidation Condition="'$(EnablePackageValidation)' == ''">true</EnablePackageValidation>
     <!-- Don't restore prebuilt packages during sourcebuild. -->
     <DisablePackageBaselineValidation Condition="'$(DotNetBuildFromSource)' == 'true'">true</DisablePackageBaselineValidation>
     <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$(NetCoreAppLatestStablePackageBaselineVersion)</PackageValidationBaselineVersion>
@@ -44,10 +44,6 @@
     <!-- Assembly version do not get updated in non-netfx ref pack assemblies. -->
     <AssemblyVersion Condition="'$(_AssemblyInTargetingPack)' != 'true'">$(MajorVersion).$(MinorVersion).0.$(ServicingVersion)</AssemblyVersion>
   </PropertyGroup>
-
-  <ItemGroup Condition="'$(EnablePackageValidation)' == 'true'">
-    <PackageReference Include="Microsoft.DotNet.Compatibility" Version="$(MicrosoftDotNetCompatibilityVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
-  </ItemGroup>
 
   <ItemGroup>
     <!-- Add a marker to help the designer optimize & share .NET Core packages -->
@@ -204,7 +200,7 @@
 <![CDATA[<Project InitialTargets="$(_NETStandardCompatErrorFileTarget)">
   <Target Name="$(_NETStandardCompatErrorFileTarget)"
           Condition="'%24(SuppressTfmSupportBuildWarnings)' == ''">
-    <Error Text="$(PackageId) doesn't support %24(TargetFramework). Consider updating your TargetFramework to %(NETStandardCompatError.Supported) or later." />
+    <Warning Text="$(PackageId) $(PackageVersion) doesn't support %24(TargetFramework) and has not been tested with it. Consider upgrading your TargetFramework to %(NETStandardCompatError.Supported) or later. You may also set &lt%3BSuppressTfmSupportBuildWarnings&gt%3Btrue&lt%3B/SuppressTfmSupportBuildWarnings&gt%3B in the project file to ignore this warning and attempt to run in this unsupported configuration at your own risk." />
   </Target>
 </Project>]]>
       </_NETStandardCompatErrorFileContent>

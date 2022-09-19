@@ -81,11 +81,7 @@ namespace System.Runtime.Caching
             {
                 for (int i = 0; i < NUM_COUNTERS; i++)
                 {
-                    var counter = counters[i];
-                    if (counter != null)
-                    {
-                        counter.Dispose();
-                    }
+                    counters[i]?.Dispose();
                 }
             }
         }

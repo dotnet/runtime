@@ -38,14 +38,14 @@
         // Transform destReg into the equivalent address in the shadow heap.
         PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address, X9
         subs    \destReg, \destReg, x9
-        blt     0f
+        blo     0f
 
         PREPARE_EXTERNAL_VAR_INDIRECT g_GCShadow, X9
         add     \destReg, \destReg, x9
 
         PREPARE_EXTERNAL_VAR_INDIRECT g_GCShadowEnd, X9
         cmp     \destReg, x9
-        bgt     0f
+        bhs     0f
 
         // Update the shadow heap.
         str     \refReg, [\destReg]
@@ -92,12 +92,11 @@
         //   destReg: location to be updated
         //   refReg:  objectref to be stored
         //   trash: register nr than can be trashed
-        //   trash2: register than can be trashed
         //
         // On exit:
         //   destReg:   trashed
         //
-        .macro INSERT_UNCHECKED_WRITE_BARRIER_CORE destReg, refReg, trash, trash2
+        .macro INSERT_UNCHECKED_WRITE_BARRIER_CORE destReg, refReg, trash
 
         // Update the shadow copy of the heap with the same value just written to the same heap. (A no-op unless
         // we are in a debug build and write barrier checking has been enabled).
@@ -120,36 +119,36 @@
         // an object not on the epehemeral segment.
         PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_low, x\trash
         cmp     \refReg, x\trash
-        blt     0f
+        blo     0f
 
         PREPARE_EXTERNAL_VAR_INDIRECT g_ephemeral_high, x\trash
         cmp     \refReg, x\trash
-        bge     0f
+        bhs     0f
 
         // Set this objects card, if it has not already been set.
 
         PREPARE_EXTERNAL_VAR_INDIRECT g_card_table, x\trash
-        add     \trash2, x\trash, \destReg, lsr #11
+        add     x17, x\trash, \destReg, lsr #11
 
         // Check that this card has not already been written. Avoiding useless writes is a big win on
         // multi-proc systems since it avoids cache thrashing.
-        ldrb    w\trash, [\trash2]
+        ldrb    w\trash, [x17]
         cmp     x\trash, 0xFF
         beq     0f
 
         mov     x\trash, 0xFF
-        strb    w\trash, [\trash2]
+        strb    w\trash, [x17]
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
         // Check if we need to update the card bundle table
         PREPARE_EXTERNAL_VAR_INDIRECT g_card_bundle_table, x\trash
-        add  \trash2, x\trash, \destReg, lsr #21
-        ldrb w\trash, [\trash2]
+        add  x17, x\trash, \destReg, lsr #21
+        ldrb w\trash, [x17]
         cmp  x\trash, 0xFF
         beq  0f
 
         mov  x\trash, 0xFF
-        strb w\trash, [\trash2]
+        strb w\trash, [x17]
 #endif
 
 0:
@@ -160,25 +159,26 @@
         //   destReg: location to be updated
         //   refReg:  objectref to be stored
         //   trash: register nr than can be trashed
-        //   trash2: register than can be trashed
         //
         // On exit:
         //   destReg:   trashed
         //
-        .macro INSERT_CHECKED_WRITE_BARRIER_CORE destReg, refReg, trash, trash2
+        .macro INSERT_CHECKED_WRITE_BARRIER_CORE destReg, refReg, trash
 
         // The "check" of this checked write barrier - is destReg
         // within the heap? if no, early out.
 
         PREPARE_EXTERNAL_VAR_INDIRECT g_lowest_address, x\trash
         cmp     \destReg, x\trash
-        blt     0f
 
         PREPARE_EXTERNAL_VAR_INDIRECT g_highest_address, x\trash
-        cmp     \destReg, x\trash
-        bgt     0f
 
-        INSERT_UNCHECKED_WRITE_BARRIER_CORE \destReg, \refReg, \trash, \trash2
+        // If \destReg >= g_lowest_address, compare \destReg to g_highest_address.
+        // Otherwise, set the C flag (0x2) to take the next branch.
+        ccmp    \destReg, x\trash, #0x2, hs
+        bhs     0f
+
+        INSERT_UNCHECKED_WRITE_BARRIER_CORE \destReg, \refReg, \trash
 
 0:
         // Exit label
@@ -201,7 +201,7 @@
 
         mov     x14, x0                     ; x14 = dst
         mov     x15, x1                     ; x15 = val
-        b       RhpCheckedAssignRefArm64
+        b       C_FUNC(RhpCheckedAssignRefArm64)
 
 LEAF_END RhpCheckedAssignRef, _TEXT
 
@@ -221,7 +221,7 @@ LEAF_ENTRY RhpAssignRef, _TEXT
 
         mov     x14, x0                     ; x14 = dst
         mov     x15, x1                     ; x15 = val
-        b       RhpAssignRefArm64
+        b       C_FUNC(RhpAssignRefArm64)
 
 LEAF_END RhpAssignRef, _TEXT
 
@@ -263,12 +263,12 @@ CmpXchgRetry:
         // The following barrier code takes the destination in x0 and the value in x1 so the arguments are
         // already correctly set up.
 
-        INSERT_CHECKED_WRITE_BARRIER_CORE x0, x1, 9, x0
+        INSERT_CHECKED_WRITE_BARRIER_CORE x0, x1, 9
 
 CmpXchgNoUpdate:
         // x10 still contains the original value.
         mov     x0, x10
-        ArmInterlockedOperationBarrier
+        InterlockedOperationBarrier
         ret     lr
 
     LEAF_END RhpCheckedLockCmpXchg, _TEXT
@@ -305,11 +305,11 @@ ExchangeRetry:
         // The following barrier code takes the destination in x0 and the value in x1 so the arguments are
         // already correctly set up.
 
-        INSERT_CHECKED_WRITE_BARRIER_CORE x0, x1, 9, x0
+        INSERT_CHECKED_WRITE_BARRIER_CORE x0, x1, 9
 
         // x10 still contains the original value.
         mov     x0, x10
-        ArmInterlockedOperationBarrier
+        InterlockedOperationBarrier
         ret
 
     LEAF_END RhpCheckedXchg, _TEXT
@@ -319,7 +319,7 @@ LEAF_ENTRY RhpAssignRefArm64, _TEXT
     ALTERNATE_ENTRY RhpAssignRefX1AVLocation
         stlr    x15, [x14]
 
-        INSERT_UNCHECKED_WRITE_BARRIER_CORE x14, x15, 12, X14
+        INSERT_UNCHECKED_WRITE_BARRIER_CORE x14, x15, 12
 
         ret
 LEAF_END RhpAssignRefArm64, _TEXT
@@ -341,9 +341,7 @@ LEAF_ENTRY RhpCheckedAssignRefArm64, _TEXT
 
         stlr    x15, [x14]
 
-        INSERT_CHECKED_WRITE_BARRIER_CORE x14, x15, 12, X15
-
-        add x14, x14, #8
+        INSERT_CHECKED_WRITE_BARRIER_CORE x14, x15, 12
 
         ret
 LEAF_END RhpCheckedAssignRefArm64, _TEXT
@@ -361,13 +359,13 @@ LEAF_END RhpCheckedAssignRefArm64, _TEXT
 //   x17  : trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 //
 LEAF_ENTRY RhpByRefAssignRefArm64, _TEXT
-    ldr x15, [x13]
-    str x15, [x14]
+    ldr     x15, [x13]
+    stlr    x15, [x14]
 
-    INSERT_CHECKED_WRITE_BARRIER_CORE x14, x15, 12, X15
+    INSERT_CHECKED_WRITE_BARRIER_CORE x14, x15, 12
 
-    add X13, x13, #8
-    add x14, x14, #8
+    add     X13, x13, #8
+    add     x14, x14, #8
 
     ret
 LEAF_END RhpByRefAssignRefArm64, _TEXT

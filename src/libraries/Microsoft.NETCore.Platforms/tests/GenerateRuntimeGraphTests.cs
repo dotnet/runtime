@@ -14,6 +14,8 @@ using Xunit.Abstractions;
 
 namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
 {
+    // MSBuild engine is not compatible with single file
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class GenerateRuntimeGraphTests
     {
         private Log _log;
@@ -208,14 +210,15 @@ namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
         [Fact]
         public void CanAddArchitectureAndVersionToExistingGroups()
         {
-            var additionalRIDs = new[] { "osx.12-powerpc" };
+            var additionalRIDs = new[] { "osx.13-powerpc" };
             var expectedAdditions = new[]
             {
-                new RuntimeDescription("osx.12-powerpc", new[] { "osx.12", "osx.11.0-powerpc" }),
-                new RuntimeDescription("osx.12-arm64", new[] { "osx.12", "osx.11.0-arm64" }),
-                new RuntimeDescription("osx.12-x64", new[] { "osx.12", "osx.11.0-x64" }),
-                new RuntimeDescription("osx.12", new[] { "osx.11.0" }),
+                new RuntimeDescription("osx.13-powerpc", new[] { "osx.13", "osx.12-powerpc" }),
+                new RuntimeDescription("osx.13-arm64", new[] { "osx.13", "osx.12-arm64" }),
+                new RuntimeDescription("osx.13-x64", new[] { "osx.13", "osx.12-x64" }),
+                new RuntimeDescription("osx.13", new[] { "osx.12" }),
                 // our RID model doesn't give priority to architecture, so the new architecture is applied to all past versions
+                new RuntimeDescription("osx.12-powerpc", new[] { "osx.12", "osx.11.0-powerpc" }),
                 new RuntimeDescription("osx.11.0-powerpc", new[] { "osx.11.0", "osx.10.16-powerpc" }),
                 new RuntimeDescription("osx.10.16-powerpc", new[] { "osx.10.16", "osx.10.15-powerpc" }),
                 new RuntimeDescription("osx.10.15-powerpc", new[] { "osx.10.15", "osx.10.14-powerpc" }),

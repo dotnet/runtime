@@ -155,7 +155,7 @@ struct MockCoreClrDelegate
 
         if (!initialized)
         {
-            MockLog("ERROR called unitialized delegate!!!");
+            MockLog("ERROR called uninitialized delegate!!!");
             return;
         }
 

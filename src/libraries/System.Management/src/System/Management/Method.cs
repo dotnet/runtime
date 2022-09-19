@@ -240,15 +240,7 @@ namespace System.Management
         ///    qualifiers for this method.
         /// </value>
         /// <seealso cref='System.Management.QualifierData'/>
-        public QualifierDataCollection Qualifiers
-        {
-            get
-            {
-                if (qualifiers == null)
-                    qualifiers = new QualifierDataCollection(parent, methodName, QualifierType.MethodQualifier);
-                return qualifiers;
-            }
-        }
+        public QualifierDataCollection Qualifiers => qualifiers ??= new QualifierDataCollection(parent, methodName, QualifierType.MethodQualifier);
 
     }//MethodData
 }

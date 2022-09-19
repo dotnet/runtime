@@ -492,8 +492,8 @@ namespace System.Net.Http
 
             public override int ReadByte()
             {
-                Span<byte> buffer = stackalloc byte[1];
-                return Read(buffer) == 1 ? buffer[0] : -1;
+                byte b = 0;
+                return Read(new Span<byte>(ref b)) == 1 ? b : -1;
             }
 
             public override int Read(Span<byte> buffer)

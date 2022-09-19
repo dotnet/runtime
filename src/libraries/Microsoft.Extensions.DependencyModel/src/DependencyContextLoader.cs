@@ -64,10 +64,7 @@ namespace Microsoft.Extensions.DependencyModel
                     context = LoadEntryAssemblyContext(reader);
                 }
 
-                if (context == null)
-                {
-                    context = LoadAssemblyContext(assembly, reader);
-                }
+                context ??= LoadAssemblyContext(assembly, reader);
 
                 if (context != null)
                 {

@@ -400,10 +400,7 @@ namespace System.Runtime.Serialization.Json
         private void EnsureBuffers()
         {
             EnsureByteBuffer();
-            if (_chars == null)
-            {
-                _chars = new char[BufferLength];
-            }
+            _chars ??= new char[BufferLength];
         }
 
         [MemberNotNull(nameof(_bytes))]

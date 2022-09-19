@@ -201,10 +201,7 @@ namespace System.ComponentModel.DataAnnotations
                 {
                     lock (_syncRoot)
                     {
-                        if (_propertyStoreItems == null)
-                        {
-                            _propertyStoreItems = CreatePropertyStoreItems();
-                        }
+                        _propertyStoreItems ??= CreatePropertyStoreItems();
                     }
                 }
 

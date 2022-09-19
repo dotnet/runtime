@@ -236,7 +236,7 @@ public:
     HRESULT InitOnRO(CMiniMd *pMd, int bReadOnly);
 #ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
     __checkReturn
-    HRESULT InitOnCustomDataSource(IMDCustomDataSource* pDataSouce);
+    HRESULT InitOnCustomDataSource(IMDCustomDataSource* pDataSource);
 #endif
     __checkReturn
     HRESULT ConvertToRW();
@@ -764,7 +764,7 @@ public:
 
     // look up hash table for tokenless tables.
     // They are constant, FieldMarshal, MethodSemantics, ClassLayout, FieldLayout, ImplMap, FieldRVA, NestedClass, and MethodImpl
-    CLookUpHash * m_pLookUpHashs[TBL_COUNT];
+    CLookUpHash * m_pLookUpHashes[TBL_COUNT];
 
     //*************************************************************************
     // Hash for named items.

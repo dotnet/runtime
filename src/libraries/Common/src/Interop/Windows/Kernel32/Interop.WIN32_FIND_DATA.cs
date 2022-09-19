@@ -22,10 +22,8 @@ internal static partial class Interop
             private fixed char _cFileName[MAX_PATH];
             private fixed char _cAlternateFileName[14];
 
-            internal ReadOnlySpan<char> cFileName
-            {
-                get { fixed (char* c = _cFileName) return new ReadOnlySpan<char>(c, MAX_PATH); }
-            }
+            internal ReadOnlySpan<char> cFileName =>
+                MemoryMarshal.CreateReadOnlySpan(ref _cFileName[0], MAX_PATH);
         }
     }
 }

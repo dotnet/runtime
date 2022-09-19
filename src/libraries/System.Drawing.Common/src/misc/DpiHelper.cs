@@ -87,7 +87,7 @@ namespace System.Windows.Forms
 
                     // We will prefer NearestNeighbor algorithm for 200, 300, 400, etc zoom factors, in which each pixel become a 2x2, 3x3, 4x4, etc rectangle.
                     // This produces sharp edges in the scaled image and doesn't cause distorsions of the original image.
-                    // For any other scale factors we will prefer a high quality resizing algorith. While that introduces fuzziness in the resulting image,
+                    // For any other scale factors we will prefer a high quality resizing algorithm. While that introduces fuzziness in the resulting image,
                     // it will not distort the original (which is extremely important for small zoom factors like 125%, 150%).
                     // We'll use Bicubic in those cases, except on reducing (zoom < 100, which we shouldn't have anyway), in which case Linear produces better
                     // results because it uses less neighboring pixels.
@@ -194,7 +194,7 @@ namespace System.Windows.Forms
         /// </summary>
         /// <param name="logicalImage">The image to scale from logical units to device units</param>
         /// <param name="targetImageSize">The size to scale image to</param>
-        [return: NotNullIfNotNull("logicalImage")]
+        [return: NotNullIfNotNull(nameof(logicalImage))]
         public static Bitmap? CreateResizedBitmap(Bitmap? logicalImage, Size targetImageSize)
         {
             if (logicalImage == null)
@@ -211,7 +211,7 @@ namespace System.Windows.Forms
         /// Note: this method should be called only inside an if (DpiHelper.IsScalingRequired) clause
         /// </summary>
         /// <param name="logicalBitmap">The image to scale from logical units to device units</param>
-        public static void ScaleBitmapLogicalToDevice([NotNullIfNotNull("logicalBitmap")]ref Bitmap? logicalBitmap)
+        public static void ScaleBitmapLogicalToDevice([NotNullIfNotNull(nameof(logicalBitmap))]ref Bitmap? logicalBitmap)
         {
             if (logicalBitmap == null)
             {

@@ -259,7 +259,7 @@ namespace System.Net.WebSockets.Compression
 
         private ZLibStreamHandle CreateInflater()
         {
-            ZLibStreamHandle stream;
+            ZLibStreamHandle? stream = null;
             ErrorCode errorCode;
 
             try
@@ -268,6 +268,7 @@ namespace System.Net.WebSockets.Compression
             }
             catch (Exception exception)
             {
+                stream?.Dispose();
                 throw new WebSocketException(SR.ZLibErrorDLLLoadError, exception);
             }
 

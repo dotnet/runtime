@@ -176,7 +176,7 @@ LEAF_END ThePreStubPatch, _TEXT
 
 
 //-----------------------------------------------------------------------------
-// The following Macros help in WRITE_BARRIER Implemetations
+// The following Macros help in WRITE_BARRIER Implementations
 // WRITE_BARRIER_ENTRY
 //
 // Declare the start of a write barrier function. Use similarly to NESTED_ENTRY. This is the only legal way
@@ -213,7 +213,7 @@ WRITE_BARRIER_ENTRY JIT_UpdateWriteBarrierState
     // x12 will be used for pointers
 
     mov x8, x0
-    mov x9, x1 
+    mov x9, x1
 
     PREPARE_EXTERNAL_VAR g_card_table, x12
     ldr  x0, [x12]
@@ -754,10 +754,10 @@ LOCAL_LABEL(Success):
     blt     LOCAL_LABEL(Promote)
 
     ldr     x16, [x9, #ResolveCacheElem__target]    // get the ImplTarget
-    br      x16               // branch to interface implemenation target
+    br      x16               // branch to interface implementation target
 
 LOCAL_LABEL(Promote):
-                              // Move this entry to head postion of the chain
+                              // Move this entry to head position of the chain
     mov     x16, #256
     str     x16, [x13]         // be quick to reset the counter so we don't get a bunch of contending threads
     orr     x11, x11, #PROMOTE_CHAIN_FLAG   // set PROMOTE_CHAIN_FLAG

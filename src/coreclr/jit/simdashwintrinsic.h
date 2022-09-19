@@ -32,6 +32,9 @@ enum class SimdAsHWIntrinsicFlag : unsigned int
 
     // For SIMDVectorHandle, keep the base type from the result type
     KeepBaseTypeFromRet = 0x10,
+
+    // Indicates that side effects need to be spilled for op1
+    SpillSideEffectsOp1 = 0x20,
 };
 
 inline SimdAsHWIntrinsicFlag operator~(SimdAsHWIntrinsicFlag value)
@@ -65,7 +68,8 @@ struct SimdAsHWIntrinsicInfo
 
     static const SimdAsHWIntrinsicInfo& lookup(NamedIntrinsic id);
 
-    static NamedIntrinsic lookupId(CORINFO_SIG_INFO* sig,
+    static NamedIntrinsic lookupId(Compiler*         comp,
+                                   CORINFO_SIG_INFO* sig,
                                    const char*       className,
                                    const char*       methodName,
                                    const char*       enclosingClassName,
@@ -141,6 +145,12 @@ struct SimdAsHWIntrinsicInfo
     {
         SimdAsHWIntrinsicFlag flags = lookupFlags(id);
         return (flags & SimdAsHWIntrinsicFlag::KeepBaseTypeFromRet) == SimdAsHWIntrinsicFlag::KeepBaseTypeFromRet;
+    }
+
+    static bool SpillSideEffectsOp1(NamedIntrinsic id)
+    {
+        SimdAsHWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & SimdAsHWIntrinsicFlag::SpillSideEffectsOp1) == SimdAsHWIntrinsicFlag::SpillSideEffectsOp1;
     }
 };
 

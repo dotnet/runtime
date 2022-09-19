@@ -1283,11 +1283,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             // Try the conversion - if it fails, do a cast without user defined casts.
-            Expr arg = tryConvert(pArgument, uofs.GetType());
-            if (arg == null)
-            {
-                arg = mustCast(pArgument, uofs.GetType(), CONVERTTYPE.NOUDC);
-            }
+            Expr arg =
+                tryConvert(pArgument, uofs.GetType()) ??
+                mustCast(pArgument, uofs.GetType(), CONVERTTYPE.NOUDC);
 
             return uofs.pfn(this, ek, flags, arg);
         }
@@ -1836,8 +1834,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Bind a shift operator: <<, >>. These can have integer or long first operands,
             and second operand must be int.
         */
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "All types used here are builtin and will not be trimmed.")]
         private static ExprBinOp BindShiftOp(ExpressionBinder _, ExpressionKind ek, EXPRFLAG flags, Expr arg1, Expr arg2)
         {
             Debug.Assert(ek == ExpressionKind.LeftShirt || ek == ExpressionKind.RightShift);
@@ -1904,8 +1900,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return BindBoolBinOp(this, ek, flags, expr1, expr2);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "All types used here are builtin and will not be trimmed.")]
         private static Expr BindLiftedBoolBitwiseOp(ExpressionBinder _, ExpressionKind ek, EXPRFLAG flags, Expr expr1, Expr expr2) => null;
 
         /*

@@ -64,7 +64,7 @@
 // For profitability we first try and avoid code growth. We do this
 // by only substituting in cases where lcl has exactly one def and one use.
 // This info is computed for us but the RCS_Early ref counting done during
-// the immediately preceeding fgMarkAddressExposedLocals phase.
+// the immediately preceding fgMarkAddressExposedLocals phase.
 //
 // Because of this, once we've substituted "tree" we know that lcl is dead
 // and we can remove the assignment statement.
@@ -187,7 +187,6 @@ class ForwardSubVisitor final : public GenTreeVisitor<ForwardSubVisitor>
 public:
     enum
     {
-        ComputeStack      = true,
         DoPostOrder       = true,
         UseExecutionOrder = true
     };
@@ -197,7 +196,6 @@ public:
         , m_use(nullptr)
         , m_node(nullptr)
         , m_parentNode(nullptr)
-        , m_callAncestor(nullptr)
         , m_lclNum(lclNum)
         , m_useCount(0)
         , m_useFlags(GTF_EMPTY)
@@ -209,7 +207,9 @@ public:
     Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
         m_treeSize++;
-        GenTree* const node = *use;
+
+        GenTree* const node  = *use;
+        bool const     isDef = (user != nullptr) && user->OperIs(GT_ASG) && (user->gtGetOp1() == node);
 
         if (node->OperIs(GT_LCL_VAR))
         {
@@ -221,8 +221,7 @@ public:
 
                 // Screen out contextual "uses"
                 //
-                GenTree* const parent = m_ancestors.Top(1);
-                bool const     isDef  = parent->OperIs(GT_ASG) && (parent->gtGetOp1() == node);
+                GenTree* const parent = user;
                 bool const     isAddr = parent->OperIs(GT_ADDR);
 
                 bool isCallTarget = false;
@@ -243,58 +242,25 @@ public:
                     m_use        = use;
                     m_useFlags   = m_accumulatedFlags;
                     m_parentNode = parent;
-
-                    // If this use contributes to a call arg we need to
-                    // remember the call and handle it specially when we
-                    // see it later in the postorder walk.
-                    //
-                    for (int i = 1; i < m_ancestors.Height(); i++)
-                    {
-                        if (m_ancestors.Top(i)->IsCall())
-                        {
-                            m_callAncestor = m_ancestors.Top(i)->AsCall();
-                            break;
-                        }
-                    }
                 }
             }
         }
 
-        if (node->OperIsLocal())
+        // Stores to and uses of address-exposed locals are modelled as global refs.
+        //
+        GenTree* lclNode = nullptr;
+        if (node->OperIsLocal() && !isDef)
         {
-            unsigned const lclNum = node->AsLclVarCommon()->GetLclNum();
-
-            // Uses of address-exposed locals are modelled as global refs.
-            //
-            LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
-
-            if (varDsc->IsAddressExposed())
-            {
-                m_accumulatedFlags |= GTF_GLOB_REF;
-            }
+            lclNode = node;
+        }
+        else if (node->OperIs(GT_ASG) && node->gtGetOp1()->OperIsLocal())
+        {
+            lclNode = node->gtGetOp1();
         }
 
-        // Is this the use's call ancestor?
-        //
-        if ((m_callAncestor != nullptr) && (node == m_callAncestor))
+        if ((lclNode != nullptr) && m_compiler->lvaGetDesc(lclNode->AsLclVarCommon())->IsAddressExposed())
         {
-            // To be conservative and avoid issues with morph
-            // reordering call args, we merge in effects of all args
-            // to this call.
-            //
-            // Remove this if/when morph's arg sorting is fixed.
-            //
-            GenTreeFlags oldUseFlags = m_useFlags;
-
-            for (CallArg& arg : m_callAncestor->gtArgs.Args())
-            {
-                m_useFlags |= (arg.GetNode()->gtFlags & GTF_GLOB_EFFECT);
-            }
-
-            if (oldUseFlags != m_useFlags)
-            {
-                JITDUMP(" [added other call arg use flags: 0x%x]", m_useFlags & ~oldUseFlags);
-            }
+            m_accumulatedFlags |= GTF_GLOB_REF;
         }
 
         m_accumulatedFlags |= (node->gtFlags & GTF_GLOB_EFFECT);
@@ -341,7 +307,6 @@ private:
     GenTree**    m_use;
     GenTree*     m_node;
     GenTree*     m_parentNode;
-    GenTreeCall* m_callAncestor;
     unsigned     m_lclNum;
     unsigned     m_useCount;
     GenTreeFlags m_useFlags;
@@ -695,30 +660,19 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         }
     }
 
-#ifdef FEATURE_SIMD
-    // Don't forward sub a SIMD call under a HW intrinsic node.
-    // LowerCallStruct is not prepared for this.
-    //
-    if (fwdSubNode->IsCall() && varTypeIsSIMD(fwdSubNode->TypeGet()) && fsv.GetParentNode()->OperIs(GT_HWINTRINSIC))
-    {
-        JITDUMP(" simd returning call; hw intrinsic\n");
-        return false;
-    }
-#endif // FEATURE_SIMD
-
     // There are implicit assumptions downstream on where/how multi-reg ops
     // can appear.
     //
     // Eg if fwdSubNode is a multi-reg call, parent node must be GT_ASG and the
     // local being defined must be specially marked up.
     //
-    if (fwdSubNode->IsMultiRegCall())
+    if (varTypeIsStruct(fwdSubNode) && fwdSubNode->IsMultiRegCall())
     {
         GenTree* const parentNode = fsv.GetParentNode();
 
         if (!parentNode->OperIs(GT_ASG))
         {
-            JITDUMP(" multi-reg call, parent not asg\n");
+            JITDUMP(" multi-reg struct call, parent not asg\n");
             return false;
         }
 
@@ -726,17 +680,9 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
         if (!parentNodeLHS->OperIs(GT_LCL_VAR))
         {
-            JITDUMP(" multi-reg call, parent not asg(lcl, ...)\n");
+            JITDUMP(" multi-reg struct call, parent not asg(lcl, ...)\n");
             return false;
         }
-
-#if defined(TARGET_X86) || defined(TARGET_ARM)
-        if (fwdSubNode->TypeGet() == TYP_LONG)
-        {
-            JITDUMP(" TYP_LONG fwd sub node, target is x86/arm\n");
-            return false;
-        }
-#endif // defined(TARGET_X86) || defined(TARGET_ARM)
 
         GenTreeLclVar* const parentNodeLHSLocal = parentNodeLHS->AsLclVar();
 
@@ -797,7 +743,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         return false;
     }
 
-    // If the intial has truncate on store semantics, we need to replicate
+    // If the initial has truncate on store semantics, we need to replicate
     // that here with a cast.
     //
     if (varDsc->lvNormalizeOnStore() && fgCastNeeded(fwdSubNode, varDsc->TypeGet()))

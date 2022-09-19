@@ -201,12 +201,9 @@ namespace System.Data.Odbc
             {
                 if (IsOpen)
                 {
-                    if (ProviderInfo.DriverName == null)
-                    {
-                        ProviderInfo.DriverName = GetInfoStringUnhandled(ODBC32.SQL_INFO.DRIVER_NAME)!;
-                    }
-                    return ProviderInfo.DriverName;
+                    return ProviderInfo.DriverName ??= GetInfoStringUnhandled(ODBC32.SQL_INFO.DRIVER_NAME)!;
                 }
+
                 return string.Empty;
             }
         }
@@ -530,10 +527,7 @@ namespace System.Data.Odbc
                     }
                 default:
                     OdbcException e = OdbcException.CreateException(ODBC32.GetDiagErrors(null, hrHandle, retcode), retcode);
-                    if (e != null)
-                    {
-                        e.Errors.SetSource(this.Driver);
-                    }
+                    e?.Errors.SetSource(this.Driver);
                     ConnectionIsAlive(e);        // this will close and throw if the connection is dead
                     return e;
             }

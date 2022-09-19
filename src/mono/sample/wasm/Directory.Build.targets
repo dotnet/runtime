@@ -26,7 +26,7 @@
       <_AOTFlag Condition="'$(RunAOTCompilation)' != ''">/p:RunAOTCompilation=$(RunAOTCompilation)</_AOTFlag>
       <_WasmMainJSFileName>$([System.IO.Path]::GetFileName('$(WasmMainJSPath)'))</_WasmMainJSFileName>
     </PropertyGroup>
-    <Exec Command="$(_Dotnet) publish -bl /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=Browser $(_AOTFlag) $(_SampleProject)" />
+    <Exec Command="$(_Dotnet) publish -bl /p:Configuration=$(Configuration) /p:TargetArchitecture=wasm /p:TargetOS=Browser $(_AOTFlag) $(_SampleProject) $(BuildAdditionalArgs)" />
   </Target>
   <Target Name="RunSampleWithV8" DependsOnTargets="BuildSampleInTree">
     <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="v8 --expose_wasm $(_WasmMainJSFileName) -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args)" IgnoreExitCode="true" />
@@ -34,11 +34,19 @@
   <Target Name="RunSampleWithNode" DependsOnTargets="BuildSampleInTree">
     <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="node --expose_wasm $(_WasmMainJSFileName) -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args)" IgnoreExitCode="true" />
   </Target>
+  <Target Name="DebugSampleWithNode" DependsOnTargets="BuildSampleInTree">
+    <Exec WorkingDirectory="bin/$(Configuration)/AppBundle" Command="node --expose_wasm $(_WasmMainJSFileName) -- $(DOTNET_MONO_LOG_LEVEL) --run $(_SampleAssembly) $(Args) --inspect=9222" IgnoreExitCode="true" />
+  </Target>
   <Target Name="CheckServe">
     <Exec Command="dotnet tool install -g dotnet-serve" IgnoreExitCode="true" />
   </Target>
   <Target Name="RunSampleWithBrowser" DependsOnTargets="BuildSampleInTree;CheckServe">
-    <Exec Command="$(_Dotnet) serve -o -d:bin/$(Configuration)/AppBundle -p:8000 --mime .mjs=text/javascript --mime .js=text/javascript --mime .cjs=text/javascript" IgnoreExitCode="true" YieldDuringToolExecution="true" />
+  <!-- 
+    - we add MIME type for .wasm .mjs .js .cjs .json. Browsers require it for proper and fast execution. For example streaming instantiation of WASM module.
+    - we set `Cross-Origin-Opener-Policy` headers so that SharedArrayBuffer is enabled
+    - we set `Content-Security-Policy` headers to test that the app is able to run in environments with such restrictions.
+  -->
+    <Exec Command="$(_Dotnet) serve -o -d:bin/$(Configuration)/AppBundle -p:8000 --mime .wasm=application/wasm --mime .mjs=text/javascript --mime .js=text/javascript --mime .cjs=text/javascript --mime .json=application/json -h Cross-Origin-Opener-Policy:same-origin -h &quot;Cross-Origin-Embedder-Policy:require-corp&quot; -h &quot;Content-Security-Policy: default-src 'self' 'wasm-unsafe-eval'&quot; " IgnoreExitCode="true" YieldDuringToolExecution="true" />
   </Target>
   <Target Name="RunSampleWithBrowserAndSimpleServer" DependsOnTargets="BuildSampleInTree">
     <Exec Command="$(_Dotnet) build -c $(Configuration) ..\simple-server\HttpServer.csproj" />

@@ -50,7 +50,7 @@ function(add_pgo TargetName)
             ProfilePath
         )
 
-        # If we don't have profile data availble, gracefully fall back to a non-PGO opt build
+        # If we don't have profile data available, gracefully fall back to a non-PGO opt build
         if(NOT EXISTS ${ProfilePath})
             message("PGO data file NOT found: ${ProfilePath}")
         elseif(CMAKE_GENERATOR MATCHES "Visual Studio")

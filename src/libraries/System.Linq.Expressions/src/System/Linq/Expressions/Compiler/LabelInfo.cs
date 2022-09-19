@@ -381,10 +381,7 @@ namespace System.Linq.Expressions.Compiler
         {
             Debug.Assert(CanJumpInto);
 
-            if (_labels == null)
-            {
-                _labels = new Dictionary<LabelTarget, LabelInfo>();
-            }
+            _labels ??= new Dictionary<LabelTarget, LabelInfo>();
 
             _labels.Add(target, info);
         }

@@ -22,7 +22,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "emit.h"
 
 /*****************************************************************************/
-#ifdef DEBUG
 
 //-----------------------------------------------------------------------------
 // genInsName: Returns the string representation of the given CPU instruction, as
@@ -147,15 +146,10 @@ const char* CodeGen::genInsDisplayName(emitter::instrDesc* id)
     return insName;
 }
 
-/*****************************************************************************/
-#endif // DEBUG
-
 /*****************************************************************************
  *
  *  Return the size string (e.g. "word ptr") appropriate for the given size.
  */
-
-#ifdef DEBUG
 
 const char* CodeGen::genSizeStr(emitAttr attr)
 {
@@ -212,8 +206,6 @@ const char* CodeGen::genSizeStr(emitAttr attr)
         return "unknw ptr ";
     }
 }
-
-#endif
 
 /*****************************************************************************
  *
@@ -326,61 +318,8 @@ void CodeGen::inst_SET(emitJumpKind condition, regNumber reg)
     // These instructions only write the low byte of 'reg'
     GetEmitter()->emitIns_R(ins, EA_1BYTE, reg);
 #elif defined(TARGET_ARM64)
-    insCond cond;
-    /* Convert the condition to an insCond value */
-    switch (condition)
-    {
-        case EJ_eq:
-            cond = INS_COND_EQ;
-            break;
-        case EJ_ne:
-            cond = INS_COND_NE;
-            break;
-        case EJ_hs:
-            cond = INS_COND_HS;
-            break;
-        case EJ_lo:
-            cond = INS_COND_LO;
-            break;
 
-        case EJ_mi:
-            cond = INS_COND_MI;
-            break;
-        case EJ_pl:
-            cond = INS_COND_PL;
-            break;
-        case EJ_vs:
-            cond = INS_COND_VS;
-            break;
-        case EJ_vc:
-            cond = INS_COND_VC;
-            break;
-
-        case EJ_hi:
-            cond = INS_COND_HI;
-            break;
-        case EJ_ls:
-            cond = INS_COND_LS;
-            break;
-        case EJ_ge:
-            cond = INS_COND_GE;
-            break;
-        case EJ_lt:
-            cond = INS_COND_LT;
-            break;
-
-        case EJ_gt:
-            cond = INS_COND_GT;
-            break;
-        case EJ_le:
-            cond = INS_COND_LE;
-            break;
-
-        default:
-            NO_WAY("unexpected condition type");
-            return;
-    }
-    GetEmitter()->emitIns_R_COND(INS_cset, EA_8BYTE, reg, cond);
+    GetEmitter()->emitIns_R_COND(INS_cset, EA_8BYTE, reg, JumpKindToInsCond(condition));
 #else
     NYI("inst_SET");
 #endif
@@ -806,7 +745,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                 break;
 
             case GT_CNS_DBL:
-                return OperandDesc(emit->emitFltOrDblConst(op->AsDblCon()->gtDconVal, emitTypeSize(op)));
+                return OperandDesc(emit->emitFltOrDblConst(op->AsDblCon()->DconValue(), emitTypeSize(op)));
 
             case GT_CNS_INT:
                 assert(op->isContainedIntOrIImmed());
@@ -826,7 +765,13 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                     case TYP_SIMD12:
                     case TYP_SIMD16:
                     {
-                        simd16_t constValue = op->AsVecCon()->gtSimd16Val;
+                        simd16_t constValue = {};
+
+                        if (op->TypeIs(TYP_SIMD12))
+                            memcpy(&constValue, &op->AsVecCon()->gtSimd12Val, sizeof(simd12_t));
+                        else
+                            constValue = op->AsVecCon()->gtSimd16Val;
+
                         return OperandDesc(emit->emitSimd16Const(constValue));
                     }
 

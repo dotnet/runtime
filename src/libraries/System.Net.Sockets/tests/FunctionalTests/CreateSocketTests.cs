@@ -688,6 +688,35 @@ namespace System.Net.Sockets.Tests
             close(ptr[1]);
         }
 
+        // On some Unix machines the second (manual) handle close succeeds despite Socket's/SafeSocketHandle's Dispose
+        // completing a succesful close of the same handle value previously.
+        // We may investigate this, but it doesn't indicate incorrect behavior in Socket code,
+        // so making the test PlatformSpecific seems to be good enough. The SafeSocketHandle lifecycle logic is platform cross-platform.
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Ctor_Dispose_HandleClosedIfOwnsHandle(bool ownsHandle)
+        {
+            Socket original = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            IntPtr handleValue = original.Handle;
+
+            SafeSocketHandle handleClone = new SafeSocketHandle(handleValue, ownsHandle: ownsHandle);
+            Socket socketClone = new Socket(handleClone);
+            socketClone.Dispose();
+
+            bool manualCloseSucceeded = closesocket(handleValue) == 0;
+            Assert.Equal(!ownsHandle, manualCloseSucceeded);
+
+#if DEBUG   // The finalizer will fail to close the handle which leads to an assertion failure in Debug builds.
+            GC.SuppressFinalize(original);
+            GC.SuppressFinalize(original.SafeHandle);
+#endif
+
+            [DllImport("ws2_32.dll", SetLastError = true)]
+            static extern int closesocket(IntPtr socketHandle);
+        }
+
         private static void AssertEqualOrSameException<T>(Func<T> expected, Func<T> actual)
         {
             T r1 = default, r2 = default;

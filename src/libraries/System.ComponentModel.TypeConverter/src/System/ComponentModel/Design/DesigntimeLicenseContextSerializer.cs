@@ -167,8 +167,8 @@ namespace System.ComponentModel.Design
             {
                 using (BinaryReader reader = new BinaryReader(wrappedStream, encoding: Text.Encoding.UTF8, leaveOpen: true))
                 {
-                    byte binaryWriterIdentifer = wrappedStream._firstByte;
-                    Debug.Assert(binaryWriterIdentifer == BinaryWriterMagic, $"Expected the first byte to be {BinaryWriterMagic}");
+                    byte binaryWriterIdentifier = wrappedStream._firstByte;
+                    Debug.Assert(binaryWriterIdentifier == BinaryWriterMagic, $"Expected the first byte to be {BinaryWriterMagic}");
                     string streamCryptoKey = reader.ReadString();
                     int numEntries = reader.ReadInt32();
                     if (streamCryptoKey == cryptoKey)

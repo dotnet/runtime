@@ -365,8 +365,7 @@ namespace System.DirectoryServices.AccountManagement
 
         protected static bool IdentityClaimToFilter(string identity, string identityFormat, ref string filter, bool throwOnFail)
         {
-            if (identity == null)
-                identity = "";
+            identity ??= "";
 
             StringBuilder sb = new StringBuilder();
 
@@ -481,9 +480,7 @@ namespace System.DirectoryServices.AccountManagement
             if (ic.UrnScheme == null)
                 throw new ArgumentException(SR.StoreCtxIdentityClaimMustHaveScheme);
 
-            string urnValue = ic.UrnValue;
-            if (urnValue == null)
-                urnValue = "";
+            string urnValue = ic.UrnValue ?? "";
 
             string filterString = null;
 

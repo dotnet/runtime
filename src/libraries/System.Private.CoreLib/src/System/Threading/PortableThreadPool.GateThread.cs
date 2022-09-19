@@ -102,10 +102,8 @@ namespace System.Threading
                                 (uint)threadPoolInstance.GetAndResetHighWatermarkCountOfThreadsProcessingUserCallbacks());
                         }
 
-                        int cpuUtilization = cpuUtilizationReader.CurrentUtilization;
+                        int cpuUtilization = (int)cpuUtilizationReader.CurrentUtilization;
                         threadPoolInstance._cpuUtilization = cpuUtilization;
-
-                        bool needGateThreadForRuntime = ThreadPool.PerformRuntimeSpecificGateActivities(cpuUtilization);
 
                         if (!disableStarvationDetection &&
                             threadPoolInstance._pendingBlockingAdjustment == PendingBlockingAdjustment.None &&
@@ -164,8 +162,7 @@ namespace System.Threading
                             }
                         }
 
-                        if (!needGateThreadForRuntime &&
-                            threadPoolInstance._separated.numRequestedWorkers <= 0 &&
+                        if (threadPoolInstance._separated.numRequestedWorkers <= 0 &&
                             threadPoolInstance._pendingBlockingAdjustment == PendingBlockingAdjustment.None &&
                             Interlocked.Decrement(ref threadPoolInstance._separated.gateThreadRunningState) <= GetRunningStateForNumRuns(0))
                         {
@@ -232,10 +229,8 @@ namespace System.Threading
                 return GateThreadRunningMask | numRuns;
             }
 
-            [MethodImpl(MethodImplOptions.NoInlining)]
             private static void CreateGateThread(PortableThreadPool threadPoolInstance)
             {
-                bool created = false;
                 try
                 {
                     // Thread pool threads must start in the default execution context without transferring the context, so
@@ -247,14 +242,10 @@ namespace System.Threading
                         Name = ".NET ThreadPool Gate"
                     };
                     gateThread.UnsafeStart();
-                    created = true;
                 }
-                finally
+                catch (Exception e)
                 {
-                    if (!created)
-                    {
-                        Interlocked.Exchange(ref threadPoolInstance._separated.gateThreadRunningState, 0);
-                    }
+                    Environment.FailFast("Failed to create the thread pool Gate thread.", e);
                 }
             }
 
@@ -334,7 +325,5 @@ namespace System.Threading
                 }
             }
         }
-
-        internal static void EnsureGateThreadRunning() => GateThread.EnsureRunning(ThreadPoolInstance);
     }
 }

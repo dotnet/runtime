@@ -100,15 +100,7 @@ namespace System.Xml.Serialization
 
         internal Dictionary<string, XmlQualifiedName>.ValueCollection Namespaces => NamespacesInternal.Values;
 
-        private Dictionary<string, XmlQualifiedName> NamespacesInternal
-        {
-            get
-            {
-                if (_namespaces == null)
-                    _namespaces = new Dictionary<string, XmlQualifiedName>();
-                return _namespaces;
-            }
-        }
+        private Dictionary<string, XmlQualifiedName> NamespacesInternal => _namespaces ??= new Dictionary<string, XmlQualifiedName>();
 
         internal ArrayList? NamespaceList
         {

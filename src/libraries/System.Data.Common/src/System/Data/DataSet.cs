@@ -33,6 +33,7 @@ namespace System.Data
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor | DynamicallyAccessedMemberTypes.NonPublicConstructors)] // needed by Clone() to preserve derived ctors
     public class DataSet : MarshalByValueComponent, IListSource, IXmlSerializable, ISupportInitializeNotification, ISerializable
     {
+        internal const string RequiresDynamicCodeMessage = "Members from serialized types may use dynamic code generation.";
         internal const string RequiresUnreferencedCodeMessage = "Members from serialized types may be trimmed if not referenced directly.";
         private const string KEY_XMLSCHEMA = "XmlSchema";
         private const string KEY_XMLDIFFGRAM = "XmlDiffGram";
@@ -217,6 +218,7 @@ namespace System.Data
 
         // Deserialize all the tables data of the dataset from binary/xml stream.
         // 'instance' method that consumes SerializationInfo
+        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         protected void GetSerializationData(SerializationInfo info, StreamingContext context)
         {
@@ -238,6 +240,7 @@ namespace System.Data
 
 
         // Deserialize all the tables schema and data of the dataset from binary/xml stream.
+        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
             Justification = "CreateInstanceOfThisType's use of GetType uses only the parameterless constructor, but the annotations preserve all non-public constructors causing a warning for the serialization constructors. Those constructors won't be used here.")]
@@ -245,6 +248,7 @@ namespace System.Data
         {
         }
 
+        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
             Justification = "CreateInstanceOfThisType's use of GetType uses only the parameterless constructor, but the annotations preserve all non-public constructors causing a warning for the serialization constructors. Those constructors won't be used here.")]
@@ -386,6 +390,7 @@ namespace System.Data
         }
 
         // Deserialize all the tables - marked internal so that DataTable can call into this
+        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         internal void DeserializeDataSet(SerializationInfo info, StreamingContext context, SerializationFormat remotingFormat, SchemaSerializationMode schemaSerializationMode)
         {
@@ -396,6 +401,7 @@ namespace System.Data
         }
 
         // Deserialize schema.
+        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         private void DeserializeDataSetSchema(SerializationInfo info, StreamingContext context, SerializationFormat remotingFormat, SchemaSerializationMode schemaSerializationMode)
         {
@@ -455,6 +461,7 @@ namespace System.Data
         }
 
         // Deserialize all  data.
+        [RequiresDynamicCode(RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(RequiresUnreferencedCodeMessage)]
         private void DeserializeDataSetData(SerializationInfo info, StreamingContext context, SerializationFormat remotingFormat)
         {
@@ -639,12 +646,10 @@ namespace System.Data
                 {
                     lock (_defaultViewManagerLock)
                     {
-                        if (_defaultViewManager == null)
-                        {
-                            _defaultViewManager = new DataViewManager(this, true);
-                        }
+                        _defaultViewManager ??= new DataViewManager(this, true);
                     }
                 }
+
                 return _defaultViewManager;
             }
         }
@@ -758,10 +763,7 @@ namespace System.Data
             set
             {
                 DataCommonEventSource.Log.Trace("<ds.DataSet.set_Namespace|API> {0}, '{1}'", ObjectID, value);
-                if (value == null)
-                {
-                    value = string.Empty;
-                }
+                value ??= string.Empty;
 
                 if (value != _namespaceURI)
                 {
@@ -801,10 +803,7 @@ namespace System.Data
             get { return _datasetPrefix; }
             set
             {
-                if (value == null)
-                {
-                    value = string.Empty;
-                }
+                value ??= string.Empty;
 
                 if ((XmlConvert.DecodeName(value) == value) && (XmlConvert.EncodeName(value) != value))
                 {
@@ -2182,10 +2181,7 @@ namespace System.Data
                                 }
                                 else
                                 {
-                                    if (xmlload == null)
-                                    {
-                                        xmlload = new XmlDataLoader(this, fIsXdr, topNode, false);
-                                    }
+                                    xmlload ??= new XmlDataLoader(this, fIsXdr, topNode, false);
 
                                     xmlload.LoadData(reader);
                                     topNodeIsProcessed = true; // we process the topnode
@@ -2226,10 +2222,7 @@ namespace System.Data
                         // now top node contains the data part
                         xdoc.AppendChild(topNode);
 
-                        if (xmlload == null)
-                        {
-                            xmlload = new XmlDataLoader(this, fIsXdr, topNode, false);
-                        }
+                        xmlload ??= new XmlDataLoader(this, fIsXdr, topNode, false);
 
                         if (!isEmptyDataSet && !topNodeIsProcessed)
                         {
@@ -2734,10 +2727,7 @@ namespace System.Data
                             }
                             else
                             {
-                                if (xmlload == null)
-                                {
-                                    xmlload = new XmlDataLoader(this, fIsXdr, topNode, mode == XmlReadMode.IgnoreSchema);
-                                }
+                                xmlload ??= new XmlDataLoader(this, fIsXdr, topNode, mode == XmlReadMode.IgnoreSchema);
                                 xmlload.LoadData(reader);
                             }
                         } //end of the while
@@ -2747,8 +2737,7 @@ namespace System.Data
 
                         // now top node contains the data part
                         xdoc.AppendChild(topNode);
-                        if (xmlload == null)
-                            xmlload = new XmlDataLoader(this, fIsXdr, mode == XmlReadMode.IgnoreSchema);
+                        xmlload ??= new XmlDataLoader(this, fIsXdr, mode == XmlReadMode.IgnoreSchema);
 
                         if (mode == XmlReadMode.DiffGram)
                         {
@@ -3153,11 +3142,7 @@ namespace System.Data
 
         internal void OnRemovedTable(DataTable table)
         {
-            DataViewManager? viewManager = _defaultViewManager;
-            if (null != viewManager)
-            {
-                viewManager.DataViewSettings.Remove(table);
-            }
+            _defaultViewManager?.DataViewSettings.Remove(table);
         }
 
         /// <summary>

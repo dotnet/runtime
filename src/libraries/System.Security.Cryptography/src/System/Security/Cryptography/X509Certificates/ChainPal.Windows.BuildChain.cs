@@ -63,9 +63,13 @@ namespace System.Security.Cryptography.X509Certificates
                             Interop.Crypt32.FILETIME ft = Interop.Crypt32.FILETIME.FromDateTime(verificationTime);
                             Interop.Crypt32.CertChainFlags flags = MapRevocationFlags(revocationMode, revocationFlag, disableAia);
                             SafeX509ChainHandle chain;
-                            if (!Interop.Crypt32.CertGetCertificateChain(storeHandle.DangerousGetHandle(), certificatePal.CertContext, &ft, extraStoreHandle, ref chainPara, flags, IntPtr.Zero, out chain))
+                            using (SafeCertContextHandle certContext = certificatePal.GetCertContext())
                             {
-                                return null;
+                                if (!Interop.Crypt32.CertGetCertificateChain(storeHandle.DangerousGetHandle(), certContext, &ft, extraStoreHandle, ref chainPara, flags, IntPtr.Zero, out chain))
+                                {
+                                    chain.Dispose();
+                                    return null;
+                                }
                             }
 
                             return new ChainPal(chain);

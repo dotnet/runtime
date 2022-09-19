@@ -42,10 +42,7 @@ namespace System.Security.Cryptography
 
         public override void AppendHashData(ReadOnlySpan<byte> data)
         {
-            if (buffer == null)
-            {
-                buffer = new MemoryStream(1000);
-            }
+            buffer ??= new MemoryStream(1000);
 
             buffer.Write(data);
         }

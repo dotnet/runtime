@@ -196,7 +196,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                     Debug.Assert(buffer != (IntPtr)0);
 
-                    // get the managed structre representation
+                    // get the managed structure representation
                     TRUSTED_DOMAIN_INFORMATION_EX domainInfo = default;
                     Marshal.PtrToStructure(buffer, domainInfo);
 
@@ -639,7 +639,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             throw ExceptionHelper.GetExceptionFromErrorCode((int)win32Error, serverName);
                     }
 
-                    // get the managed structre representation
+                    // get the managed structure representation
                     TRUSTED_DOMAIN_FULL_INFORMATION domainInfo = new TRUSTED_DOMAIN_FULL_INFORMATION();
                     Marshal.PtrToStructure(buffer, domainInfo);
 
@@ -770,7 +770,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             throw ExceptionHelper.GetExceptionFromErrorCode((int)win32Error, serverName);
                     }
 
-                    // get the managed structre representation
+                    // get the managed structure representation
                     TRUSTED_DOMAIN_FULL_INFORMATION domainInfo = new TRUSTED_DOMAIN_FULL_INFORMATION();
                     Marshal.PtrToStructure(buffer, domainInfo);
 

@@ -1357,7 +1357,7 @@ make_generic_param_class (MonoGenericParam *param)
 		if (mono_class_has_failure (klass->parent))
 			mono_class_set_type_load_failure (klass, "Failed to setup parent interfaces");
 		else
-			mono_class_setup_interface_offsets_internal (klass, klass->parent->vtable_size, TRUE);
+			mono_class_setup_interface_offsets_internal (klass, klass->parent->vtable_size, MONO_SETUP_ITF_OFFSETS_OVERWRITE);
 	}
 
 	return klass;
@@ -1836,33 +1836,10 @@ class_has_ref_fields (MonoClass *klass)
 }
 
 static gboolean
-class_is_byreference (MonoClass* klass)
-{
-	const char* klass_name_space = m_class_get_name_space (klass);
-	const char* klass_name = m_class_get_name (klass);
-	MonoImage* klass_image = m_class_get_image (klass);
-	gboolean in_corlib = klass_image == mono_defaults.corlib;
-
-	if (in_corlib &&
-		!strcmp (klass_name_space, "System") &&
-		!strcmp (klass_name, "ByReference`1")) {
-		return TRUE;
-	}
-
-	return FALSE;
-}
-
-static gboolean
 type_has_ref_fields (MonoType *ftype)
 {
 	if (m_type_is_byref (ftype) || (MONO_TYPE_ISSTRUCT (ftype) && class_has_ref_fields (mono_class_from_mono_type_internal (ftype))))
 		return TRUE;
-
-	/* Check for the ByReference`1 type */
-	if (MONO_TYPE_ISSTRUCT (ftype)) {
-		MonoClass* klass = mono_class_from_mono_type_internal (ftype);
-		return class_is_byreference (klass);
-	}
 
 	return FALSE;
 }
@@ -1880,7 +1857,7 @@ type_has_ref_fields (MonoType *ftype)
  * constraints, we return FALSE because the parameter may be instantiated both
  * with blittable and non-blittable types.
  *
- * If the paramter is a generic sharing parameter, we look at its gshared_constraint->blittable bit.
+ * If the parameter is a generic sharing parameter, we look at its gshared_constraint->blittable bit.
  */
 static gboolean
 mono_class_is_gparam_with_nonblittable_parent (MonoClass *klass)
@@ -1982,7 +1959,7 @@ validate_struct_fields_overlaps (guint8 *layout_check, int layout_size, MonoClas
 		} else {
 			int align = 0;
 			int size = mono_type_size (field->type, &align);
-			guint8 type = type_has_references (klass, ftype) ? 1 : (m_type_is_byref (ftype) || class_is_byreference (klass)) ? 2 : 3;
+			guint8 type = type_has_references (klass, ftype) ? 1 : m_type_is_byref (ftype) ? 2 : 3;
 
 			// Mark the bytes used by this fields type based on if it contains references or not.
 			// Make sure there are no overlaps between object and non-object fields.
@@ -3088,7 +3065,7 @@ mono_class_init_internal (MonoClass *klass)
 	mono_loader_unlock ();
 	locked = FALSE;
 
-	mono_class_setup_interface_offsets_internal (klass, first_iface_slot, TRUE);
+	mono_class_setup_interface_offsets_internal (klass, first_iface_slot, MONO_SETUP_ITF_OFFSETS_OVERWRITE);
 
 	if (mono_class_is_ginst (klass) && !mono_verifier_class_is_valid_generic_instantiation (klass))
 		mono_class_set_type_load_failure (klass, "Invalid generic instantiation");
@@ -3225,7 +3202,7 @@ mono_class_setup_interface_id_nolock (MonoClass *klass)
 	if (mono_is_corlib_image (klass->image) && !strcmp (m_class_get_name_space (klass), "System.Collections.Generic")) {
 		//FIXME IEnumerator needs to be special because GetEnumerator uses magic under the hood
 	    /* FIXME: System.Array/InternalEnumerator don't need all this interface fabrication machinery.
-	    * MS returns diferrent types based on which instance is called. For example:
+	    * MS returns differrent types based on which instance is called. For example:
 	    * 	object obj = new byte[10][];
 	    *	Type a = ((IEnumerable<byte[]>)obj).GetEnumerator ().GetType ();
 	    *	Type b = ((IEnumerable<IList<byte>>)obj).GetEnumerator ().GetType ();

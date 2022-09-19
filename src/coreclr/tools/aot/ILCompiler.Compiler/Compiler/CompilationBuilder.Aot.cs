@@ -3,11 +3,9 @@
 
 using System;
 
-using Internal.JitInterface;
-
 namespace ILCompiler
 {
-    partial class CompilationBuilder
+    public partial class CompilationBuilder
     {
         private PreinitializationManager _preinitializationManager;
 

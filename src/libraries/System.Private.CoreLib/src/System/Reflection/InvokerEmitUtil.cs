@@ -55,7 +55,7 @@ namespace System.Reflection
                     il.Emit(OpCodes.Add);
                 }
 
-                il.Emit(OpCodes.Call, Methods.ByReferenceOfByte_Value()); // This can be replaced by ldfld once byref fields are available in C#
+                il.Emit(OpCodes.Ldfld, Methods.ByReferenceOfByte_Value());
 
                 RuntimeType parameterType = (RuntimeType)parameters[i].ParameterType;
                 if (!parameterType.IsByRef)
@@ -166,18 +166,15 @@ namespace System.Reflection
 
         private static class Methods
         {
-            private static MethodInfo? s_ByReferenceOfByte_Value;
-            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(ByReference<>))]
-            public static MethodInfo ByReferenceOfByte_Value() =>
-                s_ByReferenceOfByte_Value ??= typeof(ByReference<byte>).GetMethod("get_Value")!;
+            private static FieldInfo? s_ByReferenceOfByte_Value;
+            public static FieldInfo ByReferenceOfByte_Value() =>
+                s_ByReferenceOfByte_Value ??= typeof(ByReference).GetField("Value")!;
 
             private static MethodInfo? s_ThrowHelper_Throw_NullReference_InvokeNullRefReturned;
-            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(ThrowHelper))]
             public static MethodInfo ThrowHelper_Throw_NullReference_InvokeNullRefReturned() =>
                 s_ThrowHelper_Throw_NullReference_InvokeNullRefReturned ??= typeof(ThrowHelper).GetMethod(nameof(ThrowHelper.Throw_NullReference_InvokeNullRefReturned))!;
 
             private static MethodInfo? s_Pointer_Box;
-            [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, typeof(Pointer))]
             public static MethodInfo Pointer_Box() =>
                 s_Pointer_Box ??= typeof(Pointer).GetMethod(nameof(Pointer.Box), new[] { typeof(void*), typeof(Type) })!;
 

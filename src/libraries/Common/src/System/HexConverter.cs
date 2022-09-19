@@ -196,16 +196,9 @@ namespace System
         public static unsafe string ToString(ReadOnlySpan<byte> bytes, Casing casing = Casing.Upper)
         {
 #if NETFRAMEWORK || NETSTANDARD2_0
-            Span<char> result = stackalloc char[0];
-            if (bytes.Length > 16)
-            {
-                var array = new char[bytes.Length * 2];
-                result = array.AsSpan();
-            }
-            else
-            {
-                result = stackalloc char[bytes.Length * 2];
-            }
+            Span<char> result = bytes.Length > 16 ?
+                new char[bytes.Length * 2].AsSpan() :
+                stackalloc char[bytes.Length * 2];
 
             int pos = 0;
             foreach (byte b in bytes)

@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*=====================================================================
-** 
+**
 ** Source:  test1.c (FreeLibraryAndExitThread)
 **
 ** Purpose: Tests the PAL implementation of the FreeLibraryAndExitThread
-**          function. FreeLibraryAndExitThread when run will exit the 
+**          function. FreeLibraryAndExitThread when run will exit the
 **          process that it is called within, therefore we create a
-**          thread to run the API. Then test for the existance of the
+**          thread to run the API. Then test for the existence of the
 **          thread and access to the library.
 **
 **
@@ -54,7 +54,7 @@ PALTEST(filemapping_memmgt_FreeLibraryAndExitThread_test1_paltest_freelibraryand
 BOOL  PALAPI StartThreadTest_FreeLibraryAndExitThread_test1()
 {
     HMODULE hLib;
-    HANDLE  hThread;  
+    HANDLE  hThread;
     DWORD   dwThreadId;
     LPTHREAD_START_ROUTINE lpStartAddress =  &CreateTestThread_FreeLibraryAndExitThread_test1;
     LPVOID lpParameter = (LPVOID)lpStartAddress;
@@ -64,12 +64,12 @@ BOOL  PALAPI StartThreadTest_FreeLibraryAndExitThread_test1()
     if(hLib == NULL)
     {
         Trace("ERROR: Unable to load library %s\n", LibraryName);
-        
+
         return (FALSE);
     }
 
     /*Start the test thread*/
-    hThread = CreateThread(NULL, 
+    hThread = CreateThread(NULL,
                             (DWORD)0,
                             lpStartAddress,
                             hLib,
@@ -90,22 +90,22 @@ BOOL  PALAPI StartThreadTest_FreeLibraryAndExitThread_test1()
     {
         Trace("ERROR:%u: hThread=0x%4.4lx not exited by "
             "FreeLibraryAndExitThread, RC[%d]\n",
-            GetLastError(),  
+            GetLastError(),
             hThread, rc);
 
-// There is a possibility that the other thread might 
+// There is a possibility that the other thread might
 // still be using the library VSW:337893
 //        FreeLibrary(hLib);
         CloseHandle(hThread);
         return (FALSE);
     }
-            
+
     /*Test access to DLL.*/
     if(!TestDll_FreeLibraryAndExitThread_test1(hLib, 0))
     {
         Trace("ERROR: TestDll function returned FALSE "
             "expected TRUE\n.");
-        
+
         CloseHandle(hThread);
         return (FALSE);
     }
@@ -121,7 +121,7 @@ BOOL PALAPI TestDll_FreeLibraryAndExitThread_test1(HMODULE hLib, int testResult)
 {
     int     RetVal;
     char    FunctName[] = "DllTest";
-    FARPROC DllAddr;    
+    FARPROC DllAddr;
 
     /* Attempt to grab the proc address of the dll function.
      * This one should succeed.*/
@@ -130,12 +130,12 @@ BOOL PALAPI TestDll_FreeLibraryAndExitThread_test1(HMODULE hLib, int testResult)
         DllAddr = GetProcAddress(hLib, FunctName);
         if(DllAddr == NULL)
         {
-            Trace("ERROR: Unable to load function \"%s\" library \"%s\"\n", 
+            Trace("ERROR: Unable to load function \"%s\" library \"%s\"\n",
                     FunctName,
                     LibraryName);
             return (FALSE);
         }
-        /* Run the function in the DLL, 
+        /* Run the function in the DLL,
          * to ensure that the DLL was loaded properly.*/
         RetVal = DllAddr();
         if (RetVal != 1)
@@ -155,8 +155,8 @@ BOOL PALAPI TestDll_FreeLibraryAndExitThread_test1(HMODULE hLib, int testResult)
         if(DllAddr != NULL)
         {
             Trace("ERROR: Able to load function \"%s\" from free'd"
-                " library \"%s\"\n", 
-                FunctName, 
+                " library \"%s\"\n",
+                FunctName,
                 LibraryName);
             return (FALSE);
         }

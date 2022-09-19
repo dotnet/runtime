@@ -29,11 +29,11 @@ To do this use the `--parallelism 1` switch to specify that the maximum parallel
 
 - Since the compilers are by default multi-threaded, they produce results fairly quickly even when compiling using a Debug variant of the JIT. In general, when debugging JIT issues we recommend using the debug JIT regardless of which environment caused a problem.
 
-- The compilers support nearly arbitrary cross-targetting, including OS and architecture cross targeting. The only restriction is that 32bit architecture cannot compile targetting a 64bit architecture. This allows the use of the debugging environment most convenient to the developer. In particular, if there is an issue which crosses the managed/native boundary, it is often convenient to debug using the mixed mode debugger on Windows X64.
+- The compilers support nearly arbitrary cross-targeting, including OS and architecture cross targeting. The only restriction is that 32bit architecture cannot compile targeting a 64bit architecture. This allows the use of the debugging environment most convenient to the developer. In particular, if there is an issue which crosses the managed/native boundary, it is often convenient to debug using the mixed mode debugger on Windows X64.
   - If the correct set of assemblies/command line arguments are passed to the compiler, it should produce binary identical output on all platforms.
   - The compiler does not check the OS/Architecture specified for input assemblies, which allows compiling using a non-architecture/OS matched version of the framework to target an arbitrary target. While this isn't useful for producing the diagnosing all issues, it can be cheaply used to identify the general behavior of a change on the full swath of supported architectures.
 
-Control compilation behavior by using the `--targetos` and `--targetarch` switches. The default behavior is to target the compiler's own OS/Arch pair, but all 64bit versions of the compilers are capable of targetting arbitrary OS/Arch combinations.
+Control compilation behavior by using the `--targetos` and `--targetarch` switches. The default behavior is to target the compiler's own OS/Arch pair, but all 64bit versions of the compilers are capable of targeting arbitrary OS/Arch combinations.
 At the time of writing the current supported sets of valid arguments are:
 | Command line arguments
 | --- |
@@ -47,9 +47,9 @@ At the time of writing the current supported sets of valid arguments are:
 |`--targetos osx --targetarch x64` |
 |`--targetos osx --targetarch arm64` |
 
-- Passing special jit behavior flags to the compiler is done via the `--codegenopt` switch. As an example to turn on tailcall loop optimizations and dump all code compiled use a pair of them like `--codegenopt NgenDump=* --codegenopt TailCallLoopOpt=1`.
+- Passing special jit behavior flags to the compiler is done via the `--codegenopt` switch. As an example to turn on tailcall loop optimizations and dump all code compiled use a pair of them like `--codegenopt JitDump=* --codegenopt TailCallLoopOpt=1`.
 
-- When using the NgenDump feature of the JIT, disable parallelism as described above or specify a single method to be compiled. Otherwise, output from multiple functions will be interleaved and inscrutable.
+- When using the JitDump feature of the JIT, disable parallelism as described above or specify a single method to be compiled. Otherwise, output from multiple functions will be interleaved and inscrutable.
 
 - Since there are 2 jits in the process, when debugging in the JIT, if the source files match up, there is a decent chance that a native debugger will stop at unfortunate and unexpected locations. This is extremely annoying, and to combat this, we generally recommend making a point of using a runtime which doesn't exactly match that of the compiler in use. However, if that isn't feasible, it is also possible to disable symbol loading in most native debuggers. For instance, in Visual Studio, one would use the "Specify excluded modules" feature.
 
@@ -137,9 +137,9 @@ Single method repro args:--singlemethodtypename "Complex_Array_Test,Complex1" --
 Emitting R2R PE file: c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\jit\Directed\Arrays\Complex1\\Complex1.dll
 ```
 
-I then wanted to see some more detail from the jit. To keep the size of this example small, I'm just using the `NgenOrder=1`switch, but jit developers would more likely use `NgenDump=*` switch.
+I then wanted to see some more detail from the jit. To keep the size of this example small, I'm just using the `JitOrder=1`switch, but jit developers would more likely use `JitDump=*` switch.
 ```
-C:\git2\runtime>"dotnet" "c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root\crossgen2\crossgen2.dll" @"c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\jit\Directed\Arrays\Complex1\\Complex1.dll.rsp"   -r:c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\jit\Directed\Arrays\Complex1\IL-CG2\*.dll --print-repro-instructions --singlemethodtypename "Complex_Array_Test,Complex1" --singlemethodname Main --singlemethodindex 1 --codegenopt NgenOrder=1
+C:\git2\runtime>"dotnet" "c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root\crossgen2\crossgen2.dll" @"c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\jit\Directed\Arrays\Complex1\\Complex1.dll.rsp"   -r:c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\jit\Directed\Arrays\Complex1\IL-CG2\*.dll --print-repro-instructions --singlemethodtypename "Complex_Array_Test,Complex1" --singlemethodname Main --singlemethodindex 1 --codegenopt JitOrder=1
 C:\git2\runtime\.dotnet
 Single method repro args:--singlemethodtypename "Complex_Array_Test,Complex1" --singlemethodname Main --singlemethodindex 1
          |  Profiled   | Method   |   Method has    |   calls   | Num |LclV |AProp| CSE |   Perf  |bytes | x64 codesize|
@@ -152,7 +152,7 @@ Emitting R2R PE file: c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\
 And finally, as the last `--targetarch` and `--targetos` switch is the meaningful one, it is simple to target a different architecture for ad hoc exploration...
 
 ```
-C:\git2\runtime>"dotnet" "c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root\crossgen2\crossgen2.dll" @"c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\jit\Directed\Arrays\Complex1\\Complex1.dll.rsp"   -r:c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\jit\Directed\Arrays\Complex1\IL-CG2\*.dll --print-repro-instructions --singlemethodtypename "Complex_Array_Test,Complex1" --singlemethodname Main --singlemethodindex 1 --codegenopt NgenOrder=1 --targetarch arm64
+C:\git2\runtime>"dotnet" "c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root\crossgen2\crossgen2.dll" @"c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\jit\Directed\Arrays\Complex1\\Complex1.dll.rsp"   -r:c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\jit\Directed\Arrays\Complex1\IL-CG2\*.dll --print-repro-instructions --singlemethodtypename "Complex_Array_Test,Complex1" --singlemethodname Main --singlemethodindex 1 --codegenopt JitOrder=1 --targetarch arm64
 C:\git2\runtime\.dotnet
 Single method repro args:--singlemethodtypename "Complex_Array_Test,Complex1" --singlemethodname Main --singlemethodindex 1
          |  Profiled   | Method   |   Method has    |   calls   | Num |LclV |AProp| CSE |   Perf  |bytes | arm64 codesize|
@@ -168,11 +168,11 @@ Finally, attaching a debugger to crossgen2.
 Since this example uses `dotnet` as the `__TestDotNetCmd` you will need to debug the `c:\git2\runtime\.dotnet\dotnet.exe` process.
 
 ```
-devenv /debugexe C:\git2\runtime\.dotnet\dotnet.exe "c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root\crossgen2\crossgen2.dll" @"c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\jit\Directed\Arrays\Complex1\\Complex1.dll.rsp"   -r:c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\jit\Directed\Arrays\Complex1\IL-CG2\*.dll --print-repro-instructions --singlemethodtypename "Complex_Array_Test,Complex1" --singlemethodname Main --singlemethodindex 1 --codegenopt NgenOrder=1 --targetarch arm64
+devenv /debugexe C:\git2\runtime\.dotnet\dotnet.exe "c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\Tests\Core_Root\crossgen2\crossgen2.dll" @"c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\jit\Directed\Arrays\Complex1\\Complex1.dll.rsp"   -r:c:\git2\runtime\artifacts\tests\coreclr\windows.x64.Debug\jit\Directed\Arrays\Complex1\IL-CG2\*.dll --print-repro-instructions --singlemethodtypename "Complex_Array_Test,Complex1" --singlemethodname Main --singlemethodindex 1 --codegenopt JitOrder=1 --targetarch arm64
 ```
 
 This will launch the Visual Studio debugger, with a solution setup for debugging the dotnet.exe process. By default this solution will debug the native code of the process only. To debug the managed components, edit the properties on the solution and set the `Debugger Type` to `Managed (.NET Core, .NET 5+)` or `Mixed (.NET Core, .NET 5+)`.
 
 # Debugging compilation graph
 
-The AOT compilation is driven by a dependency graph. If you need to troubleshoot the dependency graph (to figure out why something was or wasn't generated) you can follow [this guide](debuging-compiler-dependency-analysis.md)
+The AOT compilation is driven by a dependency graph. If you need to troubleshoot the dependency graph (to figure out why something was or wasn't generated) you can follow [this guide](debugging-compiler-dependency-analysis.md)

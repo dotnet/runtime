@@ -41,9 +41,9 @@ PALTEST(threading_DuplicateHandle_test6_paltest_duplicatehandle_test6, "threadin
     }
 
     /*Setup SECURITY_ATTRIBUTES structure for CreatePipe*/
-    lpPipeAttributes.nLength              = sizeof(lpPipeAttributes); 
-    lpPipeAttributes.lpSecurityDescriptor = NULL; 
-    lpPipeAttributes.bInheritHandle       = TRUE; 
+    lpPipeAttributes.nLength              = sizeof(lpPipeAttributes);
+    lpPipeAttributes.lpSecurityDescriptor = NULL;
+    lpPipeAttributes.bInheritHandle       = TRUE;
 
     /*Create a Pipe*/
     bRetVal = CreatePipe(&hReadPipe,       /* read handle*/
@@ -82,18 +82,18 @@ PALTEST(threading_DuplicateHandle_test6_paltest_duplicatehandle_test6, "threadin
     if (bRetVal == FALSE)
     {
         Trace("ERROR: %ld :unable to write to duplicate write pipe handle "
-            "hDupPipe=0x%lx\n", 
-            GetLastError(), 
+            "hDupPipe=0x%lx\n",
+            GetLastError(),
             hDupPipe);
         CloseHandle(hReadPipe);
         CloseHandle(hWritePipe);
         CloseHandle(hDupPipe);
         Fail("");
     }
-    
+
     /*Read from the read handle, 256 bytes, more bytes
-     then actually written. This will give allow us to use 
-     the value that ReadFile returns for comparision.*/
+     then actually written. This will give allow us to use
+     the value that ReadFile returns for comparison.*/
     bRetVal = ReadFile(hReadPipe,          /* handle to read pipe*/
                        buffer,             /* buffer to write to*/
                        256,                /* number of bytes to read*/
@@ -112,8 +112,8 @@ PALTEST(threading_DuplicateHandle_test6_paltest_duplicatehandle_test6, "threadin
     /*Compare what was read with what was written.*/
     if ((memcmp(cTestString, buffer, dwBytesRead)) != 0)
     {
-        Trace("ERROR: read \"%s\" expected \"%s\" \n", 
-             buffer, 
+        Trace("ERROR: read \"%s\" expected \"%s\" \n",
+             buffer,
              cTestString);
         CloseHandle(hReadPipe);
         CloseHandle(hWritePipe);
@@ -133,13 +133,13 @@ PALTEST(threading_DuplicateHandle_test6_paltest_duplicatehandle_test6, "threadin
         CloseHandle(hDupPipe);
         Fail("");
     }
-    
+
     /*Cleanup.*/
     CloseHandle(hReadPipe);
     CloseHandle(hWritePipe);
     CloseHandle(hDupPipe);
-    
-    
+
+
     PAL_Terminate();
     return (PASS);
 }

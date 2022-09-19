@@ -7,31 +7,11 @@ using Xunit;
 namespace System.Formats.Tar.Tests
 {
     // Tests specific to Ustar format.
-    public class TarWriter_WriteEntry_Ustar_Tests : TarTestsBase
+    public class TarWriter_WriteEntry_Ustar_Tests : TarWriter_WriteEntry_Base
     {
         [Fact]
-        public void Write_V7RegularFileEntry_As_RegularFileEntry()
-        {
-            using MemoryStream archive = new MemoryStream();
-            using (TarWriter writer = new TarWriter(archive, format: TarEntryFormat.Ustar, leaveOpen: true))
-            {
-                V7TarEntry entry = new V7TarEntry(TarEntryType.V7RegularFile, InitialEntryName);
-
-                // Should be written in the format of the entry
-                writer.WriteEntry(entry);
-            }
-
-            archive.Seek(0, SeekOrigin.Begin);
-            using (TarReader reader = new TarReader(archive))
-            {
-                TarEntry entry = reader.GetNextEntry();
-                Assert.NotNull(entry);
-                Assert.Equal(TarEntryFormat.V7, entry.Format);
-                Assert.True(entry is V7TarEntry);
-
-                Assert.Null(reader.GetNextEntry());
-            }
-        }
+        public void WriteEntry_Null_Throws() =>
+            WriteEntry_Null_Throws_Internal(TarEntryFormat.Ustar);
 
         [Fact]
         public void WriteRegularFile()
@@ -171,6 +151,16 @@ namespace System.Formats.Tar.Tests
                 UstarTarEntry fifo = reader.GetNextEntry() as UstarTarEntry;
                 VerifyFifo(fifo);
             }
+        }
+
+        [Theory]
+        [InlineData(TarEntryType.HardLink)]
+        [InlineData(TarEntryType.SymbolicLink)]
+        public void Write_LinkEntry_EmptyLinkName_Throws(TarEntryType entryType)
+        {
+            using MemoryStream archiveStream = new MemoryStream();
+            using TarWriter writer = new TarWriter(archiveStream, leaveOpen: false);
+            Assert.Throws<ArgumentException>("entry", () => writer.WriteEntry(new UstarTarEntry(entryType, "link")));
         }
     }
 }

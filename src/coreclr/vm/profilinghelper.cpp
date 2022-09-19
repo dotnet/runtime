@@ -324,7 +324,7 @@ void ProfilingAPIUtility::LogProfEventVA(
         FireEtwProfilerMessage(GetClrInstanceId(), messageToLogUtf16.GetUnicode());
     }
 
-    // Ouput debug strings for diagnostic messages.
+    // Output debug strings for diagnostic messages.
     OutputDebugStringUtf8(messageToLog.GetUTF8());
 }
 
@@ -472,7 +472,7 @@ HRESULT ProfilingAPIUtility::InitializeProfiling()
 
 
 #ifdef _DEBUG
-    // Test-only, debug-only code to allow attaching profilers to call ICorProfilerInfo inteface,
+    // Test-only, debug-only code to allow attaching profilers to call ICorProfilerInfo interface,
     // which would otherwise be disallowed for attaching profilers
     DWORD dwTestOnlyEnableICorProfilerInfo = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_TestOnlyEnableICorProfilerInfo);
     if (dwTestOnlyEnableICorProfilerInfo != 0)

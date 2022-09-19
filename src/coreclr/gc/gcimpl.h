@@ -183,6 +183,8 @@ public:
 
     int64_t GetTotalPauseDuration();
 
+    void EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc);
+
     uint32_t GetMemoryLoad();
 
     int GetGcLatencyMode();
@@ -243,6 +245,7 @@ public:	// FIX
     virtual segment_handle RegisterFrozenSegment(segment_info *pseginfo);
     virtual void UnregisterFrozenSegment(segment_handle seg);
     virtual bool IsInFrozenSegment(Object *object);
+    virtual void UpdateFrozenSegment(segment_handle seg, uint8_t* allocated, uint8_t* committed);
 
     // Event control functions
     void ControlEvents(GCEventKeyword keyword, GCEventLevel level);

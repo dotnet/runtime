@@ -1,21 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Text;
+using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-us")]
 
@@ -50,8 +46,12 @@ namespace System.Text.RegularExpressions.Generator
             IncrementalValueProvider<ImmutableArray<object>> codeOrDiagnostics =
                 context.SyntaxProvider
 
-                // Find all MethodDeclarationSyntax nodes attributed with RegexGenerator and gather the required information.
-                .CreateSyntaxProvider(IsSyntaxTargetForGeneration, GetSemanticTargetForGeneration)
+                // Find all MethodDeclarationSyntax nodes attributed with GeneratedRegex and gather the required information.
+                .ForAttributeWithMetadataName(
+                    context,
+                    GeneratedRegexAttributeName,
+                    (node, _) => node is MethodDeclarationSyntax,
+                    GetSemanticTargetForGeneration)
                 .Where(static m => m is not null)
 
                 // Generate the RunnerFactory for each regex, if possible.  This is where the bulk of the implementation occurs.
@@ -65,7 +65,7 @@ namespace System.Text.RegularExpressions.Generator
 
                     // If we're unable to generate a full implementation for this regex, report a diagnostic.
                     // We'll still output a limited implementation that just caches a new Regex(...).
-                    if (!SupportsCodeGeneration(regexMethod.Tree.Root, out string? reason))
+                    if (!SupportsCodeGeneration(regexMethod, out string? reason))
                     {
                         return (regexMethod, reason, Diagnostic.Create(DiagnosticDescriptors.LimitedSourceGeneration, regexMethod.MethodSyntax.GetLocation()));
                     }
@@ -74,10 +74,10 @@ namespace System.Text.RegularExpressions.Generator
                     Dictionary<string, string[]> requiredHelpers = new();
                     var sw = new StringWriter();
                     var writer = new IndentedTextWriter(sw);
-                    writer.Indent += 3;
+                    writer.Indent += 2;
                     writer.WriteLine();
                     EmitRegexDerivedTypeRunnerFactory(writer, regexMethod, requiredHelpers);
-                    writer.Indent -= 3;
+                    writer.Indent -= 2;
                     return (regexMethod, sw.ToString(), requiredHelpers);
                 })
                 .Collect();
@@ -133,7 +133,6 @@ namespace System.Text.RegularExpressions.Generator
                 // used to name them.  The boilerplate code generation that happens here is minimal when compared to
                 // the work required to generate the actual matching code for the regex.
                 int id = 0;
-                string generatedClassName = $"__{ComputeStringHash(compilationDataAndResults.Right.AssemblyName ?? ""):x}";
 
                 // To minimize generated code in the event of duplicated regexes, we only emit one derived Regex type per unique
                 // expression/options/timeout.  A Dictionary<(expression, options, timeout), RegexMethod> is used to deduplicate, where the value of the
@@ -181,17 +180,13 @@ namespace System.Text.RegularExpressions.Generator
                             emittedExpressions.Add(key, regexMethod);
                         }
 
-                        EmitRegexPartialMethod(regexMethod, writer, generatedClassName);
+                        EmitRegexPartialMethod(regexMethod, writer);
                         writer.WriteLine();
                     }
                 }
 
                 // At this point we've emitted all the partial method definitions, but we still need to emit the actual regex-derived implementations.
                 // These are all emitted inside of our generated class.
-                // TODO https://github.com/dotnet/csharplang/issues/5529:
-                // When C# provides a mechanism for shielding generated code from the rest of the project, it should be employed
-                // here for the generated class.  At that point, the generated class wrapper can be removed, and all of the types
-                // generated inside of it (one for each regex as well as the helpers type) should be shielded.
 
                 writer.WriteLine($"namespace {GeneratedNamespace}");
                 writer.WriteLine($"{{");
@@ -208,17 +203,9 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine($"    using System.Text.RegularExpressions;");
                 writer.WriteLine($"    using System.Threading;");
                 writer.WriteLine($"");
-                if (compilationDataAndResults.Right.AllowUnsafe)
-                {
-                    writer.WriteLine($"    [SkipLocalsInit]");
-                }
-                writer.WriteLine($"    [{s_generatedCodeAttribute}]");
-                writer.WriteLine($"    [EditorBrowsable(EditorBrowsableState.Never)]");
-                writer.WriteLine($"    internal static class {generatedClassName}");
-                writer.WriteLine($"    {{");
 
                 // Emit each Regex-derived type.
-                writer.Indent += 2;
+                writer.Indent++;
                 foreach (object? result in results)
                 {
                     if (result is ValueTuple<RegexMethod, string, Diagnostic> limitedSupportResult)
@@ -233,19 +220,20 @@ namespace System.Text.RegularExpressions.Generator
                     {
                         if (!regexImpl.Item1.IsDuplicate)
                         {
-                            EmitRegexDerivedImplementation(writer, regexImpl.Item1, regexImpl.Item2);
+                            EmitRegexDerivedImplementation(writer, regexImpl.Item1, regexImpl.Item2, compilationDataAndResults.Right.AllowUnsafe);
                             writer.WriteLine();
                         }
                     }
                 }
-                writer.Indent -= 2;
+                writer.Indent--;
 
                 // If any of the Regex-derived types asked for helper methods, emit those now.
                 if (requiredHelpers.Count != 0)
                 {
-                    writer.Indent += 2;
+                    writer.Indent++;
                     writer.WriteLine($"/// <summary>Helper methods used by generated <see cref=\"Regex\"/>-derived implementations.</summary>");
-                    writer.WriteLine($"private static class {HelpersTypeName}");
+                    writer.WriteLine($"[{s_generatedCodeAttribute}]");
+                    writer.WriteLine($"file static class {HelpersTypeName}");
                     writer.WriteLine($"{{");
                     writer.Indent++;
                     bool sawFirst = false;
@@ -264,10 +252,9 @@ namespace System.Text.RegularExpressions.Generator
                     }
                     writer.Indent--;
                     writer.WriteLine($"}}");
-                    writer.Indent -= 2;
+                    writer.Indent--;
                 }
 
-                writer.WriteLine($"    }}");
                 writer.WriteLine($"}}");
 
                 // Save out the source
@@ -275,11 +262,21 @@ namespace System.Text.RegularExpressions.Generator
             });
         }
 
-        // Determines whether the passed in node supports code generation strategy based on walking the tree.
-        // Also returns a human-readable string to explain the reason (it will be emitted by the source generator, hence
-        // there's no need to localize).
-        private static bool SupportsCodeGeneration(RegexNode node, [NotNullWhen(false)] out string? reason)
+        /// <summary>Determines whether the passed in node supports C# code generation.</summary>
+        /// <remarks>
+        // It also provides a human-readable string to explain the reason. It will be emitted by the source generator
+        // as a comment into the C# code, hence there's no need to localize.
+        /// </remarks>
+        private static bool SupportsCodeGeneration(RegexMethod method, [NotNullWhen(false)] out string? reason)
         {
+            if (method.MethodSyntax.SyntaxTree.Options is CSharpParseOptions { LanguageVersion: <= LanguageVersion.CSharp10 })
+            {
+                reason = "the language version must be C# 11 or higher.";
+                return false;
+            }
+
+            RegexNode node = method.Tree.Root;
+
             if (!node.SupportsCompilation(out reason))
             {
                 // If the pattern doesn't support Compilation, then code generation won't be supported either.

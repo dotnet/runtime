@@ -46,8 +46,7 @@ namespace System.Diagnostics
                 {
                     lock (_nameTableLock)
                     {
-                        if (_nameTable == null)
-                            _nameTable = GetStringTable(false);
+                        _nameTable ??= GetStringTable(false);
                     }
                 }
 
@@ -80,8 +79,7 @@ namespace System.Diagnostics
             {
                 lock (LazyInitializer.EnsureInitialized(ref s_internalSyncObject))
                 {
-                    if (_performanceMonitor == null)
-                        _performanceMonitor = new PerformanceMonitor(_machineName);
+                    _performanceMonitor ??= new PerformanceMonitor(_machineName);
                 }
             }
 
@@ -155,9 +153,7 @@ namespace System.Diagnostics
 
                     for (int index = 0; index < (names.Length / 2); ++index)
                     {
-                        string nameString = names[(index * 2) + 1];
-                        if (nameString == null)
-                            nameString = string.Empty;
+                        string nameString = names[(index * 2) + 1] ?? string.Empty;
 
                         int key;
                         if (!int.TryParse(names[index * 2], NumberStyles.Integer, CultureInfo.InvariantCulture, out key))

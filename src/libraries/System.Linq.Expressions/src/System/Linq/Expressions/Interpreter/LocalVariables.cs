@@ -79,10 +79,7 @@ namespace System.Linq.Expressions.Interpreter
             if (_variables.TryGetValue(variable, out existing))
             {
                 newScope = new VariableScope(result, start, existing);
-                if (existing.ChildScopes == null)
-                {
-                    existing.ChildScopes = new List<VariableScope>();
-                }
+                existing.ChildScopes ??= new List<VariableScope>();
                 existing.ChildScopes.Add(newScope);
             }
             else
@@ -160,10 +157,7 @@ namespace System.Linq.Expressions.Interpreter
 
         internal LocalVariable AddClosureVariable(ParameterExpression variable)
         {
-            if (_closureVariables == null)
-            {
-                _closureVariables = new Dictionary<ParameterExpression, LocalVariable>();
-            }
+            _closureVariables ??= new Dictionary<ParameterExpression, LocalVariable>();
             LocalVariable result = new LocalVariable(_closureVariables.Count, true);
             _closureVariables.Add(variable, result);
             return result;

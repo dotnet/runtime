@@ -46,7 +46,7 @@ namespace System.Reflection.Context
                     return value;
             }
 
-            [return: NotNullIfNotNull("value")]
+            [return: NotNullIfNotNull(nameof(value))]
             public override TypeInfo? ProjectType(Type? value)
             {
                 if (value == null)
@@ -57,7 +57,7 @@ namespace System.Reflection.Context
                 return new CustomType(value, ReflectionContext);
             }
 
-            [return: NotNullIfNotNull("value")]
+            [return: NotNullIfNotNull(nameof(value))]
             public override Assembly? ProjectAssembly(Assembly? value)
             {
                 if (value == null)
@@ -68,7 +68,7 @@ namespace System.Reflection.Context
                 return new CustomAssembly(value, ReflectionContext);
             }
 
-            [return: NotNullIfNotNull("value")]
+            [return: NotNullIfNotNull(nameof(value))]
             public override Module? ProjectModule(Module? value)
             {
                 if (value == null)
@@ -79,7 +79,7 @@ namespace System.Reflection.Context
                 return new CustomModule(value, ReflectionContext);
             }
 
-            [return: NotNullIfNotNull("value")]
+            [return: NotNullIfNotNull(nameof(value))]
             public override FieldInfo? ProjectField(FieldInfo? value)
             {
                 if (value == null)
@@ -90,7 +90,7 @@ namespace System.Reflection.Context
                 return new CustomFieldInfo(value, ReflectionContext);
             }
 
-            [return: NotNullIfNotNull("value")]
+            [return: NotNullIfNotNull(nameof(value))]
             public override EventInfo? ProjectEvent(EventInfo? value)
             {
                 if (value == null)
@@ -101,7 +101,7 @@ namespace System.Reflection.Context
                 return new CustomEventInfo(value, ReflectionContext);
             }
 
-            [return: NotNullIfNotNull("value")]
+            [return: NotNullIfNotNull(nameof(value))]
             public override ConstructorInfo? ProjectConstructor(ConstructorInfo? value)
             {
                 if (value == null)
@@ -112,7 +112,7 @@ namespace System.Reflection.Context
                 return new CustomConstructorInfo(value, ReflectionContext);
             }
 
-            [return: NotNullIfNotNull("value")]
+            [return: NotNullIfNotNull(nameof(value))]
             public override MethodInfo? ProjectMethod(MethodInfo? value)
             {
                 if (value == null)
@@ -123,7 +123,7 @@ namespace System.Reflection.Context
                 return new CustomMethodInfo(value, ReflectionContext);
             }
 
-            [return: NotNullIfNotNull("value")]
+            [return: NotNullIfNotNull(nameof(value))]
             public override MethodBase? ProjectMethodBase(MethodBase? value)
             {
                 if (value == null)
@@ -140,7 +140,7 @@ namespace System.Reflection.Context
                 throw new InvalidOperationException(SR.Format(SR.InvalidOperation_InvalidMethodType, value.GetType()));
             }
 
-            [return: NotNullIfNotNull("value")]
+            [return: NotNullIfNotNull(nameof(value))]
             public override PropertyInfo? ProjectProperty(PropertyInfo? value)
             {
                 if (value == null)
@@ -151,7 +151,7 @@ namespace System.Reflection.Context
                 return new CustomPropertyInfo(value, ReflectionContext);
             }
 
-            [return: NotNullIfNotNull("value")]
+            [return: NotNullIfNotNull(nameof(value))]
             public override ParameterInfo? ProjectParameter(ParameterInfo? value)
             {
                 if (value == null)
@@ -162,7 +162,7 @@ namespace System.Reflection.Context
                 return new CustomParameterInfo(value, ReflectionContext);
             }
 
-            [return: NotNullIfNotNull("value")]
+            [return: NotNullIfNotNull(nameof(value))]
             public override MethodBody? ProjectMethodBody(MethodBody? value)
             {
                 if (value == null)
@@ -173,7 +173,7 @@ namespace System.Reflection.Context
                 return new ProjectingMethodBody(value, this);
             }
 
-            [return: NotNullIfNotNull("value")]
+            [return: NotNullIfNotNull(nameof(value))]
             public override LocalVariableInfo? ProjectLocalVariable(LocalVariableInfo? value)
             {
                 if (value == null)
@@ -184,7 +184,7 @@ namespace System.Reflection.Context
                 return new ProjectingLocalVariableInfo(value, this);
             }
 
-            [return: NotNullIfNotNull("value")]
+            [return: NotNullIfNotNull(nameof(value))]
             public override ExceptionHandlingClause? ProjectExceptionHandlingClause(ExceptionHandlingClause? value)
             {
                 if (value == null)
@@ -195,7 +195,7 @@ namespace System.Reflection.Context
                 return new ProjectingExceptionHandlingClause(value, this);
             }
 
-            [return: NotNullIfNotNull("value")]
+            [return: NotNullIfNotNull(nameof(value))]
             public override CustomAttributeData? ProjectCustomAttributeData(CustomAttributeData? value)
             {
                 if (value == null)
@@ -206,7 +206,7 @@ namespace System.Reflection.Context
                 return new ProjectingCustomAttributeData(value, this);
             }
 
-            [return: NotNullIfNotNull("value")]
+            [return: NotNullIfNotNull(nameof(value))]
             public override ManifestResourceInfo? ProjectManifestResource(ManifestResourceInfo? value)
             {
                 if (value == null)
@@ -217,7 +217,7 @@ namespace System.Reflection.Context
                 return new ProjectingManifestResourceInfo(value, this);
             }
 
-            [return: NotNullIfNotNull("value")]
+            [return: NotNullIfNotNull(nameof(value))]
             public override MemberInfo? ProjectMember(MemberInfo? value)
             {
                 if (value == null)

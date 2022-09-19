@@ -89,16 +89,17 @@ FCIMPL3(VOID, ExceptionNative::GetStackTracesDeepCopy, Object* pExceptionObjectU
     ASSERT(pStackTraceUnsafe != NULL);
     ASSERT(pDynamicMethodsUnsafe != NULL);
 
-    struct _gc
+    struct
     {
         StackTraceArray stackTrace;
         StackTraceArray stackTraceCopy;
         EXCEPTIONREF refException;
         PTRARRAYREF dynamicMethodsArray; // Object array of Managed Resolvers
         PTRARRAYREF dynamicMethodsArrayCopy; // Copy of the object array of Managed Resolvers
-    };
-    _gc gc;
-    ZeroMemory(&gc, sizeof(gc));
+    } gc;
+    gc.refException = NULL;
+    gc.dynamicMethodsArray = NULL;
+    gc.dynamicMethodsArrayCopy = NULL;
 
     // GC protect the array reference
     HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
@@ -153,14 +154,14 @@ FCIMPL3(VOID, ExceptionNative::SaveStackTracesFromDeepCopy, Object* pExceptionOb
 
     ASSERT(pExceptionObjectUnsafe != NULL);
 
-    struct _gc
+    struct
     {
         StackTraceArray stackTrace;
         EXCEPTIONREF refException;
         PTRARRAYREF dynamicMethodsArray; // Object array of Managed Resolvers
-    };
-    _gc gc;
-    ZeroMemory(&gc, sizeof(gc));
+    } gc;
+    gc.refException = NULL;
+    gc.dynamicMethodsArray = NULL;
 
     // GC protect the array reference
     HELPER_METHOD_FRAME_BEGIN_PROTECT(gc);
@@ -1182,6 +1183,31 @@ extern "C" void QCALLTYPE GCInterface_AddMemoryPressure(UINT64 bytesAllocated)
     BEGIN_QCALL;
     GCInterface::AddMemoryPressure(bytesAllocated);
     END_QCALL;
+}
+
+extern "C" void QCALLTYPE GCInterface_EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+    GCInterface::EnumerateConfigurationValues(configurationContext, callback);
+    END_QCALL;
+}
+
+void GCInterface::EnumerateConfigurationValues(void* configurationContext, EnumerateConfigurationValuesCallback callback)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+        PRECONDITION(configurationContext != nullptr);
+        PRECONDITION(callback != nullptr);
+    }
+    CONTRACTL_END;
+
+    IGCHeap* pHeap = GCHeapUtilities::GetGCHeap();
+    pHeap->EnumerateConfigurationValues(configurationContext, callback);
 }
 
 #ifdef HOST_64BIT

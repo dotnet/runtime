@@ -38,6 +38,7 @@ gboolean _ep_rt_mono_initialized;
 
 // EventPipe TLS key.
 MonoNativeTlsKey _ep_rt_mono_thread_holder_tls_id;
+MonoNativeTlsKey _ep_rt_mono_thread_data_tls_id;
 
 // Random byte provider.
 gpointer _ep_rt_mono_rand_provider;
@@ -53,6 +54,11 @@ char *_ep_rt_mono_os_cmd_line = NULL;
 mono_lazy_init_t _ep_rt_mono_managed_cmd_line_init = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
 char *_ep_rt_mono_managed_cmd_line = NULL;
 
+// Custom Mono EventPipe thread data.
+typedef struct _EventPipeThreadData EventPipeThreadData;
+struct _EventPipeThreadData {
+	bool prevent_profiler_event_recursion;
+};
 
 // Sample profiler.
 static GArray * _ep_rt_mono_sampled_thread_callstacks = NULL;
@@ -150,7 +156,7 @@ typedef struct _EventPipeSampleProfileStackWalkData {
 } EventPipeSampleProfileStackWalkData;
 
 // Rundown flags.
-#define RUNTIME_SKU_CORECLR 0x2
+#define RUNTIME_SKU_MONO 0x4
 #define METHOD_FLAGS_DYNAMIC_METHOD 0x1
 #define METHOD_FLAGS_GENERIC_METHOD 0x2
 #define METHOD_FLAGS_SHARED_GENERIC_METHOD 0x4
@@ -294,6 +300,14 @@ static ep_rt_spin_lock_handle_t _ep_rt_mono_profiler_gc_state_lock = {0};
 /*
  * Forward declares of all static functions.
  */
+
+static
+EventPipeThreadData *
+eventpipe_thread_data_get_or_create (void);
+
+static
+void
+eventpipe_thread_data_free (EventPipeThreadData *thread_data);
 
 static
 bool
@@ -1222,6 +1236,26 @@ clr_instance_get_id (void)
 }
 
 static
+EventPipeThreadData *
+eventpipe_thread_data_get_or_create (void)
+{
+	EventPipeThreadData *thread_data = (EventPipeThreadData *)mono_native_tls_get_value (_ep_rt_mono_thread_data_tls_id);
+	if (!thread_data) {
+		thread_data = ep_rt_object_alloc (EventPipeThreadData);
+		mono_native_tls_set_value (_ep_rt_mono_thread_data_tls_id, thread_data);
+	}
+	return thread_data;
+}
+
+static
+void
+eventpipe_thread_data_free (EventPipeThreadData *thread_data)
+{
+	ep_return_void_if_nok (thread_data != NULL);
+	ep_rt_object_free (thread_data);
+}
+
+static
 bool
 fire_method_rundown_events_func (
 	const uint64_t method_id,
@@ -1845,7 +1879,8 @@ profiler_eventpipe_thread_exited (
 	ep_rt_mono_thread_exited ();
 }
 
-static bool
+static
+bool
 parse_mono_profiler_options (const ep_char8_t *option)
 {
 	do {
@@ -1931,6 +1966,7 @@ void
 ep_rt_mono_init (void)
 {
 	mono_native_tls_alloc (&_ep_rt_mono_thread_holder_tls_id, NULL);
+	mono_native_tls_alloc (&_ep_rt_mono_thread_data_tls_id, NULL);
 
 	mono_100ns_ticks ();
 	mono_rand_open ();
@@ -2115,7 +2151,7 @@ ep_rt_mono_file_open_write (const ep_char8_t *path)
 	if (!path)
 		return INVALID_HANDLE_VALUE;
 
-	ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16_string (path, -1);
+	ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path, -1);
 
 	if (!path_utf16)
 		return INVALID_HANDLE_VALUE;
@@ -2335,6 +2371,11 @@ ep_rt_mono_thread_exited (void)
 		if (thread_holder)
 			thread_holder_free_func (thread_holder);
 		mono_native_tls_set_value (_ep_rt_mono_thread_holder_tls_id, NULL);
+
+		EventPipeThreadData *thread_data = (EventPipeThreadData *)mono_native_tls_get_value (_ep_rt_mono_thread_data_tls_id);
+		if (thread_data)
+			eventpipe_thread_data_free (thread_data);
+		mono_native_tls_set_value (_ep_rt_mono_thread_data_tls_id, NULL);
 	}
 }
 
@@ -2595,7 +2636,7 @@ ep_rt_mono_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array)
 #else
 	gchar **next = NULL;
 	for (next = environ; *next != NULL; ++next)
-		ep_rt_env_array_utf16_append (env_array, ep_rt_utf8_to_utf16_string (*next, -1));
+		ep_rt_env_array_utf16_append (env_array, ep_rt_utf8_to_utf16le_string (*next, -1));
 #endif
 }
 
@@ -2646,10 +2687,31 @@ ep_rt_mono_walk_managed_stack_for_thread (
 	stack_walk_data.safe_point_frame = false;
 	stack_walk_data.runtime_invoke_frame = false;
 
+	bool restore_async_context = FALSE;
+	bool prevent_profiler_event_recursion = FALSE;
+	EventPipeThreadData *thread_data = eventpipe_thread_data_get_or_create ();
+	if (thread_data) {
+		prevent_profiler_event_recursion = thread_data->prevent_profiler_event_recursion;
+		if (prevent_profiler_event_recursion && !mono_thread_info_is_async_context ()) {
+			// Running stackwalk in async context mode is currently the only way to prevent
+			// unwinder to NOT load additional classes during stackwalk, making it signal unsafe and
+			// potential triggering uncontrolled recursion in profiler class loading event.
+			mono_thread_info_set_is_async_context (TRUE);
+			restore_async_context = TRUE;
+		}
+		thread_data->prevent_profiler_event_recursion = TRUE;
+	}
+
 	if (thread == ep_rt_thread_get_handle () && mono_get_eh_callbacks ()->mono_walk_stack_with_ctx)
 		mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (eventpipe_walk_managed_stack_for_thread_func, NULL, MONO_UNWIND_SIGNAL_SAFE, &stack_walk_data);
 	else if (mono_get_eh_callbacks ()->mono_walk_stack_with_state)
 		mono_get_eh_callbacks ()->mono_walk_stack_with_state (eventpipe_walk_managed_stack_for_thread_func, mono_thread_info_get_suspend_state (thread), MONO_UNWIND_SIGNAL_SAFE, &stack_walk_data);
+
+	if (thread_data) {
+		if (restore_async_context)
+			mono_thread_info_set_is_async_context (FALSE);
+		thread_data->prevent_profiler_event_recursion = prevent_profiler_event_recursion;
+	}
 
 	return true;
 }
@@ -2715,8 +2777,11 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 
 	mono_stop_world (MONO_THREAD_INFO_FLAGS_NO_GC);
 
-	gboolean async_context = mono_thread_info_is_async_context ();
-	mono_thread_info_set_is_async_context (TRUE);
+	bool restore_async_context = FALSE;
+	if (!mono_thread_info_is_async_context ()) {
+		mono_thread_info_set_is_async_context (TRUE);
+		restore_async_context = TRUE;
+	}
 
 	// Record all info needed in sample events while runtime is suspended, must be async safe.
 	FOREACH_THREAD_SAFE_EXCLUDE (thread_info, MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE) {
@@ -2758,7 +2823,9 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 		filtered_thread_count++;
 	} FOREACH_THREAD_SAFE_END
 
-	mono_thread_info_set_is_async_context (async_context);
+	if (restore_async_context)
+		mono_thread_info_set_is_async_context (FALSE);
+
 	mono_restart_world (MONO_THREAD_INFO_FLAGS_NO_GC);
 
 	// Fire sample event for threads. Must be done after runtime is resumed since it's not async safe.
@@ -2776,7 +2843,8 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 					mono_jit_info_table_find_internal ((gpointer)data->stack_contents.stack_frames [frame_count], TRUE, FALSE);
 			}
 			mono_thread_info_set_tid (&adapter, ep_rt_uint64_t_to_thread_id_t (data->thread_id));
-			ep_write_sample_profile_event (sampling_thread, sampling_event, &adapter, &data->stack_contents, (uint8_t *)&data->payload_data, sizeof (data->payload_data));
+			uint32_t payload_data = ep_rt_val_uint32_t (data->payload_data);
+			ep_write_sample_profile_event (sampling_thread, sampling_event, &adapter, &data->stack_contents, (uint8_t *)&payload_data, sizeof (payload_data));
 		}
 	}
 
@@ -2801,7 +2869,7 @@ ep_rt_mono_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkp
 
 	FireEtwRuntimeInformationDCStart (
 		clr_instance_get_id (),
-		RUNTIME_SKU_CORECLR,
+		RUNTIME_SKU_MONO,
 		RuntimeProductMajorVersion,
 		RuntimeProductMinorVersion,
 		RuntimeProductPatchVersion,
@@ -3369,7 +3437,7 @@ static const uint32_t MAX_METHOD_TYPE_ARGUMENT_COUNT = 1024;
 // eventpipe events. It calls ep_rt_mono_log_type_and_parameters_if_necessary to log
 // unique types from the method type and available method instantiation parameter types
 // that are ultimately emitted as a BulkType event in ep_rt_mono_fire_bulk_type_event.
-// After appropraitely logging type information, it sends method details outlined by
+// After appropriately logging type information, it sends method details outlined by
 // the generated dotnetruntime.c and ClrEtwAll manifest.
 //
 // Arguments:
@@ -3716,7 +3784,17 @@ get_module_event_data (
 		if (image && image->aot_module)
 			module_data->module_flags |= MODULE_FLAGS_NATIVE_MODULE;
 
-		module_data->module_il_path = image && image->filename ? image->filename : "";
+		module_data->module_il_path = NULL;
+		if (image && image->filename) {
+			/* if there's a filename, use it */
+			module_data->module_il_path = image->filename;
+		} else if (image && image->module_name) {
+			/* otherwise, use the module name */
+			module_data->module_il_path = image->module_name;
+		}
+		if (!module_data->module_il_path)
+			module_data->module_il_path = "";
+
 		module_data->module_il_pdb_path = "";
 		module_data->module_il_pdb_age = 0;
 
@@ -4504,7 +4582,19 @@ runtime_profiler_class_loading (
 	MonoProfiler *prof,
 	MonoClass *klass)
 {
+	bool prevent_profiler_event_recursion = FALSE;
+	EventPipeThreadData *thread_data = eventpipe_thread_data_get_or_create ();
+	if (thread_data) {
+		// Prevent additional class loading to happen recursively as part of fire TypeLoadStart event.
+		// Additional class loading can happen as part of capturing callstack for TypeLoadStart event.
+		prevent_profiler_event_recursion = thread_data->prevent_profiler_event_recursion;
+		thread_data->prevent_profiler_event_recursion = TRUE;
+	}
+
 	ep_rt_mono_write_event_type_load_start (m_class_get_byval_arg (klass));
+
+	if (thread_data)
+		thread_data->prevent_profiler_event_recursion = prevent_profiler_event_recursion;
 }
 
 static
@@ -4773,7 +4863,7 @@ mono_profiler_fire_event_enter (void)
 		old_state = mono_profiler_volatile_load_gc_state_t (&_ep_rt_mono_profiler_gc_state);
 		if (MONO_PROFILER_GC_STATE_IS_GC_IN_PROGRESS (old_state)) {
 			// GC in progress and thread tries to fire event (this should be an unlikely scenario). Wait until GC is done.
-			ep_rt_spin_lock_aquire (&_ep_rt_mono_profiler_gc_state_lock);
+			ep_rt_spin_lock_acquire (&_ep_rt_mono_profiler_gc_state_lock);
 			ep_rt_spin_lock_release (&_ep_rt_mono_profiler_gc_state_lock);
 			old_state = mono_profiler_volatile_load_gc_state_t (&_ep_rt_mono_profiler_gc_state);
 		}
@@ -4803,7 +4893,7 @@ mono_profiler_gc_in_progress_start (void)
 	mono_profiler_gc_state_t new_state = 0;
 
 	// Make sure fire event calls will block and wait for GC completion.
-	ep_rt_spin_lock_aquire (&_ep_rt_mono_profiler_gc_state_lock);
+	ep_rt_spin_lock_acquire (&_ep_rt_mono_profiler_gc_state_lock);
 
 	// Set gc in progress state, preventing new fire event requests.
 	do {
@@ -5068,14 +5158,14 @@ void
 mono_profiler_trigger_heap_collect (MonoProfiler *prof)
 {
 	if (mono_profiler_gc_heap_collect_requested ()) {
-		ep_rt_spin_lock_aquire (&_ep_rt_mono_profiler_gc_state_lock);
+		ep_rt_spin_lock_acquire (&_ep_rt_mono_profiler_gc_state_lock);
 			mono_profiler_gc_heap_collect_requests_dec ();
 			mono_profiler_gc_heap_collect_in_progress_start ();
 		ep_rt_spin_lock_release (&_ep_rt_mono_profiler_gc_state_lock);
 
 		mono_gc_collect (mono_gc_max_generation ());
 
-		ep_rt_spin_lock_aquire (&_ep_rt_mono_profiler_gc_state_lock);
+		ep_rt_spin_lock_acquire (&_ep_rt_mono_profiler_gc_state_lock);
 			mono_profiler_pop_gc_heap_collect_param_request_value ();
 			mono_profiler_gc_heap_collect_in_progress_stop ();
 		ep_rt_spin_lock_release (&_ep_rt_mono_profiler_gc_state_lock);
@@ -5794,12 +5884,10 @@ mono_profiler_get_generic_types (
 			*generic_type_count = generic_instance->type_argc;
 			for (uint32_t i = 0; i < generic_instance->type_argc; ++i) {
 				uint8_t type = generic_instance->type_argv [i]->type;
-				memcpy (buffer, &type, sizeof (type));
-				buffer += sizeof (type);
+				ep_write_buffer_uint8_t (&buffer, type);
 
 				uint64_t class_id = (uint64_t)mono_class_from_mono_type_internal (generic_instance->type_argv [i]);
-				memcpy (buffer, &class_id, sizeof (class_id));
-				buffer += sizeof (class_id);
+				ep_write_buffer_uint64_t (&buffer, class_id);
 			}
 		}
 	}

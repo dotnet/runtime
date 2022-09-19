@@ -124,14 +124,7 @@ namespace System.ServiceModel.Syndication
             _extensions.LoadElementExtensions(buffer);
         }
 
-        private static IEnumerable<string> CreateSingleEmptyAccept()
-        {
-            if (s_singleEmptyAccept == null)
-            {
-                s_singleEmptyAccept = new List<string>(1) { string.Empty }.AsReadOnly();
-            }
-
-            return s_singleEmptyAccept;
-        }
+        private static IEnumerable<string> CreateSingleEmptyAccept() =>
+            s_singleEmptyAccept ??= new List<string>(1) { string.Empty }.AsReadOnly();
     }
 }

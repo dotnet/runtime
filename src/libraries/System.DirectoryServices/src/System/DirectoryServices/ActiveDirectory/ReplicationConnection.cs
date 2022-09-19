@@ -98,7 +98,7 @@ namespace System.DirectoryServices.ActiveDirectory
             this.context = context;
             cachedDirectoryEntry = connectionEntry;
             _connectionName = name;
-            // this is an exising connection object
+            // this is an existing connection object
             existingConnection = true;
         }
 
@@ -980,11 +980,8 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (targetDE != null)
-                    targetDE.Close();
-
-                if (sourceDE != null)
-                    sourceDE.Close();
+                targetDE?.Close();
+                sourceDE?.Close();
             }
         }
     }

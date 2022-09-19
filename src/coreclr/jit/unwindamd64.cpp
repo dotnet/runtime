@@ -661,11 +661,7 @@ void Compiler::unwindReserveFunc(FuncInfoDsc* func)
     if (fgFirstColdBlock != nullptr)
     {
 #ifdef DEBUG
-        if (JitConfig.JitFakeProcedureSplitting())
-        {
-            assert(func->funKind == FUNC_ROOT); // No splitting of funclets.
-        }
-        else
+        if (!JitConfig.JitFakeProcedureSplitting())
 #endif // DEBUG
         {
             unwindReserveFuncHelper(func, false);
@@ -814,7 +810,6 @@ void Compiler::unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pCo
     else
     {
         assert(fgFirstColdBlock != nullptr);
-        assert(func->funKind == FUNC_ROOT); // No splitting of funclets.
 
         if (func->coldStartLoc == nullptr)
         {

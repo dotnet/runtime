@@ -169,7 +169,7 @@ namespace System.Net.Http
                 throw new HttpRequestException(
                     SR.Format(
                         System.Globalization.CultureInfo.InvariantCulture,
-                        SR.net_http_message_not_success_statuscode,
+                        string.IsNullOrWhiteSpace(ReasonPhrase) ? SR.net_http_message_not_success_statuscode : SR.net_http_message_not_success_statuscode_reason,
                         (int)_statusCode,
                         ReasonPhrase),
                     inner: null,
@@ -216,10 +216,7 @@ namespace System.Net.Http
             if (disposing && !_disposed)
             {
                 _disposed = true;
-                if (_content != null)
-                {
-                    _content.Dispose();
-                }
+                _content?.Dispose();
             }
         }
 
@@ -233,10 +230,7 @@ namespace System.Net.Http
 
         private void CheckDisposed()
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(this.GetType().ToString());
-            }
+            ObjectDisposedException.ThrowIf(_disposed, this);
         }
     }
 }

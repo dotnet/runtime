@@ -169,7 +169,7 @@ namespace System.Net.Http.Headers
 
             // If we reached the end of the string after reading protocolName/Version we return (we expect at least
             // <receivedBy> to follow). If reading protocolName/Version read 0 bytes, we return.
-            if ((current == startIndex) || (current == input.Length))
+            if ((current == 0) || (current == input.Length))
             {
                 return 0;
             }

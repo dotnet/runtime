@@ -41,8 +41,7 @@ namespace System.Reflection.Runtime.TypeInfos
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
                 return System.DefaultBinder.ExactBinding(candidates.ToArray(), types) as ConstructorInfo;
 
-            if (binder == null)
-                binder = DefaultBinder;
+            binder ??= DefaultBinder;
 
             return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as ConstructorInfo;
         }
@@ -108,8 +107,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (types.Length == 0 && candidates.Count == 1)
                     return candidates[0];
 
-                if (binder == null)
-                    binder = DefaultBinder;
+                binder ??= DefaultBinder;
 
                 return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as MethodInfo;
             }
@@ -175,8 +173,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 if ((bindingAttr & BindingFlags.ExactBinding) != 0)
                     return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types);
 
-                if (binder == null)
-                    binder = DefaultBinder;
+                binder ??= DefaultBinder;
 
                 return binder.SelectProperty(bindingAttr, candidates.ToArray(), returnType, types, modifiers);
             }
@@ -214,7 +211,15 @@ namespace System.Reflection.Runtime.TypeInfos
 
         private TypeComponentsCache Cache => _lazyCache ??= new TypeComponentsCache(this);
 
-        private volatile TypeComponentsCache _lazyCache;
+        // Generic cache for scenario specific data. For example, it is used to cache Enum names and values.
+        // TODO: This cache should be attached to the RuntimeType via weak reference, similar to how it is done in CoreCLR.
+        internal object? GenericCache
+        {
+            get => _lazyCache?._genericCache;
+            set => Cache._genericCache = value;
+        }
+
+        private volatile TypeComponentsCache? _lazyCache;
 
         private const int GenericParameterCountAny = -1;
     }

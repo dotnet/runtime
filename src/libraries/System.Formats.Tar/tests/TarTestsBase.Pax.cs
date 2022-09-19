@@ -114,5 +114,15 @@ namespace System.Formats.Tar.Tests
             DateTimeOffset converted = GetDateTimeOffsetFromTimestampString(paxEntry.ExtendedAttributes, fieldName);
             AssertExtensions.GreaterThanOrEqualTo(converted, minimumTime);
         }
+
+        protected void VerifyExtendedAttributeTimestamps(PaxTarEntry pax)
+        {
+            Assert.NotNull(pax.ExtendedAttributes);
+            AssertExtensions.GreaterThanOrEqualTo(pax.ExtendedAttributes.Count, 3); // Expect to at least collect mtime, ctime and atime
+
+            VerifyExtendedAttributeTimestamp(pax, PaxEaMTime, MinimumTime);
+            VerifyExtendedAttributeTimestamp(pax, PaxEaATime, MinimumTime);
+            VerifyExtendedAttributeTimestamp(pax, PaxEaCTime, MinimumTime);
+        }
     }
 }
