@@ -12416,7 +12416,8 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     bool                  partialExpand   = false;
     const CorInfoHelpFunc helper          = info.compCompHnd->getCastingHelper(pResolvedToken, isCastClass);
 
-    GenTree* exactCls = nullptr;
+    GenTree* exactCls         = nullptr;
+    bool     isExpandingArray = false;
 
     // Legality check.
     //
@@ -12444,8 +12445,8 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
             info.compCompHnd->getChildType(pResolvedToken->hClass, &elementCls);
             if ((elementCls != NO_CLASS_HANDLE) && impIsClassExact(elementCls))
             {
-                // Check if elementCls is not something shared
-                canExpandInline = info.compCompHnd->areTypesEquivalent(elementCls, elementCls);
+                canExpandInline  = true;
+                isExpandingArray = true;
             }
         }
 
@@ -12576,7 +12577,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         //
         // use the special helper that skips the cases checked by our inlined cast
         //
-        const CorInfoHelpFunc specialHelper = CORINFO_HELP_CHKCASTCLASS_SPECIAL;
+        const CorInfoHelpFunc specialHelper = isExpandingArray ? helper : CORINFO_HELP_CHKCASTCLASS_SPECIAL;
 
         condTrue = gtNewHelperCallNode(specialHelper, TYP_REF, partialExpand ? op2 : op2Var, gtClone(op1));
     }
