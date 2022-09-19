@@ -2577,9 +2577,36 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
         assert(c->isContained() && c->IsCnsIntOrI());
 
         instruction ins = genGetInsForOper(tree->OperGet(), targetType);
+        insOpts     opt = INS_OPTS_NONE;
+
+        switch (op2->gtOper)
+        {
+            case GT_LSH:
+            {
+                opt = INS_OPTS_LSL;
+                break;
+            }
+
+            case GT_RSH:
+            {
+                opt = INS_OPTS_ASR;
+                break;
+            }
+
+            case GT_RSZ:
+            {
+                opt = INS_OPTS_LSR;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
 
         emit->emitIns_R_R_R_I(ins, emitActualTypeSize(tree), targetReg, a->GetRegNum(), b->GetRegNum(),
-                              c->AsIntConCommon()->IconValue());
+                              c->AsIntConCommon()->IconValue(), opt);
 
         genProduceReg(tree);
         return;

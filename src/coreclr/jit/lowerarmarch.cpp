@@ -176,7 +176,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
     if (parentNode->gtGetOp1()->isContained() || parentNode->gtGetOp2()->isContained())
         return false;
 
-    if (parentNode->gtOverflow())
+    if (parentNode->OperMayOverflow() && parentNode->gtOverflow())
         return false;
 
     // We cannot contain if the child node:
@@ -190,7 +190,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
     if ((childNode->gtFlags & GTF_SET_FLAGS) != 0)
         return false;
 
-    if (childNode->gtOverflow())
+    if (childNode->OperMayOverflow() && childNode->gtOverflow())
         return false;
 
     GenTree* matchedOp = nullptr;
