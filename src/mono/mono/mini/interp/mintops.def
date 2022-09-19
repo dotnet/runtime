@@ -410,7 +410,6 @@ OPDEF(MINT_STELEM_REF, "stelem.ref", 4, 0, 3, MintOpNoArgs)
 OPDEF(MINT_STELEM_VT, "stelem.vt", 6, 0, 3, MintOpTwoShorts)
 
 OPDEF(MINT_LDLEN, "ldlen", 3, 1, 1, MintOpNoArgs)
-OPDEF(MINT_LDLEN_SPAN, "ldlen.span", 4, 1, 1, MintOpShortInt)
 
 OPDEF(MINT_GETITEM_SPAN, "getitem.span", 7, 1, 2, MintOpTwoShorts)
 

@@ -2090,18 +2090,6 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				td->ip += 5;
 				return TRUE;
 			}
-		} else if (!strcmp (tm, "get_Length")) {
-			MonoClassField *length_field = mono_class_get_field_from_name_full (target_method->klass, "_length", NULL);
-			g_assert (length_field);
-			int offset_length = m_field_get_offset (length_field) - sizeof (MonoObject);
-			interp_add_ins (td, MINT_LDLEN_SPAN);
-			td->last_ins->data [0] = GINT_TO_UINT16 (offset_length);
-			td->sp--;
-			interp_ins_set_sreg (td->last_ins, td->sp [0].local);
-			push_simple_type (td, STACK_TYPE_I4);
-			interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
-			td->ip += 5;
-			return TRUE;
 		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System.Runtime.CompilerServices") && !strcmp (klass_name, "Unsafe")) {
 		if (!strcmp (tm, "AddByteOffset"))
