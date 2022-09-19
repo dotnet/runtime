@@ -9789,7 +9789,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 call->gtFlags |= GTF_CALL_VIRT_VTABLE;
 
                 // Mark this method to expand the virtual call target early in fgMorphCall
-                call->AsCall()->SetExpandedEarly();
+                call->AsCall()->SetVtableCallExpandedEarly();
                 break;
             }
 

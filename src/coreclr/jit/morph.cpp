@@ -1233,24 +1233,80 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
         }
     }
 
-    // When CFG is enabled and this is a delegate call or vtable call we must
-    // compute the call target before all late args. However this will
-    // effectively null-check 'this', which should happen only after all
-    // arguments are evaluated. Thus we must evaluate all args with side
-    // effects to a temp.
-    if (comp->opts.IsCFGEnabled() && (call->IsVirtualVtable() || call->IsDelegateInvoke()))
+    bool accessesThisBeforeLateArgs = false;
+    if (comp->opts.IsCFGEnabled())
+    {
+        // When CFG is enabled we must compute the call target before all late
+        // args. However this will effectively null-check 'this', which should
+        // happen only after all arguments with other side effects have been
+        // evluated.
+        accessesThisBeforeLateArgs = call->IsVirtualVtable();
+    }
+
+    if (call->IsDelegateInvoke())
+    {
+        // Delegate invocations need to load the instance pointer from the
+        // delegate which results in a null check.
+        accessesThisBeforeLateArgs = true;
+    }
+
+    if (accessesThisBeforeLateArgs)
     {
         // Always evaluate 'this' to temp.
         assert(HasThisPointer());
-        SetNeedsTemp(GetThisArg());
-
-        for (CallArg& arg : EarlyArgs())
+        CallArg* thisArg  = GetThisArg();
+        GenTree* thisNode = thisArg->GetNode();
+        if (((thisNode->gtFlags & GTF_ALL_EFFECT) != 0) || !thisNode->OperIsLocal())
         {
-            if ((arg.GetEarlyNode()->gtFlags & GTF_ALL_EFFECT) != 0)
+            SetNeedsTemp(thisArg);
+        }
+
+        if (prevExceptionTree != nullptr)
+        {
+            if (prevExceptionFlags == ExceptionSetFlags::None)
             {
-                SetNeedsTemp(&arg);
+                prevExceptionFlags = comp->gtCollectExceptions(prevExceptionTree);
+            }
+
+            bool throwsSameAsPrev = prevExceptionFlags == ExceptionSetFlags::NullReferenceException;
+            if (!throwsSameAsPrev)
+            {
+                JITDUMP("Exception set for extra indirection off of 'this' interferes with previous tree [%06u]; must "
+                        "evaluate previous "
+                        "trees with exceptions to temps\n",
+                        Compiler::dspTreeID(prevExceptionTree));
+
+                for (CallArg& prevArg : Args())
+                {
+#if !FEATURE_FIXED_OUT_ARGS
+                    if (prevArg.AbiInfo.GetRegNum() == REG_STK)
+                    {
+                        // All stack args are already evaluated and placed in order
+                        // in this case.
+                        continue;
+                    }
+#endif
+                    // Invariant here is that all nodes that were not
+                    // already evaluated into temps and that throw can only
+                    // be throwing the same single exception as the
+                    // previous tree, so all of them interfere in the same
+                    // way with the current arg and must be evaluated
+                    // early.
+                    if ((prevArg.GetEarlyNode() != nullptr) && ((prevArg.GetEarlyNode()->gtFlags & GTF_EXCEPT) != 0))
+                    {
+                        SetNeedsTemp(&prevArg);
+                    }
+                }
             }
         }
+
+        // for (CallArg& arg : EarlyArgs())
+        //{
+        //    if ((arg.GetEarlyNode()->gtFlags & GTF_ALL_EFFECT) != 0)
+        //    {
+        //        SetNeedsTemp(&arg);
+        //    }
+        //}
     }
 
     m_argsComplete = true;
@@ -3164,7 +3220,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             // We may want to force 'this' into a temp because we want to use
             // it to expand the call target in morph so that CSE can pick it
             // up.
-            if (!reMorphing && call->IsExpandedEarly() && call->IsVirtualVtable() && !argx->OperIsLocal())
+            if (!reMorphing && !argx->OperIsLocal() &&
+                ((call->IsVirtualVtable() && call->IsVtableCallExpandedEarly()) || call->IsDelegateInvoke()))
             {
                 call->gtArgs.SetNeedsTemp(&arg);
             }
@@ -6606,7 +6663,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     // target early. Note that we may already have expanded it due to GDV at
     // this point, so make sure we do not undo that work.
     //
-    if (call->IsExpandedEarly() && call->IsVirtualVtable() && (call->gtControlExpr == nullptr))
+    if (call->IsVtableCallExpandedEarly() && call->IsVirtualVtable() && (call->gtControlExpr == nullptr))
     {
         assert(call->gtArgs.HasThisPointer());
         // It isn't always profitable to expand a virtual call early
@@ -6621,14 +6678,14 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
             // (see LowerTailCallViaJitHelper as it needs some work
             // for us to be able to expand this earlier in morph)
             //
-            call->ClearExpandedEarly();
+            call->ClearVtableCallExpandedEarly();
         }
         else if ((tailCallResult == TAILCALL_OPTIMIZED) &&
                  ((call->gtArgs.GetThisArg()->GetNode()->gtFlags & GTF_SIDE_EFFECT) != 0))
         {
             // We generate better code when we expand this late in lower instead.
             //
-            call->ClearExpandedEarly();
+            call->ClearVtableCallExpandedEarly();
         }
     }
 
@@ -8321,7 +8378,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
     // Should we expand this virtual method call target early here?
     //
-    if (call->IsExpandedEarly() && call->IsVirtualVtable())
+    if (call->IsVirtualVtable() && call->IsVtableCallExpandedEarly())
     {
         // We expand the Vtable Call target either in the global morph phase or
         // in guarded devirt if we need it for the guard.
@@ -8335,6 +8392,53 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
         // Propagate any side effect flags into the call
         call->gtFlags |= call->gtControlExpr->gtFlags & GTF_ALL_EFFECT;
+    }
+    else if (call->IsDelegateInvoke())
+    {
+        assert(fgGlobalMorph && "Delegate invokes should have been expanded by global morph");
+
+        assert(call->gtArgs.HasThisPointer());
+        CallArg* thisArg     = call->gtArgs.GetThisArg();
+        GenTree* delegatePtr = thisArg->GetNode();
+
+        // fgMorphArgs ensures this is a temp due to the multiple accesses.
+        assert(delegatePtr->OperIsLocal() && "Delegate instance should have been evaluated to a temp");
+
+        GenTree* delegatePtr2 = gtClone(delegatePtr, true);
+
+        GenTree* thisOffset = gtNewIconNode((ssize_t)eeGetEEInfo()->offsetOfDelegateInstance, TYP_I_IMPL);
+        GenTree* thisPtr    = gtNewIndir(TYP_REF, gtNewOperNode(GT_ADD, TYP_BYREF, delegatePtr, thisOffset));
+
+        thisPtr->gtFlags |= GTF_IND_INVARIANT;
+
+        GenTree* tarOffset = gtNewIconNode((ssize_t)eeGetEEInfo()->offsetOfDelegateFirstTarget, TYP_I_IMPL);
+        GenTree* tarPtr    = gtNewIndir(TYP_I_IMPL, gtNewOperNode(GT_ADD, TYP_BYREF, delegatePtr2, tarOffset));
+
+        tarPtr->gtFlags |= GTF_IND_INVARIANT;
+
+        call->gtCallType   = CT_INDIRECT;
+        call->gtCallAddr   = tarPtr;
+        call->gtCallCookie = nullptr;
+        call->gtCallMoreFlags &= ~GTF_CALL_M_DELEGATE_INV;
+
+        // This adds a NullReferenceException side effect as part of the late
+        // 'this' arg. This needs to be evaluated after other arguments, which
+        // is unusual. CallArgs::ArgsComplete has special handling for this and
+        // ensures that later arguments with side effects are evaluated as
+        // early nodes if they would conflict.
+        assert(thisArg->GetLateNode() != nullptr);
+        thisArg->SetLateNode(thisPtr);
+
+#ifdef DEBUG
+        // Verify that we didn't reorder side effects.
+        for (CallArg& arg : call->gtArgs.LateArgs())
+        {
+            GenTree* argNode = arg.GetLateNode();
+            assert(((argNode->gtFlags & GTF_SIDE_EFFECT) == 0) ||
+                   (((argNode->gtFlags & GTF_SIDE_EFFECT) == GTF_EXCEPT) &&
+                    (gtCollectExceptions(argNode) == ExceptionSetFlags::NullReferenceException)));
+        }
+#endif
     }
 
     // Morph stelem.ref helper call to store a null value, into a store into an array without the helper.

@@ -154,6 +154,20 @@ bool Compiler::optCopyProp(Statement* stmt, GenTreeLclVarCommon* tree, unsigned 
     ValueNum   lclDefVN    = varDsc->GetPerSsaData(tree->GetSsaNum())->m_vnPair.GetConservative();
     assert(lclDefVN != ValueNumStore::NoVN);
 
+    // bool hasCallParent = false;
+    // GenTree* par = tree;
+    // while ((par = par->gtGetParent(nullptr)) != nullptr)
+    //{
+    //    if (par->IsCall())
+    //    {
+    //        hasCallParent = true;
+    //        break;
+    //    }
+
+    //    if (!par->IsValue())
+    //        break;
+    //}
+
     for (LclNumToLiveDefsMap::KeyIterator iter = curSsaName->Begin(); !iter.Equal(curSsaName->End()); ++iter)
     {
         unsigned newLclNum = iter.Get();
@@ -191,6 +205,11 @@ bool Compiler::optCopyProp(Statement* stmt, GenTreeLclVarCommon* tree, unsigned 
         {
             continue;
         }
+
+        // if (hasCallParent && lvaGetDesc(tree)->lvIsTemp)
+        //{
+        //    continue;
+        //}
 
         if (optCopyProp_LclVarScore(varDsc, newLclVarDsc, true) <= 0)
         {

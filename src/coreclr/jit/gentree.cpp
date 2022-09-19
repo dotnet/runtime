@@ -12003,8 +12003,6 @@ void Compiler::gtDispTree(GenTree*     tree,
 
             if (!topOnly)
             {
-                char buf[64];
-
                 gtDispArgList(call, lastChild, indentStack);
 
                 if (call->gtCallType == CT_INDIRECT)
@@ -12017,13 +12015,6 @@ void Compiler::gtDispTree(GenTree*     tree,
                 {
                     gtDispChild(call->gtControlExpr, indentStack,
                                 (call->gtControlExpr == lastChild) ? IIArcBottom : IIArc, "control expr", topOnly);
-                }
-
-                for (CallArg& arg : call->gtArgs.LateArgs())
-                {
-                    IndentInfo arcType = (arg.GetLateNext() == nullptr) ? IIArcBottom : IIArc;
-                    gtGetLateArgMsg(call, &arg, buf, sizeof(buf));
-                    gtDispChild(arg.GetLateNode(), indentStack, arcType, buf, topOnly);
                 }
             }
         }
@@ -12360,6 +12351,14 @@ void Compiler::gtDispArgList(GenTreeCall* call, GenTree* lastCallOperand, Indent
         char buf[256];
         gtGetArgMsg(call, &arg, buf, sizeof(buf));
         gtDispChild(arg.GetEarlyNode(), indentStack, (arg.GetEarlyNode() == lastCallOperand) ? IIArcBottom : IIArc, buf,
+                    false);
+    }
+
+    for (CallArg& arg : call->gtArgs.LateArgs())
+    {
+        char buf[256];
+        gtGetLateArgMsg(call, &arg, buf, sizeof(buf));
+        gtDispChild(arg.GetLateNode(), indentStack, (arg.GetLateNode() == lastCallOperand) ? IIArcBottom : IIArc, buf,
                     false);
     }
 }

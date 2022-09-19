@@ -1547,55 +1547,47 @@ void Lowering::LowerCall(GenTree* node)
 
     // for x86, this is where we record ESP for checking later to make sure stack is balanced
 
-    // Check for Delegate.Invoke(). If so, we inline it. We get the
-    // target-object and target-function from the delegate-object, and do
-    // an indirect call.
-    if (call->IsDelegateInvoke())
+    // Delegate calls were expanded in morph.
+    assert(!call->IsDelegateInvoke());
+    //  Virtual and interface calls
+    switch (call->gtFlags & GTF_CALL_VIRT_KIND_MASK)
     {
-        controlExpr = LowerDelegateInvoke(call);
-    }
-    else
-    {
-        //  Virtual and interface calls
-        switch (call->gtFlags & GTF_CALL_VIRT_KIND_MASK)
-        {
-            case GTF_CALL_VIRT_STUB:
-                controlExpr = LowerVirtualStubCall(call);
-                break;
+        case GTF_CALL_VIRT_STUB:
+            controlExpr = LowerVirtualStubCall(call);
+            break;
 
-            case GTF_CALL_VIRT_VTABLE:
-                assert(call->IsVirtualVtable());
-                if (!call->IsExpandedEarly())
-                {
-                    assert(call->gtControlExpr == nullptr);
-                    controlExpr = LowerVirtualVtableCall(call);
-                }
-                else
-                {
-                    callWasExpandedEarly = true;
-                    controlExpr          = call->gtControlExpr;
-                }
-                break;
+        case GTF_CALL_VIRT_VTABLE:
+            assert(call->IsVirtualVtable());
+            if (!call->IsVtableCallExpandedEarly())
+            {
+                assert(call->gtControlExpr == nullptr);
+                controlExpr = LowerVirtualVtableCall(call);
+            }
+            else
+            {
+                callWasExpandedEarly = true;
+                controlExpr          = call->gtControlExpr;
+            }
+            break;
 
-            case GTF_CALL_NONVIRT:
-                if (call->IsUnmanaged())
-                {
-                    controlExpr = LowerNonvirtPinvokeCall(call);
-                }
-                else if (call->gtCallType == CT_INDIRECT)
-                {
-                    controlExpr = LowerIndirectNonvirtCall(call);
-                }
-                else
-                {
-                    controlExpr = LowerDirectCall(call);
-                }
-                break;
+        case GTF_CALL_NONVIRT:
+            if (call->IsUnmanaged())
+            {
+                controlExpr = LowerNonvirtPinvokeCall(call);
+            }
+            else if (call->gtCallType == CT_INDIRECT)
+            {
+                controlExpr = LowerIndirectNonvirtCall(call);
+            }
+            else
+            {
+                controlExpr = LowerDirectCall(call);
+            }
+            break;
 
-            default:
-                noway_assert(!"strange call type");
-                break;
-        }
+        default:
+            noway_assert(!"strange call type");
+            break;
     }
 
     // Indirect calls should always go through GenTreeCall::gtCallAddr and
@@ -4079,75 +4071,6 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
     }
 
     return result;
-}
-
-GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
-{
-    noway_assert(call->gtCallType == CT_USER_FUNC);
-
-    assert((comp->info.compCompHnd->getMethodAttribs(call->gtCallMethHnd) &
-            (CORINFO_FLG_DELEGATE_INVOKE | CORINFO_FLG_FINAL)) == (CORINFO_FLG_DELEGATE_INVOKE | CORINFO_FLG_FINAL));
-
-    GenTree* thisArgNode;
-    if (call->IsTailCallViaJitHelper())
-    {
-        thisArgNode = call->gtArgs.GetArgByIndex(0)->GetNode();
-    }
-    else
-    {
-        thisArgNode = call->gtArgs.GetThisArg()->GetNode();
-    }
-
-    assert(thisArgNode != nullptr);
-    assert(thisArgNode->gtOper == GT_PUTARG_REG);
-    GenTree* thisExpr = thisArgNode->AsOp()->gtOp1;
-
-    // We're going to use the 'this' expression multiple times, so make a local to copy it.
-
-    GenTree* base;
-    if (thisExpr->OperIs(GT_LCL_VAR))
-    {
-        base = comp->gtNewLclvNode(thisExpr->AsLclVar()->GetLclNum(), thisExpr->TypeGet());
-    }
-    else if (thisExpr->OperIs(GT_LCL_FLD))
-    {
-        base = comp->gtNewLclFldNode(thisExpr->AsLclFld()->GetLclNum(), thisExpr->TypeGet(),
-                                     thisExpr->AsLclFld()->GetLclOffs());
-    }
-    else
-    {
-        unsigned delegateInvokeTmp = comp->lvaGrabTemp(true DEBUGARG("delegate invoke call"));
-        base                       = comp->gtNewLclvNode(delegateInvokeTmp, thisExpr->TypeGet());
-
-        LIR::Use thisExprUse(BlockRange(), &thisArgNode->AsOp()->gtOp1, thisArgNode);
-        ReplaceWithLclVar(thisExprUse, delegateInvokeTmp);
-
-        thisExpr = thisExprUse.Def(); // it's changed; reload it.
-    }
-
-    // replace original expression feeding into thisPtr with
-    // [originalThis + offsetOfDelegateInstance]
-
-    GenTree* newThisAddr = new (comp, GT_LEA)
-        GenTreeAddrMode(TYP_BYREF, thisExpr, nullptr, 0, comp->eeGetEEInfo()->offsetOfDelegateInstance);
-
-    GenTree* newThis = comp->gtNewOperNode(GT_IND, TYP_REF, newThisAddr);
-
-    BlockRange().InsertAfter(thisExpr, newThisAddr, newThis);
-
-    thisArgNode->AsOp()->gtOp1 = newThis;
-    ContainCheckIndir(newThis->AsIndir());
-
-    // the control target is
-    // [originalThis + firstTgtOffs]
-
-    unsigned targetOffs = comp->eeGetEEInfo()->offsetOfDelegateFirstTarget;
-    GenTree* result     = new (comp, GT_LEA) GenTreeAddrMode(TYP_REF, base, nullptr, 0, targetOffs);
-    GenTree* callTarget = Ind(result);
-
-    // don't need to sequence and insert this tree, caller will do it
-
-    return callTarget;
 }
 
 GenTree* Lowering::LowerIndirectNonvirtCall(GenTreeCall* call)
