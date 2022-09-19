@@ -3980,6 +3980,97 @@ get_constrained_method (MonoCompile *cfg, MonoImage *image, guint32 token,
 	return NULL;
 }
 
+static MonoMethod*
+get_constrained_method_static_virtual_gshared (MonoCompile *cfg, MonoImage *image, guint32 token,
+											   MonoMethod *cmethod, MonoClass *constrained_class,
+											   MonoGenericContext *generic_context)
+{
+	/*
+	 * Both the method and the constrained class are inflated with gshared type variables, which don't have
+	 * normal interfaces/vtables set up, so we currently only handle simple cases here.
+	 */
+	gboolean constrained_is_generic_param =
+		m_class_get_byval_arg (constrained_class)->type == MONO_TYPE_VAR ||
+		m_class_get_byval_arg (constrained_class)->type == MONO_TYPE_MVAR;
+	MonoClass *gshared_constraint;
+
+	if (cfg->gsharedvt)
+		return NULL;
+
+	if (!constrained_is_generic_param)
+		return NULL;
+
+	gshared_constraint = mono_class_from_mono_type_internal (m_class_get_byval_arg (constrained_class)->data.generic_param->gshared_constraint);
+
+	//printf ("%s %s\n", mono_class_full_name (gshared_constraint), mono_method_get_full_name (cmethod));
+
+	MonoClass *iface, *the_iface;
+	gpointer iter;
+
+	/*
+	 * Find the matching interface of constrained_class manually.
+	 * This is needed because the two classes are inflated with different generic sharing gparams.
+	 */
+	the_iface = NULL;
+	iter = NULL;
+	while ((iface = mono_class_get_interfaces (gshared_constraint, &iter))) {
+		gboolean match = iface == cmethod->klass;
+
+		if (!match) {
+			match = (mono_class_get_generic_type_definition (iface) == mono_class_get_generic_type_definition (cmethod->klass));
+		}
+		if (match) {
+			if (the_iface)
+				/* FIXME: */
+				return NULL;
+			the_iface = iface;
+		}
+	}
+	if (!the_iface)
+		return NULL;
+
+	//printf ("%s %s %s\n", mono_class_full_name (the_iface), mono_class_full_name (gshared_constraint), mono_method_get_full_name (cmethod));
+
+	MonoMethod *declaring = cmethod->is_inflated ? ((MonoMethodInflated*)cmethod)->declaring : cmethod;
+
+	int mcount = mono_class_get_method_count (declaring->klass);
+	int index = -1;
+	for (int i = 0; i < mcount; ++i) {
+		if (m_class_get_methods (declaring->klass) [i] == declaring) {
+			index = i;
+			break;
+		}
+	}
+	g_assert (index != -1);
+
+	gboolean variant = FALSE;
+	int itf_base = mono_class_interface_offset_with_variance (gshared_constraint, the_iface, &variant);
+	g_assert (itf_base != -1);
+
+	MonoMethod *res = mono_class_get_vtable_entry (gshared_constraint, itf_base + index);
+
+	res = mono_class_inflate_generic_method_checked (res, generic_context, cfg->error);
+	CHECK_CFG_ERROR;
+
+	MonoMethodSignature *fsig = mono_method_signature_internal (res);
+	if (!fsig)
+		return NULL;
+
+	if (res->is_generic)
+		return NULL;
+
+	// FIXME: The types do not match with what the rest of the code expects because of gsharing
+	if (fsig->has_type_parameters)
+		return NULL;
+
+	//printf ("%s\n", mono_method_get_full_name (res));
+
+	return res;
+
+mono_error_exit:
+	return NULL;
+}
+
 static gboolean
 method_does_not_return (MonoMethod *method)
 {
@@ -7444,6 +7535,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			gboolean tailcall_calli; tailcall_calli = FALSE;
 			gboolean noreturn; noreturn = FALSE;
 			gboolean gshared_static_virtual; gshared_static_virtual = FALSE;
+			gboolean cmethod_computed; cmethod_computed = FALSE;
 #ifdef TARGET_WASM
 			gboolean needs_stack_walk; needs_stack_walk = FALSE;
 #endif
@@ -7493,10 +7585,19 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (constrained_class) {
 				if (m_method_is_static (cil_method) && mini_class_check_context_used (cfg, constrained_class)) {
 					/* get_constrained_method () doesn't work on the gparams used by generic sharing */
-					// FIXME: Other configurations
-					//if (!cfg->gsharedvt)
-					//	GENERIC_SHARING_FAILURE (CEE_CALL);
-					gshared_static_virtual = TRUE;
+					MonoMethod *tmp = get_constrained_method_static_virtual_gshared (cfg, image, token, cil_method, constrained_class, generic_context);
+					if (tmp) {
+						cmethod = tmp;
+						cmethod_computed = TRUE;
+						/* Treat it as a normal call */
+						constrained_class = NULL;
+						if (cfg->verbose_level > 2)
+							printf ("constrained call resolved to: %s\n", mono_method_get_full_name (cmethod));
+					} else {
+						if (cfg->verbose_level > 2)
+							printf ("cannot resolve constrained call.\n");
+						gshared_static_virtual = TRUE;
+					}
 				} else {
 					cmethod = get_constrained_method (cfg, image, token, cil_method, constrained_class, generic_context);
 					CHECK_CFG_ERROR;
@@ -7573,7 +7674,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod, TRUE, cfg->compile_aot);
 					fsig = mono_method_signature_internal (wrapper);
 				}
-			} else if (constrained_class) {
+			} else if (constrained_class || cmethod_computed) {
 			} else {
 				fsig = mono_method_get_signature_checked (cmethod, image, token, generic_context, cfg->error);
 				CHECK_CFG_ERROR;
