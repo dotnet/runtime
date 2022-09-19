@@ -126,28 +126,35 @@ namespace System.Reflection
         {
             get
             {
-                if (ClassImpl == typeof(decimal) || ClassImpl == typeof(decimal?))
-                {
-                    /* default values for decimals are encoded using a custom attribute */
-                    DecimalConstantAttribute[] attrs = (DecimalConstantAttribute[])GetCustomAttributes(typeof(DecimalConstantAttribute), false);
-                    if (attrs.Length > 0)
-                        return attrs[0].Value;
-                }
-                else if (ClassImpl == typeof(DateTime) || ClassImpl == typeof(DateTime?))
+                // CoreCLR favours DateTimeConstantAttribute over DefaultValueImpl and other attached CustomConstantAttributes,
+                // but also CustomConstantAttributes over DecimalConstantAttribute attached to a parameter.
+                // (see here for more info: https://github.com/dotnet/runtime/blob/main/src/coreclr/System.Private.CoreLib/src/System/Reflection/RuntimeParameterInfo.cs#L311)
+                if (ClassImpl == typeof(DateTime) || ClassImpl == typeof(DateTime?))
                 {
                     /* default values for DateTime are encoded using a custom attribute */
                     DateTimeConstantAttribute[] attrs = (DateTimeConstantAttribute[])GetCustomAttributes(typeof(DateTimeConstantAttribute), false);
                     if (attrs.Length > 0)
                         return attrs[0].Value;
                 }
-                else if (DefaultValueImpl == DBNull.Value)
+
+                object? defaultValue = DefaultValueImpl;
+                if (defaultValue != null && (defaultValue.GetType() == typeof(DBNull) || defaultValue.GetType() == typeof(Missing)))
                 {
                     /* look for a default value encoded using a custom attribute */
                     CustomConstantAttribute[] attrs = (CustomConstantAttribute[])GetCustomAttributes(typeof(CustomConstantAttribute), false);
                     if (attrs.Length > 0)
+                    {
                         return attrs[0].Value;
+                    }
+                    else
+                    {
+                        /* default values for decimals are encoded using a custom attribute */
+                        DecimalConstantAttribute[] dattrs = (DecimalConstantAttribute[])GetCustomAttributes(typeof(DecimalConstantAttribute), false);
+                        if (dattrs.Length > 0)
+                            return dattrs[0].Value;
+                    }
                 }
-                return DefaultValueImpl;
+                return defaultValue;
             }
         }
 
