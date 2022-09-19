@@ -12436,6 +12436,24 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                 // If the class is exact, the jit can expand the IsInst check inline.
                 canExpandInline = isClassExact;
             }
+            else if ((helper == CORINFO_HELP_ISINSTANCEOFARRAY) && isClassExact)
+            {
+                // We have "obj is T[]" and in case if T is sealed we can still perform
+                // the fast pMT check (in case if T[] -> obj.GetType is jit-time legal)
+                bool                 isExact = false;
+                bool                 nonNull = false;
+                CORINFO_CLASS_HANDLE op1Cls  = gtGetClassHandle(op1, &isExact, &nonNull);
+                if (op1Cls != NO_CLASS_HANDLE)
+                {
+                    CORINFO_CLASS_HANDLE elementCls = NO_CLASS_HANDLE;
+                    info.compCompHnd->getChildType(pResolvedToken->hClass, &elementCls);
+                    if ((elementCls != NO_CLASS_HANDLE) && impIsClassExact(elementCls))
+                    {
+                        canExpandInline = info.compCompHnd->compareTypesForCast(pResolvedToken->hClass, op1Cls) ==
+                                          TypeCompareState::Must;
+                    }
+                }
+            }
         }
 
         // Check if this cast helper have some profile data
