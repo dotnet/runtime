@@ -6785,7 +6785,7 @@ bool Lowering::NodesAreEquivalentLeaves(GenTree* tree1, GenTree* tree2)
 bool Lowering::CheckMultiRegLclVar(GenTreeLclVar* lclNode, const ReturnTypeDesc* retTypeDesc)
 {
     bool canEnregister = false;
-#if FEATURE_MULTIREG_RET || FEATURE_HW_INTRINSICS
+#if FEATURE_MULTIREG_RET || defined(FEATURE_HW_INTRINSICS)
     LclVarDsc* varDsc = comp->lvaGetDesc(lclNode->GetLclNum());
     if ((comp->lvaEnregMultiRegVars) && varDsc->lvPromoted)
     {

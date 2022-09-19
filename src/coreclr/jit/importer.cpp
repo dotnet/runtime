@@ -17764,7 +17764,7 @@ GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree*             op,
 
     return ret;
 }
-#endif // FEATURE_MULTIREG_RET
+#endif // FEATURE_MULTIREG_RET || defined(FEATURE_HW_INTRINSICS)
 
 //------------------------------------------------------------------------
 // impReturnInstruction: import a return or an explicit tail call

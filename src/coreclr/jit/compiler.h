@@ -1874,7 +1874,7 @@ public:
 #if FEATURE_MULTIREG_RET || defined(FEATURE_HW_INTRINSICS)
     GenTree* impAssignMultiRegTypeToVar(GenTree*             op,
                                         CORINFO_CLASS_HANDLE hClass DEBUGARG(CorInfoCallConvExtension callConv));
-#endif // FEATURE_MULTIREG_RET
+#endif // FEATURE_MULTIREG_RET || defined(FEATURE_HW_INTRINSICS)
 
 #ifdef TARGET_X86
     bool isTrivialPointerSizedStruct(CORINFO_CLASS_HANDLE clsHnd) const;
