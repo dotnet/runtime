@@ -116,13 +116,6 @@ PhaseStatus Compiler::fgForwardSub()
     }
 #endif
 
-    CLRRandom rng;
-    rng.Init(info.compILCodeSize ^ info.compILlocalsCount ^ 0x12345678);
-    if (rng.Next(10) == 0)
-    {
-        return PhaseStatus::MODIFIED_NOTHING;
-    }
-
     bool changed = false;
 
     for (BasicBlock* const block : Blocks())
