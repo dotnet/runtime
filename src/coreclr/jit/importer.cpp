@@ -12445,8 +12445,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
             if ((elementCls != NO_CLASS_HANDLE) && impIsClassExact(elementCls))
             {
                 // Check if elementCls is not something shared
-                canExpandInline =
-                    info.compCompHnd->compareTypesForEquality(elementCls, elementCls) == TypeCompareState::Must;
+                canExpandInline = info.compCompHnd->areTypesEquivalent(elementCls, elementCls);
             }
         }
 
