@@ -1213,19 +1213,17 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     GenTree* zroCns = comp->gtNewIconNode(0, TYP_INT);
     BlockRange().InsertAfter(cmp, zroCns);
 
-    var_types cmpRegType = (simdSize == 8) ? TYP_INT : TYP_LONG;
-
-    GenTree* val = comp->gtNewSimdHWIntrinsicNode(cmpRegType, cmp, zroCns, NI_AdvSimd_Extract,
-                                                  (simdSize == 8) ? CORINFO_TYPE_UINT : CORINFO_TYPE_ULONG, simdSize);
+    GenTree* val =
+        comp->gtNewSimdHWIntrinsicNode(TYP_LONG, cmp, zroCns, NI_AdvSimd_Extract, CORINFO_TYPE_ULONG, simdSize);
     BlockRange().InsertAfter(zroCns, val);
     LowerNode(val);
 
-    GenTree* bitMskCns = comp->gtNewIconNode(ssize_t((simdSize == 8) ? 0xffffffff : 0xffffffffffffffff), cmpRegType);
+    GenTree* bitMskCns = comp->gtNewIconNode(static_cast<ssize_t>(0xffffffffffffffff), TYP_LONG);
     BlockRange().InsertAfter(val, bitMskCns);
 
     node->ChangeOper(cmpOp);
 
-    node->gtType        = cmpRegType;
+    node->gtType        = TYP_LONG;
     node->AsOp()->gtOp1 = val;
     node->AsOp()->gtOp2 = bitMskCns;
 
