@@ -8607,7 +8607,7 @@ GenTree* Compiler::gtCloneExpr(
                 // We're in the SimpleOp case, so it's always unary or binary.
                 if (GenTree::OperIsUnary(tree->OperGet()))
                 {
-                    copy = gtNewOperNode(oper, tree->TypeGet(), tree->AsOp()->gtOp1, /*doSimplifications*/ false);
+                    copy = gtNewOperNode(oper, tree->TypeGet(), tree->AsOp()->gtOp1);
                 }
                 else
                 {
@@ -11121,8 +11121,15 @@ void Compiler::gtDispConst(GenTree* tree)
 
                 if (tree->TypeGet() == TYP_REF)
                 {
-                    assert(tree->AsIntCon()->gtIconVal == 0);
-                    printf(" null");
+                    if (tree->AsIntCon()->gtIconVal == 0)
+                    {
+                        printf(" null");
+                    }
+                    else
+                    {
+                        assert(doesMethodHaveFrozenString());
+                        printf(" 0x%llx", dspIconVal);
+                    }
                 }
                 else if ((tree->AsIntCon()->gtIconVal > -1000) && (tree->AsIntCon()->gtIconVal < 1000))
                 {
@@ -18658,11 +18665,46 @@ bool GenTree::isCommutativeHWIntrinsic() const
 {
     assert(gtOper == GT_HWINTRINSIC);
 
+    const GenTreeHWIntrinsic* node = AsHWIntrinsic();
+    NamedIntrinsic            id   = node->GetHWIntrinsicId();
+
+    if (HWIntrinsicInfo::IsCommutative(id))
+    {
+        return true;
+    }
+
+    if (HWIntrinsicInfo::IsMaybeCommutative(id))
+    {
+        switch (id)
+        {
 #ifdef TARGET_XARCH
-    return HWIntrinsicInfo::IsCommutative(AsHWIntrinsic()->GetHWIntrinsicId());
-#else
-    return false;
+            case NI_SSE_Max:
+            case NI_SSE_Min:
+            {
+                return false;
+            }
+
+            case NI_SSE2_Max:
+            case NI_SSE2_Min:
+            {
+                return !varTypeIsFloating(node->GetSimdBaseType());
+            }
+
+            case NI_AVX_Max:
+            case NI_AVX_Min:
+            {
+                return false;
+            }
 #endif // TARGET_XARCH
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
+    return false;
 }
 
 bool GenTree::isContainableHWIntrinsic() const

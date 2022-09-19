@@ -5284,6 +5284,52 @@ bool ValueNumStore::IsVNHandle(ValueNum vn)
 }
 
 //------------------------------------------------------------------------
+// SwapRelop: return VNFunc for swapped relop
+//
+// Arguments:
+//    vnf - vnf for original relop
+//
+// Returns:
+//    VNFunc for swapped relop, or VNF_MemOpaque if the original VNFunc
+//    was not a relop.
+//
+VNFunc ValueNumStore::SwapRelop(VNFunc vnf)
+{
+    VNFunc swappedFunc = VNF_MemOpaque;
+    if (vnf >= VNF_Boundary)
+    {
+        switch (vnf)
+        {
+            case VNF_LT_UN:
+                swappedFunc = VNF_GT_UN;
+                break;
+            case VNF_LE_UN:
+                swappedFunc = VNF_GE_UN;
+                break;
+            case VNF_GE_UN:
+                swappedFunc = VNF_LE_UN;
+                break;
+            case VNF_GT_UN:
+                swappedFunc = VNF_LT_UN;
+                break;
+            default:
+                break;
+        }
+    }
+    else
+    {
+        const genTreeOps op = (genTreeOps)vnf;
+
+        if (GenTree::OperIsCompare(op))
+        {
+            swappedFunc = (VNFunc)GenTree::SwapRelop(op);
+        }
+    }
+
+    return swappedFunc;
+}
+
+//------------------------------------------------------------------------
 // GetRelatedRelop: return value number for reversed/swapped comparison
 //
 // Arguments:
@@ -5354,36 +5400,11 @@ ValueNum ValueNumStore::GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk)
     //
     if (swap)
     {
-        if (newFunc >= VNF_Boundary)
-        {
-            switch (newFunc)
-            {
-                case VNF_LT_UN:
-                    newFunc = VNF_GT_UN;
-                    break;
-                case VNF_LE_UN:
-                    newFunc = VNF_GE_UN;
-                    break;
-                case VNF_GE_UN:
-                    newFunc = VNF_LE_UN;
-                    break;
-                case VNF_GT_UN:
-                    newFunc = VNF_LT_UN;
-                    break;
-                default:
-                    return NoVN;
-            }
-        }
-        else
-        {
-            const genTreeOps op = (genTreeOps)newFunc;
+        newFunc = SwapRelop(newFunc);
 
-            if (!GenTree::OperIsCompare(op))
-            {
-                return NoVN;
-            }
-
-            newFunc = (VNFunc)GenTree::SwapRelop(op);
+        if (newFunc == VNF_MemOpaque)
+        {
+            return NoVN;
         }
     }
 
@@ -8162,7 +8183,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
             }
             else
             {
-                assert(tree->IsIconHandle(GTF_ICON_STR_HDL)); // Constant object can be only frozen string.
+                assert(doesMethodHaveFrozenString()); // Constant object can be only frozen string.
                 tree->gtVNPair.SetBoth(
                     vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()), tree->GetIconHandleFlag()));
             }
@@ -8591,37 +8612,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
         {
             fgValueNumberBlockAssignment(tree);
         }
-        else if (oper == GT_ADDR)
-        {
-            // We have special representations for byrefs to lvalues.
-            GenTree* location = tree->AsUnOp()->gtGetOp1();
-            if (location->OperIs(GT_LCL_VAR, GT_LCL_FLD))
-            {
-                GenTreeLclVarCommon* lclNode = location->AsLclVarCommon();
-                ValueNum             addrVN =
-                    vnStore->VNForFunc(TYP_BYREF, VNF_PtrToLoc, vnStore->VNForIntCon(lclNode->GetLclNum()),
-                                       vnStore->VNForIntPtrCon(lclNode->GetLclOffs()));
-                tree->gtVNPair.SetBoth(addrVN); // No exceptions for local addresses.
-            }
-            else if ((location->gtOper == GT_IND) || location->OperIsBlk())
-            {
-                // They just cancel, so fetch the ValueNumber from the op1 of the GT_IND node.
-                //
-                GenTree*     addr    = location->AsIndir()->Addr();
-                ValueNumPair addrVNP = addr->gtVNPair;
-
-                // For the CSE phase mark the address as GTF_DONT_CSE
-                // because it will end up with the same value number as tree (the GT_ADDR).
-                addr->gtFlags |= GTF_DONT_CSE;
-
-                tree->gtVNPair = vnStore->VNPWithExc(addrVNP, vnStore->VNPExceptionSet(location->gtVNPair));
-            }
-            else
-            {
-                // May be more cases to do here!  But we'll punt for now.
-                tree->gtVNPair = vnStore->VNPUniqueWithExc(TYP_BYREF, vnStore->VNPExceptionSet(location->gtVNPair));
-            }
-        }
         else if ((oper == GT_IND) || GenTree::OperIsBlk(oper))
         {
             // So far, we handle cases in which the address is a ptr-to-local, or if it's
@@ -8866,6 +8856,26 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     {
                         ValueNumPair op1Xvnp = vnStore->VNPExceptionSet(tree->AsOp()->gtOp1->gtVNPair);
                         tree->gtVNPair       = vnStore->VNPWithExc(tree->AsOp()->gtOp2->gtVNPair, op1Xvnp);
+                    }
+                    break;
+
+                    case GT_ADDR:
+                    {
+                        GenTree* location = tree->AsUnOp()->gtGetOp1();
+
+                        if (location->OperIsLocalRead())
+                        {
+                            GenTreeLclVarCommon* lclNode = location->AsLclVarCommon();
+                            ValueNum             addrVN =
+                                vnStore->VNForFunc(TYP_BYREF, VNF_PtrToLoc, vnStore->VNForIntCon(lclNode->GetLclNum()),
+                                                   vnStore->VNForIntPtrCon(lclNode->GetLclOffs()));
+                            tree->gtVNPair.SetBoth(addrVN); // No exceptions for local addresses.
+                        }
+                        else
+                        {
+                            tree->gtVNPair = vnStore->VNPUniqueWithExc(tree->TypeGet(),
+                                                                       vnStore->VNPExceptionSet(location->gtVNPair));
+                        }
                     }
                     break;
 

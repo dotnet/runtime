@@ -1544,12 +1544,6 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     GenTree* asgNode = gtNewAssignNode(dest, src);
     gtBlockOpInit(asgNode, dest, src, false);
 
-    // TODO-1stClassStructs: Clean up the settings of GTF_DONT_CSE on the lhs
-    // of assignments.
-    if ((destFlags & GTF_DONT_CSE) == 0)
-    {
-        dest->gtFlags &= ~(GTF_DONT_CSE);
-    }
     return asgNode;
 }
 
@@ -5966,17 +5960,36 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             result = NI_System_Numerics_BitOperations_PopCount;
         }
     }
-#ifdef FEATURE_HW_INTRINSICS
     else if (strcmp(namespaceName, "System.Numerics") == 0)
     {
+#ifdef FEATURE_HW_INTRINSICS
         CORINFO_SIG_INFO sig;
         info.compCompHnd->getMethodSig(method, &sig);
 
         int sizeOfVectorT = getSIMDVectorRegisterByteLength();
 
-        result = SimdAsHWIntrinsicInfo::lookupId(&sig, className, methodName, enclosingClassName, sizeOfVectorT);
-    }
+        result = SimdAsHWIntrinsicInfo::lookupId(this, &sig, className, methodName, enclosingClassName, sizeOfVectorT);
 #endif // FEATURE_HW_INTRINSICS
+
+        if (result == NI_Illegal)
+        {
+            if (strcmp(methodName, "get_IsHardwareAccelerated") == 0)
+            {
+                // This allows the relevant code paths to be dropped as dead code even
+                // on platforms where FEATURE_HW_INTRINSICS is not supported.
+
+                result = NI_IsSupported_False;
+            }
+            else if (gtIsRecursiveCall(method))
+            {
+                // For the framework itself, any recursive intrinsics will either be
+                // only supported on a single platform or will be guarded by a relevant
+                // IsSupported check so the throw PNSE will be valid or dropped.
+
+                result = NI_Throw_PlatformNotSupportedException;
+            }
+        }
+    }
     else if (strcmp(namespaceName, "System.Runtime.CompilerServices") == 0)
     {
         if (strcmp(className, "Unsafe") == 0)
@@ -9775,13 +9788,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 call = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, di);
                 call->gtFlags |= GTF_CALL_VIRT_VTABLE;
 
-                // Should we expand virtual call targets early for this method?
-                //
-                if (opts.compExpandCallsEarly)
-                {
-                    // Mark this method to expand the virtual call target early in fgMorpgCall
-                    call->AsCall()->SetExpandedEarly();
-                }
+                // Mark this method to expand the virtual call target early in fgMorphCall
+                call->AsCall()->SetExpandedEarly();
                 break;
             }
 
