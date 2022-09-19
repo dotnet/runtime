@@ -559,7 +559,7 @@ namespace ILCompiler.DependencyAnalysis
                     ehInfo = null;
                 }
 
-                if (gcInfo != null)
+                if (gcInfo != null && ((_options & ObjectWritingOptions.NoGcInfo) == 0))
                 {
                     EmitBlob(gcInfo);
                     gcInfo = null;
@@ -645,7 +645,7 @@ namespace ILCompiler.DependencyAnalysis
                     ehInfo = null;
                 }
 
-                if (gcInfo != null)
+                if (gcInfo != null && ((_options & ObjectWritingOptions.NoGcInfo) == 0))
                 {
                     EmitBlob(gcInfo);
                     gcInfo = null;
@@ -1327,5 +1327,6 @@ namespace ILCompiler.DependencyAnalysis
         GenerateDebugInfo = 0x01,
         ControlFlowGuard = 0x02,
         UseDwarf5 = 0x4,
+        NoGcInfo = 0x8,
     }
 }

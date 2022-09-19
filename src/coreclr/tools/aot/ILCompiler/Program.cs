@@ -62,6 +62,7 @@ namespace ILCompiler
         private bool _completeTypesMetadata;
         private bool _scanReflection;
         private bool _methodBodyFolding;
+        private bool _noPreciseGc;
         private int _parallelism = Environment.ProcessorCount;
         private string _instructionSet;
         private string _guard;
@@ -221,6 +222,7 @@ namespace ILCompiler
                 syntax.DefineOption("ildump", ref _ilDump, "Dump IL assembly listing for compiler-generated IL");
                 syntax.DefineOption("stacktracedata", ref _emitStackTraceData, "Emit data to support generating stack trace strings at runtime");
                 syntax.DefineOption("methodbodyfolding", ref _methodBodyFolding, "Fold identical method bodies");
+                syntax.DefineOption("noprecisegc", ref _noPreciseGc, "Do not generate precise stack GC information");
                 syntax.DefineOptionList("initassembly", ref _initAssemblies, "Assembly(ies) with a library initializer");
                 syntax.DefineOptionList("appcontextswitch", ref _appContextSwitches, "System.AppContext switches to set (format: 'Key=Value')");
                 syntax.DefineOptionList("feature", ref _featureSwitches, "Feature switches to apply (format: 'Namespace.Name=[true|false]'");
@@ -943,7 +945,8 @@ namespace ILCompiler
                 .UseOptimizationMode(_optimizationMode)
                 .UseSecurityMitigationOptions(securityMitigationOptions)
                 .UseDebugInfoProvider(debugInfoProvider)
-                .UseDwarf5(_useDwarf5);
+                .UseDwarf5(_useDwarf5)
+                .UseGCStackReporting(isPrecise: !_noPreciseGc);
 
             builder.UseResilience(_resilient);
 

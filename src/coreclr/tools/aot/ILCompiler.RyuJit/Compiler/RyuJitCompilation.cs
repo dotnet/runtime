@@ -100,6 +100,9 @@ namespace ILCompiler
             if ((_compilationOptions & RyuJitCompilationOptions.ControlFlowGuardAnnotations) != 0)
                 options |= ObjectWritingOptions.ControlFlowGuard;
 
+            if ((_compilationOptions & RyuJitCompilationOptions.NoPreciseGc) != 0)
+                options |= ObjectWritingOptions.NoGcInfo;
+
             ObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
         }
 
@@ -244,5 +247,6 @@ namespace ILCompiler
         ControlFlowGuardAnnotations = 0x2,
         UseDwarf5 = 0x4,
         UseResilience = 0x8,
+        NoPreciseGc = 0x10,
     }
 }
