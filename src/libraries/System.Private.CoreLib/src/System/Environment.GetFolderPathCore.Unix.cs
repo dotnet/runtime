@@ -20,7 +20,7 @@ namespace System
         private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption option)
         {
             // Get the path for the SpecialFolder
-            string? path = GetFolderPathCoreWithoutValidation(folder);
+            string path = GetFolderPathCoreWithoutValidation(folder) ?? string.Empty;
             Debug.Assert(path != null);
 
             // If we didn't get one, or if we got one but we're not supposed to verify it,
