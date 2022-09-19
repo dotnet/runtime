@@ -161,6 +161,12 @@ has_intrinsic_cattr (MonoMethod *method)
 	return res;
 }
 
+static gboolean
+is_SIMD_feature_supported(MonoCompile *cfg, MonoCPUFeatures feature) 
+{
+	return mini_get_cpu_features (cfg) & feature;
+}
+
 static G_GNUC_UNUSED void
 check_no_intrinsic_cattr (MonoMethod *method)
 {
@@ -553,7 +559,7 @@ static MonoInst*
 extract_first_element (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum element_type, int sreg)
 {
 	int extract_op = type_to_extract_op (element_type);
-	MonoInst* ins = emit_simd_ins (cfg, klass, extract_op, sreg, -1);
+	MonoInst *ins = emit_simd_ins (cfg, klass, extract_op, sreg, -1);
 	ins->inst_c0 = 0;
 	ins->inst_c1 = element_type;
 
@@ -563,10 +569,15 @@ extract_first_element (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum element_
 static MonoInst*
 emit_sum_vector (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, MonoTypeEnum element_type, MonoInst **args)
 {
-	MonoClass* arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+	MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 	int size = mono_class_value_size (arg_class, NULL);
 	if (size != 16) 		// Works only with Vector128
 		return NULL;
+
+	// Check if necessary SIMD intrinsics are supported on the current machine
+	MonoCPUFeatures feature = type_enum_is_float (element_type) ? MONO_CPU_X86_SSE3 : MONO_CPU_X86_SSSE3;
+	if (!is_SIMD_feature_supported (cfg, feature))
+		return NULL;	
 
 	int instc0 = -1;
 	switch (element_type) {
@@ -591,8 +602,8 @@ emit_sum_vector (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, 
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8: {
 		// Ssse3 doesn't have support for HorizontalAdd on i64
-		MonoInst* lower = emit_simd_ins_for_sig (cfg, klass, OP_XLOWER, 0, element_type, fsig, args);
-		MonoInst* upper = emit_simd_ins_for_sig (cfg, klass, OP_XUPPER, 0, element_type, fsig, args);	
+		MonoInst *lower = emit_simd_ins_for_sig (cfg, klass, OP_XLOWER, 0, element_type, fsig, args);
+		MonoInst *upper = emit_simd_ins_for_sig (cfg, klass, OP_XUPPER, 0, element_type, fsig, args);	
 
 		// Sum lower and upper i64
 		args[0] = lower;
@@ -600,29 +611,29 @@ emit_sum_vector (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, 
 		fsig->param_count = 2;
 		MonoInst* ins = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, OP_IADD, element_type, fsig, args);
 
-		return extract_first_element(cfg, klass, element_type, ins->dreg);
+		return extract_first_element (cfg, klass, element_type, ins->dreg);
 	}
 	default: {
 		return NULL;
 	}
-	}
+	}	
 
-	MonoType* etype = mono_class_get_context (arg_class)->class_inst->type_argv [0];
+	MonoType *etype = mono_class_get_context (arg_class)->class_inst->type_argv [0];
 	int elem_size = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
 	int num_elems = size / elem_size;
 	int num_rounds = fast_log2[num_elems];
 
-	MonoInst* tmp = emit_xzero (cfg, arg_class);
-	MonoInst* ins = NULL;
+	MonoInst *tmp = emit_xzero (cfg, arg_class);
+	MonoInst *ins = NULL;
 	args[1] = tmp;
 	fsig->param_count = 2;
 	// HorizontalAdds over vector log2(num_elems) times
-	for ( int i = 0; i < num_rounds; ++i ) {
+	for (int i = 0; i < num_rounds; ++i) {
 		ins = emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X_X, instc0, element_type, fsig, args);
 		args[0] = ins;
 	}
 
-	return extract_first_element(cfg, klass, element_type, ins->dreg);
+	return extract_first_element (cfg, klass, element_type, ins->dreg);
 }
 #endif
 
