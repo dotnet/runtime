@@ -1,5 +1,7 @@
 <Project>
   <PropertyGroup>
+    <IlcUseConservativeGc>true</IlcUseConservativeGc>
+
     <OutputType>Exe</OutputType>
 
     <DefineConstants>$(DefineConstants);SINGLE_FILE_TEST_RUNNER</DefineConstants>
