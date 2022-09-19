@@ -230,8 +230,6 @@ namespace System.Text.Json
             }
         }
 
-        public static readonly UTF8Encoding s_utf8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
-
         internal static unsafe bool TryGetUtf8FromText(ReadOnlySpan<char> text, Span<byte> dest, out int written)
         {
             written = 0;
@@ -239,7 +237,7 @@ namespace System.Text.Json
             try
             {
 #if NETCOREAPP
-                written = s_utf8Encoding.GetBytes(text, dest);
+                written = Encoding.UTF8.GetBytes(text, dest);
                 return true;
 #else
                 if (text.IsEmpty)
@@ -250,7 +248,7 @@ namespace System.Text.Json
                 fixed (char* charPtr = text)
                 fixed (byte* destPtr = dest)
                 {
-                    written = s_utf8Encoding.GetBytes(charPtr, text.Length, destPtr, dest.Length);
+                    written = Encoding.UTF8.GetBytes(charPtr, text.Length, destPtr, dest.Length);
                     return true;
                 }
  #endif
