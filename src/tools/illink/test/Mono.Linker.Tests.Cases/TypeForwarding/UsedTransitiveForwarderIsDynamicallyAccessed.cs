@@ -8,8 +8,6 @@ using Mono.Linker.Tests.Cases.TypeForwarding.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.TypeForwarding
 {
-	[KeepTypeForwarderOnlyAssemblies ("false")]
-
 	[SetupCompileBefore ("SecondForwarder.dll", new[] { "Dependencies/ReferenceImplementationLibrary.cs" }, defines: new[] { "INCLUDE_REFERENCE_IMPL" })]
 	[SetupCompileBefore ("FirstForwarder.dll", new[] { "Dependencies/ForwarderLibrary.cs" }, references: new[] { "SecondForwarder.dll" })]
 

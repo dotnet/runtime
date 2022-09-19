@@ -105,8 +105,6 @@ namespace Mono.Linker
 
 		public bool LinkSymbols { get; set; }
 
-		public bool KeepTypeForwarderOnlyAssemblies { get; set; }
-
 		public readonly bool KeepMembersForDebugger = true;
 
 		public bool IgnoreUnresolved { get; set; }

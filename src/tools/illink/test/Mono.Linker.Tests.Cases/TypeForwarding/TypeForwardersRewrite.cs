@@ -6,7 +6,6 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 {
 	// Actions:
 	// link - This assembly, Forwarder.dll and Implementation.dll
-	[KeepTypeForwarderOnlyAssemblies ("false")]
 
 	[SetupLinkerArgument ("--skip-unresolved", "true")]
 

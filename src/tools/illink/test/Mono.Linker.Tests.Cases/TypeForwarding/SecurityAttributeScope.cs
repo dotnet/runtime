@@ -15,7 +15,6 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 	[SetupLinkerArgument ("--skip-unresolved", "true")]
 	[SetupLinkerArgument ("--strip-security", "false")]
 	[Define ("IL_ASSEMBLY_AVAILABLE")]
-	[KeepTypeForwarderOnlyAssemblies ("false")]
 	[SetupLinkerAction ("copy", "Library")]
 	[SetupCompileBefore ("Forwarder.dll", new[] { "Dependencies/SecurityAttributeForwarderLibrary.cs" })]
 	[SetupCompileBefore ("Library.dll", new[] { "Dependencies/LibraryWithSecurityAttributes.il" }, new[] { "Forwarder.dll" })]

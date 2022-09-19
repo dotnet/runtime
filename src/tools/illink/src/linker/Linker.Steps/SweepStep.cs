@@ -43,7 +43,6 @@ namespace Mono.Linker.Steps
 	public class SweepStep : BaseStep
 	{
 		readonly bool sweepSymbols;
-		readonly HashSet<AssemblyDefinition> BypassNGenToSave = new HashSet<AssemblyDefinition> ();
 
 		public SweepStep (bool sweepSymbols = true)
 		{
@@ -52,9 +51,7 @@ namespace Mono.Linker.Steps
 
 		protected override void Process ()
 		{
-			// To keep facades, scan all references so that even unused facades are kept
-			var assemblies = Context.KeepTypeForwarderOnlyAssemblies ?
-				Context.GetReferencedAssemblies ().ToArray () : Annotations.GetAssemblies ().ToArray ();
+			var assemblies = Annotations.GetAssemblies ().ToArray ();
 
 			// Ensure that any assemblies which need to be removed are marked for deletion,
 			// including assemblies which are not referenced by any others.
@@ -82,13 +79,10 @@ namespace Mono.Linker.Steps
 			foreach (var assembly in assemblies)
 				ProcessAssemblyAction (assembly);
 
-			if (Context.KeepTypeForwarderOnlyAssemblies)
-				return;
-
 			// Ensure that we remove any assemblies which were resolved while sweeping references
 			foreach (var assembly in Annotations.GetAssemblies ().ToArray ()) {
 				if (!assemblies.Any (processedAssembly => processedAssembly == assembly)) {
-					Debug.Assert (!IsUsedAssembly (assembly));
+					Debug.Assert (!IsMarkedAssembly (assembly));
 					Annotations.SetAction (assembly, AssemblyAction.Delete);
 				}
 			}
@@ -102,7 +96,7 @@ namespace Mono.Linker.Steps
 			case AssemblyAction.AddBypassNGenUsed:
 			case AssemblyAction.CopyUsed:
 			case AssemblyAction.Link:
-				if (!IsUsedAssembly (assembly))
+				if (!IsMarkedAssembly (assembly))
 					RemoveAssembly (assembly);
 
 				break;
@@ -160,7 +154,6 @@ namespace Mono.Linker.Steps
 						goto case AssemblyAction.AddBypassNGen;
 
 					case AssemblyAction.AddBypassNGen:
-						BypassNGenToSave.Add (assembly);
 						continue;
 					}
 				}
@@ -177,18 +170,9 @@ namespace Mono.Linker.Steps
 				Annotations.SetAction (assembly, AssemblyAction.AddBypassNGen);
 				goto case AssemblyAction.AddBypassNGen;
 
-			case AssemblyAction.AddBypassNGen:
-				// FIXME: AddBypassNGen is just wrong, it should not be action as we need to
-				// turn it to Action.Save here to e.g. correctly update debug symbols
-				if (!Context.KeepTypeForwarderOnlyAssemblies || BypassNGenToSave.Contains (assembly)) {
-					goto case AssemblyAction.Save;
-				}
-
-				break;
-
 			case AssemblyAction.CopyUsed:
 				AssemblyAction assemblyAction = AssemblyAction.Copy;
-				if (!Context.KeepTypeForwarderOnlyAssemblies && SweepTypeForwarders (assembly)) {
+				if (SweepTypeForwarders (assembly)) {
 					// Need to sweep references, in case sweeping type forwarders removed any
 					AssemblyReferencesCorrector.SweepAssemblyReferences (assembly);
 					assemblyAction = AssemblyAction.Save;
@@ -204,8 +188,11 @@ namespace Mono.Linker.Steps
 				SweepAssembly (assembly);
 				break;
 
+			case AssemblyAction.AddBypassNGen:
+			// FIXME: AddBypassNGen is just wrong, it should not be action as we need to
+			// turn it to Action.Save here to e.g. correctly update debug symbols
 			case AssemblyAction.Save:
-				if (!Context.KeepTypeForwarderOnlyAssemblies && SweepTypeForwarders (assembly)) {
+				if (SweepTypeForwarders (assembly)) {
 					// Need to sweep references, in case sweeping type forwarders removed any
 					AssemblyReferencesCorrector.SweepAssemblyReferences (assembly);
 				}
@@ -256,17 +243,6 @@ namespace Mono.Linker.Steps
 
 			if (SweepTypeForwarders (assembly) || updateScopes)
 				AssemblyReferencesCorrector.SweepAssemblyReferences (assembly);
-		}
-
-		bool IsUsedAssembly (AssemblyDefinition assembly)
-		{
-			if (IsMarkedAssembly (assembly))
-				return true;
-
-			if (assembly.MainModule.HasExportedTypes && Context.KeepTypeForwarderOnlyAssemblies)
-				return true;
-
-			return false;
 		}
 
 		bool IsMarkedAssembly (AssemblyDefinition assembly)

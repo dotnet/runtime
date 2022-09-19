@@ -5,7 +5,6 @@ using Mono.Linker.Tests.Cases.LinkXml.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.LinkXml
 {
-	[KeepTypeForwarderOnlyAssemblies ("false")]
 	[SetupCompileBefore ("Library.dll", new[] { "Dependencies/CanPreserveAnExportedType_Library.cs" })]
 	// Add another assembly in that uses the forwarder just to make things a little more complex
 	[SetupCompileBefore ("Forwarder.dll", new[] { "Dependencies/CanPreserveAnExportedType_Forwarder.cs" }, references: new[] { "Library.dll" })]

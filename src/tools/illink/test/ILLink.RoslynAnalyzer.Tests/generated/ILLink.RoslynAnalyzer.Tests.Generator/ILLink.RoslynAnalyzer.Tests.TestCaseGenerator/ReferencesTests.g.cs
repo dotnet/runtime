@@ -16,12 +16,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
-		public Task AssemblyOnlyUsedByUsingWithCscWithKeepFacades ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
 		public Task AssemblyReferenceIsRemovedWhenUnused ()
 		{
 			return RunTest (allowMissingWarnings: true);

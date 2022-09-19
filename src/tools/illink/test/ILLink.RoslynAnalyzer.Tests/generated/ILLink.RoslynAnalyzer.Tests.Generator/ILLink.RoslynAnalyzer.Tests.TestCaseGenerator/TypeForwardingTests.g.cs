@@ -28,7 +28,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
-		public Task TypeForwarderOnlyAssembliesKept ()
+		public Task TypeForwarderOnlyAssembliesRemoved ()
 		{
 			return RunTest (allowMissingWarnings: true);
 		}

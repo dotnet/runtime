@@ -5,7 +5,6 @@ using Mono.Linker.Tests.Cases.TypeForwarding.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.TypeForwarding
 {
-	[KeepTypeForwarderOnlyAssemblies ("false")]
 	[SetupCompileBefore ("Forwarder.dll", new[] { "Dependencies/ReferenceImplementationLibrary.cs" }, defines: new[] { "INCLUDE_REFERENCE_IMPL" })]
 	// Add another assembly in that uses the forwarder just to make things a little more complex
 	[SetupCompileBefore ("Library.dll", new[] { "Dependencies/LibraryUsingForwarder.cs" }, references: new[] { "Forwarder.dll" })]

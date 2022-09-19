@@ -99,12 +99,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			Append (value);
 		}
 
-		public virtual void AddKeepTypeForwarderOnlyAssemblies (string value)
-		{
-			if (bool.Parse (value))
-				Append ("-t");
-		}
-
 		public virtual void AddLinkSymbols (string value)
 		{
 			Append ("-b");
@@ -220,9 +214,6 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			if (!string.IsNullOrEmpty (options.Il8n))
 				AddIl8n (options.Il8n);
 #endif
-
-			if (!string.IsNullOrEmpty (options.KeepTypeForwarderOnlyAssemblies))
-				AddKeepTypeForwarderOnlyAssemblies (options.KeepTypeForwarderOnlyAssemblies);
 
 			if (!string.IsNullOrEmpty (options.LinkSymbols))
 				AddLinkSymbols (options.LinkSymbols);

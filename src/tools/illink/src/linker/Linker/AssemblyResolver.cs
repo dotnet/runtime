@@ -155,8 +155,7 @@ namespace Mono.Linker
 
 				return result;
 			} finally {
-				if (viewStream != null)
-					viewStream.Dispose ();
+				viewStream?.Dispose ();
 			}
 		}
 
@@ -222,11 +221,9 @@ namespace Mono.Linker
 			}
 
 			AssemblyCache.Clear ();
-			if (_unresolvedAssemblies != null)
-				_unresolvedAssemblies.Clear ();
+			_unresolvedAssemblies?.Clear ();
 
-			if (_reportedUnresolvedAssemblies != null)
-				_reportedUnresolvedAssemblies.Clear ();
+			_reportedUnresolvedAssemblies?.Clear ();
 
 			foreach (var viewStream in _viewStreams) {
 				viewStream.Dispose ();

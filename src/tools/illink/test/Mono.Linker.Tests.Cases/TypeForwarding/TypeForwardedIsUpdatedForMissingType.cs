@@ -5,7 +5,6 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.TypeForwarding
 {
 	[SkipUnresolved (true)]
-	[KeepTypeForwarderOnlyAssemblies ("false")]
 	[SetupCompileBefore ("Lib.dll", new[] { "Dependencies/TypeForwardedIsUpdatedForMissingTypeLib.cs" })]
 	[SetupCompileBefore ("AnotherLibrary.dll", new[] { "Dependencies/TypeForwardedIsUpdatedForMissingTypeLib2.cs" })]
 

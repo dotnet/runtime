@@ -7,10 +7,8 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
 	// Actions:
 	// link - This assembly, Implementation.dll
 	// copy - Forwarder.dll
-	// --keep-facades
 	[SetupLinkerDefaultAction ("link")]
 	[SetupLinkerAction ("copy", "Forwarder")]
-	[KeepTypeForwarderOnlyAssemblies ("true")]
 
 	[SetupCompileBefore ("Forwarder.dll", new[] { "Dependencies/ReferenceImplementationLibrary_3.cs" }, defines: new[] { "INCLUDE_REFERENCE_IMPL" })]
 
