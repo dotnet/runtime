@@ -3147,7 +3147,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
     {
         GenTree** parentArgx = &arg.EarlyNodeRef();
 
-        // Morph the arg node, and update the parent and argEntry pointers.
+        // Morph the arg node and update the node pointer.
         GenTree* argx = *parentArgx;
         if (argx == nullptr)
         {
