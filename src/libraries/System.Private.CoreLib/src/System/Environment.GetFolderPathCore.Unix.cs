@@ -9,6 +9,9 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+#if TARGET_OSX
+using NSSearchPathDirectory = Interop.Sys.NSSearchPathDirectory;
+#endif
 
 namespace System
 {
@@ -17,7 +20,7 @@ namespace System
         private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption option)
         {
             // Get the path for the SpecialFolder
-            string path = GetFolderPathCoreWithoutValidation(folder);
+            string? path = GetFolderPathCoreWithoutValidation(folder);
             Debug.Assert(path != null);
 
             // If we didn't get one, or if we got one but we're not supposed to verify it,
@@ -43,7 +46,7 @@ namespace System
             return path;
         }
 
-        private static string GetFolderPathCoreWithoutValidation(SpecialFolder folder)
+        private static string? GetFolderPathCoreWithoutValidation(SpecialFolder folder)
         {
             // First handle any paths that involve only static paths, avoiding the overheads of getting user-local paths.
             // https://www.freedesktop.org/software/systemd/man/file-hierarchy.html
@@ -86,30 +89,36 @@ namespace System
             {
                 case SpecialFolder.UserProfile:
                     return home;
-                case SpecialFolder.Desktop:
-                case SpecialFolder.DesktopDirectory:
-                    return ReadXdgDirectory(home, "XDG_DESKTOP_DIR", "Desktop");
+
                 case SpecialFolder.Templates:
                     return ReadXdgDirectory(home, "XDG_TEMPLATES_DIR", "Templates");
+                // TODO: Consider merging the OSX path with the rest of the Apple systems here:
+                // https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/Environment.iOS.cs
 #if TARGET_OSX
+                case SpecialFolder.Desktop:
+                case SpecialFolder.DesktopDirectory:
+                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSDesktopDirectory);
                 case SpecialFolder.ApplicationData:
                 case SpecialFolder.LocalApplicationData:
-                    return Path.Combine(home, "Library", "Application Support");
+                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSApplicationSupportDirectory);
                 case SpecialFolder.MyDocuments: // same value as Personal
-                    return Path.Combine(home, "Documents");
+                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSDocumentDirectory);
                 case SpecialFolder.MyMusic:
-                    return Path.Combine(home, "Music");
+                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSMusicDirectory);
                 case SpecialFolder.MyVideos:
-                    return Path.Combine(home, "Movies");
+                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSMoviesDirectory);
                 case SpecialFolder.MyPictures:
-                    return Path.Combine(home, "Pictures");
+                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSPicturesDirectory);
                 case SpecialFolder.Fonts:
                     return Path.Combine(home, "Library", "Fonts");
                 case SpecialFolder.Favorites:
                     return Path.Combine(home, "Library", "Favorites");
                 case SpecialFolder.InternetCache:
-                    return Path.Combine(home, "Library", "Caches");
+                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSCachesDirectory);
 #else
+                case SpecialFolder.Desktop:
+                case SpecialFolder.DesktopDirectory:
+                    return ReadXdgDirectory(home, "XDG_DESKTOP_DIR", "Desktop");
                 case SpecialFolder.ApplicationData:
                     return GetXdgConfig(home);
                 case SpecialFolder.LocalApplicationData:
