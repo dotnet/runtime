@@ -1390,7 +1390,7 @@ namespace System.Text.Json
 
             output[BytesPending++] = JsonConstants.Quote;
 
-            JsonWriterHelper.TryGetUtf8FromText(escapedPropertyName, output.Slice(BytesPending), out written);
+            JsonWriterHelper.TryGetUtf8FromText(escapedValue, output.Slice(BytesPending), out written);
             BytesPending += written;
 
             output[BytesPending++] = JsonConstants.Quote;
