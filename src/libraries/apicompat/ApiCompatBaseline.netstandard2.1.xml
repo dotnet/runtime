@@ -7244,6 +7244,12 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:System.Net.Http.Headers.CacheControlHeaderValue.TryParse(System.String,System.Net.Http.Headers.CacheControlHeaderValue@)$1:[T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute]</Target>
+    <Left>netstandard2.1/netstandard.dll</Left>
+    <Right>net7.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
     <Target>M:System.Net.Http.Headers.ContentDispositionHeaderValue.Equals(System.Object)$0:[T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute]</Target>
     <Left>netstandard2.1/netstandard.dll</Left>
     <Right>net7.0/netstandard.dll</Right>

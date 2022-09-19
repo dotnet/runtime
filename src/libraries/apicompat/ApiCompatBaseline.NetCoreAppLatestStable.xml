@@ -4334,6 +4334,12 @@
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:System.Net.Http.Headers.CacheControlHeaderValue.TryParse(System.String,System.Net.Http.Headers.CacheControlHeaderValue@)$1:[T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute]</Target>
+    <Left>net6.0/netstandard.dll</Left>
+    <Right>net7.0/netstandard.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
     <Target>M:System.Net.Http.HttpClient.DeleteAsync(System.String,System.Threading.CancellationToken)$0:[T:System.Diagnostics.CodeAnalysis.StringSyntaxAttribute]</Target>
     <Left>net6.0/netstandard.dll</Left>
     <Right>net7.0/netstandard.dll</Right>
@@ -10889,6 +10895,12 @@
     <Target>P:System.Net.NetworkInformation.NetworkInterface.LoopbackInterfaceIndex:[T:System.Runtime.Versioning.UnsupportedOSPlatformAttribute]</Target>
     <Left>net6.0/System.Net.dll</Left>
     <Right>net7.0/System.Net.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0016</DiagnosticId>
+    <Target>M:System.Net.Http.Headers.CacheControlHeaderValue.TryParse(System.String,System.Net.Http.Headers.CacheControlHeaderValue@)$1:[T:System.Diagnostics.CodeAnalysis.NotNullWhenAttribute]</Target>
+    <Left>net6.0/System.Net.Http.dll</Left>
+    <Right>net7.0/System.Net.Http.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0016</DiagnosticId>
