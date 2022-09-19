@@ -2527,7 +2527,9 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
     {
         // In the future, we might consider enabling this for floating-point "unsafe" math.
         assert(varTypeIsIntegral(tree));
-        assert(!(tree->gtFlags & GTF_SET_FLAGS));
+
+        // These operations cannot set flags
+        assert((tree->gtFlags & GTF_SET_FLAGS) == 0);
 
         GenTree* a = op1;
         GenTree* b = op2->gtGetOp1();
@@ -2557,6 +2559,28 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
         }
 
         emit->emitIns_R_R_R_R(ins, emitActualTypeSize(tree), targetReg, b->GetRegNum(), c->GetRegNum(), a->GetRegNum());
+        genProduceReg(tree);
+        return;
+    }
+    else if (op2->OperIs(GT_LSH, GT_RSH, GT_RSZ) && op2->isContained())
+    {
+        assert(varTypeIsIntegral(tree));
+
+        // A subset of operations can still set flags
+        assert(((tree->gtFlags & GTF_SET_FLAGS) == 0) || tree->OperIs(GT_ADD, GT_SUB, GT_AND));
+
+        GenTree* a = op1;
+        GenTree* b = op2->gtGetOp1();
+        GenTree* c = op2->gtGetOp2();
+
+        // The shift amount needs to be contained as well
+        assert(c->isContained() && c->IsCnsIntOrI());
+
+        instruction ins = genGetInsForOper(tree->OperGet(), targetType);
+
+        emit->emitIns_R_R_R_I(ins, emitActualTypeSize(tree), targetReg, a->GetRegNum(), b->GetRegNum(),
+                              c->AsIntConCommon()->IconValue());
+
         genProduceReg(tree);
         return;
     }

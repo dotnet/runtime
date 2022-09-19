@@ -226,6 +226,55 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
         return false;
     }
 
+    if (childNode->OperIs(GT_LSH, GT_RSH, GT_RSZ))
+    {
+        // Find "a op (b shift cns)"
+
+        if (childNode->gtGetOp1()->isContained())
+        {
+            // Cannot contain if the childs op1 is already contained
+            return false;
+        }
+
+        GenTree* shiftAmountNode = childNode->gtGetOp2();
+
+        if (!shiftAmountNode->IsCnsIntOrI())
+        {
+            // Cannot contain if the childs op2 is not a constant
+            return false;
+        }
+
+        target_ssize_t shiftAmount = (target_ssize_t)shiftAmountNode->AsIntCon()->gtIconVal;
+
+        if ((shiftAmount < 0x00) || (shiftAmount > 0x3F))
+        {
+            // Cannot contain if the shift amount is negative or greater than 63
+            return false;
+        }
+
+        if (parentNode->OperIs(GT_ADD, GT_SUB, GT_AND))
+        {
+            // These operations can still report flags
+            MakeSrcContained(childNode, shiftAmountNode);
+            return true;
+        }
+
+        if ((parentNode->gtFlags & GTF_SET_FLAGS) != 0)
+        {
+            // Cannot contain if the parent operation needs to set flags
+            return false;
+        }
+
+        if (parentNode->OperIs(GT_CMP, GT_AND, GT_OR, GT_XOR))
+        {
+            MakeSrcContained(childNode, shiftAmountNode);
+            return true;
+        }
+
+        // TODO: Handle CMN, NEG/NEGS, BIC/BICS, EON, MVN, ORN, TST
+        return false;
+    }
+
     return false;
 }
 #endif // TARGET_ARM64
