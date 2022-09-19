@@ -574,11 +574,6 @@ emit_sum_vector (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, 
 	if (size != 16) 		// Works only with Vector128
 		return NULL;
 
-	// Check if necessary SIMD intrinsics are supported on the current machine
-	MonoCPUFeatures feature = type_enum_is_float (element_type) ? MONO_CPU_X86_SSE3 : MONO_CPU_X86_SSSE3;
-	if (!is_SIMD_feature_supported (cfg, feature))
-		return NULL;	
-
 	int instc0 = -1;
 	switch (element_type) {
 	case MONO_TYPE_R4:
@@ -617,6 +612,11 @@ emit_sum_vector (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, 
 		return NULL;
 	}
 	}	
+	
+	// Check if necessary SIMD intrinsics are supported on the current machine
+	MonoCPUFeatures feature = type_enum_is_float (element_type) ? MONO_CPU_X86_SSE3 : MONO_CPU_X86_SSSE3;
+	if (!is_SIMD_feature_supported (cfg, feature))
+		return NULL;	
 
 	MonoType *etype = mono_class_get_context (arg_class)->class_inst->type_argv [0];
 	int elem_size = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
