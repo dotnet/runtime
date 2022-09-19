@@ -1345,7 +1345,26 @@ FORCEINLINE OBJECTREF MethodTable::GetPinnedManagedClassObjectIfExists()
 FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists()
 {
     LIMITED_METHOD_CONTRACT;
-    return GetRuntimeTypeObjectFromHandle(GetLoaderAllocator(), GetWriteableData_NoLogging()->GetExposedClassObjectHandle());
+
+    // GetRuntimeTypeObjectFromHandle was inlined here to produce better code in MSVC
+    // since this method is hot. 
+
+    const RUNTIMETYPEHANDLE handle = GetWriteableData_NoLogging()->m_hExposedClassObject;
+
+    // First, check if we have a cached reference to an effectively pinned (allocated on FOH) object
+    if (handle != NULL && (handle & 1) == 0)
+    {
+        return (OBJECTREF)handle;
+    }
+
+    OBJECTREF retVal;
+    if (!GetLoaderAllocator()->GetHandleValueFastPhase2(handle, &retVal))
+    {
+        return NULL;
+    }
+
+    COMPILER_ASSUME(retVal != NULL);
+    return retVal;
 }
 
 //==========================================================================================
