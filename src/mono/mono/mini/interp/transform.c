@@ -8179,12 +8179,6 @@ interp_fold_unop (TransformData *td, LocalValue *local_defs, InterpInst *ins)
 		INTERP_FOLD_UNOP (MINT_NOT_I8, LOCAL_VALUE_I8, l, ~);
 		INTERP_FOLD_UNOP (MINT_CEQ0_I4, LOCAL_VALUE_I4, i, 0 ==);
 
-		// MOV's are just a copy, if the contents of sreg are known
-		INTERP_FOLD_CONV (MINT_MOV_I1, LOCAL_VALUE_I4, i, LOCAL_VALUE_I4, i, gint32);
-		INTERP_FOLD_CONV (MINT_MOV_U1, LOCAL_VALUE_I4, i, LOCAL_VALUE_I4, i, gint32);
-		INTERP_FOLD_CONV (MINT_MOV_I2, LOCAL_VALUE_I4, i, LOCAL_VALUE_I4, i, gint32);
-		INTERP_FOLD_CONV (MINT_MOV_U2, LOCAL_VALUE_I4, i, LOCAL_VALUE_I4, i, gint32);
-
 		INTERP_FOLD_CONV (MINT_CONV_I1_I4, LOCAL_VALUE_I4, i, LOCAL_VALUE_I4, i, gint8);
 		INTERP_FOLD_CONV (MINT_CONV_I1_I8, LOCAL_VALUE_I4, i, LOCAL_VALUE_I8, l, gint8);
 		INTERP_FOLD_CONV (MINT_CONV_U1_I4, LOCAL_VALUE_I4, i, LOCAL_VALUE_I4, i, guint8);
@@ -8597,6 +8591,13 @@ retry:
 				local_defs [dreg].def_index = ins_index;
 			}
 
+			// We always store to the full i4, except as part of STIND opcodes. These opcodes can be
+			// applied to a local var only if that var has LDLOCA applied to it
+			if ((opcode >= MINT_MOV_I1 && opcode <= MINT_MOV_U2) && !td->locals [sregs [0]].indirects) {
+				ins->opcode = MINT_MOV_4;
+				opcode = MINT_MOV_4;
+			}
+
 			if (opcode == MINT_MOV_4 || opcode == MINT_MOV_8 || opcode == MINT_MOV_VT) {
 				int sreg = sregs [0];
 				if (dreg == sreg) {
@@ -8684,7 +8685,7 @@ retry:
 				local_defs [dreg].type = LOCAL_VALUE_I4;
 				local_defs [dreg].i = (gint32)td->data_items [ins->data [0]];
 #endif
-			} else if (MINT_IS_UNOP (opcode) || (opcode >= MINT_MOV_I1 && opcode <= MINT_MOV_U2)) {
+			} else if (MINT_IS_UNOP (opcode)) {
 				ins = interp_fold_unop (td, local_defs, ins);
 			} else if (MINT_IS_UNOP_CONDITIONAL_BRANCH (opcode)) {
 				ins = interp_fold_unop_cond_br (td, bb, local_defs, ins);
