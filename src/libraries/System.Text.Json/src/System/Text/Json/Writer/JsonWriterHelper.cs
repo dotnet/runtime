@@ -229,5 +229,35 @@ namespace System.Text.Json
                     nameof(utf8FormattedNumber));
             }
         }
+
+        public static readonly UTF8Encoding s_utf8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+
+        internal static unsafe bool TryGetUtf8FromText(ReadOnlySpan<char> text, Span<byte> dest, out int written)
+        {
+            written = 0;
+
+            try
+            {
+#if NETCOREAPP
+                written = s_utf8Encoding.GetBytes(text, dest);
+                return true;
+#else
+                if (text.IsEmpty)
+                {
+                    return true;
+                }
+
+                fixed (char* charPtr = text)
+                fixed (byte* destPtr = dest)
+                {
+                    written = s_utf8Encoding.GetBytes(charPtr, text.Length, destPtr, dest.Length);
+                    return true;
+                }
+ #endif
+            }
+            catch (EncoderFallbackException) { }
+
+            return false;
+         }
     }
 }

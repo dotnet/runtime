@@ -322,8 +322,8 @@ namespace System.Text.Json
                 stackalloc byte[JsonConstants.StackallocByteThreshold] :
                 (otherUtf8TextArray = ArrayPool<byte>.Shared.Rent(length));
 
-            int written = Encoding.UTF8.GetBytes(otherText, otherUtf8Text);
-            bool result = TextEquals(index, otherUtf8Text.Slice(0, written), isPropertyName, shouldUnescape: true);
+            bool result = JsonWriterHelper.TryGetUtf8FromText(otherText, otherUtf8Text, out int written) &&
+                TextEquals(index, otherUtf8Text.Slice(0, written), isPropertyName, shouldUnescape: true);
 
             if (otherUtf8TextArray != null)
             {

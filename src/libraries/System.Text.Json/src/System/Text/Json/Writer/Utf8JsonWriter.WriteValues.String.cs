@@ -134,7 +134,8 @@ namespace System.Text.Json
             }
             output[BytesPending++] = JsonConstants.Quote;
 
-            BytesPending += Encoding.UTF8.GetBytes(escapedValue, output.Slice(BytesPending));
+            JsonWriterHelper.TryGetUtf8FromText(escapedValue, output.Slice(BytesPending), out int written);
+            BytesPending += written;
 
             output[BytesPending++] = JsonConstants.Quote;
         }
@@ -175,7 +176,8 @@ namespace System.Text.Json
 
             output[BytesPending++] = JsonConstants.Quote;
 
-            BytesPending += Encoding.UTF8.GetBytes(escapedValue, output.Slice(BytesPending));
+            JsonWriterHelper.TryGetUtf8FromText(escapedValue, output.Slice(BytesPending), out int written);
+            BytesPending += written;
 
             output[BytesPending++] = JsonConstants.Quote;
         }

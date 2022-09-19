@@ -86,7 +86,8 @@ namespace System.Text.Json
             output[BytesPending++] = JsonConstants.Slash;
             output[BytesPending++] = JsonConstants.Asterisk;
 
-            BytesPending += Encoding.UTF8.GetBytes(value, output.Slice(BytesPending));
+            JsonWriterHelper.TryGetUtf8FromText(value, output.Slice(BytesPending), out int written);
+            BytesPending += written;
 
             output[BytesPending++] = JsonConstants.Asterisk;
             output[BytesPending++] = JsonConstants.Slash;
@@ -121,7 +122,8 @@ namespace System.Text.Json
             output[BytesPending++] = JsonConstants.Slash;
             output[BytesPending++] = JsonConstants.Asterisk;
 
-            BytesPending += Encoding.UTF8.GetBytes(value, output.Slice(BytesPending));
+            JsonWriterHelper.TryGetUtf8FromText(value, output.Slice(BytesPending), out int written);
+            BytesPending += written;
 
             output[BytesPending++] = JsonConstants.Asterisk;
             output[BytesPending++] = JsonConstants.Slash;
