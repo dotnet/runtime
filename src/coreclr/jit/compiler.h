@@ -9254,8 +9254,6 @@ public:
         bool dspGCtbls;                // Display the GC tables
 #endif
 
-        bool compExpandCallsEarly; // True if we should expand virtual call targets early for this method
-
 // Default numbers used to perform loop alignment. All the numbers are chosen
 // based on experimenting with various benchmarks.
 
