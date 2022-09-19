@@ -468,7 +468,7 @@ namespace SuperFileCheck
             Console.Write(Environment.NewLine);
             Console.WriteLine("SUPER OPTIONS:");
             Console.Write(Environment.NewLine);
-            Console.WriteLine($"  --csharp                       - An {CommandLineInputFile} is required.");
+            Console.WriteLine($"  --csharp                       - A {CommandLineInputFile} is required.");
             Console.WriteLine($"                                   <check-file> must be a C# source file.");
             Console.WriteLine($"                                   Methods must not have duplicate names.");
             Console.WriteLine($"                                   Methods must be marked as not inlining.");
