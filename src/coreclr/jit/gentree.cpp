@@ -18665,7 +18665,6 @@ bool GenTree::isCommutativeHWIntrinsic() const
 {
     assert(gtOper == GT_HWINTRINSIC);
 
-#ifdef TARGET_XARCH
     const GenTreeHWIntrinsic* node = AsHWIntrinsic();
     NamedIntrinsic            id   = node->GetHWIntrinsicId();
 
@@ -18678,6 +18677,7 @@ bool GenTree::isCommutativeHWIntrinsic() const
     {
         switch (id)
         {
+#ifdef TARGET_XARCH
             case NI_SSE_Max:
             case NI_SSE_Min:
             {
@@ -18695,6 +18695,7 @@ bool GenTree::isCommutativeHWIntrinsic() const
             {
                 return false;
             }
+#endif // TARGET_XARCH
 
             default:
             {
@@ -18702,7 +18703,6 @@ bool GenTree::isCommutativeHWIntrinsic() const
             }
         }
     }
-#endif // TARGET_XARCH
 
     return false;
 }
