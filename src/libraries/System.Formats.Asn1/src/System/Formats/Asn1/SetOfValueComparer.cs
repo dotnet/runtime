@@ -18,13 +18,9 @@ namespace System.Formats.Asn1
             int diff;
 
 #if NET7_0_OR_GREATER
-            int diffIndex = x.Slice(0, min).CommonPrefixLength(y.Slice(0, min));
+            int diffIndex = x.CommonPrefixLength(y);
 
-            if (diffIndex == min)
-            {
-                diff = 0;
-            }
-            else
+            if (diffIndex != min)
             {
                 return (int)x[diffIndex] - y[diffIndex];
             }
