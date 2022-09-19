@@ -59,6 +59,11 @@ if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVO
     set(NATIVE_SOURCES ${NATIVE_SOURCES}
         pal_log.m
         pal_searchpath.m)
+elseif (CLR_CMAKE_TARGET_OSX)
+    list (APPEND NATIVE_SOURCES
+        pal_searchpath.m
+        pal_console.c
+        pal_log.c)
 else ()
     list (APPEND NATIVE_SOURCES
         pal_searchpath.c
