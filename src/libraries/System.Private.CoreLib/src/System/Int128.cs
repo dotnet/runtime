@@ -98,16 +98,30 @@ namespace System
             return Number.Int128ToDecStr(this);
         }
 
+        /// <param name="provider">An object that supplies culture-specific formatting information.</param>
+        /// <summary>Converts the numeric value of this instance to its equivalent string representation using the specified culture-specific format information.</summary>
+        /// <returns>The string representation of the value of this instance as specified by <paramref name="provider" />.</returns>
         public string ToString(IFormatProvider? provider)
         {
             return Number.FormatInt128(this, null, provider);
         }
 
+        /// <param name="format">The format to use.
+        ///  -or-
+        ///  A <see langword="null" /> reference (<see langword="Nothing" /> in Visual Basic) to use the default format defined for the type of the <see cref="T:System.IFormattable" /> implementation.</param>
+        /// <summary>Converts the numeric value of this instance to its equivalent string representation, using the specified format.</summary>
+        /// <returns>The string representation of the value of this instance as specified by <paramref name="format" />.</returns>
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
             return Number.FormatInt128(this, format, null);
         }
 
+        /// <param name="format">The format to use.
+        ///  -or-
+        ///  A <see langword="null" /> reference (<see langword="Nothing" /> in Visual Basic) to use the default format defined for the type of the <see cref="T:System.IFormattable" /> implementation.</param>
+        /// <param name="provider">An object that supplies culture-specific formatting information.</param>
+        /// <summary>Formats the value of the current instance using the specified format.</summary>
+        /// <returns>The value of the current instance in the specified format.</returns>
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
             return Number.FormatInt128(this, format, provider);
