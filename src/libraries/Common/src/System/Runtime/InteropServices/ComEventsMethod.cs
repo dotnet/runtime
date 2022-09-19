@@ -157,7 +157,7 @@ namespace System.Runtime.InteropServices
         {
             get
             {
-                var wrappers = _delegateWrappers;
+                List<DelegateWrapper> wrappers = _delegateWrappers;
                 return wrappers.Count == 0;
             }
         }
@@ -279,7 +279,7 @@ namespace System.Runtime.InteropServices
             Debug.Assert(!Empty);
             object? result = null;
 
-            var wrappers = _delegateWrappers;
+            List<DelegateWrapper> wrappers = _delegateWrappers;
             foreach (DelegateWrapper wrapper in wrappers)
             {
                 result = wrapper.Invoke(args);
