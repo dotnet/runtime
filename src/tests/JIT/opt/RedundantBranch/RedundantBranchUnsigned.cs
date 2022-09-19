@@ -33,9 +33,9 @@ public class RedundantBranchUnsigned
 
     public static int Main()
     {
-        C c = new C();
-        var m1 = c.M1("hello", 2);
-        var m2 = c.M2("hello", 3);
+        var rbu = new RedundantBranchUnsigned();
+        var m1 = rbu.M1("hello", 2);
+        var m2 = rbu.M2("hello", 3);
 
         return m1.Length + m2.Length + 95;
     }
