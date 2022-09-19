@@ -234,7 +234,7 @@ namespace System.Text.Json
             }
             output[BytesPending++] = JsonConstants.Quote;
 
-            TranscodeAndWrite(escapedPropertyName, output);
+            BytesPending += Encoding.UTF8.GetBytes(escapedPropertyName, output.Slice(BytesPending));
 
             output[BytesPending++] = JsonConstants.Quote;
             output[BytesPending++] = JsonConstants.KeyValueSeparator;
@@ -316,7 +316,7 @@ namespace System.Text.Json
 
             output[BytesPending++] = JsonConstants.Quote;
 
-            TranscodeAndWrite(escapedPropertyName, output);
+            BytesPending += Encoding.UTF8.GetBytes(escapedPropertyName, output.Slice(BytesPending));
 
             output[BytesPending++] = JsonConstants.Quote;
             output[BytesPending++] = JsonConstants.KeyValueSeparator;

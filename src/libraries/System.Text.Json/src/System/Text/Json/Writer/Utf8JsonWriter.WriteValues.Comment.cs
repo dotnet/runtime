@@ -86,10 +86,7 @@ namespace System.Text.Json
             output[BytesPending++] = JsonConstants.Slash;
             output[BytesPending++] = JsonConstants.Asterisk;
 
-            ReadOnlySpan<byte> byteSpan = MemoryMarshal.AsBytes(value);
-            OperationStatus status = JsonWriterHelper.ToUtf8(byteSpan, output.Slice(BytesPending), out int _, out int written);
-            Debug.Assert(status != OperationStatus.DestinationTooSmall);
-            BytesPending += written;
+            BytesPending += Encoding.UTF8.GetBytes(value, output.Slice(BytesPending));
 
             output[BytesPending++] = JsonConstants.Asterisk;
             output[BytesPending++] = JsonConstants.Slash;
@@ -124,10 +121,7 @@ namespace System.Text.Json
             output[BytesPending++] = JsonConstants.Slash;
             output[BytesPending++] = JsonConstants.Asterisk;
 
-            ReadOnlySpan<byte> byteSpan = MemoryMarshal.AsBytes(value);
-            OperationStatus status = JsonWriterHelper.ToUtf8(byteSpan, output.Slice(BytesPending), out int _, out int written);
-            Debug.Assert(status != OperationStatus.DestinationTooSmall);
-            BytesPending += written;
+            BytesPending += Encoding.UTF8.GetBytes(value, output.Slice(BytesPending));
 
             output[BytesPending++] = JsonConstants.Asterisk;
             output[BytesPending++] = JsonConstants.Slash;

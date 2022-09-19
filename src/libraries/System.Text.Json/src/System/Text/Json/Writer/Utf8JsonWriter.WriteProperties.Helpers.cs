@@ -151,7 +151,7 @@ namespace System.Text.Json
             }
             output[BytesPending++] = JsonConstants.Quote;
 
-            TranscodeAndWrite(escapedPropertyName, output);
+            BytesPending += Encoding.UTF8.GetBytes(escapedPropertyName, output.Slice(BytesPending));
 
             output[BytesPending++] = JsonConstants.Quote;
             output[BytesPending++] = JsonConstants.KeyValueSeparator;
@@ -193,23 +193,13 @@ namespace System.Text.Json
 
             output[BytesPending++] = JsonConstants.Quote;
 
-            TranscodeAndWrite(escapedPropertyName, output);
+            BytesPending += Encoding.UTF8.GetBytes(escapedPropertyName, output.Slice(BytesPending));
 
             output[BytesPending++] = JsonConstants.Quote;
 
             output[BytesPending++] = JsonConstants.KeyValueSeparator;
             output[BytesPending++] = JsonConstants.Space;
             output[BytesPending++] = token;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void TranscodeAndWrite(ReadOnlySpan<char> escapedPropertyName, Span<byte> output)
-        {
-            ReadOnlySpan<byte> byteSpan = MemoryMarshal.AsBytes(escapedPropertyName);
-            OperationStatus status = JsonWriterHelper.ToUtf8(byteSpan, output.Slice(BytesPending), out int consumed, out int written);
-            Debug.Assert(status == OperationStatus.Done);
-            Debug.Assert(consumed == byteSpan.Length);
-            BytesPending += written;
         }
     }
 }
