@@ -2169,7 +2169,8 @@ namespace System
                     return ComputeLastIndex(offset, equals);
                 }
 
-                // If any elements remain, process the first vector in the search space.
+                // Process the first vector in the search space.
+
                 equals = TNegator.NegateIfNeeded(Vector256.Equals(values, Vector256.LoadUnsafe(ref searchSpace)));
 
                 if (equals != Vector256<TValue>.Zero)
@@ -2197,7 +2198,7 @@ namespace System
                 }
 
 
-                // If any elements remain, process the first vector in the search space.
+                // Process the first vector in the search space.
 
                 equals = TNegator.NegateIfNeeded(Vector128.Equals(values, Vector128.LoadUnsafe(ref searchSpace)));
 
@@ -2306,7 +2307,7 @@ namespace System
                     return ComputeLastIndex(offset, equals);
                 }
 
-                // If any elements remain, process the first vector in the search space.
+                // Process the first vector in the search space.
 
                 current = Vector256.LoadUnsafe(ref searchSpace);
                 equals = TNegator.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1));
@@ -2335,7 +2336,7 @@ namespace System
                     return ComputeLastIndex(offset, equals);
                 }
 
-                // If any elements remain, process the first vector in the search space.
+                // Process the first vector in the search space.
 
                 current = Vector128.LoadUnsafe(ref searchSpace);
                 equals = TNegator.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1));
@@ -2445,7 +2446,7 @@ namespace System
                     return ComputeLastIndex(offset, equals);
                 }
 
-                // If any elements remain, process the first vector in the search space.
+                // Process the first vector in the search space.
 
                 current = Vector256.LoadUnsafe(ref searchSpace);
                 equals = TNegator.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1) | Vector256.Equals(current, values2));
@@ -2475,7 +2476,7 @@ namespace System
                     return ComputeLastIndex(offset, equals);
                 }
 
-                // If any elements remain, process the first vector in the search space.
+                // Process the first vector in the search space.
 
                 current = Vector128.LoadUnsafe(ref searchSpace);
                 equals = TNegator.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1) | Vector128.Equals(current, values2));
@@ -2557,7 +2558,7 @@ namespace System
                     return ComputeLastIndex(offset, equals);
                 }
 
-                // If any elements remain, process the first vector in the search space.
+                // Process the first vector in the search space.
 
                 current = Vector256.LoadUnsafe(ref searchSpace);
                 equals = TNegator.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1) | Vector256.Equals(current, values2) | Vector256.Equals(current, values3));
@@ -2587,7 +2588,7 @@ namespace System
                     return ComputeLastIndex(offset, equals);
                 }
 
-                // If any elements remain, process the first vector in the search space.
+                // Process the first vector in the search space.
 
                 current = Vector128.LoadUnsafe(ref searchSpace);
                 equals = TNegator.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1) | Vector128.Equals(current, values2) | Vector128.Equals(current, values3));
