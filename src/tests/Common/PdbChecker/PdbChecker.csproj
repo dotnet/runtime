@@ -12,28 +12,11 @@
     <Compile Include="*.cs" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(TargetOS)' == 'windows'">
-    <DiaSymReaderTargetArch>$(TargetArchitectureForSharedLibraries)</DiaSymReaderTargetArch>
-    <DiaSymReaderTargetArch Condition="'$(DiaSymReaderTargetArch)' == 'x64'">amd64</DiaSymReaderTargetArch>
-    <DiaSymReaderTargetArchFileName>Microsoft.DiaSymReader.Native.$(DiaSymReaderTargetArch).dll</DiaSymReaderTargetArchFileName>
-    <DiaSymReaderTargetArchPath Condition="'$(PkgMicrosoft_DiaSymReader_Native)' != ''">$(PkgMicrosoft_DiaSymReader_Native)\runtimes\win\native\$(DiaSymReaderTargetArchFileName)</DiaSymReaderTargetArchPath>
-    <!-- When publishing we won't have the NuGet packages, so use the copy from the build artifacts directory. -->
-    <DiaSymReaderTargetArchPath Condition="'$(PkgMicrosoft_DiaSymReader_Native)' == ''">$(CoreCLRArtifactsPath)crossgen2/$(DiaSymReaderTargetArchFileName)</DiaSymReaderTargetArchPath>
-  </PropertyGroup>
-
   <ItemGroup Condition="'$(TargetOS)' == 'windows'">
-    <PackageReference Include="Microsoft.DiaSymReader.Native"
-      Version="$(MicrosoftDiaSymReaderNativeVersion)"
-      IsImplicitlyDefined="true"
-      ExcludeAssets="all"
-      GeneratePathProperty="true"
-      />
-
-    <Content Include="$(DiaSymReaderTargetArchPath)"
-      CopyToOutputDirectory="PreserveNewest"
-      CopyToPublishDirectory="PreserveNewest"
-      Link="%(FileName)%(Extension)"
-      />
+    <PackageReference
+      Include="Microsoft.Diagnostics.Tracing.TraceEvent"
+      Version="$(TraceEventVersion)"
+    />
   </ItemGroup>
 
 </Project>
