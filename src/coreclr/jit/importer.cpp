@@ -12449,7 +12449,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                 if ((elementCls != NO_CLASS_HANDLE) && impIsClassExact(elementCls))
                 {
                     canExpandInline =
-                        (info.compCompHnd->getArrayRank(pResolvedToken->hClass) == 1) &&
+                        info.compCompHnd->isSDArray(pResolvedToken->hClass) &&
                         info.compCompHnd->compareTypesForCast(pResolvedToken->hClass, op1Cls) == TypeCompareState::Must;
                 }
             }
