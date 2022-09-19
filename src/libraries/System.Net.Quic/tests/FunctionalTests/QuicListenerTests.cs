@@ -28,7 +28,7 @@ namespace System.Net.Quic.Tests
             }).WaitAsync(TimeSpan.FromSeconds(6));
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsIPv6Available))]
         public async Task Listener_Backlog_Success_IPv6()
         {
             await Task.Run(async () =>

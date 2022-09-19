@@ -806,7 +806,7 @@ int LinearScan::BuildCast(GenTreeCast* cast)
     }
 #endif
 
-    int srcCount = BuildOperandUses(src);
+    int srcCount = BuildCastUses(cast, RBM_NONE);
     buildInternalRegisterUses();
     BuildDef(cast);
     return srcCount;

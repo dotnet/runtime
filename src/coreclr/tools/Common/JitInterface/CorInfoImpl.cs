@@ -770,26 +770,24 @@ namespace Internal.JitInterface
 
                 if (method.IsArrayAddressMethod())
                     hasHiddenParameter = true;
-
-                // We only populate sigInst for intrinsic methods because most of the time,
-                // JIT doesn't care what the instantiation is and this is expensive.
-                Instantiation owningTypeInst = method.OwningType.Instantiation;
-                sig->sigInst.classInstCount = (uint)owningTypeInst.Length;
-                if (owningTypeInst.Length != 0)
-                {
-                    sig->sigInst.classInst = GetJitInstantiation(owningTypeInst);
-                }
-
-                sig->sigInst.methInstCount = (uint)method.Instantiation.Length;
-                if (method.Instantiation.Length != 0)
-                {
-                    sig->sigInst.methInst = GetJitInstantiation(method.Instantiation);
-                }
             }
 
             if (hasHiddenParameter)
             {
                 sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_PARAMTYPE;
+            }
+
+            Instantiation owningTypeInst = method.OwningType.Instantiation;
+            sig->sigInst.classInstCount = (uint)owningTypeInst.Length;
+            if (owningTypeInst.Length != 0)
+            {
+                sig->sigInst.classInst = GetJitInstantiation(owningTypeInst);
+            }
+
+            sig->sigInst.methInstCount = (uint)method.Instantiation.Length;
+            if (method.Instantiation.Length != 0)
+            {
+                sig->sigInst.methInst = GetJitInstantiation(method.Instantiation);
             }
         }
 
@@ -817,7 +815,7 @@ namespace Internal.JitInterface
 
             sig->sigInst.classInst = null; // Not used by the JIT
             sig->sigInst.classInstCount = 0; // Not used by the JIT
-            sig->sigInst.methInst = null; // Not used by the JIT
+            sig->sigInst.methInst = null;
             sig->sigInst.methInstCount = (uint)signature.GenericParameterCount;
 
             sig->pSig = null;
@@ -3926,8 +3924,11 @@ namespace Internal.JitInterface
             else
             {
                 // By policy we code review all changes into corelib, such that failing to use an instruction
-                // set is not a reason to not support usage of it.
-                if (!isMethodDefinedInCoreLib())
+                // set is not a reason to not support usage of it. Except for functions which check if a given
+                // feature is supported or hardware accelerated.
+                if (!isMethodDefinedInCoreLib() ||
+                    MethodBeingCompiled.Name == "get_IsSupported" ||
+                    MethodBeingCompiled.Name == "get_IsHardwareAccelerated")
                 {
                     _actualInstructionSetUnsupported.AddInstructionSet(instructionSet);
                 }

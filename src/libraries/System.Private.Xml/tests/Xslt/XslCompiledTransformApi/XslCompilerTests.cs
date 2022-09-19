@@ -5,7 +5,7 @@ using System.IO;
 using System.Xml.Xsl;
 using Xunit;
 
-namespace System.Xml.Tests
+namespace System.Xml.XslCompiledTransformApiTests
 {
     public class XslCompilerTests
     {
