@@ -17735,7 +17735,7 @@ void Compiler::impMarkLclDstNotPromotable(unsigned tmpNum, GenTree* src, CORINFO
 }
 #endif // TARGET_ARM
 
-#if FEATURE_MULTIREG_RET
+#if FEATURE_MULTIREG_RET || defined(FEATURE_HW_INTRINSICS)
 //------------------------------------------------------------------------
 // impAssignMultiRegTypeToVar: ensure calls that return structs in multiple
 //    registers return values to suitable temps.
@@ -17757,7 +17757,7 @@ GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree*             op,
     // TODO-1stClassStructs: Handle constant propagation and CSE-ing of multireg returns.
     ret->gtFlags |= GTF_DONT_CSE;
 
-    assert(IsMultiRegReturnedType(hClass, callConv));
+    assert(IsMultiRegReturnedType(hClass, callConv) || op->IsMultiRegNode());
 
     // Mark the var so that fields are not promoted and stay together.
     lvaTable[tmpNum].lvIsMultiRegRet = true;

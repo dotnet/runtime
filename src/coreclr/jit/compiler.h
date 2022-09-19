@@ -1871,7 +1871,7 @@ public:
     DWORD expensiveDebugCheckLevel;
 #endif
 
-#if FEATURE_MULTIREG_RET
+#if FEATURE_MULTIREG_RET || defined(FEATURE_HW_INTRINSICS)
     GenTree* impAssignMultiRegTypeToVar(GenTree*             op,
                                         CORINFO_CLASS_HANDLE hClass DEBUGARG(CorInfoCallConvExtension callConv));
 #endif // FEATURE_MULTIREG_RET
@@ -2575,8 +2575,6 @@ public:
                                                    NamedIntrinsic hwIntrinsicID);
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(
         var_types type, GenTree* op1, GenTree* op2, GenTree* op3, NamedIntrinsic hwIntrinsicID);
-    GenTreeLclVar* gtNewLclvForMultiRegIntrinsicNode(GenTreeHWIntrinsic* intrinsicNode, CORINFO_SIG_INFO* sig);
-
     CORINFO_CLASS_HANDLE gtGetStructHandleForHWSIMD(var_types simdType, CorInfoType simdBaseJitType);
     CorInfoType getBaseJitTypeFromArgIfNeeded(NamedIntrinsic       intrinsic,
                                               CORINFO_CLASS_HANDLE clsHnd,
