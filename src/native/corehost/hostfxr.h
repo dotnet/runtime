@@ -320,4 +320,10 @@ struct hostfxr_dotnet_environment_info
     const struct hostfxr_dotnet_environment_framework_info* frameworks;
 };
 
+typedef int32_t(HOSTFXR_CALLTYPE* hostfxr_get_dotnet_environment_info_fn)(
+    const char_t* dotnet_root,
+    void* reserved,
+    hostfxr_get_dotnet_environment_info_result_fn result,
+    void* result_context);
+
 #endif //__HOSTFXR_H__
