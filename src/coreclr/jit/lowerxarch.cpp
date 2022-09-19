@@ -367,16 +367,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
             ContainBlockStoreAddress(blkNode, size, dstAddr);
         }
-        else if (src->OperIsHWIntrinsic())
-        {
-            assert(!blkNode->AsObj()->GetLayout()->HasGCPtr());
-            if (blkNode->OperIs(GT_STORE_OBJ))
-            {
-                blkNode->SetOper(GT_STORE_BLK);
-            }
-            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
-            ContainBlockStoreAddress(blkNode, size, dstAddr);
-        }
         else
         {
             assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
