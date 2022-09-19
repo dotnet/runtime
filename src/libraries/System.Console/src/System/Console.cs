@@ -401,7 +401,18 @@ namespace System
             get { return ConsolePal.WindowWidth; }
             [SupportedOSPlatform("windows")]
             [SupportedOSPlatform("linux")]
-            set { ConsolePal.WindowWidth = value; }
+            set
+            {
+                if (Console.IsOutputRedirected)
+                {
+                    throw new IOException(SR.InvalidOperation_SetWindowSize);
+                }
+                if (value <= 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.ArgumentOutOfRange_NeedPosNum);
+                }
+                ConsolePal.WindowWidth = value;
+            }
         }
 
         public static int WindowHeight
@@ -413,7 +424,18 @@ namespace System
             get { return ConsolePal.WindowHeight; }
             [SupportedOSPlatform("windows")]
             [SupportedOSPlatform("linux")]
-            set { ConsolePal.WindowHeight = value; }
+            set
+            {
+                if (Console.IsOutputRedirected)
+                {
+                    throw new IOException(SR.InvalidOperation_SetWindowSize);
+                }
+                if (value <= 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.ArgumentOutOfRange_NeedPosNum);
+                }
+                ConsolePal.WindowHeight = value;
+            }
         }
 
         [SupportedOSPlatform("windows")]
@@ -426,6 +448,18 @@ namespace System
         [SupportedOSPlatform("linux")]
         public static void SetWindowSize(int width, int height)
         {
+            if (Console.IsOutputRedirected)
+            {
+                throw new IOException(SR.InvalidOperation_SetWindowSize);
+            }
+            if (width <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(width), width, SR.ArgumentOutOfRange_NeedPosNum);
+            }
+            if (height <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(height), height, SR.ArgumentOutOfRange_NeedPosNum);
+            }
             ConsolePal.SetWindowSize(width, height);
         }
 

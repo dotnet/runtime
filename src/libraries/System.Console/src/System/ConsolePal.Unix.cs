@@ -398,13 +398,6 @@ namespace System
 
         public static void SetWindowSize(int width, int height)
         {
-            if (Console.IsOutputRedirected)
-                throw new IOException(SR.InvalidOperation_SetWindowSize);
-            if (width <= 0)
-                throw new ArgumentOutOfRangeException(nameof(width), width, SR.ArgumentOutOfRange_NeedPosNum);
-            if (height <= 0)
-                throw new ArgumentOutOfRangeException(nameof(height), height, SR.ArgumentOutOfRange_NeedPosNum);
-
            lock (Console.Out)
            {
                Interop.Sys.WinSize winsize = default;
@@ -418,7 +411,14 @@ namespace System
                else
                {
                    Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                   throw Interop.GetExceptionForIoErrno(errorInfo);
+                   if (errorInfo.Error == Interop.Error.ENOTSUP)
+                   {
+                       throw new PlatformNotSupportedException();
+                   }
+                   else
+                   {
+                       throw Interop.GetExceptionForIoErrno(errorInfo);
+                   }
                }
            }
         }

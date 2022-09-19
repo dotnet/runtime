@@ -70,6 +70,13 @@ public class WindowAndCursorProps
         Helpers.RunInRedirectedOutput((data) => Console.WriteLine(Console.WindowWidth));
     }
 
+    [Fact]
+    [PlatformSpecific(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS)]  // Expected behavior specific to Unix
+    public static void WindowWidth_SetUnix_ThrowsPlatformNotSupportedException()
+    {
+        Assert.Throws<PlatformNotSupportedException>(() => Console.WindowWidth = 100);
+    }
+
     [Theory]
     [PlatformSpecific((TestPlatforms.Windows) | (TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.MacCatalyst & ~TestPlatforms.tvOS))]
     [InlineData(0)]
@@ -101,6 +108,13 @@ public class WindowAndCursorProps
     {
         Helpers.RunInNonRedirectedOutput((data) => Assert.Equal(Console.WindowWidth, Console.LargestWindowWidth));
         Helpers.RunInRedirectedOutput((data) => Assert.Equal(Console.WindowWidth, Console.LargestWindowWidth));
+    }
+
+    [Fact]
+    [PlatformSpecific(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS)]  // Expected behavior specific to Unix
+    public static void WindowHeight_SetUnix_ThrowsPlatformNotSupportedException()
+    {
+        Assert.Throws<PlatformNotSupportedException>(() => Console.WindowHeight = 100);
     }
 
     [Fact]
@@ -570,6 +584,13 @@ public class WindowAndCursorProps
                 Console.WindowHeight = origHeight;
             }
         }
+    }
+
+    [Fact]
+    [PlatformSpecific(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS)]
+    public void SetWindowSize_Unix_ThrowsPlatformNotSupportedException()
+    {
+        Assert.Throws<PlatformNotSupportedException>(() => Console.SetWindowSize(50, 50));
     }
 
     [Fact]
