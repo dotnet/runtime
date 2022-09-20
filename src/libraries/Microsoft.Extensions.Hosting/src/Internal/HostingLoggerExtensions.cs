@@ -104,7 +104,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         public static void HostedServiceStartupFaulted(this ILogger logger, Exception? ex)
         {
-            if (logger.IsEnabled(LogLevel.Debug))
+            if (logger.IsEnabled(LogLevel.Error))
             {
                 logger.LogError(
                    eventId: LoggerEventIds.HostedServiceStartupFaulted,
