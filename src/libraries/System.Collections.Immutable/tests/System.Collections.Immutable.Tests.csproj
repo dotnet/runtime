@@ -75,8 +75,6 @@
              Link="Common\System\Collections\DebugView.Tests.cs" />
     <Compile Include="$(CommonTestPath)System\Collections\TestingTypes.cs"
              Link="Common\System\Collections\TestingTypes.cs" />
-    <Compile Include="$(CommonPath)System\SerializableAttribute.cs"
-             Link="Common\System\SerializableAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ClassDiagram1.cd" />

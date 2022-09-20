@@ -3394,6 +3394,12 @@ void ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
                 continue;
             }
 
+            if (thread->IsGCSpecial())
+            {
+                // GC threads can not be forced to run preemptively, so we will not try.
+                continue;
+            }
+
             // this is an interesting thread in cooperative mode, let's guide it to preemptive
 
             if (!Thread::UseContextBasedThreadRedirection())

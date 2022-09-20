@@ -35,11 +35,6 @@ variables:
 # TODO: (Consolidation) Switch away from old signing/validation variables from former Core-Setup. https://github.com/dotnet/runtime/issues/1027
 - name: TeamName
   value: dotnet-core-acquisition
-# Set the target blob feed for package publish during official and validation builds.
-- name: _DotNetArtifactsCategory
-  value: .NETCore
-- name: _DotNetValidationArtifactsCategory
-  value: .NETCoreValidation
 - name: PostBuildSign
   value: true
 
