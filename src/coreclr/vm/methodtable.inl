@@ -1335,18 +1335,11 @@ inline OBJECTHANDLE MethodTable::GetLoaderAllocatorObjectHandle()
 }
 
 //==========================================================================================
-FORCEINLINE OBJECTREF MethodTable::GetPinnedManagedClassObjectIfExists()
-{
-    LIMITED_METHOD_CONTRACT;
-    return GetRuntimeTypeObjectFromHandleFast(GetWriteableData_NoLogging()->GetExposedClassObjectHandle());
-}
-
-//==========================================================================================
 FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists()
 {
     LIMITED_METHOD_CONTRACT;
 
-    // GetRuntimeTypeObjectFromHandle was inlined here to produce better code in MSVC
+    // GetManagedClassObjectFromHandle was inlined here to produce better code in MSVC
     // since this method is hot. 
 
     const RUNTIMETYPEHANDLE handle = GetWriteableData_NoLogging()->m_hExposedClassObject;

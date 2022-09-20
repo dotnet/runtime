@@ -15,6 +15,7 @@
 #include "classloadlevel.h"
 #include "array.h"
 #include "castcache.h"
+#include "frozenobjectheap.h"
 
 #ifdef _DEBUG_IMPL
 
@@ -342,6 +343,93 @@ BOOL TypeHandle::IsCanonicalSubtype() const
 
     return (*this == TypeHandle(g_pCanonMethodTableClass)) || IsSharedByGenericInstantiations();
 }
+
+#ifndef DACCESS_COMPILE
+bool TypeHandle::IsManagedClassObjectPinned() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    // Function pointers are always mapped to typeof(IntPtr)
+    return !GetLoaderAllocator()->CanUnload() || IsFnPtrType();
+}
+
+void TypeHandle::AllocateManagedClassObject(LoaderAllocator* allocator, RUNTIMETYPEHANDLE* pDest, TypeHandle type)
+{
+    REFLECTCLASSBASEREF refClass = NULL;
+
+    if (!allocator->CanUnload())
+    {
+        CrstHolder exposedClassLock(AppDomain::GetMethodTableExposedClassObjectLock());
+
+        if (*pDest == NULL)
+        {
+            // Allocate RuntimeType on a frozen segment
+            // Take a lock here since we don't want to allocate redundant objects which won't be collected
+
+            FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
+            Object* obj = foh->TryAllocateObject(g_pRuntimeTypeClass, g_pRuntimeTypeClass->GetBaseSize());
+            _ASSERTE(obj != NULL);
+            _ASSERTE((((SSIZE_T)obj) & 1) == 0);
+            refClass = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(obj);
+            refClass->SetType(type);
+            *pDest = (RUNTIMETYPEHANDLE)obj;
+        }
+    }
+    else
+    {
+        GCPROTECT_BEGIN(refClass);
+        refClass = (REFLECTCLASSBASEREF)AllocateObject(g_pRuntimeTypeClass);
+        refClass->SetKeepAlive(allocator->GetExposedObject());
+        LOADERHANDLE exposedClassObjectHandle = allocator->AllocateHandle(refClass);
+        // Set the lowest bit, we use it GetPinnedManagedClassObjectIfExists as a fast detection of the unloadable context
+        exposedClassObjectHandle |= 1;
+        refClass->SetType(type);
+
+        // Let all threads fight over who wins using InterlockedCompareExchange.
+        // Only the winner can set m_ExposedClassObject from NULL.
+        if (InterlockedCompareExchangeT(pDest, exposedClassObjectHandle, static_cast<LOADERHANDLE>(NULL)))
+        {
+            // GC will collect unused instance
+            allocator->FreeHandle(exposedClassObjectHandle);
+        }
+        GCPROTECT_END();
+    }
+}
+
+OBJECTREF TypeHandle::GetManagedClassObjectFromHandleFast(RUNTIMETYPEHANDLE handle)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // For a non-unloadable context, handle is expected to be either null (is not cached yet)
+    // or be a direct pointer to a frozen RuntimeType object
+
+    if (handle != NULL && (handle & 1) == 0)
+    {
+        return (OBJECTREF)handle;
+    }
+    return NULL;
+}
+
+OBJECTREF TypeHandle::GetManagedClassObjectFromHandle(LoaderAllocator* allocator, RUNTIMETYPEHANDLE handle)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // First, check if we have a cached reference to an effectively pinned (allocated on FOH) object
+    if (handle != NULL && (handle & 1) == 0)
+    {
+        return (OBJECTREF)handle;
+    }
+
+    OBJECTREF retVal;
+    if (!allocator->GetHandleValueFastPhase2(handle, &retVal))
+    {
+        return NULL;
+    }
+
+    COMPILER_ASSUME(retVal != NULL);
+    return retVal;
+}
+#endif
 
 /* static */ BOOL TypeHandle::IsCanonicalSubtypeInstantiation(Instantiation inst)
 {

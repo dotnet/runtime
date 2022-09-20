@@ -323,6 +323,18 @@ public:
     //
     BOOL IsCanonicalSubtype() const;
 
+#ifndef DACCESS_COMPILE
+    bool IsManagedClassObjectPinned() const;
+
+    // Allocates a RuntimeType object with the given TypeHandle. If the LoaderAllocator
+    // represents a not-unloadable context, it allocates the object on a frozen segment
+    // so the direct reference will be stored to the pDest argument. In case of unloadable
+    // context, an index to the pinned table will be saved.
+    static void AllocateManagedClassObject(LoaderAllocator* allocator, RUNTIMETYPEHANDLE* pDest, TypeHandle type);
+    static OBJECTREF GetManagedClassObjectFromHandleFast(RUNTIMETYPEHANDLE handle);
+    static OBJECTREF GetManagedClassObjectFromHandle(LoaderAllocator* allocator, RUNTIMETYPEHANDLE handle);
+#endif
+
     // Similar to IsCanonicalSubtype, but applied to a vector.
     static BOOL IsCanonicalSubtypeInstantiation(Instantiation inst);
 

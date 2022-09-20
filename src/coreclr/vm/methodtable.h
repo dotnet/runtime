@@ -2715,12 +2715,6 @@ public:
     //  GetManagedClassObjectIfExists() will return null if the Type object doesn't exist.
     OBJECTREF GetManagedClassObject();
     OBJECTREF GetManagedClassObjectIfExists();
-    OBJECTREF GetPinnedManagedClassObjectIfExists();
-
-    // Shared static helpers to allocate/cache RuntimeType objects
-    static void AllocateRuntimeTypeObject(LoaderAllocator* allocator, RUNTIMETYPEHANDLE* pDest, TypeHandle type);
-    static OBJECTREF GetRuntimeTypeObjectFromHandleFast(RUNTIMETYPEHANDLE handle);
-    static OBJECTREF GetRuntimeTypeObjectFromHandle(LoaderAllocator* allocator, RUNTIMETYPEHANDLE handle);
 
     // ------------------------------------------------------------------
     // Private part of MethodTable

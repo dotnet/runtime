@@ -494,7 +494,7 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
 
     if (m_hExposedClassObject == NULL)
     {
-        MethodTable::AllocateRuntimeTypeObject(GetLoaderAllocator(), &m_hExposedClassObject, TypeHandle(this));
+        TypeHandle::AllocateManagedClassObject(GetLoaderAllocator(), &m_hExposedClassObject, TypeHandle(this));
     }
     return GetManagedClassObjectIfExists();
 }
@@ -1595,7 +1595,7 @@ OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
 
     if (m_hExposedClassObject == NULL)
     {
-        MethodTable::AllocateRuntimeTypeObject(GetLoaderAllocator(), &m_hExposedClassObject, TypeHandle(this));
+        TypeHandle::AllocateManagedClassObject(GetLoaderAllocator(), &m_hExposedClassObject, TypeHandle(this));
     }
     return GetManagedClassObjectIfExists();
 }

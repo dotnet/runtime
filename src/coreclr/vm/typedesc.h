@@ -240,6 +240,7 @@ public:
 
     INDEBUGIMPL(BOOL Verify();)
 
+#ifndef DACCESS_COMPILE
     OBJECTREF GetManagedClassObject();
 
     OBJECTREF GetManagedClassObjectIfExists()
@@ -251,14 +252,15 @@ public:
             MODE_COOPERATIVE;
         }
         CONTRACTL_END;
-        return MethodTable::GetRuntimeTypeObjectFromHandle(GetLoaderAllocator(), m_hExposedClassObject);
+        return TypeHandle::GetManagedClassObjectFromHandle(GetLoaderAllocator(), m_hExposedClassObject);
     }
 
     OBJECTREF GetManagedClassObjectFast()
     {
         LIMITED_METHOD_CONTRACT;
-        return MethodTable::GetRuntimeTypeObjectFromHandleFast(m_hExposedClassObject);
+        return TypeHandle::GetManagedClassObjectFromHandleFast(m_hExposedClassObject);
     }
+#endif
 
     TypeHandle GetModifiedType()
     {
@@ -358,6 +360,7 @@ public:
         return m_typeOrMethodDef;
     }
 
+#ifndef DACCESS_COMPILE
     OBJECTREF GetManagedClassObject();
     OBJECTREF GetManagedClassObjectIfExists()
     {
@@ -368,14 +371,15 @@ public:
             MODE_COOPERATIVE;
         }
         CONTRACTL_END;
-        return MethodTable::GetRuntimeTypeObjectFromHandle(GetLoaderAllocator(), m_hExposedClassObject);
+        return TypeHandle::GetManagedClassObjectFromHandle(GetLoaderAllocator(), m_hExposedClassObject);
     }
 
     OBJECTREF GetManagedClassObjectFast()
     {
         LIMITED_METHOD_CONTRACT;
-        return MethodTable::GetRuntimeTypeObjectFromHandleFast(m_hExposedClassObject);
+        return TypeHandle::GetManagedClassObjectFromHandleFast(m_hExposedClassObject);
     }
+#endif
 
     // Load the owning type. Note that the result is not guaranteed to be full loaded
     MethodDesc * LoadOwnerMethod();

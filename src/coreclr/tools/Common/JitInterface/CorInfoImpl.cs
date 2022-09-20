@@ -1834,13 +1834,15 @@ namespace Internal.JitInterface
         private int objectToString(void* handle, char* buffer, int size)
 #pragma warning restore CA1822 // Mark members as static
         {
-            Debug.Assert(size >= 0);
+            Debug.Assert(size > 0 && handle != null && buffer != null);
 
             // NOTE: this function is used for pinned/frozen handles
 
             ReadOnlySpan<char> str = HandleToObject((IntPtr)handle).ToString();
             int maxLength = Math.Min(size, str.Length);
             str.CopyTo(new Span<char>(buffer, maxLength));
+            // Null-terminate it (trim if needed)
+            buffer[maxLength == size ? maxLength - 1 : maxLength] = '\0';
             return maxLength;
         }
 

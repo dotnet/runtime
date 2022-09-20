@@ -728,6 +728,8 @@ int CEEInfo::objectToString (
 
     int result = -1;
 
+    _ASSERT(handle != nullptr && buffer != nullptr && bufferSize > 0);
+
     JIT_TO_EE_TRANSITION();
 
     Object* obj = (Object*)handle;
@@ -750,6 +752,8 @@ int CEEInfo::objectToString (
     {
         result = min(bufferSize, (int)stackStr.GetCount());
         memcpy((BYTE*)buffer, stackStr.GetUnicode(), result * 2);
+        // Null-terminate it (trim if needed)
+        buffer[result == bufferSize ? result - 1 : result] = 0;
     }
 
     EE_TO_JIT_TRANSITION();
@@ -5996,26 +6000,13 @@ void* CEEInfo::getRuntimeTypePointer(CORINFO_CLASS_HANDLE clsHnd)
 
     JIT_TO_EE_TRANSITION();
 
-    GCX_COOP();
-
     TypeHandle typeHnd(clsHnd);
-    if (!typeHnd.IsNull() && !typeHnd.IsTypeDesc())
+    if (!typeHnd.IsCanonicalSubtype() && typeHnd.IsManagedClassObjectPinned())
     {
-       MethodTable* pMT = typeHnd.AsMethodTable();
-       if (!typeHnd.IsCanonicalSubtype())
-       {
-           // Trigger allocation if it's not allocated yet
-           if (pMT->GetManagedClassObject() != NULL)
-           {
-               // Check if we can rely on object being effectively pinned
-               OBJECTREF objRef = pMT->GetPinnedManagedClassObjectIfExists();
-               if (objRef != NULL)
-               {
-                   pointer = (void*)OBJECTREFToObject(objRef);
-               }
-           }
-       }
+        GCX_COOP();
+        pointer = OBJECTREFToObject(typeHnd.GetManagedClassObject());
     }
+
     EE_TO_JIT_TRANSITION();
 
     return pointer;
