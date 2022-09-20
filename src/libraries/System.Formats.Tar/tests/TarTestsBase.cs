@@ -90,8 +90,8 @@ namespace System.Formats.Tar.Tests
         protected const string PaxEaDevMajor = "devmajor";
         protected const string PaxEaDevMinor = "devminor";
         internal const char OneByteCharacter = 'a';
-        internal const char TwoBytesCharacter = 'ö';
-        internal const string FourBytesCharacter = "😒";
+        internal const char TwoBytesCharacter = '\u00F6';
+        internal const string FourBytesCharacter = "\uD83D\uDE12";
         internal const char Separator = '/';
         internal const int MaxPathComponent = 255;
 
