@@ -221,7 +221,7 @@ namespace System.Formats.Tar
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);
             ArgumentNullException.ThrowIfNull(entry);
-            ValidateEntryLinkName(entry._header._typeFlag, entry._header._linkName);
+            ValidateEntryLinkName(entry._header._typeFlag, entry._header.LinkName);
             WriteEntryInternal(entry);
         }
 
@@ -269,7 +269,7 @@ namespace System.Formats.Tar
 
             ObjectDisposedException.ThrowIf(_isDisposed, this);
             ArgumentNullException.ThrowIfNull(entry);
-            ValidateEntryLinkName(entry._header._typeFlag, entry._header._linkName);
+            ValidateEntryLinkName(entry._header._typeFlag, entry._header.LinkName);
             return WriteEntryAsyncInternal(entry, cancellationToken);
         }
 
