@@ -12411,8 +12411,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     bool                  partialExpand   = false;
     const CorInfoHelpFunc helper          = info.compCompHnd->getCastingHelper(pResolvedToken, isCastClass);
 
-    GenTree* exactCls         = nullptr;
-    bool     isExpandingArray = false;
+    GenTree* exactCls = nullptr;
 
     // Legality check.
     //
@@ -12422,20 +12421,13 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     {
         if (isCastClass)
         {
-            // Jit can only inline expand the normal CHKCASTCLASS helper.
-            canExpandInline = (helper == CORINFO_HELP_CHKCASTCLASS);
+            // Jit can only inline expand CHKCASTCLASS and CHKCASTARRAY helpers.
+            canExpandInline = (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY);
         }
-        else if (helper == CORINFO_HELP_ISINSTANCEOFCLASS)
+        else if ((helper == CORINFO_HELP_ISINSTANCEOFCLASS) || (helper == CORINFO_HELP_ISINSTANCEOFARRAY))
         {
             // If the class is exact, the jit can expand the IsInst check inline.
             canExpandInline = isClassExact;
-        }
-
-        if (isClassExact && ((helper == CORINFO_HELP_ISINSTANCEOFARRAY) || (helper == CORINFO_HELP_CHKCASTARRAY)))
-        {
-                canExpandInline  = true;
-                isExpandingArray = true;
-            }
         }
 
         // Check if this cast helper have some profile data
@@ -12565,7 +12557,8 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         //
         // use the special helper that skips the cases checked by our inlined cast
         //
-        const CorInfoHelpFunc specialHelper = (helper == CORINFO_HELP_CHKCASTCLASS) ? CORINFO_HELP_CHKCASTCLASS_SPECIAL : helper;
+        const CorInfoHelpFunc specialHelper =
+            (helper == CORINFO_HELP_CHKCASTCLASS) ? CORINFO_HELP_CHKCASTCLASS_SPECIAL : helper;
 
         condTrue = gtNewHelperCallNode(specialHelper, TYP_REF, partialExpand ? op2 : op2Var, gtClone(op1));
     }
@@ -12593,8 +12586,11 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 
     if (isCastClass && isClassExact && condTrue->OperIs(GT_CALL))
     {
-        // condTrue is used only for throwing InvalidCastException in case of casting to an exact class.
-        condTrue->AsCall()->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
+        if (helper == CORINFO_HELP_CHKCASTCLASS)
+        {
+            // condTrue is used only for throwing InvalidCastException in case of casting to an exact class.
+            condTrue->AsCall()->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
+        }
     }
 
     GenTree* qmarkNull;
