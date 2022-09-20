@@ -30488,7 +30488,10 @@ void gc_heap::plan_phase (int condemned_gen_number)
                             heap_segment* region = generation_start_segment (hp->generation_of (i));
                             while (region)
                             {
-                                committed += heap_segment_committed (region) - get_region_start (region);
+                                if (!heap_segment_read_only_p (region))
+                                {
+                                    committed += heap_segment_committed (region) - get_region_start (region);
+                                }
                                 region = heap_segment_next (region);
                             }
 
@@ -43917,7 +43920,10 @@ void gc_heap::verify_regions (int gen_number, bool can_verify_gen_num, bool can_
     {
         if (p_total_committed)
         {
-            *p_total_committed += (heap_segment_committed (seg_in_gen) - get_region_start (seg_in_gen));
+            if (!heap_segment_read_only_p (seg_in_gen))
+            {
+                *p_total_committed += (heap_segment_committed (seg_in_gen) - get_region_start (seg_in_gen));
+            }
         }
         if (can_verify_gen_num)
         {
