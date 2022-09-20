@@ -4791,11 +4791,10 @@ bool Compiler::optIfConvert(BasicBlock* block)
     falseInput->gtFlags &= GTF_EMPTY;
 
     // Create a new SSA entry for the false result.
+    if (destination->HasSsaName())
     {
-        // Get the SSA num of the destination.
-        unsigned lclNum            = destination->GetLclNum();
-        unsigned destinationSsaNum = destination->GetSsaNum();
-        assert(destinationSsaNum != SsaConfig::RESERVED_SSA_NUM);
+        unsigned      lclNum            = destination->GetLclNum();
+        unsigned      destinationSsaNum = destination->GetSsaNum();
         LclSsaVarDsc* destinationSsaDef = lvaGetDesc(lclNum)->GetPerSsaData(destinationSsaNum);
 
         // Create a new SSA num.
@@ -4809,7 +4808,7 @@ bool Compiler::optIfConvert(BasicBlock* block)
         newSsaDef->m_vnPair = destinationSsaDef->m_vnPair;
         falseInput->AsLclVarCommon()->SetSsaNum(newSsaNum);
 
-        fgValueNumberTree(falseInput);
+        fgValueNumberSsaVarDef(falseInput->AsLclVarCommon());
     }
 
     // Invert the condition.

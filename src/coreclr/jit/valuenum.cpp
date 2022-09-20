@@ -8390,6 +8390,46 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
     tree->gtVNPair         = vnStore->VNPWithExc(vnStore->VNPForVoid(), vnpExcSet);
 }
 
+//------------------------------------------------------------------------
+// fgValueNumberSsaVarDef: Perform value numbering for a variable definition that has SSA
+//
+// Arguments:
+//    lcl - the variable definition.
+//
+void Compiler::fgValueNumberSsaVarDef(GenTreeLclVarCommon* lcl)
+{
+    unsigned   lclNum = lcl->GetLclNum();
+    LclVarDsc* varDsc = lvaGetDesc(lclNum);
+
+    assert((lcl->gtFlags & GTF_VAR_DEF) == 0);
+    assert(lcl->HasSsaName());
+
+    // We expect all uses of promoted structs to be replaced with uses of their fields.
+    assert(lvaInSsa(lclNum) && !varDsc->CanBeReplacedWithItsField(this));
+
+    ValueNumPair wholeLclVarVNP = varDsc->GetPerSsaData(lcl->GetSsaNum())->m_vnPair;
+    assert(wholeLclVarVNP.BothDefined());
+
+    // Account for type mismatches.
+    if (genActualType(varDsc) != genActualType(lcl))
+    {
+        if (genTypeSize(varDsc) != genTypeSize(lcl))
+        {
+            assert((varDsc->TypeGet() == TYP_LONG) && lcl->TypeIs(TYP_INT));
+            lcl->gtVNPair = vnStore->VNPairForCast(wholeLclVarVNP, lcl->TypeGet(), varDsc->TypeGet());
+        }
+        else
+        {
+            assert((varDsc->TypeGet() == TYP_I_IMPL) && lcl->TypeIs(TYP_BYREF));
+            lcl->gtVNPair = wholeLclVarVNP;
+        }
+    }
+    else
+    {
+        lcl->gtVNPair = wholeLclVarVNP;
+    }
+}
+
 void Compiler::fgValueNumberTree(GenTree* tree)
 {
     genTreeOps oper = tree->OperGet();
@@ -8426,31 +8466,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 {
                     if (lcl->HasSsaName())
                     {
-                        // We expect all uses of promoted structs to be replaced with uses of their fields.
-                        assert(lvaInSsa(lclNum) && !varDsc->CanBeReplacedWithItsField(this));
-
-                        ValueNumPair wholeLclVarVNP = varDsc->GetPerSsaData(lcl->GetSsaNum())->m_vnPair;
-                        assert(wholeLclVarVNP.BothDefined());
-
-                        // Account for type mismatches.
-                        if (genActualType(varDsc) != genActualType(lcl))
-                        {
-                            if (genTypeSize(varDsc) != genTypeSize(lcl))
-                            {
-                                assert((varDsc->TypeGet() == TYP_LONG) && lcl->TypeIs(TYP_INT));
-                                lcl->gtVNPair =
-                                    vnStore->VNPairForCast(wholeLclVarVNP, lcl->TypeGet(), varDsc->TypeGet());
-                            }
-                            else
-                            {
-                                assert((varDsc->TypeGet() == TYP_I_IMPL) && lcl->TypeIs(TYP_BYREF));
-                                lcl->gtVNPair = wholeLclVarVNP;
-                            }
-                        }
-                        else
-                        {
-                            lcl->gtVNPair = wholeLclVarVNP;
-                        }
+                        fgValueNumberSsaVarDef(lcl);
                     }
                     else if (varDsc->IsAddressExposed())
                     {
