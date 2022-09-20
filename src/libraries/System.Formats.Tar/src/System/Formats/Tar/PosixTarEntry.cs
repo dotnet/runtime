@@ -22,8 +22,8 @@ namespace System.Formats.Tar
         internal PosixTarEntry(TarEntryType entryType, string entryName, TarEntryFormat format, bool isGea)
             : base(entryType, entryName, format, isGea)
         {
-            _header._uName = string.Empty;
-            _header._gName = string.Empty;
+            _header.UName = string.Empty;
+            _header.GName = string.Empty;
             _header._devMajor = 0;
             _header._devMinor = 0;
         }
@@ -34,15 +34,15 @@ namespace System.Formats.Tar
         {
             if (other is PosixTarEntry)
             {
-                Debug.Assert(other._header._uName != null);
-                Debug.Assert(other._header._gName != null);
-                _header._uName = other._header._uName;
-                _header._gName = other._header._gName;
+                Debug.Assert(other._header.UName != null);
+                Debug.Assert(other._header.GName != null);
+                _header.UName = other._header.UName;
+                _header.GName = other._header.GName;
                 _header._devMajor = other._header._devMajor;
                 _header._devMinor = other._header._devMinor;
             }
-            _header._uName ??= string.Empty;
-            _header._gName ??= string.Empty;
+            _header.UName ??= string.Empty;
+            _header.GName ??= string.Empty;
         }
 
         /// <summary>
@@ -99,11 +99,11 @@ namespace System.Formats.Tar
         /// <remarks><see cref="GroupName"/> is only used in Unix platforms.</remarks>
         public string GroupName
         {
-            get => _header._gName ?? string.Empty;
+            get => _header.GName ?? string.Empty;
             set
             {
                 ArgumentNullException.ThrowIfNull(value);
-                _header._gName = value;
+                _header.GName = value;
             }
         }
 
@@ -114,11 +114,11 @@ namespace System.Formats.Tar
         /// <exception cref="ArgumentNullException">Cannot set a null user name.</exception>
         public string UserName
         {
-            get => _header._uName ?? string.Empty;
+            get => _header.UName ?? string.Empty;
             set
             {
                 ArgumentNullException.ThrowIfNull(value);
-                _header._uName = value;
+                _header.UName = value;
             }
         }
     }

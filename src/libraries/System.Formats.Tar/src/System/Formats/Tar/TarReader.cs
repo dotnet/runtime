@@ -199,7 +199,7 @@ namespace System.Formats.Tar
                 Debug.Assert(_previouslyReadEntry._header._endOfHeaderAndDataAndBlockAlignment > 0);
                 _archiveStream.Position = _previouslyReadEntry._header._endOfHeaderAndDataAndBlockAlignment;
             }
-            else if (_previouslyReadEntry._header._size > 0)
+            else if (_previouslyReadEntry._header.Size > 0)
             {
                 // When working with seekable streams, every time we return an entry, we avoid advancing the pointer beyond the data section
                 // This is so the user can read the data if desired. But if the data was not read by the user, we need to advance the pointer
@@ -215,14 +215,14 @@ namespace System.Formats.Tar
                 {
                     // If the user did not advance the position, we need to make sure the position
                     // pointer is located at the beginning of the next header.
-                    if (dataStream.Position < (_previouslyReadEntry._header._size - 1))
+                    if (dataStream.Position < (_previouslyReadEntry._header.Size - 1))
                     {
-                        long bytesToSkip = _previouslyReadEntry._header._size - dataStream.Position;
+                        long bytesToSkip = _previouslyReadEntry._header.Size - dataStream.Position;
                         TarHelpers.AdvanceStream(_archiveStream, bytesToSkip);
                         dataStream.HasReachedEnd = true; // Now the pointer is beyond the limit, so any read attempts should throw
                     }
                 }
-                TarHelpers.SkipBlockAlignmentPadding(_archiveStream, _previouslyReadEntry._header._size);
+                TarHelpers.SkipBlockAlignmentPadding(_archiveStream, _previouslyReadEntry._header.Size);
             }
         }
 
@@ -241,7 +241,7 @@ namespace System.Formats.Tar
                 Debug.Assert(_previouslyReadEntry._header._endOfHeaderAndDataAndBlockAlignment > 0);
                 _archiveStream.Position = _previouslyReadEntry._header._endOfHeaderAndDataAndBlockAlignment;
             }
-            else if (_previouslyReadEntry._header._size > 0)
+            else if (_previouslyReadEntry._header.Size > 0)
             {
                 // When working with seekable streams, every time we return an entry, we avoid advancing the pointer beyond the data section
                 // This is so the user can read the data if desired. But if the data was not read by the user, we need to advance the pointer
@@ -257,14 +257,14 @@ namespace System.Formats.Tar
                 {
                     // If the user did not advance the position, we need to make sure the position
                     // pointer is located at the beginning of the next header.
-                    if (dataStream.Position < (_previouslyReadEntry._header._size - 1))
+                    if (dataStream.Position < (_previouslyReadEntry._header.Size - 1))
                     {
-                        long bytesToSkip = _previouslyReadEntry._header._size - dataStream.Position;
+                        long bytesToSkip = _previouslyReadEntry._header.Size - dataStream.Position;
                         await TarHelpers.AdvanceStreamAsync(_archiveStream, bytesToSkip, cancellationToken).ConfigureAwait(false);
                         dataStream.HasReachedEnd = true; // Now the pointer is beyond the limit, so any read attempts should throw
                     }
                 }
-                await TarHelpers.SkipBlockAlignmentPaddingAsync(_archiveStream, _previouslyReadEntry._header._size, cancellationToken).ConfigureAwait(false);
+                await TarHelpers.SkipBlockAlignmentPaddingAsync(_archiveStream, _previouslyReadEntry._header.Size, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -491,18 +491,18 @@ namespace System.Formats.Tar
 
                 if (header._typeFlag is TarEntryType.LongLink)
                 {
-                    Debug.Assert(header._linkName != null);
-                    Debug.Assert(secondHeader._name != null);
+                    Debug.Assert(header.LinkName != null);
+                    Debug.Assert(secondHeader.Name != null);
 
-                    thirdHeader._linkName = header._linkName;
-                    thirdHeader._name = secondHeader._name;
+                    thirdHeader.LinkName = header.LinkName;
+                    thirdHeader.Name = secondHeader.Name;
                 }
                 else if (header._typeFlag is TarEntryType.LongPath)
                 {
-                    Debug.Assert(header._name != null);
-                    Debug.Assert(secondHeader._linkName != null);
-                    thirdHeader._name = header._name;
-                    thirdHeader._linkName = secondHeader._linkName;
+                    Debug.Assert(header.Name != null);
+                    Debug.Assert(secondHeader.LinkName != null);
+                    thirdHeader.Name = header.Name;
+                    thirdHeader.LinkName = secondHeader.LinkName;
                 }
 
                 finalHeader = thirdHeader;
@@ -512,13 +512,13 @@ namespace System.Formats.Tar
             {
                 if (header._typeFlag is TarEntryType.LongLink)
                 {
-                    Debug.Assert(header._linkName != null);
-                    secondHeader._linkName = header._linkName;
+                    Debug.Assert(header.LinkName != null);
+                    secondHeader.LinkName = header.LinkName;
                 }
                 else if (header._typeFlag is TarEntryType.LongPath)
                 {
-                    Debug.Assert(header._name != null);
-                    secondHeader._name = header._name;
+                    Debug.Assert(header.Name != null);
+                    secondHeader.Name = header.Name;
                 }
 
                 finalHeader = secondHeader;
@@ -567,18 +567,18 @@ namespace System.Formats.Tar
 
                 if (header._typeFlag is TarEntryType.LongLink)
                 {
-                    Debug.Assert(header._linkName != null);
-                    Debug.Assert(secondHeader._name != null);
+                    Debug.Assert(header.LinkName != null);
+                    Debug.Assert(secondHeader.Name != null);
 
-                    thirdHeader._linkName = header._linkName;
-                    thirdHeader._name = secondHeader._name;
+                    thirdHeader.LinkName = header.LinkName;
+                    thirdHeader.Name = secondHeader.Name;
                 }
                 else if (header._typeFlag is TarEntryType.LongPath)
                 {
-                    Debug.Assert(header._name != null);
-                    Debug.Assert(secondHeader._linkName != null);
-                    thirdHeader._name = header._name;
-                    thirdHeader._linkName = secondHeader._linkName;
+                    Debug.Assert(header.Name != null);
+                    Debug.Assert(secondHeader.LinkName != null);
+                    thirdHeader.Name = header.Name;
+                    thirdHeader.LinkName = secondHeader.LinkName;
                 }
 
                 finalHeader = thirdHeader;
@@ -588,13 +588,13 @@ namespace System.Formats.Tar
             {
                 if (header._typeFlag is TarEntryType.LongLink)
                 {
-                    Debug.Assert(header._linkName != null);
-                    secondHeader._linkName = header._linkName;
+                    Debug.Assert(header.LinkName != null);
+                    secondHeader.LinkName = header.LinkName;
                 }
                 else if (header._typeFlag is TarEntryType.LongPath)
                 {
-                    Debug.Assert(header._name != null);
-                    secondHeader._name = header._name;
+                    Debug.Assert(header.Name != null);
+                    secondHeader.Name = header.Name;
                 }
 
                 finalHeader = secondHeader;

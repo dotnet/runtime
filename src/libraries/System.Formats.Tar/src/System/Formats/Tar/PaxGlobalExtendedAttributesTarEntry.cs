@@ -29,7 +29,7 @@ namespace System.Formats.Tar
             : base(TarEntryType.GlobalExtendedAttributes, TarHeader.GlobalHeadFormatPrefix, TarEntryFormat.Pax, isGea: true)
         {
             ArgumentNullException.ThrowIfNull(globalExtendedAttributes);
-            _header.InitializeExtendedAttributesWithExisting(globalExtendedAttributes);
+            _header.InitializeExtendedAttributesWithExisting(globalExtendedAttributes, allowReservedKeys: false);
         }
 
         /// <summary>

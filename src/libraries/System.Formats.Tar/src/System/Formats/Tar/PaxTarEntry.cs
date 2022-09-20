@@ -54,7 +54,7 @@ namespace System.Formats.Tar
         {
             _header._prefix = string.Empty;
 
-            Debug.Assert(_header._mTime != default);
+            Debug.Assert(_header.MTime != default);
             AddNewAccessAndChangeTimestampsIfNotExist(useMTime: true);
         }
 
@@ -94,9 +94,9 @@ namespace System.Formats.Tar
             ArgumentNullException.ThrowIfNull(extendedAttributes);
 
             _header._prefix = string.Empty;
-            _header.InitializeExtendedAttributesWithExisting(extendedAttributes);
+            _header.InitializeExtendedAttributesWithExisting(extendedAttributes, allowReservedKeys: false);
 
-            Debug.Assert(_header._mTime != default);
+            Debug.Assert(_header.MTime != default);
             AddNewAccessAndChangeTimestampsIfNotExist(useMTime: true);
         }
 
@@ -116,7 +116,7 @@ namespace System.Formats.Tar
 
             if (other is PaxTarEntry paxOther)
             {
-                _header.InitializeExtendedAttributesWithExisting(paxOther.ExtendedAttributes);
+                _header.InitializeExtendedAttributesWithExisting(paxOther.ExtendedAttributes, allowReservedKeys: true);
             }
             else
             {
@@ -158,13 +158,13 @@ namespace System.Formats.Tar
         // or 'DateTimeOffset.UtcNow', depending on the value of 'useMTime'.
         private void AddNewAccessAndChangeTimestampsIfNotExist(bool useMTime)
         {
-            Debug.Assert(!useMTime || (useMTime && _header._mTime != default));
+            Debug.Assert(!useMTime || (useMTime && _header.MTime != default));
             bool containsATime = _header.ExtendedAttributes.ContainsKey(TarHeader.PaxEaATime);
             bool containsCTime = _header.ExtendedAttributes.ContainsKey(TarHeader.PaxEaCTime);
 
             if (!containsATime || !containsCTime)
             {
-                string secondsFromEpochString = TarHelpers.GetTimestampStringFromDateTimeOffset(useMTime ? _header._mTime : DateTimeOffset.UtcNow);
+                string secondsFromEpochString = TarHelpers.GetTimestampStringFromDateTimeOffset(useMTime ? _header.MTime : DateTimeOffset.UtcNow);
 
                 if (!containsATime)
                 {

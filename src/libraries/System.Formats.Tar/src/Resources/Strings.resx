@@ -234,6 +234,9 @@
   <data name="TarPosixFormatExpected" xml:space="preserve">
     <value>A POSIX format was expected (Ustar or PAX), but could not be reliably determined for entry '{0}'.</value>
   </data>
+  <data name="TarReservedExtendedAttribute" xml:space="preserve">
+    <value>The extended attributes dictionary cannot contain the reserved key '{0}'.</value>
+  </data>
   <data name="TarSizeFieldNegative" xml:space="preserve">
     <value>The size field is negative in a tar entry.</value>
   </data>

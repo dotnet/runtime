@@ -50,7 +50,7 @@ namespace System.Formats.Tar
 
             FileSystemInfo info = (attributes & FileAttributes.Directory) != 0 ? new DirectoryInfo(fullPath) : new FileInfo(fullPath);
 
-            entry._header._mTime = info.LastWriteTimeUtc;
+            entry._header.MTime = info.LastWriteTimeUtc;
             entry._header._aTime = info.LastAccessTimeUtc;
             entry._header._cTime = info.LastWriteTimeUtc; // There is no "change time" property
 

@@ -18,7 +18,7 @@ namespace System.Formats.Tar
         internal TarHeader _header;
 
         // Used to access the data section of this entry in an unseekable file
-        private TarReader? _readerOfOrigin;
+        internal TarReader? _readerOfOrigin;
 
         // Constructor called when reading a TarEntry from a TarReader.
         internal TarEntry(TarHeader header, TarReader readerOfOrigin, TarEntryFormat format)
@@ -95,14 +95,14 @@ namespace System.Formats.Tar
         /// <exception cref="ArgumentOutOfRangeException">The specified value is larger than <see cref="DateTimeOffset.UnixEpoch"/>.</exception>
         public DateTimeOffset ModificationTime
         {
-            get => _header._mTime;
+            get => _header.MTime;
             set
             {
                 if (value < DateTimeOffset.UnixEpoch)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
-                _header._mTime = value;
+                _header.MTime = value;
             }
         }
 
@@ -110,7 +110,7 @@ namespace System.Formats.Tar
         /// When the <see cref="EntryType"/> indicates an entry that can contain data, this property returns the length in bytes of such data.
         /// </summary>
         /// <remarks>The entry type that commonly contains data is <see cref="TarEntryType.RegularFile"/> (or <see cref="TarEntryType.V7RegularFile"/> in the <see cref="TarEntryFormat.V7"/> format). Other uncommon entry types that can also contain data are: <see cref="TarEntryType.ContiguousFile"/>, <see cref="TarEntryType.DirectoryList"/>, <see cref="TarEntryType.MultiVolume"/> and <see cref="TarEntryType.SparseFile"/>.</remarks>
-        public long Length => _header._dataStream != null ? _header._dataStream.Length : _header._size;
+        public long Length => _header._dataStream != null ? _header._dataStream.Length : _header.Size;
 
         /// <summary>
         /// When the <see cref="EntryType"/> indicates a <see cref="TarEntryType.SymbolicLink"/> or a <see cref="TarEntryType.HardLink"/>, this property returns the link target path of such link.
@@ -120,7 +120,7 @@ namespace System.Formats.Tar
         /// <exception cref="ArgumentException">The specified value is empty.</exception>
         public string LinkName
         {
-            get => _header._linkName ?? string.Empty;
+            get => _header.LinkName ?? string.Empty;
             set
             {
                 if (_header._typeFlag is not TarEntryType.HardLink and not TarEntryType.SymbolicLink)
@@ -128,7 +128,7 @@ namespace System.Formats.Tar
                     throw new InvalidOperationException(SR.TarEntryHardLinkOrSymLinkExpected);
                 }
                 ArgumentException.ThrowIfNullOrEmpty(value);
-                _header._linkName = value;
+                _header.LinkName = value;
             }
         }
 
@@ -154,11 +154,11 @@ namespace System.Formats.Tar
         /// </summary>
         public string Name
         {
-            get => _header._name;
+            get => _header.Name;
             set
             {
                 ArgumentException.ThrowIfNullOrEmpty(value);
-                _header._name = value;
+                _header.Name = value;
             }
         }
 

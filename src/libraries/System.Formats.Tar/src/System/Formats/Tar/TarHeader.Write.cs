@@ -178,17 +178,17 @@ namespace System.Formats.Tar
         internal void WriteAsGnu(Stream archiveStream, Span<byte> buffer)
         {
             // First, we determine if we need a preceding LongLink, and write it if needed
-            if (_linkName?.Length > FieldLengths.LinkName)
+            if (LinkName?.Length > FieldLengths.LinkName)
             {
-                TarHeader longLinkHeader = GetGnuLongMetadataHeader(TarEntryType.LongLink, _linkName);
+                TarHeader longLinkHeader = GetGnuLongMetadataHeader(TarEntryType.LongLink, LinkName);
                 longLinkHeader.WriteAsGnuInternal(archiveStream, buffer);
                 buffer.Clear(); // Reset it to reuse it
             }
 
             // Second, we determine if we need a preceding LongPath, and write it if needed
-            if (_name.Length > FieldLengths.Name)
+            if (Name.Length > FieldLengths.Name)
             {
-                TarHeader longPathHeader = GetGnuLongMetadataHeader(TarEntryType.LongPath, _name);
+                TarHeader longPathHeader = GetGnuLongMetadataHeader(TarEntryType.LongPath, Name);
                 longPathHeader.WriteAsGnuInternal(archiveStream, buffer);
                 buffer.Clear(); // Reset it to reuse it
             }
@@ -204,17 +204,17 @@ namespace System.Formats.Tar
             cancellationToken.ThrowIfCancellationRequested();
 
             // First, we determine if we need a preceding LongLink, and write it if needed
-            if (_linkName?.Length > FieldLengths.LinkName)
+            if (LinkName?.Length > FieldLengths.LinkName)
             {
-                TarHeader longLinkHeader = GetGnuLongMetadataHeader(TarEntryType.LongLink, _linkName);
+                TarHeader longLinkHeader = GetGnuLongMetadataHeader(TarEntryType.LongLink, LinkName);
                 await longLinkHeader.WriteAsGnuInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
                 buffer.Span.Clear(); // Reset it to reuse it
             }
 
             // Second, we determine if we need a preceding LongPath, and write it if needed
-            if (_name.Length > FieldLengths.Name)
+            if (Name.Length > FieldLengths.Name)
             {
-                TarHeader longPathHeader = GetGnuLongMetadataHeader(TarEntryType.LongPath, _name);
+                TarHeader longPathHeader = GetGnuLongMetadataHeader(TarEntryType.LongPath, Name);
                 await longPathHeader.WriteAsGnuInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
                 buffer.Span.Clear(); // Reset it to reuse it
             }
@@ -231,11 +231,11 @@ namespace System.Formats.Tar
 
             TarHeader longMetadataHeader = new(TarEntryFormat.Gnu);
 
-            longMetadataHeader._name = GnuLongMetadataName; // Same name for both longpath or longlink
+            longMetadataHeader.Name = GnuLongMetadataName; // Same name for both longpath or longlink
             longMetadataHeader._mode = TarHelpers.GetDefaultMode(entryType);
             longMetadataHeader._uid = 0;
             longMetadataHeader._gid = 0;
-            longMetadataHeader._mTime = DateTimeOffset.MinValue; // 0
+            longMetadataHeader.MTime = DateTimeOffset.MinValue; // 0
             longMetadataHeader._typeFlag = entryType;
             longMetadataHeader._dataStream = new MemoryStream(Encoding.UTF8.GetBytes(longText));
 
@@ -307,7 +307,7 @@ namespace System.Formats.Tar
         {
             Debug.Assert(isGea && globalExtendedAttributesEntryNumber >= 0 || !isGea && globalExtendedAttributesEntryNumber < 0);
 
-            _name = isGea ?
+            Name = isGea ?
                 GenerateGlobalExtendedAttributeName(globalExtendedAttributesEntryNumber) :
                 GenerateExtendedAttributeName();
 
@@ -361,7 +361,7 @@ namespace System.Formats.Tar
         // All formats save in the name byte array only the ASCII bytes that fit.
         private int WriteName(Span<byte> buffer)
         {
-            ReadOnlySpan<char> src = _name.AsSpan(0, Math.Min(_name.Length, FieldLengths.Name));
+            ReadOnlySpan<char> src = Name.AsSpan(0, Math.Min(Name.Length, FieldLengths.Name));
             Span<byte> dest = buffer.Slice(FieldLocations.Name, FieldLengths.Name);
             int encoded = Encoding.ASCII.GetBytes(src, dest);
             return Checksum(dest.Slice(0, encoded));
@@ -372,11 +372,11 @@ namespace System.Formats.Tar
         {
             int checksum = WriteName(buffer);
 
-            if (_name.Length > FieldLengths.Name)
+            if (Name.Length > FieldLengths.Name)
             {
-                int prefixBytesLength = Math.Min(_name.Length - FieldLengths.Name, FieldLengths.Prefix);
+                int prefixBytesLength = Math.Min(Name.Length - FieldLengths.Name, FieldLengths.Prefix);
                 Span<byte> remaining = stackalloc byte[prefixBytesLength];
-                int encoded = Encoding.ASCII.GetBytes(_name.AsSpan(FieldLengths.Name, prefixBytesLength), remaining);
+                int encoded = Encoding.ASCII.GetBytes(Name.AsSpan(FieldLengths.Name, prefixBytesLength), remaining);
                 Debug.Assert(encoded == remaining.Length);
 
                 checksum += WriteLeftAlignedBytesAndGetChecksum(remaining, buffer.Slice(FieldLocations.Prefix, FieldLengths.Prefix));
@@ -408,22 +408,22 @@ namespace System.Formats.Tar
                 checksum += FormatOctal(_gid, buffer.Slice(FieldLocations.Gid, FieldLengths.Gid));
             }
 
-            _size = actualLength;
+            Size = actualLength;
 
-            if (_size > 0)
+            if (Size > 0)
             {
-                checksum += FormatOctal(_size, buffer.Slice(FieldLocations.Size, FieldLengths.Size));
+                checksum += FormatOctal(Size, buffer.Slice(FieldLocations.Size, FieldLengths.Size));
             }
 
-            checksum += WriteAsTimestamp(_mTime, buffer.Slice(FieldLocations.MTime, FieldLengths.MTime));
+            checksum += WriteAsTimestamp(MTime, buffer.Slice(FieldLocations.MTime, FieldLengths.MTime));
 
             char typeFlagChar = (char)actualEntryType;
             buffer[FieldLocations.TypeFlag] = (byte)typeFlagChar;
             checksum += typeFlagChar;
 
-            if (!string.IsNullOrEmpty(_linkName))
+            if (!string.IsNullOrEmpty(LinkName))
             {
-                checksum += WriteAsAsciiString(_linkName, buffer.Slice(FieldLocations.LinkName, FieldLengths.LinkName));
+                checksum += WriteAsAsciiString(LinkName, buffer.Slice(FieldLocations.LinkName, FieldLengths.LinkName));
             }
 
             return checksum;
@@ -465,14 +465,14 @@ namespace System.Formats.Tar
         {
             int checksum = 0;
 
-            if (!string.IsNullOrEmpty(_uName))
+            if (!string.IsNullOrEmpty(UName))
             {
-                checksum += WriteAsAsciiString(_uName, buffer.Slice(FieldLocations.UName, FieldLengths.UName));
+                checksum += WriteAsAsciiString(UName, buffer.Slice(FieldLocations.UName, FieldLengths.UName));
             }
 
-            if (!string.IsNullOrEmpty(_gName))
+            if (!string.IsNullOrEmpty(GName))
             {
-                checksum += WriteAsAsciiString(_gName, buffer.Slice(FieldLocations.GName, FieldLengths.GName));
+                checksum += WriteAsAsciiString(GName, buffer.Slice(FieldLocations.GName, FieldLengths.GName));
             }
 
             if (_devMajor > 0)
@@ -621,28 +621,41 @@ namespace System.Formats.Tar
         // extended attributes. They are always collected or updated in that dictionary, with no restrictions.
         private void CollectExtendedAttributesFromStandardFields()
         {
-            ExtendedAttributes[PaxEaName] = _name;
-
-            ExtendedAttributes[PaxEaMTime] = TarHelpers.GetTimestampStringFromDateTimeOffset(_mTime);
-
-            if (!string.IsNullOrEmpty(_gName))
+            if (!_isPaxEaNameSynced)
             {
-                TryAddStringField(ExtendedAttributes, PaxEaGName, _gName, FieldLengths.GName);
+                ExtendedAttributes[PaxEaName] = Name;
+                _isPaxEaNameSynced = true;
             }
 
-            if (!string.IsNullOrEmpty(_uName))
+            if (!_isPaxEaMTimeSynced)
             {
-                TryAddStringField(ExtendedAttributes, PaxEaUName, _uName, FieldLengths.UName);
+                ExtendedAttributes[PaxEaMTime] = TarHelpers.GetTimestampStringFromDateTimeOffset(MTime);
+                _isPaxEaMTimeSynced = true;
             }
 
-            if (!string.IsNullOrEmpty(_linkName))
+            if (!_isPaxEaGNameSynced && !string.IsNullOrEmpty(GName))
             {
-                ExtendedAttributes[PaxEaLinkName] = _linkName;
+                TryAddStringField(ExtendedAttributes, PaxEaGName, GName, FieldLengths.GName);
+                _isPaxEaGNameSynced = true;
             }
 
-            if (_size > 99_999_999)
+            if (!_isPaxEaUNameSynced && !string.IsNullOrEmpty(UName))
             {
-                ExtendedAttributes[PaxEaSize] = _size.ToString();
+                TryAddStringField(ExtendedAttributes, PaxEaUName, UName, FieldLengths.UName);
+                _isPaxEaUNameSynced = true;
+            }
+
+            if (!_isPaxEaLinkNameSynced && !string.IsNullOrEmpty(LinkName))
+            {
+                ExtendedAttributes[PaxEaLinkName] = LinkName;
+                _isPaxEaLinkNameSynced = true;
+            }
+
+            Size = GetTotalDataBytesToWrite();
+            if (!_isPaxEaSizeSynced && Size > 99_999_999)
+            {
+                ExtendedAttributes[PaxEaSize] = Size.ToString();
+                _isPaxEaSizeSynced = true;
             }
 
             // Adds the specified string to the dictionary if it's longer than the specified max byte length.
@@ -777,10 +790,10 @@ namespace System.Formats.Tar
         // - %f: The filename of the file, equivalent to the result of the basename utility on the translated pathname.
         private string GenerateExtendedAttributeName()
         {
-            ReadOnlySpan<char> dirName = Path.GetDirectoryName(_name.AsSpan());
+            ReadOnlySpan<char> dirName = Path.GetDirectoryName(Name.AsSpan());
             dirName = dirName.IsEmpty ? "." : dirName;
 
-            ReadOnlySpan<char> fileName = Path.GetFileName(_name.AsSpan());
+            ReadOnlySpan<char> fileName = Path.GetFileName(Name.AsSpan());
             fileName = fileName.IsEmpty ? "." : fileName;
 
             return _typeFlag is TarEntryType.Directory or TarEntryType.DirectoryList ?

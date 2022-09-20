@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
 namespace System.Formats.Tar
@@ -51,24 +52,33 @@ namespace System.Formats.Tar
 
         internal TarEntryFormat _format;
 
+        // Booleans to determine if in a PAX tar entry, the extended attribute for a reserved
+        // field should get overwritten before writing this header to an archive
+        internal bool _isPaxEaNameSynced;
+        internal bool _isPaxEaSizeSynced;
+        internal bool _isPaxEaMTimeSynced;
+        internal bool _isPaxEaGNameSynced;
+        internal bool _isPaxEaUNameSynced;
+        internal bool _isPaxEaLinkNameSynced;
+
         // Common attributes
 
-        internal string _name;
+        private string _name;
         internal int _mode;
         internal int _uid;
         internal int _gid;
-        internal long _size;
-        internal DateTimeOffset _mTime;
+        private long _size;
+        private DateTimeOffset _mTime;
         internal int _checksum;
         internal TarEntryType _typeFlag;
-        internal string? _linkName;
+        private string? _linkName;
 
         // POSIX and GNU shared attributes
 
         internal string _magic;
         internal string _version;
-        internal string? _gName;
-        internal string? _uName;
+        private string? _gName;
+        private string? _uName;
         internal int _devMajor;
         internal int _devMinor;
 
@@ -90,13 +100,76 @@ namespace System.Formats.Tar
         // fields have data, we store it to avoid data loss, but we don't yet expose it publicly.
         internal byte[]? _gnuUnusedBytes;
 
+        internal string Name
+        {
+            get => _name;
+            [MemberNotNull(nameof(_name))]
+            set
+            {
+                Debug.Assert(value != null);
+                _name = value;
+                _isPaxEaNameSynced = false;
+            }
+        }
+
+        internal long Size
+        {
+            get => _size;
+            set
+            {
+                _size = value;
+                _isPaxEaSizeSynced = false;
+            }
+        }
+
+        internal DateTimeOffset MTime
+        {
+            get => _mTime;
+            set
+            {
+                _mTime = value;
+                _isPaxEaMTimeSynced = false;
+            }
+        }
+
+        internal string? LinkName
+        {
+            get => _linkName;
+            set
+            {
+                _linkName = value;
+                _isPaxEaLinkNameSynced = false;
+            }
+        }
+
+        internal string? GName
+        {
+            get => _gName;
+            set
+            {
+                _gName = value;
+                _isPaxEaGNameSynced = false;
+            }
+        }
+        internal string? UName
+        {
+            get => _uName;
+            set
+            {
+                _uName = value;
+                _isPaxEaUNameSynced = false;
+            }
+        }
+
         // Constructor called when creating an entry with default common fields.
         internal TarHeader(TarEntryFormat format, string name = "", int mode = 0, DateTimeOffset mTime = default, TarEntryType typeFlag = TarEntryType.RegularFile)
         {
+            Debug.Assert(name != null);
+
             _format = format;
-            _name = name;
+            Name = name;
             _mode = mode;
-            _mTime = mTime;
+            MTime = mTime;
             _typeFlag = typeFlag;
             _magic = GetMagicForFormat(format);
             _version = GetVersionForFormat(format);
@@ -105,19 +178,31 @@ namespace System.Formats.Tar
         // Constructor called when creating an entry using the common fields from another entry.
         // The *TarEntry constructor calling this should take care of setting any format-specific fields.
         internal TarHeader(TarEntryFormat format, TarEntryType typeFlag, TarHeader other)
-            : this(format, other._name, other._mode, other._mTime, typeFlag)
+            : this(format, other.Name, other._mode, other.MTime, typeFlag)
         {
             _uid = other._uid;
             _gid = other._gid;
-            _size = other._size;
+            Size = other.Size;
             _checksum = other._checksum;
-            _linkName = other._linkName;
+            LinkName = other.LinkName;
             _dataStream = other._dataStream;
         }
 
-        internal void InitializeExtendedAttributesWithExisting(IEnumerable<KeyValuePair<string, string>> existing)
+        internal void InitializeExtendedAttributesWithExisting(IEnumerable<KeyValuePair<string, string>> existing, bool allowReservedKeys)
         {
             Debug.Assert(_ea == null);
+
+            if (!allowReservedKeys)
+            {
+                foreach ((string key, string _) in existing)
+                {
+                    if (key is PaxEaName or PaxEaSize or PaxEaMTime or PaxEaGName or PaxEaUName)
+                    {
+                        throw new ArgumentException(string.Format(SR.TarReservedExtendedAttribute, key));
+                    }
+                }
+            }
+
             _ea = new Dictionary<string, string>(existing);
         }
 
