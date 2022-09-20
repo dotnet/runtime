@@ -66,65 +66,65 @@ jobs:
     jobParameters:
       testGroup: outerloop
 
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
-    buildConfig: checked
-    platforms:
-    - OSX_arm64
-    - Linux_arm
-    - Linux_arm64
-    - Linux_x64
-    - windows_x64
-    - windows_x86
-    - windows_arm64
-    helixQueueGroup: ci
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: outerloop
-      liveLibrariesBuildConfig: Release
-      collectionType: pmi
-      collectionName: libraries
+# - template: /eng/pipelines/common/platform-matrix.yml
+#   parameters:
+#     jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
+#     buildConfig: checked
+#     platforms:
+#     - OSX_arm64
+#     - Linux_arm
+#     - Linux_arm64
+#     - Linux_x64
+#     - windows_x64
+#     - windows_x86
+#     - windows_arm64
+#     helixQueueGroup: ci
+#     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+#     jobParameters:
+#       testGroup: outerloop
+#       liveLibrariesBuildConfig: Release
+#       collectionType: pmi
+#       collectionName: libraries
 
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
-    buildConfig: checked
-    platforms:
-    - OSX_arm64
-    - Linux_arm
-    - Linux_arm64
-    - Linux_x64
-    - windows_x64
-    - windows_x86
-    - windows_arm64
-    helixQueueGroup: ci
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: outerloop
-      liveLibrariesBuildConfig: Release
-      collectionType: pmi
-      collectionName: libraries_tests
+# - template: /eng/pipelines/common/platform-matrix.yml
+#   parameters:
+#     jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
+#     buildConfig: checked
+#     platforms:
+#     - OSX_arm64
+#     - Linux_arm
+#     - Linux_arm64
+#     - Linux_x64
+#     - windows_x64
+#     - windows_x86
+#     - windows_arm64
+#     helixQueueGroup: ci
+#     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+#     jobParameters:
+#       testGroup: outerloop
+#       liveLibrariesBuildConfig: Release
+#       collectionType: pmi
+#       collectionName: libraries_tests
 
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
-    buildConfig: checked
-    platforms:
-    - OSX_arm64
-    - Linux_arm
-    - Linux_arm64
-    - Linux_x64
-    - windows_x64
-    - windows_x86
-    - windows_arm64
-    helixQueueGroup: ci
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: outerloop
-      liveLibrariesBuildConfig: Release
-      collectionType: crossgen2
-      collectionName: libraries
+# - template: /eng/pipelines/common/platform-matrix.yml
+#   parameters:
+#     jobTemplate: /eng/pipelines/coreclr/templates/superpmi-collect-job.yml
+#     buildConfig: checked
+#     platforms:
+#     - OSX_arm64
+#     - Linux_arm
+#     - Linux_arm64
+#     - Linux_x64
+#     - windows_x64
+#     - windows_x86
+#     - windows_arm64
+#     helixQueueGroup: ci
+#     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+#     jobParameters:
+#       testGroup: outerloop
+#       liveLibrariesBuildConfig: Release
+#       collectionType: crossgen2
+#       collectionName: libraries
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -146,24 +146,24 @@ jobs:
       collectionType: run
       collectionName: benchmarks
 
-#
-# Collection of coreclr test run
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-    buildConfig: checked
-    platforms:
-    - OSX_arm64
-    - Linux_arm
-    - Linux_arm64
-    - Linux_x64
-    - windows_x64
-    - windows_x86
-    - windows_arm64
-    helixQueueGroup: superpmi
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: outerloop
-      liveLibrariesBuildConfig: Release
-      SuperPmiCollect: true
+# #
+# # Collection of coreclr test run
+# #
+# - template: /eng/pipelines/common/platform-matrix.yml
+#   parameters:
+#     jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+#     buildConfig: checked
+#     platforms:
+#     - OSX_arm64
+#     - Linux_arm
+#     - Linux_arm64
+#     - Linux_x64
+#     - windows_x64
+#     - windows_x86
+#     - windows_arm64
+#     helixQueueGroup: superpmi
+#     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+#     jobParameters:
+#       testGroup: outerloop
+#       liveLibrariesBuildConfig: Release
+#       SuperPmiCollect: true
