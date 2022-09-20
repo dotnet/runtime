@@ -477,6 +477,7 @@ namespace System.Runtime.CompilerServices
         private static object? ChkCastClassSpecial(void* toTypeHnd, object obj)
         {
             MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
+            Debug.Assert(mt != toTypeHnd, "The check for the trivial cases should be inlined by the JIT");
 
             for (; ; )
             {
