@@ -277,14 +277,14 @@ fi
 <![CDATA[
       $(CLRTestBatchPreCommands)
 @(DisasmCheckFiles -> '  dotnet %CORE_ROOT%\SuperFileCheck\SuperFileCheck.dll --csharp-list-method-names "%(Identity)" --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) > "$(BatchDisasmListOutputFile)"
-  for /F "delims=" %%g in ($(BatchDisasmListOutputFile)) do set COMPlus_JitDisasm=%%g
-  set COMPlus_JitDiffableDasm=1
-  set COMPlus_JitStdOutFile=$(BatchDisasmOutputFile)
   IF NOT "!ERRORLEVEL!" == "0" (
     ECHO %CORE_ROOT%\SuperFileCheck\SuperFileCheck.exe --csharp-list-method-names "%(Identity)" --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) > "$(BatchDisasmListOutputFile)"
     ECHO EXECUTION OF FILECHECK LISTING METHOD NAMES - FAILED !ERRORLEVEL!
     Exit /b 1
   )', '%0d%0a')
+  for /F "delims=" %%g in ($(BatchDisasmListOutputFile)) do set COMPlus_JitDisasm=%%g
+  set COMPlus_JitDiffableDasm=1
+  set COMPlus_JitStdOutFile=$(BatchDisasmOutputFile)
 ]]>
       </CLRTestBatchPreCommands>
 
