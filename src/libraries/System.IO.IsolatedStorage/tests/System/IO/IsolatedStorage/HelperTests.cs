@@ -13,6 +13,7 @@ namespace System.IO.IsolatedStorage.Tests
         {
             object identity;
             string hash;
+            //TestHelper.InitHelper(out identity,out hash);
             Helper.GetDefaultIdentityAndHash(out identity, out hash, '.');
 
             Assert.NotNull(identity);
@@ -45,7 +46,7 @@ namespace System.IO.IsolatedStorage.Tests
                 return;
 
             string path = Helper.GetDataDirectory(scope);
-            Assert.Equal(".isolated-storage", Path.GetFileName(path));
+            Assert.Equal(Helper.IsolatedStorageDirectoryName, Path.GetFileName(path));
         }
     }
 }
