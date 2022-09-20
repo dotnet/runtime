@@ -61,8 +61,8 @@ namespace System.Formats.Tar.Tests
 
         protected const string TestGName = "group";
         protected const string TestUName = "user";
-        protected readonly string TestLongGName = new string('ñ', 33);
-        protected readonly string TestLongUName = new string('ü', 100);
+        protected readonly string TestLongGName = new string('\u00f1', 33);
+        protected readonly string TestLongUName = new string('\u00e4', 100);
 
         // The metadata of the entries inside the asset archives are all set to these values
         protected const int AssetGid = 3579;
