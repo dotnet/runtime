@@ -12570,7 +12570,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         //
         // use the special helper that skips the cases checked by our inlined cast
         //
-        const CorInfoHelpFunc specialHelper = isExpandingArray ? helper : CORINFO_HELP_CHKCASTCLASS_SPECIAL;
+        const CorInfoHelpFunc specialHelper = (helper == CORINFO_HELP_CHKCASTCLASS) ? CORINFO_HELP_CHKCASTCLASS_SPECIAL : helper;
 
         condTrue = gtNewHelperCallNode(specialHelper, TYP_REF, partialExpand ? op2 : op2Var, gtClone(op1));
     }
