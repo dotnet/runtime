@@ -18,11 +18,6 @@ namespace Microsoft.Extensions.Hosting
         StopHost = 0,
         Ignore = 1,
     }
-    public enum BackgroundServiceStopBehavior
-    {
-        Sequential,
-        Asynchronous
-    }
     public partial class ConsoleLifetimeOptions
     {
         public ConsoleLifetimeOptions() { }
@@ -119,7 +114,8 @@ namespace Microsoft.Extensions.Hosting
     {
         public HostOptions() { }
         public Microsoft.Extensions.Hosting.BackgroundServiceExceptionBehavior BackgroundServiceExceptionBehavior { get { throw null; } set { } }
-        public Microsoft.Extensions.Hosting.BackgroundServiceStopBehavior BackgroundServiceStopBehavior { get { throw null; } set { } }
+        public bool ServicesStartConcurrently { get { throw null; } set { } }
+        public bool ServicesStopConcurrently { get { throw null; } set { } }
         public System.TimeSpan ShutdownTimeout { get { throw null; } set { } }
     }
 }

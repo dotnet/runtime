@@ -18,13 +18,14 @@ namespace Microsoft.Extensions.Hosting
         public TimeSpan ShutdownTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
         /// <summary>
-        /// The behavior the <see cref="IHost"/> will follow when stopping registered instances of <see cref="IHostedService"/>
+        /// Determines if the <see cref="IHost"/> will start registered instances of <see cref="IHostedService"/> concurrently or sequentially
         /// </summary>
-        /// <remarks>
-        /// Defaults to <see cref="BackgroundServiceStopBehavior.Asynchronous"/>
-        /// </remarks>
-        public BackgroundServiceStopBehavior BackgroundServiceStopBehavior { get; set; } =
-            BackgroundServiceStopBehavior.Asynchronous;
+        public bool ServicesStartConcurrently { get; set; }
+
+        /// <summary>
+        /// Determines if the <see cref="IHost"/> will stop registered instances of <see cref="IHostedService"/> concurrently or sequentially
+        /// </summary>
+        public bool ServicesStopConcurrently { get; set; }
 
         /// <summary>
         /// The behavior the <see cref="IHost"/> will follow when any of
@@ -45,18 +46,18 @@ namespace Microsoft.Extensions.Hosting
                 ShutdownTimeout = TimeSpan.FromSeconds(seconds);
             }
 
-            var backgroundServiceStopBehavior = configuration["backgroundServiceStopBehavior"];
-            if (!string.IsNullOrWhiteSpace(backgroundServiceStopBehavior)
-                && Enum.TryParse<BackgroundServiceStopBehavior>(backgroundServiceStopBehavior, out var stopBehavior))
+            var servicesStartConcurrently = configuration["servicesStartConcurrently"];
+            if (!string.IsNullOrWhiteSpace(servicesStartConcurrently)
+                && bool.TryParse(servicesStartConcurrently, out bool startBehavior))
             {
-                BackgroundServiceStopBehavior = stopBehavior;
+                ServicesStartConcurrently = startBehavior;
             }
 
-            var backgroundServiceExceptionBehavior = configuration["backgroundServiceExceptionBehavior"];
-            if (!string.IsNullOrWhiteSpace(backgroundServiceExceptionBehavior)
-                && Enum.TryParse<BackgroundServiceExceptionBehavior>(backgroundServiceExceptionBehavior, out var exceptionBehavior))
+            var servicesStopConcurrently = configuration["servicesStopConcurrently"];
+            if (!string.IsNullOrWhiteSpace(servicesStopConcurrently)
+                && bool.TryParse(servicesStopConcurrently, out bool stopBehavior))
             {
-                BackgroundServiceExceptionBehavior = exceptionBehavior;
+                ServicesStopConcurrently = stopBehavior;
             }
         }
     }
