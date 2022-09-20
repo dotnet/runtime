@@ -263,7 +263,7 @@ public:
     //
     // GC support APIs - do not use except from GC itself
     //
-    void SetGCSpecial(bool isGCSpecial);
+    void SetGCSpecial();
     bool IsGCSpecial();
     bool CatchAtSafePoint();
 
