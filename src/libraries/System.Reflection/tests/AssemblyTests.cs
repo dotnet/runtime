@@ -155,7 +155,7 @@ namespace System.Reflection.Tests
             string assembly = Assembly.GetEntryAssembly().ToString();
 
             // The single file test runner is not xunit.console
-            string expectedAssembly = PlatformDetection.IsNativeAot ? "System.Reflection.Tests" : "xunit.console";
+            string expectedAssembly = PlatformDetection.IsNativeAot ? "System.Reflection.Tests" : "testhost";
 
             bool correct = assembly.IndexOf(expectedAssembly, StringComparison.OrdinalIgnoreCase) != -1;
             Assert.True(correct, $"Unexpected assembly name {assembly}");
