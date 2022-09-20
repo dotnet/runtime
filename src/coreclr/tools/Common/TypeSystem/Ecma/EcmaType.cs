@@ -429,6 +429,24 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        public override TypeDesc UnderlyingType
+        {
+            get
+            {
+                if (!IsEnum)
+                    return this;
+
+                foreach (var handle in _typeDefinition.GetFields())
+                {
+                    var field = (EcmaField)_module.GetObject(handle);
+                    if (!field.IsStatic)
+                        return field.FieldType;
+                }
+
+                return base.UnderlyingType; // Use the base implementation to get consistent error behavior
+            }
+        }
+
         public override FieldDesc GetField(string name)
         {
             var metadataReader = this.MetadataReader;
