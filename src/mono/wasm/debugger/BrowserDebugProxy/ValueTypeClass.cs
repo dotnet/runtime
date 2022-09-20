@@ -293,7 +293,7 @@ namespace BrowserDebugProxy
                     typeId,
                     className,
                     Buffer,
-                    autoExpand,
+                    autoExpand ? GetObjectCommandOptions.AutoExpandable : GetObjectCommandOptions.None,
                     Id,
                     isValueType: true,
                     isOwn: i == 0,
