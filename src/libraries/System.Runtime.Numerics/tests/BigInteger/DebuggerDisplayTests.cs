@@ -12,6 +12,7 @@ namespace System.Numerics.Tests
         [InlineData(new uint[] { 0, 0, 1 }, "1.84467441e+19")]
         [InlineData(new uint[] { 0, 0, 0, 1 }, "7.92281625e+28")]
         [InlineData(new uint[] { 0, 0xCC00CC00, 0x80808080 }, "3.97694306e+28")]
+        [SkipOnPlatform(TestPlatforms.Browser, "DebuggerDisplayAttribute is stripped on wasm")]
         public void TestDebuggerDisplay(uint[] bits, string displayString)
         {
             BigInteger positiveValue = new BigInteger(1, bits);
