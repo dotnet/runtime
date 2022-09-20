@@ -11,7 +11,7 @@ namespace System.Numerics
     /// with IEEE 754 totalOrder semantic.
     /// </summary>
     /// <typeparam name="T">The type of the numbers to be compared, must be an IEEE 754 floating-point type.</typeparam>
-    public class TotalOrderIeee754Comparer<T> : IComparer<T>, IEqualityComparer<T>
+    public struct TotalOrderIeee754Comparer<T> : IComparer<T>, IEqualityComparer<T>
         where T : IFloatingPointIeee754<T>?
     {
         /// <summary>
