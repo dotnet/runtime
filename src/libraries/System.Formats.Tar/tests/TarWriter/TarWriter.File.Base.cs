@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
@@ -15,7 +12,7 @@ namespace System.Formats.Tar.Tests
         {
             foreach (CompressionMethod compressionMethod in Enum.GetValues<CompressionMethod>())
             {
-                foreach (bool copyData in new object[] { false, true })
+                foreach (bool copyData in new bool[] { false, true })
                 {
                     foreach (object[] testCaseName in GetV7TestCaseNames())
                     {
@@ -29,15 +26,15 @@ namespace System.Formats.Tar.Tests
 
                     foreach (object[] testCaseNameObj in GetUstarTestCaseNames())
                     {
-                        string testcaseName = (string)testCaseNameObj[0];
-                        if (testcaseName is "folder_file_utf8" // The legacy name field is stored in ASCII in the Ustar format
+                        string testCaseName = (string)testCaseNameObj[0];
+                        if (testCaseName is "folder_file_utf8" // The legacy name field is stored in ASCII in the Ustar format
                                          or "longpath_splitable_under255" // Folder stored under 'unarchived' runtime-assets due to NuGet not allowing very long paths
                                          or "specialfiles") // Same but for fifos/chardevices/blockdevices
                         {
                             continue;
                         }
 
-                        yield return new object[] { TestTarFormat.ustar, testcaseName, compressionMethod, copyData };
+                        yield return new object[] { TestTarFormat.ustar, testCaseName, compressionMethod, copyData };
                     }
 
                     foreach (object[] testCaseNameObj in GetPaxAndGnuTestCaseNames())

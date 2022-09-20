@@ -215,13 +215,10 @@ namespace System.Formats.Tar.Tests
         {
             TarEntryFormat entryFormat = GetEntryFormatForTestTarFormat(testFormat);
             string pathWithExpectedFiles = GetTestCaseUnarchivedFolderPath(testCaseName);
-            if (!Path.EndsInDirectorySeparator(pathWithExpectedFiles))
-            {
-                pathWithExpectedFiles = pathWithExpectedFiles + Path.DirectorySeparatorChar;
-            }
+            pathWithExpectedFiles = PathInternal.EnsureTrailingSeparator(pathWithExpectedFiles);
 
-            using Stream file = GetTarMemoryStream(compressionMethod, testFormat, testCaseName);
-            using Stream originArchive = compressionMethod == CompressionMethod.GZip ? new GZipStream(file, CompressionMode.Decompress) : file;
+            using Stream fileMemoryStream = GetTarMemoryStream(compressionMethod, testFormat, testCaseName);
+            using Stream originArchive = compressionMethod == CompressionMethod.GZip ? new GZipStream(fileMemoryStream, CompressionMode.Decompress) : fileMemoryStream;
 
             VerifyCopyArchive(pathWithExpectedFiles, originArchive, entryFormat, copyData);
         }
