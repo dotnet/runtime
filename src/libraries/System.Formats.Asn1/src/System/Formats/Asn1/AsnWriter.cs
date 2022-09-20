@@ -621,6 +621,12 @@ namespace System.Formats.Asn1
 
             Debug.Assert(pos == end);
 
+            // If there is only one thing in the contents, we have no sorting work to do and it's already sorted.
+            if (positions.Count == 1)
+            {
+                return;
+            }
+
             var comparer = new ArrayIndexSetOfValueComparer(buffer);
             positions.Sort(comparer);
 
