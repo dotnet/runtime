@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
@@ -111,9 +112,18 @@ namespace Microsoft.Extensions.Hosting.Internal
 
             if (exceptions.Count > 0)
             {
-                var ex = new AggregateException("One or more hosted services failed to start.", exceptions);
-                _logger.HostedServiceStartupFaulted(ex);
-                throw ex;
+                if (exceptions.Count == 1)
+                {
+                    // Rethrow if it's a single error
+                    _logger.HostedServiceStartupFaulted(exceptions[0]);
+                    ExceptionDispatchInfo.Capture(exceptions[0]).Throw();
+                }
+                else
+                {
+                    var ex = new AggregateException("One or more hosted services failed to start.", exceptions);
+                    _logger.HostedServiceStartupFaulted(ex);
+                    throw ex;
+                }
             }
 
             // Fire IHostApplicationLifetime.Started
@@ -214,9 +224,18 @@ namespace Microsoft.Extensions.Hosting.Internal
 
                 if (exceptions.Count > 0)
                 {
-                    var ex = new AggregateException("One or more hosted services failed to stop.", exceptions);
-                    _logger.StoppedWithException(ex);
-                    throw ex;
+                    if (exceptions.Count == 1)
+                    {
+                        // Rethrow if it's a single error
+                        _logger.HostedServiceStartupFaulted(exceptions[0]);
+                        ExceptionDispatchInfo.Capture(exceptions[0]).Throw();
+                    }
+                    else
+                    {
+                        var ex = new AggregateException("One or more hosted services failed to stop.", exceptions);
+                        _logger.HostedServiceStartupFaulted(ex);
+                        throw ex;
+                    }
                 }
             }
 

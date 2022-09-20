@@ -60,12 +60,12 @@ namespace Microsoft.Extensions.Hosting.Tests
             var stopCallOrder = hostedServiceCount;
             var stopExecutionCount = 0;
 
-            var hostedServices = new Mock<BackgroundService>[hostedServiceCount];
+            var hostedServices = new Mock<IHostedService>[hostedServiceCount];
 
             for (int i = 0; i < hostedServiceCount; i++)
             {
                 var index = i;
-                var service = new Mock<BackgroundService>();
+                var service = new Mock<IHostedService>();
                 service.Setup(y => y.StopAsync(It.IsAny<CancellationToken>()))
                     .Callback(() =>
                     {
