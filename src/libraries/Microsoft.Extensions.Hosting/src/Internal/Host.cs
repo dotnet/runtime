@@ -112,7 +112,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             if (exceptions.Count > 0)
             {
                 var ex = new AggregateException("One or more hosted services failed to start.", exceptions);
-                _logger.StoppedWithException(ex);
+                _logger.HostedServiceStartupFaulted(ex);
                 throw ex;
             }
 
