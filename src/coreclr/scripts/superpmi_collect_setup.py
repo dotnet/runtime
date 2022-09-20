@@ -390,7 +390,9 @@ def setup_microbenchmark(workitem_directory, arch):
             print("Missing " + dotnet_install_script)
             return
 
-        # Hardcode the dotnet-version
+        # Sometimes the dotnet version installed by the script is latest and expect certain versions of SDK that
+        # have not published yet. As a result, we hit errors of "dotnet restore". As a workaround, hard code the
+        # working version until we move to ".NET 8" in the script.
         run_command(
             get_python_name() + [dotnet_install_script, "install", "--dotnet-versions", "7.0.100-rc.2.22458.3", "--architecture", arch, "--install-dir",
                                  dotnet_directory, "--verbose"])
