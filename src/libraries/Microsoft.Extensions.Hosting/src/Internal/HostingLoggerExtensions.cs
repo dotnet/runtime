@@ -109,7 +109,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 logger.LogError(
                    eventId: LoggerEventIds.HostedServiceStartupFaulted,
                    exception: ex,
-                   message: "HostedService failed to start");
+                   message: "Hosting failed to start");
             }
         }
     }
