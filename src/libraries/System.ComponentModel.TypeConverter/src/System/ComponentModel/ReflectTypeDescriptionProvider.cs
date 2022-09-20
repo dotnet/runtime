@@ -157,10 +157,11 @@ namespace System.ComponentModel
             [RequiresUnreferencedCode("NullableConverter's UnderlyingType cannot be statically discovered.")]
             get
             {
-                return LazyInitializer.EnsureInitialized(ref s_intrinsicTypeConverters, () => new Dictionary<object, IntrinsicTypeConverterData>(27)
+                return LazyInitializer.EnsureInitialized(ref s_intrinsicTypeConverters, () => new Dictionary<object, IntrinsicTypeConverterData>(32)
                 {
                     // Add the intrinsics
                     //
+                    // When modifying this list, be sure to update the initial dictionary capacity above
                     [typeof(bool)] = new IntrinsicTypeConverterData((type) => new BooleanConverter()),
                     [typeof(byte)] = new IntrinsicTypeConverterData((type) => new ByteConverter()),
                     [typeof(sbyte)] = new IntrinsicTypeConverterData((type) => new SByteConverter()),

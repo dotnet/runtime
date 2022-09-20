@@ -130,22 +130,108 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (token.TokenType == CorTokenType.mdtMethodSpec)
             {
                 MethodSpecification methodSpec = token.MetadataReader.GetMethodSpecification((MethodSpecificationHandle)token.Handle);
-                methodSpec.DecodeSignature<DummyTypeInfo, ModuleTokenResolver>(new TokenResolverProvider(this, token.Module), this);
+                DecodeMethodSpecificationSignatureToDiscoverUsedTypeTokens(methodSpec.Signature, token);
                 token = new ModuleToken(token.Module, methodSpec.Method);
             }
+
             if (token.TokenType == CorTokenType.mdtMemberRef)
             {
                 MemberReference memberRef = token.MetadataReader.GetMemberReference((MemberReferenceHandle)token.Handle);
                 EntityHandle owningTypeHandle = memberRef.Parent;
                 TypeDesc owningType = (TypeDesc)token.Module.GetObject(owningTypeHandle, NotFoundBehavior.Throw);
                 AddModuleTokenForType(owningType, new ModuleToken(token.Module, owningTypeHandle));
-                memberRef.DecodeMethodSignature<DummyTypeInfo, ModuleTokenResolver>(new TokenResolverProvider(this, token.Module), this);
+                DecodeMethodSignatureToDiscoverUsedTypeTokens(memberRef.Signature, token);
             }
             if (token.TokenType == CorTokenType.mdtMethodDef)
             {
                 MethodDefinition methodDef = token.MetadataReader.GetMethodDefinition((MethodDefinitionHandle)token.Handle);
-                methodDef.DecodeSignature<DummyTypeInfo, ModuleTokenResolver>(new TokenResolverProvider(this, token.Module), this);
+                TokenResolverProvider rentedProvider = TokenResolverProvider.Rent(this, token.Module);
+                DecodeMethodSignatureToDiscoverUsedTypeTokens(methodDef.Signature, token);
             }
+        }
+
+        private void DecodeMethodSpecificationSignatureToDiscoverUsedTypeTokens(BlobHandle signatureHandle, ModuleToken token)
+        {
+            MetadataReader metadataReader = token.MetadataReader;
+            TokenResolverProvider rentedProvider = TokenResolverProvider.Rent(this, token.Module);
+            SignatureDecoder<DummyTypeInfo, ModuleTokenResolver> sigDecoder = new(rentedProvider, metadataReader, this);
+
+            BlobReader signature = metadataReader.GetBlobReader(signatureHandle);
+
+            SignatureHeader header = signature.ReadSignatureHeader();
+            SignatureKind kind = header.Kind;
+            if (kind != SignatureKind.MethodSpecification)
+            {
+                throw new BadImageFormatException();
+            }
+
+            int count = signature.ReadCompressedInteger();
+            for (int i = 0; i < count; i++)
+            {
+                sigDecoder.DecodeType(ref signature);
+            }
+            TokenResolverProvider.ReturnRental(rentedProvider);
+        }
+
+        private void DecodeMethodSignatureToDiscoverUsedTypeTokens(BlobHandle signatureHandle, ModuleToken token)
+        {
+            MetadataReader metadataReader = token.MetadataReader;
+            TokenResolverProvider rentedProvider = TokenResolverProvider.Rent(this, token.Module);
+            SignatureDecoder<DummyTypeInfo, ModuleTokenResolver> sigDecoder = new (rentedProvider, metadataReader, this);
+            BlobReader signature = metadataReader.GetBlobReader(signatureHandle);
+
+            SignatureHeader header = signature.ReadSignatureHeader();
+            SignatureKind kind = header.Kind;
+            if (kind != SignatureKind.Method && kind != SignatureKind.Property)
+            {
+                throw new BadImageFormatException();
+            }
+
+            int genericParameterCount = 0;
+            if (header.IsGeneric)
+            {
+                genericParameterCount = signature.ReadCompressedInteger();
+            }
+
+            int parameterCount = signature.ReadCompressedInteger();
+            sigDecoder.DecodeType(ref signature);
+
+            if (parameterCount != 0)
+            {
+                int parameterIndex;
+
+                for (parameterIndex = 0; parameterIndex < parameterCount; parameterIndex++)
+                {
+                    BlobReader sentinelReader = signature;
+                    int typeCode = sentinelReader.ReadCompressedInteger();
+                    if (typeCode == (int)SignatureTypeCode.Sentinel)
+                    {
+                        signature = sentinelReader;
+                    }
+                    sigDecoder.DecodeType(ref signature, allowTypeSpecifications: false);
+                }
+            }
+
+            TokenResolverProvider.ReturnRental(rentedProvider);
+        }
+
+        private void DecodeFieldSignatureToDiscoverUsedTypeTokens(BlobHandle signatureHandle, ModuleToken token)
+        {
+            MetadataReader metadataReader = token.MetadataReader;
+            TokenResolverProvider rentedProvider = TokenResolverProvider.Rent(this, token.Module);
+            SignatureDecoder<DummyTypeInfo, ModuleTokenResolver> sigDecoder = new(rentedProvider, metadataReader, this);
+
+            BlobReader signature = metadataReader.GetBlobReader(signatureHandle);
+
+            SignatureHeader header = signature.ReadSignatureHeader();
+            SignatureKind kind = header.Kind;
+            if (kind != SignatureKind.Field)
+            {
+                throw new BadImageFormatException();
+            }
+
+            sigDecoder.DecodeType(ref signature);
+            TokenResolverProvider.ReturnRental(rentedProvider);
         }
 
         private void AddModuleTokenForFieldReference(TypeDesc owningType, ModuleToken token)
@@ -153,7 +239,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             MemberReference memberRef = token.MetadataReader.GetMemberReference((MemberReferenceHandle)token.Handle);
             EntityHandle owningTypeHandle = memberRef.Parent;
             AddModuleTokenForType(owningType, new ModuleToken(token.Module, owningTypeHandle));
-            memberRef.DecodeFieldSignature<DummyTypeInfo, ModuleTokenResolver>(new TokenResolverProvider(this, token.Module), this);
+            DecodeFieldSignatureToDiscoverUsedTypeTokens(memberRef.Signature, token);
         }
 
         // Add TypeSystemEntity -> ModuleToken mapping to a ConcurrentDictionary. Using CompareTo sort the token used, so it will
@@ -182,7 +268,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (token.TokenType == CorTokenType.mdtTypeSpec)
             {
                 TypeSpecification typeSpec = token.MetadataReader.GetTypeSpecification((TypeSpecificationHandle)token.Handle);
-                typeSpec.DecodeSignature(new TokenResolverProvider(this, token.Module), this);
+                TokenResolverProvider rentedProvider = TokenResolverProvider.Rent(this, token.Module);
+                typeSpec.DecodeSignature(rentedProvider, this);
+                TokenResolverProvider.ReturnRental(rentedProvider);
                 specialTypeFound = true;
             }
 
@@ -229,10 +317,33 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             IEcmaModule _contextModule;
 
+            [ThreadStatic]
+            private static TokenResolverProvider _rentalObject;
+
             public TokenResolverProvider(ModuleTokenResolver resolver, IEcmaModule contextModule)
             {
                 _resolver = resolver;
                 _contextModule = contextModule;
+            }
+
+            public static TokenResolverProvider Rent(ModuleTokenResolver resolver, IEcmaModule contextModule)
+            {
+                if (_rentalObject != null)
+                {
+                    TokenResolverProvider result = _rentalObject;
+                    _rentalObject = null;
+                    result._resolver = resolver;
+                    result._contextModule = contextModule;
+                    return result;
+                }
+                return new TokenResolverProvider(resolver, contextModule);
+            }
+
+            public static void ReturnRental(TokenResolverProvider rental)
+            {
+                rental._resolver = null;
+                rental._contextModule = null;
+                _rentalObject = rental;
             }
 
             public DummyTypeInfo GetArrayType(DummyTypeInfo elementType, ArrayShape shape)
