@@ -358,28 +358,41 @@ namespace System.Formats.Tar
             _checksum = WriteChecksum(tmpChecksum, buffer);
         }
 
-        // All formats save in the name byte array only the ASCII bytes that fit.
+        // All formats save in the name byte array only the UTF8 bytes that fit.
         private int WriteName(Span<byte> buffer)
         {
-            ReadOnlySpan<char> src = _name.AsSpan(0, Math.Min(_name.Length, FieldLengths.Name));
-            Span<byte> dest = buffer.Slice(FieldLocations.Name, FieldLengths.Name);
-            int encoded = Encoding.ASCII.GetBytes(src, dest);
-            return Checksum(dest.Slice(0, encoded));
+            ReadOnlySpan<char> name = _name;
+            int utf16NameTruncatedLength = GetUtf16TruncatedTextLength(name, FieldLengths.Name);
+
+            ReadOnlySpan<char> truncatedName = name.Slice(0, utf16NameTruncatedLength);
+            Span<byte> destination = buffer.Slice(FieldLocations.Name, FieldLengths.Name);
+            Encoding.UTF8.GetBytes(truncatedName, destination);
+
+            return Checksum(destination);
         }
 
-        // Ustar and PAX save in the name byte array only the ASCII bytes that fit, and the rest of that string is saved in the prefix field.
+        // Ustar and PAX save in the name byte array only the UTF8 bytes that fit, and the rest of that string is saved in the prefix field.
         private int WritePosixName(Span<byte> buffer)
         {
-            int checksum = WriteName(buffer);
+            ReadOnlySpan<char> name = _name;
+            int utf16NameTruncatedLength = GetUtf16TruncatedTextLength(name, FieldLengths.Name);
 
-            if (_name.Length > FieldLengths.Name)
+            ReadOnlySpan<char> truncatedName = name.Slice(0, utf16NameTruncatedLength);
+            Span<byte> destination = buffer.Slice(FieldLocations.Name, FieldLengths.Name);
+            Encoding.UTF8.GetBytes(truncatedName, destination);
+
+            int checksum = Checksum(destination);
+
+            if (utf16NameTruncatedLength < name.Length)
             {
-                int prefixBytesLength = Math.Min(_name.Length - FieldLengths.Name, FieldLengths.Prefix);
-                Span<byte> remaining = stackalloc byte[prefixBytesLength];
-                int encoded = Encoding.ASCII.GetBytes(_name.AsSpan(FieldLengths.Name, prefixBytesLength), remaining);
-                Debug.Assert(encoded == remaining.Length);
+                ReadOnlySpan<char> prefix = name.Slice(utf16NameTruncatedLength);
+                int utf16PrefixTruncatedLength = GetUtf16TruncatedTextLength(prefix, FieldLengths.Prefix);
 
-                checksum += WriteLeftAlignedBytesAndGetChecksum(remaining, buffer.Slice(FieldLocations.Prefix, FieldLengths.Prefix));
+                destination = buffer.Slice(FieldLocations.Prefix, FieldLengths.Prefix);
+                ReadOnlySpan<char> truncatedPrefix = prefix.Slice(0, utf16PrefixTruncatedLength);
+                Encoding.UTF8.GetBytes(truncatedPrefix, destination);
+
+                checksum += Checksum(destination);
             }
 
             return checksum;
@@ -423,7 +436,7 @@ namespace System.Formats.Tar
 
             if (!string.IsNullOrEmpty(_linkName))
             {
-                checksum += WriteAsAsciiString(_linkName, buffer.Slice(FieldLocations.LinkName, FieldLengths.LinkName));
+                checksum += WriteAsUtf8String(_linkName, buffer.Slice(FieldLocations.LinkName, FieldLengths.LinkName));
             }
 
             return checksum;
@@ -467,12 +480,12 @@ namespace System.Formats.Tar
 
             if (!string.IsNullOrEmpty(_uName))
             {
-                checksum += WriteAsAsciiString(_uName, buffer.Slice(FieldLocations.UName, FieldLengths.UName));
+                checksum += WriteAsUtf8String(_uName, buffer.Slice(FieldLocations.UName, FieldLengths.UName));
             }
 
             if (!string.IsNullOrEmpty(_gName))
             {
-                checksum += WriteAsAsciiString(_gName, buffer.Slice(FieldLocations.GName, FieldLengths.GName));
+                checksum += WriteAsUtf8String(_gName, buffer.Slice(FieldLocations.GName, FieldLengths.GName));
             }
 
             if (_devMajor > 0)
@@ -766,10 +779,10 @@ namespace System.Formats.Tar
             return FormatOctal(unixTimeSeconds, destination);
         }
 
-        // Writes the specified text as an ASCII string aligned to the left, and returns its checksum.
-        private static int WriteAsAsciiString(string str, Span<byte> buffer)
+        // Writes the specified text as an UTF8 string aligned to the left, and returns its checksum.
+        private static int WriteAsUtf8String(string str, Span<byte> buffer)
         {
-            byte[] bytes = Encoding.ASCII.GetBytes(str);
+            byte[] bytes = Encoding.UTF8.GetBytes(str);
             return WriteLeftAlignedBytesAndGetChecksum(bytes.AsSpan(), buffer);
         }
 
@@ -818,6 +831,28 @@ namespace System.Formats.Tar
             result += suffix;
 
             return result;
+        }
+
+        // Returns the text's utf16 length truncated at the specified max length.
+        private static int GetUtf16TruncatedTextLength(ReadOnlySpan<char> text, int maxLength)
+        {
+            int utf8Length = 0;
+            int utf16TruncatedLength = 0;
+
+            foreach (Rune rune in text.EnumerateRunes())
+            {
+                utf8Length += rune.Utf8SequenceLength;
+                if (utf8Length <= maxLength)
+                {
+                    utf16TruncatedLength += rune.Utf16SequenceLength;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return utf16TruncatedLength;
         }
     }
 }
