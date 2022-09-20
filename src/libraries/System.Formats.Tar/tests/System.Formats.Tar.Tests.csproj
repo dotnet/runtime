@@ -47,6 +47,7 @@
     <Compile Include="TarTestsBase.Posix.cs" />
     <Compile Include="TarTestsBase.Ustar.cs" />
     <Compile Include="TarTestsBase.V7.cs" />
+    <Compile Include="TarWriter\TarWriter.WriteEntry.Entry.Roundtrip.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntryAsync.File.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntry.Base.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntryAsync.Tests.cs" />
