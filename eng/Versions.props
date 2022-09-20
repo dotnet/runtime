@@ -51,7 +51,7 @@
     <!--
       TODO: Remove pinned version once arcade supplies a compiler that enables the repo to compile.
     -->
-    <MicrosoftNetCompilersToolsetVersion>4.4.0-3.22452.8</MicrosoftNetCompilersToolsetVersion>
+    <MicrosoftNetCompilersToolsetVersion>4.4.0-3.22472.1</MicrosoftNetCompilersToolsetVersion>
     <StaticCsVersion>0.2.0</StaticCsVersion>
     <!-- SDK dependencies -->
     <MicrosoftDotNetApiCompatTaskVersion>8.0.100-alpha.1.22462.3</MicrosoftDotNetApiCompatTaskVersion>
