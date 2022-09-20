@@ -9051,6 +9051,14 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 				case WRAPPER_SUBTYPE_PTR_TO_STRUCTURE:
 				case WRAPPER_SUBTYPE_STRUCTURE_TO_PTR:
 					break;
+				case WRAPPER_SUBTYPE_ICALL_WRAPPER: {
+					MonoJumpInfo *tmp_ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
+					tmp_ji->type = MONO_PATCH_INFO_METHOD;
+					tmp_ji->data.method = method;
+					get_got_offset (acfg, TRUE, tmp_ji);
+					keep = TRUE;
+					break;
+				}
 				default:
 					keep = TRUE;
 					break;
