@@ -635,15 +635,36 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
     {
         int64_t cacheSizeFromSysctl = 0;
         size_t sz = sizeof(cacheSizeFromSysctl);
-        const bool success = false
-            // macOS: Since macOS 12.0, Apple added ".perflevelX." to determinate cache sizes for efficiency
-            // and performance cores separately. "perflevel0" stands for "performance"
-            || sysctlbyname("hw.perflevel0.l3cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
-            || sysctlbyname("hw.perflevel0.l2cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
+        bool success = false;
+        // macOS: Since macOS 12.0, Apple added ".perflevelX." to determinate cache sizes for efficiency
+        // and performance cores separately. "perflevel0" stands for "performance"
+        if (sysctlbyname("hw.perflevel0.l3cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0)
+        {
+            success = true;
+        }
+        else if (sysctlbyname("hw.perflevel0.l2cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0)
+        {
+            int64_t cpusMax;
+            int64_t cpusPerL2;
+            size_t szCpusMax = sizeof(cpusMax);
+            size_t szCpusPerL2 = sizeof(cpusPerL2);
+            // macOS: The reported L2 cache size is actually not total but rather per CPU "cluster".
+            // Therefore, we need to account for CPU count per "cluster" to calculate total size
+            if (sysctlbyname("hw.perflevel0.physicalcpu_max", &cpusMax, &szCpusMax, nullptr, 0) == 0 &&
+                sysctlbyname("hw.perflevel0.cpusperl2", &cpusPerL2, &szCpusPerL2, nullptr, 0) == 0)
+            {
+                cacheSizeFromSysctl = cacheSizeFromSysctl * (cpusMax / cpusPerL2);
+            }
+            success = true;
+        }
+        else
+        {
             // macOS: these report cache sizes for efficiency cores only:
-            || sysctlbyname("hw.l3cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
-            || sysctlbyname("hw.l2cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
-            || sysctlbyname("hw.l1dcachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0;
+            success = sysctlbyname("hw.l3cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
+                || sysctlbyname("hw.l2cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
+                || sysctlbyname("hw.l1dcachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0;
+        }
+
         if (success)
         {
             _ASSERTE(cacheSizeFromSysctl > 0);
