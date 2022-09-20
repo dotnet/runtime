@@ -5,6 +5,12 @@ namespace System.IO.IsolatedStorage
 {
     public sealed partial class IsolatedStorageFile : IsolatedStorage, IDisposable
     {
+
+        private static void InitializeIsoStorageDirectoryName()
+        {
+            Helper.IsolatedStorageDirectoryName = ".isolated-storage";
+        }
+
         private string GetIsolatedStorageRoot()
         {
             return Helper.GetRootDirectory(Scope);
