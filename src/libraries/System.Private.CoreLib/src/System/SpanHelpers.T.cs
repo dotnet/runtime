@@ -1442,10 +1442,6 @@ namespace System
             return false;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int IndexOfAnyExceptValueType<T>(ref T searchSpace, T value, int length) where T : struct, INumber<T>
-            => IndexOfValueType<T, Negate<T>>(ref searchSpace, value, length);
-
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static int IndexOfValueType<TValue, TNegator>(ref TValue searchSpace, TValue value, int length)
             where TValue : struct, INumber<TValue>
@@ -1558,18 +1554,6 @@ namespace System
 
             return -1;
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int IndexOfAnyChar(ref char searchSpace, char value0, char value1, int length)
-            => IndexOfAnyValueType(ref Unsafe.As<char, short>(ref searchSpace), (short)value0, (short)value1, length);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int IndexOfAnyValueType<T>(ref T searchSpace, T value0, T value1, int length) where T : struct, INumber<T>
-            => IndexOfAnyValueType<T, DontNegate<T>>(ref searchSpace, value0, value1, length);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int IndexOfAnyExceptValueType<T>(ref T searchSpace, T value0, T value1, int length) where T : struct, INumber<T>
-            => IndexOfAnyValueType<T, Negate<T>>(ref searchSpace, value0, value1, length);
 
         // having INumber<T> constraint here allows to use == operator and get better perf compared to .Equals
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -1708,14 +1692,6 @@ namespace System
             return -1;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int IndexOfAnyValueType<T>(ref T searchSpace, T value0, T value1, T value2, int length) where T : struct, INumber<T>
-            => IndexOfAnyValueType<T, DontNegate<T>>(ref searchSpace, value0, value1, value2, length);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int IndexOfAnyExceptValueType<T>(ref T searchSpace, T value0, T value1, T value2, int length) where T : struct, INumber<T>
-            => IndexOfAnyValueType<T, Negate<T>>(ref searchSpace, value0, value1, value2, length);
-
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static int IndexOfAnyValueType<TValue, TNegator>(ref TValue searchSpace, TValue value0, TValue value1, TValue value2, int length)
             where TValue : struct, INumber<TValue>
@@ -1851,14 +1827,6 @@ namespace System
 
             return -1;
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int IndexOfAnyValueType<T>(ref T searchSpace, T value0, T value1, T value2, T value3, int length) where T : struct, INumber<T>
-            => IndexOfAnyValueType<T, DontNegate<T>>(ref searchSpace, value0, value1, value2, value3, length);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int IndexOfAnyExceptValueType<T>(ref T searchSpace, T value0, T value1, T value2, T value3, int length) where T : struct, INumber<T>
-            => IndexOfAnyValueType<T, Negate<T>>(ref searchSpace, value0, value1, value2, value3, length);
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static int IndexOfAnyValueType<TValue, TNegator>(ref TValue searchSpace, TValue value0, TValue value1, TValue value2, TValue value3, int length)
@@ -2085,14 +2053,6 @@ namespace System
             return -1;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LastIndexOfValueType<T>(ref T searchSpace, T value, int length) where T : struct, INumber<T>
-            => LastIndexOfValueType<T, DontNegate<T>>(ref searchSpace, value, length);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LastIndexOfAnyExceptValueType<T>(ref T searchSpace, T value, int length) where T : struct, INumber<T>
-            => LastIndexOfValueType<T, Negate<T>>(ref searchSpace, value, length);
-
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static int LastIndexOfValueType<TValue, TNegator>(ref TValue searchSpace, TValue value, int length)
             where TValue : struct, INumber<TValue>
@@ -2202,14 +2162,6 @@ namespace System
 
             return -1;
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LastIndexOfAnyValueType<T>(ref T searchSpace, T value0, T value1, int length) where T : struct, INumber<T>
-            => LastIndexOfAnyValueType<T, DontNegate<T>>(ref searchSpace, value0, value1, length);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LastIndexOfAnyExceptValueType<T>(ref T searchSpace, T value0, T value1, int length) where T : struct, INumber<T>
-            => LastIndexOfAnyValueType<T, Negate<T>>(ref searchSpace, value0, value1, length);
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static int LastIndexOfAnyValueType<TValue, TNegator>(ref TValue searchSpace, TValue value0, TValue value1, int length)
@@ -2341,14 +2293,6 @@ namespace System
 
             return -1;
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LastIndexOfAnyValueType<T>(ref T searchSpace, T value0, T value1, T value2, int length) where T : struct, INumber<T>
-            => LastIndexOfAnyValueType<T, DontNegate<T>>(ref searchSpace, value0, value1, value2, length);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LastIndexOfAnyExceptValueType<T>(ref T searchSpace, T value0, T value1, T value2, int length) where T : struct, INumber<T>
-            => LastIndexOfAnyValueType<T, Negate<T>>(ref searchSpace, value0, value1, value2, length);
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static int LastIndexOfAnyValueType<TValue, TNegator>(ref TValue searchSpace, TValue value0, TValue value1, TValue value2, int length)
@@ -2485,10 +2429,6 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int LastIndexOfAnyValueType<T>(ref T searchSpace, T value0, T value1, T value2, T value3, int length) where T : struct, INumber<T>
             => LastIndexOfAnyValueType<T, DontNegate<T>>(ref searchSpace, value0, value1, value2, value3, length);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LastIndexOfAnyExceptValueType<T>(ref T searchSpace, T value0, T value1, T value2, T value3, int length) where T : struct, INumber<T>
-            => LastIndexOfAnyValueType<T, Negate<T>>(ref searchSpace, value0, value1, value2, value3, length);
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private static int LastIndexOfAnyValueType<TValue, TNegator>(ref TValue searchSpace, TValue value0, TValue value1, TValue value2, TValue value3, int length)
