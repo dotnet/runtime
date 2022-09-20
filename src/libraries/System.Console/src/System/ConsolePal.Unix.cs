@@ -417,7 +417,7 @@ namespace System
                    }
                    else
                    {
-                       throw Interop.GetExceptionForIoErrno(errorInfo);
+                       throw Interop.GetIOException(errorInfo);
                    }
                }
            }
