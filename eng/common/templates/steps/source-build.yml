@@ -82,7 +82,7 @@ steps:
       $targetRidArgs \
       /p:SourceBuildNonPortable=${{ parameters.platform.nonPortable }} \
       /p:ArcadeBuildFromSource=true \
-      /p:AssetManifestFileName=${{ parameters.platform.name }}
+      /p:AssetManifestFileName=$assetManifestFileName
   displayName: Build
 
 # Upload build logs for diagnosis.
