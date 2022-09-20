@@ -184,14 +184,25 @@ namespace SuperFileCheck
                 GetDescendantSingleLineCommentTrivia(root)
                 .Where(x =>
                 {
-                    if (x.Token.Parent != null)
-                    {
-                        return !x.Token.Parent.Ancestors().Any(p => p.IsKind(SyntaxKind.MethodDeclaration) && p.Span.Contains(x.Span));
-                    }
-                    else
+                    if (x.Token.Parent == null)
                     {
                         return true;
                     }
+
+                    // A comment before the method declaration is considered a child of the method
+                    // declaration.  In this example:
+                    //
+                    // // trivia1
+                    // public void M()
+                    // {
+                    //     // trivia2
+                    // }
+                    //
+                    // Both // trivia1 and // trivia2 are descendants of MethodDeclarationSyntax.
+                    //
+                    // We are only allowing checks to occur in 'trivia2'.  The 'Contains' check is
+                    // used to find 'trivia1'.
+                    return !x.Token.Parent.Ancestors().Any(p => p.IsKind(SyntaxKind.MethodDeclaration) && p.Span.Contains(x.Span));
                 })
                 .Where(x => ContainsCheckPrefixes(x.ToString(), checkPrefixes))
                 .ToArray();
@@ -243,20 +254,18 @@ namespace SuperFileCheck
             {
                 throw new InvalidOperationException("SourceText is null.");
             }
-            else
+
+            var lineStr = text.ToString(line.Span);
+
+            var result = TryTransformDirective(lineStr, checkPrefixes, SyntaxDirectiveFullLine, String.Empty);
+            if (result != null)
             {
-                var lineStr = text.ToString(line.Span);
-
-                var result = TryTransformDirective(lineStr, checkPrefixes, SyntaxDirectiveFullLine, String.Empty);
-                if (result != null)
-                {
-                    return result;
-                }
-
-                result = TryTransformDirective(lineStr, checkPrefixes, SyntaxDirectiveFullLineNext, "-NEXT");
-
-                return result ?? lineStr;
+                return result;
             }
+
+            result = TryTransformDirective(lineStr, checkPrefixes, SyntaxDirectiveFullLineNext, "-NEXT");
+
+            return result ?? lineStr;
         }
 
         /// <summary>
@@ -460,7 +469,7 @@ namespace SuperFileCheck
             Console.Write(Environment.NewLine);
             Console.WriteLine("SUPER OPTIONS:");
             Console.Write(Environment.NewLine);
-            Console.WriteLine($"  --csharp                       - An {CommandLineInputFile} is required.");
+            Console.WriteLine($"  --csharp                       - A {CommandLineInputFile} is required.");
             Console.WriteLine($"                                   <check-file> must be a C# source file.");
             Console.WriteLine($"                                   Methods must not have duplicate names.");
             Console.WriteLine($"                                   Methods must be marked as not inlining.");

@@ -203,6 +203,11 @@ IF NOT DEFINED DoLink (
     </PropertyGroup>
   </Target>
 
+  <!--
+  The source code file(s) (specified by HasDisasmCheck in the test's project file) contain
+  the patterns used by FileCheck.  They need to be copied to the output directory for the
+  test to be self-contained.
+  -->
   <Target Name="PropagateHasDisasmCheckToCopy"
           BeforeTargets="AssignTargetPaths">
     <ItemGroup>
