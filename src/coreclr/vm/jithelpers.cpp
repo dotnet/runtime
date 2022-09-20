@@ -4917,7 +4917,7 @@ HCIMPLEND
 void JIT_Patchpoint(int* counter, int ilOffset)
 {
     // BEGIN_PRESERVE_LAST_ERROR;
-    DWORD __dwLastError = ::GetLastError();
+    DWORD dwLastError = ::GetLastError();
 
     // This method may not return normally
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -4932,6 +4932,8 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     LoaderAllocator* allocator = pMD->GetLoaderAllocator();
     OnStackReplacementManager* manager = allocator->GetOnStackReplacementManager();
     PerPatchpointInfo * ppInfo = manager->GetPerPatchpointInfo(ip);
+    PCODE osrMethodCode = NULL;
+    bool isNewMethod = false;
 
     // In the current prototype, counter is shared by all patchpoints
     // in a method, so no matter what happens below, we don't want to
@@ -4963,8 +4965,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     }
 
     // See if we have an OSR method for this patchpoint.
-    PCODE osrMethodCode = ppInfo->m_osrMethodCode;
-    bool isNewMethod = false;
+    osrMethodCode = ppInfo->m_osrMethodCode;
 
     if (osrMethodCode == NULL)
     {
@@ -5197,7 +5198,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
 
         // Restore last error (since call below does not return)
         // END_PRESERVE_LAST_ERROR;
-        ::SetLastError(__dwLastError);
+        ::SetLastError(dwLastError);
 
         // Transition!
         ClrRestoreNonvolatileContext(pFrameContext);
@@ -5206,7 +5207,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
  DONE:
 
     // END_PRESERVE_LAST_ERROR;
-    ::SetLastError(__dwLastError);
+    ::SetLastError(dwLastError);
 }
 
 // Jit helper invoked at a partial compilation patchpoint.
@@ -5221,7 +5222,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
 void JIT_PartialCompilationPatchpoint(int ilOffset)
 {
     // BEGIN_PRESERVE_LAST_ERROR;
-    DWORD __dwLastError = ::GetLastError();
+    DWORD dwLastError = ::GetLastError();
 
     // This method will not return normally
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -5376,7 +5377,7 @@ void JIT_PartialCompilationPatchpoint(int ilOffset)
 
     // Restore last error (since call below does not return)
     // END_PRESERVE_LAST_ERROR;
-    ::SetLastError(__dwLastError);
+    ::SetLastError(dwLastError);
 
     // Transition!
     RtlRestoreContext(&frameContext, NULL);
