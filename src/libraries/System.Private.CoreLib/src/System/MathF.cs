@@ -481,7 +481,7 @@ namespace System
                     case MidpointRounding.AwayFromZero:
                     {
                         // manually fold BitDecrement(0.5f)
-                        value = Truncate(x + CopySign(0.49999997f, x));
+                        x = Truncate(x + CopySign(0.49999997f, x));
                         break;
                     }
                     // Directed rounding: Round to the nearest value, toward to zero
