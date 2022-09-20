@@ -553,7 +553,7 @@ emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_t
 
 #ifdef TARGET_AMD64
 static int type_to_extract_op (MonoTypeEnum type);
-static const int fast_log2 [] = { 1, 0, 1, -1, 2, -1, -1, -1, 3 };
+static const int fast_log2 [] = { -1, -1, 1, -1, 2, -1, -1, -1, 3 };
 
 static MonoInst*
 extract_first_element (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum element_type, int sreg)
