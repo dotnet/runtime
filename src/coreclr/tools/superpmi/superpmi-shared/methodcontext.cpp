@@ -1259,6 +1259,7 @@ DWORD MethodContext::repGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
     DEBUG_REP(dmpGetJitFlags(0, value));
 
     CORJIT_FLAGS* resultFlags = (CORJIT_FLAGS*)GetJitFlags->GetBuffer(value.A);
+    Assert(sizeInBytes >= value.B);
     memcpy(jitFlags, resultFlags, value.B);
     InitReadyToRunFlag(resultFlags);
     return value.B;
