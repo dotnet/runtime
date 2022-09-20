@@ -12433,13 +12433,6 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 
         if (isClassExact && ((helper == CORINFO_HELP_ISINSTANCEOFARRAY) || (helper == CORINFO_HELP_CHKCASTARRAY)))
         {
-            // We have "obj isinst/castclass T[]" and in case if T is sealed we can still perform
-            // the fast pMT check (in case if T[] -> obj.GetType is legal in jit-time)
-
-            CORINFO_CLASS_HANDLE elementCls = NO_CLASS_HANDLE;
-            info.compCompHnd->getChildType(pResolvedToken->hClass, &elementCls);
-            if ((elementCls != NO_CLASS_HANDLE) && impIsClassExact(elementCls))
-            {
                 canExpandInline  = true;
                 isExpandingArray = true;
             }
@@ -12572,7 +12565,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         //
         // use the special helper that skips the cases checked by our inlined cast
         //
-        const CorInfoHelpFunc specialHelper = isExpandingArray ? helper : CORINFO_HELP_CHKCASTCLASS_SPECIAL;
+        const CorInfoHelpFunc specialHelper = (helper == CORINFO_HELP_CHKCASTCLASS) ? CORINFO_HELP_CHKCASTCLASS_SPECIAL : helper;
 
         condTrue = gtNewHelperCallNode(specialHelper, TYP_REF, partialExpand ? op2 : op2Var, gtClone(op1));
     }
