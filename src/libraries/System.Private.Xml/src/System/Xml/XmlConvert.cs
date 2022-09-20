@@ -963,6 +963,8 @@ namespace System.Xml
 
         public static float ToSingle(string s)
         {
+            ArgumentNullException.ThrowIfNull(s);
+
             ReadOnlySpan<char> value = s.AsSpan().Trim(WhitespaceChars);
             switch (value)
             {
@@ -1008,6 +1010,8 @@ namespace System.Xml
 
         public static double ToDouble(string s)
         {
+            ArgumentNullException.ThrowIfNull(s);
+
             ReadOnlySpan<char> value = s.AsSpan().Trim(WhitespaceChars);
             switch (value)
             {
@@ -1058,6 +1062,8 @@ namespace System.Xml
             {
                 case string str:
                     {
+                        ArgumentNullException.ThrowIfNull(str);
+
                         ReadOnlySpan<char> value = str.AsSpan().Trim(WhitespaceChars);
                         if (value.Length != 0 && value[0] != '+')
                         {
