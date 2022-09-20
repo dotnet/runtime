@@ -43,7 +43,7 @@ namespace System.IO.IsolatedStorage
             // for non mobile platforms IsolatedStorageDirectoryName is "IsolatedStorage", for mobile platforms ".isolated-storage"
             InitializeIsoStorageDirectoryName();
 
-           // InitStore will set up the IdentityHash
+            // InitStore will set up the IdentityHash
             InitStore(scope, null, null);
 
             StringBuilder sb = new StringBuilder(GetIsolatedStorageRoot());

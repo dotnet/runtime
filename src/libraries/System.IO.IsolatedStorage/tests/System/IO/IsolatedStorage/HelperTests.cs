@@ -13,7 +13,6 @@ namespace System.IO.IsolatedStorage.Tests
         {
             object identity;
             string hash;
-            //TestHelper.InitHelper(out identity,out hash);
             Helper.GetDefaultIdentityAndHash(out identity, out hash, '.');
 
             Assert.NotNull(identity);
