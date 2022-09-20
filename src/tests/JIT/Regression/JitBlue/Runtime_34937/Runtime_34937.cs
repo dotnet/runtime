@@ -15,6 +15,20 @@ class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int PerformMod_2(int i)
     {
+        // x64-FULL-LINE:      mov [[REG0:%[a-z]+]], [[REG1:%[a-z]+]]
+        // x64-FULL-LINE-NEXT: sar [[REG0]], 31
+        // x64-FULL-LINE-NEXT: and [[REG0]], 15
+        // x64-FULL-LINE-NEXT: add [[REG0]], [[REG1]]
+        // x64-FULL-LINE-NEXT: and [[REG0]], -16
+        // x64-FULL-LINE-NEXT: mov [[REG2:%[a-z]+]], [[REG1]]
+        // x64-FULL-LINE-NEXT: sub [[REG2]], [[REG0]]
+        // x64-FULL-LINE-NEXT: mov [[REG0]], [[REG2]]
+
+        // ARM64-FULL-LINE:      and w1, w0, #15
+        // ARM64-FULL-LINE-NEXT: negs w0, w0
+        // ARM64-FULL-LINE-NEXT: and w0, w0, #15
+        // ARM64-FULL-LINE-NEXT: csneg w0, w1, w0, mi
+
         return i % 16;
     }
 
