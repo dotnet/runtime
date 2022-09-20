@@ -2460,4 +2460,7 @@
   <ItemGroup Condition="'$(FeatureCoreCLR)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.Clr.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(FeatureMono)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.Mono.cs" />
+  </ItemGroup>
 </Project>
