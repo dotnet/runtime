@@ -648,8 +648,6 @@ struct etw_bucket_info
     uint32_t count;
     size_t size;
 
-    etw_bucket_info() = default;
-
     void set (uint16_t _index, uint32_t _count, size_t _size)
     {
         index = _index;
