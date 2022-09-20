@@ -10,13 +10,7 @@
 
   <ItemGroup>
     <Compile Include="*.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetOS)' == 'windows'">
-    <PackageReference
-      Include="Microsoft.Diagnostics.Tracing.TraceEvent"
-      Version="$(TraceEventVersion)"
-    />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventVersion)" />
   </ItemGroup>
 
 </Project>
