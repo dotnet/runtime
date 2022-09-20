@@ -12554,6 +12554,8 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     GenTree* condTrue;
     if (isCastClass)
     {
+        assert((helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY) ||
+               (helper == CORINFO_HELP_CHKCASTINTERFACE));
         //
         // use the special helper that skips the cases checked by our inlined cast
         //
