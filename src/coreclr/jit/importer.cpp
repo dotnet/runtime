@@ -12411,7 +12411,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     bool                  partialExpand   = false;
     const CorInfoHelpFunc helper          = info.compCompHnd->getCastingHelper(pResolvedToken, isCastClass);
 
-    GenTree* exactCls = nullptr;
+    CORINFO_CLASS_HANDLE exactCls = NO_CLASS_HANDLE;
 
     // Legality check.
     //
@@ -12472,7 +12472,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 
                         canExpandInline = true;
                         partialExpand   = true;
-                        exactCls        = gtNewIconEmbClsHndNode(likelyCls);
+                        exactCls        = likelyCls;
                     }
                 }
             }
@@ -12533,8 +12533,9 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         op2Var                                                  = fgInsertCommaFormTemp(&op2);
         lvaTable[op2Var->AsLclVarCommon()->GetLclNum()].lvIsCSE = true;
     }
-    temp   = gtNewMethodTableLookup(temp);
-    condMT = gtNewOperNode(GT_NE, TYP_INT, temp, exactCls != nullptr ? exactCls : op2);
+    temp = gtNewMethodTableLookup(temp);
+    condMT =
+        gtNewOperNode(GT_NE, TYP_INT, temp, (exactCls != NO_CLASS_HANDLE) ? gtNewIconEmbClsHndNode(exactCls) : op2);
 
     GenTree* condNull;
     //
@@ -12556,12 +12557,14 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     {
         assert((helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY) ||
                (helper == CORINFO_HELP_CHKCASTINTERFACE));
-        //
-        // use the special helper that skips the cases checked by our inlined cast
-        //
-        const CorInfoHelpFunc specialHelper =
-            (helper == CORINFO_HELP_CHKCASTCLASS) ? CORINFO_HELP_CHKCASTCLASS_SPECIAL : helper;
 
+        CorInfoHelpFunc specialHelper = helper;
+        if ((helper == CORINFO_HELP_CHKCASTCLASS) &&
+            ((exactCls == nullptr) || (exactCls == gtGetHelperArgClassHandle(op2))))
+        {
+            // use the special helper that skips the cases checked by our inlined cast
+            specialHelper = CORINFO_HELP_CHKCASTCLASS_SPECIAL;
+        }
         condTrue = gtNewHelperCallNode(specialHelper, TYP_REF, partialExpand ? op2 : op2Var, gtClone(op1));
     }
     else if (partialExpand)
