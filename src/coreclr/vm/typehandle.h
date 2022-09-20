@@ -330,7 +330,7 @@ public:
     // represents a not-unloadable context, it allocates the object on a frozen segment
     // so the direct reference will be stored to the pDest argument. In case of unloadable
     // context, an index to the pinned table will be saved.
-    static void AllocateManagedClassObject(LoaderAllocator* allocator, RUNTIMETYPEHANDLE* pDest, TypeHandle type);
+    void AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest);
     static OBJECTREF GetManagedClassObjectFromHandleFast(RUNTIMETYPEHANDLE handle);
     static OBJECTREF GetManagedClassObjectFromHandle(LoaderAllocator* allocator, RUNTIMETYPEHANDLE handle);
 #endif

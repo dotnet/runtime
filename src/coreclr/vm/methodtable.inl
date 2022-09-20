@@ -1345,9 +1345,10 @@ FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists()
     const RUNTIMETYPEHANDLE handle = GetWriteableData_NoLogging()->m_hExposedClassObject;
 
     // First, check if we have a cached reference to an effectively pinned (allocated on FOH) object
-    if (handle != NULL && (handle & 1) == 0)
+    if (handle & 1)
     {
-        return (OBJECTREF)handle;
+        // Clear the "is pinned object" bit from the managed reference
+        return (OBJECTREF)((handle >> 1) << 1); // C++ compiler is expected to emit "and reg, mask"
     }
 
     OBJECTREF retVal;

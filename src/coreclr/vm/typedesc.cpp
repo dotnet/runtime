@@ -494,7 +494,7 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
 
     if (m_hExposedClassObject == NULL)
     {
-        TypeHandle::AllocateManagedClassObject(GetLoaderAllocator(), &m_hExposedClassObject, TypeHandle(this));
+        TypeHandle(this).AllocateManagedClassObject(&m_hExposedClassObject);
     }
     return GetManagedClassObjectIfExists();
 }
@@ -1579,7 +1579,6 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
     return TRUE;
 }
 
-
 OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
 {
     CONTRACTL {
@@ -1595,7 +1594,7 @@ OBJECTREF TypeVarTypeDesc::GetManagedClassObject()
 
     if (m_hExposedClassObject == NULL)
     {
-        TypeHandle::AllocateManagedClassObject(GetLoaderAllocator(), &m_hExposedClassObject, TypeHandle(this));
+        TypeHandle(this).AllocateManagedClassObject(&m_hExposedClassObject);
     }
     return GetManagedClassObjectIfExists();
 }

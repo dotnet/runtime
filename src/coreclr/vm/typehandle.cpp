@@ -353,26 +353,31 @@ bool TypeHandle::IsManagedClassObjectPinned() const
     return !GetLoaderAllocator()->CanUnload() || IsFnPtrType();
 }
 
-void TypeHandle::AllocateManagedClassObject(LoaderAllocator* allocator, RUNTIMETYPEHANDLE* pDest, TypeHandle type)
+void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
 {
     REFLECTCLASSBASEREF refClass = NULL;
 
+    PTR_LoaderAllocator allocator = GetLoaderAllocator();
+
     if (!allocator->CanUnload())
     {
+        // Allocate RuntimeType on a frozen segment
+        // Take a lock here since we don't want to allocate redundant objects which won't be collected
         CrstHolder exposedClassLock(AppDomain::GetMethodTableExposedClassObjectLock());
 
         if (*pDest == NULL)
         {
-            // Allocate RuntimeType on a frozen segment
-            // Take a lock here since we don't want to allocate redundant objects which won't be collected
-
             FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
             Object* obj = foh->TryAllocateObject(g_pRuntimeTypeClass, g_pRuntimeTypeClass->GetBaseSize());
             _ASSERTE(obj != NULL);
+            // Since objects are aligned we can use the lowest bit as a storage for "is pinned object" flag
             _ASSERTE((((SSIZE_T)obj) & 1) == 0);
             refClass = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(obj);
-            refClass->SetType(type);
-            *pDest = (RUNTIMETYPEHANDLE)obj;
+            refClass->SetType(*this);
+            RUNTIMETYPEHANDLE handle = (RUNTIMETYPEHANDLE)obj;
+            // Set the bit to 1 (we'll have to reset it before use)
+            handle |= 1;
+            *pDest = handle;
         }
     }
     else
@@ -381,9 +386,8 @@ void TypeHandle::AllocateManagedClassObject(LoaderAllocator* allocator, RUNTIMET
         refClass = (REFLECTCLASSBASEREF)AllocateObject(g_pRuntimeTypeClass);
         refClass->SetKeepAlive(allocator->GetExposedObject());
         LOADERHANDLE exposedClassObjectHandle = allocator->AllocateHandle(refClass);
-        // Set the lowest bit, we use it GetPinnedManagedClassObjectIfExists as a fast detection of the unloadable context
-        exposedClassObjectHandle |= 1;
-        refClass->SetType(type);
+        _ASSERTE((exposedClassObjectHandle & 1) == 0);
+        refClass->SetType(*this);
 
         // Let all threads fight over who wins using InterlockedCompareExchange.
         // Only the winner can set m_ExposedClassObject from NULL.
@@ -403,9 +407,10 @@ OBJECTREF TypeHandle::GetManagedClassObjectFromHandleFast(RUNTIMETYPEHANDLE hand
     // For a non-unloadable context, handle is expected to be either null (is not cached yet)
     // or be a direct pointer to a frozen RuntimeType object
 
-    if (handle != NULL && (handle & 1) == 0)
+    if (handle & 1)
     {
-        return (OBJECTREF)handle;
+        // Clear the "is pinned object" bit from the managed reference
+        return (OBJECTREF)((handle >> 1) << 1); // C++ compiler is expected to emit "and reg, mask"
     }
     return NULL;
 }
@@ -415,9 +420,10 @@ OBJECTREF TypeHandle::GetManagedClassObjectFromHandle(LoaderAllocator* allocator
     LIMITED_METHOD_CONTRACT;
 
     // First, check if we have a cached reference to an effectively pinned (allocated on FOH) object
-    if (handle != NULL && (handle & 1) == 0)
+    if (handle & 1)
     {
-        return (OBJECTREF)handle;
+        // Clear the "is pinned object" bit from the managed reference
+        return (OBJECTREF)((handle >> 1) << 1); // C++ compiler is expected to emit "and reg, mask"
     }
 
     OBJECTREF retVal;

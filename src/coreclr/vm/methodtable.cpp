@@ -4219,7 +4219,7 @@ OBJECTREF MethodTable::GetManagedClassObject()
     {
         // Make sure that we have been restored
         CheckRestore();
-        TypeHandle::AllocateManagedClassObject(GetLoaderAllocator(), (RUNTIMETYPEHANDLE*)&GetWriteableData()->m_hExposedClassObject, TypeHandle(this));
+        TypeHandle(this).AllocateManagedClassObject((RUNTIMETYPEHANDLE*)&GetWriteableData()->m_hExposedClassObject);
     }
     RETURN(GetManagedClassObjectIfExists());
 }
