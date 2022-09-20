@@ -101,6 +101,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs" Link="Common\Interop\Unix\System.Native\Interop.Stat.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\src\System.Formats.Tar.csproj" />
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />
     <PackageReference Include="System.Formats.Tar.TestData" Version="$(SystemFormatsTarTestDataVersion)" />
   </ItemGroup>
