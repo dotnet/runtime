@@ -195,25 +195,22 @@ namespace System.Net
                 return MemoryMarshal.Cast<byte, ushort>(address).ToArray();
             }
 
+            ushort[] numbers = new ushort[NumberOfLabels];
             if (Vector128.IsHardwareAccelerated)
             {
-                Vector128<byte> bytes = Vector128.Shuffle(
-                    Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(address)),
-                    Vector128.Create((byte)1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14));
-
-                ushort[] numbers = new ushort[NumberOfLabels];
-                bytes.AsUInt16().StoreUnsafe(ref MemoryMarshal.GetArrayDataReference(numbers));
-                return numbers;
+                Vector128<ushort> ushorts = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(address)).AsUInt16();
+                ushorts = Vector128.ShiftLeft(ushorts, 8) | Vector128.ShiftRightLogical(ushorts, 8);
+                ushorts.StoreUnsafe(ref MemoryMarshal.GetArrayDataReference(numbers));
             }
             else
             {
-                ushort[] numbers = MemoryMarshal.Cast<byte, ushort>(address).ToArray();
                 for (int i = 0; i < numbers.Length; i++)
                 {
-                    numbers[i] = BinaryPrimitives.ReverseEndianness(numbers[i]);
+                    numbers[i] = BinaryPrimitives.ReadUInt16BigEndian(address.Slice(i * 2));
                 }
-                return numbers;
             }
+
+            return numbers;
         }
 
         // We need this internally since we need to interface with winsock,
@@ -296,18 +293,15 @@ namespace System.Net
             {
                 if (Vector128.IsHardwareAccelerated)
                 {
-                    Vector128<byte> bytes = Vector128.Shuffle(
-                        Vector128.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(numbers)).AsByte(),
-                        Vector128.Create((byte)1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 13, 12, 15, 14));
-                    bytes.StoreUnsafe(ref MemoryMarshal.GetReference(destination));
+                    Vector128<ushort> ushorts = Vector128.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(numbers));
+                    ushorts = Vector128.ShiftLeft(ushorts, 8) | Vector128.ShiftRightLogical(ushorts, 8);
+                    ushorts.AsByte().StoreUnsafe(ref MemoryMarshal.GetReference(destination));
                 }
                 else
                 {
-                    int j = 0;
-                    for (int i = 0; i < NumberOfLabels; i++)
+                    for (int i = 0; i < numbers.Length; i++)
                     {
-                        destination[j++] = (byte)((numbers[i] >> 8) & 0xFF);
-                        destination[j++] = (byte)((numbers[i]) & 0xFF);
+                        BinaryPrimitives.WriteUInt16BigEndian(destination.Slice(i * 2), numbers[i]);
                     }
                 }
             }
