@@ -366,9 +366,9 @@ namespace System.Formats.Tar
 
             ReadOnlySpan<char> truncatedName = name.Slice(0, utf16NameTruncatedLength);
             Span<byte> destination = buffer.Slice(FieldLocations.Name, FieldLengths.Name);
-            Encoding.UTF8.GetBytes(truncatedName, destination);
+            int encoded = Encoding.UTF8.GetBytes(truncatedName, destination);
 
-            return Checksum(destination);
+            return Checksum(destination.Slice(0, encoded));
         }
 
         // Ustar and PAX save in the name byte array only the UTF8 bytes that fit, and the rest of that string is saved in the prefix field.
@@ -379,9 +379,9 @@ namespace System.Formats.Tar
 
             ReadOnlySpan<char> truncatedName = name.Slice(0, utf16NameTruncatedLength);
             Span<byte> destination = buffer.Slice(FieldLocations.Name, FieldLengths.Name);
-            Encoding.UTF8.GetBytes(truncatedName, destination);
+            int encoded = Encoding.UTF8.GetBytes(truncatedName, destination);
 
-            int checksum = Checksum(destination);
+            int checksum = Checksum(destination.Slice(0, encoded));
 
             if (utf16NameTruncatedLength < name.Length)
             {
@@ -390,9 +390,9 @@ namespace System.Formats.Tar
 
                 destination = buffer.Slice(FieldLocations.Prefix, FieldLengths.Prefix);
                 ReadOnlySpan<char> truncatedPrefix = prefix.Slice(0, utf16PrefixTruncatedLength);
-                Encoding.UTF8.GetBytes(truncatedPrefix, destination);
+                encoded = Encoding.UTF8.GetBytes(truncatedPrefix, destination);
 
-                checksum += Checksum(destination);
+                checksum += Checksum(destination.Slice(0, encoded));
             }
 
             return checksum;
