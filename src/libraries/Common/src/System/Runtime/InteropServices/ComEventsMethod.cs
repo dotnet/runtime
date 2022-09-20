@@ -100,7 +100,7 @@ namespace System.Runtime.InteropServices
         /// Since multicast delegate's built-in chaining supports only chaining instances of the same type,
         /// we need to complement this design by using an explicit linked list data structure.
         /// </summary>
-        private DelegateWrapper[] _delegateWrappers = Array.Empty<DelegateWrapper>();
+        private List<DelegateWrapper> _delegateWrappers = new List<DelegateWrapper>();
 
         private readonly int _dispid;
         private ComEventsMethod? _next;
@@ -157,15 +157,15 @@ namespace System.Runtime.InteropServices
         {
             get
             {
-                DelegateWrapper[] wrappers = _delegateWrappers;
-                return wrappers.Length == 0;
+                List<DelegateWrapper> wrappers = _delegateWrappers;
+                return wrappers.Count == 0;
             }
         }
 
         public void AddDelegate(Delegate d, bool wrapArgs = false)
         {
-            DelegateWrapper[] wrappers;
-            DelegateWrapper[] newWrappers;
+            List<DelegateWrapper> wrappers;
+            List<DelegateWrapper> newWrappers;
             do
             {
                 wrappers = _delegateWrappers;
@@ -180,17 +180,18 @@ namespace System.Runtime.InteropServices
                     }
                 }
 
-                newWrappers = new DelegateWrapper[wrappers.Length + 1];
-                wrappers.CopyTo(newWrappers, 0);
+                newWrappers = wrappers.Count == 0
+                    ? new List<DelegateWrapper>()
+                    : wrappers.GetRange(0, wrappers.Count);
 
-                newWrappers[newWrappers.Length - 1] = new DelegateWrapper(d, wrapArgs);
+                newWrappers.Add(new DelegateWrapper(d, wrapArgs));
             } while (!PublishNewWrappers(newWrappers, wrappers));
         }
 
         public void RemoveDelegate(Delegate d, bool wrapArgs = false)
         {
-            DelegateWrapper[] wrappers;
-            DelegateWrapper[] newWrappers;
+            List<DelegateWrapper> wrappers;
+            List<DelegateWrapper> newWrappers;
             do
             {
                 wrappers = _delegateWrappers;
@@ -198,7 +199,7 @@ namespace System.Runtime.InteropServices
                 // Find delegate wrapper index
                 int removeIdx = -1;
                 DelegateWrapper? wrapper = null;
-                for (int i = 0; i < wrappers.Length; i++)
+                for (int i = 0; i < wrappers.Count; i++)
                 {
                     DelegateWrapper wrapperMaybe = wrappers[i];
                     if (wrapperMaybe.Delegate.GetType() == d.GetType() && wrapperMaybe.WrapArgs == wrapArgs)
@@ -223,22 +224,22 @@ namespace System.Runtime.InteropServices
                     return; // No need to update collection
                 }
 
-                newWrappers = new DelegateWrapper[wrappers.Length - 1];
-                wrappers.AsSpan(0, removeIdx).CopyTo(newWrappers);
-                wrappers.AsSpan(removeIdx + 1).CopyTo(newWrappers.AsSpan(removeIdx));
+                newWrappers = wrappers.GetRange(0, wrappers.Count);
+                newWrappers.RemoveAt(removeIdx);
             } while (!PublishNewWrappers(newWrappers, wrappers));
         }
 
         public void RemoveDelegates(Func<Delegate, bool> condition)
         {
-            DelegateWrapper[] wrappers;
-            DelegateWrapper[] newWrappers;
+            List<DelegateWrapper> wrappers;
+            List<DelegateWrapper> newWrappers;
             do
             {
                 wrappers = _delegateWrappers;
 
+                // Find delegate wrapper indexes. Iterate in reverse such that the list to remove is sorted by high to low index.
                 List<int> toRemove = new List<int>();
-                for (int i = 0; i < wrappers.Length; i++)
+                for (int i = wrappers.Count - 1; i >= 0; i--)
                 {
                     DelegateWrapper wrapper = wrappers[i];
                     Delegate[] invocationList = wrapper.Delegate.GetInvocationList();
@@ -265,35 +266,12 @@ namespace System.Runtime.InteropServices
                     return;
                 }
 
-                newWrappers = RemoveAll(wrappers, CollectionsMarshal.AsSpan(toRemove));
+                newWrappers = wrappers.GetRange(0, wrappers.Count);
+                foreach (int idx in toRemove)
+                {
+                    newWrappers.RemoveAt(idx);
+                }
             } while (!PublishNewWrappers(newWrappers, wrappers));
-
-            // The list of indices is assumed to be sorted in ascending order
-            static DelegateWrapper[] RemoveAll(DelegateWrapper[] oldCol, ReadOnlySpan<int> toRemove)
-            {
-                // Allocate new collection
-                var newCol = new DelegateWrapper[oldCol.Length - toRemove.Length];
-                if (newCol.Length == 0)
-                {
-                    return newCol;
-                }
-
-                // Iterate over collection, skipping elements that should be removed.
-                int ri = 0;
-                for (int oi = 0, ni = 0; oi < oldCol.Length; oi++)
-                {
-                    if (ri < toRemove.Length && oi == toRemove[ri])
-                    {
-                        ri++;
-                        continue;
-                    }
-
-                    newCol[ni] = oldCol[oi];
-                    ni++;
-                }
-
-                return newCol;
-            }
         }
 
         public object? Invoke(object[] args)
@@ -301,7 +279,7 @@ namespace System.Runtime.InteropServices
             Debug.Assert(!Empty);
             object? result = null;
 
-            DelegateWrapper[] wrappers = _delegateWrappers;
+            List<DelegateWrapper> wrappers = _delegateWrappers;
             foreach (DelegateWrapper wrapper in wrappers)
             {
                 result = wrapper.Invoke(args);
@@ -311,7 +289,7 @@ namespace System.Runtime.InteropServices
         }
 
         // Attempt to update the member wrapper field
-        private bool PublishNewWrappers(DelegateWrapper[] newWrappers, DelegateWrapper[] currentMaybe)
+        private bool PublishNewWrappers(List<DelegateWrapper> newWrappers, List<DelegateWrapper> currentMaybe)
         {
             return Interlocked.CompareExchange(ref _delegateWrappers, newWrappers, currentMaybe) == currentMaybe;
         }
