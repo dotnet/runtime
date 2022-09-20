@@ -985,7 +985,7 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
             if (sysctlbyname("hw.perflevel0.physicalcpu_max", &cpusMax, &szCpusMax, nullptr, 0) == 0 &&
                 sysctlbyname("hw.perflevel0.cpusperl2", &cpusPerL2, &szCpusPerL2, nullptr, 0) == 0)
             {
-                cacheSizeFromSysctl = cacheSizeFromSysctl * (cpusMax / cpusPerL2);
+                cacheSizeFromSysctl *= (cpusMax / cpusPerL2);
             }
             success = true;
         }

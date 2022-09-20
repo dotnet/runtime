@@ -633,9 +633,9 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
 #if HAVE_SYSCTLBYNAME
     if (cacheSize == 0)
     {
+        bool success = false;
         int64_t cacheSizeFromSysctl = 0;
         size_t sz = sizeof(cacheSizeFromSysctl);
-        bool success = false;
         // macOS: Since macOS 12.0, Apple added ".perflevelX." to determinate cache sizes for efficiency
         // and performance cores separately. "perflevel0" stands for "performance"
         if (sysctlbyname("hw.perflevel0.l3cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0)
@@ -653,7 +653,7 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
             if (sysctlbyname("hw.perflevel0.physicalcpu_max", &cpusMax, &szCpusMax, nullptr, 0) == 0 &&
                 sysctlbyname("hw.perflevel0.cpusperl2", &cpusPerL2, &szCpusPerL2, nullptr, 0) == 0)
             {
-                cacheSizeFromSysctl = cacheSizeFromSysctl * (cpusMax / cpusPerL2);
+                cacheSizeFromSysctl *= (cpusMax / cpusPerL2);
             }
             success = true;
         }
