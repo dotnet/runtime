@@ -5994,7 +5994,11 @@ CorInfoHelpFunc CEEInfo::getUnBoxHelper(CORINFO_CLASS_HANDLE clsHnd)
 /***********************************************************************/
 void* CEEInfo::getRuntimeTypePointer(CORINFO_CLASS_HANDLE clsHnd)
 {
-    LIMITED_METHOD_CONTRACT;
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
 
     void* pointer = nullptr;
 
