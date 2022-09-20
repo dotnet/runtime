@@ -402,7 +402,6 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_InterpreterFallback, W("InterpreterFallback"),
 ///
 CONFIG_DWORD_INFO(INTERNAL_LoaderHeapCallTracing, W("LoaderHeapCallTracing"), 0, "Loader heap troubleshooting")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_CodeHeapReserveForJumpStubs, W("CodeHeapReserveForJumpStubs"), 1, "Percentage of code heap to reserve for jump stubs")
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_NGenReserveForJumpStubs, W("NGenReserveForJumpStubs"), 0, "Percentage of ngen image size to reserve for jump stubs")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_BreakOnOutOfMemoryWithinRange, W("BreakOnOutOfMemoryWithinRange"), 0, "Break before out of memory within range exception is thrown")
 
 ///
@@ -805,7 +804,6 @@ CONFIG_DWORD_INFO(INTERNAL_ActivatePatchSkip, W("ActivatePatchSkip"), 0, "Allows
 CONFIG_DWORD_INFO(INTERNAL_AlwaysUseMetadataInterfaceMapLayout, W("AlwaysUseMetadataInterfaceMapLayout"), 0, "Used for debugging generic interface map layout.")
 CONFIG_DWORD_INFO(INTERNAL_AssertOnUnneededThis, W("AssertOnUnneededThis"), 0, "While the ConfigDWORD is unnecessary, the contained ASSERT should be kept. This may result in some work tracking down violating MethodDescCallSites.")
 CONFIG_DWORD_INFO(INTERNAL_AssertStacktrace, W("AssertStacktrace"), 1, "")
-CONFIG_DWORD_INFO(INTERNAL_clearNativeImageStress, W("clearNativeImageStress"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_CPUFamily, W("CPUFamily"), 0xFFFFFFFF, "")
 CONFIG_DWORD_INFO(INTERNAL_CPUFeatures, W("CPUFeatures"), 0xFFFFFFFF, "")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_DisableConfigCache, W("DisableConfigCache"), 0, "Used to disable the \"probabilistic\" config cache, which walks through the appropriate config registry keys on init and probabilistically keeps track of which exist.")
