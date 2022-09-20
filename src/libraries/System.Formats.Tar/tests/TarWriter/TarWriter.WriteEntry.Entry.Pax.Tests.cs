@@ -495,5 +495,130 @@ namespace System.Formats.Tar.Tests
             using TarWriter writer = new TarWriter(archiveStream, leaveOpen: false);
             Assert.Throws<ArgumentException>("entry", () => writer.WriteEntry(new PaxTarEntry(entryType, "link")));
         }
+
+        [Theory]
+        [InlineData(TarEntryType.RegularFile)]
+        [InlineData(TarEntryType.SymbolicLink)]
+        public void Verify_Write_Inserts_ReservedKeys(TarEntryType entryType)
+        {
+            string expectedName = "ExpectedName.txt";
+
+            PaxTarEntry entry = new PaxTarEntry(entryType, expectedName);
+            entry.ModificationTime = TestModificationTime;
+            entry.GroupName = TestLongGName;
+            entry.UserName = TestLongUName;
+
+            if (entryType is TarEntryType.RegularFile)
+            {
+                entry.DataStream = new FakeLengthStream(); // All we care is the length beyond the limit
+            }
+            else if (entryType is TarEntryType.SymbolicLink)
+            {
+                entry.LinkName = TestLinkName;
+            }
+
+            using MemoryStream archive = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
+            {
+                writer.WriteEntry(entry); // Forces writing reserved keys into extended attributes of entry
+            }
+
+            VerifyPaxReservedKeys(entry);
+
+            archive.Position = 0;
+            using (TarReader reader = new TarReader(archive, leaveOpen: false))
+            {
+                PaxTarEntry readEntry = reader.GetNextEntry() as PaxTarEntry;
+                Assert.NotNull(readEntry);
+                VerifyPaxReservedKeys(readEntry);
+            }
+
+            if (entry.DataStream != null)
+            {
+                entry.DataStream.Dispose();
+            }
+        }
+
+        [Theory]
+        [InlineData(TarEntryType.RegularFile)]
+        [InlineData(TarEntryType.SymbolicLink)]
+        public void Verify_Write_Inserts_ReservedKeys_UpdatedBeforeWrite(TarEntryType entryType)
+        {
+            string modifiedName = "modifiedName.txt";
+            DateTimeOffset modifiedModificationTime = new DateTimeOffset(2022, 12, 29, 23, 59, 58, TimeSpan.Zero);
+            string modifiedGName = $"abc{TestLongGName}abc";
+            string modifiedUName = $"abc{TestLongUName}abc";
+            long modifiedSize = MaxAllowedSize + 5;
+            string modifiedLinkName = $"abc{TestLinkName}abc";
+
+            PaxTarEntry originalEntry = new PaxTarEntry(entryType, "originalName.txt");
+            originalEntry.ModificationTime = TestModificationTime;
+            originalEntry.GroupName = TestLongGName;
+            originalEntry.UserName = TestLongUName;
+
+            if (entryType is TarEntryType.RegularFile)
+            {
+                originalEntry.DataStream = new FakeLengthStream(); // All we care is the length beyond the limit
+            }
+            else if (entryType is TarEntryType.SymbolicLink)
+            {
+                originalEntry.LinkName = TestLinkName;
+            }
+
+            using MemoryStream archive = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
+            {
+                originalEntry.Name = modifiedName;
+                originalEntry.ModificationTime = modifiedModificationTime;
+                originalEntry.GroupName = modifiedGName;
+                originalEntry.UserName = modifiedUName;
+
+                if (entryType is TarEntryType.RegularFile)
+                {
+                    ((FakeLengthStream)originalEntry.DataStream).ChangeLength(modifiedSize);
+                }
+
+                if (entryType is TarEntryType.SymbolicLink)
+                {
+                    originalEntry.LinkName = modifiedLinkName;
+                }
+
+                writer.WriteEntry(originalEntry); // Forces writing reserved keys into extended attributes of entry
+            }
+
+            VerifyPaxReservedKeys(originalEntry);
+
+            archive.Position = 0;
+            using (TarReader reader = new TarReader(archive, leaveOpen: false))
+            {
+                PaxTarEntry readEntry = reader.GetNextEntry() as PaxTarEntry;
+                Assert.NotNull(readEntry);
+                VerifyModifiedKeys(readEntry);
+            }
+
+            if (originalEntry.DataStream != null)
+            {
+                originalEntry.DataStream.Dispose();
+            }
+
+            void VerifyModifiedKeys(PaxTarEntry paxEntry)
+            {
+                Assert.Equal(paxEntry.ExtendedAttributes[PaxEaName], modifiedName);
+                VerifyExtendedAttributeTimestamp(paxEntry, PaxEaMTime, modifiedModificationTime);
+                Assert.Equal(paxEntry.ExtendedAttributes[PaxEaGName], modifiedGName);
+                Assert.Equal(paxEntry.ExtendedAttributes[PaxEaUName], modifiedUName);
+
+                if (paxEntry.EntryType is TarEntryType.RegularFile)
+                {
+                    Assert.True(long.TryParse(paxEntry.ExtendedAttributes[PaxEaSize], out long result));
+                    Assert.Equal(result, modifiedSize);
+                }
+
+                else if (paxEntry.EntryType is TarEntryType.SymbolicLink)
+                {
+                    Assert.Equal(paxEntry.ExtendedAttributes[PaxEaLinkName], modifiedLinkName);
+                }
+            }
+        }
     }
 }

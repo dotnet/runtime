@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Xunit;
@@ -90,6 +91,16 @@ namespace System.Formats.Tar.Tests
             PaxTarEntry fifo = new PaxTarEntry(TarEntryType.Fifo, InitialEntryName);
             SetFifo(fifo);
             VerifyFifo(fifo);
+        }
+
+        [Fact]
+        public void ThrowIf_Dictionary_Contains_ReservedKey()
+        {
+            foreach (string reservedKey in ReservedExtendedAttributeKeyNames)
+            {
+                Dictionary<string, string> dict = new Dictionary<string, string>() { { reservedKey, "not allowed" } };
+                Assert.Throws<ArgumentException>(() => new PaxTarEntry(TarEntryType.RegularFile, "entryName", dict));
+            }
         }
     }
 }

@@ -350,5 +350,199 @@ namespace System.Formats.Tar.Tests
         [Fact]
         public void Constructor_ConversionGnu_BackAndForth_Fifo() =>
             TestConstructionConversionBackAndForth(TarEntryType.Fifo, TarEntryFormat.Pax, TarEntryFormat.Gnu);
+
+        [Theory]
+        [InlineData(TarEntryType.RegularFile)]
+        [InlineData(TarEntryType.SymbolicLink)]
+        public void Constructor_Conversion_CopyAllReservedKeys(TarEntryType entryType)
+        {
+            string expectedName = "ExpectedName.txt";
+
+            PaxTarEntry originalEntry = new PaxTarEntry(entryType, expectedName);
+            originalEntry.ModificationTime = TestModificationTime;
+            originalEntry.GroupName = TestLongGName;
+            originalEntry.UserName = TestLongUName;
+
+            if (entryType is TarEntryType.RegularFile)
+            {
+                originalEntry.DataStream = new FakeLengthStream(); // All we care is the length beyond the limit
+            }
+            else if (entryType is TarEntryType.SymbolicLink)
+            {
+                originalEntry.LinkName = TestLinkName;
+            }
+
+            using MemoryStream archive = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
+            {
+                writer.WriteEntry(originalEntry); // Forces writing reserved keys into extended attributes of entry
+            }
+
+            // The writer copies reserved fields into the extended attributes if needed
+            VerifyPaxReservedKeys(originalEntry);
+
+            PaxTarEntry convertedEntry = new PaxTarEntry(other: originalEntry); // Should not throw for finding reserved keys in dictionary
+
+            // Using the conversion constructor should also copy the extended attributes
+            VerifyPaxReservedKeys(convertedEntry);
+
+            // Verify the entry's attributes were written into the archive correctly
+            archive.Position = 0;
+            using (TarReader reader = new TarReader(archive, leaveOpen: false))
+            {
+                PaxTarEntry readEntry = reader.GetNextEntry() as PaxTarEntry;
+                Assert.NotNull(readEntry);
+                VerifyPaxReservedKeys(readEntry);
+            }
+
+            // Now update the fields so the existing dictionary keys get overwritten
+
+            string modifiedName = "modifiedName.txt";
+            DateTimeOffset modifiedMTime = new DateTimeOffset(2022, 12, 30, 23, 59, 58, TimeSpan.Zero);
+            string modifiedGName = $"abc{TestLongGName}abc";
+            string modifiedUName = $"abc{TestLongUName}abc";
+            long modifiedSize = MaxAllowedSize + 5;
+            string modifiedLinkName = "modifiedLinkName";
+
+            convertedEntry.Name = modifiedName;
+            convertedEntry.ModificationTime = modifiedMTime;
+            convertedEntry.GroupName = modifiedGName;
+            convertedEntry.UserName = modifiedUName;
+
+            if (entryType is TarEntryType.RegularFile)
+            {
+                ((FakeLengthStream)convertedEntry.DataStream).ChangeLength(modifiedSize);
+            }
+            else if (entryType is TarEntryType.SymbolicLink)
+            {
+                convertedEntry.LinkName = modifiedLinkName;
+            }
+
+            archive.Position = 0;
+            archive.SetLength(0);
+            using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
+            {
+                writer.WriteEntry(convertedEntry); // Forces overwriting reserved keys
+            }
+
+            VerifyPaxReservedKeys(convertedEntry);
+
+            // Last check: verify we write the converted entry's dictionary correctly
+            archive.Position = 0;
+            using (TarReader reader = new TarReader(archive, leaveOpen: false))
+            {
+                PaxTarEntry readEntry = reader.GetNextEntry() as PaxTarEntry;
+                Assert.NotNull(readEntry);
+                VerifyPaxReservedKeys(readEntry);
+            }
+
+            // Finally, dispose streams if needed
+            if (originalEntry.DataStream != null)
+            {
+                originalEntry.DataStream.Dispose();
+            }
+
+            if (convertedEntry.DataStream != null)
+            {
+                convertedEntry.DataStream.Dispose();
+            }
+        }
+
+        [Theory]
+        [InlineData(TarEntryType.RegularFile)]
+        [InlineData(TarEntryType.SymbolicLink)]
+        public async Task Constructor_Conversion_CopyAllReservedKeys_Async(TarEntryType entryType)
+        {
+            string expectedName = "ExpectedName.txt";
+
+            PaxTarEntry originalEntry = new PaxTarEntry(entryType, expectedName);
+            originalEntry.ModificationTime = TestModificationTime;
+            originalEntry.GroupName = TestLongGName;
+            originalEntry.UserName = TestLongUName;
+
+            if (entryType is TarEntryType.RegularFile)
+            {
+                originalEntry.DataStream = new FakeLengthStream(); // All we care is the length beyond the limit
+            }
+            else if (entryType is TarEntryType.SymbolicLink)
+            {
+                originalEntry.LinkName = TestLinkName;
+            }
+
+            await using MemoryStream archive = new MemoryStream();
+            await using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
+            {
+                await writer.WriteEntryAsync(originalEntry); // Forces writing reserved keys into extended attributes of entry
+            }
+
+            // The writer copies reserved fields into the extended attributes if needed
+            VerifyPaxReservedKeys(originalEntry);
+
+            PaxTarEntry convertedEntry = new PaxTarEntry(other: originalEntry); // Should not throw for finding reserved keys in dictionary
+
+            // Using the conversion constructor should also copy the extended attributes
+            VerifyPaxReservedKeys(convertedEntry);
+
+            // Verify the entry's attributes were written into the archive correctly
+            archive.Position = 0;
+            await using (TarReader reader = new TarReader(archive, leaveOpen: false))
+            {
+                PaxTarEntry readEntry = await reader.GetNextEntryAsync() as PaxTarEntry;
+                Assert.NotNull(readEntry);
+                VerifyPaxReservedKeys(readEntry);
+            }
+
+            // Now update the fields so the existing dictionary keys get overwritten
+
+            string modifiedName = "modifiedName.txt";
+            DateTimeOffset modifiedMTime = new DateTimeOffset(2022, 12, 30, 23, 59, 58, TimeSpan.Zero);
+            string modifiedGName = $"abc{TestLongGName}abc";
+            string modifiedUName = $"abc{TestLongUName}abc";
+            long modifiedSize = MaxAllowedSize + 5;
+            string modifiedLinkName = "modifiedLinkName";
+
+            convertedEntry.Name = modifiedName;
+            convertedEntry.ModificationTime = modifiedMTime;
+            convertedEntry.GroupName = modifiedGName;
+            convertedEntry.UserName = modifiedUName;
+
+            if (entryType is TarEntryType.RegularFile)
+            {
+                ((FakeLengthStream)convertedEntry.DataStream).ChangeLength(modifiedSize);
+            }
+            else if (entryType is TarEntryType.SymbolicLink)
+            {
+                convertedEntry.LinkName = modifiedLinkName;
+            }
+
+            archive.Position = 0;
+            archive.SetLength(0);
+            await using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
+            {
+                await writer.WriteEntryAsync(convertedEntry); // Forces overwriting reserved keys
+            }
+
+            VerifyPaxReservedKeys(convertedEntry);
+
+            // Last check: verify we write the converted entry's dictionary correctly
+            archive.Position = 0;
+            await using (TarReader reader = new TarReader(archive, leaveOpen: false))
+            {
+                PaxTarEntry readEntry = await reader.GetNextEntryAsync() as PaxTarEntry;
+                Assert.NotNull(readEntry);
+                VerifyPaxReservedKeys(readEntry);
+            }
+
+            // Finally, dispose streams if needed
+            if (originalEntry.DataStream != null)
+            {
+                await originalEntry.DataStream.DisposeAsync();
+            }
+
+            if (convertedEntry.DataStream != null)
+            {
+                await convertedEntry.DataStream.DisposeAsync();
+            }
+        }
     }
 }

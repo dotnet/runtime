@@ -33,6 +33,8 @@ namespace System.Formats.Tar.Tests
         protected const UnixFileMode TestPermission3 = UserAll | UnixFileMode.OtherRead;
         protected const UnixFileMode TestPermission4 = UserAll | UnixFileMode.OtherExecute;
 
+        protected const long MaxAllowedSize = 99_999_999;
+
         protected const int DefaultGid = 0;
         protected const int DefaultUid = 0;
         protected const int DefaultDeviceMajor = 0;
@@ -92,6 +94,8 @@ namespace System.Formats.Tar.Tests
         protected const string PaxEaSize = "size";
         protected const string PaxEaDevMajor = "devmajor";
         protected const string PaxEaDevMinor = "devminor";
+
+        protected static readonly string[] ReservedExtendedAttributeKeyNames = new[] { PaxEaName, PaxEaSize, PaxEaMTime, PaxEaGName, PaxEaUName };
 
         private static readonly string[] V7TestCaseNames = new[]
         {
@@ -640,6 +644,33 @@ namespace System.Formats.Tar.Tests
         {
             var enumerationOptions = new EnumerationOptions { RecurseSubdirectories = true };
             return new FileSystemEnumerable<FileSystemInfo>(path, (ref FileSystemEntry e) => e.ToFileSystemInfo(), enumerationOptions);
+        }
+
+        internal class FakeLengthStream : Stream
+        {
+            private long _length;
+
+            public FakeLengthStream(long initialLength = MaxAllowedSize + 1)
+            {
+                _length = initialLength;
+            }
+
+            public override bool CanRead => true;
+            public override bool CanSeek => true;
+            public override bool CanWrite => true;
+            public override long Length => _length; // Beyond allowed length to write in size field
+            public override long Position { get => 0; set { throw new NotImplementedException(); } }
+
+            public override void Flush() => throw new NotImplementedException();
+            public override int Read(byte[] buffer, int offset, int count) => 0;
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotImplementedException();
+            public override void SetLength(long value) => throw new NotImplementedException();
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotImplementedException();
+
+            public void ChangeLength(long newLength)
+            {
+                _length = newLength;
+            }
         }
     }
 }

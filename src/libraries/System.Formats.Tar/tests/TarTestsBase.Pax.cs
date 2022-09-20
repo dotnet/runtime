@@ -124,5 +124,19 @@ namespace System.Formats.Tar.Tests
             VerifyExtendedAttributeTimestamp(pax, PaxEaATime, MinimumTime);
             VerifyExtendedAttributeTimestamp(pax, PaxEaCTime, MinimumTime);
         }
+
+        protected void VerifyPaxReservedKeys(PaxTarEntry entry)
+        {
+            foreach (string reservedKey in ReservedExtendedAttributeKeyNames)
+            {
+                if ((reservedKey is PaxEaSize && entry.EntryType is not TarEntryType.RegularFile) ||
+                    (reservedKey is PaxEaLinkName && entry.EntryType is not TarEntryType.SymbolicLink))
+                {
+                    continue;
+                }
+
+                Assert.Contains(reservedKey, entry.ExtendedAttributes);
+            }
+        }
     }
 }

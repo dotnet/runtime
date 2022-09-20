@@ -515,5 +515,130 @@ namespace System.Formats.Tar.Tests
             await using TarWriter writer = new TarWriter(archiveStream, leaveOpen: false);
             await Assert.ThrowsAsync<ArgumentException>("entry", () => writer.WriteEntryAsync(new PaxTarEntry(entryType, "link")));
         }
+
+        [Theory]
+        [InlineData(TarEntryType.RegularFile)]
+        [InlineData(TarEntryType.SymbolicLink)]
+        public async Task Verify_Write_Inserts_ReservedKeysAsync(TarEntryType entryType)
+        {
+            string expectedName = "ExpectedName.txt";
+
+            PaxTarEntry entry = new PaxTarEntry(entryType, expectedName);
+            entry.ModificationTime = TestModificationTime;
+            entry.GroupName = TestLongGName;
+            entry.UserName = TestLongUName;
+
+            if (entryType is TarEntryType.RegularFile)
+            {
+                entry.DataStream = new FakeLengthStream(); // All we care is the length beyond the limit
+            }
+            else if (entryType is TarEntryType.SymbolicLink)
+            {
+                entry.LinkName = TestLinkName;
+            }
+
+            await using MemoryStream archive = new MemoryStream();
+            await using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
+            {
+                await writer.WriteEntryAsync(entry); // Forces writing reserved keys into extended attributes of entry
+            }
+
+            VerifyPaxReservedKeys(entry);
+
+            archive.Position = 0;
+            await using (TarReader reader = new TarReader(archive, leaveOpen: false))
+            {
+                PaxTarEntry readEntry = await reader.GetNextEntryAsync() as PaxTarEntry;
+                Assert.NotNull(readEntry);
+                VerifyPaxReservedKeys(readEntry);
+            }
+
+            if (entry.DataStream != null)
+            {
+                await entry.DataStream.DisposeAsync();
+            }
+        }
+
+        [Theory]
+        [InlineData(TarEntryType.RegularFile)]
+        [InlineData(TarEntryType.SymbolicLink)]
+        public async Task Verify_Write_Inserts_ReservedKeys_UpdatedBeforeWriteAsync(TarEntryType entryType)
+        {
+            string modifiedName = "modifiedName.txt";
+            DateTimeOffset modifiedModificationTime = new DateTimeOffset(2022, 12, 29, 23, 59, 58, TimeSpan.Zero);
+            string modifiedGName = $"abc{TestLongGName}abc";
+            string modifiedUName = $"abc{TestLongUName}abc";
+            long modifiedSize = MaxAllowedSize + 5;
+            string modifiedLinkName = $"abc{TestLinkName}abc";
+
+            PaxTarEntry originalEntry = new PaxTarEntry(entryType, "originalName.txt");
+            originalEntry.ModificationTime = TestModificationTime;
+            originalEntry.GroupName = TestLongGName;
+            originalEntry.UserName = TestLongUName;
+
+            if (entryType is TarEntryType.RegularFile)
+            {
+                originalEntry.DataStream = new FakeLengthStream(); // All we care is the length beyond the limit
+            }
+            else if (entryType is TarEntryType.SymbolicLink)
+            {
+                originalEntry.LinkName = TestLinkName;
+            }
+
+            await using MemoryStream archive = new MemoryStream();
+            await using (TarWriter writer = new TarWriter(archive, leaveOpen: true))
+            {
+                originalEntry.Name = modifiedName;
+                originalEntry.ModificationTime = modifiedModificationTime;
+                originalEntry.GroupName = modifiedGName;
+                originalEntry.UserName = modifiedUName;
+
+                if (entryType is TarEntryType.RegularFile)
+                {
+                    ((FakeLengthStream)originalEntry.DataStream).ChangeLength(modifiedSize);
+                }
+
+                if (entryType is TarEntryType.SymbolicLink)
+                {
+                    originalEntry.LinkName = modifiedLinkName;
+                }
+
+                await writer.WriteEntryAsync(originalEntry); // Forces writing reserved keys into extended attributes of entry
+            }
+
+            VerifyPaxReservedKeys(originalEntry);
+
+            archive.Position = 0;
+            await using (TarReader reader = new TarReader(archive, leaveOpen: false))
+            {
+                PaxTarEntry readEntry = await reader.GetNextEntryAsync() as PaxTarEntry;
+                Assert.NotNull(readEntry);
+                VerifyModifiedKeys(readEntry);
+            }
+
+            if (originalEntry.DataStream != null)
+            {
+                await originalEntry.DataStream.DisposeAsync();
+            }
+
+            void VerifyModifiedKeys(PaxTarEntry paxEntry)
+            {
+                Assert.Equal(paxEntry.ExtendedAttributes[PaxEaName], modifiedName);
+                VerifyExtendedAttributeTimestamp(paxEntry, PaxEaMTime, modifiedModificationTime);
+                Assert.Equal(paxEntry.ExtendedAttributes[PaxEaGName], modifiedGName);
+                Assert.Equal(paxEntry.ExtendedAttributes[PaxEaUName], modifiedUName);
+
+                if (paxEntry.EntryType is TarEntryType.RegularFile)
+                {
+                    Assert.True(long.TryParse(paxEntry.ExtendedAttributes[PaxEaSize], out long result));
+                    Assert.Equal(result, modifiedSize);
+                }
+
+                else if (paxEntry.EntryType is TarEntryType.SymbolicLink)
+                {
+                    Assert.Equal(paxEntry.ExtendedAttributes[PaxEaLinkName], modifiedLinkName);
+                }
+            }
+        }
     }
 }
