@@ -836,6 +836,12 @@ namespace System.Formats.Tar
         // Returns the text's utf16 length truncated at the specified max length.
         private static int GetUtf16TruncatedTextLength(ReadOnlySpan<char> text, int maxLength)
         {
+            // fast path, most entries will be smaller than maxLength.
+            if (Encoding.UTF8.GetByteCount(text) <= maxLength)
+            {
+                return text.Length;
+            }
+
             int utf8Length = 0;
             int utf16TruncatedLength = 0;
 
