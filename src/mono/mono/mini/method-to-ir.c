@@ -5669,6 +5669,9 @@ check_get_virtual_method_assumptions (MonoClass* klass, MonoMethod* method)
 	if (((method->flags & METHOD_ATTRIBUTE_FINAL) || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL)))
 		return TRUE;
 
+	if (m_class_get_vtable (klass) == NULL)
+		return FALSE;
+
 	if (method->slot == -1) {
 		if (method->is_inflated) {
 			if (((MonoMethodInflated*)method)->declaring->slot == -1)
