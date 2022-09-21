@@ -410,7 +410,7 @@ OBJECTREF TypeHandle::GetManagedClassObjectFromHandleFast(RUNTIMETYPEHANDLE hand
     if (handle & 1)
     {
         // Clear the "is pinned object" bit from the managed reference
-        return (OBJECTREF)((handle >> 1) << 1); // C++ compiler is expected to emit "and reg, mask"
+        return (OBJECTREF)(handle - 1);
     }
     return NULL;
 }
@@ -423,7 +423,7 @@ OBJECTREF TypeHandle::GetManagedClassObjectFromHandle(LoaderAllocator* allocator
     if (handle & 1)
     {
         // Clear the "is pinned object" bit from the managed reference
-        return (OBJECTREF)((handle >> 1) << 1); // C++ compiler is expected to emit "and reg, mask"
+        return (OBJECTREF)(handle - 1);
     }
 
     OBJECTREF retVal;
