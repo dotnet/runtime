@@ -142,12 +142,28 @@ namespace System.Numerics
                         // To match the integer semantic comparison above, here we compare all the significant bits
                         // Revisit this if decimals are added
 
-                        Span<byte> significantX = stackalloc byte[x!.GetSignificandByteCount()];
-                        Span<byte> significantY = stackalloc byte[y!.GetSignificandByteCount()];
-                        x.WriteSignificandBigEndian(significantX);
-                        y.WriteSignificandBigEndian(significantY);
+                        // Leave the space for custom floating-point type that has variable significand length
 
-                        return significantX.SequenceCompareTo(significantY);
+                        if (x!.GetSignificandBitLength() == y!.GetSignificandBitLength())
+                        {
+                            // Prevent stack overflow for huge numbers
+                            const int StackAllocThreshold = 256;
+
+                            int xSignificandLength = x!.GetSignificandByteCount();
+                            int ySignificandLength = y!.GetSignificandByteCount();
+
+                            Span<byte> significantX = xSignificandLength <= StackAllocThreshold ? stackalloc byte[xSignificandLength] : new byte[xSignificandLength];
+                            Span<byte> significantY = ySignificandLength <= StackAllocThreshold ? stackalloc byte[ySignificandLength] : new byte[ySignificandLength];
+
+                            x.WriteSignificandBigEndian(significantX);
+                            y.WriteSignificandBigEndian(significantY);
+
+                            return significantX.SequenceCompareTo(significantY);
+                        }
+                        else
+                        {
+                            return x.GetSignificandBitLength().CompareTo(y.GetSignificandBitLength());
+                        }
                     }
 
                     if (T.IsNaN(x))
