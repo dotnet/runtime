@@ -399,42 +399,6 @@ void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
         GCPROTECT_END();
     }
 }
-
-OBJECTREF TypeHandle::GetManagedClassObjectFromHandleFast(RUNTIMETYPEHANDLE handle)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // For a non-unloadable context, handle is expected to be either null (is not cached yet)
-    // or be a direct pointer to a frozen RuntimeType object
-
-    if (handle & 1)
-    {
-        // Clear the "is pinned object" bit from the managed reference
-        return (OBJECTREF)(handle - 1);
-    }
-    return NULL;
-}
-
-OBJECTREF TypeHandle::GetManagedClassObjectFromHandle(LoaderAllocator* allocator, RUNTIMETYPEHANDLE handle)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // First, check if we have a cached reference to an effectively pinned (allocated on FOH) object
-    if (handle & 1)
-    {
-        // Clear the "is pinned object" bit from the managed reference
-        return (OBJECTREF)(handle - 1);
-    }
-
-    OBJECTREF retVal;
-    if (!allocator->GetHandleValueFastPhase2(handle, &retVal))
-    {
-        return NULL;
-    }
-
-    COMPILER_ASSUME(retVal != NULL);
-    return retVal;
-}
 #endif
 
 /* static */ BOOL TypeHandle::IsCanonicalSubtypeInstantiation(Instantiation inst)

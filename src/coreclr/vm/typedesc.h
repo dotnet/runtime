@@ -252,13 +252,31 @@ public:
             MODE_COOPERATIVE;
         }
         CONTRACTL_END;
-        return TypeHandle::GetManagedClassObjectFromHandle(GetLoaderAllocator(), m_hExposedClassObject);
+
+        const RUNTIMETYPEHANDLE handle = m_hExposedClassObject;
+
+        OBJECTREF retVal;
+        if (!TypeHandle::GetManagedClassObjectFromHandleFast(handle, &retVal) &&
+            !GetLoaderAllocator()->GetHandleValueFastPhase2(handle, &retVal))
+        {
+            return NULL;
+        }
+
+        COMPILER_ASSUME(retVal != NULL);
+        return retVal;
     }
 
     OBJECTREF GetManagedClassObjectFast()
     {
         LIMITED_METHOD_CONTRACT;
-        return TypeHandle::GetManagedClassObjectFromHandleFast(m_hExposedClassObject);
+
+        OBJECTREF objRef;
+        if (!TypeHandle::GetManagedClassObjectFromHandleFast(m_hExposedClassObject, &objRef))
+        {
+            return FALSE;
+        }
+        COMPILER_ASSUME(objRef != NULL);
+        return objRef;
     }
 #endif
 
@@ -371,13 +389,31 @@ public:
             MODE_COOPERATIVE;
         }
         CONTRACTL_END;
-        return TypeHandle::GetManagedClassObjectFromHandle(GetLoaderAllocator(), m_hExposedClassObject);
+
+        const RUNTIMETYPEHANDLE handle = m_hExposedClassObject;
+
+        OBJECTREF retVal;
+        if (!TypeHandle::GetManagedClassObjectFromHandleFast(handle, &retVal) &&
+            !GetLoaderAllocator()->GetHandleValueFastPhase2(handle, &retVal))
+        {
+            return NULL;
+        }
+
+        COMPILER_ASSUME(retVal != NULL);
+        return retVal;
     }
 
     OBJECTREF GetManagedClassObjectFast()
     {
         LIMITED_METHOD_CONTRACT;
-        return TypeHandle::GetManagedClassObjectFromHandleFast(m_hExposedClassObject);
+
+        OBJECTREF objRef;
+        if (!TypeHandle::GetManagedClassObjectFromHandleFast(m_hExposedClassObject, &objRef))
+        {
+            return FALSE;
+        }
+        COMPILER_ASSUME(objRef != NULL);
+        return objRef;
     }
 #endif
 

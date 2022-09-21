@@ -1334,25 +1334,17 @@ inline OBJECTHANDLE MethodTable::GetLoaderAllocatorObjectHandle()
     return GetLoaderAllocator()->GetLoaderAllocatorObjectHandle();
 }
 
+#ifndef DACCESS_COMPILE
 //==========================================================================================
 FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists()
 {
     LIMITED_METHOD_CONTRACT;
 
-    // GetManagedClassObjectFromHandle was inlined here to produce better code in MSVC
-    // since this method is hot. 
-
     const RUNTIMETYPEHANDLE handle = GetWriteableData_NoLogging()->m_hExposedClassObject;
 
-    // First, check if we have a cached reference to an effectively pinned (allocated on FOH) object
-    if (handle & 1)
-    {
-        // Clear the "is pinned object" bit from the managed reference
-        return (OBJECTREF)(handle - 1);
-    }
-
     OBJECTREF retVal;
-    if (!GetLoaderAllocator()->GetHandleValueFastPhase2(handle, &retVal))
+    if (!TypeHandle::GetManagedClassObjectFromHandleFast(handle, &retVal) &&
+        !GetLoaderAllocator()->GetHandleValueFastPhase2(handle, &retVal))
     {
         return NULL;
     }
@@ -1360,6 +1352,7 @@ FORCEINLINE OBJECTREF MethodTable::GetManagedClassObjectIfExists()
     COMPILER_ASSUME(retVal != NULL);
     return retVal;
 }
+#endif
 
 //==========================================================================================
 inline void MethodTable::SetIsArray(CorElementType arrayType)
