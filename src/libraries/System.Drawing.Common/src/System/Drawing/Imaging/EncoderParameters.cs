@@ -64,7 +64,7 @@ namespace System.Drawing.Imaging
 
             for (int i = 0; i < length; i++)
             {
-                Marshal.StructureToPtr(_param[i], (IntPtr)(arrayOffset + i * size), false);
+                Marshal.StructureToPtr(_param[i], (nint)(arrayOffset + (nint)i * size), false);
             }
 
             return memory;

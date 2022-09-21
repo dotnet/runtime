@@ -729,7 +729,7 @@ namespace System.DirectoryServices.Protocols
                 {
                     sortPtr = Marshal.AllocHGlobal(structSize);
                     Marshal.StructureToPtr(nativeSortKeys[i], sortPtr, false);
-                    pMemHandle[i] = (void**)sortPtr;
+                    pMemHandle[i] = (void*)sortPtr;
                 }
                 pMemHandle[i] = null;
 

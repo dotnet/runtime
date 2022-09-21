@@ -456,6 +456,8 @@ dotnet_diagnostic.CA2018.severity = warning
 # CA2019: Improper 'ThreadStatic' field initialization
 dotnet_diagnostic.CA2019.severity = warning
 
+dotnet_diagnostic.CA2020.severity = warning
+
 # CA2100: Review SQL queries for security vulnerabilities
 dotnet_diagnostic.CA2100.severity = none
 

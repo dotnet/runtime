@@ -2596,7 +2596,7 @@ namespace System.Data.OleDb
                 }
                 else
                 {
-                    long v = (long)ordinal - m.ordinal;
+                    long v = (long)ordinal - (long)m.ordinal;
                     return ((0 < v) ? 1 : ((v < 0) ? -1 : 0));
                 }
             }
