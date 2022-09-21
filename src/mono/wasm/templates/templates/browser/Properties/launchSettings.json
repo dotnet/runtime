@@ -10,5 +10,4 @@
         "inspectUri": "{wsProtocol}://{url.hostname}:{url.port}/debug?browser={browserInspectUri}"
       }
     }
-  }
-  
+}
