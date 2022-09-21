@@ -480,7 +480,11 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
         return nullptr;
     }
 
-    LPCWSTR phaseName = PhaseShortNames[phase];
+    LPCWSTR phaseNameAux = PhaseShortNames[phase];
+    size_t  phaseNameLenWithoutPreffix = wcslen(phaseNameAux) - strlen("PHASE_");
+    LPCWSTR phaseName                  = getAllocator(CMK_DebugOnly).allocate<WCHAR>(phaseNameLenWithoutPreffix + 1);
+    wcscpy(const_cast<WCHAR*>(phaseName), &phaseNameAux[strlen("PHASE_")]);
+
 
     if (pos == PhasePosition::PrePhase)
     {
