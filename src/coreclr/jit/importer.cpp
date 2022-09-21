@@ -12411,7 +12411,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     bool                  partialExpand   = false;
     const CorInfoHelpFunc helper          = info.compCompHnd->getCastingHelper(pResolvedToken, isCastClass);
 
-    GenTree* exactCls = nullptr;
+    CORINFO_CLASS_HANDLE exactCls = NO_CLASS_HANDLE;
 
     // Legality check.
     //
@@ -12421,16 +12421,13 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     {
         if (isCastClass)
         {
-            // Jit can only inline expand the normal CHKCASTCLASS helper.
-            canExpandInline = (helper == CORINFO_HELP_CHKCASTCLASS);
+            // Jit can only inline expand CHKCASTCLASS and CHKCASTARRAY helpers.
+            canExpandInline = (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY);
         }
-        else
+        else if ((helper == CORINFO_HELP_ISINSTANCEOFCLASS) || (helper == CORINFO_HELP_ISINSTANCEOFARRAY))
         {
-            if (helper == CORINFO_HELP_ISINSTANCEOFCLASS)
-            {
-                // If the class is exact, the jit can expand the IsInst check inline.
-                canExpandInline = isClassExact;
-            }
+            // If the class is exact, the jit can expand the IsInst check inline.
+            canExpandInline = isClassExact;
         }
 
         // Check if this cast helper have some profile data
@@ -12475,7 +12472,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 
                         canExpandInline = true;
                         partialExpand   = true;
-                        exactCls        = gtNewIconEmbClsHndNode(likelyCls);
+                        exactCls        = likelyCls;
                     }
                 }
             }
@@ -12536,8 +12533,9 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         op2Var                                                  = fgInsertCommaFormTemp(&op2);
         lvaTable[op2Var->AsLclVarCommon()->GetLclNum()].lvIsCSE = true;
     }
-    temp   = gtNewMethodTableLookup(temp);
-    condMT = gtNewOperNode(GT_NE, TYP_INT, temp, exactCls != nullptr ? exactCls : op2);
+    temp = gtNewMethodTableLookup(temp);
+    condMT =
+        gtNewOperNode(GT_NE, TYP_INT, temp, (exactCls != NO_CLASS_HANDLE) ? gtNewIconEmbClsHndNode(exactCls) : op2);
 
     GenTree* condNull;
     //
@@ -12557,11 +12555,16 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     GenTree* condTrue;
     if (isCastClass)
     {
-        //
-        // use the special helper that skips the cases checked by our inlined cast
-        //
-        const CorInfoHelpFunc specialHelper = CORINFO_HELP_CHKCASTCLASS_SPECIAL;
+        assert((helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY) ||
+               (helper == CORINFO_HELP_CHKCASTINTERFACE));
 
+        CorInfoHelpFunc specialHelper = helper;
+        if ((helper == CORINFO_HELP_CHKCASTCLASS) &&
+            ((exactCls == nullptr) || (exactCls == gtGetHelperArgClassHandle(op2))))
+        {
+            // use the special helper that skips the cases checked by our inlined cast
+            specialHelper = CORINFO_HELP_CHKCASTCLASS_SPECIAL;
+        }
         condTrue = gtNewHelperCallNode(specialHelper, TYP_REF, partialExpand ? op2 : op2Var, gtClone(op1));
     }
     else if (partialExpand)
@@ -12588,8 +12591,11 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 
     if (isCastClass && isClassExact && condTrue->OperIs(GT_CALL))
     {
-        // condTrue is used only for throwing InvalidCastException in case of casting to an exact class.
-        condTrue->AsCall()->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
+        if (helper == CORINFO_HELP_CHKCASTCLASS)
+        {
+            // condTrue is used only for throwing InvalidCastException in case of casting to an exact class.
+            condTrue->AsCall()->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
+        }
     }
 
     GenTree* qmarkNull;

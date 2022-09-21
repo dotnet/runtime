@@ -472,7 +472,6 @@ namespace Internal.TypeSystem
                 if (!this.IsEnum)
                     return this;
 
-                // TODO: Cache the result?
                 foreach (var field in this.GetFields())
                 {
                     if (!field.IsStatic)

@@ -7049,6 +7049,12 @@ void ValueNumStore::InitValueNumStoreStatics()
 
             ValueNumFuncSetArity(func, newArity);
         }
+
+        if (HWIntrinsicInfo::IsCommutative(id))
+        {
+            VNFunc func = VNFunc(VNF_HWI_FIRST + (id - NI_HW_INTRINSIC_START - 1));
+            vnfOpAttribs[func] |= VNFOA_Commutative;
+        }
     }
 
 #endif // FEATURE_HW_INTRINSICS

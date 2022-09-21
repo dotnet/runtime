@@ -562,12 +562,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_45929/test45929/*">
             <Issue>https://github.com/dotnet/runtime/issues/60152</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/GetTotalPauseDuration/*">
-            <Issue>https://github.com/dotnet/runtime/issues/74631</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/GetGCMemoryInfo/*">
-            <Issue>https://github.com/dotnet/runtime/issues/74902</Issue>
-        </ExcludeList>    
     </ItemGroup>
 
     <!-- The following are x64 Unix failures on CoreCLR. -->

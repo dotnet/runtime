@@ -342,9 +342,9 @@ private:
 
 public:
     //
-    // Default constructor.  Results in an uninitialized value!
+    // Default constructor.
     //
-    inline Volatile()
+    inline Volatile() : m_val {}
     {
         STATIC_CONTRACT_SUPPORTS_DAC;
     }
