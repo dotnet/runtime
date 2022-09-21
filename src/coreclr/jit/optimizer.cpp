@@ -9629,6 +9629,15 @@ void OptBoolsDsc::optOptimizeBoolsGcStress()
     // morphing it into a TYP_I_IMPL.
     noway_assert(relop->AsOp()->gtOp2->gtOper == GT_CNS_INT);
     relop->AsOp()->gtOp2->gtType = TYP_I_IMPL;
+
+    // Recost/rethread the tree if necessary
+    //
+    if (m_comp->fgStmtListThreaded)
+    {
+        m_comp->gtPrepareCost(test.testTree);
+        m_comp->gtSetStmtInfo(test.testStmt);
+        m_comp->fgSetStmtSeq(test.testStmt);
+    }
 }
 
 #endif
