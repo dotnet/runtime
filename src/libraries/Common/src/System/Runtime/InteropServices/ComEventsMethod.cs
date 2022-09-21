@@ -173,16 +173,6 @@ namespace System.Runtime.InteropServices
             {
                 wrappers = _delegateWrappers;
 
-                // Update an existing delegate wrapper
-                foreach (DelegateWrapper wrapper in wrappers)
-                {
-                    if (wrapper.Delegate.GetType() == d.GetType() && wrapper.WrapArgs == wrapArgs)
-                    {
-                        wrapper.Delegate = Delegate.Combine(wrapper.Delegate, d);
-                        return;
-                    }
-                }
-
                 newWrappers = new DelegateWrapper[wrappers.Length + 1];
                 wrappers.CopyTo(newWrappers, 0);
 
@@ -200,14 +190,12 @@ namespace System.Runtime.InteropServices
 
                 // Find delegate wrapper index
                 int removeIdx = -1;
-                DelegateWrapper? wrapper = null;
                 for (int i = 0; i < wrappers.Length; i++)
                 {
                     DelegateWrapper wrapperMaybe = wrappers[i];
                     if (wrapperMaybe.Delegate.GetType() == d.GetType() && wrapperMaybe.WrapArgs == wrapArgs)
                     {
                         removeIdx = i;
-                        wrapper = wrapperMaybe;
                         break;
                     }
                 }
@@ -216,14 +204,6 @@ namespace System.Runtime.InteropServices
                 {
                     // Not present in collection
                     return;
-                }
-
-                // Update wrapper or remove from collection
-                Delegate? newDelegate = Delegate.Remove(wrapper!.Delegate, d);
-                if (newDelegate != null)
-                {
-                    wrapper.Delegate = newDelegate;
-                    return; // No need to update collection
                 }
 
                 newWrappers = new DelegateWrapper[wrappers.Length - 1];
@@ -240,25 +220,13 @@ namespace System.Runtime.InteropServices
             {
                 wrappers = _delegateWrappers;
 
-                List<int> toRemove = new List<int>();
+                List<int> toRemove = new();
                 for (int i = 0; i < wrappers.Length; i++)
                 {
                     DelegateWrapper wrapper = wrappers[i];
-                    Delegate[] invocationList = wrapper.Delegate.GetInvocationList();
-                    foreach (Delegate delegateMaybe in invocationList)
+                    if (condition(wrapper.Delegate))
                     {
-                        if (condition(delegateMaybe))
-                        {
-                            Delegate? newDelegate = Delegate.Remove(wrapper!.Delegate, delegateMaybe);
-                            if (newDelegate != null)
-                            {
-                                wrapper.Delegate = newDelegate;
-                            }
-                            else
-                            {
-                                toRemove.Add(i);
-                            }
-                        }
+                        toRemove.Add(i);
                     }
                 }
 
