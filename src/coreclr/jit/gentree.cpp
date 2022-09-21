@@ -11375,8 +11375,8 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
             {
                 if (tree->gtFlags & GTF_VAR_USEASG)
                 {
-                    unsigned oldDefSsaNum;
-                    unsigned newDefSsaNum = GetSsaNumForLocalVarDef(tree, &oldDefSsaNum);
+                    unsigned newDefSsaNum = tree->AsLclVarCommon()->GetSsaNum();
+                    unsigned oldDefSsaNum = varDsc->GetPerSsaData(newDefSsaNum)->GetUseDefSsaNum();
                     printf("ud:%d->%d", oldDefSsaNum, newDefSsaNum);
                 }
                 else
@@ -16430,7 +16430,8 @@ bool GenTree::IsPartialLclFld(Compiler* comp)
 //    that "LocalAddressVisitor" recognizes, as it is used to detect which
 //    trees can define tracked locals.
 //
-bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire, ssize_t* pOffset)
+bool GenTree::DefinesLocal(
+    Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire, ssize_t* pOffset, unsigned* pSize)
 {
     assert((pOffset == nullptr) || (*pOffset == 0));
 
@@ -16444,17 +16445,39 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
 
         // Return early for the common case.
         //
-        if (lhs->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+        if (lhs->OperIs(GT_LCL_VAR))
         {
             *pLclVarTree = lhs->AsLclVarCommon();
             if (pIsEntire != nullptr)
             {
-                *pIsEntire = !lhs->IsPartialLclFld(comp);
+                *pIsEntire = true;
             }
-
             if (pOffset != nullptr)
             {
-                *pOffset = lhs->AsLclVarCommon()->GetLclOffs();
+                *pOffset = 0;
+            }
+            if (pSize != nullptr)
+            {
+                *pSize = comp->lvaLclExactSize(lhs->AsLclVarCommon()->GetLclNum());
+            }
+
+            return true;
+        }
+
+        if (lhs->OperIs(GT_LCL_FLD))
+        {
+            *pLclVarTree = lhs->AsLclVarCommon();
+            if (pIsEntire != nullptr)
+            {
+                *pIsEntire = !lhs->AsLclFld()->IsPartialLclFld(comp);
+            }
+            if (pOffset != nullptr)
+            {
+                *pOffset = lhs->AsLclFld()->GetLclOffs();
+            }
+            if (pSize != nullptr)
+            {
+                *pSize = lhs->AsLclFld()->GetSize();
             }
 
             return true;
@@ -16519,6 +16542,11 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
     if (pOffset != nullptr)
     {
         *pOffset = offset;
+    }
+
+    if (pSize != nullptr)
+    {
+        *pSize = storeSize;
     }
 
     return true;
@@ -17381,6 +17409,41 @@ bool Compiler::gtIsStaticFieldPtrToBoxedStruct(var_types fieldNodeType, CORINFO_
     CorInfoType cit      = info.compCompHnd->getFieldType(fldHnd);
     var_types   fieldTyp = JITtype2varType(cit);
     return fieldTyp != TYP_REF;
+}
+
+//------------------------------------------------------------------------
+// gtStoreDefinesField: Does the given parent store modify the given field?
+//
+// Arguments:
+//    fieldVarDsc       - The field local
+//    offset            - Offset of the store, relative to the parent
+//    size              - Size of the store in bytes
+//    pFieldStoreOffset - [out] parameter for the store's offset relative
+//                        to the field local itself
+//    pFileStoreSize    - [out] parameter for the amount of the field's
+//                        local's bytes affected by the store
+//
+// Return Value:
+//    If the given store affects the given field local, "true, "false"
+//    otherwise.
+//
+bool Compiler::gtStoreDefinesField(
+    LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFileStoreSize)
+{
+    ssize_t  fieldOffset = fieldVarDsc->lvFldOffset;
+    unsigned fieldSize   = genTypeSize(fieldVarDsc); // No TYP_STRUCT field locals.
+
+    ssize_t storeEndOffset = offset + static_cast<ssize_t>(size);
+    ssize_t fieldEndOffset = fieldOffset + static_cast<ssize_t>(fieldSize);
+    if ((fieldOffset < storeEndOffset) && (offset < fieldEndOffset))
+    {
+        *pFieldStoreOffset = (offset < fieldOffset) ? 0 : (offset - fieldOffset);
+        *pFileStoreSize    = static_cast<unsigned>(min(storeEndOffset, fieldEndOffset) - max(offset, fieldOffset));
+
+        return true;
+    }
+
+    return false;
 }
 
 CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)

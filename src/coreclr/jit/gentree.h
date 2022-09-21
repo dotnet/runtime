@@ -1988,7 +1988,8 @@ public:
     bool DefinesLocal(Compiler*             comp,
                       GenTreeLclVarCommon** pLclVarTree,
                       bool*                 pIsEntire = nullptr,
-                      ssize_t*              pOffset   = nullptr);
+                      ssize_t*              pOffset   = nullptr,
+                      unsigned*             pSize     = nullptr);
 
     bool DefinesLocalAddr(GenTreeLclVarCommon** pLclVarTree, ssize_t* pOffset = nullptr);
 

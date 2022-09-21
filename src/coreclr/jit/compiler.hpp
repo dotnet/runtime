@@ -4074,49 +4074,6 @@ bool Compiler::fgVarNeedsExplicitZeroInit(unsigned varNum, bool bbInALoop, bool 
     return !info.compInitMem || (varDsc->lvIsTemp && !varDsc->HasGCPtr());
 }
 
-//------------------------------------------------------------------------
-// GetSsaNumForLocalVarDef: Get the SSA number for a local "def" node
-//
-// Arguments:
-//    lcl           - The local node representing the SSA def
-//    pUseDefSsaNum - Optional [out] parameter for the "use" SSA number
-//                    representing the previous def in a partial definition
-//
-// Return Value:
-//    The SSA def number "lcl" refers to. RESERVED_SSA_NUM if the local
-//    isn't in SSA.
-//
-inline unsigned Compiler::GetSsaNumForLocalVarDef(GenTree* lcl, unsigned* pUseDefSsaNum)
-{
-    // Normally, not-in-SSA locals will not have SSA numbers. There is,
-    // however, one exception: "CanBeReplacedWithItsField" struct defs.
-    unsigned defSsaNum;
-    if (!lvaInSsa(lcl->AsLclVarCommon()->GetLclNum()))
-    {
-        defSsaNum = SsaConfig::RESERVED_SSA_NUM;
-    }
-    else
-    {
-        defSsaNum = lcl->AsLclVarCommon()->GetSsaNum();
-    }
-
-    // The SSA number associated with the "use" portion of a partial definitions is stored in the latter's
-    // SSA descriptor.
-    if (pUseDefSsaNum != nullptr)
-    {
-        if ((defSsaNum != SsaConfig::RESERVED_SSA_NUM) && ((lcl->gtFlags & GTF_VAR_USEASG) != 0))
-        {
-            *pUseDefSsaNum = lvaGetDesc(lcl->AsLclVarCommon())->GetPerSsaData(defSsaNum)->GetUseDefSsaNum();
-        }
-        else
-        {
-            *pUseDefSsaNum = SsaConfig::RESERVED_SSA_NUM;
-        }
-    }
-
-    return defSsaNum;
-}
-
 inline bool Compiler::PreciseRefCountsRequired()
 {
     return opts.OptimizationEnabled();

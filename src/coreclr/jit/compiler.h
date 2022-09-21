@@ -2772,6 +2772,9 @@ public:
     // the given "fldHnd", is such an object pointer.
     bool gtIsStaticFieldPtrToBoxedStruct(var_types fieldNodeType, CORINFO_FIELD_HANDLE fldHnd);
 
+    bool gtStoreDefinesField(
+        LclVarDsc* fieldVarDsc, ssize_t offset, unsigned size, ssize_t* pFieldStoreOffset, unsigned* pFileStoreSize);
+
     // Return true if call is a recursive call; return false otherwise.
     // Note when inlining, this looks for calls back to the root method.
     bool gtIsRecursiveCall(GenTreeCall* call)
@@ -3442,10 +3445,9 @@ public:
     bool     lvaTempsHaveLargerOffsetThanVars();
 
     // Returns "true" iff local variable "lclNum" is in SSA form.
-    bool lvaInSsa(unsigned lclNum)
+    bool lvaInSsa(unsigned lclNum) const
     {
-        assert(lclNum < lvaCount);
-        return lvaTable[lclNum].lvInSsa;
+        return lvaGetDesc(lclNum)->lvInSsa;
     }
 
     unsigned lvaStubArgumentVar; // variable representing the secret stub argument coming in EAX
@@ -4708,8 +4710,6 @@ public:
     {
         return BasicBlockRangeList(startBlock, endBlock);
     }
-
-    unsigned GetSsaNumForLocalVarDef(GenTree* lcl, unsigned* pUseDefSsaNum = nullptr);
 
     // This array, managed by the SSA numbering infrastructure, keeps "outlined composite SSA numbers".
     // See "SsaNumInfo::GetNum" for more details on when this is needed.
@@ -6754,14 +6754,10 @@ public:
     typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, CopyPropSsaDefStack*> LclNumToLiveDefsMap;
 
     // Copy propagation functions.
-    bool optCopyProp(Statement* stmt, GenTreeLclVarCommon* tree, unsigned lclNum, LclNumToLiveDefsMap* curSsaName);
+    bool optCopyProp(Statement* stmt, GenTreeLclVarCommon* tree, LclNumToLiveDefsMap* curSsaName);
     void optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
     bool optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
-    void optCopyPropPushDef(GenTree*             defNode,
-                            GenTreeLclVarCommon* lclNode,
-                            unsigned             lclNum,
-                            LclNumToLiveDefsMap* curSsaName);
-    unsigned optIsSsaLocal(GenTreeLclVarCommon* lclNode);
+    void optCopyPropPushDef(GenTree* defNode, GenTreeLclVarCommon* lclNode, LclNumToLiveDefsMap* curSsaName);
     int optCopyProp_LclVarScore(const LclVarDsc* lclVarDsc, const LclVarDsc* copyVarDsc, bool preferOp2);
     PhaseStatus optVnCopyProp();
     INDEBUG(void optDumpCopyPropStack(LclNumToLiveDefsMap* curSsaName));

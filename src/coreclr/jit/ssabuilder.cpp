@@ -743,57 +743,85 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
 
     GenTreeLclVarCommon* lclNode;
     bool                 isFullDef = false;
-    bool                 isLocal   = defNode->DefinesLocal(m_pCompiler, &lclNode, &isFullDef);
+    ssize_t              offset    = 0;
+    unsigned             storeSize = 0;
+    bool                 isLocal   = defNode->DefinesLocal(m_pCompiler, &lclNode, &isFullDef, &offset, &storeSize);
 
     if (isLocal)
     {
+        // This should have been marked as definition.
+        assert(((lclNode->gtFlags & GTF_VAR_DEF) != 0) && (((lclNode->gtFlags & GTF_VAR_USEASG) != 0) == !isFullDef));
+
         unsigned   lclNum = lclNode->GetLclNum();
         LclVarDsc* varDsc = m_pCompiler->lvaGetDesc(lclNum);
 
-        if (!m_pCompiler->lvaInSsa(lclNum) && varDsc->CanBeReplacedWithItsField(m_pCompiler))
-        {
-            lclNum = varDsc->lvFieldLclStart;
-            varDsc = m_pCompiler->lvaGetDesc(lclNum);
-            assert(isFullDef);
-        }
-
-        if (m_pCompiler->lvaInSsa(lclNum))
-        {
+        auto pushDef = [=](unsigned defLclNum, bool defIsFull) -> unsigned {
             // Promoted variables are not in SSA, only their fields are.
-            assert(!m_pCompiler->lvaGetDesc(lclNum)->lvPromoted);
-            // This should have been marked as definition.
-            assert((lclNode->gtFlags & GTF_VAR_DEF) != 0);
-            assert(((lclNode->gtFlags & GTF_VAR_USEASG) != 0) == !isFullDef);
+            assert(m_pCompiler->lvaInSsa(defLclNum) && !m_pCompiler->lvaGetDesc(defLclNum)->lvPromoted);
 
-            unsigned ssaNum = varDsc->lvPerSsaData.AllocSsaNum(m_allocator, block,
-                                                               defNode->OperIs(GT_ASG) ? defNode->AsOp() : nullptr);
+            LclVarDsc* defVarDsc = m_pCompiler->lvaGetDesc(defLclNum);
+            unsigned   defSsaNum = defVarDsc->lvPerSsaData.AllocSsaNum(
+                m_allocator, block, defNode->OperIs(GT_ASG) ? defNode->AsOp() : nullptr);
 
-            lclNode->SetSsaNum(ssaNum);
-
-            if (!isFullDef)
+            if (!defIsFull)
             {
                 // This is a partial definition of a variable. The node records only the SSA number
                 // of the def. The SSA number of the old definition (the "use" portion) will be
                 // recorded in the SSA descriptor.
-                varDsc->GetPerSsaData(ssaNum)->SetUseDefSsaNum(m_renameStack.Top(lclNum));
+                defVarDsc->GetPerSsaData(defSsaNum)->SetUseDefSsaNum(m_renameStack.Top(defLclNum));
             }
 
-            m_renameStack.Push(block, lclNum, ssaNum);
+            m_renameStack.Push(block, defLclNum, defSsaNum);
 
-            // If necessary, add "lclNum/ssaNum" to the arg list of a phi def in any
-            // handlers for try blocks that "block" is within.  (But only do this for "real" definitions,
-            // not phi definitions.)
+            // If necessary, add SSA name to the arg list of a phi def in any handlers for try
+            // blocks that "block" is within. (But only do this for "real" definitions, not phis.)
             if (!defNode->IsPhiDefn())
             {
-                AddDefToHandlerPhis(block, lclNum, ssaNum);
+                AddDefToHandlerPhis(block, defLclNum, defSsaNum);
             }
 
-            // If it's a SSA local then it cannot be address exposed and thus does not define SSA memory.
-            assert(!m_pCompiler->lvaVarAddrExposed(lclNum));
+            return defSsaNum;
+        };
+
+        if (m_pCompiler->lvaInSsa(lclNum))
+        {
+            lclNode->SetSsaNum(pushDef(lclNum, isFullDef));
+            assert(!varDsc->IsAddressExposed()); // Cannot define SSA memory.
             return;
         }
 
-        lclNode->SetSsaNum(SsaConfig::RESERVED_SSA_NUM);
+        if (varDsc->lvPromoted)
+        {
+            for (unsigned index = 0; index < varDsc->lvFieldCnt; index++)
+            {
+                unsigned   fieldLclNum = varDsc->lvFieldLclStart + index;
+                LclVarDsc* fieldVarDsc = m_pCompiler->lvaGetDesc(fieldLclNum);
+                if (m_pCompiler->lvaInSsa(fieldLclNum))
+                {
+                    ssize_t  fieldStoreOffset;
+                    unsigned fieldStoreSize;
+                    unsigned defSsaNum = SsaConfig::RESERVED_SSA_NUM;
+
+                    // Fast-path the common case of an "entire" store.
+                    if (isFullDef)
+                    {
+                        defSsaNum = pushDef(fieldLclNum, /* defIsFull */ true);
+                    }
+                    else if (m_pCompiler->gtStoreDefinesField(
+                        fieldVarDsc, offset, storeSize, &fieldStoreOffset, &fieldStoreSize))
+                    {
+                        defSsaNum = pushDef(fieldLclNum, ValueNumStore::LoadStoreIsEntire(genTypeSize(fieldVarDsc),
+                                                                                          fieldStoreOffset,
+                                                                                          fieldStoreSize));
+                    }
+
+                    if (defSsaNum != SsaConfig::RESERVED_SSA_NUM)
+                    {
+                        lclNode->SetSsaNum(m_pCompiler, index, defSsaNum);
+                    }
+                }
+            }
+        }
     }
     else if (defNode->OperIs(GT_CALL))
     {
@@ -801,7 +829,6 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
         // the memory effect of the call is captured by the live out state from the block and doesn't need special
         // handling here. If we ever change liveness to more carefully model call effects (from interprecedural
         // information) we might need to revisit this.
-
         return;
     }
 
