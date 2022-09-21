@@ -10,6 +10,8 @@ using ILCompiler.DependencyAnalysis;
 using Debug = System.Diagnostics.Debug;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 
+#pragma warning disable IDE0060
+
 namespace Internal.IL
 {
     // Implements an IL scanner that scans method bodies to be compiled by the code generation
@@ -224,7 +226,7 @@ namespace Internal.IL
             _isReadOnly = false;
         }
 
-        private void ImportCasting(int token)
+        private void ImportCasting(ILOpcode opcode, int token)
         {
             TypeDesc type = (TypeDesc)_methodIL.GetObject(token);
 
@@ -798,7 +800,7 @@ namespace Internal.IL
             _dependencies.Add(_factory.CanonicalEntrypoint(stub), "calli");
         }
 
-        private void ImportBranch(ILOpcode _/*opcode*/, BasicBlock target, BasicBlock fallthrough)
+        private void ImportBranch(ILOpcode opcode, BasicBlock target, BasicBlock fallthrough)
         {
             ImportFallthrough(target);
 
@@ -827,7 +829,7 @@ namespace Internal.IL
                 if (opCode == ILOpcode.unbox_any)
                 {
                     // When applied to a reference type, unbox_any has the same effect as castclass.
-                    ImportCasting(token);
+                    ImportCasting(ILOpcode.castclass, token);
                 }
                 return;
             }
@@ -1070,7 +1072,7 @@ namespace Internal.IL
             ImportFieldAccess(token, isStatic, isStatic ? "stsfld" : "stfld");
         }
 
-        private void ImportLoadString(int _)
+        private void ImportLoadString(int token)
         {
             // If we care, this can include allocating the frozen string node.
             _dependencies.Add(_factory.SerializedStringObject(""), "ldstr");
@@ -1128,22 +1130,22 @@ namespace Internal.IL
             }
         }
 
-        private void ImportLoadElement(int _)
+        private void ImportLoadElement(int token)
         {
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.RngChkFail), "ldelem");
         }
 
-        private void ImportLoadElement(TypeDesc _)
+        private void ImportLoadElement(TypeDesc elementType)
         {
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.RngChkFail), "ldelem");
         }
 
-        private void ImportStoreElement(int _)
+        private void ImportStoreElement(int token)
         {
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.RngChkFail), "stelem");
         }
 
-        private void ImportStoreElement(TypeDesc _)
+        private void ImportStoreElement(TypeDesc elementType)
         {
             _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.RngChkFail), "stelem");
         }
@@ -1226,7 +1228,7 @@ namespace Internal.IL
                 + (_ilBytes[ilOffset + 3] << 24));
         }
 
-        private static void ReportInvalidBranchTarget()
+        private static void ReportInvalidBranchTarget(int targetOffset)
         {
             ThrowHelper.ThrowInvalidProgramException();
         }
@@ -1241,7 +1243,7 @@ namespace Internal.IL
             ThrowHelper.ThrowInvalidProgramException();
         }
 
-        private static void ReportInvalidInstruction()
+        private static void ReportInvalidInstruction(ILOpcode opcode)
         {
             ThrowHelper.ThrowInvalidProgramException();
         }
@@ -1358,7 +1360,6 @@ namespace Internal.IL
         static partial void ImportLoadLength();
         static partial void ImportEndFinally();
 
-#pragma warning disable IDE0060 // Cannot be partial because the method are called with arguments with side effect
         private static void ImportLoadVar(int index, bool argument) { }
         private static void ImportStoreVar(int index, bool argument) { }
         private static void ImportAddressOfVar(int index, bool argument) { }
@@ -1369,7 +1370,7 @@ namespace Internal.IL
         private static void ImportStoreIndirect(int token) { }
         private static void ImportStoreIndirect(TypeDesc type) { }
         private static void ImportShiftOperation(ILOpcode opcode) { }
-        private static void ImportCompareOperation(ILOpcode opcode)  { }
+        private static void ImportCompareOperation(ILOpcode opcode) { }
         private static void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned) { }
         private static void ImportUnaryOperation(ILOpcode opCode) { }
         private static void ImportCpOpj(int token) { }
@@ -1377,6 +1378,5 @@ namespace Internal.IL
         private static void ImportUnalignedPrefix(byte alignment) { }
         private static void ImportNoPrefix(byte mask) { }
         private static void ImportInitObj(int token) { }
-#pragma warning restore IDE0060
     }
 }

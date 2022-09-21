@@ -1,0 +1,5 @@
+<Project>
+  <Import Project="../../Directory.Build.props" />
+  <EditorConfigFiles Remove="$(RepositoryEngineeringDir)CodeAnalysis.src.globalconfig" />
+  <EditorConfigFiles Include="$(RepositoryEngineeringDir)CodeAnalysis.test.globalconfig" />
+</Project>

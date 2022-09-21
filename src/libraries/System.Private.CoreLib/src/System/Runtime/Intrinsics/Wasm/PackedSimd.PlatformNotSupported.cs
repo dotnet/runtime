@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
-using System.Runtime.Intrinsics;
+
+#pragma warning disable IDE0060
 
 namespace System.Runtime.Intrinsics.Wasm
 {
@@ -10,7 +11,6 @@ namespace System.Runtime.Intrinsics.Wasm
     {
         public static bool IsSupported { [Intrinsic] get { return false; } }
 
-#pragma warning disable IDE0060
         public static Vector128<sbyte>  Splat(sbyte  value) { throw new PlatformNotSupportedException(); }
         public static Vector128<byte>   Splat(byte   value) { throw new PlatformNotSupportedException(); }
         public static Vector128<short>  Splat(short  value) { throw new PlatformNotSupportedException(); }
@@ -105,6 +105,5 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<double> CompareNotEqual(Vector128<double> left, Vector128<double> right) { throw new PlatformNotSupportedException(); }
         public static Vector128<nint>   CompareNotEqual(Vector128<nint>   left, Vector128<nint>   right) { throw new PlatformNotSupportedException(); }
         public static Vector128<nuint>  CompareNotEqual(Vector128<nuint>  left, Vector128<nuint>  right) { throw new PlatformNotSupportedException(); }
-#pragma warning restore IDE0060
     }
 }

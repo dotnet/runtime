@@ -9,6 +9,8 @@ using Internal.TypeSystem.Ecma;
 
 using ILVerify;
 
+#pragma warning disable IDE0060
+
 namespace Internal.IL
 {
     class VerificationException : Exception
@@ -1521,7 +1523,7 @@ namespace Internal.IL
             var method = ResolveMethodToken(token);
         }
 
-        void ImportCasting(int token)
+        void ImportCasting(ILOpcode opcode, int token)
         {
             var type = ResolveTypeToken(token);
 
@@ -2747,7 +2749,7 @@ namespace Internal.IL
             _pendingPrefix &= ~prefix;
         }
 
-        void ReportInvalidBranchTarget()
+        void ReportInvalidBranchTarget(int targetOffset)
         {
             VerificationError(VerifierError.BadBranch);
         }
@@ -2763,7 +2765,7 @@ namespace Internal.IL
             AbortMethodVerification();
         }
 
-        void ReportInvalidInstruction()
+        void ReportInvalidInstruction(ILOpcode opcode)
         {
             VerificationError(VerifierError.UnknownOpcode);
         }

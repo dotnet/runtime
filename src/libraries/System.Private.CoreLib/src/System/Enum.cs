@@ -302,7 +302,7 @@ namespace System
 
         internal static string[] InternalGetNames(RuntimeType enumType) =>
             // Get all of the names
-            GetEnumInfo(enumType, true).Names;
+            GetEnumInfo(enumType).Names;
 
         public static Type GetUnderlyingType(Type enumType)
         {

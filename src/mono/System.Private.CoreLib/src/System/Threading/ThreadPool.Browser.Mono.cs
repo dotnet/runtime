@@ -9,6 +9,8 @@ using System.Runtime.Versioning;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Win32.SafeHandles;
 
+#pragma warning disable IDE0060
+
 namespace System.Threading
 {
 #if !FEATURE_WASM_THREADS
@@ -92,8 +94,6 @@ namespace System.Threading
 
         internal static object? GetOrCreateThreadLocalCompletionCountObject() => null;
 
-#pragma warning disable IDE0060
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool NotifyWorkItemComplete(object? threadLocalCompletionCountObject, int currentTimeMs)
         {
             return true;
@@ -150,6 +150,5 @@ namespace System.Threading
         {
             throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
         }
-#pragma warning restore IDE0060
     }
 }

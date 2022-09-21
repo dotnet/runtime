@@ -211,7 +211,6 @@ namespace System.Net.Security
             }
         }
 
-#pragma warning disable IDE0060
         public static SecurityStatusPal ApplyAlertToken(
             SafeDeleteContext? securityContext,
             TlsAlertType alertType,
@@ -221,7 +220,6 @@ namespace System.Net.Security
             // The API seems to assume that all alerts are generated internally.
             return new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
         }
-#pragma warning restore IDE0060
 
         public static SecurityStatusPal ApplyShutdownToken(
             SafeDeleteSslContext securityContext)

@@ -6,6 +6,8 @@
 // these types publicly.
 [assembly:System.Runtime.CompilerServices.InternalsVisibleTo("mscorlib, PublicKey=00000000000000000400000000000000")]
 
+#pragma warning disable IDE0060
+
 namespace System.Runtime.CompilerServices
 {
     // Types used by the C++/CLI compiler during linking.
@@ -41,7 +43,7 @@ namespace System.Runtime.CompilerServices
     [AttributeUsage(AttributeTargets.All)]
     internal sealed class DecoratedNameAttribute : Attribute
     {
-        public DecoratedNameAttribute(string _) { }
+        public DecoratedNameAttribute(string decoratedName) { }
     }
 
     // Indicates that the modified instance is pinned in memory.

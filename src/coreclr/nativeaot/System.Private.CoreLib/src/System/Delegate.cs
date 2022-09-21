@@ -459,13 +459,5 @@ namespace System
                 }
             }
         }
-
-#pragma warning disable IDE0060
-        private static string DebuggerFunctionPointerFormattingHook(IntPtr functionPointer, RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate)
-        {
-            // This method will be hooked by the debugger and the debugger will cause it to return a description for the function pointer
-            throw new NotSupportedException();
-        }
-#pragma warning restore IDE0060
     }
 }

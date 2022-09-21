@@ -662,6 +662,19 @@ internal static partial class Interop
             bindingHandle.SetCertHashLength(certHashLength);
         }
 
+#pragma warning disable IDE0060
+        [UnmanagedCallersOnly]
+        private static int VerifyClientCertificate(int preverify_ok, IntPtr x509_ctx_ptr)
+        {
+            // Full validation is handled after the handshake in VerifyCertificateProperties and the
+            // user callback.  It's also up to those handlers to decide if a null certificate
+            // is appropriate.  So just return success to tell OpenSSL that the cert is acceptable,
+            // we'll process it after the handshake finishes.
+            const int OpenSslSuccess = 1;
+            return OpenSslSuccess;
+        }
+#pragma warning restore IDE0060
+
         [UnmanagedCallersOnly]
         private static unsafe int AlpnServerSelectCallback(IntPtr ssl, byte** outp, byte* outlen, byte* inp, uint inlen, IntPtr arg)
         {
