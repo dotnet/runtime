@@ -1,13 +1,13 @@
 
-# CLR memory model
+# .NET memory model
 
-## ECMA vs. CLR memory models.
+## ECMA 335 vs. .NET memory models.
 ECMA 335 standard defines a very weak memory model. After two decades the desire to have a flexible model did not result in considerable benefits due to hardware being more strict. On the other hand programming against ECMA model requires extra complexity to handle scenarios that are hard to comprehend and not possible to test.
 
-In the course of multiple releases CLR implementation settled around a memory model that is a practical compromise between what can be implemented efficiently on the current hardware, while staying reasonably approachable by the developers. This document rationalizes the invariants provided and expected by the CLR runtime in its current implementation with expectation of that being carried to future releases.
+In the course of multiple releases .NET runtime implementations settled around a memory model that is a practical compromise between what can be implemented efficiently on the current hardware, while staying reasonably approachable by the developers. This document rationalizes the invariants provided and expected by the CLR runtime in its current implementation with expectation of that being carried to future releases.
 
 ## Alignment
-When managed by CLR runtime, variables of built-in primitive types are *properly aligned* according to the data type size. This applies to both heap and stack allocated memory.
+When managed by the .NET runtime, variables of built-in primitive types are *properly aligned* according to the data type size. This applies to both heap and stack allocated memory.
 
 1-byte, 2-byte, 4-byte variables are stored at 1-byte, 2-byte, 4-byte boundary, respectively.
 8-byte variables are 8-byte aligned on 64 bit platforms.
@@ -29,7 +29,7 @@ These facilities ensure fault-free access to potentially unaligned locations, bu
 As of this writing there is no specific support for operating with incoherent memory, device memory or similar. Passing non-ordinary memory to the runtime by the means of pointer operations or native interop results in Undefined Behavior.
 
 ## Sideeffects and optimizations of memory accesses.
-CLR assumes that the sideeffects of memory reads and writes include only changing and observing values at specified memory locations. This applies to all reads and writes - volatile or not. **This is different from ECMA model.**
+.NET runtime assumes that the sideeffects of memory reads and writes include only changing and observing values at specified memory locations. This applies to all reads and writes - volatile or not. **This is different from ECMA model.**
 
 As a consequence:
 * Speculative writes are not allowed.
