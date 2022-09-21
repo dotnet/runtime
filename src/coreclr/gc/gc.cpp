@@ -595,7 +595,7 @@ static unsigned int         gc_count_during_log;
  // In ms. This is how often we print out stats.
 static const unsigned int   log_interval = 5000;
 // Time (in ms) when we start a new log interval.
-static unsigned int         log_start_tick;
+static uint64_t             log_start_tick;
 static unsigned int         gc_lock_contended;
 static int64_t              log_start_hires;
 // Cycles accumulated in SuspendEE during log_interval.
@@ -629,7 +629,7 @@ process_sync_log_stats()
 {
 #ifdef SYNCHRONIZATION_STATS
 
-    unsigned int log_elapsed = GCToOSInterface::GetLowPrecisionTimeStamp() - log_start_tick;
+    uint64_t log_elapsed = GCToOSInterface::GetLowPrecisionTimeStamp() - log_start_tick;
 
     if (log_elapsed > log_interval)
     {
@@ -766,7 +766,7 @@ class t_join
     // remember join id and last thread to arrive so restart can use these
     int thd;
     // we want to print statistics every 10 seconds - this is to remember the start of the 10 sec interval
-    uint32_t start_tick;
+    uint64_t start_tick;
     // counters for joins, in 1000's of clock cycles
     uint64_t elapsed_total[gc_join_max], wake_total[gc_join_max], seq_loss_total[gc_join_max], par_loss_total[gc_join_max], in_join_total[gc_join_max];
 #endif //JOIN_STATS
@@ -2485,7 +2485,7 @@ uint64_t    gc_heap::total_alloc_bytes_uoh = 0;
 
 int         gc_heap::gc_policy = 0;
 
-size_t      gc_heap::allocation_running_time;
+uint64_t    gc_heap::allocation_running_time;
 
 size_t      gc_heap::allocation_running_amount;
 
@@ -7598,7 +7598,7 @@ bool gc_heap::new_allocation_allowed (int gen_number)
         if ((allocation_running_amount - dd_new_allocation (dd0)) >
             dd_min_size (dd0))
         {
-            uint32_t ctime = GCToOSInterface::GetLowPrecisionTimeStamp();
+            uint64_t ctime = GCToOSInterface::GetLowPrecisionTimeStamp();
             if ((ctime - allocation_running_time) > 1000)
             {
                 dprintf (2, (">1s since last gen0 gc"));
@@ -22755,7 +22755,7 @@ void gc_heap::garbage_collect (int n)
         gc1();
     }
 #ifndef MULTIPLE_HEAPS
-    allocation_running_time = (size_t)GCToOSInterface::GetLowPrecisionTimeStamp();
+    allocation_running_time = GCToOSInterface::GetLowPrecisionTimeStamp();
     allocation_running_amount = dd_new_allocation (dynamic_data_of (0));
     fgn_last_alloc = dd_new_allocation (dynamic_data_of (0));
 #endif //MULTIPLE_HEAPS
@@ -24253,7 +24253,7 @@ gc_heap::mark_steal()
 
 #ifdef SNOOP_STATS
         dprintf (SNOOP_LOG, ("(GC%d)heap%d: start snooping %d", settings.gc_index, heap_number, (heap_number+1)%n_heaps));
-        uint32_t begin_tick = GCToOSInterface::GetLowPrecisionTimeStamp();
+        uint64_t begin_tick = GCToOSInterface::GetLowPrecisionTimeStamp();
 #endif //SNOOP_STATS
 
     int idle_loop_count = 0;
@@ -24356,7 +24356,7 @@ gc_heap::mark_steal()
                     dprintf (SNOOP_LOG, ("heap%d: marking %Ix from %d [%d] tl:%dms",
                             heap_number, (size_t)o, (heap_number+1)%n_heaps, level,
                             (GCToOSInterface::GetLowPrecisionTimeStamp()-begin_tick)));
-                    uint32_t start_tick = GCToOSInterface::GetLowPrecisionTimeStamp();
+                    uint64_t start_tick = GCToOSInterface::GetLowPrecisionTimeStamp();
 #endif //SNOOP_STATS
 
                     mark_object_simple1 (o, start, heap_number);
