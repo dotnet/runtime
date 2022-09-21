@@ -20,7 +20,7 @@ class Program
         // X64-FULL-LINE-NEXT: and [[REG0]], 15
         // X64-FULL-LINE-NEXT: add [[REG0]], [[REG1]]
         // X64-FULL-LINE-NEXT: and [[REG0]], -16
-        // X64-FULL-LINE-NEXT: mov [[REG2:%[a-z]+]], [[REG1]]
+        // X64-FULL-LINE-NEXT: mov [[REG2:[a-z]+]], [[REG1]]
         // X64-FULL-LINE-NEXT: sub [[REG2]], [[REG0]]
         // X64-FULL-LINE-NEXT: mov [[REG0]], [[REG2]]
 
