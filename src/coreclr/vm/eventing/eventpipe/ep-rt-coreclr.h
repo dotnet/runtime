@@ -2052,7 +2052,7 @@ inline
 void
 ep_rt_set_server_name()
 {
-	::SetThreadName(PAL_GetCurrentThread(), W(".NET EventPipe"));
+	::SetThreadName(GetCurrentThread(), W(".NET EventPipe"));
 }
 
 static

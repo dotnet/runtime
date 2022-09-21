@@ -1227,7 +1227,7 @@ void DbgTransportSession::InitSessionState()
 // instance method version defined below for convenience in the implementation.
 DWORD WINAPI DbgTransportSession::TransportWorkerStatic(LPVOID pvContext)
 {
-    SetThreadName(PAL_GetCurrentThread(), W(".NET DebugPipe"));
+    SetThreadName(GetCurrentThread(), W(".NET DebugPipe"));
 
     ((DbgTransportSession*)pvContext)->TransportWorker();
 
