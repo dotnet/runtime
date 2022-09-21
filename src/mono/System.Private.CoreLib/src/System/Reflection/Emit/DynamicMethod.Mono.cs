@@ -12,17 +12,17 @@ namespace System.Reflection.Emit
     {
 #region Sync with MonoReflectionDynamicMethod in object-internals.h
         private RuntimeMethodHandle mhandle;
-        private RuntimeType m_returnType;
-        private RuntimeType[] m_parameterTypes;
-        private Module m_module;
-        private bool m_skipVisibility;
-        private bool m_restrictedSkipVisibility;
-        private bool m_fInitLocals;
-        private ILGenerator? m_ilGenerator;
+        private RuntimeType returnType;
+        private RuntimeType[] parameterTypes;
+        private Module module;
+        private bool skipVisibility;
+        private bool restrictedSkipVisibility;
+        private bool initLocals;
+        private ILGenerator? ilGenerator;
         private int nrefs;
         private object?[]? refs;
         private IntPtr referenced_by;
-        private RuntimeType? m_typeOwner;
+        private RuntimeType? typeOwner;
 #endregion
         // We want the creator of the DynamicMethod to control who has access to the
         // DynamicMethod (just like we do for delegates). However, a user can get to
@@ -30,14 +30,14 @@ namespace System.Reflection.Emit
         // If we allowed use of RTDynamicMethod, the creator of the DynamicMethod would
         // not be able to bound access to the DynamicMethod. Hence, we need to ensure that
         // we do not allow direct use of RTDynamicMethod.
-        private RTDynamicMethod m_dynMethod;
+        private RTDynamicMethod dynMethod;
 
         private Delegate? deleg;
         private RuntimeMethodInfo? method;
         private bool creating;
-        private DynamicILInfo? m_DynamicILInfo;
+        private DynamicILInfo? dynamicILInfo;
 
-        private object? m_methodHandle; // unused
+        private object? methodHandle; // unused
 
         public sealed override Delegate CreateDelegate(Type delegateType)
         {
@@ -61,10 +61,10 @@ namespace System.Reflection.Emit
             return Delegate.CreateDelegate(delegateType, target, this);
         }
 
-        public DynamicILInfo GetDynamicILInfo() => m_DynamicILInfo ??= new DynamicILInfo(this);
+        public DynamicILInfo GetDynamicILInfo() => dynamicILInfo ??= new DynamicILInfo(this);
 
         public ILGenerator GetILGenerator(int streamSize) =>
-            m_ilGenerator ??= new ILGenerator(Module, new DynamicMethodTokenGenerator(this), streamSize);
+            ilGenerator ??= new ILGenerator(Module, new DynamicMethodTokenGenerator(this), streamSize);
 
         public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
@@ -94,10 +94,10 @@ namespace System.Reflection.Emit
             {
                 if (mhandle.Value == IntPtr.Zero)
                 {
-                    if (m_ilGenerator == null || m_ilGenerator.ILOffset == 0)
+                    if (ilGenerator == null || ilGenerator.ILOffset == 0)
                         throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadEmptyMethodBody, Name));
 
-                    m_ilGenerator.label_fixup(this);
+                    ilGenerator.label_fixup(this);
 
                     // Have to create all DynamicMethods referenced by this one
                     try
@@ -121,7 +121,7 @@ namespace System.Reflection.Emit
                         creating = false;
                     }
                     create_dynamic_method(this, Name, Attributes, CallingConvention);
-                    m_ilGenerator = null;
+                    ilGenerator = null;
                 }
             }
         }
@@ -142,7 +142,7 @@ namespace System.Reflection.Emit
             return nrefs - 1;
         }
 
-        internal override ParameterInfo[] GetParametersNoCopy() => m_dynMethod.GetParametersNoCopy();
+        internal override ParameterInfo[] GetParametersNoCopy() => dynMethod.GetParametersNoCopy();
 
         internal override int GetParametersCount() => GetParametersNoCopy().Length;
 
@@ -160,7 +160,7 @@ namespace System.Reflection.Emit
                 return m.AddRef(str);
             }
 
-            public int GetToken(MethodBase method, Type[] opt_param_types)
+            public int GetToken(MethodBase method, Type[] opt_paratypes)
             {
                 throw new InvalidOperationException();
             }

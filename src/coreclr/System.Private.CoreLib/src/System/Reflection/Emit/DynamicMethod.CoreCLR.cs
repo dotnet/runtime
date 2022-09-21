@@ -15,17 +15,17 @@ namespace System.Reflection.Emit
 {
     public sealed partial class DynamicMethod : MethodInfo
     {
-        private RuntimeType[] m_parameterTypes;
-        internal IRuntimeMethodInfo? m_methodHandle;
-        private RuntimeType m_returnType;
-        private DynamicILGenerator? m_ilGenerator;
-        private DynamicILInfo? m_DynamicILInfo;
-        private bool m_fInitLocals;
-        private Module m_module;
-        internal bool m_skipVisibility;
-        internal RuntimeType? m_typeOwner; // can be null
-        private MethodInvoker? _invoker;
-        private Signature? _signature;
+        private RuntimeType[] parameterTypes;
+        internal IRuntimeMethodInfo? methodHandle;
+        private RuntimeType returnType;
+        private DynamicILGenerator? ilGenerator;
+        private DynamicILInfo? dynamicILInfo;
+        private bool initLocals;
+        private Module module;
+        internal bool skipVisibility;
+        internal RuntimeType? typeOwner;
+        private MethodInvoker? invoker;
+        private Signature? signature;
 
         // We want the creator of the DynamicMethod to control who has access to the
         // DynamicMethod (just like we do for delegates). However, a user can get to
@@ -33,13 +33,13 @@ namespace System.Reflection.Emit
         // If we allowed use of RTDynamicMethod, the creator of the DynamicMethod would
         // not be able to bound access to the DynamicMethod. Hence, we need to ensure that
         // we do not allow direct use of RTDynamicMethod.
-        private RTDynamicMethod m_dynMethod;
+        private RTDynamicMethod dynMethod;
 
         // needed to keep the object alive during jitting
         // assigned by the DynamicResolver ctor
-        internal DynamicResolver? m_resolver;
+        internal DynamicResolver? resolver;
 
-        internal bool m_restrictedSkipVisibility;
+        internal bool restrictedSkipVisibility;
 
         //
         // Delegate and method creation
@@ -47,11 +47,11 @@ namespace System.Reflection.Emit
 
         public sealed override Delegate CreateDelegate(Type delegateType)
         {
-            if (m_restrictedSkipVisibility)
+            if (restrictedSkipVisibility)
             {
                 // Compile the method since accessibility checks are done as part of compilation.
                 GetMethodDescriptor();
-                IRuntimeMethodInfo? methodHandle = m_methodHandle;
+                IRuntimeMethodInfo? methodHandle = this.methodHandle;
                 System.Runtime.CompilerServices.RuntimeHelpers.CompileMethod(methodHandle != null ? methodHandle.Value : RuntimeMethodHandleInternal.EmptyHandle);
                 GC.KeepAlive(methodHandle);
             }
@@ -64,11 +64,11 @@ namespace System.Reflection.Emit
 
         public sealed override Delegate CreateDelegate(Type delegateType, object? target)
         {
-            if (m_restrictedSkipVisibility)
+            if (restrictedSkipVisibility)
             {
                 // Compile the method since accessibility checks are done as part of compilation
                 GetMethodDescriptor();
-                IRuntimeMethodInfo? methodHandle = m_methodHandle;
+                IRuntimeMethodInfo? methodHandle = this.methodHandle;
                 System.Runtime.CompilerServices.RuntimeHelpers.CompileMethod(methodHandle != null ? methodHandle.Value : RuntimeMethodHandleInternal.EmptyHandle);
                 GC.KeepAlive(methodHandle);
             }
@@ -82,25 +82,25 @@ namespace System.Reflection.Emit
         // This is guaranteed to return a valid handle
         internal RuntimeMethodHandle GetMethodDescriptor()
         {
-            if (m_methodHandle == null)
+            if (methodHandle == null)
             {
                 lock (this)
                 {
-                    if (m_methodHandle == null)
+                    if (methodHandle == null)
                     {
-                        if (m_DynamicILInfo != null)
-                            m_DynamicILInfo.GetCallableMethod((RuntimeModule)m_module, this);
+                        if (dynamicILInfo != null)
+                            dynamicILInfo.GetCallableMethod((RuntimeModule)module, this);
                         else
                         {
-                            if (m_ilGenerator == null || m_ilGenerator.ILOffset == 0)
+                            if (ilGenerator == null || ilGenerator.ILOffset == 0)
                                 throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadEmptyMethodBody, Name));
 
-                            m_ilGenerator.GetCallableMethod((RuntimeModule)m_module, this);
+                            ilGenerator.GetCallableMethod((RuntimeModule)module, this);
                         }
                     }
                 }
             }
-            return new RuntimeMethodHandle(m_methodHandle!);
+            return new RuntimeMethodHandle(methodHandle!);
         }
 
         private MethodInvoker Invoker
@@ -108,8 +108,7 @@ namespace System.Reflection.Emit
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                _invoker ??= new MethodInvoker(this, Signature);
-                return _invoker;
+                return invoker ??= new MethodInvoker(this, Signature);
             }
         }
 
@@ -121,15 +120,15 @@ namespace System.Reflection.Emit
                 [MethodImpl(MethodImplOptions.NoInlining)] // move lazy sig generation out of the hot path
                 Signature LazyCreateSignature()
                 {
-                    Debug.Assert(m_methodHandle != null);
-                    Debug.Assert(m_parameterTypes != null);
+                    Debug.Assert(methodHandle != null);
+                    Debug.Assert(parameterTypes != null);
 
-                    Signature newSig = new Signature(m_methodHandle, m_parameterTypes, m_returnType, CallingConvention);
-                    Volatile.Write(ref _signature, newSig);
+                    Signature newSig = new Signature(methodHandle, parameterTypes, returnType, CallingConvention);
+                    Volatile.Write(ref signature, newSig);
                     return newSig;
                 }
 
-                return _signature ?? LazyCreateSignature();
+                return signature ?? LazyCreateSignature();
             }
         }
 
@@ -283,24 +282,24 @@ namespace System.Reflection.Emit
 
         public DynamicILInfo GetDynamicILInfo()
         {
-            if (m_DynamicILInfo == null)
+            if (dynamicILInfo == null)
             {
                 byte[] methodSignature = SignatureHelper.GetMethodSigHelper(
-                        null, CallingConvention, ReturnType, null, null, m_parameterTypes, null, null).GetSignature(true);
-                m_DynamicILInfo = new DynamicILInfo(this, methodSignature);
+                        null, CallingConvention, ReturnType, null, null, parameterTypes, null, null).GetSignature(true);
+                dynamicILInfo = new DynamicILInfo(this, methodSignature);
             }
-            return m_DynamicILInfo;
+            return dynamicILInfo;
         }
 
         public ILGenerator GetILGenerator(int streamSize)
         {
-            if (m_ilGenerator == null)
+            if (ilGenerator == null)
             {
                 byte[] methodSignature = SignatureHelper.GetMethodSigHelper(
-                    null, CallingConvention, ReturnType, null, null, m_parameterTypes, null, null).GetSignature(true);
-                m_ilGenerator = new DynamicILGenerator(this, methodSignature, streamSize);
+                    null, CallingConvention, ReturnType, null, null, parameterTypes, null, null).GetSignature(true);
+                ilGenerator = new DynamicILGenerator(this, methodSignature, streamSize);
             }
-            return m_ilGenerator;
+            return ilGenerator;
         }
     }
 }
