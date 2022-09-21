@@ -5666,6 +5666,9 @@ is_addressable_valuetype_load (MonoCompile* cfg, guint8* ip, MonoType* ldtype)
 static gboolean
 check_get_virtual_method_assumptions (MonoClass* klass, MonoMethod* method)
 {
+	if (m_class_is_abstract(klass))
+		return FALSE;
+
 	if (((method->flags & METHOD_ATTRIBUTE_FINAL) || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL)))
 		return TRUE;
 
