@@ -313,8 +313,12 @@ static void* SignalHandlerLoop(void* arg)
     free(arg);
     assert(pipeFd >= 0);
 
+    char* threadName = ".NET SigHandler";
 #if defined(__linux__) || defined(__FreeBSD__)
-    pthread_setname_np(pthread_self(), ".NET SigHandler");
+    pthread_setname_np(pthread_self(), threadName);
+#endif
+#if defined(__APPLE__)
+    pthread_setname_np(threadName);
 #endif
 
     // Continually read a signal code from the signal pipe and process it,
