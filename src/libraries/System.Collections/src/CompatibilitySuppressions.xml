@@ -3,25 +3,17 @@
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Collections.Generic.SortedDictionary`2.KeyValuePairComparer</Target>
-    <Left>ref/net7.0/System.Collections.dll</Left>
-    <Right>lib/net7.0/System.Collections.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Collections.Generic.SortedList`2.KeyList</Target>
-    <Left>ref/net7.0/System.Collections.dll</Left>
-    <Right>lib/net7.0/System.Collections.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Collections.Generic.SortedList`2.ValueList</Target>
-    <Left>ref/net7.0/System.Collections.dll</Left>
-    <Right>lib/net7.0/System.Collections.dll</Right>
   </Suppression>
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Collections.Generic.TreeSet`1</Target>
-    <Left>ref/net7.0/System.Collections.dll</Left>
-    <Right>lib/net7.0/System.Collections.dll</Right>
   </Suppression>
 </Suppressions>
