@@ -4950,7 +4950,7 @@ int MethodContext::repObjectToString(void* handle, char* buffer, int bufferSize)
         int srcBufferLength = (int)value.A;
         if (buffer != nullptr && srcBufferLength > 0)
         {
-            char16_t* srcBuffer = (char16_t*)ObjectToString->GetBuffer(value.B);
+            char* srcBuffer = (char*)ObjectToString->GetBuffer(value.B);
             Assert(srcBuffer != nullptr);
             memcpy(buffer, srcBuffer, min(srcBufferLength, bufferSize));
         }
