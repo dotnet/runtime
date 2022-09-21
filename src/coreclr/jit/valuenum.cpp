@@ -9095,16 +9095,26 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             {
                 GenTreeConditional* const conditional = tree->AsConditional();
 
-                ValueNumPair vnpExcSet = ValueNumStore::VNPForEmptyExcSet();
+                ValueNumPair condvnp;
+                ValueNumPair condXvnp;
+                vnStore->VNPUnpackExc(conditional->gtCond->gtVNPair, &condvnp, &condXvnp);
 
-                // Collect the exception sets from our operands
-                vnpExcSet = vnStore->VNPUnionExcSet(conditional->gtCond->gtVNPair, vnpExcSet);
-                vnpExcSet = vnStore->VNPUnionExcSet(conditional->gtOp1->gtVNPair, vnpExcSet);
-                vnpExcSet = vnStore->VNPUnionExcSet(conditional->gtOp2->gtVNPair, vnpExcSet);
+                ValueNumPair op1vnp;
+                ValueNumPair op1Xvnp;
+                vnStore->VNPUnpackExc(conditional->gtOp1->gtVNPair, &op1vnp, &op1Xvnp);
 
-                // The normal value is a new unique VN.
-                ValueNumPair normalPair;
-                normalPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
+                ValueNumPair op2vnp;
+                ValueNumPair op2Xvnp;
+                vnStore->VNPUnpackExc(conditional->gtOp2->gtVNPair, &op2vnp, &op2Xvnp);
+
+                // Collect the exception sets.
+                ValueNumPair vnpExcSet = vnStore->VNPExcSetUnion(condXvnp, op1Xvnp);
+                vnpExcSet              = vnStore->VNPExcSetUnion(vnpExcSet, op2Xvnp);
+
+                // Get the normal value using the VN func.
+                VNFunc vnf = GetVNFuncForNode(tree);
+                assert(ValueNumStore::VNFuncIsLegal(vnf));
+                ValueNumPair normalPair = vnStore->VNPairForFunc(tree->TypeGet(), vnf, condvnp, op1vnp, op2vnp);
 
                 // Attach the combined exception set
                 tree->gtVNPair = vnStore->VNPWithExc(normalPair, vnpExcSet);
