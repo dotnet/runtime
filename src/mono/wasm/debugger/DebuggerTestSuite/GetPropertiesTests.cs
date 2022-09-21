@@ -449,12 +449,13 @@ namespace DebuggerTests
                 throw new XunitException($"missing or unexpected members found");
         }
 
-        public static TheoryData<Dictionary<string, JObject>, Dictionary<string, JObject>, Dictionary<string, JObject>, string> GetDataForProtectionLevels()
+        public static TheoryData<Dictionary<string, JObject>, Dictionary<string, JObject>, string> GetDataForProtectionLevels()
         {
-            var data = new TheoryData<Dictionary<string, JObject>, Dictionary<string, JObject>, Dictionary<string, JObject>, string>();
+            var data = new TheoryData<Dictionary<string, JObject>, Dictionary<string, JObject>, string>();
 
             var public_props = new Dictionary<string, JObject>()
             {
+                // --------- public ------------:
                 // own:
                 {"BaseBase_PropertyForHidingWithField",             TNumber(210)},
                 {"Base_PropertyForOverridingWithProperty",          TGetter("Base_PropertyForOverridingWithProperty", TDateTime(new DateTime(2020, 7, 6, 5, 4, 3)))},
@@ -487,10 +488,8 @@ namespace DebuggerTests
                 {"BaseBase_AutoPropertyForHidingWithAutoProperty (BaseBaseClass2)",  TString("BaseBase#BaseBase_AutoPropertyForHidingWithAutoProperty")},
                 {"BaseBase_PropertyForVHO (BaseBaseClass2)",                         TGetter("BaseBase_PropertyForVHO (BaseBaseClass2)", TString("BaseBase#BaseBase_PropertyForVHO"))},
                 {"BaseBase_AutoPropertyForVHO (BaseBaseClass2)",                     TString("BaseBase#BaseBase_AutoPropertyForVHO")},
-            };
 
-            var internal_protected_props = new Dictionary<string, JObject>(){
-
+                // ---- internal / protected ----:
                 // own:
                 {"BaseBase_AutoPropertyForHidingWithProperty",          TGetter("BaseBase_AutoPropertyForHidingWithProperty", TString("Derived#BaseBase_AutoPropertyForHidingWithProperty"))},
                 {"Base_PropertyForOverridingWithAutoProperty",          TDateTime(new DateTime(2022, 7, 6, 5, 4, 3))},
@@ -510,20 +509,19 @@ namespace DebuggerTests
                 {"BaseBase_AutoPropertyForHidingWithProperty (BaseClass2)", TGetter("BaseBase_AutoPropertyForHidingWithProperty (BaseClass2)", TString("Base#BaseBase_AutoPropertyForHidingWithProperty"))},
                 {"BaseBase_PropertyForHidingWithAutoProperty",              TString("Base#BaseBase_PropertyForHidingWithAutoProperty")},
             };
-            data.Add(public_props, internal_protected_props, private_props, "DerivedClass2");
+            data.Add(public_props, private_props, "DerivedClass2");
 
             // structure CloneableStruct:
             public_props = new Dictionary<string, JObject>()
             {
                 // own
+                // public
                 {"a",                       TNumber(4)},
                 {"DateTime",                TGetter("DateTime")},
                 {"AutoStringProperty",      TString("CloneableStruct#AutoStringProperty")},
                 {"FirstName",               TGetter("FirstName")},
-                {"LastName",                TGetter("LastName")}
-            };
-            internal_protected_props = new Dictionary<string, JObject>()
-            {
+                {"LastName",                TGetter("LastName")},
+
                 // internal
                 {"b",                       TBool(true)}
             };
@@ -533,14 +531,14 @@ namespace DebuggerTests
                 {"_dateTime",               TDateTime(new DateTime(2020, 7, 6, 5, 4, 3 + 3))},
                 {"_DTProp",                 TGetter("_DTProp")}
             };
-            data.Add(public_props, internal_protected_props, private_props, "CloneableStruct");
+            data.Add(public_props, private_props, "CloneableStruct");
             return data;
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberData(nameof(GetDataForProtectionLevels))]
         public async Task PropertiesSortedByProtectionLevel(
-            Dictionary<string, JObject> expectedPublic, Dictionary<string, JObject> expectedProtInter, Dictionary<string, JObject> expectedPriv, string entryMethod) =>
+            Dictionary<string, JObject> expectedPublicInternalAndProtected, Dictionary<string, JObject> expectedPriv, string entryMethod) =>
             await CheckInspectLocalsAtBreakpointSite(
             $"DebuggerTests.GetPropertiesTests.{entryMethod}", "InstanceMethod", 1, $"DebuggerTests.GetPropertiesTests.{entryMethod}.InstanceMethod",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.GetPropertiesTests.{entryMethod}:run'); }})",
@@ -548,14 +546,12 @@ namespace DebuggerTests
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                 var (obj, _) = await EvaluateOnCallFrame(id, "this");
-                var (pub, internalAndProtected, priv) = await GetPropertiesSortedByProtectionLevels(obj["objectId"]?.Value<string>());
+                var (pubInternalAndProtected, priv) = await GetPropertiesSortedByProtectionLevels(obj["objectId"]?.Value<string>());
 
-                AssertHasOnlyExpectedProperties(expectedPublic.Keys.ToArray(), pub.Values<JObject>());
-                AssertHasOnlyExpectedProperties(expectedProtInter.Keys.ToArray(), internalAndProtected.Values<JObject>());
+                AssertHasOnlyExpectedProperties(expectedPublicInternalAndProtected.Keys.ToArray(), pubInternalAndProtected.Values<JObject>());
                 AssertHasOnlyExpectedProperties(expectedPriv.Keys.ToArray(), priv.Values<JObject>());
 
-                await CheckProps(pub, expectedPublic, "public");
-                await CheckProps(internalAndProtected, expectedProtInter, "internalAndProtected");
+                await CheckProps(pubInternalAndProtected, expectedPublicInternalAndProtected, "result");
                 await CheckProps(priv, expectedPriv, "private");
             });
     }
