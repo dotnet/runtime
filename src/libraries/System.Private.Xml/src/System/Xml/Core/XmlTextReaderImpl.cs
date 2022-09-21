@@ -3741,7 +3741,7 @@ namespace System.Xml
                 int nameEndPos = ParseName();
 
                 NodeData? attr = null;
-                switch (_ps.chars.AsSpan(_ps.charPos..nameEndPos))
+                switch (_ps.chars.AsSpan(_ps.charPos, nameEndPos - _ps.charPos))
                 {
                     case "version":
                         if (xmlDeclState == 0)
@@ -3859,7 +3859,7 @@ namespace System.Xml
                             xmlDeclState = 2;
                             break;
                         case 2:
-                            switch (_ps.chars.AsSpan(_ps.charPos..pos))
+                            switch (_ps.chars.AsSpan(_ps.charPos, pos - _ps.charPos))
                             {
                                 case "yes":
                                     _standalone = true;
