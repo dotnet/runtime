@@ -16,7 +16,7 @@ class Program
     static int PerformMod_2(int i)
     {
         // X64-FULL-LINE:      mov [[REG0:%[a-z]+]], [[REG1:%[a-z]+]]
-        // X64-FULL-LINE-NEXT: sar [[REG1]], 31
+        // X64-FULL-LINE-NEXT: sar [[REG0]], 31
         // X64-FULL-LINE-NEXT: and [[REG0]], 15
         // X64-FULL-LINE-NEXT: add [[REG0]], [[REG1]]
         // X64-FULL-LINE-NEXT: and [[REG0]], -16
