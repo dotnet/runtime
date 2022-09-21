@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
@@ -11,7 +12,7 @@ namespace System.Numerics
     /// with IEEE 754 totalOrder semantic.
     /// </summary>
     /// <typeparam name="T">The type of the numbers to be compared, must be an IEEE 754 floating-point type.</typeparam>
-    public struct TotalOrderIeee754Comparer<T> : IComparer<T>, IEqualityComparer<T>
+    public readonly struct TotalOrderIeee754Comparer<T> : IComparer<T>, IEqualityComparer<T>
         where T : IFloatingPointIeee754<T>?
     {
         /// <summary>
@@ -46,6 +47,7 @@ namespace System.Numerics
         /// IEEE 754 specification defines totalOrder as a &lt;= semantic.
         /// totalOrder(x,y) is true corresponds to the result of this method &lt;= 0.
         /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int Compare(T? x, T? y)
         {
             if (typeof(T) == typeof(float))
@@ -66,7 +68,7 @@ namespace System.Numerics
             }
 
             static int CompareIntegerSemantic<TInteger>(TInteger x, TInteger y)
-                where TInteger : IBinaryInteger<TInteger>, ISignedNumber<TInteger>, IComparable<TInteger>
+                where TInteger : struct, IBinaryInteger<TInteger>, ISignedNumber<TInteger>
             {
                 // In IEEE 754 binary floating-point representation, a number is represented as Sign|Exponent|Significant
                 // Normal numbers has an implicit 1. in front of the significant, so value with larger exponent will have larger absolute value

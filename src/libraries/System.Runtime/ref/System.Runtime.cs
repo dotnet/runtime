@@ -10530,7 +10530,7 @@ namespace System.Numerics
     public partial interface IUnsignedNumber<TSelf> : System.Numerics.INumberBase<TSelf> where TSelf : System.Numerics.IUnsignedNumber<TSelf>?
     {
     }
-    public partial struct TotalOrderIeee754Comparer<T> : System.Collections.Generic.IComparer<T>, System.Collections.Generic.IEqualityComparer<T> where T : System.Numerics.IFloatingPointIeee754<T>?
+    public readonly partial struct TotalOrderIeee754Comparer<T> : System.Collections.Generic.IComparer<T>, System.Collections.Generic.IEqualityComparer<T> where T : System.Numerics.IFloatingPointIeee754<T>?
     {
         public int Compare(T? x, T? y) { throw null; }
         public bool Equals(T? x, T? y) { throw null; }
