@@ -16,13 +16,17 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
 	[ExpectedWarning ("IL2030", "MalformedAssemblyName, thisiswrong", FileName = "LinkAttributeErrorCases.xml", SourceLine = 7, SourceColumn = 8)]
 	[ExpectedWarning ("IL2031", "NonExistentAttribute", FileName = "LinkAttributeErrorCases.xml", SourceLine = 10, SourceColumn = 8)]
 	[ExpectedWarning ("IL2022", "AttributeWithNoParametersAttribute", FileName = "LinkAttributeErrorCases.xml", SourceLine = 13, SourceColumn = 8)]
+	[ExpectedWarning ("IL2022", "AttributeWithEnumParameterAttribute", FileName = "LinkAttributeErrorCases.xml", SourceLine = 18, SourceColumn = 8)]
+	[ExpectedWarning ("IL2022", "AttributeWithIntParameterAttribute", FileName = "LinkAttributeErrorCases.xml", SourceLine = 23, SourceColumn = 8)]
 	[ExpectedWarning ("IL2023", "GetTypeMethod", FileName = "LinkAttributeErrorCases.xml", SourceLine = 47, SourceColumn = 10)]
 	[ExpectedWarning ("IL2024", "methodParameter", "MethodWithParameter", FileName = "LinkAttributeErrorCases.xml", SourceLine = 57, SourceColumn = 10)]
 	[ExpectedWarning ("IL2029", FileName = "LinkAttributeErrorCases.xml", SourceLine = 64, SourceColumn = 6)]
+	[ExpectedWarning ("IL2029", FileName = "LinkAttributeErrorCases.xml", SourceLine = 65, SourceColumn = 6)]
 	[ExpectedWarning ("IL2051", FileName = "LinkAttributeErrorCases.xml", SourceLine = 29, SourceColumn = 10)]
 	[ExpectedWarning ("IL2052", "NonExistentPropertyName", FileName = "LinkAttributeErrorCases.xml", SourceLine = 34, SourceColumn = 10)]
 	[ExpectedWarning ("IL2100", FileName = "ILLink.LinkAttributes.xml", SourceLine = 3, SourceColumn = 4)]
 	[ExpectedWarning ("IL2101", "library", "test", FileName = "ILLink.LinkAttributes.xml", SourceLine = 5, SourceColumn = 4)]
+	[ExpectedNoWarnings]
 	class LinkAttributeErrorCases
 	{
 		public static void Main ()
