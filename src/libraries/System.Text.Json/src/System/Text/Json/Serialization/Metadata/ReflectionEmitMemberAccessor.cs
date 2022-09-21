@@ -13,6 +13,8 @@ namespace System.Text.Json.Serialization.Metadata
     [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
     internal sealed class ReflectionEmitMemberAccessor : MemberAccessor
     {
+        private static ReflectionMemberAccessor? s_reflectionMemberAccessor;
+
         public override Func<object>? CreateConstructor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
@@ -59,13 +61,10 @@ namespace System.Text.Json.Serialization.Metadata
 
             generator.Emit(OpCodes.Ret);
 
-            return (Func<object>)dynamicMethod.CreateDelegate(typeof(Func<object>));
+            return CreateDelegate<Func<object>>(dynamicMethod);
         }
 
-        public override Func<object[], T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor) =>
-            CreateDelegate<Func<object[], T>>(CreateParameterizedConstructor(constructor));
-
-        private static DynamicMethod? CreateParameterizedConstructor(ConstructorInfo constructor)
+        public override Func<object[], T> CreateParameterizedConstructor<T>(ConstructorInfo constructor)
         {
             Type? type = constructor.DeclaringType;
 
@@ -76,9 +75,10 @@ namespace System.Text.Json.Serialization.Metadata
             ParameterInfo[] parameters = constructor.GetParameters();
             int parameterCount = parameters.Length;
 
-            if (parameterCount > JsonConstants.MaxParameterCount)
+            if (parameterCount > 64)
             {
-                return null;
+                // Avoid emitting dynamic code for constructors with large parameter counts
+                return (s_reflectionMemberAccessor ??= new()).CreateParameterizedConstructor<T>(constructor);
             }
 
             var dynamicMethod = new DynamicMethod(
@@ -103,7 +103,7 @@ namespace System.Text.Json.Serialization.Metadata
             generator.Emit(OpCodes.Newobj, constructor);
             generator.Emit(OpCodes.Ret);
 
-            return dynamicMethod;
+            return CreateDelegate<Func<object[], T>>(dynamicMethod);
         }
 
         public override JsonTypeInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>?
