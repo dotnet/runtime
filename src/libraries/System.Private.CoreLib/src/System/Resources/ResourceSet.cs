@@ -18,7 +18,7 @@ namespace System.Resources
     //
     public class ResourceSet : IDisposable, IEnumerable
     {
-        protected IResourceReader Reader = null!;
+        private IResourceReader? _reader;
 
         private Dictionary<object, object?>? _table;
         private Dictionary<string, object?>? _caseInsensitiveTable;  // For case-insensitive lookups.
@@ -43,7 +43,7 @@ namespace System.Resources
         public ResourceSet(string fileName)
             : this()
         {
-            Reader = new ResourceReader(fileName);
+            _reader = new ResourceReader(fileName);
             ReadResources();
         }
 
@@ -54,7 +54,7 @@ namespace System.Resources
         public ResourceSet(Stream stream)
             : this()
         {
-            Reader = new ResourceReader(stream);
+            _reader = new ResourceReader(stream);
             ReadResources();
         }
 
@@ -63,7 +63,7 @@ namespace System.Resources
         {
             ArgumentNullException.ThrowIfNull(reader);
 
-            Reader = reader;
+            _reader = reader;
             ReadResources();
         }
 
@@ -81,11 +81,11 @@ namespace System.Resources
             if (disposing)
             {
                 // Close the Reader in a thread-safe way.
-                IResourceReader? copyOfReader = Reader;
-                Reader = null!;
+                IResourceReader? copyOfReader = _reader;
+                _reader = null;
                 copyOfReader?.Close();
             }
-            Reader = null!;
+            _reader = null;
             _caseInsensitiveTable = null;
             _table = null;
         }
@@ -189,8 +189,8 @@ namespace System.Resources
         protected virtual void ReadResources()
         {
             Debug.Assert(_table != null);
-            Debug.Assert(Reader != null);
-            IDictionaryEnumerator en = Reader.GetEnumerator();
+            Debug.Assert(_reader != null);
+            IDictionaryEnumerator en = _reader.GetEnumerator();
             while (en.MoveNext())
             {
                 _table.Add(en.Key, en.Value);

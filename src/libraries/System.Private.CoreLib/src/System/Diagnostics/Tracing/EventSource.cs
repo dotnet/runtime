@@ -3923,7 +3923,7 @@ namespace System.Diagnostics.Tracing
     /// created.
     /// </para>
     /// </summary>
-    public class EventListener : IDisposable
+    public abstract class EventListener : IDisposable
     {
         private event EventHandler<EventSourceCreatedEventArgs>? _EventSourceCreated;
 
@@ -3963,7 +3963,7 @@ namespace System.Diagnostics.Tracing
         /// Create a new EventListener in which all events start off turned off (use EnableEvents to turn
         /// them on).
         /// </summary>
-        public EventListener()
+        protected EventListener()
         {
             // This will cause the OnEventSourceCreated callback to fire.
             CallBackForExistingEventSources(true, (obj, args) =>
@@ -4100,7 +4100,7 @@ namespace System.Diagnostics.Tracing
         /// and EventSourceIndex allows this extra information to be efficiently stored in a
         /// (growable) array (eg List(T)).
         /// </summary>
-        public static int EventSourceIndex(EventSource eventSource) { return eventSource.m_id; }
+        protected internal static int EventSourceIndex(EventSource eventSource) { return eventSource.m_id; }
 
         /// <summary>
         /// This method is called whenever a new eventSource is 'attached' to the dispatcher.

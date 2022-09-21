@@ -98,7 +98,7 @@ namespace System.Resources
             public ResourceSet? lastResourceSet;
         }
 
-        protected string BaseNameField;
+        private readonly string _baseNameField;
         protected Assembly? MainAssembly;    // Need the assembly manifest sometimes.
 
         private Dictionary<string, ResourceSet>? _resourceSets;
@@ -155,7 +155,7 @@ namespace System.Resources
             _lastUsedResourceCache = new CultureNameResourceSetPair();
             ResourceManagerMediator mediator = new ResourceManagerMediator(this);
             _resourceGroveler = new ManifestBasedResourceGroveler(mediator);
-            BaseNameField = string.Empty;
+            _baseNameField = string.Empty;
         }
 
         // Constructs a Resource Manager for files beginning with
@@ -175,7 +175,7 @@ namespace System.Resources
             ArgumentNullException.ThrowIfNull(baseName);
             ArgumentNullException.ThrowIfNull(resourceDir);
 
-            BaseNameField = baseName;
+            _baseNameField = baseName;
 
             _moduleDir = resourceDir;
             _userResourceSet = userResourceSet;
@@ -195,7 +195,7 @@ namespace System.Resources
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
 
             MainAssembly = assembly;
-            BaseNameField = baseName;
+            _baseNameField = baseName;
 
             CommonAssemblyInit();
         }
@@ -211,7 +211,7 @@ namespace System.Resources
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
 
             MainAssembly = assembly;
-            BaseNameField = baseName;
+            _baseNameField = baseName;
 
             if (usingResourceSet != null && (usingResourceSet != s_minResourceSet) && !usingResourceSet.IsSubclassOf(s_minResourceSet))
                 throw new ArgumentException(SR.Arg_ResMgrNotResSet, nameof(usingResourceSet));
@@ -229,7 +229,7 @@ namespace System.Resources
 
             _locationInfo = resourceSource;
             MainAssembly = _locationInfo.Assembly;
-            BaseNameField = resourceSource.Name;
+            _baseNameField = resourceSource.Name;
 
             CommonAssemblyInit();
         }
@@ -253,7 +253,7 @@ namespace System.Resources
         }
 
         // Gets the base name for the ResourceManager.
-        public virtual string BaseName => BaseNameField;
+        public virtual string BaseName => _baseNameField;
 
         // Whether we should ignore the capitalization of resources when calling
         // GetString or GetObject.
@@ -324,12 +324,12 @@ namespace System.Resources
             // If this is the neutral culture, don't include the culture name.
             if (culture.HasInvariantCultureName)
             {
-                return BaseNameField + ResFileExtension;
+                return _baseNameField + ResFileExtension;
             }
             else
             {
                 CultureInfo.VerifyCultureName(culture.Name, throwException: true);
-                return BaseNameField + "." + culture.Name + ResFileExtension;
+                return _baseNameField + "." + culture.Name + ResFileExtension;
             }
         }
 
@@ -753,7 +753,7 @@ namespace System.Resources
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             internal Type? UserResourceSet => _rm._userResourceSet;
 
-            internal string? BaseNameField => _rm.BaseNameField;
+            internal string? BaseNameField => _rm._baseNameField;
 
             internal CultureInfo? NeutralResourcesCulture
             {
