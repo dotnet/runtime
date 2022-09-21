@@ -2030,7 +2030,6 @@ ep_rt_thread_create (
 				DWORD thread_id = 0;
 				HANDLE server_thread = ::CreateThread (nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(thread_func), nullptr, 0, &thread_id);
 				if (server_thread != NULL) {
-					::SetThreadName(server_thread, W(".NET EventPipe"));
 					::CloseHandle (server_thread);
 					if (id)
 						*reinterpret_cast<DWORD *>(id) = thread_id;
@@ -2046,6 +2045,14 @@ ep_rt_thread_create (
 	EX_END_CATCH(SwallowAllExceptions);
 
 	return result;
+}
+
+static
+inline
+void
+ep_rt_set_server_name()
+{
+	::SetThreadName(PAL_GetCurrentThread(), W(".NET EventPipe"));
 }
 
 static
