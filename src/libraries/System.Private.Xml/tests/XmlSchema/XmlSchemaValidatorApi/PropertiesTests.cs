@@ -10,7 +10,7 @@ using Xunit.Abstractions;
 namespace System.Xml.XmlSchemaValidatorApiTests
 {
     // ===================== XmlResolver =====================
-
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class TCXmlResolver : CXmlSchemaValidatorTestCase
     {
         private ITestOutputHelper _output;
