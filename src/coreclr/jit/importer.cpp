@@ -12411,7 +12411,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     bool                  partialExpand   = false;
     const CorInfoHelpFunc helper          = info.compCompHnd->getCastingHelper(pResolvedToken, isCastClass);
 
-    CORINFO_CLASS_HANDLE exactCls = NO_CLASS_HANDLE;
+    CORINFO_CLASS_HANDLE likelyCls = NO_CLASS_HANDLE;
 
     // Legality check.
     //
@@ -12424,10 +12424,22 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
             // Jit can only inline expand CHKCASTCLASS and CHKCASTARRAY helpers.
             canExpandInline = (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY);
         }
-        else if ((helper == CORINFO_HELP_ISINSTANCEOFCLASS) || (helper == CORINFO_HELP_ISINSTANCEOFARRAY))
+        else if (helper == CORINFO_HELP_ISINSTANCEOFCLASS)
         {
             // If the class is exact, the jit can expand the IsInst check inline.
             canExpandInline = isClassExact;
+        }
+        else if (CORINFO_HELP_ISINSTANCEOFARRAY)
+        {
+            canExpandInline = isClassExact;
+
+            CORINFO_CLASS_HANDLE elementCls = NO_CLASS_HANDLE;
+            if (impIsPrimitive(info.compCompHnd->getChildType(pResolvedToken->hClass, &elementCls)))
+            {
+                canExpandInline = true;
+                partialExpand   = true;
+                likelyCls       = pResolvedToken->hClass;
+            }
         }
 
         // Check if this cast helper have some profile data
@@ -12456,23 +12468,23 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                 }
 #endif
 
-                LikelyClassMethodRecord likelyClass = likelyClasses[0];
-                CORINFO_CLASS_HANDLE    likelyCls   = (CORINFO_CLASS_HANDLE)likelyClass.handle;
+                LikelyClassMethodRecord likelyClass    = likelyClasses[0];
+                CORINFO_CLASS_HANDLE    firstLikelyCls = (CORINFO_CLASS_HANDLE)likelyClass.handle;
 
-                if ((likelyCls != NO_CLASS_HANDLE) &&
+                if ((firstLikelyCls != NO_CLASS_HANDLE) &&
                     (likelyClass.likelihood > (UINT32)JitConfig.JitGuardedDevirtualizationChainLikelihood()))
                 {
-                    if ((info.compCompHnd->compareTypesForCast(likelyCls, pResolvedToken->hClass) ==
+                    if ((info.compCompHnd->compareTypesForCast(firstLikelyCls, pResolvedToken->hClass) ==
                          TypeCompareState::Must))
                     {
-                        assert((info.compCompHnd->getClassAttribs(likelyCls) &
+                        assert((info.compCompHnd->getClassAttribs(firstLikelyCls) &
                                 (CORINFO_FLG_INTERFACE | CORINFO_FLG_ABSTRACT)) == 0);
                         JITDUMP("Adding \"is %s (%X)\" check as a fast path for %s using PGO data.\n",
-                                eeGetClassName(likelyCls), likelyCls, isCastClass ? "castclass" : "isinst");
+                                eeGetClassName(firstLikelyCls), firstLikelyCls, isCastClass ? "castclass" : "isinst");
 
                         canExpandInline = true;
                         partialExpand   = true;
-                        exactCls        = likelyCls;
+                        likelyCls       = firstLikelyCls;
                     }
                 }
             }
@@ -12535,7 +12547,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     }
     temp = gtNewMethodTableLookup(temp);
     condMT =
-        gtNewOperNode(GT_NE, TYP_INT, temp, (exactCls != NO_CLASS_HANDLE) ? gtNewIconEmbClsHndNode(exactCls) : op2);
+        gtNewOperNode(GT_NE, TYP_INT, temp, (likelyCls != NO_CLASS_HANDLE) ? gtNewIconEmbClsHndNode(likelyCls) : op2);
 
     GenTree* condNull;
     //
@@ -12560,7 +12572,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 
         CorInfoHelpFunc specialHelper = helper;
         if ((helper == CORINFO_HELP_CHKCASTCLASS) &&
-            ((exactCls == nullptr) || (exactCls == gtGetHelperArgClassHandle(op2))))
+            ((likelyCls == nullptr) || (likelyCls == gtGetHelperArgClassHandle(op2))))
         {
             // use the special helper that skips the cases checked by our inlined cast
             specialHelper = CORINFO_HELP_CHKCASTCLASS_SPECIAL;
