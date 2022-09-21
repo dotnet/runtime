@@ -1,10 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:Microsoft.VisualBasic.FileIO.TextFieldParser.Dispose</Target>
-  </Suppression>
-  <Suppression>
     <DiagnosticId>CP0014</DiagnosticId>
     <Target>M:Microsoft.VisualBasic.CompilerServices.Conversions.ToGenericParameter``1(System.Object)-&gt;T?:[T:System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute]</Target>
   </Suppression>
