@@ -1830,6 +1830,7 @@ class Compiler
 
 #ifdef FEATURE_HW_INTRINSICS
     friend struct HWIntrinsicInfo;
+    friend struct SimdAsHWIntrinsicInfo;
 #endif // FEATURE_HW_INTRINSICS
 
 #ifndef TARGET_64BIT
@@ -2248,7 +2249,7 @@ public:
     Statement* gtNewStmt(GenTree* expr, const DebugInfo& di);
 
     // For unary opers.
-    GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, bool doSimplifications = TRUE);
+    GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1);
 
     // For binary opers.
     GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2);
@@ -9252,8 +9253,6 @@ public:
                                        // (IF_LARGEJMP/IF_LARGEADR/IF_LARGLDC)
         bool dspGCtbls;                // Display the GC tables
 #endif
-
-        bool compExpandCallsEarly; // True if we should expand virtual call targets early for this method
 
 // Default numbers used to perform loop alignment. All the numbers are chosen
 // based on experimenting with various benchmarks.

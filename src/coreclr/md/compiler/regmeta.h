@@ -17,10 +17,7 @@
 #include <metamodelrw.h>
 #include "../inc/mdlog.h"
 #include "utsem.h"
-
 #include "rwutil.h"
-#include "mdperf.h"
-
 #include "sigparser.h"
 
 class FilterManager;
@@ -2036,10 +2033,6 @@ private:
 
     LONG        m_cRef;                     // Ref count.
     IUnknown    *m_pFreeThreadedMarshaler;   // FreeThreadedMarshaler
-
-#ifdef FEATURE_METADATA_PERF_STATS
-    MDCompilerPerf m_MDCompilerPerf;        // Compiler perf object to store all stats.
-#endif
 
     // If true, cached in list of global scopes. This is very dangerous because it may allow
     // unpredictable state sharing between seemingly unrelated dispensers.

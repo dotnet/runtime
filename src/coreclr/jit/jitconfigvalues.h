@@ -307,6 +307,14 @@ CONFIG_INTEGER(EnableHWIntrinsic,  W("EnableHWIntrinsic"),  1) // Allows Base+ h
 CONFIG_INTEGER(EnableAES,          W("EnableAES"),          1) // Allows AES+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVX,          W("EnableAVX"),          1) // Allows AVX+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVX2,         W("EnableAVX2"),         1) // Allows AVX2+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512BW,     W("EnableAVX512BW"),     1) // Allows AVX512BW+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512BW_VL,  W("EnableAVX512BW_VL"),  1) // Allows AVX512BW+ AVX512VL+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512CD,     W("EnableAVX512CD"),     1) // Allows AVX512CD+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512CD_VL,  W("EnableAVX512CD_VL"),  1) // Allows AVX512CD+ AVX512VL+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512DQ,     W("EnableAVX512DQ"),     1) // Allows AVX512DQ+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512DQ_VL,  W("EnableAVX512DQ_VL"),  1) // Allows AVX512DQ+ AVX512VL+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512F,      W("EnableAVX512F"),      1) // Allows AVX512F+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX512F_VL,   W("EnableAVX512F_VL"),   1) // Allows AVX512BW+ AVX512VL+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableAVXVNNI,      W("EnableAVXVNNI"),      1) // Allows AVX VNNI+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableBMI1,         W("EnableBMI1"),         1) // Allows BMI1+ hardware intrinsics to be disabled
 CONFIG_INTEGER(EnableBMI2,         W("EnableBMI2"),         1) // Allows BMI2+ hardware intrinsics to be disabled
@@ -568,10 +576,6 @@ CONFIG_INTEGER(JitRandomlyCollect64BitCounts, W("JitRandomlyCollect64BitCounts")
 
 // Devirtualize virtual calls with getExactClasses (NativeAOT only for now)
 CONFIG_INTEGER(JitEnableExactDevirtualization, W("JitEnableExactDevirtualization"), 1)
-
-// Control when Virtual Calls are expanded
-CONFIG_INTEGER(JitExpandCallsEarly, W("JitExpandCallsEarly"), 1) // Expand Call targets early (in the global morph
-                                                                 // phase)
 
 // Force the generation of CFG checks
 CONFIG_INTEGER(JitForceControlFlowGuard, W("JitForceControlFlowGuard"), 0);
