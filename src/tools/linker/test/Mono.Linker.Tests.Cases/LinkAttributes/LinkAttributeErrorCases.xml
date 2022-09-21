@@ -14,12 +14,12 @@
         <argument>ExtraArgumentValue</argument>
       </attribute>
 
-      <!-- IL2054 -->
+      <!-- IL2022 -->
       <attribute fullname="Mono.Linker.Tests.Cases.LinkAttributes.LinkAttributeErrorCases/AttributeWithEnumParameterAttribute">
         <argument>NonExistentEnumValue</argument>
       </attribute>
 
-      <!-- IL2054 -->
+      <!-- IL2022 -->
       <attribute fullname="Mono.Linker.Tests.Cases.LinkAttributes.LinkAttributeErrorCases/AttributeWithIntParameterAttribute">
         <argument>NotANumber</argument>
       </attribute>

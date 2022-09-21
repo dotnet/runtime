@@ -54,12 +54,13 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
 	// [RemovedAttributeInAssembly ("LinkerAttributeRemovalEmbeddedAndLazyLoad.dll", typeof (EmbeddedAttributeToBeRemoved), typeof (TypeWithEmbeddedAttributeToBeRemoved))]
 	[KeptAttributeInAssembly ("LinkerAttributeRemovalEmbeddedAndLazyLoad", typeof (EmbeddedAttributeToBeRemoved), typeof (TypeWithEmbeddedAttributeToBeRemoved))]
 
-	[LogContains ("IL2045: Mono.Linker.Tests.Cases.LinkAttributes.LinkerAttributeRemoval.TestType(): Attribute 'System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute'")]
 	[LogContains ("IL2045: Mono.Linker.Tests.Cases.LinkAttributes.Dependencies.TypeOnCopyAssemblyWithAttributeUsage.TypeOnCopyAssemblyWithAttributeUsage(): Attribute 'Mono.Linker.Tests.Cases.LinkAttributes.Dependencies.TestAttributeReferencedAsTypeFromCopyAssemblyAttribute'")]
-
 	[LogDoesNotContain ("IL2045")] // No other 2045 messages should be logged
 
+	[ExpectedWarning ("IL2049", "'InvalidInternal'", FileName = "LinkerAttributeRemoval.xml")]
 	[ExpectedWarning ("IL2048", "RemoveAttributeInstances", FileName = "LinkerAttributeRemoval.xml")]
+
+	[ExpectedNoWarnings]
 
 	[KeptMember (".ctor()")]
 	class LinkerAttributeRemoval
@@ -68,7 +69,7 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
 		{
 			var instance = new LinkerAttributeRemoval ();
 			instance._fieldWithCustomAttribute = null;
-			string value = instance.methodWithCustomAttribute ("parameter");
+			string value = instance.methodWithCustomAttribute (null);
 			TestType ();
 
 			_ = new TypeOnCopyAssemblyWithAttributeUsage ();
@@ -94,9 +95,10 @@ namespace Mono.Linker.Tests.Cases.LinkAttributes
 		[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]
 		private string methodWithCustomAttribute ([DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)] string parameterWithCustomAttribute)
 		{
-			return "this is a return value";
+			return null;
 		}
 
+		[ExpectedWarning ("IL2045", "Attribute 'System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute'")]
 		[Kept]
 		public static void TestType ()
 		{
