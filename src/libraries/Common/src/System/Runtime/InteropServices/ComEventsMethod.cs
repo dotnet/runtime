@@ -176,7 +176,7 @@ namespace System.Runtime.InteropServices
                 newWrappers = new DelegateWrapper[wrappers.Length + 1];
                 wrappers.CopyTo(newWrappers, 0);
 
-                newWrappers[newWrappers.Length - 1] = new DelegateWrapper(d, wrapArgs);
+                newWrappers[^1] = new DelegateWrapper(d, wrapArgs);
             } while (!PublishNewWrappers(newWrappers, wrappers));
         }
 
