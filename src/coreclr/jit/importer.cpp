@@ -12429,7 +12429,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
             // If the class is exact, the jit can expand the IsInst check inline.
             canExpandInline = isClassExact;
         }
-        else if (CORINFO_HELP_ISINSTANCEOFARRAY)
+        else if (helper == CORINFO_HELP_ISINSTANCEOFARRAY)
         {
             CORINFO_CLASS_HANDLE elementCls = NO_CLASS_HANDLE;
             if (!isClassExact && impIsPrimitive(info.compCompHnd->getChildType(pResolvedToken->hClass, &elementCls)))
