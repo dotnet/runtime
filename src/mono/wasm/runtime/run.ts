@@ -109,12 +109,7 @@ function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
     if (runtimeHelpers.ExitStatus) {
         if (reason && !(reason instanceof runtimeHelpers.ExitStatus)) {
             if (!runtimeHelpers.config.logExitCode) {
-                if (reason instanceof Error)
-                    Module.printErr(mono_wasm_stringify_as_error_with_stack(reason));
-                else if (typeof reason == "string")
-                    Module.printErr(reason);
-                else
-                    Module.printErr(JSON.stringify(reason));
+                Module.printErr(mono_wasm_stringify_as_error_with_stack(reason));
             }
         }
         else {
@@ -146,12 +141,7 @@ function appendElementOnExit(exit_code: number) {
 function logErrorOnExit(exit_code: number, reason?: any) {
     if (runtimeHelpers.config.logExitCode) {
         if (exit_code != 0 && reason) {
-            if (reason instanceof Error)
-                console.error(mono_wasm_stringify_as_error_with_stack(reason));
-            else if (typeof reason == "string")
-                console.error(reason);
-            else
-                console.error(JSON.stringify(reason));
+            console.error(mono_wasm_stringify_as_error_with_stack(reason));
         }
         if (consoleWebSocket) {
             const stop_when_ws_buffer_empty = () => {
