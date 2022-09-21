@@ -15,14 +15,20 @@ class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int PerformMod_2(int i)
     {
-        // X64-FULL-LINE:      mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
-        // X64-FULL-LINE-NEXT: sar [[REG0]], 31
-        // X64-FULL-LINE-NEXT: and [[REG0]], 15
-        // X64-FULL-LINE-NEXT: add [[REG0]], [[REG1]]
-        // X64-FULL-LINE-NEXT: and [[REG0]], -16
-        // X64-FULL-LINE-NEXT: mov [[REG2:[a-z]+]], [[REG1]]
-        // X64-FULL-LINE-NEXT: sub [[REG2]], [[REG0]]
-        // X64-FULL-LINE-NEXT: mov [[REG0]], [[REG2]]
+        // CHECK: _IG02:
+
+        // X64-FULL-LINE-:              mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
+        // X64-FULL-LINE-NEXT:         sar [[REG0]], 31
+        // X64-FULL-LINE-NEXT:         and [[REG0]], 15
+        // X64-FULL-LINE-NEXT:         add [[REG0]], [[REG1]]
+        // X64-FULL-LINE-NEXT:         and [[REG0]], -16
+
+        // X64-WINDOWS-FULL-LINE-NEXT: mov [[REG2:[a-z]+]], [[REG1]]
+        // X64-WINDOWS-FULL-LINE-NEXT: sub [[REG2]], [[REG0]]
+        // X64-WINDOWS-FULL-LINE-NEXT: mov [[REG0]], [[REG2]]
+
+        // X64-LINUX-FULL-LINE-NEXT:   sub [[REG1]], [[REG0]]
+        // X64-LINUX-FULL-LINE-NEXT:   mov [[REG0]], [[REG1]]
 
         // ARM64-FULL-LINE:      and w1, w0, #15
         // ARM64-FULL-LINE-NEXT: negs w0, w0
