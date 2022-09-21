@@ -19,9 +19,8 @@
                                        '$(IsRIDSpecificProject)' == 'true') and
                                        '$(PreReleaseVersionLabel)' != 'servicing' and
                                        '$(GitHubRepositoryName)' != 'runtimelab'">true</GeneratePackageOnBuild>
-    <GeneratePackageOnBuild Condition="'$(GeneratePackageOnBuild)' != 'true'">false</GeneratePackageOnBuild>
     <!-- When in source-build we need to generate all packages when building for all configurations even in servicing. -->
-    <GeneratePackageOnBuild Condition="!$(GeneratePackageOnBuild) and
+    <GeneratePackageOnBuild Condition="'$(GeneratePackageOnBuild)' != 'true' and
                                        '$(BuildAllConfigurations)' == 'true' and
                                        '$(DotNetBuildFromSource)' == 'true'">true</GeneratePackageOnBuild>
     <!-- Search for the documentation file in the intellisense package and otherwise pick up the generated one. -->
