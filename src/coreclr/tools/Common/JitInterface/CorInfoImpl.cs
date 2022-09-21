@@ -1837,6 +1837,7 @@ namespace Internal.JitInterface
             Debug.Assert(bufferSize >= 0 && handle != null);
 
             // NOTE: this function is used for pinned/frozen handles
+            // it doesn't need to null-terminate the string
 
             ReadOnlySpan<char> str = HandleToObject((IntPtr)handle).ToString();
             if (buffer != null)

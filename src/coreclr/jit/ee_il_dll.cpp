@@ -1622,6 +1622,7 @@ void Compiler::eePrintFrozenObjectDescription(const char* prefix, size_t handle)
     int       realLength = this->info.compCompHnd->objectToString((void*)handle, str, maxStrSize);
     if (realLength >= maxStrSize)
     {
+        // string is too long, trim it and null-terminate
         str[maxStrSize - 4] = L'.';
         str[maxStrSize - 3] = L'.';
         str[maxStrSize - 2] = L'.';
@@ -1629,6 +1630,7 @@ void Compiler::eePrintFrozenObjectDescription(const char* prefix, size_t handle)
     }
     else
     {
+        // objectToString doesn't null-terminate buffer
         str[realLength] = 0;
     }
 
@@ -1641,14 +1643,7 @@ void Compiler::eePrintFrozenObjectDescription(const char* prefix, size_t handle)
         }
     }
 
-    if (realLength >= 0)
-    {
-        printf("%s '%S'\n", prefix, str);
-    }
-    else
-    {
-        printf("%s 'frozen object handle'\n", prefix, str);
-    }
+    printf("%s '%S'\n", prefix, str);
 }
 #else  // DEBUG
 void jitprintf(const char* fmt, ...)

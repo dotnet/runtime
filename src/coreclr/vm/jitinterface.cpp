@@ -728,6 +728,9 @@ int CEEInfo::objectToString (
 
     int charsCount = 0;
 
+    // NOTE: this function is used for pinned/frozen handles
+    // it doesn't need to null-terminate the string
+
     _ASSERT(handle != nullptr && bufferSize >= 0);
 
     JIT_TO_EE_TRANSITION();
