@@ -106,6 +106,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                     catch (Exception ex)
                     {
                         exceptions.Add(ex);
+                        break;
                     }
                 }
             }
