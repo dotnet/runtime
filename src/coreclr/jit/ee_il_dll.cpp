@@ -1618,7 +1618,7 @@ const char16_t* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
 void Compiler::eePrintFrozenObjectDescription(const char* prefix, size_t handle)
 {
     const int maxStrSize      = 128;
-    char16_t  str[maxStrSize] = {0};
+    char16_t  str[maxStrSize];
     int       realLength      = this->info.compCompHnd->objectToString((void*)handle, str, maxStrSize);
     if (realLength >= 0)
     {
