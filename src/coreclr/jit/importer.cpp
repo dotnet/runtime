@@ -12431,14 +12431,17 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         }
         else if (CORINFO_HELP_ISINSTANCEOFARRAY)
         {
-            canExpandInline = isClassExact;
-
+            canExpandInline                 = isClassExact;
             CORINFO_CLASS_HANDLE elementCls = NO_CLASS_HANDLE;
-            if (impIsPrimitive(info.compCompHnd->getChildType(pResolvedToken->hClass, &elementCls)))
+            if (!isClassExact && impIsPrimitive(info.compCompHnd->getChildType(pResolvedToken->hClass, &elementCls)))
             {
                 canExpandInline = true;
                 partialExpand   = true;
                 likelyCls       = pResolvedToken->hClass;
+            }
+            else
+            {
+                canExpandInline = isClassExact;
             }
         }
 
