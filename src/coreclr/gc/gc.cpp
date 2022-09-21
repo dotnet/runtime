@@ -13667,12 +13667,6 @@ gc_heap::init_semi_shared()
 
     memset (full_gc_counts, 0, sizeof (full_gc_counts));
 
-    memset (&last_ephemeral_gc_info, 0, sizeof (last_ephemeral_gc_info));
-    memset (&last_full_blocking_gc_info, 0, sizeof (last_full_blocking_gc_info));
-#ifdef BACKGROUND_GC
-    memset (&last_bgc_info, 0, sizeof (last_bgc_info));
-#endif //BACKGROUND_GC
-
     should_expand_in_full_gc = FALSE;
 
 #ifdef FEATURE_LOH_COMPACTION
