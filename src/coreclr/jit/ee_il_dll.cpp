@@ -1617,9 +1617,30 @@ const char16_t* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
 
 void Compiler::eePrintFrozenObjectDescription(const char* prefix, size_t handle)
 {
-    const int maxStrSize      = 128;
+    const int maxStrSize = 64;
     char16_t  str[maxStrSize];
-    int       realLength      = this->info.compCompHnd->objectToString((void*)handle, str, maxStrSize);
+    int       realLength = this->info.compCompHnd->objectToString((void*)handle, str, maxStrSize);
+    if (realLength >= maxStrSize)
+    {
+        str[maxStrSize - 4] = L'.';
+        str[maxStrSize - 3] = L'.';
+        str[maxStrSize - 2] = L'.';
+        str[maxStrSize - 1] = 0;
+    }
+    else
+    {
+        str[realLength] = 0;
+    }
+
+    for (size_t i = 0; i < min(maxStrSize, realLength); i++)
+    {
+        // Escape \n and \r symbols
+        if (str[i] == L'\n' || str[i] == L'\r')
+        {
+            str[i] = L' ';
+        }
+    }
+
     if (realLength >= 0)
     {
         printf("%s '%S'\n", prefix, str);

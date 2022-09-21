@@ -726,9 +726,9 @@ int CEEInfo::objectToString (
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    int result = -1;
+    int charsCount = 0;
 
-    _ASSERT(handle != nullptr && buffer != nullptr && bufferSize > 0);
+    _ASSERT(handle != nullptr && bufferSize >= 0);
 
     JIT_TO_EE_TRANSITION();
 
@@ -748,17 +748,16 @@ int CEEInfo::objectToString (
         ((ReflectClassBaseObject*)obj)->GetType().GetName(stackStr);
     }
 
-    if (stackStr.GetCount() > 0)
+    charsCount = (int)stackStr.GetCount();
+
+    if (buffer != nullptr)
     {
-        result = min(bufferSize, (int)stackStr.GetCount());
-        memcpy((BYTE*)buffer, stackStr.GetUnicode(), result * 2);
-        // Null-terminate it (trim if needed)
-        buffer[result == bufferSize ? result - 1 : result] = 0;
+        memcpy((BYTE*)buffer, stackStr.GetUnicode(), min(bufferSize, charsCount) * 2);
     }
 
     EE_TO_JIT_TRANSITION();
 
-    return result;
+    return charsCount;
 }
 
 /* static */
