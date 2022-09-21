@@ -6980,6 +6980,8 @@ public:
     bool optRedundantBranch(BasicBlock* const block);
     bool optJumpThread(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
     bool optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock, BasicBlock* const excludedBlock);
+    BitVecTraits* optReachableBitVecTraits;
+    BitVec        optReachableBitVec;
     void optRelopImpliesRelop(RelopImplicationInfo* rii);
 
     /**************************************************************************
