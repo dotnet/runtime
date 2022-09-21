@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 
 class Program
@@ -41,9 +42,17 @@ class Program
 
         logger.LogError("Hello");
 
-        await consoleWriter.FinishedWriting;
+        try
+        {
+            await consoleWriter.FinishedWriting.WaitAsync(TimeSpan.FromSeconds(10));
+        }
+        catch
+        {
+            // timing out means that FakeConsoleWriter isn't overriding the right 'Write' method
+            return -99;
+        }
 
-        string consoleOutput = consoleWriter.GetStringBuilder().ToString();
+        string consoleOutput = consoleWriter.GetOutput();
         
         // ensure the output contains whitespace between the property and the value
         if (!consoleOutput.Contains("""
@@ -85,20 +94,27 @@ class Program
         && char.IsDigit(timestamp[6])
         && char.IsDigit(timestamp[7]);
 
-    private sealed class FakeConsoleWriter : StringWriter
+    private sealed class FakeConsoleWriter : TextWriter
     {
-        private TaskCompletionSource _onFinishedWriting;
-        public Task FinishedWriting => _onFinishedWriting.Task;
+        private readonly StringBuilder _sb;
+        private readonly TaskCompletionSource _onFinishedWriting;
 
         public FakeConsoleWriter()
         {
+            _sb = new StringBuilder();
             _onFinishedWriting = new TaskCompletionSource();
         }
 
-        public override void Write(string value)
+        public override Encoding Encoding => Encoding.Unicode;
+
+        public Task FinishedWriting => _onFinishedWriting.Task;
+
+        public override void Write(char[] buffer, int index, int count)
         {
-            base.Write(value);
+            _sb.Append(buffer, index, count);
             _onFinishedWriting.SetResult();
         }
+
+        public string GetOutput() => _sb.ToString();
     }
 }
