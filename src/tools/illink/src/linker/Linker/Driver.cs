@@ -51,13 +51,17 @@ namespace Mono.Linker
 
 		public static int Main (string[] args)
 		{
+			LinkerEventSource.Log.LinkerStart (string.Join ("; ", args));
 			if (args.Length == 0) {
 				Console.Error.WriteLine ("No parameters specified");
+				LinkerEventSource.Log.LinkerStop ();
 				return 1;
 			}
 
-			if (!ProcessResponseFile (args, out var arguments))
+			if (!ProcessResponseFile (args, out var arguments)) {
+				LinkerEventSource.Log.LinkerStop ();
 				return 1;
+			}
 
 			try {
 				using (Driver driver = new Driver (arguments)) {
@@ -66,6 +70,8 @@ namespace Mono.Linker
 			} catch {
 				Console.Error.WriteLine ("Fatal error in {0}", _linker);
 				throw;
+			} finally {
+				LinkerEventSource.Log.LinkerStop ();
 			}
 		}
 
