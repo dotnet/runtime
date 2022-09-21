@@ -3656,15 +3656,23 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 {
     assert((methodFlags & CORINFO_FLG_INTRINSIC) != 0);
 
-    bool           mustExpand = false;
-    bool           isSpecial  = false;
-    NamedIntrinsic ni         = NI_Illegal;
+    bool           mustExpand  = false;
+    bool           isSpecial   = false;
+    bool           isIntrinsic = false;
+    NamedIntrinsic ni          = NI_Illegal;
 
     if ((methodFlags & CORINFO_FLG_INTRINSIC) != 0)
     {
+        isIntrinsic = true;
+
         // The recursive non-virtual calls to Jit intrinsics are must-expand by convention.
         mustExpand = gtIsRecursiveCall(method) && !(methodFlags & CORINFO_FLG_VIRTUAL);
+    }
 
+    // For mismatched VM (AltJit) we want to check all methods as intrinsic to ensure
+    // we get more accurate codegen. This particularly applies to HWIntrinsic usage
+    if (isIntrinsic || !info.compMatchedVM)
+    {
         ni = lookupNamedIntrinsic(method);
 
         // We specially support the following on all platforms to allow for dead
