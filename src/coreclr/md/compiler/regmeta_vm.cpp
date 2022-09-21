@@ -19,7 +19,6 @@
 #include "mdlog.h"
 #include "importhelper.h"
 #include "filtermanager.h"
-#include "mdperf.h"
 #include "switches.h"
 #include "posterror.h"
 #include "stgio.h"
@@ -166,7 +165,6 @@ RegMeta::ResolveTypeRef(
     LOG((LOGMD, "{%08x} RegMeta::ResolveTypeRef(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
         this, tr, riid, ppIScope, ptd));
 
-    START_MD_PERF();
     LOCKREAD();
 
     pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -189,7 +187,6 @@ RegMeta::ResolveTypeRef(
             *ppIScope = NULL;
         }
 
-        STOP_MD_PERF(ResolveTypeRef);
         hr = E_INVALIDARG;
         goto ErrExit;
     }
@@ -198,7 +195,6 @@ RegMeta::ResolveTypeRef(
     {
         // Shortcut when we receive a TypeDef token
         *ptd = tr;
-        STOP_MD_PERF(ResolveTypeRef);
         hr = this->QueryInterface(riid, (void **)ppIScope);
         goto ErrExit;
     }
@@ -233,7 +229,6 @@ RegMeta::ResolveTypeRef(
     IfFailGo(META_E_CANNOTRESOLVETYPEREF);
 
 ErrExit:
-    STOP_MD_PERF(ResolveTypeRef);
     END_ENTRYPOINT_NOTHROW;
 
     return hr;

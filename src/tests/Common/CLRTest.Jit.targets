@@ -218,8 +218,7 @@ then
   export SuperPMIShimLogPath=$spmi_collect_dir
   export SuperPMIShimPath=$spmi_jitlib
   export COMPlus_EnableExtraSuperPmiQueries=1
-  export COMPlus_JitName=libsuperpmi-shim-collector.$spmi_file_extension
-  export COMPlus_JitPath=$CORE_ROOT/$COMPlus_JitName
+  export COMPlus_JitPath=$CORE_ROOT/libsuperpmi-shim-collector.$spmi_file_extension
 fi
 ]]>
       </SuperPMICollectionBashScript>
@@ -239,8 +238,7 @@ set spmi_jitlib=%CORE_ROOT%\clrjit.dll
 set SuperPMIShimLogPath=%spmi_collect_dir%
 set SuperPMIShimPath=%spmi_jitlib%
 set COMPlus_EnableExtraSuperPmiQueries=1
-set COMPlus_JitName=superpmi-shim-collector.dll
-set COMPlus_JitPath=%CORE_ROOT%\%COMPlus_JitName%
+set COMPlus_JitPath=%CORE_ROOT%\superpmi-shim-collector.dll
 :skip_spmi_enable_collection
 ]]>
       </SuperPMICollectionBatchScript>

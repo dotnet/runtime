@@ -8860,9 +8860,10 @@ ssize_t Compiler::optGetArrayRefScaleAndIndex(GenTree* mul, GenTree** pIndex DEB
 //
 struct OptTestInfo
 {
-    GenTree* testTree; // The root node of basic block with GT_JTRUE or GT_RETURN type to check boolean condition on
-    GenTree* compTree; // The compare node (i.e. GT_EQ or GT_NE node) of the testTree
-    bool     isBool;   // If the compTree is boolean expression
+    Statement* testStmt; // Last statement of the basic block
+    GenTree*   testTree; // The root node of the testStmt (GT_JTRUE or GT_RETURN).
+    GenTree*   compTree; // The compare node (i.e. GT_EQ or GT_NE node) of the testTree
+    bool       isBool;   // If the compTree is boolean expression
 };
 
 //-----------------------------------------------------------------------------
@@ -9202,7 +9203,9 @@ Statement* OptBoolsDsc::optOptimizeBoolsChkBlkCond()
         m_t3 = testTree3;
     }
 
+    m_testInfo1.testStmt = s1;
     m_testInfo1.testTree = testTree1;
+    m_testInfo2.testStmt = s2;
     m_testInfo2.testTree = testTree2;
 
     return s1;
@@ -9324,6 +9327,15 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     //
     cmpOp1->gtRequestSetFlags();
 #endif
+
+    // Recost/rethread the tree if necessary
+    //
+    if (m_comp->fgStmtListThreaded)
+    {
+        m_comp->gtPrepareCost(m_testInfo1.testTree);
+        m_comp->gtSetStmtInfo(m_testInfo1.testStmt);
+        m_comp->fgSetStmtSeq(m_testInfo1.testStmt);
+    }
 
     if (!optReturnBlock)
     {
@@ -9584,11 +9596,13 @@ void OptBoolsDsc::optOptimizeBoolsGcStress()
     }
 
     assert(m_b1->bbJumpKind == BBJ_COND);
-    GenTree* cond = m_b1->lastStmt()->GetRootNode();
+    Statement* const stmt = m_b1->lastStmt();
+    GenTree* const   cond = stmt->GetRootNode();
 
     assert(cond->gtOper == GT_JTRUE);
 
     OptTestInfo test;
+    test.testStmt = stmt;
     test.testTree = cond;
 
     GenTree* comparand = optIsBoolComp(&test);
