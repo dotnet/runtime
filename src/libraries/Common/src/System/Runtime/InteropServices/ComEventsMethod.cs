@@ -169,10 +169,8 @@ namespace System.Runtime.InteropServices
             do
             {
                 wrappers = _delegateWrappers;
-
                 newWrappers = new DelegateWrapper[wrappers.Length + 1];
                 wrappers.CopyTo(newWrappers, 0);
-
                 newWrappers[^1] = new DelegateWrapper(d, wrapArgs);
             } while (!PublishNewWrappers(newWrappers, wrappers));
         }
@@ -190,7 +188,7 @@ namespace System.Runtime.InteropServices
                 for (int i = 0; i < wrappers.Length; i++)
                 {
                     DelegateWrapper wrapperMaybe = wrappers[i];
-                    if (wrapperMaybe.Delegate.GetType() == d.GetType() && wrapperMaybe.WrapArgs == wrapArgs)
+                    if (wrapperMaybe.Delegate == d && wrapperMaybe.WrapArgs == wrapArgs)
                     {
                         removeIdx = i;
                         break;
@@ -216,52 +214,11 @@ namespace System.Runtime.InteropServices
             do
             {
                 wrappers = _delegateWrappers;
-
-                List<int> toRemove = new();
-                for (int i = 0; i < wrappers.Length; i++)
-                {
-                    DelegateWrapper wrapper = wrappers[i];
-                    if (condition(wrapper.Delegate))
-                    {
-                        toRemove.Add(i);
-                    }
-                }
-
-                if (toRemove.Count == 0)
-                {
-                    // Nothing to remove
-                    return;
-                }
-
-                newWrappers = RemoveAll(wrappers, CollectionsMarshal.AsSpan(toRemove));
-            } while (!PublishNewWrappers(newWrappers, wrappers));
-
-            // The list of indices is assumed to be sorted in ascending order
-            static DelegateWrapper[] RemoveAll(DelegateWrapper[] oldCol, ReadOnlySpan<int> toRemove)
-            {
-                // Allocate new collection
-                var newCol = new DelegateWrapper[oldCol.Length - toRemove.Length];
-                if (newCol.Length == 0)
-                {
-                    return newCol;
-                }
-
-                // Iterate over collection, skipping elements that should be removed.
-                int ri = 0;
-                for (int oi = 0, ni = 0; oi < oldCol.Length; oi++)
-                {
-                    if (ri < toRemove.Length && oi == toRemove[ri])
-                    {
-                        ri++;
-                        continue;
-                    }
-
-                    newCol[ni] = oldCol[oi];
-                    ni++;
-                }
-
-                return newCol;
+                List<DelegateWrapper> tmp = new(wrappers);
+                tmp.RemoveAll(w => condition(w.Delegate));
+                newWrappers = tmp.ToArray();
             }
+            while (!PublishNewWrappers(newWrappers, wrappers));
         }
 
         public object? Invoke(object[] args)
