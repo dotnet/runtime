@@ -20,9 +20,9 @@ jobs:
     runProfile: 'v8'
     collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
     onlySanityCheck: true
-    #perfForkToUse:
-      #url: https://github.com/radical/performance
-      #branch: fix-build
+    perfForkToUse:
+      url: https://github.com/radical/performance
+      branch: fix-rc2
     #downloadSpecificBuild:
       #buildId: '1878694'
       #pipeline: 'perf-wasm'
