@@ -276,9 +276,8 @@ fi
       <CLRTestBatchPreCommands Condition="'$(HasBatchDisasmCheck)' == 'true'">
 <![CDATA[
       $(CLRTestBatchPreCommands)
-@(DisasmCheckFiles -> '  dotnet %CORE_ROOT%\SuperFileCheck\SuperFileCheck.dll --csharp-list-method-names "%(Identity)" --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()) > "$(BatchDisasmListOutputFile)"
+@(DisasmCheckFiles -> '  dotnet %CORE_ROOT%\SuperFileCheck\SuperFileCheck.dll --csharp-list-method-names "%(Identity)" --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) > "$(BatchDisasmListOutputFile)"
   IF NOT "!ERRORLEVEL!" == "0" (
-    ECHO dotnet %CORE_ROOT%\SuperFileCheck\SuperFileCheck.dll --csharp-list-method-names "%(Identity)" --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) > "$(BatchDisasmListOutputFile)"
     ECHO EXECUTION OF FILECHECK LISTING METHOD NAMES - FAILED !ERRORLEVEL!
     Exit /b 1
   )', '%0d%0a')
@@ -293,7 +292,6 @@ fi
 IF NOT "%COMPlus_JitDisasm%" == "" (
   @(DisasmCheckFiles -> '  dotnet %CORE_ROOT%\SuperFileCheck\SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) --dump-input-context 25 --input-file "$(BatchDisasmOutputFile)"
     IF NOT "!ERRORLEVEL!" == "0" (
-      ECHO dotnet %CORE_ROOT%\SuperFileCheck\SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) --dump-input-context 25 --input-file "$(BatchDisasmOutputFile)"
       ECHO EXECUTION OF FILECHECK - FAILED !ERRORLEVEL!
       Exit /b 1
     )', '%0d%0a')

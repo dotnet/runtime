@@ -17,7 +17,7 @@ class Program
     {
         // CHECK: _IG02:
 
-        // X64-FULL-LINE-:              mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
+        // X64-FULL-LINE-NEXT:         mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
         // X64-FULL-LINE-NEXT:         sar [[REG0]], 31
         // X64-FULL-LINE-NEXT:         and [[REG0]], 15
         // X64-FULL-LINE-NEXT:         add [[REG0]], [[REG1]]
@@ -30,7 +30,7 @@ class Program
         // X64-LINUX-FULL-LINE-NEXT:   sub [[REG1]], [[REG0]]
         // X64-LINUX-FULL-LINE-NEXT:   mov [[REG0]], [[REG1]]
 
-        // ARM64-FULL-LINE:      and w1, w0, #15
+        // ARM64-FULL-LINE-NEXT: and w1, w0, #15
         // ARM64-FULL-LINE-NEXT: negs w0, w0
         // ARM64-FULL-LINE-NEXT: and w0, w0, #15
         // ARM64-FULL-LINE-NEXT: csneg w0, w1, w0, mi

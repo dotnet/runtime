@@ -11,7 +11,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace SuperFileCheck
 {
-    internal readonly record struct MethodDeclarationInfo(MethodDeclarationSyntax Syntax, string Name);
+    internal readonly record struct MethodDeclarationInfo(MethodDeclarationSyntax Syntax, string FullyQualifiedName);
 
     internal readonly record struct FileCheckResult(int ExitCode, string StandardOutput, string StandardError);
 
@@ -75,7 +75,7 @@ namespace SuperFileCheck
             // FULL-LINE and FULL-LINE-NEXT are not part of LLVM FileCheck - they are new syntax directives for SuperFileCheck to be able to
             // match a single full-line, similar to that of LLVM FileCheck's --match-full-lines option.
 
-            var pattern = $"({String.Join('|', checkPrefixes)})+?({{LITERAL}})?(:|-LABEL:|-NOT:|-SAME:|-EMPTY:|-COUNT:|-DAG:|{SyntaxDirectiveFullLine}|{SyntaxDirectiveFullLineNext})";
+            var pattern = $"({String.Join('|', checkPrefixes)})+?({{LITERAL}})?(:|-LABEL:|-NEXT:|-NOT:|-SAME:|-EMPTY:|-COUNT:|-DAG:|{SyntaxDirectiveFullLine}|{SyntaxDirectiveFullLineNext})";
             var regex = new System.Text.RegularExpressions.Regex(pattern);
             return regex.Count(str) > 0;
         }
@@ -154,11 +154,97 @@ namespace SuperFileCheck
         /// </summary>
         static string GetMethodName(MethodDeclarationSyntax methodDecl)
         {
-            return
-                methodDecl.ChildTokens()
-                .OfType<SyntaxToken>()
-                .Where(x => x.IsKind(SyntaxKind.IdentifierToken)).First().ValueText;
+            var methodName = methodDecl.Identifier.ValueText;
+
+            var typeArity = methodDecl.TypeParameterList?.ChildNodes().Count();
+            if (typeArity > 0)
+            {
+                var typePars = new List<string>();
+                for (var i = 0; i < typeArity; i++)
+                {
+                    typePars.Add("*");
+                }
+
+                methodName = $"{methodName}[{String.Join(",", typePars)}]";
+            }
+
+            var parCount = methodDecl.ParameterList?.ChildNodes().Count();
+            var pars = new List<string>();
+            for (var i = 0; i < parCount; i++)
+            {
+                pars.Add("*");
+            }
+
+            return $"{methodName}({String.Join(",", pars)})";
         }
+
+        static TypeDeclarationSyntax? TryGetEnclosingTypeDeclaration(SyntaxNode node)
+        {
+            return node.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault();
+        }
+
+        static TypeDeclarationSyntax[] GetEnclosingTypeDeclarations(SyntaxNode node)
+        {
+            return node.Ancestors().OfType<TypeDeclarationSyntax>().ToArray();
+        }
+
+        /// <summary>
+        /// Try to get an enclosing type name from the given syntax node.
+        /// </summary>
+        static string GetTypeName(TypeDeclarationSyntax typeDecl)
+        {
+            var typeName = typeDecl.Identifier.ValueText;
+
+            var typeArity = typeDecl.TypeParameterList?.ChildNodes().Count();
+            if (typeArity > 0)
+            {
+                var typePars = new List<string>();
+                for (var i = 0; i < typeArity; i++)
+                {
+                    typePars.Add("*");
+                }
+
+                typeName = $"{typeName}[{String.Join(",", typePars)}]";
+            }
+
+            return typeName;
+        }
+
+        /// <summary>
+        /// Get the method's fully qualified enclosing namespace and type name.
+        /// </summary>
+        static string GetFullyQualifiedEnclosingTypeName(MethodDeclarationSyntax methodDecl)
+        {
+            var qualifiedTypeName = String.Empty;
+
+            var typeDecl = TryGetEnclosingTypeDeclaration(methodDecl);
+            if (typeDecl == null)
+            {
+                return qualifiedTypeName;
+            }
+
+            qualifiedTypeName = GetTypeName(typeDecl);
+
+            var typeDecls = GetEnclosingTypeDeclarations(typeDecl);
+            for (var i = 0; i < typeDecls.Length; i++)
+            {
+                typeDecl = typeDecls[i];
+                qualifiedTypeName = $"{GetTypeName(typeDecl)}+{qualifiedTypeName}";
+            }
+
+            var namespaceDecl = typeDecl.Ancestors().OfType<NamespaceDeclarationSyntax>().FirstOrDefault();
+            if (namespaceDecl != null)
+            {
+                var identifiers =
+                    namespaceDecl.DescendantTokens().Where(x => x.IsKind(SyntaxKind.IdentifierToken)).Select(x => x.ValueText);
+                var namespac = String.Join(".", identifiers);
+                return $"{String.Join(".", identifiers)}.{qualifiedTypeName}";
+            }
+
+            return qualifiedTypeName;
+        }
+
+
 
         /// <summary>
         /// Get all the descendant single line comment trivia items.
@@ -217,7 +303,7 @@ namespace SuperFileCheck
                 .DescendantNodes()
                 .OfType<MethodDeclarationSyntax>()
                 .Where(x => ContainsCheckPrefixes(x.ToString(), checkPrefixes))
-                .Select(x => new MethodDeclarationInfo(x, GetMethodName(x)))
+                .Select(x => new MethodDeclarationInfo(x, $"{GetFullyQualifiedEnclosingTypeName(x)}:{GetMethodName(x)}"))
                 .ToArray();
         }
 
@@ -299,14 +385,11 @@ namespace SuperFileCheck
         static string PreProcessMethod(MethodDeclarationInfo methodDeclInfo, string[] checkPrefixes)
         {
             var methodDecl = methodDeclInfo.Syntax;
-            var methodName = methodDeclInfo.Name;
-            
-            var isGeneric = methodDeclInfo.Syntax.TypeParameterList != null;
-            var afterMethodName = isGeneric ? "[" : "(";
+            var methodName = methodDeclInfo.FullyQualifiedName.Replace("*", "{{.*}}"); // Change wild-card to FileCheck wild-card syntax.
 
             // Create anchors from the first prefix.
-            var startAnchorText = $"// {checkPrefixes[0]}-LABEL: {methodName}{afterMethodName}";
-            var endAnchorText = $"// {checkPrefixes[0]}: {methodName}{afterMethodName}";
+            var startAnchorText = $"// {checkPrefixes[0]}-LABEL: {methodName}";
+            var endAnchorText = $"// {checkPrefixes[0]}: {methodName}";
 
             // Create temp source file based on the source text of the method.
             // Newlines are added to pad the text so FileCheck's error messages will correspond
@@ -492,9 +575,9 @@ namespace SuperFileCheck
             var set = new HashSet<string>();
 
             var duplicateMethodDeclInfo =
-                methodDeclInfos.FirstOrDefault(x => !set.Add(x.Name));
+                methodDeclInfos.FirstOrDefault(x => !set.Add(x.FullyQualifiedName));
 
-            return duplicateMethodDeclInfo.Name;
+            return duplicateMethodDeclInfo.FullyQualifiedName;
         }
 
         /// <summary>
@@ -532,7 +615,7 @@ namespace SuperFileCheck
                 {
                     if (!MethodHasNoInlining(methodDeclInfo.Syntax))
                     {
-                        PrintErrorMethodNoInlining(methodDeclInfo.Name);
+                        PrintErrorMethodNoInlining(methodDeclInfo.FullyQualifiedName);
                         return false;
                     }
 
@@ -571,7 +654,7 @@ namespace SuperFileCheck
                             return 1;
                         }
 
-                        Console.Write(String.Join(' ', methodDeclInfos.Select(x => x.Name)));
+                        Console.Write(String.Join(' ', methodDeclInfos.Select(x => x.FullyQualifiedName)));
                         return 0;
                     }
                     catch(Exception ex)
