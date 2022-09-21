@@ -77,4 +77,8 @@
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading.Channels" />
   </ItemGroup>
+  
+  <ProjectReference Include="..\gen\JSImportGenerator\JSImportGenerator.csproj"
+                    ReferenceOutputAssembly="false"
+                    OutputItemType="Analyzer" />
 </Project>
