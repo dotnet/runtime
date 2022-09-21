@@ -719,6 +719,12 @@ emit_hardware_intrinsics (
 			goto support_probe_complete;
 		id = info->id;
 
+#ifdef TARGET_ARM64
+		if (!(cfg->compile_aot && cfg->full_aot && !cfg->interp) && !intrin_group->jit_supported) {
+			goto support_probe_complete;
+		}
+#endif
+
 		// Hardware intrinsics are LLVM-only.
 		if (!COMPILE_LLVM (cfg) && !intrin_group->jit_supported)
 			goto support_probe_complete;
@@ -909,6 +915,7 @@ static guint16 sri_vector_methods [] = {
 	SN_Equals,
 	SN_EqualsAll,
 	SN_EqualsAny,
+	SN_ExtractMostSignificantBits,
 	SN_Floor,
 	SN_GetElement,
 	SN_GetLower,
@@ -1194,6 +1201,15 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			default: g_assert_not_reached ();
 		}
 	}
+	case SN_ExtractMostSignificantBits: {
+		if (!is_element_type_primitive (fsig->params [0]) || type_enum_is_float (arg0_type))
+			return NULL;
+#ifdef TARGET_WASM
+		return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_BITMASK, -1, -1, fsig, args);
+#else
+		return NULL;
+#endif
+	}
 	case SN_GetElement: {
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
@@ -1392,12 +1408,21 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #endif
 	}
 	case SN_Sqrt: {
-#ifdef TARGET_ARM64
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 		if (!type_enum_is_float (arg0_type))
 			return NULL;
+#ifdef TARGET_ARM64
 		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FSQRT, arg0_type, fsig, args);
+#elif TARGET_AMD64
+		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		int size = mono_class_value_size (arg_class, NULL);
+		if ( size != 16 ) 		// Only works with Vector128
+			return NULL;
+
+		int instc0 = arg0_type == MONO_TYPE_R4 ? INTRINS_SSE_SQRT_PS : INTRINS_SSE_SQRT_PD;
+
+		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, instc0, arg0_type, fsig, args);
 #else
 		return NULL;
 #endif

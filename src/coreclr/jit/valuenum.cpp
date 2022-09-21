@@ -1969,12 +1969,12 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
     }
 }
 
-ValueNum ValueNumStore::VNForZeroObj(CORINFO_CLASS_HANDLE structHnd)
+ValueNum ValueNumStore::VNForZeroObj(ClassLayout* layout)
 {
-    assert(structHnd != NO_CLASS_HANDLE);
+    assert(layout != nullptr);
 
-    ValueNum structHndVN = VNForHandle(ssize_t(structHnd), GTF_ICON_CLASS_HDL);
-    ValueNum zeroObjVN   = VNForFunc(TYP_STRUCT, VNF_ZeroObj, structHndVN);
+    ValueNum layoutVN  = VNForIntPtrCon(reinterpret_cast<ssize_t>(layout));
+    ValueNum zeroObjVN = VNForFunc(TYP_STRUCT, VNF_ZeroObj, layoutVN);
 
     return zeroObjVN;
 }
@@ -5284,6 +5284,52 @@ bool ValueNumStore::IsVNHandle(ValueNum vn)
 }
 
 //------------------------------------------------------------------------
+// SwapRelop: return VNFunc for swapped relop
+//
+// Arguments:
+//    vnf - vnf for original relop
+//
+// Returns:
+//    VNFunc for swapped relop, or VNF_MemOpaque if the original VNFunc
+//    was not a relop.
+//
+VNFunc ValueNumStore::SwapRelop(VNFunc vnf)
+{
+    VNFunc swappedFunc = VNF_MemOpaque;
+    if (vnf >= VNF_Boundary)
+    {
+        switch (vnf)
+        {
+            case VNF_LT_UN:
+                swappedFunc = VNF_GT_UN;
+                break;
+            case VNF_LE_UN:
+                swappedFunc = VNF_GE_UN;
+                break;
+            case VNF_GE_UN:
+                swappedFunc = VNF_LE_UN;
+                break;
+            case VNF_GT_UN:
+                swappedFunc = VNF_LT_UN;
+                break;
+            default:
+                break;
+        }
+    }
+    else
+    {
+        const genTreeOps op = (genTreeOps)vnf;
+
+        if (GenTree::OperIsCompare(op))
+        {
+            swappedFunc = (VNFunc)GenTree::SwapRelop(op);
+        }
+    }
+
+    return swappedFunc;
+}
+
+//------------------------------------------------------------------------
 // GetRelatedRelop: return value number for reversed/swapped comparison
 //
 // Arguments:
@@ -5354,36 +5400,11 @@ ValueNum ValueNumStore::GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk)
     //
     if (swap)
     {
-        if (newFunc >= VNF_Boundary)
-        {
-            switch (newFunc)
-            {
-                case VNF_LT_UN:
-                    newFunc = VNF_GT_UN;
-                    break;
-                case VNF_LE_UN:
-                    newFunc = VNF_GE_UN;
-                    break;
-                case VNF_GE_UN:
-                    newFunc = VNF_LE_UN;
-                    break;
-                case VNF_GT_UN:
-                    newFunc = VNF_LT_UN;
-                    break;
-                default:
-                    return NoVN;
-            }
-        }
-        else
-        {
-            const genTreeOps op = (genTreeOps)newFunc;
+        newFunc = SwapRelop(newFunc);
 
-            if (!GenTree::OperIsCompare(op))
-            {
-                return NoVN;
-            }
-
-            newFunc = (VNFunc)GenTree::SwapRelop(op);
+        if (newFunc == VNF_MemOpaque)
+        {
+            return NoVN;
         }
     }
 
@@ -7028,6 +7049,12 @@ void ValueNumStore::InitValueNumStoreStatics()
 
             ValueNumFuncSetArity(func, newArity);
         }
+
+        if (HWIntrinsicInfo::IsCommutative(id))
+        {
+            VNFunc func = VNFunc(VNF_HWI_FIRST + (id - NI_HW_INTRINSIC_START - 1));
+            vnfOpAttribs[func] |= VNFOA_Commutative;
+        }
     }
 
 #endif // FEATURE_HW_INTRINSICS
@@ -7510,7 +7537,7 @@ PhaseStatus Compiler::fgValueNumber()
                     if (isZeroed)
                     {
                         // By default we will zero init these LclVars
-                        initVal = (typ == TYP_STRUCT) ? vnStore->VNForZeroObj(varDsc->GetStructHnd())
+                        initVal = (typ == TYP_STRUCT) ? vnStore->VNForZeroObj(varDsc->GetLayout())
                                                       : vnStore->VNZeroForType(typ);
                     }
                     else
@@ -8145,13 +8172,13 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
 
         case TYP_FLOAT:
         {
-            tree->gtVNPair.SetBoth(vnStore->VNForFloatCon((float)tree->AsDblCon()->gtDconVal));
+            tree->gtVNPair.SetBoth(vnStore->VNForFloatCon((float)tree->AsDblCon()->DconValue()));
             break;
         }
 
         case TYP_DOUBLE:
         {
-            tree->gtVNPair.SetBoth(vnStore->VNForDoubleCon(tree->AsDblCon()->gtDconVal));
+            tree->gtVNPair.SetBoth(vnStore->VNForDoubleCon(tree->AsDblCon()->DconValue()));
             break;
         }
 
@@ -8162,7 +8189,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
             }
             else
             {
-                assert(tree->IsIconHandle(GTF_ICON_STR_HDL)); // Constant object can be only frozen string.
+                assert(doesMethodHaveFrozenString()); // Constant object can be only frozen string.
                 tree->gtVNPair.SetBoth(
                     vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()), tree->GetIconHandleFlag()));
             }
@@ -8364,26 +8391,23 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
         // SSA names in which to store VN's on defs.  We'll yield unique VN's when we read from them.
         if (lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
         {
-            unsigned lhsLclSize = lvaLclExactSize(lhsLclNum);
-            unsigned storeSize  = lhs->GetLayout(this)->GetSize();
+            ClassLayout* const layout    = lhs->GetLayout(this);
+            unsigned           storeSize = layout->GetSize();
 
             ValueNumPair rhsVNPair = ValueNumPair();
             if (tree->OperIsInitBlkOp())
             {
                 ValueNum initObjVN = ValueNumStore::NoVN;
-                if (isEntire && rhs->IsIntegralConst(0))
+                if (rhs->IsIntegralConst(0))
                 {
-                    // Note that it is possible to see pretty much any kind of type for the local
-                    // (not just TYP_STRUCT) here because of the ASG(BLK(ADDR(LCL_VAR/FLD)), 0) form.
-                    initObjVN = (lhsVarDsc->TypeGet() == TYP_STRUCT) ? vnStore->VNForZeroObj(lhsVarDsc->GetStructHnd())
-                                                                     : vnStore->VNZeroForType(lhsVarDsc->TypeGet());
+                    initObjVN = (lhs->TypeGet() == TYP_STRUCT) ? vnStore->VNForZeroObj(layout)
+                                                               : vnStore->VNZeroForType(lhs->TypeGet());
                 }
                 else
                 {
                     // Non-zero block init is very rare so we'll use a simple, unique VN here.
-                    initObjVN = vnStore->VNForExpr(compCurBB, lhsVarDsc->TypeGet());
+                    initObjVN = vnStore->VNForExpr(compCurBB, lhs->TypeGet());
                 }
-
                 rhsVNPair.SetBoth(initObjVN);
             }
             else
@@ -8593,37 +8617,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
         else if (oper == GT_ASG && (tree->TypeGet() == TYP_STRUCT))
         {
             fgValueNumberBlockAssignment(tree);
-        }
-        else if (oper == GT_ADDR)
-        {
-            // We have special representations for byrefs to lvalues.
-            GenTree* location = tree->AsUnOp()->gtGetOp1();
-            if (location->OperIs(GT_LCL_VAR, GT_LCL_FLD))
-            {
-                GenTreeLclVarCommon* lclNode = location->AsLclVarCommon();
-                ValueNum             addrVN =
-                    vnStore->VNForFunc(TYP_BYREF, VNF_PtrToLoc, vnStore->VNForIntCon(lclNode->GetLclNum()),
-                                       vnStore->VNForIntPtrCon(lclNode->GetLclOffs()));
-                tree->gtVNPair.SetBoth(addrVN); // No exceptions for local addresses.
-            }
-            else if ((location->gtOper == GT_IND) || location->OperIsBlk())
-            {
-                // They just cancel, so fetch the ValueNumber from the op1 of the GT_IND node.
-                //
-                GenTree*     addr    = location->AsIndir()->Addr();
-                ValueNumPair addrVNP = addr->gtVNPair;
-
-                // For the CSE phase mark the address as GTF_DONT_CSE
-                // because it will end up with the same value number as tree (the GT_ADDR).
-                addr->gtFlags |= GTF_DONT_CSE;
-
-                tree->gtVNPair = vnStore->VNPWithExc(addrVNP, vnStore->VNPExceptionSet(location->gtVNPair));
-            }
-            else
-            {
-                // May be more cases to do here!  But we'll punt for now.
-                tree->gtVNPair = vnStore->VNPUniqueWithExc(TYP_BYREF, vnStore->VNPExceptionSet(location->gtVNPair));
-            }
         }
         else if ((oper == GT_IND) || GenTree::OperIsBlk(oper))
         {
@@ -8869,6 +8862,26 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     {
                         ValueNumPair op1Xvnp = vnStore->VNPExceptionSet(tree->AsOp()->gtOp1->gtVNPair);
                         tree->gtVNPair       = vnStore->VNPWithExc(tree->AsOp()->gtOp2->gtVNPair, op1Xvnp);
+                    }
+                    break;
+
+                    case GT_ADDR:
+                    {
+                        GenTree* location = tree->AsUnOp()->gtGetOp1();
+
+                        if (location->OperIsLocalRead())
+                        {
+                            GenTreeLclVarCommon* lclNode = location->AsLclVarCommon();
+                            ValueNum             addrVN =
+                                vnStore->VNForFunc(TYP_BYREF, VNF_PtrToLoc, vnStore->VNForIntCon(lclNode->GetLclNum()),
+                                                   vnStore->VNForIntPtrCon(lclNode->GetLclOffs()));
+                            tree->gtVNPair.SetBoth(addrVN); // No exceptions for local addresses.
+                        }
+                        else
+                        {
+                            tree->gtVNPair = vnStore->VNPUniqueWithExc(tree->TypeGet(),
+                                                                       vnStore->VNPExceptionSet(location->gtVNPair));
+                        }
                     }
                     break;
 

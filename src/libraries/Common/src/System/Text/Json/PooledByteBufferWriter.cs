@@ -22,11 +22,18 @@ namespace System.Text.Json
 
         private const int MinimumBufferSize = 256;
 
+        // Value copied from Array.MaxLength in System.Private.CoreLib/src/libraries/System.Private.CoreLib/src/System/Array.cs.
+        public const int MaximumBufferSize = 0X7FFFFFC7;
+
         private PooledByteBufferWriter()
         {
+#if NETCOREAPP
+            // Ensure we are in sync with the Array.MaxLength implementation.
+            Debug.Assert(MaximumBufferSize == Array.MaxLength);
+#endif
         }
 
-        public PooledByteBufferWriter(int initialCapacity)
+        public PooledByteBufferWriter(int initialCapacity) : this()
         {
             Debug.Assert(initialCapacity > 0);
 
@@ -125,17 +132,16 @@ namespace System.Text.Json
             Debug.Assert(_rentedBuffer != null);
             Debug.Assert(count >= 0);
             Debug.Assert(_index <= _rentedBuffer.Length - count);
-
             _index += count;
         }
 
-        public Memory<byte> GetMemory(int sizeHint = 0)
+        public Memory<byte> GetMemory(int sizeHint = MinimumBufferSize)
         {
             CheckAndResizeBuffer(sizeHint);
             return _rentedBuffer.AsMemory(_index);
         }
 
-        public Span<byte> GetSpan(int sizeHint = 0)
+        public Span<byte> GetSpan(int sizeHint = MinimumBufferSize)
         {
             CheckAndResizeBuffer(sizeHint);
             return _rentedBuffer.AsSpan(_index);
@@ -168,26 +174,28 @@ namespace System.Text.Json
         private void CheckAndResizeBuffer(int sizeHint)
         {
             Debug.Assert(_rentedBuffer != null);
-            Debug.Assert(sizeHint >= 0);
+            Debug.Assert(sizeHint > 0);
 
-            if (sizeHint == 0)
+            int currentLength = _rentedBuffer.Length;
+            int availableSpace = currentLength - _index;
+
+            // If we've reached ~1GB written, grow to the maximum buffer
+            // length to avoid incessant minimal growths causing perf issues.
+            if (_index >= MaximumBufferSize / 2)
             {
-                sizeHint = MinimumBufferSize;
+                sizeHint = Math.Max(sizeHint, MaximumBufferSize - currentLength);
             }
-
-            int availableSpace = _rentedBuffer.Length - _index;
 
             if (sizeHint > availableSpace)
             {
-                int currentLength = _rentedBuffer.Length;
                 int growBy = Math.Max(sizeHint, currentLength);
 
                 int newSize = currentLength + growBy;
 
-                if ((uint)newSize > int.MaxValue)
+                if ((uint)newSize > MaximumBufferSize)
                 {
                     newSize = currentLength + sizeHint;
-                    if ((uint)newSize > int.MaxValue)
+                    if ((uint)newSize > MaximumBufferSize)
                     {
                         ThrowHelper.ThrowOutOfMemoryException_BufferMaximumSizeExceeded((uint)newSize);
                     }
@@ -200,9 +208,9 @@ namespace System.Text.Json
                 Debug.Assert(oldBuffer.Length >= _index);
                 Debug.Assert(_rentedBuffer.Length >= _index);
 
-                Span<byte> previousBuffer = oldBuffer.AsSpan(0, _index);
-                previousBuffer.CopyTo(_rentedBuffer);
-                previousBuffer.Clear();
+                Span<byte> oldBufferAsSpan = oldBuffer.AsSpan(0, _index);
+                oldBufferAsSpan.CopyTo(_rentedBuffer);
+                oldBufferAsSpan.Clear();
                 ArrayPool<byte>.Shared.Return(oldBuffer);
             }
 

@@ -304,9 +304,6 @@ private:
     // (Requires InitValueNumStoreStatics to have been run.)
     static bool VNFuncIsCommutative(VNFunc vnf);
 
-    // Returns "true" iff "vnf" is a comparison (and thus binary) operator.
-    static bool VNFuncIsComparison(VNFunc vnf);
-
     bool VNEvalCanFoldBinaryFunc(var_types type, VNFunc func, ValueNum arg0VN, ValueNum arg1VN);
 
     bool VNEvalCanFoldUnaryFunc(var_types type, VNFunc func, ValueNum arg0VN);
@@ -500,7 +497,7 @@ public:
     ValueNum VNZeroForType(var_types typ);
 
     // Returns the value number for a zero-initialized struct.
-    ValueNum VNForZeroObj(CORINFO_CLASS_HANDLE structHnd);
+    ValueNum VNForZeroObj(ClassLayout* layout);
 
     // Returns the value number for one of the given "typ".
     // It returns NoVN for a "typ" that has no one value, such as TYP_REF.
@@ -981,6 +978,13 @@ public:
     // If vn is not a relop, return NoVN.
     //
     ValueNum GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk);
+
+    // Return VNFunc for swapped relop, or VNF_MemOpaque if the function
+    // is not a relop.
+    static VNFunc SwapRelop(VNFunc vnf);
+
+    // Returns "true" iff "vnf" is a comparison (and thus binary) operator.
+    static bool VNFuncIsComparison(VNFunc vnf);
 
     // Convert a vartype_t to the value number's storage type for that vartype_t.
     // For example, ValueNum of type TYP_LONG are stored in a map of INT64 variables.

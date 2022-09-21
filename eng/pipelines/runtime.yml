@@ -163,10 +163,12 @@ jobs:
     - FreeBSD_x64
     jobParameters:
       testGroup: innerloop
-      # Don't run these when we have only wasm changes on PRs
+      # Mono/runtimetests also need this, but skip for wasm
       condition:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
@@ -312,17 +314,16 @@ jobs:
     buildConfig: release
     platforms:
     - Android_x64
-    - Browser_wasm
+    #- Browser_wasm - unused
     - tvOS_arm64
     - iOS_arm64
     - MacCatalyst_x64
     jobParameters:
       isOfficialBuild: ${{ variables.isOfficialBuild }}
+      # needed by crossaot
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
@@ -396,6 +397,7 @@ jobs:
       - Browser_wasm
     nameSuffix: _EAT
     runAOT: false
+    shouldRunSmokeOnly: false
     alwaysRun: ${{ variables.isRollingBuild }}
 
 # AOT Library tests
@@ -405,7 +407,7 @@ jobs:
       - Browser_wasm
     nameSuffix: _AOT
     runAOT: true
-    runSmokeOnlyArg: $(_runSmokeTestsOnlyArg)
+    shouldRunSmokeOnly: true
     alwaysRun: ${{ variables.isRollingBuild }}
 
 - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -414,17 +416,16 @@ jobs:
       - Browser_wasm_win
     nameSuffix: _AOT
     runAOT: true
-    runSmokeOnlyArg: $(_runSmokeTestsOnlyArg)
+    shouldRunSmokeOnly: true
     alwaysRun: ${{ variables.isRollingBuild }}
 
 # Wasm.Build.Tests
-# Issue: https://github.com/dotnet/runtime/issues/75223
-#- template: /eng/pipelines/common/templates/wasm-build-tests.yml
-  #parameters:
-    #platforms:
-      #- Browser_wasm
-      #- Browser_wasm_win
-    #alwaysRun: ${{ variables.isRollingBuild }}
+- template: /eng/pipelines/common/templates/wasm-build-tests.yml
+  parameters:
+    platforms:
+      - Browser_wasm
+      - Browser_wasm_win
+    alwaysRun: ${{ variables.isRollingBuild }}
 
 # Wasm Debugger tests
 - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
@@ -673,15 +674,13 @@ jobs:
       runtimeVariant: crossaot
       dependsOn:
       - mono_android_offsets
-      - mono_browser_offsets
+      #- mono_browser_offsets - unused
       monoCrossAOTTargetOS:
       - Android
-      - Browser
+      #- Browser - unused
       condition: >-
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm.containsChange'], true),
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
@@ -696,13 +695,13 @@ jobs:
       runtimeVariant: crossaot
       dependsOn:
       - mono_android_offsets
-      - mono_browser_offsets
+      #- mono_browser_offsets - unused
       - mono_tvos_offsets
       - mono_ios_offsets
       - mono_maccatalyst_offsets
       monoCrossAOTTargetOS:
       - Android
-      - Browser
+      #- Browser - unused
       - tvOS
       - iOS
       - MacCatalyst
@@ -795,7 +794,10 @@ jobs:
     jobParameters:
       condition:
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -814,7 +816,10 @@ jobs:
       testScope: innerloop
       condition:
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
 #
@@ -899,6 +904,7 @@ jobs:
     jobParameters:
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: Release
+      runOnlyIfDependenciesSucceeded: true
       condition:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
@@ -919,6 +925,7 @@ jobs:
     jobParameters:
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+      runOnlyIfDependenciesSucceeded: true
       condition:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
