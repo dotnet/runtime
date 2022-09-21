@@ -2504,11 +2504,11 @@ namespace System
             return -1;
         }
 
+#if !MONO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int LastIndexOfAnyValueType<T>(ref T searchSpace, T value0, T value1, T value2, T value3, int length) where T : struct, INumber<T>
             => LastIndexOfAnyValueType<T, DontNegate<T>>(ref searchSpace, value0, value1, value2, value3, length);
 
-#if !MONO
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static int LastIndexOfAnyExceptValueType<T>(ref T searchSpace, T value0, T value1, T value2, T value3, int length) where T : struct, INumber<T>
             => LastIndexOfAnyValueType<T, Negate<T>>(ref searchSpace, value0, value1, value2, value3, length);
