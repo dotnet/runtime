@@ -389,7 +389,7 @@ int MyICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  */
 }
 
 int MyICJI::objectToString(void*     handle,    /* IN  */
-                           char16_t* buffer,    /* OUT */
+                           char*     buffer,    /* OUT */
                            int       bufferSize /* IN  */
                            )
 {

@@ -376,7 +376,7 @@ int WrapICorJitInfo::getStringLiteral(
 
 int WrapICorJitInfo::objectToString(
           void* handle,
-          char16_t* buffer,
+          char* buffer,
           int bufferSize)
 {
     API_ENTER(objectToString);

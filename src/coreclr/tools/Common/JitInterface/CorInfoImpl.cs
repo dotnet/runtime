@@ -9,6 +9,7 @@ using System.Text;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Text.Unicode;
 
 #if SUPPORT_JIT
 using Internal.Runtime.CompilerServices;
@@ -1831,20 +1832,18 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private int objectToString(void* handle, char* buffer, int bufferSize)
+        private int objectToString(void* handle, byte* buffer, int bufferSize)
 #pragma warning restore CA1822 // Mark members as static
         {
-            Debug.Assert(bufferSize >= 0 && handle != null);
+            Debug.Assert(bufferSize > 0 && handle != null && buffer != null);
 
             // NOTE: this function is used for pinned/frozen handles
             // it doesn't need to null-terminate the string
 
-            ReadOnlySpan<char> str = HandleToObject((IntPtr)handle).ToString();
-            if (buffer != null)
-            {
-                str.CopyTo(new Span<char>(buffer, Math.Min(bufferSize, str.Length)));
-            }
-            return str.Length;
+            ReadOnlySpan<char> objStr = HandleToObject((IntPtr)handle).ToString();
+            var bufferSpan = new Span<byte>(buffer, bufferSize);
+            Utf8.FromUtf16(objStr, bufferSpan, out _, out int written);
+            return written;
         }
 
         private CorInfoType asCorInfoType(CORINFO_CLASS_STRUCT_* cls)

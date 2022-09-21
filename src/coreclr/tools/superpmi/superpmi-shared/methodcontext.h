@@ -622,9 +622,9 @@ public:
     void dmpGetStringLiteral(DLDD key, DD value);
     int repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize);
 
-    void recObjectToString(void* handle, char16_t* buffer, int bufferSize, int length);
+    void recObjectToString(void* handle, char* buffer, int bufferSize, int length);
     void dmpObjectToString(DLD key, DD value);
-    int repObjectToString(void* handle, char16_t* buffer, int bufferSize);
+    int repObjectToString(void* handle, char* buffer, int bufferSize);
 
     void recGetHelperName(CorInfoHelpFunc funcNum, const char* result);
     void dmpGetHelperName(DWORD key, DWORD value);

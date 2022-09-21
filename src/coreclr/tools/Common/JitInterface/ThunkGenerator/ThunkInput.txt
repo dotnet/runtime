@@ -192,7 +192,7 @@ FUNCTIONS
     bool isValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK)
     bool isValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK)
     int getStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize)
-    int objectToString(void* handle, char16_t* buffer, int bufferSize)
+    int objectToString(void* handle, char* buffer, int bufferSize)
     CorInfoType asCorInfoType(CORINFO_CLASS_HANDLE cls)
     const char* getClassName(CORINFO_CLASS_HANDLE cls)
     const char* getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char **namespaceName)

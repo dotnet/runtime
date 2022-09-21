@@ -48,7 +48,7 @@ struct JitInterfaceCallbacks
     bool (* isValidToken)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK);
     bool (* isValidStringRef)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK);
     int (* getStringLiteral)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize);
-    int (* objectToString)(void * thisHandle, CorInfoExceptionClass** ppException, void* handle, char16_t* buffer, int bufferSize);
+    int (* objectToString)(void * thisHandle, CorInfoExceptionClass** ppException, void* handle, char* buffer, int bufferSize);
     CorInfoType (* asCorInfoType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     const char* (* getClassName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     const char* (* getClassNameFromMetadata)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, const char** namespaceName);
@@ -567,7 +567,7 @@ public:
 
     virtual int objectToString(
           void* handle,
-          char16_t* buffer,
+          char* buffer,
           int bufferSize)
 {
     CorInfoExceptionClass* pException = nullptr;

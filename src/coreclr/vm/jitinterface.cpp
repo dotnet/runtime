@@ -716,9 +716,9 @@ int CEEInfo::getStringLiteral (
 }
 
 int CEEInfo::objectToString (
-        void*     handle,
-        char16_t* buffer,
-        int       bufferSize)
+        void* handle,
+        char* buffer,
+        int   bufferSize)
 {
     CONTRACTL{
         THROWS;
@@ -731,7 +731,7 @@ int CEEInfo::objectToString (
     // NOTE: this function is used for pinned/frozen handles
     // it doesn't need to null-terminate the string
 
-    _ASSERT(handle != nullptr && bufferSize >= 0);
+    _ASSERT(handle != nullptr && buffer != nullptr && bufferSize > 0);
 
     JIT_TO_EE_TRANSITION();
 
@@ -751,12 +751,9 @@ int CEEInfo::objectToString (
         ((ReflectClassBaseObject*)obj)->GetType().GetName(stackStr);
     }
 
-    charsCount = (int)stackStr.GetCount();
-
-    if (buffer != nullptr)
-    {
-        memcpy((BYTE*)buffer, stackStr.GetUnicode(), min(bufferSize, charsCount) * 2);
-    }
+    const UTF8* utf8data = stackStr.GetUTF8();
+    charsCount = stackStr.GetCount();
+    memcpy((BYTE*)buffer, (BYTE*)utf8data, min(bufferSize, charsCount));
 
     EE_TO_JIT_TRANSITION();
 

@@ -1618,7 +1618,7 @@ const char16_t* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
 void Compiler::eePrintFrozenObjectDescription(const char* prefix, size_t handle)
 {
     const int maxStrSize = 64;
-    char16_t  str[maxStrSize];
+    char      str[maxStrSize];
     int       realLength = this->info.compCompHnd->objectToString((void*)handle, str, maxStrSize);
     if (realLength == -1)
     {
@@ -1628,9 +1628,9 @@ void Compiler::eePrintFrozenObjectDescription(const char* prefix, size_t handle)
     else if (realLength >= maxStrSize)
     {
         // string is too long, trim it and null-terminate
-        str[maxStrSize - 4] = L'.';
-        str[maxStrSize - 3] = L'.';
-        str[maxStrSize - 2] = L'.';
+        str[maxStrSize - 4] = '.';
+        str[maxStrSize - 3] = '.';
+        str[maxStrSize - 2] = '.';
         str[maxStrSize - 1] = 0;
     }
     else
@@ -1642,13 +1642,13 @@ void Compiler::eePrintFrozenObjectDescription(const char* prefix, size_t handle)
     for (size_t i = 0; i < min(maxStrSize, realLength); i++)
     {
         // Replace \n and \r symbols with whitespaces
-        if (str[i] == L'\n' || str[i] == L'\r')
+        if (str[i] == '\n' || str[i] == '\r')
         {
-            str[i] = L' ';
+            str[i] = ' ';
         }
     }
 
-    printf("%s '%S'\n", prefix, str);
+    printf("%s '%s'\n", prefix, str);
 }
 #else  // DEBUG
 void jitprintf(const char* fmt, ...)

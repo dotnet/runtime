@@ -453,9 +453,9 @@ int interceptor_ICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  *
     return temp;
 }
 
-int interceptor_ICJI::objectToString(void*     handle,    /* IN  */
-                                     char16_t* buffer,    /* OUT */
-                                     int       bufferSize /* IN  */
+int interceptor_ICJI::objectToString(void* handle,    /* IN  */
+                                     char* buffer,    /* OUT */
+                                     int   bufferSize /* IN  */
                                      )
 {
     mc->cr->AddCall("objectToString");

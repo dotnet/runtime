@@ -177,7 +177,7 @@ int getStringLiteral(
 
 int objectToString(
           void* handle,
-          char16_t* buffer,
+          char* buffer,
           int bufferSize) override;
 
 CorInfoType asCorInfoType(

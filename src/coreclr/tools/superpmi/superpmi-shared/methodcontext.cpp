@@ -4897,7 +4897,7 @@ int MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned me
     }
 }
 
-void MethodContext::recObjectToString(void* handle, char16_t* buffer, int bufferSize, int length)
+void MethodContext::recObjectToString(void* handle, char* buffer, int bufferSize, int length)
 {
     if (ObjectToString == nullptr)
         ObjectToString = new LightWeightMap<DLD, DD>();
@@ -4910,7 +4910,7 @@ void MethodContext::recObjectToString(void* handle, char16_t* buffer, int buffer
     DWORD strBuf = (DWORD)-1;
     if (buffer != nullptr && length != -1)
     {
-        int bufferRealSize = min(length, bufferSize) * sizeof(char16_t);
+        int bufferRealSize = min(length, bufferSize);
         strBuf = (DWORD)ObjectToString->AddBuffer((unsigned char*)buffer, (unsigned int)bufferRealSize);
     }
 
@@ -4926,7 +4926,7 @@ void MethodContext::dmpObjectToString(DLD key, DD value)
     printf("ObjectToString key hnd-%016llX bufSize-%u, len-%u", key.A, key.B, value.A);
     ObjectToString->Unlock();
 }
-int MethodContext::repObjectToString(void* handle, char16_t* buffer, int bufferSize)
+int MethodContext::repObjectToString(void* handle, char* buffer, int bufferSize)
 {
     if (ObjectToString == nullptr)
     {
@@ -4952,7 +4952,7 @@ int MethodContext::repObjectToString(void* handle, char16_t* buffer, int bufferS
         {
             char16_t* srcBuffer = (char16_t*)ObjectToString->GetBuffer(value.B);
             Assert(srcBuffer != nullptr);
-            memcpy(buffer, srcBuffer, min(srcBufferLength, bufferSize) * sizeof(char16_t));
+            memcpy(buffer, srcBuffer, min(srcBufferLength, bufferSize));
         }
         return srcBufferLength;
     }

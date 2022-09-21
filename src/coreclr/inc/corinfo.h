@@ -2268,7 +2268,7 @@ public:
     // Calls ToString() for given pinned/frozen object handle
     virtual int objectToString (
             void*                       handle,     /* IN  */
-            char16_t*                   buffer,     /* OUT */
+            char*                       buffer,     /* OUT */
             int                         bufferSize  /* IN  */
             ) = 0;
 

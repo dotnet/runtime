@@ -279,7 +279,7 @@ int interceptor_ICJI::getStringLiteral(
 
 int interceptor_ICJI::objectToString(
           void* handle,
-          char16_t* buffer,
+          char* buffer,
           int bufferSize)
 {
     return original_ICorJitInfo->objectToString(handle, buffer, bufferSize);
