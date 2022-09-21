@@ -104,7 +104,7 @@ internal sealed class BrowserHost
             ContentRootPath: Path.GetFullPath(appPath),
             WebServerUseCors: true,
             WebServerUseCrossOriginPolicy: true,
-            Url: urls
+            Urls: urls
         );
 
         (ServerURLs serverURLs, IWebHost host) = await WebServer.StartAsync(options, _logger, token);
