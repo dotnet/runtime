@@ -223,7 +223,9 @@ namespace Internal.JitInterface
                 Dictionary<object, IntPtr> objectToHandle = new Dictionary<object, IntPtr>();
                 Dictionary<IntPtr, object> handleToObject = new Dictionary<IntPtr, object>();
 
-                ComputeJitPgoInstrumentationSchema(LocalObjectToHandle, pgoData, out var nativeSchema, out var instrumentationData);
+                MemoryStream memoryStreamInstrumentationData = new MemoryStream();
+                ComputeJitPgoInstrumentationSchema(LocalObjectToHandle, pgoData, out var nativeSchema, memoryStreamInstrumentationData);
+                var instrumentationData = memoryStreamInstrumentationData.ToArray();
 
                 for (int i = 0; i < pgoData.Length; i++)
                 {
@@ -655,7 +657,7 @@ namespace Internal.JitInterface
             _pgoResults.Clear();
         }
 
-        private Dictionary<object, IntPtr> _objectToHandle = new Dictionary<object, IntPtr>();
+        private Dictionary<object, IntPtr> _objectToHandle = new Dictionary<object, IntPtr>(new JitObjectComparer());
         private List<object> _handleToObject = new List<object>();
 
         private const int handleMultiplier = 8;
@@ -991,7 +993,24 @@ namespace Internal.JitInterface
             if (method.IsIntrinsic)
                 result |= CorInfoFlag.CORINFO_FLG_INTRINSIC;
             if (method.IsVirtual)
+            {
                 result |= CorInfoFlag.CORINFO_FLG_VIRTUAL;
+
+                // The JIT only cares about the sealed flag if the method is virtual, or if
+                // it is a delegate.
+
+                // method or class might have the final bit
+                if (method.IsUnboxingThunk())
+                {
+                    if (_compilation.IsEffectivelySealed(method.GetUnboxedMethod()))
+                        result |= CorInfoFlag.CORINFO_FLG_FINAL;
+                }
+                else
+                {
+                    if (_compilation.IsEffectivelySealed(method))
+                        result |= CorInfoFlag.CORINFO_FLG_FINAL;
+                }
+            }
             if (method.IsAbstract)
                 result |= CorInfoFlag.CORINFO_FLG_ABSTRACT;
             if (method.IsConstructor || method.IsStaticConstructor)
@@ -1001,10 +1020,6 @@ namespace Internal.JitInterface
             // See if we need to embed a .cctor call at the head of the
             // method body.
             //
-
-            // method or class might have the final bit
-            if (_compilation.IsEffectivelySealed(method))
-                result |= CorInfoFlag.CORINFO_FLG_FINAL;
 
             if (method.IsSharedByGenericInstantiations)
                 result |= CorInfoFlag.CORINFO_FLG_SHAREDINST;
@@ -2239,18 +2254,26 @@ namespace Internal.JitInterface
             return result;
         }
 
+        private Dictionary<TypeDesc, uint> _classNumInstanceFields = new();
+
         private uint getClassNumInstanceFields(CORINFO_CLASS_STRUCT_* cls)
         {
             TypeDesc type = HandleToObject(cls);
 
-            uint result = 0;
+            var lookupType = type.GetTypeDefinition(); // The number of fields on an instantiation is the same as on the generic definition
+
+            if (_classNumInstanceFields.TryGetValue(lookupType, out uint numInstanceFields))
+                return numInstanceFields;
+
+            numInstanceFields = 0;
             foreach (var field in type.GetFields())
             {
                 if (!field.IsStatic)
-                    result++;
+                    numInstanceFields++;
             }
 
-            return result;
+            _classNumInstanceFields.Add(lookupType, numInstanceFields);
+            return numInstanceFields;
         }
 
         private CORINFO_FIELD_STRUCT_* getFieldInClass(CORINFO_CLASS_STRUCT_* clsHnd, int num)
@@ -3801,11 +3824,13 @@ namespace Internal.JitInterface
             return _compilation.ProfileData[method]?.SchemaData;
         }
 
-        public static void ComputeJitPgoInstrumentationSchema(Func<object, IntPtr> objectToHandle, PgoSchemaElem[] pgoResultsSchemas, out PgoInstrumentationSchema[] nativeSchemas, out byte[] instrumentationData, Func<TypeDesc, bool> typeFilter = null)
+        private MemoryStream _cachedMemoryStream = new MemoryStream();
+
+        public static void ComputeJitPgoInstrumentationSchema(Func<object, IntPtr> objectToHandle, PgoSchemaElem[] pgoResultsSchemas, out PgoInstrumentationSchema[] nativeSchemas, MemoryStream instrumentationData, Func<TypeDesc, bool> typeFilter = null)
         {
             nativeSchemas = new PgoInstrumentationSchema[pgoResultsSchemas.Length];
-            MemoryStream msInstrumentationData = new MemoryStream();
-            BinaryWriter bwInstrumentationData = new BinaryWriter(msInstrumentationData);
+            instrumentationData.SetLength(0);
+            BinaryWriter bwInstrumentationData = new BinaryWriter(instrumentationData);
             for (int i = 0; i < nativeSchemas.Length; i++)
             {
                 if ((bwInstrumentationData.BaseStream.Position % 8) == 4)
@@ -3867,8 +3892,6 @@ namespace Internal.JitInterface
             }
 
             bwInstrumentationData.Flush();
-
-            instrumentationData = msInstrumentationData.ToArray();
         }
 
         private HRESULT getPgoInstrumentationResults(CORINFO_METHOD_STRUCT_* ftnHnd, ref PgoInstrumentationSchema* pSchema, ref uint countSchemaItems, byte** pInstrumentationData,
@@ -3886,13 +3909,14 @@ namespace Internal.JitInterface
                 else
                 {
 #pragma warning disable SA1001, SA1113, SA1115 // Commas should be spaced correctly
-                    ComputeJitPgoInstrumentationSchema(ObjectToHandle, pgoResultsSchemas, out var nativeSchemas, out var instrumentationData
+                    ComputeJitPgoInstrumentationSchema(ObjectToHandle, pgoResultsSchemas, out var nativeSchemas, _cachedMemoryStream
 #if !READYTORUN
                         , _compilation.CanConstructType
 #endif
                         );
 #pragma warning restore SA1001, SA1113, SA1115 // Commas should be spaced correctly
 
+                    var instrumentationData = _cachedMemoryStream.ToArray();
                     pgoResults.pInstrumentationData = (byte*)GetPin(instrumentationData);
                     pgoResults.countSchemaItems = (uint)nativeSchemas.Length;
                     pgoResults.pSchema = (PgoInstrumentationSchema*)GetPin(nativeSchemas);
@@ -3926,8 +3950,11 @@ namespace Internal.JitInterface
             else
             {
                 // By policy we code review all changes into corelib, such that failing to use an instruction
-                // set is not a reason to not support usage of it.
-                if (!isMethodDefinedInCoreLib())
+                // set is not a reason to not support usage of it. Except for functions which check if a given
+                // feature is supported or hardware accelerated.
+                if (!isMethodDefinedInCoreLib() ||
+                    MethodBeingCompiled.Name == "get_IsSupported" ||
+                    MethodBeingCompiled.Name == "get_IsHardwareAccelerated")
                 {
                     _actualInstructionSetUnsupported.AddInstructionSet(instructionSet);
                 }
