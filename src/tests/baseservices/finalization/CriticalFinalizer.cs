@@ -52,9 +52,14 @@ static class CriticalFinalizerTest
         // Allocate a bunch of Normal and Critical objects, then unroot them
         AllocateObjects(Count);
 
-        // Force a garbage collection and wait until all finalizers are executed
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
+        //Ensure GC collects allocated memory.
+        var currentTotalMemory = GC.GetTotalMemory(false);
+        do
+        {
+            // Force a garbage collection and wait until all finalizers are executed
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        } while (currentTotalMemory <= GC.GetTotalMemory(false));
 
         // Check that all Normal objects were finalized before all Critical objects
         int normalFinalized = Normal.Finalized;
