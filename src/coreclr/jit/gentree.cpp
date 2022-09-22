@@ -7161,15 +7161,6 @@ GenTree* Compiler::gtNewZeroConNode(var_types type)
             break;
 #endif // FEATURE_SIMD
 
-#ifdef FEATURE_SIMD
-        case TYP_SIMD8:
-        case TYP_SIMD12:
-        case TYP_SIMD16:
-        case TYP_SIMD32:
-            zero = gtNewZeroConNode(type, CORINFO_TYPE_FLOAT);
-            break;
-#endif // FEATURE_SIMD
-
         default:
             unreached();
     }
