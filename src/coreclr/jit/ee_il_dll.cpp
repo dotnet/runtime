@@ -1639,7 +1639,7 @@ void Compiler::eePrintFrozenObjectDescription(const char* prefix, size_t handle)
         str[realLength] = 0;
     }
 
-    for (size_t i = 0; i < min(maxStrSize, realLength); i++)
+    for (int i = 0; i < min(maxStrSize, realLength); i++)
     {
         // Replace \n and \r symbols with whitespaces
         if (str[i] == '\n' || str[i] == '\r')
