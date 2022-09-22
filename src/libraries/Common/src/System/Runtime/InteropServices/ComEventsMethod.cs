@@ -155,17 +155,12 @@ namespace System.Runtime.InteropServices
 
         public bool Empty
         {
-            get
-            {
-                DelegateWrapper[] wrappers = _delegateWrappers;
-                return wrappers.Length == 0;
-            }
+            get => _delegateWrappers.Length == 0;
         }
 
         public void AddDelegate(Delegate d, bool wrapArgs = false)
         {
-            DelegateWrapper[] wrappers;
-            DelegateWrapper[] newWrappers;
+            DelegateWrapper[] wrappers, newWrappers;
             do
             {
                 wrappers = _delegateWrappers;
@@ -177,8 +172,7 @@ namespace System.Runtime.InteropServices
 
         public void RemoveDelegate(Delegate d, bool wrapArgs = false)
         {
-            DelegateWrapper[] wrappers;
-            DelegateWrapper[] newWrappers;
+            DelegateWrapper[] wrappers, newWrappers;
             do
             {
                 wrappers = _delegateWrappers;
@@ -209,8 +203,7 @@ namespace System.Runtime.InteropServices
 
         public void RemoveDelegates(Func<Delegate, bool> condition)
         {
-            DelegateWrapper[] wrappers;
-            DelegateWrapper[] newWrappers;
+            DelegateWrapper[] wrappers, newWrappers;
             do
             {
                 wrappers = _delegateWrappers;
@@ -226,8 +219,7 @@ namespace System.Runtime.InteropServices
             Debug.Assert(!Empty);
             object? result = null;
 
-            DelegateWrapper[] wrappers = _delegateWrappers;
-            foreach (DelegateWrapper wrapper in wrappers)
+            foreach (DelegateWrapper wrapper in _delegateWrappers)
             {
                 result = wrapper.Invoke(args);
             }
