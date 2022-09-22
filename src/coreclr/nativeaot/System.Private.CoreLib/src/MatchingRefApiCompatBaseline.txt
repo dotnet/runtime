@@ -222,6 +222,7 @@ TypesMustExist : Type 'System.Reflection.Runtime.General.QMethodDefinition' does
 TypesMustExist : Type 'System.Reflection.Runtime.General.QSignatureTypeHandle' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Reflection.Runtime.General.QTypeDefinition' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Reflection.Runtime.General.QTypeDefRefOrSpec' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'protected System.Resources.IResourceReader System.Resources.IResourceReader System.Resources.ResourceSet.Reader' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'protected System.String System.String System.Resources.ResourceManager.BaseNameField' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Resources.RuntimeResourceSet' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Runtime.ExceptionIDs' does not exist in the reference but it does exist in the implementation.

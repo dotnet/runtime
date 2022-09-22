@@ -4,4 +4,5 @@ TypesMustExist : Type 'Internal.Runtime.InteropServices.ComActivationContextInte
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.TypeDependencyAttribute' exists on 'System.Collections.Generic.Comparer<T>' in the implementation but not the reference.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.TypeDependencyAttribute' exists on 'System.Collections.Generic.EqualityComparer<T>' in the implementation but not the reference.
 TypesMustExist : Type 'System.Runtime.CompilerServices.ICastable' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'protected System.Resources.IResourceReader System.Resources.IResourceReader System.Resources.ResourceSet.Reader' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'protected System.String System.String System.Resources.ResourceManager.BaseNameField' does not exist in the reference but it does exist in the implementation.

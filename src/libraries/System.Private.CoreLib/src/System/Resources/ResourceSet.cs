@@ -18,7 +18,7 @@ namespace System.Resources
     //
     public class ResourceSet : IDisposable, IEnumerable
     {
-        private IResourceReader? _reader;
+        protected IResourceReader? Reader; // The field is protected for .NET Framework compatibility
 
         private Dictionary<object, object?>? _table;
         private Dictionary<string, object?>? _caseInsensitiveTable;  // For case-insensitive lookups.
@@ -43,7 +43,7 @@ namespace System.Resources
         public ResourceSet(string fileName)
             : this()
         {
-            _reader = new ResourceReader(fileName);
+            Reader = new ResourceReader(fileName);
             ReadResources();
         }
 
@@ -54,7 +54,7 @@ namespace System.Resources
         public ResourceSet(Stream stream)
             : this()
         {
-            _reader = new ResourceReader(stream);
+            Reader = new ResourceReader(stream);
             ReadResources();
         }
 
@@ -63,7 +63,7 @@ namespace System.Resources
         {
             ArgumentNullException.ThrowIfNull(reader);
 
-            _reader = reader;
+            Reader = reader;
             ReadResources();
         }
 
@@ -81,11 +81,11 @@ namespace System.Resources
             if (disposing)
             {
                 // Close the Reader in a thread-safe way.
-                IResourceReader? copyOfReader = _reader;
-                _reader = null;
+                IResourceReader? copyOfReader = Reader;
+                Reader = null!;
                 copyOfReader?.Close();
             }
-            _reader = null;
+            Reader = null!;
             _caseInsensitiveTable = null;
             _table = null;
         }
@@ -189,8 +189,8 @@ namespace System.Resources
         protected virtual void ReadResources()
         {
             Debug.Assert(_table != null);
-            Debug.Assert(_reader != null);
-            IDictionaryEnumerator en = _reader.GetEnumerator();
+            Debug.Assert(Reader != null);
+            IDictionaryEnumerator en = Reader.GetEnumerator();
             while (en.MoveNext())
             {
                 _table.Add(en.Key, en.Value);
