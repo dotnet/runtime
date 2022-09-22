@@ -6,6 +6,7 @@ using System.Formats.Asn1;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography.Tests;
 using Test.Cryptography;
 using Xunit;
 
@@ -273,9 +274,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             DateTimeOffset now = DateTimeOffset.UtcNow;
             X500DistinguishedName dn = new X500DistinguishedName("CN=Name");
 
-            using (RSA rsa = RSA.Create(TestData.RsaBigExponentParams))
+            using (RSALease lease = RSAKeyPool.RentBigExponentKey())
             {
-                X509SignatureGenerator gen = X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
+                X509SignatureGenerator gen =
+                    X509SignatureGenerator.CreateForRSA(lease.Key, RSASignaturePadding.Pkcs1);
 
                 Assert.Throws<ArgumentNullException>(
                     "authorityKeyIdentifier",
@@ -286,11 +288,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Fact]
         public static void BuildWithRSACertificateAndNoPadding()
         {
-            using (RSA key = RSA.Create(TestData.RsaBigExponentParams))
+            using (RSALease lease = RSAKeyPool.RentBigExponentKey())
             {
                 CertificateRequest req = new CertificateRequest(
                     "CN=RSA Test",
-                    key,
+                    lease.Key,
                     HashAlgorithmName.SHA256,
                     RSASignaturePadding.Pkcs1);
 
@@ -1332,7 +1334,7 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
 +w==
 -----END X509 CRL-----";
 
-            using (RSA rsa = RSA.Create(4096))
+            using (RSALease lease = RSAKeyPool.Rent(4096))
             {
                 X500DistinguishedName parentDn = new X500DistinguishedName("CN=Parent");
                 X500DistinguishedName dn = new X500DistinguishedName(
@@ -1340,7 +1342,7 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
 
                 CertificateRequest req = new CertificateRequest(
                     dn,
-                    rsa,
+                    lease.Key,
                     HashAlgorithmName.SHA384,
                     RSASignaturePadding.Pkcs1);
 
@@ -1354,12 +1356,12 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
 
                 X509Certificate2 pubCert = req.Create(
                     parentDn,
-                    X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1),
+                    X509SignatureGenerator.CreateForRSA(lease.Key, RSASignaturePadding.Pkcs1),
                     thisUpdate.AddMinutes(-1),
                     nextUpdate.AddDays(3),
                     new byte[] { 0x01, 0x02, 0x03, 0x05 });
 
-                using (X509Certificate2 cert = pubCert.CopyWithPrivateKey(rsa))
+                using (X509Certificate2 cert = pubCert.CopyWithPrivateKey(lease.Key))
                 {
                     pubCert.Dispose();
 
@@ -1467,11 +1469,11 @@ PMzkCtzeqlHvuzIHHNcS1aNvlb94Tg8tPR5u/deYDrNg4NkbsqpG/QUMWse4T1Q7
             bool addSubjectKeyIdentifier = true,
             [CallerMemberName] string callerName = null)
         {
-            using (RSA key = RSA.Create(TestData.RsaBigExponentParams))
+            using (RSALease lease = RSAKeyPool.RentBigExponentKey())
             {
                 CertificateRequest req = new CertificateRequest(
                     $"CN=\"{callerName}\"",
-                    key,
+                    lease.Key,
                     HashAlgorithmName.SHA384,
                     RSASignaturePadding.Pkcs1);
 

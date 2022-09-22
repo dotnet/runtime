@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Security.Cryptography.Tests;
 using System.Text;
 using Test.Cryptography;
 using Xunit;
@@ -81,11 +82,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             bool flattenCase,
             bool expectedResult)
         {
-            using (RSA rsa = RSA.Create(TestData.RsaBigExponentParams))
+            using (RSALease lease = RSAKeyPool.RentBigExponentKey())
             {
                 CertificateRequest request = new CertificateRequest(
                     $"CN={FixCase(subjectCN, flattenCase)}, O=.NET Framework (CoreFX)",
-                    rsa,
+                    lease.Key,
                     HashAlgorithmName.SHA256,
                     RSASignaturePadding.Pkcs1);
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net;
+using System.Security.Cryptography.Tests;
 using Test.Cryptography;
 using Xunit;
 
@@ -329,11 +330,11 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
         {
             HashAlgorithmName hashAlgorithmName = new HashAlgorithmName(hashAlgorithm);
 
-            using (RSA key = RSA.Create())
+            using (RSALease lease = RSAKeyPool.Rent())
             {
                 CertificateRequest first = new CertificateRequest(
                     "CN=Test",
-                    key,
+                    lease.Key,
                     hashAlgorithmName,
                     RSASignaturePadding.Pkcs1);
 
@@ -341,7 +342,7 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
 
                 if (hashAlgorithm == "SHA1")
                 {
-                    pkcs10 = first.CreateSigningRequest(new RSASha1Pkcs1SignatureGenerator(key));
+                    pkcs10 = first.CreateSigningRequest(new RSASha1Pkcs1SignatureGenerator(lease.Key));
                 }
                 else
                 {
@@ -374,11 +375,11 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
         {
             HashAlgorithmName hashAlgorithmName = new HashAlgorithmName(hashAlgorithm);
 
-            using (RSA key = RSA.Create())
+            using (RSALease lease = RSAKeyPool.Rent())
             {
                 CertificateRequest first = new CertificateRequest(
                     "CN=Test",
-                    key,
+                    lease.Key,
                     hashAlgorithmName,
                     RSASignaturePadding.Pss);
 
@@ -386,7 +387,7 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
 
                 if (hashAlgorithm == "SHA1")
                 {
-                    pkcs10 = first.CreateSigningRequest(new RSASha1PssSignatureGenerator(key));
+                    pkcs10 = first.CreateSigningRequest(new RSASha1PssSignatureGenerator(lease.Key));
                 }
                 else
                 {
@@ -449,11 +450,11 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
             DateTimeOffset notBefore = now.AddMonths(-1);
             DateTimeOffset notAfter = now.AddMonths(1);
 
-            using (RSA rootKey = RSA.Create(TestData.RsaBigExponentParams))
+            using (RSALease rootKey = RSAKeyPool.RentBigExponentKey())
             {
                 CertificateRequest rootReq = new CertificateRequest(
                     "CN=Root",
-                    rootKey,
+                    rootKey.Key,
                     HashAlgorithmName.SHA256,
                     RSASignaturePadding.Pkcs1);
 
@@ -475,7 +476,7 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
                     Assert.Contains(nameof(X509SignatureGenerator), ex.Message);
 
                     X509SignatureGenerator gen =
-                        X509SignatureGenerator.CreateForRSA(rootKey, RSASignaturePadding.Pkcs1);
+                        X509SignatureGenerator.CreateForRSA(rootKey.Key, RSASignaturePadding.Pkcs1);
 
                     X509Certificate2 issued = req.Create(
                         rootCert.SubjectName,
@@ -500,11 +501,11 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
             DateTimeOffset notBefore = now.AddMonths(-1);
             DateTimeOffset notAfter = now.AddMonths(1);
 
-            using (RSA rootKey = RSA.Create(TestData.RsaBigExponentParams))
+            using (RSALease rootKey = RSAKeyPool.RentBigExponentKey())
             {
                 CertificateRequest rootReq = new CertificateRequest(
                     "CN=Root",
-                    rootKey,
+                    rootKey.Key,
                     HashAlgorithmName.SHA256,
                     RSASignaturePadding.Pkcs1);
 
@@ -534,7 +535,7 @@ Y2FsaG9zdDANBgkqhkiG9w0BAQsFAAMCB4A=
                     // Using a generator overrides the decision
 
                     X509SignatureGenerator gen =
-                        X509SignatureGenerator.CreateForRSA(rootKey, RSASignaturePadding.Pss);
+                        X509SignatureGenerator.CreateForRSA(rootKey.Key, RSASignaturePadding.Pss);
 
                     issued = req.Create(
                         rootCert.SubjectName,

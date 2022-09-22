@@ -52,5 +52,15 @@ namespace System.Security.Cryptography.Rsa.Tests
     public partial class RSAFactory
     {
         private static readonly IRSAProvider s_provider = new DefaultRSAProvider();
+
+        static partial void CreateIdempotent(ref RSALease? lease)
+        {
+            lease = RSAKeyPool.Rent(2048);
+        }
+
+        static partial void CreateIdempotent(int keySize, ref RSALease? lease)
+        {
+            lease = RSAKeyPool.Rent(keySize);
+        }
     }
 }

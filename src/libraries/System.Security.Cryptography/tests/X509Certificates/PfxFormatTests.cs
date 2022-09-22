@@ -3,6 +3,7 @@
 
 using System.Globalization;
 using System.Security.Cryptography.Pkcs;
+using System.Security.Cryptography.Tests;
 using Test.Cryptography;
 using Xunit;
 
@@ -248,11 +249,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             // Build the PFX in the normal Windows style, except the private key doesn't match.
             using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, s_exportableImportFlags))
             using (RSA realKey = cert.GetRSAPrivateKey())
-            using (RSA key = RSA.Create(realKey.KeySize))
+            using (RSALease unrelated= RSAKeyPool.Rent(realKey.KeySize))
             {
                 Pkcs12Builder builder = new Pkcs12Builder();
                 Pkcs12SafeContents keyContents = new Pkcs12SafeContents();
-                Pkcs12SafeBag keyBag = keyContents.AddShroudedKey(key, pw, s_windowsPbe);
+                Pkcs12SafeBag keyBag = keyContents.AddShroudedKey(unrelated.Key, pw, s_windowsPbe);
                 Pkcs12SafeContents certContents = new Pkcs12SafeContents();
                 Pkcs12SafeBag certBag = certContents.AddCertificate(cert);
 
@@ -297,7 +298,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             // Build the PFX in the normal Windows style, except the private key doesn't match.
             using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, s_exportableImportFlags))
             using (RSA key = cert.GetRSAPrivateKey())
-            using (RSA unrelated = RSA.Create(key.KeySize))
+            using (RSALease unrelated = RSAKeyPool.Rent(key.KeySize))
             {
                 Pkcs12Builder builder = new Pkcs12Builder();
                 Pkcs12SafeContents keyContents = new Pkcs12SafeContents();
@@ -309,11 +310,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 if (correctKeyFirst)
                 {
                     keyBag = keyContents.AddShroudedKey(key, pw, s_windowsPbe);
-                    keyBag2 = keyContents.AddShroudedKey(unrelated, pw, s_windowsPbe);
+                    keyBag2 = keyContents.AddShroudedKey(unrelated.Key, pw, s_windowsPbe);
                 }
                 else
                 {
-                    keyBag = keyContents.AddShroudedKey(unrelated, pw, s_windowsPbe);
+                    keyBag = keyContents.AddShroudedKey(unrelated.Key, pw, s_windowsPbe);
                     keyBag2 = keyContents.AddShroudedKey(key, pw, s_windowsPbe);
                 }
 
@@ -539,7 +540,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             string pw = nameof(OneCert_NoKey_WithLocalKeyId);
 
             using (var cert = new X509Certificate2(TestData.MsCertificate))
-            using (RSA rsa = RSA.Create(TestData.RsaBigExponentParams))
+            using (RSALease lease = RSAKeyPool.RentBigExponentKey())
             {
                 Pkcs12Builder builder = new Pkcs12Builder();
                 Pkcs12SafeContents certContents = new Pkcs12SafeContents();
@@ -548,7 +549,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Pkcs12CertBag certBag = certContents.AddCertificate(cert);
                 certBag.Attributes.Add(s_keyIdOne);
 
-                byte[] keyExport = rsa.ExportEncryptedPkcs8PrivateKey(pw, s_windowsPbe);
+                byte[] keyExport = lease.Key.ExportEncryptedPkcs8PrivateKey(pw, s_windowsPbe);
 
                 for (int i = 0; i < 20; i++)
                 {
@@ -580,7 +581,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (var certWithKey = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
             using (var cert = new X509Certificate2(certWithKey.RawData))
             using (var cert2 = new X509Certificate2(TestData.MsCertificate))
-            using (RSA rsa = RSA.Create(TestData.RsaBigExponentParams))
+            using (RSALease lease = RSAKeyPool.RentBigExponentKey())
             {
                 Pkcs12Builder builder = new Pkcs12Builder();
                 Pkcs12SafeContents certContents = new Pkcs12SafeContents();
@@ -602,7 +603,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     certBag.Attributes.Add(s_keyIdOne);
                 }
 
-                byte[] keyExport = rsa.ExportEncryptedPkcs8PrivateKey(pw, s_windowsPbe);
+                byte[] keyExport = lease.Key.ExportEncryptedPkcs8PrivateKey(pw, s_windowsPbe);
 
                 for (int i = 0; i < 20; i++)
                 {

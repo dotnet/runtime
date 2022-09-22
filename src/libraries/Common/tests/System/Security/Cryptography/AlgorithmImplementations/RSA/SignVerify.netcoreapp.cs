@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Security.Cryptography.Tests;
 using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
@@ -85,8 +86,9 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public static void SignDefaultSpanHash()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSALease lease = RSAFactory.CreateIdempotent())
             {
+                RSA rsa = lease.Key;
                 byte[] signature = new byte[2048 / 8];
 
                 Assert.ThrowsAny<CryptographicException>(
@@ -100,8 +102,9 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public static void VerifyDefaultSpanHash()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSALease lease = RSAFactory.CreateIdempotent())
             {
+                RSA rsa = lease.Key;
                 byte[] signature = new byte[2048 / 8];
 
                 Assert.False(

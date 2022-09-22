@@ -203,6 +203,12 @@
              Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\CryptoUtils.cs"
              Link="CommonTest\System\Security\Cryptography\CryptoUtils.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\KeyPool.cs"
+             Link="CommonTest\System\Security\Cryptography\KeyPool.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\RSAKeyPool.cs"
+             Link="CommonTest\System\Security\Cryptography\RSAKeyPool.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\RSAKeyPool.KnownKeys.cs"
+             Link="CommonTest\System\Security\Cryptography\RSAKeyPool.KnownKeys.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs"
              Link="CommonTest\System\Security\Cryptography\PlatformSupport.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"

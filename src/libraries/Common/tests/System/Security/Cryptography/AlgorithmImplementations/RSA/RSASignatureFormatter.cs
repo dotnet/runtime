@@ -13,10 +13,8 @@ namespace System.Security.Cryptography.Rsa.Tests
         [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha1Signatures))]
         public static void VerifySignature_SHA1()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
             {
-                rsa.ImportParameters(TestData.RSA2048Params);
-
                 var formatter = new RSAPKCS1SignatureFormatter(rsa);
                 var deformatter = new RSAPKCS1SignatureDeformatter(rsa);
 
@@ -31,10 +29,8 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public static void VerifySignature_SHA256()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
             {
-                rsa.ImportParameters(TestData.RSA2048Params);
-
                 var formatter = new RSAPKCS1SignatureFormatter(rsa);
                 var deformatter = new RSAPKCS1SignatureDeformatter(rsa);
 
@@ -49,10 +45,10 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public static void InvalidHashAlgorithm()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSALease lease = RSAFactory.CreateIdempotent())
             {
-                var formatter = new RSAPKCS1SignatureFormatter(rsa);
-                var deformatter = new RSAPKCS1SignatureDeformatter(rsa);
+                var formatter = new RSAPKCS1SignatureFormatter(lease.Key);
+                var deformatter = new RSAPKCS1SignatureDeformatter(lease.Key);
 
                 // Exception is deferred until VerifySignature
                 formatter.SetHashAlgorithm("INVALIDVALUE");
@@ -72,9 +68,8 @@ namespace System.Security.Cryptography.Rsa.Tests
             byte[] hash = "012d161304fa0c6321221516415813022320620c".HexToByteArray();
             byte[] sig;
 
-            using (RSA key = RSAFactory.Create())
+            using (RSA key = RSAFactory.Create(TestData.RSA1024Params))
             {
-                key.ImportParameters(TestData.RSA1024Params);
                 RSAPKCS1SignatureFormatter formatter = new RSAPKCS1SignatureFormatter(key);
                 formatter.SetHashAlgorithm("SHA1");
                 sig = formatter.CreateSignature(hash);
@@ -86,9 +81,8 @@ namespace System.Security.Cryptography.Rsa.Tests
                 Assert.Equal(expectedSig, sig);
             }
 
-            using (RSA key = RSAFactory.Create()) // Test against a different instance
+            using (RSA key = RSAFactory.Create(TestData.RSA1024Params)) // Test against a different instance
             {
-                key.ImportParameters(TestData.RSA1024Params);
                 RSAPKCS1SignatureDeformatter deformatter = new RSAPKCS1SignatureDeformatter(key);
                 deformatter.SetHashAlgorithm("SHA1");
                 bool verified = deformatter.VerifySignature(hash, sig);

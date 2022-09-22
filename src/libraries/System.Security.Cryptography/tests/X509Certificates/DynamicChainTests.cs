@@ -6,7 +6,7 @@ using System.Formats.Asn1;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+using System.Security.Cryptography.Tests;
 using Test.Cryptography;
 using Xunit;
 
@@ -326,11 +326,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void TestLeafCertificateWithUnknownCriticalExtension()
         {
-            using (RSA key = RSA.Create())
+            using (RSALease lease = RSAKeyPool.Rent())
             {
                 CertificateRequest certReq = new CertificateRequest(
                     new X500DistinguishedName("CN=Cert"),
-                    key,
+                    lease.Key,
                     HashAlgorithmName.SHA256,
                     RSASignaturePadding.Pkcs1);
 
@@ -373,11 +373,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [SkipOnPlatform(TestPlatforms.Android, "Android does not support AIA fetching")]
         public static void TestInvalidAia()
         {
-            using (RSA key = RSA.Create())
+            using (RSALease lease = RSAKeyPool.Rent())
             {
                 CertificateRequest rootReq = new CertificateRequest(
                     "CN=Root",
-                    key,
+                    lease.Key,
                     HashAlgorithmName.SHA256,
                     RSASignaturePadding.Pkcs1);
 
@@ -385,7 +385,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 CertificateRequest certReq = new CertificateRequest(
                     "CN=test",
-                    key,
+                    lease.Key,
                     HashAlgorithmName.SHA256,
                     RSASignaturePadding.Pkcs1);
 
@@ -422,11 +422,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             X500DistinguishedName dn = new X500DistinguishedName(
                 "30283117301506052901020203120C313233203635342037383930310D300B0603550403130454657374".HexToByteArray());
 
-            using (RSA key = RSA.Create())
+            using (RSALease lease = RSAKeyPool.Rent())
             {
                 CertificateRequest req = new CertificateRequest(
                     dn,
-                    key,
+                    lease.Key,
                     HashAlgorithmName.SHA256,
                     RSASignaturePadding.Pkcs1);
 

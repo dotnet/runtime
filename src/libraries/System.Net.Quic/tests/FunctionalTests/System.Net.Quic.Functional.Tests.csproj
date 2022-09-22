@@ -23,7 +23,9 @@
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Certificates.Dynamic.cs" Link="TestCommon\System\Net\Configuration.Certificates.Dynamic.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Http.cs" Link="Common\System\Net\Configuration.Http.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Configuration.Security.cs" Link="Common\System\Net\Configuration.Security.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\KeyPool.cs" Link="TestCommon\System\Security\Cryptography\KeyPool.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\PlatformSupport.cs" Link="TestCommon\System\Security\Cryptography\PlatformSupport.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\RSAKeyPool.cs" Link="TestCommon\System\Security\Cryptography\RSAKeyPool.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\CertificateAuthority.cs" Link="CommonTest\System\Security\Cryptography\X509Certificates\CertificateAuthority.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\RevocationResponder.cs" Link="CommonTest\System\Security\Cryptography\X509Certificates\RevocationResponder.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\Tasks\TaskTimeoutExtensions.cs" Link="TestCommon\System\Threading\Tasks\TaskTimeoutExtensions.cs" />

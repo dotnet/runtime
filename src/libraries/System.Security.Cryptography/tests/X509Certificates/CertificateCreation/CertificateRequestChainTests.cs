@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
-using Test.Cryptography;
+using System.Security.Cryptography.Tests;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreation
@@ -32,18 +32,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Fact]
         public static void CreateChain_RSA()
         {
-            using (RSA rootKey = RSA.Create(3072))
-            using (RSA intermed1Key = RSA.Create(2048))
-            using (RSA intermed2Key = RSA.Create(2048))
-            using (RSA leafKey = RSA.Create(1536))
-            using (RSA leafPubKey = RSA.Create(leafKey.ExportParameters(false)))
+            using (RSALease rootKey = RSAKeyPool.Rent(3072))
+            using (RSALease intermed1Key = RSAKeyPool.Rent(2048))
+            using (RSALease intermed2Key = RSAKeyPool.Rent(2048))
+            using (RSALease leafKey = RSAKeyPool.Rent(1536))
+            using (RSA leafPubKey = RSA.Create(leafKey.Key.ExportParameters(false)))
             {
-                leafPubKey.ImportParameters(leafKey.ExportParameters(false));
-
                 CreateAndTestChain(
-                    rootKey,
-                    intermed1Key,
-                    intermed2Key,
+                    rootKey.Key,
+                    intermed1Key.Key,
+                    intermed2Key.Key,
                     leafPubKey);
             }
         }
@@ -52,15 +50,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         public static void CreateChain_Hybrid()
         {
             using (ECDsa rootKey = ECDsa.Create(ECCurve.NamedCurves.nistP521))
-            using (RSA intermed1Key = RSA.Create(2048))
-            using (RSA intermed2Key = RSA.Create(2048))
+            using (RSALease intermed1Key = RSAKeyPool.Rent(2048))
+            using (RSALease intermed2Key = RSAKeyPool.Rent(2048))
             using (ECDiffieHellman leafKey = ECDiffieHellman.Create(ECCurve.NamedCurves.nistP256))
             using (ECDiffieHellman leafPubKey = ECDiffieHellman.Create(leafKey.ExportParameters(false)))
             {
                 CreateAndTestChain(
                     rootKey,
-                    intermed1Key,
-                    intermed2Key,
+                    intermed1Key.Key,
+                    intermed2Key.Key,
                     leafPubKey);
             }
         }
@@ -464,9 +462,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [ConditionalFact(nameof(PlatformSupportsPss))]
         public static void CreateChain_RSAPSS()
         {
-            using (RSA rootKey = RSA.Create())
-            using (RSA intermedKey = RSA.Create())
-            using (RSA leafKey = RSA.Create(TestData.RsaBigExponentParams))
+            using (RSALease rootKey = RSAKeyPool.Rent())
+            using (RSALease intermedKey = RSAKeyPool.Rent())
+            using (RSALease leafKey = RSAKeyPool.RentBigExponentKey())
             {
                 X509Certificate2 rootCertWithKey = null;
                 X509Certificate2 intermedCertWithKey = null;
@@ -480,7 +478,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
                 try
                 {
-                    request = new CertificateRequest("CN=Root", rootKey, HashAlgorithmName.SHA512, padding);
+                    request = new CertificateRequest("CN=Root", rootKey.Key, HashAlgorithmName.SHA512, padding);
                     request.CertificateExtensions.Add(
                         new X509BasicConstraintsExtension(true, false, 0, true));
 
@@ -488,15 +486,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
                     byte[] intermedSerial = { 1, 2, 3, 5, 7, 11, 13 };
 
-                    request = new CertificateRequest("CN=Intermediate", intermedKey, HashAlgorithmName.SHA384, padding);
+                    request = new CertificateRequest("CN=Intermediate", intermedKey.Key, HashAlgorithmName.SHA384, padding);
                     request.CertificateExtensions.Add(
                         new X509BasicConstraintsExtension(true, true, 1, true));
 
                     X509Certificate2 intermedPublic = request.Create(rootCertWithKey, notBefore, notAfter, intermedSerial);
-                    intermedCertWithKey = intermedPublic.CopyWithPrivateKey(intermedKey);
+                    intermedCertWithKey = intermedPublic.CopyWithPrivateKey(intermedKey.Key);
                     intermedPublic.Dispose();
 
-                    request = new CertificateRequest("CN=Leaf", leafKey, HashAlgorithmName.SHA256, padding);
+                    request = new CertificateRequest("CN=Leaf", leafKey.Key, HashAlgorithmName.SHA256, padding);
                     request.CertificateExtensions.Add(
                         new X509BasicConstraintsExtension(false, false, 0, true));
 

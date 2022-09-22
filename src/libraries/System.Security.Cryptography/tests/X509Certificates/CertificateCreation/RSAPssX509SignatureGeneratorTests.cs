@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Security.Cryptography.Tests;
 using Test.Cryptography;
 using Xunit;
 
@@ -20,11 +21,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Fact]
         public static void PublicKeyEncoding()
         {
-            using (RSA rsa = RSA.Create())
+            using (RSALease lease = RSAKeyPool.RentBigExponentKey())
             {
-                rsa.ImportParameters(TestData.RsaBigExponentParams);
-
-                X509SignatureGenerator signatureGenerator = X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pss);
+                X509SignatureGenerator signatureGenerator =
+                    X509SignatureGenerator.CreateForRSA(lease.Key, RSASignaturePadding.Pss);
                 PublicKey publicKey = signatureGenerator.PublicKey;
 
                 // Irrespective of what the current key thinks, the PublicKey value we encode for RSA will always write
@@ -62,12 +62,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [InlineData("SHA512")]
         public static void SignatureAlgorithm_StableNotSame(string hashAlgorithmName)
         {
-            using (RSA rsa = RSA.Create())
+            using (RSALease lease = RSAKeyPool.RentBigExponentKey())
             {
-                RSAParameters parameters = TestData.RsaBigExponentParams;
-                rsa.ImportParameters(parameters);
-
-                var signatureGenerator = X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pss);
+                X509SignatureGenerator signatureGenerator =
+                    X509SignatureGenerator.CreateForRSA(lease.Key, RSASignaturePadding.Pss);
 
                 HashAlgorithmName hashAlgorithm = new HashAlgorithmName(hashAlgorithmName);
 
@@ -85,12 +83,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [InlineData("Potato")]
         public static void SignatureAlgorithm_NotSupported(string hashAlgorithmName)
         {
-            using (RSA rsa = RSA.Create())
+            using (RSALease lease = RSAKeyPool.RentBigExponentKey())
             {
-                RSAParameters parameters = TestData.RsaBigExponentParams;
-                rsa.ImportParameters(parameters);
-
-                var signatureGenerator = X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pss);
+                X509SignatureGenerator signatureGenerator =
+                    X509SignatureGenerator.CreateForRSA(lease.Key, RSASignaturePadding.Pss);
 
                 HashAlgorithmName hashAlgorithm = new HashAlgorithmName(hashAlgorithmName);
 
@@ -161,13 +157,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                             // INTEGER (saltLength == size of hash)
                             "0201" + saltLenByte.ToString("X2");
 
-            using (RSA rsa = RSA.Create())
+            using (RSALease lease = RSAKeyPool.RentBigExponentKey())
             {
-                RSAParameters parameters = TestData.RsaBigExponentParams;
-                rsa.ImportParameters(parameters);
-
                 HashAlgorithmName hashAlgorithm = new HashAlgorithmName(hashAlgorithmName);
-                var signatureGenerator = X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pss);
+                X509SignatureGenerator signatureGenerator =
+                    X509SignatureGenerator.CreateForRSA(lease.Key, RSASignaturePadding.Pss);
                 byte[] sigAlg = signatureGenerator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
 
                 Assert.Equal(expectedHex, sigAlg.ByteArrayToHex());

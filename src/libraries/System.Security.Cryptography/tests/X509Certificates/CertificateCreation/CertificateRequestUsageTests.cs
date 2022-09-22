@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
+using System.Security.Cryptography.Tests;
 using Test.Cryptography;
 using Xunit;
 
@@ -23,13 +24,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             string csrPem;
             string autoCsrPem;
 
-            using (RSA rsa = RSA.Create())
+            using (RSALease lease = RSAKeyPool.RentBigExponentKey())
             {
-                rsa.ImportParameters(TestData.RsaBigExponentParams);
-
                 CertificateRequest request = new CertificateRequest(
                     "CN=localhost, OU=.NET Framework (CoreFX), O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
-                    rsa,
+                    lease.Key,
                     HashAlgorithmName.SHA256,
                     RSASignaturePadding.Pkcs1);
 
@@ -38,7 +37,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 autoCsr = request.CreateSigningRequest();
                 autoCsrPem = request.CreateSigningRequestPem();
 
-                X509SignatureGenerator generator = X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
+                X509SignatureGenerator generator = X509SignatureGenerator.CreateForRSA(lease.Key, RSASignaturePadding.Pkcs1);
                 csr = request.CreateSigningRequest(generator);
                 csrPem = request.CreateSigningRequestPem(generator);
             }
@@ -72,16 +71,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
             X509Certificate2 cert;
 
-            using (RSA rsa = RSA.Create())
+            using (RSALease lease = RSAKeyPool.RentBigExponentKey())
             {
-                rsa.ImportParameters(TestData.RsaBigExponentParams);
-
-                var request = new CertificateRequest(subject, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                var request = new CertificateRequest(subject, lease.Key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
                 request.CertificateExtensions.Add(skidExtension);
                 request.CertificateExtensions.Add(akidExtension);
                 request.CertificateExtensions.Add(basicConstraints);
 
-                var signatureGenerator = X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
+                var signatureGenerator = X509SignatureGenerator.CreateForRSA(lease.Key, RSASignaturePadding.Pkcs1);
 
                 cert = request.Create(subject, signatureGenerator, notBefore, notAfter, serialNumber);
             }
@@ -131,10 +128,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [InlineData(true)]
         public static void SimpleSelfSign_RSA(bool exportPfx)
         {
-            using (RSA rsa = RSA.Create())
+            using (RSALease lease = RSAKeyPool.Rent())
             {
                 SimpleSelfSign(
-                    new CertificateRequest("CN=localhost", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1),
+                    new CertificateRequest("CN=localhost", lease.Key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1),
                     "1.2.840.113549.1.1.1",
                     exportPfx);
             }
@@ -200,13 +197,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
             RSA priv2;
 
-            using (RSA rsa = RSA.Create())
+            using (RSALease lease = RSAKeyPool.Rent())
             {
-                pubParams = rsa.ExportParameters(false);
+                pubParams = lease.Key.ExportParameters(false);
 
                 CertificateRequest request = new CertificateRequest(
                     "CN=localhost, OU=.NET Framework (CoreFX), O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
-                    rsa,
+                    lease.Key,
                     HashAlgorithmName.SHA256,
                     RSASignaturePadding.Pkcs1);
 
@@ -216,14 +213,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
             using (cert)
             using (priv2 = cert.GetRSAPrivateKey())
-            using (RSA pub = RSA.Create())
+            using (RSA pub = RSA.Create(pubParams))
             {
                 Assert.True(cert.HasPrivateKey, "cert.HasPrivateKey");
                 Assert.NotNull(priv2);
 
                 byte[] sig = priv2.SignData(pubParams.Modulus, HashAlgorithmName.SHA512, RSASignaturePadding.Pkcs1);
-
-                pub.ImportParameters(pubParams);
 
                 Assert.True(
                     pub.VerifyData(pubParams.Modulus, sig, HashAlgorithmName.SHA512, RSASignaturePadding.Pkcs1),
@@ -393,11 +388,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Fact]
         public static void UniqueExtensions()
         {
-            using (RSA rsa = RSA.Create())
+            using (RSALease lease = RSAKeyPool.Rent())
             {
                 CertificateRequest request = new CertificateRequest(
                     "CN=Double Extension Test",
-                    rsa,
+                    lease.Key,
                     HashAlgorithmName.SHA256,
                     RSASignaturePadding.Pkcs1);
 
@@ -418,9 +413,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         {
             HashAlgorithmName hashAlgorithm = HashAlgorithmName.SHA256;
 
-            using (RSA rsa = RSA.Create(TestData.RsaBigExponentParams))
+            using (RSALease lease = RSAKeyPool.RentBigExponentKey())
             {
-                CertificateRequest request = new CertificateRequest("CN=Issuer", rsa, hashAlgorithm, RSASignaturePadding.Pkcs1);
+                var request = new CertificateRequest("CN=Issuer", lease.Key, hashAlgorithm, RSASignaturePadding.Pkcs1);
 
                 request.CertificateExtensions.Add(
                     new X509BasicConstraintsExtension(true, false, 0, true));
@@ -437,7 +432,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
                 using (X509Certificate2 issuer = request.CreateSelfSigned(notBefore, notAfter))
                 {
-                    request = new CertificateRequest("CN=Leaf", rsa, hashAlgorithm, RSASignaturePadding.Pkcs1);
+                    request = new CertificateRequest("CN=Leaf", lease.Key, hashAlgorithm, RSASignaturePadding.Pkcs1);
                     byte[] serial = { 3, 1, 4, 1, 5, 9 };
 
                     // Boundary case, exact match: Issue+Dispose
@@ -714,7 +709,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Fact]
         public static void ECDSA_Signing_RSA()
         {
-            using (RSA rsa = RSA.Create())
+            using (RSALease lease = RSAKeyPool.Rent())
             using (ECDsa ecdsa = ECDsa.Create())
             {
                 var request = new CertificateRequest(
@@ -730,18 +725,19 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 using (X509Certificate2 cert = request.CreateSelfSigned(now, now.AddDays(1)))
                 {
                     X509SignatureGenerator generator =
-                        X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
+                        X509SignatureGenerator.CreateForRSA(lease.Key, RSASignaturePadding.Pkcs1);
 
                     request = new CertificateRequest(
                         new X500DistinguishedName("CN=Leaf"),
-                        rsa,
+                        lease.Key,
                         HashAlgorithmName.SHA256,
                         RSASignaturePadding.Pkcs1);
 
                     byte[] serialNumber = { 1, 1, 2, 3, 5, 8, 13 };
 
-                    AssertExtensions.Throws<ArgumentException>("issuerCertificate", () => request.Create(cert, now, now.AddHours(3), serialNumber));
-
+                    AssertExtensions.Throws<ArgumentException>(
+                        "issuerCertificate",
+                        () => request.Create(cert, now, now.AddHours(3), serialNumber));
 
                     // Passes with the generator
                     using (request.Create(cert.SubjectName, generator, now, now.AddHours(3), serialNumber))
@@ -754,7 +750,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Fact]
         public static void ECDSA_Signing_RSAPublicKey()
         {
-            using (RSA rsa = RSA.Create())
+            using (RSALease lease = RSAKeyPool.Rent())
             using (ECDsa ecdsa = ECDsa.Create())
             {
                 var request = new CertificateRequest(
@@ -770,7 +766,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 using (X509Certificate2 cert = request.CreateSelfSigned(now, now.AddDays(1)))
                 {
                     X509SignatureGenerator rsaGenerator =
-                        X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
+                        X509SignatureGenerator.CreateForRSA(lease.Key, RSASignaturePadding.Pkcs1);
 
                     request = new CertificateRequest(
                         new X500DistinguishedName("CN=Leaf"),
@@ -779,7 +775,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
                     byte[] serialNumber = { 1, 1, 2, 3, 5, 8, 13 };
 
-                    AssertExtensions.Throws<ArgumentException>("issuerCertificate", () => request.Create(cert, now, now.AddHours(3), serialNumber));
+                    AssertExtensions.Throws<ArgumentException>(
+                        "issuerCertificate",
+                        () => request.Create(cert, now, now.AddHours(3), serialNumber));
 
                     X509SignatureGenerator ecdsaGenerator =
                         X509SignatureGenerator.CreateForECDsa(ecdsa);
@@ -795,12 +793,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Fact]
         public static void RSA_Signing_ECDSA()
         {
-            using (RSA rsa = RSA.Create())
+            using (RSALease lease = RSAKeyPool.Rent())
             using (ECDsa ecdsa = ECDsa.Create())
             {
                 var request = new CertificateRequest(
                     new X500DistinguishedName("CN=Test"),
-                    rsa,
+                    lease.Key,
                     HashAlgorithmName.SHA256,
                     RSASignaturePadding.Pkcs1);
 
@@ -818,10 +816,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
                     byte[] serialNumber = { 1, 1, 2, 3, 5, 8, 13 };
 
-                    AssertExtensions.Throws<ArgumentException>("issuerCertificate", () => request.Create(cert, now, now.AddHours(3), serialNumber));
+                    AssertExtensions.Throws<ArgumentException>(
+                        "issuerCertificate",
+                        () => request.Create(cert, now, now.AddHours(3), serialNumber));
 
                     X509SignatureGenerator generator =
-                        X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
+                        X509SignatureGenerator.CreateForRSA(lease.Key, RSASignaturePadding.Pkcs1);
 
                     // Passes with the generator
                     using (request.Create(cert.SubjectName, generator, now, now.AddHours(3), serialNumber))
@@ -834,11 +834,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Fact]
         public static void RSACertificateNoPaddingMode()
         {
-            using (RSA rsa = RSA.Create())
+            using (RSALease lease = RSAKeyPool.Rent())
             {
                 var request = new CertificateRequest(
                     new X500DistinguishedName("CN=Test"),
-                    rsa,
+                    lease.Key,
                     HashAlgorithmName.SHA256,
                     RSASignaturePadding.Pkcs1);
 
@@ -860,7 +860,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                         () => request.Create(cert, now, now.AddHours(3), serialNumber));
 
                     X509SignatureGenerator generator =
-                        X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
+                        X509SignatureGenerator.CreateForRSA(lease.Key, RSASignaturePadding.Pkcs1);
 
                     // Passes with the generator
                     using (request.Create(cert.SubjectName, generator, now, now.AddHours(3), serialNumber))
@@ -986,7 +986,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
             string builtPem;
 
-            using (RSA key = RSA.Create(TestData.RsaBigExponentParams))
+            using (RSALease lease = RSAKeyPool.RentBigExponentKey())
             {
                 X500DistinguishedNameBuilder nameBuilder = new();
                 nameBuilder.AddOrganizationName("Internet Widgits Pty Ltd");
@@ -995,7 +995,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
                 CertificateRequest req = new CertificateRequest(
                     nameBuilder.Build(),
-                    key,
+                    lease.Key,
                     HashAlgorithmName.SHA256,
                     RSASignaturePadding.Pkcs1);
 
@@ -1056,11 +1056,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
             string output;
 
-            using (RSA key = RSA.Create(TestData.RsaBigExponentParams))
+            using (RSALease lease = RSAKeyPool.RentBigExponentKey())
             {
                 CertificateRequest req = new CertificateRequest(
                     "CN=localhost, OU=.NET Framework (CoreFX), O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
-                    key,
+                    lease.Key,
                     HashAlgorithmName.SHA256,
                     RSASignaturePadding.Pkcs1);
 

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography.Tests;
 using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Test.IO.Streams;
@@ -25,8 +26,9 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public void NullArray_Throws()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSALease lease = RSAFactory.CreateIdempotent())
             {
+                RSA rsa = lease.Key;
                 AssertExtensions.Throws<ArgumentNullException>("data", () => SignData(rsa, null, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
                 AssertExtensions.Throws<ArgumentNullException>("hash", () => SignHash(rsa, null, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
 
@@ -52,8 +54,9 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public void InvalidHashAlgorithmName_Throws()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSALease lease = RSAFactory.CreateIdempotent())
             {
+                RSA rsa = lease.Key;
                 var invalidName = new HashAlgorithmName(null);
                 AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => SignData(rsa, new byte[1], invalidName, RSASignaturePadding.Pkcs1));
                 AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => SignHash(rsa, new byte[1], invalidName, RSASignaturePadding.Pkcs1));
@@ -71,8 +74,9 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public void NullPadding_Throws()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSALease lease = RSAFactory.CreateIdempotent())
             {
+                RSA rsa = lease.Key;
                 AssertExtensions.Throws<ArgumentNullException>("padding", () => SignData(rsa, new byte[1], HashAlgorithmName.SHA256, null));
                 AssertExtensions.Throws<ArgumentNullException>("padding", () => SignHash(rsa, new byte[1], HashAlgorithmName.SHA256, null));
                 AssertExtensions.Throws<ArgumentNullException>("padding", () => VerifyData(rsa, new byte[1], new byte[1], HashAlgorithmName.SHA256, null));
@@ -128,10 +132,10 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public void PublicKey_CannotSign()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSALease lease = RSAFactory.CreateIdempotent())
             using (RSA rsaPub = RSAFactory.Create())
             {
-                rsaPub.ImportParameters(rsa.ExportParameters(false));
+                rsaPub.ImportParameters(lease.Key.ExportParameters(false));
 
                 Assert.ThrowsAny<CryptographicException>(
                     () => rsaPub.SignData(TestData.HelloBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
@@ -141,10 +145,10 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public void SignEmptyHash()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSALease lease = RSAFactory.CreateIdempotent())
             {
                 Assert.ThrowsAny<CryptographicException>(
-                    () => SignHash(rsa, Array.Empty<byte>(), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
+                    () => SignHash(lease.Key, Array.Empty<byte>(), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
             }
         }
 
@@ -342,9 +346,8 @@ namespace System.Security.Cryptography.Rsa.Tests
             byte[] signature;
 
             using (Stream stream = new PositionValueStream(10))
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(TestData.RSA1024Params))
             {
-                rsa.ImportParameters(TestData.RSA1024Params);
                 signature = rsa.SignData(stream, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
             }
 
@@ -534,9 +537,8 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public void NegativeVerify_WrongAlgorithm()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
             {
-                rsa.ImportParameters(TestData.RSA2048Params);
                 byte[] signature = SignData(rsa, TestData.HelloBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
                 bool signatureMatched = VerifyData(rsa, TestData.HelloBytes, signature, HashAlgorithmName.SHA384, RSASignaturePadding.Pkcs1);
 
@@ -547,9 +549,8 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public void NegativeVerify_WrongSignature()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
             {
-                rsa.ImportParameters(TestData.RSA2048Params);
                 byte[] signature = SignData(rsa, TestData.HelloBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
 
                 // Invalidate the signature.
@@ -563,9 +564,8 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public void NegativeVerify_TamperedData()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
             {
-                rsa.ImportParameters(TestData.RSA2048Params);
                 byte[] signature = SignData(rsa, TestData.HelloBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
                 bool signatureMatched = VerifyData(rsa, Array.Empty<byte>(), signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
                 Assert.False(signatureMatched);
@@ -577,15 +577,13 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             byte[] signature;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
             {
-                rsa.ImportParameters(TestData.RSA2048Params);
                 signature = SignData(rsa, TestData.HelloBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
             }
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(TestData.RSA1024Params))
             {
-                rsa.ImportParameters(TestData.RSA1024Params);
                 bool signatureMatched = VerifyData(rsa, TestData.HelloBytes, signature, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
 
                 Assert.False(signatureMatched);
@@ -897,12 +895,9 @@ namespace System.Security.Cryptography.Rsa.Tests
                 Exponent = privateParameters.Exponent,
             };
 
-            using (RSA privateKey = RSAFactory.Create())
-            using (RSA publicKey = RSAFactory.Create())
+            using (RSA privateKey = RSAFactory.Create(privateParameters))
+            using (RSA publicKey = RSAFactory.Create(publicParameters))
             {
-                privateKey.ImportParameters(privateParameters);
-                publicKey.ImportParameters(publicParameters);
-
                 byte[] data = TestData.RsaBigExponentParams.Modulus;
                 HashAlgorithmName hashAlgorithm = new HashAlgorithmName(hashAlgorithmName);
                 RSASignaturePadding padding = RSASignaturePadding.Pss;
@@ -1228,9 +1223,8 @@ namespace System.Security.Cryptography.Rsa.Tests
             // the signature is deterministic, so we can safely verify it here.
             byte[] signature;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(rsaParameters))
             {
-                rsa.ImportParameters(rsaParameters);
                 signature = SignData(rsa, data, new HashAlgorithmName(hashAlgorithmName), RSASignaturePadding.Pkcs1);
             }
 
@@ -1249,9 +1243,8 @@ namespace System.Security.Cryptography.Rsa.Tests
             // the signature is deterministic, so we can safely verify it here.
             byte[] signature;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(rsaParameters))
             {
-                rsa.ImportParameters(rsaParameters);
                 signature = SignHash(rsa, dataHash, new HashAlgorithmName(hashAlgorithmName), RSASignaturePadding.Pkcs1);
             }
 
@@ -1272,9 +1265,8 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             bool signatureMatched;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(publicOnly))
             {
-                rsa.ImportParameters(publicOnly);
                 signatureMatched = VerifyData(rsa, data, signature, new HashAlgorithmName(hashAlgorithmName), RSASignaturePadding.Pkcs1);
             }
 
@@ -1295,9 +1287,8 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             bool signatureMatched;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(publicOnly))
             {
-                rsa.ImportParameters(publicOnly);
                 signatureMatched = VerifyHash(rsa, dataHash, signature, new HashAlgorithmName(hashAlgorithmName), RSASignaturePadding.Pkcs1);
             }
 
@@ -1306,9 +1297,8 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         private void SignAndVerify(byte[] data, string hashAlgorithmName, RSAParameters rsaParameters)
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(rsaParameters))
             {
-                rsa.ImportParameters(rsaParameters);
                 byte[] signature = SignData(rsa, data, new HashAlgorithmName(hashAlgorithmName), RSASignaturePadding.Pkcs1);
                 bool signatureMatched = VerifyData(rsa, data, signature, new HashAlgorithmName(hashAlgorithmName), RSASignaturePadding.Pkcs1);
                 Assert.True(signatureMatched);

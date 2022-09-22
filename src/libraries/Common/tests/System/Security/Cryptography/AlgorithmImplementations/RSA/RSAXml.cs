@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Security.Cryptography.Tests;
 using System.Xml.Linq;
 using Xunit;
 
@@ -984,13 +985,13 @@ zM=
         [Fact]
         public static void FromToXml()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSALease lease = RSAFactory.CreateIdempotent())
             {
-                RSAParameters pubOnly = rsa.ExportParameters(false);
-                RSAParameters pubPriv = rsa.ExportParameters(true);
+                RSAParameters pubOnly = lease.Key.ExportParameters(false);
+                RSAParameters pubPriv = lease.Key.ExportParameters(true);
 
-                string xmlPub = rsa.ToXmlString(false);
-                string xmlPriv = rsa.ToXmlString(true);
+                string xmlPub = lease.Key.ToXmlString(false);
+                string xmlPriv = lease.Key.ToXmlString(true);
 
                 using (RSA rsaPub = RSAFactory.Create())
                 {

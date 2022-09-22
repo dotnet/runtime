@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Security.Cryptography.Tests;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreation
@@ -38,11 +39,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Fact]
         public static void SelfSign_ArgumentValidation()
         {
-            using (RSA rsa = RSA.Create())
+            using (RSALease lease = RSAKeyPool.RentBigExponentKey())
             {
-                rsa.ImportParameters(TestData.RsaBigExponentParams);
-
-                var request = new CertificateRequest("CN=Test", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                var request = new CertificateRequest("CN=Test", lease.Key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
 
                 AssertExtensions.Throws<ArgumentException>(
                     null,
@@ -150,30 +149,27 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         public static void CtorValidation_RSA_string()
         {
             string subjectName = null;
-            RSA key = null;
             RSASignaturePadding padding = null;
 
             AssertExtensions.Throws<ArgumentNullException>(
                 "subjectName",
-                () => new CertificateRequest(subjectName, key, default(HashAlgorithmName), padding));
+                () => new CertificateRequest(subjectName, null, default(HashAlgorithmName), padding));
 
             subjectName = "";
 
             AssertExtensions.Throws<ArgumentNullException>(
                 "key",
-                () => new CertificateRequest(subjectName, key, default(HashAlgorithmName), padding));
+                () => new CertificateRequest(subjectName, null, default(HashAlgorithmName), padding));
 
-            key = RSA.Create(TestData.RsaBigExponentParams);
-
-            using (key)
+            using (RSALease lease = RSAKeyPool.RentBigExponentKey())
             {
                 AssertExtensions.Throws<ArgumentNullException>(
                     "hashAlgorithm",
-                    () => new CertificateRequest(subjectName, key, default(HashAlgorithmName), padding));
+                    () => new CertificateRequest(subjectName, lease.Key, default(HashAlgorithmName), padding));
 
                 AssertExtensions.Throws<ArgumentNullException>(
                     "padding",
-                    () => new CertificateRequest(subjectName, key, HashAlgorithmName.SHA256, padding));
+                    () => new CertificateRequest(subjectName, lease.Key, HashAlgorithmName.SHA256, padding));
             }
         }
 
@@ -181,34 +177,32 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         public static void CtorValidation_RSA_X500DN()
         {
             X500DistinguishedName subjectName = null;
-            RSA key = null;
+            const RSA NullKey = null;
             RSASignaturePadding padding = null;
 
             AssertExtensions.Throws<ArgumentNullException>(
                 "subjectName",
-                () => new CertificateRequest(subjectName, key, default(HashAlgorithmName), padding));
+                () => new CertificateRequest(subjectName, NullKey, default(HashAlgorithmName), padding));
 
             subjectName = new X500DistinguishedName("");
 
             AssertExtensions.Throws<ArgumentNullException>(
                 "key",
-                () => new CertificateRequest(subjectName, key, default(HashAlgorithmName), padding));
+                () => new CertificateRequest(subjectName, NullKey, default(HashAlgorithmName), padding));
 
-            key = RSA.Create(TestData.RsaBigExponentParams);
-
-            using (key)
+            using (RSALease lease = RSAKeyPool.RentBigExponentKey())
             {
                 AssertExtensions.Throws<ArgumentNullException>(
                     "hashAlgorithm",
-                    () => new CertificateRequest(subjectName, key, default(HashAlgorithmName), padding));
+                    () => new CertificateRequest(subjectName, lease.Key, default(HashAlgorithmName), padding));
 
                 AssertExtensions.Throws<ArgumentException>(
                     "hashAlgorithm",
-                    () => new CertificateRequest(subjectName, key, new HashAlgorithmName(""), padding));
+                    () => new CertificateRequest(subjectName, lease.Key, new HashAlgorithmName(""), padding));
 
                 AssertExtensions.Throws<ArgumentNullException>(
                     "padding",
-                    () => new CertificateRequest(subjectName, key, HashAlgorithmName.SHA256, padding));
+                    () => new CertificateRequest(subjectName, lease.Key, HashAlgorithmName.SHA256, padding));
             }
         }
 

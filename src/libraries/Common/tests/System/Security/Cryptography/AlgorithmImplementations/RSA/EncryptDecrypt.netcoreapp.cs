@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using System.Security.Cryptography.Tests;
 using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
@@ -71,9 +72,8 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public void Decrypt_VariousSizeSpans_Success()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(TestData.RSA1024Params))
             {
-                rsa.ImportParameters(TestData.RSA1024Params);
                 byte[] cipherBytes = Encrypt(rsa, TestData.HelloBytes, RSAEncryptionPadding.OaepSHA1);
                 byte[] actual;
                 int bytesWritten;
@@ -103,9 +103,8 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public void Encrypt_VariousSizeSpans_Success()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(TestData.RSA1024Params))
             {
-                rsa.ImportParameters(TestData.RSA1024Params);
                 byte[] cipherBytes = Encrypt(rsa, TestData.HelloBytes, RSAEncryptionPadding.OaepSHA1);
                 byte[] actual;
                 int bytesWritten;
@@ -148,8 +147,9 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public static void EncryptDefaultSpan()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSALease lease = RSAFactory.CreateIdempotent())
             {
+                RSA rsa = lease.Key;
                 byte[] dest = new byte[rsa.KeySize / 8];
 
                 Assert.True(
@@ -166,11 +166,11 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         private static void Decrypt_WrongKey(RSAEncryptionPadding padding)
         {
-            using (RSA rsa1 = RSAFactory.Create())
-            using (RSA rsa2 = RSAFactory.Create())
+            using (RSALease rsa1 = RSAFactory.CreateIdempotent())
+            using (RSALease rsa2 = RSAFactory.CreateIdempotent())
             {
                 byte[] input = TestData.HelloBytes;
-                byte[] encrypted = rsa1.Encrypt(input, padding);
+                byte[] encrypted = rsa1.Key.Encrypt(input, padding);
                 byte[] buf = new byte[encrypted.Length];
                 buf.AsSpan().Fill(0xCA);
 
@@ -196,7 +196,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                     // false should never be returned.
                     //
                     // But if the padding doesn't work out (109384 out of 109385, see above) we'll throw.
-                    bool decrypted = rsa2.TryDecrypt(encrypted, buf, padding, out bytesWritten);
+                    bool decrypted = rsa2.Key.TryDecrypt(encrypted, buf, padding, out bytesWritten);
                     Assert.True(decrypted, "Pkcs1 TryDecrypt succeeded with a large buffer");
 
                     // If bytesWritten != input.Length, we got back gibberish, which is good.
@@ -211,7 +211,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                     //
                     // For RSA-1024 (less freedom) it's 1 in 5.363e19, so like 1.6 trillion years.
 
-                    if (rsa2.TryDecrypt(encrypted, buf, padding, out bytesWritten)
+                    if (rsa2.Key.TryDecrypt(encrypted, buf, padding, out bytesWritten)
                         && bytesWritten == input.Length)
                     {
                         // We'll get -here- 1 in 111014 runs (RSA-2048 Pkcs1).

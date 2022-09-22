@@ -58,9 +58,8 @@ namespace System.Security.Cryptography.Rsa.Tests
             RSAParameters diminishedDPParameters = TestData.DiminishedDPParameters;
             RSAParameters exported;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(diminishedDPParameters))
             {
-                rsa.ImportParameters(diminishedDPParameters);
                 exported = rsa.ExportParameters(true);
             }
 
@@ -111,9 +110,8 @@ namespace System.Security.Cryptography.Rsa.Tests
             RSAParameters unusualExponentParameters = TestData.UnusualExponentParameters;
             RSAParameters exported;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(unusualExponentParameters))
             {
-                rsa.ImportParameters(unusualExponentParameters);
                 exported = rsa.ExportParameters(true);
             }
 
@@ -129,9 +127,8 @@ namespace System.Security.Cryptography.Rsa.Tests
             RSAParameters exported;
             RSAParameters exportedPublic;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(imported))
             {
-                rsa.ImportParameters(imported);
                 exported = rsa.ExportParameters(true);
                 exportedPublic = rsa.ExportParameters(false);
             }
@@ -178,10 +175,8 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             RSAParameters imported = TestData.RSA1024Params;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(imported))
             {
-                rsa.ImportParameters(imported);
-
                 RSAParameters exportedPublic = rsa.ExportParameters(false);
 
                 Assert.Equal(imported.Modulus, exportedPublic.Modulus);
@@ -196,10 +191,8 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             RSAParameters imported = TestData.RSA1024Params;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(imported))
             {
-                rsa.ImportParameters(imported);
-
                 RSAParameters exportedPrivate = rsa.ExportParameters(true);
                 RSAParameters exportedPrivate2 = rsa.ExportParameters(true);
                 RSAParameters exportedPublic = rsa.ExportParameters(false);
@@ -231,9 +224,8 @@ namespace System.Security.Cryptography.Rsa.Tests
                 Exponent = TestData.RSA1024Params.Exponent,
             };
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(imported))
             {
-                rsa.ImportParameters(imported);
                 Assert.ThrowsAny<CryptographicException>(() => rsa.ExportParameters(true));
             }
         }

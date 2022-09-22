@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography.Tests;
 using System.Security.Cryptography.X509Certificates.Tests.Common;
 using Test.Cryptography;
 using Xunit;
@@ -377,8 +377,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 {
                     DateTimeOffset now = DateTimeOffset.UtcNow;
 
-                    using (RSA tmpRoot = RSA.Create())
-                    using (RSA rsa = RSA.Create())
+                    using (RSALease tmpRoot = RSAKeyPool.Rent())
+                    using (RSALease lease = RSAKeyPool.Rent())
                     {
                         CertificateRequest rootReq = new CertificateRequest(
                             BuildSubject(
@@ -386,7 +386,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                                 nameof(RevokeEndEntity_IssuerUnrelatedOcsp),
                                 pkiOptions,
                                 true),
-                            tmpRoot,
+                            tmpRoot.Key,
                             HashAlgorithmName.SHA256,
                             RSASignaturePadding.Pkcs1);
 
@@ -411,11 +411,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                                     nameof(RevokeEndEntity_IssuerUnrelatedOcsp),
                                     pkiOptions,
                                     true),
-                                rsa);
+                                lease.Key);
 
                             using (designatedSigner)
                             {
-                                intermediate.DesignateOcspResponder(designatedSigner.CopyWithPrivateKey(rsa));
+                                intermediate.DesignateOcspResponder(designatedSigner.CopyWithPrivateKey(lease.Key));
                             }
                         }
                     }
@@ -462,8 +462,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                 {
                     DateTimeOffset now = DateTimeOffset.UtcNow;
 
-                    using (RSA tmpRoot = RSA.Create())
-                    using (RSA rsa = RSA.Create())
+                    using (RSALease tmpRoot = RSAKeyPool.Rent())
+                    using (RSALease lease = RSAKeyPool.Rent())
                     {
                         CertificateRequest rootReq = new CertificateRequest(
                             BuildSubject(
@@ -471,7 +471,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                                 nameof(RevokeEndEntity_IssuerUnrelatedOcsp),
                                 pkiOptions,
                                 true),
-                            tmpRoot,
+                            tmpRoot.Key,
                             HashAlgorithmName.SHA256,
                             RSASignaturePadding.Pkcs1);
 
@@ -496,11 +496,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
                                     nameof(RevokeEndEntity_IssuerUnrelatedOcsp),
                                     pkiOptions,
                                     true),
-                                rsa);
+                                lease.Key);
 
                             using (designatedSigner)
                             {
-                                root.DesignateOcspResponder(designatedSigner.CopyWithPrivateKey(rsa));
+                                root.DesignateOcspResponder(designatedSigner.CopyWithPrivateKey(lease.Key));
                             }
                         }
                     }
@@ -1505,27 +1505,35 @@ namespace System.Security.Cryptography.X509Certificates.Tests.RevocationTests
             using (X509Certificate2 rootCert = root.CloneIssuerCert())
             using (X509Certificate2 intermediateCert = intermediate.CloneIssuerCert())
             {
+                RSALease? rootOcspLease = null;
+                RSALease? issuerOcspLease = null;
+
                 if (pkiOptions.HasFlag(PkiOptions.RootAuthorityHasDesignatedOcspResponder))
                 {
-                    using (RSA tmpKey = RSA.Create())
+                    rootOcspLease = RSAKeyPool.Rent();
+
                     using (X509Certificate2 tmp = root.CreateOcspSigner(
                         BuildSubject("A Root Designated OCSP Responder", callerName, pkiOptions, true),
-                        tmpKey))
+                        rootOcspLease.Value.Key))
                     {
-                        root.DesignateOcspResponder(tmp.CopyWithPrivateKey(tmpKey));
+                        root.DesignateOcspResponder(tmp.CopyWithPrivateKey(rootOcspLease.Value.Key));
                     }
                 }
 
                 if (pkiOptions.HasFlag(PkiOptions.IssuerAuthorityHasDesignatedOcspResponder))
                 {
-                    using (RSA tmpKey = RSA.Create())
+                    issuerOcspLease = RSAKeyPool.Rent();
+
                     using (X509Certificate2 tmp = intermediate.CreateOcspSigner(
                         BuildSubject("An Intermediate Designated OCSP Responder", callerName, pkiOptions, true),
-                        tmpKey))
+                        issuerOcspLease.Value.Key))
                     {
-                        intermediate.DesignateOcspResponder(tmp.CopyWithPrivateKey(tmpKey));
+                        intermediate.DesignateOcspResponder(tmp.CopyWithPrivateKey(issuerOcspLease.Value.Key));
                     }
                 }
+
+                issuerOcspLease?.Dispose();
+                rootOcspLease?.Dispose();
 
                 RetryHelper.Execute(() => {
                     using (ChainHolder holder = new ChainHolder())

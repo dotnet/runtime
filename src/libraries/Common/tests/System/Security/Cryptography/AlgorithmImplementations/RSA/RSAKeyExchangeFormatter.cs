@@ -13,10 +13,8 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public static void VerifyDecryptKeyExchangeOaep()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
             {
-                rsa.ImportParameters(TestData.RSA2048Params);
-
                 var formatter = new RSAOAEPKeyExchangeFormatter(rsa);
                 var deformatter = new RSAOAEPKeyExchangeDeformatter(rsa);
                 VerifyDecryptKeyExchange(formatter, deformatter);
@@ -26,10 +24,8 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public static void VerifyDecryptKeyExchangePkcs1()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
             {
-                rsa.ImportParameters(TestData.RSA2048Params);
-
                 var formatter = new RSAPKCS1KeyExchangeFormatter(rsa);
                 var deformatter = new RSAPKCS1KeyExchangeDeformatter(rsa);
                 VerifyDecryptKeyExchange(formatter, deformatter);
@@ -39,9 +35,8 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public static void TestKnownValueOaep()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(TestData.RSA1024Params))
             {
-                rsa.ImportParameters(TestData.RSA1024Params);
                 byte[] encrypted =
                     ( "19134ffba4025a1c651120ca07258a46e005a327c3927f615465060734dc0339114cabfd13803288883abf9329296a3e3a5cb1587927"
                     + "a6e8a2e736f0a756e342b4adb0f1de5bba9ba5faee30456fb7409678eb71a70185606eda3303d9425fbeb730ab7803bea50e208b563f"
@@ -56,9 +51,8 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public static void TestKnownValuePkcs1()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(TestData.RSA1024Params))
             {
-                rsa.ImportParameters(TestData.RSA1024Params);
                 byte[] encrypted =
                     ( "7061adb87a8759f0a0dc6ece42f5b63bf186f845237c6b16bf824b303812486efbb8f5febb681902228a609d4330a6c21abf0fc0d271"
                     + "ba63d1d0d9e486668270c2dbf73ab33055dfc0b797938557b99c0e9a535605c0a4bceefe5a37594732bb566ab026e4e8d5ce47d0967d"

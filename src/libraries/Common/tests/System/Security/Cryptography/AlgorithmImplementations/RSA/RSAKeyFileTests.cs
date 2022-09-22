@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Security.Cryptography.Encryption.RC2.Tests;
+using System.Security.Cryptography.Tests;
 using System.Text;
 using Test.Cryptography;
 using Xunit;
@@ -1116,8 +1117,10 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         [Fact]
         public static void BadPbeParameters()
         {
-            using (RSA key = RSAFactory.Create())
+            using (RSALease lease = RSAFactory.CreateIdempotent())
             {
+                RSA key = lease.Key;
+
                 Assert.ThrowsAny<ArgumentNullException>(
                     () => key.ExportEncryptedPkcs8PrivateKey(
                         ReadOnlySpan<byte>.Empty,
@@ -1238,12 +1241,13 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
         [Fact]
         public static void DecryptPkcs12WithBytes()
         {
-            using (RSA key = RSAFactory.Create())
+            using (RSALease lease = RSAKeyPool.Rent())
+            using (RSA testKey = RSAFactory.Create())
             {
                 string charBased = "hello";
                 byte[] byteBased = Encoding.UTF8.GetBytes(charBased);
 
-                byte[] encrypted = key.ExportEncryptedPkcs8PrivateKey(
+                byte[] encrypted = lease.Key.ExportEncryptedPkcs8PrivateKey(
                     charBased,
                     new PbeParameters(
                         PbeEncryptionAlgorithm.TripleDes3KeyPkcs12,
@@ -1251,7 +1255,7 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
                         123));
 
                 Assert.ThrowsAny<CryptographicException>(
-                    () => key.ImportEncryptedPkcs8PrivateKey(byteBased, encrypted, out _));
+                    () => testKey.ImportEncryptedPkcs8PrivateKey(byteBased, encrypted, out _));
             }
         }
 

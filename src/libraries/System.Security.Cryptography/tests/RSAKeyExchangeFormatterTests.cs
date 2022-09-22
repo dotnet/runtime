@@ -35,9 +35,9 @@ namespace System.Security.Cryptography.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public static void RSAOAEPFormatterRng()
         {
-            using (RSA key = RSA.Create())
+            using (RSALease lease = RSAKeyPool.Rent())
             {
-                RSAOAEPKeyExchangeFormatter keyex = new RSAOAEPKeyExchangeFormatter(key);
+                RSAOAEPKeyExchangeFormatter keyex = new RSAOAEPKeyExchangeFormatter(lease.Key);
                 Assert.Null(keyex.Rng);
                 keyex.Rng = RandomNumberGenerator.Create();
                 Assert.NotNull(keyex.Rng);
@@ -48,9 +48,9 @@ namespace System.Security.Cryptography.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public static void RSAPKCS1FormatterRng()
         {
-            using (RSA key = RSA.Create())
+            using (RSALease lease = RSAKeyPool.Rent())
             {
-                RSAPKCS1KeyExchangeFormatter keyex = new RSAPKCS1KeyExchangeFormatter(key);
+                RSAPKCS1KeyExchangeFormatter keyex = new RSAPKCS1KeyExchangeFormatter(lease.Key);
                 Assert.Null(keyex.Rng);
                 keyex.Rng = RandomNumberGenerator.Create();
                 Assert.NotNull(keyex.Rng);
@@ -61,9 +61,9 @@ namespace System.Security.Cryptography.Tests
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
         public static void RSAPKCS1DeformatterRng()
         {
-            using (RSA key = RSA.Create())
+            using (RSALease lease = RSAKeyPool.Rent())
             {
-                RSAPKCS1KeyExchangeDeformatter keyex = new RSAPKCS1KeyExchangeDeformatter(key);
+                RSAPKCS1KeyExchangeDeformatter keyex = new RSAPKCS1KeyExchangeDeformatter(lease.Key);
                 Assert.Null(keyex.RNG);
                 keyex.RNG = RandomNumberGenerator.Create();
                 Assert.NotNull(keyex.RNG);

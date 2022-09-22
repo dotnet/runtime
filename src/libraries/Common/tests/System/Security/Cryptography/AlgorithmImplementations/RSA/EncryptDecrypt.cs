@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Security.Cryptography.Tests;
 using Test.Cryptography;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
@@ -18,8 +19,9 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public void NullArray_Throws()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSALease lease = RSAFactory.CreateIdempotent())
             {
+                RSA rsa = lease.Key;
                 AssertExtensions.Throws<ArgumentNullException>("data", () => rsa.Encrypt(null, RSAEncryptionPadding.OaepSHA1));
                 AssertExtensions.Throws<ArgumentNullException>("data", () => rsa.Decrypt(null, RSAEncryptionPadding.OaepSHA1));
             }
@@ -37,8 +39,9 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public void NullPadding_Throws()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSALease lease = RSAFactory.CreateIdempotent())
             {
+                RSA rsa = lease.Key;
                 AssertExtensions.Throws<ArgumentNullException>("padding", () => Encrypt(rsa, TestData.HelloBytes, null));
                 AssertExtensions.Throws<ArgumentNullException>("padding", () => Decrypt(rsa, TestData.HelloBytes, null));
             }
@@ -87,9 +90,8 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             byte[] output;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(TestData.RSA1024Params))
             {
-                rsa.ImportParameters(TestData.RSA1024Params);
                 output = Decrypt(rsa, cipherBytes, RSAEncryptionPadding.OaepSHA1);
             }
 
@@ -150,10 +152,8 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             byte[] output;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
             {
-                rsa.ImportParameters(TestData.RSA2048Params);
-
                 if (RSAFactory.SupportsSha2Oaep)
                 {
                     output = Decrypt(rsa, cipherBytes, RSAEncryptionPadding.OaepSHA256);
@@ -211,10 +211,8 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             byte[] output;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
             {
-                rsa.ImportParameters(TestData.RSA2048Params);
-
                 if (RSAFactory.SupportsSha2Oaep)
                 {
                     output = Decrypt(rsa, cipherBytes, RSAEncryptionPadding.OaepSHA384);
@@ -246,10 +244,8 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             byte[] output;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(TestData.RSA2048Params))
             {
-                rsa.ImportParameters(TestData.RSA2048Params);
-
                 if (RSAFactory.SupportsSha2Oaep)
                 {
                     output = Decrypt(rsa, cipherBytes, RSAEncryptionPadding.OaepSHA512);
@@ -291,9 +287,8 @@ namespace System.Security.Cryptography.Rsa.Tests
 
             byte[] output;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(TestData.UnusualExponentParameters))
             {
-                rsa.ImportParameters(TestData.UnusualExponentParameters);
                 output = Decrypt(rsa, cipherBytes, RSAEncryptionPadding.OaepSHA1);
             }
 
@@ -320,18 +315,18 @@ namespace System.Security.Cryptography.Rsa.Tests
             byte[] crypt;
             byte[] output;
 
-            using (RSA rsa = RSAFactory.Create(2048))
+            using (RSALease lease= RSAFactory.CreateIdempotent(2048))
             {
                 if (!expectSuccess)
                 {
                     Assert.ThrowsAny<CryptographicException>(
-                        () => Encrypt(rsa, TestData.HelloBytes, paddingMode));
+                        () => Encrypt(lease.Key, TestData.HelloBytes, paddingMode));
 
                     return;
                 }
 
-                crypt = Encrypt(rsa, TestData.HelloBytes, paddingMode);
-                output = Decrypt(rsa, crypt, paddingMode);
+                crypt = Encrypt(lease.Key, TestData.HelloBytes, paddingMode);
+                output = Decrypt(lease.Key, crypt, paddingMode);
             }
 
             Assert.NotEqual(crypt, output);
@@ -617,13 +612,13 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             byte[] output;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSALease lease = RSAFactory.CreateIdempotent())
             {
-                byte[] crypt = Encrypt(rsa, TestData.HelloBytes, RSAEncryptionPadding.OaepSHA1);
+                byte[] crypt = Encrypt(lease.Key, TestData.HelloBytes, RSAEncryptionPadding.OaepSHA1);
 
                 // Export the key, this should not clear/destroy the key.
-                rsa.ExportParameters(true);
-                output = Decrypt(rsa, crypt, RSAEncryptionPadding.OaepSHA1);
+                lease.Key.ExportParameters(true);
+                output = Decrypt(lease.Key, crypt, RSAEncryptionPadding.OaepSHA1);
             }
 
             Assert.Equal(TestData.HelloBytes, output);
@@ -662,10 +657,8 @@ namespace System.Security.Cryptography.Rsa.Tests
             byte[] crypt;
             byte[] output;
 
-            using (RSA rsa = RSAFactory.Create())
+            using (RSA rsa = RSAFactory.Create(TestData.UnusualExponentParameters))
             {
-                rsa.ImportParameters(TestData.UnusualExponentParameters);
-
                 crypt = Encrypt(rsa, TestData.HelloBytes, RSAEncryptionPadding.OaepSHA1);
                 output = Decrypt(rsa, crypt, RSAEncryptionPadding.OaepSHA1);
             }
@@ -681,10 +674,10 @@ namespace System.Security.Cryptography.Rsa.Tests
             byte[] crypt;
             byte[] output;
 
-            using (RSA rsa = RSAFactory.Create(3072))
+            using (RSALease lease = RSAFactory.CreateIdempotent(3072))
             {
-                crypt = Encrypt(rsa, TestData.HelloBytes, oaepPaddingMode);
-                output = Decrypt(rsa, crypt, oaepPaddingMode);
+                crypt = Encrypt(lease.Key, TestData.HelloBytes, oaepPaddingMode);
+                output = Decrypt(lease.Key, crypt, oaepPaddingMode);
             }
 
             Assert.NotEqual(crypt, output);
@@ -694,10 +687,10 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Fact]
         public void NotSupportedValueMethods()
         {
-            using (RSA rsa = RSAFactory.Create())
+            using (RSALease lease = RSAFactory.CreateIdempotent())
             {
-                Assert.Throws<NotSupportedException>(() => rsa.DecryptValue(null));
-                Assert.Throws<NotSupportedException>(() => rsa.EncryptValue(null));
+                Assert.Throws<NotSupportedException>(() => lease.Key.DecryptValue(null));
+                Assert.Throws<NotSupportedException>(() => lease.Key.EncryptValue(null));
             }
         }
 

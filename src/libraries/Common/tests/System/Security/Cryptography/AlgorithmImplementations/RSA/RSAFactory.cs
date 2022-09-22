@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Security.Cryptography.Tests;
+
 namespace System.Security.Cryptography.Rsa.Tests
 {
     public interface IRSAProvider
@@ -32,6 +34,37 @@ namespace System.Security.Cryptography.Rsa.Tests
             rsa.ImportParameters(rsaParameters);
             return rsa;
         }
+
+        internal static RSALease CreateIdempotent()
+        {
+            RSALease? lease = null;
+            CreateIdempotent(ref lease);
+
+            if (lease != null)
+            {
+                return lease.Value;
+            }
+
+            RSA key = Create();
+            return new RSALease(key, key);
+        }
+
+        internal static RSALease CreateIdempotent(int keySize)
+        {
+            RSALease? lease = null;
+            CreateIdempotent(keySize, ref lease);
+
+            if (lease != null)
+            {
+                return lease.Value;
+            }
+
+            RSA key = Create(keySize);
+            return new RSALease(key, key);
+        }
+
+        static partial void CreateIdempotent(ref RSALease? lease);
+        static partial void CreateIdempotent(int keySize, ref RSALease? lease);
 
         public static bool Supports384PrivateKey => s_provider.Supports384PrivateKey;
 

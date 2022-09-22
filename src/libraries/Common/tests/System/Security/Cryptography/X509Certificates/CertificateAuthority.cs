@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Formats.Asn1;
 using System.Linq;
+using System.Security.Cryptography.Tests;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.Common
@@ -814,12 +815,13 @@ SingleResponse ::= SEQUENCE {
             // default to client
             extensions ??= new X509ExtensionCollection() { s_eeConstraints, s_eeKeyUsage, s_tlsClientEku };
 
-            using (RSA rootKey = RSA.Create(keySize))
-            using (RSA eeKey = RSA.Create(keySize))
+            using (RSALease rootLease = RSAKeyPool.Rent(keySize))
+            using (RSALease imed0Lease = RSAKeyPool.Rent(keySize))
+            using (RSALease eeLease = RSAKeyPool.Rent(keySize))
             {
                 var rootReq = new CertificateRequest(
                     BuildSubject("A Revocation Test Root", testName, pkiOptions, pkiOptionsInSubject),
-                    rootKey,
+                    rootLease.Key,
                     HashAlgorithmName.SHA256,
                     RSASignaturePadding.Pkcs1);
 
@@ -853,7 +855,8 @@ SingleResponse ::= SEQUENCE {
 
                 for (int intermediateIndex = 0; intermediateIndex < intermediateAuthorityCount; intermediateIndex++)
                 {
-                    using RSA intermediateKey = RSA.Create(keySize);
+                    using RSA createdKey = intermediateIndex > 0 ? RSA.Create(keySize) : null;
+                    RSA intermediateKey = createdKey ?? imed0Lease.Key;
 
                     // Don't dispose this, it's being transferred to the CertificateAuthority
                     X509Certificate2 intermedCert;
@@ -885,11 +888,11 @@ SingleResponse ::= SEQUENCE {
 
                 endEntityCert = issuingAuthority.CreateEndEntity(
                     BuildSubject(subjectName ?? "A Revocation Test Cert", testName, pkiOptions, pkiOptionsInSubject),
-                    eeKey,
+                    eeLease.Key,
                     extensions);
 
                 X509Certificate2 tmp = endEntityCert;
-                endEntityCert = endEntityCert.CopyWithPrivateKey(eeKey);
+                endEntityCert = endEntityCert.CopyWithPrivateKey(eeLease.Key);
                 tmp.Dispose();
             }
 

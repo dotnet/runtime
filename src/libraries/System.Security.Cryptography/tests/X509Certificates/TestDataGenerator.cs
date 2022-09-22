@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography.Tests;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
@@ -17,15 +18,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             IEnumerable<X509Extension> rootExtensions = null,
             [CallerMemberName] string testName = null)
         {
-            using (RSA rootKey = RSA.Create())
-            using (RSA intermediateKey = RSA.Create())
-            using (RSA endEntityKey = RSA.Create())
+            using (RSALease rootKey = RSAKeyPool.Rent())
+            using (RSALease intermediateKey = RSAKeyPool.Rent())
+            using (RSALease endEntityKey = RSAKeyPool.Rent())
             {
                 ReadOnlySpan<RSA> keys = new[]
                 {
-                    rootKey,
-                    intermediateKey,
-                    endEntityKey,
+                    rootKey.Key,
+                    intermediateKey.Key,
+                    endEntityKey.Key,
                 };
 
                 Span<X509Certificate2> certs = new X509Certificate2[keys.Length];
@@ -54,16 +55,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             IEnumerable<X509Extension> rootExtensions = null,
             [CallerMemberName] string testName = null)
         {
-            using (RSA rootKey = RSA.Create())
-            using (RSA intermediateKey = RSA.Create())
-            using (RSA endEntityKey = RSA.Create())
+            using (RSALease rootKey = RSAKeyPool.Rent())
+            using (RSALease intermediateKey = RSAKeyPool.Rent())
+            using (RSALease endEntityKey = RSAKeyPool.Rent())
             {
                 ReadOnlySpan<RSA> keys = new[]
                 {
-                    rootKey,
-                    intermediateKey,
-                    intermediateKey,
-                    endEntityKey,
+                    rootKey.Key,
+                    intermediateKey.Key,
+                    intermediateKey.Key,
+                    endEntityKey.Key,
                 };
 
                 Span<X509Certificate2> certs = new X509Certificate2[keys.Length];
@@ -126,7 +127,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             TimeSpan notAfterInterval = TimeSpan.FromDays(90);
             DateTimeOffset eeStart = DateTimeOffset.UtcNow.AddDays(-7);
             DateTimeOffset eeEnd = eeStart.AddDays(45);
-            byte[] serialBuf = new byte[16];
 
             int rootIndex = keys.Length - 1;
 
