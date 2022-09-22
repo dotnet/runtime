@@ -6,6 +6,8 @@
 #define _JIT_H_
 /*****************************************************************************/
 
+//#undef _DEBUG
+//#undef DEBUG
 //
 // clr.sln only defines _DEBUG
 // The jit uses DEBUG rather than _DEBUG
@@ -16,6 +18,7 @@
 #define DEBUG 1
 #endif
 #endif
+
 
 // Clang-format messes with the indentation of comments if they directly precede an
 // ifdef. This macro allows us to anchor the comments to the regular flow of code.
