@@ -75,6 +75,7 @@ namespace Microsoft.NET.HostModel.AppHost
         internal AppHostSigningException(int exitCode, string signingErrorMessage)
             : base(signingErrorMessage)
         {
+            ExitCode = exitCode;
         }
     }
 
