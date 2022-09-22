@@ -16,7 +16,11 @@ Native-sized integer types and pointers have alignment that matches their size o
 ## Atomic memory accesses.
 Memory accesses to *properly aligned* data of primitive types are always atomic. The value that is observed is always a result of complete read and write operations.
 
-Note: since unmanaged pointers and managed references are always aligned to their size on the given platform, accesses of pointers and managed references are atomic.
+The following methods perform atomic memory accesses regardless of the platform.<br/>
+- `System.Threading.Interlocked` methods
+- `System.Threading.Volatile` methods
+
+**Example:** `Volatile.Read<double>(ref location)` on a 32 bit platform is atomic, while an ordinary read of `location` mat not be.
 
 ## Unmanaged memory access.
 As unmanaged pointers can point to any addressable memory, operations with such pointers may violate guarantees provided by the runtime and expose undefined or platform-specific behavior.
@@ -92,7 +96,7 @@ Process-wide barrier has full-fence semantics with an additional guarantee that 
 
 The actual implementation may vary depending on the platform. For example interrupting the execution of every core in the current process' affinity mask could be a suitable implementation.
 
-## Synchronized methods. 
+## Synchronized methods.
 Methods decoratied with ```MethodImpl(MethodImplOptions.Synchronized)``` attribute have the same memory access semantics as if a lock is acquired at an entrance to the method and released upon leaving the method.
 
 ## Object assignment
