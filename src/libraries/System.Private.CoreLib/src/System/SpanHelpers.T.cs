@@ -2631,7 +2631,7 @@ namespace System
             }
         }
 
-        public static void ReplaceValueType<T>(ref T src, T oldValue, T newValue, nuint length) where T : struct
+        public static void ReplaceValueType<T>(ref T src, ref T dst, T oldValue, T newValue, nuint length) where T : struct
         {
             Debug.Assert(Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported);
 
@@ -2653,7 +2653,7 @@ namespace System
                         Vector256<T> original256 = Vector256.LoadUnsafe(ref src, idx);
                         Vector256<T> mask256 = Vector256.Equals(oldValues256, original256);
                         Vector256<T> result256 = Vector256.ConditionalSelect(mask256, newValues256, original256);
-                        result256.StoreUnsafe(ref src, idx);
+                        result256.StoreUnsafe(ref dst, idx);
 
                         idx += (uint)Vector256<T>.Count;
                     } while (idx <= lastVector256Index);
@@ -2676,7 +2676,7 @@ namespace System
                     original = Vector128.LoadUnsafe(ref src, idx);
                     mask = Vector128.Equals(oldValues, original);
                     result = Vector128.ConditionalSelect(mask, newValues, original);
-                    result.StoreUnsafe(ref src, idx);
+                    result.StoreUnsafe(ref dst, idx);
 
                     idx += (uint)Vector128<T>.Count;
                 }
@@ -2689,18 +2689,14 @@ namespace System
                 original = Vector128.LoadUnsafe(ref src, lastVector128Index);
                 mask = Vector128.Equals(oldValues, original);
                 result = Vector128.ConditionalSelect(mask, newValues, original);
-                result.StoreUnsafe(ref src, lastVector128Index);
+                result.StoreUnsafe(ref dst, lastVector128Index);
             }
             else
             {
                 for (; idx < length; ++idx)
                 {
-                    ref T original = ref Unsafe.Add(ref src, idx);
-
-                    if (EqualityComparer<T>.Default.Equals(original, oldValue))
-                    {
-                        original = newValue;
-                    }
+                    T original = Unsafe.Add(ref src, idx);
+                    Unsafe.Add(ref dst, idx) = EqualityComparer<T>.Default.Equals(original, oldValue) ? newValue : original;
                 }
             }
         }

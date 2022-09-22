@@ -2661,8 +2661,10 @@ namespace System
 
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
+                    ref byte src = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span));
                     SpanHelpers.ReplaceValueType(
-                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                        ref src,
+                        ref src,
                         Unsafe.As<T, byte>(ref oldValue),
                         Unsafe.As<T, byte>(ref newValue),
                         length);
@@ -2670,16 +2672,20 @@ namespace System
                 else if (Unsafe.SizeOf<T>() == sizeof(ushort))
                 {
                     // Use ushort rather than short, as this avoid a sign-extending move.
+                    ref ushort src = ref Unsafe.As<T, ushort>(ref MemoryMarshal.GetReference(span));
                     SpanHelpers.ReplaceValueType(
-                        ref Unsafe.As<T, ushort>(ref MemoryMarshal.GetReference(span)),
+                        ref src,
+                        ref src,
                         Unsafe.As<T, ushort>(ref oldValue),
                         Unsafe.As<T, ushort>(ref newValue),
                         length);
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(int))
                 {
+                    ref int src = ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span));
                     SpanHelpers.ReplaceValueType(
-                        ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                        ref src,
+                        ref src,
                         Unsafe.As<T, int>(ref oldValue),
                         Unsafe.As<T, int>(ref newValue),
                         length);
@@ -2688,8 +2694,10 @@ namespace System
                 {
                     Debug.Assert(Unsafe.SizeOf<T>() == sizeof(long));
 
+                    ref long src = ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span));
                     SpanHelpers.ReplaceValueType(
-                        ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                        ref src,
+                        ref src,
                         Unsafe.As<T, long>(ref oldValue),
                         Unsafe.As<T, long>(ref newValue),
                         length);
