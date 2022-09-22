@@ -166,11 +166,17 @@ namespace SuperFileCheck
         }
 
         /// <summary>
-        /// Try to get the enclosing type declaration syntax of the given node.
+        /// Get the enclosing type declaration syntax of the given node.
+        /// Errors if it cannot find one.
         /// </summary>
-        static TypeDeclarationSyntax? TryGetEnclosingTypeDeclaration(SyntaxNode node)
+        static TypeDeclarationSyntax GetEnclosingTypeDeclaration(SyntaxNode node)
         {
-            return node.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault();
+            var typeDecl = node.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault();
+            if (typeDecl == null)
+            {
+                throw new SuperFileCheckException($"Unable to find enclosing type declaration on: {node.Span}");
+            }
+            return typeDecl;
         }
 
         /// <summary>
@@ -204,12 +210,7 @@ namespace SuperFileCheck
         {
             var qualifiedTypeName = String.Empty;
 
-            var typeDecl = TryGetEnclosingTypeDeclaration(methodDecl);
-            if (typeDecl == null)
-            {
-                return qualifiedTypeName;
-            }
-
+            var typeDecl = GetEnclosingTypeDeclaration(methodDecl);
             qualifiedTypeName = GetTypeName(typeDecl);
 
             var typeDecls = GetEnclosingTypeDeclarations(typeDecl);
