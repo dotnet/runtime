@@ -1544,12 +1544,6 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     GenTree* asgNode = gtNewAssignNode(dest, src);
     gtBlockOpInit(asgNode, dest, src, false);
 
-    // TODO-1stClassStructs: Clean up the settings of GTF_DONT_CSE on the lhs
-    // of assignments.
-    if ((destFlags & GTF_DONT_CSE) == 0)
-    {
-        dest->gtFlags &= ~(GTF_DONT_CSE);
-    }
     return asgNode;
 }
 
@@ -3660,68 +3654,75 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                 NamedIntrinsic*         pIntrinsicName,
                                 bool*                   isSpecialIntrinsic)
 {
-    assert((methodFlags & CORINFO_FLG_INTRINSIC) != 0);
-
-    bool           mustExpand = false;
-    bool           isSpecial  = false;
-    NamedIntrinsic ni         = NI_Illegal;
+    bool           mustExpand  = false;
+    bool           isSpecial   = false;
+    bool           isIntrinsic = false;
+    NamedIntrinsic ni          = NI_Illegal;
 
     if ((methodFlags & CORINFO_FLG_INTRINSIC) != 0)
     {
+        isIntrinsic = true;
+
         // The recursive non-virtual calls to Jit intrinsics are must-expand by convention.
         mustExpand = gtIsRecursiveCall(method) && !(methodFlags & CORINFO_FLG_VIRTUAL);
+    }
+    else
+    {
+        // For mismatched VM (AltJit) we want to check all methods as intrinsic to ensure
+        // we get more accurate codegen. This particularly applies to HWIntrinsic usage
+        assert(!info.compMatchedVM);
+    }
 
-        ni = lookupNamedIntrinsic(method);
+    ni = lookupNamedIntrinsic(method);
 
-        // We specially support the following on all platforms to allow for dead
-        // code optimization and to more generally support recursive intrinsics.
+    // We specially support the following on all platforms to allow for dead
+    // code optimization and to more generally support recursive intrinsics.
 
-        if (ni == NI_IsSupported_True)
-        {
-            assert(sig->numArgs == 0);
-            return gtNewIconNode(true);
-        }
+    if (ni == NI_IsSupported_True)
+    {
+        assert(sig->numArgs == 0);
+        return gtNewIconNode(true);
+    }
 
-        if (ni == NI_IsSupported_False)
-        {
-            assert(sig->numArgs == 0);
-            return gtNewIconNode(false);
-        }
+    if (ni == NI_IsSupported_False)
+    {
+        assert(sig->numArgs == 0);
+        return gtNewIconNode(false);
+    }
 
-        if (ni == NI_Throw_PlatformNotSupportedException)
-        {
-            return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
-        }
+    if (ni == NI_Throw_PlatformNotSupportedException)
+    {
+        return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
+    }
 
-        if ((ni > NI_SRCS_UNSAFE_START) && (ni < NI_SRCS_UNSAFE_END))
-        {
-            assert(!mustExpand);
-            return impSRCSUnsafeIntrinsic(ni, clsHnd, method, sig);
-        }
+    if ((ni > NI_SRCS_UNSAFE_START) && (ni < NI_SRCS_UNSAFE_END))
+    {
+        assert(!mustExpand);
+        return impSRCSUnsafeIntrinsic(ni, clsHnd, method, sig);
+    }
 
 #ifdef FEATURE_HW_INTRINSICS
-        if ((ni > NI_HW_INTRINSIC_START) && (ni < NI_HW_INTRINSIC_END))
+    if ((ni > NI_HW_INTRINSIC_START) && (ni < NI_HW_INTRINSIC_END))
+    {
+        GenTree* hwintrinsic = impHWIntrinsic(ni, clsHnd, method, sig, mustExpand);
+
+        if (mustExpand && (hwintrinsic == nullptr))
         {
-            GenTree* hwintrinsic = impHWIntrinsic(ni, clsHnd, method, sig, mustExpand);
-
-            if (mustExpand && (hwintrinsic == nullptr))
-            {
-                return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_NOT_IMPLEMENTED, method, sig, mustExpand);
-            }
-
-            return hwintrinsic;
+            return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_NOT_IMPLEMENTED, method, sig, mustExpand);
         }
 
-        if ((ni > NI_SIMD_AS_HWINTRINSIC_START) && (ni < NI_SIMD_AS_HWINTRINSIC_END))
-        {
-            // These intrinsics aren't defined recursively and so they will never be mustExpand
-            // Instead, they provide software fallbacks that will be executed instead.
-
-            assert(!mustExpand);
-            return impSimdAsHWIntrinsic(ni, clsHnd, method, sig, newobjThis);
-        }
-#endif // FEATURE_HW_INTRINSICS
+        return hwintrinsic;
     }
+
+    if ((ni > NI_SIMD_AS_HWINTRINSIC_START) && (ni < NI_SIMD_AS_HWINTRINSIC_END))
+    {
+        // These intrinsics aren't defined recursively and so they will never be mustExpand
+        // Instead, they provide software fallbacks that will be executed instead.
+
+        assert(!mustExpand);
+        return impSimdAsHWIntrinsic(ni, clsHnd, method, sig, newobjThis);
+    }
+#endif // FEATURE_HW_INTRINSICS
 
     *pIntrinsicName = ni;
 
@@ -5966,17 +5967,36 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
             result = NI_System_Numerics_BitOperations_PopCount;
         }
     }
-#ifdef FEATURE_HW_INTRINSICS
     else if (strcmp(namespaceName, "System.Numerics") == 0)
     {
+#ifdef FEATURE_HW_INTRINSICS
         CORINFO_SIG_INFO sig;
         info.compCompHnd->getMethodSig(method, &sig);
 
         int sizeOfVectorT = getSIMDVectorRegisterByteLength();
 
-        result = SimdAsHWIntrinsicInfo::lookupId(&sig, className, methodName, enclosingClassName, sizeOfVectorT);
-    }
+        result = SimdAsHWIntrinsicInfo::lookupId(this, &sig, className, methodName, enclosingClassName, sizeOfVectorT);
 #endif // FEATURE_HW_INTRINSICS
+
+        if (result == NI_Illegal)
+        {
+            if (strcmp(methodName, "get_IsHardwareAccelerated") == 0)
+            {
+                // This allows the relevant code paths to be dropped as dead code even
+                // on platforms where FEATURE_HW_INTRINSICS is not supported.
+
+                result = NI_IsSupported_False;
+            }
+            else if (gtIsRecursiveCall(method))
+            {
+                // For the framework itself, any recursive intrinsics will either be
+                // only supported on a single platform or will be guarded by a relevant
+                // IsSupported check so the throw PNSE will be valid or dropped.
+
+                result = NI_Throw_PlatformNotSupportedException;
+            }
+        }
+    }
     else if (strcmp(namespaceName, "System.Runtime.CompilerServices") == 0)
     {
         if (strcmp(className, "Unsafe") == 0)
@@ -9612,8 +9632,11 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         // <NICE> Factor this into getCallInfo </NICE>
         bool isSpecialIntrinsic = false;
-        if ((mflags & CORINFO_FLG_INTRINSIC) != 0)
+        if (((mflags & CORINFO_FLG_INTRINSIC) != 0) || !info.compMatchedVM)
         {
+            // For mismatched VM (AltJit) we want to check all methods as intrinsic to ensure
+            // we get more accurate codegen. This particularly applies to HWIntrinsic usage
+
             const bool isTailCall = canTailCall && (tailCallFlags != 0);
 
             call =
@@ -9775,13 +9798,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 call = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, di);
                 call->gtFlags |= GTF_CALL_VIRT_VTABLE;
 
-                // Should we expand virtual call targets early for this method?
-                //
-                if (opts.compExpandCallsEarly)
-                {
-                    // Mark this method to expand the virtual call target early in fgMorpgCall
-                    call->AsCall()->SetExpandedEarly();
-                }
+                // Mark this method to expand the virtual call target early in fgMorphCall
+                call->AsCall()->SetExpandedEarly();
                 break;
             }
 
@@ -12403,7 +12421,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     bool                  partialExpand   = false;
     const CorInfoHelpFunc helper          = info.compCompHnd->getCastingHelper(pResolvedToken, isCastClass);
 
-    GenTree* exactCls = nullptr;
+    CORINFO_CLASS_HANDLE exactCls = NO_CLASS_HANDLE;
 
     // Legality check.
     //
@@ -12413,16 +12431,13 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     {
         if (isCastClass)
         {
-            // Jit can only inline expand the normal CHKCASTCLASS helper.
-            canExpandInline = (helper == CORINFO_HELP_CHKCASTCLASS);
+            // Jit can only inline expand CHKCASTCLASS and CHKCASTARRAY helpers.
+            canExpandInline = (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY);
         }
-        else
+        else if ((helper == CORINFO_HELP_ISINSTANCEOFCLASS) || (helper == CORINFO_HELP_ISINSTANCEOFARRAY))
         {
-            if (helper == CORINFO_HELP_ISINSTANCEOFCLASS)
-            {
-                // If the class is exact, the jit can expand the IsInst check inline.
-                canExpandInline = isClassExact;
-            }
+            // If the class is exact, the jit can expand the IsInst check inline.
+            canExpandInline = isClassExact;
         }
 
         // Check if this cast helper have some profile data
@@ -12467,7 +12482,7 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 
                         canExpandInline = true;
                         partialExpand   = true;
-                        exactCls        = gtNewIconEmbClsHndNode(likelyCls);
+                        exactCls        = likelyCls;
                     }
                 }
             }
@@ -12528,8 +12543,9 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
         op2Var                                                  = fgInsertCommaFormTemp(&op2);
         lvaTable[op2Var->AsLclVarCommon()->GetLclNum()].lvIsCSE = true;
     }
-    temp   = gtNewMethodTableLookup(temp);
-    condMT = gtNewOperNode(GT_NE, TYP_INT, temp, exactCls != nullptr ? exactCls : op2);
+    temp = gtNewMethodTableLookup(temp);
+    condMT =
+        gtNewOperNode(GT_NE, TYP_INT, temp, (exactCls != NO_CLASS_HANDLE) ? gtNewIconEmbClsHndNode(exactCls) : op2);
 
     GenTree* condNull;
     //
@@ -12549,11 +12565,16 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     GenTree* condTrue;
     if (isCastClass)
     {
-        //
-        // use the special helper that skips the cases checked by our inlined cast
-        //
-        const CorInfoHelpFunc specialHelper = CORINFO_HELP_CHKCASTCLASS_SPECIAL;
+        assert((helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTARRAY) ||
+               (helper == CORINFO_HELP_CHKCASTINTERFACE));
 
+        CorInfoHelpFunc specialHelper = helper;
+        if ((helper == CORINFO_HELP_CHKCASTCLASS) &&
+            ((exactCls == nullptr) || (exactCls == gtGetHelperArgClassHandle(op2))))
+        {
+            // use the special helper that skips the cases checked by our inlined cast
+            specialHelper = CORINFO_HELP_CHKCASTCLASS_SPECIAL;
+        }
         condTrue = gtNewHelperCallNode(specialHelper, TYP_REF, partialExpand ? op2 : op2Var, gtClone(op1));
     }
     else if (partialExpand)
@@ -12580,8 +12601,11 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
 
     if (isCastClass && isClassExact && condTrue->OperIs(GT_CALL))
     {
-        // condTrue is used only for throwing InvalidCastException in case of casting to an exact class.
-        condTrue->AsCall()->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
+        if (helper == CORINFO_HELP_CHKCASTCLASS)
+        {
+            // condTrue is used only for throwing InvalidCastException in case of casting to an exact class.
+            condTrue->AsCall()->gtCallMoreFlags |= GTF_CALL_M_DOES_NOT_RETURN;
+        }
     }
 
     GenTree* qmarkNull;

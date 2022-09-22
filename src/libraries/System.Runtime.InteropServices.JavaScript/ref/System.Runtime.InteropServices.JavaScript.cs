@@ -201,7 +201,9 @@ public sealed class JSMarshalerType
 [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
 public struct JSMarshalerArgument
 {
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public delegate void ArgumentToManagedCallback<T>(ref JSMarshalerArgument arg, out T value);
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public delegate void ArgumentToJSCallback<T>(ref JSMarshalerArgument arg, T value);
     public void Initialize() { throw null; }
     public void ToManaged(out bool value) { throw null; }
