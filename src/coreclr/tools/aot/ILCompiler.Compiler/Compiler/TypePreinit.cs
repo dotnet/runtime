@@ -2234,7 +2234,6 @@ namespace ILCompiler
                 int size = type.InstanceByteCount.AsInt;
                 if (type.IsValueType)
                     size += type.Context.Target.PointerSize;
-                size = Math.Max(size, type.Context.Target.MinimumObjectSize - type.Context.Target.PointerSize);
                 _data = new byte[size];
             }
 

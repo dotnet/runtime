@@ -185,8 +185,6 @@ namespace Internal.TypeSystem
             }
         }
 
-        public int MinimumObjectSize => PointerSize * 3;
-
         public TargetDetails(TargetArchitecture architecture, TargetOS targetOS, TargetAbi abi)
         {
             Architecture = architecture;
