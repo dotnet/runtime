@@ -1611,12 +1611,12 @@ namespace System.Numerics
                 // Let m=n*Log10(2), the final result would be x = (k*10^(m-[m]))*10^(i+[m])
 
                 ulong highBits = ((ulong)_bits[^1] << kcbitUint) + _bits[^2];
-                double lowBitsCount32 = _bits.Length - 2; // if Length > int.MaxValue/32, counting in bits can cause overflow
+                int lowBitsCount32 = _bits.Length - 2; // max length of BitInteger is Array.MaxLength/sizeof(uint), which is Array.MaxLength bits
                 double exponentLow = lowBitsCount32 * kcbitUint * Math.Log10(2);
 
-                // Max possible value of BigInteger is 2^(32*Array.MaxLength)-1 which is larger than 10^(2^35)
-                // Use long to avoid potential overflow
-                long exponent = (long)exponentLow;
+                // Max possible value < 2^Array.MaxLength < 2^int.MaxValue < 10^int.MaxValue
+                // No worrying about int overflow
+                int exponent = (int)exponentLow;
                 double significand = (double)highBits * Math.Pow(10, exponentLow - exponent);
 
                 while (significand >= 10.0)
