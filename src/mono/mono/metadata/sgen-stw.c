@@ -74,7 +74,12 @@ update_current_thread_stack (void *start)
 
 	info->client_info.stack_start = align_pointer (&stack_guard);
 	g_assert (info->client_info.stack_start);
+#ifdef HOST_WASI
+	// FIXME
+	// mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "update_current_thread_stack [%d] [%d] [%d] [%d]", (int)info->client_info.stack_start, (int)info->client_info.info.stack_start_limit, (int)info->client_info.stack_start, (int)info->client_info.info.stack_end);
+#else
 	g_assert (info->client_info.stack_start >= info->client_info.info.stack_start_limit && info->client_info.stack_start < info->client_info.info.stack_end);
+#endif
 
 #if !defined(MONO_CROSS_COMPILE) && MONO_ARCH_HAS_MONO_CONTEXT
 	MONO_CONTEXT_GET_CURRENT (info->client_info.ctx);
