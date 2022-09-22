@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class Program<T>
+class Program
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static uint PerformMod_1(uint i)
@@ -48,7 +48,7 @@ class Program<T>
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int MSUB<U>(int a, int b, int c)
+    static int MSUB(int a, int b, int c)
     {
         // X64-FULL-LINE:      imul [[REG0:[a-z]+]], [[REG1:[a-z0-9]+]]
         // X64-FULL-LINE-NEXT: mov [[REG2:[a-z]+]], [[REG3:[a-z]+]]
@@ -58,33 +58,30 @@ class Program<T>
 
         return a - b * c;
     }
-}
 
-class Program
-{
     static int Main(string[] args)
     {
         var result = 100;
 
-        if (Program<int>.PerformMod_1(23) != 7)
+        if (PerformMod_1(23) != 7)
         {
             result = -1;
             Console.WriteLine("Failed Mod1!");
         }
 
-        if (Program<int>.PerformMod_2(-23) != -7)
+        if (PerformMod_2(-23) != -7)
         {
             result = -1;
             Console.WriteLine("Failed Mod2!");
         }
 
-        if (Program<int>.PerformMod_3(23, 8) != 7)
+        if (PerformMod_3(23, 8) != 7)
         {
             result = -1;
             Console.WriteLine("Failed Mod3!");
         }
 
-        if (Program<int>.MSUB<float>(3, 7, 8) != -53)
+        if (MSUB<float>(3, 7, 8) != -53)
         {
             result = -1;
             Console.WriteLine("Failed MSUB");

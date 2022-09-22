@@ -159,23 +159,10 @@ namespace SuperFileCheck
             var typeArity = methodDecl.TypeParameterList?.ChildNodes().Count();
             if (typeArity > 0)
             {
-                var typePars = new List<string>();
-                for (var i = 0; i < typeArity; i++)
-                {
-                    typePars.Add("*");
-                }
-
-                methodName = $"{methodName}[{String.Join(",", typePars)}]";
+                throw new SuperFileCheckException($"'{methodName}' has generic parameters which are not supported.");
             }
 
-            var parCount = methodDecl.ParameterList?.ChildNodes().Count();
-            var pars = new List<string>();
-            for (var i = 0; i < parCount; i++)
-            {
-                pars.Add("*");
-            }
-
-            return $"{methodName}({String.Join(",", pars)})";
+            return $"{methodName}(*)";
         }
 
         /// <summary>
@@ -204,13 +191,7 @@ namespace SuperFileCheck
             var typeArity = typeDecl.TypeParameterList?.ChildNodes().Count();
             if (typeArity > 0)
             {
-                var typePars = new List<string>();
-                for (var i = 0; i < typeArity; i++)
-                {
-                    typePars.Add("*");
-                }
-
-                typeName = $"{typeName}`{typeArity}[{String.Join(",", typePars)}]";
+                throw new SuperFileCheckException($"'{typeName}' has generic parameters which are not supported.");
             }
 
             return typeName;
