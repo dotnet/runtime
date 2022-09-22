@@ -11,18 +11,18 @@ namespace System.Reflection.Emit
     public sealed partial class DynamicMethod : MethodInfo
     {
 #region Sync with MonoReflectionDynamicMethod in object-internals.h
-        private RuntimeMethodHandle mhandle;
-        private RuntimeType returnType;
-        private RuntimeType[] parameterTypes;
-        private Module module;
-        private bool skipVisibility;
-        private bool restrictedSkipVisibility;
-        private bool initLocals;
-        private ILGenerator? ilGenerator;
-        private int nrefs;
-        private object?[]? refs;
-        private IntPtr referenced_by;
-        private RuntimeType? typeOwner;
+        private RuntimeMethodHandle _mhandle;
+        private RuntimeType _returnType;
+        private RuntimeType[] _parameterTypes;
+        private Module _module;
+        private bool _skipVisibility;
+        private bool _restrictedSkipVisibility;
+        private bool _initLocals;
+        private ILGenerator? _ilGenerator;
+        private int _nrefs;
+        private object?[]? _refs;
+        private IntPtr _referencedBy;
+        private RuntimeType? _typeOwner;
 #endregion
         // We want the creator of the DynamicMethod to control who has access to the
         // DynamicMethod (just like we do for delegates). However, a user can get to
@@ -30,25 +30,24 @@ namespace System.Reflection.Emit
         // If we allowed use of RTDynamicMethod, the creator of the DynamicMethod would
         // not be able to bound access to the DynamicMethod. Hence, we need to ensure that
         // we do not allow direct use of RTDynamicMethod.
-        private RTDynamicMethod dynMethod;
+        private RTDynamicMethod _dynMethod;
 
-        private Delegate? deleg;
-        private RuntimeMethodInfo? method;
-        private bool creating;
-        private DynamicILInfo? dynamicILInfo;
+        private Delegate? _deleg;
+        private RuntimeMethodInfo? _method;
+        private bool _creating;
+        private DynamicILInfo? _dynamicILInfo;
 
-        private object? methodHandle; // unused
+        private object? _methodHandle; // unused
 
         public sealed override Delegate CreateDelegate(Type delegateType)
         {
             ArgumentNullException.ThrowIfNull(delegateType);
-            if (deleg is not null)
-                return deleg;
+            if (_deleg is not null)
+                return _deleg;
 
             CreateDynMethod();
 
-            deleg = Delegate.CreateDelegate(delegateType, null, this);
-            return deleg;
+            return _deleg = Delegate.CreateDelegate(delegateType, null, this);
         }
 
         public sealed override Delegate CreateDelegate(Type delegateType, object? target)
@@ -61,10 +60,10 @@ namespace System.Reflection.Emit
             return Delegate.CreateDelegate(delegateType, target, this);
         }
 
-        public DynamicILInfo GetDynamicILInfo() => dynamicILInfo ??= new DynamicILInfo(this);
+        public DynamicILInfo GetDynamicILInfo() => _dynamicILInfo ??= new DynamicILInfo(this);
 
         public ILGenerator GetILGenerator(int streamSize) =>
-            ilGenerator ??= new ILGenerator(Module, new DynamicMethodTokenGenerator(this), streamSize);
+            _ilGenerator ??= new ILGenerator(Module, new DynamicMethodTokenGenerator(this), streamSize);
 
         public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
@@ -74,9 +73,9 @@ namespace System.Reflection.Emit
             try
             {
                 CreateDynMethod();
-                method ??= new RuntimeMethodInfo(mhandle);
+                _method ??= new RuntimeMethodInfo(_mhandle);
 
-                return method.Invoke(obj, invokeAttr, binder, parameters, culture);
+                return _method.Invoke(obj, invokeAttr, binder, parameters, culture);
             }
             catch (MethodAccessException mae)
             {
@@ -92,25 +91,25 @@ namespace System.Reflection.Emit
             // Clearing of ilgen in create_dynamic_method is not yet synchronized for multiple threads
             lock (this)
             {
-                if (mhandle.Value == IntPtr.Zero)
+                if (_mhandle.Value == IntPtr.Zero)
                 {
-                    if (ilGenerator == null || ilGenerator.ILOffset == 0)
+                    if (_ilGenerator == null || _ilGenerator.ILOffset == 0)
                         throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadEmptyMethodBody, Name));
 
-                    ilGenerator.label_fixup(this);
+                    _ilGenerator.label_fixup(this);
 
                     // Have to create all DynamicMethods referenced by this one
                     try
                     {
                         // Used to avoid cycles
-                        creating = true;
-                        if (refs != null)
+                        _creating = true;
+                        if (_refs != null)
                         {
-                            for (int i = 0; i < refs.Length; ++i)
+                            for (int i = 0; i < _refs.Length; ++i)
                             {
-                                if (refs[i] is DynamicMethod m)
+                                if (_refs[i] is DynamicMethod m)
                                 {
-                                    if (!m.creating)
+                                    if (!m._creating)
                                         m.CreateDynMethod();
                                 }
                             }
@@ -118,46 +117,46 @@ namespace System.Reflection.Emit
                     }
                     finally
                     {
-                        creating = false;
+                        _creating = false;
                     }
                     create_dynamic_method(this, Name, Attributes, CallingConvention);
-                    ilGenerator = null;
+                    _ilGenerator = null;
                 }
             }
         }
 
         private int AddRef(object reference)
         {
-            refs ??= new object?[4];
-            if (nrefs >= refs.Length - 1)
+            _refs ??= new object?[4];
+            if (_nrefs >= _refs.Length - 1)
             {
-                object[] new_refs = new object[refs.Length * 2];
-                Array.Copy(refs, new_refs, refs.Length);
-                refs = new_refs;
+                object[] new_refs = new object[_refs.Length * 2];
+                Array.Copy(_refs, new_refs, _refs.Length);
+                _refs = new_refs;
             }
-            refs[nrefs] = reference;
+            _refs[_nrefs] = reference;
             /* Reserved by the runtime */
-            refs[nrefs + 1] = null;
-            nrefs += 2;
-            return nrefs - 1;
+            _refs[_nrefs + 1] = null;
+            _nrefs += 2;
+            return _nrefs - 1;
         }
 
-        internal override ParameterInfo[] GetParametersNoCopy() => dynMethod.GetParametersNoCopy();
+        internal override ParameterInfo[] GetParametersNoCopy() => _dynMethod.GetParametersNoCopy();
 
         internal override int GetParametersCount() => GetParametersNoCopy().Length;
 
         private sealed class DynamicMethodTokenGenerator : ITokenGenerator
         {
-            private readonly DynamicMethod m;
+            private readonly DynamicMethod _m;
 
             public DynamicMethodTokenGenerator(DynamicMethod m)
             {
-                this.m = m;
+                _m = m;
             }
 
             public int GetToken(string str)
             {
-                return m.AddRef(str);
+                return _m.AddRef(str);
             }
 
             public int GetToken(MethodBase method, Type[] opt_paratypes)
@@ -167,12 +166,12 @@ namespace System.Reflection.Emit
 
             public int GetToken(MemberInfo member, bool create_open_instance)
             {
-                return m.AddRef(member);
+                return _m.AddRef(member);
             }
 
             public int GetToken(SignatureHelper helper)
             {
-                return m.AddRef(helper);
+                return _m.AddRef(helper);
             }
         }
     }
