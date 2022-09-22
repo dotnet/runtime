@@ -1109,27 +1109,44 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
         opZero = op2;
     }
 
-    if (!varTypeIsFloating(simdBaseType) && (op != nullptr))
+    // Special case: "vec ==/!= zero_vector"
+    if (!varTypeIsFloating(simdBaseType) && (op != nullptr) && (simdSize != 12))
     {
-        // Use USHORT for V64 and UINT for V128 due to better latency/TP on some CPUs
-        CorInfoType maxType = (simdSize == 8) ? CORINFO_TYPE_USHORT : CORINFO_TYPE_UINT;
-        GenTree*    cmp = comp->gtNewSimdHWIntrinsicNode(simdType, op, NI_AdvSimd_Arm64_MaxAcross, maxType, simdSize);
-        BlockRange().InsertBefore(node, cmp);
-        LowerNode(cmp);
+        GenTree* cmp = node;
+        if (simdSize != 8) // we don't need compression for Vector64
+        {
+            node->Op(1) = op;
+            LIR::Use tmp1Use(BlockRange(), &node->Op(1), node);
+            ReplaceWithLclVar(tmp1Use);
+            op = node->Op(1);
+            GenTree* opClone = comp->gtClone(op);
+            BlockRange().InsertAfter(op, opClone);
+
+            cmp = comp->gtNewSimdHWIntrinsicNode(simdType, op, opClone, NI_AdvSimd_Arm64_MaxPairwise, CORINFO_TYPE_UINT, simdSize);
+            BlockRange().InsertBefore(node, cmp);
+            LowerNode(cmp);
+        }
+
         BlockRange().Remove(opZero);
 
-        GenTree* val = comp->gtNewSimdHWIntrinsicNode(TYP_INT, cmp, NI_Vector128_ToScalar, CORINFO_TYPE_UINT, simdSize);
-        BlockRange().InsertAfter(cmp, val);
+        GenTree* zroCns = comp->gtNewIconNode(0, TYP_INT);
+        BlockRange().InsertAfter(cmp, zroCns);
+
+        GenTree* val =
+            comp->gtNewSimdHWIntrinsicNode(TYP_LONG, cmp, zroCns, NI_AdvSimd_Extract, CORINFO_TYPE_ULONG, simdSize);
+        BlockRange().InsertAfter(zroCns, val);
         LowerNode(val);
 
-        GenTree* cmpZeroCns = comp->gtNewIconNode(0, TYP_INT);
-        BlockRange().InsertAfter(val, cmpZeroCns);
+        GenTree* bitMskCns = comp->gtNewIconNode(0, TYP_LONG);
+        BlockRange().InsertAfter(val, bitMskCns);
 
         node->ChangeOper(cmpOp);
-        node->gtType        = TYP_INT;
+        node->gtType = TYP_INT;
         node->AsOp()->gtOp1 = val;
-        node->AsOp()->gtOp2 = cmpZeroCns;
-        LowerNodeCC(node, (cmpOp == GT_EQ) ? GenCondition::EQ : GenCondition::NE);
+        node->AsOp()->gtOp2 = bitMskCns;
+
+        GenCondition cmpCnd = (cmpOp == GT_EQ) ? GenCondition::EQ : GenCondition::NE;
+        LowerNodeCC(node, cmpCnd);
         node->gtType = TYP_VOID;
         node->ClearUnusedValue();
         LowerNode(node);
