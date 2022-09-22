@@ -84,13 +84,16 @@ It may be possible for an optimizing compiler to prove that some data is accessi
      - `System.Thread.MemoryBarrier`
      - `System.Threading.Interlocked` methods
 
+## C# `volatile` feature.
+One common way to introduce volatile memory accesses is by using C# `volatile` language feature. Declaring a field as `volatile` does not have any effect on how .NET runtime treats the field. The decoration works as a hint to the C# compiler itself (and compilers for other .Net languages) to emit reads and writes of such field as  reads and writes with `volatile.` prefix.
+
 ## Process-wide barrier
 Process-wide barrier has full-fence semantics with an additional guarantee that each thread in the program effectively performs a full fence at arbitrary point synchronized with the process-wide barrier in such a way that effects of writes that precede both barriers are observable by memory operations that follow the barriers.
 
 The actual implementation may vary depending on the platform. For example interrupting the execution of every core in the current process' affinity mask could be a suitable implementation.
 
-## Synchronized methods
-Synchronized methods have the same memory access semantics as if a lock is acquired at an entrance to the method and released upon leaving the method.
+## Synchronized methods. 
+Methods decoratied with ```MethodImpl(MethodImplOptions.Synchronized)``` attribute have the same memory access semantics as if a lock is acquired at an entrance to the method and released upon leaving the method.
 
 ## Object assignment
 Object assignment to a location potentially accessible by other threads is a release with respect to write operations to the instance’s fields and metadata.
@@ -105,7 +108,7 @@ However, the ordering sideeffects of reference assignment should not be used for
 CLR does not specify any ordering effects to the instance constructors.
 
 ## Static constructors
-All side effects of static constructor execution must happen before accessing any member of the type.
+All side effects of static constructor execution will become observable not later than effects of accessing any member of the type. Other member methods of the type, when invoked, will observe complete results of the type's static constructor execution.
 
 ## Hardware considerations
 Currently supported implementations of CLR and system libraries make a few expectations about the hardware memory model. These conditions are present on all supported platforms and transparently passed to the user of the runtime. The future supported platforms will likely support these too as the large body of preexisting software will make it burdensome to break common assumptions.
