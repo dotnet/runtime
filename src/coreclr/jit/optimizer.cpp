@@ -9247,16 +9247,14 @@ bool OptBoolsDsc::optOptimizeBoolsChkTypeCostCond()
         return false;
 #endif
     // The second condition must not contain side effects
-
+    //
     if (m_c2->gtFlags & GTF_GLOB_EFFECT)
     {
         return false;
     }
 
     // The second condition must not be too expensive
-
-    m_comp->gtPrepareCost(m_c2);
-
+    //
     if (m_c2->GetCostEx() > 12)
     {
         return false;
@@ -9332,7 +9330,6 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     //
     if (m_comp->fgStmtListThreaded)
     {
-        m_comp->gtPrepareCost(m_testInfo1.testTree);
         m_comp->gtSetStmtInfo(m_testInfo1.testStmt);
         m_comp->fgSetStmtSeq(m_testInfo1.testStmt);
     }
@@ -9634,7 +9631,6 @@ void OptBoolsDsc::optOptimizeBoolsGcStress()
     //
     if (m_comp->fgStmtListThreaded)
     {
-        m_comp->gtPrepareCost(test.testTree);
         m_comp->gtSetStmtInfo(test.testStmt);
         m_comp->fgSetStmtSeq(test.testStmt);
     }
