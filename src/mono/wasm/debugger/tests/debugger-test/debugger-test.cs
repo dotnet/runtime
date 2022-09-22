@@ -604,7 +604,7 @@ public class LoadDebuggerTestALC {
             Console.WriteLine($"Loaded - {loadedAssembly}");
 
         }
-        public static void RunMethod(string className, string methodName)
+        public static void RunMethod(string className, string methodName, string methodName2, string methodName3)
         {
             var ty = typeof(System.Reflection.Metadata.MetadataUpdater);
             var mi = ty.GetMethod("GetCapabilities", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static, Array.Empty<Type>());
@@ -624,13 +624,13 @@ public class LoadDebuggerTestALC {
             ApplyUpdate(loadedAssembly, 1);
 
             myType = loadedAssembly.GetType($"ApplyUpdateReferencedAssembly.{className}");
-            myMethod = myType.GetMethod(methodName);
+            myMethod = myType.GetMethod(methodName2);
             myMethod.Invoke(null, null);
 
             ApplyUpdate(loadedAssembly, 2);
 
             myType = loadedAssembly.GetType($"ApplyUpdateReferencedAssembly.{className}");
-            myMethod = myType.GetMethod(methodName);
+            myMethod = myType.GetMethod(methodName3);
             myMethod.Invoke(null, null);
         }
 
@@ -1300,11 +1300,11 @@ public class ClassNonUserCodeToInherit
     private int d;
     public int e;
     protected int f;
-    public int G
+    private int G
     {
         get {return f + 1;}
     }
-    public int H => f;
+    private int H => f;
 
     public ClassNonUserCodeToInherit()
     {

@@ -1302,7 +1302,7 @@ CorInfoHelpFunc CEEInfo::getSharedStaticsHelper(FieldDesc * pField, MethodTable 
         helper += delta;
     }
     else
-    if (!pFieldMT->HasClassConstructor() && !pFieldMT->HasBoxedRegularStatics())
+    if ((!pFieldMT->HasClassConstructor() && !pFieldMT->HasBoxedRegularStatics()) || pFieldMT->IsClassInited())
     {
         const int delta = CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR - CORINFO_HELP_GETSHARED_GCSTATIC_BASE;
 
@@ -11620,7 +11620,19 @@ InfoAccessType CEEJitInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd
     }
     else
     {
-        *ppValue = (LPVOID)ConstructStringLiteral(scopeHnd, metaTok); // throws
+        // If ConstructStringLiteral returns a pinned reference we can return it by value (IAT_VALUE)
+        void* ppPinnedString = nullptr;
+        void** ptr = (void**)ConstructStringLiteral(scopeHnd, metaTok, &ppPinnedString);
+
+        if (ppPinnedString != nullptr)
+        {
+            *ppValue = ppPinnedString;
+            result = IAT_VALUE;
+        }
+        else
+        {
+            *ppValue = (void*)ptr;
+        }
     }
 
     EE_TO_JIT_TRANSITION();
@@ -11640,7 +11652,19 @@ InfoAccessType CEEJitInfo::emptyStringLiteral(void ** ppValue)
     InfoAccessType result = IAT_PVALUE;
 
     JIT_TO_EE_TRANSITION();
-    *ppValue = StringObject::GetEmptyStringRefPtr();
+    void* pinnedStr = nullptr;
+    void* pinnedStrHandlePtr = StringObject::GetEmptyStringRefPtr(&pinnedStr);
+
+    if (pinnedStr != nullptr)
+    {
+        *ppValue = pinnedStr;
+        result = IAT_VALUE;
+    }
+    else
+    {
+        *ppValue = pinnedStr;
+    }
+
     EE_TO_JIT_TRANSITION();
 
     return result;
@@ -13326,7 +13350,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             if (rid == 0)
             {
                 // Empty string
-                result = (size_t)StringObject::GetEmptyStringRefPtr();
+                result = (size_t)StringObject::GetEmptyStringRefPtr(nullptr);
             }
             else
             {

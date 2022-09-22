@@ -1830,6 +1830,7 @@ class Compiler
 
 #ifdef FEATURE_HW_INTRINSICS
     friend struct HWIntrinsicInfo;
+    friend struct SimdAsHWIntrinsicInfo;
 #endif // FEATURE_HW_INTRINSICS
 
 #ifndef TARGET_64BIT
@@ -2248,7 +2249,7 @@ public:
     Statement* gtNewStmt(GenTree* expr, const DebugInfo& di);
 
     // For unary opers.
-    GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, bool doSimplifications = TRUE);
+    GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1);
 
     // For binary opers.
     GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2);
@@ -3808,7 +3809,7 @@ public:
     void impInsertTreeBefore(GenTree* tree, const DebugInfo& di, Statement* stmtBefore);
     void impAssignTempGen(unsigned         tmp,
                           GenTree*         val,
-                          unsigned         curLevel   = (unsigned)CHECK_SPILL_NONE,
+                          unsigned         curLevel   = CHECK_SPILL_NONE,
                           Statement**      pAfterStmt = nullptr,
                           const DebugInfo& di         = DebugInfo(),
                           BasicBlock*      block      = nullptr);
@@ -5749,6 +5750,7 @@ private:
     GenTree* fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree);
     GenTree* fgMorphForRegisterFP(GenTree* tree);
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone = nullptr);
+    void fgTryReplaceStructLocalWithField(GenTree* tree);
     GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeCastOnAssignment(GenTreeOp* asg);
     GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
@@ -6213,6 +6215,12 @@ public:
             {
                 return false;
             }
+        }
+
+        // Returns "true" iff this is removed loop.
+        bool lpIsRemoved() const
+        {
+            return (lpFlags & LPFLG_REMOVED) != 0;
         }
 
         // Returns "true" iff "*this" contains the blk.
@@ -9245,8 +9253,6 @@ public:
                                        // (IF_LARGEJMP/IF_LARGEADR/IF_LARGLDC)
         bool dspGCtbls;                // Display the GC tables
 #endif
-
-        bool compExpandCallsEarly; // True if we should expand virtual call targets early for this method
 
 // Default numbers used to perform loop alignment. All the numbers are chosen
 // based on experimenting with various benchmarks.

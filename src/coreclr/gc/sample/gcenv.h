@@ -122,7 +122,7 @@ public:
         return (alloc_context *)&m_alloc_context;
     }
 
-    void SetGCSpecial(bool fGCSpecial)
+    void SetGCSpecial()
     {
     }
 };

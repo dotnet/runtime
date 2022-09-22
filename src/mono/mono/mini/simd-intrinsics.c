@@ -719,6 +719,12 @@ emit_hardware_intrinsics (
 			goto support_probe_complete;
 		id = info->id;
 
+#ifdef TARGET_ARM64
+		if (!(cfg->compile_aot && cfg->full_aot && !cfg->interp) && !intrin_group->jit_supported) {
+			goto support_probe_complete;
+		}
+#endif
+
 		// Hardware intrinsics are LLVM-only.
 		if (!COMPILE_LLVM (cfg) && !intrin_group->jit_supported)
 			goto support_probe_complete;
@@ -909,6 +915,7 @@ static guint16 sri_vector_methods [] = {
 	SN_Equals,
 	SN_EqualsAll,
 	SN_EqualsAny,
+	SN_ExtractMostSignificantBits,
 	SN_Floor,
 	SN_GetElement,
 	SN_GetLower,
@@ -1193,6 +1200,15 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			}
 			default: g_assert_not_reached ();
 		}
+	}
+	case SN_ExtractMostSignificantBits: {
+		if (!is_element_type_primitive (fsig->params [0]) || type_enum_is_float (arg0_type))
+			return NULL;
+#ifdef TARGET_WASM
+		return emit_simd_ins_for_sig (cfg, klass, OP_WASM_SIMD_BITMASK, -1, -1, fsig, args);
+#else
+		return NULL;
+#endif
 	}
 	case SN_GetElement: {
 		if (!is_element_type_primitive (fsig->params [0]))

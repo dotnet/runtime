@@ -6,7 +6,8 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <IsPackable>true</IsPackable>
     <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
-    <PackageDescription>JSON configuration provider implementation for Microsoft.Extensions.Configuration.</PackageDescription>
+    <PackageDescription>JSON configuration provider implementation for Microsoft.Extensions.Configuration. This package enables you to read your application's settings from a JSON file. You can use JsonConfigurationExtensions.AddJsonFile extension method on IConfigurationBuilder to add the JSON configuration provider to the configuration builder.</PackageDescription>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,6 +18,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
     <Compile Include="$(CommonPath)System\ThrowHelper.cs"
              Link="Common\System\ThrowHelper.cs" />
+    <None Include="README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
 </Project>

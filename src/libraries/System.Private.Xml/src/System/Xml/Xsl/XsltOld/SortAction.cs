@@ -35,7 +35,7 @@ namespace System.Xml.Xsl.XsltOld
             // better to remove this method completely and not call it here, but that may
             // change exception types for some stylesheets.
             CultureInfo cultInfo = new CultureInfo(value);
-            if (!XmlComplianceUtil.IsValidLanguageID(value.ToCharArray(), 0, value.Length)
+            if (!XmlComplianceUtil.IsValidLanguageID(value)
                 && (value.Length == 0 || cultInfo == null)
             )
             {

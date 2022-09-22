@@ -12,6 +12,7 @@
 using System.Globalization;
 using System.IO;
 using System.Net;
+using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
@@ -1593,34 +1594,11 @@ namespace System.Security.Cryptography.Xml.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/74115")]
         public void VerifyXmlResolver(bool provideResolver)
         {
-            HttpListener listener;
-            int port = 9000;
-
-            while (true)
-            {
-                listener = new HttpListener();
-                listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-                listener.IgnoreWriteExceptions = true;
-
-                try
-                {
-                    listener.Start();
-                    break;
-                }
-                catch
-                {
-                }
-
-                port++;
-
-                if (port > 10000)
-                {
-                    throw new InvalidOperationException("Could not find an open port");
-                }
-            }
+            TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            int port = ((IPEndPoint)listener.LocalEndpoint).Port;
 
             string xml = $@"<!DOCTYPE foo [<!ENTITY xxe SYSTEM ""http://127.0.0.1:{port}/"" >]>
 <ExampleDoc>Example doc to be signed.&xxe;<Signature xmlns=""http://www.w3.org/2000/09/xmldsig#"">
@@ -1641,7 +1619,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
             bool listenerContacted = false;
             CancellationTokenSource tokenSource = new CancellationTokenSource();
-            Task listenerTask = ProcessRequests(listener, req => listenerContacted = true, tokenSource.Token);
+            Task listenerTask = ProcessRequests(listener, () => listenerContacted = true, tokenSource.Token);
 
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(xml);
@@ -1677,36 +1655,68 @@ namespace System.Security.Cryptography.Xml.Tests
                 catch
                 {
                 }
-
-                ((IDisposable)listener).Dispose();
             }
 
             static async Task ProcessRequests(
-                HttpListener listener,
-                Action<HttpListenerRequest> requestReceived,
+                TcpListener listener,
+                Action requestReceived,
                 CancellationToken cancellationToken)
             {
+                static byte[] GetResponse() =>
+                    ("HTTP/1.1 200 OK\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Length: 0\r\n\r\n"u8).ToArray();
+
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    HttpListenerContext ctx;
+                    Socket socket;
 
                     try
                     {
-                        ctx = await listener.GetContextAsync();
+#if NETCOREAPP
+                        socket = await listener.AcceptSocketAsync(cancellationToken);
+#else
+                        socket = await listener.AcceptSocketAsync();
+#endif
                     }
                     catch
                     {
                         break;
                     }
 
-                    HttpListenerRequest req = ctx.Request;
-                    requestReceived(req);
-
-                    using (HttpListenerResponse resp = ctx.Response)
+                    using (socket)
+                    using (NetworkStream stream = new NetworkStream(socket))
                     {
-                        resp.ContentType = "text/plain";
-                        resp.ContentEncoding = Encoding.UTF8;
-                        resp.ContentLength64 = 0;
+                        requestReceived();
+                        byte[] buf = new byte[1024];
+                        int offset = 0;
+
+                        // Drain out the request.
+                        do
+                        {
+                            int read = await stream.ReadAsync(buf, offset, buf.Length - offset, cancellationToken);
+
+                            if (read <= 0)
+                            {
+                                break;
+                            }
+
+                            offset += read;
+
+                            if (offset >= buf.Length)
+                            {
+                                throw new InvalidOperationException();
+                            }
+
+                            if (offset > 4)
+                            {
+                                if (buf.AsSpan(offset - 4, 4).SequenceEqual("\r\n\r\n"u8))
+                                {
+                                    break;
+                                }
+                            }
+                        } while (true);
+
+                        byte[] response = GetResponse();
+                        await stream.WriteAsync(response, 0, response.Length, cancellationToken);
                     }
                 }
             }

@@ -1355,7 +1355,7 @@ namespace System.Threading
 
     public static partial class ThreadPool
     {
-        internal const string WorkerThreadName = ".NET ThreadPool Worker";
+        internal const string WorkerThreadName = ".NET TP Worker";
 
         internal static readonly ThreadPoolWorkQueue s_workQueue = new ThreadPoolWorkQueue();
 

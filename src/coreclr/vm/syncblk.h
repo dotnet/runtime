@@ -74,13 +74,9 @@ class AppDomain;
 #ifdef EnC_SUPPORTED
 class EnCSyncBlockInfo;
 typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
-
 #endif // EnC_SUPPORTED
 
 #include "eventstore.hpp"
-
-#include "eventstore.hpp"
-
 #include "synch.h"
 
 // At a negative offset from each Object is an ObjHeader.  The 'size' of the
