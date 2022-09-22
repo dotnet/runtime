@@ -6911,9 +6911,9 @@ GenTree* Compiler::gtNewIndOfIconHandleNode(var_types indType, size_t addr, GenT
         // This indirection also is invariant.
         indNode->gtFlags |= GTF_IND_INVARIANT;
 
-        if ((iconFlags == GTF_ICON_STR_HDL) || (iconFlags == GTF_ICON_OBJ_HDL))
+        if (iconFlags == GTF_ICON_STR_HDL)
         {
-            // String literals and frozen type objects are never null
+            // String literals are never null
             indNode->gtFlags |= GTF_IND_NONNULL;
         }
     }
