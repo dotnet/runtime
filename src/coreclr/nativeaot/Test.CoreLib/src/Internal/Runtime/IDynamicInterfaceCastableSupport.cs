@@ -4,6 +4,8 @@
 using System;
 using System.Runtime;
 
+#pragma warning disable IDE0060
+
 namespace Internal.Runtime
 {
     static unsafe class IDynamicCastableSupport

@@ -443,20 +443,7 @@ namespace System
             }
             else
             {
-                RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate;
-                IntPtr functionPointer = GetFunctionPointer(out typeOfFirstParameterIfInstanceDelegate, out bool _, out bool _);
-                if (!FunctionPointerOps.IsGenericMethodPointer(functionPointer))
-                {
-                    return DebuggerFunctionPointerFormattingHook(functionPointer, typeOfFirstParameterIfInstanceDelegate);
-                }
-                else
-                {
-                    unsafe
-                    {
-                        GenericMethodDescriptor* pointerDef = FunctionPointerOps.ConvertToGenericDescriptor(functionPointer);
-                        return DebuggerFunctionPointerFormattingHook(pointerDef->InstantiationArgument, typeOfFirstParameterIfInstanceDelegate);
-                    }
-                }
+                return "";
             }
         }
     }

@@ -6,6 +6,8 @@ using System.Runtime.CompilerServices;
 
 using Debug = System.Diagnostics.Debug;
 
+#pragma warning disable IDE0060
+
 namespace System
 {
     // Eagerly preallocate instance of out of memory exception to avoid infinite recursion once we run out of memory
