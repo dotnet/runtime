@@ -2667,12 +2667,13 @@ namespace System
                         Unsafe.As<T, byte>(ref newValue),
                         length);
                 }
-                else if (Unsafe.SizeOf<T>() == sizeof(short))
+                else if (Unsafe.SizeOf<T>() == sizeof(ushort))
                 {
+                    // Use ushort rather than short, as this avoid a sign-extending move.
                     SpanHelpers.ReplaceValueType(
-                        ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
-                        Unsafe.As<T, short>(ref oldValue),
-                        Unsafe.As<T, short>(ref newValue),
+                        ref Unsafe.As<T, ushort>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, ushort>(ref oldValue),
+                        Unsafe.As<T, ushort>(ref newValue),
                         length);
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(int))
