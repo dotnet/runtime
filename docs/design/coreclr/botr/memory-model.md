@@ -16,12 +16,14 @@ Native-sized integer types and pointers have alignment that matches their size o
 ## Atomic memory accesses.
 Memory accesses to *properly aligned* data of primitive types are always atomic. The value that is observed is always a result of complete read and write operations.
 
+Note: since unmanaged pointers and managed references are always aligned to their size on the given platform, accesses of pointers and managed references are atomic.
+
 ## Unmanaged memory access.
 As unmanaged pointers can point to any addressable memory, operations with such pointers may violate guarantees provided by the runtime and expose undefined or platform-specific behavior.
 **Example:** memory accesses through pointers which are *not properly aligned* may be not atomic or cause faults depending on the platform and hardware configuration.
 
 Although rare, unaligned access is a realistic scenario and thus there is some limited support for unaligned memory accesses, such as:
-* `.unaligned` IL prefix
+* `unaligned.` IL prefix
 * `Unsafe.ReadUnaligned`, `Unsafe.WriteUnaligned` and ` Unsafe.CopyBlockUnaligned` helpers.
 
 These facilities ensure fault-free access to potentially unaligned locations, but do not ensure atomicity.
@@ -51,28 +53,28 @@ The effects of ordinary reads and writes can be reordered as long as that preser
 
 * **Volatile reads** have "acquire semantics" - no read or write that is later in the program order may be speculatively executed ahead of a volatile read.
   Operations with acquire semantics:
-     - IL load instructions with `.volatile` prefix when instruction supports such prefix
+     - IL load instructions with `volatile.` prefix when instruction supports such prefix
      - `System.Threading.Volatile.Read`
      - `System.Thread.VolatileRead`
      - Acquiring a lock (`System.Threading.Monitor.Enter` or entering a synchronized method)
 
 * **Volatile writes** have "release semantics" - the effects of a volatile write will not be observable before effects of all previous, in program order, reads and writes become observable.
   Operations with release semantics:
-     - IL store instructions with `.volatile` prefix when such prefix is supported
+     - IL store instructions with `volatile.` prefix when such prefix is supported
      - `System.Threading.Volatile.Write`
      - `System.Thread.VolatileWrite`
      - Releasing a lock (`System.Threading.Monitor.Exit` or leaving a synchronized method)
 
-* **.volatile initblk** has "release semantics" - the effects of `.volatile initblk` will not be observable earlier than the effects of preceeding reads and writes.
+* **volatile. initblk** has "release semantics" - the effects of `.volatile initblk` will not be observable earlier than the effects of preceeding reads and writes.
 
-* **.volatile cpblk** combines ordering semantics of a volatile read and write with respect to the read and written memory locations.
-     - The writes performed by `.volatile cpblk` will not be observable earlier than the effects of preceeding reads and writes.
-     - No read or write that is later in the program order may be speculatively executed before the reads performed by `.volatile cpblk`
+* **volatile. cpblk** combines ordering semantics of a volatile read and write with respect to the read and written memory locations.
+     - The writes performed by `volatile. cpblk` will not be observable earlier than the effects of preceeding reads and writes.
+     - No read or write that is later in the program order may be speculatively executed before the reads performed by `volatile. cpblk`
      - `cpblk` may be implemented as a sequence of reads and writes. The granularity and mutual order of such reads and writes is unspecified.
 
 Note that volatile semantics does not by itself imply that operation is atomic or has any effect on how soon the operation is committed to the coherent memory. It only specifies the order of effects when they eventually become observable.
 
-`.volatile` and `.unaligned` IL prefixes can be combined where both are permitted.
+`volatile.` and `unaligned.` IL prefixes can be combined where both are permitted.
 
 It may be possible for an optimizing compiler to prove that some data is accessible only by a single thread. In such case it is permitted to omit volatile semantics when accessing such data.
 
@@ -173,7 +175,7 @@ void ThreadFunc2()
 
 ```cs
 
-private object _lock = new object();
+private readonly object _lock = new object();
 private MyClass _inst;
 
 public MyClass GetSingleton()
