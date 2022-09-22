@@ -76,7 +76,7 @@ public abstract class ReplaceTests<T> where T : IEquatable<T>
         T[] values = { Create('0'), Create('1') };
 
         Span<T> span = CreateArray(length, values);
-        T[] expected = CreateArray(length, values);
+        T[] expected = span.ToArray();
 
         span.Replace(_oldValue, _newValue);
         T[] actual = span.ToArray();
