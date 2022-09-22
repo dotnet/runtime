@@ -4,33 +4,36 @@
 using System;
 using System.Runtime.CompilerServices;
 
-class Program
+class Program<T>
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static uint PerformMod_1(uint i)
+    public static uint PerformMod_1(uint i)
     {
+        // X64-FULL-LINE:      mov [[REG0:[a-z]+]], [[REG1:[a-z0-9]+]]
+        // X64-FULL-LINE-NEXT: and [[REG0]], 7
+
+        // ARM64-FULL-LINE: and w0, w0, #7
+
         return i % 8;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static int PerformMod_2(int i)
+    public static int PerformMod_2(int i)
     {
-        // CHECK: _IG02:
-
-        // X64-FULL-LINE-NEXT:         mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
+        // X64-FULL-LINE:              mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
         // X64-FULL-LINE-NEXT:         sar [[REG0]], 31
         // X64-FULL-LINE-NEXT:         and [[REG0]], 15
         // X64-FULL-LINE-NEXT:         add [[REG0]], [[REG1]]
         // X64-FULL-LINE-NEXT:         and [[REG0]], -16
-
         // X64-WINDOWS-FULL-LINE-NEXT: mov [[REG2:[a-z]+]], [[REG1]]
         // X64-WINDOWS-FULL-LINE-NEXT: sub [[REG2]], [[REG0]]
         // X64-WINDOWS-FULL-LINE-NEXT: mov [[REG0]], [[REG2]]
-
         // X64-LINUX-FULL-LINE-NEXT:   sub [[REG1]], [[REG0]]
         // X64-LINUX-FULL-LINE-NEXT:   mov [[REG0]], [[REG1]]
+        // X64-OSX-FULL-LINE-NEXT:     sub [[REG1]], [[REG0]]
+        // X64-OSX-FULL-LINE-NEXT:     mov [[REG0]], [[REG1]]
 
-        // ARM64-FULL-LINE-NEXT: and w1, w0, #15
+        // ARM64-FULL-LINE:      and w1, w0, #15
         // ARM64-FULL-LINE-NEXT: negs w0, w0
         // ARM64-FULL-LINE-NEXT: and w0, w0, #15
         // ARM64-FULL-LINE-NEXT: csneg w0, w1, w0, mi
@@ -39,40 +42,49 @@ class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static int PerformMod_3(int i, int j)
+    public static int PerformMod_3(int i, int j)
     {
         return i % j;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static int MSUB(int a, int b, int c)
+    public static int MSUB<U>(int a, int b, int c)
     {
+        // X64-FULL-LINE:      imul [[REG0:[a-z]+]], [[REG1:[a-z0-9]+]]
+        // X64-FULL-LINE-NEXT: mov [[REG2:[a-z]+]], [[REG3:[a-z]+]]
+        // X64-FULL-LINE-NEXT: sub [[REG2]], [[REG0]]
+
+        // ARM64-FULL-LINE: msub w0, w1, w2, w0
+
         return a - b * c;
     }
+}
 
+class Program
+{
     static int Main(string[] args)
     {
         var result = 100;
 
-        if (PerformMod_1(23) != 7)
+        if (Program<int>.PerformMod_1(23) != 7)
         {
             result = -1;
             Console.WriteLine("Failed Mod1!");
         }
 
-        if (PerformMod_2(-23) != -7)
+        if (Program<int>.PerformMod_2(-23) != -7)
         {
             result = -1;
             Console.WriteLine("Failed Mod2!");
         }
 
-        if (PerformMod_3(23, 8) != 7)
+        if (Program<int>.PerformMod_3(23, 8) != 7)
         {
             result = -1;
             Console.WriteLine("Failed Mod3!");
         }
 
-        if (MSUB(3, 7, 8) != -53)
+        if (Program<int>.MSUB<float>(3, 7, 8) != -53)
         {
             result = -1;
             Console.WriteLine("Failed MSUB");

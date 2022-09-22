@@ -178,11 +178,17 @@ namespace SuperFileCheck
             return $"{methodName}({String.Join(",", pars)})";
         }
 
+        /// <summary>
+        /// Try to get the enclosing type declaration syntax of the given node.
+        /// </summary>
         static TypeDeclarationSyntax? TryGetEnclosingTypeDeclaration(SyntaxNode node)
         {
             return node.Ancestors().OfType<TypeDeclarationSyntax>().FirstOrDefault();
         }
 
+        /// <summary>
+        /// Get all the acestoral enclosing type declaration syntaxes of the given node.
+        /// </summary>
         static TypeDeclarationSyntax[] GetEnclosingTypeDeclarations(SyntaxNode node)
         {
             return node.Ancestors().OfType<TypeDeclarationSyntax>().ToArray();
@@ -204,7 +210,7 @@ namespace SuperFileCheck
                     typePars.Add("*");
                 }
 
-                typeName = $"{typeName}[{String.Join(",", typePars)}]";
+                typeName = $"{typeName}`{typeArity}[{String.Join(",", typePars)}]";
             }
 
             return typeName;
@@ -243,8 +249,6 @@ namespace SuperFileCheck
 
             return qualifiedTypeName;
         }
-
-
 
         /// <summary>
         /// Get all the descendant single line comment trivia items.
