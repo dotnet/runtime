@@ -1088,13 +1088,13 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     GenTree* op1 = node->Op(1);
     GenTree* op2 = node->Op(2);
 
-    // Optimize comparison against Vector64/128<>.Zero via UMAX:
+    // Optimize comparison against Vector64/128<>.Zero via UMAXV:
     //
     //   bool eq = v == Vector128<integer>.Zero
     //
     // to:
     //
-    //   bool eq = AdvSimd.Arm64.MaxAcross(v.AsUInt16()).ToScalar() == 0;
+    //   bool eq = AdvSimd.Arm64.MaxPairwise(v.AsUInt16(), v.AsUInt16()).GetElement(0) == 0;
     //
     GenTree* op     = nullptr;
     GenTree* opZero = nullptr;
