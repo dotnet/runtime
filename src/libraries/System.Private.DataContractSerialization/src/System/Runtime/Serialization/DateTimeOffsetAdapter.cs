@@ -66,7 +66,7 @@ namespace System.Runtime.Serialization
 
         private string ToStringDiagnostic()
         {
-            return "DateTime: " + UtcDateTime + ", Offset: " + OffsetMinutes;
+            return string.Create(CultureInfo.InvariantCulture, $"DateTime: {UtcDateTime}, Offset: {OffsetMinutes}");
         }
     }
 }

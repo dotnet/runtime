@@ -181,8 +181,8 @@ namespace Internal.IL
             return _compilation.GetHelperEntrypoint(helper);
         }
 
-        static partial void MarkInstructionBoundary();
-        static partial void EndImportingBasicBlock(BasicBlock basicBlock);
+        private static void MarkInstructionBoundary() { }
+        private static void EndImportingBasicBlock(BasicBlock basicBlock) { }
 
         private void StartImportingBasicBlock(BasicBlock basicBlock)
         {
@@ -1342,27 +1342,15 @@ namespace Internal.IL
             return _compilation.TypeSystemContext.GetWellKnownType(wellKnownType);
         }
 
-        static partial void ImportNop();
-        static partial void ImportBreak();
-        static partial void ImportDup();
-        static partial void ImportPop();
-        static partial void ImportLoadNull();
-        static partial void ImportReturn();
-        static partial void ImportCkFinite();
-        static partial void ImportLocalAlloc();
-        static partial void ImportEndFilter();
-        static partial void ImportCpBlk();
-        static partial void ImportInitBlk();
-        static partial void ImportRethrow();
-        static partial void ImportVolatilePrefix();
-        static partial void ImportTailPrefix();
-        static partial void ImportThrow();
-        static partial void ImportLoadLength();
-        static partial void ImportEndFinally();
-
+        private static void ImportNop() { }
+        private static void ImportBreak() { }
         private static void ImportLoadVar(int index, bool argument) { }
         private static void ImportStoreVar(int index, bool argument) { }
         private static void ImportAddressOfVar(int index, bool argument) { }
+        private static void ImportDup() { }
+        private static void ImportPop() { }
+        private static void ImportLoadNull() { }
+        private static void ImportReturn() { }
         private static void ImportLoadInt(long value, StackValueKind kind) { }
         private static void ImportLoadFloat(double value) { }
         private static void ImportLoadIndirect(int token) { }
@@ -1374,9 +1362,20 @@ namespace Internal.IL
         private static void ImportConvert(WellKnownType wellKnownType, bool checkOverflow, bool unsigned) { }
         private static void ImportUnaryOperation(ILOpcode opCode) { }
         private static void ImportCpOpj(int token) { }
+        private static void ImportCkFinite() { }
+        private static void ImportLocalAlloc() { }
+        private static void ImportEndFilter() { }
+        private static void ImportCpBlk() { }
+        private static void ImportInitBlk() { }
+        private static void ImportRethrow() { }
         private static void ImportSizeOf(int token) { }
         private static void ImportUnalignedPrefix(byte alignment) { }
+        private static void ImportVolatilePrefix() { }
+        private static void ImportTailPrefix() { }
         private static void ImportNoPrefix(byte mask) { }
+        private static void ImportThrow() { }
         private static void ImportInitObj(int token) { }
+        private static void ImportLoadLength() { }
+        private static void ImportEndFinally() { }
     }
 }

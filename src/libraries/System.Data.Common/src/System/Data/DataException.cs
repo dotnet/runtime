@@ -348,7 +348,7 @@ namespace System.Data
         public static Exception ArgumentNull(string paramName) => _ArgumentNull(paramName, SR.Format(SR.Data_ArgumentNull, paramName));
         public static Exception ArgumentOutOfRange(string paramName) => _ArgumentOutOfRange(paramName, SR.Format(SR.Data_ArgumentOutOfRange, paramName));
         public static Exception BadObjectPropertyAccess(string error) => _InvalidOperation(SR.Format(SR.DataConstraint_BadObjectPropertyAccess, error));
-        public static Exception ArgumentContainsNull(string paramName) => _Argument(SR.Format(SR.Data_ArgumentContainsNull, paramName));
+        public static Exception ArgumentContainsNull(string paramName) => TraceExceptionAsReturnValue(new ArgumentException(SR.Data_ArgumentContainsNull, paramName));
         public static Exception TypeNotAllowed(Type type) => _InvalidOperation(SR.Format(SR.Data_TypeNotAllowed, type.AssemblyQualifiedName));
 
         //
