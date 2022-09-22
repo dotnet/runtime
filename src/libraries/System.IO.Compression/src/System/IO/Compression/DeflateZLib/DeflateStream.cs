@@ -284,7 +284,7 @@ namespace System.IO.Compression
                         // - Inflation is not finished yet.
                         // - Provided input wasn't completely empty
                         // In such case, we are dealing with a truncated input stream.
-                        if (UseStrictValidation && !buffer.IsEmpty && !_inflater.Finished() && _inflater.NonEmptyInput())
+                        if (s_useStrictValidation && !buffer.IsEmpty && !_inflater.Finished() && _inflater.NonEmptyInput())
                         {
                             ThrowTruncatedInvalidData();
                         }
@@ -433,7 +433,7 @@ namespace System.IO.Compression
                                 // - Inflation is not finished yet.
                                 // - Provided input wasn't completely empty
                                 // In such case, we are dealing with a truncated input stream.
-                                if (UseStrictValidation && !_inflater.Finished() && _inflater.NonEmptyInput() && !buffer.IsEmpty)
+                                if (s_useStrictValidation && !_inflater.Finished() && _inflater.NonEmptyInput() && !buffer.IsEmpty)
                                 {
                                     ThrowTruncatedInvalidData();
                                 }
@@ -914,7 +914,7 @@ namespace System.IO.Compression
 
                     // Now, use the source stream's CopyToAsync to push directly to our inflater via this helper stream
                     await _deflateStream._stream.CopyToAsync(this, _arrayPoolBuffer.Length, _cancellationToken).ConfigureAwait(false);
-                    if (!_deflateStream._inflater.Finished() && UseStrictValidation)
+                    if (!_deflateStream._inflater.Finished() && s_useStrictValidation)
                     {
                         ThrowTruncatedInvalidData();
                     }
@@ -950,7 +950,7 @@ namespace System.IO.Compression
 
                     // Now, use the source stream's CopyToAsync to push directly to our inflater via this helper stream
                     _deflateStream._stream.CopyTo(this, _arrayPoolBuffer.Length);
-                    if (!_deflateStream._inflater.Finished() && UseStrictValidation)
+                    if (!_deflateStream._inflater.Finished() && s_useStrictValidation)
                     {
                         ThrowTruncatedInvalidData();
                     }
@@ -1079,7 +1079,7 @@ namespace System.IO.Compression
         private static void ThrowInvalidBeginCall() =>
             throw new InvalidOperationException(SR.InvalidBeginCall);
 
-        private static readonly bool UseStrictValidation =
+        private static readonly bool s_useStrictValidation =
             AppContext.TryGetSwitch("System.IO.Compression.UseStrictValidation", out bool strictValidation) ? strictValidation : false;
     }
 }

@@ -66,7 +66,7 @@ namespace System.IO.Compression
                 int bytesRead = _stream.Read(_buffer, _bufferCount, _buffer.Length - _bufferCount);
                 if (bytesRead <= 0)
                 {
-                    if (UseStrictValidation && _nonEmptyInput && !buffer.IsEmpty)
+                    if (s_useStrictValidation && _nonEmptyInput && !buffer.IsEmpty)
                         ThrowTruncatedInvalidData();
                     break;
                 }
@@ -154,7 +154,7 @@ namespace System.IO.Compression
                         int bytesRead = await _stream.ReadAsync(_buffer.AsMemory(_bufferCount), cancellationToken).ConfigureAwait(false);
                         if (bytesRead <= 0)
                         {
-                            if (UseStrictValidation && _nonEmptyInput && !buffer.IsEmpty)
+                            if (s_useStrictValidation && _nonEmptyInput && !buffer.IsEmpty)
                                 ThrowTruncatedInvalidData();
                             break;
                         }
@@ -234,7 +234,7 @@ namespace System.IO.Compression
             return false;
         }
 
-        private static readonly bool UseStrictValidation =
+        private static readonly bool s_useStrictValidation =
             AppContext.TryGetSwitch("System.IO.Compression.UseStrictValidation", out bool strictValidation) ? strictValidation : false;
 
         private static void ThrowInvalidStream() =>
