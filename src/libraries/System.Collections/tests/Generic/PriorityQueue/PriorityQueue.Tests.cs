@@ -85,6 +85,7 @@ namespace System.Collections.Tests
 
             Assert.Equal(0, queue.Count);
             Assert.Throws<InvalidOperationException>(() => queue.DequeueEnqueue(1, 1));
+            Assert.Equal(0, queue.Count);
         }
 
         [Fact]

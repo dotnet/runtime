@@ -198,9 +198,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [InlineData(1)]
-        [InlineData(3)]
-        [InlineData(75)]
+        [MemberData(nameof(ValidCollectionSizes))]
         public void PriorityQueue_DequeueEnqueue(int count)
         {
             (TElement Element, TPriority Priority)[] itemsToEnqueue = CreateItems(count * 2).ToArray();
