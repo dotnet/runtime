@@ -9413,6 +9413,11 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                         chars += printf("[ICON_STR_HDL]");
                         break;
 
+                    case GTF_ICON_OBJ_HDL:
+
+                        chars += printf("[ICON_OBJ_HDL]");
+                        break;
+
                     case GTF_ICON_CONST_PTR:
 
                         chars += printf("[ICON_CONST_PTR]");

@@ -22127,9 +22127,9 @@ bool Compiler::impCanSkipCovariantStoreCheck(GenTree* value, GenTree* array)
             return true;
         }
         // Non-0 const refs can only occur with frozen objects
-        assert(value->IsIconHandle(GTF_ICON_STR_HDL));
-        assert(doesMethodHaveFrozenString() ||
-               (compIsForInlining() && impInlineInfo->InlinerCompiler->doesMethodHaveFrozenString()));
+        assert(value->IsIconHandle(GTF_ICON_OBJ_HDL));
+        assert(doesMethodHaveFrozenObjects() ||
+               (compIsForInlining() && impInlineInfo->InlinerCompiler->doesMethodHaveFrozenObjects()));
     }
 
     // Try and get a class handle for the array

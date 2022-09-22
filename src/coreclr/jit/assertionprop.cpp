@@ -2149,7 +2149,7 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
                     break;
                 case O1K_LCLVAR:
                     assert((lvaGetDesc(assertion->op1.lcl.lclNum)->lvType != TYP_REF) ||
-                           (assertion->op2.u1.iconVal == 0) || doesMethodHaveFrozenString());
+                           (assertion->op2.u1.iconVal == 0) || doesMethodHaveFrozenObjects());
                     break;
                 case O1K_VALUE_NUMBER:
                     assert((vnStore->TypeOfVN(assertion->op1.vn) != TYP_REF) || (assertion->op2.u1.iconVal == 0));
@@ -3423,7 +3423,7 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
 
                 // Make sure we don't retype const gc handles to TYP_I_IMPL
                 // Although, it's possible for e.g. GTF_ICON_STATIC_HDL
-                if (!newTree->IsIntegralConst(0) && newTree->IsIconHandle(GTF_ICON_STR_HDL))
+                if (!newTree->IsIntegralConst(0) && newTree->IsIconHandle(GTF_ICON_OBJ_HDL))
                 {
                     if (tree->TypeIs(TYP_BYREF))
                     {
