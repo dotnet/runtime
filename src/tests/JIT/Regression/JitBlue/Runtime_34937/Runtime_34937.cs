@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 class Program
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static uint PerformMod_1(uint i)
+    static uint PerformMod_1(uint i)
     {
         // X64-FULL-LINE:      mov [[REG0:[a-z]+]], [[REG1:[a-z0-9]+]]
         // X64-FULL-LINE-NEXT: and [[REG0]], 7
@@ -18,7 +18,7 @@ class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int PerformMod_2(int i)
+    static int PerformMod_2(int i)
     {
         // X64-FULL-LINE:              mov [[REG0:[a-z]+]], [[REG1:[a-z]+]]
         // X64-FULL-LINE-NEXT:         sar [[REG0]], 31
@@ -42,7 +42,7 @@ class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int PerformMod_3(int i, int j)
+    static int PerformMod_3(int i, int j)
     {
         return i % j;
     }
@@ -81,7 +81,7 @@ class Program
             Console.WriteLine("Failed Mod3!");
         }
 
-        if (MSUB<float>(3, 7, 8) != -53)
+        if (MSUB(3, 7, 8) != -53)
         {
             result = -1;
             Console.WriteLine("Failed MSUB");
