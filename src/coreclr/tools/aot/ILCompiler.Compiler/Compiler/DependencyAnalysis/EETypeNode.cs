@@ -128,7 +128,10 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public int MinimumObjectSize => _type.Context.Target.MinimumObjectSize;
+        public int MinimumObjectSize => GetMinimumObjectSize(_type.Context);
+
+        public static int GetMinimumObjectSize(TypeSystemContext typeSystemContext)
+            => typeSystemContext.Target.PointerSize * 3;
 
         protected virtual bool EmitVirtualSlotsAndInterfaces => false;
 
