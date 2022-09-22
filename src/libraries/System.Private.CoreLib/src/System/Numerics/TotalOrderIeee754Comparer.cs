@@ -144,25 +144,28 @@ namespace System.Numerics
 
                         // Leave the space for custom floating-point type that has variable significand length
 
-                        if (x!.GetSignificandBitLength() == y!.GetSignificandBitLength())
+                        int xSignificandBits = x!.GetSignificandBitLength();
+                        int ySignificandBits = y!.GetSignificandBitLength();
+
+                        if (xSignificandBits == ySignificandBits)
                         {
                             // Prevent stack overflow for huge numbers
                             const int StackAllocThreshold = 256;
 
-                            int xSignificandLength = x!.GetSignificandByteCount();
-                            int ySignificandLength = y!.GetSignificandByteCount();
+                            int xSignificandLength = x.GetSignificandByteCount();
+                            int ySignificandLength = y.GetSignificandByteCount();
 
-                            Span<byte> significantX = xSignificandLength <= StackAllocThreshold ? stackalloc byte[xSignificandLength] : new byte[xSignificandLength];
-                            Span<byte> significantY = ySignificandLength <= StackAllocThreshold ? stackalloc byte[ySignificandLength] : new byte[ySignificandLength];
+                            Span<byte> significandX = xSignificandLength <= StackAllocThreshold ? stackalloc byte[xSignificandLength] : new byte[xSignificandLength];
+                            Span<byte> significandY = ySignificandLength <= StackAllocThreshold ? stackalloc byte[ySignificandLength] : new byte[ySignificandLength];
 
-                            x.WriteSignificandBigEndian(significantX);
-                            y.WriteSignificandBigEndian(significantY);
+                            x.WriteSignificandBigEndian(significandX);
+                            y.WriteSignificandBigEndian(significandY);
 
-                            return significantX.SequenceCompareTo(significantY);
+                            return significandX.SequenceCompareTo(significandY);
                         }
                         else
                         {
-                            return x.GetSignificandBitLength().CompareTo(y.GetSignificandBitLength());
+                            return xSignificandBits.CompareTo(ySignificandBits);
                         }
                     }
 
