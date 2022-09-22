@@ -212,14 +212,14 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
         if (parentNode->OperIs(GT_ADD))
         {
             // Find "c + (a * b)" or "(a * b) + c"
-            return IsSafeToContainMem(node, childNode);
+            return IsSafeToContainMem(parentNode, childNode);
         }
 
         if (parentNode->OperIs(GT_SUB))
         {
             // Find "c - (a * b)"
             assert(childNode == parentNode->gtGetOp2());
-            return IsSafeToContainMem(node, childNode);
+            return IsSafeToContainMem(parentNode, childNode);
         }
 
         // TODO: Handle mneg
@@ -256,7 +256,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
         {
             // These operations can still report flags
 
-            if (IsSafeToContainMem(node, childNode))
+            if (IsSafeToContainMem(parentNode, childNode))
             {
                 MakeSrcContained(childNode, shiftAmountNode);
                 return true;
@@ -271,7 +271,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
 
         if (parentNode->OperIs(GT_CMP, GT_AND, GT_OR, GT_XOR))
         {
-            if (IsSafeToContainMem(node, childNode))
+            if (IsSafeToContainMem(parentNode, childNode))
             {
                 MakeSrcContained(childNode, shiftAmountNode);
                 return true;
