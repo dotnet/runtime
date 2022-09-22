@@ -173,8 +173,8 @@ namespace System.IO.Compression.Tests
                 if (blocksToRead != -1 && blocksRead >= blocksToRead)
                     break;
 
-                ac = await ast.ReadAtLeastAsync(ad, 4096);
-                bc = await bst.ReadAtLeastAsync(bd, 4096);
+                ac = await ast.ReadAtLeastAsync(ad, 4096, throwOnEndOfStream: false);
+                bc = await bst.ReadAtLeastAsync(bd, 4096, throwOnEndOfStream: false);
 
                 if (ac != bc)
                 {
