@@ -1597,7 +1597,7 @@ namespace System.Numerics
             get
             {
                 // For very big numbers, ToString can be too long or even timeout for Visual Studio to display
-                // Display an fast estimation value instead
+                // Display a fast estimated value instead
 
                 // Use ToString for small values
 
@@ -1626,7 +1626,7 @@ namespace System.Numerics
                 }
 
                 // The digits can be incorrect because of floating point errors and estimation in Log and Exp
-                // Keep some digits in the significand. 8 is arbitrarily chose, about half of the precision of double
+                // Keep some digits in the significand. 8 is arbitrarily chosen, about half of the precision of double
                 significand = Math.Round(significand, 8);
 
                 if (significand >= 10.0)
