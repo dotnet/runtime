@@ -301,8 +301,6 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData(TarEntryFormat.V7)]
-        // [InlineData(TarEntryFormat.Ustar)] https://github.com/dotnet/runtime/issues/75360
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
         public void WriteLongName(TarEntryFormat format)
@@ -354,6 +352,33 @@ namespace System.Formats.Tar.Tests
                 }
                 return expectedName;
             }
+        }
+
+        public static IEnumerable<object[]> WriteEntry_TooLongName_Throws_TheoryData()
+        {
+            foreach (TarEntryType entryType in new[] { TarEntryType.RegularFile, TarEntryType.Directory })
+            {
+                foreach (string name in GetTooLongNamesTestData(NameCapabilities.Name))
+                {
+                    TarEntryType v7EntryType = entryType is TarEntryType.RegularFile ? TarEntryType.V7RegularFile : entryType;
+                    yield return new object[] { TarEntryFormat.V7, v7EntryType, name };
+                }
+
+                foreach (string name in GetTooLongNamesTestData(NameCapabilities.NameAndPrefix))
+                {
+                    yield return new object[] { TarEntryFormat.Ustar, entryType, name };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(WriteEntry_TooLongName_Throws_TheoryData))]
+        public void WriteEntry_TooLongName_Throws(TarEntryFormat entryFormat, TarEntryType entryType, string name)
+        {
+            using TarWriter writer = new(new MemoryStream());
+
+            TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, entryType, name);
+            Assert.Throws<ArgumentException>("entry", () => writer.WriteEntry(entry));
         }
     }
 }

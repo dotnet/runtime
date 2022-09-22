@@ -65,6 +65,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MkFifo.cs" Link="Common\Interop\Unix\System.Native\Interop.MkFifo.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs" Link="Common\Interop\Unix\Interop.Stat.cs" />
     <Compile Include="$(CommonPath)System\IO\Archiving.Utils.Unix.cs" Link="Common\System\IO\Archiving.Utils.Unix.cs" />
+    <Compile Include="$(CommonPath)System\IO\PathInternal.Unix.cs" Link="Common\System\IO\PathInternal.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
