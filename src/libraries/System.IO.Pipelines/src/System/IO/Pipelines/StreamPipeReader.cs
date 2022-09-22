@@ -75,6 +75,11 @@ namespace System.IO.Pipelines
         {
             get
             {
+                if (_internalTokenSource != null)
+                {
+                    return _internalTokenSource;
+                }
+
                 lock (_lock)
                 {
                     return _internalTokenSource ??= new CancellationTokenSource();
@@ -208,7 +213,6 @@ namespace System.IO.Pipelines
                 return new ValueTask<ReadResult>(Task.FromCanceled<ReadResult>(cancellationToken));
             }
 
-            // PERF: store InternalTokenSource locally to avoid querying it twice (which acquires a lock)
             CancellationTokenSource tokenSource = InternalTokenSource;
             if (TryReadInternal(tokenSource, out ReadResult readResult))
             {
@@ -293,7 +297,6 @@ namespace System.IO.Pipelines
                 return new ValueTask<ReadResult>(Task.FromCanceled<ReadResult>(cancellationToken));
             }
 
-            // PERF: store InternalTokenSource locally to avoid querying it twice (which acquires a lock)
             CancellationTokenSource tokenSource = InternalTokenSource;
             if (TryReadInternal(tokenSource, out ReadResult readResult))
             {
@@ -380,7 +383,6 @@ namespace System.IO.Pipelines
         {
             ThrowIfCompleted();
 
-            // PERF: store InternalTokenSource locally to avoid querying it twice (which acquires a lock)
             CancellationTokenSource tokenSource = InternalTokenSource;
             if (tokenSource.IsCancellationRequested)
             {
@@ -451,7 +453,6 @@ namespace System.IO.Pipelines
         {
             ThrowIfCompleted();
 
-            // PERF: store InternalTokenSource locally to avoid querying it twice (which acquires a lock)
             CancellationTokenSource tokenSource = InternalTokenSource;
             if (tokenSource.IsCancellationRequested)
             {
