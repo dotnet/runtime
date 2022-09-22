@@ -698,7 +698,7 @@ namespace ILCompiler
 
         public sealed override bool GeneratesPInvoke(MethodDesc method)
         {
-            return !MarshalHelpers.IsMarshallingRequired(method);
+            return !Marshaller.IsMarshallingRequired(method);
         }
 
         public sealed override bool TryGetModuleTokenForExternalType(TypeDesc type, out ModuleToken token)

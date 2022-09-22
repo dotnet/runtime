@@ -2782,18 +2782,37 @@ namespace Internal.JitInterface
                     return true;
                 }
 
-                // If marshalling is required, then we cannot inline the P/Invoke and marshalling is required.
-                if (MarshalHelpers.IsMarshallingRequired(method))
+                MethodIL stubIL = null;
+                try
                 {
+                    stubIL = _compilation.GetMethodIL(method);
+                    if (stubIL == null)
+                    {
+                        // This is the case of a PInvoke method that requires marshallers, which we can't use in this compilation
+                        Debug.Assert(!_compilation.NodeFactory.CompilationModuleGroup.GeneratesPInvoke(method));
+                        return true;
+                    }
+
+                    // Marshalling behavior isn't modeled as protected by R2R rules, so disable pinvoke inlining for code outside
+                    // of the version bubble
+                    if (!_compilation.CompilationModuleGroup.VersionsWithMethodBody(method))
+                        return true;
+                }
+                catch (RequiresRuntimeJitException)
+                {
+                    // The PInvoke IL emitter will throw for known unsupported scenario. We cannot propagate the exception here since
+                    // this interface call might be used to check if a certain pinvoke can be inlined in the caller. Throwing means that the
+                    // caller will not get compiled. Instead, we'll return true to let the JIT know that it cannot inline the pinvoke, and
+                    // the actual pinvoke call will be handled by a stub that we create and compile in the runtime.
                     return true;
                 }
 
-                return false;
+                return ((PInvokeILStubMethodIL)stubIL).IsMarshallingRequired;
             }
             else
             {
                 var sig = HandleToObject(callSiteSig->methodSignature);
-                return MarshalHelpers.IsMarshallingRequired(sig, Array.Empty<ParameterMetadata>(), ((MetadataType)HandleToObject(callSiteSig->scope).OwningMethod.OwningType).Module);
+                return Marshaller.IsMarshallingRequired(sig, Array.Empty<ParameterMetadata>(), ((MetadataType)HandleToObject(callSiteSig->scope).OwningMethod.OwningType).Module);
             }
         }
 
@@ -2943,16 +2962,6 @@ namespace Internal.JitInterface
                 // If we didn't succeed on the inline, just pop back to the state before inlining
                 _precodeFixups = _stashedPrecodeFixups.Pop();
                 _inlinedMethods = _stashedInlinedMethods.Pop();
-                if (inlineResult == CorInfoInline.INLINE_FAIL && inlineeHnd != null)
-                {
-                    MethodDesc failedInlinee = HandleToObject(inlineeHnd);
-                    if (failedInlinee.IsPInvoke)
-                    {
-                        // If we failed to inline a P/Invoke, then we need to request compilation for it
-                        // to avoid generating a stub at runtime.
-                        _compilation.PrepareForCompilationRetry(_compilation.NodeFactory.CompiledMethodNode(failedInlinee), Array.Empty<EcmaMethod>());
-                    }
-                }
             }
         }
 
