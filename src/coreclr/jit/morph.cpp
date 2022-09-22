@@ -1279,12 +1279,12 @@ static regMaskTP EstimateRegisterUses(Compiler* comp, GenTree* tree)
             LclVarDsc*           desc = m_compiler->lvaGetDesc(node);
             if (!desc->lvDoNotEnregister && desc->lvIsRegArg)
             {
-                if (desc->GetArgReg() != REG_NA)
+                if ((desc->GetArgReg() != REG_NA) && (desc->GetArgReg() != REG_STK))
                 {
                     Registers |= genRegMask(desc->GetArgReg());
                 }
 #if FEATURE_MULTIREG_ARGS
-                if (desc->GetOtherArgReg() != REG_NA)
+                if ((desc->GetOtherArgReg() != REG_NA) && (desc->GetOtherArgReg() != REG_STK))
                 {
                     Registers |= genRegMask(desc->GetOtherArgReg());
                 }
