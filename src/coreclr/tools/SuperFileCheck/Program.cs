@@ -225,7 +225,6 @@ namespace SuperFileCheck
             {
                 var identifiers =
                     namespaceDecl.DescendantTokens().Where(x => x.IsKind(SyntaxKind.IdentifierToken)).Select(x => x.ValueText);
-                var namespac = String.Join(".", identifiers);
                 return $"{String.Join(".", identifiers)}.{qualifiedTypeName}";
             }
 
