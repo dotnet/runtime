@@ -1314,23 +1314,50 @@ namespace System
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
+                    ref byte spanRef = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span));
                     ref byte valueRef = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values));
-                    if (values.Length == 2)
+                    switch (values.Length)
                     {
-                        return SpanHelpers.IndexOfAnyValueType(
-                            ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
-                            valueRef,
-                            Unsafe.Add(ref valueRef, 1),
-                            span.Length);
-                    }
-                    else if (values.Length == 3)
-                    {
-                        return SpanHelpers.IndexOfAnyValueType(
-                            ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
-                            valueRef,
-                            Unsafe.Add(ref valueRef, 1),
-                            Unsafe.Add(ref valueRef, 2),
-                            span.Length);
+                        case 0:
+                            return -1;
+
+                        case 1:
+                            return SpanHelpers.IndexOfValueType(ref spanRef, valueRef, span.Length);
+
+                        case 2:
+                            return SpanHelpers.IndexOfAnyValueType(
+                                ref spanRef,
+                                valueRef,
+                                Unsafe.Add(ref valueRef, 1),
+                                span.Length);
+
+                        case 3:
+                            return SpanHelpers.IndexOfAnyValueType(
+                                ref spanRef,
+                                valueRef,
+                                Unsafe.Add(ref valueRef, 1),
+                                Unsafe.Add(ref valueRef, 2),
+                                span.Length);
+
+#if !MONO // We don't have a mono overload for 4 values
+                        case 4:
+                            return SpanHelpers.IndexOfAnyValueType(
+                                ref spanRef,
+                                valueRef,
+                                Unsafe.Add(ref valueRef, 1),
+                                Unsafe.Add(ref valueRef, 2),
+                                Unsafe.Add(ref valueRef, 3),
+                                span.Length);
+#endif
+                        case 5:
+                            return SpanHelpers.IndexOfAnyValueType(
+                                ref spanRef,
+                                valueRef,
+                                Unsafe.Add(ref valueRef, 1),
+                                Unsafe.Add(ref valueRef, 2),
+                                Unsafe.Add(ref valueRef, 3),
+                                Unsafe.Add(ref valueRef, 4),
+                                span.Length);
                     }
                 }
 
@@ -1573,23 +1600,41 @@ namespace System
             {
                 if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
+                    ref byte spanRef = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span));
                     ref byte valueRef = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values));
-                    if (values.Length == 2)
+                    switch (values.Length)
                     {
-                        return SpanHelpers.LastIndexOfAnyValueType(
-                            ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
-                            valueRef,
-                            Unsafe.Add(ref valueRef, 1),
-                            span.Length);
-                    }
-                    else if (values.Length == 3)
-                    {
-                        return SpanHelpers.LastIndexOfAnyValueType(
-                            ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
-                            valueRef,
-                            Unsafe.Add(ref valueRef, 1),
-                            Unsafe.Add(ref valueRef, 2),
-                            span.Length);
+                        case 0:
+                            return -1;
+
+                        case 1:
+                            return SpanHelpers.LastIndexOfValueType(ref spanRef, valueRef, span.Length);
+
+                        case 2:
+                            return SpanHelpers.LastIndexOfAnyValueType(
+                                ref spanRef,
+                                valueRef,
+                                Unsafe.Add(ref valueRef, 1),
+                                span.Length);
+
+                        case 3:
+                            return SpanHelpers.LastIndexOfAnyValueType(
+                                ref spanRef,
+                                valueRef,
+                                Unsafe.Add(ref valueRef, 1),
+                                Unsafe.Add(ref valueRef, 2),
+                                span.Length);
+
+#if !MONO // We don't have a mono overload for 4 values
+                        case 4:
+                            return SpanHelpers.LastIndexOfAnyValueType(
+                                ref spanRef,
+                                valueRef,
+                                Unsafe.Add(ref valueRef, 1),
+                                Unsafe.Add(ref valueRef, 2),
+                                Unsafe.Add(ref valueRef, 3),
+                                span.Length);
+#endif
                     }
                 }
 
