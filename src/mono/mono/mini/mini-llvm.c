@@ -7965,8 +7965,8 @@ MONO_RESTORE_WARNING
 				result = LLVMBuildXor (builder, lhs_int, rhs_int, "");
 				break;
 			case XBINOP_FORCEINT_ANDN:
-				rhs_int = LLVMBuildNot (builder, rhs_int, "");
-				result = LLVMBuildAnd (builder,  lhs_int, rhs_int, "");
+				result = LLVMBuildNot (builder, rhs_int, "");
+				result = LLVMBuildAnd (builder,  lhs_int, result, "");
 				break;
 			}
 			values [ins->dreg] = LLVMBuildBitCast (builder, result, t, "");
