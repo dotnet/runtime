@@ -560,11 +560,19 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             switch (type)
             {
-                case ElementType.Boolean:
-                case ElementType.Char:
                 case ElementType.U1:
                 case ElementType.I2:
                 case ElementType.I4:
+                    Write((ElementType)type, (int)value);
+                    return true;
+                case ElementType.Char:
+                    if (value.GetType() == typeof(char))
+                        value = (int)(char)value;
+                    Write((ElementType)type, (int)value);
+                    return true;
+                case ElementType.Boolean:
+                    if (value.GetType() == typeof(bool))
+                        value = (bool)value ? 1 : 0;
                     Write((ElementType)type, (int)value);
                     return true;
                 case ElementType.I1:

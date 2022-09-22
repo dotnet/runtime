@@ -593,7 +593,7 @@ namespace DebuggerTests
                 var (_, res) = await EvaluateOnCallFrame(id, "f.idx0[2]", expect_ok: false );
                 Assert.Equal("Unable to evaluate element access 'f.idx0[2]': Cannot apply indexing with [] to a primitive object of type 'number'", res.Error["message"]?.Value<string>());
                 (_, res) = await EvaluateOnCallFrame(id, "f[1]", expect_ok: false );
-                Assert.Equal( "Unable to evaluate element access 'f[1]': Type 'DebuggerTests.EvaluateLocalsWithIndexingTests.TestEvaluate' cannot be indexed.", res.Error["message"]?.Value<string>());
+                Assert.Equal( "Unable to evaluate element access 'f[1]': Cannot apply indexing with [] to an object of type 'DebuggerTests.EvaluateLocalsWithIndexingTests.TestEvaluate'", res.Error["message"]?.Value<string>());
            });
 
         [Fact]
@@ -624,9 +624,54 @@ namespace DebuggerTests
                    ("f.textList[j]", TString("2")),
                    ("f.numArray[j]", TNumber(2)),
                    ("f.textArray[i]", TString("1")));
-
            });
 
+        [Fact]
+        public async Task EvaluateUserDefinedIndexingByNonIntConst() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("f[\"longstring\"]", TBool(true)),
+                    ("f[\"-\"]", TBool(false)),
+                    ("f[\'-\']", TNumber(45)),
+                    ("f[true]", TString("True")),
+                    // ("f[1.23]", TNumber(1)) // Not supported yet - float/double
+
+                    // FixMe: https://github.com/dotnet/runtime/issues/76013
+                    // ("f.indexedByStr[\"1\"]", TBool(true)) // keyNotFoundException
+                    // ("f.indexedByStr[\"111\"]", TBool(false)), // keyNotFoundException
+                    // ("f.indexedByStr[\"true\"]", TBool(true)), // keyNotFoundException
+                    ("f.indexedByChar[\'i\']", TString("I")), //TEST ME
+                    ("f.indexedByChar[\'5\']", TString("5")), //TEST ME
+                    ("f.indexedByBool[true]", TString("TRUE")),
+                    ("f.indexedByBool[false]", TString("FALSE"))
+                );
+            });
+
+        [Fact]
+        public async Task EvaluateUserDefinedIndexingByNonIntLocals() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 12, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("f[longString]", TBool(true)),
+                    ("f[aBool]", TString("True")),
+                    ("f[aChar]", TNumber(57)),
+                    ("f[shortString]", TBool(false))
+                    // ("f[aFloat]", TNumber(1)),
+                    // ("f[aDouble]", TNumber(2)),
+
+                    // FixMe: https://github.com/dotnet/runtime/issues/76014
+                    // ("f[aDecimal]", TNumber(3)) // object
+                );
+            });
+
+        // ToDo: https://github.com/dotnet/runtime/issues/76015
         [Fact]
         public async Task EvaluateIndexingByExpression() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
@@ -638,7 +683,6 @@ namespace DebuggerTests
                     ("f.numList[i + 1]", TNumber(2)),
                     ("f.textList[(2 * j) - 1]", TString("2")),
                     ("f.textList[j - 1]", TString("1")),
-                    //("f[\"longstring\"]", TBool(true)), FIXME: Broken case
                     ("f.numArray[f.numList[j - 1]]", TNumber(2))
                 );
             });

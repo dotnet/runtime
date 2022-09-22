@@ -448,7 +448,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             case "object":
                                 if (multiDimensionalArray)
                                     throw new InvalidOperationException($"Cannot apply indexing with [,] to an object of type '{type}'");
-                                int.TryParse(elementIdxStr, out elementIdx);
+                                // can we use the get_Item for string as well? would be easier
                                 if (type == "string")
                                 {
                                     // ToArray() does not exist on string
@@ -458,37 +458,35 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     return await ExpressionEvaluator.EvaluateSimpleExpression(this, eaFormatted, elementAccessStr, variableDefinitions, logger, token);
                                 }
                                 var typeIds = await context.SdbAgent.GetTypeIdsForObject(objectId.Value, true, token);
-                                int[] methodIds = await context.SdbAgent.GetMethodIdsByName(typeIds[0], "ToArray", token);
-                                // ToArray should not have an overload, but if user defined it, take the default one: without params
+                                int[] methodIds = await context.SdbAgent.GetMethodIdsByName(typeIds[0], "get_Item", token);
                                 if (methodIds == null)
                                     throw new InvalidOperationException($"Type '{rootObject?["className"]?.Value<string>()}' cannot be indexed.");
 
+                                // get_Item should not have an overload, but if user defined it, take the default one: with one param (key)
+                                int allowedParamCnt = 1;
                                 int toArrayId = methodIds[0];
-                                if (methodIds.Length > 1)
+                                for (int i = 0; i < methodIds.Length; i++)
                                 {
-                                    foreach (var methodId in methodIds)
+                                    MethodInfoWithDebugInformation methodInfo = await context.SdbAgent.GetMethodInfo(methodIds[i], token);
+                                    ParameterInfo[] paramInfo = methodInfo.GetParametersInfo();
+
+                                    // how to choose the right method here when we have multiple with the same info? Try till succeeded?
+                                    if (paramInfo.Length == allowedParamCnt)
                                     {
-                                        MethodInfoWithDebugInformation methodInfo = await context.SdbAgent.GetMethodInfo(methodId, token);
-                                        ParameterInfo[] paramInfo = methodInfo.GetParametersInfo();
-                                        if (paramInfo.Length == 0)
+                                        try
                                         {
-                                            toArrayId = methodId;
-                                            break;
+                                            ArraySegment<byte> buffer = await WriteIndex(objectId, indexObject, elementIdxStr);
+                                            JObject getItemRetObj = await context.SdbAgent.InvokeMethod(buffer, methodIds[i], token);
+                                            return (JObject)getItemRetObj["value"];
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            logger.LogDebug($"Attempt number {i+1} out of {methodIds.Length} of invoking method {methodInfo.Name} failed. Method Id = {methodIds[i]}.\nInner exception: {ex}.");
+                                            continue;
                                         }
                                     }
                                 }
-                                try
-                                {
-                                    var toArrayRetMethod = await context.SdbAgent.InvokeMethod(objectId.Value, toArrayId, isValueType: false, token);
-                                    rootObject = await GetValueFromObject(toArrayRetMethod, token);
-                                    DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId arrayObjectId);
-                                    rootObject["value"] = await context.SdbAgent.GetArrayValues(arrayObjectId.Value, token);
-                                    return (JObject)rootObject["value"][elementIdx]["value"];
-                                }
-                                catch
-                                {
-                                    throw new InvalidOperationException($"Cannot apply indexing with [] to an object of type '{rootObject?["className"]?.Value<string>()}'");
-                                }
+                                throw new InvalidOperationException($"Cannot apply indexing with [] to an object of type '{rootObject?["className"]?.Value<string>()}'");
                             default:
                                 throw new InvalidOperationException($"Cannot apply indexing with [] to an expression of scheme '{objectId.Scheme}'");
                         }
@@ -499,6 +497,121 @@ namespace Microsoft.WebAssembly.Diagnostics
             catch (Exception ex) when (ex is not ExpressionEvaluationFailedException)
             {
                 throw new ExpressionEvaluationFailedException($"Unable to evaluate element access '{elementAccess}': {ex.Message}", ex);
+            }
+
+            async Task<ArraySegment<byte>> WriteIndex(DotnetObjectId rootObjId, JObject indexObject, string elementIdxStr)
+            {
+                var writer = new MonoBinaryWriter();
+                writer.WriteObj(rootObjId, context.SdbAgent);
+                writer.Write(1); // number of method args
+                var indexType = indexObject?["type"]?.Value<string>();
+                ArraySegment<byte> buffer;
+                if (indexType == null)
+                {
+                    // maybe use here
+                    // WriteConst(LiteralExpressionSyntax constValue, MonoSDBHelper SdbHelper, CancellationToken token)
+                    // then there will be no need to check the type manually and we fall here only for LiteralExpressionSyntax
+                    // Nested indexing does not fall here, it has indexObject's type
+
+                    // check if it's int
+                    buffer = await TryWriteIntIndex(writer, elementIdxStr);
+                    if (buffer != null)
+                        return buffer;
+
+                    // Not supported yet. We need more info about the method to know which overload to use
+                    buffer = TryWriteNotIntNumIndex(writer, elementIdxStr);
+
+                    // check if it's bool
+                    buffer = await TryWriteBoolIndex(writer, elementIdxStr);
+                    if (buffer != null)
+                        return buffer;
+
+                    // check if it's char:
+                    buffer = await TryWriteCharIndex(writer, elementIdxStr);
+                    if (buffer != null)
+                        return buffer;
+
+                    // assume it's string:
+                    Console.WriteLine($"Trying a constant string: {elementIdxStr}");
+                    if (!await writer.WriteConst(ElementType.String, elementIdxStr, context.SdbAgent, token))
+                        throw new InternalErrorException($"Unable to write index parameter to invoke the method in the runtime.");
+                    return writer.GetParameterBuffer();
+                }
+                // why not use WriteJsonValue for all cases here? It just needs a minor extension of the method (symbols + float/double)
+                switch (indexType)
+                {
+                    case "number":
+                        buffer = await TryWriteIntIndex(writer, elementIdxStr);
+                        if (buffer != null)
+                            break;
+                        // Not supported yet. We need more info about the method to know which overload to use
+                        Console.WriteLine($"indexType = {indexType}");
+                        buffer = TryWriteNotIntNumIndex(writer, elementIdxStr);
+                        break;
+                    case "boolean":
+                        buffer = await TryWriteBoolIndex(writer, elementIdxStr);
+                        break;
+                    case "symbol":
+                        buffer = await TryWriteCharIndex(writer, elementIdxStr);
+                        break;
+                    case "string":
+                        if (!await writer.WriteConst(ElementType.String, elementIdxStr, context.SdbAgent, token))
+                            throw new InternalErrorException($"Unable to write index parameter to invoke the method in the runtime.");
+                        buffer = writer.GetParameterBuffer();
+                        break;
+                    default:
+                        // ToDo - "object". Use WriteJsonValue? Add tests and check if we can do it
+                        // decimals are treated as objects
+                        throw new InternalErrorException($"Indexing by {indexType} is not supported yet.");
+                }
+                if (buffer == null)
+                    throw new InternalErrorException($"Parsing index of type {indexType} to write it into the buffer failed.");
+                return buffer;
+            }
+
+            async Task<ArraySegment<byte>> TryWriteIntIndex(MonoBinaryWriter writer, string elementIdxStr)
+            {
+                if (int.TryParse(elementIdxStr, out int elementIdx))
+                {
+                    if (!await writer.WriteConst(ElementType.I4, elementIdx, context.SdbAgent, token))
+                        throw new InternalErrorException($"Unable to write index parameter to invoke the method in the runtime.");
+                    return writer.GetParameterBuffer();
+                }
+                return null;
+            }
+
+            ArraySegment<byte> TryWriteNotIntNumIndex(MonoBinaryWriter writer, string elementIdxStr)
+            {
+                if (double.TryParse(elementIdxStr, System.Globalization.CultureInfo.InvariantCulture, out double elementIdx))
+                    throw new InternalErrorException($"Indexing by single and double type is not supported yet.");
+                return null;
+            }
+
+            async Task<ArraySegment<byte>> TryWriteBoolIndex(MonoBinaryWriter writer, string elementIdxStr)
+            {
+                if (bool.TryParse(elementIdxStr, out bool elementIdxBool))
+                {
+                    Console.WriteLine($"it's bool: {elementIdxBool}");
+                    if (!await writer.WriteConst(ElementType.Boolean, elementIdxBool, context.SdbAgent, token))
+                        throw new InternalErrorException($"Unable to write index parameter to invoke the method in the runtime.");
+                    return writer.GetParameterBuffer();
+                }
+                return null;
+            }
+
+            async Task<ArraySegment<byte>> TryWriteCharIndex(MonoBinaryWriter writer, string elementIdxStr)
+            {
+                char elementIdxChar;
+                if (elementIdxStr.Length == 3 && elementIdxStr.StartsWith("\'") && elementIdxStr.EndsWith("\'"))
+                    elementIdxChar = elementIdxStr[1];
+                else if (elementIdxStr.Length == 1)
+                    elementIdxChar = elementIdxStr[0];
+                else
+                    return null;
+                Console.WriteLine($"it's char: {elementIdxChar}");
+                if (!await writer.WriteConst(ElementType.Char, elementIdxChar, context.SdbAgent, token))
+                    throw new InternalErrorException($"Unable to write index parameter to invoke the method in the runtime.");
+                return writer.GetParameterBuffer();
             }
         }
 
