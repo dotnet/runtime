@@ -2654,25 +2654,13 @@ namespace System
         /// <param name="newValue">The value to replace all occurrences of <paramref name="oldValue"/>.</param>
         public static void Replace<T>(this Span<T> span, T oldValue, T newValue) where T : IEquatable<T>?
         {
-            if (default(T) != null || oldValue != null)
+            for (int i = 0; i < span.Length; ++i)
             {
-                Debug.Assert(oldValue is not null);
+                ref T val = ref span[i];
 
-                for (int i = 0; i < span.Length; ++i)
+                if (EqualityComparer<T>.Default.Equals(val, oldValue))
                 {
-                    ref T val = ref span[i];
-                    if (oldValue.Equals(val))
-                    {
-                        val = newValue;
-                    }
-                }
-            }
-            else
-            {
-                for (int i = 0; i < span.Length; ++i)
-                {
-                    ref T val = ref span[i];
-                    val ??= newValue;
+                    val = newValue;
                 }
             }
         }
