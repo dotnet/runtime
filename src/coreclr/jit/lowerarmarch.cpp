@@ -1138,16 +1138,14 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
         BlockRange().InsertAfter(zroCns, val);
         LowerNode(val);
 
-        GenTree* bitMskCns = comp->gtNewIconNode(0, TYP_LONG);
-        BlockRange().InsertAfter(val, bitMskCns);
+        GenTree* cmpZeroCns = comp->gtNewIconNode(0, TYP_LONG);
+        BlockRange().InsertAfter(val, cmpZeroCns);
 
         node->ChangeOper(cmpOp);
         node->gtType        = TYP_INT;
         node->AsOp()->gtOp1 = val;
-        node->AsOp()->gtOp2 = bitMskCns;
-
-        GenCondition cmpCnd = (cmpOp == GT_EQ) ? GenCondition::EQ : GenCondition::NE;
-        LowerNodeCC(node, cmpCnd);
+        node->AsOp()->gtOp2 = cmpZeroCns;
+        LowerNodeCC(node, (cmpOp == GT_EQ) ? GenCondition::EQ : GenCondition::NE);
         node->gtType = TYP_VOID;
         node->ClearUnusedValue();
         LowerNode(node);
