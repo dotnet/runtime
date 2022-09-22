@@ -1640,7 +1640,7 @@ namespace System.Numerics
                 string signStr = _sign < 0 ? "-" : "";
 
                 // Use about a half of the precision of double
-                return $"{signStr}{significand:F8}e+{exponent}";
+                return string.Create(CultureInfo.InvariantCulture, $"{signStr}{significand:F8}e+{exponent}");
             }
         }
 
