@@ -16,6 +16,10 @@ Native-sized integer types and pointers have alignment that matches their size o
 ## Atomic memory accesses.
 Memory accesses to *properly aligned* data of primitive types are always atomic. The value that is observed is always a result of complete read and write operations.
 
+Values of unmanaged pointers are treated as native integer primitive types. Memory accesses to *properly aligned* values of unmanaged pointers are atomic.
+
+Managed references are always aligned to their size on the given platform and accesses are atomic.
+
 The following methods perform atomic memory accesses regardless of the platform.<br/>
 - `System.Threading.Interlocked` methods
 - `System.Threading.Volatile` methods
