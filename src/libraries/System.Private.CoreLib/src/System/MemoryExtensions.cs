@@ -2652,17 +2652,50 @@ namespace System
         /// <param name="span">The span in which the elements should be replaced.</param>
         /// <param name="oldValue">The value to be replaced with <paramref name="newValue"/>.</param>
         /// <param name="newValue">The value to replace all occurrences of <paramref name="oldValue"/>.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Replace<T>(this Span<T> span, T oldValue, T newValue) where T : IEquatable<T>?
         {
-            for (int i = 0; i < span.Length; ++i)
+            if (SpanHelpers.CanVectorizeAndBenefit<T>(span.Length))
             {
-                ref T val = ref span[i];
+                nuint length = (uint)span.Length;
 
-                if (EqualityComparer<T>.Default.Equals(val, oldValue))
+                if (Unsafe.SizeOf<T>() == sizeof(byte))
                 {
-                    val = newValue;
+                    SpanHelpers.ReplaceValueType(
+                        ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, byte>(ref oldValue),
+                        Unsafe.As<T, byte>(ref newValue),
+                        length);
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(short))
+                {
+                    SpanHelpers.ReplaceValueType(
+                        ref Unsafe.As<T, short>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, short>(ref oldValue),
+                        Unsafe.As<T, short>(ref newValue),
+                        length);
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(int))
+                {
+                    SpanHelpers.ReplaceValueType(
+                        ref Unsafe.As<T, int>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, int>(ref oldValue),
+                        Unsafe.As<T, int>(ref newValue),
+                        length);
+                }
+                else
+                {
+                    Debug.Assert(Unsafe.SizeOf<T>() == sizeof(long));
+
+                    SpanHelpers.ReplaceValueType(
+                        ref Unsafe.As<T, long>(ref MemoryMarshal.GetReference(span)),
+                        Unsafe.As<T, long>(ref oldValue),
+                        Unsafe.As<T, long>(ref newValue),
+                        length);
                 }
             }
+
+            SpanHelpers.Replace(span, oldValue, newValue);
         }
 
         /// <summary>Finds the length of any common prefix shared between <paramref name="span"/> and <paramref name="other"/>.</summary>

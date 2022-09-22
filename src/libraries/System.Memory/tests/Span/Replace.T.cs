@@ -11,6 +11,7 @@ public class ReplaceTests_Int16 : ReplaceTests<short> { protected override short
 public class ReplaceTests_Int32 : ReplaceTests<int> { protected override int Create(int value) => value; }
 public class ReplaceTests_Int64 : ReplaceTests<long> { protected override long Create(int value) => value; }
 public class ReplaceTests_Char : ReplaceTests<char> { protected override char Create(int value) => (char)value; }
+public class ReplaceTests_Double : ReplaceTests<double> { protected override double Create(int value) => (double)value; }
 public class ReplaceTests_Record : ReplaceTests<SimpleRecord> { protected override SimpleRecord Create(int value) => new SimpleRecord(value); }
 public class ReplaceTests_CustomEquatable : ReplaceTests<CustomEquatable> { protected override CustomEquatable Create(int value) => new CustomEquatable((byte)value); }
 

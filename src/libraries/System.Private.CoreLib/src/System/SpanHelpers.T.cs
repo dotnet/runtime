@@ -2618,6 +2618,24 @@ namespace System
             return -1;
         }
 
+        public static void Replace<T>(Span<T> span, T oldValue, T newValue)
+        {
+            for (int i = 0; i < span.Length; ++i)
+            {
+                ref T val = ref span[i];
+
+                if (EqualityComparer<T>.Default.Equals(oldValue, val))
+                {
+                    val = newValue;
+                }
+            }
+        }
+
+        public static void ReplaceValueType<T>(ref T src, T oldValue, T newValue, nuint length) where T : struct
+        {
+            throw new NotImplementedException();
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int ComputeFirstIndex<T>(ref T searchSpace, ref T current, Vector128<T> equals) where T : struct
         {
