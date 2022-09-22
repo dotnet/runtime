@@ -1176,7 +1176,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (size != 16) 	// Supported only on Vector128
 			return NULL;
 
-		if (!is_SIMD_feature_supported (ctr, MONO_CPU_X86_SSE41))
+		if (!is_SIMD_feature_supported (cfg, MONO_CPU_X86_SSE41))
 			return NULL;
 
 		int ceil_or_floor = id == SN_Ceiling ? 10 : 9;
