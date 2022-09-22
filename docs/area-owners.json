@@ -1400,7 +1400,8 @@
     {
       "lead": "HongGit",
       "owners": [
-        "HongGit"
+        "HongGit",
+        "roji"
       ],
       "label": "area-System.Transactions"
     },
