@@ -13,8 +13,6 @@ namespace System.Text.Json.Serialization.Metadata
     [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
     internal sealed class ReflectionEmitMemberAccessor : MemberAccessor
     {
-        private static ReflectionMemberAccessor? s_reflectionMemberAccessor;
-
         public override Func<object>? CreateConstructor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
@@ -75,12 +73,6 @@ namespace System.Text.Json.Serialization.Metadata
             ParameterInfo[] parameters = constructor.GetParameters();
             int parameterCount = parameters.Length;
 
-            if (parameterCount > 64)
-            {
-                // Avoid emitting dynamic code for constructors with large parameter counts
-                return (s_reflectionMemberAccessor ??= new()).CreateParameterizedConstructor<T>(constructor);
-            }
-
             var dynamicMethod = new DynamicMethod(
                 ConstructorInfo.ConstructorName,
                 type,
@@ -95,7 +87,7 @@ namespace System.Text.Json.Serialization.Metadata
                 Type paramType = parameters[i].ParameterType;
 
                 generator.Emit(OpCodes.Ldarg_0);
-                generator.Emit(OpCodes.Ldc_I4_S, i);
+                generator.Emit(OpCodes.Ldc_I4, i);
                 generator.Emit(OpCodes.Ldelem_Ref);
                 generator.Emit(OpCodes.Unbox_Any, paramType);
             }
