@@ -25,7 +25,7 @@ namespace System.Runtime.InteropServices
             if (t.IsPointer /* or IsFunctionPointer */)
                 return IntPtr.Size;
 
-            if (t.IsByRef || t.IsGenericTypeDefinition || t.IsArray || t.ContainsGenericParameters)
+            if (t.IsByRef || t.IsArray || t.ContainsGenericParameters)
                 throw new ArgumentException(SR.Format(SR.Arg_CannotMarshal, t));
 
             return RuntimeInteropData.GetStructUnsafeStructSize(t.TypeHandle);
