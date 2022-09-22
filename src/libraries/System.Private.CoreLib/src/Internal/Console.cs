@@ -10,7 +10,7 @@ namespace Internal
     // and low-level tests that want to call System.Private.CoreLib directly
     //
 
-    internal static partial class Console
+    public static partial class Console
     {
         public static void WriteLine(string? s) =>
             Write(s + Environment.NewLineConst);

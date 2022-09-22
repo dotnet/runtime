@@ -1,4 +1,5 @@
 Compat issues with assembly System.Private.CoreLib:
+TypesMustExist : Type 'Internal.Console' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'Internal.DeveloperExperience.DeveloperExperience' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'Internal.Metadata.NativeFormat.ArraySignature' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'Internal.Metadata.NativeFormat.ArraySignatureHandle' does not exist in the reference but it does exist in the implementation.
@@ -221,6 +222,7 @@ TypesMustExist : Type 'System.Reflection.Runtime.General.QMethodDefinition' does
 TypesMustExist : Type 'System.Reflection.Runtime.General.QSignatureTypeHandle' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Reflection.Runtime.General.QTypeDefinition' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Reflection.Runtime.General.QTypeDefRefOrSpec' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'protected System.String System.String System.Resources.ResourceManager.BaseNameField' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Resources.RuntimeResourceSet' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Runtime.ExceptionIDs' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Runtime.RhFailFastReason' does not exist in the reference but it does exist in the implementation.

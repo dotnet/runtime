@@ -13,5 +13,20 @@
       <method name="UpdateValue" />
       <method name="ThrowIfDeserializationInProgress" />
     </type>
+    <type fullname="Internal.Runtime.InteropServices.ComActivator">
+      <!-- Used by hostpolicy.cpp -->
+      <method name="GetClassFactoryForTypeInternal" />
+      <method name="RegisterClassForTypeInternal" />
+      <method name="UnregisterClassForTypeInternal" />
+    </type>
+    <type fullname="Internal.Runtime.InteropServices.InMemoryAssemblyLoader">
+      <!-- Used by hostpolicy.cpp -->
+      <method name="LoadInMemoryAssembly" />
+    </type>
+    <type fullname="Internal.Runtime.InteropServices.ComponentActivator">
+      <!-- Used by hostpolicy.cpp -->
+      <method name="LoadAssemblyAndGetFunctionPointer" />
+      <method name="GetFunctionPointer" />
+    </type>
   </assembly>
 </linker>

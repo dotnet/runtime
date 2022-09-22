@@ -8,7 +8,8 @@ using System.Runtime.InteropServices;
 namespace Internal.Runtime.InteropServices
 {
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe struct ComActivationContextInternal
+    [CLSCompliant(false)]
+    public unsafe struct ComActivationContextInternal
     {
         public Guid ClassId;
         public Guid InterfaceId;
