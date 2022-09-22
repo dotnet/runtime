@@ -2645,6 +2645,18 @@ namespace System
             }
         }
 
+        /// <summary>
+        /// Replaces all occurrences of <paramref name="oldValue"/> with <paramref name="newValue"/>.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements in the span.</typeparam>
+        /// <param name="span">The span in which the elements should be replaced.</param>
+        /// <param name="oldValue">The value to be replaced with <paramref name="newValue"/>.</param>
+        /// <param name="newValue">The value to replace all occurrences of <paramref name="oldValue"/>.</param>
+        public static void Replace<T>(this Span<T> span, T oldValue, T newValue) where T : IEquatable<T>?
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>Finds the length of any common prefix shared between <paramref name="span"/> and <paramref name="other"/>.</summary>
         /// <typeparam name="T">The type of the elements in the spans.</typeparam>
         /// <param name="span">The first sequence to compare.</param>
