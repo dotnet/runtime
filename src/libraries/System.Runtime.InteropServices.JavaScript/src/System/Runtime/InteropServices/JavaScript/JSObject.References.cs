@@ -8,7 +8,7 @@ namespace System.Runtime.InteropServices.JavaScript
 {
     public partial class JSObject
     {
-        internal IntPtr JSHandle;
+        internal nint JSHandle;
 
         internal GCHandle? InFlight;
         internal int InFlightCounter;

@@ -14,7 +14,7 @@ namespace System.Runtime.InteropServices.JavaScript
     internal static unsafe partial class LegacyExports
     {
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
-        public static void GetCSOwnedObjectByJSHandleRef(IntPtr jsHandle, int shouldAddInflight, out JSObject? result)
+        public static void GetCSOwnedObjectByJSHandleRef(nint jsHandle, int shouldAddInflight, out JSObject? result)
         {
             lock (JSHostImplementation.s_csOwnedObjects)
             {
@@ -56,7 +56,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
-        public static void CreateCSOwnedProxyRef(IntPtr jsHandle, JSHostImplementation.MappedType mappedType, int shouldAddInflight, out JSObject jsObject)
+        public static void CreateCSOwnedProxyRef(nint jsHandle, JSHostImplementation.MappedType mappedType, int shouldAddInflight, out JSObject jsObject)
         {
             JSObject? res = null;
 
