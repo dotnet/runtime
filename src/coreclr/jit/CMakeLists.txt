@@ -165,7 +165,6 @@ set( JIT_SOURCES
   ssarenamestate.cpp
   stacklevelsetter.cpp
   treelifeupdater.cpp
-  typeinfo.cpp
   unwind.cpp
   utils.cpp
   valuenum.cpp

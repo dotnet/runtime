@@ -3929,13 +3929,6 @@ private:
     unsigned impInitBlockLineInfo();
 
     bool impIsThis(GenTree* obj);
-    bool impIsLDFTN_TOKEN(const BYTE* delegateCreateStart, const BYTE* newobjCodeAddr);
-    bool impIsDUP_LDVIRTFTN_TOKEN(const BYTE* delegateCreateStart, const BYTE* newobjCodeAddr);
-    bool impIsAnySTLOC(OPCODE opcode)
-    {
-        return ((opcode == CEE_STLOC) || (opcode == CEE_STLOC_S) ||
-                ((opcode >= CEE_STLOC_0) && (opcode <= CEE_STLOC_3)));
-    }
 
     void impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call);
 
@@ -3954,10 +3947,9 @@ private:
 
     struct PendingDsc
     {
-        PendingDsc*   pdNext;
-        BasicBlock*   pdBB;
-        SavedStack    pdSavedStack;
-        ThisInitState pdThisPtrInit;
+        PendingDsc* pdNext;
+        BasicBlock* pdBB;
+        SavedStack  pdSavedStack;
     };
 
     PendingDsc* impPendingList; // list of BBs currently waiting to be imported.
@@ -4128,7 +4120,6 @@ private:
 
     void FreeBlockListNode(BlockListNode* node);
 
-    bool impIsValueType(typeInfo* pTypeInfo);
     var_types mangleVarArgsType(var_types type);
 
     regNumber getCallArgIntRegister(regNumber floatReg);
@@ -10239,37 +10230,6 @@ public:
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     XX                                                                           XX
-    XX                           typeInfo                                        XX
-    XX                                                                           XX
-    XX   Checks for type compatibility and merges types                          XX
-    XX                                                                           XX
-    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    */
-
-public:
-    // Returns true if child is equal to or a subtype of parent for merge purposes
-    // This support is necessary to support attributes that are not described in
-    // for example, signatures. For example, the permanent home byref (byref that
-    // points to the gc heap), isn't a property of method signatures, therefore,
-    // it is safe to have mismatches here (that tiCompatibleWith will not flag),
-    // but when deciding if we need to reimport a block, we need to take these
-    // in account
-    bool tiMergeCompatibleWith(const typeInfo& pChild, const typeInfo& pParent, bool normalisedForStack) const;
-
-    // Returns true if child is equal to or a subtype of parent.
-    // normalisedForStack indicates that both types are normalised for the stack
-    bool tiCompatibleWith(const typeInfo& pChild, const typeInfo& pParent, bool normalisedForStack) const;
-
-    // Merges pDest and pSrc. Returns false if merge is undefined.
-    // *pDest is modified to represent the merged type.  Sets "*changed" to true
-    // if this changes "*pDest".
-    bool tiMergeToCommonParent(typeInfo* pDest, const typeInfo* pSrc, bool* changed) const;
-
-    /*
-    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    XX                                                                           XX
     XX                           IL verification stuff                           XX
     XX                                                                           XX
     XX                                                                           XX
@@ -10278,45 +10238,22 @@ public:
     */
 
 public:
-    // The following is used to track liveness of local variables, initialization
-    // of valueclass constructors, and type safe use of IL instructions.
-
-    // dynamic state info needed for verification
     EntryState verCurrentState;
-
-    // this ptr of object type .ctors are considered intited only after
-    // the base class ctor is called, or an alternate ctor is called.
-    // An uninited this ptr can be used to access fields, but cannot
-    // be used to call a member function.
-    bool verTrackObjCtorInitState;
 
     void verInitBBEntryState(BasicBlock* block, EntryState* currentState);
 
-    // Requires that "tis" is not TIS_Bottom -- it's a definite init/uninit state.
-    void verSetThisInit(BasicBlock* block, ThisInitState tis);
     void verInitCurrentState();
     void verResetCurrentState(BasicBlock* block, EntryState* currentState);
-
-    // Merges the current verification state into the entry state of "block", return false if that merge fails,
-    // TRUE if it succeeds.  Further sets "*changed" to true if this changes the entry state of "block".
-    bool verMergeEntryStates(BasicBlock* block, bool* changed);
 
     void verConvertBBToThrowVerificationException(BasicBlock* block DEBUGARG(bool logMsg));
     void verHandleVerificationFailure(BasicBlock* block DEBUGARG(bool logMsg));
     typeInfo verMakeTypeInfoForLocal(unsigned lclNum);
-    typeInfo verMakeTypeInfo(CORINFO_CLASS_HANDLE clsHnd,
-                             bool bashStructToRef = false); // converts from jit type representation to typeInfo
+    typeInfo verMakeTypeInfo(CORINFO_CLASS_HANDLE clsHnd); // converts from jit type representation to typeInfo
     typeInfo verMakeTypeInfo(CorInfoType          ciType,
                              CORINFO_CLASS_HANDLE clsHnd); // converts from jit type representation to typeInfo
-    bool verIsSDArray(const typeInfo& ti);
-    typeInfo verGetArrayElemType(const typeInfo& ti);
 
     typeInfo verParseArgSigToTypeInfo(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args);
     bool verIsByRefLike(const typeInfo& ti);
-    bool verIsSafeToReturnByRef(const typeInfo& ti);
-
-    // generic type variables range over types that satisfy IsBoxable
-    bool verIsBoxable(const typeInfo& ti);
 
     void DECLSPEC_NORETURN verRaiseVerifyException(INDEBUG(const char* reason) DEBUGARG(const char* file)
                                                        DEBUGARG(unsigned line));
@@ -10324,35 +10261,7 @@ public:
                                              DEBUGARG(unsigned line));
     bool verCheckTailCallConstraint(OPCODE                  opcode,
                                     CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                    CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, // Is this a "constrained." call
-                                                                                       // on a type parameter?
-                                    bool speculative // If true, won't throw if verificatoin fails. Instead it will
-                                                     // return false to the caller.
-                                                     // If false, it will throw.
-                                    );
-    bool verIsBoxedValueType(const typeInfo& ti);
-
-    void verVerifyCall(OPCODE                  opcode,
-                       CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                       CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
-                       bool                    tailCall,
-                       bool                    readonlyCall, // is this a "readonly." call?
-                       const BYTE*             delegateCreateStart,
-                       const BYTE*             codeAddr,
-                       CORINFO_CALL_INFO* callInfo DEBUGARG(const char* methodName));
-
-    bool verCheckDelegateCreation(const BYTE* delegateCreateStart, const BYTE* codeAddr, mdMemberRef& targetMemberRef);
-
-    typeInfo verVerifySTIND(const typeInfo& ptr, const typeInfo& value, const typeInfo& instrType);
-    typeInfo verVerifyLDIND(const typeInfo& ptr, const typeInfo& instrType);
-    void verVerifyField(CORINFO_RESOLVED_TOKEN*   pResolvedToken,
-                        const CORINFO_FIELD_INFO& fieldInfo,
-                        const typeInfo*           tiThis,
-                        bool                      mutator,
-                        bool                      allowPlainStructAsThis = false);
-    void verVerifyCond(const typeInfo& tiOp1, const typeInfo& tiOp2, unsigned opcode);
-    void verVerifyThisPtrInitialised();
-    bool verIsCallToInitThisPtr(CORINFO_CLASS_HANDLE context, CORINFO_CLASS_HANDLE target);
+                                    CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken);
 
 #ifdef DEBUG
 
