@@ -22,7 +22,6 @@ namespace System.Formats.Tar
 
         private static ReadOnlySpan<byte> GnuMagicBytes => "ustar "u8;
         private static ReadOnlySpan<byte> GnuVersionBytes => " \0"u8;
-        private static ReadOnlySpan<byte> SeparatorsAsBytes => Encoding.UTF8.GetBytes(PathInternal.DirectorySeparators);
 
         // Predefined text for the Name field of a GNU long metadata entry. Applies for both LongPath ('L') and LongLink ('K').
         private const string GnuLongMetadataName = "././@LongLink";
@@ -398,9 +397,9 @@ namespace System.Formats.Tar
                 return WriteLeftAlignedBytesAndGetChecksum(nameAndPrefixBytes, buffer.Slice(FieldLocations.Name, FieldLengths.Name));
             }
 
-            int lastIdx = nameAndPrefixBytes.LastIndexOfAny(SeparatorsAsBytes);
-            ReadOnlySpan<byte> name = stackalloc byte[0];
-            ReadOnlySpan<byte> prefix = stackalloc byte[0];
+            int lastIdx = nameAndPrefixBytes.LastIndexOfAny(PathInternal.Utf8DirectorySeparators);
+            scoped ReadOnlySpan<byte> name;
+            scoped ReadOnlySpan<byte> prefix;
 
             if (lastIdx == -1)
             {
@@ -410,32 +409,21 @@ namespace System.Formats.Tar
             else
             {
                 name = nameAndPrefixBytes.Slice(lastIdx + 1);
-
-                if (lastIdx > 0)
-                {
-                    prefix = nameAndPrefixBytes.Slice(0, lastIdx);
-                }
-                else
-                {
-                    // We cannot neglect the separator if that's the only thing we can place in prefix.
-                    prefix = nameAndPrefixBytes.Slice(0, 1);
-                }
+                prefix = nameAndPrefixBytes.Slice(0, Math.Max(lastIdx, 1)); // need at least the separator
             }
 
+            // At this point nameAndPrefixBytes.Length > 100.
+            // Attempt to split it in a way it can use prefix.
             while (prefix.Length - name.Length > FieldLengths.Prefix)
             {
-                lastIdx = prefix.LastIndexOfAny(SeparatorsAsBytes);
-                if (lastIdx == -1) { break; }
+                lastIdx = prefix.LastIndexOfAny(PathInternal.Utf8DirectorySeparators);
+                if (lastIdx < 0)
+                {
+                    break;
+                }
 
                 name = nameAndPrefixBytes.Slice(lastIdx + 1);
-                if (lastIdx > 0)
-                {
-                    prefix = prefix.Slice(0, lastIdx);
-                }
-                else
-                {
-                    prefix = prefix.Slice(0, 1);
-                }
+                prefix = nameAndPrefixBytes.Slice(0, Math.Max(lastIdx, 1)); // need at least the separator
             }
 
             if (prefix.Length <= FieldLengths.Prefix && name.Length <= FieldLengths.Name)
