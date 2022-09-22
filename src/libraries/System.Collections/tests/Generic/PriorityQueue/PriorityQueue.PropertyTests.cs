@@ -107,25 +107,25 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(GetRandomStringArrays))]
-        public static void KMaxElements_EnqueueDequeue_String(string[] elements)
+        public static void KMaxElements_String(string[] elements)
         {
             const int k = 5;
             IEnumerable<string> expected = elements.OrderByDescending(e => e, s_stringComparer).Take(k);
-            IEnumerable<string> actual = KMaxElements_EnqueueDequeue(elements, k, s_stringComparer);
+            IEnumerable<string> actual = KMaxElements(elements, k, s_stringComparer);
             Assert.Equal(expected, actual);
         }
 
         [Theory]
         [MemberData(nameof(GetRandomIntArrays))]
-        public static void KMaxElements_EnqueueDequeue_Int(int[] elements)
+        public static void KMaxElements_Int(int[] elements)
         {
             const int k = 5;
             IEnumerable<int> expected = elements.OrderByDescending(e => e).Take(k);
-            IEnumerable<int> actual = KMaxElements_EnqueueDequeue(elements, k);
+            IEnumerable<int> actual = KMaxElements(elements, k);
             Assert.Equal(expected, actual);
         }
 
-        private static IEnumerable<TElement> KMaxElements_EnqueueDequeue<TElement>(TElement[] elements, int k, IComparer<TElement>? comparer = null)
+        private static IEnumerable<TElement> KMaxElements<TElement>(TElement[] elements, int k, IComparer<TElement>? comparer = null)
         {
             var queue = new PriorityQueue<TElement, TElement>(comparer);
             comparer = queue.Comparer;
