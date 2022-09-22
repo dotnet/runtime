@@ -1696,9 +1696,13 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
         //
         JITDUMP("  [%06u] -> #%d", expensiveArg->GetNode()->gtTreeID, begTab);
         if (argsRemaining == 1)
+        {
             JITDUMP(" (last arg)\n");
+        }
         else
+        {
             JITDUMP(" (cost %u)\n", expensiveArgCost);
+        }
 
         if (expensiveArgIndex != begTab)
         {
