@@ -239,8 +239,8 @@ namespace System.Xml.XmlReaderTests
             //add end tag
             fullXml.Append("</PLAY>");
 
-            //quote expected string with \r\n
-            expected = "\r\n" + expectedXml.ToString() + "\r\n";
+            //quote expected string with Environment.NewLine
+            expected = Environment.NewLine + expectedXml.ToString() + Environment.NewLine;
 
             return fullXml.ToString();
         }
