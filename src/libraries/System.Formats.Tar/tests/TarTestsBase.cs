@@ -643,6 +643,7 @@ namespace System.Formats.Tar.Tests
             Assert.True(Enum.IsDefined(max));
             List<string> prefixes = GetPrefixes();
 
+            // prefix + name of length 100
             foreach (string prefix in prefixes)
             {
                 int nameLength = 100 - prefix.Length;
@@ -654,7 +655,15 @@ namespace System.Formats.Tar.Tests
             if (max == NameCapabilities.Name)
                 yield break;
 
-            // test maxed out prefix.
+            // maxed out name.
+            foreach (string prefix in prefixes)
+            {
+                yield return prefix + Repeat(OneByteCharacter, 100);
+                yield return prefix + Repeat(OneByteCharacter, 100 - 2) + Repeat(TwoBytesCharacter, 1);
+                yield return prefix + Repeat(OneByteCharacter, 100 - 4) + Repeat(FourBytesCharacter, 1);
+            }
+
+            // maxed out prefix and name.
             foreach (string prefix in prefixes)
             {
                 int directoryLength = 155 - prefix.Length;
@@ -716,6 +725,51 @@ namespace System.Formats.Tar.Tests
             yield return Repeat(OneByteCharacter, MaxPathComponent) + Separator + Repeat(OneByteCharacter, MaxPathComponent);
             yield return Repeat(TwoBytesCharacter, MaxPathComponent / 2) + Separator + Repeat(TwoBytesCharacter, MaxPathComponent / 2);
             yield return Repeat(FourBytesCharacter, MaxPathComponent / 4) + Separator + Repeat(FourBytesCharacter, MaxPathComponent / 4);
+        }
+
+        internal static IEnumerable<string> GetTooLongNamesTestData(NameCapabilities max)
+        {
+            Assert.True(max is NameCapabilities.Name or NameCapabilities.NameAndPrefix);
+            List<string> prefixes = GetPrefixes();
+
+            // 1. non-ascii last character doesn't fit in name.
+            foreach (string prefix in prefixes)
+            {
+                // 1.1. last character doesn't fit fully.
+                yield return prefix + Repeat(OneByteCharacter, 100 + 1);
+                yield return prefix + Repeat(OneByteCharacter, 100 - 2) + Repeat(TwoBytesCharacter, 2);
+                yield return prefix + Repeat(OneByteCharacter, 100 - 4) + Repeat(FourBytesCharacter, 2);
+
+                // 1.2. last character doesn't fit by one byte.
+                yield return prefix + Repeat(OneByteCharacter, 100 - 2 + 1) + Repeat(TwoBytesCharacter, 1);
+                yield return prefix + Repeat(OneByteCharacter, 100 - 4 + 1) + Repeat(FourBytesCharacter, 1);
+            }
+
+            // 2. non-ascii last character doesn't fit in prefix.
+            string maxedOutName = Repeat(OneByteCharacter, 100);
+
+            // 2.1. last char doesn't fit fully.
+            yield return Repeat(OneByteCharacter, 155 + 1) + Separator + maxedOutName;
+            yield return Repeat(OneByteCharacter, 155 - 2) + Repeat(TwoBytesCharacter, 2) + Separator + maxedOutName;
+            yield return Repeat(OneByteCharacter, 155 - 4) + Repeat(FourBytesCharacter, 2) + Separator + maxedOutName;
+
+            // 2.2 last char doesn't fit by one byte.
+            yield return Repeat(OneByteCharacter, 155 - 2 + 1) + Repeat(TwoBytesCharacter, 1) + Separator + maxedOutName;
+            yield return Repeat(OneByteCharacter, 155 - 4 + 1) + Repeat(FourBytesCharacter, 1) + Separator + maxedOutName;
+
+            if (max is NameCapabilities.NameAndPrefix)
+                yield break;
+
+            // Next cases only apply for V7 which only allows 100 length names.
+            foreach (string prefix in prefixes)
+            {
+                if (prefix.Length == 0)
+                    continue;
+
+                yield return prefix + Repeat(OneByteCharacter, 100);
+                yield return prefix + Repeat(TwoBytesCharacter, 100 / 2);
+                yield return prefix + Repeat(FourBytesCharacter, 100 / 4);
+            }
         }
 
         internal static string Repeat(char c, int count)
