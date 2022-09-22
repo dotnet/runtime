@@ -276,8 +276,7 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 	int op = OP_XBINOP;
 
 	if (id == SN_BitwiseAnd || id == SN_BitwiseOr || id == SN_Xor ||
-		id == SN_op_BitwiseAnd || id == SN_op_BitwiseOr || id == SN_op_ExclusiveOr ||
-		id == SN_AndNot ) {
+		id == SN_op_BitwiseAnd || id == SN_op_BitwiseOr || id == SN_op_ExclusiveOr ) {
 		op = OP_XBINOP_FORCEINT;
 	
 		switch (id) {
@@ -292,9 +291,6 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 		case SN_op_ExclusiveOr:
 		case SN_Xor:
 			instc0 = XBINOP_FORCEINT_XOR;
-			break;
-		case SN_AndNot:
-			instc0 = XBINOP_FORCEINT_ANDN;
 			break;
 		}
 	} else {
@@ -1150,7 +1146,18 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #ifdef TARGET_ARM64
 		return emit_simd_ins_for_sig (cfg, klass, OP_ARM64_BIC, -1, arg0_type, fsig, args);
 #elif defined(TARGET_AMD64)
-		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
+		MonoClass* arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		int size = mono_class_value_size (arg_class, NULL);
+		if (size != 16) 		// Works only with Vector128
+			return NULL;
+
+		/* Swap lhs and rhs because Vector128 needs lhs & !rhs
+		   whereas SSE2 does !lhs & rhs */
+		MonoInst *tmp = args[0];
+		args[0] = args[1];
+		args[1] = tmp;
+
+		return emit_simd_ins_for_sig (cfg, klass, OP_SSE_ANDN, -1, arg0_type, fsig, args);
 #else
 		return NULL;
 #endif
