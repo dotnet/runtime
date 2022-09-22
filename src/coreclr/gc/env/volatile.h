@@ -304,9 +304,7 @@ public:
     //
     // Default constructor.
     //
-    inline Volatile() : m_val {}
-    {
-    }
+    inline Volatile() = default;
 
     //
     // Allow initialization of Volatile<T> from a T

@@ -2462,4 +2462,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IUnaryPlusOperators.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\IUnsignedNumber.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(FeatureMono)' == 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)System\SpanHelpers.Mono.cs" />
+  </ItemGroup>
 </Project>
