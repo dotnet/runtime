@@ -1112,17 +1112,18 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     // Special case: "vec ==/!= zero_vector"
     if (!varTypeIsFloating(simdBaseType) && (op != nullptr) && (simdSize != 12))
     {
-        GenTree* cmp = node;
+        GenTree* cmp = op;
         if (simdSize != 8) // we don't need compression for Vector64
         {
             node->Op(1) = op;
             LIR::Use tmp1Use(BlockRange(), &node->Op(1), node);
             ReplaceWithLclVar(tmp1Use);
-            op = node->Op(1);
+            op               = node->Op(1);
             GenTree* opClone = comp->gtClone(op);
             BlockRange().InsertAfter(op, opClone);
 
-            cmp = comp->gtNewSimdHWIntrinsicNode(simdType, op, opClone, NI_AdvSimd_Arm64_MaxPairwise, CORINFO_TYPE_UINT, simdSize);
+            cmp = comp->gtNewSimdHWIntrinsicNode(simdType, op, opClone, NI_AdvSimd_Arm64_MaxPairwise, CORINFO_TYPE_UINT,
+                                                 simdSize);
             BlockRange().InsertBefore(node, cmp);
             LowerNode(cmp);
         }
@@ -1141,7 +1142,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
         BlockRange().InsertAfter(val, bitMskCns);
 
         node->ChangeOper(cmpOp);
-        node->gtType = TYP_INT;
+        node->gtType        = TYP_INT;
         node->AsOp()->gtOp1 = val;
         node->AsOp()->gtOp2 = bitMskCns;
 
