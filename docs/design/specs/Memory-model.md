@@ -20,11 +20,11 @@ Values of unmanaged pointers are treated as native integer primitive types. Memo
 
 Managed references are always aligned to their size on the given platform and accesses are atomic.
 
-The following methods perform atomic memory accesses regardless of the platform.<br/>
+The following methods perform atomic memory accesses regardless of the platform.
 - `System.Threading.Interlocked` methods
 - `System.Threading.Volatile` methods
 
-**Example:** `Volatile.Read<double>(ref location)` on a 32 bit platform is atomic, while an ordinary read of `location` mat not be.
+**Example:** `Volatile.Read<double>(ref location)` on a 32 bit platform is atomic, while an ordinary read of `location` may not be.
 
 ## Unmanaged memory access.
 As unmanaged pointers can point to any addressable memory, operations with such pointers may violate guarantees provided by the runtime and expose undefined or platform-specific behavior.
