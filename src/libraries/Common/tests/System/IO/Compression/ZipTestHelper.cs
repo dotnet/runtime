@@ -181,7 +181,7 @@ namespace System.IO.Compression.Tests
                     bd = NormalizeLineEndings(bd);
                 }
 
-                AssertExtensions.SequenceEqual(ad, bd);
+                AssertExtensions.SequenceEqual(ad.AsSpan(0, ac), bd.AsSpan(0, bc));
 
                 blocksRead++;
             } while (ac == bufSize);
