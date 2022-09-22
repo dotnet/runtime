@@ -123,7 +123,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public int MinimumObjectSize => _type.Context.Target.PointerSize * 3;
+        public int MinimumObjectSize => _type.Context.Target.MinimumObjectSize;
 
         protected virtual bool EmitVirtualSlotsAndInterfaces => false;
 
