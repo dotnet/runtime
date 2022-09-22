@@ -1893,8 +1893,16 @@ class SuperPMIReplayAsmDiffs:
                         html_color(base_color, "{:,d}".format(missing_base_contexts)),
                         html_color(diff_color, "{:,d}".format(missing_diff_contexts))))
 
-                if any(has_diff for (_, _, _, has_diff, _) in asm_diffs):
+                def has_diffs(row):
+                    return int(row["Contexts with diffs"]) > 0
+
+                # Exclude entire diffs section?
+                if any(has_diffs(diff_metrics["Overall"]) for (_, _, diff_metrics, _, _) in asm_diffs):
                     def write_pivot_section(row):
+                        # Exclude this particular Overall/MinOpts/FullOpts table?
+                        if not any(has_diffs(diff_metrics[row]) for (_, _, diff_metrics, _, _) in asm_diffs):
+                            return
+
                         write_fh.write("\n<details>\n")
                         sum_base = sum(int(base_metrics[row]["Diffed code bytes"]) for (_, base_metrics, _, _, _) in asm_diffs)
                         sum_diff = sum(int(diff_metrics[row]["Diffed code bytes"]) for (_, _, diff_metrics, _, _) in asm_diffs)
@@ -1902,8 +1910,9 @@ class SuperPMIReplayAsmDiffs:
                         write_fh.write("<summary>{} ({} bytes)</summary>\n\n".format(row, format_delta(sum_base, sum_diff)))
                         write_fh.write("|Collection|Base size (bytes)|Diff size (bytes)|\n")
                         write_fh.write("|---|--:|--:|\n")
-                        for (mch_file, base_metrics, diff_metrics, has_diffs, _) in asm_diffs:
-                            if not has_diffs:
+                        for (mch_file, base_metrics, diff_metrics, _, _) in asm_diffs:
+                            # Exclude this particular row?
+                            if not has_diffs(diff_metrics[row]):
                                 continue
 
                             write_fh.write("|{}|{:,d}|{}|\n".format(
@@ -1925,14 +1934,15 @@ class SuperPMIReplayAsmDiffs:
                 write_fh.write("\n<details>\n")
                 write_fh.write("<summary>Details</summary>\n\n")
 
-                write_fh.write("|Collection|Diffed contexts|MinOpts|FullOpts|Missed, base|Missed, diff|\n")
-                write_fh.write("|---|--:|--:|--:|--:|--:|\n")
+                write_fh.write("|Collection|Diffed contexts|MinOpts|FullOpts|Contexts with diffs|Missed, base|Missed, diff|\n")
+                write_fh.write("|---|--:|--:|--:|--:|--:|--:|\n")
                 for (mch_file, base_metrics, diff_metrics, has_diffs, jit_analyze_summary_file) in asm_diffs:
-                    write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d}|{:,d}|\n".format(
+                    write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d}|{:,d}|{:,d}|\n".format(
                         mch_file,
                         int(diff_metrics["Overall"]["Successful compiles"]),
                         int(diff_metrics["MinOpts"]["Successful compiles"]),
                         int(diff_metrics["FullOpts"]["Successful compiles"]),
+                        int(diff_metrics["Overall"]["Contexts with diffs"]),
                         int(base_metrics["Overall"]["Missing compiles"]),
                         int(diff_metrics["Overall"]["Missing compiles"])))
 
@@ -2159,11 +2169,8 @@ class SuperPMIReplayThroughputDiff:
                 # instruction count and all collections.
                 def is_significant_pct(base, diff):
                     return round((diff - base) / base * 100, 2) != 0
-                def is_significant(base, diff):
-                    def check(col):
-                        return is_significant_pct(int(base[col]["Diff executed instructions"]), int(diff[col]["Diff executed instructions"]))
-
-                    return check("Overall") or check("MinOpts") or check("FullOpts")
+                def is_significant(row, base, diff):
+                    return is_significant_pct(int(base[row]["Diff executed instructions"]), int(diff[row]["Diff executed instructions"]))
                 def format_pct(base_instructions, diff_instructions):
                     plus_if_positive = "+" if diff_instructions > base_instructions else ""
                     text = "{}{:.2f}%".format(plus_if_positive, (diff_instructions - base_instructions) / base_instructions * 100)
@@ -2173,24 +2180,23 @@ class SuperPMIReplayThroughputDiff:
 
                     return text
 
-                significant_diffs = {}
-                for mch_file, base, diff in tp_diffs:
-                    significant_diffs[mch_file] = is_significant(base, diff)
+                if any(is_significant(row, base, diff) for row in ["Overall", "MinOpts", "FullOpts"] for (_, base, diff) in tp_diffs):
+                    def write_pivot_section(row):
+                        if not any(is_significant(row, base, diff) for (_, base, diff) in tp_diffs):
+                            return
 
-                if any(significant_diffs[mch_file] for (mch_file, _, _) in tp_diffs):
-                    def write_pivot_section(col):
                         write_fh.write("\n<details>\n")
-                        sum_base = sum(int(base_metrics[col]["Diff executed instructions"]) for (_, base_metrics, _) in tp_diffs)
-                        sum_diff = sum(int(diff_metrics[col]["Diff executed instructions"]) for (_, _, diff_metrics) in tp_diffs)
+                        sum_base = sum(int(base_metrics[row]["Diff executed instructions"]) for (_, base_metrics, _) in tp_diffs)
+                        sum_diff = sum(int(diff_metrics[row]["Diff executed instructions"]) for (_, _, diff_metrics) in tp_diffs)
 
-                        write_fh.write("<summary>{} ({})</summary>\n\n".format(col, format_pct(sum_base, sum_diff)))
+                        write_fh.write("<summary>{} ({})</summary>\n\n".format(row, format_pct(sum_base, sum_diff)))
                         write_fh.write("|Collection|PDIFF|\n")
                         write_fh.write("|---|--:|\n")
                         for mch_file, base, diff in tp_diffs:
-                            base_instructions = int(base[col]["Diff executed instructions"])
-                            diff_instructions = int(diff[col]["Diff executed instructions"])
+                            base_instructions = int(base[row]["Diff executed instructions"])
+                            diff_instructions = int(diff[row]["Diff executed instructions"])
 
-                            if significant_diffs[mch_file]:
+                            if is_significant(row, base, diff):
                                 write_fh.write("|{}|{}|\n".format(
                                     mch_file,
                                     format_pct(base_instructions, diff_instructions)))
@@ -2206,13 +2212,13 @@ class SuperPMIReplayThroughputDiff:
 
                 write_fh.write("\n<details>\n")
                 write_fh.write("<summary>Details</summary>\n\n")
-                for (disp, col) in [("All", "Overall"), ("MinOpts", "MinOpts"), ("FullOpts", "FullOpts")]:
+                for (disp, row) in [("All", "Overall"), ("MinOpts", "MinOpts"), ("FullOpts", "FullOpts")]:
                     write_fh.write("{} contexts:\n\n".format(disp))
                     write_fh.write("|Collection|Base # instructions|Diff # instructions|PDIFF|\n")
                     write_fh.write("|---|--:|--:|--:|\n")
                     for mch_file, base, diff in tp_diffs:
-                        base_instructions = int(base[col]["Diff executed instructions"])
-                        diff_instructions = int(diff[col]["Diff executed instructions"])
+                        base_instructions = int(base[row]["Diff executed instructions"])
+                        diff_instructions = int(diff[row]["Diff executed instructions"])
                         write_fh.write("|{}|{:,d}|{:,d}|{}|\n".format(
                             mch_file, base_instructions, diff_instructions,
                             format_pct(base_instructions, diff_instructions)))
