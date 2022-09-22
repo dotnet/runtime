@@ -2654,7 +2654,27 @@ namespace System
         /// <param name="newValue">The value to replace all occurrences of <paramref name="oldValue"/>.</param>
         public static void Replace<T>(this Span<T> span, T oldValue, T newValue) where T : IEquatable<T>?
         {
-            throw new NotImplementedException();
+            if (default(T) != null || oldValue != null)
+            {
+                Debug.Assert(oldValue is not null);
+
+                for (int i = 0; i < span.Length; ++i)
+                {
+                    ref T val = ref span[i];
+                    if (oldValue.Equals(val))
+                    {
+                        val = newValue;
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < span.Length; ++i)
+                {
+                    ref T val = ref span[i];
+                    val ??= newValue;
+                }
+            }
         }
 
         /// <summary>Finds the length of any common prefix shared between <paramref name="span"/> and <paramref name="other"/>.</summary>
