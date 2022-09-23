@@ -775,29 +775,29 @@ namespace System
                     PopulateAllSystemTimeZones(cachedData);
                     cachedData._allSystemTimeZonesRead = true;
 
-                    List<TimeZoneInfo> list;
                     if (cachedData._systemTimeZones != null)
                     {
                         // return a collection of the cached system time zones
-                        list = new List<TimeZoneInfo>(cachedData._systemTimeZones.Values);
+                        TimeZoneInfo[] array = new TimeZoneInfo[cachedData._systemTimeZones.Count];
+                        cachedData._systemTimeZones.Values.CopyTo(array, 0);
+
+                        // sort and copy the TimeZoneInfo's into a ReadOnlyCollection for the user
+                        Array.Sort(array, static (x, y) =>
+                        {
+                            // sort by BaseUtcOffset first and by DisplayName second - this is similar to the Windows Date/Time control panel
+                            int comparison = x.BaseUtcOffset.CompareTo(y.BaseUtcOffset);
+                            return comparison == 0 ? string.CompareOrdinal(x.DisplayName, y.DisplayName) : comparison;
+                        });
+
+                        cachedData._readOnlySystemTimeZones = new ReadOnlyCollection<TimeZoneInfo>(array);
                     }
                     else
                     {
-                        // return an empty collection
-                        list = new List<TimeZoneInfo>();
+                        cachedData._readOnlySystemTimeZones = ReadOnlyCollection<TimeZoneInfo>.Empty;
                     }
-
-                    // sort and copy the TimeZoneInfo's into a ReadOnlyCollection for the user
-                    list.Sort(static (x, y) =>
-                    {
-                        // sort by BaseUtcOffset first and by DisplayName second - this is similar to the Windows Date/Time control panel
-                        int comparison = x.BaseUtcOffset.CompareTo(y.BaseUtcOffset);
-                        return comparison == 0 ? string.CompareOrdinal(x.DisplayName, y.DisplayName) : comparison;
-                    });
-
-                    cachedData._readOnlySystemTimeZones = new ReadOnlyCollection<TimeZoneInfo>(list);
                 }
             }
+
             return cachedData._readOnlySystemTimeZones;
         }
 

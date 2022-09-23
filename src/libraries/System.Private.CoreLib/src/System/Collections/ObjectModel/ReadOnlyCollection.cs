@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.Collections.ObjectModel
 {
@@ -23,6 +25,25 @@ namespace System.Collections.ObjectModel
             this.list = list;
         }
 
+        /// <summary>Lazily-initialized empty singleton.</summary>
+        private static ReadOnlyCollection<T>? s_empty;
+
+        /// <summary>Gets an empty <see cref="ReadOnlyCollection{T}"/>.</summary>
+        /// <remarks>The returned instance is immutable and will always be empty.</remarks>
+        internal static ReadOnlyCollection<T> Empty // TODO https://github.com/dotnet/runtime/issues/76028: Make this public.
+        {
+            get
+            {
+                return s_empty ?? InitEmpty();
+
+                [MethodImpl(MethodImplOptions.NoInlining)]
+                static ReadOnlyCollection<T> InitEmpty() =>
+                    s_empty ??
+                    Interlocked.CompareExchange(ref s_empty, new ReadOnlyCollection<T>(Array.Empty<T>()), null) ??
+                    s_empty;
+            }
+        }
+
         public int Count => list.Count;
 
         public T this[int index] => list[index];
@@ -37,10 +58,10 @@ namespace System.Collections.ObjectModel
             list.CopyTo(array, index);
         }
 
-        public IEnumerator<T> GetEnumerator()
-        {
-            return list.GetEnumerator();
-        }
+        public IEnumerator<T> GetEnumerator() =>
+            list.Count == 0 ?
+                SZGenericArrayEnumerator<T>.Empty :
+                list.GetEnumerator();
 
         public int IndexOf(T value)
         {
