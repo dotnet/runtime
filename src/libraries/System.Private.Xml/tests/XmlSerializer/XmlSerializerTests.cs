@@ -21,7 +21,6 @@ using System.Xml.Serialization;
 using SerializationTypes;
 using Xunit;
 
-[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
 public static partial class XmlSerializerTests
 {
 #if ReflectionOnly|| XMLSERIALIZERGENERATORTESTS
