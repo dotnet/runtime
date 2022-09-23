@@ -692,7 +692,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 case "number":
                 {
+                    // FixMe: what if the number is not int but single/double?
                     Write(ElementType.I4, objValue["value"].Value<int>());
+                    return true;
+                }
+                case "symbol":
+                {
+                    Write(ElementType.Char, (int)objValue["value"].Value<char>());
                     return true;
                 }
                 case "string":

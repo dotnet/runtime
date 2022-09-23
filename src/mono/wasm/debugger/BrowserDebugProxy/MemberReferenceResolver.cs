@@ -504,9 +504,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var writer = new MonoBinaryWriter();
                 writer.WriteObj(rootObjId, context.SdbAgent);
                 writer.Write(1); // number of method args
-                var indexType = indexObject?["type"]?.Value<string>();
                 ArraySegment<byte> buffer;
-                if (indexType == null)
+                if (indexObject == null)
                 {
                     // maybe use here
                     // WriteConst(LiteralExpressionSyntax constValue, MonoSDBHelper SdbHelper, CancellationToken token)
@@ -537,36 +536,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                         throw new InternalErrorException($"Unable to write index parameter to invoke the method in the runtime.");
                     return writer.GetParameterBuffer();
                 }
-                // why not use WriteJsonValue for all cases here? It just needs a minor extension of the method (symbols + float/double)
-                switch (indexType)
-                {
-                    case "number":
-                        buffer = await TryWriteIntIndex(writer, elementIdxStr);
-                        if (buffer != null)
-                            break;
-                        // Not supported yet. We need more info about the method to know which overload to use
-                        Console.WriteLine($"indexType = {indexType}");
-                        buffer = TryWriteNotIntNumIndex(writer, elementIdxStr);
-                        break;
-                    case "boolean":
-                        buffer = await TryWriteBoolIndex(writer, elementIdxStr);
-                        break;
-                    case "symbol":
-                        buffer = await TryWriteCharIndex(writer, elementIdxStr);
-                        break;
-                    case "string":
-                        if (!await writer.WriteConst(ElementType.String, elementIdxStr, context.SdbAgent, token))
-                            throw new InternalErrorException($"Unable to write index parameter to invoke the method in the runtime.");
-                        buffer = writer.GetParameterBuffer();
-                        break;
-                    default:
-                        // ToDo - "object". Use WriteJsonValue? Add tests and check if we can do it
-                        // decimals are treated as objects
-                        throw new InternalErrorException($"Indexing by {indexType} is not supported yet.");
-                }
-                if (buffer == null)
-                    throw new InternalErrorException($"Parsing index of type {indexType} to write it into the buffer failed.");
-                return buffer;
+                if (!await writer.WriteJsonValue(indexObject, context.SdbAgent, token))
+                    throw new InternalErrorException($"Parsing index of type {indexObject["type"].Value<string>()} to write it into the buffer failed.");
+                return writer.GetParameterBuffer();
             }
 
             async Task<ArraySegment<byte>> TryWriteIntIndex(MonoBinaryWriter writer, string elementIdxStr)
