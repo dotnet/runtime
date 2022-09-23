@@ -1808,6 +1808,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             //
             loadIntrinsic->gtFlags |= (GTF_GLOB_REF | GTF_EXCEPT);
 
+            assert(HWIntrinsicInfo::IsMultiReg(intrinsic));
             retNode = impAssignMultiRegTypeToVar(loadIntrinsic,
                                                  sig->retTypeSigClass DEBUGARG(CorInfoCallConvExtension::Managed));
             break;
