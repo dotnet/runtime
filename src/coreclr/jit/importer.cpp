@@ -3660,10 +3660,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
     NamedIntrinsic ni = lookupNamedIntrinsic(method);
 
-    if ((methodFlags & CORINFO_FLG_INTRINSIC) != 0)
+    if (isIntrinsic)
     {
-        isIntrinsic = true;
-
         // The recursive non-virtual calls to Jit intrinsics are must-expand by convention.
         mustExpand = gtIsRecursiveCall(method) && !(methodFlags & CORINFO_FLG_VIRTUAL);
     }
