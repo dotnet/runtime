@@ -36,6 +36,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/LargeMemory/Allocation/finalizertest/*">
             <Issue>https://github.com/dotnet/runtime/issues/5933</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/finalization/*">
+            <Issue>https://github.com/dotnet/runtime/issues/76041</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/LargeMemory/API/gc/collect/*">
             <Issue>https://github.com/dotnet/runtime/issues/5933</Issue>
         </ExcludeList>
