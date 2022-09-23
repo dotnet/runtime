@@ -136,6 +136,7 @@ namespace System.Runtime.Intrinsics
         /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector256{Byte}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<byte> AsByte<T>(this Vector256<T> vector)
             where T : struct => vector.As<T, byte>();
 
@@ -145,6 +146,7 @@ namespace System.Runtime.Intrinsics
         /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector256{Double}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<double> AsDouble<T>(this Vector256<T> vector)
             where T : struct => vector.As<T, double>();
 
@@ -154,6 +156,7 @@ namespace System.Runtime.Intrinsics
         /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector256{Int16}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<short> AsInt16<T>(this Vector256<T> vector)
             where T : struct => vector.As<T, short>();
 
@@ -163,6 +166,7 @@ namespace System.Runtime.Intrinsics
         /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector256{Int32}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<int> AsInt32<T>(this Vector256<T> vector)
             where T : struct => vector.As<T, int>();
 
@@ -172,6 +176,7 @@ namespace System.Runtime.Intrinsics
         /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector256{Int64}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<long> AsInt64<T>(this Vector256<T> vector)
             where T : struct => vector.As<T, long>();
 
@@ -181,6 +186,7 @@ namespace System.Runtime.Intrinsics
         /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector256{IntPtr}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<nint> AsNInt<T>(this Vector256<T> vector)
             where T : struct => vector.As<T, nint>();
 
@@ -191,6 +197,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<nuint> AsNUInt<T>(this Vector256<T> vector)
             where T : struct => vector.As<T, nuint>();
 
@@ -201,6 +208,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<sbyte> AsSByte<T>(this Vector256<T> vector)
             where T : struct => vector.As<T, sbyte>();
 
@@ -210,6 +218,7 @@ namespace System.Runtime.Intrinsics
         /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector256{Single}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<float> AsSingle<T>(this Vector256<T> vector)
             where T : struct => vector.As<T, float>();
 
@@ -220,6 +229,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<ushort> AsUInt16<T>(this Vector256<T> vector)
             where T : struct => vector.As<T, ushort>();
 
@@ -230,6 +240,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<uint> AsUInt32<T>(this Vector256<T> vector)
             where T : struct => vector.As<T, uint>();
 
@@ -240,6 +251,7 @@ namespace System.Runtime.Intrinsics
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="T" />) is not supported.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<ulong> AsUInt64<T>(this Vector256<T> vector)
             where T : struct => vector.As<T, ulong>();
 
