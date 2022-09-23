@@ -3654,10 +3654,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                 NamedIntrinsic*         pIntrinsicName,
                                 bool*                   isSpecialIntrinsic)
 {
-    bool           mustExpand  = false;
-    bool           isSpecial   = false;
-    bool           isIntrinsic = false;
-    NamedIntrinsic ni          = NI_Illegal;
+    bool mustExpand  = false;
+    bool isSpecial   = false;
+    bool isIntrinsic = false;
+
+    NamedIntrinsic ni = lookupNamedIntrinsic(method);
 
     if ((methodFlags & CORINFO_FLG_INTRINSIC) != 0)
     {
@@ -3671,9 +3672,13 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         // For mismatched VM (AltJit) we want to check all methods as intrinsic to ensure
         // we get more accurate codegen. This particularly applies to HWIntrinsic usage
         assert(!info.compMatchedVM);
-    }
 
-    ni = lookupNamedIntrinsic(method);
+        if (ni == NI_Illegal)
+        {
+            // Early exit for the common AltJit scenario
+            return nullptr;
+        }
+    }
 
     // We specially support the following on all platforms to allow for dead
     // code optimization and to more generally support recursive intrinsics.
@@ -3723,6 +3728,15 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         return impSimdAsHWIntrinsic(ni, clsHnd, method, sig, newobjThis);
     }
 #endif // FEATURE_HW_INTRINSICS
+
+    if (!isIntrinsic)
+    {
+        // TODO-Cleanup: Outside the cases above, there are many intrinsics which
+        // apply to only 1 overload and where simply matching by name may cause
+        // downstream asserts or other failures. Math.Min is one example, where it
+        // only applies to the floating-point overloads.
+        return nullptr;
+    }
 
     *pIntrinsicName = ni;
 
@@ -9632,6 +9646,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         // <NICE> Factor this into getCallInfo </NICE>
         bool isSpecialIntrinsic = false;
+
         if (((mflags & CORINFO_FLG_INTRINSIC) != 0) || !info.compMatchedVM)
         {
             // For mismatched VM (AltJit) we want to check all methods as intrinsic to ensure
