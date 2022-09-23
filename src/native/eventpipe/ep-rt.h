@@ -568,6 +568,10 @@ ep_rt_thread_create (
 
 static
 void
+ep_rt_set_server_name (void);
+
+static
+void
 ep_rt_thread_sleep (uint64_t ns);
 
 static

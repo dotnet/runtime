@@ -1432,7 +1432,6 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                             (m_srcVarDsc->lvType == TYP_STRUCT) ? m_srcVarDsc->lvExactSize : genTypeSize(m_srcVarDsc);
                         if (destSize == srcSize)
                         {
-                            m_srcLclNode->gtFlags |= GTF_VAR_CAST;
                             m_srcLclNode->ChangeOper(GT_LCL_FLD);
                             m_srcLclNode->gtType = destType;
                             m_comp->lvaSetVarDoNotEnregister(m_srcLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
