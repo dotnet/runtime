@@ -44,8 +44,8 @@ namespace System.Numerics
         /// </list>
         /// </returns>
         /// <remarks>
-        /// IEEE 754 specification defines totalOrder as a &lt;= semantic.
-        /// totalOrder(x,y) is true corresponds to the result of this method &lt;= 0.
+        /// IEEE 754 specification defines totalOrder as &lt;= semantic.
+        /// totalOrder(x,y) is <see langword="true"/> when the result of this method is less than or equal to 0.
         /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int Compare(T? x, T? y)
@@ -70,9 +70,9 @@ namespace System.Numerics
             static int CompareIntegerSemantic<TInteger>(TInteger x, TInteger y)
                 where TInteger : struct, IBinaryInteger<TInteger>, ISignedNumber<TInteger>
             {
-                // In IEEE 754 binary floating-point representation, a number is represented as Sign|Exponent|Significant
-                // Normal numbers has an implicit 1. in front of the significant, so value with larger exponent will have larger absolute value
-                // Inf and NaN are defined as Exponent=All 1s, while Inf has Significant=0, sNaN has Significant=0xxx and qNaN has Significant=1xxx
+                // In IEEE 754 binary floating-point representation, a number is represented as Sign|Exponent|Significand
+                // Normal numbers has an implicit 1. in front of the significand, so value with larger exponent will have larger absolute value
+                // Inf and NaN are defined as Exponent=All 1s, while Inf has Significand=0, sNaN has Significand=0xxx and qNaN has Significand=1xxx
                 // This also satisfies totalOrder definition which is +x < +Inf < +sNaN < +qNaN
 
                 // The order of NaNs of same category and same sign is implementation defined,
@@ -136,10 +136,10 @@ namespace System.Numerics
                     // One or two of the values are NaN
                     // totalOrder defines that -qNaN < -sNaN < x < +sNaN < + qNaN
 
-                    static int CompareSignificant(T x, T y)
+                    static int CompareSignificand(T x, T y)
                     {
-                        // IEEE 754 totalOrder only defines the order of NaN type bit (the first bit of significant)
-                        // To match the integer semantic comparison above, here we compare all the significant bits
+                        // IEEE 754 totalOrder only defines the order of NaN type bit (the first bit of significand)
+                        // To match the integer semantic comparison above, here we compare all the significand bits
                         // Revisit this if decimals are added
 
                         // Leave the space for custom floating-point type that has variable significand length
@@ -175,11 +175,11 @@ namespace System.Numerics
                         {
                             if (T.IsNegative(x))
                             {
-                                return T.IsPositive(y) ? -1 : CompareSignificant(y, x);
+                                return T.IsPositive(y) ? -1 : CompareSignificand(y, x);
                             }
                             else
                             {
-                                return T.IsNegative(y) ? 1 : CompareSignificant(x, y);
+                                return T.IsNegative(y) ? 1 : CompareSignificand(x, y);
                             }
                         }
                         else
