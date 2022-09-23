@@ -3677,27 +3677,30 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     // We specially support the following on all platforms to allow for dead
     // code optimization and to more generally support recursive intrinsics.
 
-    if (ni == NI_IsSupported_True)
+    if (isIntrinsic)
     {
-        assert(sig->numArgs == 0);
-        return gtNewIconNode(true);
-    }
+        if (ni == NI_IsSupported_True)
+        {
+            assert(sig->numArgs == 0);
+            return gtNewIconNode(true);
+        }
 
-    if (ni == NI_IsSupported_False)
-    {
-        assert(sig->numArgs == 0);
-        return gtNewIconNode(false);
-    }
+        if (ni == NI_IsSupported_False)
+        {
+            assert(sig->numArgs == 0);
+            return gtNewIconNode(false);
+        }
 
-    if (ni == NI_Throw_PlatformNotSupportedException)
-    {
-        return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
-    }
+        if (ni == NI_Throw_PlatformNotSupportedException)
+        {
+            return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
+        }
 
-    if ((ni > NI_SRCS_UNSAFE_START) && (ni < NI_SRCS_UNSAFE_END))
-    {
-        assert(!mustExpand);
-        return impSRCSUnsafeIntrinsic(ni, clsHnd, method, sig);
+        if ((ni > NI_SRCS_UNSAFE_START) && (ni < NI_SRCS_UNSAFE_END))
+        {
+            assert(!mustExpand);
+            return impSRCSUnsafeIntrinsic(ni, clsHnd, method, sig);
+        }
     }
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -3729,7 +3732,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         return hwintrinsic;
     }
 
-    if ((ni > NI_SIMD_AS_HWINTRINSIC_START) && (ni < NI_SIMD_AS_HWINTRINSIC_END))
+    if (isIntrinsic && (ni > NI_SIMD_AS_HWINTRINSIC_START) && (ni < NI_SIMD_AS_HWINTRINSIC_END))
     {
         // These intrinsics aren't defined recursively and so they will never be mustExpand
         // Instead, they provide software fallbacks that will be executed instead.
@@ -9654,10 +9657,12 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
 #endif // DEBUG
 
+        bool isIntrinsic = (mflags & CORINFO_FLG_INTRINSIC) != 0;
+
         // <NICE> Factor this into getCallInfo </NICE>
         bool isSpecialIntrinsic = false;
 
-        if (((mflags & CORINFO_FLG_INTRINSIC) != 0) || !info.compMatchedVM)
+        if (isIntrinsic || !info.compMatchedVM)
         {
             // For mismatched VM (AltJit) we want to check all methods as intrinsic to ensure
             // we get more accurate codegen. This particularly applies to HWIntrinsic usage
