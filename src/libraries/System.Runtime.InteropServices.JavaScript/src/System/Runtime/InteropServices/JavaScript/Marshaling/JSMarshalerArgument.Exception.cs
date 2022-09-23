@@ -32,7 +32,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (slot.JSHandle != IntPtr.Zero)
             {
                 // this is JSException round-trip
-                jsException = JavaScriptExports.CreateCSOwnedProxy(slot.JSHandle);
+                jsException = JSHostImplementation.CreateCSOwnedProxy(slot.JSHandle);
             }
 
             string? message;
@@ -75,7 +75,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     ToJS(cpy.Message);
                     slot.Type = MarshalerType.Exception;
-                    slot.GCHandle = JavaScriptExports.GetJSOwnedObjectGCHandleRef(cpy);
+                    slot.GCHandle = JSHostImplementation.GetJSOwnedObjectGCHandle(cpy);
                 }
             }
         }

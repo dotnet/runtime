@@ -539,28 +539,23 @@ bool Compiler::fgRemoveUnreachableBlocks(CanRemoveBlockBody canRemoveBlock)
 //------------------------------------------------------------------------
 // fgComputeReachability: Compute the dominator and reachable sets.
 //
-// Use `fgReachable()` to check reachability, `fgDominate()` to check dominance.
+// Returns:
+//    Suitable phase status
 //
-// Also, compute the list of return blocks `fgReturnBlocks` and set of enter blocks `fgEnterBlks`.
-// Delete unreachable blocks.
+// Notes:
+//   Also computes the list of return blocks `fgReturnBlocks`
+//   and set of enter  blocks `fgEnterBlks`.
 //
-// Assumptions:
-//    Assumes the predecessor lists are computed and correct.
+//   Delete unreachable blocks.
 //
-void Compiler::fgComputeReachability()
+//   Assumes the predecessor lists are computed and correct.
+//
+//   Use `fgReachable()` to check reachability.
+//   Use `fgDominate()` to check dominance.
+//
+PhaseStatus Compiler::fgComputeReachability()
 {
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("*************** In fgComputeReachability\n");
-    }
-
-    fgVerifyHandlerTab();
-
-    // Make sure that the predecessor lists are accurate
     assert(fgComputePredsDone);
-    fgDebugCheckBBlist();
-#endif // DEBUG
 
     fgComputeReturnBlocks();
 
@@ -591,6 +586,8 @@ void Compiler::fgComputeReachability()
         return true;
     };
 
+    bool madeChanges = false;
+
     do
     {
         // Just to be paranoid, avoid infinite loops; fall back to minopts.
@@ -602,7 +599,7 @@ void Compiler::fgComputeReachability()
         // Walk the flow graph, reassign block numbers to keep them in ascending order.
         JITDUMP("\nRenumbering the basic blocks for fgComputeReachability pass #%u\n", passNum);
         passNum++;
-        fgRenumberBlocks();
+        madeChanges |= fgRenumberBlocks();
 
         //
         // Compute fgEnterBlks
@@ -621,26 +618,17 @@ void Compiler::fgComputeReachability()
         //
 
         changed = fgRemoveUnreachableBlocks(canRemoveBlock);
+        madeChanges |= changed;
 
     } while (changed);
-
-#ifdef DEBUG
-    if (verbose)
-    {
-        printf("\nAfter computing reachability:\n");
-        fgDispBasicBlocks(verboseTrees);
-        printf("\n");
-    }
-
-    fgVerifyHandlerTab();
-    fgDebugCheckBBlist(true);
-#endif // DEBUG
 
     //
     // Now, compute the dominators
     //
 
     fgComputeDoms();
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //------------------------------------------------------------------------
@@ -1002,7 +990,7 @@ void Compiler::fgComputeDoms()
     for (block = fgFirstBB->bbNext; block != nullptr; block = block->bbNext)
     {
         // If any basic block has no predecessors then we flag it as processed and temporarily
-        // mark its precedessor list to be flRoot.  This makes the flowgraph connected,
+        // mark its predecessor list to be flRoot.  This makes the flowgraph connected,
         // a precondition that is needed by the dominance algorithm to operate properly.
         if (block->bbPreds == nullptr)
         {
@@ -1051,7 +1039,7 @@ void Compiler::fgComputeDoms()
                 continue;
             }
 
-            // Pick up the first processed predecesor of the current block.
+            // Pick up the first processed predecessor of the current block.
             for (first = block->bbPreds; first != nullptr; first = first->flNext)
             {
                 if (BlockSetOps::IsMember(this, processedBlks, first->getBlock()->bbNum))
@@ -1365,6 +1353,9 @@ void Compiler::fgInitBlockVarSets()
 //------------------------------------------------------------------------
 // fgPostImportationCleanups: clean up flow graph after importation
 //
+// Returns:
+//   suitable phase status
+//
 // Notes:
 //
 //  Find and remove any basic blocks that are useless (e.g. they have not been
@@ -1414,9 +1405,34 @@ void Compiler::fgInitBlockVarSets()
 //  from OSR method entry, and flow always enters the try blocks at the
 //  first block of the try.
 //
-void Compiler::fgPostImportationCleanup()
+PhaseStatus Compiler::fgPostImportationCleanup()
 {
-    JITDUMP("\n*************** In fgPostImportationCleanup\n");
+    // Bail, if this is a failed inline
+    //
+    if (compDonotInline())
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    if (compIsForInlining())
+    {
+        // Update type of return spill temp if we have gathered
+        // better info when importing the inlinee, and the return
+        // spill temp is single def.
+        if (fgNeedReturnSpillTemp())
+        {
+            CORINFO_CLASS_HANDLE retExprClassHnd = impInlineInfo->retExprClassHnd;
+            if (retExprClassHnd != nullptr)
+            {
+                LclVarDsc* returnSpillVarDsc = lvaGetDesc(lvaInlineeReturnSpillTemp);
+
+                if (returnSpillVarDsc->lvSingleDef)
+                {
+                    lvaUpdateClass(lvaInlineeReturnSpillTemp, retExprClassHnd, impInlineInfo->retExprClassHndIsExact);
+                }
+            }
+        }
+    }
 
     BasicBlock* cur;
     BasicBlock* nxt;
@@ -1462,7 +1478,7 @@ void Compiler::fgPostImportationCleanup()
     //
     if ((removedBlks == 0) && !(opts.IsOSR() && fgOSREntryBB->hasTryIndex()))
     {
-        return;
+        return PhaseStatus::MODIFIED_NOTHING;
     }
 
     // Update all references in the exception handler table.
@@ -1662,6 +1678,9 @@ void Compiler::fgPostImportationCleanup()
     // If this is OSR, and the OSR entry was mid-try or in a nested try entry,
     // add the appropriate step block logic.
     //
+    unsigned addedBlocks = 0;
+    bool     addedTemps  = 0;
+
     if (opts.IsOSR())
     {
         BasicBlock* const osrEntry        = fgOSREntryBB;
@@ -1687,6 +1706,7 @@ void Compiler::fgPostImportationCleanup()
                 //
                 unsigned const entryStateVar   = lvaGrabTemp(false DEBUGARG("OSR entry state var"));
                 lvaTable[entryStateVar].lvType = TYP_INT;
+                addedTemps                     = true;
 
                 // Zero the entry state at method entry.
                 //
@@ -1700,8 +1720,8 @@ void Compiler::fgPostImportationCleanup()
 
                 // Helper method to add flow
                 //
-                auto addConditionalFlow = [this, entryStateVar, &entryJumpTarget](BasicBlock* fromBlock,
-                                                                                  BasicBlock* toBlock) {
+                auto addConditionalFlow = [this, entryStateVar, &entryJumpTarget, &addedBlocks](BasicBlock* fromBlock,
+                                                                                                BasicBlock* toBlock) {
 
                     // We may have previously though this try entry was unreachable, but now we're going to
                     // step through it on the way to the OSR entry. So ensure it has plausible profile weight.
@@ -1716,6 +1736,7 @@ void Compiler::fgPostImportationCleanup()
                     BasicBlock* const newBlock = fgSplitBlockAtBeginning(fromBlock);
                     fromBlock->bbFlags |= BBF_INTERNAL;
                     newBlock->bbFlags &= ~BBF_DONT_REMOVE;
+                    addedBlocks++;
 
                     GenTree* const entryStateLcl = gtNewLclvNode(entryStateVar, TYP_INT);
                     GenTree* const compareEntryStateToZero =
@@ -1807,13 +1828,27 @@ void Compiler::fgPostImportationCleanup()
         }
     }
 
-    // Renumber the basic blocks
-    JITDUMP("\nRenumbering the basic blocks for fgPostImporterCleanup\n");
-    fgRenumberBlocks();
+    // Did we alter any flow or EH?
+    //
+    const bool madeFlowChanges = (addedBlocks > 0) || (delCnt > 0) || (removedBlks > 0);
+
+    // Renumber the basic blocks if so.
+    //
+    if (madeFlowChanges)
+    {
+        JITDUMP("\nRenumbering the basic blocks for fgPostImportationCleanup\n");
+        fgRenumberBlocks();
+    }
 
 #ifdef DEBUG
     fgVerifyHandlerTab();
 #endif // DEBUG
+
+    // Did we make any changes?
+    //
+    const bool madeChanges = madeFlowChanges || addedTemps;
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }
 
 //-------------------------------------------------------------
@@ -2385,7 +2420,7 @@ void Compiler::fgUpdateLoopsAfterCompacting(BasicBlock* block, BasicBlock* bNext
         /* Some loops may have been already removed by
          * loop unrolling or conditional folding */
 
-        if (optLoopTable[loopNum].lpFlags & LPFLG_REMOVED)
+        if (optLoopTable[loopNum].lpIsRemoved())
         {
             continue;
         }
@@ -2779,7 +2814,8 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
 {
     assert(block->isEmpty());
 
-    BasicBlock* bPrev = block->bbPrev;
+    bool        madeChanges = false;
+    BasicBlock* bPrev       = block->bbPrev;
 
     switch (block->bbJumpKind)
     {
@@ -2918,6 +2954,8 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                             gtSetStmtInfo(nopStmt);
                         }
 
+                        madeChanges = true;
+
 #ifdef DEBUG
                         if (verbose)
                         {
@@ -2976,13 +3014,15 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
             /* Remove the block */
             compCurBB = block;
             fgRemoveBlock(block, /* unreachable */ false);
-            return true;
+            madeChanges = true;
+            break;
 
         default:
             noway_assert(!"Unexpected bbJumpKind");
             break;
     }
-    return false;
+
+    return madeChanges;
 }
 
 //-------------------------------------------------------------
@@ -4125,7 +4165,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
     gtReverseCond(condTree);
 
     // We need to update the following flags of the bJump block if they were set in the bDest block
-    bJump->bbFlags |= (bDest->bbFlags & (BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN));
+    bJump->bbFlags |= bDest->bbFlags & BBF_COPY_PROPAGATE;
 
     bJump->bbJumpKind = BBJ_COND;
     bJump->bbJumpDest = bDest->bbNext;
@@ -4427,7 +4467,7 @@ bool Compiler::fgExpandRarelyRunBlocks()
                 {
                     if (tmpbb == bPrevPrev)
                     {
-                        /* We found an ealier predecessor */
+                        /* We found an earlier predecessor */
                         bPrevPrev = pred->getBlock();
                         break;
                     }
@@ -5876,12 +5916,34 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 #endif
 
 //-------------------------------------------------------------
+// fgUpdateFlowGraphPhase: run flow graph optimization as a
+//   phase, with no tail duplication
+//
+// Returns:
+//    Suitable phase status
+//
+PhaseStatus Compiler::fgUpdateFlowGraphPhase()
+{
+    constexpr bool doTailDup   = false;
+    constexpr bool isPhase     = true;
+    const bool     madeChanges = fgUpdateFlowGraph(doTailDup, isPhase);
+
+    // Dominator and reachability sets are no longer valid.
+    // The loop table is no longer valid.
+    fgDomsComputed    = false;
+    optLoopTableValid = false;
+
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
+//-------------------------------------------------------------
 // fgUpdateFlowGraph: Removes any empty blocks, unreachable blocks, and redundant jumps.
 // Most of those appear after dead store removal and folding of conditionals.
 // Also, compact consecutive basic blocks.
 //
 // Arguments:
 //    doTailDuplication - true to attempt tail duplication optimization
+//    isPhase - true if being run as the only thing in a phase
 //
 // Returns: true if the flowgraph has been modified
 //
@@ -5889,10 +5951,10 @@ bool Compiler::fgReorderBlocks(bool useProfile)
 //    Debuggable code and Min Optimization JIT also introduces basic blocks
 //    but we do not optimize those!
 //
-bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
+bool Compiler::fgUpdateFlowGraph(bool doTailDuplication, bool isPhase)
 {
 #ifdef DEBUG
-    if (verbose)
+    if (verbose && !isPhase)
     {
         printf("\n*************** In fgUpdateFlowGraph()");
     }
@@ -5903,7 +5965,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
     noway_assert(opts.OptimizationEnabled());
 
 #ifdef DEBUG
-    if (verbose)
+    if (verbose && !isPhase)
     {
         printf("\nBefore updating the flow graph:\n");
         fgDispBasicBlocks(verboseTrees);
@@ -6041,7 +6103,7 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
 
                     // case (b)
                     //
-                    // Note the asymetric checks for refs == 1 and refs > 1 ensures that we
+                    // Note the asymmetric checks for refs == 1 and refs > 1 ensures that we
                     // differentiate the roles played by bDest and bNextJumpDest. We need some
                     // sense of which arrangement is preferable to avoid getting stuck in a loop
                     // reversing and re-reversing.
@@ -6371,32 +6433,32 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication)
     } while (change);
 
 #ifdef DEBUG
-    if (verbose && modified)
+    if (!isPhase)
     {
-        printf("\nAfter updating the flow graph:\n");
-        fgDispBasicBlocks(verboseTrees);
-        fgDispHandlerTab();
-    }
-
-    if (compRationalIRForm)
-    {
-        for (BasicBlock* const block : Blocks())
+        if (verbose && modified)
         {
-            LIR::AsRange(block).CheckLIR(this);
+            printf("\nAfter updating the flow graph:\n");
+            fgDispBasicBlocks(verboseTrees);
+            fgDispHandlerTab();
         }
-    }
 
-    fgVerifyHandlerTab();
-    // Make sure that the predecessor lists are accurate
-    fgDebugCheckBBlist();
-    fgDebugCheckUpdate();
+        if (compRationalIRForm)
+        {
+            for (BasicBlock* const block : Blocks())
+            {
+                LIR::AsRange(block).CheckLIR(this);
+            }
+        }
+
+        fgVerifyHandlerTab();
+        // Make sure that the predecessor lists are accurate
+        fgDebugCheckBBlist();
+        fgDebugCheckUpdate();
+    }
 #endif // DEBUG
 
     return modified;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 //-------------------------------------------------------------
 // fgGetCodeEstimate: Compute a code size estimate for the block, including all statements

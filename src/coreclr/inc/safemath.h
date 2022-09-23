@@ -159,7 +159,7 @@ inline bool DoubleFitsInIntType(double val)
 // Modified to track an overflow bit instead of throwing exceptions.  In most
 // cases the Visual C++ optimizer (Whidbey beta1 - v14.00.40607) is able to
 // optimize the bool away completely.
-// Note that using a sentinal value (IntMax for example) to represent overflow
+// Note that using a sentinel value (IntMax for example) to represent overflow
 // actually results in poorer code-gen.
 //
 // This has also been simplified significantly to remove functionality we

@@ -21,6 +21,7 @@ namespace System.Net.Http.Json
         public object? Value { get; }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         private JsonContent(
             object? inputValue,
             Type inputType,
@@ -44,10 +45,12 @@ namespace System.Net.Http.Json
         }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         public static JsonContent Create<T>(T inputValue, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
             => Create(inputValue, typeof(T), mediaType, options);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         public static JsonContent Create(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType = null, JsonSerializerOptions? options = null)
             => new JsonContent(inputValue, inputType, mediaType, options);
 
@@ -62,6 +65,8 @@ namespace System.Net.Http.Json
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "The ctor is annotated with RequiresUnreferencedCode.")]
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The ctor is annotated with RequiresDynamicCode.")]
         private async Task SerializeToStreamAsyncCore(Stream targetStream, bool async, CancellationToken cancellationToken)
         {
             Encoding? targetEncoding = JsonHelpers.GetEncoding(Headers.ContentType?.CharSet);
@@ -75,11 +80,11 @@ namespace System.Net.Http.Json
                 {
                     if (async)
                     {
-                        await SerializeAsyncHelper(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+                        await JsonSerializer.SerializeAsync(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
-                        SerializeSyncHelper(transcodingStream, Value, ObjectType, _jsonSerializerOptions);
+                        JsonSerializer.Serialize(transcodingStream, Value, ObjectType, _jsonSerializerOptions);
                     }
                 }
                 finally
@@ -100,7 +105,7 @@ namespace System.Net.Http.Json
 
                 using (TranscodingWriteStream transcodingStream = new TranscodingWriteStream(targetStream, targetEncoding))
                 {
-                    await SerializeAsyncHelper(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+                    await JsonSerializer.SerializeAsync(transcodingStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
                     // The transcoding streams use Encoders and Decoders that have internal buffers. We need to flush these
                     // when there is no more data to be written. Stream.FlushAsync isn't suitable since it's
                     // acceptable to Flush a Stream (multiple times) prior to completion.
@@ -112,28 +117,17 @@ namespace System.Net.Http.Json
             {
                 if (async)
                 {
-                    await SerializeAsyncHelper(targetStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
+                    await JsonSerializer.SerializeAsync(targetStream, Value, ObjectType, _jsonSerializerOptions, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
 #if NETCOREAPP
-                    SerializeSyncHelper(targetStream, Value, ObjectType, _jsonSerializerOptions);
+                    JsonSerializer.Serialize(targetStream, Value, ObjectType, _jsonSerializerOptions);
 #else
                     Debug.Fail("Synchronous serialization is only supported since .NET 5.0");
 #endif
                 }
             }
-#if NETCOREAPP
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
-            static void SerializeSyncHelper(Stream utf8Json, object? value, Type inputType, JsonSerializerOptions? options)
-                => JsonSerializer.Serialize(utf8Json, value, inputType, options);
-#endif
-
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Workaround for https://github.com/mono/linker/issues/1416. The outer method is marked as RequiresUnreferencedCode.")]
-            static Task SerializeAsyncHelper(Stream utf8Json, object? value, Type inputType, JsonSerializerOptions? options, CancellationToken cancellationToken)
-                => JsonSerializer.SerializeAsync(utf8Json, value, inputType, options, cancellationToken);
         }
     }
 }

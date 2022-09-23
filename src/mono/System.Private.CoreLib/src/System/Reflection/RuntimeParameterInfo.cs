@@ -121,6 +121,16 @@ namespace System.Reflection
             this.marshalAs = marshalAs;
         }
 
+        // ctor for no metadata MethodInfo in the DynamicMethod and RuntimeMethodInfo cases
+        internal RuntimeParameterInfo(MethodInfo owner, string? name, Type parameterType, int position)
+        {
+            MemberImpl = owner;
+            NameImpl = name;
+            ClassImpl = parameterType;
+            PositionImpl = position;
+            AttrsImpl = ParameterAttributes.None;
+        }
+
         public override
         object? DefaultValue
         {
@@ -218,7 +228,8 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern int GetMetadataToken();
 
-        public override Type[] GetOptionalCustomModifiers() => GetCustomModifiers(true);
+        public override Type[] GetOptionalCustomModifiers() =>
+            MemberImpl is DynamicMethod.RTDynamicMethod ? Type.EmptyTypes : GetCustomModifiers(true);
 
         internal object[]? GetPseudoCustomAttributes()
         {
@@ -289,7 +300,8 @@ namespace System.Reflection
             return attrsData;
         }
 
-        public override Type[] GetRequiredCustomModifiers() => GetCustomModifiers(false);
+        public override Type[] GetRequiredCustomModifiers() =>
+            MemberImpl is DynamicMethod.RTDynamicMethod ? Type.EmptyTypes : GetCustomModifiers(false);
 
         public override bool HasDefaultValue
         {
@@ -322,6 +334,16 @@ namespace System.Reflection
         internal static ParameterInfo New(Type type, MemberInfo member, MarshalAsAttribute marshalAs)
         {
             return new RuntimeParameterInfo(type, member, marshalAs);
+        }
+
+        internal void SetName(string? name)
+        {
+            NameImpl = name;
+        }
+
+        internal void SetAttributes(ParameterAttributes attributes)
+        {
+            AttrsImpl = attributes;
         }
 
         private Type[] GetCustomModifiers(bool optional) => GetTypeModifiers(ParameterType, Member, Position, optional) ?? Type.EmptyTypes;

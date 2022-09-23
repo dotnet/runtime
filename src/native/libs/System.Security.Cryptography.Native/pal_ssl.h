@@ -119,10 +119,10 @@ typedef int32_t (*SslCtxSetAlpnCallback)(SSL* ssl,
     void* arg);
 
 // the function pointer used for new  session
-typedef int32_t (*SslCtxNewSessionCallback)(SSL* ssl, SSL_SESSION* sesssion);
+typedef int32_t (*SslCtxNewSessionCallback)(SSL* ssl, SSL_SESSION* session);
 
 // the function pointer used for new  session
-typedef void (*SslCtxRemoveSessionCallback)(SSL_CTX* ctx, SSL_SESSION* sesssion);
+typedef void (*SslCtxRemoveSessionCallback)(SSL_CTX* ctx, SSL_SESSION* session);
 
 /*
 Ensures that libssl is correctly initialized and ready to use.
@@ -162,7 +162,7 @@ PALEXPORT void CryptoNative_SslSetPostHandshakeAuth(SSL* ssl, int32_t val);
 /*
 Sets session caching. 0 is disabled.
 */
-PALEXPORT int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, SslCtxNewSessionCallback newCb, SslCtxRemoveSessionCallback removeCb);
+PALEXPORT int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, int contextIdLength, uint8_t* contextId, SslCtxNewSessionCallback newSessionCb, SslCtxRemoveSessionCallback removeSessionCb);
 
 /*
 Returns name associated with given ssl session.
@@ -370,7 +370,7 @@ PALEXPORT void CryptoNative_SslSetQuietShutdown(SSL* ssl, int mode);
 /*
 Shims the SSL_get_client_CA_list method.
 
-Returns the list of CA names explicity set.
+Returns the list of CA names explicitly set.
 */
 PALEXPORT X509NameStack* CryptoNative_SslGetClientCAList(SSL* ssl);
 

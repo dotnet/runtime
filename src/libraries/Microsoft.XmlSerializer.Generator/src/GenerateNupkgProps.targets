@@ -19,6 +19,12 @@
   &lt;ItemGroup&gt;
     &lt;DotNetCliToolReference Include="$(PackageId)" Version="$(PackageVersion)" /&gt;
   &lt;/ItemGroup&gt;
+  &lt;PropertyGroup&gt;
+    &lt;SgenPackSerializer Condition="'%24(SgenPackSerializer)'==''"&gt;True&lt;/SgenPackSerializer&gt;
+  &lt;/PropertyGroup&gt;
+  &lt;ItemGroup Condition="'%24(SgenPackSerializer)'=='True'"&gt;
+    &lt;BuildOutputInPackage Include="%24(OutputPath)%24(AssemblyName).XmlSerializers.dll" /&gt;
+  &lt;/ItemGroup&gt;
 &lt;/Project&gt;
       </PropsFileContents>
     </PropertyGroup>

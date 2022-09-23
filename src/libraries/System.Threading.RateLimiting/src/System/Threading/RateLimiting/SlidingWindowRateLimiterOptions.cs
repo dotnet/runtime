@@ -9,80 +9,45 @@ namespace System.Threading.RateLimiting
     public sealed class SlidingWindowRateLimiterOptions
     {
         /// <summary>
-        /// Initializes the <see cref="SlidingWindowRateLimiterOptions"/>.
-        /// </summary>
-        /// <param name="permitLimit">Maximum number of request counters that can be served in a window.</param>
-        /// <param name="queueProcessingOrder"></param>
-        /// <param name="queueLimit">Maximum number of unprocessed request counters waiting via <see cref="RateLimiter.WaitAndAcquireAsync(int, CancellationToken)"/>.</param>
-        /// <param name="window">
-        /// Specifies how often requests can be replenished. Replenishing is triggered either by an internal timer if <paramref name="autoReplenishment"/> is true, or by calling <see cref="SlidingWindowRateLimiter.TryReplenish"/>.
-        /// </param>
-        /// <param name="segmentsPerWindow">Specified how many segments a window can be divided into. The total requests a segment can serve cannot exceed the max limit.<paramref name="permitLimit"/>.</param>
-        /// <param name="autoReplenishment">
-        /// Specifies whether request replenishment will be handled by the <see cref="SlidingWindowRateLimiter"/> or by another party via <see cref="SlidingWindowRateLimiter.TryReplenish"/>.
-        /// </param>
-        /// <exception cref="ArgumentOutOfRangeException">When <paramref name="permitLimit"/>, <paramref name="queueLimit"/>, or <paramref name="segmentsPerWindow"/> are less than 0. </exception>
-        public SlidingWindowRateLimiterOptions(
-            int permitLimit,
-            QueueProcessingOrder queueProcessingOrder,
-            int queueLimit,
-            TimeSpan window,
-            int segmentsPerWindow,
-            bool autoReplenishment = true)
-        {
-            if (permitLimit < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(permitLimit));
-            }
-            if (queueLimit < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(queueLimit));
-            }
-            if (segmentsPerWindow <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(segmentsPerWindow));
-            }
-
-            PermitLimit = permitLimit;
-            QueueProcessingOrder = queueProcessingOrder;
-            QueueLimit = queueLimit;
-            Window = window;
-            SegmentsPerWindow = segmentsPerWindow;
-            AutoReplenishment = autoReplenishment;
-        }
-
-        /// <summary>
         /// Specifies the minimum period between replenishments.
+        /// Must be set to a value >= <see cref="TimeSpan.Zero" /> by the time these options are passed to the constructor of <see cref="SlidingWindowRateLimiter"/>.
         /// </summary>
-        public TimeSpan Window { get; }
+        /// <remarks><see cref="TimeSpan.Zero"/> means the limiter will never replenish.</remarks>
+        public TimeSpan Window { get; set; } = TimeSpan.Zero;
 
         /// <summary>
         /// Specifies the maximum number of segments a window is divided into.
+        /// Must be set to a value > 0 by the time these options are passed to the constructor of <see cref="SlidingWindowRateLimiter"/>.
         /// </summary>
-        public int SegmentsPerWindow { get; }
+        public int SegmentsPerWindow { get; set; }
 
         /// <summary>
         /// Specified whether the <see cref="SlidingWindowRateLimiter"/> is automatically replenishing request counters or if someone else
         /// will be calling <see cref="SlidingWindowRateLimiter.TryReplenish"/> to replenish tokens.
         /// </summary>
-        public bool AutoReplenishment { get; }
+        /// <value>
+        /// <see langword="true" /> by default.
+        /// </value>
+        public bool AutoReplenishment { get; set; } = true;
 
         /// <summary>
         /// Maximum number of requests that can be served in a window.
+        /// Must be set to a value > 0 by the time these options are passed to the constructor of <see cref="SlidingWindowRateLimiter"/>.
         /// </summary>
-        public int PermitLimit { get; }
+        public int PermitLimit { get; set; }
 
         /// <summary>
-        /// Determines the behaviour of <see cref="RateLimiter.WaitAndAcquireAsync"/> when not enough resources can be leased.
+        /// Determines the behaviour of <see cref="RateLimiter.AcquireAsync"/> when not enough resources can be leased.
         /// </summary>
         /// <value>
         /// <see cref="QueueProcessingOrder.OldestFirst"/> by default.
         /// </value>
-        public QueueProcessingOrder QueueProcessingOrder { get; }
+        public QueueProcessingOrder QueueProcessingOrder { get; set; } = QueueProcessingOrder.OldestFirst;
 
         /// <summary>
         /// Maximum cumulative permit count of queued acquisition requests.
+        /// Must be set to a value >= 0 by the time these options are passed to the constructor of <see cref="SlidingWindowRateLimiter"/>.
         /// </summary>
-        public int QueueLimit { get; }
+        public int QueueLimit { get; set; }
     }
 }

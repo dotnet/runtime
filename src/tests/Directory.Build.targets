@@ -83,6 +83,10 @@
     </ProjectReference>
   </ItemGroup>
 
+  <PropertyGroup Condition="'$(RequiresCodeFlowEnforcement)' == 'true'">
+    <CLRTestTargetUnsupported Condition="'$(UseCodeFlowEnforcement)' != 'true'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+
   <!-- Determine if this project should be built or not -->
   <PropertyGroup>
     <BuildAllProjects Condition="'$(BuildAllProjects)' == ''">false</BuildAllProjects>
@@ -91,6 +95,7 @@
     <_WillCLRTestProjectBuild Condition="'$(BuildAllProjects)' == 'true' And '$(CLRTestPriority)' &lt;= '$(CLRTestPriorityToBuild)'">true</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(CLRTestBuildAllTargets)' != 'allTargets' And '$(CLRTestTargetUnsupported)' == 'true'">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(DisableProjectBuild)' == 'true'">false</_WillCLRTestProjectBuild>
+    <_WillCLRTestProjectBuild Condition="'$(NativeAotIncompatible)' == 'true' and '$(TestBuildMode)' == 'nativeaot'">false</_WillCLRTestProjectBuild>
   </PropertyGroup>
   <PropertyGroup>
     <_CopyNativeProjectBinaries Condition="'$(__CopyNativeTestBinaries)' != '1'">$(__CopyNativeProjectsAfterCombinedTestBuild)</_CopyNativeProjectBinaries>
@@ -533,13 +538,17 @@
     <_UsingDefaultForHasRuntimeOutput>false</_UsingDefaultForHasRuntimeOutput>
   </PropertyGroup>
 
-  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.NETCore.Native.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
+  <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
+    <IlcReference Include="$(TargetingPackPath)/*.dll" />
+  </ItemGroup>
+
+  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
 
   <Target Name="BuildNativeAot"
           DependsOnTargets="Build;LinkNativeIfBuildAndRun" />
 
   <Target Name="LinkNativeIfBuildAndRun"
-          Condition="'$(CLRTestTargetUnsupported)' != 'true' and '$(CLRTestKind)' == 'BuildAndRun'"
+          Condition="'$(_WillCLRTestProjectBuild)' == 'true' and '$(CLRTestKind)' == 'BuildAndRun'"
           DependsOnTargets="ComputeResolvedFilesToPublishList;LinkNative" />
 
 </Project>

@@ -36,7 +36,7 @@ namespace AppDomainUnloadAsmLoad
 		static AppDomainTestDriver()
 		{
 			// Needs a callback so that the runtime fires the
-			// AssembyLoad event for this domain and materializes a System.Reflection.Assembly
+			// AssemblyLoad event for this domain and materializes a System.Reflection.Assembly
 			AppDomain.CurrentDomain.AssemblyLoad += CurrentDomain_AssemblyLoad;
 		}
 

@@ -302,11 +302,9 @@ private:
 
 public:
     //
-    // Default constructor.  Results in an unitialized value!
+    // Default constructor.
     //
-    inline Volatile()
-    {
-    }
+    inline Volatile() = default;
 
     //
     // Allow initialization of Volatile<T> from a T

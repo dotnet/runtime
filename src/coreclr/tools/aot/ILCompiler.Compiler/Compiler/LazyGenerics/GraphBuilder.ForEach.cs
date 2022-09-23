@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 
 using Internal.TypeSystem;
@@ -18,10 +16,10 @@ namespace ILCompiler
             /// Walk through the type expression and find any embedded generic parameter references. For each one found,
             /// invoke the collector delegate with that generic parameter and a boolean indicate whether this is
             /// a proper embedding (i.e. there is something actually nesting this.)
-            /// 
+            ///
             /// Typically, the type expression is something that a generic type formal is being bound to, and we're
             /// looking to see if another other generic type formals are referenced within that type expression.
-            /// 
+            ///
             /// This method also records bindings for any generic instances it finds inside the tree expression.
             /// Sometimes, this side-effect is all that's wanted - in such cases, invoke this method with a null collector.
             /// </summary>
@@ -31,8 +29,7 @@ namespace ILCompiler
                     delegate(EcmaGenericParameter embedded, int depth)
                     {
                         bool isProperEmbedding = (depth > 0);
-                        if (collector != null)
-                            collector(embedded, isProperEmbedding);
+                        collector?.Invoke(embedded, isProperEmbedding);
                         return;
                     };
                 ForEachEmbeddedGenericFormalWorker(typeExpression, typeContext, methodContext, wrappedCollector, depth: 0);

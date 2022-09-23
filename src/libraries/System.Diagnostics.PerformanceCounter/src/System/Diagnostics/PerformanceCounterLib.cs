@@ -271,8 +271,6 @@ namespace System.Diagnostics
                     {
                         if (s_symbolFilePath == null)
                         {
-                            Path.GetTempPath();
-
                             try
                             {
                                 s_symbolFilePath = Path.GetTempFileName();

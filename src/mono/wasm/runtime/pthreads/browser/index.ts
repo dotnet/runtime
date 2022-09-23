@@ -1,8 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { Module } from "../../imports";
-import { pthread_ptr, MonoWorkerMessageChannelCreated, isMonoWorkerMessageChannelCreated, monoSymbol } from "../shared";
+import { MonoWorkerMessageChannelCreated, isMonoWorkerMessageChannelCreated, monoSymbol, makeMonoThreadMessageApplyMonoConfig } from "../shared";
+import { pthread_ptr } from "../shared/types";
+import { MonoThreadMessage } from "../shared";
+import { PromiseController, createPromiseController } from "../../promise-controller";
+import { MonoConfig, mono_assert } from "../../types";
+import Internals from "../shared/emscripten-internals";
+import { runtimeHelpers } from "../../imports";
 
 const threads: Map<pthread_ptr, Thread> = new Map();
 
@@ -10,10 +15,43 @@ export interface Thread {
     readonly pthread_ptr: pthread_ptr;
     readonly worker: Worker;
     readonly port: MessagePort;
+    postMessageToWorker<T extends MonoThreadMessage>(message: T): void;
+}
+
+class ThreadImpl implements Thread {
+    constructor(readonly pthread_ptr: pthread_ptr, readonly worker: Worker, readonly port: MessagePort) { }
+    postMessageToWorker<T extends MonoThreadMessage>(message: T): void {
+        this.port.postMessage(message);
+    }
+}
+
+const thread_promises: Map<pthread_ptr, PromiseController<Thread>[]> = new Map();
+
+/// wait until the thread with the given id has set up a message port to the runtime
+export function waitForThread(pthread_ptr: pthread_ptr): Promise<Thread> {
+    if (threads.has(pthread_ptr)) {
+        return Promise.resolve(threads.get(pthread_ptr)!);
+    }
+    const promiseAndController = createPromiseController<Thread>();
+    const arr = thread_promises.get(pthread_ptr);
+    if (arr === undefined) {
+        thread_promises.set(pthread_ptr, [promiseAndController.promise_control]);
+    } else {
+        arr.push(promiseAndController.promise_control);
+    }
+    return promiseAndController.promise;
+}
+
+function resolvePromises(pthread_ptr: pthread_ptr, thread: Thread): void {
+    const arr = thread_promises.get(pthread_ptr);
+    if (arr !== undefined) {
+        arr.forEach((controller) => controller.resolve(thread));
+        thread_promises.delete(pthread_ptr);
+    }
 }
 
 function addThread(pthread_ptr: pthread_ptr, worker: Worker, port: MessagePort): Thread {
-    const thread = { pthread_ptr, worker, port };
+    const thread = new ThreadImpl(pthread_ptr, worker, port);
     threads.set(pthread_ptr, thread);
     return thread;
 }
@@ -43,7 +81,7 @@ export const getThreadIds = (): IterableIterator<pthread_ptr> => threads.keys();
 
 function monoDedicatedChannelMessageFromWorkerToMain(event: MessageEvent<unknown>, thread: Thread): void {
     // TODO: add callbacks that will be called from here
-    console.debug("got message from worker on the dedicated channel", event.data, thread);
+    console.debug("MONO_WASM: got message from worker on the dedicated channel", event.data, thread);
 }
 
 // handler that runs in the main thread when a message is received from a pthread worker
@@ -51,12 +89,14 @@ function monoWorkerMessageHandler(worker: Worker, ev: MessageEvent<MonoWorkerMes
     /// N.B. important to ignore messages we don't recognize - Emscripten uses the message event to send internal messages
     const data = ev.data;
     if (isMonoWorkerMessageChannelCreated(data)) {
-        console.debug("received the channel created message", data, worker);
+        console.debug("MONO_WASM: received the channel created message", data, worker);
         const port = data[monoSymbol].port;
         const pthread_id = data[monoSymbol].thread_id;
         const thread = addThread(pthread_id, worker, port);
         port.addEventListener("message", (ev) => monoDedicatedChannelMessageFromWorkerToMain(ev, thread));
         port.start();
+        port.postMessage(makeMonoThreadMessageApplyMonoConfig(runtimeHelpers.config));
+        resolvePromises(pthread_id, thread);
     }
 }
 
@@ -64,24 +104,45 @@ function monoWorkerMessageHandler(worker: Worker, ev: MessageEvent<MonoWorkerMes
 /// At this point the worker doesn't have any pthread assigned to it, yet.
 export function afterLoadWasmModuleToWorker(worker: Worker): void {
     worker.addEventListener("message", (ev) => monoWorkerMessageHandler(worker, ev));
-    console.debug("afterLoadWasmModuleToWorker added message event handler", worker);
+    console.debug("MONO_WASM: afterLoadWasmModuleToWorker added message event handler", worker);
 }
 
-/// These utility functions dig into Emscripten internals
-const Internals = {
-    getWorker: (pthread_ptr: pthread_ptr): Worker => {
-        // see https://github.com/emscripten-core/emscripten/pull/16239
-        return (<any>Module).PThread.pthreads[pthread_ptr].worker;
-    },
-    getThreadId: (worker: Worker): pthread_ptr | undefined => {
-        /// See library_pthread.js in Emscripten.
-        /// They hang a "pthread" object from the worker if the worker is running a thread, and remove it when the thread stops by doing `pthread_exit` or when it's joined using `pthread_join`.
-        const emscriptenThreadInfo = (<any>worker)["pthread"];
-        if (emscriptenThreadInfo === undefined) {
-            return undefined;
-        }
-        return emscriptenThreadInfo.threadInfoStruct;
+/// We call on the main thread this during startup to pre-allocate a pool of pthread workers.
+/// At this point asset resolution needs to be working (ie we loaded MonoConfig).
+/// This is used instead of the Emscripten PThread.initMainThread because we call it later.
+export function preAllocatePThreadWorkerPool(defaultPthreadPoolSize: number, config: MonoConfig): void {
+    const poolSizeSpec = config?.pthreadPoolSize;
+    let n: number;
+    if (poolSizeSpec === undefined) {
+        n = defaultPthreadPoolSize;
+    } else {
+        mono_assert(typeof poolSizeSpec === "number", "pthreadPoolSize must be a number");
+        if (poolSizeSpec < 0)
+            n = defaultPthreadPoolSize;
+        else
+            n = poolSizeSpec;
     }
-};
+    for (let i = 0; i < n; i++) {
+        Internals.allocateUnusedWorker();
+    }
+}
 
-
+/// We call this on the main thread during startup once we fetched WasmModule.
+/// This sends a message to each pre-allocated worker to load the WasmModule and dotnet.js and to set up
+/// message handling.
+/// This is used instead of the Emscripten "receiveInstance" in "createWasm" because that code is
+/// conditioned on a non-zero PTHREAD_POOL_SIZE (but we set it to 0 to avoid early worker allocation).
+export async function instantiateWasmPThreadWorkerPool(): Promise<void> {
+    // this is largely copied from emscripten's "receiveInstance" in "createWasm" in "src/preamble.js"
+    const workers = Internals.getUnusedWorkerPool();
+    if (workers.length > 0) {
+        const allLoaded = createPromiseController<void>();
+        let leftToLoad = workers.length;
+        workers.forEach((w) => {
+            Internals.loadWasmModuleToWorker(w, function () {
+                if (!--leftToLoad) allLoaded.promise_control.resolve();
+            });
+        });
+        await allLoaded.promise;
+    }
+}

@@ -78,7 +78,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     $"'{Constants.RollForwardOnNoCandidateFxSetting.CommandLineArgument}' command line options.");
         }
 
-        // Verifies the precedence of rollFoward and rollForwardOnNoCandidateFx from various sources
+        // Verifies the precedence of rollForward and rollForwardOnNoCandidateFx from various sources
         // Only checks valid cases - the precedence order should be:
         //   1. Command line
         //   2. DOTNET_ROLL_FORWARD env. variable

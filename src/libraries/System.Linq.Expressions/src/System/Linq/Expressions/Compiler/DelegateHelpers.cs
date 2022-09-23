@@ -122,7 +122,7 @@ namespace System.Linq.Expressions.Compiler
                 TypeBuilder builder = AssemblyGen.DefineDelegateType("Delegate" + types.Length);
                 builder.DefineConstructor(ctorAttributes, CallingConventions.Standard, delegateCtorSignature).SetImplementationFlags(implAttributes);
                 builder.DefineMethod("Invoke", invokeAttributes, returnType, parameters).SetImplementationFlags(implAttributes);
-                return builder.CreateTypeInfo()!;
+                return builder.CreateTypeInfo();
             }
             else
             {

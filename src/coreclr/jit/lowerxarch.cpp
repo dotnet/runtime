@@ -41,55 +41,20 @@ void Lowering::LowerRotate(GenTree* tree)
 // Notes:
 //    This involves:
 //    - Handling of contained immediates.
-//    - Widening operations of unsigneds.
-
+//    - Widening some small stores.
+//
 void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 {
-    // Try to widen the ops if they are going into a local var.
-    if ((storeLoc->gtOper == GT_STORE_LCL_VAR) && (storeLoc->gtOp1->gtOper == GT_CNS_INT))
+    // Most small locals (the exception is dependently promoted fields) have 4 byte wide stack slots, so
+    // we can widen the store, if profitable. The widening is only (largely) profitable for 2 byte stores.
+    // We could widen bytes too but that would only be better when the constant is zero and reused, which
+    // we presume is not common enough.
+    //
+    if (storeLoc->OperIs(GT_STORE_LCL_VAR) && (genTypeSize(storeLoc) == 2) && storeLoc->Data()->IsCnsIntOrI())
     {
-        GenTreeIntCon* con  = storeLoc->gtOp1->AsIntCon();
-        ssize_t        ival = con->gtIconVal;
-
-        LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
-
-        if (varDsc->lvIsSIMDType())
+        if (!comp->lvaGetDesc(storeLoc)->lvIsStructField)
         {
-            noway_assert(storeLoc->gtType != TYP_STRUCT);
-        }
-        unsigned size = genTypeSize(storeLoc);
-        // If we are storing a constant into a local variable
-        // we extend the size of the store here
-        if ((size < 4) && !varTypeIsStruct(varDsc))
-        {
-            if (!varTypeIsUnsigned(varDsc))
-            {
-                if (genTypeSize(storeLoc) == 1)
-                {
-                    if ((ival & 0x7f) != ival)
-                    {
-                        ival = ival | 0xffffff00;
-                    }
-                }
-                else
-                {
-                    assert(genTypeSize(storeLoc) == 2);
-                    if ((ival & 0x7fff) != ival)
-                    {
-                        ival = ival | 0xffff0000;
-                    }
-                }
-            }
-
-            // A local stack slot is at least 4 bytes in size, regardless of
-            // what the local var is typed as, so auto-promote it here
-            // unless it is a field of a promoted struct
-            // TODO-XArch-CQ: if the field is promoted shouldn't we also be able to do this?
-            if (!varDsc->lvIsStructField)
-            {
-                storeLoc->gtType = TYP_INT;
-                con->SetIconValue(ival);
-            }
+            storeLoc->gtType = TYP_INT;
         }
     }
     if (storeLoc->OperIs(GT_STORE_LCL_FLD))
@@ -97,6 +62,7 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
         // We should only encounter this for lclVars that are lvDoNotEnregister.
         verifyLclFldDoNotEnregister(storeLoc->GetLclNum());
     }
+
     ContainCheckStoreLoc(storeLoc);
 }
 
@@ -507,18 +473,6 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
             // registers to be consumed atomically by the call.
             if (varTypeIsIntegralOrI(fieldNode))
             {
-                // If we are loading from an in-memory local, we would like to use "push", but this
-                // is only legal if we can safely load all 4 bytes. Retype the local node here to
-                // TYP_INT for such legal cases to make downstream (LSRA & codegen) logic simpler.
-                // Retyping is ok because we model this node as STORE<field type>(LOAD<node type>).
-                // If the field came from promotion, we allow the padding to remain undefined, if
-                // from decomposition, the field type will be INT (naturally blocking the retyping).
-                if (varTypeIsSmall(fieldNode) && (genTypeSize(fieldType) <= genTypeSize(fieldNode)) &&
-                    fieldNode->OperIsLocalRead())
-                {
-                    fieldNode->ChangeType(TYP_INT);
-                }
-
                 if (IsContainableImmed(putArgStk, fieldNode))
                 {
                     MakeSrcContained(putArgStk, fieldNode);
@@ -557,7 +511,6 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
 
         ClassLayout* layout  = src->GetLayout(comp);
         var_types    regType = layout->GetRegisterType();
-        srcIsLocal |= src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIsLocalAddr();
 
         if (regType == TYP_UNDEF)
         {
@@ -605,18 +558,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
 #endif // !TARGET_X86
             }
 
-            if (src->OperIs(GT_OBJ) && src->AsObj()->Addr()->OperIsLocalAddr())
-            {
-                // TODO-ADDR: always perform this transformation in local morph and delete this code.
-                GenTreeLclVarCommon* lclAddrNode = src->AsObj()->Addr()->AsLclVarCommon();
-                BlockRange().Remove(lclAddrNode);
-
-                src->ChangeOper(GT_LCL_FLD);
-                src->AsLclFld()->SetLclNum(lclAddrNode->GetLclNum());
-                src->AsLclFld()->SetLclOffs(lclAddrNode->GetLclOffs());
-                src->AsLclFld()->SetLayout(layout);
-            }
-            else if (src->OperIs(GT_LCL_VAR))
+            if (src->OperIs(GT_LCL_VAR))
             {
                 comp->lvaSetVarDoNotEnregister(src->AsLclVar()->GetLclNum()
                                                    DEBUGARG(DoNotEnregisterReason::IsStructArg));
@@ -744,7 +686,7 @@ void Lowering::LowerCast(GenTree* tree)
     }
 
     // We should never see the following casts as they are expected to be lowered
-    // apropriately or converted into helper calls by front-end.
+    // appropriately or converted into helper calls by front-end.
     //   srcType = float/double                    castToType = * and overflow detecting cast
     //       Reason: must be converted to a helper call
     //   srcType = float/double,                   castToType = ulong
@@ -3419,6 +3361,20 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
         {
             assert(simdBaseType == TYP_FLOAT);
 
+            // We need to mask off the most significant element to avoid the shuffle + add
+            // from including it in the computed result. We need to do this for both op1 and
+            // op2 in case one of them is `NaN` (because Zero * NaN == NaN)
+
+            simd16_t simd16Val = {};
+
+            simd16Val.i32[0] = -1;
+            simd16Val.i32[1] = -1;
+            simd16Val.i32[2] = -1;
+            simd16Val.i32[3] = +0;
+
+            simdType = TYP_SIMD16;
+            simdSize = 16;
+
             // We will be constructing the following parts:
             //   ...
             //          +--*  CNS_INT    int    -1
@@ -3426,7 +3382,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
             //          +--*  CNS_INT    int    -1
             //          +--*  CNS_INT    int    0
             //   tmp1 = *  HWINTRINSIC   simd16 T Create
-            //          /--*  op2 simd16
+            //          /--*  op1 simd16
             //          +--*  tmp1 simd16
             //   op1  = *  HWINTRINSIC   simd16 T And
             //   ...
@@ -3434,30 +3390,48 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
             // This is roughly the following managed code:
             //   ...
             //   tmp1 = Vector128.Create(-1, -1, -1, 0);
-            //   op1  = Sse.And(op1, tmp2);
+            //   op1  = Sse.And(op1, tmp1);
             //   ...
 
-            GenTree* cns0 = comp->gtNewIconNode(-1, TYP_INT);
-            BlockRange().InsertAfter(op1, cns0);
+            GenTreeVecCon* vecCon1 = comp->gtNewVconNode(simdType, simdBaseJitType);
+            vecCon1->gtSimd16Val   = simd16Val;
 
-            GenTree* cns1 = comp->gtNewIconNode(-1, TYP_INT);
-            BlockRange().InsertAfter(cns0, cns1);
+            BlockRange().InsertAfter(op1, vecCon1);
 
-            GenTree* cns2 = comp->gtNewIconNode(-1, TYP_INT);
-            BlockRange().InsertAfter(cns1, cns2);
+            op1 = comp->gtNewSimdHWIntrinsicNode(simdType, op1, vecCon1, NI_SSE_And, simdBaseJitType, simdSize);
+            BlockRange().InsertAfter(vecCon1, op1);
 
-            GenTree* cns3 = comp->gtNewIconNode(0, TYP_INT);
-            BlockRange().InsertAfter(cns2, cns3);
-
-            tmp1 = comp->gtNewSimdHWIntrinsicNode(simdType, cns0, cns1, cns2, cns3, NI_Vector128_Create,
-                                                  CORINFO_TYPE_INT, 16);
-            BlockRange().InsertAfter(cns3, tmp1);
-
-            op1 = comp->gtNewSimdHWIntrinsicNode(simdType, op1, tmp1, NI_SSE_And, simdBaseJitType, simdSize);
-            BlockRange().InsertAfter(tmp1, op1);
-
-            LowerNode(tmp1);
+            LowerNode(vecCon1);
             LowerNode(op1);
+
+            // We will be constructing the following parts:
+            //   ...
+            //          +--*  CNS_INT    int    -1
+            //          +--*  CNS_INT    int    -1
+            //          +--*  CNS_INT    int    -1
+            //          +--*  CNS_INT    int    0
+            //   tmp2 = *  HWINTRINSIC   simd16 T Create
+            //          /--*  op2 simd16
+            //          +--*  tmp2 simd16
+            //   op2  = *  HWINTRINSIC   simd16 T And
+            //   ...
+
+            // This is roughly the following managed code:
+            //   ...
+            //   tmp2 = Vector128.Create(-1, -1, -1, 0);
+            //   op2  = Sse.And(op2, tmp2);
+            //   ...
+
+            GenTreeVecCon* vecCon2 = comp->gtNewVconNode(simdType, simdBaseJitType);
+            vecCon2->gtSimd16Val   = simd16Val;
+
+            BlockRange().InsertAfter(op2, vecCon2);
+
+            op2 = comp->gtNewSimdHWIntrinsicNode(simdType, op2, vecCon2, NI_SSE_And, simdBaseJitType, simdSize);
+            BlockRange().InsertAfter(vecCon2, op2);
+
+            LowerNode(vecCon2);
+            LowerNode(op2);
         }
     }
 
@@ -5135,28 +5109,52 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
         srcType = varTypeToUnsigned(srcType);
     }
 
-    if (!node->gtOverflow() && (varTypeIsFloating(castToType) || varTypeIsFloating(srcType)))
+    if (!node->gtOverflow())
     {
-#ifdef DEBUG
-        // If converting to float/double, the operand must be 4 or 8 byte in size.
-        if (varTypeIsFloating(castToType))
+        // Some casts will be able to use the source from memory.
+        bool srcIsContainable = false;
+
+        if (varTypeIsFloating(castToType) || varTypeIsFloating(srcType))
         {
-            unsigned opSize = genTypeSize(srcType);
-            assert(opSize == 4 || opSize == 8);
-        }
+#ifdef DEBUG
+            // If converting to float/double, the operand must be 4 or 8 byte in size.
+            if (varTypeIsFloating(castToType))
+            {
+                unsigned opSize = genTypeSize(srcType);
+                assert(opSize == 4 || opSize == 8);
+            }
 #endif // DEBUG
 
-        // U8 -> R8 conversion requires that the operand be in a register.
-        if (srcType != TYP_ULONG)
+            // U8 -> R8 conversion requires that the operand be in a register.
+            if (srcType != TYP_ULONG)
+            {
+                if (castOp->IsCnsNonZeroFltOrDbl())
+                {
+                    MakeSrcContained(node, castOp);
+                }
+                else
+                {
+                    srcIsContainable = true;
+                }
+            }
+        }
+        else if (comp->opts.OptimizationEnabled() && varTypeIsIntegral(castOp) && varTypeIsIntegral(castToType))
         {
-            if ((IsContainableMemoryOp(castOp) && IsSafeToContainMem(node, castOp)) || castOp->IsCnsNonZeroFltOrDbl())
+            // Most integral casts can be re-expressed as loads, except those that would be changing the sign.
+            if (!varTypeIsSmall(castOp) || (varTypeIsUnsigned(castOp) == node->IsZeroExtending()))
+            {
+                srcIsContainable = true;
+            }
+        }
+
+        if (srcIsContainable && IsSafeToContainMem(node, castOp))
+        {
+            if (IsContainableMemoryOp(castOp))
             {
                 MakeSrcContained(node, castOp);
             }
             else
             {
-                // Mark castOp as reg optional to indicate codegen
-                // can still generate code if it is on stack.
                 castOp->SetRegOptional();
             }
         }
@@ -5370,12 +5368,12 @@ bool Lowering::LowerRMWMemOp(GenTreeIndir* storeInd)
             indirOpSource->ClearContained();
         }
         indirSrc->AsOp()->gtOp2->ClearRegOptional();
-        JITDUMP("Lower succesfully detected an assignment of the form: *addrMode BinOp= source\n");
+        JITDUMP("Lower successfully detected an assignment of the form: *addrMode BinOp= source\n");
     }
     else
     {
         assert(GenTree::OperIsUnary(oper));
-        JITDUMP("Lower succesfully detected an assignment of the form: *addrMode = UnaryOp(*addrMode)\n");
+        JITDUMP("Lower successfully detected an assignment of the form: *addrMode = UnaryOp(*addrMode)\n");
     }
     DISPTREERANGE(BlockRange(), storeInd);
 

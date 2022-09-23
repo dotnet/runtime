@@ -175,8 +175,7 @@ void TailCallHelp::LayOutArgBuffer(
         bool thisParamByRef = (calleeMD != NULL) ? calleeMD->GetMethodTable()->IsValueType() : thisArgByRef;
         if (thisParamByRef)
         {
-            thisHnd = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_U1))
-                      .MakeByRef();
+            thisHnd = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_U1)).MakeByRef();
         }
         else
         {
@@ -463,7 +462,7 @@ MethodDesc* TailCallHelp::CreateCallTargetStub(const TailCallInfo& info)
 
     ILCodeStream* pCode = sl.NewCodeStream(ILStubLinker::kDispatch);
 
-    // void CallTarget(void* argBuffer, void* retVal, PortableTailCallFrame* pFrame)
+    // void CallTarget(void* argBuffer, ref byte retVal, PortableTailCallFrame* pFrame)
     const int ARG_ARG_BUFFER = 0;
     const int ARG_RET_VAL = 1;
     const int ARG_PTR_FRAME = 2;
@@ -615,7 +614,8 @@ void TailCallHelp::CreateCallTargetStubSig(const TailCallInfo& info, SigBuilder*
     sig->AppendElementType(ELEMENT_TYPE_I);
 
     // Return value
-    sig->AppendElementType(ELEMENT_TYPE_I);
+    sig->AppendElementType(ELEMENT_TYPE_BYREF);
+    sig->AppendElementType(ELEMENT_TYPE_U1);
 
     // Pointer to tail call frame
     sig->AppendElementType(ELEMENT_TYPE_I);

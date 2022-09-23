@@ -388,6 +388,15 @@ int MyICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  */
     return jitInstance->mc->repGetStringLiteral(module, metaTOK, buffer, bufferSize);
 }
 
+int MyICJI::objectToString(void*     handle,    /* IN  */
+                           char*     buffer,    /* OUT */
+                           int       bufferSize /* IN  */
+                           )
+{
+    jitInstance->mc->cr->AddCall("objectToString");
+    return jitInstance->mc->repObjectToString(handle, buffer, bufferSize);
+}
+
 /**********************************************************************************/
 //
 // ICorClassInfo
@@ -660,6 +669,13 @@ CorInfoHelpFunc MyICJI::getUnBoxHelper(CORINFO_CLASS_HANDLE cls)
 {
     jitInstance->mc->cr->AddCall("getUnBoxHelper");
     CorInfoHelpFunc result = jitInstance->mc->repGetUnBoxHelper(cls);
+    return result;
+}
+
+void* MyICJI::getRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
+{
+    jitInstance->mc->cr->AddCall("getRuntimeTypePointer");
+    void* result = jitInstance->mc->repGetRuntimeTypePointer(cls);
     return result;
 }
 
@@ -971,7 +987,7 @@ void MyICJI::setBoundaries(CORINFO_METHOD_HANDLE         ftn,  // [IN] method of
     freeArray(pMap); // see note in recSetBoundaries... we own this array and own destroying it.
 }
 
-// Query the EE to find out the scope of local varables.
+// Query the EE to find out the scope of local variables.
 // normally the JIT would trash variables after last use, but
 // under debugging, the JIT needs to keep them live over their
 // entire scope so that they can be inspected.
@@ -1084,6 +1100,15 @@ CorInfoTypeWithMod MyICJI::getArgType(CORINFO_SIG_INFO*       sig,      /* IN */
     if (exceptionCode != 0)
         ThrowException(exceptionCode);
     return value;
+}
+
+int MyICJI::getExactClasses(CORINFO_CLASS_HANDLE    baseType,        /* IN */
+                            int                     maxExactClasses, /* IN */
+                            CORINFO_CLASS_HANDLE*   exactClsRet      /* OUT */
+                            )
+{
+    jitInstance->mc->cr->AddCall("getExactClasses");
+    return jitInstance->mc->repGetExactClasses(baseType, maxExactClasses, exactClsRet);
 }
 
 // If the Arg is a CORINFO_TYPE_CLASS fetch the class handle associated with it

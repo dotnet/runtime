@@ -14,7 +14,7 @@ namespace System.Net.Quic
         Success,
 
         /// <summary>
-        /// An internal implementation error has occured.
+        /// An internal implementation error has occurred.
         /// </summary>
         InternalError,
 

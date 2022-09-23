@@ -45,7 +45,7 @@ namespace System.Runtime.Intrinsics
         public static bool IsHardwareAccelerated
         {
             [Intrinsic]
-            get => false;
+            get => IsHardwareAccelerated;
         }
 
         /// <summary>Computes the absolute value of each element in a vector.</summary>
@@ -112,11 +112,11 @@ namespace System.Runtime.Intrinsics
         public static Vector256<T> AndNot<T>(Vector256<T> left, Vector256<T> right)
             where T : struct => left & ~right;
 
-        /// <summary>Reinterprets a <see cref="Vector256{T}" /> as a new <see cref="Vector256{U}" />.</summary>
+        /// <summary>Reinterprets a <see cref="Vector256{TFrom}" /> as a new <see cref="Vector256{TTo}" />.</summary>
         /// <typeparam name="TFrom">The type of the input vector.</typeparam>
         /// <typeparam name="TTo">The type of the vector <paramref name="vector" /> should be reinterpreted as.</typeparam>
         /// <param name="vector">The vector to reinterpret.</param>
-        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector256{U}" />.</returns>
+        /// <returns><paramref name="vector" /> reinterpreted as a new <see cref="Vector256{TTo}" />.</returns>
         /// <exception cref="NotSupportedException">The type of <paramref name="vector" /> (<typeparamref name="TFrom" />) or the type of the target (<typeparamref name="TTo" />) is not supported.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -690,53 +690,42 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector256<byte> Create(byte value)
         {
-            if (Avx.IsSupported)
+            byte* pResult = stackalloc byte[32]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector256<byte> SoftwareFallback(byte value)
-            {
-                byte* pResult = stackalloc byte[32]
-                {
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector256<byte>>(pResult);
-            }
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector256<byte>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector256{Double}" /> instance with all elements initialized to the specified value.</summary>
@@ -746,25 +735,14 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector256<double> Create(double value)
         {
-            if (Avx.IsSupported)
+            double* pResult = stackalloc double[4]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector256<double> SoftwareFallback(double value)
-            {
-                double* pResult = stackalloc double[4]
-                {
-                    value,
-                    value,
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector256<double>>(pResult);
-            }
+                value,
+                value,
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector256<double>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector256{Int16}" /> instance with all elements initialized to the specified value.</summary>
@@ -774,37 +752,26 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector256<short> Create(short value)
         {
-            if (Avx.IsSupported)
+            short* pResult = stackalloc short[16]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector256<short> SoftwareFallback(short value)
-            {
-                short* pResult = stackalloc short[16]
-                {
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector256<short>>(pResult);
-            }
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector256<short>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector256{Int32}" /> instance with all elements initialized to the specified value.</summary>
@@ -814,29 +781,18 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector256<int> Create(int value)
         {
-            if (Avx.IsSupported)
+            int* pResult = stackalloc int[8]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector256<int> SoftwareFallback(int value)
-            {
-                int* pResult = stackalloc int[8]
-                {
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector256<int>>(pResult);
-            }
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector256<int>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector256{Int64}" /> instance with all elements initialized to the specified value.</summary>
@@ -846,25 +802,14 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector256<long> Create(long value)
         {
-            if (Sse2.X64.IsSupported && Avx.IsSupported)
+            long* pResult = stackalloc long[4]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector256<long> SoftwareFallback(long value)
-            {
-                long* pResult = stackalloc long[4]
-                {
-                    value,
-                    value,
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector256<long>>(pResult);
-            }
+                value,
+                value,
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector256<long>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector256{IntPtr}" /> instance with all elements initialized to the specified value.</summary>
@@ -873,21 +818,11 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector256<nint> Create(nint value)
         {
-            if (Avx.IsSupported)
-            {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector256<nint> SoftwareFallback(nint value)
-            {
 #if TARGET_64BIT
-                return Create((long)value).AsNInt();
+            return Create((long)value).AsNInt();
 #else
-                return Create((int)value).AsNInt();
+            return Create((int)value).AsNInt();
 #endif
-            }
         }
 
         /// <summary>Creates a new <see cref="Vector256{UIntPtr}" /> instance with all elements initialized to the specified value.</summary>
@@ -897,21 +832,11 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector256<nuint> Create(nuint value)
         {
-            if (Avx.IsSupported)
-            {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector256<nuint> SoftwareFallback(nuint value)
-            {
 #if TARGET_64BIT
-                return Create((ulong)value).AsNUInt();
+            return Create((ulong)value).AsNUInt();
 #else
-                return Create((uint)value).AsNUInt();
+            return Create((uint)value).AsNUInt();
 #endif
-            }
         }
 
         /// <summary>Creates a new <see cref="Vector256{SByte}" /> instance with all elements initialized to the specified value.</summary>
@@ -922,53 +847,42 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector256<sbyte> Create(sbyte value)
         {
-            if (Avx.IsSupported)
+            sbyte* pResult = stackalloc sbyte[32]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector256<sbyte> SoftwareFallback(sbyte value)
-            {
-                sbyte* pResult = stackalloc sbyte[32]
-                {
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector256<sbyte>>(pResult);
-            }
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector256<sbyte>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector256{Single}" /> instance with all elements initialized to the specified value.</summary>
@@ -978,29 +892,18 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector256<float> Create(float value)
         {
-            if (Avx.IsSupported)
+            float* pResult = stackalloc float[8]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector256<float> SoftwareFallback(float value)
-            {
-                float* pResult = stackalloc float[8]
-                {
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector256<float>>(pResult);
-            }
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector256<float>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector256{UInt16}" /> instance with all elements initialized to the specified value.</summary>
@@ -1011,37 +914,26 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector256<ushort> Create(ushort value)
         {
-            if (Avx.IsSupported)
+            ushort* pResult = stackalloc ushort[16]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector256<ushort> SoftwareFallback(ushort value)
-            {
-                ushort* pResult = stackalloc ushort[16]
-                {
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector256<ushort>>(pResult);
-            }
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector256<ushort>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector256{UInt32}" /> instance with all elements initialized to the specified value.</summary>
@@ -1052,29 +944,18 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector256<uint> Create(uint value)
         {
-            if (Avx.IsSupported)
+            uint* pResult = stackalloc uint[8]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector256<uint> SoftwareFallback(uint value)
-            {
-                uint* pResult = stackalloc uint[8]
-                {
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector256<uint>>(pResult);
-            }
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector256<uint>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector256{UInt64}" /> instance with all elements initialized to the specified value.</summary>
@@ -1085,25 +966,14 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector256<ulong> Create(ulong value)
         {
-            if (Sse2.X64.IsSupported && Avx.IsSupported)
+            ulong* pResult = stackalloc ulong[4]
             {
-                return Create(value);
-            }
-
-            return SoftwareFallback(value);
-
-            static Vector256<ulong> SoftwareFallback(ulong value)
-            {
-                ulong* pResult = stackalloc ulong[4]
-            {
-                    value,
-                    value,
-                    value,
-                    value,
-                };
-
-                return Unsafe.AsRef<Vector256<ulong>>(pResult);
-            }
+                value,
+                value,
+                value,
+                value,
+            };
+            return Unsafe.AsRef<Vector256<ulong>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector256{T}" /> from a given array.</summary>
@@ -1198,53 +1068,42 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector256<byte> Create(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7, byte e8, byte e9, byte e10, byte e11, byte e12, byte e13, byte e14, byte e15, byte e16, byte e17, byte e18, byte e19, byte e20, byte e21, byte e22, byte e23, byte e24, byte e25, byte e26, byte e27, byte e28, byte e29, byte e30, byte e31)
         {
-            if (Avx.IsSupported)
+            byte* pResult = stackalloc byte[32]
             {
-                return Create(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15, e16, e17, e18, e19, e20, e21, e22, e23, e24, e25, e26, e27, e28, e29, e30, e31);
-            }
-
-            return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15, e16, e17, e18, e19, e20, e21, e22, e23, e24, e25, e26, e27, e28, e29, e30, e31);
-
-            static Vector256<byte> SoftwareFallback(byte e0, byte e1, byte e2, byte e3, byte e4, byte e5, byte e6, byte e7, byte e8, byte e9, byte e10, byte e11, byte e12, byte e13, byte e14, byte e15, byte e16, byte e17, byte e18, byte e19, byte e20, byte e21, byte e22, byte e23, byte e24, byte e25, byte e26, byte e27, byte e28, byte e29, byte e30, byte e31)
-            {
-                byte* pResult = stackalloc byte[32]
-                {
-                    e0,
-                    e1,
-                    e2,
-                    e3,
-                    e4,
-                    e5,
-                    e6,
-                    e7,
-                    e8,
-                    e9,
-                    e10,
-                    e11,
-                    e12,
-                    e13,
-                    e14,
-                    e15,
-                    e16,
-                    e17,
-                    e18,
-                    e19,
-                    e20,
-                    e21,
-                    e22,
-                    e23,
-                    e24,
-                    e25,
-                    e26,
-                    e27,
-                    e28,
-                    e29,
-                    e30,
-                    e31,
-                };
-
-                return Unsafe.AsRef<Vector256<byte>>(pResult);
-            }
+                e0,
+                e1,
+                e2,
+                e3,
+                e4,
+                e5,
+                e6,
+                e7,
+                e8,
+                e9,
+                e10,
+                e11,
+                e12,
+                e13,
+                e14,
+                e15,
+                e16,
+                e17,
+                e18,
+                e19,
+                e20,
+                e21,
+                e22,
+                e23,
+                e24,
+                e25,
+                e26,
+                e27,
+                e28,
+                e29,
+                e30,
+                e31,
+            };
+            return Unsafe.AsRef<Vector256<byte>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector256{Double}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -1257,25 +1116,14 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector256<double> Create(double e0, double e1, double e2, double e3)
         {
-            if (Avx.IsSupported)
+            double* pResult = stackalloc double[4]
             {
-                return Create(e0, e1, e2, e3);
-            }
-
-            return SoftwareFallback(e0, e1, e2, e3);
-
-            static Vector256<double> SoftwareFallback(double e0, double e1, double e2, double e3)
-            {
-                double* pResult = stackalloc double[4]
-                {
-                    e0,
-                    e1,
-                    e2,
-                    e3,
-                };
-
-                return Unsafe.AsRef<Vector256<double>>(pResult);
-            }
+                e0,
+                e1,
+                e2,
+                e3,
+            };
+            return Unsafe.AsRef<Vector256<double>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector256{Int16}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -1300,37 +1148,26 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector256<short> Create(short e0, short e1, short e2, short e3, short e4, short e5, short e6, short e7, short e8, short e9, short e10, short e11, short e12, short e13, short e14, short e15)
         {
-            if (Avx.IsSupported)
+            short* pResult = stackalloc short[16]
             {
-                return Create(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15);
-            }
-
-            return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15);
-
-            static Vector256<short> SoftwareFallback(short e0, short e1, short e2, short e3, short e4, short e5, short e6, short e7, short e8, short e9, short e10, short e11, short e12, short e13, short e14, short e15)
-            {
-                short* pResult = stackalloc short[16]
-                {
-                    e0,
-                    e1,
-                    e2,
-                    e3,
-                    e4,
-                    e5,
-                    e6,
-                    e7,
-                    e8,
-                    e9,
-                    e10,
-                    e11,
-                    e12,
-                    e13,
-                    e14,
-                    e15,
-                };
-
-                return Unsafe.AsRef<Vector256<short>>(pResult);
-            }
+                e0,
+                e1,
+                e2,
+                e3,
+                e4,
+                e5,
+                e6,
+                e7,
+                e8,
+                e9,
+                e10,
+                e11,
+                e12,
+                e13,
+                e14,
+                e15,
+            };
+            return Unsafe.AsRef<Vector256<short>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector256{Int32}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -1347,29 +1184,18 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector256<int> Create(int e0, int e1, int e2, int e3, int e4, int e5, int e6, int e7)
         {
-            if (Avx.IsSupported)
+            int* pResult = stackalloc int[8]
             {
-                return Create(e0, e1, e2, e3, e4, e5, e6, e7);
-            }
-
-            return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7);
-
-            static Vector256<int> SoftwareFallback(int e0, int e1, int e2, int e3, int e4, int e5, int e6, int e7)
-            {
-                int* pResult = stackalloc int[8]
-                {
-                    e0,
-                    e1,
-                    e2,
-                    e3,
-                    e4,
-                    e5,
-                    e6,
-                    e7,
-                };
-
-                return Unsafe.AsRef<Vector256<int>>(pResult);
-            }
+                e0,
+                e1,
+                e2,
+                e3,
+                e4,
+                e5,
+                e6,
+                e7,
+            };
+            return Unsafe.AsRef<Vector256<int>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector256{Int64}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -1382,25 +1208,14 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector256<long> Create(long e0, long e1, long e2, long e3)
         {
-            if (Sse2.X64.IsSupported && Avx.IsSupported)
+            long* pResult = stackalloc long[4]
             {
-                return Create(e0, e1, e2, e3);
-            }
-
-            return SoftwareFallback(e0, e1, e2, e3);
-
-            static Vector256<long> SoftwareFallback(long e0, long e1, long e2, long e3)
-            {
-                long* pResult = stackalloc long[4]
-                {
-                    e0,
-                    e1,
-                    e2,
-                    e3,
-                };
-
-                return Unsafe.AsRef<Vector256<long>>(pResult);
-            }
+                e0,
+                e1,
+                e2,
+                e3,
+            };
+            return Unsafe.AsRef<Vector256<long>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector256{SByte}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -1442,53 +1257,42 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector256<sbyte> Create(sbyte e0, sbyte e1, sbyte e2, sbyte e3, sbyte e4, sbyte e5, sbyte e6, sbyte e7, sbyte e8, sbyte e9, sbyte e10, sbyte e11, sbyte e12, sbyte e13, sbyte e14, sbyte e15, sbyte e16, sbyte e17, sbyte e18, sbyte e19, sbyte e20, sbyte e21, sbyte e22, sbyte e23, sbyte e24, sbyte e25, sbyte e26, sbyte e27, sbyte e28, sbyte e29, sbyte e30, sbyte e31)
         {
-            if (Avx.IsSupported)
+            sbyte* pResult = stackalloc sbyte[32]
             {
-                return Create(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15, e16, e17, e18, e19, e20, e21, e22, e23, e24, e25, e26, e27, e28, e29, e30, e31);
-            }
-
-            return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15, e16, e17, e18, e19, e20, e21, e22, e23, e24, e25, e26, e27, e28, e29, e30, e31);
-
-            static Vector256<sbyte> SoftwareFallback(sbyte e0, sbyte e1, sbyte e2, sbyte e3, sbyte e4, sbyte e5, sbyte e6, sbyte e7, sbyte e8, sbyte e9, sbyte e10, sbyte e11, sbyte e12, sbyte e13, sbyte e14, sbyte e15, sbyte e16, sbyte e17, sbyte e18, sbyte e19, sbyte e20, sbyte e21, sbyte e22, sbyte e23, sbyte e24, sbyte e25, sbyte e26, sbyte e27, sbyte e28, sbyte e29, sbyte e30, sbyte e31)
-            {
-                sbyte* pResult = stackalloc sbyte[32]
-                {
-                    e0,
-                    e1,
-                    e2,
-                    e3,
-                    e4,
-                    e5,
-                    e6,
-                    e7,
-                    e8,
-                    e9,
-                    e10,
-                    e11,
-                    e12,
-                    e13,
-                    e14,
-                    e15,
-                    e16,
-                    e17,
-                    e18,
-                    e19,
-                    e20,
-                    e21,
-                    e22,
-                    e23,
-                    e24,
-                    e25,
-                    e26,
-                    e27,
-                    e28,
-                    e29,
-                    e30,
-                    e31,
-                };
-
-                return Unsafe.AsRef<Vector256<sbyte>>(pResult);
-            }
+                e0,
+                e1,
+                e2,
+                e3,
+                e4,
+                e5,
+                e6,
+                e7,
+                e8,
+                e9,
+                e10,
+                e11,
+                e12,
+                e13,
+                e14,
+                e15,
+                e16,
+                e17,
+                e18,
+                e19,
+                e20,
+                e21,
+                e22,
+                e23,
+                e24,
+                e25,
+                e26,
+                e27,
+                e28,
+                e29,
+                e30,
+                e31,
+            };
+            return Unsafe.AsRef<Vector256<sbyte>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector256{Single}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -1505,29 +1309,18 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         public static unsafe Vector256<float> Create(float e0, float e1, float e2, float e3, float e4, float e5, float e6, float e7)
         {
-            if (Avx.IsSupported)
+            float* pResult = stackalloc float[8]
             {
-                return Create(e0, e1, e2, e3, e4, e5, e6, e7);
-            }
-
-            return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7);
-
-            static Vector256<float> SoftwareFallback(float e0, float e1, float e2, float e3, float e4, float e5, float e6, float e7)
-            {
-                float* pResult = stackalloc float[8]
-                {
-                    e0,
-                    e1,
-                    e2,
-                    e3,
-                    e4,
-                    e5,
-                    e6,
-                    e7,
-                };
-
-                return Unsafe.AsRef<Vector256<float>>(pResult);
-            }
+                e0,
+                e1,
+                e2,
+                e3,
+                e4,
+                e5,
+                e6,
+                e7,
+            };
+            return Unsafe.AsRef<Vector256<float>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector256{UInt16}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -1553,37 +1346,26 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector256<ushort> Create(ushort e0, ushort e1, ushort e2, ushort e3, ushort e4, ushort e5, ushort e6, ushort e7, ushort e8, ushort e9, ushort e10, ushort e11, ushort e12, ushort e13, ushort e14, ushort e15)
         {
-            if (Avx.IsSupported)
+            ushort* pResult = stackalloc ushort[16]
             {
-                return Create(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15);
-            }
-
-            return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7, e8, e9, e10, e11, e12, e13, e14, e15);
-
-            static Vector256<ushort> SoftwareFallback(ushort e0, ushort e1, ushort e2, ushort e3, ushort e4, ushort e5, ushort e6, ushort e7, ushort e8, ushort e9, ushort e10, ushort e11, ushort e12, ushort e13, ushort e14, ushort e15)
-            {
-                ushort* pResult = stackalloc ushort[16]
-                {
-                    e0,
-                    e1,
-                    e2,
-                    e3,
-                    e4,
-                    e5,
-                    e6,
-                    e7,
-                    e8,
-                    e9,
-                    e10,
-                    e11,
-                    e12,
-                    e13,
-                    e14,
-                    e15,
-                };
-
-                return Unsafe.AsRef<Vector256<ushort>>(pResult);
-            }
+                e0,
+                e1,
+                e2,
+                e3,
+                e4,
+                e5,
+                e6,
+                e7,
+                e8,
+                e9,
+                e10,
+                e11,
+                e12,
+                e13,
+                e14,
+                e15,
+            };
+            return Unsafe.AsRef<Vector256<ushort>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector256{UInt32}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -1601,29 +1383,18 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector256<uint> Create(uint e0, uint e1, uint e2, uint e3, uint e4, uint e5, uint e6, uint e7)
         {
-            if (Avx.IsSupported)
+            uint* pResult = stackalloc uint[8]
             {
-                return Create(e0, e1, e2, e3, e4, e5, e6, e7);
-            }
-
-            return SoftwareFallback(e0, e1, e2, e3, e4, e5, e6, e7);
-
-            static Vector256<uint> SoftwareFallback(uint e0, uint e1, uint e2, uint e3, uint e4, uint e5, uint e6, uint e7)
-            {
-                uint* pResult = stackalloc uint[8]
-                {
-                    e0,
-                    e1,
-                    e2,
-                    e3,
-                    e4,
-                    e5,
-                    e6,
-                    e7,
-                };
-
-                return Unsafe.AsRef<Vector256<uint>>(pResult);
-            }
+                e0,
+                e1,
+                e2,
+                e3,
+                e4,
+                e5,
+                e6,
+                e7,
+            };
+            return Unsafe.AsRef<Vector256<uint>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector256{UInt64}" /> instance with each element initialized to the corresponding specified value.</summary>
@@ -1637,25 +1408,14 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static unsafe Vector256<ulong> Create(ulong e0, ulong e1, ulong e2, ulong e3)
         {
-            if (Sse2.X64.IsSupported && Avx.IsSupported)
+            ulong* pResult = stackalloc ulong[4]
             {
-                return Create(e0, e1, e2, e3);
-            }
-
-            return SoftwareFallback(e0, e1, e2, e3);
-
-            static Vector256<ulong> SoftwareFallback(ulong e0, ulong e1, ulong e2, ulong e3)
-            {
-                ulong* pResult = stackalloc ulong[4]
-                {
-                    e0,
-                    e1,
-                    e2,
-                    e3,
-                };
-
-                return Unsafe.AsRef<Vector256<ulong>>(pResult);
-            }
+                e0,
+                e1,
+                e2,
+                e3,
+            };
+            return Unsafe.AsRef<Vector256<ulong>>(pResult);
         }
 
         /// <summary>Creates a new <see cref="Vector256{Byte}" /> instance from two <see cref="Vector128{Byte}" /> instances.</summary>
@@ -3943,7 +3703,7 @@ namespace System.Runtime.Intrinsics
         /// <summary>Tries to copy a <see cref="Vector{T}" /> to a given span.</summary>
         /// <param name="vector">The vector to copy.</param>
         /// <param name="destination">The span to which <paramref name="destination" /> is copied.</param>
-        /// <returns><c>true</c> if <paramref name="vector" /> was succesfully copied to <paramref name="destination" />; otherwise, <c>false</c> if the length of <paramref name="destination" /> is less than <see cref="Vector256{T}.Count" />.</returns>
+        /// <returns><c>true</c> if <paramref name="vector" /> was successfully copied to <paramref name="destination" />; otherwise, <c>false</c> if the length of <paramref name="destination" /> is less than <see cref="Vector256{T}.Count" />.</returns>
         public static bool TryCopyTo<T>(this Vector256<T> vector, Span<T> destination)
             where T : struct
         {

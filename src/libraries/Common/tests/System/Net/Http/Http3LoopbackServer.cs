@@ -23,7 +23,7 @@ namespace System.Net.Test.Common
         {
             options ??= new Http3Options();
 
-            _cert = Configuration.Certificates.GetServerCertificate();
+            _cert = options.Certificate ?? Configuration.Certificates.GetServerCertificate();
 
             var listenerOptions = new QuicListenerOptions()
             {
@@ -82,14 +82,14 @@ namespace System.Net.Test.Common
 
         public override async Task AcceptConnectionAsync(Func<GenericLoopbackConnection, Task> funcAsync)
         {
-            using Http3LoopbackConnection con = await EstablishHttp3ConnectionAsync().ConfigureAwait(false);
+            await using Http3LoopbackConnection con = await EstablishHttp3ConnectionAsync().ConfigureAwait(false);
             await funcAsync(con).ConfigureAwait(false);
             await con.ShutdownAsync();
         }
 
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
-            using var con = (Http3LoopbackConnection)await EstablishGenericConnectionAsync().ConfigureAwait(false);
+            await using Http3LoopbackConnection con = (Http3LoopbackConnection)await EstablishGenericConnectionAsync().ConfigureAwait(false);
             return await con.HandleRequestAsync(statusCode, headers, content).ConfigureAwait(false);
         }
     }
@@ -130,6 +130,7 @@ namespace System.Net.Test.Common
             {
                 http3Options.Address = options.Address;
                 http3Options.UseSsl = options.UseSsl;
+                http3Options.Certificate = options.Certificate;
                 http3Options.SslProtocols = options.SslProtocols;
                 http3Options.ListenBacklog = options.ListenBacklog;
             }

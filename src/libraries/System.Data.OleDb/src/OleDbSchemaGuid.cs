@@ -8,7 +8,7 @@ namespace System.Data.OleDb
     public sealed class OleDbSchemaGuid
     {
         // V1 shipped with default ctor which is public
-        // so we can NOT remove the now explict public ctor
+        // so we can NOT remove the now explicit public ctor
         public OleDbSchemaGuid() { }
 
         // MDAC 2.0

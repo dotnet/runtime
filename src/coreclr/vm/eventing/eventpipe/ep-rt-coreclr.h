@@ -11,7 +11,6 @@
 #include <eventpipe/ep-session-provider.h>
 #include "fstream.h"
 #include "typestring.h"
-#include "win32threadpool.h"
 #include "clrversion.h"
 
 #undef EP_INFINITE_WAIT
@@ -1343,10 +1342,10 @@ ep_rt_shutdown (void)
 static
 inline
 bool
-ep_rt_config_aquire (void)
+ep_rt_config_acquire (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-	return ep_rt_lock_aquire (ep_rt_coreclr_config_lock_get ());
+	return ep_rt_lock_acquire (ep_rt_coreclr_config_lock_get ());
 }
 
 static
@@ -1659,15 +1658,6 @@ ep_rt_config_value_get_output_streaming (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 	return CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeOutputStreaming) != 0;
-}
-
-static
-inline
-bool
-ep_rt_config_value_get_use_portable_thread_pool (void)
-{
-	STATIC_CONTRACT_NOTHROW;
-	return ThreadpoolMgr::UsePortableThreadPool ();
 }
 
 /*
@@ -2060,6 +2050,14 @@ ep_rt_thread_create (
 static
 inline
 void
+ep_rt_set_server_name()
+{
+	::SetThreadName(GetCurrentThread(), W(".NET EventPipe"));
+}
+
+static
+inline
+void
 ep_rt_thread_sleep (uint64_t ns)
 {
 	STATIC_CONTRACT_NOTHROW;
@@ -2322,7 +2320,7 @@ ep_rt_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array)
 
 static
 bool
-ep_rt_lock_aquire (ep_rt_lock_handle_t *lock)
+ep_rt_lock_acquire (ep_rt_lock_handle_t *lock)
 {
 	STATIC_CONTRACT_NOTHROW;
 
@@ -2421,7 +2419,7 @@ ep_rt_spin_lock_free (ep_rt_spin_lock_handle_t *spin_lock)
 static
 inline
 bool
-ep_rt_spin_lock_aquire (ep_rt_spin_lock_handle_t *spin_lock)
+ep_rt_spin_lock_acquire (ep_rt_spin_lock_handle_t *spin_lock)
 {
 	STATIC_CONTRACT_NOTHROW;
 	EP_ASSERT (ep_rt_spin_lock_is_valid (spin_lock));
@@ -2745,7 +2743,7 @@ ep_rt_diagnostics_command_line_get (void)
 	// The host initializes the runtime in two phases, init and exec assembly. On non-Windows platforms the commandline returned by the runtime
 	// is different during each phase. We suspend during init where the runtime has populated the commandline with a
 	// mock value (the full path of the executing assembly) and the actual value isn't populated till the exec assembly phase.
-	// On Windows this does not apply as the value is retrieved directly from the OS any time it is requested. 
+	// On Windows this does not apply as the value is retrieved directly from the OS any time it is requested.
 	// As a result, we cannot actually cache this value. We need to return the _current_ value.
 	// This function needs to handle freeing the string in order to make it consistent with Mono's version.
 	// There is a rare chance this may be called on multiple threads, so we attempt to always return the newest value

@@ -526,7 +526,7 @@ DWORD WINAPI GetEnvironmentVariableWrapper(
 
         // We loop round getting the length of the env var and then trying to copy
         // the value into a the allocated buffer. Usually we'll go through this loop
-        // precisely once, but the caution is ncessary in case the variable mutates
+        // precisely once, but the caution is necessary in case the variable mutates
         // beneath us, as the environment variable can be modified by another thread
         //between two calls to GetEnvironmentVariableW
 

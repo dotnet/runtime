@@ -299,7 +299,7 @@ namespace System.Reflection.Emit
 
         protected override ModuleHandle GetModuleHandleImpl() => new ModuleHandle(InternalModule);
 
-        private static RuntimeModule GetRuntimeModuleFromModule(Module? m)
+        internal static RuntimeModule GetRuntimeModuleFromModule(Module? m)
         {
             ModuleBuilder? mb = m as ModuleBuilder;
             if (mb != null)
@@ -852,7 +852,7 @@ namespace System.Reflection.Emit
                 // cannot create globals twice
                 throw new InvalidOperationException(SR.InvalidOperation_NotADebugModule);
             }
-            _globalTypeBuilder.CreateType();
+            _globalTypeBuilder.CreateTypeInfoImpl();
             _hasGlobalBeenCreated = true;
         }
 

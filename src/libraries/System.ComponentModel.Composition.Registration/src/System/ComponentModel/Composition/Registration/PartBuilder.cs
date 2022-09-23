@@ -22,7 +22,7 @@ namespace System.ComponentModel.Composition.Registration
 
         // Constructor selector / configuration
         private Func<ConstructorInfo[], ConstructorInfo> _constructorFilter;
-        private Action<ParameterInfo, ImportBuilder> _configureConstuctorImports;
+        private Action<ParameterInfo, ImportBuilder> _configureConstructorImports;
 
         //Property Import/Export selection and configuration
         private readonly List<Tuple<Predicate<PropertyInfo>, Action<PropertyInfo, ExportBuilder>, Type>> _propertyExports;
@@ -80,7 +80,7 @@ namespace System.ComponentModel.Composition.Registration
             Action<ParameterInfo, ImportBuilder> importConfiguration)
         {
             _constructorFilter = constructorFilter;
-            _configureConstuctorImports = importConfiguration;
+            _configureConstructorImports = importConfiguration;
 
             return this;
         }
@@ -380,17 +380,17 @@ namespace System.ComponentModel.Composition.Registration
                 ConstructorInfo constructorInfo = _constructorFilter(constructors);
                 if (constructorInfo != null)
                 {
-                    ConfigureConstructorAttributes(constructorInfo, ref configuredMembers, _configureConstuctorImports);
+                    ConfigureConstructorAttributes(constructorInfo, ref configuredMembers, _configureConstructorImports);
                 }
 
                 return true;
             }
-            else if (_configureConstuctorImports != null)
+            else if (_configureConstructorImports != null)
             {
                 bool configured = false;
                 foreach (ConstructorInfo constructorInfo in FindLongestConstructors(constructors))
                 {
-                    ConfigureConstructorAttributes(constructorInfo, ref configuredMembers, _configureConstuctorImports);
+                    ConfigureConstructorAttributes(constructorInfo, ref configuredMembers, _configureConstructorImports);
                     configured = true;
                 }
 
@@ -410,7 +410,7 @@ namespace System.ComponentModel.Composition.Registration
             }
         }
 
-        private static void ConfigureConstructorAttributes(ConstructorInfo constructorInfo, ref List<Tuple<object, List<Attribute>>> configuredMembers, Action<ParameterInfo, ImportBuilder> configureConstuctorImports)
+        private static void ConfigureConstructorAttributes(ConstructorInfo constructorInfo, ref List<Tuple<object, List<Attribute>>> configuredMembers, Action<ParameterInfo, ImportBuilder> configureConstructorImports)
         {
             configuredMembers ??= new List<Tuple<object, List<Attribute>>>();
 
@@ -431,7 +431,7 @@ namespace System.ComponentModel.Composition.Registration
                     var importBuilder = new ImportBuilder();
 
                     // Let the developer alter them if they specified to do so
-                    configureConstuctorImports?.Invoke(pi, importBuilder);
+                    configureConstructorImports?.Invoke(pi, importBuilder);
 
                     // Generate the attributes
                     List<Attribute> attributes = null;

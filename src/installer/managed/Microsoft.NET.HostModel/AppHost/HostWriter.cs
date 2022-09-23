@@ -30,14 +30,14 @@ namespace Microsoft.NET.HostModel.AppHost
         /// <param name="appHostDestinationFilePath">The destination path for desired location to place, including the file name</param>
         /// <param name="appBinaryFilePath">Full path to app binary or relative path to the result apphost file</param>
         /// <param name="windowsGraphicalUserInterface">Specify whether to set the subsystem to GUI. Only valid for PE apphosts.</param>
-        /// <param name="assemblyToCopyResorcesFrom">Path to the intermediate assembly, used for copying resources to PE apphosts.</param>
+        /// <param name="assemblyToCopyResourcesFrom">Path to the intermediate assembly, used for copying resources to PE apphosts.</param>
         /// <param name="enableMacOSCodeSign">Sign the app binary using codesign with an anonymous certificate.</param>
         public static void CreateAppHost(
             string appHostSourceFilePath,
             string appHostDestinationFilePath,
             string appBinaryFilePath,
             bool windowsGraphicalUserInterface = false,
-            string assemblyToCopyResorcesFrom = null,
+            string assemblyToCopyResourcesFrom = null,
             bool enableMacOSCodeSign = false)
         {
             var bytesToWrite = Encoding.UTF8.GetBytes(appBinaryFilePath);
@@ -68,13 +68,13 @@ namespace Microsoft.NET.HostModel.AppHost
 
             void UpdateResources()
             {
-                if (assemblyToCopyResorcesFrom != null && appHostIsPEImage)
+                if (assemblyToCopyResourcesFrom != null && appHostIsPEImage)
                 {
                     if (ResourceUpdater.IsSupportedOS())
                     {
                         // Copy resources from managed dll to the apphost
                         new ResourceUpdater(appHostDestinationFilePath)
-                            .AddResourcesFromPEImage(assemblyToCopyResorcesFrom)
+                            .AddResourcesFromPEImage(assemblyToCopyResourcesFrom)
                             .Update();
                     }
                     else
@@ -141,7 +141,7 @@ namespace Microsoft.NET.HostModel.AppHost
 
                     if (chmodReturnCode == -1)
                     {
-                        throw new Win32Exception(Marshal.GetLastWin32Error(), $"Could not set file permission {filePermissionOctal} for {appHostDestinationFilePath}.");
+                        throw new Win32Exception(Marshal.GetLastWin32Error(), $"Could not set file permission {Convert.ToString(filePermissionOctal, 8)} for {appHostDestinationFilePath}.");
                     }
 
                     if (enableMacOSCodeSign && RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && HostModelUtils.IsCodesignAvailable())
@@ -224,9 +224,9 @@ namespace Microsoft.NET.HostModel.AppHost
             long headerOffset = 0;
             void FindBundleHeader()
             {
-                using (var memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostFilePath))
+                using (var memoryMappedFile = MemoryMappedFile.CreateFromFile(appHostFilePath, FileMode.Open, null, 0, MemoryMappedFileAccess.Read))
                 {
-                    using (MemoryMappedViewAccessor accessor = memoryMappedFile.CreateViewAccessor())
+                    using (MemoryMappedViewAccessor accessor = memoryMappedFile.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read))
                     {
                         int position = BinaryUtils.SearchInFile(accessor, bundleSignature);
                         if (position == -1)

@@ -224,7 +224,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        [return: NotNullIfNotNull("list")]
+        [return: NotNullIfNotNull(nameof(list))]
         internal static string? ToString(NamespaceList? list)
         {
             if (list == null)

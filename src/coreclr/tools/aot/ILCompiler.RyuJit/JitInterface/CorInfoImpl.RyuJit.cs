@@ -23,7 +23,7 @@ using RyuJitCompilation = ILCompiler.Compilation;
 
 namespace Internal.JitInterface
 {
-    unsafe partial class CorInfoImpl
+    internal unsafe partial class CorInfoImpl
     {
         private const CORINFO_RUNTIME_ABI TargetABI = CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI;
 
@@ -55,8 +55,7 @@ namespace Internal.JitInterface
             _methodCodeNode = methodCodeNodeNeedingCode;
             _isFallbackBodyCompilation = methodIL != null;
 
-            if (methodIL == null)
-                methodIL = _compilation.GetMethodIL(MethodBeingCompiled);
+            methodIL ??= _compilation.GetMethodIL(MethodBeingCompiled);
 
             try
             {
@@ -94,7 +93,7 @@ namespace Internal.JitInterface
         // - Combine in one single block for the whole prolog instead of one CFI block per assembler instruction
         // - Store CFA definition first
         // - Store all used registers in ascending order
-        private byte[] CompressARM64CFI(byte[] blobData)
+        private static byte[] CompressARM64CFI(byte[] blobData)
         {
             if (blobData == null || blobData.Length == 0)
             {
@@ -223,7 +222,7 @@ namespace Internal.JitInterface
             }
         }
 
-        private CORINFO_RUNTIME_LOOKUP_KIND GetLookupKindFromContextSource(GenericContextSource contextSource)
+        private static CORINFO_RUNTIME_LOOKUP_KIND GetLookupKindFromContextSource(GenericContextSource contextSource)
         {
             switch (contextSource)
             {
@@ -382,8 +381,16 @@ namespace Internal.JitInterface
                 var interfaceMethod = (MethodDesc)ResolveTokenInScope(methodIL, typeOrMethodContext, pTargetMethod.token);
                 constrainedType = (TypeDesc)GetRuntimeDeterminedObjectForToken(methodIL, typeOrMethodContext, targetConstraint);
 
-                MethodDesc directMethod = canonConstrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(interfaceType, interfaceMethod, out bool forceRuntimeLookup);
-                if (directMethod != null)
+                DefaultInterfaceMethodResolution staticResolution = default;
+                MethodDesc directMethod = canonConstrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(interfaceType, interfaceMethod, out bool forceRuntimeLookup, ref staticResolution);
+                if (directMethod != null && !directMethod.IsCanonicalMethod(CanonicalFormKind.Any))
+                {
+                    targetMethod = directMethod;
+
+                    // We resolved the constraint
+                    constrainedType = null;
+                }
+                else if (directMethod != null)
                 {
                     // We resolved on a canonical form of the valuetype. Now find the method on the runtime determined form.
                     Debug.Assert(directMethod.OwningType.IsValueType);
@@ -404,6 +411,11 @@ namespace Internal.JitInterface
 
                     // We resolved the constraint
                     constrainedType = null;
+                }
+                else if (staticResolution is DefaultInterfaceMethodResolution.Diamond or DefaultInterfaceMethodResolution.Reabstraction)
+                {
+                    // TODO
+                    ThrowHelper.ThrowInvalidProgramException();
                 }
             }
 
@@ -530,6 +542,9 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.AreTypesEquivalent;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOF_EXCEPTION:
+                    id = ReadyToRunHelper.IsInstanceOfException;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_BOX:
                     id = ReadyToRunHelper.Box;
                     break;
@@ -809,7 +824,7 @@ namespace Internal.JitInterface
             return stringObject.RepresentsIndirectionCell ? InfoAccessType.IAT_PVALUE : InfoAccessType.IAT_VALUE;
         }
 
-        enum RhEHClauseKind
+        private enum RhEHClauseKind
         {
             RH_EH_CLAUSE_TYPED = 0,
             RH_EH_CLAUSE_FAULT = 1,
@@ -818,7 +833,7 @@ namespace Internal.JitInterface
 
         private ObjectNode.ObjectData EncodeEHInfo()
         {
-            var builder = new ObjectDataBuilder();
+            var builder = default(ObjectDataBuilder);
             builder.RequireInitialAlignment(1);
 
             int totalClauses = _ehClauses.Length;
@@ -893,13 +908,6 @@ namespace Internal.JitInterface
                             var methodIL = (MethodIL)HandleToObject((IntPtr)_methodScope);
                             var type = (TypeDesc)methodIL.GetObject((int)clause.ClassTokenOrOffset);
 
-                            // Once https://github.com/dotnet/corert/issues/3460 is done, this should be an assert.
-                            // Throwing InvalidProgram is not great, but we want to do *something* if this happens
-                            // because doing nothing means problems at runtime. This is not worth piping a
-                            // a new exception with a fancy message for.
-                            if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
-                                ThrowHelper.ThrowInvalidProgramException();
-
                             var typeSymbol = _compilation.NecessaryTypeSymbolIfPossible(type);
 
                             RelocType rel = (_compilation.NodeFactory.Target.IsWindows) ?
@@ -941,7 +949,7 @@ namespace Internal.JitInterface
                     debugVarInfoBuilders[varNumber].Add(new DebugVarRangeInfo(vars[i].startOffset, vars[i].endOffset, vars[i].varLoc));
             }
 
-            var debugVarInfos = new ArrayBuilder<DebugVarInfo>();
+            var debugVarInfos = default(ArrayBuilder<DebugVarInfo>);
             for (uint i = 0; i < debugVarInfoBuilders.Length; i++)
             {
                 if (debugVarInfoBuilders[i].Count > 0)
@@ -968,14 +976,14 @@ namespace Internal.JitInterface
             for (int i = 0; i < cMap; i++)
             {
                 OffsetMapping nativeToILInfo = pMap[i];
-                int currectILOffset = (int)nativeToILInfo.ilOffset;
-                if (currectILOffset > largestILOffset) // Special offsets are negative.
+                int currentILOffset = (int)nativeToILInfo.ilOffset;
+                if (currentILOffset > largestILOffset) // Special offsets are negative.
                 {
-                    largestILOffset = currectILOffset;
+                    largestILOffset = currentILOffset;
                 }
             }
 
-            ArrayBuilder<DebugLocInfo> debugLocInfos = new ArrayBuilder<DebugLocInfo>();
+            ArrayBuilder<DebugLocInfo> debugLocInfos = default(ArrayBuilder<DebugLocInfo>);
             for (int i = 0; i < cMap; i++)
             {
                 OffsetMapping* nativeToILInfo = &pMap[i];
@@ -1172,6 +1180,7 @@ namespace Internal.JitInterface
             bool forceUseRuntimeLookup = false;
             bool targetIsFatFunctionPointer = false;
             bool useFatCallTransform = false;
+            DefaultInterfaceMethodResolution staticResolution = default;
 
             MethodDesc methodAfterConstraintResolution = method;
             if (constrainedType == null)
@@ -1186,7 +1195,7 @@ namespace Internal.JitInterface
                 // JIT compilation, and require a runtime lookup for the actual code pointer
                 // to call.
 
-                MethodDesc directMethod = constrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(exactType, method, out forceUseRuntimeLookup);
+                MethodDesc directMethod = constrainedType.GetClosestDefType().TryResolveConstraintMethodApprox(exactType, method, out forceUseRuntimeLookup, ref staticResolution);
                 if (directMethod == null && constrainedType.IsEnum)
                 {
                     // Constrained calls to methods on enum methods resolve to System.Enum's methods. System.Enum is a reference
@@ -1208,7 +1217,7 @@ namespace Internal.JitInterface
                     resolvedConstraint = true;
                     pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
 
-                    exactType = constrainedType;
+                    exactType = directMethod.OwningType;
                 }
                 else if (method.Signature.IsStatic)
                 {
@@ -1470,6 +1479,12 @@ namespace Internal.JitInterface
 
                 pResult->nullInstanceCheck = resolvedCallVirt;
             }
+            else if (staticResolution is DefaultInterfaceMethodResolution.Diamond or DefaultInterfaceMethodResolution.Reabstraction)
+            {
+                Debug.Assert(targetMethod.OwningType.IsInterface && targetMethod.IsVirtual && constrainedType != null);
+
+                ThrowHelper.ThrowBadImageFormatException();
+            }
             else if (targetMethod.Signature.IsStatic)
             {
                 // This should be an unresolved static virtual interface method call. Other static methods should
@@ -1481,9 +1496,17 @@ namespace Internal.JitInterface
                 TypeDesc runtimeDeterminedConstrainedType = (TypeDesc)GetRuntimeDeterminedObjectForToken(ref *pConstrainedResolvedToken);
                 MethodDesc runtimeDeterminedInterfaceMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
 
+                var constrainedCallInfo = new ConstrainedCallInfo(runtimeDeterminedConstrainedType, runtimeDeterminedInterfaceMethod);
+                var constrainedHelperId = ReadyToRunHelperId.ConstrainedDirectCall;
+
+                // Constant lookup doesn't make sense and we don't implement it. If we need constant lookup,
+                // the method wasn't implemented. Don't crash on it.
+                if (!_compilation.NeedsRuntimeLookup(constrainedHelperId, constrainedCallInfo))
+                    ThrowHelper.ThrowTypeLoadException(constrainedType);
+
                 ComputeLookup(ref pResolvedToken,
-                    new ConstrainedCallInfo(runtimeDeterminedConstrainedType, runtimeDeterminedInterfaceMethod),
-                    ReadyToRunHelperId.ConstrainedDirectCall,
+                    constrainedCallInfo,
+                    constrainedHelperId,
                     ref pResult->codePointerOrStubLookup);
 
                 targetIsFatFunctionPointer = true;
@@ -1530,12 +1553,14 @@ namespace Internal.JitInterface
                 {
                     pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = false;
                     pResult->codePointerOrStubLookup.constLookup.accessType = InfoAccessType.IAT_PVALUE;
+#pragma warning disable SA1001, SA1113, SA1115 // Commas should be spaced correctly
                     pResult->codePointerOrStubLookup.constLookup.addr = (void*)ObjectToHandle(
                         _compilation.NodeFactory.InterfaceDispatchCell(targetMethod
 #if !SUPPORT_JIT
                         , _compilation.NameMangler.GetMangledMethodName(MethodBeingCompiled).ToString()
 #endif
                         ));
+#pragma warning restore SA1001, SA1113, SA1115 // Commas should be spaced correctly
                 }
 
                 pResult->nullInstanceCheck = false;
@@ -1838,7 +1863,9 @@ namespace Internal.JitInterface
             throw new NotImplementedException("allocPgoInstrumentationBySchema");
         }
 
+#pragma warning disable CA1822 // Mark members as static
         private CORINFO_CLASS_STRUCT_* getLikelyClass(CORINFO_METHOD_STRUCT_* ftnHnd, CORINFO_CLASS_STRUCT_* baseHnd, uint IlOffset, ref uint pLikelihood, ref uint pNumberOfClasses)
+#pragma warning restore CA1822 // Mark members as static
         {
             return null;
         }
@@ -1956,7 +1983,9 @@ namespace Internal.JitInterface
         private bool canGetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig)
         { throw new NotImplementedException("canGetCookieForPInvokeCalliSig"); }
 
+#pragma warning disable CA1822 // Mark members as static
         private void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_STRUCT_* cls)
+#pragma warning restore CA1822 // Mark members as static
         {
         }
 
@@ -1970,15 +1999,21 @@ namespace Internal.JitInterface
             _ehClauses[EHnumber] = clause;
         }
 
+#pragma warning disable CA1822 // Mark members as static
         private void beginInlining(CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd)
+#pragma warning restore CA1822 // Mark members as static
         {
         }
 
+#pragma warning disable CA1822 // Mark members as static
         private void reportInliningDecision(CORINFO_METHOD_STRUCT_* inlinerHnd, CORINFO_METHOD_STRUCT_* inlineeHnd, CorInfoInline inlineResult, byte* reason)
+#pragma warning restore CA1822 // Mark members as static
         {
         }
 
+#pragma warning disable CA1822 // Mark members as static
         private void updateEntryPointForTailCall(ref CORINFO_CONST_LOOKUP entryPoint)
+#pragma warning restore CA1822 // Mark members as static
         {
         }
 
@@ -2129,6 +2164,44 @@ namespace Internal.JitInterface
 
             // TODO: We need to implement access checks for fields and methods.  See JitInterface.cpp in mrtjit
             //       and STS::AccessCheck::CanAccess.
+        }
+
+        private int getExactClasses(CORINFO_CLASS_STRUCT_* baseType, int maxExactClasses, CORINFO_CLASS_STRUCT_** exactClsRet)
+        {
+            MetadataType type = HandleToObject(baseType) as MetadataType;
+            if (type == null)
+            {
+                return 0;
+            }
+
+            // type is already sealed, return it
+            if (_compilation.IsEffectivelySealed(type))
+            {
+                *exactClsRet = baseType;
+                return 1;
+            }
+
+            if (!type.IsInterface)
+            {
+                // TODO: handle classes
+                return 0;
+            }
+
+            TypeDesc[] implClasses = _compilation.GetImplementingClasses(type);
+            if (implClasses == null || implClasses.Length > maxExactClasses)
+            {
+                return 0;
+            }
+
+            int index = 0;
+            foreach (TypeDesc implClass in implClasses)
+            {
+                Debug.Assert(!implClass.IsCanonicalSubtype(CanonicalFormKind.Any));
+                exactClsRet[index++] = ObjectToHandle(implClass);
+            }
+
+            Debug.Assert(index <= maxExactClasses);
+            return index;
         }
     }
 }

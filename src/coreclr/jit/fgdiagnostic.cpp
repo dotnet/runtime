@@ -247,12 +247,12 @@ const char* Compiler::fgProcessEscapes(const char* nameIn, escapeMapping_t* map)
     unsigned    lengthOut;
     unsigned    index;
     bool        match;
-    bool        subsitutionRequired;
+    bool        substitutionRequired;
     const char* pChar;
 
-    lengthOut           = 1;
-    subsitutionRequired = false;
-    pChar               = nameIn;
+    lengthOut            = 1;
+    substitutionRequired = false;
+    pChar                = nameIn;
     while (*pChar != '\0')
     {
         match = false;
@@ -268,7 +268,7 @@ const char* Compiler::fgProcessEscapes(const char* nameIn, escapeMapping_t* map)
         }
         if (match)
         {
-            subsitutionRequired = true;
+            substitutionRequired = true;
             lengthOut += (unsigned)strlen(map[index].sub);
         }
         else
@@ -278,7 +278,7 @@ const char* Compiler::fgProcessEscapes(const char* nameIn, escapeMapping_t* map)
         pChar++;
     }
 
-    if (subsitutionRequired)
+    if (substitutionRequired)
     {
         char* newName = getAllocator(CMK_DebugOnly).allocate<char>(lengthOut);
         char* pDest;
@@ -389,7 +389,7 @@ void Compiler::fgDumpTree(FILE* fgxFile, GenTree* const tree)
     }
     else if (tree->IsCnsFltOrDbl())
     {
-        fprintf(fgxFile, "%g", tree->AsDblCon()->gtDconVal);
+        fprintf(fgxFile, "%g", tree->AsDblCon()->DconValue());
     }
     else if (tree->IsLocal())
     {
@@ -467,20 +467,9 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
     }
 
 #ifdef DEBUG
-    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PREJIT))
-    {
-        dumpFunction =
-            JitConfig.NgenDumpFg().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args);
-        filename = JitConfig.NgenDumpFgFile();
-        pathname = JitConfig.NgenDumpFgDir();
-    }
-    else
-    {
-        dumpFunction =
-            JitConfig.JitDumpFg().contains(info.compMethodName, info.compClassName, &info.compMethodInfo->args);
-        filename = JitConfig.JitDumpFgFile();
-        pathname = JitConfig.JitDumpFgDir();
-    }
+    dumpFunction = JitConfig.JitDumpFg().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args);
+    filename     = JitConfig.JitDumpFgFile();
+    pathname     = JitConfig.JitDumpFgDir();
 
     prePhasePattern  = JitConfig.JitDumpFgPrePhase();
     postPhasePattern = JitConfig.JitDumpFgPhase();
@@ -728,9 +717,6 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
 //      COMPlus_JitDumpFgDir           A path to a directory into which the flowgraphs will be dumped.
 //      COMPlus_JitDumpFgFile          The filename to use. The default is "default.[xml|dot]".
 //                                     Note that the new graphs will be appended to this file if it already exists.
-//      COMPlus_NgenDumpFg             Same as COMPlus_JitDumpFg, but for ngen compiles.
-//      COMPlus_NgenDumpFgDir          Same as COMPlus_JitDumpFgDir, but for ngen compiles.
-//      COMPlus_NgenDumpFgFile         Same as COMPlus_JitDumpFgFile, but for ngen compiles.
 //      COMPlus_JitDumpFgPhase         Phase(s) after which to dump the flowgraph.
 //                                     Set to the short name of a phase to see the flowgraph after that phase.
 //                                     Leave unset to dump after COLD-BLK (determine first cold block) or set to *
@@ -1715,7 +1701,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase, PhasePosition pos)
                 for (unsigned loopNum = 0; loopNum < optLoopCount; loopNum++)
                 {
                     const LoopDsc& loop = optLoopTable[loopNum];
-                    if (loop.lpFlags & LPFLG_REMOVED)
+                    if (loop.lpIsRemoved())
                     {
                         continue;
                     }
@@ -3498,7 +3484,7 @@ void Compiler::fgDebugCheckBlockLinks()
     }
 }
 
-// UniquenessCheckWalker keeps data that is neccesary to check
+// UniquenessCheckWalker keeps data that is necessary to check
 // that each tree has it is own unique id and they do not repeat.
 class UniquenessCheckWalker
 {
@@ -3735,7 +3721,7 @@ void Compiler::fgDebugCheckLoopTable()
         const LoopDsc& loop = optLoopTable[i];
 
         // Ignore removed loops
-        if (loop.lpFlags & LPFLG_REMOVED)
+        if (loop.lpIsRemoved())
         {
             continue;
         }
@@ -3773,7 +3759,7 @@ void Compiler::fgDebugCheckLoopTable()
                     continue;
                 }
                 const LoopDsc& otherLoop = optLoopTable[j];
-                if (otherLoop.lpFlags & LPFLG_REMOVED)
+                if (otherLoop.lpIsRemoved())
                 {
                     continue;
                 }
@@ -3792,8 +3778,16 @@ void Compiler::fgDebugCheckLoopTable()
             assert(loop.lpParent != BasicBlock::NOT_IN_LOOP);
             assert(loop.lpParent < optLoopCount);
             assert(loop.lpParent < i); // outer loops come before inner loops in the table
+
             const LoopDsc& parentLoop = optLoopTable[loop.lpParent];
-            assert((parentLoop.lpFlags & LPFLG_REMOVED) == 0); // don't allow removed parent loop?
+            assert(!parentLoop.lpIsRemoved()); // don't allow removed parent loop?
+
+            // Either there is no sibling or it should not be marked REMOVED.
+            assert((loop.lpSibling == BasicBlock::NOT_IN_LOOP) || !optLoopTable[loop.lpSibling].lpIsRemoved());
+
+            // Either there is no child or it should not be marked REMOVED.
+            assert((loop.lpChild == BasicBlock::NOT_IN_LOOP) || !optLoopTable[loop.lpChild].lpIsRemoved());
+
             assert(MappedChecks::lpContainedBy(blockNumMap, &loop, optLoopTable[loop.lpParent]));
         }
 
@@ -3807,10 +3801,7 @@ void Compiler::fgDebugCheckLoopTable()
                 assert(child < optLoopCount);
                 assert(i < child); // outer loops come before inner loops in the table
                 const LoopDsc& childLoop = optLoopTable[child];
-                if (childLoop.lpFlags & LPFLG_REMOVED) // removed child loop might still be in table
-                {
-                    continue;
-                }
+                assert(!childLoop.lpIsRemoved());
                 assert(MappedChecks::lpContains(blockNumMap, &loop, childLoop));
                 assert(childLoop.lpParent == i);
             }
@@ -3821,19 +3812,13 @@ void Compiler::fgDebugCheckLoopTable()
                  child = optLoopTable[child].lpSibling)
             {
                 const LoopDsc& childLoop = optLoopTable[child];
-                if (childLoop.lpFlags & LPFLG_REMOVED)
-                {
-                    continue;
-                }
+                assert(!childLoop.lpIsRemoved());
                 for (unsigned child2 = optLoopTable[child].lpSibling; //
                      child2 != BasicBlock::NOT_IN_LOOP;               //
                      child2 = optLoopTable[child2].lpSibling)
                 {
                     const LoopDsc& child2Loop = optLoopTable[child2];
-                    if (child2Loop.lpFlags & LPFLG_REMOVED)
-                    {
-                        continue;
-                    }
+                    assert(!child2Loop.lpIsRemoved());
                     assert(MappedChecks::lpFullyDisjoint(blockNumMap, &childLoop, child2Loop));
                 }
             }
@@ -3844,10 +3829,7 @@ void Compiler::fgDebugCheckLoopTable()
                  child = optLoopTable[child].lpSibling)
             {
                 const LoopDsc& childLoop = optLoopTable[child];
-                if (childLoop.lpFlags & LPFLG_REMOVED)
-                {
-                    continue;
-                }
+                assert(!childLoop.lpIsRemoved());
                 assert(loop.lpTop != childLoop.lpTop);
             }
         }
@@ -3930,7 +3912,7 @@ void Compiler::fgDebugCheckLoopTable()
         for (int i = optLoopCount - 1; i >= 0; i--)
         {
             // Ignore removed loops
-            if (optLoopTable[i].lpFlags & LPFLG_REMOVED)
+            if (optLoopTable[i].lpIsRemoved())
             {
                 continue;
             }

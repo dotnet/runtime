@@ -108,6 +108,15 @@ struct WriteBarrierParameters
     // The new write watch table, if we are using our own write watch
     // implementation. Used for WriteBarrierOp::SwitchToWriteWatch only.
     uint8_t* write_watch_table;
+
+    // mapping table from region index to generation
+    uint8_t* region_to_generation_table;
+
+    // shift count - how many bits to shift right to obtain region index from address
+    uint8_t  region_shr;
+
+    // whether to use the more precise but slower write barrier
+    bool region_use_bitwise_write_barrier;
 };
 
 struct EtwGCSettingsInfo
@@ -946,6 +955,9 @@ public:
 
     // Gets all the names and values of the GC configurations.
     virtual void EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc) = 0;
+
+    // Updates given frozen segment
+    virtual void UpdateFrozenSegment(segment_handle seg, uint8_t* allocated, uint8_t* committed) = 0;
 };
 
 #ifdef WRITE_BARRIER_CHECK

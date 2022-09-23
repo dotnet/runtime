@@ -168,8 +168,8 @@ namespace System
         /// <summary>Produces the full product of two unsigned 64-bit numbers.</summary>
         /// <param name="a">The first number to multiply.</param>
         /// <param name="b">The second number to multiply.</param>
-        /// <param name="low">The low 64-bit of the product of the specied numbers.</param>
-        /// <returns>The high 64-bit of the product of the specied numbers.</returns>
+        /// <param name="low">The low 64-bit of the product of the specified numbers.</param>
+        /// <returns>The high 64-bit of the product of the specified numbers.</returns>
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe ulong BigMul(ulong a, ulong b, out ulong low)
@@ -216,8 +216,8 @@ namespace System
         /// <summary>Produces the full product of two 64-bit numbers.</summary>
         /// <param name="a">The first number to multiply.</param>
         /// <param name="b">The second number to multiply.</param>
-        /// <param name="low">The low 64-bit of the product of the specied numbers.</param>
-        /// <returns>The high 64-bit of the product of the specied numbers.</returns>
+        /// <param name="low">The low 64-bit of the product of the specified numbers.</param>
+        /// <returns>The high 64-bit of the product of the specified numbers.</returns>
         public static long BigMul(long a, long b, out long low)
         {
             if (ArmBase.Arm64.IsSupported)
@@ -1320,9 +1320,14 @@ namespace System
                     return Round(value);
 
                 // For ARM/ARM64 we can lower it down to a single instruction FRINTA
-                // For XARCH we have to use the common path
-                if (AdvSimd.IsSupported && mode == MidpointRounding.AwayFromZero)
-                    return AdvSimd.RoundAwayFromZeroScalar(Vector64.CreateScalar(value)).ToScalar();
+                // For other platforms we use a fast managed implementation
+                if (mode == MidpointRounding.AwayFromZero)
+                {
+                    if (AdvSimd.IsSupported)
+                        return AdvSimd.RoundAwayFromZeroScalar(Vector64.CreateScalar(value)).ToScalar();
+                    // manually fold BitDecrement(0.5)
+                    return Truncate(value + CopySign(0.49999999999999994, value));
+                }
             }
 
             return Round(value, 0, mode);
@@ -1359,13 +1364,8 @@ namespace System
                     // it is rounded to the nearest value above (for positive numbers) or below (for negative numbers)
                     case MidpointRounding.AwayFromZero:
                     {
-                        double fraction = ModF(value, &value);
-
-                        if (Abs(fraction) >= 0.5)
-                        {
-                            value += Sign(fraction);
-                        }
-
+                        // manually fold BitDecrement(0.5)
+                        value = Truncate(value + CopySign(0.49999999999999994, value));
                         break;
                     }
                     // Directed rounding: Round to the nearest value, toward to zero

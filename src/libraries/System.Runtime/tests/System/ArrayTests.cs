@@ -3121,55 +3121,64 @@ namespace System.Tests
         public static IEnumerable<object[]> Reverse_TestData()
         {
             // SByte
-            yield return new object[] { new sbyte[] { 1, 2, 3, 4, 5 }, 0, 5, new sbyte[] { 5, 4, 3, 2, 1 } };
+            yield return new object[] { new sbyte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65 }, 0, 65, new sbyte[] { 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 } };
+            yield return new object[] { new sbyte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33 }, 0, 33, new sbyte[] { 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 } };
             yield return new object[] { new sbyte[] { 1, 2, 3, 4, 5 }, 2, 3, new sbyte[] { 1, 2, 5, 4, 3 } };
             yield return new object[] { new sbyte[] { 1, 2, 3, 4, 5 }, 0, 0, new sbyte[] { 1, 2, 3, 4, 5 } };
             yield return new object[] { new sbyte[] { 1, 2, 3, 4, 5 }, 5, 0, new sbyte[] { 1, 2, 3, 4, 5 } };
 
             // Byte
-            yield return new object[] { new byte[] { 1, 2, 3, 4, 5 }, 0, 5, new byte[] { 5, 4, 3, 2, 1 } };
+            yield return new object[] { new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65 }, 0, 65, new byte[] { 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 } };
+            yield return new object[] { new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33 }, 0, 33, new byte[] { 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 } };
             yield return new object[] { new byte[] { 1, 2, 3, 4, 5 }, 2, 3, new byte[] { 1, 2, 5, 4, 3 } };
             yield return new object[] { new byte[] { 1, 2, 3, 4, 5 }, 0, 0, new byte[] { 1, 2, 3, 4, 5 } };
             yield return new object[] { new byte[] { 1, 2, 3, 4, 5 }, 5, 0, new byte[] { 1, 2, 3, 4, 5 } };
 
             // Int16
-            yield return new object[] { new short[] { 1, 2, 3, 4, 5 }, 0, 5, new short[] { 5, 4, 3, 2, 1 } };
+            yield return new object[] { new short[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33 }, 0, 33, new short[] { 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 } };
+            yield return new object[] { new short[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 }, 0, 17, new short[] { 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 } };
             yield return new object[] { new short[] { 1, 2, 3, 4, 5 }, 2, 3, new short[] { 1, 2, 5, 4, 3 } };
             yield return new object[] { new short[] { 1, 2, 3, 4, 5 }, 0, 0, new short[] { 1, 2, 3, 4, 5 } };
             yield return new object[] { new short[] { 1, 2, 3, 4, 5 }, 5, 0, new short[] { 1, 2, 3, 4, 5 } };
 
             // UInt16
-            yield return new object[] { new ushort[] { 1, 2, 3, 4, 5 }, 0, 5, new ushort[] { 5, 4, 3, 2, 1 } };
+            yield return new object[] { new ushort[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33 }, 0, 33, new ushort[] { 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 } };
+            yield return new object[] { new ushort[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 }, 0, 17, new ushort[] { 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 } };
             yield return new object[] { new ushort[] { 1, 2, 3, 4, 5 }, 2, 3, new ushort[] { 1, 2, 5, 4, 3 } };
             yield return new object[] { new ushort[] { 1, 2, 3, 4, 5 }, 0, 0, new ushort[] { 1, 2, 3, 4, 5 } };
             yield return new object[] { new ushort[] { 1, 2, 3, 4, 5 }, 5, 0, new ushort[] { 1, 2, 3, 4, 5 } };
 
             // Int32
-            yield return new object[] { new int[] { 1, 2, 3, 4, 5 }, 0, 5, new int[] { 5, 4, 3, 2, 1 } };
+            yield return new object[] { new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 }, 0, 17, new int[] { 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 } };
+            yield return new object[] { new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 0, 9, new int[] { 9, 8, 7, 6, 5, 4, 3, 2, 1 } };
             yield return new object[] { new int[] { 1, 2, 3, 4, 5 }, 2, 3, new int[] { 1, 2, 5, 4, 3 } };
             yield return new object[] { new int[] { 1, 2, 3, 4, 5 }, 0, 0, new int[] { 1, 2, 3, 4, 5 } };
             yield return new object[] { new int[] { 1, 2, 3, 4, 5 }, 5, 0, new int[] { 1, 2, 3, 4, 5 } };
 
             // UInt32
-            yield return new object[] { new uint[] { 1, 2, 3, 4, 5 }, 0, 5, new uint[] { 5, 4, 3, 2, 1 } };
+            yield return new object[] { new uint[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 }, 0, 17, new uint[] { 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 } };
+            yield return new object[] { new uint[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 0, 9, new uint[] { 9, 8, 7, 6, 5, 4, 3, 2, 1 } };
             yield return new object[] { new uint[] { 1, 2, 3, 4, 5 }, 2, 3, new uint[] { 1, 2, 5, 4, 3 } };
             yield return new object[] { new uint[] { 1, 2, 3, 4, 5 }, 0, 0, new uint[] { 1, 2, 3, 4, 5 } };
             yield return new object[] { new uint[] { 1, 2, 3, 4, 5 }, 5, 0, new uint[] { 1, 2, 3, 4, 5 } };
 
             // Int64
+            yield return new object[] { new long[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 0, 9, new long[] { 9, 8, 7, 6, 5, 4, 3, 2, 1 } };
             yield return new object[] { new long[] { 1, 2, 3, 4, 5 }, 0, 5, new long[] { 5, 4, 3, 2, 1 } };
             yield return new object[] { new long[] { 1, 2, 3, 4, 5 }, 2, 3, new long[] { 1, 2, 5, 4, 3 } };
             yield return new object[] { new long[] { 1, 2, 3, 4, 5 }, 0, 0, new long[] { 1, 2, 3, 4, 5 } };
             yield return new object[] { new long[] { 1, 2, 3, 4, 5 }, 5, 0, new long[] { 1, 2, 3, 4, 5 } };
 
             // UInt64
+            yield return new object[] { new ulong[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 0, 9, new ulong[] { 9, 8, 7, 6, 5, 4, 3, 2, 1 } };
             yield return new object[] { new ulong[] { 1, 2, 3, 4, 5 }, 0, 5, new ulong[] { 5, 4, 3, 2, 1 } };
             yield return new object[] { new ulong[] { 1, 2, 3, 4, 5 }, 2, 3, new ulong[] { 1, 2, 5, 4, 3 } };
             yield return new object[] { new ulong[] { 1, 2, 3, 4, 5 }, 0, 0, new ulong[] { 1, 2, 3, 4, 5 } };
             yield return new object[] { new ulong[] { 1, 2, 3, 4, 5 }, 5, 0, new ulong[] { 1, 2, 3, 4, 5 } };
 
             // Char
-            yield return new object[] { new char[] { '1', '2', '3', '4', '5' }, 0, 5, new char[] { '5', '4', '3', '2', '1' } };
+            yield return new object[] { new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7' }, 0, 33, new char[] { '7', '6', '5', '4', '3', '2', '1', 'z', 'y', 'x', 'w', 'v', 'u', 't', 's', 'r', 'q', 'p', 'o', 'n', 'm', 'l', 'k', 'j', 'i', 'h', 'g', 'f', 'e', 'd', 'c', 'b', 'a' } };
+            yield return new object[] { new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q' }, 0, 17, new char[] {  'q', 'p', 'o', 'n', 'm', 'l', 'k', 'j', 'i', 'h', 'g', 'f', 'e', 'd', 'c', 'b', 'a' } };
             yield return new object[] { new char[] { '1', '2', '3', '4', '5' }, 2, 3, new char[] { '1', '2', '5', '4', '3' } };
             yield return new object[] { new char[] { '1', '2', '3', '4', '5' }, 0, 0, new char[] { '1', '2', '3', '4', '5' } };
             yield return new object[] { new char[] { '1', '2', '3', '4', '5' }, 5, 0, new char[] { '1', '2', '3', '4', '5' } };
@@ -3181,12 +3190,14 @@ namespace System.Tests
             yield return new object[] { new bool[] { false, false, true, true, false }, 5, 0, new bool[] { false, false, true, true, false } };
 
             // Single
-            yield return new object[] { new float[] { 1, 2, 3, 4, 5 }, 0, 5, new float[] { 5, 4, 3, 2, 1 } };
+            yield return new object[] { new float[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 }, 0, 17, new float[] { 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1 } };
+            yield return new object[] { new float[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 0, 9, new float[] { 9, 8, 7, 6, 5, 4, 3, 2, 1 } };
             yield return new object[] { new float[] { 1, 2, 3, 4, 5 }, 2, 3, new float[] { 1, 2, 5, 4, 3 } };
             yield return new object[] { new float[] { 1, 2, 3, 4, 5 }, 0, 0, new float[] { 1, 2, 3, 4, 5 } };
             yield return new object[] { new float[] { 1, 2, 3, 4, 5 }, 5, 0, new float[] { 1, 2, 3, 4, 5 } };
 
             // Double
+            yield return new object[] { new double[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 }, 0, 9, new double[] { 9, 8, 7, 6, 5, 4, 3, 2, 1 } };
             yield return new object[] { new double[] { 1, 2, 3, 4, 5 }, 0, 5, new double[] { 5, 4, 3, 2, 1 } };
             yield return new object[] { new double[] { 1, 2, 3, 4, 5 }, 2, 3, new double[] { 1, 2, 5, 4, 3 } };
             yield return new object[] { new double[] { 1, 2, 3, 4, 5 }, 0, 0, new double[] { 1, 2, 3, 4, 5 } };
@@ -3251,7 +3262,7 @@ namespace System.Tests
             // Use Reverse(Array, int, int)
             Array arrayClone2 = (Array)array.Clone();
             Array.Reverse(arrayClone2, index, length);
-            Assert.Equal(expected, expected);
+            Assert.Equal(expected, arrayClone2);
         }
 
         [Fact]
@@ -3727,7 +3738,7 @@ namespace System.Tests
             yield return new object[] { new int[] { 3, 1, 2 }, new string[] { "a", "b", "c" }, 0, 3, null, new int[] { 1, 2, 3 }, new string[] { "b", "c", "a" } };
             yield return new object[] { new int[] { 3, 2, 1, 4 }, new string[] { "a", "b", "c", "d" }, 1, 2, null, new int[] { 3, 1, 2, 4 }, new string[] { "a", "c", "b", "d" } };
 
-            yield return new object[] { new int[] { 3, 2, 1, 4 }, new string[] { "a", "b", "c", "d" }, 0, 4, new ReverseIntegerComparer(), new int[] { 4, 3, 2, 1 }, new string[] { "d", "a", "b", "c" } };
+            yield return new object[] { new int[] { 3, 2, 1, 4 }, new string[] { "a", "b", "c", "d" }, 0, 4, Comparer<int>.Create((x, y) => -((int)x).CompareTo((int)y)), new int[] { 4, 3, 2, 1 }, new string[] { "d", "a", "b", "c" } };
 
             yield return new object[] { new int[] { 3, 2, 1, 4 }, new string[] { "a", "b", "c", "d", "e", "f" }, 0, 4, new IntegerComparer(), new int[] { 1, 2, 3, 4 }, new string[] { "c", "b", "a", "d", "e", "f" } }; // Items.Length > keys.Length
 
@@ -4588,11 +4599,6 @@ namespace System.Tests
             bool IEqualityComparer.Equals(object x, object y) => ((int)x) == ((int)y);
 
             public int GetHashCode(object obj) => ((int)obj) >> 2;
-        }
-
-        public class ReverseIntegerComparer : IComparer
-        {
-            public int Compare(object x, object y) => -((int)x).CompareTo((int)y);
         }
 
         private class StringComparer : IComparer, IComparer<string>

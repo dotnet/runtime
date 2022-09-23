@@ -20,7 +20,7 @@
 
 ; UPDATE JIT/EE INTERFACE GUID WHEN CHANGING THESE DEFINITIONS. The instruction set definitions are part of JIT/EE interface contract.
 
-; DO NOT CHANGE R2R NUMERIC VALUES OF THE EXISTING SETS. Changing R2R numberic values definitions would be R2R format breaking change.
+; DO NOT CHANGE R2R NUMERIC VALUES OF THE EXISTING SETS. Changing R2R numeric values definitions would be R2R format breaking change.
 
 ; Definition of X86 instruction sets
 definearch         ,X86   ,32Bit     ,X64
@@ -46,6 +46,14 @@ instructionset     ,X86   ,          ,        ,   ,Vector256,
 instructionset     ,X86   ,AvxVnni   ,        ,25 ,AVXVNNI  ,avxvnni
 instructionset     ,X86   ,Movbe     ,        ,27 ,MOVBE    ,movbe
 instructionset     ,X86   ,X86Serialize ,     ,28 ,X86Serialize  ,serialize
+instructionset     ,X86   ,Avx512F   ,        ,29 ,AVX512F  ,avx512f
+instructionset     ,X86   ,Avx512F_VL,        ,30 ,AVX512F_VL  ,avx512f_vl
+instructionset     ,X86   ,Avx512BW  ,        ,31 ,AVX512BW ,avx512bw
+instructionset     ,X86   ,Avx512BW_VL,       ,32 ,AVX512BW_VL  ,avx512bw_vl
+instructionset     ,X86   ,Avx512CD  ,        ,33 ,AVX512CD ,avx512cd
+instructionset     ,X86   ,Avx512CD_VL,       ,34 ,AVX512CD_VL  ,avx512cd_vl
+instructionset     ,X86   ,Avx512DQ  ,        ,35 ,AVX512DQ ,avx512dq
+instructionset     ,X86   ,Avx512DQ_VL,       ,36 ,AVX512DQ_VL  ,avx512dq_vl
 
 instructionset64bit,X86   ,X86Base
 instructionset64bit,X86   ,SSE
@@ -66,6 +74,14 @@ instructionset64bit,X86   ,POPCNT
 instructionset64bit,X86   ,AVXVNNI
 instructionset64bit,X86   ,MOVBE
 instructionset64bit,X86   ,X86Serialize
+instructionset64bit,X86   ,AVX512F
+instructionset64bit,X86   ,AVX512F_VL
+instructionset64bit,X86   ,AVX512BW
+instructionset64bit,X86   ,AVX512BW_VL
+instructionset64bit,X86   ,AVX512CD
+instructionset64bit,X86   ,AVX512CD_VL
+instructionset64bit,X86   ,AVX512DQ
+instructionset64bit,X86   ,AVX512DQ_VL
 
 vectorinstructionset,X86  ,Vector128
 vectorinstructionset,X86  ,Vector256
@@ -90,6 +106,15 @@ implication        ,X86   ,Vector256 ,AVX
 implication        ,X86   ,AVXVNNI   ,AVX2
 implication        ,X86   ,MOVBE     ,SSE42
 implication        ,X86   ,X86Serialize, X86Base
+
+implication        ,X86   ,AVX512F,   AVX2
+implication        ,X86   ,AVX512F_VL,AVX512F
+implication        ,X86   ,AVX512CD,  AVX512F
+implication        ,X86   ,AVX512CD_VL,  AVX512F_VL
+implication        ,X86   ,AVX512BW,  AVX512F
+implication        ,X86   ,AVX512BW_VL,  AVX512F_VL
+implication        ,X86   ,AVX512DQ,  AVX512F
+implication        ,X86   ,AVX512DQ_VL,  AVX512F_VL
 
 ; Definition of X64 instruction sets
 definearch         ,X64   ,64Bit     ,X64
@@ -142,6 +167,7 @@ instructionsetgroup  ,x86-x64                    ,X64 X86  ,sse2
 instructionsetgroup  ,x86-x64-v2                 ,X64 X86  ,sse4.2 popcnt
 instructionsetgroup  ,x86-x64-v3                 ,X64 X86  ,x86-x64-v2 avx2 bmi bmi2 lzcnt movbe fma
 instructionsetgroup  ,skylake                    ,X64 X86  ,x86-x64-v3
+instructionsetgroup  ,x86-x64-v4                 ,X64 X86  ,x86-x64-v3 avx512f avx512f_vl avx512bw avx512bw_vl avx512cd avx512cd_vl
 
 instructionsetgroup  ,armv8-a                    ,ARM64    ,neon
 instructionsetgroup  ,armv8.1-a                  ,ARM64    ,armv8-a lse crc rdma

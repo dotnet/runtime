@@ -43,7 +43,7 @@ namespace System.Reflection.Emit.Tests
             FieldBuilder field = type.DefineField("TestField", typeof(object), FieldAttributes.Public);
             ConstructorInfo attributeConstructor = typeof(EmptyAttribute).GetConstructor(new Type[0]);
             byte[] bytes = Enumerable.Range(0, 256).Select(i => (byte)i).ToArray();
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
 
             Assert.Throws<InvalidOperationException>(() => field.SetCustomAttribute(attributeConstructor, bytes));
         }
@@ -74,7 +74,7 @@ namespace System.Reflection.Emit.Tests
             FieldBuilder field = type.DefineField("TestField", typeof(object), FieldAttributes.Public);
             ConstructorInfo con = typeof(EmptyAttribute).GetConstructor(new Type[0]);
             CustomAttributeBuilder attribute = new CustomAttributeBuilder(con, new object[0]);
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
 
             Assert.Throws<InvalidOperationException>(() => { field.SetCustomAttribute(attribute); });
         }

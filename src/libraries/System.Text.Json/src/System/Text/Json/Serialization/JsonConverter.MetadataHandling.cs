@@ -80,6 +80,16 @@ namespace System.Text.Json.Serialization
                 case PolymorphicSerializationState.None:
                     Debug.Assert(!state.IsContinuation);
 
+                    if (state.IsPolymorphicRootValue && state.CurrentDepth == 0)
+                    {
+                        Debug.Assert(jsonTypeInfo.PolymorphicTypeResolver != null);
+
+                        // We're serializing a root-level object value whose runtime type uses type hierarchies.
+                        // For consistency with nested value handling, we want to serialize as-is without emitting metadata.
+                        state.Current.PolymorphicSerializationState = PolymorphicSerializationState.PolymorphicReEntryNotFound;
+                        break;
+                    }
+
                     Type runtimeType = value.GetType();
 
                     if (jsonTypeInfo.PolymorphicTypeResolver is PolymorphicTypeResolver resolver)

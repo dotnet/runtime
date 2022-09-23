@@ -21,7 +21,6 @@
 #include "method.hpp"
 #include "runtimecallablewrapper.h"
 #include "excep.h"
-#include "typeparse.h"
 
 //
 // Declare the static field int the ManagedStdInterfaceMap class.
@@ -351,7 +350,7 @@ FCIMPL1(FC_BOOL_RET, StdMngIEnumerator::MoveNext, Object* refThisUNSAFE)
     // result.  The high bits are undefined on AMD64.  (Note that a narrowing
     // cast to CLR_BOOL will not work since it is the same as checking the
     // size_t result != 0.)
-    FC_RETURN_BOOL(*(CLR_BOOL*)StackElemEndianessFixup(&retVal, sizeof(CLR_BOOL)));
+    FC_RETURN_BOOL(*(CLR_BOOL*)StackElemEndiannessFixup(&retVal, sizeof(CLR_BOOL)));
 }
 FCIMPLEND
 

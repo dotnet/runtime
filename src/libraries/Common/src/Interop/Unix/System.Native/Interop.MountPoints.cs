@@ -2,37 +2,52 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        private unsafe delegate void MountPointFound(byte* name);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetAllMountPoints")]
+        private static unsafe partial int GetAllMountPoints(delegate* unmanaged<void*, byte*, void> onFound, void* context);
 
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetAllMountPoints", SetLastError = true)]
-        private static partial int GetAllMountPoints(MountPointFound mpf);
+        private struct AllMountPointsContext
+        {
+            internal List<string> _results;
+            internal ExceptionDispatchInfo? _exception;
+        }
+
+        [UnmanagedCallersOnly]
+        private static unsafe void AddMountPoint(void* context, byte* name)
+        {
+            ref AllMountPointsContext callbackContext = ref Unsafe.As<byte, AllMountPointsContext>(ref *(byte*)context);
+
+            try
+            {
+                callbackContext._results.Add(Marshal.PtrToStringUTF8((IntPtr)name)!);
+            }
+            catch (Exception e)
+            {
+                callbackContext._exception = ExceptionDispatchInfo.Capture(e);
+            }
+        }
 
         internal static string[] GetAllMountPoints()
         {
-            int count = 0;
-            var found = new string[4];
+            AllMountPointsContext context = default;
+            context._results = new List<string>();
 
             unsafe
             {
-                GetAllMountPoints((byte* name) =>
-                {
-                    if (count == found.Length)
-                    {
-                        Array.Resize(ref found, count * 2);
-                    }
-                    found[count++] = Marshal.PtrToStringAnsi((IntPtr)name)!;
-                });
+                GetAllMountPoints(&AddMountPoint, Unsafe.AsPointer(ref context));
             }
 
-            Array.Resize(ref found, count);
-            return found;
+            context._exception?.Throw();
+
+            return context._results.ToArray();
         }
     }
 }

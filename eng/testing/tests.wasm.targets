@@ -5,10 +5,6 @@
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">true</WasmGenerateAppBundle>
     <BundleTestAppTargets>$(BundleTestAppTargets);BundleTestWasmApp</BundleTestAppTargets>
     <DebuggerSupport Condition="'$(DebuggerSupport)' == '' and '$(Configuration)' == 'Debug'">true</DebuggerSupport>
-    <!-- suppress warnings as these are tests, and not expected to be trim-safe -->
-    <SuppressTrimAnalysisWarnings Condition="'$(EnableAggressiveTrimming)' == 'true'">true</SuppressTrimAnalysisWarnings>
-    <!-- This warning code isn't yet included in SuppressTrimAnalysisWarnings -->
-    <NoWarn Condition="'$(EnableAggressiveTrimming)' == 'true'">$(NoWarn);IL2118</NoWarn>
 
     <!-- set this when provisioning emsdk on CI -->
     <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(ContinuousIntegrationBuild)' == 'true' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(MonoProjectRoot), 'wasm', 'emsdk'))</EMSDK_PATH>
@@ -31,6 +27,17 @@
     <_WasmStrictVersionMatch Condition="'$(ContinuousIntegrationBuild)' == 'true'">true</_WasmStrictVersionMatch>
     <XUnitUseRandomizedTestOrderer Condition="'$(XUnitUseRandomizedTestOrderer)' == '' and '$(IsTestProject)' == 'true'">true</XUnitUseRandomizedTestOrderer>
     <_UseWasmSymbolicator Condition="'$(TestTrimming)' != 'true'">true</_UseWasmSymbolicator>
+    <WasmIgnoreNet6WorkloadInstallErrors Condition="'$(WasmIgnoreNet6WorkloadInstallErrors)' == ''">true</WasmIgnoreNet6WorkloadInstallErrors>
+    <WasmIgnoreNet6WorkloadInstallErrors Condition="'$(WasmIgnoreNet6WorkloadInstallErrors)' != 'true'">false</WasmIgnoreNet6WorkloadInstallErrors>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(EnableAggressiveTrimming)' == 'true'">
+    <!-- suppress warnings as these are tests, and not expected to be trim-safe -->
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+    <!-- This warning code isn't yet included in SuppressTrimAnalysisWarnings -->
+    <NoWarn>$(NoWarn);IL2118</NoWarn>
+    <!-- IL2121: Unnecessary UnconditionalSuppressMessage attribute -->
+    <NoWarn>$(NoWarn);IL2121</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -53,12 +60,16 @@
     <SetScriptCommands Condition="'$(JSEngine)' != ''" Include="export JS_ENGINE=--engine=$(JSEngine)" />
     <SetScriptCommands Condition="'$(JSEngineArgs)' != ''" Include="export JS_ENGINE_ARGS=$(JSEngineArgs)" />
     <SetScriptCommands Condition="'$(_WasmMainJSFileName)' != ''" Include="export MAIN_JS=--js-file=$(_WasmMainJSFileName)" />
+    <!-- Workaround for https://github.com/dotnet/runtime/issues/74328 -->
+    <SetScriptCommands Condition="'$(BuildAOTTestsOnHelix)' == 'true'" Include="export DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1" />
   </ItemGroup>
   <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
     <SetScriptCommands Condition="'$(Scenario)' != '' and '$(ContinuousIntegrationBuild)' != 'true'" Include="set &quot;SCENARIO=$(Scenario)&quot;" />
     <SetScriptCommands Condition="'$(JSEngine)' != ''" Include="set &quot;JS_ENGINE=--engine^=$(JSEngine)&quot;" />
     <SetScriptCommands Condition="'$(JSEngineArgs)' != ''" Include="set &quot;JS_ENGINE_ARGS=$(JSEngineArgs)&quot;" />
     <SetScriptCommands Condition="'$(_WasmMainJSFileName)' != ''" Include="set &quot;MAIN_JS=--js-file^=$(_WasmMainJSFileName)&quot;" />
+    <!-- Workaround for https://github.com/dotnet/runtime/issues/74328 -->
+    <SetScriptCommands Condition="'$(BuildAOTTestsOnHelix)' == 'true'" Include="set DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER=1" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -133,14 +144,31 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <WorkloadIdForTesting Include="wasm-tools"
+    <WorkloadIdForTesting Include="wasm-tools;wasm-experimental"
                           ManifestName="Microsoft.NET.Workload.Mono.ToolChain"
+                          Variant="latest"
                           Version="$(PackageVersion)"
                           VersionBand="$(SdkBandVersion)" />
-    <WorkloadIdForTesting Include="wasm-experimental"
-                          ManifestName="Microsoft.NET.Workload.Mono.ToolChain"
+
+    <WorkloadIdForTesting Include="wasm-tools-net7;wasm-experimental-net7"
+                          ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net7"
+                          Variant="net7"
                           Version="$(PackageVersion)"
                           VersionBand="$(SdkBandVersion)" />
+
+    <WorkloadIdForTesting Include="wasm-tools-net6"
+                          ManifestName="Microsoft.NET.Workload.Mono.ToolChain.net6"
+                          Variant="net6"
+                          Version="$(PackageVersion)"
+                          VersionBand="$(SdkBandVersion)"
+                          IgnoreErrors="$(WasmIgnoreNet6WorkloadInstallErrors)" />
+
+    <WorkloadCombinationsToInstall Include="latest"   Variants="latest" />
+    <WorkloadCombinationsToInstall Include="net7"     Variants="net7" />
+    <WorkloadCombinationsToInstall Include="net7+latest"   Variants="net7;latest" />
+    <!--<WorkloadCombinationsToInstall Include="net6"     Variants="net6" />-->
+    <!--<WorkloadCombinationsToInstall Include="net6+7"   Variants="net6;net7" />-->
+    <!--<WorkloadCombinationsToInstall Include="none" />-->
 
     <WasmExtraFilesToDeploy Condition="'$(_UseWasmSymbolicator)' == 'true'" Include="$(MonoProjectRoot)wasm\data\wasm-symbol-patterns.txt" />
     <WasmExtraFilesToDeploy Condition="'$(_UseWasmSymbolicator)' == 'true'" Include="$(ArtifactsBinDir)WasmSymbolicator\$(Configuration)\$(NetCoreAppToolCurrent)\WasmSymbolicator.dll" />
@@ -196,7 +224,6 @@
       <_WasmPropertyNames Include="WasmDedup" />
       <_WasmPropertyNames Include="WasmLinkIcalls" />
       <_WasmPropertyNames Include="WasmNativeStrip" />
-      <_WasmPropertyNames Include="WasmEnableES6" />
       <_WasmPropertyNames Include="_WasmDevel" />
       <_WasmPropertyNames Include="_WasmStrictVersionMatch" />
       <_WasmPropertyNames Include="WasmEmitSymbolMap" />
@@ -299,8 +326,8 @@
 
     <!-- Restore NPM packages -->
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
-      <SetScriptCommands Include="if [[ &quot;$SCENARIO&quot; == &quot;WasmTestOnNodeJs&quot; || &quot;$SCENARIO&quot; == &quot;wasmtestonnodejs&quot; ]]; then export WasmXHarnessMonoArgs=&quot;$WasmXHarnessMonoArgs --setenv=NPM_MODULES=$(NodeNpmModuleString)&quot;; fi" />
-      <RunScriptCommands Include="if [[ &quot;$SCENARIO&quot; == &quot;WasmTestOnNodeJs&quot; || &quot;$SCENARIO&quot; == &quot;wasmtestonnodejs&quot; ]]; then npm ci; fi" />
+      <SetScriptCommands Include="if [[ &quot;$SCENARIO&quot; == &quot;WasmTestOnNodeJS&quot; || &quot;$SCENARIO&quot; == &quot;wasmtestonnodejs&quot; ]]; then export WasmXHarnessMonoArgs=&quot;$WasmXHarnessMonoArgs --setenv=NPM_MODULES=$(NodeNpmModuleString)&quot;; fi" />
+      <RunScriptCommands Include="if [[ &quot;$SCENARIO&quot; == &quot;WasmTestOnNodeJS&quot; || &quot;$SCENARIO&quot; == &quot;wasmtestonnodejs&quot; ]]; then npm ci; fi" />
     </ItemGroup>
     <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
       <SetScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( set &quot;WasmXHarnessMonoArgs=%WasmXHarnessMonoArgs% --setenv=NPM_MODULES^=$(NodeNpmModuleString)&quot; )" />

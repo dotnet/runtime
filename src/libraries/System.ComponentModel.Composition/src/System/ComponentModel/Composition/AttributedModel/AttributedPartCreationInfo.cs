@@ -287,7 +287,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             // The order of types returned here is important because it is used as a
             // priority list of which InhertedExport to choose if multiple exists with
             // the same contract name. Therefore ensure that we always return the types
-            // in the hiearchy from most derived to the lowest base type, followed
+            // in the hierarchy from most derived to the lowest base type, followed
             // by all the interfaces that this type implements.
             foreach (Type type in GetInheritedExports(_type))
             {
@@ -373,7 +373,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             // The order of types returned here is important because it is used as a
             // priority list of which InhertedExport to choose if multiple exists with
             // the same contract name. Therefore ensure that we always return the types
-            // in the hiearchy from most derived to the lowest base type, followed
+            // in the hierarchy from most derived to the lowest base type, followed
             // by all the interfaces that this type implements.
 
             Type? currentType = type.BaseType;

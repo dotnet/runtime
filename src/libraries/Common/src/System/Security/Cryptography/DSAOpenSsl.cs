@@ -373,6 +373,7 @@ namespace System.Security.Cryptography
             // with the already loaded key.
             ForceSetKeySize(BitsPerByte * Interop.Crypto.DsaKeySize(newKey));
 
+            FreeKey();
             _key = new Lazy<SafeDsaHandle>(newKey);
         }
 

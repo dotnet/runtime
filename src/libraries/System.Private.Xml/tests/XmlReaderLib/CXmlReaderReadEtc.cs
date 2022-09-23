@@ -373,7 +373,7 @@ namespace System.Xml.Tests
             return TEST_PASS;
         }
 
-        [Variation("ReadInnerXml with entity references, EntityHandling = ExpandCharEntites")]
+        [Variation("ReadInnerXml with entity references, EntityHandling = ExpandCharEntities")]
         public int TestTextReadInnerXml2()
         {
             bool bPassed = false;

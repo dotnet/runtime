@@ -978,9 +978,9 @@ namespace System.Net.Mail
                 new AsyncCallback(SendMailCallback), state);
         }
 
-        // After we've estabilished a connection and initilized ServerSupportsEai,
+        // After we've estabilished a connection and initialized ServerSupportsEai,
         // check all the addresses for one that contains unicode in the username/localpart.
-        // The localpart is the only thing we cannot succesfully downgrade.
+        // The localpart is the only thing we cannot successfully downgrade.
         private static void ValidateUnicodeRequirement(MailMessage message, MailAddressCollection recipients, bool allowUnicode)
         {
             // Check all recipients, to, from, sender, bcc, cc, etc...

@@ -59,16 +59,17 @@ namespace System
         private const long TicksPerMicrosecond = 10;
         private const long TicksPerMillisecond = TicksPerMicrosecond * MicrosecondsPerMillisecond;
 
+        private const int HoursPerDay = 24;
         private const long TicksPerSecond = TicksPerMillisecond * 1000;
         private const long TicksPerMinute = TicksPerSecond * 60;
         private const long TicksPerHour = TicksPerMinute * 60;
-        private const long TicksPerDay = TicksPerHour * 24;
+        private const long TicksPerDay = TicksPerHour * HoursPerDay;
 
         // Number of milliseconds per time unit
         private const int MillisPerSecond = 1000;
         private const int MillisPerMinute = MillisPerSecond * 60;
         private const int MillisPerHour = MillisPerMinute * 60;
-        private const int MillisPerDay = MillisPerHour * 24;
+        private const int MillisPerDay = MillisPerHour * HoursPerDay;
 
         // Number of days in a non-leap year
         private const int DaysPerYear = 365;
@@ -90,8 +91,12 @@ namespace System
 
         internal const long MinTicks = 0;
         internal const long MaxTicks = DaysTo10000 * TicksPerDay - 1;
-        private const long MaxMillis = (long)DaysTo10000 * MillisPerDay;
-        private const long MaxMicroseconds = MaxMillis * MicrosecondsPerMillisecond;
+        private const long MaxMicroseconds = MaxTicks / TicksPerMicrosecond;
+        private const long MaxMillis = MaxTicks / TicksPerMillisecond;
+        private const long MaxSeconds = MaxTicks / TicksPerSecond;
+        private const long MaxMinutes = MaxTicks / TicksPerMinute;
+        private const long MaxHours = MaxTicks / TicksPerHour;
+        private const long MaxDays = (long)DaysTo10000 - 1;
 
         internal const long UnixEpochTicks = DaysTo1970 * TicksPerDay;
         private const long FileTimeOffset = DaysTo1601 * TicksPerDay;
@@ -104,10 +109,16 @@ namespace System
         // All OA dates must be less than (not <=) OADateMaxAsDouble
         private const double OADateMaxAsDouble = 2958466.0;
 
-        private const int DatePartYear = 0;
-        private const int DatePartDayOfYear = 1;
-        private const int DatePartMonth = 2;
-        private const int DatePartDay = 3;
+        // Euclidean Affine Functions Algorithm (EAF) constants
+
+        // Constants used for fast calculation of following subexpressions
+        //      x / DaysPer4Years
+        //      x % DaysPer4Years / 4
+        private const uint EafMultiplier = (uint)(((1UL << 32) + DaysPer4Years - 1) / DaysPer4Years);   // 2,939,745
+        private const uint EafDivider = EafMultiplier * 4;                                              // 11,758,980
+
+        private const ulong TicksPer6Hours = TicksPerHour * 6;
+        private const int March1BasedDayOfNewYear = 306;              // Days between March 1 and January 1
 
         private static readonly uint[] s_daysToMonth365 = {
             0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
@@ -179,6 +190,7 @@ namespace System
         private static void ThrowMillisecondOutOfRange() => throw new ArgumentOutOfRangeException("millisecond", SR.Format(SR.ArgumentOutOfRange_Range, 0, MillisPerSecond - 1));
         private static void ThrowMicrosecondOutOfRange() => throw new ArgumentOutOfRangeException("microsecond", SR.Format(SR.ArgumentOutOfRange_Range, 0, MicrosecondsPerMillisecond - 1));
         private static void ThrowDateArithmetic(int param) => throw new ArgumentOutOfRangeException(param switch { 0 => "value", 1 => "t", _ => "months" }, SR.ArgumentOutOfRange_DateArithmetic);
+        private static void ThrowAddOutOfRange() => throw new ArgumentOutOfRangeException("value", SR.ArgumentOutOfRange_AddValue);
 
         // Constructs a DateTime from a given year, month, and day. The
         // time-of-day of the resulting DateTime is always midnight.
@@ -836,49 +848,48 @@ namespace System
             return AddTicks(value._ticks);
         }
 
-        // Returns the DateTime resulting from adding a fractional number of
-        // time units to this DateTime.
-        private DateTime Add(double value, int scale)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private DateTime AddUnits(double value, long maxUnitCount, long ticksPerUnit)
         {
-            double millis_double = value * scale + (value >= 0 ? 0.5 : -0.5);
-            if (millis_double <= -MaxMillis || millis_double >= MaxMillis) ThrowOutOfRange();
-            return AddTicks((long)millis_double * TicksPerMillisecond);
+            if (Math.Abs(value) > maxUnitCount)
+            {
+                ThrowAddOutOfRange();
+            }
 
-            static void ThrowOutOfRange() => throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_AddValue);
+            double integralPart = Math.Truncate(value);
+            double fractionalPart = value - integralPart;
+            long ticks = (long)(integralPart) * ticksPerUnit;
+            ticks += (long)(fractionalPart * ticksPerUnit);
+
+            return AddTicks(ticks);
         }
 
-        // Returns the DateTime resulting from adding a fractional number of
-        // days to this DateTime. The result is computed by rounding the
-        // fractional number of days given by value to the nearest
-        // millisecond, and adding that interval to this DateTime. The
-        // value argument is permitted to be negative.
-        //
-        public DateTime AddDays(double value)
-        {
-            return Add(value, MillisPerDay);
-        }
+        /// <summary>
+        /// Returns a new <see cref="DateTime"/> that adds the specified number of days to the value of this instance.
+        /// </summary>
+        /// <param name="value">A number of whole and fractional days. The value parameter can be negative or positive.</param>
+        /// <returns>
+        /// An object whose value is the sum of the date and time represented by this instance and the number of days represented by value.
+        /// </returns>
+        public DateTime AddDays(double value) => AddUnits(value, MaxDays, TicksPerDay);
 
-        // Returns the DateTime resulting from adding a fractional number of
-        // hours to this DateTime. The result is computed by rounding the
-        // fractional number of hours given by value to the nearest
-        // millisecond, and adding that interval to this DateTime. The
-        // value argument is permitted to be negative.
-        //
-        public DateTime AddHours(double value)
-        {
-            return Add(value, MillisPerHour);
-        }
+        /// <summary>
+        /// Returns a new <see cref="DateTime"/> that adds the specified number of hours to the value of this instance.
+        /// </summary>
+        /// <param name="value">A number of whole and fractional hours. The value parameter can be negative or positive.</param>
+        /// <returns>
+        /// An object whose value is the sum of the date and time represented by this instance and the number of hours represented by value.
+        /// </returns>
+        public DateTime AddHours(double value) => AddUnits(value, MaxHours, TicksPerHour);
 
-        // Returns the DateTime resulting from the given number of
-        // milliseconds to this DateTime. The result is computed by rounding
-        // the number of milliseconds given by value to the nearest integer,
-        // and adding that interval to this DateTime. The value
-        // argument is permitted to be negative.
-        //
-        public DateTime AddMilliseconds(double value)
-        {
-            return Add(value, 1);
-        }
+        /// <summary>
+        /// Returns a new <see cref="DateTime"/> that adds the specified number of milliseconds to the value of this instance.
+        /// </summary>
+        /// <param name="value">A number of whole and fractional milliseconds. The value parameter can be negative or positive.</param>
+        /// <returns>
+        /// An object whose value is the sum of the date and time represented by this instance and the number of milliseconds represented by value.
+        /// </returns>
+        public DateTime AddMilliseconds(double value) => AddUnits(value, MaxMillis, TicksPerMillisecond);
 
         /// <summary>
         /// Returns a new <see cref="DateTime"/> that adds the specified number of microseconds to the value of this instance.
@@ -904,28 +915,16 @@ namespace System
         /// <exception cref="ArgumentOutOfRangeException">
         /// The resulting <see cref="DateTime"/> is less than <see cref="MinValue"/> or greater than <see cref="MaxValue"/>.
         /// </exception>
-        public DateTime AddMicroseconds(double value)
-        {
-            if (value < -MaxMicroseconds || value > MaxMicroseconds)
-            {
-                ThrowOutOfRange();
-            }
+        public DateTime AddMicroseconds(double value) => AddUnits(value, MaxMicroseconds, TicksPerMicrosecond);
 
-            return AddTicks((long)(value * TicksPerMicrosecond));
-
-            static void ThrowOutOfRange() => throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_AddValue);
-        }
-
-        // Returns the DateTime resulting from adding a fractional number of
-        // minutes to this DateTime. The result is computed by rounding the
-        // fractional number of minutes given by value to the nearest
-        // millisecond, and adding that interval to this DateTime. The
-        // value argument is permitted to be negative.
-        //
-        public DateTime AddMinutes(double value)
-        {
-            return Add(value, MillisPerMinute);
-        }
+        /// <summary>
+        /// Returns a new <see cref="DateTime"/> that adds the specified number of minutes to the value of this instance.
+        /// </summary>
+        /// <param name="value">A number of whole and fractional minutes. The value parameter can be negative or positive.</param>
+        /// <returns>
+        /// An object whose value is the sum of the date and time represented by this instance and the number of minutes represented by value.
+        /// </returns>
+        public DateTime AddMinutes(double value) => AddUnits(value, MaxMinutes, TicksPerMinute);
 
         // Returns the DateTime resulting from adding the given number of
         // months to this DateTime. The result is computed by incrementing
@@ -962,16 +961,14 @@ namespace System
             return new DateTime(n * (ulong)TicksPerDay + UTicks % TicksPerDay | InternalKind);
         }
 
-        // Returns the DateTime resulting from adding a fractional number of
-        // seconds to this DateTime. The result is computed by rounding the
-        // fractional number of seconds given by value to the nearest
-        // millisecond, and adding that interval to this DateTime. The
-        // value argument is permitted to be negative.
-        //
-        public DateTime AddSeconds(double value)
-        {
-            return Add(value, MillisPerSecond);
-        }
+        /// <summary>
+        /// Returns a new <see cref="DateTime"/> that adds the specified number of seconds to the value of this instance.
+        /// </summary>
+        /// <param name="value">A number of whole and fractional seconds. The value parameter can be negative or positive.</param>
+        /// <returns>
+        /// An object whose value is the sum of the date and time represented by this instance and the number of seconds represented by value.
+        /// </returns>
+        public DateTime AddSeconds(double value) => AddUnits(value, MaxSeconds, TicksPerSecond);
 
         // Returns the DateTime resulting from adding the given number of
         // 100-nanosecond ticks to this DateTime. The value argument
@@ -1162,7 +1159,7 @@ namespace System
 
             millis += DoubleDateOffset / TicksPerMillisecond;
 
-            if (millis < 0 || millis >= MaxMillis) throw new ArgumentException(SR.Arg_OleAutDateScale);
+            if (millis < 0 || millis > MaxMillis) throw new ArgumentException(SR.Arg_OleAutDateScale);
             return millis * TicksPerMillisecond;
         }
 
@@ -1349,94 +1346,31 @@ namespace System
             }
         }
 
-        // Returns a given date part of this DateTime. This method is used
-        // to compute the year, day-of-year, month, or day part.
-        private int GetDatePart(int part)
-        {
-            // n = number of days since 1/1/0001
-            uint n = (uint)(UTicks / TicksPerDay);
-            // y400 = number of whole 400-year periods since 1/1/0001
-            uint y400 = n / DaysPer400Years;
-            // n = day number within 400-year period
-            n -= y400 * DaysPer400Years;
-            // y100 = number of whole 100-year periods within 400-year period
-            uint y100 = n / DaysPer100Years;
-            // Last 100-year period has an extra day, so decrement result if 4
-            if (y100 == 4) y100 = 3;
-            // n = day number within 100-year period
-            n -= y100 * DaysPer100Years;
-            // y4 = number of whole 4-year periods within 100-year period
-            uint y4 = n / DaysPer4Years;
-            // n = day number within 4-year period
-            n -= y4 * DaysPer4Years;
-            // y1 = number of whole years within 4-year period
-            uint y1 = n / DaysPerYear;
-            // Last year has an extra day, so decrement result if 4
-            if (y1 == 4) y1 = 3;
-            // If year was requested, compute and return it
-            if (part == DatePartYear)
-            {
-                return (int)(y400 * 400 + y100 * 100 + y4 * 4 + y1 + 1);
-            }
-            // n = day number within year
-            n -= y1 * DaysPerYear;
-            // If day-of-year was requested, return it
-            if (part == DatePartDayOfYear) return (int)n + 1;
-            // Leap year calculation looks different from IsLeapYear since y1, y4,
-            // and y100 are relative to year 1, not year 0
-            uint[] days = y1 == 3 && (y4 != 24 || y100 == 3) ? s_daysToMonth366 : s_daysToMonth365;
-            // All months have less than 32 days, so n >> 5 is a good conservative
-            // estimate for the month
-            uint m = (n >> 5) + 1;
-            // m = 1-based month number
-            while (n >= days[m]) m++;
-            // If month was requested, return it
-            if (part == DatePartMonth) return (int)m;
-            // Return 1-based day-of-month
-            return (int)(n - days[m - 1] + 1);
-        }
-
-        // Exactly the same as GetDatePart, except computing all of
+        // Exactly the same as Year, Month, Day properties, except computing all of
         // year/month/day rather than just one of them. Used when all three
         // are needed rather than redoing the computations for each.
+        //
+        // Implementation based on article https://arxiv.org/pdf/2102.06959.pdf
+        //   Cassio Neri, Lorenz Schneiderhttps - Euclidean Affine Functions and Applications to Calendar Algorithms - 2021
         internal void GetDate(out int year, out int month, out int day)
         {
-            // n = number of days since 1/1/0001
-            uint n = (uint)(UTicks / TicksPerDay);
-            // y400 = number of whole 400-year periods since 1/1/0001
-            uint y400 = n / DaysPer400Years;
-            // n = day number within 400-year period
-            n -= y400 * DaysPer400Years;
-            // y100 = number of whole 100-year periods within 400-year period
-            uint y100 = n / DaysPer100Years;
-            // Last 100-year period has an extra day, so decrement result if 4
-            if (y100 == 4) y100 = 3;
-            // n = day number within 100-year period
-            n -= y100 * DaysPer100Years;
-            // y4 = number of whole 4-year periods within 100-year period
-            uint y4 = n / DaysPer4Years;
-            // n = day number within 4-year period
-            n -= y4 * DaysPer4Years;
-            // y1 = number of whole years within 4-year period
-            uint y1 = n / DaysPerYear;
-            // Last year has an extra day, so decrement result if 4
-            if (y1 == 4) y1 = 3;
-            // compute year
-            year = (int)(y400 * 400 + y100 * 100 + y4 * 4 + y1 + 1);
-            // n = day number within year
-            n -= y1 * DaysPerYear;
-            // dayOfYear = n + 1;
-            // Leap year calculation looks different from IsLeapYear since y1, y4,
-            // and y100 are relative to year 1, not year 0
-            uint[] days = y1 == 3 && (y4 != 24 || y100 == 3) ? s_daysToMonth366 : s_daysToMonth365;
-            // All months have less than 32 days, so n >> 5 is a good conservative
-            // estimate for the month
-            uint m = (n >> 5) + 1;
-            // m = 1-based month number
-            while (n >= days[m]) m++;
+            // y100 = number of whole 100-year periods since 3/1/0000
+            // r1 = (day number within 100-year period) * 4
+            (uint y100, uint r1) = Math.DivRem(((uint)(UTicks / TicksPer6Hours) | 3U) + 1224, DaysPer400Years);
+            ulong u2 = (ulong)Math.BigMul((int)EafMultiplier, (int)r1 | 3);
+            ushort daySinceMarch1 = (ushort)((uint)u2 / EafDivider);
+            int n3 = 2141 * daySinceMarch1 + 197913;
+            year = (int)(100 * y100 + (uint)(u2 >> 32));
             // compute month and day
-            month = (int)m;
-            day = (int)(n - days[m - 1] + 1);
+            month = (ushort)(n3 >> 16);
+            day = (ushort)n3 / 2141 + 1;
+
+            // rollover December 31
+            if (daySinceMarch1 >= March1BasedDayOfNewYear)
+            {
+                ++year;
+                month -= 12;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1479,7 +1413,19 @@ namespace System
         // Returns the day-of-month part of this DateTime. The returned
         // value is an integer between 1 and 31.
         //
-        public int Day => GetDatePart(DatePartDay);
+        public int Day
+        {
+            get
+            {
+                // r1 = (day number within 100-year period) * 4
+                uint r1 = (((uint)(UTicks / TicksPer6Hours) | 3U) + 1224) % DaysPer400Years;
+                ulong u2 = (ulong)Math.BigMul((int)EafMultiplier, (int)r1 | 3);
+                ushort daySinceMarch1 = (ushort)((uint)u2 / EafDivider);
+                int n3 = 2141 * daySinceMarch1 + 197913;
+                // Return 1-based day-of-month
+                return (ushort)n3 / 2141 + 1;
+            }
+        }
 
         // Returns the day-of-week part of this DateTime. The returned value
         // is an integer between 0 and 6, where 0 indicates Sunday, 1 indicates
@@ -1491,7 +1437,8 @@ namespace System
         // Returns the day-of-year part of this DateTime. The returned value
         // is an integer between 1 and 366.
         //
-        public int DayOfYear => GetDatePart(DatePartDayOfYear);
+        public int DayOfYear =>
+            1 + (int)(((((uint)(UTicks / TicksPer6Hours) | 3U) % (uint)DaysPer400Years) | 3U) * EafMultiplier / EafDivider);
 
         // Returns the hash code for this DateTime.
         //
@@ -1543,7 +1490,18 @@ namespace System
         // Returns the month part of this DateTime. The returned value is an
         // integer between 1 and 12.
         //
-        public int Month => GetDatePart(DatePartMonth);
+        public int Month
+        {
+            get
+            {
+                // r1 = (day number within 100-year period) * 4
+                uint r1 = (((uint)(UTicks / TicksPer6Hours) | 3U) + 1224) % DaysPer400Years;
+                ulong u2 = (ulong)Math.BigMul((int)EafMultiplier, (int)r1 | 3);
+                ushort daySinceMarch1 = (ushort)((uint)u2 / EafDivider);
+                int n3 = 2141 * daySinceMarch1 + 197913;
+                return (ushort)(n3 >> 16) - (daySinceMarch1 >= March1BasedDayOfNewYear ? 12 : 0);
+            }
+        }
 
         // Returns a DateTime representing the current date and time. The
         // resolution of the returned value depends on the system timer.
@@ -1591,7 +1549,16 @@ namespace System
         // Returns the year part of this DateTime. The returned value is an
         // integer between 1 and 9999.
         //
-        public int Year => GetDatePart(DatePartYear);
+        public int Year
+        {
+            get
+            {
+                // y100 = number of whole 100-year periods since 1/1/0001
+                // r1 = (day number within 100-year period) * 4
+                (uint y100, uint r1) = Math.DivRem(((uint)(UTicks / TicksPer6Hours) | 3U), DaysPer400Years);
+                return 1 + (int)(100 * y100 + (r1 | 3) / DaysPer4Years);
+            }
+        }
 
         // Checks whether a given year is a leap year. This method returns true if
         // year is a leap year, or false if not.

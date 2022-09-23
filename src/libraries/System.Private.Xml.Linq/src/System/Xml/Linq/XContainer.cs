@@ -1367,7 +1367,7 @@ namespace System.Xml.Linq
             }
         }
 
-        [return: NotNullIfNotNull("content")]
+        [return: NotNullIfNotNull(nameof(content))]
         internal static object? GetContentSnapshot(object? content)
         {
             if (content is string || !(content is IEnumerable)) return content;

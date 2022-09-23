@@ -11,7 +11,7 @@
 **===================================================================*/
 
 //	delete an existing file
-//	delete a non-existant file
+//	delete a non-existent file
 //  delete an open file
 //	delete files using wild cards
 //	delete a hidden file
@@ -48,7 +48,7 @@ PALTEST(file_io_DeleteFileW_test1_paltest_deletefilew_test1, "file_io/DeleteFile
     if (fclose(tempFile) != 0)
     {
         Fail ("DeleteFileA: ERROR: Couldn't close \"DeleteFileW's"
-        " testFile01.tmp\"\n");   
+        " testFile01.tmp\"\n");
     }
 
     pTemp = convert("testFile01.tmp");
@@ -63,7 +63,7 @@ PALTEST(file_io_DeleteFileW_test1_paltest_deletefilew_test1, "file_io/DeleteFile
 
 
     //
-    // deleting a non-existant file : should fail
+    // deleting a non-existent file : should fail
     //
 
     pTemp = convert("testFile02.tmp");
@@ -71,7 +71,7 @@ PALTEST(file_io_DeleteFileW_test1_paltest_deletefilew_test1, "file_io/DeleteFile
     free(pTemp);
     if (bRc != FALSE)
     {
-        Fail ("DeleteFileW: ERROR: Was able to delete the non-existant"
+        Fail ("DeleteFileW: ERROR: Was able to delete the non-existent"
             " file \"testFile02.tmp\"\n");
     }
 
@@ -92,7 +92,7 @@ PALTEST(file_io_DeleteFileW_test1_paltest_deletefilew_test1, "file_io/DeleteFile
     if (fclose(tempFile) != 0)
     {
         Fail ("DeleteFileA: ERROR: Couldn't close \"DeleteFileW's"
-        " testFile03.tmp\"\n");   
+        " testFile03.tmp\"\n");
     }
 
     pTemp = convert("testFile03.tmp");
@@ -125,7 +125,7 @@ PALTEST(file_io_DeleteFileW_test1_paltest_deletefilew_test1, "file_io/DeleteFile
     if (fclose(tempFile) != 0)
     {
         Fail ("DeleteFileA: ERROR: Couldn't close \"DeleteFileW's"
-        " testFile04.tmp\"\n");   
+        " testFile04.tmp\"\n");
     }
 
     // delete using '?'
@@ -158,6 +158,6 @@ PALTEST(file_io_DeleteFileW_test1_paltest_deletefilew_test1, "file_io/DeleteFile
             " Error is %d\n", GetLastError());
     }
 
-    PAL_Terminate();  
+    PAL_Terminate();
     return PASS;
 }

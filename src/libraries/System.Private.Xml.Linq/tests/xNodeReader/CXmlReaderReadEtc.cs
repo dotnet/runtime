@@ -292,7 +292,7 @@ namespace CoreXml.Test.XLinq
                     TestLog.Compare(VerifyNode(DataReader, XmlNodeType.Text, string.Empty, "yyy"), true, "VN");
                 }
 
-                //[Variation("ReadInnerXml with entity references, EntityHandling = ExpandCharEntites")]
+                //[Variation("ReadInnerXml with entity references, EntityHandling = ExpandCharEntities")]
                 public void TestTextReadInnerXml2()
                 {
                     bool bPassed = false;

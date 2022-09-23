@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 namespace System.Text.Json.SourceGeneration.Tests
 {
     /// <summary>
-    /// Custom converter that adds\substract 100 from MyIntProperty.
+    /// Custom converter that adds\subtract 100 from MyIntProperty.
     /// </summary>
     public class CustomConverter_ClassWithCustomConverter : JsonConverter<ClassWithCustomConverter>
     {
@@ -47,7 +47,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     }
 
     /// <summary>
-    /// Custom converter that adds\substract 100 from MyIntProperty.
+    /// Custom converter that adds\subtract 100 from MyIntProperty.
     /// </summary>
     public class CustomConverter_ClassWithCustomConverterFactory : JsonConverter<ClassWithCustomConverterFactory>
     {
@@ -88,7 +88,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     }
 
     /// <summary>
-    /// Custom converter that adds\substract 100 from MyIntProperty.
+    /// Custom converter that adds\subtract 100 from MyIntProperty.
     /// </summary>
     public class CustomConverter_StructWithCustomConverter : JsonConverter<StructWithCustomConverter>
     {
@@ -129,7 +129,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     }
 
     /// <summary>
-    /// Custom converter that adds\substract 100 from MyIntProperty.
+    /// Custom converter that adds\subtract 100 from MyIntProperty.
     /// </summary>
     public class CustomConverter_StructWithCustomConverterFactory : JsonConverter<StructWithCustomConverterFactory>
     {

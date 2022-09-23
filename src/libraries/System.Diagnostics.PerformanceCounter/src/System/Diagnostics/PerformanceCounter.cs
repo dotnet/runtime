@@ -454,7 +454,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        ///     Intializes required resources
+        ///     Initializes required resources
         /// </summary>
         private void InitializeImpl()
         {

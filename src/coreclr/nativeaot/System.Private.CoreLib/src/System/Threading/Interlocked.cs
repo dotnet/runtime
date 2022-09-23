@@ -44,14 +44,14 @@ namespace System.Threading
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [return: NotNullIfNotNull("location1")]
+        [return: NotNullIfNotNull(nameof(location1))]
         public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class?
         {
             return Unsafe.As<T>(RuntimeImports.InterlockedCompareExchange(ref Unsafe.As<T, object?>(ref location1), value, comparand));
         }
 
         [Intrinsic]
-        [return: NotNullIfNotNull("location1")]
+        [return: NotNullIfNotNull(nameof(location1))]
         public static object? CompareExchange(ref object? location1, object? value, object? comparand)
         {
             return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
@@ -105,15 +105,15 @@ namespace System.Threading
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [return: NotNullIfNotNull("location1")]
-        public static T Exchange<T>([NotNullIfNotNull("value")] ref T location1, T value) where T : class?
+        [return: NotNullIfNotNull(nameof(location1))]
+        public static T Exchange<T>([NotNullIfNotNull(nameof(value))] ref T location1, T value) where T : class?
         {
             return Unsafe.As<T>(RuntimeImports.InterlockedExchange(ref Unsafe.As<T, object?>(ref location1), value));
         }
 
         [Intrinsic]
-        [return: NotNullIfNotNull("location1")]
-        public static object? Exchange([NotNullIfNotNull("value")] ref object? location1, object? value)
+        [return: NotNullIfNotNull(nameof(location1))]
+        public static object? Exchange([NotNullIfNotNull(nameof(value))] ref object? location1, object? value)
         {
             return RuntimeImports.InterlockedExchange(ref location1, value);
         }

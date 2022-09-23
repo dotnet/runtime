@@ -49,7 +49,7 @@ static guint64 stat_bytes_alloced_los = 0;
 #endif
 
 /* The total number of bytes allocated so far in program execution by all attached threads.
- * This is not constantly syncrhonized, but only updated on each GC. */
+ * This is not constantly synchronized, but only updated on each GC. */
 static guint64 bytes_allocated_attached = 0;
 
 /* Total bytes allocated so far in program execution by detached threads */

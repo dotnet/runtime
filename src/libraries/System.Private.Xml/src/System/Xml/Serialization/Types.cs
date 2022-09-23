@@ -494,10 +494,6 @@ namespace System.Xml.Serialization
             "token"
         };
 
-        [UnconditionalSuppressMessage ("ReflectionAnalysis", "IL2118",
-            Justification = "DAM on AddPrimitive references methods of DateTime, which has a compiler-generated local function " +
-                            "LowGranularityNonCachedFallback that calls PInvokes which are considered potentially dangerous. " +
-                            "XML serialization will not access this local function.")]
         static TypeScope()
         {
             AddPrimitive(typeof(string), "string", "String", TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.CanBeTextValue | TypeFlags.Reference | TypeFlags.HasDefaultConstructor);
@@ -593,10 +589,6 @@ namespace System.Xml.Serialization
             return false;
         }
 
-        [UnconditionalSuppressMessage ("ReflectionAnalysis", "IL2118",
-            Justification = "DAM on AddPrimitive references methods of DateTime, which has a compiler-generated local function " +
-                            "LowGranularityNonCachedFallback that calls PInvokes which are considered potentially dangerous. " +
-                            "XML serialization will not access this local function.")]
         private static void AddSoapEncodedTypes(string ns)
         {
             AddSoapEncodedPrimitive(typeof(string), "normalizedString", ns, "String", new XmlQualifiedName("normalizedString", XmlSchema.Namespace), TypeFlags.AmbiguousDataType | TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.Reference | TypeFlags.HasDefaultConstructor);
@@ -621,7 +613,7 @@ namespace System.Xml.Serialization
             AddSoapEncodedPrimitive(typeof(uint), "unsignedInt", ns, "UInt32", new XmlQualifiedName("string", XmlSchema.Namespace), TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.XmlEncodingNotRequired);
             AddSoapEncodedPrimitive(typeof(ulong), "unsignedLong", ns, "UInt64", new XmlQualifiedName("string", XmlSchema.Namespace), TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.XmlEncodingNotRequired);
 
-            // Types without direct mapping (ambigous)
+            // Types without direct mapping (ambiguous)
             AddSoapEncodedPrimitive(typeof(DateTime), "date", ns, "Date", new XmlQualifiedName("string", XmlSchema.Namespace), TypeFlags.AmbiguousDataType | TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.HasCustomFormatter | TypeFlags.XmlEncodingNotRequired);
             AddSoapEncodedPrimitive(typeof(DateTime), "time", ns, "Time", new XmlQualifiedName("string", XmlSchema.Namespace), TypeFlags.AmbiguousDataType | TypeFlags.CanBeAttributeValue | TypeFlags.CanBeElementValue | TypeFlags.HasCustomFormatter | TypeFlags.XmlEncodingNotRequired);
 

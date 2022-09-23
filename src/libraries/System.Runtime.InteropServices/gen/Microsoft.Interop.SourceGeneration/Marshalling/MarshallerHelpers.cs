@@ -147,6 +147,11 @@ namespace Microsoft.Interop
             return context.GetAdditionalIdentifier(info, "numElements");
         }
 
+        internal static bool CanUseCallerAllocatedBuffer(TypePositionInfo info, StubCodeContext context)
+        {
+            return context.SingleFrameSpansNativeContext && (!info.IsByRef || info.RefKind == RefKind.In);
+        }
+
         /// <summary>
         /// Generate a topologically sorted collection of elements.
         /// </summary>
@@ -276,13 +281,21 @@ namespace Microsoft.Interop
             {
                 if (nestedCollection.ElementCountInfo is CountElementCountInfo { ElementInfo: TypePositionInfo nestedCountElement })
                 {
-                    yield return nestedCountElement;
+                    // Do not include dependent elements with no managed or native index.
+                    // These values are dummy values that are inserted earlier to avoid emitting extra diagnostics.
+                    if (nestedCountElement.ManagedIndex != TypePositionInfo.UnsetIndex || nestedCountElement.NativeIndex != TypePositionInfo.UnsetIndex)
+                    {
+                        yield return nestedCountElement;
+                    }
                 }
                 foreach (KeyValuePair<MarshalMode, CustomTypeMarshallerData> mode in nestedCollection.Marshallers.Modes)
                 {
-                    foreach (TypePositionInfo nestedElements in GetDependentElementsOfMarshallingInfo(mode.Value.CollectionElementMarshallingInfo))
+                    foreach (TypePositionInfo nestedElement in GetDependentElementsOfMarshallingInfo(mode.Value.CollectionElementMarshallingInfo))
                     {
-                        yield return nestedElements;
+                        if (nestedElement.ManagedIndex != TypePositionInfo.UnsetIndex || nestedElement.NativeIndex != TypePositionInfo.UnsetIndex)
+                        {
+                            yield return nestedElement;
+                        }
                     }
                 }
             }

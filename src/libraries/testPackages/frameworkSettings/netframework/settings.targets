@@ -4,15 +4,15 @@
     <ShouldVerifyTypes>true</ShouldVerifyTypes>
     <SkipVerifyClosureForRuntime>true</SkipVerifyClosureForRuntime>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <!-- these are part of the targeting pack but not actual assemblies -->
     <ExcludeReference Include="System.EnterpriseServices.Thunk;System.EnterpriseServices.Wrapper" />
-    
+
     <!-- these are part of the targeting pack but contain many duplicate types -->
     <ExcludeReference Include="PresentationFramework.Aero;PresentationFramework.Aero2;PresentationFramework.AeroLite;PresentationFramework.Classic;PresentationFramework.Luna;PresentationFramework.Royale" />
 
-    <!-- Ignoring dangling references and cycles comming in from the netfx targeting pack -->
+    <!-- Ignoring dangling references and cycles coming in from the netfx targeting pack -->
     <IgnoredReference Include="ADODB" />
     <IgnoredReference Include="Microsoft.Internal.Tasks.Dataflow" />
     <IgnoredReference Include="Microsoft.StdFormat" />
@@ -93,8 +93,8 @@
   <!-- this target must run before ResolveLockFileReferences so
        that the SDK targets de-dup the References it adds against those
        that come from packages -->
-  <Target Name="ReferenceEntireFramework" 
-          BeforeTargets="ResolveLockFileReferences" 
+  <Target Name="ReferenceEntireFramework"
+          BeforeTargets="ResolveLockFileReferences"
           DependsOnTargets="GetFrameworkPaths;GetReferenceAssemblyPaths">
     <ItemGroup Condition="'$(TargetFrameworkDirectory)' != ''">
       <!-- TargetFrameworkDirectory may contain many paths -->

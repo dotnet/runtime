@@ -49,6 +49,9 @@ namespace System.Net.Test.Common
         private Http3LoopbackStream _inboundControlStream;      // Inbound control stream from client
         private Http3LoopbackStream _outboundControlStream;     // Our outbound control stream
 
+        public Http3LoopbackStream OutboundControlStream => _outboundControlStream ?? throw new Exception("Control stream has not been opened yet");
+        public Http3LoopbackStream InboundControlStream => _inboundControlStream ?? throw new Exception("Inbound control stream has not been accepted yet");
+
         public Http3LoopbackConnection(QuicConnection connection)
         {
             _connection = connection;
@@ -56,38 +59,36 @@ namespace System.Net.Test.Common
 
         public long MaxHeaderListSize { get; private set; } = -1;
 
-        public override void Dispose()
+        public override async ValueTask DisposeAsync()
         {
             // Close any remaining request streams (but NOT control streams, as these should not be closed while the connection is open)
             foreach (Http3LoopbackStream stream in _openStreams.Values)
             {
-                stream.Dispose();
+                await stream.DisposeAsync().ConfigureAwait(false);
             }
 
             foreach (QuicStream stream in _delayedStreams)
             {
-                stream.Dispose();
+                await stream.DisposeAsync().ConfigureAwait(false);
             }
 
-            // We don't dispose the connection currently, because this causes races when the server connection is closed before
-            // the client has received and handled all response data.
-            // See discussion in https://github.com/dotnet/runtime/pull/57223#discussion_r687447832
-#if false
             // Dispose the connection
             // If we already waited for graceful shutdown from the client, then the connection is already closed and this will simply release the handle.
             // If not, then this will silently abort the connection.
-            _connection.Dispose();
+            await _connection.DisposeAsync();
 
             // Dispose control streams so that we release their handles too.
-            _inboundControlStream?.Dispose();
-            _outboundControlStream?.Dispose();
-#endif
+            if (_inboundControlStream is not null)
+            {
+                await _inboundControlStream.DisposeAsync().ConfigureAwait(false);
+            }
+            if (_outboundControlStream is not null)
+            {
+                await _outboundControlStream.DisposeAsync().ConfigureAwait(false);
+            }
         }
 
-        public async Task CloseAsync(long errorCode)
-        {
-            await _connection.CloseAsync(errorCode).ConfigureAwait(false);
-        }
+        public Task CloseAsync(long errorCode) => _connection.CloseAsync(errorCode).AsTask();
 
         public async ValueTask<Http3LoopbackStream> OpenUnidirectionalStreamAsync()
         {
@@ -104,7 +105,7 @@ namespace System.Net.Test.Common
             Debug.Assert(stream.CanRead && stream.CanWrite, "Stream must be a request stream.");
 
             // TODO: QUIC streams can have IDs larger than int.MaxValue; update all our tests to use long rather than int.
-            return checked((int)stream.StreamId + 1);
+            return checked((int)stream.Id + 1);
         }
 
         public Http3LoopbackStream GetOpenRequest(int requestId = 0)
@@ -172,9 +173,9 @@ namespace System.Net.Test.Common
 
             Assert.True(quicStream.CanWrite, "Expected writeable stream.");
 
-            _openStreams.Add(checked((int)quicStream.StreamId), stream);
+            _openStreams.Add(checked((int)quicStream.Id), stream);
             _currentStream = stream;
-            _currentStreamId = quicStream.StreamId;
+            _currentStreamId = quicStream.Id;
 
             return stream;
         }
@@ -293,9 +294,9 @@ namespace System.Net.Test.Common
                     break;
                 }
 
-                using (stream)
+                await using (stream)
                 {
-                    await stream.AbortAndWaitForShutdownAsync(H3_REQUEST_REJECTED);
+                    stream.Abort(H3_REQUEST_REJECTED);
                 }
             }
 

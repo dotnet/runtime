@@ -19,6 +19,12 @@
 #include <mono/metadata/threads.h>
 #include <mono/metadata/image.h>
 #include <mono/metadata/mono-gc.h>
+#include <mono/metadata/loader.h>
+#include <mono/metadata/object.h>
+#include <mono/metadata/metadata.h>
+#include <mono/metadata/class.h>
+#include <mono/metadata/appdomain.h>
+#include <mono/metadata/mono-debug.h>
 
 #include <mono/metadata/mono-private-unstable.h>
 
@@ -39,6 +45,7 @@ int mono_wasm_register_root (char *start, size_t size, const char *name);
 void mono_wasm_deregister_root (char *addr);
 
 void mono_ee_interp_init (const char *opts);
+void mono_marshal_ilgen_init (void);
 void mono_marshal_lightweight_init (void);
 void mono_method_builder_ilgen_init (void);
 void mono_sgen_mono_ilgen_init (void);
@@ -244,6 +251,14 @@ int32_t SystemNative_Stat2(const char* path, FileStatus* output)
 		? 0x4000  // Dir
 		: 0x8000; // File
 
+	// Never fail when looking for the root directory. Even if the WASI host isn't giving us filesystem access
+	// (which is the default), we need the root directory to appear to exist, otherwise things like ASP.NET Core
+	// will fail by default, whether or not it needs to read anything from the filesystem.
+	if (ret != 0 && path[0] == '/' && path[1] == 0) {
+		output->Mode = 0x4000; // Dir
+		return 0;
+	}
+
 	//printf("SystemNative_Stat2 for %s has ISDIR=%i and will return mode %i; ret=%i\n", path, S_ISDIR (stat_result.st_mode), output->Mode, ret);
 
 	return ret;
@@ -316,6 +331,7 @@ wasm_dl_load (const char *name, int flags, char **err, void *user_data)
 		return SystemNativeImports;
 	if (!strcmp (name, "libSystem.Globalization.Native"))
 		return SystemGlobalizationNativeImports;
+
 	//printf("In wasm_dl_load for name %s but treating as NOT FOUND\n", name);
     return 0;
 }
@@ -394,7 +410,7 @@ cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
 }
 
 void
-mono_wasm_load_runtime (const char *unused, int debug_level)
+mono_wasm_load_runtime (const char *argv, int debug_level)
 {
 	const char *interp_opts = "";
 
@@ -412,6 +428,18 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
     // corlib assemblies.
 	monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
 #endif
+	char* debugger_fd = monoeg_g_getenv ("DEBUGGER_FD");
+	if (debugger_fd != 0)
+	{
+		const char *debugger_str = "--debugger-agent=transport=wasi_socket,debugger_fd=%-2s,loglevel=0";
+		char *debugger_str_with_fd = (char *)malloc (sizeof (char) * (strlen(debugger_str) + strlen(debugger_fd) + 1));
+		snprintf (debugger_str_with_fd, strlen(debugger_str) + strlen(debugger_fd) + 1, debugger_str, debugger_fd);
+		mono_jit_parse_options (1, &debugger_str_with_fd);
+		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
+		// Disable optimizations which interfere with debugging
+		interp_opts = "-all";
+		free (debugger_str_with_fd);
+	}
 	// When the list of app context properties changes, please update RuntimeConfigReservedProperties for
 	// target _WasmGenerateRuntimeConfig in WasmApp.targets file
 	const char *appctx_keys[2];
@@ -452,20 +480,8 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	mono_jit_set_aot_mode (MONO_AOT_MODE_INTERP_ONLY);
 
-	/*
-	 * debug_level > 0 enables debugging and sets the debug log level to debug_level
-	 * debug_level == 0 disables debugging and enables interpreter optimizations
-	 * debug_level < 0 enabled debugging and disables debug logging.
-	 *
-	 * Note: when debugging is enabled interpreter optimizations are disabled.
-	 */
-	if (debug_level) {
-		// Disable optimizations which interfere with debugging
-		interp_opts = "-all";
-		mono_wasm_enable_debugging (debug_level);
-	}
-
 	mono_ee_interp_init (interp_opts);
+	mono_marshal_lightweight_init ();
 	mono_marshal_ilgen_init ();
 	mono_method_builder_ilgen_init ();
 	mono_sgen_mono_ilgen_init ();
@@ -643,6 +659,7 @@ mono_wasm_string_get_utf8 (MonoString *str)
 	return mono_string_to_utf8 (str); //XXX JS is responsible for freeing this
 }
 
+MonoString *
 mono_wasm_string_from_js (const char *str)
 {
 	if (str)

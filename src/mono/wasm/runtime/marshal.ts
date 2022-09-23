@@ -2,16 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { js_owned_gc_handle_symbol, teardown_managed_proxy } from "./gc-handles";
-import { Module } from "./imports";
+import { Module, runtimeHelpers } from "./imports";
 import { getF32, getF64, getI16, getI32, getI64Big, getU16, getU32, getU8, setF32, setF64, setI16, setI32, setI64Big, setU16, setU32, setU8 } from "./memory";
-import { mono_wasm_new_external_root, WasmRoot } from "./roots";
-import { mono_assert, GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull } from "./types";
-import { CharPtr, NativePointer, TypedArray, VoidPtr } from "./types/emscripten";
+import { mono_wasm_new_external_root } from "./roots";
+import { mono_assert, GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerArguments, JSFunctionSignature, JSMarshalerType, JSMarshalerArgument, MarshalerToJs, MarshalerToCs, WasmRoot } from "./types";
+import { CharPtr, TypedArray, VoidPtr } from "./types/emscripten";
 
 export const cs_to_js_marshalers = new Map<MarshalerType, MarshalerToJs>();
 export const js_to_cs_marshalers = new Map<MarshalerType, MarshalerToCs>();
 export const bound_cs_function_symbol = Symbol.for("wasm bound_cs_function");
 export const bound_js_function_symbol = Symbol.for("wasm bound_js_function");
+export const imported_js_function_symbol = Symbol.for("wasm imported_js_function");
 
 /**
  * JSFunctionSignature is pointer to [
@@ -39,20 +40,15 @@ export const JavaScriptMarshalerArgSize = 16;
 export const JSMarshalerTypeSize = 32;
 export const JSMarshalerSignatureHeaderSize = 4 + 4; // without Exception and Result
 
-export interface JSMarshalerArguments extends NativePointer {
-    __brand: "JSMarshalerArguments"
-}
-
-export interface JSFunctionSignature extends NativePointer {
-    __brand: "JSFunctionSignatures"
-}
-
-export interface JSMarshalerType extends NativePointer {
-    __brand: "JSMarshalerType"
-}
-
-export interface JSMarshalerArgument extends NativePointer {
-    __brand: "JSMarshalerArgument"
+export function alloc_stack_frame(size: number): JSMarshalerArguments {
+    const anyModule = Module as any;
+    const args = anyModule.stackAlloc(JavaScriptMarshalerArgSize * size);
+    mono_assert(args && (<any>args) % 8 == 0, "Arg alignment");
+    const exc = get_arg(args, 0);
+    set_arg_type(exc, MarshalerType.None);
+    const res = get_arg(args, 1);
+    set_arg_type(res, MarshalerType.None);
+    return args;
 }
 
 export function get_arg(args: JSMarshalerArguments, index: number): JSMarshalerArgument {
@@ -321,13 +317,31 @@ export class ManagedObject implements IDisposable {
 }
 
 export class ManagedError extends Error implements IDisposable {
+    private superStack: any;
     constructor(message: string) {
         super(message);
+        this.superStack = Object.getOwnPropertyDescriptor(this, "stack"); // this works on Chrome
+        Object.defineProperty(this, "stack", {
+            get: this.getManageStack,
+        });
     }
 
-    get stack(): string | undefined {
-        //todo implement lazy managed stack strace from  this[js_owned_gc_handle_symbol]!
-        return super.stack;
+    getSuperStack() {
+        if (this.superStack) {
+            return this.superStack.value;
+        }
+        return super.stack; // this works on FF
+    }
+
+    getManageStack() {
+        const gc_handle = (<any>this)[js_owned_gc_handle_symbol];
+        if (gc_handle) {
+            const managed_stack = runtimeHelpers.javaScriptExports.get_managed_stack_trace(gc_handle);
+            if (managed_stack) {
+                return managed_stack + "\n" + this.getSuperStack();
+            }
+        }
+        return this.getSuperStack();
     }
 
     dispose(): void {
@@ -337,14 +351,7 @@ export class ManagedError extends Error implements IDisposable {
     get isDisposed(): boolean {
         return (<any>this)[js_owned_gc_handle_symbol] === GCHandleNull;
     }
-
-    toString(): string {
-        return `ManagedError(gc_handle: ${(<any>this)[js_owned_gc_handle_symbol]})`;
-    }
 }
-
-export type MarshalerToJs = (arg: JSMarshalerArgument, sig?: JSMarshalerType, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs) => any;
-export type MarshalerToCs = (arg: JSMarshalerArgument, value: any, sig?: JSMarshalerType, res_converter?: MarshalerToCs, arg1_converter?: MarshalerToJs, arg2_converter?: MarshalerToJs) => void;
 
 export function get_signature_marshaler(signature: JSFunctionSignature, index: number): JSHandle {
     mono_assert(signature, "Null signatures");

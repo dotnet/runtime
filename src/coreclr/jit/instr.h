@@ -140,7 +140,7 @@ enum insFlags : uint32_t
     // Avx
     INS_Flags_IsDstDstSrcAVXInstruction = 1 << 25,
     INS_Flags_IsDstSrcSrcAVXInstruction = 1 << 26,
-    
+
     // w and s bits
     INS_FLAGS_Has_Wbit = 1 << 27,
     INS_FLAGS_Has_Sbit = 1 << 28,
@@ -319,7 +319,7 @@ enum insOpts : unsigned
 enum insBarrier : unsigned
 {
     // TODO-LOONGARCH64-CQ: ALL there are the same value right now.
-    // These are reserved for future extention.
+    // These are reserved for future extension.
     // Because the LoongArch64 doesn't support these right now.
     INS_BARRIER_FULL  =  0,
     INS_BARRIER_WMB   =  INS_BARRIER_FULL,//4,

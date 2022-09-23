@@ -313,6 +313,14 @@ static void* SignalHandlerLoop(void* arg)
     free(arg);
     assert(pipeFd >= 0);
 
+    char* threadName = ".NET SigHandler";
+#if defined(__linux__) || defined(__FreeBSD__)
+    pthread_setname_np(pthread_self(), threadName);
+#endif
+#if defined(__APPLE__)
+    pthread_setname_np(threadName);
+#endif
+
     // Continually read a signal code from the signal pipe and process it,
     // until the pipe is closed.
     while (true)
@@ -468,7 +476,7 @@ void SystemNative_SetTerminalInvalidationHandler(TerminalInvalidationCallback ca
 {
     assert(callback != NULL);
     assert(g_terminalInvalidationCallback == NULL);
-    bool installed;
+    bool installed = false;
     (void)installed; // only used for assert
 
     pthread_mutex_lock(&lock);
@@ -489,7 +497,7 @@ void SystemNative_RegisterForSigChld(SigChldCallback callback)
 {
     assert(callback != NULL);
     assert(g_sigChldCallback == NULL);
-    bool installed;
+    bool installed = false;
     (void)installed; // only used for assert
 
     pthread_mutex_lock(&lock);
@@ -662,7 +670,7 @@ void InstallTTOUHandlerForConsole(ConsoleSigTtouHandler handler)
         // will stop it (default SIGTTOU action).
         // We change SIGTTOU's disposition to get EINTR instead.
         // This thread may be used to run a signal handler, which may write to
-        // stdout. We set SA_RESETHAND to avoid that handler's write loops infinitly
+        // stdout. We set SA_RESETHAND to avoid that handler's write loops infinitely
         // on EINTR when the process is running in background and the terminal
         // configured with TOSTOP.
         RestoreSignalHandler(SIGTTOU);
@@ -674,7 +682,7 @@ void InstallTTOUHandlerForConsole(ConsoleSigTtouHandler handler)
 
 void UninstallTTOUHandlerForConsole(void)
 {
-    bool installed;
+    bool installed = false;
     (void)installed; // only used for assert
     pthread_mutex_lock(&lock);
     {

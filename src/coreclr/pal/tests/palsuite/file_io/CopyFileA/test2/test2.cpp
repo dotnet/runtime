@@ -22,7 +22,7 @@ PALTEST(file_io_CopyFileA_test2_paltest_copyfilea_test2, "file_io/CopyFileA/test
     FILE* tempFile = NULL;
     DWORD temp;
     int retCode;
-    
+
     if (0 != PAL_Initialize(argc,argv))
     {
         return FAIL;
@@ -60,7 +60,7 @@ PALTEST(file_io_CopyFileA_test2_paltest_copyfilea_test2, "file_io/CopyFileA/test
             "failed with error code %ld. \n",
             GetLastError());
     }
-    
+
     /* make sure a file can't copy to itself
     first testing with IfFileExists flag set to true */
     bRc = CopyFileA(szSrcExisting,szSrcExisting,TRUE);
@@ -68,18 +68,18 @@ PALTEST(file_io_CopyFileA_test2_paltest_copyfilea_test2, "file_io/CopyFileA/test
     {
         Fail("ERROR: Cannot copy a file to itself, %u",GetLastError());
     }
-    
-    /* try to get file attributes of desitnation */
+
+    /* try to get file attributes of destination */
     if (GetFileAttributesA(szSrcExisting) == -1)
     {
         Fail("CopyFileA: GetFileAttributes of destination file "
             "failed with error code %ld. \n",
-            GetLastError());  
+            GetLastError());
     }
     else
     {
-        /* verify attributes of destination file to source file*/               
-     
+        /* verify attributes of destination file to source file*/
+
         if(temp != GetFileAttributes(szSrcExisting))
         {
             Fail("CopyFileA : The file attributes of the "
@@ -95,7 +95,7 @@ PALTEST(file_io_CopyFileA_test2_paltest_copyfilea_test2, "file_io/CopyFileA/test
     {
         Fail("ERROR: Cannot copy a file to itself, %u",GetLastError());
     }
-    
+
     if (GetFileAttributesA(szSrcExisting) == -1)
     {
         Fail("CopyFileA: GetFileAttributes of destination file "
@@ -104,8 +104,8 @@ PALTEST(file_io_CopyFileA_test2_paltest_copyfilea_test2, "file_io/CopyFileA/test
     }
     else
     {
-        /* verify attributes of destination file to source file*/               
-     
+        /* verify attributes of destination file to source file*/
+
         if(temp != GetFileAttributes(szSrcExisting))
         {
             Fail("CopyFileA : The file attributes of the "

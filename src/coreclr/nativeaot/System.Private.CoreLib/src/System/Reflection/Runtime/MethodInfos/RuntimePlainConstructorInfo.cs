@@ -78,8 +78,6 @@ namespace System.Reflection.Runtime.MethodInfos
         [DebuggerGuidedStepThrough]
         public sealed override object Invoke(BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
-            parameters ??= Array.Empty<object>();
-
             // Most objects are allocated by NewObject and their constructors return "void". But in many frameworks,
             // there are "weird" cases (e.g. String) where the constructor must do both the allocation and initialization.
             // Reflection.Core does not hardcode these special cases. It's up to the ExecutionEnvironment to steer

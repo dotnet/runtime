@@ -105,7 +105,6 @@ private:
             case TMPFS_MAGIC: return 1;
             case CGROUP2_SUPER_MAGIC: return 2;
             default:
-                assert(!"Unexpected file system type for /sys/fs/cgroup");
                 return 0;
         }
 #endif

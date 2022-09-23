@@ -36,7 +36,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(errorCode, (ProtocolErrors)protocolEx.ErrorCode);
         }
 
-        private async Task AssertProtocolErrorForIOExceptionAsync(Task task, ProtocolErrors errorCode)
+        private async Task AssertHttpProtocolException(Task task, ProtocolErrors errorCode)
         {
             HttpProtocolException protocolEx = await Assert.ThrowsAsync<HttpProtocolException>(() => task);
             Assert.Equal(errorCode, (ProtocolErrors)protocolEx.ErrorCode);
@@ -63,7 +63,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_ClientPreface_Sent()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -78,7 +77,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_InitialSettings_SentAndAcked()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -111,7 +109,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_DataSentBeforeServerPreface_ProtocolError()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -130,7 +127,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_StreamResetByServerBeforePrefix_RequestFailsWithGoawayProtocolError()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -162,7 +158,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_NoResponseBody_Success()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -183,7 +178,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_ZeroLengthResponseBody_Success()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -242,7 +236,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_ServerSendsValidSettingsValues_Success()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -278,7 +271,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(SettingId.MaxFrameSize, 16383)]
         [InlineData(SettingId.MaxFrameSize, 162777216)]
         [InlineData(SettingId.InitialWindowSize, 0x80000000)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_ServerSendsInvalidSettingsValue_Error(SettingId settingId, uint value)
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -291,12 +283,11 @@ namespace System.Net.Http.Functional.Tests
 
                 await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
 
-                connection.Dispose();
+                await connection.DisposeAsync();
             }
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_StreamResetByServerBeforeHeadersSent_RequestFails()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -316,7 +307,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_StreamResetByServerAfterHeadersSent_RequestFails()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -339,7 +329,31 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
+        public async Task Http2_StreamResetByServerAfterHeadersSent_ResponseHeadersRead_ContentThrows()
+        {
+            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address, HttpCompletionOption.ResponseHeadersRead);
+
+                Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+                int streamId = await connection.ReadRequestHeaderAsync();
+
+                // Send response headers and RST_STREAM combined
+                await connection.WriteFramesAsync(new Frame[] {
+                    new HeadersFrame(new byte[] { 0x88 /* :status: 200 */}, FrameFlags.EndHeaders, 0, 0, 0, streamId),
+                    new RstStreamFrame(FrameFlags.None, (int)ProtocolErrors.NO_ERROR, streamId)
+                });
+
+                // Headers should be received successfully
+                HttpResponseMessage response = await sendTask;
+
+                // Reading the actual content should throw
+                await AssertHttpProtocolException((await response.Content.ReadAsStreamAsync()).ReadAsync(new byte[10]).AsTask(), ProtocolErrors.NO_ERROR);
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_StreamResetByServerAfterPartialBodySent_RequestFails()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -364,7 +378,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GetAsync_StreamRefused_RequestIsRetried()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -400,7 +413,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsync_StreamRefused_RequestIsRetried()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -441,7 +453,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses delays")]
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GetAsync_SettingsFrameNotSentOnNewConnection_ClientApplies100StreamLimit()
         {
             const int DefaultMaxConcurrentStreams = 100;
@@ -493,7 +504,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses delays")]
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GetAsync_ServerDelaysSendingSettingsThenSetsLowerMaxConcurrentStreamsLimitThenIncreaseIt_ClientAppliesEachLimitChangeProperly()
         {
             const int DefaultMaxConcurrentStreams = 100;
@@ -554,7 +564,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses delays")]
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GetAsync_ServerSendSettingsWithoutMaxConcurrentStreams_ClientAppliesInfiniteLimit()
         {
             const int DefaultMaxConcurrentStreams = 100;
@@ -616,7 +625,6 @@ namespace System.Net.Http.Functional.Tests
         // "If a DATA frame is received whose stream identifier field is 0x0, the recipient MUST
         // respond with a connection error (Section 5.4.1) of type PROTOCOL_ERROR."
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task DataFrame_NoStream_ConnectionError()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -643,7 +651,6 @@ namespace System.Net.Http.Functional.Tests
         // "Receiving any frame other than HEADERS or PRIORITY on a stream in this state MUST
         // be treated as a connection error (Section 5.4.1) of type PROTOCOL_ERROR."
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task DataFrame_IdleStream_ConnectionError()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -670,7 +677,6 @@ namespace System.Net.Http.Functional.Tests
         // headers from the server on an idle stream. We fall back to treating this as a connection
         // level error, as we do for other unexpected frames on idle streams.
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task HeadersFrame_IdleStream_ConnectionError()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -738,7 +744,6 @@ namespace System.Net.Http.Functional.Tests
                 0, streamId);
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ResponseStreamFrames_ContinuationBeforeHeaders_ConnectionError()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -759,7 +764,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ResponseStreamFrames_DataBeforeHeaders_ConnectionError()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -780,7 +784,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ResponseStreamFrames_HeadersAfterHeadersWithoutEndHeaders_ConnectionError()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -802,7 +805,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ResponseStreamFrames_HeadersAfterHeadersAndContinuationWithoutEndHeaders_ConnectionError()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -825,7 +827,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ResponseStreamFrames_DataAfterHeadersWithoutEndHeaders_ConnectionError()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -847,7 +848,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ResponseStreamFrames_DataAfterHeadersAndContinuationWithoutEndHeaders_ConnectionError()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -873,7 +873,6 @@ namespace System.Net.Http.Functional.Tests
         // "An endpoint MUST treat a GOAWAY frame with a stream identifier other than 0x0 as a
         // connection error (Section 5.4.1) of type PROTOCOL_ERROR."
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GoAwayFrame_NonzeroStream_ConnectionError()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -897,7 +896,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GoAwayFrame_NewRequest_NewConnection()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -929,7 +927,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GoAwayFrame_ServerDisconnect_AbortStreams()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -957,7 +954,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GoAwayFrame_RequestWithBody_ServerDisconnect_AbortStreamsAndThrowIOException()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -990,7 +986,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GoAwayFrame_UnprocessedStreamFirstRequestFinishedFirst_RequestRestarted()
         {
             // This test case is similar to GoAwayFrame_UnprocessedStreamFirstRequestWaitsUntilSecondFinishes_RequestRestarted
@@ -1036,7 +1031,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GoAwayFrame_UnprocessedStreamFirstRequestWaitsUntilSecondFinishes_RequestRestarted()
         {
             using (await Watchdog.CreateAsync())
@@ -1079,7 +1073,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GoAwayFrame_RequestInFlight_Finished()
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -1125,7 +1118,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task DataFrame_TooLong_ConnectionError()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -1148,7 +1140,6 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalTheory(nameof(SupportsAlpn))]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task CompletedResponse_FrameReceived_Ignored(bool sendDataFrame)
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -1182,7 +1173,6 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalTheory(nameof(SupportsAlpn))]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task EmptyResponse_FrameReceived_Ignored(bool sendDataFrame)
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -1211,7 +1201,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task CompletedResponse_WindowUpdateFrameReceived_Success()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -1282,7 +1271,6 @@ namespace System.Net.Http.Functional.Tests
 
         [ConditionalTheory(nameof(SupportsAlpn))]
         [MemberData(nameof(ValidAndInvalidProtocolErrorsAndBool))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task ResetResponseStream_FrameReceived_Ignored(ProtocolErrors error, bool dataFrame)
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -1340,7 +1328,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GoAwayFrame_NoPendingStreams_ConnectionClosed()
         {
             using (await Watchdog.CreateAsync())
@@ -1362,7 +1349,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GoAwayFrame_AllPendingStreamsValid_RequestsSucceedAndConnectionClosed()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -1427,7 +1413,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task GoAwayFrame_AbortAllPendingStreams_StreamFailWithExpectedException()
         {
             using (await Watchdog.CreateAsync())
@@ -1536,7 +1521,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses Task.Delay")]
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_FlowControl_ClientDoesNotExceedWindows()
         {
             const int ContentSize = 100_000;
@@ -1629,7 +1613,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses Task.Delay")]
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_InitialWindowSize_ClientDoesNotExceedWindows()
         {
             const int ContentSize = DefaultInitialWindowSize + 1000;
@@ -1749,7 +1732,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(DefaultInitialWindowSize + 32 * 1024)]
         [InlineData(DefaultInitialWindowSize + 64 * 1024)]
         [InlineData(DefaultInitialWindowSize + 96 * 1024)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_SendOverStreamWindowSizeWithoutExplicitFlush_ClientSendsUpToFullWindowSize(int contentSize)
         {
             var content = new ByteArrayContent(new byte[contentSize]);
@@ -1803,7 +1785,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(DefaultInitialWindowSize + 32 * 1024)]
         [InlineData(DefaultInitialWindowSize + 64 * 1024)]
         [InlineData(DefaultInitialWindowSize + 96 * 1024)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_SendOverConnectionWindowSizeWithoutExplicitFlush_ClientSendsUpToFullWindowSize(int contentSize)
         {
             var content = new ByteArrayContent(new byte[contentSize]);
@@ -1852,7 +1833,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses Task.Delay")]
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_MaxConcurrentStreams_LimitEnforced()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -1921,7 +1901,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses Task.Delay")]
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_WaitingForStream_Cancellation()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -1971,7 +1950,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_WaitingOnWindowCredit_Cancellation()
         {
             // The goal of this test is to get the client into the state where it has sent the headers,
@@ -1979,8 +1957,7 @@ namespace System.Net.Http.Functional.Tests
             // to ensure the request is cancelled as expected.
             const int ContentSize = DefaultInitialWindowSize + 1;
 
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
 
             var content = new ByteAtATimeContent(ContentSize);
 
@@ -2019,7 +1996,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_PendingSend_Cancellation()
         {
             // The goal of this test is to get the client into the state where it is sending content,
@@ -2058,7 +2034,6 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses Task.Delay")]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_PendingSend_SendsReset(bool waitForData)
         {
             var cts = new CancellationTokenSource();
@@ -2071,7 +2046,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient())
                 {
                     var request = new HttpRequestMessage(HttpMethod.Post, url);
-                    request.Version = new Version(2,0);
+                    request.Version = new Version(2, 0);
                     request.Content = new CustomContent(stream);
 
                     await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await client.SendAsync(request, cts.Token));
@@ -2081,7 +2056,7 @@ namespace System.Net.Http.Functional.Tests
 
                     // Send another request to verify that connection is still functional.
                     request = new HttpRequestMessage(HttpMethod.Get, url);
-                    request.Version = new Version(2,0);
+                    request.Version = new Version(2, 0);
 
                     await client.SendAsync(request);
                 }
@@ -2090,12 +2065,13 @@ namespace System.Net.Http.Functional.Tests
             {
                 Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
 
-                (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody : false);
+                (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
                 int frameCount = 0;
                 Frame frame;
                 do
                 {
-                    if (frameCount == (waitForData ? 1 : 0)) {
+                    if (frameCount == (waitForData ? 1 : 0))
+                    {
                         // Cancel client after receiving Headers or part of request body.
                         cts.Cancel();
                     }
@@ -2103,7 +2079,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.NotNull(frame); // We should get Rst before closing connection.
                     Assert.Equal(0, (int)(frame.Flags & FrameFlags.EndStream));
                     frameCount++;
-                 } while (frame.Type != FrameType.RstStream);
+                } while (frame.Type != FrameType.RstStream);
 
                 Assert.Equal(1, frame.StreamId);
 
@@ -2128,7 +2104,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_PendingReceive_SendsReset(bool doRead)
         {
             var cts = new CancellationTokenSource();
@@ -2140,7 +2115,7 @@ namespace System.Net.Http.Functional.Tests
                 await Http2LoopbackServer.CreateClientAndServerAsync(async url =>
                 {
                     var request = new HttpRequestMessage(HttpMethod.Get, url);
-                    request.Version = new Version(2,0);
+                    request.Version = new Version(2, 0);
 
                     response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token);
                     using (Stream stream = await response.Content.ReadAsStreamAsync())
@@ -2174,7 +2149,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
 
-                    (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody : false);
+                    (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
                     _output.WriteLine($"{DateTime.Now} Connection established");
 
                     await connection.SendResponseHeadersAsync(streamId, endStream: false, HttpStatusCode.OK);
@@ -2198,7 +2173,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2Connection_Should_Wrap_HttpContent_InvalidOperationException()
         {
             // test for https://github.com/dotnet/runtime/issues/30187
@@ -2226,7 +2200,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2Connection_Should_Not_Wrap_HttpContent_CustomException()
         {
             // Assert existing HttpConnection behaviour in which custom HttpContent exception types are surfaced as-is
@@ -2259,7 +2232,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncExpect100Continue_SendRequest_Ok(bool send100Continue)
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(async url =>
@@ -2267,7 +2239,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient())
                 {
                     var request = new HttpRequestMessage(HttpMethod.Post, url);
-                    request.Version = new Version(2,0);
+                    request.Version = new Version(2, 0);
                     request.Content = new StringContent(new string('*', 3000));
                     request.Headers.ExpectContinue = true;
                     request.Headers.Add("x-test", $"PostAsyncExpect100Continue_SendRequest_Ok({send100Continue}");
@@ -2280,7 +2252,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
 
-                (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody : false);
+                (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
                 Assert.Equal("100-continue", requestData.GetSingleHeaderValue("Expect"));
 
                 if (send100Continue)
@@ -2295,22 +2267,20 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncExpect100Continue_NonSuccessResponse_RequestBodyNotSent()
         {
             string responseContent = "no no!";
 
             await Http2LoopbackServer.CreateClientAndServerAsync(async url =>
             {
-                using (var handler = new SocketsHttpHandler())
+                using (var handler = CreateSocketsHttpHandler(allowAllCertificates: true))
                 using (HttpClient client = CreateHttpClient(handler))
                 {
-                    handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
                     // Increase default Expect: 100-continue timeout to ensure that we don't accidentally fire the timer and send the request body.
                     handler.Expect100ContinueTimeout = TimeSpan.FromSeconds(300);
 
                     var request = new HttpRequestMessage(HttpMethod.Post, url);
-                    request.Version = new Version(2,0);
+                    request.Version = new Version(2, 0);
                     request.VersionPolicy = HttpVersionPolicy.RequestVersionExact;
                     request.Content = new StringContent(new string('*', 3000));
                     request.Headers.ExpectContinue = true;
@@ -2325,7 +2295,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
 
-                (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody : false);
+                (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
                 Assert.Equal("100-continue", requestData.GetSingleHeaderValue("Expect"));
 
                 // Reject content with 403.
@@ -2333,7 +2303,7 @@ namespace System.Net.Http.Functional.Tests
                 await connection.SendResponseBodyAsync(streamId, Encoding.ASCII.GetBytes(responseContent));
 
                 // Client should send empty request body
-                byte[] requestBody = await connection.ReadBodyAsync(expectEndOfStream:true);
+                byte[] requestBody = await connection.ReadBodyAsync(expectEndOfStream: true);
                 Assert.Null(requestBody);
 
                 await connection.ShutdownIgnoringErrorsAsync(streamId);
@@ -2427,7 +2397,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncDuplex_ClientSendsEndStream_Success()
         {
             byte[] contentBytes = "Hello world"u8.ToArray();
@@ -2488,7 +2457,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncDuplex_ServerSendsEndStream_Success()
         {
             byte[] contentBytes = "Hello world"u8.ToArray();
@@ -2576,9 +2544,7 @@ namespace System.Net.Http.Functional.Tests
 
             StreamingHttpContent requestContent = new StreamingHttpContent();
 
-            using var handler = new SocketsHttpHandler();
-            handler.SslOptions.RemoteCertificateValidationCallback = delegate { return true; };
-
+            using var handler = CreateSocketsHttpHandler(allowAllCertificates: true);
             using HttpClient client = new HttpClient(handler);
 
             HttpRequestMessage request = new(HttpMethod.Connect, server.Address);
@@ -2609,11 +2575,10 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(0, await responseStream.ReadAsync(readBuffer).AsTask().WaitAsync(TimeSpan.FromSeconds(10)));
 
             Assert.NotNull(connection);
-            connection.Dispose();
+            await connection.DisposeAsync();
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncDuplex_RequestContentException_ResetsStream()
         {
             byte[] contentBytes = "Hello world"u8.ToArray();
@@ -2671,7 +2636,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncDuplex_RequestContentExceptionAfterResponseEndReceivedButBeforeConsumed_ResetsStreamAndThrowsOnResponseStreamRead()
         {
             byte[] contentBytes = "Hello world"u8.ToArray();
@@ -2736,7 +2700,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses Task.Delay")]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncDuplex_CancelledBeforeResponseHeadersReceived_ResetsStream()
         {
             byte[] contentBytes = "Hello world"u8.ToArray();
@@ -2793,7 +2756,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncDuplex_ServerResetsStream_Throws()
         {
             byte[] contentBytes = "Hello world"u8.ToArray();
@@ -2838,7 +2800,7 @@ namespace System.Net.Http.Functional.Tests
                     await connection.WriteFrameAsync(new RstStreamFrame(FrameFlags.None, (int)ProtocolErrors.ENHANCE_YOUR_CALM, streamId));
 
                     // Trying to read on the response stream should fail now, and client should ignore any data received
-                    await AssertProtocolErrorForIOExceptionAsync(SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId), ProtocolErrors.ENHANCE_YOUR_CALM);
+                    await AssertHttpProtocolException(SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId), ProtocolErrors.ENHANCE_YOUR_CALM);
 
                     // Attempting to write on the request body should now fail with IOException.
                     Exception e = await Assert.ThrowsAnyAsync<IOException>(async () => { await SendAndReceiveRequestDataAsync(contentBytes, requestStream, connection, streamId); });
@@ -2855,7 +2817,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses Task.Delay")]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncDuplex_DisposeResponseBodyBeforeEnd_ResetsStreamAndThrowsOnRequestStreamWriteAndResponseStreamRead()
         {
             byte[] contentBytes = "Hello world"u8.ToArray();
@@ -2923,7 +2884,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses Task.Delay")]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncDuplex_DisposeResponseBodyAfterEndReceivedButBeforeConsumed_ResetsStreamAndThrowsOnRequestStreamWriteAndResponseStreamRead()
         {
             byte[] contentBytes = "Hello world"u8.ToArray();
@@ -2997,7 +2957,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses Task.Delay")]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncDuplex_FinishRequestBodyAndDisposeResponseBodyAfterEndReceivedButBeforeConsumed_DoesNotResetStream()
         {
             byte[] contentBytes = "Hello world"u8.ToArray();
@@ -3054,7 +3013,7 @@ namespace System.Net.Http.Functional.Tests
                     // Trying to read on the response stream should fail now, and client should ignore any data received
                     await Assert.ThrowsAsync<ObjectDisposedException>(async () => await SendAndReceiveResponseDataAsync(contentBytes, responseStream, connection, streamId));
 
-                    // Client should NOT send RST_STREAM. The stream was completed succesfully, but the remaining response data was discarded.
+                    // Client should NOT send RST_STREAM. The stream was completed successfully, but the remaining response data was discarded.
                 }
 
                 // On handler dispose, client should shutdown the connection without sending additional frames.
@@ -3063,7 +3022,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncDuplex_ServerCompletesResponseBodyThenResetsStreamWithNoError_SuccessAndRequestBodyCancelled()
         {
             // Per section 8.1 of the RFC:
@@ -3133,7 +3091,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task PostAsyncNonDuplex_ServerCompletesResponseBodyThenResetsStreamWithNoError_SuccessAndRequestBodyCancelled()
         {
             // Per section 8.1 of the RFC:
@@ -3186,7 +3143,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true, HttpStatusCode.OK)]
         [InlineData(false, HttpStatusCode.OK)]
         [OuterLoop("Uses Task.Delay")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_ConcurentSendReceive_Ok(bool shouldWaitForRequestBody, HttpStatusCode responseCode)
         {
             string requestContent = new string('*', 300);
@@ -3206,12 +3162,12 @@ namespace System.Net.Http.Functional.Tests
                     Task<HttpResponseMessage> responseTask = client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
                     connection = await server.EstablishConnectionAsync();
 
-                     // Client should have sent the request headers, and the request stream should now be available
+                    // Client should have sent the request headers, and the request stream should now be available
                     Stream requestStream = await duplexContent.WaitForStreamAsync();
                     // Flush the content stream. Otherwise, the request headers are not guaranteed to be sent.
                     await requestStream.FlushAsync();
 
-                    (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody : false);
+                    (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
 
                     // Client finished sending request headers and we received them.
                     // Send request body.
@@ -3240,7 +3196,7 @@ namespace System.Net.Http.Functional.Tests
 
                     // Send trailing headers for good measure and close stream.
                     var headers = new HttpHeaderData[] { new HttpHeaderData("x-last", "done") };
-                    await connection.SendResponseHeadersAsync(streamId, endStream: true, isTrailingHeader : true, headers: headers);
+                    await connection.SendResponseHeadersAsync(streamId, endStream: true, isTrailingHeader: true, headers: headers);
 
                     // Finish reading response body and verify it for all cases.
                     string responseBody = await response.Content.ReadAsStringAsync();
@@ -3254,13 +3210,12 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [OuterLoop("Uses Task.Delay")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_ConcurentSendReceive_Fail()
         {
             TaskCompletionSource<bool> tsc = new TaskCompletionSource<bool>();
             string requestContent = new string('*', 300);
             const string responseContent = "SendAsync_ConcurentSendReceive_Fail";
-            var stream = new CustomContent.SlowTestStream(Encoding.UTF8.GetBytes(requestContent), tsc, trigger : 1, count : 50);
+            var stream = new CustomContent.SlowTestStream(Encoding.UTF8.GetBytes(requestContent), tsc, trigger: 1, count: 50);
             bool stopSending = false;
 
             await Http2LoopbackServer.CreateClientAndServerAsync(async url =>
@@ -3268,7 +3223,7 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient())
                 {
                     var request = new HttpRequestMessage(HttpMethod.Post, url);
-                    request.Version = new Version(2,0);
+                    request.Version = new Version(2, 0);
                     request.Content = new CustomContent(stream);
 
                     // This should fail either while getting response headers or while reading response body.
@@ -3288,7 +3243,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
 
-                (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody : false);
+                (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody: false);
                 await connection.SendResponseHeadersAsync(streamId, endStream: false, HttpStatusCode.OK);
 
                 // Wait for client so start sending body.
@@ -3297,7 +3252,7 @@ namespace System.Net.Http.Functional.Tests
                 int maxCount = 120;
                 while (!stopSending && maxCount != 0)
                 {
-                   try
+                    try
                     {
                         await connection.SendResponseDataAsync(streamId, Encoding.ASCII.GetBytes(responseContent), endStream: false);
                     }
@@ -3308,7 +3263,7 @@ namespace System.Net.Http.Functional.Tests
                         break;
                     }
                     await Task.Delay(500);
-                    maxCount --;
+                    maxCount--;
                 }
                 // We should not reach retry limit without failing.
                 Assert.NotEqual(0, maxCount);
@@ -3327,7 +3282,6 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [OuterLoop("Waits for seconds for events that shouldn't happen")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SendAsync_StreamContentRequestBody_WaitsForRequestBodyToComplete()
         {
             var waitToSendRequestBody = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -3377,12 +3331,9 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2_ProtocolMismatch_Throws()
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
+            HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
             using (HttpClient client = CreateHttpClient())
             {
                 // Create HTTP/1.1 loopback server and advertise HTTP2 via ALPN.
@@ -3414,7 +3365,6 @@ namespace System.Net.Http.Functional.Tests
 
         // rfc7540 8.1.2.3.
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2GetAsync_MultipleStatusHeaders_Throws()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -3425,14 +3375,13 @@ namespace System.Net.Http.Functional.Tests
 
                 Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
                 int streamId = await connection.ReadRequestHeaderAsync();
-                await connection.SendResponseHeadersAsync(streamId, endStream : true, headers: headers);
+                await connection.SendResponseHeadersAsync(streamId, endStream: true, headers: headers);
                 await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
             }
         }
 
         // rfc7540 8.1.2.3.
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2GetAsync_StatusHeaderNotFirst_Throws()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -3443,7 +3392,7 @@ namespace System.Net.Http.Functional.Tests
 
                 Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
                 int streamId = await connection.ReadRequestHeaderAsync();
-                await connection.SendResponseHeadersAsync(streamId, endStream : true, isTrailingHeader : true, headers: headers);
+                await connection.SendResponseHeadersAsync(streamId, endStream: true, isTrailingHeader: true, headers: headers);
 
                 await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
             }
@@ -3451,7 +3400,6 @@ namespace System.Net.Http.Functional.Tests
 
         // rfc7540 8.1.2.3.
         [ConditionalFact(nameof(SupportsAlpn))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2GetAsync_TrailigPseudo_Throw()
         {
             using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
@@ -3464,7 +3412,7 @@ namespace System.Net.Http.Functional.Tests
                 int streamId = await connection.ReadRequestHeaderAsync();
                 await connection.SendDefaultResponseHeadersAsync(streamId);
                 await connection.SendResponseDataAsync(streamId, "hello"u8.ToArray(), endStream: false);
-                await connection.SendResponseHeadersAsync(streamId, endStream : true, isTrailingHeader : true, headers: headers);
+                await connection.SendResponseHeadersAsync(streamId, endStream: true, isTrailingHeader: true, headers: headers);
 
                 await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
             }
@@ -3474,7 +3422,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task Http2SendAsync_LargeHeaders_CorrectlyWritten(int continuationCount)
         {
             // Intentionally larger than 2x16K in total because that's the limit that will trigger a CONTINUATION frame in HTTP2.
@@ -3518,7 +3465,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task InboundWindowSize_Exceeded_Throw()
         {
             var semaphore = new SemaphoreSlim(0);
@@ -3596,7 +3542,6 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [OuterLoop("Uses Task.Delay")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task SocketSendQueueFull_RequestCanceled_ThrowsOperationCanceled()
         {
             TaskCompletionSource clientComplete = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -3638,7 +3583,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task MaxResponseHeadersLength_Exact_Success(bool huffmanEncode)
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(
@@ -3669,7 +3613,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task MaxResponseHeadersLength_Exceeded_Throws(bool huffmanEncode)
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(
@@ -3699,7 +3642,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task MaxResponseHeadersLength_Malicious_Throws()
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(
@@ -3727,7 +3669,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task DynamicTableSizeUpdate_Exceeds_Settings_Throws()
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(
@@ -3753,7 +3694,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task DynamicTable_Reuse_Concat()
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(
@@ -3784,7 +3724,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task DynamicTable_Resize_Success()
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(
@@ -3863,7 +3802,6 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(DynamicTable_Data))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69870", TestPlatforms.Android)]
         public async Task DynamicTable_Receipt_Success(IEnumerable<HttpHeaderData> headers)
         {
             await Http2LoopbackServer.CreateClientAndServerAsync(

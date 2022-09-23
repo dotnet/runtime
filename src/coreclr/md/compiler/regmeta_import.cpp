@@ -20,7 +20,6 @@
 #include "mdlog.h"
 #include "importhelper.h"
 #include "filtermanager.h"
-#include "mdperf.h"
 #include "switches.h"
 #include "posterror.h"
 #include "stgio.h"
@@ -96,7 +95,6 @@ HRESULT CountEnum(
     // No need to lock this function.
 
     LOG((LOGMD, "RegMeta::CountEnum(0x%08x, 0x%08x)\n", hEnum, pulCount));
-    START_MD_PERF();
 
     _ASSERTE( pulCount );
 
@@ -116,7 +114,6 @@ HRESULT CountEnum(
     else
         *pulCount = pmdEnum->m_ulCount;
 ErrExit:
-    STOP_MD_PERF(CountEnum);
     return hr;
 } // ::CountEnum
 
@@ -148,7 +145,6 @@ STDMETHODIMP RegMeta::ResetEnum(
     // No need to lock this function.
 
     LOG((LOGMD, "RegMeta::ResetEnum(0x%08x, 0x%08x)\n", hEnum, ulPos));
-    START_MD_PERF();
 
     if (pmdEnum == NULL)
         goto ErrExit;
@@ -156,7 +152,6 @@ STDMETHODIMP RegMeta::ResetEnum(
     pmdEnum->u.m_ulCur = pmdEnum->u.m_ulStart + ulPos;
 
 ErrExit:
-    STOP_MD_PERF(ResetEnum);
     END_ENTRYPOINT_NOTHROW;
     return hr;
 } // RegMeta::ResetEnum
@@ -179,7 +174,6 @@ STDMETHODIMP RegMeta::EnumTypeDefs(
 
     LOG((LOGMD, "RegMeta::EnumTypeDefs(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
             phEnum, rTypeDefs, cMax, pcTypeDefs));
-    START_MD_PERF();
     LOCKREAD();
 
 
@@ -222,14 +216,13 @@ STDMETHODIMP RegMeta::EnumTypeDefs(
         pEnum = NULL;
     }
 
-    // we can only fill the minimun of what caller asked for or what we have left
+    // we can only fill the minimum of what caller asked for or what we have left
     hr = HENUMInternal::EnumWithCount(*ppmdEnum, cMax, rTypeDefs, pcTypeDefs);
 
 ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
     HENUMInternal::DestroyEnum(pEnum);
 
-    STOP_MD_PERF(EnumTypeDefs);
 
     END_ENTRYPOINT_NOTHROW;
 
@@ -259,7 +252,6 @@ STDMETHODIMP RegMeta::EnumInterfaceImpls(
 
     LOG((LOGMD, "RegMeta::EnumInterfaceImpls(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
             phEnum, td, rImpls, cMax, pcImpls));
-    START_MD_PERF();
     LOCKREAD();
 
     _ASSERTE(TypeFromToken(td) == mdtTypeDef);
@@ -306,7 +298,6 @@ ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
     HENUMInternal::DestroyEnum(pEnum);
 
-    STOP_MD_PERF(EnumInterfaceImpls);
 
     END_ENTRYPOINT_NOTHROW;
 
@@ -331,7 +322,6 @@ STDMETHODIMP RegMeta::EnumGenericParams(HCORENUM *phEnum, mdToken tkOwner,
 
     LOG((LOGMD, "RegMeta::EnumGenericParams(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
             phEnum, tkOwner, rTokens, cMaxTokens, pcTokens));
-    START_MD_PERF();
     LOCKREAD();
 
     pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -400,7 +390,6 @@ ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
     HENUMInternal::DestroyEnum(pEnum);
 
-    STOP_MD_PERF(EnumGenericPars);
     END_ENTRYPOINT_NOTHROW;
 
     return hr;
@@ -427,7 +416,6 @@ STDMETHODIMP RegMeta::EnumMethodSpecs(
 
     LOG((LOGMD, "RegMeta::EnumMethodSpecs(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
             phEnum, tkOwner, rTokens, cMaxTokens, pcTokens));
-    START_MD_PERF();
     LOCKREAD();
 
     pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -504,7 +492,6 @@ ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
     HENUMInternal::DestroyEnum(pEnum);
 
-    STOP_MD_PERF(EnumMethodSpecs);
     END_ENTRYPOINT_NOTHROW;
 
     return hr;
@@ -531,7 +518,6 @@ STDMETHODIMP RegMeta::EnumGenericParamConstraints(
 
     LOG((LOGMD, "RegMeta::EnumGenericParamConstraints(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
             phEnum, tkOwner, rTokens, cMaxTokens, pcTokens));
-    START_MD_PERF();
     LOCKREAD();
 
     pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -592,7 +578,6 @@ ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
     HENUMInternal::DestroyEnum(pEnum);
 
-    STOP_MD_PERF(EnumGenericParamConstraints);
     END_ENTRYPOINT_NOTHROW;
 
     return hr;
@@ -619,7 +604,6 @@ STDMETHODIMP RegMeta::EnumTypeRefs(
 
     LOG((LOGMD, "RegMeta::EnumTypeRefs(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
             phEnum, rTypeRefs, cMax, pcTypeRefs));
-    START_MD_PERF();
     LOCKREAD();
 
     if ( pEnum == 0 )
@@ -641,7 +625,6 @@ ErrExit:
     HENUMInternal::DestroyEnumIfEmpty(ppmdEnum);
 
 
-    STOP_MD_PERF(EnumTypeRefs);
     END_ENTRYPOINT_NOTHROW;
 
     return hr;
@@ -660,7 +643,6 @@ STDMETHODIMP RegMeta::FindTypeDefByName(// S_OK or error.
 
     LOG((LOGMD, "{%08x} RegMeta::FindTypeDefByName(%S, 0x%08x, 0x%08x)\n",
             this, MDSTR(wzTypeDef), tkEnclosingClass, ptd));
-    START_MD_PERF();
     LOCKREAD();
 
 
@@ -688,7 +670,6 @@ STDMETHODIMP RegMeta::FindTypeDefByName(// S_OK or error.
                                         ptd);
 ErrExit:
 
-    STOP_MD_PERF(FindTypeDefByName);
     END_ENTRYPOINT_NOTHROW;
 
     return hr;
@@ -713,7 +694,6 @@ STDMETHODIMP RegMeta::GetScopeProps(
 
     LOG((LOGMD, "RegMeta::GetScopeProps(%S, 0x%08x, 0x%08x, 0x%08x)\n",
             MDSTR(szName), cchName, pchName, pmvid));
-    START_MD_PERF();
     LOCKREAD();
 
     // there is only one module record
@@ -728,7 +708,6 @@ STDMETHODIMP RegMeta::GetScopeProps(
         IfFailGo( pMiniMd->getNameOfModule(pModuleRec, szName, cchName, pchName) );
 ErrExit:
 
-    STOP_MD_PERF(GetScopeProps);
     END_ENTRYPOINT_NOTHROW;
 
     return hr;
@@ -744,7 +723,6 @@ STDMETHODIMP RegMeta::GetModuleFromScope(// S_OK.
     BEGIN_ENTRYPOINT_NOTHROW;
 
     LOG((LOGMD, "RegMeta::GetModuleFromScope(0x%08x)\n", pmd));
-    START_MD_PERF();
 
     _ASSERTE(pmd);
 
@@ -752,7 +730,6 @@ STDMETHODIMP RegMeta::GetModuleFromScope(// S_OK.
 
     *pmd = TokenFromRid(1, mdtModule);
 
-    STOP_MD_PERF(GetModuleFromScope);
     END_ENTRYPOINT_NOTHROW;
 
     return hr;
@@ -773,7 +750,6 @@ HRESULT RegMeta::IsGlobal(              // S_OK ir error.
     mdToken     tkParent;               // Parent of field or method.
 
     LOG((LOGMD, "RegMeta::GetTokenForGlobalType(0x%08x, %08x)\n", tk, pbGlobal));
-    //START_MD_PERF();
 
     // No need to lock this function.
 
@@ -812,7 +788,6 @@ HRESULT RegMeta::IsGlobal(              // S_OK ir error.
     }
 
 ErrExit:
-    //STOP_MD_PERF(GetModuleFromScope);
     END_ENTRYPOINT_NOTHROW;
 
     return hr;
@@ -841,7 +816,6 @@ RegMeta::GetTypeDefProps(
     LOG((LOGMD, "{%08x} RegMeta::GetTypeDefProps(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
             this, td, szTypeDef, cchTypeDef, pchTypeDef,
             pdwTypeDefFlags, ptkExtends));
-    START_MD_PERF();
     LOCKREAD();
 
     if (TypeFromToken(td) != mdtTypeDef)
@@ -922,7 +896,6 @@ RegMeta::GetTypeDefProps(
 ErrExit:
     END_ENTRYPOINT_NOTHROW;
 
-    STOP_MD_PERF(GetTypeDefProps);
 
     return hr;
 } // RegMeta::GetTypeDefProps
@@ -946,7 +919,6 @@ STDMETHODIMP RegMeta::GetInterfaceImplProps(        // S_OK or error.
 
     LOG((LOGMD, "RegMeta::GetInterfaceImplProps(0x%08x, 0x%08x, 0x%08x)\n",
             iiImpl, pClass, ptkIface));
-    START_MD_PERF();
     LOCKREAD();
 
     _ASSERTE(TypeFromToken(iiImpl) == mdtInterfaceImpl);
@@ -964,7 +936,6 @@ STDMETHODIMP RegMeta::GetInterfaceImplProps(        // S_OK or error.
     }
 
 ErrExit:
-    STOP_MD_PERF(GetInterfaceImplProps);
     END_ENTRYPOINT_NOTHROW;
 
     return hr;
@@ -992,7 +963,6 @@ RegMeta::GetTypeRefProps(
     LOG((LOGMD, "RegMeta::GetTypeRefProps(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
         tr, ptkResolutionScope, szTypeRef, cchTypeRef, pchTypeRef));
 
-    START_MD_PERF();
     LOCKREAD();
 
     if (TypeFromToken(tr) != mdtTypeRef)
@@ -1060,7 +1030,6 @@ RegMeta::GetTypeRefProps(
     }
 
 ErrExit:
-    STOP_MD_PERF(GetTypeRefProps);
     END_ENTRYPOINT_NOTHROW;
     return hr;
 } // RegMeta::GetTypeRefProps
@@ -1088,7 +1057,6 @@ STDMETHODIMP RegMeta::FindTypeRef(      // S_OK or error.
 
     LOG((LOGMD, "RegMeta::FindTypeRef(0x%8x, %ls, 0x%08x)\n",
             tkResolutionScope, MDSTR(wzTypeName), ptk));
-    START_MD_PERF();
     LOCKREAD();
 
     // Convert the  name to UTF8.
@@ -1103,7 +1071,6 @@ STDMETHODIMP RegMeta::FindTypeRef(      // S_OK or error.
                                          ptk);
 ErrExit:
 
-    STOP_MD_PERF(FindTypeRef);
     END_ENTRYPOINT_NOTHROW;
 
     return hr;

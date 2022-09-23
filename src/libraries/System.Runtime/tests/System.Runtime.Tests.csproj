@@ -111,6 +111,8 @@
     <Compile Include="System\NullableMetadataTests.cs" />
     <Compile Include="System\NullableTests.cs" />
     <Compile Include="System\NullReferenceExceptionTests.cs" />
+    <Compile Include="System\Numerics\IExponentialFunctionsTests.cs" />
+    <Compile Include="System\Numerics\IFloatingPointTests.cs" />
     <Compile Include="System\ObjectTests.cs" />
     <Compile Include="System\ObjectDisposedExceptionTests.cs" />
     <Compile Include="System\ObsoleteAttributeTests.cs" />
@@ -226,6 +228,7 @@
     <Compile Include="System\Reflection\TypeDelegatorTests.cs" />
     <Compile Include="System\Reflection\TypeTests.Get.CornerCases.cs" />
     <Compile Include="System\Reflection\TypeTests.GetMember.cs" />
+    <Compile Include="System\Runtime\ControlledExecutionTests.cs" />
     <Compile Include="System\Runtime\DependentHandleTests.cs" />
     <Compile Include="System\Runtime\JitInfoTests.cs" />
     <Compile Include="System\Runtime\MemoryFailPointTests.cs" />
@@ -261,6 +264,8 @@
 
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\GenericMathHelpers.cs" Link="Common\System\GenericMathHelpers.cs" />
+    <Compile Include="System\Numerics\GenericMathDimHelpers.cs" />
+    <Compile Include="System\Numerics\IBinaryNumberTests.cs" />
     <Compile Include="System\ByteTests.GenericMath.cs" />
     <Compile Include="System\CharTests.GenericMath.cs" />
     <Compile Include="System\DecimalTests.GenericMath.cs" />

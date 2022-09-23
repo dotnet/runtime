@@ -109,7 +109,7 @@ namespace ILCompiler.DependencyAnalysis
             if (!IsMethodEligibleForTracking(factory, method))
                 return;
 
-            dependencies = dependencies ?? new DependencyList();
+            dependencies ??= new DependencyList();
 
             // Method entry point dependency
             bool getUnboxingStub = method.OwningType.IsValueType && !method.Signature.IsStatic;

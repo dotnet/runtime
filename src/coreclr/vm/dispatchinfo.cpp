@@ -60,7 +60,7 @@ inline UPTR DispID2HashKey(DISPID DispID)
     return DispID + 2;
 }
 
-// Typedef for string comparition functions.
+// Typedef for string comparison functions.
 typedef int (__cdecl *UnicodeStringCompareFuncPtr)(const WCHAR *, const WCHAR *);
 
 //--------------------------------------------------------------------------------
@@ -1144,7 +1144,7 @@ DispatchMemberInfo* DispatchInfo::FindMember(SString& strName, BOOL bCaseSensiti
         pCurrMemberInfo = pCurrMemberInfo->m_pNext;
     }
 
-    // No member has been found with the coresponding name.
+    // No member has been found with the corresponding name.
     RETURN NULL;
 }
 

@@ -58,6 +58,7 @@ namespace ILCompiler
         public bool MapCsv;
         public bool PrintReproInstructions;
         public bool Pdb;
+        public bool SupportIbc;
         public string PdbPath;
         public bool PerfMap;
         public string PerfMapPath;
@@ -92,7 +93,14 @@ namespace ILCompiler
             NonLocalGenericsModule = "";
 
             PerfMapFormatVersion = DefaultPerfMapFormatVersion;
-            Parallelism = Environment.ProcessorCount;
+            // Limit parallelism to 24 wide at most by default, more parallelism is unlikely to improve compilation speed
+            // as many portions of the process are single threaded, and is known to use excessive memory.
+            Parallelism = Math.Min(24, Environment.ProcessorCount);
+
+            // On 32bit platforms restrict it more, as virtual address space is quite limited
+            if (!Environment.Is64BitProcess)
+                Parallelism = Math.Min(4, Parallelism);
+
             SingleMethodGenericArg = null;
 
             // These behaviors default to enabled
@@ -149,6 +157,7 @@ namespace ILCompiler
                 syntax.DefineOption("systemmodule", ref SystemModule, SR.SystemModuleOverrideOption);
                 syntax.DefineOption("waitfordebugger", ref WaitForDebugger, SR.WaitForDebuggerOption);
                 syntax.DefineOptionList("codegenopt|codegen-options", ref CodegenOptions, SR.CodeGenOptions);
+                syntax.DefineOption("support-ibc", ref SupportIbc, SR.SupportIbc);
                 syntax.DefineOption("resilient", ref Resilient, SR.ResilientOption);
                 syntax.DefineOption("imagebase", ref ImageBase, SR.ImageBase);
 

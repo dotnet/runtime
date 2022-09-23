@@ -100,14 +100,14 @@ namespace System.Xml.Serialization
             set { _topLevelInSchema = value; }
         }
 
-        [return: NotNullIfNotNull("name")]
+        [return: NotNullIfNotNull(nameof(name))]
         internal static string? EscapeName(string? name)
         {
             if (name == null || name.Length == 0) return name;
             return XmlConvert.EncodeLocalName(name);
         }
 
-        [return: NotNullIfNotNull("name")]
+        [return: NotNullIfNotNull(nameof(name))]
         internal static string? EscapeQName(string? name)
         {
             if (name == null || name.Length == 0) return name;
@@ -122,7 +122,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        [return: NotNullIfNotNull("name")]
+        [return: NotNullIfNotNull(nameof(name))]
         internal static string? UnescapeName(string? name)
         {
             return XmlConvert.DecodeName(name);

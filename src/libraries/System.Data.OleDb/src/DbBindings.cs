@@ -293,7 +293,7 @@ namespace System.Data.OleDb
                 }
                 else
                 {
-                    // always set ouput only and return value parameter values to null when executing
+                    // always set output only and return value parameter values to null when executing
                     parameters[i].Value = null;
 
                     //columnBindings[i].SetValueEmpty();

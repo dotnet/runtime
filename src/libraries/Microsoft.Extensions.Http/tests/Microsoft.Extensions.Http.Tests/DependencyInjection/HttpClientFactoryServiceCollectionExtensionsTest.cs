@@ -958,9 +958,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 client.Service,
                 request.Properties[nameof(SingletonService)]);
 #else
-#nullable enable
             request.Options.TryGetValue(new HttpRequestOptionsKey<SingletonService>(nameof(SingletonService)), out SingletonService? optService);
-#nullable disable
+
             Assert.Same(
                 services.GetRequiredService<SingletonService>(),
                 optService);
@@ -1006,9 +1005,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     client.Service,
                     request.Properties[nameof(SingletonService)]);
 #else
-#nullable enable
                 request.Options.TryGetValue(new HttpRequestOptionsKey<SingletonService>(nameof(SingletonService)), out SingletonService? optService);
-#nullable disable
 
                 Assert.Same(
                     services.GetRequiredService<SingletonService>(),
@@ -1080,9 +1077,8 @@ namespace Microsoft.Extensions.DependencyInjection
                     client.Service,
                     request.Properties[nameof(ScopedService)]);
 #else
-#nullable enable
                 request.Options.TryGetValue(new HttpRequestOptionsKey<ScopedService>(nameof(ScopedService)), out ScopedService? optService);
-#nullable disable
+
                 Assert.NotSame(
                     scope.ServiceProvider.GetRequiredService<ScopedService>(),
                     optService);
@@ -1127,9 +1123,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 client.Service,
                 request.Properties[nameof(TransientService)]);
 #else
-#nullable enable
             request.Options.TryGetValue(new HttpRequestOptionsKey<TransientService>(nameof(TransientService)), out TransientService? optService);
-#nullable disable
+
             Assert.NotSame(
                 services.GetRequiredService<TransientService>(),
                 optService);
@@ -1171,9 +1166,8 @@ namespace Microsoft.Extensions.DependencyInjection
                     client.Service,
                     request.Properties[nameof(TransientService)]);
 #else
-#nullable enable
-            request.Options.TryGetValue(new HttpRequestOptionsKey<TransientService>(nameof(TransientService)), out TransientService? optService);
-#nullable disable
+                request.Options.TryGetValue(new HttpRequestOptionsKey<TransientService>(nameof(TransientService)), out TransientService? optService);
+
                 Assert.NotSame(
                     services.GetRequiredService<TransientService>(),
                     optService);

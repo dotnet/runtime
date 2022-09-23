@@ -56,7 +56,7 @@ struct LikelyClassMethodHistogram
 };
 
 //------------------------------------------------------------------------
-// LikelyClassMethodHistogram::LikelyClassMethodHistgram: construct a new histogram
+// LikelyClassMethodHistogram::LikelyClassMethodHistogram: construct a new histogram
 //
 // Arguments:
 //    histogramEntries - pointer to the table portion of a ClassProfile* object (see corjit.h)

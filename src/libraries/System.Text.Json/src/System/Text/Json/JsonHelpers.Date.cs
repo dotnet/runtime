@@ -216,7 +216,7 @@ namespace System.Text.Json
             // Decimal fractions are allowed for hours, minutes and seconds (5.3.14).
             // We only allow fractions for seconds currently. Lower order components
             // can't follow, i.e. you can have T23.3, but not T23.3:04. There must be
-            // one digit, but the max number of digits is implemenation defined. We
+            // one digit, but the max number of digits is implementation defined. We
             // currently allow up to 16 digits of fractional seconds only. While we
             // support 16 fractional digits we only parse the first seven, anything
             // past that is considered a zero. This is to stay compatible with the

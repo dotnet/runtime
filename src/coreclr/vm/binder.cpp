@@ -17,7 +17,6 @@
 #include "customattribute.h"
 #include "debugdebugger.h"
 #include "dllimport.h"
-#include "nativeoverlapped.h"
 #include "clrvarargs.h"
 #include "sigbuilder.h"
 #include "olevariant.h"
@@ -407,7 +406,7 @@ Again:
 
 //------------------------------------------------------------------
 // Resolve type references in the hardcoded metasig.
-// Returns a new signature with type refences resolved.
+// Returns a new signature with type references resolved.
 //------------------------------------------------------------------
 void CoreLibBinder::BuildConvertedSignature(const BYTE* pSig, SigBuilder * pSigBuilder)
 {
@@ -502,7 +501,7 @@ void CoreLibBinder::TriggerGCUnderStress()
 #ifndef DACCESS_COMPILE
     _ASSERTE (GetThreadNULLOk());
     TRIGGERSGC ();
-    // Force a GC here because GetClass could trigger GC nondeterminsticly
+    // Force a GC here because GetClass could trigger GC nondeterministicly
     if (g_pConfig->GetGCStressLevel() != 0)
     {
         DEBUG_ONLY_REGION();
@@ -586,7 +585,7 @@ void CoreLibBinder::Check()
         else
         if (p->fieldName != NULL)
         {
-            // This assert will fire if there is DEFINE_FIELD_U macro without preceeding DEFINE_CLASS_U macro in corelib.h
+            // This assert will fire if there is DEFINE_FIELD_U macro without preceding DEFINE_CLASS_U macro in corelib.h
             _ASSERTE(pMT != NULL);
 
             FieldDesc * pFD = MemberLoader::FindField(pMT, p->fieldName, NULL, 0, NULL);

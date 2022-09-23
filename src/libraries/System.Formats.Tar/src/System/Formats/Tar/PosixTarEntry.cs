@@ -99,7 +99,7 @@ namespace System.Formats.Tar
         /// <remarks><see cref="GroupName"/> is only used in Unix platforms.</remarks>
         public string GroupName
         {
-            get => _header._gName;
+            get => _header._gName ?? string.Empty;
             set
             {
                 ArgumentNullException.ThrowIfNull(value);
@@ -114,7 +114,7 @@ namespace System.Formats.Tar
         /// <exception cref="ArgumentNullException">Cannot set a null user name.</exception>
         public string UserName
         {
-            get => _header._uName;
+            get => _header._uName ?? string.Empty;
             set
             {
                 ArgumentNullException.ThrowIfNull(value);

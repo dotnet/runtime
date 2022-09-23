@@ -179,8 +179,8 @@ HRESULT STDMETHODCALLTYPE CordbReferenceValue::GetExactType(ICorDebugType** ppTy
 {
     LOG((LF_CORDB, LL_INFO1000000, "CordbReferenceValue - GetExactType - IMPLEMENTED\n"));
     HRESULT hr = S_OK;
-    EX_TRY 
-    {    
+    EX_TRY
+    {
         if (m_pCordbType)
         {
             m_pCordbType->QueryInterface(IID_ICorDebugType, (void**)ppType);
@@ -291,7 +291,7 @@ HRESULT STDMETHODCALLTYPE CordbReferenceValue::GetExactType(ICorDebugType** ppTy
         m_pCordbType->QueryInterface(IID_ICorDebugType, (void**)ppType);
     }
     EX_CATCH_HRESULT(hr);
-__Exit:    
+__Exit:
     return hr;
 }
 
@@ -476,8 +476,8 @@ HRESULT STDMETHODCALLTYPE CordbObjectValue::GetVirtualMethodAndType(mdMemberRef 
 HRESULT STDMETHODCALLTYPE CordbObjectValue::GetLength(ULONG32* pcchString)
 {
     HRESULT hr = S_OK;
-    EX_TRY 
-    {    
+    EX_TRY
+    {
         if (m_debuggerId == -1)
             hr = S_FALSE;
         else if (m_type == ELEMENT_TYPE_STRING)
@@ -505,8 +505,8 @@ HRESULT STDMETHODCALLTYPE CordbObjectValue::GetLength(ULONG32* pcchString)
 HRESULT STDMETHODCALLTYPE CordbObjectValue::GetString(ULONG32 cchString, ULONG32* pcchString, WCHAR szString[])
 {
     HRESULT hr = S_OK;
-    EX_TRY 
-    {    
+    EX_TRY
+    {
         if (m_debuggerId == -1)
             hr = S_FALSE;
         else if (m_type == ELEMENT_TYPE_STRING)
@@ -541,11 +541,11 @@ HRESULT STDMETHODCALLTYPE CordbObjectValue::GetString(ULONG32 cchString, ULONG32
             }
             hr =  S_OK;
         }
-        else 
+        else
             hr = E_NOTIMPL;
     }
     EX_CATCH_HRESULT(hr);
-    return hr;    
+    return hr;
 }
 
 HRESULT STDMETHODCALLTYPE CordbObjectValue::CreateHandle(CorDebugHandleType type, ICorDebugHandleValue** ppHandle)
@@ -618,8 +618,8 @@ HRESULT STDMETHODCALLTYPE CordbObjectValue::GetFieldValue(ICorDebugClass*  pClas
 {
     LOG((LF_CORDB, LL_INFO1000000, "CordbObjectValue - GetFieldValue - IMPLEMENTED\n"));
     HRESULT hr = S_OK;
-    EX_TRY 
-    {    
+    EX_TRY
+    {
         if (m_debuggerId == -1)
             hr = S_FALSE;
         else {
@@ -672,8 +672,8 @@ int CordbObjectValue::GetTypeSize(int type)
 HRESULT CordbObjectValue::CreateCordbValue(Connection* conn, MdbgProtBuffer* pReply, ICorDebugValue** ppValue)
 {
     HRESULT hr = S_OK;
-    EX_TRY 
-    {    
+    EX_TRY
+    {
         CorElementType type = (CorElementType)m_dbgprot_decode_byte(pReply->p, &pReply->p, pReply->end);
         CordbContent   value;
 
@@ -1132,8 +1132,8 @@ HRESULT STDMETHODCALLTYPE CordbArrayValue::GetRank(ULONG32* pnRank)
 {
     LOG((LF_CORDB, LL_INFO1000000, "CordbArrayValue - GetRank - IMPLEMENTED\n"));
     HRESULT hr = S_OK;
-    EX_TRY 
-    {    
+    EX_TRY
+    {
         MdbgProtBuffer localbuf;
         m_dbgprot_buffer_init(&localbuf, 128);
         m_dbgprot_buffer_add_id(&localbuf, m_debuggerId);
@@ -1153,8 +1153,8 @@ HRESULT STDMETHODCALLTYPE CordbArrayValue::GetRank(ULONG32* pnRank)
 HRESULT STDMETHODCALLTYPE CordbArrayValue::GetCount(ULONG32* pnCount)
 {
     HRESULT hr = S_OK;
-    EX_TRY 
-    {    
+    EX_TRY
+    {
         MdbgProtBuffer localbuf;
         m_dbgprot_buffer_init(&localbuf, 128);
         m_dbgprot_buffer_add_id(&localbuf, m_debuggerId);
@@ -1180,15 +1180,15 @@ HRESULT STDMETHODCALLTYPE CordbArrayValue::GetDimensions(ULONG32 cdim, ULONG32 d
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE CordbArrayValue::HasBaseIndicies(BOOL* pbHasBaseIndicies)
+HRESULT STDMETHODCALLTYPE CordbArrayValue::HasBaseIndices(BOOL* pbHasBaseIndices)
 {
-    LOG((LF_CORDB, LL_INFO100000, "CordbArrayValue - HasBaseIndicies - NOT IMPLEMENTED\n"));
+    LOG((LF_CORDB, LL_INFO100000, "CordbArrayValue - HasBaseIndices - NOT IMPLEMENTED\n"));
     return S_OK;
 }
 
-HRESULT STDMETHODCALLTYPE CordbArrayValue::GetBaseIndicies(ULONG32 cdim, ULONG32 indicies[])
+HRESULT STDMETHODCALLTYPE CordbArrayValue::GetBaseIndices(ULONG32 cdim, ULONG32 indices[])
 {
-    LOG((LF_CORDB, LL_INFO100000, "CordbArrayValue - GetBaseIndicies - NOT IMPLEMENTED\n"));
+    LOG((LF_CORDB, LL_INFO100000, "CordbArrayValue - GetBaseIndices - NOT IMPLEMENTED\n"));
     return E_NOTIMPL;
 }
 
@@ -1196,7 +1196,7 @@ HRESULT STDMETHODCALLTYPE CordbArrayValue::GetElement(ULONG32 cdim, ULONG32 indi
 {
     LOG((LF_CORDB, LL_INFO1000000, "CordbArrayValue - GetElement - IMPLEMENTED\n"));
     HRESULT hr = S_OK;
-    EX_TRY 
+    EX_TRY
     {
         MdbgProtBuffer localbuf;
         m_dbgprot_buffer_init(&localbuf, 128);

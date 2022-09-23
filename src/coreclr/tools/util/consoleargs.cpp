@@ -846,7 +846,7 @@ bool ConsoleArgs::ReadTextFile(LPCWSTR pwzFilename, _Outptr_ LPWSTR *ppwzTextBuf
     else
     {
         //
-        // File is formated as ANSI or UTF-8 and needs converting to UTF-16
+        // File is formatted as ANSI or UTF-8 and needs converting to UTF-16
         //
         int requiredSize = MultiByteToWideChar(CP_UTF8, 0, postByteOrderMarks, size, nullptr, 0);
         bufW = new WCHAR[requiredSize + 1];

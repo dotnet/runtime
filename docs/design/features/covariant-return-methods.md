@@ -2,11 +2,11 @@
 
 Covariant return methods is a runtime feature designed to support the [covariant return types](https://github.com/dotnet/csharplang/blob/master/proposals/csharp-9.0/covariant-returns.md) and [records](https://github.com/dotnet/csharplang/blob/master/proposals/csharp-9.0/records.md) C# language features posed for C# 9.0.
 
-This feature allows an overriding method to have a return type that is different than the one on the method it overrides, but compatible with it. The type compability rules are defined in ECMA I.8.7.1. Example: using a more derived return type.
+This feature allows an overriding method to have a return type that is different than the one on the method it overrides, but compatible with it. The type compatibility rules are defined in ECMA I.8.7.1. Example: using a more derived return type.
 
 Covariant return methods can only be described through MethodImpl records, and as an initial implementation will only be applicable to methods on reference types. Methods on interfaces and value types will not be supported (may be supported later in the future).
 
-MethodImpl checking will allow a return type to vary as long as the override is compatible with the return type of the method overriden (ECMA I.8.7.1).
+MethodImpl checking will allow a return type to vary as long as the override is compatible with the return type of the method overridden (ECMA I.8.7.1).
 
 If a language wishes for the override to be semantically visible such that users of the more derived type may rely on the covariant return type it shall make the override a newslot method with appropriate visibility AND name to be used outside of the class.
 
@@ -20,14 +20,14 @@ A new `PreserveBaseOverridesAttribute` shall be added. The presence of this attr
 
 During enumeration of MethodImpls on a type (`MethodTableBuilder::EnumerateMethodImpls()`), if the signatures of the MethodImpl and the MethodDecl do not match:
 1. We repeat the signature comparison a second time, but skip the comparison of the return type signatures. If the signatures for the rest of the method arguments match, we will conditionally treat that MethodImpl as a valid one, but flag it for a closer examination of the return type compatibility at a later stage of type loading (end of `CLASS_LOAD_EXACTPARENTS` stage).
-2. At the end of the `CLASS_LOAD_EXACTPARENTS` type loading stage, examing each virtual method on the type, and if it has been flagged for further return type checking:
+2. At the end of the `CLASS_LOAD_EXACTPARENTS` type loading stage, examine each virtual method on the type, and if it has been flagged for further return type checking:
     + Load the `TypeHandle` of the return type of the method on base type.
     + Load the `TypeHandle` of the return type of the method on the current type being validated.
     + Verify that the second `TypeHandle` is compatible with the first `TypeHandle` using the `MethodTable::CanCastTo()` API. If they are not compatible, a TypeLoadException is thrown.
 
 The only exception where `CanCastTo()` will return true for an incompatible type according to the ECMA rules is for structs implementing interfaces, so we explicitly check for that case and throw a TypeLoadException if we hit it.
 
-Once a method is flagged for return type checking, every time the vtable slot containing that method gets overridden on a derived type, the new override will also be checked for compatiblity. This is to ensure that no derived type can implicitly override some virtual method that has already been overridden by some MethodImpl with a covariant return type.
+Once a method is flagged for return type checking, every time the vtable slot containing that method gets overridden on a derived type, the new override will also be checked for compatibility. This is to ensure that no derived type can implicitly override some virtual method that has already been overridden by some MethodImpl with a covariant return type.
 
 ### VTable Slot Unification
 
@@ -40,7 +40,7 @@ Consider this case:
      }
      class B : A {
          [PreserveBaseOverrides]
-         DerivedRetType VirtualFunction() { .override A.VirtualFuncion }
+         DerivedRetType VirtualFunction() { .override A.VirtualFunction }
      }
      class C : B {
          [PreserveBaseOverrides]

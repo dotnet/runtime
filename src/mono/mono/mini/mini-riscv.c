@@ -269,7 +269,7 @@ void
 mono_arch_flush_icache (guint8 *code, gint size)
 {
 #ifndef MONO_CROSS_COMPILE
-	__builtin___clear_cache (code, code + size);
+	__builtin___clear_cache ((char *)code, (char *)code + size);
 #endif
 }
 
@@ -685,7 +685,7 @@ mono_arch_skip_single_step (MonoContext *ctx)
 	NOT_IMPLEMENTED;
 }
 
-gpointer
+SeqPointInfo*
 mono_arch_get_seq_point_info (guint8 *code)
 {
 	NOT_IMPLEMENTED;
