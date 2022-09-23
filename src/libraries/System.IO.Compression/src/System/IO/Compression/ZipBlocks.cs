@@ -457,7 +457,7 @@ namespace System.IO.Compression
         public ushort FileCommentLength;
         public int DiskNumberStart;
         public ushort InternalFileAttributes;
-        public uint ExternalFileAttributes;
+        public int ExternalFileAttributes;
         public long RelativeOffsetOfLocalHeader;
 
         public byte[] Filename;
@@ -486,7 +486,7 @@ namespace System.IO.Compression
             header.FileCommentLength = reader.ReadUInt16();
             ushort diskNumberStartSmall = reader.ReadUInt16();
             header.InternalFileAttributes = reader.ReadUInt16();
-            header.ExternalFileAttributes = reader.ReadUInt32();
+            header.ExternalFileAttributes = reader.ReadInt32();
             uint relativeOffsetOfLocalHeaderSmall = reader.ReadUInt32();
 
             header.Filename = reader.ReadBytes(header.FilenameLength);
