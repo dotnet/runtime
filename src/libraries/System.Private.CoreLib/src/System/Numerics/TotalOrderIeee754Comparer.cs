@@ -12,7 +12,7 @@ namespace System.Numerics
     /// with IEEE 754 totalOrder semantic.
     /// </summary>
     /// <typeparam name="T">The type of the numbers to be compared, must be an IEEE 754 floating-point type.</typeparam>
-    public readonly struct TotalOrderIeee754Comparer<T> : IComparer<T>, IEqualityComparer<T>
+    public readonly struct TotalOrderIeee754Comparer<T> : IComparer<T>, IEqualityComparer<T>, IEquatable<TotalOrderIeee754Comparer<T>>
         where T : IFloatingPointIeee754<T>?
     {
         /// <summary>
@@ -223,5 +223,11 @@ namespace System.Numerics
             ArgumentNullException.ThrowIfNull(obj, nameof(obj));
             return obj.GetHashCode();
         }
+
+        public bool Equals(TotalOrderIeee754Comparer<T> other) => true;
+
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is TotalOrderIeee754Comparer<T>;
+
+        public override int GetHashCode() => EqualityComparer<T>.Default.GetHashCode();
     }
 }
