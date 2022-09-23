@@ -22,6 +22,8 @@
     <type fullname="Internal.Runtime.InteropServices.InMemoryAssemblyLoader">
       <!-- Used by hostpolicy.cpp -->
       <method name="LoadInMemoryAssembly" />
+      <!-- Used by ijwhost.cpp -->
+      <method name="LoadInMemoryAssemblyInContext" />
     </type>
     <type fullname="Internal.Runtime.InteropServices.ComponentActivator">
       <!-- Used by hostpolicy.cpp -->
