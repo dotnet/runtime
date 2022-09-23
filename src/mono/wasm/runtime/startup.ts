@@ -1,55 +1,51 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import BuildConfiguration from "consts:configuration";
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { mono_assert, CharPtrNull, DotnetModule, MonoConfig, wasm_type_symbol, MonoObject, MonoConfigError, LoadingResource, AssetEntry, ResourceRequest, DotnetPublicAPI } from "./types";
-import { BINDING, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_PTHREAD, ENVIRONMENT_IS_SHELL, INTERNAL, Module, MONO, runtimeHelpers } from "./imports";
+import { CharPtrNull, DotnetModule, RuntimeAPI, MonoConfig, MonoConfigError, MonoConfigInternal } from "./types";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, Module, runtimeHelpers } from "./imports";
 import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
-import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
+import { mono_wasm_globalization_init } from "./icu";
 import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_coverage_profiler } from "./profiler";
-import { find_corlib_class } from "./class-loader";
-import { VoidPtr, CharPtr } from "./types/emscripten";
-import { mono_on_abort, set_exit_code } from "./run";
+import { mono_on_abort, mono_exit } from "./run";
 import { initialize_marshalers_to_cs } from "./marshal-to-cs";
 import { initialize_marshalers_to_js } from "./marshal-to-js";
-import { mono_wasm_new_root } from "./roots";
-import { init_crypto } from "./crypto-worker";
 import { init_polyfills_async } from "./polyfills";
 import * as pthreads_worker from "./pthreads/worker";
 import { createPromiseController } from "./promise-controller";
 import { string_decoder } from "./strings";
-import { mono_wasm_init_diagnostics } from "./diagnostics/index";
 import { init_managed_exports } from "./managed-exports";
 import { init_legacy_exports } from "./net6-legacy/corebindings";
-import { mono_wasm_load_bytes_into_heap } from "./memory";
 import { cwraps_internal } from "./exports-internal";
 import { cwraps_binding_api, cwraps_mono_api } from "./net6-legacy/exports-legacy";
+import { CharPtr, InstantiateWasmCallBack, InstantiateWasmSuccessCallback } from "./types/emscripten";
+import { instantiate_wasm_asset, mono_download_assets, resolve_asset_path, start_asset_download_with_retries, wait_for_all_assets } from "./assets";
+import { BINDING, MONO } from "./net6-legacy/imports";
+import { readSymbolMapFile } from "./logging";
+import { mono_wasm_init_diagnostics } from "./diagnostics";
+import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "./pthreads/browser";
 
-let all_assets_loaded_in_memory: Promise<void> | null = null;
-const loaded_files: { url: string, file: string }[] = [];
-const loaded_assets: { [id: string]: [VoidPtr, number] } = Object.create(null);
-let instantiated_assets_count = 0;
-let downloded_assets_count = 0;
-const max_parallel_downloads = 100;
-// in order to prevent net::ERR_INSUFFICIENT_RESOURCES if we start downloading too many files at same time
-let parallel_count = 0;
-let throttling_promise: Promise<void> | undefined = undefined;
-let throttling_promise_resolve: Function | undefined = undefined;
-let config: MonoConfig = undefined as any;
+let config: MonoConfigInternal = undefined as any;
+let configLoaded = false;
+let isCustomStartup = false;
+export const afterConfigLoaded = createPromiseController<void>();
+export const afterInstantiateWasm = createPromiseController<void>();
+export const beforePreInit = createPromiseController<void>();
+export const afterPreInit = createPromiseController<void>();
+export const afterPreRun = createPromiseController<void>();
+export const beforeOnRuntimeInitialized = createPromiseController<void>();
+export const afterOnRuntimeInitialized = createPromiseController<void>();
+export const afterPostRun = createPromiseController<void>();
 
-const afterInstantiateWasm = createPromiseController();
-const beforePreInit = createPromiseController();
-const afterPreInit = createPromiseController();
-const afterPreRun = createPromiseController();
-const beforeOnRuntimeInitialized = createPromiseController();
-const afterOnRuntimeInitialized = createPromiseController();
-const afterPostRun = createPromiseController();
+// default size if MonoConfig.pthreadPoolSize is undefined
+const MONO_PTHREAD_POOL_SIZE = 4;
 
 // we are making emscripten startup async friendly
 // emscripten is executing the events without awaiting it and so we need to block progress via PromiseControllers above
-export function configure_emscripten_startup(module: DotnetModule, exportedAPI: DotnetPublicAPI): void {
+export function configure_emscripten_startup(module: DotnetModule, exportedAPI: RuntimeAPI): void {
     // these all could be overridden on DotnetModuleConfig, we are chaing them to async below, as opposed to emscripten
     // when user set configSrc or config, we are running our default startup sequence.
     const userInstantiateWasm: undefined | ((imports: WebAssembly.Imports, successCallback: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void) => any) = module.instantiateWasm;
@@ -58,17 +54,18 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
     const userpostRun: (() => void)[] = !module.postRun ? [] : typeof module.postRun === "function" ? [module.postRun] : module.postRun as any;
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     const userOnRuntimeInitialized: () => void = module.onRuntimeInitialized ? module.onRuntimeInitialized : () => { };
-    const isCustomStartup = !module.configSrc && !module.config; // like blazor
+    // when assets don't contain DLLs it means this is Blazor or another custom startup
+    isCustomStartup = !module.configSrc && (!module.config || !module.config.assets || module.config.assets.findIndex(a => a.behavior === "assembly") == -1); // like blazor
 
     // execution order == [0] ==
     // - default or user Module.instantiateWasm (will start downloading dotnet.wasm)
     module.instantiateWasm = (imports, callback) => instantiateWasm(imports, callback, userInstantiateWasm);
     // execution order == [1] ==
-    module.preInit = [() => preInit(isCustomStartup, userPreInit)];
+    module.preInit = [() => preInit(userPreInit)];
     // execution order == [2] ==
     module.preRun = [() => preRunAsync(userPreRun)];
     // execution order == [4] ==
-    module.onRuntimeInitialized = () => onRuntimeInitializedAsync(isCustomStartup, userOnRuntimeInitialized);
+    module.onRuntimeInitialized = () => onRuntimeInitializedAsync(userOnRuntimeInitialized);
     // execution order == [5] ==
     module.postRun = [() => postRunAsync(userpostRun)];
     // execution order == [6] ==
@@ -85,13 +82,11 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
     }
 }
 
-let wasm_module_imports: WebAssembly.Imports | null = null;
-let wasm_success_callback: null | ((instance: WebAssembly.Instance, module: WebAssembly.Module) => void) = null;
 
 function instantiateWasm(
     imports: WebAssembly.Imports,
-    successCallback: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void,
-    userInstantiateWasm?: (imports: WebAssembly.Imports, successCallback: (instance: WebAssembly.Instance, module: WebAssembly.Module) => void) => any): any[] {
+    successCallback: InstantiateWasmSuccessCallback,
+    userInstantiateWasm?: InstantiateWasmCallBack): any[] {
     // this is called so early that even Module exports like addRunDependency don't exist yet
 
     if (!Module.configSrc && !Module.config && !userInstantiateWasm) {
@@ -102,32 +97,26 @@ function instantiateWasm(
     } else {
         config = runtimeHelpers.config = Module.config = {} as any;
     }
-    runtimeHelpers.diagnostic_tracing = !!config.diagnostic_tracing;
-    runtimeHelpers.enable_debugging = config.enable_debugging ? config.enable_debugging : 0;
-    if (!config.assets) {
-        config.assets = [];
-    }
+    runtimeHelpers.diagnosticTracing = !!config.diagnosticTracing;
 
     if (userInstantiateWasm) {
         const exports = userInstantiateWasm(imports, (instance: WebAssembly.Instance, module: WebAssembly.Module) => {
-            afterInstantiateWasm.promise_control.resolve(null);
+            afterInstantiateWasm.promise_control.resolve();
             successCallback(instance, module);
         });
         return exports;
     }
 
-    wasm_module_imports = imports;
-    wasm_success_callback = successCallback;
-    _instantiate_wasm_module();
+    instantiate_wasm_module(imports, successCallback);
     return []; // No exports
 }
 
-function preInit(isCustomStartup: boolean, userPreInit: (() => void)[]) {
+function preInit(userPreInit: (() => void)[]) {
     Module.addRunDependency("mono_pre_init");
     try {
         mono_wasm_pre_init_essential();
-        if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: preInit");
-        beforePreInit.promise_control.resolve(null);
+        if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: preInit");
+        beforePreInit.promise_control.resolve();
         // all user Module.preInit callbacks
         userPreInit.forEach(fn => fn());
     } catch (err) {
@@ -135,8 +124,8 @@ function preInit(isCustomStartup: boolean, userPreInit: (() => void)[]) {
         abort_startup(err, true);
         throw err;
     }
-    // this will start immediately but return on first await. 
-    // It will block our `preRun` by afterPreInit promise 
+    // this will start immediately but return on first await.
+    // It will block our `preRun` by afterPreInit promise
     // It will block emscripten `userOnRuntimeInitialized` by pending addRunDependency("mono_pre_init")
     (async () => {
         try {
@@ -151,7 +140,7 @@ function preInit(isCustomStartup: boolean, userPreInit: (() => void)[]) {
             throw err;
         }
         // signal next stage
-        afterPreInit.promise_control.resolve(null);
+        afterPreInit.promise_control.resolve();
         Module.removeRunDependency("mono_pre_init");
     })();
 }
@@ -161,7 +150,10 @@ async function preRunAsync(userPreRun: (() => void)[]) {
     // wait for previous stages
     await afterInstantiateWasm.promise;
     await afterPreInit.promise;
-    if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: preRunAsync");
+    if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: preRunAsync");
+    if (MonoWasmThreads) {
+        await instantiateWasmPThreadWorkerPool();
+    }
     try {
         // all user Module.preRun callbacks
         userPreRun.map(fn => fn());
@@ -171,27 +163,24 @@ async function preRunAsync(userPreRun: (() => void)[]) {
         throw err;
     }
     // signal next stage
-    afterPreRun.promise_control.resolve(null);
+    afterPreRun.promise_control.resolve();
     Module.removeRunDependency("mono_pre_run_async");
 }
 
-async function onRuntimeInitializedAsync(isCustomStartup: boolean, userOnRuntimeInitialized: () => void) {
+async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
     // wait for previous stage
     await afterPreRun.promise;
-    if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: onRuntimeInitialized");
+    if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: onRuntimeInitialized");
     // signal this stage, this will allow pending assets to allocate memory
-    beforeOnRuntimeInitialized.promise_control.resolve(null);
+    beforeOnRuntimeInitialized.promise_control.resolve();
     try {
         if (!isCustomStartup) {
-            // wait for all assets in memory
-            await all_assets_loaded_in_memory;
-            const expected_asset_count = config.assets ? config.assets.length : 0;
-            mono_assert(downloded_assets_count == expected_asset_count, "Expected assets to be downloaded");
-            mono_assert(instantiated_assets_count == expected_asset_count, "Expected assets to be in memory");
-            if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: all assets are loaded in wasm memory");
-
+            await wait_for_all_assets();
             // load runtime
             await mono_wasm_before_user_runtime_initialized();
+        }
+        if (config.runtimeOptions) {
+            mono_wasm_set_runtime_options(config.runtimeOptions);
         }
         // call user code
         try {
@@ -201,7 +190,7 @@ async function onRuntimeInitializedAsync(isCustomStartup: boolean, userOnRuntime
             _print_error("MONO_WASM: user callback onRuntimeInitialized() failed", err);
             throw err;
         }
-        // finish 
+        // finish
         await mono_wasm_after_user_runtime_initialized();
     } catch (err) {
         _print_error("MONO_WASM: onRuntimeInitializedAsync() failed", err);
@@ -209,13 +198,13 @@ async function onRuntimeInitializedAsync(isCustomStartup: boolean, userOnRuntime
         throw err;
     }
     // signal next stage
-    afterOnRuntimeInitialized.promise_control.resolve(null);
+    afterOnRuntimeInitialized.promise_control.resolve();
 }
 
 async function postRunAsync(userpostRun: (() => void)[]) {
     // wait for previous stage
     await afterOnRuntimeInitialized.promise;
-    if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: postRunAsync");
+    if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: postRunAsync");
     try {
         // all user Module.postRun callbacks
         userpostRun.map(fn => fn());
@@ -225,12 +214,12 @@ async function postRunAsync(userpostRun: (() => void)[]) {
         throw err;
     }
     // signal next stage
-    afterPostRun.promise_control.resolve(null);
+    afterPostRun.promise_control.resolve();
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function abort_startup(reason: any, should_exit: boolean): void {
-    if (runtimeHelpers.diagnostic_tracing) console.trace("MONO_WASM: abort_startup");
+    if (runtimeHelpers.diagnosticTracing) console.trace("MONO_WASM: abort_startup");
     afterInstantiateWasm.promise_control.reject(reason);
     beforePreInit.promise_control.reject(reason);
     afterPreInit.promise_control.reject(reason);
@@ -239,17 +228,17 @@ export function abort_startup(reason: any, should_exit: boolean): void {
     afterOnRuntimeInitialized.promise_control.reject(reason);
     afterPostRun.promise_control.reject(reason);
     if (should_exit) {
-        set_exit_code(1, reason);
+        mono_exit(1, reason);
     }
 }
 
 // runs in both blazor and non-blazor
 function mono_wasm_pre_init_essential(): void {
     Module.addRunDependency("mono_wasm_pre_init_essential");
-    if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: mono_wasm_pre_init_essential");
+
+    if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_pre_init_essential");
 
     // init_polyfills() is already called from export.ts
-    init_crypto();
     init_c_exports();
     cwraps_internal(INTERNAL);
     cwraps_mono_api(MONO);
@@ -260,12 +249,14 @@ function mono_wasm_pre_init_essential(): void {
 
 // runs in both blazor and non-blazor
 async function mono_wasm_pre_init_essential_async(): Promise<void> {
-    if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: mono_wasm_pre_init_essential_async");
+    if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_pre_init_essential_async");
     Module.addRunDependency("mono_wasm_pre_init_essential_async");
 
     await init_polyfills_async();
-    if (MonoWasmThreads && ENVIRONMENT_IS_PTHREAD) {
-        await mono_wasm_pthread_worker_init();
+    await mono_wasm_load_config(Module.configSrc);
+
+    if (MonoWasmThreads) {
+        preAllocatePThreadWorkerPool(MONO_PTHREAD_POOL_SIZE, config);
     }
 
     Module.removeRunDependency("mono_wasm_pre_init_essential_async");
@@ -273,12 +264,9 @@ async function mono_wasm_pre_init_essential_async(): Promise<void> {
 
 // runs just in non-blazor
 async function mono_wasm_pre_init_full(): Promise<void> {
-    if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: mono_wasm_pre_init_full");
+    if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_pre_init_full");
     Module.addRunDependency("mono_wasm_pre_init_full");
 
-    if (Module.configSrc) {
-        await mono_wasm_load_config(Module.configSrc);
-    }
     await mono_download_assets();
 
     Module.removeRunDependency("mono_wasm_pre_init_full");
@@ -286,23 +274,16 @@ async function mono_wasm_pre_init_full(): Promise<void> {
 
 // runs just in non-blazor
 async function mono_wasm_before_user_runtime_initialized(): Promise<void> {
-    if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: mono_wasm_before_user_runtime_initialized");
-
-    if (!Module.config || Module.config.isError) {
-        return;
-    }
+    if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_before_user_runtime_initialized");
 
     try {
-        loaded_files.forEach(value => MONO.loaded_files.push(value.url));
-        if (!loaded_files || loaded_files.length == 0) {
-            Module.print("MONO_WASM: no files were loaded into runtime");
-        }
-
         await _apply_configuration_from_args();
         mono_wasm_globalization_init();
 
-        if (!runtimeHelpers.mono_wasm_load_runtime_done) mono_wasm_load_runtime("unused", config.debug_level || 0);
+        if (!runtimeHelpers.mono_wasm_load_runtime_done) mono_wasm_load_runtime("unused", config.debugLevel);
         if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
+        if (!runtimeHelpers.mono_wasm_symbols_are_ready) readSymbolMapFile("dotnet.js.symbols");
+
         setTimeout(() => {
             // when there are free CPU cycles
             string_decoder.init_fields();
@@ -315,7 +296,7 @@ async function mono_wasm_before_user_runtime_initialized(): Promise<void> {
 
 // runs in both blazor and non-blazor
 async function mono_wasm_after_user_runtime_initialized(): Promise<void> {
-    if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: mono_wasm_after_user_runtime_initialized");
+    if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_after_user_runtime_initialized");
     try {
         if (!Module.disableDotnet6Compatibility && Module.exports) {
             // Export emscripten defined in module through EXPORTED_RUNTIME_METHODS
@@ -334,8 +315,12 @@ async function mono_wasm_after_user_runtime_initialized(): Promise<void> {
                 }
             }
         }
+        // for Blazor, init diagnostics after their "onRuntimeInitalized" sets env variables, but before their postRun callback (which calls mono_wasm_load_runtime)
+        if (MonoWasmThreads) {
+            await mono_wasm_init_diagnostics();
+        }
 
-        if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: Initializing mono runtime");
+        if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: Initializing mono runtime");
 
         if (Module.onDotnetReady) {
             try {
@@ -369,14 +354,14 @@ export function mono_wasm_setenv(name: string, value: string): void {
 
 export function mono_wasm_set_runtime_options(options: string[]): void {
     if (!Array.isArray(options))
-        throw new Error("Expected runtime_options to be an array of strings");
+        throw new Error("Expected runtimeOptions to be an array of strings");
 
     const argv = Module._malloc(options.length * 4);
     let aindex = 0;
     for (let i = 0; i < options.length; ++i) {
         const option = options[i];
         if (typeof (option) !== "string")
-            throw new Error("Expected runtime_options to be an array of strings");
+            throw new Error("Expected runtimeOptions to be an array of strings");
         Module.setValue(<any>argv + (aindex * 4), cwraps.mono_wasm_strdup(option), "i32");
         aindex += 1;
     }
@@ -384,135 +369,29 @@ export function mono_wasm_set_runtime_options(options: string[]): void {
 }
 
 
-async function _instantiate_wasm_module(): Promise<void> {
+async function instantiate_wasm_module(
+    imports: WebAssembly.Imports,
+    successCallback: InstantiateWasmSuccessCallback,
+): Promise<void> {
     // this is called so early that even Module exports like addRunDependency don't exist yet
     try {
-        if (!config.assets && Module.configSrc) {
-            // when we are starting with mono-config,json, it could have dotnet.wasm location in it, we have to wait for it
-            await mono_wasm_load_config(Module.configSrc);
-        }
-        if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: instantiateWasm");
-        let assetToLoad: AssetEntry = {
-            name: "dotnet.wasm",
-            behavior: "dotnetwasm"
-        };
-        const assetfromConfig = config.assets!.find(a => a.behavior === "dotnetwasm");
-        if (assetfromConfig) {
-            assetToLoad = assetfromConfig;
-        } else {
-            config.assets!.push(assetToLoad);
-        }
-
-        const pendingAsset = await start_asset_download(assetToLoad);
+        await mono_wasm_load_config(Module.configSrc);
+        if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module");
+        const assetToLoad = resolve_asset_path("dotnetwasm");
+        // FIXME: this would not apply re-try (on connection reset during download) for dotnet.wasm because we could not download the buffer before we pass it to instantiate_wasm_asset
+        await start_asset_download_with_retries(assetToLoad, false);
         await beforePreInit.promise;
-        Module.addRunDependency("_instantiate_wasm_module");
-        mono_assert(pendingAsset && pendingAsset.pending, () => `Can't load ${assetToLoad.name}`);
+        Module.addRunDependency("instantiate_wasm_module");
+        instantiate_wasm_asset(assetToLoad, imports, successCallback);
 
-        const response = await pendingAsset.pending.response;
-        const contentType = response.headers ? response.headers.get("Content-Type") : undefined;
-        let compiledInstance: WebAssembly.Instance;
-        let compiledModule: WebAssembly.Module;
-        if (typeof WebAssembly.instantiateStreaming === "function" && contentType === "application/wasm") {
-            if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: mono_wasm_after_user_runtime_initialized streaming");
-            const streamingResult = await WebAssembly.instantiateStreaming(response, wasm_module_imports!);
-            compiledInstance = streamingResult.instance;
-            compiledModule = streamingResult.module;
-        } else {
-            const arrayBuffer = await response.arrayBuffer();
-            if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: mono_wasm_after_user_runtime_initialized streaming");
-            const arrayBufferResult = await WebAssembly.instantiate(arrayBuffer, wasm_module_imports!);
-            compiledInstance = arrayBufferResult.instance;
-            compiledModule = arrayBufferResult.module;
-        }
-        ++instantiated_assets_count;
-        wasm_success_callback!(compiledInstance, compiledModule);
-        if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: instantiateWasm done");
-        afterInstantiateWasm.promise_control.resolve(null);
-        wasm_success_callback = null;
-        wasm_module_imports = null;
+        if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: instantiate_wasm_module done");
+        afterInstantiateWasm.promise_control.resolve();
     } catch (err) {
-        _print_error("MONO_WASM: _instantiate_wasm_module() failed", err);
+        _print_error("MONO_WASM: instantiate_wasm_module() failed", err);
         abort_startup(err, true);
         throw err;
     }
-    Module.removeRunDependency("_instantiate_wasm_module");
-}
-
-// this need to be run only after onRuntimeInitialized event, when the memory is ready
-function _instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array) {
-    if (runtimeHelpers.diagnostic_tracing)
-        console.debug(`MONO_WASM: Loaded:${asset.name} as ${asset.behavior} size ${bytes.length} from ${url}`);
-
-    const virtualName: string = typeof (asset.virtual_path) === "string"
-        ? asset.virtual_path
-        : asset.name;
-    let offset: VoidPtr | null = null;
-
-    switch (asset.behavior) {
-        case "resource":
-        case "assembly":
-        case "pdb":
-            loaded_files.push({ url: url, file: virtualName });
-        // falls through
-        case "heap":
-        case "icu":
-            offset = mono_wasm_load_bytes_into_heap(bytes);
-            loaded_assets[virtualName] = [offset, bytes.length];
-            break;
-
-        case "vfs": {
-            // FIXME
-            const lastSlash = virtualName.lastIndexOf("/");
-            let parentDirectory = (lastSlash > 0)
-                ? virtualName.substr(0, lastSlash)
-                : null;
-            let fileName = (lastSlash > 0)
-                ? virtualName.substr(lastSlash + 1)
-                : virtualName;
-            if (fileName.startsWith("/"))
-                fileName = fileName.substr(1);
-            if (parentDirectory) {
-                if (runtimeHelpers.diagnostic_tracing)
-                    console.debug(`MONO_WASM: Creating directory '${parentDirectory}'`);
-
-                Module.FS_createPath(
-                    "/", parentDirectory, true, true // fixme: should canWrite be false?
-                );
-            } else {
-                parentDirectory = "/";
-            }
-
-            if (runtimeHelpers.diagnostic_tracing)
-                console.debug(`MONO_WASM: Creating file '${fileName}' in directory '${parentDirectory}'`);
-
-            if (!mono_wasm_load_data_archive(bytes, parentDirectory)) {
-                Module.FS_createDataFile(
-                    parentDirectory, fileName,
-                    bytes, true /* canRead */, true /* canWrite */, true /* canOwn */
-                );
-            }
-            break;
-        }
-        default:
-            throw new Error(`Unrecognized asset behavior:${asset.behavior}, for asset ${asset.name}`);
-    }
-
-    if (asset.behavior === "assembly") {
-        const hasPpdb = cwraps.mono_wasm_add_assembly(virtualName, offset!, bytes.length);
-
-        if (!hasPpdb) {
-            const index = loaded_files.findIndex(element => element.file == virtualName);
-            loaded_files.splice(index, 1);
-        }
-    }
-    else if (asset.behavior === "icu") {
-        if (!mono_wasm_load_icu_data(offset!))
-            Module.printErr(`MONO_WASM: Error loading ICU asset ${asset.name}`);
-    }
-    else if (asset.behavior === "resource") {
-        cwraps.mono_wasm_add_satellite_assembly(virtualName, asset.culture!, offset!, bytes.length);
-    }
-    ++instantiated_assets_count;
+    Module.removeRunDependency("instantiate_wasm_module");
 }
 
 // runs just in non-blazor
@@ -524,43 +403,43 @@ async function _apply_configuration_from_args() {
         mono_wasm_setenv("TZ", "UTC");
     }
 
-    for (const k in config.environment_variables) {
-        const v = config.environment_variables![k];
+    for (const k in config.environmentVariables) {
+        const v = config.environmentVariables![k];
         if (typeof (v) === "string")
             mono_wasm_setenv(k, v);
         else
             throw new Error(`Expected environment variable '${k}' to be a string but it was ${typeof v}: '${v}'`);
     }
 
-    if (config.runtime_options)
-        mono_wasm_set_runtime_options(config.runtime_options);
+    if (config.runtimeOptions)
+        mono_wasm_set_runtime_options(config.runtimeOptions);
 
-    if (config.aot_profiler_options)
-        mono_wasm_init_aot_profiler(config.aot_profiler_options);
+    if (config.aotProfilerOptions)
+        mono_wasm_init_aot_profiler(config.aotProfilerOptions);
 
-    if (config.coverage_profiler_options)
-        mono_wasm_init_coverage_profiler(config.coverage_profiler_options);
-
-    if (config.diagnostic_options) {
-        await mono_wasm_init_diagnostics(config.diagnostic_options);
+    if (config.coverageProfilerOptions)
+        mono_wasm_init_coverage_profiler(config.coverageProfilerOptions);
+    // for non-Blazor, init diagnostics after environment variables are set
+    if (MonoWasmThreads) {
+        await mono_wasm_init_diagnostics();
     }
 }
 
-export function mono_wasm_load_runtime(unused?: string, debug_level?: number): void {
-    if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: mono_wasm_load_runtime");
+export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): void {
+    if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_load_runtime");
     if (runtimeHelpers.mono_wasm_load_runtime_done) {
         return;
     }
     runtimeHelpers.mono_wasm_load_runtime_done = true;
     try {
-        if (debug_level == undefined) {
-            debug_level = 0;
-            if (config && config.debug_level) {
-                debug_level = 0 + debug_level;
+        if (debugLevel == undefined) {
+            debugLevel = 0;
+            if (config && config.debugLevel) {
+                debugLevel = 0 + debugLevel;
             }
         }
-        cwraps.mono_wasm_load_runtime(unused || "unused", debug_level);
-        runtimeHelpers.wait_for_debugger = config.wait_for_debugger;
+        cwraps.mono_wasm_load_runtime(unused || "unused", debugLevel);
+        runtimeHelpers.waitForDebugger = config.waitForDebugger;
 
         if (!runtimeHelpers.mono_wasm_bindings_is_ready) bindings_init();
     } catch (err: any) {
@@ -576,265 +455,23 @@ export function mono_wasm_load_runtime(unused?: string, debug_level?: number): v
 }
 
 export function bindings_init(): void {
-    if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: bindings_init");
+    if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: bindings_init");
     if (runtimeHelpers.mono_wasm_bindings_is_ready) {
         return;
     }
     runtimeHelpers.mono_wasm_bindings_is_ready = true;
     try {
-
-        // please keep System.Runtime.InteropServices.JavaScript.JSHostImplementation.MappedType in sync
-        (<any>Object.prototype)[wasm_type_symbol] = 0;
-        (<any>Array.prototype)[wasm_type_symbol] = 1;
-        (<any>ArrayBuffer.prototype)[wasm_type_symbol] = 2;
-        (<any>DataView.prototype)[wasm_type_symbol] = 3;
-        (<any>Function.prototype)[wasm_type_symbol] = 4;
-        (<any>Uint8Array.prototype)[wasm_type_symbol] = 11;
-
-        runtimeHelpers._box_buffer_size = 65536;
-        runtimeHelpers._unbox_buffer_size = 65536;
-        runtimeHelpers._box_buffer = Module._malloc(runtimeHelpers._box_buffer_size);
-        runtimeHelpers._unbox_buffer = Module._malloc(runtimeHelpers._unbox_buffer_size);
-        runtimeHelpers._i52_error_scratch_buffer = <any>Module._malloc(4);
-        runtimeHelpers._class_int32 = find_corlib_class("System", "Int32");
-        runtimeHelpers._class_uint32 = find_corlib_class("System", "UInt32");
-        runtimeHelpers._class_double = find_corlib_class("System", "Double");
-        runtimeHelpers._class_boolean = find_corlib_class("System", "Boolean");
-
         init_managed_exports();
         init_legacy_exports();
         initialize_marshalers_to_js();
         initialize_marshalers_to_cs();
-
-        runtimeHelpers._box_root = mono_wasm_new_root<MonoObject>();
-        runtimeHelpers._null_root = mono_wasm_new_root<MonoObject>();
+        runtimeHelpers._i52_error_scratch_buffer = <any>Module._malloc(4);
     } catch (err) {
         _print_error("MONO_WASM: Error in bindings_init", err);
         throw err;
     }
 }
 
-function downloadResource(request: ResourceRequest): LoadingResource {
-    if (typeof Module.downloadResource === "function") {
-        return Module.downloadResource(request);
-    }
-    const options: any = {};
-    if (request.hash) {
-        options.integrity = request.hash;
-    }
-    const response = runtimeHelpers.fetch_like(request.resolvedUrl!, options);
-    return {
-        name: request.name, url: request.resolvedUrl!, response
-    };
-}
-
-async function start_asset_download(asset: AssetEntry): Promise<AssetEntry | undefined> {
-    // we don't addRunDependency to allow download in parallel with onRuntimeInitialized event!
-    if (asset.buffer) {
-        ++downloded_assets_count;
-        const buffer = asset.buffer;
-        asset.buffer = undefined;//GC later
-        asset.pending = {
-            url: "undefined://" + asset.name,
-            name: asset.name,
-            response: Promise.resolve({
-                arrayBuffer: () => buffer,
-                headers: {
-                    get: () => undefined,
-                }
-            }) as any
-        };
-        return Promise.resolve(asset);
-    }
-    if (asset.pending) {
-        ++downloded_assets_count;
-        return asset;
-    }
-
-    while (throttling_promise) {
-        await throttling_promise;
-    }
-    ++parallel_count;
-    if (parallel_count == max_parallel_downloads) {
-        if (runtimeHelpers.diagnostic_tracing)
-            console.debug("MONO_WASM: Throttling further parallel downloads");
-
-        throttling_promise = new Promise((resolve) => {
-            throttling_promise_resolve = resolve;
-        });
-    }
-
-    const sourcesList = asset.load_remote && config.remote_sources ? config.remote_sources : [""];
-
-    let error = undefined;
-    let result: AssetEntry | undefined = undefined;
-    for (let sourcePrefix of sourcesList) {
-        sourcePrefix = sourcePrefix.trim();
-        // HACK: Special-case because MSBuild doesn't allow "" as an attribute
-        if (sourcePrefix === "./")
-            sourcePrefix = "";
-
-        let attemptUrl;
-        if (!asset.resolvedUrl) {
-            if (sourcePrefix === "") {
-                if (asset.behavior === "assembly" || asset.behavior === "pdb")
-                    attemptUrl = config.assembly_root + "/" + asset.name;
-                else if (asset.behavior === "resource") {
-                    const path = asset.culture !== "" ? `${asset.culture}/${asset.name}` : asset.name;
-                    attemptUrl = config.assembly_root + "/" + path;
-                }
-                else
-                    attemptUrl = asset.name;
-            } else {
-                attemptUrl = sourcePrefix + asset.name;
-            }
-            attemptUrl = runtimeHelpers.locateFile(attemptUrl);
-        }
-        else {
-            attemptUrl = asset.resolvedUrl;
-        }
-        if (asset.name === attemptUrl) {
-            if (runtimeHelpers.diagnostic_tracing)
-                console.debug(`MONO_WASM: Attempting to download '${attemptUrl}'`);
-        } else {
-            if (runtimeHelpers.diagnostic_tracing)
-                console.debug(`MONO_WASM: Attempting to download '${attemptUrl}' for ${asset.name}`);
-        }
-        try {
-            const loadingResource = downloadResource({
-                name: asset.name,
-                resolvedUrl: attemptUrl,
-                hash: asset.hash,
-                behavior: asset.behavior
-            });
-            const response = await loadingResource.response;
-            if (!response.ok) {
-                error = new Error(`MONO_WASM: download '${attemptUrl}' for ${asset.name} failed ${response.status} ${response.statusText}`);
-                continue;// next source
-            }
-            asset.pending = loadingResource;
-            result = asset;
-            ++downloded_assets_count;
-            error = undefined;
-        }
-        catch (err) {
-            error = new Error(`MONO_WASM: download '${attemptUrl}' for ${asset.name} failed ${err}`);
-            continue; //next source
-        }
-
-        if (!error) {
-            break; // this source worked, stop searching
-        }
-    }
-
-    --parallel_count;
-    if (throttling_promise && parallel_count == ((max_parallel_downloads / 2) | 0)) {
-        if (runtimeHelpers.diagnostic_tracing)
-            console.debug("MONO_WASM: Resuming more parallel downloads");
-        throttling_promise_resolve!();
-        throttling_promise = undefined;
-    }
-
-    if (error) {
-        const isOkToFail = asset.is_optional || (asset.name.match(/\.pdb$/) && config.ignore_pdb_load_errors);
-        if (!isOkToFail)
-            throw error;
-    }
-
-    return result;
-}
-
-async function mono_download_assets(): Promise<void> {
-    if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: mono_download_assets");
-    try {
-        const asset_promises: Promise<void>[] = [];
-
-        // start fetching and instantiating all assets in parallel
-        for (const asset of config.assets || []) {
-            if (asset.behavior != "dotnetwasm") {
-                const downloadedAsset = await start_asset_download(asset);
-                if (downloadedAsset) {
-                    asset_promises.push((async () => {
-                        const url = downloadedAsset.pending!.url;
-                        const response = await downloadedAsset.pending!.response;
-                        downloadedAsset.pending = undefined; //GC
-                        const buffer = await response.arrayBuffer();
-                        await beforeOnRuntimeInitialized.promise;
-                        // this is after onRuntimeInitialized
-                        _instantiate_asset(downloadedAsset, url, new Uint8Array(buffer));
-                    })());
-                }
-            }
-        }
-
-        // this await will get past the onRuntimeInitialized because we are not blocking via addRunDependency
-        // and we are not awating it here
-        all_assets_loaded_in_memory = Promise.all(asset_promises) as any;
-        // OPTIMIZATION explained:
-        // we do it this way so that we could allocate memory immediately after asset is downloaded (and after onRuntimeInitialized which happened already)
-        // spreading in time
-        // rather than to block all downloads after onRuntimeInitialized or block onRuntimeInitialized after all downloads are done. That would create allocation burst.
-    } catch (err: any) {
-        Module.printErr("MONO_WASM: Error in mono_download_assets: " + err);
-        throw err;
-    }
-}
-
-// used from Blazor
-export function mono_wasm_load_data_archive(data: Uint8Array, prefix: string): boolean {
-    if (data.length < 8)
-        return false;
-
-    const dataview = new DataView(data.buffer);
-    const magic = dataview.getUint32(0, true);
-    //    get magic number
-    if (magic != 0x626c6174) {
-        return false;
-    }
-    const manifestSize = dataview.getUint32(4, true);
-    if (manifestSize == 0 || data.length < manifestSize + 8)
-        return false;
-
-    let manifest;
-    try {
-        const manifestContent = Module.UTF8ArrayToString(data, 8, manifestSize);
-        manifest = JSON.parse(manifestContent);
-        if (!(manifest instanceof Array))
-            return false;
-    } catch (exc) {
-        return false;
-    }
-
-    data = data.slice(manifestSize + 8);
-
-    // Create the folder structure
-    // /usr/share/zoneinfo
-    // /usr/share/zoneinfo/Africa
-    // /usr/share/zoneinfo/Asia
-    // ..
-
-    const folders = new Set<string>();
-    manifest.filter(m => {
-        const file = m[0];
-        const last = file.lastIndexOf("/");
-        const directory = file.slice(0, last + 1);
-        folders.add(directory);
-    });
-    folders.forEach(folder => {
-        Module["FS_createPath"](prefix, folder, true, true);
-    });
-
-    for (const row of manifest) {
-        const name = row[0];
-        const length = row[1];
-        const bytes = data.slice(0, length);
-        Module["FS_createDataFile"](prefix, name, bytes, true, true);
-        data = data.slice(length);
-    }
-    return true;
-}
-
-let configLoaded = false;
 /**
  * Loads the mono config file (typically called mono-config.json) asynchroniously
  * Note: the run dependencies are so emsdk actually awaits it in order.
@@ -842,47 +479,63 @@ let configLoaded = false;
  * @param {string} configFilePath - relative path to the config file
  * @throws Will throw an error if the config file loading fails
  */
-export async function mono_wasm_load_config(configFilePath: string): Promise<void> {
+export async function mono_wasm_load_config(configFilePath?: string): Promise<void> {
     if (configLoaded) {
+        await afterConfigLoaded.promise;
         return;
     }
-    if (runtimeHelpers.diagnostic_tracing) console.debug("MONO_WASM: mono_wasm_load_config");
+    configLoaded = true;
+    if (!configFilePath) {
+        normalize();
+        afterConfigLoaded.promise_control.resolve();
+        return;
+    }
+    if (runtimeHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_wasm_load_config");
     try {
         const resolveSrc = runtimeHelpers.locateFile(configFilePath);
         const configResponse = await runtimeHelpers.fetch_like(resolveSrc);
-        const configData: MonoConfig = (await configResponse.json()) || {};
+        const loadedConfig: MonoConfig = (await configResponse.json()) || {};
+        if (loadedConfig.environmentVariables && typeof (loadedConfig.environmentVariables) !== "object")
+            throw new Error("Expected config.environmentVariables to be unset or a dictionary-style object");
+
         // merge
-        configData.assets = [...(config.assets || []), ...(configData.assets || [])];
-        config = runtimeHelpers.config = Module.config = Object.assign(Module.config as any, configData);
+        loadedConfig.assets = [...(loadedConfig.assets || []), ...(config.assets || [])];
+        loadedConfig.environmentVariables = { ...(loadedConfig.environmentVariables || {}), ...(config.environmentVariables || {}) };
+        config = runtimeHelpers.config = Module.config = Object.assign(Module.config as any, loadedConfig);
 
-        // normalize
-        config.environment_variables = config.environment_variables || {};
-        config.assets = config.assets || [];
-        config.runtime_options = config.runtime_options || [];
-        config.globalization_mode = config.globalization_mode || "auto";
-        if (config.enable_debugging)
-            config.debug_level = config.enable_debugging;
-
-        if (typeof (config.environment_variables) !== "object")
-            throw new Error("Expected config.environment_variables to be unset or a dictionary-style object");
+        normalize();
 
         if (Module.onConfigLoaded) {
             try {
                 await Module.onConfigLoaded(<MonoConfig>runtimeHelpers.config);
+                normalize();
             }
             catch (err: any) {
                 _print_error("MONO_WASM: onConfigLoaded() failed", err);
                 throw err;
             }
         }
-        runtimeHelpers.diagnostic_tracing = !!runtimeHelpers.config.diagnostic_tracing;
-        runtimeHelpers.enable_debugging = runtimeHelpers.config.enable_debugging ? runtimeHelpers.config.enable_debugging : 0;
-        configLoaded = true;
+        afterConfigLoaded.promise_control.resolve();
     } catch (err) {
         const errMessage = `Failed to load config file ${configFilePath} ${err}`;
         abort_startup(errMessage, true);
         config = runtimeHelpers.config = Module.config = <any>{ message: errMessage, error: err, isError: true };
         throw err;
+    }
+
+    function normalize() {
+        // normalize
+        config.environmentVariables = config.environmentVariables || {};
+        config.assets = config.assets || [];
+        config.runtimeOptions = config.runtimeOptions || [];
+        config.globalizationMode = config.globalizationMode || "auto";
+        if (config.debugLevel === undefined && BuildConfiguration === "Debug") {
+            config.debugLevel = -1;
+        }
+        if (config.diagnosticTracing === undefined && BuildConfiguration === "Debug") {
+            config.diagnosticTracing = true;
+        }
+        runtimeHelpers.diagnosticTracing = !!runtimeHelpers.config.diagnosticTracing;
     }
 }
 
@@ -928,11 +581,17 @@ export function mono_wasm_set_main_args(name: string, allRuntimeArguments: strin
 /// 1. Emscripten skips a lot of initialization on the pthread workers, Module may not have everything you expect.
 /// 2. Emscripten does not run the preInit or preRun functions in the workers.
 /// 3. At the point when this executes there is no pthread assigned to the worker yet.
-async function mono_wasm_pthread_worker_init(): Promise<void> {
+export async function mono_wasm_pthread_worker_init(): Promise<void> {
+    console.debug("MONO_WASM: worker initializing essential C exports and APIs");
+    // FIXME: copy/pasted from mono_wasm_pre_init_essential - can we share this code? Any other global state that needs initialization?
+    init_c_exports();
+    // not initializing INTERNAL, MONO, or BINDING C wrappers here - those legacy APIs are not likely to be needed on pthread workers.
+
     // This is a good place for subsystems to attach listeners for pthreads_worker.currentWorkerThreadEvents
     pthreads_worker.currentWorkerThreadEvents.addEventListener(pthreads_worker.dotnetPthreadCreated, (ev) => {
         console.debug("MONO_WASM: pthread created", ev.pthread_self.pthread_id);
     });
+
 }
 
 /**
@@ -941,5 +600,7 @@ async function mono_wasm_pthread_worker_init(): Promise<void> {
 export async function mono_load_runtime_and_bcl_args(cfg?: MonoConfig | MonoConfigError | undefined): Promise<void> {
     config = Module.config = runtimeHelpers.config = Object.assign(runtimeHelpers.config || {}, cfg || {}) as any;
     await mono_download_assets();
-    await all_assets_loaded_in_memory;
+    if (!isCustomStartup) {
+        await wait_for_all_assets();
+    }
 }

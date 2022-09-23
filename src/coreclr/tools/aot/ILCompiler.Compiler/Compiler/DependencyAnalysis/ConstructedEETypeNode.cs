@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 
 using Internal.Runtime;
 using Internal.TypeSystem;
-using Internal.IL;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -66,11 +64,11 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     if (instantiationType.IsValueType)
                     {
-                        // All valuetype generic parameters of a constructed type may be effectively constructed. This is generally not that 
+                        // All valuetype generic parameters of a constructed type may be effectively constructed. This is generally not that
                         // critical, but in the presence of universal generics the compiler may generate a Box followed by calls to ToString,
                         // GetHashcode or Equals in ways that cannot otherwise be detected by dependency analysis. Thus force all struct type
                         // generic parameters to be considered constructed when walking dependencies of a constructed generic
-                        dependencyList.Add(factory.ConstructedTypeSymbol(instantiationType.ConvertToCanonForm(CanonicalFormKind.Specific)), 
+                        dependencyList.Add(factory.ConstructedTypeSymbol(instantiationType.ConvertToCanonForm(CanonicalFormKind.Specific)),
                         "Struct generic parameters in constructed types may be assumed to be used as constructed in constructed generic types");
                     }
                 }
@@ -82,11 +80,13 @@ namespace ILCompiler.DependencyAnalysis
             factory.InteropStubManager.AddInterestingInteropConstructedTypeDependencies(ref dependencyList, factory, _type);
 
             // Keep track of the default constructor map dependency for this type if it has a default constructor
+            // We only do this for reflection blocked types because dataflow analysis is responsible for
+            // generating default constructors for Activator.CreateInstance in other cases.
             MethodDesc defaultCtor = closestDefType.GetDefaultConstructor();
-            if (defaultCtor != null)
+            if (defaultCtor != null && factory.MetadataManager.IsReflectionBlocked(defaultCtor))
             {
                 dependencyList.Add(new DependencyListEntry(
-                    factory.CanonicalEntrypoint(defaultCtor), 
+                    factory.CanonicalEntrypoint(defaultCtor),
                     "DefaultConstructorNode"));
             }
 

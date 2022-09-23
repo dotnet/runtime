@@ -13,8 +13,6 @@ using Internal.TypeSystem.Ecma;
 using ILCompiler.Dataflow;
 using ILCompiler.Logging;
 using ILLink.Shared;
-
-using ILSequencePoint = Internal.IL.ILSequencePoint;
 using MethodIL = Internal.IL.MethodIL;
 using Internal.IL;
 
@@ -26,6 +24,7 @@ namespace ILCompiler
         private readonly CompilerGeneratedState _compilerGeneratedState;
 
         private readonly HashSet<int> _suppressedWarnings;
+        private readonly HashSet<string> _suppressedCategories;
 
         private readonly bool _isSingleWarn;
         private readonly HashSet<string> _singleWarnEnabledAssemblies;
@@ -44,7 +43,8 @@ namespace ILCompiler
             IEnumerable<int> suppressedWarnings,
             bool singleWarn,
             IEnumerable<string> singleWarnEnabledModules,
-            IEnumerable<string> singleWarnDisabledModules)
+            IEnumerable<string> singleWarnDisabledModules,
+            IEnumerable<string> suppressedCategories)
         {
             _logWriter = writer;
             _compilerGeneratedState = ilProvider == null ? null : new CompilerGeneratedState(ilProvider, this);
@@ -53,15 +53,16 @@ namespace ILCompiler
             _isSingleWarn = singleWarn;
             _singleWarnEnabledAssemblies = new HashSet<string>(singleWarnEnabledModules, StringComparer.OrdinalIgnoreCase);
             _singleWarnDisabledAssemblies = new HashSet<string>(singleWarnDisabledModules, StringComparer.OrdinalIgnoreCase);
+            _suppressedCategories = new HashSet<string>(suppressedCategories, StringComparer.Ordinal);
         }
 
-        public Logger(TextWriter writer, ILProvider ilProvider, bool isVerbose, IEnumerable<int> suppressedWarnings, bool singleWarn, IEnumerable<string> singleWarnEnabledModules, IEnumerable<string> singleWarnDisabledModules)
-            : this(new TextLogWriter(writer), ilProvider, isVerbose, suppressedWarnings, singleWarn, singleWarnEnabledModules, singleWarnDisabledModules)
+        public Logger(TextWriter writer, ILProvider ilProvider, bool isVerbose, IEnumerable<int> suppressedWarnings, bool singleWarn, IEnumerable<string> singleWarnEnabledModules, IEnumerable<string> singleWarnDisabledModules, IEnumerable<string> suppressedCategories)
+            : this(new TextLogWriter(writer), ilProvider, isVerbose, suppressedWarnings, singleWarn, singleWarnEnabledModules, singleWarnDisabledModules, suppressedCategories)
         {
         }
 
         public Logger(ILogWriter writer, ILProvider ilProvider, bool isVerbose)
-            : this(writer, ilProvider, isVerbose, Array.Empty<int>(), singleWarn: false, Array.Empty<string>(), Array.Empty<string>())
+            : this(writer, ilProvider, isVerbose, Array.Empty<int>(), singleWarn: false, Array.Empty<string>(), Array.Empty<string>(), Array.Empty<string>())
         {
         }
 
@@ -141,6 +142,8 @@ namespace ILCompiler
         public void LogError(TypeSystemEntity origin, DiagnosticId id, params string[] args) =>
             LogError(new MessageOrigin(origin), id, args);
 
+        internal bool IsWarningSubcategorySuppressed(string category) => _suppressedCategories.Contains(category);
+
         internal bool IsWarningSuppressed(int code, MessageOrigin origin)
         {
             // This is causing too much noise
@@ -172,7 +175,7 @@ namespace ILCompiler
             return false;
         }
 
-        bool IsSuppressed(int id, TypeSystemEntity warningOrigin)
+        private static bool IsSuppressed(int id, TypeSystemEntity warningOrigin)
         {
             TypeSystemEntity warningOriginMember = warningOrigin;
             while (warningOriginMember != null)
@@ -188,7 +191,7 @@ namespace ILCompiler
             return false;
         }
 
-        bool IsSuppressedOnElement(int id, TypeSystemEntity provider)
+        private static bool IsSuppressedOnElement(int id, TypeSystemEntity provider)
         {
             if (provider == null)
                 return false;
@@ -218,7 +221,7 @@ namespace ILCompiler
                         || warningId.Length < 6
                         || !warningId.StartsWith("IL")
                         || (warningId.Length > 6 && warningId[6] != ':')
-                        || !int.TryParse(warningId.Substring(2, 4), out int suppressedCode))
+                        || !int.TryParse(warningId.AsSpan(2, 4), out int suppressedCode))
                     {
                         continue;
                     }
@@ -233,7 +236,7 @@ namespace ILCompiler
             return false;
         }
 
-        internal bool IsWarningAsError(int code)
+        internal static bool IsWarningAsError(int code)
         {
             // TODO: warnaserror
             return false;

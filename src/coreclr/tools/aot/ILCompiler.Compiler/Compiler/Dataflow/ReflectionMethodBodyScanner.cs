@@ -2,23 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Reflection;
-using System.Reflection.Metadata;
 using ILCompiler.Logging;
 using ILLink.Shared;
-using ILLink.Shared.DataFlow;
 using ILLink.Shared.TrimAnalysis;
-using ILLink.Shared.TypeSystemProxy;
 using Internal.IL;
 using Internal.TypeSystem;
-
-using CustomAttributeNamedArgumentKind = System.Reflection.Metadata.CustomAttributeNamedArgumentKind;
-using CustomAttributeValue = System.Reflection.Metadata.CustomAttributeValue<Internal.TypeSystem.TypeDesc>;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using InteropTypes = Internal.TypeSystem.Interop.InteropTypes;
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
@@ -29,7 +21,7 @@ using WellKnownType = ILLink.Shared.TypeSystemProxy.WellKnownType;
 
 namespace ILCompiler.Dataflow
 {
-    sealed class ReflectionMethodBodyScanner : MethodBodyScanner
+    internal sealed class ReflectionMethodBodyScanner : MethodBodyScanner
     {
         private readonly Logger _logger;
         private readonly NodeFactory _factory;
@@ -144,7 +136,7 @@ namespace ILCompiler.Dataflow
         protected override ValueWithDynamicallyAccessedMembers GetMethodParameterValue(MethodDesc method, int parameterIndex)
             => GetMethodParameterValue(method, parameterIndex, _annotations.GetParameterAnnotation(method, parameterIndex));
 
-        ValueWithDynamicallyAccessedMembers GetMethodParameterValue(MethodDesc method, int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+        private ValueWithDynamicallyAccessedMembers GetMethodParameterValue(MethodDesc method, int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
         {
             if (!method.Signature.IsStatic)
             {
@@ -183,7 +175,6 @@ namespace ILCompiler.Dataflow
 
         public override bool HandleCall(MethodIL callingMethodBody, MethodDesc calledMethod, ILOpcode operation, int offset, ValueNodeList methodParams, out MultiValue methodReturnValue)
         {
-            methodReturnValue = null;
             Debug.Assert(callingMethodBody.OwningMethod == _origin.MemberDefinition);
 
             _origin = _origin.WithInstructionOffset(callingMethodBody, offset);
@@ -317,6 +308,7 @@ namespace ILCompiler.Dataflow
 
                             ParameterMetadata returnParamMetadata = Array.Find(paramMetadata, m => m.Index == 0);
 
+                            bool aotUnsafeDelegate = IsAotUnsafeDelegate(calledMethod.Signature.ReturnType);
                             bool comDangerousMethod = IsComInterop(returnParamMetadata.MarshalAsDescriptor, calledMethod.Signature.ReturnType);
                             for (int paramIndex = 0; paramIndex < calledMethod.Signature.Length; paramIndex++)
                             {
@@ -327,7 +319,13 @@ namespace ILCompiler.Dataflow
                                         marshalAsDescriptor = paramMetadata[metadataIndex].MarshalAsDescriptor;
                                 }
 
+                                aotUnsafeDelegate |= IsAotUnsafeDelegate(calledMethod.Signature[paramIndex]);
                                 comDangerousMethod |= IsComInterop(marshalAsDescriptor, calledMethod.Signature[paramIndex]);
+                            }
+
+                            if (aotUnsafeDelegate)
+                            {
+                                diagnosticContext.AddDiagnostic(DiagnosticId.CorrectnessOfAbstractDelegatesCannotBeGuaranteed, calledMethod.GetDisplayName());
                             }
 
                             if (comDangerousMethod)
@@ -563,7 +561,14 @@ namespace ILCompiler.Dataflow
             }
         }
 
-        static bool IsComInterop(MarshalAsDescriptor? marshalInfoProvider, TypeDesc parameterType)
+        private static bool IsAotUnsafeDelegate(TypeDesc parameterType)
+        {
+            TypeSystemContext context = parameterType.Context;
+            return parameterType.IsWellKnownType(Internal.TypeSystem.WellKnownType.MulticastDelegate)
+                    || parameterType == context.GetWellKnownType(Internal.TypeSystem.WellKnownType.MulticastDelegate).BaseType;
+        }
+
+        private static bool IsComInterop(MarshalAsDescriptor? marshalInfoProvider, TypeDesc parameterType)
         {
             // This is best effort. One can likely find ways how to get COM without triggering these alarms.
             // AsAny marshalling of a struct with an object-typed field would be one, for example.
@@ -642,7 +647,7 @@ namespace ILCompiler.Dataflow
             return false;
         }
 
-        void HandleAssignmentPattern(
+        private void HandleAssignmentPattern(
             in MessageOrigin origin,
             in MultiValue value,
             ValueWithDynamicallyAccessedMembers targetValue,

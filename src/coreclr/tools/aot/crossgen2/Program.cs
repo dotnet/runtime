@@ -604,6 +604,7 @@ namespace ILCompiler
                         typeSystemContext,
                         compilationGroup,
                         Get(_command.EmbedPgoData),
+                        Get(_command.SupportIbc),
                         crossModuleInlineableCode.Count == 0 ? compilationGroup.VersionsWithMethodBody : compilationGroup.CrossModuleInlineable);
 
                     bool partial = Get(_command.Partial);

@@ -20,7 +20,7 @@ namespace System.Text.Json
             return reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
         }
 
-#if !BUILDING_INBOX_LIBRARY
+#if !NETCOREAPP
         /// <summary>
         /// Returns <see langword="true"/> if <paramref name="value"/> is a valid Unicode scalar
         /// value, i.e., is in [ U+0000..U+D7FF ], inclusive; or [ U+E000..U+10FFFF ], inclusive.
@@ -124,7 +124,7 @@ namespace System.Text.Json
 
         public static bool IsFinite(double value)
         {
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
             return double.IsFinite(value);
 #else
             return !(double.IsNaN(value) || double.IsInfinity(value));
@@ -133,7 +133,7 @@ namespace System.Text.Json
 
         public static bool IsFinite(float value)
         {
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
             return float.IsFinite(value);
 #else
             return !(float.IsNaN(value) || float.IsInfinity(value));

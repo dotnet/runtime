@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
@@ -81,7 +80,7 @@ namespace Internal.TypeSystem.Ecma
 
         public static PdbSymbolReader TryOpenEmbedded(PEReader peReader, MetadataStringDecoder stringDecoder)
         {
-            foreach (DebugDirectoryEntry debugEntry in peReader.ReadDebugDirectory())
+            foreach (DebugDirectoryEntry debugEntry in peReader.SafeReadDebugDirectory())
             {
                 if (debugEntry.Type != DebugDirectoryEntryType.EmbeddedPortablePdb)
                     continue;
@@ -105,8 +104,7 @@ namespace Internal.TypeSystem.Ecma
 
         public override void Dispose()
         {
-            if (_mappedViewAccessor != null)
-                _mappedViewAccessor.Dispose();
+            _mappedViewAccessor?.Dispose();
         }
 
         public override int GetStateMachineKickoffMethod(int methodToken)

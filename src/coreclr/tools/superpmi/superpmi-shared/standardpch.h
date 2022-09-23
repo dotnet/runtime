@@ -116,4 +116,6 @@ static inline void __debugbreak()
 }
 #endif
 
+#include <minipal/utils.h>
+
 #endif // STANDARDPCH_H

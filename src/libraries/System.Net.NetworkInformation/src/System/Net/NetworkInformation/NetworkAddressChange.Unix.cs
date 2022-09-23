@@ -219,7 +219,7 @@ namespace System.Net.NetworkInformation
             {
                 // Unexpected error.
                 Debug.Fail($"Unexpected error: {ex}");
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, ex);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(ex);
             }
 
             static unsafe Interop.Error ReadEvents(Socket socket)

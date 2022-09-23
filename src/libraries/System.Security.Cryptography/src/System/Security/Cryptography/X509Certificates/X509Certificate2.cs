@@ -1482,7 +1482,10 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         private static X509Extension? CreateCustomExtensionIfAny(Oid oid) =>
-            oid.Value switch
+            CreateCustomExtensionIfAny(oid.Value);
+
+        internal static X509Extension? CreateCustomExtensionIfAny(string? oidValue) =>
+            oidValue switch
             {
                 Oids.BasicConstraints => X509Pal.Instance.SupportsLegacyBasicConstraintsExtension ? new X509BasicConstraintsExtension() : null,
                 Oids.BasicConstraints2 => new X509BasicConstraintsExtension(),

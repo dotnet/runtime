@@ -24,7 +24,7 @@ namespace ILCompiler
         public Option<string> InstructionSet { get; } =
             new(new[] { "--instruction-set" }, SR.InstructionSets);
         public Option<string[]> MibcFilePaths { get; } =
-            new(new[] { "--mibc", "-m" }, () => Array.Empty<string>(), SR.MibcFiles);
+            new(new[] { "--mibc", "-m" }, Array.Empty<string>, SR.MibcFiles);
         public Option<string> OutputFilePath { get; } =
             new(new[] { "--out", "-o" }, SR.OutputFilePath);
         public Option<string> CompositeRootPath { get; } =
@@ -68,7 +68,9 @@ namespace ILCompiler
         public Option<bool> WaitForDebugger { get; } =
             new(new[] { "--waitfordebugger" }, SR.WaitForDebuggerOption);
         public Option<string[]> CodegenOptions { get; } =
-            new(new[] { "--codegenopt" }, () => Array.Empty<string>(), SR.CodeGenOptions);
+            new(new[] { "--codegenopt" }, Array.Empty<string>, SR.CodeGenOptions);
+        public Option<bool> SupportIbc { get; } =
+            new(new[] { "--support-ibc" }, SR.SupportIbc);
         public Option<bool> Resilient { get; } =
             new(new[] { "--resilient" }, SR.ResilientOption);
         public Option<string> ImageBase { get; } =
@@ -100,7 +102,21 @@ namespace ILCompiler
         public Option<string[]> SingleMethodGenericArgs { get; } =
             new(new[] { "--singlemethodgenericarg" }, SR.SingleMethodGenericArgs);
         public Option<int> Parallelism { get; } =
-            new(new[] { "--parallelism" }, () => Environment.ProcessorCount, SR.ParalellismOption);
+            new(new[] { "--parallelism" }, result =>
+            {
+                if (result.Tokens.Count > 0)
+                    return int.Parse(result.Tokens[0].Value);
+
+                // Limit parallelism to 24 wide at most by default, more parallelism is unlikely to improve compilation speed
+                // as many portions of the process are single threaded, and is known to use excessive memory.
+                var parallelism = Math.Min(24, Environment.ProcessorCount);
+
+                // On 32bit platforms restrict it more, as virtual address space is quite limited
+                if (!Environment.Is64BitProcess)
+                    parallelism = Math.Min(4, parallelism);
+
+                return parallelism;
+            }, true, SR.ParalellismOption);
         public Option<int> CustomPESectionAlignment { get; } =
             new(new[] { "--custom-pe-section-alignment" }, SR.CustomPESectionAlignmentOption);
         public Option<bool> Map { get; } =
@@ -196,6 +212,7 @@ namespace ILCompiler
             AddOption(SystemModuleName);
             AddOption(WaitForDebugger);
             AddOption(CodegenOptions);
+            AddOption(SupportIbc);
             AddOption(Resilient);
             AddOption(ImageBase);
             AddOption(TargetArchitecture);

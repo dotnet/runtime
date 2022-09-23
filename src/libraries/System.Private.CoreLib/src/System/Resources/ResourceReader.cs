@@ -939,10 +939,6 @@ namespace System.Resources
         // This allows us to delay-initialize the Type[].  This might be a
         // good startup time savings, since we might have to load assemblies
         // and initialize Reflection.
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "UseReflectionToGetType will get trimmed out when AllowCustomResourceTypes is set to false. " +
-            "When set to true, we will already throw a warning for this feature switch, so we suppress this one in order for" +
-            "the user to only get one error.")]
         private Type FindType(int typeIndex)
         {
             if (!AllowCustomResourceTypes)
@@ -955,7 +951,13 @@ namespace System.Resources
                 throw new BadImageFormatException(SR.BadImageFormat_InvalidType);
             }
 
-            return _typeTable[typeIndex] ?? UseReflectionToGetType(typeIndex);
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+                Justification = "UseReflectionToGetType will get trimmed out when AllowCustomResourceTypes is set to false. " +
+                "When set to true, we will already throw a warning for this feature switch, so we suppress this one in order for" +
+                "the user to only get one error.")]
+            Type UseReflectionToGetTypeLocal(int typeIndex) => UseReflectionToGetType(typeIndex);
+
+            return _typeTable[typeIndex] ?? UseReflectionToGetTypeLocal(typeIndex);
         }
 
         [RequiresUnreferencedCode("The CustomResourceTypesSupport feature switch has been enabled for this app which is being trimmed. " +
@@ -971,6 +973,10 @@ namespace System.Resources
                 Debug.Assert(_typeTable[typeIndex] != null, "Should have found a type!");
                 return _typeTable[typeIndex]!;
             }
+// If-defing this coud out from Resources Extensions since they will by definition always support deserialization
+// So we shouldn't attempt to wrap the original exception with a NotSupportedException since that can be misleading.
+// For that reason, the bellow code is only relevant when building CoreLib's ResourceReader.
+#if !RESOURCES_EXTENSIONS
             // If serialization isn't supported, we convert FileNotFoundException to
             // NotSupportedException for consistency with v2. This is a corner-case, but the
             // idea is that we want to give the user a more accurate error message. Even if
@@ -981,10 +987,12 @@ namespace System.Resources
             //
             // We don't want to regress the expected case by checking the type info before
             // getting to Type.GetType -- this is costly with v1 resource formats.
-            catch (FileNotFoundException)
+            catch (FileNotFoundException fileNotFoundException) when (!_permitDeserialization)
             {
-                throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization);
+                // Include the FileNotFoundException as an inner exception to make it more diagnosable
+                throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization, fileNotFoundException);
             }
+#endif
             finally
             {
                 _store.BaseStream.Position = oldPos;

@@ -352,3 +352,23 @@ COOP_PINVOKE_HELPER(int64_t, RhGetTotalPauseDuration, ())
 {
     return GCHeapUtilities::GetGCHeap()->GetTotalPauseDuration();
 }
+
+COOP_PINVOKE_HELPER(void, RhRegisterForGCReporting, (GCFrameRegistration* pRegistration))
+{
+    Thread* pThread = ThreadStore::GetCurrentThread();
+
+    ASSERT(pRegistration->m_pThread == NULL);
+    pRegistration->m_pThread = pThread;
+
+    pThread->PushGCFrameRegistration(pRegistration);
+}
+
+COOP_PINVOKE_HELPER(void, RhUnregisterForGCReporting, (GCFrameRegistration* pRegistration))
+{
+    Thread* pThread = pRegistration->m_pThread;
+    if (pThread == NULL)
+        return;
+
+    ASSERT(pThread == ThreadStore::GetCurrentThread());
+    pThread->PopGCFrameRegistration(pRegistration);
+}

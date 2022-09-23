@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import ProductVersion from "consts:productVersion";
-import Configuration from "consts:configuration";
+import GitHash from "consts:gitHash";
+import MonoWasmThreads from "consts:monoWasmThreads";
+import BuildConfiguration from "consts:configuration";
 
-import { ENVIRONMENT_IS_WORKER, set_imports_exports } from "./imports";
-import { DotnetModule, is_nullish, DotnetPublicAPI, EarlyImports, EarlyExports, EarlyReplacements } from "./types";
-import { configure_emscripten_startup } from "./startup";
+import { ENVIRONMENT_IS_PTHREAD, exportedRuntimeAPI, moduleExports, set_emscripten_entrypoint, set_environment, set_imports_exports } from "./imports";
+import { DotnetModule, is_nullish, EarlyImports, EarlyExports, EarlyReplacements, RuntimeAPI, CreateDotnetRuntimeType } from "./types";
+import { configure_emscripten_startup, mono_wasm_pthread_worker_init } from "./startup";
 import { mono_bind_static_method } from "./net6-legacy/method-calls";
 
 import { create_weak_ref } from "./weak-ref";
@@ -14,10 +16,12 @@ import { export_binding_api, export_mono_api } from "./net6-legacy/exports-legac
 import { export_internal } from "./exports-internal";
 import { export_linker } from "./exports-linker";
 import { init_polyfills } from "./polyfills";
+import { export_api, export_module } from "./export-api";
+import { set_legacy_exports } from "./net6-legacy/imports";
 
-export const __initializeImportsAndExports: any = initializeImportsAndExports; // don't want to export the type
-export let __linker_exports: any = null;
-let exportedAPI: DotnetPublicAPI;
+const __initializeImportsAndExports: any = initializeImportsAndExports; // don't want to export the type
+const __setEmscriptenEntrypoint: any = setEmscriptenEntrypoint; // don't want to export the type
+let __linker_exports: any = null;
 
 
 // this is executed early during load of emscripten runtime
@@ -28,32 +32,37 @@ function initializeImportsAndExports(
     imports: EarlyImports,
     exports: EarlyExports,
     replacements: EarlyReplacements,
-): DotnetPublicAPI {
+    callbackAPI: any
+): RuntimeAPI {
     const module = exports.module as DotnetModule;
     const globalThisAny = globalThis as any;
 
     // we want to have same instance of MONO, BINDING and Module in dotnet iffe
     set_imports_exports(imports, exports);
+    set_legacy_exports(exports);
     init_polyfills(replacements);
 
     // here we merge methods from the local objects into exported objects
     Object.assign(exports.mono, export_mono_api());
     Object.assign(exports.binding, export_binding_api());
     Object.assign(exports.internal, export_internal());
+    Object.assign(exports.internal, export_internal());
+    const API = export_api();
     __linker_exports = export_linker();
-
-    exportedAPI = <any>{
+    Object.assign(exportedRuntimeAPI, {
         MONO: exports.mono,
         BINDING: exports.binding,
         INTERNAL: exports.internal,
-        EXPORTS: exports.marshaled_exports,
         IMPORTS: exports.marshaled_imports,
         Module: module,
-        RuntimeBuildInfo: {
-            ProductVersion,
-            Configuration
-        }
-    };
+        runtimeBuildInfo: {
+            productVersion: ProductVersion,
+            gitHash: GitHash,
+            buildConfiguration: BuildConfiguration
+        },
+        ...API,
+    });
+    Object.assign(callbackAPI, API);
     if (exports.module.__undefinedConfig) {
         module.disableDotnet6Compatibility = true;
         module.configSrc = "./mono-config.json";
@@ -71,13 +80,13 @@ function initializeImportsAndExports(
     }
     // here we expose objects global namespace for tests and backward compatibility
     if (imports.isGlobal || !module.disableDotnet6Compatibility) {
-        Object.assign(module, exportedAPI);
+        Object.assign(module, exportedRuntimeAPI);
 
         // backward compatibility
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         module.mono_bind_static_method = (fqn: string, signature: string/*ArgsMarshalString*/): Function => {
-            console.warn("MONO_WASM: Module.mono_bind_static_method is obsolete, please use BINDING.bind_static_method instead");
+            console.warn("MONO_WASM: Module.mono_bind_static_method is obsolete, please use [JSExportAttribute] interop instead");
             return mono_bind_static_method(fqn, signature);
         };
 
@@ -121,37 +130,50 @@ function initializeImportsAndExports(
     else {
         list = globalThisAny.getDotnetRuntime.__list;
     }
-    list.registerRuntime(exportedAPI);
+    list.registerRuntime(exportedRuntimeAPI);
 
-    if (ENVIRONMENT_IS_WORKER) {
-        // HACK: Emscripten's dotnet.worker.js expects the exports of dotnet.js module to be Module object
-        // until we have our own fix for dotnet.worker.js file
-        // we also skip all emscripten startup event and configuration of worker's JS state
-        // note that emscripten events are not firing either
-        return <any>exportedAPI.Module;
+    if (MonoWasmThreads && ENVIRONMENT_IS_PTHREAD) {
+        // eslint-disable-next-line no-inner-declarations
+        async function workerInit(): Promise<DotnetModule> {
+            await mono_wasm_pthread_worker_init();
+
+            // HACK: Emscripten's dotnet.worker.js expects the exports of dotnet.js module to be Module object
+            // until we have our own fix for dotnet.worker.js file
+            // we also skip all emscripten startup event and configuration of worker's JS state
+            // note that emscripten events are not firing either
+
+            return exportedRuntimeAPI.Module;
+        }
+        // Emscripten pthread worker.js is ok with a Promise here.
+        return <any>workerInit();
     }
 
-    configure_emscripten_startup(module, exportedAPI);
+    configure_emscripten_startup(module, exportedRuntimeAPI);
 
-    return exportedAPI;
+    return exportedRuntimeAPI;
 }
 
 
 class RuntimeList {
-    private list: { [runtimeId: number]: WeakRef<DotnetPublicAPI> } = {};
+    private list: { [runtimeId: number]: WeakRef<RuntimeAPI> } = {};
 
-    public registerRuntime(api: DotnetPublicAPI): number {
-        api.RuntimeId = Object.keys(this.list).length;
-        this.list[api.RuntimeId] = create_weak_ref(api);
-        return api.RuntimeId;
+    public registerRuntime(api: RuntimeAPI): number {
+        api.runtimeId = Object.keys(this.list).length;
+        this.list[api.runtimeId] = create_weak_ref(api);
+        return api.runtimeId;
     }
 
-    public getRuntime(runtimeId: number): DotnetPublicAPI | undefined {
+    public getRuntime(runtimeId: number): RuntimeAPI | undefined {
         const wr = this.list[runtimeId];
         return wr ? wr.deref() : undefined;
     }
 }
 
-export function get_dotnet_instance(): DotnetPublicAPI {
-    return exportedAPI;
+function setEmscriptenEntrypoint(emscriptenEntrypoint: CreateDotnetRuntimeType, env: any) {
+    set_environment(env);
+    Object.assign(moduleExports, export_module());
+    set_emscripten_entrypoint(emscriptenEntrypoint);
 }
+
+export { __initializeImportsAndExports, __setEmscriptenEntrypoint, __linker_exports, moduleExports };
+

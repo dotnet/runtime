@@ -42,6 +42,7 @@ extern bool g_debugRep;
 const char* toString(CorInfoType cit);
 
 #define METHOD_IDENTITY_INFO_SIZE 0x10000 // We assume that the METHOD_IDENTITY_INFO_SIZE will not exceed 64KB
+#define METHOD_IDENTITY_INFO_NON_NAME_RESERVE 0x400 // Reserve 1KB of METHOD_IDENTITY_INFO_SIZE for everything except for the method name.
 
 // Special "jit flags" for noting some method context features
 
@@ -309,6 +310,10 @@ public:
     void dmpGetUnBoxHelper(DWORDLONG key, DWORD value);
     CorInfoHelpFunc repGetUnBoxHelper(CORINFO_CLASS_HANDLE cls);
 
+    void recGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls, void* result);
+    void dmpGetRuntimeTypePointer(DWORDLONG key, DWORDLONG value);
+    void* repGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls);
+
     void recGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                 CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                 CorInfoHelpFunc         id,
@@ -374,6 +379,15 @@ public:
                                      CORINFO_ARG_LIST_HANDLE args,
                                      CORINFO_CLASS_HANDLE*   vcTypeRet,
                                      DWORD*                  exception);
+
+    void recGetExactClasses(CORINFO_CLASS_HANDLE  baseType,
+                            int                   maxExactClasses,
+                            CORINFO_CLASS_HANDLE* exactClsRet,
+                            int                   result);
+    void dmpGetExactClasses(DLD key, DLD value);
+    int repGetExactClasses(CORINFO_CLASS_HANDLE  baseType,
+                           int                   maxExactClasses,
+                           CORINFO_CLASS_HANDLE* exactClsRet);
 
     void recGetArgNext(CORINFO_ARG_LIST_HANDLE args, CORINFO_ARG_LIST_HANDLE result);
     void dmpGetArgNext(DWORDLONG key, DWORDLONG value);
@@ -608,6 +622,10 @@ public:
     void dmpGetStringLiteral(DLDD key, DD value);
     int repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize);
 
+    void recObjectToString(void* handle, char* buffer, int bufferSize, int length);
+    void dmpObjectToString(DLD key, DD value);
+    int repObjectToString(void* handle, char* buffer, int bufferSize);
+
     void recGetHelperName(CorInfoHelpFunc funcNum, const char* result);
     void dmpGetHelperName(DWORD key, DWORD value);
     const char* repGetHelperName(CorInfoHelpFunc funcNum);
@@ -787,8 +805,8 @@ public:
     void dmpGetClassNameFromMetadata(DLD key, DD value);
     const char* repGetClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char** namespaceName);
 
-    void recGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result, unsigned index);
-    void dmpGetTypeInstantiationArgument(DWORDLONG key, DWORDLONG value);
+    void recGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index, CORINFO_CLASS_HANDLE result);
+    void dmpGetTypeInstantiationArgument(DLD key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index);
 
     void recAppendClassName(int                  nBufLenIn,
@@ -1118,6 +1136,9 @@ enum mcPackets
     Packet_IsIntrinsic = 192,
     Packet_UpdateEntryPointForTailCall = 193,
     Packet_GetLoongArch64PassStructInRegisterFlags = 194,
+    Packet_GetExactClasses = 195,
+    Packet_GetRuntimeTypePointer = 196,
+    Packet_ObjectToString = 197,
 };
 
 void SetDebugDumpVariables();

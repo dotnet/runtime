@@ -30,9 +30,7 @@ unsafe class Program
 
         public static string GetFullPath()
         {
-            Assembly assembly = Assembly.GetExecutingAssembly();
-            string directory = Path.GetDirectoryName(assembly.Location);
-            return Path.Combine(directory, GetFileName());
+            return Path.Combine(AppContext.BaseDirectory, GetFileName());
         }
     }
 

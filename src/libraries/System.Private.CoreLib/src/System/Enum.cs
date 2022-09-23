@@ -315,11 +315,42 @@ namespace System
             (TEnum[])GetValues(typeof(TEnum));
 #endif
 
-        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetValues<TEnum> overload instead.")]
+        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetValues<TEnum> overload or the GetValuesAsUnderlyingType method instead.")]
         public static Array GetValues(Type enumType)
         {
             ArgumentNullException.ThrowIfNull(enumType);
             return enumType.GetEnumValues();
+        }
+
+        /// <summary>
+        /// Retrieves an array of the values of the underlying type constants in a specified enumeration type.
+        /// </summary>
+        /// <typeparam name="TEnum">An enumeration type.</typeparam>
+        /// /// <remarks>
+        /// You can use this method to get enumeration values when it's hard to create an array of the enumeration type.
+        /// For example, you might use this method for the <see cref="T:System.Reflection.MetadataLoadContext" /> enumeration or on a platform where run-time code generation is not available.
+        /// </remarks>
+        /// <returns>An array that contains the values of the underlying type constants in <typeparamref name="TEnum" />.</returns>
+        public static Array GetValuesAsUnderlyingType<TEnum>() where TEnum : struct, Enum =>
+            typeof(TEnum).GetEnumValuesAsUnderlyingType();
+
+        /// <summary>
+        /// Retrieves an array of the values of the underlying type constants in a specified enumeration.
+        /// </summary>
+        /// <param name="enumType">An enumeration type.</param>
+        /// <remarks>
+        /// You can use this method to get enumeration values when it's hard to create an array of the enumeration type.
+        /// For example, you might use this method for the <see cref="T:System.Reflection.MetadataLoadContext" /> enumeration or on a platform where run-time code generation is not available.
+        /// </remarks>
+        /// <returns>An array that contains the values of the underlying type constants in  <paramref name="enumType" />.</returns>
+        /// <exception cref="T:System.ArgumentNullException">
+        /// <paramref name="enumType" /> is null.</exception>
+        /// <exception cref="T:System.ArgumentException">
+        /// <paramref name="enumType" /> is not an enumeration type.</exception>
+        public static Array GetValuesAsUnderlyingType(Type enumType)
+        {
+            ArgumentNullException.ThrowIfNull(enumType);
+            return enumType.GetEnumValuesAsUnderlyingType();
         }
 
         [Intrinsic]
@@ -403,7 +434,7 @@ namespace System
             int ulValuesLength = ulValues.Length;
             ref ulong start = ref MemoryMarshal.GetArrayDataReference(ulValues);
             return ulValuesLength <= NumberOfValuesThreshold ?
-                SpanHelpers.IndexOf(ref start, ulValue, ulValuesLength) :
+                SpanHelpers.IndexOfValueType(ref Unsafe.As<ulong, long>(ref start), (long)ulValue, ulValuesLength) :
                 SpanHelpers.BinarySearch(ref start, ulValuesLength, ulValue);
         }
 

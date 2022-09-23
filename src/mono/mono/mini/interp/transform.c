@@ -295,6 +295,13 @@ interp_prev_ins (InterpInst *ins)
 		} \
 	} while (0)
 
+#define CHECK_FALLTHRU() \
+	do {		 \
+		if (G_UNLIKELY (td->ip >= end)) {		\
+			interp_generate_ipe_bad_fallthru (td);	\
+		}						\
+	} while (0)
+
 #if NO_UNALIGNED_ACCESS
 #define WRITE32(ip, v) \
 	do { \
@@ -1304,6 +1311,18 @@ interp_generate_ipe_throw_with_msg (TransformData *td, MonoError *error_msg)
 		td->last_ins->dreg = td->sp [0].local;
 	}
 }
+
+static void
+interp_generate_ipe_bad_fallthru (TransformData *td)
+{
+	ERROR_DECL (bad_fallthru_error);
+	char *method_code = mono_disasm_code_one (NULL, td->method, td->ip, NULL);
+	mono_error_set_invalid_program (bad_fallthru_error, "Invalid IL (conditional fallthru past end of method) due to: %s", method_code);
+	interp_generate_ipe_throw_with_msg (td, bad_fallthru_error);
+	g_free (method_code);
+	mono_error_cleanup (bad_fallthru_error);
+}
+
 
 static int
 create_interp_local (TransformData *td, MonoType *type)
@@ -2443,6 +2462,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			*op = MINT_LDC_I4_0;
 	} else if (in_corlib &&
 			(!strncmp ("System.Runtime.Intrinsics.Arm", klass_name_space, 29) ||
+			!strncmp ("System.Runtime.Intrinsics.PackedSimd", klass_name_space, 36) ||
 			!strncmp ("System.Runtime.Intrinsics.X86", klass_name_space, 29)) &&
 			!strcmp (tm, "get_IsSupported")) {
 		*op = MINT_LDC_I4_0;
@@ -2450,6 +2470,16 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		(!strncmp ("System.Runtime.Intrinsics.Arm", klass_name_space, 29) ||
 		!strncmp ("System.Runtime.Intrinsics.X86", klass_name_space, 29))) {
 		interp_generate_void_throw (td, MONO_JIT_ICALL_mono_throw_platform_not_supported);
+	} else if (in_corlib &&
+			   (!strncmp ("System.Numerics", klass_name_space, 15) &&
+				!strcmp ("Vector", klass_name) &&
+				!strcmp (tm, "get_IsHardwareAccelerated"))) {
+		*op = MINT_LDC_I4_0;
+	} else if (in_corlib &&
+			   (!strncmp ("System.Runtime.Intrinsics", klass_name_space, 25) &&
+				!strncmp ("Vector", klass_name, 6) &&
+				!strcmp (tm, "get_IsHardwareAccelerated"))) {
+		*op = MINT_LDC_I4_0;
 	}
 
 	return FALSE;
@@ -4939,98 +4969,122 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		case CEE_BRFALSE:
 			one_arg_branch (td, MINT_BRFALSE_I4, read32 (td->ip + 1), 5);
 			td->ip += 5;
+			CHECK_FALLTHRU ();
 			break;
 		case CEE_BRFALSE_S:
 			one_arg_branch (td, MINT_BRFALSE_I4, (gint8)td->ip [1], 2);
 			td->ip += 2;
+			CHECK_FALLTHRU ();
 			break;
 		case CEE_BRTRUE:
 			one_arg_branch (td, MINT_BRTRUE_I4, read32 (td->ip + 1), 5);
 			td->ip += 5;
+			CHECK_FALLTHRU ();
 			break;
 		case CEE_BRTRUE_S:
 			one_arg_branch (td, MINT_BRTRUE_I4, (gint8)td->ip [1], 2);
 			td->ip += 2;
+			CHECK_FALLTHRU ();
 			break;
 		case CEE_BEQ:
 			two_arg_branch (td, MINT_BEQ_I4, read32 (td->ip + 1), 5);
 			td->ip += 5;
+			CHECK_FALLTHRU ();
 			break;
 		case CEE_BEQ_S:
 			two_arg_branch (td, MINT_BEQ_I4, (gint8) td->ip [1], 2);
 			td->ip += 2;
+			CHECK_FALLTHRU ();
 			break;
 		case CEE_BGE:
 			two_arg_branch (td, MINT_BGE_I4, read32 (td->ip + 1), 5);
 			td->ip += 5;
+			CHECK_FALLTHRU ();
 			break;
 		case CEE_BGE_S:
 			two_arg_branch (td, MINT_BGE_I4, (gint8) td->ip [1], 2);
 			td->ip += 2;
+			CHECK_FALLTHRU ();
 			break;
 		case CEE_BGT:
 			two_arg_branch (td, MINT_BGT_I4, read32 (td->ip + 1), 5);
 			td->ip += 5;
+			CHECK_FALLTHRU ();
 			break;
 		case CEE_BGT_S:
 			two_arg_branch (td, MINT_BGT_I4, (gint8) td->ip [1], 2);
 			td->ip += 2;
+			CHECK_FALLTHRU ();
 			break;
 		case CEE_BLT:
 			two_arg_branch (td, MINT_BLT_I4, read32 (td->ip + 1), 5);
 			td->ip += 5;
+			CHECK_FALLTHRU ();
 			break;
 		case CEE_BLT_S:
 			two_arg_branch (td, MINT_BLT_I4, (gint8) td->ip [1], 2);
 			td->ip += 2;
+			CHECK_FALLTHRU ();
 			break;
 		case CEE_BLE:
 			two_arg_branch (td, MINT_BLE_I4, read32 (td->ip + 1), 5);
 			td->ip += 5;
+			CHECK_FALLTHRU ();
 			break;
 		case CEE_BLE_S:
 			two_arg_branch (td, MINT_BLE_I4, (gint8) td->ip [1], 2);
 			td->ip += 2;
+			CHECK_FALLTHRU ();
 			break;
 		case CEE_BNE_UN:
 			two_arg_branch (td, MINT_BNE_UN_I4, read32 (td->ip + 1), 5);
 			td->ip += 5;
+			CHECK_FALLTHRU ();
 			break;
 		case CEE_BNE_UN_S:
 			two_arg_branch (td, MINT_BNE_UN_I4, (gint8) td->ip [1], 2);
 			td->ip += 2;
+			CHECK_FALLTHRU ();
 			break;
 		case CEE_BGE_UN:
 			two_arg_branch (td, MINT_BGE_UN_I4, read32 (td->ip + 1), 5);
 			td->ip += 5;
+			CHECK_FALLTHRU ();
 			break;
 		case CEE_BGE_UN_S:
 			two_arg_branch (td, MINT_BGE_UN_I4, (gint8) td->ip [1], 2);
 			td->ip += 2;
+			CHECK_FALLTHRU ();
 			break;
 		case CEE_BGT_UN:
 			two_arg_branch (td, MINT_BGT_UN_I4, read32 (td->ip + 1), 5);
 			td->ip += 5;
+			CHECK_FALLTHRU ();
 			break;
 		case CEE_BGT_UN_S:
 			two_arg_branch (td, MINT_BGT_UN_I4, (gint8) td->ip [1], 2);
 			td->ip += 2;
+			CHECK_FALLTHRU ();
 			break;
 		case CEE_BLE_UN:
 			two_arg_branch (td, MINT_BLE_UN_I4, read32 (td->ip + 1), 5);
 			td->ip += 5;
+			CHECK_FALLTHRU ();
 			break;
 		case CEE_BLE_UN_S:
 			two_arg_branch (td, MINT_BLE_UN_I4, (gint8) td->ip [1], 2);
 			td->ip += 2;
+			CHECK_FALLTHRU ();
 			break;
 		case CEE_BLT_UN:
 			two_arg_branch (td, MINT_BLT_UN_I4, read32 (td->ip + 1), 5);
 			td->ip += 5;
+			CHECK_FALLTHRU ();
 			break;
 		case CEE_BLT_UN_S:
 			two_arg_branch (td, MINT_BLT_UN_I4, (gint8) td->ip [1], 2);
 			td->ip += 2;
+			CHECK_FALLTHRU ();
 			break;
 		case CEE_SWITCH: {
 			guint32 n;
@@ -5900,6 +5954,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			MonoType *ftype = mono_field_get_type_internal (field);
 			gboolean is_static = !!(ftype->attrs & FIELD_ATTRIBUTE_STATIC);
 			mono_class_init_internal (klass);
+			mono_class_setup_fields (klass);
 			{
 				if (is_static) {
 					td->sp--;
@@ -5939,6 +5994,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			MonoType *ftype = mono_field_get_type_internal (field);
 			gboolean is_static = !!(ftype->attrs & FIELD_ATTRIBUTE_STATIC);
 			mono_class_init_internal (klass);
+			mono_class_setup_fields (klass);
 
 			MonoClass *field_klass = mono_class_from_mono_type_internal (ftype);
 			mt = mint_type (ftype);
@@ -6014,6 +6070,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			gboolean is_static = !!(ftype->attrs & FIELD_ATTRIBUTE_STATIC);
 			MonoClass *field_klass = mono_class_from_mono_type_internal (ftype);
 			mono_class_init_internal (klass);
+			mono_class_setup_fields (klass);
 			mt = mint_type (ftype);
 
 			BARRIER_IF_VOLATILE (td, MONO_MEMORY_BARRIER_REL);

@@ -12,7 +12,6 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-US")]
@@ -64,7 +63,6 @@ namespace Microsoft.Interop
             // Collect all methods adorned with LibraryImportAttribute
             var attributedMethods = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
-                    context,
                     TypeNames.LibraryImportAttribute,
                     static (node, ct) => node is MethodDeclarationSyntax,
                     static (context, ct) => context.TargetSymbol is IMethodSymbol methodSymbol
@@ -312,7 +310,7 @@ namespace Microsoft.Interop
             }
 
             // Create the stub.
-            var signatureContext = SignatureContext.Create(symbol, libraryImportData, environment, generatorDiagnostics, typeof(LibraryImportGenerator).Assembly);
+            var signatureContext = SignatureContext.Create(symbol, DefaultMarshallingInfoParser.Create(environment, generatorDiagnostics, symbol, libraryImportData, generatedDllImportAttr), environment, typeof(LibraryImportGenerator).Assembly);
 
             var containingTypeContext = new ContainingSyntaxContext(originalSyntax);
 

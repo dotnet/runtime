@@ -12,7 +12,7 @@ using Internal.TypeSystem;
 
 namespace System.CommandLine
 {
-    internal class CommandLineException : Exception
+    internal sealed class CommandLineException : Exception
     {
         public CommandLineException(string message) : base(message) { }
     }
@@ -128,7 +128,7 @@ namespace System.CommandLine
                 }
             }
 
-            HashCode hashCodeOfArgs = new HashCode();
+            HashCode hashCodeOfArgs = default;
             foreach (string s in details)
                 hashCodeOfArgs.Add(s);
 

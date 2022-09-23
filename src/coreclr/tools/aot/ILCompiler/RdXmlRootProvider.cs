@@ -18,7 +18,7 @@ namespace ILCompiler
     /// Only supports a subset of the Runtime Directives configuration file format.
     /// </summary>
     /// <remarks>https://msdn.microsoft.com/en-us/library/dn600639(v=vs.110).aspx</remarks>
-    internal class RdXmlRootProvider : ICompilationRootProvider
+    internal sealed class RdXmlRootProvider : ICompilationRootProvider
     {
         private XElement _documentRoot;
         private TypeSystemContext _context;
@@ -88,7 +88,7 @@ namespace ILCompiler
             }
         }
 
-        private void ProcessTypeDirective(IRootingServiceProvider rootProvider, ModuleDesc containingModule, XElement typeElement)
+        private static void ProcessTypeDirective(IRootingServiceProvider rootProvider, ModuleDesc containingModule, XElement typeElement)
         {
             var typeNameAttribute = typeElement.Attribute("Name");
             if (typeNameAttribute == null)
@@ -137,7 +137,7 @@ namespace ILCompiler
             }
         }
 
-        private void ProcessMethodDirective(IRootingServiceProvider rootProvider, ModuleDesc containingModule, TypeDesc containingType, XElement methodElement)
+        private static void ProcessMethodDirective(IRootingServiceProvider rootProvider, ModuleDesc containingModule, TypeDesc containingType, XElement methodElement)
         {
             var methodNameAttribute = methodElement.Attribute("Name");
             if (methodNameAttribute == null)

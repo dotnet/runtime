@@ -1370,65 +1370,45 @@ FOUND_AM:
 
     if (rv2)
     {
-        /* Make sure a GC address doesn't end up in 'rv2' */
-
+        // Make sure a GC address doesn't end up in 'rv2'
         if (varTypeIsGC(rv2->TypeGet()))
         {
-            noway_assert(rv1 && !varTypeIsGC(rv1->TypeGet()));
-
-            tmp = rv1;
-            rv1 = rv2;
-            rv2 = tmp;
-
+            std::swap(rv1, rv2);
             rev = !rev;
         }
 
-        /* Special case: constant array index (that is range-checked) */
-
+        // Special case: constant array index (that is range-checked)
         if (fold)
         {
-            ssize_t  tmpMul;
-            GenTree* index;
+            // By default, assume index is rv2 and indexScale is mul (or 1 if mul is zero)
+            GenTree* index      = rv2;
+            ssize_t  indexScale = mul == 0 ? 1 : mul;
 
-            if ((rv2->gtOper == GT_MUL || rv2->gtOper == GT_LSH) && (rv2->AsOp()->gtOp2->IsCnsIntOrI()))
+            if (rv2->OperIs(GT_MUL, GT_LSH) && (rv2->gtGetOp2()->IsCnsIntOrI()))
             {
-                /* For valuetype arrays where we can't use the scaled address
-                   mode, rv2 will point to the scaled index. So we have to do
-                   more work */
-
-                tmpMul = compiler->optGetArrayRefScaleAndIndex(rv2, &index DEBUGARG(false));
-                if (mul)
-                {
-                    tmpMul *= mul;
-                }
-            }
-            else
-            {
-                /* May be a simple array. rv2 will points to the actual index */
-
-                index  = rv2;
-                tmpMul = mul;
+                indexScale *= compiler->optGetArrayRefScaleAndIndex(rv2, &index DEBUGARG(false));
             }
 
-            /* Get hold of the array index and see if it's a constant */
-            if (index->IsIntCnsFitsInI32())
+            // "index * 0" means index is zero
+            if (indexScale == 0)
             {
-                /* Get hold of the index value */
-                ssize_t ixv = index->AsIntConCommon()->IconValue();
-
-                /* Scale the index if necessary */
-                if (tmpMul)
+                mul = 0;
+                rv2 = nullptr;
+            }
+            else if (index->IsIntCnsFitsInI32())
+            {
+                ssize_t constantIndex = index->AsIntConCommon()->IconValue() * indexScale;
+                if (constantIndex == 0)
                 {
-                    ixv *= tmpMul;
+                    // while scale is a non-zero constant, the actual index is zero so drop it
+                    mul = 0;
+                    rv2 = nullptr;
                 }
-
-                if (FitsIn<INT32>(cns + ixv))
+                else if (FitsIn<INT32>(cns + constantIndex))
                 {
-                    /* Add the scaled index to the offset value */
-
-                    cns += ixv;
-
-                    /* There is no scaled operand any more */
+                    // Add the constant index to the accumulated offset value
+                    cns += constantIndex;
+                    // and get rid of index
                     mul = 0;
                     rv2 = nullptr;
                 }
@@ -1740,11 +1720,18 @@ void CodeGen::genGenerateMachineCode()
     {
         compiler->opts.disAsm = true;
     }
+#endif
     compiler->compCurBB = compiler->fgFirstBB;
 
     if (compiler->opts.disAsm)
     {
-        printf("; Assembly listing for method %s\n", compiler->info.compFullName);
+#ifdef DEBUG
+        const char* fullName = compiler->info.compFullName;
+#else
+        const char* fullName = compiler->eeGetMethodFullName(compiler->info.compMethodHnd);
+#endif
+
+        printf("; Assembly listing for method %s\n", fullName);
 
         printf("; Emitting ");
 
@@ -1880,8 +1867,9 @@ void CodeGen::genGenerateMachineCode()
 
         if (compiler->fgHaveProfileData())
         {
-            printf("; with PGO: edge weights are %s, and fgCalledCount is " FMT_WT "\n",
-                   compiler->fgHaveValidEdgeWeights ? "valid" : "invalid", compiler->fgCalledCount);
+            printf("; with %s: edge weights are %s, and fgCalledCount is " FMT_WT "\n",
+                   compiler->compGetPgoSourceName(), compiler->fgHaveValidEdgeWeights ? "valid" : "invalid",
+                   compiler->fgCalledCount);
         }
 
         if (compiler->fgPgoFailReason != nullptr)
@@ -1905,7 +1893,6 @@ void CodeGen::genGenerateMachineCode()
             printf("; invoked as altjit\n");
         }
     }
-#endif // DEBUG
 
     // We compute the final frame layout before code generation. This is because LSRA
     // has already computed exactly the maximum concurrent number of spill temps of each type that are
@@ -2056,6 +2043,11 @@ void CodeGen::genEmitMachineCode()
     {
         printf("*************** After end code gen, before unwindEmit()\n");
         GetEmitter()->emitDispIGlist(true);
+    }
+#else
+    if (compiler->opts.disAsm)
+    {
+        printf("\n; Total bytes of code %d\n\n", codeSize);
     }
 #endif
 
@@ -3361,7 +3353,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 regNumber regNum  = genMapRegArgNumToRegNum(argNum, regType);
 
                 regNumber destRegNum = REG_NA;
-                if (varTypeIsStruct(varDsc) &&
+                if (varTypeIsPromotable(varDsc) &&
                     (compiler->lvaGetPromotionType(varDsc) == Compiler::PROMOTION_TYPE_INDEPENDENT))
                 {
                     assert(regArgTab[argNum].slot <= varDsc->lvFieldCnt);
@@ -6362,9 +6354,9 @@ void CodeGen::genFnProlog()
 #if defined(DEBUG) && defined(TARGET_XARCH)
     if (compiler->opts.compStackCheckOnRet)
     {
-        noway_assert(compiler->lvaReturnSpCheck != 0xCCCCCCCC &&
-                     compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvDoNotEnregister &&
-                     compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvOnFrame);
+        assert(compiler->lvaReturnSpCheck != BAD_VAR_NUM);
+        assert(compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvDoNotEnregister);
+        assert(compiler->lvaGetDesc(compiler->lvaReturnSpCheck)->lvOnFrame);
         GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaReturnSpCheck, 0);
     }
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
@@ -8566,17 +8558,34 @@ regNumber CodeGen::genRegCopy(GenTree* treeNode, unsigned multiRegIndex)
 //    doStackPointerCheck - If true, do the stack pointer check, otherwise do nothing.
 //    lvaStackPointerVar  - The local variable number that holds the value of the stack pointer
 //                          we are comparing against.
+//    offset              - the offset from the stack pointer to expect
+//    regTmp              - register we can use for computation if `offset` != 0
 //
 // Return Value:
 //    None
 //
-void CodeGen::genStackPointerCheck(bool doStackPointerCheck, unsigned lvaStackPointerVar)
+void CodeGen::genStackPointerCheck(bool      doStackPointerCheck,
+                                   unsigned  lvaStackPointerVar,
+                                   ssize_t   offset,
+                                   regNumber regTmp)
 {
     if (doStackPointerCheck)
     {
-        noway_assert(lvaStackPointerVar != 0xCCCCCCCC && compiler->lvaGetDesc(lvaStackPointerVar)->lvDoNotEnregister &&
-                     compiler->lvaGetDesc(lvaStackPointerVar)->lvOnFrame);
-        GetEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, REG_SPBASE, lvaStackPointerVar, 0);
+        assert(lvaStackPointerVar != BAD_VAR_NUM);
+        assert(compiler->lvaGetDesc(lvaStackPointerVar)->lvDoNotEnregister);
+        assert(compiler->lvaGetDesc(lvaStackPointerVar)->lvOnFrame);
+
+        if (offset != 0)
+        {
+            assert(regTmp != REG_NA);
+            GetEmitter()->emitIns_Mov(INS_mov, EA_PTRSIZE, regTmp, REG_SPBASE, /* canSkip */ false);
+            GetEmitter()->emitIns_R_I(INS_sub, EA_PTRSIZE, regTmp, offset);
+            GetEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, regTmp, lvaStackPointerVar, 0);
+        }
+        else
+        {
+            GetEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, REG_SPBASE, lvaStackPointerVar, 0);
+        }
 
         BasicBlock* sp_check = genCreateTempLabel();
         GetEmitter()->emitIns_J(INS_je, sp_check);

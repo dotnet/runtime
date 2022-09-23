@@ -1004,15 +1004,6 @@ ep_rt_config_value_get_output_streaming (void)
 
 static
 inline
-bool
-ep_rt_config_value_get_use_portable_thread_pool (void)
-{
-	// Only supports portable thread pool.
-	return true;
-}
-
-static
-inline
 uint32_t
 ep_rt_config_value_get_rundown (void)
 {
@@ -1366,6 +1357,14 @@ ep_rt_thread_create (
 	}
 
 	return false;
+}
+
+static
+inline
+void
+ep_rt_set_server_name()
+{
+	mono_native_thread_set_name(mono_native_thread_id_get(), ".NET EventPipe");
 }
 
 static

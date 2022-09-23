@@ -3611,7 +3611,7 @@ namespace System.Text.Json.Tests
             out Utf8JsonReader reader,
             ReadOnlyMemory<byte> data,
             int segmentCount,
-            in JsonReaderState state,
+            scoped in JsonReaderState state,
             bool isFinalBlock = false)
         {
             if (segmentCount == 0)

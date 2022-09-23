@@ -1,7 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -9,6 +11,87 @@ namespace System.Runtime.InteropServices.JavaScript
     // the methods are protected from trimming by DynamicDependency on JSFunctionBinding.BindJSFunction
     internal static unsafe partial class JavaScriptExports
     {
+        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
+        // the marshaled signature is:
+        // Task<int>? CallEntrypoint(MonoMethod* entrypointPtr, string[] args)
+        public static void CallEntrypoint(JSMarshalerArgument* arguments_buffer)
+        {
+            ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
+            ref JSMarshalerArgument arg_result = ref arguments_buffer[1]; // initialized by caller in alloc_stack_frame()
+            ref JSMarshalerArgument arg_1 = ref arguments_buffer[2]; // initialized and set by caller
+            ref JSMarshalerArgument arg_2 = ref arguments_buffer[3]; // initialized and set by caller
+            try
+            {
+                arg_1.ToManaged(out IntPtr entrypointPtr);
+                if (entrypointPtr == IntPtr.Zero)
+                {
+                    throw new MissingMethodException("Missing entrypoint");
+                }
+
+                RuntimeMethodHandle methodHandle = JSHostImplementation.GetMethodHandleFromIntPtr(entrypointPtr);
+                // this would not work for generic types. But Main() could not be generic, so we are fine.
+                MethodInfo? method = MethodBase.GetMethodFromHandle(methodHandle) as MethodInfo;
+                if (method == null)
+                {
+                    throw new InvalidProgramException("Can't resolve entrypoint handle");
+                }
+
+                arg_2.ToManaged(out string?[]? args);
+                object[] argsToPass = System.Array.Empty<object>();
+                Task<int>? result = null;
+                var parameterInfos = method.GetParameters();
+                if (parameterInfos.Length > 0 && parameterInfos[0].ParameterType == typeof(string[]))
+                {
+                    argsToPass = new object[] { args ?? System.Array.Empty<string>() };
+                }
+                if (method.ReturnType == typeof(void))
+                {
+                    method.Invoke(null, argsToPass);
+                }
+                else if (method.ReturnType == typeof(int))
+                {
+                    int intResult = (int)method.Invoke(null, argsToPass)!;
+                    result = Task.FromResult(intResult);
+                }
+                else if (method.ReturnType == typeof(Task))
+                {
+                    Task methodResult = (Task)method.Invoke(null, argsToPass)!;
+                    TaskCompletionSource<int> tcs = new TaskCompletionSource<int>();
+                    result = tcs.Task;
+                    methodResult.ContinueWith((t) =>
+                    {
+                        if (t.IsFaulted)
+                        {
+                            tcs.SetException(t.Exception!);
+                        }
+                        else
+                        {
+                            tcs.SetResult(0);
+                        }
+                    }, TaskScheduler.Default);
+                }
+                else if (method.ReturnType == typeof(Task<int>))
+                {
+                    result = (Task<int>)method.Invoke(null, argsToPass)!;
+                }
+                else
+                {
+                    throw new InvalidProgramException($"Return type '{method.ReturnType.FullName}' from main method in not supported");
+                }
+                arg_result.ToJS(result, (ref JSMarshalerArgument arg, int value) =>
+                {
+                    arg.ToJS(value);
+                });
+            }
+            catch (Exception ex)
+            {
+                if (ex is TargetInvocationException refEx && refEx.InnerException != null)
+                    ex = refEx.InnerException;
+
+                arg_exc.ToJS(ex);
+            }
+        }
+
 
         // The JS layer invokes this method when the JS wrapper for a JS owned object
         //  has been collected by the JS garbage collector
@@ -41,7 +124,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public static void CreateTaskCallback(JSMarshalerArgument* arguments_buffer)
         {
             ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
-            ref JSMarshalerArgument arg_return = ref arguments_buffer[1]; // used as return vaule
+            ref JSMarshalerArgument arg_return = ref arguments_buffer[1]; // used as return value
             try
             {
                 JSHostImplementation.TaskCallback holder = new JSHostImplementation.TaskCallback();
@@ -113,11 +196,56 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
+        // the marshaled signature is:
+        // string GetManagedStackTrace(GCHandle exception)
+        public static void GetManagedStackTrace(JSMarshalerArgument* arguments_buffer)
+        {
+            ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
+            ref JSMarshalerArgument arg_return = ref arguments_buffer[1]; // used as return value
+            ref JSMarshalerArgument arg_1 = ref arguments_buffer[2];// initialized and set by caller
+            try
+            {
+                GCHandle exception_gc_handle = (GCHandle)arg_1.slot.GCHandle;
+                if (exception_gc_handle.Target is Exception exception)
+                {
+                    arg_return.ToJS(exception.StackTrace);
+                }
+                else
+                {
+                    throw new InvalidOperationException("Exception is null");
+                }
+            }
+            catch (Exception ex)
+            {
+                arg_exc.ToJS(ex);
+            }
+        }
+
+#if FEATURE_WASM_THREADS
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
+        // the marshaled signature is:
+        // void InstallSynchronizationContext()
+        public static void InstallSynchronizationContext (JSMarshalerArgument* arguments_buffer) {
+            ref JSMarshalerArgument arg_exc = ref arguments_buffer[0]; // initialized by caller in alloc_stack_frame()
+            try
+            {
+                JSSynchronizationContext.Install();
+            }
+            catch (Exception ex)
+            {
+                arg_exc.ToJS(ex);
+            }
+        }
+
+#endif
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static void StopProfile()
         {
         }
 
-        // Called by the AOT profiler to save profile data into INTERNAL.aot_profile_data
+        // Called by the AOT profiler to save profile data into INTERNAL.aotProfileData
         [MethodImpl(MethodImplOptions.NoInlining)] // https://github.com/dotnet/runtime/issues/71425
         public static unsafe void DumpAotProfileData(ref byte buf, int len, string extraArg)
         {
@@ -133,7 +261,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 if (module == null)
                     throw new InvalidOperationException();
 
-                module.SetProperty("aot_profile_data", span.ToArray());
+                module.SetProperty("aotProfileData", span.ToArray());
             }
         }
     }

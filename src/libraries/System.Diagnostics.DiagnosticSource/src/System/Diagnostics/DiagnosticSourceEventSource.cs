@@ -641,6 +641,8 @@ namespace System.Diagnostics
                         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2119",
                             Justification = "DAM on EventSource references this compiler-generated local function which calls a " +
                                             "method that requires unreferenced code. EventSource will not access this local function.")]
+                        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+                            Justification = "DiagnosticSource.Write is marked with RequiresDynamicCode.")]
                         void OnEventWritten(KeyValuePair<string, object?> evnt)
                         {
                             // The filter given to the DiagnosticSource may not work if users don't is 'IsEnabled' as expected.
@@ -888,6 +890,8 @@ namespace System.Diagnostics
             [DynamicDependency(nameof(TimeSpan.Ticks), typeof(TimeSpan))]
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = "Activity's properties are being preserved with the DynamicDependencies on OnActivityStarted.")]
+            [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+                            Justification = "Activity is a reference type and is safe in aot.")]
             private static void OnActivityStarted(DiagnosticSourceEventSource eventSource, Activity activity)
             {
                 FilterAndTransform? list = eventSource._activitySourceSpecs;
@@ -907,6 +911,8 @@ namespace System.Diagnostics
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = "Activity's properties are being preserved with the DynamicDependencies on OnActivityStarted.")]
+            [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+                            Justification = "Activity is a reference type and is safe with aot.")]
             private static void OnActivityStopped(DiagnosticSourceEventSource eventSource, Activity activity)
             {
                 FilterAndTransform? list = eventSource._activitySourceSpecs;
@@ -1009,6 +1015,7 @@ namespace System.Diagnostics
                 Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                 "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
             [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
+            [RequiresDynamicCode(DiagnosticSource.WriteRequiresDynamicCode)]
             public List<KeyValuePair<string, string?>> Morph(object? args)
             {
                 // Transform the args into a bag of key-value strings.
@@ -1047,11 +1054,7 @@ namespace System.Diagnostics
                                 Interlocked.CompareExchange(ref _implicitTransformsTable,
                                     new ConcurrentDictionary<Type, TransformSpec?>(1, 8), null);
                             }
-                            implicitTransforms = _implicitTransformsTable.GetOrAdd(argType, type => MakeImplicitTransformsWrapper(type));
-
-                            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                                Justification = "The Morph method has RequiresUnreferencedCode, but the trimmer can't see through lamdba calls.")]
-                            static TransformSpec? MakeImplicitTransformsWrapper(Type transformType) => MakeImplicitTransforms(transformType);
+                            implicitTransforms = _implicitTransformsTable.GetOrAdd(argType, MakeImplicitTransforms);
                         }
 
                         // implicitTransformas now fetched from cache or constructed, use it to Fetch all the implicit fields.
@@ -1190,6 +1193,7 @@ namespace System.Diagnostics
                 Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                 "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
             [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
+            [RequiresDynamicCode(DiagnosticSource.WriteRequiresDynamicCode)]
             public KeyValuePair<string, string?> Morph(object? obj)
             {
                 for (PropertySpec? cur = _fetches; cur != null; cur = cur.Next)
@@ -1244,6 +1248,7 @@ namespace System.Diagnostics
                     Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
                 [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
+                [RequiresDynamicCode(DiagnosticSource.WriteRequiresDynamicCode)]
                 public object? Fetch(object? obj)
                 {
                     PropertyFetch? fetch = _fetchForExpectedType;
@@ -1290,6 +1295,7 @@ namespace System.Diagnostics
                         Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                         "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
                     [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
+                    [RequiresDynamicCode(DiagnosticSource.WriteRequiresDynamicCode)]
                     public static PropertyFetch FetcherForProperty(Type? type, string propertyName)
                     {
                         if (propertyName == null)

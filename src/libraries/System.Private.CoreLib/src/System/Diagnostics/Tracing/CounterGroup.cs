@@ -7,6 +7,11 @@ using System.Threading;
 
 namespace System.Diagnostics.Tracing
 {
+#if !ES_BUILD_STANDALONE
+#if !FEATURE_WASM_PERFTRACING
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+#endif
+#endif
     internal sealed class CounterGroup
     {
         private readonly EventSource _eventSource;

@@ -120,25 +120,34 @@ namespace System.Text.Json
         {
             Debug.Assert(jsonTypeInfo.IsConfigured);
 
-            JsonSerializerOptions options = jsonTypeInfo.Options;
+            Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(jsonTypeInfo.Options, out PooledByteBufferWriter output);
 
-            using var output = new PooledByteBufferWriter(options.DefaultBufferSize);
-            using var writer = new Utf8JsonWriter(output, options.GetWriterOptions());
-
-            WriteCore(writer, value, jsonTypeInfo);
-            return output.WrittenMemory.ToArray();
+            try
+            {
+                WriteCore(writer, value, jsonTypeInfo);
+                return output.WrittenMemory.ToArray();
+            }
+            finally
+            {
+                Utf8JsonWriterCache.ReturnWriterAndBuffer(writer, output);
+            }
         }
 
         private static byte[] WriteBytesAsObject(object? value, JsonTypeInfo jsonTypeInfo)
         {
             Debug.Assert(jsonTypeInfo.IsConfigured);
 
-            JsonSerializerOptions options = jsonTypeInfo.Options;
+            Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(jsonTypeInfo.Options, out PooledByteBufferWriter output);
 
-            using var output = new PooledByteBufferWriter(options.DefaultBufferSize);
-            using var writer = new Utf8JsonWriter(output, options.GetWriterOptions());
-            WriteCoreAsObject(writer, value, jsonTypeInfo);
-            return output.WrittenMemory.ToArray();
+            try
+            {
+                WriteCoreAsObject(writer, value, jsonTypeInfo);
+                return output.WrittenMemory.ToArray();
+            }
+            finally
+            {
+                Utf8JsonWriterCache.ReturnWriterAndBuffer(writer, output);
+            }
         }
     }
 }

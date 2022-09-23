@@ -59,7 +59,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         OwnProperties = 4,
         ForDebuggerProxyAttribute = 8,
         ForDebuggerDisplayAttribute = 16,
-        WithProperties = 32
+        WithProperties = 32,
+        JustMyCode = 64,
+        AutoExpandable = 128
     }
 
     internal enum CommandSet {
@@ -880,11 +882,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
 
             string methodName = await GetMethodName(methodId, token);
-            if (method == null)
-            {
-                //get information from runtime
-                method = await CreateMethodInfoFromRuntimeInformation(asm, methodId, methodName, methodToken, token);
-            }
+            //get information from runtime
+            method ??= await CreateMethodInfoFromRuntimeInformation(asm, methodId, methodName, methodToken, token);
             var type = await GetTypeFromMethodIdAsync(methodId, token);
             var typeInfo = await GetTypeInfo(type, token);
             try {
@@ -946,10 +945,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             asm.TypesByToken.TryGetValue(typeToken, out TypeInfo type);
 
-            if (type == null)
-            {
-                type = asm.CreateTypeInfo(typeName, typeToken);
-            }
+            type ??= asm.CreateTypeInfo(typeName, typeToken);
 
             types[typeId] = new TypeInfoWithDebugInformation(type, typeId, typeName);
             return types[typeId];
@@ -1355,7 +1351,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return parameters;
         }
 
-        public async Task<int> SetBreakpoint(int methodId, long il_offset, CancellationToken token)
+        public async Task<int> SetBreakpointNoThrow(int methodId, long il_offset, CancellationToken token)
         {
             using var commandParamsWriter = new MonoBinaryWriter();
             commandParamsWriter.Write((byte)EventKind.Breakpoint);
@@ -1364,7 +1360,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write((byte)ModifierKind.LocationOnly);
             commandParamsWriter.Write(methodId);
             commandParamsWriter.Write(il_offset);
-            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdEventRequest.Set, commandParamsWriter, token);
+            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdEventRequest.Set, commandParamsWriter, token, throwOnError: false);
+            if (retDebuggerCmdReader.HasError)
+                return -1;
             return retDebuggerCmdReader.ReadInt32();
         }
 
@@ -1613,8 +1611,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 expr = "$\"" + dispAttrStr + "\"";
                 JObject retValue = await resolver.Resolve(expr, token);
-                if (retValue == null)
-                    retValue = await ExpressionEvaluator.CompileAndRunTheExpression(expr, resolver, logger, token);
+                retValue ??= await ExpressionEvaluator.CompileAndRunTheExpression(expr, resolver, logger, token);
 
                 return retValue?["value"]?.Value<string>();
             }
@@ -2366,19 +2363,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public static bool IsPrimitiveType(string simplifiedClassName)
             => s_primitiveTypeNames.Contains(simplifiedClassName);
-
-    }
-
-    internal static class HelperExtensions
-    {
-        public static void AddRange(this JArray arr, JArray addedArr)
-        {
-            foreach (var item in addedArr)
-                arr.Add(item);
-        }
-
-        public static bool IsNullValuedObject(this JObject obj)
-            => obj != null && obj["type"]?.Value<string>() == "object" && obj["subtype"]?.Value<string>() == "null";
 
     }
 }

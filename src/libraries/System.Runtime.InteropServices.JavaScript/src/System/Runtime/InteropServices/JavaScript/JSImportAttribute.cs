@@ -20,8 +20,6 @@ namespace System.Runtime.InteropServices.JavaScript
     /// public static partial int librarySum(int a, int b);
     /// [JSImport("Math.sum", "my-math-helper")]
     /// public static partial int libraryNamespaceSum(int a, int b);
-    /// [JSImport("IMPORTS.sum")]
-    /// public static partial int runtimeImportsSum(int a, int b);
     /// [JSImport("globalThis.Math.sum")]
     /// public static partial int globalSum(int a, int b);
     /// </code>
@@ -31,7 +29,7 @@ namespace System.Runtime.InteropServices.JavaScript
     public sealed class JSImportAttribute : Attribute
     {
         /// <summary>
-        /// The name of the target JavaScript function. This name will be used as a key to locate the function in the IMPORTS JavaScript object owned by the runtime.
+        /// The name of the target JavaScript function. This name will be used as a key to locate the function in the module.
         /// Functions nested inside of objects can be referred to by using the dot operator to connect one or more names.
         /// </summary>
         public string FunctionName { get; }
@@ -44,7 +42,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Initializes a new instance of the <see cref="JSImportAttribute"/>.
         /// </summary>
-        /// <param name="functionName">Name of the function to be bound in the IMPORTS object of the runtime instance in the JavaScript page. It allows dots for nested objects.</param>
+        /// <param name="functionName">Name of the function to be bound in the module. It allows dots for nested objects.</param>
         public JSImportAttribute(string functionName)
         {
             FunctionName = functionName;
@@ -54,7 +52,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Initializes a new instance of the <see cref="JSImportAttribute"/>.
         /// </summary>
         /// <param name="functionName">
-        /// The name of the target JavaScript function. This name will be used as a key to locate the function in the IMPORTS JavaScript object owned by the runtime.
+        /// The name of the target JavaScript function. This name will be used as a key to locate the function in the module.
         /// Functions nested inside of objects can be referred to by using the dot operator to connect one or more names.
         /// </param>
         /// <param name="moduleName">

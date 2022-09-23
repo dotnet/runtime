@@ -218,7 +218,7 @@ BaseDomain *MethodDesc::GetDomain()
         FORBID_FAULT;
         SUPPORTS_DAC;
     }
-    CONTRACTL_END
+    CONTRACTL_END;
 
     return AppDomain::GetCurrentDomain();
 }
@@ -241,6 +241,24 @@ LoaderAllocator * MethodDesc::GetDomainSpecificLoaderAllocator()
 
 #endif //!DACCESS_COMPILE
 
+
+//*******************************************************************************
+LPCUTF8 MethodDesc::GetNameThrowing()
+{
+    CONTRACTL
+    {
+        THROWS;
+    }
+    CONTRACTL_END;
+
+    LPCUTF8 result = GetName();
+    if (result == NULL)
+    {
+        ThrowHR(COR_E_BADIMAGEFORMAT, BFA_METADATA_CORRUPT);
+    }
+    return result;
+}
+
 //*******************************************************************************
 LPCUTF8 MethodDesc::GetName(USHORT slot)
 {
@@ -260,7 +278,8 @@ LPCUTF8 MethodDesc::GetName()
         GC_NOTRIGGER;
         FORBID_FAULT;
         SUPPORTS_DAC;
-    }CONTRACTL_END;
+    }
+    CONTRACTL_END;
 
     if (IsArray())
     {
@@ -340,7 +359,7 @@ VOID MethodDesc::GetMethodInfoWithNewSig(SString &namespaceOrClassName, SString 
 
 /*
  * Function to get a method's full name, something like
- * void [mscorlib]System.StubHelpers.BSTRMarshaler::ClearNative(native int)
+ * void [System.Private.CoreLib]System.StubHelpers.BSTRMarshaler::ClearNative(native int)
  */
 VOID MethodDesc::GetFullMethodInfo(SString& fullMethodSigName)
 {

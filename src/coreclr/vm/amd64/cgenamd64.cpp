@@ -548,6 +548,7 @@ void UMEntryThunkCode::Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTarget
     m_jmpRAX[2]  = 0xE0;
 
     _ASSERTE(DbgIsExecutable(&pEntryThunkCodeRX->m_movR10[0], &pEntryThunkCodeRX->m_jmpRAX[3]-&pEntryThunkCodeRX->m_movR10[0]));
+    FlushInstructionCache(GetCurrentProcess(),pEntryThunkCodeRX,sizeof(UMEntryThunkCode));
 }
 
 void UMEntryThunkCode::Poison()
@@ -574,7 +575,7 @@ void UMEntryThunkCode::Poison()
     pThisRW->m_movR10[1]  = 0xBF;
 #endif
 
-    ClrFlushInstructionCache(&m_movR10[0], &m_jmpRAX[3]-&m_movR10[0]);
+    ClrFlushInstructionCache(&m_movR10[0], &m_jmpRAX[3]-&m_movR10[0], /* hasCodeExecutedBefore */ true);
 }
 
 UMEntryThunk* UMEntryThunk::Decode(LPVOID pCallback)

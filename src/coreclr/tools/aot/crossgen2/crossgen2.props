@@ -13,8 +13,7 @@
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <Configurations>Debug;Release;Checked</Configurations>
     <ServerGarbageCollection>true</ServerGarbageCollection>
-    <!-- Trim all dependent assemblies as though they were all marked IsTrimmable. -->
-    <TrimmerDefaultAction>link</TrimmerDefaultAction>
+    <EventSourceSupport>true</EventSourceSupport>
   </PropertyGroup>
 
   <ItemGroup Label="Embedded Resources">

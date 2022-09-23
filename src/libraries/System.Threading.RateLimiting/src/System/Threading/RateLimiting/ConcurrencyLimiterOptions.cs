@@ -15,7 +15,7 @@ namespace System.Threading.RateLimiting
         public int PermitLimit { get; set; }
 
         /// <summary>
-        /// Determines the behaviour of <see cref="RateLimiter.WaitAndAcquireAsync"/> when not enough resources can be leased.
+        /// Determines the behaviour of <see cref="RateLimiter.AcquireAsync"/> when not enough resources can be leased.
         /// </summary>
         /// <value>
         /// <see cref="QueueProcessingOrder.OldestFirst"/> by default.

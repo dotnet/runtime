@@ -3,8 +3,11 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
+using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,21 +15,18 @@ using System.Threading.Tasks;
 namespace System.Formats.Tar
 {
     // Static class containing a variety of helper methods.
-    internal static class TarHelpers
+    internal static partial class TarHelpers
     {
         internal const short RecordSize = 512;
         internal const int MaxBufferLength = 4096;
 
-        internal const int ZeroChar = 0x30;
-        internal const byte SpaceChar = 0x20;
-        internal const byte EqualsChar = 0x3d;
-        internal const byte NewLineChar = 0xa;
-
+        // Default mode for TarEntry created for a file-type.
         private const UnixFileMode DefaultFileMode =
             UnixFileMode.UserRead | UnixFileMode.UserWrite |
             UnixFileMode.GroupRead |
             UnixFileMode.OtherRead;
 
+        // Default mode for TarEntry created for a directory-type.
         private const UnixFileMode DefaultDirectoryMode =
             DefaultFileMode |
             UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
@@ -115,36 +115,6 @@ namespace System.Formats.Tar
             return padding;
         }
 
-        // Returns the specified 8-base number as a 10-base number.
-        internal static int ConvertDecimalToOctal(int value)
-        {
-            int multiplier = 1;
-            int accum = value;
-            int actual = 0;
-            while (accum != 0)
-            {
-                actual += (accum % 8) * multiplier;
-                accum /= 8;
-                multiplier *= 10;
-            }
-            return actual;
-        }
-
-        // Returns the specified 10-base number as an 8-base number.
-        internal static long ConvertDecimalToOctal(long value)
-        {
-            long multiplier = 1;
-            long accum = value;
-            long actual = 0;
-            while (accum != 0)
-            {
-                actual += (accum % 8) * multiplier;
-                accum /= 8;
-                multiplier *= 10;
-            }
-            return actual;
-        }
-
         // Returns true if all the bytes in the specified array are nulls, false otherwise.
         internal static bool IsAllNullBytes(Span<byte> buffer) =>
             buffer.IndexOfAnyExcept((byte)0) < 0;
@@ -189,9 +159,10 @@ namespace System.Formats.Tar
         {
             if (dict.TryGetValue(fieldName, out string? strNumber) && !string.IsNullOrEmpty(strNumber))
             {
-                baseTenInteger = Convert.ToInt32(strNumber);
+                baseTenInteger = int.Parse(strNumber, CultureInfo.InvariantCulture);
                 return true;
             }
+
             baseTenInteger = 0;
             return false;
         }
@@ -201,9 +172,10 @@ namespace System.Formats.Tar
         {
             if (dict.TryGetValue(fieldName, out string? strNumber) && !string.IsNullOrEmpty(strNumber))
             {
-                baseTenLong = Convert.ToInt64(strNumber);
+                baseTenLong = long.Parse(strNumber, CultureInfo.InvariantCulture);
                 return true;
             }
+
             baseTenLong = 0;
             return false;
         }
@@ -228,35 +200,65 @@ namespace System.Formats.Tar
             return entryType;
         }
 
-        // Receives a byte array that represents an ASCII string containing a number in octal base.
-        // Converts the array to an octal base number, then transforms it to ten base and returns it.
-        internal static int GetTenBaseNumberFromOctalAsciiChars(Span<byte> buffer)
+        /// <summary>Parses a byte span that represents an ASCII string containing a number in octal base.</summary>
+        internal static T ParseOctal<T>(ReadOnlySpan<byte> buffer) where T : struct, INumber<T>
         {
-            string str = GetTrimmedAsciiString(buffer);
-            return string.IsNullOrEmpty(str) ? 0 : Convert.ToInt32(str, fromBase: 8);
+            buffer = TrimEndingNullsAndSpaces(buffer);
+            buffer = TrimLeadingNullsAndSpaces(buffer);
+
+            if (buffer.Length == 0)
+            {
+                return T.Zero;
+            }
+
+            T octalFactor = T.CreateTruncating(8u);
+            T value = T.Zero;
+            foreach (byte b in buffer)
+            {
+                uint digit = (uint)(b - '0');
+                if (digit >= 8)
+                {
+                    ThrowInvalidNumber();
+                }
+
+                value = checked((value * octalFactor) + T.CreateTruncating(digit));
+            }
+
+            return value;
         }
 
-        // Receives a byte array that represents an ASCII string containing a number in octal base.
-        // Converts the array to an octal base number, then transforms it to ten base and returns it.
-        internal static long GetTenBaseLongFromOctalAsciiChars(Span<byte> buffer)
-        {
-            string str = GetTrimmedAsciiString(buffer);
-            return string.IsNullOrEmpty(str) ? 0 : Convert.ToInt64(str, fromBase: 8);
-        }
+        [DoesNotReturn]
+        private static void ThrowInvalidNumber() =>
+            throw new InvalidDataException(SR.Format(SR.TarInvalidNumber));
 
         // Returns the string contained in the specified buffer of bytes,
         // in the specified encoding, removing the trailing null or space chars.
         private static string GetTrimmedString(ReadOnlySpan<byte> buffer, Encoding encoding)
         {
+            buffer = TrimEndingNullsAndSpaces(buffer);
+            return buffer.IsEmpty ? string.Empty : encoding.GetString(buffer);
+        }
+
+        internal static ReadOnlySpan<byte> TrimEndingNullsAndSpaces(ReadOnlySpan<byte> buffer)
+        {
             int trimmedLength = buffer.Length;
-            while (trimmedLength > 0 && IsByteNullOrSpace(buffer[trimmedLength - 1]))
+            while (trimmedLength > 0 && buffer[trimmedLength - 1] is 0 or 32)
             {
                 trimmedLength--;
             }
 
-            return trimmedLength == 0 ? string.Empty : encoding.GetString(buffer.Slice(0, trimmedLength));
+            return buffer.Slice(0, trimmedLength);
+        }
 
-            static bool IsByteNullOrSpace(byte c) => c is 0 or 32;
+        private static ReadOnlySpan<byte> TrimLeadingNullsAndSpaces(ReadOnlySpan<byte> buffer)
+        {
+            int newStart = 0;
+            while (newStart < buffer.Length && buffer[newStart] is 0 or 32)
+            {
+                newStart++;
+            }
+
+            return buffer.Slice(newStart);
         }
 
         // Returns the ASCII string contained in the specified buffer of bytes,
@@ -290,7 +292,7 @@ namespace System.Formats.Tar
         }
 
         // Throws if the specified entry type is not supported for the specified format.
-        internal static void ThrowIfEntryTypeNotSupported(TarEntryType entryType, TarEntryFormat archiveFormat)
+        internal static void ThrowIfEntryTypeNotSupported(TarEntryType entryType, TarEntryFormat archiveFormat, [CallerArgumentExpression("entryType")] string? paramName = null)
         {
             switch (archiveFormat)
             {
@@ -364,10 +366,10 @@ namespace System.Formats.Tar
 
                 case TarEntryFormat.Unknown:
                 default:
-                    throw new FormatException(string.Format(SR.TarInvalidFormat, archiveFormat));
+                    throw new InvalidDataException(string.Format(SR.TarInvalidFormat, archiveFormat));
             }
 
-            throw new InvalidOperationException(string.Format(SR.TarEntryTypeNotSupported, entryType, archiveFormat));
+            throw new ArgumentException(string.Format(SR.TarEntryTypeNotSupportedInFormat, entryType, archiveFormat), paramName);
         }
     }
 }

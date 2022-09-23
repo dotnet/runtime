@@ -7,6 +7,7 @@ parameters:
   onlySanityCheck: false
   downloadSpecificBuild: null # { buildId, pipeline, branchName, project }
   collectHelixLogsScript: ''
+  perfForkToUse: {} # url, branch
 
 jobs:
 
@@ -48,6 +49,7 @@ jobs:
         javascriptEngine: 'javascriptcore'
         collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
+        perfForkToUse: ${{ parameters.perfForkToUse }}
         #downloadSpecificBuild:
           #buildId: '1693181'
           #pipeline: 'perf-wasm'
@@ -74,6 +76,7 @@ jobs:
         javascriptengine: 'javascriptcore'
         collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
+        perfForkToUse: ${{ parameters.perfForkToUse }}
 
 - ${{ if eq(parameters.runProfile, 'v8') }}:
   - ${{ if eq(parameters.downloadSpecificBuild.buildId, '') }}:
@@ -112,10 +115,12 @@ jobs:
         runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
         javascriptEngine: 'v8'
+        additionalSetupParameters: '--dotnet-versions 8.0.0' # passed to ci_setup.py
         collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
         compare: ${{ parameters.compare }}
         onlySanityCheck: ${{ parameters.onlySanityCheck }}
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
+        perfForkToUse: ${{ parameters.perfForkToUse }}
 
   #run mono wasm aot microbenchmarks perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -136,10 +141,12 @@ jobs:
         runjobtemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
         logicalmachine: 'perftiger'
         javascriptEngine: 'v8'
+        additionalSetupParameters: '--dotnet-versions 8.0.0' # passed to ci_setup.py
         collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
         compare: ${{ parameters.compare }}
         onlySanityCheck: ${{ parameters.onlySanityCheck }}
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
+        perfForkToUse: ${{ parameters.perfForkToUse }}
 
   # run mono wasm blazor perf job
   - template: /eng/pipelines/common/platform-matrix.yml
@@ -157,6 +164,7 @@ jobs:
         projectFile: blazor_perf.proj
         runKind: blazor_scenarios
         runJobTemplate: /eng/pipelines/coreclr/templates/run-scenarios-job.yml
-        #additionalSetupParameters: '--latestdotnet' - doesn't do anything, IIUC. see performance-setup.sh
+        additionalSetupParameters: '--dotnetversions 8.0.0' # passed to performance-setup.sh
         logicalmachine: 'perftiger'
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
+        perfForkToUse: ${{ parameters.perfForkToUse }}

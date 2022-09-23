@@ -715,6 +715,51 @@ int CEEInfo::getStringLiteral (
     return result;
 }
 
+int CEEInfo::objectToString (
+        void* handle,
+        char* buffer,
+        int   bufferSize)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    int charsCount = 0;
+
+    // NOTE: this function is used for pinned/frozen handles
+    // it doesn't need to null-terminate the string
+
+    _ASSERT(handle != nullptr && buffer != nullptr && bufferSize > 0);
+
+    JIT_TO_EE_TRANSITION();
+
+    Object* obj = (Object*)handle;
+
+    GCX_COOP();
+
+    StackSString stackStr;
+
+    // Currently only supported for String and RuntimeType
+    if (obj->GetMethodTable()->IsString())
+    {
+        ((StringObject*)obj)->GetSString(stackStr);
+    }
+    else if (obj->GetMethodTable() == g_pRuntimeTypeClass)
+    {
+        ((ReflectClassBaseObject*)obj)->GetType().GetName(stackStr);
+    }
+
+    const UTF8* utf8data = stackStr.GetUTF8();
+    charsCount = stackStr.GetCount();
+    memcpy((BYTE*)buffer, (BYTE*)utf8data, min(bufferSize, charsCount));
+
+    EE_TO_JIT_TRANSITION();
+
+    return charsCount;
+}
+
 /* static */
 size_t CEEInfo::findNameOfToken (Module* module,
                                                  mdToken metaTOK,
@@ -1302,7 +1347,7 @@ CorInfoHelpFunc CEEInfo::getSharedStaticsHelper(FieldDesc * pField, MethodTable 
         helper += delta;
     }
     else
-    if (!pFieldMT->HasClassConstructor() && !pFieldMT->HasBoxedRegularStatics())
+    if ((!pFieldMT->HasClassConstructor() && !pFieldMT->HasBoxedRegularStatics()) || pFieldMT->IsClassInited())
     {
         const int delta = CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR - CORINFO_HELP_GETSHARED_GCSTATIC_BASE;
 
@@ -4882,7 +4927,7 @@ void CEEInfo::getCallInfo(
     MethodDesc * pTargetMD = pMDAfterConstraintResolution;
     DWORD dwTargetMethodAttrs = pTargetMD->GetAttrs();
 
-    pResult->exactContextNeedsRuntimeLookup = (!constrainedType.IsNull() && constrainedType.IsCanonicalSubtype());
+    pResult->exactContextNeedsRuntimeLookup = (fIsStaticVirtualMethod && !fResolvedConstraint && !constrainedType.IsNull() && constrainedType.IsCanonicalSubtype());
 
     if (pTargetMD->HasMethodInstantiation())
     {
@@ -5943,6 +5988,31 @@ CorInfoHelpFunc CEEInfo::getUnBoxHelper(CORINFO_CLASS_HANDLE clsHnd)
         return CORINFO_HELP_UNBOX_NULLABLE;
 
     return CORINFO_HELP_UNBOX;
+}
+
+/***********************************************************************/
+void* CEEInfo::getRuntimeTypePointer(CORINFO_CLASS_HANDLE clsHnd)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    void* pointer = nullptr;
+
+    JIT_TO_EE_TRANSITION();
+
+    TypeHandle typeHnd(clsHnd);
+    if (!typeHnd.IsCanonicalSubtype() && typeHnd.IsManagedClassObjectPinned())
+    {
+        GCX_COOP();
+        pointer = OBJECTREFToObject(typeHnd.GetManagedClassObject());
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return pointer;
 }
 
 /***********************************************************************/
@@ -9458,6 +9528,32 @@ uint32_t CEEInfo::getLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE c
 
 /*********************************************************************/
 
+int CEEInfo::getExactClasses (
+        CORINFO_CLASS_HANDLE  baseType,
+        int                   maxExactClasses,
+        CORINFO_CLASS_HANDLE* exactClsRet
+        )
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    } CONTRACTL_END;
+
+    int exactClassesCount = 0;
+
+    JIT_TO_EE_TRANSITION();
+
+    // This function is currently implemented only on NativeAOT
+    // but can be implemented for CoreCLR as well (e.g. for internal types)
+
+    EE_TO_JIT_TRANSITION();
+
+    return exactClassesCount;
+}
+
+/*********************************************************************/
+
 CORINFO_CLASS_HANDLE CEEInfo::getArgClass (
     CORINFO_SIG_INFO*       sig,
     CORINFO_ARG_LIST_HANDLE args
@@ -11594,7 +11690,19 @@ InfoAccessType CEEJitInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd
     }
     else
     {
-        *ppValue = (LPVOID)ConstructStringLiteral(scopeHnd, metaTok); // throws
+        // If ConstructStringLiteral returns a pinned reference we can return it by value (IAT_VALUE)
+        void* ppPinnedString = nullptr;
+        void** ptr = (void**)ConstructStringLiteral(scopeHnd, metaTok, &ppPinnedString);
+
+        if (ppPinnedString != nullptr)
+        {
+            *ppValue = ppPinnedString;
+            result = IAT_VALUE;
+        }
+        else
+        {
+            *ppValue = (void*)ptr;
+        }
     }
 
     EE_TO_JIT_TRANSITION();
@@ -11614,7 +11722,19 @@ InfoAccessType CEEJitInfo::emptyStringLiteral(void ** ppValue)
     InfoAccessType result = IAT_PVALUE;
 
     JIT_TO_EE_TRANSITION();
-    *ppValue = StringObject::GetEmptyStringRefPtr();
+    void* pinnedStr = nullptr;
+    void* pinnedStrHandlePtr = StringObject::GetEmptyStringRefPtr(&pinnedStr);
+
+    if (pinnedStr != nullptr)
+    {
+        *ppValue = pinnedStr;
+        result = IAT_VALUE;
+    }
+    else
+    {
+        *ppValue = pinnedStr;
+    }
+
     EE_TO_JIT_TRANSITION();
 
     return result;
@@ -12954,7 +13074,8 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         //DbgPrintf("Jitted Entry at" FMT_ADDR "method %s::%s %s size %08x\n", DBG_ADDR(nativeEntry),
         //          pszDebugClassName, pszDebugMethodName, pszDebugMethodSignature, sizeOfCode);
 
-        ClrFlushInstructionCache(nativeEntry, sizeOfCode);
+        // For dynamic method, the code memory may be reused, thus we are passing in the hasCodeExecutedBefore set to true
+        ClrFlushInstructionCache(nativeEntry, sizeOfCode, /* hasCodeExecutedBefore */ true);
         ret = (PCODE)nativeEntry;
 
 #ifdef TARGET_ARM
@@ -13299,7 +13420,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             if (rid == 0)
             {
                 // Empty string
-                result = (size_t)StringObject::GetEmptyStringRefPtr();
+                result = (size_t)StringObject::GetEmptyStringRefPtr(nullptr);
             }
             else
             {

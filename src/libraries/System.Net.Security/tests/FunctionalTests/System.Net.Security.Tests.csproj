@@ -7,10 +7,15 @@
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <!-- the res/xml/network_security_config.xml file comes from the System.Net.TestData package -->
     <IncludeNetworkSecurityConfig Condition="'$(TargetOS)' == 'Android'">true</IncludeNetworkSecurityConfig>
+    <EnablePreviewFeatures>true</EnablePreviewFeatures>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <RdXmlFile Include="default.rd.xml" />
+  </ItemGroup>
+  <Import Project="$(CommonTestPath)System\Net\Security\Kerberos\System.Net.Security.Kerberos.Shared.projitems" />
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Browser'">
     <Compile Include="SslStreamExtensions.cs" />
     <Compile Include="TestConfiguration.cs" />
@@ -30,6 +35,8 @@
     <Compile Include="SslStreamNetworkStreamTest.cs" />
     <Compile Include="SslStreamMutualAuthenticationTest.cs" />
     <Compile Include="TransportContextTest.cs" />
+    <!-- NegotiateAuthentication Tests -->
+    <Compile Include="NegotiateAuthenticationKerberosTest.cs" />
     <!-- NegotiateStream Tests -->
     <Compile Include="NegotiateStreamConformanceTests.cs" />
     <Compile Include="NegotiateStreamInvalidOperationTest.cs" />
@@ -67,6 +74,8 @@
              Link="Common\System\Net\HttpsTestClient.cs" />
     <Compile Include="$(CommonTestPath)System\Net\HttpsTestServer.cs"
              Link="Common\System\Net\HttpsTestServer.cs" />
+    <Compile Include="$(CommonTestPath)System\Net\QuicLoad.cs"
+             Link="Common\System\Net\System\Net\QuicLoad.cs" />
     <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs"
              Link="Common\System\Net\SslProtocolSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Net\TestLogging.cs"

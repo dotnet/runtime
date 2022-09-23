@@ -16,13 +16,15 @@ using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
+using ILCompiler.Dataflow;
+using ILLink.Shared;
+
 using Debug = System.Diagnostics.Debug;
 using InstructionSet = Internal.JitInterface.InstructionSet;
-using ILCompiler.Dataflow;
 
 namespace ILCompiler
 {
-    internal class Program
+    internal sealed class Program
     {
         private readonly ILCompilerRootCommand _command;
 
@@ -104,7 +106,7 @@ namespace ILCompiler
                 {
                     string instructionSet = instructionSetParamsInput[i];
 
-                    if (String.IsNullOrEmpty(instructionSet))
+                    if (string.IsNullOrEmpty(instructionSet))
                         throw new CommandLineException("Instruction set must not be empty");
 
                     char firstChar = instructionSet[0];
@@ -136,7 +138,7 @@ namespace ILCompiler
 
             instructionSetSupportBuilder.ComputeInstructionSetFlags(out var supportedInstructionSet, out var unsupportedInstructionSet,
                 (string specifiedInstructionSet, string impliedInstructionSet) =>
-                    throw new CommandLineException(String.Format("Unsupported combination of instruction sets: {0}/{1}", specifiedInstructionSet, impliedInstructionSet)));
+                    throw new CommandLineException(string.Format("Unsupported combination of instruction sets: {0}/{1}", specifiedInstructionSet, impliedInstructionSet)));
 
             InstructionSetSupportBuilder optimisticInstructionSetSupportBuilder = new InstructionSetSupportBuilder(targetArchitecture);
 
@@ -246,7 +248,7 @@ namespace ILCompiler
 
                 securityMitigationOptions = SecurityMitigationOptions.ControlFlowGuardAnnotations;
             }
-            else if (!String.IsNullOrEmpty(guard))
+            else if (!string.IsNullOrEmpty(guard))
             {
                 throw new CommandLineException($"Unrecognized mitigation option '{guard}'");
             }
@@ -339,6 +341,13 @@ namespace ILCompiler
                 {
                     compilationRoots.Add(new RdXmlRootProvider(typeSystemContext, rdXmlFilePath));
                 }
+
+                foreach (var linkTrimFilePath in Get(_command.LinkTrimFilePaths))
+                {
+                    if (!File.Exists(linkTrimFilePath))
+                        throw new CommandLineException($"'{linkTrimFilePath}' doesn't exist");
+                    compilationRoots.Add(new ILCompiler.DependencyAnalysis.TrimmingDescriptorNode(linkTrimFilePath));
+                }
             }
 
             // Root whatever assemblies were specified on the command line
@@ -372,7 +381,7 @@ namespace ILCompiler
                 ((RyuJitCompilationBuilder)builder).UseProfileData(mibcFilePaths);
 
             string jitPath = Get(_command.JitPath);
-            if (!String.IsNullOrEmpty(jitPath))
+            if (!string.IsNullOrEmpty(jitPath))
                 ((RyuJitCompilationBuilder)builder).UseJitPath(jitPath);
 
             PInvokeILEmitterConfiguration pinvokePolicy = new ConfigurablePInvokePolicy(typeSystemContext.Target,
@@ -391,8 +400,14 @@ namespace ILCompiler
             }
             ilProvider = new FeatureSwitchManager(ilProvider, featureSwitches);
 
+            var suppressedWarningCategories = new List<string>();
+            if (Get(_command.NoTrimWarn))
+                suppressedWarningCategories.Add(MessageSubCategory.TrimAnalysis);
+            if (Get(_command.NoAotWarn))
+                suppressedWarningCategories.Add(MessageSubCategory.AotAnalysis);
+
             var logger = new Logger(Console.Out, ilProvider, Get(_command.IsVerbose), ProcessWarningCodes(Get(_command.SuppressedWarnings)),
-                Get(_command.SingleWarn), Get(_command.SingleWarnEnabledAssemblies), Get(_command.SingleWarnDisabledAssemblies));
+                Get(_command.SingleWarn), Get(_command.SingleWarnEnabledAssemblies), Get(_command.SingleWarnDisabledAssemblies), suppressedWarningCategories);
             CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider, logger);
 
             var stackTracePolicy = Get(_command.EmitStackTraceData) ?
@@ -568,9 +583,17 @@ namespace ILCompiler
             ICompilation compilation = builder.ToCompilation();
 
             string mapFileName = Get(_command.MapFileName);
-            ObjectDumper dumper = mapFileName != null ? new ObjectDumper(mapFileName) : null;
+            string mstatFileName = Get(_command.MstatFileName);
 
-            CompilationResults compilationResults = compilation.Compile(outputFilePath, dumper);
+            List<ObjectDumper> dumpers = new List<ObjectDumper>();
+
+            if (mapFileName != null)
+                dumpers.Add(new XmlObjectDumper(mapFileName));
+
+            if (mstatFileName != null)
+                dumpers.Add(new MstatObjectDumper(mstatFileName, typeSystemContext));
+
+            CompilationResults compilationResults = compilation.Compile(outputFilePath, ObjectDumper.Compose(dumpers));
             string exportsFile = Get(_command.ExportsFile);
             if (exportsFile != null)
             {
@@ -644,7 +667,7 @@ namespace ILCompiler
             return 0;
         }
 
-        private void DiffCompilationResults<T>(ref bool result, IEnumerable<T> set1, IEnumerable<T> set2, string prefix,
+        private static void DiffCompilationResults<T>(ref bool result, IEnumerable<T> set1, IEnumerable<T> set2, string prefix,
             string set1name, string set2name, Predicate<T> filter)
         {
             HashSet<T> diff = new HashSet<T>(set1);
@@ -667,7 +690,7 @@ namespace ILCompiler
             }
         }
 
-        private TypeDesc FindType(CompilerTypeSystemContext context, string typeName)
+        private static TypeDesc FindType(CompilerTypeSystemContext context, string typeName)
         {
             ModuleDesc systemModule = context.SystemModule;
 
@@ -726,7 +749,7 @@ namespace ILCompiler
                 string[] values = value.Split(new char[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
                 foreach (string id in values)
                 {
-                    if (!id.StartsWith("IL", StringComparison.Ordinal) || !ushort.TryParse(id.Substring(2), out ushort code))
+                    if (!id.StartsWith("IL", StringComparison.Ordinal) || !ushort.TryParse(id.AsSpan(2), out ushort code))
                         continue;
 
                     yield return code;

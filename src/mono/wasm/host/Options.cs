@@ -169,9 +169,6 @@ using System.Globalization;
 using System.IO;
 #if PCL
 using System.Reflection;
-#else
-using System.Runtime.Serialization;
-using System.Security.Permissions;
 #endif
 using System.Text;
 using System.Text.RegularExpressions;
@@ -766,9 +763,6 @@ namespace Mono.Options
     }
 #endif
 
-#if !PCL
-    [Serializable]
-#endif
     public class OptionException : Exception
     {
         private string option;
@@ -789,29 +783,10 @@ namespace Mono.Options
             this.option = optionName;
         }
 
-#if !PCL
-        protected OptionException(SerializationInfo info, StreamingContext context)
-            : base(info, context)
-        {
-            this.option = info.GetString("OptionName");
-        }
-#endif
-
         public string OptionName
         {
             get { return this.option; }
         }
-
-#if !PCL
-#pragma warning disable 618 // SecurityPermissionAttribute is obsolete
-        // [SecurityPermission(SecurityAction.LinkDemand, SerializationFormatter = true)]
-#pragma warning restore 618
-        public override void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            base.GetObjectData(info, context);
-            info.AddValue("OptionName", option);
-        }
-#endif
     }
 
     public delegate void OptionAction<TKey, TValue>(TKey key, TValue value);
@@ -837,14 +812,10 @@ namespace Mono.Options
             : base(comparer)
         {
             this.roSources = new ReadOnlyCollection<ArgumentSource>(sources);
-            this.localizer = localizer;
-            if (this.localizer == null)
+            this.localizer = localizer ?? delegate (string f)
             {
-                this.localizer = delegate (string f)
-                {
-                    return f;
-                };
-            }
+                return f;
+            };
         }
 
         private MessageLocalizerConverter localizer;
@@ -1129,8 +1100,7 @@ namespace Mono.Options
                 if (!Parse(argument, c))
                     Unprocessed(unprocessed, def, c, argument);
             }
-            if (c.Option != null)
-                c.Option.Invoke(c);
+            c.Option?.Invoke(c);
             return unprocessed;
         }
 
@@ -1879,13 +1849,9 @@ namespace Mono.Options
 
         public CommandSet Add(CommandSet nestedCommands)
         {
-            if (nestedCommands == null)
-                throw new ArgumentNullException(nameof(nestedCommands));
+            ArgumentNullException.ThrowIfNull(nestedCommands);
 
-            if (NestedCommandSets == null)
-            {
-                NestedCommandSets = new List<CommandSet>();
-            }
+            NestedCommandSets ??= new List<CommandSet>();
 
             if (!AlreadyAdded(nestedCommands))
             {

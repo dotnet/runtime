@@ -40,7 +40,7 @@ namespace System.Text.Json.Serialization.Converters
         internal override Type? ElementType => Converter.ElementType;
 
         internal override bool ConstructorIsParameterized => Converter.ConstructorIsParameterized;
-
+        internal override bool SupportsCreateObjectDelegate => Converter.SupportsCreateObjectDelegate;
         internal override bool CanHaveMetadata => Converter.CanHaveMetadata;
 
         public JsonMetadataServicesConverter(Func<JsonConverter<T>> converterCreator, ConverterStrategy converterStrategy)
@@ -60,7 +60,7 @@ namespace System.Text.Json.Serialization.Converters
             _converterStrategy = converter.ConverterStrategy;
         }
 
-        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T? value)
+        internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out T? value)
              => Converter.OnTryRead(ref reader, typeToConvert, options, ref state, out value);
 
         internal override bool OnTryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)

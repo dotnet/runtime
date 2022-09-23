@@ -15,7 +15,7 @@ internal static partial class TermInfo
         /// The default locations in which to search for terminfo databases.
         /// This is the ordering of well-known locations used by ncurses.
         /// </summary>
-        private static readonly string[] _terminfoLocations = new string[] {
+        internal static readonly string[] s_terminfoLocations = {
             "/etc/terminfo",
             "/lib/terminfo",
             "/usr/share/terminfo",
@@ -34,7 +34,7 @@ internal static partial class TermInfo
         /// <summary>Read the database for the specified terminal.</summary>
         /// <param name="term">The identifier for the terminal.</param>
         /// <returns>The database, or null if it could not be found.</returns>
-        private static Database? ReadDatabase(string term)
+        internal static Database? ReadDatabase(string term)
         {
             // This follows the same search order as prescribed by ncurses.
             Database? db;
@@ -54,7 +54,7 @@ internal static partial class TermInfo
             }
 
             // Then try a set of well-known locations.
-            foreach (string terminfoLocation in _terminfoLocations)
+            foreach (string terminfoLocation in s_terminfoLocations)
             {
                 if ((db = ReadDatabase(term, terminfoLocation)) != null)
                 {
@@ -88,7 +88,7 @@ internal static partial class TermInfo
         /// <param name="term">The identifier for the terminal.</param>
         /// <param name="directoryPath">The path to the directory containing terminfo database files.</param>
         /// <returns>The database, or null if it could not be found.</returns>
-        private static Database? ReadDatabase(string? term, string? directoryPath)
+        internal static Database? ReadDatabase(string? term, string? directoryPath)
         {
             if (string.IsNullOrEmpty(term) || string.IsNullOrEmpty(directoryPath))
             {
@@ -106,8 +106,7 @@ internal static partial class TermInfo
             using (fd)
             {
                 // Read in all of the terminfo data
-                long termInfoLength = Interop.CheckIo(Interop.Sys.LSeek(fd, 0, Interop.Sys.SeekWhence.SEEK_END)); // jump to the end to get the file length
-                Interop.CheckIo(Interop.Sys.LSeek(fd, 0, Interop.Sys.SeekWhence.SEEK_SET)); // reset back to beginning
+                long termInfoLength = RandomAccess.GetLength(fd);
                 const int MaxTermInfoLength = 4096; // according to the term and tic man pages, 4096 is the terminfo file size max
                 const int HeaderLength = 12;
                 if (termInfoLength <= HeaderLength || termInfoLength > MaxTermInfoLength)
@@ -116,10 +115,17 @@ internal static partial class TermInfo
                 }
 
                 byte[] data = new byte[(int)termInfoLength];
-                if (ConsolePal.Read(fd, data) != data.Length)
+                long fileOffset = 0;
+                do
                 {
-                    throw new InvalidOperationException(SR.IO_TermInfoInvalid);
-                }
+                    int bytesRead = RandomAccess.Read(fd, new Span<byte>(data, (int)fileOffset, (int)(termInfoLength - fileOffset)), fileOffset);
+                    if (bytesRead == 0)
+                    {
+                        throw new InvalidOperationException(SR.IO_TermInfoInvalid);
+                    }
+
+                    fileOffset += bytesRead;
+                } while (fileOffset < termInfoLength);
 
                 // Create the database from the data
                 return new Database(term, data);

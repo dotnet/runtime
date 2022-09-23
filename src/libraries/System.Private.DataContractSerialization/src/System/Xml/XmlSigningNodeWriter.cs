@@ -64,7 +64,7 @@ namespace System.Xml
         public override void WriteDeclaration()
         {
             _writer.WriteDeclaration();
-            XmlCanonicalWriter.WriteDeclaration();
+            _signingWriter.WriteDeclaration();
         }
 
         public override void WriteComment(string text)

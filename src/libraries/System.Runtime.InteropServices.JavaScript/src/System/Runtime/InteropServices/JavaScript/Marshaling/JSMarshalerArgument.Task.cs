@@ -13,12 +13,14 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Helps with marshaling of the Task result or Function arguments.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public delegate void ArgumentToManagedCallback<T>(ref JSMarshalerArgument arg, out T value);
 
         /// <summary>
         /// Helps with marshaling of the Task result or Function arguments.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public delegate void ArgumentToJSCallback<T>(ref JSMarshalerArgument arg, T value);
 
         /// <summary>
@@ -175,9 +177,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
-        public void ToJS(Task value)
+        public void ToJS(Task? value)
         {
-            Task task = value;
+            Task? task = value;
 
             if (task == null)
             {

@@ -514,7 +514,7 @@
     <value>Object type is not supported.</value>
   </data>
   <data name="Xml_NullResolver" xml:space="preserve">
-    <value>Resolving of external URIs was prohibited.</value>
+    <value>Resolving of external URIs was prohibited. Attempted access to: {0}</value>
   </data>
   <data name="Xml_RelativeUriNotSupported" xml:space="preserve">
     <value>Relative URIs are not supported.</value>

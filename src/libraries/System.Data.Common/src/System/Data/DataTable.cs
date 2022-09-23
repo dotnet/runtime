@@ -3516,6 +3516,8 @@ namespace System.Data
 
         // Prevent inlining so that reflection calls are not moved to caller that may be in a different assembly that may have a different grant set.
         [MethodImpl(MethodImplOptions.NoInlining)]
+        [UnconditionalSuppressMessage("AOT analysis", "IL3050:RequiresDynamicCode",
+            Justification = "Array.CreateInstance operates over a reference type making the call safe for AOT")]
         protected internal DataRow[] NewRowArray(int size)
         {
             if (IsTypedDataTable)
@@ -6923,8 +6925,6 @@ namespace System.Data
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This is unsafe only when columns have associated expression. All ways to add such expression are marked unsafe.")]
         internal void EvaluateExpressions(DataRow row, DataRowAction action, List<DataRow>? cachedRows)
         {
             // evaluate all expressions for specified row

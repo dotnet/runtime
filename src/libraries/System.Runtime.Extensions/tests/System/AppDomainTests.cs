@@ -259,6 +259,8 @@ namespace System.Tests
             }).Dispose();
         }
 
+        // In Mono AOT, loading assemblies can happen, but they need to be AOT'd and registered on startup.  That is not the case
+        // with TestAppOutsideOfTPA.exe
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNonBundledAssemblyLoadingSupported))]
         public void ExecuteAssembly()
         {
@@ -378,6 +380,7 @@ namespace System.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75302", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot), nameof(PlatformDetection.IsArm64Process))]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Throws PNSE")]
         public void MonitoringIsEnabled()
         {

@@ -185,6 +185,7 @@ namespace ILLink.Shared
 		CompilerGeneratedMemberAccessedViaReflection = 2118,
 		DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMember = 2119,
 		DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBase = 2120,
+		RedundantSuppression = 2121,
 
 		// Single-file diagnostic ids.
 		AvoidAssemblyLocationInSingleFile = 3000,

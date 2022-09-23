@@ -102,7 +102,7 @@ namespace System.Net.Quic.Tests
                         }
                         catch (Exception ex)
                         {
-                            _output?.WriteLine($"Failed to {ex.Message}");
+                            _output?.WriteLine($"Failed to connect: {ex.Message}");
                             throw;
                         }
                     }));

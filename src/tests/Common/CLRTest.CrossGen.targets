@@ -42,7 +42,6 @@ WARNING:   When setting properties based on their current state (for example:
         <![CDATA[
 
 if [ "$(AlwaysUseCrossGen2)" == "true" ]; then
-    unset RunCrossGen
     export RunCrossGen2=1
     export CompositeBuildMode=1
 fi
@@ -66,6 +65,8 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       else
         cp *.dll IL-CG2/
         rm IL-CG2/composite-r2r.dll 2>/dev/null
+        rm IL-CG2/Coreclr.TestWrapper.dll 2>/dev/null
+        rm IL-CG2/*.XUnitWrapper.dll 2>/dev/null
       fi
 
       ExtraCrossGen2Args+=" $(CrossGen2TestExtraArguments)"
@@ -160,7 +161,6 @@ fi
         <![CDATA[
 
 if /i "$(AlwaysUseCrossGen2)" == "true" (
-    set RunCrossGen=
     set RunCrossGen2=1
     set CompositeBuildMode=1
 )
@@ -186,6 +186,8 @@ if defined RunCrossGen2 (
     mkdir IL-CG2
     copy *.dll IL-CG2\
     del IL-CG2\composite-r2r.dll 2>nul
+    del IL-CG2\Coreclr.TestWrapper.dll 2>nul
+    del IL-CG2\*.XUnitWrapper.dll 2>nul
 
     if defined CompositeBuildMode (
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! --composite
@@ -196,9 +198,9 @@ if defined RunCrossGen2 (
         IF NOT !CrossGen2Status!==0 goto :DoneCrossgen2Operations
     ) else (
         set ExtraCrossGen2Args=!ExtraCrossGen2Args! -r:!scriptPath!IL-CG2\*.dll
-        for %%I in (!scriptPath!\*.dll) do (
-            set __OutputFile=!scriptPath!\%%~nI.dll
-            set __InputFile=!scriptPath!IL-CG2\%%~nI.dll
+        for %%I in (!scriptPath!IL-CG2\*.dll) do (
+            set __OutputFile=!scriptPath!%%~nI.dll
+            set __InputFile=%%I
             call :CompileOneFileCrossgen2
             IF NOT !CrossGen2Status!==0 (
               IF NOT !CrossGen2Status!==2 goto :DoneCrossgen2Operations

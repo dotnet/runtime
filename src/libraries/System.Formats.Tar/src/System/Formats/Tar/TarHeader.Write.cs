@@ -1,10 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
+using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Numerics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,15 +17,11 @@ namespace System.Formats.Tar
     // Writes header attributes of a tar archive entry.
     internal sealed partial class TarHeader
     {
-        private static ReadOnlySpan<byte> PaxMagicBytes => "ustar\0"u8;
-        private static ReadOnlySpan<byte> PaxVersionBytes => "00"u8;
+        private static ReadOnlySpan<byte> UstarMagicBytes => "ustar\0"u8;
+        private static ReadOnlySpan<byte> UstarVersionBytes => "00"u8;
 
         private static ReadOnlySpan<byte> GnuMagicBytes => "ustar "u8;
         private static ReadOnlySpan<byte> GnuVersionBytes => " \0"u8;
-
-        // Extended Attribute entries have a special format in the Name field:
-        // "{dirName}/PaxHeaders.{processId}/{fileName}{trailingSeparator}"
-        private const string PaxHeadersFormat = "{0}/PaxHeaders.{1}/{2}{3}";
 
         // Predefined text for the Name field of a GNU long metadata entry. Applies for both LongPath ('L') and LongLink ('K').
         private const string GnuLongMetadataName = "././@LongLink";
@@ -61,7 +60,7 @@ namespace System.Formats.Tar
             long actualLength = GetTotalDataBytesToWrite();
             TarEntryType actualEntryType = TarHelpers.GetCorrectTypeFlagForFormat(TarEntryFormat.V7, _typeFlag);
 
-            int tmpChecksum = WriteName(buffer, out _);
+            int tmpChecksum = WriteName(buffer);
             tmpChecksum += WriteCommonFields(buffer, actualLength, actualEntryType);
             _checksum = WriteChecksum(tmpChecksum, buffer);
 
@@ -215,7 +214,7 @@ namespace System.Formats.Tar
             // Second, we determine if we need a preceding LongPath, and write it if needed
             if (_name.Length > FieldLengths.Name)
             {
-                TarHeader longPathHeader = await GetGnuLongMetadataHeaderAsync(TarEntryType.LongPath, _name, cancellationToken).ConfigureAwait(false);
+                TarHeader longPathHeader = GetGnuLongMetadataHeader(TarEntryType.LongPath, _name);
                 await longPathHeader.WriteAsGnuInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
                 buffer.Span.Clear(); // Reset it to reuse it
             }
@@ -227,34 +226,8 @@ namespace System.Formats.Tar
         // Creates and returns a GNU long metadata header, with the specified long text written into its data stream.
         private static TarHeader GetGnuLongMetadataHeader(TarEntryType entryType, string longText)
         {
-            TarHeader longMetadataHeader = GetDefaultGnuLongMetadataHeader(longText.Length, entryType);
-            Debug.Assert(longMetadataHeader._dataStream != null);
-
-            longMetadataHeader._dataStream.Write(Encoding.UTF8.GetBytes(longText));
-            longMetadataHeader._dataStream.Seek(0, SeekOrigin.Begin); // Ensure it gets written into the archive from the beginning
-
-            return longMetadataHeader;
-        }
-
-        // Asynchronously creates and returns a GNU long metadata header, with the specified long text written into its data stream.
-        private static async Task<TarHeader> GetGnuLongMetadataHeaderAsync(TarEntryType entryType, string longText, CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            TarHeader longMetadataHeader = GetDefaultGnuLongMetadataHeader(longText.Length, entryType);
-            Debug.Assert(longMetadataHeader._dataStream != null);
-
-            await longMetadataHeader._dataStream.WriteAsync(Encoding.UTF8.GetBytes(longText), cancellationToken).ConfigureAwait(false);
-            longMetadataHeader._dataStream.Seek(0, SeekOrigin.Begin); // Ensure it gets written into the archive from the beginning
-
-            return longMetadataHeader;
-        }
-
-        // Constructs a GNU metadata header with default values for the specified entry type.
-        private static TarHeader GetDefaultGnuLongMetadataHeader(int longTextLength, TarEntryType entryType)
-        {
-            Debug.Assert((entryType is TarEntryType.LongPath && longTextLength > FieldLengths.Name) ||
-                         (entryType is TarEntryType.LongLink && longTextLength > FieldLengths.LinkName));
+            Debug.Assert((entryType is TarEntryType.LongPath && longText.Length > FieldLengths.Name) ||
+                         (entryType is TarEntryType.LongLink && longText.Length > FieldLengths.LinkName));
 
             TarHeader longMetadataHeader = new(TarEntryFormat.Gnu);
 
@@ -264,7 +237,7 @@ namespace System.Formats.Tar
             longMetadataHeader._gid = 0;
             longMetadataHeader._mTime = DateTimeOffset.MinValue; // 0
             longMetadataHeader._typeFlag = entryType;
-            longMetadataHeader._dataStream = new MemoryStream();
+            longMetadataHeader._dataStream = new MemoryStream(Encoding.UTF8.GetBytes(longText));
 
             return longMetadataHeader;
         }
@@ -302,7 +275,7 @@ namespace System.Formats.Tar
         {
             actualLength = GetTotalDataBytesToWrite();
 
-            int tmpChecksum = WriteName(buffer, out _);
+            int tmpChecksum = WriteName(buffer);
             tmpChecksum += WriteCommonFields(buffer, actualLength, TarHelpers.GetCorrectTypeFlagForFormat(TarEntryFormat.Gnu, _typeFlag));
             tmpChecksum += WriteGnuMagicAndVersion(buffer);
             tmpChecksum += WritePosixAndGnuSharedFields(buffer);
@@ -320,13 +293,13 @@ namespace System.Formats.Tar
         }
 
         // Asynchronously writes the current header as a PAX Extended Attributes entry into the archive stream and returns the value of the final checksum.
-        private async Task WriteAsPaxExtendedAttributesAsync(Stream archiveStream, Memory<byte> buffer, Dictionary<string, string> extendedAttributes, bool isGea, int globalExtendedAttributesEntryNumber, CancellationToken cancellationToken)
+        private Task WriteAsPaxExtendedAttributesAsync(Stream archiveStream, Memory<byte> buffer, Dictionary<string, string> extendedAttributes, bool isGea, int globalExtendedAttributesEntryNumber, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             WriteAsPaxExtendedAttributesShared(isGea, globalExtendedAttributesEntryNumber);
-            _dataStream = await GenerateExtendedAttributesDataStreamAsync(extendedAttributes, cancellationToken).ConfigureAwait(false);
-            await WriteAsPaxInternalAsync(archiveStream, buffer, cancellationToken).ConfigureAwait(false);
+            _dataStream = GenerateExtendedAttributesDataStream(extendedAttributes);
+            return WriteAsPaxInternalAsync(archiveStream, buffer, cancellationToken);
         }
 
         // Initializes the name, mode and type flag of a PAX extended attributes entry.
@@ -385,55 +358,64 @@ namespace System.Formats.Tar
             _checksum = WriteChecksum(tmpChecksum, buffer);
         }
 
-        // All formats save in the name byte array only the ASCII bytes that fit. The full string is returned in the out byte array.
-        private int WriteName(Span<byte> buffer, out byte[] fullNameBytes)
+        // All formats save in the name byte array only the ASCII bytes that fit.
+        private int WriteName(Span<byte> buffer)
         {
-            fullNameBytes = Encoding.ASCII.GetBytes(_name);
-            int nameBytesLength = Math.Min(fullNameBytes.Length, FieldLengths.Name);
-            int checksum = WriteLeftAlignedBytesAndGetChecksum(fullNameBytes.AsSpan(0, nameBytesLength), buffer.Slice(FieldLocations.Name, FieldLengths.Name));
-            return checksum;
+            ReadOnlySpan<char> src = _name.AsSpan(0, Math.Min(_name.Length, FieldLengths.Name));
+            Span<byte> dest = buffer.Slice(FieldLocations.Name, FieldLengths.Name);
+            int encoded = Encoding.ASCII.GetBytes(src, dest);
+            return Checksum(dest.Slice(0, encoded));
         }
 
         // Ustar and PAX save in the name byte array only the ASCII bytes that fit, and the rest of that string is saved in the prefix field.
         private int WritePosixName(Span<byte> buffer)
         {
-            int checksum = WriteName(buffer, out byte[] fullNameBytes);
-            if (fullNameBytes.Length > FieldLengths.Name)
+            int checksum = WriteName(buffer);
+
+            if (_name.Length > FieldLengths.Name)
             {
-                int prefixBytesLength = Math.Min(fullNameBytes.Length - FieldLengths.Name, FieldLengths.Name);
-                checksum += WriteLeftAlignedBytesAndGetChecksum(fullNameBytes.AsSpan(FieldLengths.Name, prefixBytesLength), buffer.Slice(FieldLocations.Prefix, FieldLengths.Prefix));
+                int prefixBytesLength = Math.Min(_name.Length - FieldLengths.Name, FieldLengths.Prefix);
+                Span<byte> remaining = stackalloc byte[prefixBytesLength];
+                int encoded = Encoding.ASCII.GetBytes(_name.AsSpan(FieldLengths.Name, prefixBytesLength), remaining);
+                Debug.Assert(encoded == remaining.Length);
+
+                checksum += WriteLeftAlignedBytesAndGetChecksum(remaining, buffer.Slice(FieldLocations.Prefix, FieldLengths.Prefix));
             }
+
             return checksum;
         }
 
         // Writes all the common fields shared by all formats into the specified spans.
         private int WriteCommonFields(Span<byte> buffer, long actualLength, TarEntryType actualEntryType)
         {
+            // Don't write an empty LinkName if the entry is a hardlink or symlink
+            Debug.Assert(!string.IsNullOrEmpty(_linkName) ^ (_typeFlag is not TarEntryType.SymbolicLink and not TarEntryType.HardLink));
+
             int checksum = 0;
 
             if (_mode > 0)
             {
-                checksum += WriteAsOctal(_mode, buffer, FieldLocations.Mode, FieldLengths.Mode);
+                checksum += FormatOctal(_mode, buffer.Slice(FieldLocations.Mode, FieldLengths.Mode));
             }
 
             if (_uid > 0)
             {
-                checksum += WriteAsOctal(_uid, buffer, FieldLocations.Uid, FieldLengths.Uid);
+                checksum += FormatOctal(_uid, buffer.Slice(FieldLocations.Uid, FieldLengths.Uid));
             }
 
             if (_gid > 0)
             {
-                checksum += WriteAsOctal(_gid, buffer, FieldLocations.Gid, FieldLengths.Gid);
+                checksum += FormatOctal(_gid, buffer.Slice(FieldLocations.Gid, FieldLengths.Gid));
             }
 
             _size = actualLength;
 
             if (_size > 0)
             {
-                checksum += WriteAsOctal(_size, buffer, FieldLocations.Size, FieldLengths.Size);
+                checksum += FormatOctal(_size, buffer.Slice(FieldLocations.Size, FieldLengths.Size));
             }
 
-            checksum += WriteAsTimestamp(_mTime, buffer, FieldLocations.MTime, FieldLengths.MTime);
+            checksum += WriteAsTimestamp(_mTime, buffer.Slice(FieldLocations.MTime, FieldLengths.MTime));
 
             char typeFlagChar = (char)actualEntryType;
             buffer[FieldLocations.TypeFlag] = (byte)typeFlagChar;
@@ -441,7 +423,7 @@ namespace System.Formats.Tar
 
             if (!string.IsNullOrEmpty(_linkName))
             {
-                checksum += WriteAsAsciiString(_linkName, buffer, FieldLocations.LinkName, FieldLengths.LinkName);
+                checksum += WriteAsAsciiString(_linkName, buffer.Slice(FieldLocations.LinkName, FieldLengths.LinkName));
             }
 
             return checksum;
@@ -465,8 +447,8 @@ namespace System.Formats.Tar
         // Writes the magic and version fields of a ustar or pax entry into the specified spans.
         private static int WritePosixMagicAndVersion(Span<byte> buffer)
         {
-            int checksum = WriteLeftAlignedBytesAndGetChecksum(PaxMagicBytes, buffer.Slice(FieldLocations.Magic, FieldLengths.Magic));
-            checksum += WriteLeftAlignedBytesAndGetChecksum(PaxVersionBytes, buffer.Slice(FieldLocations.Version, FieldLengths.Version));
+            int checksum = WriteLeftAlignedBytesAndGetChecksum(UstarMagicBytes, buffer.Slice(FieldLocations.Magic, FieldLengths.Magic));
+            checksum += WriteLeftAlignedBytesAndGetChecksum(UstarVersionBytes, buffer.Slice(FieldLocations.Version, FieldLengths.Version));
             return checksum;
         }
 
@@ -485,22 +467,22 @@ namespace System.Formats.Tar
 
             if (!string.IsNullOrEmpty(_uName))
             {
-                checksum += WriteAsAsciiString(_uName, buffer, FieldLocations.UName, FieldLengths.UName);
+                checksum += WriteAsAsciiString(_uName, buffer.Slice(FieldLocations.UName, FieldLengths.UName));
             }
 
             if (!string.IsNullOrEmpty(_gName))
             {
-                checksum += WriteAsAsciiString(_gName, buffer, FieldLocations.GName, FieldLengths.GName);
+                checksum += WriteAsAsciiString(_gName, buffer.Slice(FieldLocations.GName, FieldLengths.GName));
             }
 
             if (_devMajor > 0)
             {
-                checksum += WriteAsOctal(_devMajor, buffer, FieldLocations.DevMajor, FieldLengths.DevMajor);
+                checksum += FormatOctal(_devMajor, buffer.Slice(FieldLocations.DevMajor, FieldLengths.DevMajor));
             }
 
             if (_devMinor > 0)
             {
-                checksum += WriteAsOctal(_devMinor, buffer, FieldLocations.DevMinor, FieldLengths.DevMinor);
+                checksum += FormatOctal(_devMinor, buffer.Slice(FieldLocations.DevMinor, FieldLengths.DevMinor));
             }
 
             return checksum;
@@ -509,8 +491,8 @@ namespace System.Formats.Tar
         // Saves the gnu-specific fields into the specified spans.
         private int WriteGnuFields(Span<byte> buffer)
         {
-            int checksum = WriteAsTimestamp(_aTime, buffer, FieldLocations.ATime, FieldLengths.ATime);
-            checksum += WriteAsTimestamp(_cTime, buffer, FieldLocations.CTime, FieldLengths.CTime);
+            int checksum = WriteAsTimestamp(_aTime, buffer.Slice(FieldLocations.ATime, FieldLengths.ATime));
+            checksum += WriteAsTimestamp(_cTime, buffer.Slice(FieldLocations.CTime, FieldLengths.CTime));
 
             if (_gnuUnusedBytes != null)
             {
@@ -524,8 +506,18 @@ namespace System.Formats.Tar
         private static void WriteData(Stream archiveStream, Stream dataStream, long actualLength)
         {
             dataStream.CopyTo(archiveStream); // The data gets copied from the current position
+
             int paddingAfterData = TarHelpers.CalculatePadding(actualLength);
-            archiveStream.Write(new byte[paddingAfterData]);
+            if (paddingAfterData != 0)
+            {
+                Debug.Assert(paddingAfterData <= TarHelpers.RecordSize);
+
+                Span<byte> padding = stackalloc byte[TarHelpers.RecordSize];
+                padding = padding.Slice(0, paddingAfterData);
+                padding.Clear();
+
+                archiveStream.Write(padding);
+            }
         }
 
         // Asynchronously writes the current header's data stream into the archive stream.
@@ -534,44 +526,95 @@ namespace System.Formats.Tar
             cancellationToken.ThrowIfCancellationRequested();
 
             await dataStream.CopyToAsync(archiveStream, cancellationToken).ConfigureAwait(false); // The data gets copied from the current position
+
             int paddingAfterData = TarHelpers.CalculatePadding(actualLength);
-            await archiveStream.WriteAsync(new byte[paddingAfterData], cancellationToken).ConfigureAwait(false);
+            if (paddingAfterData != 0)
+            {
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(paddingAfterData);
+                Array.Clear(buffer, 0, paddingAfterData);
+
+                await archiveStream.WriteAsync(buffer.AsMemory(0, paddingAfterData), cancellationToken).ConfigureAwait(false);
+
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
         }
 
         // Dumps into the archive stream an extended attribute entry containing metadata of the entry it precedes.
         private static Stream? GenerateExtendedAttributesDataStream(Dictionary<string, string> extendedAttributes)
         {
             MemoryStream? dataStream = null;
+
+            byte[]? buffer = null;
+            Span<byte> span = stackalloc byte[512];
+
             if (extendedAttributes.Count > 0)
             {
                 dataStream = new MemoryStream();
+
                 foreach ((string attribute, string value) in extendedAttributes)
                 {
-                    byte[] entryBytes = GenerateExtendedAttributeKeyValuePairAsByteArray(Encoding.UTF8.GetBytes(attribute), Encoding.UTF8.GetBytes(value));
-                    dataStream.Write(entryBytes);
+                    // Generates an extended attribute key value pair string saved into a byte array, following the ISO/IEC 10646-1:2000 standard UTF-8 encoding format.
+                    // https://pubs.opengroup.org/onlinepubs/9699919799/utilities/pax.html
+
+                    // The format is:
+                    //     "XX attribute=value\n"
+                    // where "XX" is the number of characters in the entry, including those required for the count itself.
+                    // If prepending the length digits increases the number of digits, we need to expand.
+                    int length = 3 + Encoding.UTF8.GetByteCount(attribute) + Encoding.UTF8.GetByteCount(value);
+                    int originalDigitCount = CountDigits(length), newDigitCount;
+                    length += originalDigitCount;
+                    while ((newDigitCount = CountDigits(length)) != originalDigitCount)
+                    {
+                        length += newDigitCount - originalDigitCount;
+                        originalDigitCount = newDigitCount;
+                    }
+                    Debug.Assert(length == CountDigits(length) + 3 + Encoding.UTF8.GetByteCount(attribute) + Encoding.UTF8.GetByteCount(value));
+
+                    // Get a large enough buffer if we don't already have one.
+                    if (span.Length < length)
+                    {
+                        if (buffer is not null)
+                        {
+                            ArrayPool<byte>.Shared.Return(buffer);
+                        }
+                        span = buffer = ArrayPool<byte>.Shared.Rent(length);
+                    }
+
+                    // Format the contents.
+                    bool formatted = Utf8Formatter.TryFormat(length, span, out int bytesWritten);
+                    Debug.Assert(formatted);
+                    span[bytesWritten++] = (byte)' ';
+                    bytesWritten += Encoding.UTF8.GetBytes(attribute, span.Slice(bytesWritten));
+                    span[bytesWritten++] = (byte)'=';
+                    bytesWritten += Encoding.UTF8.GetBytes(value, span.Slice(bytesWritten));
+                    span[bytesWritten++] = (byte)'\n';
+
+                    // Write it to the stream.
+                    dataStream.Write(span.Slice(0, bytesWritten));
                 }
-                dataStream?.Seek(0, SeekOrigin.Begin); // Ensure it gets written into the archive from the beginning
+
+                dataStream.Position = 0; // Ensure it gets written into the archive from the beginning
             }
-            return dataStream;
-        }
 
-        // Asynchronously dumps into the archive stream an extended attribute entry containing metadata of the entry it precedes.
-        private static async Task<Stream?> GenerateExtendedAttributesDataStreamAsync(Dictionary<string, string> extendedAttributes, CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            MemoryStream? dataStream = null;
-            if (extendedAttributes.Count > 0)
+            if (buffer is not null)
             {
-                dataStream = new MemoryStream();
-                foreach ((string attribute, string value) in extendedAttributes)
-                {
-                    byte[] entryBytes = GenerateExtendedAttributeKeyValuePairAsByteArray(Encoding.UTF8.GetBytes(attribute), Encoding.UTF8.GetBytes(value));
-                    await dataStream.WriteAsync(entryBytes, cancellationToken).ConfigureAwait(false);
-                }
-                dataStream?.Seek(0, SeekOrigin.Begin); // Ensure it gets written into the archive from the beginning
+                ArrayPool<byte>.Shared.Return(buffer);
             }
+
             return dataStream;
+
+            static int CountDigits(int value)
+            {
+                Debug.Assert(value >= 0);
+                int digits = 1;
+                while (true)
+                {
+                    value /= 10;
+                    if (value == 0) break;
+                    digits++;
+                }
+                return digits;
+            }
         }
 
         // Some fields that have a reserved spot in the header, may not fit in such field anymore, but they can fit in the
@@ -584,10 +627,12 @@ namespace System.Formats.Tar
             {
                 ExtendedAttributes.Add(PaxEaMTime, TarHelpers.GetTimestampStringFromDateTimeOffset(_mTime));
             }
+
             if (!string.IsNullOrEmpty(_gName))
             {
                 TryAddStringField(ExtendedAttributes, PaxEaGName, _gName, FieldLengths.GName);
             }
+
             if (!string.IsNullOrEmpty(_uName))
             {
                 TryAddStringField(ExtendedAttributes, PaxEaUName, _uName, FieldLengths.UName);
@@ -603,7 +648,6 @@ namespace System.Formats.Tar
                 ExtendedAttributes.Add(PaxEaSize, _size.ToString());
             }
 
-
             // Adds the specified string to the dictionary if it's longer than the specified max byte length.
             static void TryAddStringField(Dictionary<string, string> extendedAttributes, string key, string value, int maxLength)
             {
@@ -614,63 +658,24 @@ namespace System.Formats.Tar
             }
         }
 
-        // Generates an extended attribute key value pair string saved into a byte array, following the ISO/IEC 10646-1:2000 standard UTF-8 encoding format.
-        // https://pubs.opengroup.org/onlinepubs/9699919799/utilities/pax.html
-        private static byte[] GenerateExtendedAttributeKeyValuePairAsByteArray(byte[] keyBytes, byte[] valueBytes)
-        {
-            // Assuming key="ab" and value="cdef"
-
-            // The " ab=cdef\n" attribute string has a length of 9 chars
-            int suffixByteCount = 3 + // leading space, equals sign and trailing newline
-                keyBytes.Length + valueBytes.Length;
-
-            // The count string "9" has a length of 1 char
-            string suffixByteCountString = suffixByteCount.ToString();
-            int firstTotalByteCount = Encoding.ASCII.GetByteCount(suffixByteCountString);
-
-            // If we prepend the count string length to the attribute string,
-            // the total length increases to 10, which has one more digit
-            // "9 abc=def\n"
-            int firstPrefixAndSuffixByteCount = firstTotalByteCount + suffixByteCount;
-
-            // The new count string "10" has an increased length of 2 chars
-            string prefixAndSuffixByteCountString = firstPrefixAndSuffixByteCount.ToString();
-            int realTotalCharCount = Encoding.ASCII.GetByteCount(prefixAndSuffixByteCountString);
-
-            byte[] finalTotalCharCountBytes = Encoding.ASCII.GetBytes(prefixAndSuffixByteCountString);
-
-            // The final string should contain the correct total length now
-            List<byte> bytesList = new();
-
-            bytesList.AddRange(finalTotalCharCountBytes);
-            bytesList.Add(TarHelpers.SpaceChar);
-            bytesList.AddRange(keyBytes);
-            bytesList.Add(TarHelpers.EqualsChar);
-            bytesList.AddRange(valueBytes);
-            bytesList.Add(TarHelpers.NewLineChar);
-
-            Debug.Assert(bytesList.Count == (realTotalCharCount + suffixByteCount));
-
-            return bytesList.ToArray();
-        }
-
         // The checksum accumulator first adds up the byte values of eight space chars, then the final number
         // is written on top of those spaces on the specified span as ascii.
         // At the end, it's saved in the header field and the final value returned.
-        internal int WriteChecksum(int checksum, Span<byte> buffer)
+        internal static int WriteChecksum(int checksum, Span<byte> buffer)
         {
             // The checksum field is also counted towards the total sum
             // but as an array filled with spaces
-            checksum += TarHelpers.SpaceChar * 8;
+            checksum += (byte)' ' * 8;
 
             Span<byte> converted = stackalloc byte[FieldLengths.Checksum];
-            WriteAsOctal(checksum, converted, 0, converted.Length);
+            converted.Clear();
+            FormatOctal(checksum, converted);
 
             Span<byte> destination = buffer.Slice(FieldLocations.Checksum, FieldLengths.Checksum);
 
             // Checksum field ends with a null and a space
-            destination[^1] = TarHelpers.SpaceChar; // ' '
-            destination[^2] = 0; // '\0'
+            destination[^1] = (byte)' ';
+            destination[^2] = (byte)'\0';
 
             int i = destination.Length - 3;
             int j = converted.Length - 1;
@@ -684,7 +689,7 @@ namespace System.Formats.Tar
                 }
                 else
                 {
-                    destination[i] = TarHelpers.ZeroChar; // Leading zero chars '0'
+                    destination[i] = (byte)'0';  // Leading zero chars
                 }
                 i--;
             }
@@ -697,67 +702,75 @@ namespace System.Formats.Tar
         {
             Debug.Assert(destination.Length > 1);
 
-            int checksum = 0;
+            // Copy as many bytes as will fit
+            int numToCopy = Math.Min(bytesToWrite.Length, destination.Length);
+            bytesToWrite = bytesToWrite.Slice(0, numToCopy);
+            bytesToWrite.CopyTo(destination);
 
-            for (int i = 0, j = 0; i < destination.Length && j < bytesToWrite.Length; i++, j++)
-            {
-                destination[i] = bytesToWrite[j];
-                checksum += destination[i];
-            }
-
-            return checksum;
+            return Checksum(bytesToWrite);
         }
 
         // Writes the specified bytes aligned to the right, filling all the leading bytes with the zero char 0x30,
         // ensuring a null terminator is included at the end of the specified span.
         private static int WriteRightAlignedBytesAndGetChecksum(ReadOnlySpan<byte> bytesToWrite, Span<byte> destination)
         {
+            Debug.Assert(destination.Length > 1);
+
+            // Null terminated
+            destination[^1] = (byte)'\0';
+
+            // Copy as many input bytes as will fit
+            int numToCopy = Math.Min(bytesToWrite.Length, destination.Length - 1);
+            bytesToWrite = bytesToWrite.Slice(0, numToCopy);
+            int copyPos = destination.Length - 1 - bytesToWrite.Length;
+            bytesToWrite.CopyTo(destination.Slice(copyPos));
+
+            // Fill all leading bytes with zeros
+            destination.Slice(0, copyPos).Fill((byte)'0');
+
+            return Checksum(destination);
+        }
+
+        private static int Checksum(ReadOnlySpan<byte> bytes)
+        {
             int checksum = 0;
-            int i = destination.Length - 1;
-            int j = bytesToWrite.Length - 1;
-
-            while (i >= 0)
+            foreach (byte b in bytes)
             {
-                if (i == destination.Length - 1)
-                {
-                    destination[i] = 0; // null terminated
-                }
-                else if (j >= 0)
-                {
-                    destination[i] = bytesToWrite[j];
-                    j--;
-                }
-                else
-                {
-                    destination[i] = TarHelpers.ZeroChar; // leading zeros
-                }
-                checksum += destination[i];
-                i--;
+                checksum += b;
             }
-
             return checksum;
         }
 
         // Writes the specified decimal number as a right-aligned octal number and returns its checksum.
-        internal static int WriteAsOctal(long tenBaseNumber, Span<byte> destination, int location, int length)
+        internal static int FormatOctal(long value, Span<byte> destination)
         {
-            long octal = TarHelpers.ConvertDecimalToOctal(tenBaseNumber);
-            byte[] bytes = Encoding.ASCII.GetBytes(octal.ToString());
-            return WriteRightAlignedBytesAndGetChecksum(bytes.AsSpan(), destination.Slice(location, length));
+            ulong remaining = (ulong)value;
+            Span<byte> digits = stackalloc byte[32]; // longer than any possible octal formatting of a ulong
+
+            int i = digits.Length - 1;
+            while (true)
+            {
+                digits[i] = (byte)('0' + (remaining % 8));
+                remaining /= 8;
+                if (remaining == 0) break;
+                i--;
+            }
+
+            return WriteRightAlignedBytesAndGetChecksum(digits.Slice(i), destination);
         }
 
         // Writes the specified DateTimeOffset's Unix time seconds as a right-aligned octal number, and returns its checksum.
-        private static int WriteAsTimestamp(DateTimeOffset timestamp, Span<byte> destination, int location, int length)
+        private static int WriteAsTimestamp(DateTimeOffset timestamp, Span<byte> destination)
         {
             long unixTimeSeconds = timestamp.ToUnixTimeSeconds();
-            return WriteAsOctal(unixTimeSeconds, destination, location, length);
+            return FormatOctal(unixTimeSeconds, destination);
         }
 
         // Writes the specified text as an ASCII string aligned to the left, and returns its checksum.
-        private static int WriteAsAsciiString(string str, Span<byte> buffer, int location, int length)
+        private static int WriteAsAsciiString(string str, Span<byte> buffer)
         {
             byte[] bytes = Encoding.ASCII.GetBytes(str);
-            return WriteLeftAlignedBytesAndGetChecksum(bytes.AsSpan(), buffer.Slice(location, length));
+            return WriteLeftAlignedBytesAndGetChecksum(bytes.AsSpan(), buffer);
         }
 
         // Gets the special name for the 'name' field in an extended attribute entry.
@@ -767,18 +780,15 @@ namespace System.Formats.Tar
         // - %f: The filename of the file, equivalent to the result of the basename utility on the translated pathname.
         private string GenerateExtendedAttributeName()
         {
-            string? dirName = Path.GetDirectoryName(_name);
-            dirName = string.IsNullOrEmpty(dirName) ? "." : dirName;
+            ReadOnlySpan<char> dirName = Path.GetDirectoryName(_name.AsSpan());
+            dirName = dirName.IsEmpty ? "." : dirName;
 
-            int processId = Environment.ProcessId;
+            ReadOnlySpan<char> fileName = Path.GetFileName(_name.AsSpan());
+            fileName = fileName.IsEmpty ? "." : fileName;
 
-            string? fileName = Path.GetFileName(_name);
-            fileName = string.IsNullOrEmpty(fileName) ? "." : fileName;
-
-            string trailingSeparator = (_typeFlag is TarEntryType.Directory or TarEntryType.DirectoryList) ?
-                $"{Path.DirectorySeparatorChar}" : string.Empty;
-
-            return string.Format(PaxHeadersFormat, dirName, processId, fileName, trailingSeparator);
+            return _typeFlag is TarEntryType.Directory or TarEntryType.DirectoryList ?
+                $"{dirName}/PaxHeaders.{Environment.ProcessId}/{fileName}{Path.DirectorySeparatorChar}" :
+                $"{dirName}/PaxHeaders.{Environment.ProcessId}/{fileName}";
         }
 
         // Gets the special name for the 'name' field in a global extended attribute entry.

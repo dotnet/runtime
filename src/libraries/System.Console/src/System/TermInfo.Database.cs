@@ -34,7 +34,7 @@ internal static partial class TermInfo
         private readonly int _sizeOfInt;
 
         /// <summary>Extended / user-defined entries in the terminfo database.</summary>
-        private readonly Dictionary<string, string> _extendedStrings;
+        private readonly Dictionary<string, string>? _extendedStrings;
 
         /// <summary>Initializes the database instance.</summary>
         /// <param name="term">The name of the terminal.</param>
@@ -75,11 +75,13 @@ internal static partial class TermInfo
             // (Note that the extended section also includes other Booleans and numbers, but we don't
             // have any need for those now, so we don't parse them.)
             int extendedBeginning = RoundUpToEven(StringsTableOffset + _stringTableNumBytes);
-            _extendedStrings = ParseExtendedStrings(data, extendedBeginning, _readAs32Bit) ?? new Dictionary<string, string>();
+            _extendedStrings = ParseExtendedStrings(data, extendedBeginning, _readAs32Bit);
         }
 
         /// <summary>The name of the associated terminfo, if any.</summary>
         public string Term { get { return _term; } }
+
+        internal bool HasExtendedStrings => _extendedStrings is not null;
 
         /// <summary>The offset into data where the names section begins.</summary>
         private const int NamesOffset = 12; // comes right after the header, which is always 12 bytes
@@ -133,9 +135,7 @@ internal static partial class TermInfo
             Debug.Assert(name != null);
 
             string? value;
-            return _extendedStrings.TryGetValue(name, out value) ?
-                value :
-                null;
+            return _extendedStrings is not null && _extendedStrings.TryGetValue(name, out value) ? value : null;
         }
 
         /// <summary>Gets a number from the numbers section by the number's well-known index.</summary>

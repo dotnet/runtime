@@ -12,7 +12,7 @@ namespace ILLink.Shared.TrimAnalysis
 	/// <summary>
 	/// This is a known System.Reflection.MethodBase value.  MethodRepresented is the 'value' of the MethodBase.
 	/// </summary>
-	sealed partial record SystemReflectionMethodBaseValue : SingleValue
+	internal sealed partial record SystemReflectionMethodBaseValue : SingleValue
 	{
 		public SystemReflectionMethodBaseValue (MethodProxy representedMethod) => RepresentedMethod = representedMethod;
 

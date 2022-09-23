@@ -105,7 +105,7 @@ export function teardown_managed_proxy(result: any, gc_handle: GCHandle): void {
         }
     }
     if (gc_handle !== GCHandleNull && _js_owned_object_table.delete(gc_handle)) {
-        runtimeHelpers.javaScriptExports._release_js_owned_object_by_gc_handle(gc_handle);
+        runtimeHelpers.javaScriptExports.release_js_owned_object_by_gc_handle(gc_handle);
     }
 }
 

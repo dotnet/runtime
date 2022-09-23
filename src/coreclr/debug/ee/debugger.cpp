@@ -971,7 +971,12 @@ Debugger::Debugger()
     // as data structure layouts change, add a new version number
     // and comment the changes
     m_mdDataStructureVersion = 1;
-
+    m_fOutOfProcessSetContextEnabled =
+#if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
+        Thread::AreCetShadowStacksEnabled() || CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_OutOfProcessSetContext) != 0;
+#else
+        FALSE;
+#endif
 }
 
 /******************************************************************************
@@ -5504,7 +5509,8 @@ bool Debugger::IsJMCMethod(Module* pModule, mdMethodDef tkMethod)
 bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
                                           CONTEXT *context,
                                           DWORD code,
-                                          Thread *thread)
+                                          Thread *thread,
+                                          BOOL fIsVEH)
 {
 
     // @@@
@@ -5537,19 +5543,27 @@ bool Debugger::FirstChanceNativeException(EXCEPTION_RECORD *exception,
 
     bool retVal;
 
-    // Don't stop for native debugging anywhere inside our inproc-Filters.
-    CantStopHolder hHolder;
-
-    if (!CORDBUnrecoverableError(this))
     {
-        retVal = DebuggerController::DispatchNativeException(exception, context,
-                                                           code, thread);
-    }
-    else
-    {
-        retVal = false;
+        // Don't stop for native debugging anywhere inside our inproc-Filters.
+        CantStopHolder hHolder;
+
+        if (!CORDBUnrecoverableError(this))
+        {
+            retVal = DebuggerController::DispatchNativeException(exception, context,
+                                                               code, thread);
+        }
+        else
+        {
+            retVal = false;
+        }
     }
 
+#if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
+    if (retVal && fIsVEH)
+    {
+        SendSetThreadContextNeeded(context);
+    }
+#endif
     return retVal;
 }
 
@@ -6624,6 +6638,7 @@ void Debugger::InitDebuggerLaunchJitInfo(Thread * pThread, EXCEPTION_POINTERS * 
         reinterpret_cast<ULONG64>(s_DebuggerLaunchJitInfoExceptionRecord.ExceptionAddress) :
         reinterpret_cast<ULONG64>(reinterpret_cast<PVOID>(GetIP(pExceptionInfo->ContextRecord)));
 
+#if defined(HOST_WINDOWS)
 #if defined(TARGET_X86)
     s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_INTEL;
 #elif defined(TARGET_AMD64)
@@ -6632,10 +6647,9 @@ void Debugger::InitDebuggerLaunchJitInfo(Thread * pThread, EXCEPTION_POINTERS * 
     s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_ARM;
 #elif defined(TARGET_ARM64)
     s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_ARM64;
-#elif defined(TARGET_LOONGARCH64)
-    s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_LOONGARCH64;
 #else
 #error Unknown processor.
+#endif
 #endif
 }
 
@@ -13146,7 +13160,7 @@ void STDCALL ExceptionHijackWorker(
             break;
     case EHijackReason::kFirstChanceSuspend:
             _ASSERTE(pData == NULL);
-            g_pDebugger->FirstChanceSuspendHijackWorker(pContext, pRecord);
+            g_pDebugger->FirstChanceSuspendHijackWorker(pContext, pRecord, FALSE);
             break;
     case EHijackReason::kGenericHijack:
             _ASSERTE(pData == NULL);
@@ -13177,19 +13191,14 @@ void STDCALL ExceptionHijackWorker(
 //    See code:ExceptionHijackPersonalityRoutine for more information.
 //
 // Arguments:
-//    * pExceptionRecord   - not used
-//    * MemoryStackFp      - not used
-//    * BackingStoreFp     - not used
-//    * pContextRecord     - not used
-//    * pDispatcherContext - not used
-//    * GlobalPointer      - not used
+//    Standard personality routine signature.
 //
 // Return Value:
 //    Always return ExceptionContinueSearch.
 //
 
 EXCEPTION_DISPOSITION EmptyPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord,
-                                              IN     ULONG64             MemoryStackFp,
+                                              IN     PVOID               pEstablisherFrame,
                                               IN OUT PCONTEXT            pContextRecord,
                                               IN OUT PDISPATCHER_CONTEXT pDispatcherContext)
 {
@@ -13202,7 +13211,7 @@ EXCEPTION_DISPOSITION EmptyPersonalityRoutine(IN     PEXCEPTION_RECORD   pExcept
 // Personality routine for unwinder the assembly hijack stub on 64-bit.
 //
 // Arguments:
-//    standard Personality routine signature.
+//    Standard personality routine signature.
 //
 // Assumptions:
 //    This is caleld by the OS exception logic during exception handling.
@@ -13229,9 +13238,8 @@ EXCEPTION_DISPOSITION EmptyPersonalityRoutine(IN     PEXCEPTION_RECORD   pExcept
 //    On AMD64, we work around this by using an empty personality routine.
 
 EXTERN_C EXCEPTION_DISPOSITION
-ExceptionHijackPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord
-                        BIT64_ARG(IN     ULONG64             MemoryStackFp)
-                    NOT_BIT64_ARG(IN     ULONG32             MemoryStackFp),
+ExceptionHijackPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord,
+                                  IN     PVOID               pEstablisherFrame,
                                   IN OUT PCONTEXT            pContextRecord,
                                   IN OUT PDISPATCHER_CONTEXT pDispatcherContext
                                  )
@@ -13254,7 +13262,7 @@ ExceptionHijackPersonalityRoutine(IN     PEXCEPTION_RECORD   pExceptionRecord
 
     // This copies pHijackContext into pDispatcherContext, which the OS can then
     // use to walk the stack.
-    FixupDispatcherContext(pDispatcherContext, pHijackContext, pContextRecord, (PEXCEPTION_ROUTINE)EmptyPersonalityRoutine);
+    FixupDispatcherContext(pDispatcherContext, pHijackContext, (PEXCEPTION_ROUTINE)EmptyPersonalityRoutine);
 #else
     _ASSERTE(!"NYI - ExceptionHijackPersonalityRoutine()");
 #endif
@@ -13463,7 +13471,8 @@ VOID Debugger::M2UHandoffHijackWorker(CONTEXT *pContext,
         okay = g_pDebugger->FirstChanceNativeException(pExceptionRecord,
             pContext,
             pExceptionRecord->ExceptionCode,
-            pEEThread);
+            pEEThread,
+            FALSE);
         _ASSERTE(okay == true);
         LOG((LF_CORDB, LL_INFO1000, "D::M2UHHW: FirstChanceNativeException returned\n"));
     }
@@ -13502,7 +13511,8 @@ VOID Debugger::M2UHandoffHijackWorker(CONTEXT *pContext,
 // - this thread is not in cooperative mode.
 //-----------------------------------------------------------------------------
 LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
-                                              EXCEPTION_RECORD *pExceptionRecord)
+                                              EXCEPTION_RECORD *pExceptionRecord,
+                                              BOOL fIsVEH)
 {
     // if we aren't set up to do interop debugging this function should just bail out
     if(m_pRCThread == NULL)
@@ -13638,6 +13648,12 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
     if (pFcd->action == HIJACK_ACTION_EXIT_HANDLED)
     {
         SPEW(fprintf(stderr, "0x%x D::FCHF: exiting with CONTINUE_EXECUTION\n", tid));
+#if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
+        if (fIsVEH)
+        {
+            SendSetThreadContextNeeded(pContext);
+        }
+#endif
         return EXCEPTION_CONTINUE_EXECUTION;
     }
     else
@@ -16574,22 +16590,23 @@ Debugger::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
     DAC_ENUM_VTHIS();
     SUPPORTS_DAC;
-    _ASSERTE(m_rgHijackFunction != NULL);
 
-    if ( flags != CLRDATA_ENUM_MEM_TRIAGE)
+    if (flags != CLRDATA_ENUM_MEM_TRIAGE)
     {
         if (m_pMethodInfos.IsValid())
         {
             m_pMethodInfos->EnumMemoryRegions(flags);
         }
 
-        DacEnumMemoryRegion(dac_cast<TADDR>(m_pLazyData),
-                                sizeof(DebuggerLazyInit));
+        DacEnumMemoryRegion(dac_cast<TADDR>(m_pLazyData), sizeof(DebuggerLazyInit));
     }
 
     // Needed for stack walking from an initial native context.  If the debugger can find the
     // on-disk image of clr.dll, then this is not necessary.
-    DacEnumMemoryRegion(dac_cast<TADDR>(m_rgHijackFunction), sizeof(MemoryRange)*kMaxHijackFunctions);
+    if (m_rgHijackFunction.IsValid())
+    {
+        DacEnumMemoryRegion(dac_cast<TADDR>(m_rgHijackFunction), sizeof(MemoryRange)*kMaxHijackFunctions);
+    }
 }
 
 
@@ -16631,4 +16648,93 @@ void Debugger::StartCanaryThread()
 }
 #endif // DACCESS_COMPILE
 
+#ifndef DACCESS_COMPILE
+#ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
+void Debugger::SendSetThreadContextNeeded(CONTEXT *context)
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+
+    if (!m_fOutOfProcessSetContextEnabled)
+        return;
+
+#if defined(TARGET_WINDOWS) && defined(TARGET_AMD64)
+    DWORD contextFlags = context->ContextFlags;
+    DWORD contextSize = 0;
+
+    // determine the context size
+    BOOL success = InitializeContext(NULL, contextFlags, NULL, &contextSize);
+    if (success || GetLastError() != ERROR_INSUFFICIENT_BUFFER || contextSize == 0)
+    {
+        // The initialize call should fail but return contextSize
+        _ASSERTE(!"InitializeContext unexpectedly failed\n");
+        return;
+    }
+
+    // allocate a temp buffer for the context
+    BYTE *pBuffer = (BYTE*)_alloca(contextSize);
+    if (pBuffer == NULL)
+    {
+        _ASSERTE(!"Failed to allocate context buffer");
+        LOG((LF_CORDB, LL_INFO10000, "D::SSTCN Failed to allocate context buffer\n"));
+        return;
+    }
+
+    // make a copy of the context
+    PCONTEXT pContext = NULL;
+    success = InitializeContext(pBuffer, contextFlags, &pContext, &contextSize);
+    if (!success)
+    {
+        _ASSERTE(!"InitializeContext failed");
+        LOG((LF_CORDB, LL_INFO10000, "D::SSTCN Unexpected result from InitializeContext (error: %d).\n", GetLastError()));
+        return;
+    }
+
+    success = CopyContext(pContext, contextFlags, context);
+    if (!success)
+    {
+        _ASSERTE(!"CopyContext failed");
+        LOG((LF_CORDB, LL_INFO10000, "D::SSTCN Unexpected result from CopyContext (error: %d).\n", GetLastError()));
+        return;
+    }
+
+    // adjust context size if the context pointer is not aligned with the buffer we allocated
+    contextSize -= (DWORD)((BYTE*)pContext-(BYTE*)pBuffer);
+
+    // send the context to the right side
+    LOG((LF_CORDB, LL_INFO10000, "D::SSTCN ContextFlags=0x%X contextSize=%d..\n", contextFlags, contextSize));
+    EX_TRY
+    {
+        SetThreadContextNeededFlare((TADDR)pContext, contextSize, pContext->Rip, pContext->Rsp);
+    }
+    EX_CATCH
+    {
+    }
+    EX_END_CATCH(SwallowAllExceptions);
+#else
+    #error Platform not supported
+#endif
+
+    LOG((LF_CORDB, LL_INFO10000, "D::SSTCN SetThreadContextNeededFlare returned\n"));
+    _ASSERTE(!"We failed to SetThreadContext from out of process!");
+}
+
+BOOL Debugger::IsOutOfProcessSetContextEnabled()
+{
+    return m_fOutOfProcessSetContextEnabled;
+}
+#else
+void Debugger::SendSetThreadContextNeeded(CONTEXT* context)
+{
+    _ASSERTE(!"SendSetThreadContextNeeded is not enabled on this platform");
+}
+
+BOOL Debugger::IsOutOfProcessSetContextEnabled()
+{
+    return FALSE;
+}
+#endif // OUT_OF_PROCESS_SETTHREADCONTEXT
+#endif // DACCESS_COMPILE
+
 #endif //DEBUGGING_SUPPORTED
+

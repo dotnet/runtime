@@ -283,33 +283,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
-        public void GetStringList()
-        {
-            var input = new Dictionary<string, string>
-            {
-                {"StringList:0", "val0"},
-                {"StringList:1", "val1"},
-                {"StringList:2", "val2"},
-                {"StringList:x", "valx"}
-            };
-
-            var configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddInMemoryCollection(input);
-            var config = configurationBuilder.Build();
-            var options = new OptionsWithLists();
-            config.Bind(options);
-
-            var list = options.StringList;
-
-            Assert.Equal(4, list.Count);
-
-            Assert.Equal("val0", list[0]);
-            Assert.Equal("val1", list[1]);
-            Assert.Equal("val2", list[2]);
-            Assert.Equal("valx", list[3]);
-        }
-
-        [Fact]
         public void BindStringList()
         {
             var input = new Dictionary<string, string>
@@ -334,34 +307,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("val1", list[1]);
             Assert.Equal("val2", list[2]);
             Assert.Equal("valx", list[3]);
-        }
-
-        [Fact]
-        public void GetIntList()
-        {
-            var input = new Dictionary<string, string>
-            {
-                {"IntList:0", "42"},
-                {"IntList:1", "43"},
-                {"IntList:2", "44"},
-                {"IntList:x", "45"}
-            };
-
-            var configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddInMemoryCollection(input);
-            var config = configurationBuilder.Build();
-
-            var options = new OptionsWithLists();
-            config.Bind(options);
-
-            var list = options.IntList;
-
-            Assert.Equal(4, list.Count);
-
-            Assert.Equal(42, list[0]);
-            Assert.Equal(43, list[1]);
-            Assert.Equal(44, list[2]);
-            Assert.Equal(45, list[3]);
         }
 
         [Fact]
@@ -634,7 +579,10 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             {
                 {"AlreadyInitializedStringDictionaryInterface:abc", "val_1"},
                 {"AlreadyInitializedStringDictionaryInterface:def", "val_2"},
-                {"AlreadyInitializedStringDictionaryInterface:ghi", "val_3"}
+                {"AlreadyInitializedStringDictionaryInterface:ghi", "val_3"},
+
+                {"IDictionaryNoSetter:Key1", "Value1"},
+                {"IDictionaryNoSetter:Key2", "Value2"},
             };
 
             var configurationBuilder = new ConfigurationBuilder();
@@ -651,6 +599,10 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("val_1", options.AlreadyInitializedStringDictionaryInterface["abc"]);
             Assert.Equal("val_2", options.AlreadyInitializedStringDictionaryInterface["def"]);
             Assert.Equal("val_3", options.AlreadyInitializedStringDictionaryInterface["ghi"]);
+
+            Assert.Equal(2, options.IDictionaryNoSetter.Count);
+            Assert.Equal("Value1", options.IDictionaryNoSetter["Key1"]);
+            Assert.Equal("Value2", options.IDictionaryNoSetter["Key2"]);
         }
 
         [Fact]
@@ -1114,7 +1066,10 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 {"AlreadyInitializedIEnumerableInterface:0", "val0"},
                 {"AlreadyInitializedIEnumerableInterface:1", "val1"},
                 {"AlreadyInitializedIEnumerableInterface:2", "val2"},
-                {"AlreadyInitializedIEnumerableInterface:x", "valx"}
+                {"AlreadyInitializedIEnumerableInterface:x", "valx"},
+                
+                {"ICollectionNoSetter:0", "val0"},
+                {"ICollectionNoSetter:1", "val1"},
             };
 
             var configurationBuilder = new ConfigurationBuilder();
@@ -1139,6 +1094,10 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(2, options.ListUsedInIEnumerableFieldAndShouldNotBeTouched.Count);
             Assert.Equal("This was here too", options.ListUsedInIEnumerableFieldAndShouldNotBeTouched.ElementAt(0));
             Assert.Equal("Don't touch me!", options.ListUsedInIEnumerableFieldAndShouldNotBeTouched.ElementAt(1));
+
+            Assert.Equal(2, options.ICollectionNoSetter.Count);
+            Assert.Equal("val0", options.ICollectionNoSetter.ElementAt(0));
+            Assert.Equal("val1", options.ICollectionNoSetter.ElementAt(1));
         }
 
         [Fact]
@@ -1259,6 +1218,34 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("val1", array[1]);
             Assert.Equal("val2", array[2]);
             Assert.Equal("valx", array[3]);
+        }
+
+        [Fact]
+        public void CanBindUninitializedIList()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"IList:0", "val0"},
+                {"IList:1", "val1"},
+                {"IList:2", "val2"},
+                {"IList:x", "valx"}
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new UninitializedCollectionsOptions();
+            config.Bind(options);
+
+            IList<string> list = options.IList;
+
+            Assert.Equal(4, list.Count);
+
+            Assert.Equal("val0", list[0]);
+            Assert.Equal("val1", list[1]);
+            Assert.Equal("val2", list[2]);
+            Assert.Equal("valx", list[3]);
         }
 
         [Fact]
@@ -1451,6 +1438,8 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 new CustomListIndirectlyDerivedFromIEnumerable();
 
             public IReadOnlyDictionary<string, string> AlreadyInitializedDictionary { get; set; }
+
+            public ICollection<string> ICollectionNoSetter { get; } = new List<string>();
         }
 
         private class CustomList : List<string>
@@ -1590,6 +1579,8 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public Dictionary<string, int> IntDictionary { get; set; }
 
             public Dictionary<string, string> StringDictionary { get; set; }
+
+            public IDictionary<string, string> IDictionaryNoSetter { get; } = new Dictionary<string, string>();
 
             public Dictionary<string, NestedOptions> ObjectDictionary { get; set; }
 

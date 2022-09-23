@@ -13,7 +13,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler
 {
-    internal class ILCompilerRootCommand : RootCommand
+    internal sealed class ILCompilerRootCommand : RootCommand
     {
         public Argument<Dictionary<string, string>> InputFilePaths { get; } =
             new("input-file-path", result => Helpers.BuildPathDictionay(result.Tokens, true), false, "Input file(s)") { Arity = ArgumentArity.OneOrMore };
@@ -28,7 +28,7 @@ namespace ILCompiler
         public Option<bool> OptimizeTime { get; } =
             new(new[] { "--optimize-time", "-Ot" }, "Enable optimizations, favor code speed");
         public Option<string[]> MibcFilePaths { get; } =
-            new(new[] { "--mibc", "-m" }, () => Array.Empty<string>(), "Mibc file(s) for profile guided optimization");
+            new(new[] { "--mibc", "-m" }, Array.Empty<string>, "Mibc file(s) for profile guided optimization");
         public Option<bool> EnableDebugInfo { get; } =
             new(new[] { "--debug", "-g" }, "Emit debugging information");
         public Option<bool> UseDwarf5 { get; } =
@@ -56,11 +56,15 @@ namespace ILCompiler
         public Option<bool> Resilient { get; } =
             new(new[] { "--resilient" }, "Ignore unresolved types, methods, and assemblies. Defaults to false");
         public Option<string[]> CodegenOptions { get; } =
-            new(new[] { "--codegenopt" }, () => Array.Empty<string>(), "Define a codegen option");
+            new(new[] { "--codegenopt" }, Array.Empty<string>, "Define a codegen option");
         public Option<string[]> RdXmlFilePaths { get; } =
-            new(new[] { "--rdxml" }, () => Array.Empty<string>(), "RD.XML file(s) for compilation");
+            new(new[] { "--rdxml" }, Array.Empty<string>, "RD.XML file(s) for compilation");
+        public Option<string[]> LinkTrimFilePaths { get; } =
+            new(new[] { "--descriptor" }, Array.Empty<string>, "ILLinkTrim.Descriptor file(s) for compilation");
         public Option<string> MapFileName { get; } =
             new(new[] { "--map" }, "Generate a map file");
+        public Option<string> MstatFileName { get; } =
+            new(new[] { "--mstat" }, "Generate an mstat file");
         public Option<string> MetadataLogFileName { get; } =
             new(new[] { "--metadatalog" }, "Generate a metadata log file");
         public Option<bool> NoMetadataBlocking { get; } =
@@ -82,15 +86,29 @@ namespace ILCompiler
         public Option<bool> MethodBodyFolding { get; } =
             new(new[] { "--methodbodyfolding" }, "Fold identical method bodies");
         public Option<string[]> InitAssemblies { get; } =
-            new(new[] { "--initassembly" }, () => Array.Empty<string>(), "Assembly(ies) with a library initializer");
+            new(new[] { "--initassembly" }, Array.Empty<string>, "Assembly(ies) with a library initializer");
         public Option<string[]> AppContextSwitches { get; } =
-            new(new[] { "--appcontextswitch" }, () => Array.Empty<string>(), "System.AppContext switches to set (format: 'Key=Value')");
+            new(new[] { "--appcontextswitch" }, Array.Empty<string>, "System.AppContext switches to set (format: 'Key=Value')");
         public Option<string[]> FeatureSwitches { get; } =
-            new(new[] { "--feature" }, () => Array.Empty<string>(), "Feature switches to apply (format: 'Namespace.Name=[true|false]'");
+            new(new[] { "--feature" }, Array.Empty<string>, "Feature switches to apply (format: 'Namespace.Name=[true|false]'");
         public Option<string[]> RuntimeOptions { get; } =
-            new(new[] { "--runtimeopt" }, () => Array.Empty<string>(), "Runtime options to set");
+            new(new[] { "--runtimeopt" }, Array.Empty<string>, "Runtime options to set");
         public Option<int> Parallelism { get; } =
-            new(new[] { "--parallelism" }, () => Environment.ProcessorCount, "Maximum number of threads to use during compilation");
+            new(new[] { "--parallelism" }, result =>
+            {
+                if (result.Tokens.Count > 0)
+                    return int.Parse(result.Tokens[0].Value);
+
+                // Limit parallelism to 24 wide at most by default, more parallelism is unlikely to improve compilation speed
+                // as many portions of the process are single threaded, and is known to use excessive memory.
+                var parallelism = Math.Min(24, Environment.ProcessorCount);
+
+                // On 32bit platforms restrict it more, as virtual address space is quite limited
+                if (!Environment.Is64BitProcess)
+                    parallelism = Math.Min(4, parallelism);
+
+                return parallelism;
+            }, true, "Maximum number of threads to use during compilation");
         public Option<string> InstructionSet { get; } =
             new(new[] { "--instruction-set" }, "Instruction set to allow or disallow");
         public Option<string> Guard { get; } =
@@ -100,21 +118,25 @@ namespace ILCompiler
         public Option<bool> NoPreinitStatics { get; } =
             new(new[] { "--nopreinitstatics" }, "Do not interpret static constructors at compile time");
         public Option<string[]> SuppressedWarnings { get; } =
-            new(new[] { "--nowarn" }, () => Array.Empty<string>(), "Disable specific warning messages");
+            new(new[] { "--nowarn" }, Array.Empty<string>, "Disable specific warning messages");
         public Option<bool> SingleWarn { get; } =
             new(new[] { "--singlewarn" }, "Generate single AOT/trimming warning per assembly");
+        public Option<bool> NoTrimWarn { get; } =
+            new(new[] { "--notrimwarn" }, "Disable warnings related to trimming");
+        public Option<bool> NoAotWarn { get; } =
+            new(new[] { "--noaotwarn" }, "Disable warnings related to AOT");
         public Option<string[]> SingleWarnEnabledAssemblies { get; } =
-            new(new[] { "--singlewarnassembly" }, () => Array.Empty<string>(), "Generate single AOT/trimming warning for given assembly");
+            new(new[] { "--singlewarnassembly" }, Array.Empty<string>, "Generate single AOT/trimming warning for given assembly");
         public Option<string[]> SingleWarnDisabledAssemblies { get; } =
-            new(new[] { "--nosinglewarnassembly" }, () => Array.Empty<string>(), "Expand AOT/trimming warnings for given assembly");
+            new(new[] { "--nosinglewarnassembly" }, Array.Empty<string>, "Expand AOT/trimming warnings for given assembly");
         public Option<string[]> DirectPInvokes { get; } =
-            new(new[] { "--directpinvoke" }, () => Array.Empty<string>(), "PInvoke to call directly");
+            new(new[] { "--directpinvoke" }, Array.Empty<string>, "PInvoke to call directly");
         public Option<string[]> DirectPInvokeLists { get; } =
-            new(new[] { "--directpinvokelist" }, () => Array.Empty<string>(), "File with list of PInvokes to call directly");
+            new(new[] { "--directpinvokelist" }, Array.Empty<string>, "File with list of PInvokes to call directly");
         public Option<int> MaxGenericCycle { get; } =
             new(new[] { "--maxgenericcycle" }, () => CompilerTypeSystemContext.DefaultGenericCycleCutoffPoint, "Max depth of generic cycle");
         public Option<string[]> RootedAssemblies { get; } =
-            new(new[] { "--root" }, () => Array.Empty<string>(), "Fully generate given assembly");
+            new(new[] { "--root" }, Array.Empty<string>, "Fully generate given assembly");
         public Option<IEnumerable<string>> ConditionallyRootedAssemblies { get; } =
             new(new[] { "--conditionalroot" }, result => ILLinkify(result.Tokens, true), true, "Fully generate given assembly if it's used");
         public Option<IEnumerable<string>> TrimmedAssemblies { get; } =
@@ -163,7 +185,9 @@ namespace ILCompiler
             AddOption(Resilient);
             AddOption(CodegenOptions);
             AddOption(RdXmlFilePaths);
+            AddOption(LinkTrimFilePaths);
             AddOption(MapFileName);
+            AddOption(MstatFileName);
             AddOption(MetadataLogFileName);
             AddOption(NoMetadataBlocking);
             AddOption(CompleteTypesMetadata);
@@ -185,6 +209,8 @@ namespace ILCompiler
             AddOption(NoPreinitStatics);
             AddOption(SuppressedWarnings);
             AddOption(SingleWarn);
+            AddOption(NoTrimWarn);
+            AddOption(NoAotWarn);
             AddOption(SingleWarnEnabledAssemblies);
             AddOption(SingleWarnDisabledAssemblies);
             AddOption(DirectPInvokes);
@@ -234,7 +260,7 @@ namespace ILCompiler
                         // + a rsp file that should work to directly run out of the zip file
 
                         Helpers.MakeReproPackage(makeReproPath, context.ParseResult.GetValueForOption(OutputFilePath), args,
-                            context.ParseResult, new[] { "r", "reference", "m", "mibc", "rdxml", "directpinvokelist" });
+                            context.ParseResult, new[] { "r", "reference", "m", "mibc", "rdxml", "directpinvokelist", "descriptor" });
                     }
 
                     context.ExitCode = new Program(this).Run();
@@ -281,7 +307,7 @@ namespace ILCompiler
 
                 Console.WriteLine("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetos", string.Join("', '", ValidOS), Helpers.GetTargetOS(null).ToString().ToLowerInvariant());
 
-                Console.WriteLine(String.Format("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetarch", String.Join("', '", ValidArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
+                Console.WriteLine(string.Format("Valid switches for {0} are: '{1}'. The default value is '{2}'\n", "--targetarch", string.Join("', '", ValidArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
 
                 Console.WriteLine("The allowable values for the --instruction-set option are described in the table below. Each architecture has a different set of valid " +
                     "instruction sets, and multiple instruction sets may be specified by separating the instructions sets by a ','. For example 'avx2,bmi,lzcnt'");

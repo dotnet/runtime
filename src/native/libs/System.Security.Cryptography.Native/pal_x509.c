@@ -350,10 +350,19 @@ int32_t CryptoNative_X509StoreCtxRebuildChain(X509_STORE_CTX* ctx)
     return X509_verify_cert(ctx);
 }
 
-void CryptoNative_X509StoreCtxSetVerifyCallback(X509_STORE_CTX* ctx, X509StoreVerifyCallback callback)
+int32_t CryptoNative_X509StoreCtxSetVerifyCallback(X509_STORE_CTX* ctx, X509StoreVerifyCallback callback, void* appData)
 {
-    // Just a field mutator, no error queue interactions apply.
+    ERR_clear_error();
+    
     X509_STORE_CTX_set_verify_cb(ctx, callback);
+
+    return X509_STORE_CTX_set_app_data(ctx, appData);
+}
+
+void* CryptoNative_X509StoreCtxGetAppData(X509_STORE_CTX* ctx)
+{
+    // Just a field accessor, no error queue interactions apply.
+    return X509_STORE_CTX_get_app_data(ctx);
 }
 
 int32_t CryptoNative_X509StoreCtxGetErrorDepth(X509_STORE_CTX* ctx)

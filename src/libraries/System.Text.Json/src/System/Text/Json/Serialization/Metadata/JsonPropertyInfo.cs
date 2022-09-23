@@ -20,12 +20,19 @@ namespace System.Text.Json.Serialization.Metadata
         internal JsonTypeInfo? ParentTypeInfo { get; private set; }
         private JsonTypeInfo? _jsonTypeInfo;
 
-        internal ConverterStrategy ConverterStrategy { get; private protected set; }
-
         /// <summary>
         /// Converter after applying CustomConverter (i.e. JsonConverterAttribute)
         /// </summary>
-        internal abstract JsonConverter EffectiveConverter { get; }
+        internal JsonConverter EffectiveConverter
+        {
+            get
+            {
+                Debug.Assert(_effectiveConverter != null);
+                return _effectiveConverter;
+            }
+        }
+
+        private protected JsonConverter? _effectiveConverter;
 
         /// <summary>
         /// Gets or sets a custom converter override for the current property.
@@ -203,7 +210,21 @@ namespace System.Text.Json.Serialization.Metadata
 
         private bool _isExtensionDataProperty;
 
-        internal bool IsRequired
+        /// <summary>
+        /// Specifies whether the current property is required for deserialization to be successful.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// The <see cref="JsonPropertyInfo"/> instance has been locked for further modification.
+        /// </exception>
+        /// <remarks>
+        /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
+        /// the value of this property will be mapped from <see cref="JsonRequiredAttribute"/> annotations.
+        ///
+        /// For contracts using <see cref="DefaultJsonTypeInfoResolver"/>, properties using the <see langword="required"/> keyword
+        /// will also map to this setting, unless deserialization uses a SetsRequiredMembersAttribute on a constructor that populates all required properties.
+        /// <see langword="required"/> keyword is currently not supported in <see cref="JsonSerializerContext"/> contracts.
+        /// </remarks>
+        public bool IsRequired
         {
             get => _isRequired;
             set
@@ -401,7 +422,7 @@ namespace System.Text.Json.Serialization.Metadata
                 return;
             }
 
-            if ((ConverterStrategy & (ConverterStrategy.Enumerable | ConverterStrategy.Dictionary)) != 0)
+            if ((EffectiveConverter.ConverterStrategy & (ConverterStrategy.Enumerable | ConverterStrategy.Dictionary)) != 0)
             {
                 // Properties of collections types that only have setters are not supported.
                 if (Get == null && Set != null && !_isUserSpecifiedSetter)
@@ -478,7 +499,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             Type potentialNumberType;
             if (!EffectiveConverter.IsInternalConverter ||
-                ((ConverterStrategy.Enumerable | ConverterStrategy.Dictionary) & ConverterStrategy) == 0)
+                ((ConverterStrategy.Enumerable | ConverterStrategy.Dictionary) & EffectiveConverter.ConverterStrategy) == 0)
             {
                 potentialNumberType = PropertyType;
             }
@@ -506,10 +527,8 @@ namespace System.Text.Json.Serialization.Metadata
 
         private void DetermineIsRequired(MemberInfo memberInfo, bool shouldCheckForRequiredKeyword)
         {
-            if (shouldCheckForRequiredKeyword && memberInfo.HasRequiredMemberAttribute())
-            {
-                IsRequired = true;
-            }
+            IsRequired = memberInfo.GetCustomAttribute<JsonRequiredAttribute>(inherit: false) != null
+                || (shouldCheckForRequiredKeyword && memberInfo.HasRequiredMemberAttribute());
         }
 
         internal abstract bool GetMemberAndWriteJson(object obj, ref WriteStack state, Utf8JsonWriter writer);
@@ -679,7 +698,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal bool ReadJsonAndAddExtensionProperty(
             object obj,
-            ref ReadStack state,
+            scoped ref ReadStack state,
             ref Utf8JsonReader reader)
         {
             object propValue = GetValueAsObject(obj)!;
@@ -693,16 +712,15 @@ namespace System.Text.Json.Serialization.Metadata
                 }
                 else
                 {
-                    JsonConverter<object> converter = (JsonConverter<object>)GetDictionaryValueConverter(JsonTypeInfo.ObjectType);
+                    JsonConverter<object> converter = GetDictionaryValueConverter<object>();
                     object value = converter.Read(ref reader, JsonTypeInfo.ObjectType, Options)!;
                     dictionaryObjectValue[state.Current.JsonPropertyNameAsString!] = value;
                 }
             }
             else if (propValue is IDictionary<string, JsonElement> dictionaryElementValue)
             {
-                Type elementType = typeof(JsonElement);
-                JsonConverter<JsonElement> converter = (JsonConverter<JsonElement>)GetDictionaryValueConverter(elementType);
-                JsonElement value = converter.Read(ref reader, elementType, Options);
+                JsonConverter<JsonElement> converter = GetDictionaryValueConverter<JsonElement>();
+                JsonElement value = converter.Read(ref reader, typeof(JsonElement), Options);
                 dictionaryElementValue[state.Current.JsonPropertyNameAsString!] = value;
             }
             else
@@ -714,33 +732,25 @@ namespace System.Text.Json.Serialization.Metadata
 
             return true;
 
-            JsonConverter GetDictionaryValueConverter(Type dictionaryValueType)
+            JsonConverter<TValue> GetDictionaryValueConverter<TValue>()
             {
-                JsonConverter converter;
-                JsonTypeInfo? dictionaryValueInfo = JsonTypeInfo.ElementTypeInfo;
-                if (dictionaryValueInfo != null)
-                {
-                    // Fast path when there is a generic type such as Dictionary<,>.
-                    converter = dictionaryValueInfo.Converter;
-                }
-                else
-                {
+                JsonTypeInfo dictionaryValueInfo =
+                    JsonTypeInfo.ElementTypeInfo
                     // Slower path for non-generic types that implement IDictionary<,>.
                     // It is possible to cache this converter on JsonTypeInfo if we assume the property value
                     // will always be the same type for all instances.
-                    converter = Options.GetConverterInternal(dictionaryValueType);
-                }
+                    ?? Options.GetTypeInfoInternal(typeof(TValue));
 
-                Debug.Assert(converter != null);
-                return converter;
+                Debug.Assert(dictionaryValueInfo is JsonTypeInfo<TValue>);
+                return ((JsonTypeInfo<TValue>)dictionaryValueInfo).EffectiveConverter;
             }
         }
 
-        internal abstract bool ReadJsonAndSetMember(object obj, ref ReadStack state, ref Utf8JsonReader reader);
+        internal abstract bool ReadJsonAndSetMember(object obj, scoped ref ReadStack state, ref Utf8JsonReader reader);
 
-        internal abstract bool ReadJsonAsObject(ref ReadStack state, ref Utf8JsonReader reader, out object? value);
+        internal abstract bool ReadJsonAsObject(scoped ref ReadStack state, ref Utf8JsonReader reader, out object? value);
 
-        internal bool ReadJsonExtensionDataValue(ref ReadStack state, ref Utf8JsonReader reader, out object? value)
+        internal bool ReadJsonExtensionDataValue(scoped ref ReadStack state, ref Utf8JsonReader reader, out object? value)
         {
             Debug.Assert(this == state.Current.JsonTypeInfo.ExtensionDataProperty);
 
@@ -790,8 +800,6 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 // This could potentially be double initialized
                 Debug.Assert(_jsonTypeInfo == null || _jsonTypeInfo == value);
-                // Ensure the right strategy is surfaced in PropertyInfoForTypeInfo early
-                ConverterStrategy = value?.Converter.ConverterStrategy ?? default;
                 _jsonTypeInfo = value;
             }
         }

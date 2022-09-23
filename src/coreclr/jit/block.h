@@ -91,23 +91,11 @@ struct StackEntry
     GenTree* val;
     typeInfo seTypeInfo;
 };
-/*****************************************************************************/
-
-enum ThisInitState
-{
-    TIS_Bottom, // We don't know anything about the 'this' pointer.
-    TIS_Uninit, // The 'this' pointer for this constructor is known to be uninitialized.
-    TIS_Init,   // The 'this' pointer for this constructor is known to be initialized.
-    TIS_Top,    // This results from merging the state of two blocks one with TIS_Unint and the other with TIS_Init.
-                // We use this in fault blocks to prevent us from accessing the 'this' pointer, but otherwise
-                // allowing the fault block to generate code.
-};
 
 struct EntryState
 {
-    ThisInitState thisInitialized; // used to track whether the this ptr is initialized.
-    unsigned      esStackDepth;    // size of esStack
-    StackEntry*   esStack;         // ptr to  stack
+    unsigned    esStackDepth; // size of esStack
+    StackEntry* esStack;      // ptr to  stack
 };
 
 // Enumeration of the kinds of memory whose state changes the compiler tracks
@@ -583,6 +571,13 @@ enum BasicBlockFlags : unsigned __int64
 
     BBF_SPLIT_GAINED = BBF_DONT_REMOVE | BBF_HAS_JMP | BBF_BACKWARD_JUMP | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_PROF_WEIGHT | \
                        BBF_HAS_NEWOBJ | BBF_KEEP_BBJ_ALWAYS | BBF_CLONED_FINALLY_END | BBF_HAS_NULLCHECK | BBF_HAS_HISTOGRAM_PROFILE | BBF_HAS_MDARRAYREF,
+
+    // Flags that must be propagated to a new block if code is copied from a block to a new block. These are flags that
+    // limit processing of a block if the code in question doesn't exist. This is conservative; we might not
+    // have actually copied one of these type of tree nodes, but if we only copy a portion of the block's statements,
+    // we don't know (unless we actually pay close attention during the copy).
+
+    BBF_COPY_PROPAGATE = BBF_HAS_NEWOBJ | BBF_HAS_NULLCHECK | BBF_HAS_IDX_LEN | BBF_HAS_MD_IDX_LEN | BBF_HAS_MDARRAYREF,
 };
 
 inline constexpr BasicBlockFlags operator ~(BasicBlockFlags a)
@@ -1229,8 +1224,7 @@ struct BasicBlock : private LIR::Range
     unsigned bbID;
 #endif // DEBUG
 
-    ThisInitState bbThisOnEntry() const;
-    unsigned      bbStackDepthOnEntry() const;
+    unsigned bbStackDepthOnEntry() const;
     void bbSetStack(void* stackBuffer);
     StackEntry* bbStackOnEntry() const;
 

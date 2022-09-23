@@ -468,11 +468,10 @@ enum GenTreeFlags : unsigned int
 
     GTF_LIVENESS_MASK   = GTF_VAR_DEF | GTF_VAR_USEASG | GTF_VAR_DEATH_MASK,
 
-    GTF_VAR_CAST        = 0x01000000, // GT_LCL_VAR -- has been explicitly cast (variable node may not be type of local)
-    GTF_VAR_ITERATOR    = 0x00800000, // GT_LCL_VAR -- this is a iterator reference in the loop condition
-    GTF_VAR_CLONED      = 0x00400000, // GT_LCL_VAR -- this node has been cloned or is a clone
-    GTF_VAR_CONTEXT     = 0x00200000, // GT_LCL_VAR -- this node is part of a runtime lookup
-    GTF_VAR_FOLDED_IND  = 0x00100000, // GT_LCL_VAR -- this node was folded from *(typ*)&lclVar expression tree in fgMorphSmpOp()
+    GTF_VAR_ITERATOR    = 0x01000000, // GT_LCL_VAR -- this is a iterator reference in the loop condition
+    GTF_VAR_CLONED      = 0x00800000, // GT_LCL_VAR -- this node has been cloned or is a clone
+    GTF_VAR_CONTEXT     = 0x00400000, // GT_LCL_VAR -- this node is part of a runtime lookup
+    GTF_VAR_FOLDED_IND  = 0x00200000, // GT_LCL_VAR -- this node was folded from *(typ*)&lclVar expression tree in fgMorphSmpOp()
                                       // where 'typ' is a small type and 'lclVar' corresponds to a normalized-on-store local variable.
                                       // This flag identifies such nodes in order to make sure that fgDoNormalizeOnStore() is called
                                       // on their parents in post-order morph.
@@ -554,7 +553,8 @@ enum GenTreeFlags : unsigned int
     GTF_ICON_METHOD_HDL         = 0x03000000, // GT_CNS_INT -- constant is a method handle
     GTF_ICON_FIELD_HDL          = 0x04000000, // GT_CNS_INT -- constant is a field handle
     GTF_ICON_STATIC_HDL         = 0x05000000, // GT_CNS_INT -- constant is a handle to static data
-    GTF_ICON_STR_HDL            = 0x06000000, // GT_CNS_INT -- constant is a string handle
+    GTF_ICON_STR_HDL            = 0x06000000, // GT_CNS_INT -- constant is a pinned handle pointing to a string object
+    GTF_ICON_OBJ_HDL            = 0x12000000, // GT_CNS_INT -- constant is an object handle (e.g. frozen string or Type object)
     GTF_ICON_CONST_PTR          = 0x07000000, // GT_CNS_INT -- constant is a pointer to immutable data, (e.g. IAT_PPVALUE)
     GTF_ICON_GLOBAL_PTR         = 0x08000000, // GT_CNS_INT -- constant is a pointer to mutable data (e.g. from the VM state)
     GTF_ICON_VARG_HDL           = 0x09000000, // GT_CNS_INT -- constant is a var arg cookie handle
@@ -915,6 +915,12 @@ public:
         return isContained() && IsCnsIntOrI() && !isUsedFromSpillTemp();
     }
 
+    // Node is contained, but it isn't contained due to being a containable int.
+    bool isContainedAndNotIntOrIImmed() const
+    {
+        return isContained() && !isContainedIntOrIImmed();
+    }
+
     bool isContainedFltOrDblImmed() const
     {
         return isContained() && OperIs(GT_CNS_DBL);
@@ -1088,8 +1094,8 @@ public:
         if (gtType == TYP_VOID)
         {
             // These are the only operators which can produce either VOID or non-VOID results.
-            assert(OperIs(GT_NOP, GT_CALL, GT_COMMA) || OperIsCompare() || OperIsConditionalCompare() || OperIsLong() ||
-                   OperIsSimdOrHWintrinsic() || IsCnsVec());
+            assert(OperIs(GT_NOP, GT_CALL, GT_COMMA) || OperIsCompare() || OperIsLong() || OperIsSimdOrHWintrinsic() ||
+                   IsCnsVec());
             return false;
         }
 
@@ -1353,10 +1359,21 @@ public:
         return OperIsCompare(OperGet());
     }
 
+    // Oper is a compare that generates a cmp instruction (as opposed to a test instruction).
+    static bool OperIsCmpCompare(genTreeOps gtOper)
+    {
+        static_assert_no_msg(AreContiguous(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GE, GT_GT));
+        return (GT_EQ <= gtOper) && (gtOper <= GT_GT);
+    }
+
+    bool OperIsCmpCompare() const
+    {
+        return OperIsCmpCompare(OperGet());
+    }
+
     static bool OperIsConditional(genTreeOps gtOper)
     {
-        static_assert_no_msg(AreContiguous(GT_SELECT, GT_CEQ, GT_CNE, GT_CLT, GT_CLE, GT_CGE, GT_CGT));
-        return (GT_SELECT <= gtOper) && (gtOper <= GT_CGT);
+        return (GT_SELECT == gtOper);
     }
 
     bool OperIsConditional() const
@@ -1364,15 +1381,14 @@ public:
         return OperIsConditional(OperGet());
     }
 
-    static bool OperIsConditionalCompare(genTreeOps gtOper)
+    static bool OperIsCC(genTreeOps gtOper)
     {
-        static_assert_no_msg(AreContiguous(GT_CEQ, GT_CNE, GT_CLT, GT_CLE, GT_CGE, GT_CGT));
-        return (GT_CEQ <= gtOper) && (gtOper <= GT_CGT);
+        return (gtOper == GT_JCC) || (gtOper == GT_SETCC);
     }
 
-    bool OperIsConditionalCompare() const
+    bool OperIsCC() const
     {
-        return OperIsConditionalCompare(OperGet());
+        return OperIsCC(OperGet());
     }
 
     static bool OperIsShift(genTreeOps gtOper)
@@ -2297,20 +2313,18 @@ public:
     bool IsReuseRegVal() const
     {
         // This can be extended to non-constant nodes, but not to local or indir nodes.
-        if (IsInvariant() && ((gtFlags & GTF_REUSE_REG_VAL) != 0))
-        {
-            return true;
-        }
-        return false;
+        return OperIsConst() && ((gtFlags & GTF_REUSE_REG_VAL) != 0);
     }
+
     void SetReuseRegVal()
     {
-        assert(IsInvariant());
+        assert(OperIsConst());
         gtFlags |= GTF_REUSE_REG_VAL;
     }
+
     void ResetReuseRegVal()
     {
-        assert(IsInvariant());
+        assert(OperIsConst());
         gtFlags &= ~GTF_REUSE_REG_VAL;
     }
 
@@ -3290,7 +3304,19 @@ inline void GenTreeIntConCommon::SetValueTruncating(T value)
 
 struct GenTreeDblCon : public GenTree
 {
+private:
     double gtDconVal;
+
+public:
+    double DconValue() const
+    {
+        return gtDconVal;
+    }
+
+    void SetDconValue(double value)
+    {
+        gtDconVal = FloatingPointUtils::normalize(value);
+    }
 
     bool isBitwiseEqual(GenTreeDblCon* other)
     {
@@ -3299,9 +3325,10 @@ struct GenTreeDblCon : public GenTree
         return (bits == otherBits);
     }
 
-    GenTreeDblCon(double val, var_types type = TYP_DOUBLE) : GenTree(GT_CNS_DBL, type), gtDconVal(val)
+    GenTreeDblCon(double val, var_types type = TYP_DOUBLE) : GenTree(GT_CNS_DBL, type)
     {
         assert(varTypeIsFloating(type));
+        SetDconValue(val);
     }
 #if DEBUGGABLE_GENTREE
     GenTreeDblCon() : GenTree()
@@ -3842,6 +3869,22 @@ struct GenTreeCast : public GenTreeOp
     {
     }
 #endif
+
+    bool IsZeroExtending()
+    {
+        assert(varTypeIsIntegral(CastOp()) && varTypeIsIntegral(CastToType()));
+
+        if (varTypeIsSmall(CastToType()))
+        {
+            return varTypeIsUnsigned(CastToType());
+        }
+        if (TypeIs(TYP_LONG) && genActualTypeIsInt(CastOp()))
+        {
+            return IsUnsigned();
+        }
+
+        return false;
+    }
 };
 
 // GT_BOX nodes are place markers for boxed values.  The "real" tree
@@ -4311,7 +4354,7 @@ struct CallArgABIInformation
         , IsBackFilled(false)
         , IsStruct(false)
         , PassedByRef(false)
-#ifdef FEATURE_ARG_SPLIT
+#if FEATURE_ARG_SPLIT
         , m_isSplit(false)
 #endif
 #ifdef FEATURE_HFA_FIELDS_PRESENT
@@ -4366,7 +4409,7 @@ public:
     bool PassedByRef : 1;
 
 private:
-#ifdef FEATURE_ARG_SPLIT
+#if FEATURE_ARG_SPLIT
     // True when this argument is split between the registers and OutArg area
     bool m_isSplit : 1;
 #endif
@@ -8222,7 +8265,7 @@ public:
 
     static GenCondition FromRelop(GenTree* relop)
     {
-        assert(relop->OperIsCompare() || relop->OperIsConditionalCompare());
+        assert(relop->OperIsCompare());
 
         if (varTypeIsFloating(relop->gtGetOp1()))
         {
@@ -8259,30 +8302,17 @@ public:
 
     static GenCondition FromIntegralRelop(GenTree* relop)
     {
-        if (relop->OperIsConditionalCompare())
-        {
-            assert(!varTypeIsFloating(relop->AsConditional()->gtOp1) &&
-                   !varTypeIsFloating(relop->AsConditional()->gtOp2));
-        }
-        else
-        {
-            assert(!varTypeIsFloating(relop->gtGetOp1()) && !varTypeIsFloating(relop->gtGetOp2()));
-        }
-
+        assert(!varTypeIsFloating(relop->gtGetOp1()) && !varTypeIsFloating(relop->gtGetOp2()));
         return FromIntegralRelop(relop->OperGet(), relop->IsUnsigned());
     }
 
     static GenCondition FromIntegralRelop(genTreeOps oper, bool isUnsigned)
     {
-        assert(GenTree::OperIsCompare(oper) || GenTree::OperIsConditionalCompare(oper));
+        assert(GenTree::OperIsCompare(oper));
 
         // GT_TEST_EQ/NE are special, they need to be mapped as GT_EQ/NE
         unsigned code;
-        if (oper >= GT_CEQ)
-        {
-            code = oper - GT_CEQ;
-        }
-        else if (oper >= GT_TEST_EQ)
+        if (oper >= GT_TEST_EQ)
         {
             code = oper - GT_TEST_EQ;
         }
@@ -8427,7 +8457,7 @@ inline bool GenTree::IsFloatAllBitsSet() const
 {
     if (IsCnsFltOrDbl())
     {
-        double constValue = AsDblCon()->gtDconVal;
+        double constValue = AsDblCon()->DconValue();
 
         if (TypeIs(TYP_FLOAT))
         {
@@ -8454,7 +8484,7 @@ inline bool GenTree::IsFloatNaN() const
 {
     if (IsCnsFltOrDbl())
     {
-        double constValue = AsDblCon()->gtDconVal;
+        double constValue = AsDblCon()->DconValue();
         return FloatingPointUtils::isNaN(constValue);
     }
 
@@ -8472,7 +8502,7 @@ inline bool GenTree::IsFloatNegativeZero() const
 {
     if (IsCnsFltOrDbl())
     {
-        double constValue = AsDblCon()->gtDconVal;
+        double constValue = AsDblCon()->DconValue();
         return FloatingPointUtils::isNegativeZero(constValue);
     }
 
@@ -8493,7 +8523,7 @@ inline bool GenTree::IsFloatPositiveZero() const
         // This implementation is almost identical to IsCnsNonZeroFltOrDbl
         // but it is easier to parse out
         // rather than using !IsCnsNonZeroFltOrDbl.
-        double constValue = AsDblCon()->gtDconVal;
+        double constValue = AsDblCon()->DconValue();
         return FloatingPointUtils::isPositiveZero(constValue);
     }
 
@@ -9281,7 +9311,7 @@ inline bool GenTree::IsCnsNonZeroFltOrDbl() const
 {
     if (IsCnsFltOrDbl())
     {
-        double constValue = AsDblCon()->gtDconVal;
+        double constValue = AsDblCon()->DconValue();
         return *(__int64*)&constValue != 0;
     }
 
