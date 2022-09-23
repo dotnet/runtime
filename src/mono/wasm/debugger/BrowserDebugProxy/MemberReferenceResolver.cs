@@ -374,6 +374,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (rootObject != null)
                 {
                     string elementIdxStr = null;
+                    LiteralExpressionSyntax indexingExpression = null;
                     int elementIdx = 0;
                     var elementAccessStr = elementAccess.ToString();
                     // x[1] or x[a] or x[a.b]
@@ -392,8 +393,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 // e.g. x[1]
                                 if (arg.Expression is LiteralExpressionSyntax)
                                 {
-                                    var argParm = arg.Expression as LiteralExpressionSyntax;
-                                    elementIdxStr += argParm.ToString();
+                                    indexingExpression = arg.Expression as LiteralExpressionSyntax;
+                                    elementIdxStr += indexingExpression.ToString();
                                 }
 
                                 // e.g. x[a] or x[a.b]
@@ -475,7 +476,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     {
                                         try
                                         {
-                                            ArraySegment<byte> buffer = await WriteIndex(objectId, indexObject, elementIdxStr);
+                                            ArraySegment<byte> buffer = await WriteIndex(objectId, indexObject, indexingExpression, elementIdxStr);
                                             JObject getItemRetObj = await context.SdbAgent.InvokeMethod(buffer, methodIds[i], token);
                                             return (JObject)getItemRetObj["value"];
                                         }
@@ -499,91 +500,24 @@ namespace Microsoft.WebAssembly.Diagnostics
                 throw new ExpressionEvaluationFailedException($"Unable to evaluate element access '{elementAccess}': {ex.Message}", ex);
             }
 
-            async Task<ArraySegment<byte>> WriteIndex(DotnetObjectId rootObjId, JObject indexObject, string elementIdxStr)
+            async Task<ArraySegment<byte>> WriteIndex(DotnetObjectId rootObjId, JObject indexObject, LiteralExpressionSyntax indexingExpression, string elementIdxStr)
             {
                 var writer = new MonoBinaryWriter();
                 writer.WriteObj(rootObjId, context.SdbAgent);
                 writer.Write(1); // number of method args
-                ArraySegment<byte> buffer;
-                if (indexObject == null)
+                if (indexObject != null)
                 {
-                    // maybe use here
-                    // WriteConst(LiteralExpressionSyntax constValue, MonoSDBHelper SdbHelper, CancellationToken token)
-                    // then there will be no need to check the type manually and we fall here only for LiteralExpressionSyntax
-                    // Nested indexing does not fall here, it has indexObject's type
-
-                    // check if it's int
-                    buffer = await TryWriteIntIndex(writer, elementIdxStr);
-                    if (buffer != null)
-                        return buffer;
-
-                    // Not supported yet. We need more info about the method to know which overload to use
-                    buffer = TryWriteNotIntNumIndex(writer, elementIdxStr);
-
-                    // check if it's bool
-                    buffer = await TryWriteBoolIndex(writer, elementIdxStr);
-                    if (buffer != null)
-                        return buffer;
-
-                    // check if it's char:
-                    buffer = await TryWriteCharIndex(writer, elementIdxStr);
-                    if (buffer != null)
-                        return buffer;
-
-                    // assume it's string:
-                    Console.WriteLine($"Trying a constant string: {elementIdxStr}");
-                    if (!await writer.WriteConst(ElementType.String, elementIdxStr, context.SdbAgent, token))
-                        throw new InternalErrorException($"Unable to write index parameter to invoke the method in the runtime.");
+                    if (!await writer.WriteJsonValue(indexObject, context.SdbAgent, token))
+                        throw new InternalErrorException($"Parsing index of type {indexObject["type"].Value<string>()} to write it into the buffer failed.");
                     return writer.GetParameterBuffer();
                 }
-                if (!await writer.WriteJsonValue(indexObject, context.SdbAgent, token))
-                    throw new InternalErrorException($"Parsing index of type {indexObject["type"].Value<string>()} to write it into the buffer failed.");
-                return writer.GetParameterBuffer();
-            }
-
-            async Task<ArraySegment<byte>> TryWriteIntIndex(MonoBinaryWriter writer, string elementIdxStr)
-            {
-                if (int.TryParse(elementIdxStr, out int elementIdx))
+                if (indexingExpression != null)
                 {
-                    if (!await writer.WriteConst(ElementType.I4, elementIdx, context.SdbAgent, token))
-                        throw new InternalErrorException($"Unable to write index parameter to invoke the method in the runtime.");
+                    if (!await writer.WriteConst(indexingExpression, context.SdbAgent, token))
+                        throw new InternalErrorException($"Parsing index of type {indexObject["type"].Value<string>()} to write it into the buffer failed.");
                     return writer.GetParameterBuffer();
                 }
-                return null;
-            }
-
-            ArraySegment<byte> TryWriteNotIntNumIndex(MonoBinaryWriter writer, string elementIdxStr)
-            {
-                if (double.TryParse(elementIdxStr, System.Globalization.CultureInfo.InvariantCulture, out double elementIdx))
-                    throw new InternalErrorException($"Indexing by single and double type is not supported yet.");
-                return null;
-            }
-
-            async Task<ArraySegment<byte>> TryWriteBoolIndex(MonoBinaryWriter writer, string elementIdxStr)
-            {
-                if (bool.TryParse(elementIdxStr, out bool elementIdxBool))
-                {
-                    Console.WriteLine($"it's bool: {elementIdxBool}");
-                    if (!await writer.WriteConst(ElementType.Boolean, elementIdxBool, context.SdbAgent, token))
-                        throw new InternalErrorException($"Unable to write index parameter to invoke the method in the runtime.");
-                    return writer.GetParameterBuffer();
-                }
-                return null;
-            }
-
-            async Task<ArraySegment<byte>> TryWriteCharIndex(MonoBinaryWriter writer, string elementIdxStr)
-            {
-                char elementIdxChar;
-                if (elementIdxStr.Length == 3 && elementIdxStr.StartsWith("\'") && elementIdxStr.EndsWith("\'"))
-                    elementIdxChar = elementIdxStr[1];
-                else if (elementIdxStr.Length == 1)
-                    elementIdxChar = elementIdxStr[0];
-                else
-                    return null;
-                Console.WriteLine($"it's char: {elementIdxChar}");
-                if (!await writer.WriteConst(ElementType.Char, elementIdxChar, context.SdbAgent, token))
-                    throw new InternalErrorException($"Unable to write index parameter to invoke the method in the runtime.");
-                return writer.GetParameterBuffer();
+                throw new InternalErrorException($"Unable to write index parameter to invoke the method in the runtime.");
             }
         }
 

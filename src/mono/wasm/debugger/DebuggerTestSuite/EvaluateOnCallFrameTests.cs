@@ -671,6 +671,19 @@ namespace DebuggerTests
                 );
             });
 
+        [Fact]
+        public async Task EvaluateNestedUserDefinedIndexingByNonIntLocals() => await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 12, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("f[f.textArray[0]]", TBool(false)), // f["1"]
+                    ("f[f.textArray[j]]", TBool(false)) // f["2"]
+                );
+            });
+
         // ToDo: https://github.com/dotnet/runtime/issues/76015
         [Fact]
         public async Task EvaluateIndexingByExpression() => await CheckInspectLocalsAtBreakpointSite(
