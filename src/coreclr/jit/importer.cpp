@@ -3654,8 +3654,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                 NamedIntrinsic*         pIntrinsicName,
                                 bool*                   isSpecialIntrinsic)
 {
-    bool mustExpand  = false;
-    bool isSpecial   = false;
+    bool       mustExpand  = false;
+    bool       isSpecial   = false;
     const bool isIntrinsic = (methodFlags & CORINFO_FLG_INTRINSIC) != 0;
 
     NamedIntrinsic ni = lookupNamedIntrinsic(method);
