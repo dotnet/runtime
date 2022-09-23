@@ -636,7 +636,7 @@ namespace DebuggerTests
                 await EvaluateOnCallFrameAndCheck(id,
                     ("f[\"longstring\"]", TBool(true)),
                     ("f[\"-\"]", TBool(false)),
-                    ("f[\'-\']", TNumber(45)),
+                    ("f[\'-\']", TString("res_45"))),
                     ("f[true]", TString("True")),
                     // ("f[1.23]", TNumber(1)) // Not supported yet - float/double
 
@@ -661,7 +661,7 @@ namespace DebuggerTests
                 await EvaluateOnCallFrameAndCheck(id,
                     ("f[longString]", TBool(true)),
                     ("f[aBool]", TString("True")),
-                    ("f[aChar]", TNumber(57)),
+                    ("f[aChar]", TString("res_9")),
                     ("f[shortString]", TBool(false))
                     // ("f[aFloat]", TNumber(1)),
                     // ("f[aDouble]", TNumber(2)),

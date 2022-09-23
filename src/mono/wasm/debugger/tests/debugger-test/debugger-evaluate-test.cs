@@ -522,7 +522,7 @@ namespace DebuggerTests
             public int idx0;
             public int idx1;
 
-            public int this[char key] => (int)key;
+            public string this[char key] => "res_" + key;
             public string this[bool key] => key.ToString();
             public bool this[string key] => key.Length > 3;
             public int this[double key] => (int)key;
