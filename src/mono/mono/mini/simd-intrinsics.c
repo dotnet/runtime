@@ -1262,14 +1262,52 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_CreateScalarUnsafe:
 		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE, -1, arg0_type, fsig, args);
 	case SN_Dot: {
-#ifdef TARGET_ARM64
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
-
+#ifdef TARGET_ARM64
 		int instc0 = type_enum_is_float (arg0_type) ? OP_FMUL : OP_IMUL;
 		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, arg0_type, fsig, args);
 
 		return emit_sum_vector (cfg, fsig->params [0], arg0_type, pairwise_multiply);
+#elif defined(TARGET_AMD64)
+		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		int size = mono_class_value_size (arg_class, NULL);
+		if (size != 16) 		// Works only with Vector128
+			return NULL;
+
+/*/
+		if (type_enum_is_float (arg0_type)) {
+		//	OP_SSE41_DPPS OP_SSE41_DPPD
+			if (is_SIMD_feature_supported (cfg, MONO_CPU_X86_SSE41)) {
+				int op = -1;
+				switch (arg0_type) {
+				case MONO_TYPE_R4: 
+					op = OP_SSE41_DPPS; 
+					break;
+				case MONO_TYPE_R8: 
+					op = OP_SSE41_DPPD; 
+					break;	
+				default:
+					return NULL;
+				}	
+				return emit_simd_ins_for_sig (cfg, klass, op, 0, arg0_type, fsig, args);
+			} 
+				return NULL; // todo DO MUltiplication
+
+		}
+*/
+				// TODO cannot do dot product of Bytes -> we do not support Sum of array in bytes
+
+		// TODO test what intrinsics are generated
+		// If SSSE41 intrinsics are generated for floats keep this simple code, otherwise need to change
+		int instc0 = type_enum_is_float (arg0_type) ? OP_FMUL : OP_IMUL;
+		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, arg0_type, fsig, args);
+
+		args[0] = pairwise_multiply;
+		return emit_sum_vector(cfg, klass, fsig, arg0_type, args);
+
+
+		
 #else
 		return NULL;
 #endif
