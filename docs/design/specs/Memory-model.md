@@ -4,7 +4,7 @@
 ## ECMA 335 vs. .NET memory models.
 ECMA 335 standard defines a very weak memory model. After two decades the desire to have a flexible model did not result in considerable benefits due to hardware being more strict. On the other hand programming against ECMA model requires extra complexity to handle scenarios that are hard to comprehend and not possible to test.
 
-In the course of multiple releases .NET runtime implementations settled around a memory model that is a practical compromise between what can be implemented efficiently on the current hardware, while staying reasonably approachable by the developers. This document rationalizes the invariants provided and expected by the CLR runtime in its current implementation with expectation of that being carried to future releases.
+In the course of multiple releases .NET runtime implementations settled around a memory model that is a practical compromise between what can be implemented efficiently on the current hardware, while staying reasonably approachable by the developers. This document rationalizes the invariants provided and expected by the .NET runtimes in their current implementation with expectation of that being carried to future releases.
 
 ## Alignment
 When managed by the .NET runtime, variables of built-in primitive types are *properly aligned* according to the data type size. This applies to both heap and stack allocated memory.
@@ -13,6 +13,8 @@ When managed by the .NET runtime, variables of built-in primitive types are *pro
 8-byte variables are 8-byte aligned on 64 bit platforms.
 Native-sized integer types and pointers have alignment that matches their size on the given platform.
 
+The alignment of fields is not guaranteed when `FieldOffsetAttribute` is used to explicitly adjust field offsets.
+
 ## Atomic memory accesses.
 Memory accesses to *properly aligned* data of primitive types are always atomic. The value that is observed is always a result of complete read and write operations.
 
@@ -20,7 +22,7 @@ Values of unmanaged pointers are treated as native integer primitive types. Memo
 
 Managed references are always aligned to their size on the given platform and accesses are atomic.
 
-The following methods perform atomic memory accesses regardless of the platform.
+The following methods perform atomic memory accesses regardless of the platform when the location of the variable is managed by the runtime. 
 - `System.Threading.Interlocked` methods
 - `System.Threading.Volatile` methods
 
@@ -101,7 +103,7 @@ Process-wide barrier has full-fence semantics with an additional guarantee that 
 The actual implementation may vary depending on the platform. For example interrupting the execution of every core in the current process' affinity mask could be a suitable implementation.
 
 ## Synchronized methods.
-Methods decoratied with ```MethodImpl(MethodImplOptions.Synchronized)``` attribute have the same memory access semantics as if a lock is acquired at an entrance to the method and released upon leaving the method.
+Methods decorated with ```MethodImpl(MethodImplOptions.Synchronized)``` attribute have the same memory access semantics as if a lock is acquired at an entrance to the method and released upon leaving the method.
 
 ## Object assignment
 Object assignment to a location potentially accessible by other threads is a release with respect to write operations to the instance’s fields and metadata.
@@ -113,13 +115,13 @@ However, the ordering sideeffects of reference assignment should not be used for
 -	an optimizing compiler can omit the release semantics if it can prove that the instance is not shared with other threads.
 
 ## Instance constructors
-CLR does not specify any ordering effects to the instance constructors.
+.NET runtime does not specify any ordering effects to the instance constructors.
 
 ## Static constructors
 All side effects of static constructor execution will become observable not later than effects of accessing any member of the type. Other member methods of the type, when invoked, will observe complete results of the type's static constructor execution.
 
 ## Hardware considerations
-Currently supported implementations of CLR and system libraries make a few expectations about the hardware memory model. These conditions are present on all supported platforms and transparently passed to the user of the runtime. The future supported platforms will likely support these too as the large body of preexisting software will make it burdensome to break common assumptions.
+Currently supported implementations of .NET runtime and system libraries make a few expectations about the hardware memory model. These conditions are present on all supported platforms and transparently passed to the user of the runtime. The future supported platforms will likely support these as well because the large body of preexisting software will make it burdensome to break common assumptions.
 
 * Naturally aligned reads and writes with sizes up to the platform pointer size are atomic.
 That applies even for locations targeted by overlapping aligned reads and writes of different sizes.
@@ -140,7 +142,7 @@ Either the platform defaults to release consistency or stronger (i.e. x64 is TSO
 (Some versions of Alpha processors did not support this, most current architectures do)
 
 ## Examples and common patterns:
-The following examples work correctly on all supported CLR implementations regardless of the target OS or architecture.
+The following examples work correctly on all supported implementations of .NET runtime regardless of the target OS or architecture.
 
 *   Constructing an instance and sharing with another thread is safe and does not require explicit fences.
 
