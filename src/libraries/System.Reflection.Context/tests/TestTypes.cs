@@ -9,7 +9,6 @@ namespace System.Reflection.Context.Tests
 {
     internal class TestCustomReflectionContext : CustomReflectionContext
     {
-        
         private readonly Dictionary<string, object> _properties = new Dictionary<string, object>
         {
             { "text", "abc" },

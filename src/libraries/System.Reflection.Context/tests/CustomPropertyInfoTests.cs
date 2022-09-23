@@ -30,6 +30,5 @@ namespace System.Reflection.Context.Tests
             Assert.All(customAttributesData,
                 cad => Assert.Equal(ProjectionConstants.ProjectingCustomAttributeData, cad.GetType().FullName));
         }
-
     }
 }
