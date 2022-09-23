@@ -244,7 +244,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         protected override async Task<bool> AcceptCommand(MessageId id, string method, JObject args, CancellationToken token)
         {
-            System.Diagnostics.Debugger.Launch();
             // Inspector doesn't use the Target domain or sessions
             // so we try to init immediately
             if (id == SessionId.Null)
