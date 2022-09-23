@@ -2149,7 +2149,7 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
                     break;
                 case O1K_LCLVAR:
                     assert((lvaGetDesc(assertion->op1.lcl.lclNum)->lvType != TYP_REF) ||
-                           (assertion->op2.u1.iconVal == 0) || doesMethodHaveFrozenString());
+                           (assertion->op2.u1.iconVal == 0) || doesMethodHaveFrozenObjects());
                     break;
                 case O1K_VALUE_NUMBER:
                     assert((vnStore->TypeOfVN(assertion->op1.vn) != TYP_REF) || (assertion->op2.u1.iconVal == 0));
@@ -3420,6 +3420,18 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
                 // Here we have to allocate a new 'large' node to replace the old one
                 newTree = gtNewIconHandleNode(curAssertion->op2.u1.iconVal,
                                               curAssertion->op2.u1.iconFlags & GTF_ICON_HDL_MASK);
+
+                // Make sure we don't retype const gc handles to TYP_I_IMPL
+                // Although, it's possible for e.g. GTF_ICON_STATIC_HDL
+                if (!newTree->IsIntegralConst(0) && newTree->IsIconHandle(GTF_ICON_OBJ_HDL))
+                {
+                    if (tree->TypeIs(TYP_BYREF))
+                    {
+                        // Conservatively don't allow propagation of ICON TYP_REF into BYREF
+                        return nullptr;
+                    }
+                    newTree->ChangeType(tree->TypeGet());
+                }
             }
             else
             {

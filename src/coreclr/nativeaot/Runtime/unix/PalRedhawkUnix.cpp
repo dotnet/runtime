@@ -655,45 +655,7 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCal
 // time).
 REDHAWK_PALEXPORT uint64_t REDHAWK_PALAPI PalGetTickCount64()
 {
-    uint64_t retval = 0;
-
-#if HAVE_CLOCK_GETTIME_NSEC_NP
-    {
-        retval = clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / tccMilliSecondsToNanoSeconds;
-    }
-#elif HAVE_CLOCK_MONOTONIC
-    {
-        clockid_t clockType =
-#if HAVE_CLOCK_MONOTONIC_COARSE
-            CLOCK_MONOTONIC_COARSE; // good enough resolution, fastest speed
-#else
-            CLOCK_MONOTONIC;
-#endif
-        struct timespec ts;
-        if (clock_gettime(clockType, &ts) == 0)
-        {
-            retval = (ts.tv_sec * tccSecondsToMilliSeconds) + (ts.tv_nsec / tccMilliSecondsToNanoSeconds);
-        }
-        else
-        {
-            ASSERT_UNCONDITIONALLY("clock_gettime(CLOCK_MONOTONIC) failed\n");
-        }
-    }
-#else
-    {
-        struct timeval tv;
-        if (gettimeofday(&tv, NULL) == 0)
-        {
-            retval = (tv.tv_sec * tccSecondsToMilliSeconds) + (tv.tv_usec / tccMilliSecondsToMicroSeconds);
-        }
-        else
-        {
-            ASSERT_UNCONDITIONALLY("gettimeofday() failed\n");
-        }
-    }
-#endif
-
-    return retval;
+    return GCToOSInterface::GetLowPrecisionTimeStamp();
 }
 
 REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
@@ -715,6 +677,11 @@ REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void*
 }
 
 REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalIsAvxEnabled()
+{
+    return true;
+}
+
+REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalIsAvx512Enabled()
 {
     return true;
 }
@@ -1210,24 +1177,14 @@ extern "C" void GetSystemTimeAsFileTime(FILETIME *lpSystemTimeAsFileTime)
     lpSystemTimeAsFileTime->dwHighDateTime = (uint32_t)(result >> 32);
 }
 
-extern "C" UInt32_BOOL QueryPerformanceCounter(LARGE_INTEGER *lpPerformanceCount)
+extern "C" uint64_t PalQueryPerformanceCounter()
 {
-    // TODO: More efficient, platform-specific implementation
-    struct timeval tv;
-    if (gettimeofday(&tv, NULL) == -1)
-    {
-        ASSERT_UNCONDITIONALLY("gettimeofday() failed");
-        return UInt32_FALSE;
-    }
-    lpPerformanceCount->QuadPart =
-        (int64_t) tv.tv_sec * (int64_t) tccSecondsToMicroSeconds + (int64_t) tv.tv_usec;
-    return UInt32_TRUE;
+    return GCToOSInterface::QueryPerformanceCounter();
 }
 
-extern "C" UInt32_BOOL QueryPerformanceFrequency(LARGE_INTEGER *lpFrequency)
+extern "C" uint64_t PalQueryPerformanceFrequency()
 {
-    lpFrequency->QuadPart = (int64_t) tccSecondsToMicroSeconds;
-    return UInt32_TRUE;
+    return GCToOSInterface::QueryPerformanceFrequency();
 }
 
 extern "C" uint64_t PalGetCurrentThreadIdForLogging()
@@ -1287,6 +1244,19 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI xmmYmmStateSupport()
     // check OS has enabled both XMM and YMM state support
     return ((eax & 0x06) == 0x06) ? 1 : 0;
 }
+
+REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI avx512StateSupport()
+{
+    DWORD eax;
+    __asm("  xgetbv\n" \
+        : "=a"(eax) /*output in eax*/\
+        : "c"(0) /*inputs - 0 in ecx*/\
+        : "edx" /* registers that are clobbered*/
+      );
+    // check OS has enabled XMM, YMM and ZMM state support
+    return ((eax & 0xE6) == 0x0E6) ? 1 : 0;
+}
+
 #endif // defined(HOST_X86) || defined(HOST_AMD64)
 
 #if defined (HOST_ARM64)

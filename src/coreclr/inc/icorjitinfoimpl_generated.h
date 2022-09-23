@@ -175,6 +175,11 @@ int getStringLiteral(
           char16_t* buffer,
           int bufferSize) override;
 
+int objectToString(
+          void* handle,
+          char* buffer,
+          int bufferSize) override;
+
 CorInfoType asCorInfoType(
           CORINFO_CLASS_HANDLE cls) override;
 
@@ -278,6 +283,9 @@ CorInfoHelpFunc getBoxHelper(
           CORINFO_CLASS_HANDLE cls) override;
 
 CorInfoHelpFunc getUnBoxHelper(
+          CORINFO_CLASS_HANDLE cls) override;
+
+void* getRuntimeTypePointer(
           CORINFO_CLASS_HANDLE cls) override;
 
 bool getReadyToRunHelper(

@@ -18,7 +18,7 @@ namespace System.Numerics
         public static bool IsHardwareAccelerated
         {
             [Intrinsic]
-            get => false;
+            get => IsHardwareAccelerated;
         }
 
         /// <summary>Computes the absolute value of each element in a vector.</summary>

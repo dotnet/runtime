@@ -177,6 +177,11 @@ bool RedhawkGCInterface::InitializeSubsystems()
     g_heap_type = GC_HEAP_WKS;
 #endif
 
+    if (g_pRhConfig->GetgcConservative())
+    {
+        GetRuntimeInstance()->EnableConservativeStackReporting();
+    }
+
     HRESULT hr = GCHeapUtilities::InitializeDefaultGC();
     if (FAILED(hr))
         return false;
@@ -1234,7 +1239,7 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
             ThreadStore::AttachCurrentThread(false);
         }
 
-        ThreadStore::RawGetCurrentThread()->SetGCSpecial(true);
+        ThreadStore::RawGetCurrentThread()->SetGCSpecial();
 
         auto realStartRoutine = pStartContext->m_pRealStartRoutine;
         void* realContext = pStartContext->m_pRealContext;
