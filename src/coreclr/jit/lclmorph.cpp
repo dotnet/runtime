@@ -1008,13 +1008,6 @@ private:
             return IndirTransform::LclFld;
         }
 
-        if (indir->OperIs(GT_IND)) // IND<struct>
-        {
-            // TODO-ADDR: add this case to the "don't expect" assert above; it requires
-            // updating the import of "expandRawHandleIntrinsic" NativeAOT intrinsics.
-            return IndirTransform::None;
-        }
-
         ClassLayout* indirLayout = nullptr;
 
         if (indir->OperIs(GT_FIELD))

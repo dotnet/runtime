@@ -5898,8 +5898,6 @@ private:
     // the variable is not enregistered, and is therefore not promoted independently.
     void fgLclFldAssign(unsigned lclNum);
 
-    static fgWalkPreFn gtHasLocalsWithAddrOpCB;
-
     enum TypeProducerKind
     {
         TPK_Unknown = 0, // May not be a RuntimeType
