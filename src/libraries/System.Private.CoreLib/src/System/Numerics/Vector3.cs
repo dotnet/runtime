@@ -106,6 +106,10 @@ namespace System.Numerics
             get => new Vector3(0.0f, 0.0f, 1.0f);
         }
 
+        /// <summary>Gets or sets the element at the specified index.</summary>
+        /// <param name="index">The index of the element to get or set.</param>
+        /// <returns>The the element at <paramref name="index" />.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> was less than zero or greater than the number of elements.</exception>
         public float this[int index]
         {
             get => GetElement(this, index);
