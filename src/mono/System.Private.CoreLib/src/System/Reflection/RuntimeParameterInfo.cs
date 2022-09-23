@@ -126,9 +126,10 @@ namespace System.Reflection
         {
             get
             {
-                // CoreCLR favours DateTimeConstantAttribute over DefaultValueImpl and other attached CustomConstantAttributes,
-                // but also CustomConstantAttributes over DecimalConstantAttribute attached to a parameter.
-                // (see here for more info: https://github.com/dotnet/runtime/blob/main/src/coreclr/System.Private.CoreLib/src/System/Reflection/RuntimeParameterInfo.cs#L311)
+                // In case of multiple CustomAttributes the following rules apply:
+                // - if declared type is DateTime, then DateTimeConstantAttribute is favoured over others
+                // - else if there is at least one CustomConstantAttribute, then it is favoured over others
+                // - else use the first attribute providing the default value
                 if (ClassImpl == typeof(DateTime) || ClassImpl == typeof(DateTime?))
                 {
                     /* default values for DateTime are encoded using a custom attribute */
