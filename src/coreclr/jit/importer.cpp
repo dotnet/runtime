@@ -3672,12 +3672,6 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         // For mismatched VM (AltJit) we want to check all methods as intrinsic to ensure
         // we get more accurate codegen. This particularly applies to HWIntrinsic usage
         assert(!info.compMatchedVM);
-
-        if (ni == NI_Illegal)
-        {
-            // Early exit for the common AltJit scenario
-            return nullptr;
-        }
     }
 
     // We specially support the following on all platforms to allow for dead
@@ -3731,10 +3725,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
     if (!isIntrinsic)
     {
-        // TODO-Cleanup: Outside the cases above, there are many intrinsics which
-        // apply to only 1 overload and where simply matching by name may cause
-        // downstream asserts or other failures. Math.Min is one example, where it
-        // only applies to the floating-point overloads.
+        // Outside the cases above, there are many intrinsics which apply to only a
+        // subset of overload and where simply matching by name may cause downstream
+        // asserts or other failures. Math.Min is one example, where it only applies
+        // to the floating-point overloads.
         return nullptr;
     }
 
