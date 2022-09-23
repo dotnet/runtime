@@ -5079,7 +5079,7 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 			//PRINT_MSG ("%s\n", mono_type_full_name (t));
 			buffer_add_byte (buf, VALUE_TYPE_ID_NULL);
 			if (CHECK_PROTOCOL_VERSION (2, 59))
-				buffer_add_info_for_null_value(buf, t, domain);
+				buffer_add_info_for_null_value (buf, t, domain);
 			return;
 		}
 		g_assert (*(void**)addr);
@@ -5234,7 +5234,7 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 					/* The client can't handle PARENT_VTYPE */
 					buffer_add_byte (buf, VALUE_TYPE_ID_NULL);
 					if (CHECK_PROTOCOL_VERSION (2, 59))
-						buffer_add_info_for_null_value(buf, t, domain);
+						buffer_add_info_for_null_value (buf, t, domain);
 				}
 				break;
 			} else {
