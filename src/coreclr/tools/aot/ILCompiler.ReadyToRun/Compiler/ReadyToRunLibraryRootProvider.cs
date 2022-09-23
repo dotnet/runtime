@@ -86,13 +86,14 @@ namespace ILCompiler
                             continue;
                     }
 
-                    RootMethods(typeWithMethods, "Library module method", rootProvider);
+                    RootMethods(typeWithMethods, "Library module method", rootProvider, ((EcmaAssembly)_module.Assembly).HasAssemblyCustomAttribute("System.Runtime.CompilerServices", "InternalsVisibleToAttribute"));
                 }
             }
         }
 
-        private void RootMethods(TypeDesc type, string reason, IRootingServiceProvider rootProvider)
+        private void RootMethods(MetadataType type, string reason, IRootingServiceProvider rootProvider, bool anyInternalsVisibleTo)
         {
+            MethodImplRecord[] methodImplRecords = ((EcmaType)type.GetTypeDefinition()).AllMethodImplsForType;
             foreach (MethodDesc method in type.GetAllMethods())
             {
                 // Skip methods with no IL
@@ -102,10 +103,32 @@ namespace ILCompiler
                 if (method.IsInternalCall)
                     continue;
 
-                // We will not root P/Invokes. We'll only compile them for ReadyToRun if
-                // they have a use where they are not inlined.
-                if (method.IsPInvoke)
-                    continue;
+                // If the method is not visible outside the assembly, then do not root the method.
+                // It will be rooted by any callers that require it and do not inline it.
+                if (!method.IsStaticConstructor
+                    && method.GetTypicalMethodDefinition() is EcmaMethod ecma
+                    && !ecma.GetEffectiveVisibility().IsExposedOutsideOfThisAssembly(anyInternalsVisibleTo))
+                {
+                    // If a method itself is not visible outside the assembly, but it implements a method that is,
+                    // we want to root it as it could be called from outside the assembly.
+                    bool implementsOrOverridesVisibleMethod = false;
+                    foreach (var record in methodImplRecords)
+                    {
+                        if (record.Body == ecma)
+                        {
+                            implementsOrOverridesVisibleMethod = record.Decl.GetTypicalMethodDefinition() is EcmaMethod decl
+                                && decl.GetEffectiveVisibility().IsExposedOutsideOfThisAssembly(anyInternalsVisibleTo);
+                            if (implementsOrOverridesVisibleMethod)
+                            {
+                                break;
+                            }
+                        }
+                    }
+                    if (!implementsOrOverridesVisibleMethod)
+                    {
+                        continue;
+                    }
+                }
 
                 MethodDesc methodToRoot = method;
                 if (method.HasInstantiation)
@@ -197,7 +220,7 @@ namespace ILCompiler
             return new Instantiation(args);
         }
 
-        private static InstantiatedType InstantiateIfPossible(MetadataType type)
+        public static InstantiatedType InstantiateIfPossible(MetadataType type)
         {
             Instantiation inst = GetInstantiationThatMeetsConstraints(type.Instantiation);
             if (inst.IsNull)
@@ -208,7 +231,7 @@ namespace ILCompiler
             return type.MakeInstantiatedType(inst);
         }
 
-        private static MethodDesc InstantiateIfPossible(MethodDesc method)
+        public static MethodDesc InstantiateIfPossible(MethodDesc method)
         {
             Instantiation inst = GetInstantiationThatMeetsConstraints(method.Instantiation);
             if (inst.IsNull)

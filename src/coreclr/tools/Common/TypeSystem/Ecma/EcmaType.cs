@@ -28,6 +28,7 @@ namespace Internal.TypeSystem.Ecma
         private TypeDesc[] _genericParameters;
         private MetadataType _baseType;
         private int _hashcode;
+        private MethodImplRecord[] _allMethodImplsForType;
 
         internal EcmaType(EcmaModule module, TypeDefinitionHandle handle)
         {
@@ -149,6 +150,31 @@ namespace Internal.TypeSystem.Ecma
             {
                 return _handle;
             }
+        }
+
+        public MethodImplRecord[] AllMethodImplsForType
+        {
+            get
+            {
+                return _allMethodImplsForType ??= GetAllMethodImplRecordsForType();
+            }
+        }
+
+        public MethodImplRecord[] GetAllMethodImplRecordsForType()
+        {
+            ArrayBuilder<MethodImplRecord> records = default;
+            MetadataReader metadataReader = _module.MetadataReader;
+
+            foreach (var methodImplHandle in _typeDefinition.GetMethodImplementations())
+            {
+                MethodImplementation methodImpl = metadataReader.GetMethodImplementation(methodImplHandle);
+
+                records.Add(new MethodImplRecord(
+                    _module.GetMethod(methodImpl.MethodDeclaration),
+                   _module.GetMethod(methodImpl.MethodBody)
+                ));
+            }
+            return records.ToArray();
         }
 
         private MetadataType InitializeBaseType()

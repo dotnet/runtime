@@ -620,6 +620,11 @@ namespace ILCompiler
                                 profileDataManager,
                                 profileDrivenPartialNGen: partial));
 
+                            if (ReadyToRunXmlRootProvider.TryCreateRootProviderFromEmbeddedDescriptorFile(module, out ReadyToRunXmlRootProvider xmlProvider))
+                            {
+                                compilationRoots.Add(xmlProvider);
+                            }
+
                             if (!_command.CompositeOrInputBubble)
                             {
                                 break;
