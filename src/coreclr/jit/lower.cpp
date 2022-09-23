@@ -6815,9 +6815,8 @@ bool Lowering::CheckMultiRegLclVar(GenTreeLclVar* lclNode, const ReturnTypeDesc*
     // For local stores on XARCH we can't handle another lclVar source.
     // If the source was another lclVar similarly promoted, we would
     // have broken it into multiple stores.
-    if (lclNode->OperIs(GT_STORE_LCL_VAR) && !lclNode->gtGetOp1()->OperIs(GT_CALL))
+    if (lclNode->OperIs(GT_STORE_LCL_VAR) && lclNode->gtGetOp1()->OperIs(GT_LCL_VAR))
     {
-        assert(lclNode->gtGetOp1()->OperIs(GT_LCL_VAR));
         canEnregister = false;
     }
 #endif // TARGET_XARCH

@@ -17752,7 +17752,13 @@ GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree*             op,
 {
     unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg return"));
     impAssignTempGen(tmpNum, op, hClass, CHECK_SPILL_ALL);
-    GenTreeLclVar* ret = gtNewLclvNode(tmpNum, lvaTable[tmpNum].lvType);
+
+    LclVarDsc* varDsc = lvaGetDesc(tmpNum);
+
+    // The following is to exclude the fields of the local to have SSA.
+    varDsc->lvIsMultiRegRet = true;
+
+    GenTreeLclVar* ret = gtNewLclvNode(tmpNum, varDsc->lvType);
 
     // TODO-1stClassStructs: Handle constant propagation and CSE-ing of multireg returns.
     ret->SetDoNotCSE();
