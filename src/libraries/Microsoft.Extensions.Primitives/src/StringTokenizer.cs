@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.Primitives
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         /// <summary>
-        /// Enumerates the <see cref="string"/> tokens represented by <see cref="StringSegment"/>
+        /// Enumerates the <see cref="string"/> tokens represented by <see cref="StringSegment"/>.
         /// </summary>
         public struct Enumerator : IEnumerator<StringSegment>
         {

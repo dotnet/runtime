@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace Microsoft.Extensions.Primitives
 {
     /// <summary>
-    /// Compares two <see cref="StringSegment"/>.
+    /// Compares two <see cref="StringSegment"/> instances.
     /// </summary>
     public class StringSegmentComparer : IComparer<StringSegment>, IEqualityComparer<StringSegment>
     {
