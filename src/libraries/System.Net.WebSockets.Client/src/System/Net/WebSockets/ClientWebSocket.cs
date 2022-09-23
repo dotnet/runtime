@@ -79,7 +79,7 @@ namespace System.Net.WebSockets
         /// <param name="uri">The URI of the WebSocket server to connect to.</param>
         /// <param name="cancellationToken">A cancellation token used to propagate notification that the operation should be canceled.</param>
         /// <returns>The task object representing the asynchronous operation.</returns>
-        public Task ConnectAsync(Uri uri, CancellationToken cancellationToken)
+        public Task ConnectAsync(Uri uri, CancellationToken cancellationToken = default)
         {
             return ConnectAsync(uri, null, cancellationToken);
         }
@@ -91,7 +91,7 @@ namespace System.Net.WebSockets
         /// <param name="invoker">The <see cref="HttpMessageInvoker" /> instance to use for connecting.</param>
         /// <param name="cancellationToken">A cancellation token used to propagate notification that the operation should be canceled.</param>
         /// <returns>The task object representing the asynchronous operation.</returns>
-        public Task ConnectAsync(Uri uri, HttpMessageInvoker? invoker, CancellationToken cancellationToken)
+        public Task ConnectAsync(Uri uri, HttpMessageInvoker? invoker, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(uri);
 
@@ -121,7 +121,7 @@ namespace System.Net.WebSockets
             return ConnectAsyncCore(uri, invoker, cancellationToken);
         }
 
-        private async Task ConnectAsyncCore(Uri uri, HttpMessageInvoker? invoker, CancellationToken cancellationToken)
+        private async Task ConnectAsyncCore(Uri uri, HttpMessageInvoker? invoker, CancellationToken cancellationToken = default)
         {
             _innerWebSocket = new WebSocketHandle();
 
@@ -142,22 +142,22 @@ namespace System.Net.WebSockets
             }
         }
 
-        public override Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken) =>
+        public override Task SendAsync(ArraySegment<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken = default) =>
             ConnectedWebSocket.SendAsync(buffer, messageType, endOfMessage, cancellationToken);
 
-        public override ValueTask SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken) =>
+        public override ValueTask SendAsync(ReadOnlyMemory<byte> buffer, WebSocketMessageType messageType, bool endOfMessage, CancellationToken cancellationToken = default) =>
             ConnectedWebSocket.SendAsync(buffer, messageType, endOfMessage, cancellationToken);
 
-        public override Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken) =>
+        public override Task<WebSocketReceiveResult> ReceiveAsync(ArraySegment<byte> buffer, CancellationToken cancellationToken = default) =>
             ConnectedWebSocket.ReceiveAsync(buffer, cancellationToken);
 
-        public override ValueTask<ValueWebSocketReceiveResult> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken) =>
+        public override ValueTask<ValueWebSocketReceiveResult> ReceiveAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
             ConnectedWebSocket.ReceiveAsync(buffer, cancellationToken);
 
-        public override Task CloseAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken) =>
+        public override Task CloseAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken = default) =>
             ConnectedWebSocket.CloseAsync(closeStatus, statusDescription, cancellationToken);
 
-        public override Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken) =>
+        public override Task CloseOutputAsync(WebSocketCloseStatus closeStatus, string? statusDescription, CancellationToken cancellationToken = default) =>
             ConnectedWebSocket.CloseOutputAsync(closeStatus, statusDescription, cancellationToken);
 
         private WebSocket ConnectedWebSocket
