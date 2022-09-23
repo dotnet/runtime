@@ -330,7 +330,7 @@ namespace System.Tests
                 (DateTime)(new DateTimeWithDefaultValueAttribute(DateTimeMethod)).DynamicInvoke(new object[] { Type.Missing }));
         }
 
-        // CoreCLR prioritizes DateTimeConstant over CustomConstant attribute
+        // Verify that DateTimeConstantAttribute is prioritized over CustomConstantAttribute
         [Fact]
         public static void DynamicInvoke_DateTimeAndCustomConstantAttribute_DateTimeParameterWithMissingValue()
         {
@@ -339,7 +339,7 @@ namespace System.Tests
                 (DateTime)(new DateTimeDelegateWithDateTimeAndCustomConstantAttribute(DateTimeMethod)).DynamicInvoke(new object[] { Type.Missing }));
         }
 
-        // CoreCLR prioritizes DateTimeConstant over CustomConstant attribute
+        // Verify that DateTimeConstantAttribute is prioritized over CustomConstantAttribute
         [Fact]
         public static void DynamicInvoke_CustomConstantAndDateTimeAttribute_DateTimeParameterWithMissingValue()
         {
@@ -372,7 +372,7 @@ namespace System.Tests
                 (decimal)(new DecimalWithDefaultValueAttribute(DecimalMethod)).DynamicInvoke(new object[] { Type.Missing }));
         }
 
-        // CoreCLR prioritizes CustomConstant over DecimalConstant attribute
+        // Verify that CustomConstant is prioritized over DecimalConstantAttribute
         [Fact]
         public static void DynamicInvoke_DecimalAndCustomConstantAttribute_DecimalParameterWithAttributeAndMissingValue()
         {
@@ -381,7 +381,7 @@ namespace System.Tests
                 (decimal)(new DecimalDelegateWithDecimalAndCustomConstantAttribute(DecimalMethod)).DynamicInvoke(new object[] { Type.Missing }));
         }
 
-        // CoreCLR prioritizes CustomConstant over DecimalConstant attribute
+        // Verify that CustomConstant is prioritized over DecimalConstantAttribute
         [Fact]
         public static void DynamicInvoke_CustomConstantAndDecimalAttribute_DecimalParameterWithAttributeAndMissingValue()
         {
