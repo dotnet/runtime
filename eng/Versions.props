@@ -8,7 +8,7 @@
     <PatchVersion>0</PatchVersion>
     <SdkBandVersion>8.0.100</SdkBandVersion>
     <PackageVersionNet6>6.0.10</PackageVersionNet6>
-    <PackageVersionNet7>7.0.0-rc.2.22458.4</PackageVersionNet7>
+    <!-- problematic until NetCoreAppCurrent is net8.0 <PackageVersionNet7>7.0.0</PackageVersionNet7> -->
     <PreReleaseVersionLabel>alpha</PreReleaseVersionLabel>
     <PreReleaseVersionIteration>1</PreReleaseVersionIteration>
     <!-- Set assembly version to align with major and minor version,
