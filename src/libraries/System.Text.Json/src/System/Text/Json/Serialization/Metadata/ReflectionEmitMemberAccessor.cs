@@ -7,12 +7,27 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json.Serialization.Metadata
 {
     [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
     internal sealed class ReflectionEmitMemberAccessor : MemberAccessor
     {
+        private const int MaxInterpretedConstructorParameters = 64;
+        private static ReflectionMemberAccessor? s_reflectionMemberAccessor;
+        private readonly bool _isDynamicCodeInterpreted;
+
+        public ReflectionEmitMemberAccessor()
+        {
+#if !NETFRAMEWORK
+            Debug.Assert(RuntimeFeature.IsDynamicCodeSupported);
+            _isDynamicCodeInterpreted = !RuntimeFeature.IsDynamicCodeCompiled;
+#else
+            _isDynamicCodeInterpreted = false;
+#endif
+        }
+
         public override Func<object>? CreateConstructor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
@@ -62,10 +77,7 @@ namespace System.Text.Json.Serialization.Metadata
             return CreateDelegate<Func<object>>(dynamicMethod);
         }
 
-        public override Func<object[], T> CreateParameterizedConstructor<T>(ConstructorInfo constructor) =>
-            CreateDelegate<Func<object[], T>>(CreateParameterizedConstructor(constructor));
-
-        private static DynamicMethod CreateParameterizedConstructor(ConstructorInfo constructor)
+        public override Func<object[], T> CreateParameterizedConstructor<T>(ConstructorInfo constructor)
         {
             Type? type = constructor.DeclaringType;
 
@@ -75,6 +87,14 @@ namespace System.Text.Json.Serialization.Metadata
 
             ParameterInfo[] parameters = constructor.GetParameters();
             int parameterCount = parameters.Length;
+
+            if (_isDynamicCodeInterpreted && parameterCount > MaxInterpretedConstructorParameters)
+            {
+                // Fall back to reflection accessors for large constructor arities in interpreted runtimes
+                // This is due to crashes observed when emitting dynamic code in interpreted mono:
+                // https://github.com/dotnet/runtime/pull/75982#discussion_r978689494
+                return (s_reflectionMemberAccessor ??= new()).CreateParameterizedConstructor<T>(constructor);
+            }
 
             var dynamicMethod = new DynamicMethod(
                 ConstructorInfo.ConstructorName,
@@ -98,7 +118,7 @@ namespace System.Text.Json.Serialization.Metadata
             generator.Emit(OpCodes.Newobj, constructor);
             generator.Emit(OpCodes.Ret);
 
-            return dynamicMethod;
+            return CreateDelegate<Func<object[], T>>(dynamicMethod);
         }
 
         public override JsonTypeInfo.ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>?
