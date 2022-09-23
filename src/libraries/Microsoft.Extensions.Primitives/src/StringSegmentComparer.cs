@@ -43,11 +43,10 @@ namespace Microsoft.Extensions.Primitives
         }
 
         /// <summary>
-        /// Returns a hash code for this instance.
+        /// Returns a hash code for a <see cref="StringSegment"/>.
         /// </summary>
-        /// <returns>
-        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.
-        /// </returns>
+        /// <param name="obj">The <see cref="StringSegment"/> to get a hash code from.</param>
+        /// <returns>A hash code for a <see cref="StringSegment"/>, suitable for use in hashing algorithms and data structures like a hash table.</returns>
         public int GetHashCode(StringSegment obj)
         {
 #if NETCOREAPP || NETSTANDARD2_1
