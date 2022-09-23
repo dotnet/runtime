@@ -21,8 +21,7 @@
                                                                                                             ('$(BuildAllConfigurations)' != 'true' and '$(RuntimeFlavor)' == '$(PrimaryRuntimeFlavor)')" />
 
     <!-- Don't build task and tools project in the NetCoreAppCurrent vertical. -->
-    <ProjectReference Remove="Microsoft.NETCore.Platforms\src\Microsoft.NETCore.Platforms.csproj;
-                              Microsoft.XmlSerializer.Generator\src\Microsoft.XmlSerializer.Generator.csproj" />
+    <ProjectReference Remove="Microsoft.XmlSerializer.Generator\src\Microsoft.XmlSerializer.Generator.csproj" />
 
     <!-- Don't build meta-projects in the NetCoreAppCurrent vertical. -->
     <ProjectReference Remove="Microsoft.Internal.Runtime.AspNetCore.Transport\src\Microsoft.Internal.Runtime.AspNetCore.Transport.proj;

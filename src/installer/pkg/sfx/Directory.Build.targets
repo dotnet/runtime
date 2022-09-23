@@ -1,3 +1,7 @@
 <Project>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />
+
+  <PropertyGroup>
+    <BundledRuntimeIdentifierGraphFile>$(GeneratedRuntimeIdentifierGraphFile)</BundledRuntimeIdentifierGraphFile>
+  </PropertyGroup>
 </Project>
