@@ -197,10 +197,8 @@ namespace System.Diagnostics
         public virtual void OnActivityExport(System.Diagnostics.Activity activity, object? payload) { }
         public virtual void OnActivityImport(System.Diagnostics.Activity activity, object? payload) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of object being written to DiagnosticSource cannot be discovered statically.")]
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("DiagnosticSource may require creating new generic types or methods, which requires creating code at runtime. This may not work when AOT compiling.")]
         public System.Diagnostics.Activity StartActivity(System.Diagnostics.Activity activity, object? args) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of object being written to DiagnosticSource cannot be discovered statically.")]
-        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("DiagnosticSource may require creating new generic types or methods, which requires creating code at runtime. This may not work when AOT compiling.")]
         public void StopActivity(System.Diagnostics.Activity activity, object? args) { }
     }
     public enum ActivitySamplingResult

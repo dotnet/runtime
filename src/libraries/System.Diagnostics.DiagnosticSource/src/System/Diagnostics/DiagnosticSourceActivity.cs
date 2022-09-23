@@ -26,7 +26,6 @@ namespace System.Diagnostics
         /// <returns>Started Activity for convenient chaining</returns>
         /// <seealso cref="Activity"/>
         [RequiresUnreferencedCode(WriteRequiresUnreferencedCode)]
-        [RequiresDynamicCode(WriteRequiresDynamicCode)]
         public Activity StartActivity(Activity activity, object? args)
         {
             activity.Start();
@@ -45,7 +44,6 @@ namespace System.Diagnostics
         /// <param name="args">An object that represent the value being passed as a payload for the event.</param>
         /// <seealso cref="Activity"/>
         [RequiresUnreferencedCode(WriteRequiresUnreferencedCode)]
-        [RequiresDynamicCode(WriteRequiresDynamicCode)]
         public void StopActivity(Activity activity, object? args)
         {
             // Stop sets the end time if it was unset, but we want it set before we issue the write

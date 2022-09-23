@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -234,7 +235,8 @@ namespace System.Diagnostics
         /// Events from DiagnosticSource can be forwarded to EventSource using this event.
         /// </summary>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Arguments parameter is trimmer safe")]
+            Justification = "Arguments parameter is preserved by DynamicDependency")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(2, Keywords = Keywords.Events)]
         private void Event(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>>? Arguments)
         {
@@ -255,7 +257,8 @@ namespace System.Diagnostics
         /// Used to mark the beginning of an activity
         /// </summary>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Arguments parameter is trimmer safe")]
+            Justification = "Arguments parameter is preserved by DynamicDependency")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(4, Keywords = Keywords.Events)]
         private void Activity1Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -266,7 +269,8 @@ namespace System.Diagnostics
         /// Used to mark the end of an activity
         /// </summary>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Arguments parameter is trimmer safe")]
+            Justification = "Arguments parameter is preserved by DynamicDependency")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(5, Keywords = Keywords.Events)]
         private void Activity1Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -277,7 +281,8 @@ namespace System.Diagnostics
         /// Used to mark the beginning of an activity
         /// </summary>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Arguments parameter is trimmer safe")]
+            Justification = "Arguments parameter is preserved by DynamicDependency")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(6, Keywords = Keywords.Events)]
         private void Activity2Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -288,7 +293,8 @@ namespace System.Diagnostics
         /// Used to mark the end of an activity that can be recursive.
         /// </summary>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Arguments parameter is trimmer safe")]
+            Justification = "Arguments parameter is preserved by DynamicDependency")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(7, Keywords = Keywords.Events)]
         private void Activity2Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -299,7 +305,8 @@ namespace System.Diagnostics
         /// Used to mark the beginning of an activity
         /// </summary>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Arguments parameter is trimmer safe")]
+            Justification = "Arguments parameter is preserved by DynamicDependency")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(8, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
         private void RecursiveActivity1Start(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -310,7 +317,8 @@ namespace System.Diagnostics
         /// Used to mark the end of an activity that can be recursive.
         /// </summary>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Arguments parameter is trimmer safe")]
+            Justification = "Arguments parameter is preserved by DynamicDependency")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(9, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
         private void RecursiveActivity1Stop(string SourceName, string EventName, IEnumerable<KeyValuePair<string, string?>> Arguments)
         {
@@ -334,7 +342,8 @@ namespace System.Diagnostics
         /// <param name="ActivityName">The Activity name</param>
         /// <param name="Arguments">Name and value pairs of the Activity properties</param>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Arguments parameter is trimmer safe")]
+            Justification = "Arguments parameter is preserved by DynamicDependency")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(11, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
         private void ActivityStart(string SourceName, string ActivityName, IEnumerable<KeyValuePair<string, string?>> Arguments) =>
             WriteEvent(11, SourceName, ActivityName, Arguments);
@@ -346,7 +355,8 @@ namespace System.Diagnostics
         /// <param name="ActivityName">The Activity name</param>
         /// <param name="Arguments">Name and value pairs of the Activity properties</param>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "Arguments parameter is trimmer safe")]
+            Justification = "Arguments parameter is preserved by DynamicDependency")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<,>))]
         [Event(12, Keywords = Keywords.Events, ActivityOptions = EventActivityOptions.Recursive)]
         private void ActivityStop(string SourceName, string ActivityName, IEnumerable<KeyValuePair<string, string?>> Arguments) =>
             WriteEvent(12, SourceName, ActivityName, Arguments);
@@ -641,8 +651,6 @@ namespace System.Diagnostics
                         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2119",
                             Justification = "DAM on EventSource references this compiler-generated local function which calls a " +
                                             "method that requires unreferenced code. EventSource will not access this local function.")]
-                        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-                            Justification = "DiagnosticSource.Write is marked with RequiresDynamicCode.")]
                         void OnEventWritten(KeyValuePair<string, object?> evnt)
                         {
                             // The filter given to the DiagnosticSource may not work if users don't is 'IsEnabled' as expected.
@@ -890,8 +898,6 @@ namespace System.Diagnostics
             [DynamicDependency(nameof(TimeSpan.Ticks), typeof(TimeSpan))]
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = "Activity's properties are being preserved with the DynamicDependencies on OnActivityStarted.")]
-            [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-                            Justification = "Activity is a reference type and is safe in aot.")]
             private static void OnActivityStarted(DiagnosticSourceEventSource eventSource, Activity activity)
             {
                 FilterAndTransform? list = eventSource._activitySourceSpecs;
@@ -911,8 +917,6 @@ namespace System.Diagnostics
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = "Activity's properties are being preserved with the DynamicDependencies on OnActivityStarted.")]
-            [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-                            Justification = "Activity is a reference type and is safe with aot.")]
             private static void OnActivityStopped(DiagnosticSourceEventSource eventSource, Activity activity)
             {
                 FilterAndTransform? list = eventSource._activitySourceSpecs;
@@ -1015,7 +1019,6 @@ namespace System.Diagnostics
                 Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                 "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
             [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
-            [RequiresDynamicCode(DiagnosticSource.WriteRequiresDynamicCode)]
             public List<KeyValuePair<string, string?>> Morph(object? args)
             {
                 // Transform the args into a bag of key-value strings.
@@ -1193,7 +1196,6 @@ namespace System.Diagnostics
                 Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                 "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
             [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
-            [RequiresDynamicCode(DiagnosticSource.WriteRequiresDynamicCode)]
             public KeyValuePair<string, string?> Morph(object? obj)
             {
                 for (PropertySpec? cur = _fetches; cur != null; cur = cur.Next)
@@ -1248,7 +1250,6 @@ namespace System.Diagnostics
                     Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
                 [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
-                [RequiresDynamicCode(DiagnosticSource.WriteRequiresDynamicCode)]
                 public object? Fetch(object? obj)
                 {
                     PropertyFetch? fetch = _fetchForExpectedType;
@@ -1295,7 +1296,6 @@ namespace System.Diagnostics
                         Justification = "In EventSource, EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                         "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
                     [RequiresUnreferencedCode(DiagnosticSource.WriteRequiresUnreferencedCode)]
-                    [RequiresDynamicCode(DiagnosticSource.WriteRequiresDynamicCode)]
                     public static PropertyFetch FetcherForProperty(Type? type, string propertyName)
                     {
                         if (propertyName == null)
@@ -1319,10 +1319,7 @@ namespace System.Diagnostics
                                     continue;
                                 }
 
-                                Type elemType = iFaceTypeInfo.GetGenericArguments()[0];
-                                Type instantiatedTypedPropertyFetcher = typeof(EnumeratePropertyFetch<>)
-                                    .GetTypeInfo().MakeGenericType(elemType);
-                                return (PropertyFetch)Activator.CreateInstance(instantiatedTypedPropertyFetcher, type)!;
+                                return CreateEnumeratePropertyFetch(type, iFaceTypeInfo);
                             }
 
                             // no implementation of IEnumerable<T> found, return a null fetcher
@@ -1355,12 +1352,42 @@ namespace System.Diagnostics
                                 Log.Message($"Property {propertyName} is static.");
                                 return new PropertyFetch(type);
                             }
-                            Type typedPropertyFetcher = typeInfo.IsValueType ?
-                                typeof(ValueTypedFetchProperty<,>) : typeof(RefTypedFetchProperty<,>);
-                            Type instantiatedTypedPropertyFetcher = typedPropertyFetcher.GetTypeInfo().MakeGenericType(
-                                propertyInfo.DeclaringType!, propertyInfo.PropertyType);
-                            return (PropertyFetch)Activator.CreateInstance(instantiatedTypedPropertyFetcher, type, propertyInfo)!;
+
+                            return CreatePropertyFetch(typeInfo, propertyInfo);
                         }
+                    }
+
+                    [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
+                        Justification = "MakeGenericType is only called when IsDynamicCodeSupported is true or only with ref types.")]
+                    private static PropertyFetch CreateEnumeratePropertyFetch(Type type, Type enumerableOfTType)
+                    {
+                        Type elemType = enumerableOfTType.GetGenericArguments()[0];
+#if NETCOREAPP
+                        if (!RuntimeFeature.IsDynamicCodeSupported && elemType.IsValueType)
+                        {
+                            return new EnumeratePropertyFetch(type);
+                        }
+#endif
+                        Type instantiatedTypedPropertyFetcher = typeof(EnumeratePropertyFetch<>)
+                            .GetTypeInfo().MakeGenericType(elemType);
+                        return (PropertyFetch)Activator.CreateInstance(instantiatedTypedPropertyFetcher, type)!;
+                    }
+
+                    [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
+                        Justification = "MakeGenericType is only called when IsDynamicCodeSupported is true or only with ref types.")]
+                    private static PropertyFetch CreatePropertyFetch(Type type, PropertyInfo propertyInfo)
+                    {
+#if NETCOREAPP
+                        if (!RuntimeFeature.IsDynamicCodeSupported && (propertyInfo.DeclaringType!.IsValueType || propertyInfo.PropertyType.IsValueType))
+                        {
+                            return new ReflectionPropertyFetch(type, propertyInfo);
+                        }
+#endif
+                        Type typedPropertyFetcher = type.IsValueType ?
+                            typeof(ValueTypedFetchProperty<,>) : typeof(RefTypedFetchProperty<,>);
+                        Type instantiatedTypedPropertyFetcher = typedPropertyFetcher.GetTypeInfo().MakeGenericType(
+                            propertyInfo.DeclaringType!, propertyInfo.PropertyType);
+                        return (PropertyFetch)Activator.CreateInstance(instantiatedTypedPropertyFetcher, type, propertyInfo)!;
                     }
 
                     /// <summary>
@@ -1368,7 +1395,7 @@ namespace System.Diagnostics
                     /// </summary>
                     public virtual object? Fetch(object? obj) { return null; }
 
-                    #region private
+#region private
 
                     private sealed class RefTypedFetchProperty<TObject, TProperty> : PropertyFetch
                     {
@@ -1407,6 +1434,74 @@ namespace System.Diagnostics
                         private readonly StructFunc<TStruct, TProperty> _propertyFetch;
                     }
 
+#if NETCOREAPP
+                    /// <summary>
+                    /// A fetcher that can be used when MakeGenericType isn't available.
+                    /// </summary>
+                    private sealed class ReflectionPropertyFetch : PropertyFetch
+                    {
+                        private readonly PropertyInfo _property;
+                        public ReflectionPropertyFetch(Type type, PropertyInfo property) : base(type)
+                        {
+                            _property = property;
+                        }
+
+                        public override object? Fetch(object? obj) => _property.GetValue(obj);
+                    }
+
+                    /// <summary>
+                    /// A fetcher that enumerates and formats an IEnumerable when MakeGenericType isn't available.
+                    /// </summary>
+                    private sealed class EnumeratePropertyFetch : PropertyFetch
+                    {
+                        public EnumeratePropertyFetch(Type type) : base(type) { }
+
+                        public override object? Fetch(object? obj)
+                        {
+                            IEnumerable? enumerable = obj as IEnumerable;
+                            Debug.Assert(enumerable is not null);
+
+                            // string.Join for a non-generic IEnumerable
+                            IEnumerator en = enumerable.GetEnumerator();
+                            using (IDisposable? disposable = en as IDisposable)
+                            {
+                                if (!en.MoveNext())
+                                {
+                                    return string.Empty;
+                                }
+
+                                object? currentValue = en.Current;
+                                string? firstString = currentValue?.ToString();
+
+                                // If there's only 1 item, simply return the ToString of that
+                                if (!en.MoveNext())
+                                {
+                                    // Only one value available
+                                    return firstString ?? string.Empty;
+                                }
+
+                                var result = new ValueStringBuilder(stackalloc char[256]);
+
+                                result.Append(firstString);
+
+                                do
+                                {
+                                    currentValue = en.Current;
+
+                                    result.Append(",");
+                                    if (currentValue != null)
+                                    {
+                                        result.Append(currentValue.ToString());
+                                    }
+                                }
+                                while (en.MoveNext());
+
+                                return result.ToString();
+                            }
+                        }
+                    }
+#endif
+
                     /// <summary>
                     /// A fetcher that returns the result of Activity.Current
                     /// </summary>
@@ -1431,17 +1526,17 @@ namespace System.Diagnostics
                             return string.Join(",", (IEnumerable<ElementType>)obj);
                         }
                     }
-                    #endregion
+#endregion
                 }
 
                 private readonly string _propertyName;
                 private volatile PropertyFetch? _fetchForExpectedType;
-                #endregion
+#endregion
             }
 
             private readonly string _outputName = null!;
             private readonly PropertySpec? _fetches;
-            #endregion
+#endregion
         }
 
         /// <summary>
@@ -1454,13 +1549,13 @@ namespace System.Diagnostics
         {
             public CallbackObserver(Action<T> callback) { _callback = callback; }
 
-            #region private
+#region private
             public void OnCompleted() { }
             public void OnError(Exception error) { }
             public void OnNext(T value) { _callback(value); }
 
             private readonly Action<T> _callback;
-            #endregion
+#endregion
         }
 
         // A linked list of IObservable subscriptions (which are IDisposable).
@@ -1477,11 +1572,11 @@ namespace System.Diagnostics
             public Subscriptions? Next;
         }
 
-        #endregion
+#endregion
 
         private FilterAndTransform? _specs;                 // Transformation specifications that indicate which sources/events are forwarded.
         private FilterAndTransform? _activitySourceSpecs;   // ActivitySource Transformation specifications that indicate which sources/events are forwarded.
         private ActivityListener? _activityListener;
-        #endregion
+#endregion
     }
 }

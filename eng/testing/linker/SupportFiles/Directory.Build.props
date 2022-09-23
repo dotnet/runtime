@@ -2,7 +2,6 @@
   <PropertyGroup>
     <SkipConfigureTrimming>true</SkipConfigureTrimming>
     <PublishTrimmed>true</PublishTrimmed>
-    <SkipImportRepoLinkerTargets>true</SkipImportRepoLinkerTargets>
     <TrimMode>full</TrimMode>
     <TrimmerRemoveSymbols>false</TrimmerRemoveSymbols>
     <SelfContained>true</SelfContained>
