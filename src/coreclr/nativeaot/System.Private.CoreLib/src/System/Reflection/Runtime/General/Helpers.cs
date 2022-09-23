@@ -203,17 +203,46 @@ namespace System.Reflection.Runtime.General
             return result;
         }
 
-        public static bool GetCustomAttributeDefaultValueIfAny(IEnumerable<CustomAttributeData> customAttributes, bool raw, out object? defaultValue)
+        // In case of multiple CustomAttributes the following rules apply:
+        // - if declared type is DateTime, then DateTimeConstantAttribute is favoured over others
+        // - else if there is at least one CustomConstantAttribute, then it is favoured over others
+        // - else use the first attribute providing the default value
+        private static CustomAttributeData? PrioritizeCustomAttributesForDefaultValueResolution(IEnumerable<CustomAttributeData> customAttributes, Type declaredType)
         {
-            // Legacy: If there are multiple default value attribute, the desktop picks one at random (and so do we...)
-            foreach (CustomAttributeData cad in customAttributes)
+            CustomAttributeData? previousAttributeData = null;
+            bool declaredTypeIsDateTime = declaredType == typeof(DateTime);
+            foreach (CustomAttributeData currentAttributeData in customAttributes)
             {
-                Type attributeType = cad.AttributeType;
+                Type currentAttributeType = currentAttributeData.AttributeType;
+                if (declaredTypeIsDateTime && currentAttributeType == typeof(DateTimeConstantAttribute))
+                {
+                    previousAttributeData = currentAttributeData;
+                    break;
+                }
+                else if (previousAttributeData == null && (currentAttributeType.IsSubclassOf(typeof(CustomConstantAttribute)) || currentAttributeType == typeof(DecimalConstantAttribute)))
+                {
+                    previousAttributeData = currentAttributeData;
+                }
+                else if (previousAttributeData != null && (currentAttributeType.IsSubclassOf(typeof(CustomConstantAttribute)) && previousAttributeData.AttributeType == typeof(DecimalConstantAttribute)))
+                {
+                    previousAttributeData = currentAttributeData;
+                    break;
+                }
+            }
+            return previousAttributeData;
+        }
+
+        public static bool GetCustomAttributeDefaultValueIfAny(IEnumerable<CustomAttributeData> customAttributes, Type declaredType, bool raw, out object? defaultValue)
+        {
+            var prioritizedAttributeData = PrioritizeCustomAttributesForDefaultValueResolution(customAttributes, declaredType);
+            if (prioritizedAttributeData != null)
+            {
+                Type attributeType = prioritizedAttributeData.AttributeType;
                 if (attributeType.IsSubclassOf(typeof(CustomConstantAttribute)))
                 {
                     if (raw)
                     {
-                        foreach (CustomAttributeNamedArgument namedArgument in cad.NamedArguments)
+                        foreach (CustomAttributeNamedArgument namedArgument in prioritizedAttributeData.NamedArguments)
                         {
                             if (namedArgument.MemberName.Equals("Value"))
                             {
@@ -226,7 +255,7 @@ namespace System.Reflection.Runtime.General
                     }
                     else
                     {
-                        CustomConstantAttribute customConstantAttribute = (CustomConstantAttribute)(cad.Instantiate());
+                        CustomConstantAttribute customConstantAttribute = (CustomConstantAttribute)(prioritizedAttributeData.Instantiate());
                         defaultValue = customConstantAttribute.Value;
                         return true;
                     }
@@ -235,7 +264,7 @@ namespace System.Reflection.Runtime.General
                 {
                     // We should really do a non-instanting check if "raw == false" but given that we don't support
                     // reflection-only loads, there isn't an observable difference.
-                    DecimalConstantAttribute decimalConstantAttribute = (DecimalConstantAttribute)(cad.Instantiate());
+                    DecimalConstantAttribute decimalConstantAttribute = (DecimalConstantAttribute)(prioritizedAttributeData.Instantiate());
                     defaultValue = decimalConstantAttribute.Value;
                     return true;
                 }

@@ -18,7 +18,7 @@ namespace System.Reflection.Runtime.General.NativeFormat
                 return true;
             }
 
-            if (Helpers.GetCustomAttributeDefaultValueIfAny(customAttributes, raw, out defaultValue))
+            if (Helpers.GetCustomAttributeDefaultValueIfAny(customAttributes, declaredType, raw, out defaultValue))
                 return true;
 
             defaultValue = null;
