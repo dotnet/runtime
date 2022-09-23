@@ -9,7 +9,7 @@
       <TargetsNet7    Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '7.0'))">true</TargetsNet7>
       <TargetsCurrent Condition="'$(TargetsNet8)' == 'true'">true</TargetsCurrent>
 
-      <-- override WorkloadDetectionWhen net7 == net8 -->
+      <!-- override WorkloadDetectionWhen net7 == net8 -->
       <WasmNativeWorkload7 Condition="'${PackageVersionNet7}' == '${PackageVersion}'">$(WasmNativeWorkload8)</WasmNativeWorkload7>
     </PropertyGroup>
 
