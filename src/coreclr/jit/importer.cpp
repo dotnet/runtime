@@ -3889,8 +3889,14 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 GenTree*  lclVar     = gtNewLclvNode(rawHandleSlot, TYP_I_IMPL);
                 GenTree*  lclVarAddr = gtNewOperNode(GT_ADDR, TYP_I_IMPL, lclVar);
                 var_types resultType = JITtype2varType(sig->retType);
-                retNode              = gtNewOperNode(GT_IND, resultType, lclVarAddr);
-
+                if (resultType == TYP_STRUCT)
+                {
+                    retNode = gtNewObjNode(sig->retTypeClass, lclVarAddr);
+                }
+                else
+                {
+                    retNode = gtNewIndir(resultType, lclVarAddr);
+                }
                 break;
             }
 
