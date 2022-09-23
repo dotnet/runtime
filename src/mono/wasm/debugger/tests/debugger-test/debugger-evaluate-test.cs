@@ -522,7 +522,7 @@ namespace DebuggerTests
             public int idx0;
             public int idx1;
 
-            // ToDo: add 2d indexing of following kind:
+            // ToDo: add 2d indexing - https://github.com/dotnet/runtime/issues/76062
             public string this[char key] => "res_" + key;
             public string this[bool key] => key.ToString();
             public bool this[string key] => key.Length > 3;

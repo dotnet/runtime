@@ -627,7 +627,7 @@ namespace DebuggerTests
            });
 
         [Fact]
-        public async Task EvaluateUserDefinedIndexingByNonIntConst() => await CheckInspectLocalsAtBreakpointSite(
+        public async Task EvaluateObjectIndexingByNonIntConst() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
@@ -644,15 +644,15 @@ namespace DebuggerTests
                     // ("f.indexedByStr[\"1\"]", TBool(true)) // keyNotFoundException
                     // ("f.indexedByStr[\"111\"]", TBool(false)), // keyNotFoundException
                     // ("f.indexedByStr[\"true\"]", TBool(true)), // keyNotFoundException
-                    ("f.indexedByChar[\'i\']", TString("I")), //TEST ME
-                    ("f.indexedByChar[\'5\']", TString("5")), //TEST ME
+                    ("f.indexedByChar[\'i\']", TString("I")),
+                    ("f.indexedByChar[\'5\']", TString("5")),
                     ("f.indexedByBool[true]", TString("TRUE")),
                     ("f.indexedByBool[false]", TString("FALSE"))
                 );
             });
 
         [Fact]
-        public async Task EvaluateUserDefinedIndexingByNonIntLocals() => await CheckInspectLocalsAtBreakpointSite(
+        public async Task EvaluateObjectByNonIntLocals() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 12, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
@@ -672,7 +672,7 @@ namespace DebuggerTests
             });
 
         [Fact]
-        public async Task EvaluateNestedUserDefinedIndexingByNonIntLocals() => await CheckInspectLocalsAtBreakpointSite(
+        public async Task EvaluateNestedObjectIndexingByNonIntLocals() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 12, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>

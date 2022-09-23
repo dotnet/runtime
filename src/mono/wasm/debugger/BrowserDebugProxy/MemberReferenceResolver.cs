@@ -449,10 +449,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                             case "object":
                                 if (multiDimensionalArray)
                                     throw new InvalidOperationException($"Cannot apply indexing with [,] to an object of type '{type}'");
-                                // can we use the get_Item for string as well? would be easier
+                                // ToDo: try to use the get_Item for string as well
                                 if (type == "string")
                                 {
-                                    // ToArray() does not exist on string
                                     var eaExpressionFormatted = elementAccessStrExpression.Replace('.', '_'); // instance_str
                                     variableDefinitions.Add(ExpressionEvaluator.ConvertJSToCSharpLocalVariableAssignment(eaExpressionFormatted, rootObject));
                                     var eaFormatted = elementAccessStr.Replace('.', '_'); // instance_str[1]
@@ -466,12 +465,12 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 // get_Item should not have an overload, but if user defined it, take the default one: with one param (key)
                                 int allowedParamCnt = 1;
                                 int toArrayId = methodIds[0];
+                                // ToDo: optimize the loop by choosing the right method at once without trying out them all
                                 for (int i = 0; i < methodIds.Length; i++)
                                 {
                                     MethodInfoWithDebugInformation methodInfo = await context.SdbAgent.GetMethodInfo(methodIds[i], token);
                                     ParameterInfo[] paramInfo = methodInfo.GetParametersInfo();
 
-                                    // how to choose the right method here when we have multiple with the same info? Try till succeeded?
                                     if (paramInfo.Length == allowedParamCnt)
                                     {
                                         try
