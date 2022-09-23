@@ -330,7 +330,7 @@ namespace System.Numerics
             where TOther : INumberBase<TOther>;
 #nullable restore
 
-        /// <summary>Tries to parses a string into a value.</summary>
+        /// <summary>Tries to parse a string into a value.</summary>
         /// <param name="s">The string to parse.</param>
         /// <param name="style">A bitwise combination of number styles that can be present in <paramref name="s" />.</param>
         /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="s" />.</param>
@@ -339,7 +339,7 @@ namespace System.Numerics
         /// <exception cref="ArgumentException"><paramref name="style" /> is not a supported <see cref="NumberStyles" /> value.</exception>
         static abstract bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out TSelf result);
 
-        /// <summary>Tries to parses a span of characters into a value.</summary>
+        /// <summary>Tries to parse a span of characters into a value.</summary>
         /// <param name="s">The span of characters to parse.</param>
         /// <param name="style">A bitwise combination of number styles that can be present in <paramref name="s" />.</param>
         /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="s" />.</param>

@@ -242,7 +242,7 @@ namespace System
             return nint_t.TryParse(s, out Unsafe.As<nint, nint_t>(ref result));
         }
 
-        /// <summary>Tries to parses a string into a value.</summary>
+        /// <summary>Tries to parse a string into a value.</summary>
         /// <param name="s">A read-only span of characters containing a number to convert.</param>
         /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="s" />.</param>
         /// <param name="result">When this method returns, contains the result of successfully parsing <paramref name="s" /> or an undefined value on failure.</param>
