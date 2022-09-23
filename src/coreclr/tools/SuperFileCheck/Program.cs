@@ -159,7 +159,7 @@ namespace SuperFileCheck
             var typeArity = methodDecl.TypeParameterList?.ChildNodes().Count();
             if (typeArity > 0)
             {
-                throw new SuperFileCheckException($"'{methodName}' has generic parameters which are not supported.");
+                methodName = $"{methodName}[*]";
             }
 
             return $"{methodName}(*)";
@@ -197,7 +197,7 @@ namespace SuperFileCheck
             var typeArity = typeDecl.TypeParameterList?.ChildNodes().Count();
             if (typeArity > 0)
             {
-                throw new SuperFileCheckException($"'{typeName}' has generic parameters which are not supported.");
+                typeName = $"{typeName}`{typeArity}[*]";
             }
 
             return typeName;
