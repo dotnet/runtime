@@ -3656,7 +3656,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 {
     bool mustExpand  = false;
     bool isSpecial   = false;
-    bool isIntrinsic = false;
+    const bool isIntrinsic = (methodFlags & CORINFO_FLG_INTRINSIC) != 0;
 
     NamedIntrinsic ni = lookupNamedIntrinsic(method);
 
@@ -9657,7 +9657,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
 #endif // DEBUG
 
-        bool isIntrinsic = (mflags & CORINFO_FLG_INTRINSIC) != 0;
+        const bool isIntrinsic = (mflags & CORINFO_FLG_INTRINSIC) != 0;
 
         // <NICE> Factor this into getCallInfo </NICE>
         bool isSpecialIntrinsic = false;
