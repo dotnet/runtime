@@ -6,11 +6,20 @@ using System.Collections.Generic;
 
 namespace Microsoft.Extensions.Primitives
 {
+    /// <summary>
+    /// Compares two <see cref="StringSegment"/>.
+    /// </summary>
     public class StringSegmentComparer : IComparer<StringSegment>, IEqualityComparer<StringSegment>
     {
+        /// <summary>
+        /// Gets a <see cref="StringSegmentComparer"/> object that performs a case-sensitive ordinal <see cref="StringSegment"/> comparison.
+        /// </summary>
         public static StringSegmentComparer Ordinal { get; }
             = new StringSegmentComparer(StringComparison.Ordinal, StringComparer.Ordinal);
 
+        /// <summary>
+        /// Gets a <see cref="StringSegmentComparer"/> object that performs a case-insensitive ordinal <see cref="StringSegment"/> comparison.
+        /// </summary>
         public static StringSegmentComparer OrdinalIgnoreCase { get; }
             = new StringSegmentComparer(StringComparison.OrdinalIgnoreCase, StringComparer.OrdinalIgnoreCase);
 
@@ -33,6 +42,12 @@ namespace Microsoft.Extensions.Primitives
             return StringSegment.Equals(x, y, Comparison);
         }
 
+        /// <summary>
+        /// Returns a hash code for this instance.
+        /// </summary>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.
+        /// </returns>
         public int GetHashCode(StringSegment obj)
         {
 #if NETCOREAPP || NETSTANDARD2_1
