@@ -187,28 +187,32 @@ void ThreadFunc2()
 * Singleton (using a lock)
 
 ```cs
-
-private readonly object _lock = new object();
-private MyClass _inst;
-
-public MyClass GetSingleton()
+public class Singleton
 {
-    if (_inst == null)
-    {
-        lock (_lock)
-        {
-            // taking a lock is an acquire, the read of _inst will happen after taking the lock
-            // releasing a lock is a release, if another thread assigned _inst, the write will be observed no later than the release of the lock
-            // thus if another thread initialized the singleton, the current thread is guaranteed to see that here.
+    private static readonly object _lock = new object();
+    private static Singleton _inst;
 
-            if (_inst == null)
+    private Singleton() { }
+
+    public static Singleton GetInstance()
+    {
+        if (_inst == null)
+        {
+            lock (_lock)
             {
-                _inst = new MyClass();
+                // taking a lock is an acquire, the read of _inst will happen after taking the lock
+                // releasing a lock is a release, if another thread assigned _inst, the write will be observed no later than the release of the lock
+                // thus if another thread initialized the _inst, the current thread is guaranteed to see that here.
+
+                if (_inst == null)
+                {
+                    _inst = new Singleton();
+                }
             }
         }
+
+        return _inst;
     }
-    
-    return _inst;
 }
 
 ```
@@ -217,24 +221,28 @@ public MyClass GetSingleton()
 * Singleton (using an interlocked operation)
 
 ```cs
-private MyClass _inst;
-
-public MyClass GetSingleton()
+public class Singleton
 {
-    MyClass localInst = _inst;
-    
-    if (localInst == null)
+    private static Singleton _inst;
+
+    private Singleton() { }
+
+    public static Singleton GetInstance()
     {
-        // unlike the example with the lock, we may construct multiple instances
-        // only one will "win" and become a unique singleton object
-        Interlocked.CompareExchange(ref _inst, new MyClass(), null);
-        
-        // since Interlocked.CompareExchange is a full fence,
-        // we cannot possibly read null or some other spurious instance that is not the singleton
-        localInst = _inst;
+        Singleton localInst = _inst;
+        if (localInst == null)
+        {
+            // unlike the example with the lock, we may construct multiple instances
+            // only one will "win" and become a unique singleton object
+            Interlocked.CompareExchange(ref _inst, new Singleton(), null);
+
+            // since Interlocked.CompareExchange is a full fence,
+            // we cannot possibly read null or some other spurious instance that is not the singleton
+            localInst = _inst;
+        }
+
+        return localInst;
     }
-    
-    return localInst;
 }
 ```
 
