@@ -7090,7 +7090,8 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 3;
 			MINT_IN_BREAK;
 
-		MINT_IN_CASE(MINT_MOV_OFF)
+		MINT_IN_CASE(MINT_MOV_SRC_OFF)
+		MINT_IN_CASE(MINT_MOV_DST_OFF)
 			// This opcode is resolved to a normal MINT_MOV when emitting compacted instructions
 			g_assert_not_reached ();
 			MINT_IN_BREAK;

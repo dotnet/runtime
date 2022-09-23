@@ -727,6 +727,33 @@ get_mov_for_type (int mt, gboolean needs_sext)
 	g_assert_not_reached ();
 }
 
+static int
+get_mint_type_size (int mt)
+{
+	switch (mt) {
+	case MINT_TYPE_I1:
+	case MINT_TYPE_U1:
+		return 1;
+	case MINT_TYPE_I2:
+	case MINT_TYPE_U2:
+		return 2;
+	case MINT_TYPE_I4:
+	case MINT_TYPE_R4:
+		return 4;
+	case MINT_TYPE_I8:
+	case MINT_TYPE_R8:
+		return 8;
+	case MINT_TYPE_O:
+#if SIZEOF_VOID_P == 8
+		return 8;
+#else
+		return 4;
+#endif
+	}
+	g_assert_not_reached ();
+}
+
+
 // Should be called when td->cbb branches to newbb and newbb can have a stack state
 static void
 fixup_newbb_stack_locals (TransformData *td, InterpBasicBlock *newbb)
@@ -6016,7 +6043,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 							size = 8;
 					}
 #endif
-					interp_add_ins (td, MINT_MOV_OFF);
+					interp_add_ins (td, MINT_MOV_SRC_OFF);
 					g_assert (m_class_is_valuetype (klass));
 					td->sp--;
 					interp_ins_set_sreg (td->last_ins, td->sp [0].local);
@@ -7900,13 +7927,17 @@ emit_compacted_instruction (TransformData *td, guint16* start_ip, InterpInst *in
 		// IL_SEQ_POINT shouldn't exist in the emitted code, we undo the ip position
 		if (opcode == MINT_IL_SEQ_POINT)
 			return ip - 1;
-	} else if (opcode == MINT_MOV_OFF) {
+	} else if (opcode == MINT_MOV_SRC_OFF || opcode == MINT_MOV_DST_OFF) {
 		guint16 foff = ins->data [0];
 		guint16 mt = ins->data [1];
 		guint16 fsize = ins->data [2];
 
 		int dest_off = get_local_offset (td, ins->dreg);
-		int src_off = get_local_offset (td, ins->sregs [0]) + foff;
+		int src_off = get_local_offset (td, ins->sregs [0]);
+		if (opcode == MINT_MOV_SRC_OFF)
+			src_off += foff;
+		else
+			dest_off += foff;
 		if (mt == MINT_TYPE_VT || fsize)
 			opcode = MINT_MOV_VT;
 		else
@@ -8726,19 +8757,38 @@ retry:
 				}
 			} else if (MINT_IS_BINOP_CONDITIONAL_BRANCH (opcode)) {
 				ins = interp_fold_binop_cond_br (td, bb, local_defs, ins);
-			} else if (MINT_IS_LDFLD (opcode) && ins->data [0] == 0) {
+			} else if (MINT_IS_LDFLD (opcode)) {
 				InterpInst *ldloca = local_defs [sregs [0]].ins;
-				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S &&
-						td->locals [ldloca->sregs [0]].mt == (ins->opcode - MINT_LDFLD_I1)) {
+				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S) {
 					int mt = ins->opcode - MINT_LDFLD_I1;
 					int local = ldloca->sregs [0];
-					// Replace LDLOCA + LDFLD with LDLOC, when the loading field represents
-					// the entire local. This is the case with loading the only field of an
-					// IntPtr. We don't handle value type loads.
-					ins->opcode = GINT_TO_OPCODE (get_mov_for_type (mt, TRUE));
-					// The dreg of the MOV is the same as the dreg of the LDFLD
+					// Allow ldloca instruction to be killed
 					local_ref_count [sregs [0]]--;
-					sregs [0] = local;
+					if (td->locals [local].mt == (ins->opcode - MINT_LDFLD_I1) && ins->data [0] == 0) {
+						// Replace LDLOCA + LDFLD with LDLOC, when the loading field represents
+						// the entire local. This is the case with loading the only field of an
+						// IntPtr. We don't handle value type loads.
+						ins->opcode = GINT_TO_OPCODE (get_mov_for_type (mt, TRUE));
+						// The dreg of the MOV is the same as the dreg of the LDFLD
+						sregs [0] = local;
+					} else {
+						// Add mov.src.off to load directly from the local var space without use of ldloca.
+						int foffset = ins->data [0];
+						guint16 ldsize = 0;
+						if (mt == MINT_TYPE_VT)
+							ldsize = ins->data [1];
+
+						// This loads just a part of the local valuetype
+						ins = interp_insert_ins (td, ins, MINT_MOV_SRC_OFF);
+						interp_ins_set_dreg (ins, ins->prev->dreg);
+						interp_ins_set_sreg (ins, local);
+						ins->data [0] = foffset;
+						ins->data [1] = mt;
+						if (mt == MINT_TYPE_VT)
+							ins->data [2] = ldsize;
+
+						interp_clear_ins (ins->prev);
+					}
 
 					if (td->verbose_level) {
 						g_print ("Replace ldloca/ldfld pair :\n\t");
@@ -8781,7 +8831,7 @@ retry:
 						needs_retry = TRUE;
 					} else {
 						// This loads just a part of the local valuetype
-						ins = interp_insert_ins (td, ins, MINT_MOV_OFF);
+						ins = interp_insert_ins (td, ins, MINT_MOV_SRC_OFF);
 						interp_ins_set_dreg (ins, ins->prev->dreg);
 						interp_ins_set_sreg (ins, local);
 						ins->data [0] = 0;
@@ -8795,19 +8845,38 @@ retry:
 						dump_interp_inst (ins);
 					}
 				}
-			} else if (MINT_IS_STFLD (opcode) && ins->data [0] == 0) {
+			} else if (MINT_IS_STFLD (opcode)) {
 				InterpInst *ldloca = local_defs [sregs [0]].ins;
-				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S &&
-						td->locals [ldloca->sregs [0]].mt == (ins->opcode - MINT_STFLD_I1)) {
+				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S) {
 					int mt = ins->opcode - MINT_STFLD_I1;
 					int local = ldloca->sregs [0];
-
-					ins->opcode = GINT_TO_OPCODE (get_mov_for_type (mt, FALSE));
-					// The sreg of the MOV is the same as the second sreg of the STFLD
 					local_ref_count [sregs [0]]--;
-					ins->dreg = local;
-					sregs [0] = sregs [1];
+					// Allow ldloca instruction to be killed
+					if (td->locals [local].mt == (ins->opcode - MINT_STFLD_I1) && ins->data [0] == 0) {
+						ins->opcode = GINT_TO_OPCODE (get_mov_for_type (mt, FALSE));
+						// The sreg of the MOV is the same as the second sreg of the STFLD
+						ins->dreg = local;
+						sregs [0] = sregs [1];
+					} else {
+						// Add mov.dst.off to store directly int the local var space without use of ldloca.
+						int foffset = ins->data [0];
+						guint16 vtsize = 0;
+						if (mt == MINT_TYPE_VT)
+							vtsize = ins->data [1];
+						else
+							vtsize = get_mint_type_size (mt);
 
+						// This stores just to part of the dest valuetype
+						ins = interp_insert_ins (td, ins, MINT_MOV_DST_OFF);
+						interp_ins_set_dreg (ins, local);
+						interp_ins_set_sreg (ins, sregs [1]);
+						ins->data [0] = foffset;
+						// Always use MINT_TYPE_VT so we end up doing a memmove with the type size
+						ins->data [1] = MINT_TYPE_VT;
+						ins->data [2] = vtsize;
+
+						interp_clear_ins (ins->prev);
+					}
 					if (td->verbose_level) {
 						g_print ("Replace ldloca/stfld pair (off %p) :\n\t", (void *)(uintptr_t) ldloca->il_offset);
 						dump_interp_inst (ins);
