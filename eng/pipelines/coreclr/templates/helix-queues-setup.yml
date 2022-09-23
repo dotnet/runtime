@@ -78,7 +78,7 @@ jobs:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - (Alpine.314.Amd64.Open)Ubuntu.1804.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-amd64-20210910135833-1848e19
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - (Alpine.314.Amd64)ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-amd64-20210910135833-1848e19
+        - (Alpine.314.Amd64)ubuntu.1804.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.14-helix-amd64-20210910135833-1848e19
 
     # Linux musl arm32
     - ${{ if eq(parameters.platform, 'Linux_musl_arm') }}:
@@ -110,7 +110,7 @@ jobs:
         - (Debian.10.Amd64)Ubuntu.1804.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-10-helix-amd64-20220810215022-f344011
         - (Debian.11.Amd64)Ubuntu.1804.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-11-helix-amd64-20220810215032-f344011
         - Ubuntu.1804.Amd64
-        - (Centos.8.Amd64)Ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-helix-20201229003624-c1bf759
+        - (Centos.8.Amd64)Ubuntu.1804.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-helix-20201229003624-c1bf759
         - (Fedora.34.Amd64)Ubuntu.1804.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-34-helix-20220809205730-e7e8d1c
         - RedHat.7.Amd64
 
