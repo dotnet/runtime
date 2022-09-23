@@ -9,7 +9,7 @@ using Xunit.Abstractions;
 namespace System.Xml.XmlSchemaValidatorApiTests
 {
     // ===================== ValidateElement =====================
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+
     public class TCValidateElement : CXmlSchemaValidatorTestCase
     {
         private ITestOutputHelper _output;

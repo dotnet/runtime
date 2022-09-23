@@ -8,7 +8,7 @@ using Xunit.Abstractions;
 namespace System.Xml.XmlSchemaValidatorApiTests
 {
     // ===================== ValidateText =====================
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+
     public class TCValidateText_String : CXmlSchemaValidatorTestCase
     {
         private ITestOutputHelper _output;

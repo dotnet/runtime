@@ -10,7 +10,7 @@ using Xunit.Abstractions;
 namespace System.Xml.XmlSchemaValidatorApiTests
 {
     // ===================== ValidateAttribute =====================
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+
     public class TCValidateAttribute : CXmlSchemaValidatorTestCase
     {
         private ITestOutputHelper _output;
@@ -198,7 +198,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
     }
 
     // ===================== GetUnspecifiedDefaultAttributes =====================
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+
     public class TCGetUnspecifiedDefaultAttributes : CXmlSchemaValidatorTestCase
     {
         public TCGetUnspecifiedDefaultAttributes(ITestOutputHelper output) : base(output)

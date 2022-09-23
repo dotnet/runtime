@@ -8,7 +8,7 @@ using Xunit.Abstractions;
 namespace System.Xml.XmlSchemaValidatorApiTests
 {
     // ===================== ValidateWhitespace =====================
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+
     public class TCValidateWhitespace_String : CXmlSchemaValidatorTestCase
     {
         private ITestOutputHelper _output;
