@@ -204,5 +204,14 @@
     <SwixPackageVersion>1.1.87-gba258badda</SwixPackageVersion>
     <WixPackageVersion>1.0.0-v3.14.0.5722</WixPackageVersion>
     <MonoWorkloadManifestVersion>6.0.0-preview.5.21275.7</MonoWorkloadManifestVersion>
+    <!-- JIT Tools -->
+    <runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.22431.4</runtimelinuxarm64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimelinuxx64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.22431.4</runtimelinuxx64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimelinuxmuslarm64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.22431.4</runtimelinuxmuslarm64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimelinuxmuslx64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.22431.4</runtimelinuxmuslx64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimewinarm64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.22431.4</runtimewinarm64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.22431.4</runtimewinx64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimeosx110arm64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.22431.4</runtimeosx110arm64MicrosoftNETCoreRuntimeJITToolsVersion>
+    <runtimeosx1012x64MicrosoftNETCoreRuntimeJITToolsVersion>1.0.0-alpha.1.22431.4</runtimeosx1012x64MicrosoftNETCoreRuntimeJITToolsVersion>
   </PropertyGroup>
 </Project>
