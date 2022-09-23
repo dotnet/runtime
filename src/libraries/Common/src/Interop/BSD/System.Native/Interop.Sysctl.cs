@@ -30,12 +30,13 @@ internal static partial class Interop
             }
         }
 
+
         private static unsafe void Sysctl(int* name, int name_len, ref byte* value, ref int len)
         {
-            nint bytesLength = len;
+            IntPtr bytesLength = (IntPtr)len;
             int ret = -1;
             bool autoSize = (value == null && len == 0);
-
+#pragma warning disable CA2020 // Prevent behavioral changes
             if (autoSize)
             {
                 // do one try to see how much data we need
@@ -60,11 +61,11 @@ internal static partial class Interop
                 }
                 if ((int)bytesLength >= int.MaxValue / 2)
                 {
-                    bytesLength = int.MaxValue;
+                    bytesLength = (IntPtr)int.MaxValue;
                 }
                 else
                 {
-                    bytesLength = (int)bytesLength * 2;
+                    bytesLength = (IntPtr)((int)bytesLength * 2);
                 }
                 value = (byte*)Marshal.AllocHGlobal(bytesLength);
                 ret = Sysctl(name, name_len, value, &bytesLength);
@@ -79,6 +80,7 @@ internal static partial class Interop
             }
 
             len = (int)bytesLength;
+#pragma warning restore CA2020
         }
     }
 }
