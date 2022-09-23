@@ -80,35 +80,25 @@ static bool ConvertToLowerCase(WCHAR* input, WCHAR* mask, int length)
 // Return Value:
 //    GenTreeHWIntrinsic node representing Vector128/256.Create(<cns>)
 //
-static GenTreeHWIntrinsic* CreateConstVector(Compiler* comp, var_types simdType, WCHAR* cns)
+static GenTreeVecCon* CreateConstVector(Compiler* comp, var_types simdType, WCHAR* cns)
 {
-    const CorInfoType baseType = CORINFO_TYPE_ULONG;
-
     // We can use e.g. UINT here to support SIMD for 32bit as well,
     // but it significantly complicates code, so 32bit support is left up-for-grabs
     assert(sizeof(ssize_t) == 8);
 
+    GenTreeVecCon* vecCon = comp->gtNewVconNode(simdType, CORINFO_TYPE_ULONG);
+
 #ifdef TARGET_XARCH
     if (simdType == TYP_SIMD32)
     {
-        ssize_t fourLongs[4];
-        memcpy(fourLongs, cns, sizeof(ssize_t) * 4);
-
-        GenTree* long1 = comp->gtNewIconNode(fourLongs[0], TYP_LONG);
-        GenTree* long2 = comp->gtNewIconNode(fourLongs[1], TYP_LONG);
-        GenTree* long3 = comp->gtNewIconNode(fourLongs[2], TYP_LONG);
-        GenTree* long4 = comp->gtNewIconNode(fourLongs[3], TYP_LONG);
-        return comp->gtNewSimdHWIntrinsicNode(simdType, long1, long2, long3, long4, NI_Vector256_Create, baseType, 32);
+        memcpy(&vecCon->gtSimd32Val, cns, 32);
+        return vecCon;
     }
 #endif // TARGET_XARCH
 
-    ssize_t twoLongs[2];
-    memcpy(twoLongs, cns, sizeof(ssize_t) * 2);
-
     assert(simdType == TYP_SIMD16);
-    GenTree* long1 = comp->gtNewIconNode(twoLongs[0], TYP_LONG);
-    GenTree* long2 = comp->gtNewIconNode(twoLongs[1], TYP_LONG);
-    return comp->gtNewSimdHWIntrinsicNode(simdType, long1, long2, NI_Vector128_Create, baseType, 16);
+    memcpy(&vecCon->gtSimd16Val, cns, 16);
+    return vecCon;
 }
 
 //------------------------------------------------------------------------

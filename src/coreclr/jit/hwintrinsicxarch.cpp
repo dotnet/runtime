@@ -903,12 +903,44 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_CreateScalarUnsafe:
         case NI_Vector256_CreateScalarUnsafe:
         {
+            bool     isConstant = true;
+            bool     isCreate   = (intrinsic == NI_Vector128_Create) || (intrinsic == NI_Vector256_Create);
             uint32_t simdLength = getSIMDVectorLength(simdSize, simdBaseType);
-            assert((sig->numArgs == 1) || (sig->numArgs == simdLength));
 
-            bool isConstant = true;
+            assert((sig->numArgs == 1) || (isCreate && ((sig->numArgs == 2) || (sig->numArgs == simdLength))));
 
-            if (varTypeIsFloating(simdBaseType))
+            if (varTypeIsStruct(impStackTop().val))
+            {
+                assert(isCreate && (sig->numArgs == 2));
+
+                if (intrinsic == NI_Vector128_Create)
+                {
+                    // xarch doesn't support Vector64<T>
+                    break;
+                }
+
+                op1 = impSIMDPopStack(TYP_SIMD16);
+                op2 = impSIMDPopStack(TYP_SIMD16);
+
+                if (!op1->IsVectorConst() || !op2->IsVectorConst())
+                {
+                    retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_Vector128_ToVector256Unsafe, simdBaseJitType,
+                                                       16);
+                    retNode = gtNewSimdWithUpperNode(retType, retNode, op2, simdBaseJitType, simdSize,
+                                                     /* isSimdAsHWIntrinsic */ false);
+                }
+                else
+                {
+                    GenTreeVecCon* vecCon = gtNewVconNode(retType, simdBaseJitType);
+
+                    vecCon->gtSimd32Val.v128[0] = op1->AsVecCon()->gtSimd16Val;
+                    vecCon->gtSimd32Val.v128[1] = op2->AsVecCon()->gtSimd16Val;
+
+                    retNode = vecCon;
+                }
+                break;
+            }
+            else if (varTypeIsFloating(simdBaseType))
             {
                 for (uint32_t index = 0; index < sig->numArgs; index++)
                 {
@@ -1231,7 +1263,6 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                 NamedIntrinsic moveMaskIntrinsic = NI_Illegal;
                 NamedIntrinsic shuffleIntrinsic  = NI_Illegal;
-                NamedIntrinsic createIntrinsic   = NI_Illegal;
 
                 switch (simdBaseType)
                 {
@@ -1249,52 +1280,50 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                         simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
 
                         assert((simdSize == 16) || (simdSize == 32));
-                        IntrinsicNodeBuilder nodeBuilder(getAllocator(CMK_ASTNode), simdSize);
+                        GenTreeVecCon* vecCon = gtNewVconNode(simdType, simdBaseJitType);
 
                         // We want to tightly pack the most significant byte of each short/ushort
                         // and then zero the tightly packed least significant bytes
 
-                        nodeBuilder.AddOperand(0x00, gtNewIconNode(0x01));
-                        nodeBuilder.AddOperand(0x01, gtNewIconNode(0x03));
-                        nodeBuilder.AddOperand(0x02, gtNewIconNode(0x05));
-                        nodeBuilder.AddOperand(0x03, gtNewIconNode(0x07));
-                        nodeBuilder.AddOperand(0x04, gtNewIconNode(0x09));
-                        nodeBuilder.AddOperand(0x05, gtNewIconNode(0x0B));
-                        nodeBuilder.AddOperand(0x06, gtNewIconNode(0x0D));
-                        nodeBuilder.AddOperand(0x07, gtNewIconNode(0x0F));
+                        vecCon->gtSimd16Val.u8[0x00] = 0x01;
+                        vecCon->gtSimd16Val.u8[0x01] = 0x03;
+                        vecCon->gtSimd16Val.u8[0x02] = 0x05;
+                        vecCon->gtSimd16Val.u8[0x03] = 0x07;
+                        vecCon->gtSimd16Val.u8[0x04] = 0x09;
+                        vecCon->gtSimd16Val.u8[0x05] = 0x0B;
+                        vecCon->gtSimd16Val.u8[0x06] = 0x0D;
+                        vecCon->gtSimd16Val.u8[0x07] = 0x0F;
 
                         for (unsigned i = 0x08; i < 0x10; i++)
                         {
                             // The most significant bit being set means zero the value
-                            nodeBuilder.AddOperand(i, gtNewIconNode(0x80));
+                            vecCon->gtSimd16Val.u8[i] = 0x80;
                         }
 
                         if (simdSize == 32)
                         {
                             // Vector256 works on 2x128-bit lanes, so repeat the same indices for the upper lane
 
-                            nodeBuilder.AddOperand(0x10, gtNewIconNode(0x01));
-                            nodeBuilder.AddOperand(0x11, gtNewIconNode(0x03));
-                            nodeBuilder.AddOperand(0x12, gtNewIconNode(0x05));
-                            nodeBuilder.AddOperand(0x13, gtNewIconNode(0x07));
-                            nodeBuilder.AddOperand(0x14, gtNewIconNode(0x09));
-                            nodeBuilder.AddOperand(0x15, gtNewIconNode(0x0B));
-                            nodeBuilder.AddOperand(0x16, gtNewIconNode(0x0D));
-                            nodeBuilder.AddOperand(0x17, gtNewIconNode(0x0F));
+                            vecCon->gtSimd32Val.u8[0x10] = 0x01;
+                            vecCon->gtSimd32Val.u8[0x11] = 0x03;
+                            vecCon->gtSimd32Val.u8[0x12] = 0x05;
+                            vecCon->gtSimd32Val.u8[0x13] = 0x07;
+                            vecCon->gtSimd32Val.u8[0x14] = 0x09;
+                            vecCon->gtSimd32Val.u8[0x15] = 0x0B;
+                            vecCon->gtSimd32Val.u8[0x16] = 0x0D;
+                            vecCon->gtSimd32Val.u8[0x17] = 0x0F;
 
                             for (unsigned i = 0x18; i < 0x20; i++)
                             {
                                 // The most significant bit being set means zero the value
-                                nodeBuilder.AddOperand(i, gtNewIconNode(0x80));
+                                vecCon->gtSimd32Val.u8[i] = 0x80;
                             }
 
-                            createIntrinsic   = NI_Vector256_Create;
                             shuffleIntrinsic  = NI_AVX2_Shuffle;
                             moveMaskIntrinsic = NI_AVX2_MoveMask;
                         }
                         else if (compOpportunisticallyDependsOn(InstructionSet_SSSE3))
                         {
-                            createIntrinsic   = NI_Vector128_Create;
                             shuffleIntrinsic  = NI_SSSE3_Shuffle;
                             moveMaskIntrinsic = NI_SSE2_MoveMask;
                         }
@@ -1303,9 +1332,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                             return nullptr;
                         }
 
-                        op2 = gtNewSimdHWIntrinsicNode(simdType, std::move(nodeBuilder), createIntrinsic,
-                                                       simdBaseJitType, simdSize);
-
+                        op2 = vecCon;
                         op1 = impSIMDPopStack(simdType);
                         op1 = gtNewSimdHWIntrinsicNode(simdType, op1, op2, shuffleIntrinsic, simdBaseJitType, simdSize);
 
