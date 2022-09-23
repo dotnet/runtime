@@ -18,6 +18,10 @@ namespace System.Text.Json.Serialization.Converters
         // Odd type codes are conveniently signed types (for enum backing types).
         private static readonly bool s_isSignedEnum = ((int)s_enumTypeCode % 2) == 1;
 
+        private static readonly char[] s_specialChars = { ',' };
+
+        private static readonly bool s_containsSpecialChar = ContainsSpecialChar();
+
         private const string ValueSeparator = ", ";
 
         private readonly EnumConverterOptions _converterOptions;
@@ -109,6 +113,13 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     return value;
                 }
+
+                // If enum contains special char, faile before pass bogus tokens into the naming policy.
+                if (s_containsSpecialChar)
+                {
+                    ThrowHelper.ThrowJsonException();
+                }
+
 #if NETCOREAPP
                 return ReadEnumUsingNamingPolicy(reader.GetString());
 #else
@@ -503,6 +514,28 @@ namespace System.Text.Json.Serialization.Converters
                 new string[] { ValueSeparator }, StringSplitOptions.None
 #endif
                 );
+        }
+
+        private static bool ContainsSpecialChar()
+        {
+#if NETCOREAPP
+            string[] names = Enum.GetNames<T>();
+#else
+            string[] names = Enum.GetNames(TypeToConvert);
+#endif
+
+            foreach (string name in names)
+            {
+                foreach (char specialChar in s_specialChars)
+                {
+                    if (name.Contains(specialChar))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
     }
 }
