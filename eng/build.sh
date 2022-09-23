@@ -64,8 +64,8 @@ usage()
   echo "Libraries settings:"
   echo "  --allconfigurations        Build packages for all build configurations."
   echo "  --coverage                 Collect code coverage when testing."
-  echo "  --framework (-f)           Build framework: net7.0 or net48."
-  echo "                             [Default: net7.0]"
+  echo "  --framework (-f)           Build framework: net8.0 or net48."
+  echo "                             [Default: net8.0]"
   echo "  --testnobuild              Skip building tests when invoking -test."
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all."
   echo ""
@@ -400,6 +400,12 @@ while [[ $# > 0 ]]; do
      -cross)
       crossBuild=1
       arguments="$arguments /p:CrossBuild=True"
+      shift 1
+      ;;
+
+     *crossbuild=true*)
+      crossBuild=1
+      extraargs="$extraargs $1"
       shift 1
       ;;
 

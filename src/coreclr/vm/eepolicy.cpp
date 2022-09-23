@@ -445,10 +445,12 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
                 failureType = EventReporter::ERT_ManagedFailFast;
             else if (exitCode == (UINT)COR_E_CODECONTRACTFAILED)
                 failureType = EventReporter::ERT_CodeContractFailed;
+            else if (exitCode == EXCEPTION_ACCESS_VIOLATION)
+                failureType = EventReporter::ERT_UnhandledException;
             EventReporter reporter(failureType);
             StackSString s(argExceptionString);
 
-            if ((exitCode == (UINT)COR_E_FAILFAST) || (exitCode == (UINT)COR_E_CODECONTRACTFAILED) || (exitCode == (UINT)CLR_E_GC_OOM))
+            if ((exitCode == (UINT)COR_E_FAILFAST) || (exitCode == (UINT)COR_E_CODECONTRACTFAILED) || (exitCode == (UINT)CLR_E_GC_OOM) || (exitCode == EXCEPTION_ACCESS_VIOLATION))
             {
                 if (pszMessage)
                 {
@@ -469,7 +471,7 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
                 InlineSString<80> ssMessage;
                 InlineSString<80> ssErrorFormat;
                 if(!ssErrorFormat.LoadResource(CCompRC::Optional, IDS_ER_UNMANAGEDFAILFASTMSG ))
-                    ssErrorFormat.Set(W("at IP 0x%x (0x%x) with exit code 0x%x."));
+                    ssErrorFormat.Set(W("at IP 0x%1 (0x%2) with exit code 0x%3."));
                 SmallStackSString addressString;
                 addressString.Printf(W("%p"), pExceptionInfo? (PVOID)pExceptionInfo->ExceptionRecord->ExceptionAddress : (PVOID)address);
 

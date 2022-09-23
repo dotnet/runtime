@@ -21,7 +21,6 @@
 #include "method.hpp"
 #include "runtimecallablewrapper.h"
 #include "excep.h"
-#include "typeparse.h"
 
 //
 // Declare the static field int the ManagedStdInterfaceMap class.

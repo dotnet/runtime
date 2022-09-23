@@ -74,7 +74,7 @@ static char* string_to_utf8_image_raw (MonoImage *image, MonoString *s, MonoErro
 #ifndef DISABLE_REFLECTION_EMIT
 static guint32 mono_image_get_sighelper_token (MonoDynamicImage *assembly, MonoReflectionSigHelperHandle helper, MonoError *error);
 static gboolean ensure_runtime_vtable (MonoClass *klass, MonoError  *error);
-static void reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilder *rmb, MonoReflectionDynamicMethod *mb);
+static void reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilder *rmb, MonoReflectionDynamicMethod *mb, MonoStringHandle name, guint32 attrs, guint32 call_conv);
 static gboolean reflection_setup_internal_class (MonoReflectionTypeBuilderHandle tb, MonoError *error);
 static gboolean reflection_init_generic_class (MonoReflectionTypeBuilderHandle tb, MonoError *error);
 static gboolean reflection_setup_class_hierarchy (GHashTable *unparented, MonoError *error);
@@ -589,7 +589,7 @@ mono_reflection_methodbuilder_from_ctor_builder (ReflectionMethodBuilder *rmb, M
 }
 
 static void
-reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilder *rmb, MonoReflectionDynamicMethod *mb)
+reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilder *rmb, MonoReflectionDynamicMethod *mb, MonoStringHandle name, guint32 attrs, guint32 call_conv)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -605,17 +605,17 @@ reflection_methodbuilder_from_dynamic_method (ReflectionMethodBuilder *rmb, Mono
 	rmb->generic_container = NULL;
 	rmb->opt_types = NULL;
 	rmb->pinfo = NULL;
-	rmb->attrs = mb->attrs;
+	rmb->attrs = attrs;
 	rmb->iattrs = 0;
-	rmb->call_conv = mb->call_conv;
+	rmb->call_conv = call_conv;
 	rmb->code = NULL;
 	rmb->type = (MonoObject *) mb->owner;
 	MONO_HANDLE_PIN (rmb->type);
-	rmb->name = mb->name;
+	rmb->name = MONO_HANDLE_RAW (name);
 	MONO_HANDLE_PIN (rmb->name);
 	rmb->table_idx = NULL;
 	rmb->init_locals = mb->init_locals;
-	rmb->skip_visibility = mb->skip_visibility;
+	rmb->skip_visibility = mb->skip_visibility | mb->restricted_skip_visibility;
 	rmb->return_modreq = NULL;
 	rmb->return_modopt = NULL;
 	rmb->param_modreq = NULL;
@@ -1839,7 +1839,7 @@ method_builder_to_signature (MonoImage *image, MonoReflectionMethodBuilderHandle
 }
 
 static MonoMethodSignature*
-dynamic_method_to_signature (MonoReflectionDynamicMethodHandle method, MonoError *error)
+dynamic_method_to_signature (MonoReflectionDynamicMethodHandle method, guint32 attrs, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
 	MonoMethodSignature *sig = NULL;
@@ -1849,7 +1849,7 @@ dynamic_method_to_signature (MonoReflectionDynamicMethodHandle method, MonoError
 	sig = parameters_to_signature (NULL, MONO_HANDLE_NEW_GET (MonoArray, method, parameters),
 		MONO_HANDLE_CAST (MonoArray, NULL_HANDLE), MONO_HANDLE_CAST (MonoArray, NULL_HANDLE), error);
 	goto_if_nok (error, leave);
-	sig->hasthis = MONO_HANDLE_GETVAL (method, attrs) & METHOD_ATTRIBUTE_STATIC? 0: 1;
+	sig->hasthis = attrs & METHOD_ATTRIBUTE_STATIC? 0: 1;
 	MonoReflectionTypeHandle rtype;
 	rtype = MONO_HANDLE_NEW_GET (MonoReflectionType, method, rtype);
 	if (!MONO_HANDLE_IS_NULL (rtype)) {
@@ -3935,7 +3935,7 @@ free_dynamic_method (void *dynamic_method)
 }
 
 static gboolean
-reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, MonoError *error)
+reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, MonoStringHandle name, guint32 attrs, guint32 call_conv, MonoError *error)
 {
 	/* We need to clear handles for rmb fields created in reflection_methodbuilder_from_dynamic_method */
 	HANDLE_FUNCTION_ENTER ();
@@ -3959,11 +3959,11 @@ reflection_create_dynamic_method (MonoReflectionDynamicMethodHandle ref_mb, Mono
 		mono_loader_unlock ();
 	}
 
-	sig = dynamic_method_to_signature (ref_mb, error);
+	sig = dynamic_method_to_signature (ref_mb, attrs, error);
 	goto_if_nok (error, exit_false);
 
 	mb = MONO_HANDLE_RAW (ref_mb); /* FIXME convert reflection_create_dynamic_method to use handles */
-	reflection_methodbuilder_from_dynamic_method (&rmb, mb);
+	reflection_methodbuilder_from_dynamic_method (&rmb, mb, name, attrs, call_conv);
 
 	/*
 	 * Resolve references.
@@ -4070,9 +4070,9 @@ exit:
 }
 
 void
-ves_icall_DynamicMethod_create_dynamic_method (MonoReflectionDynamicMethodHandle mb, MonoError *error)
+ves_icall_DynamicMethod_create_dynamic_method (MonoReflectionDynamicMethodHandle mb, MonoStringHandle name, guint32 attrs, guint32 call_conv, MonoError *error)
 {
-	(void) reflection_create_dynamic_method (mb, error);
+	(void) reflection_create_dynamic_method (mb, name, attrs, call_conv, error);
 }
 
 #endif /* DISABLE_REFLECTION_EMIT */
@@ -4385,7 +4385,7 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilderHandle tb, 
 }
 
 void
-ves_icall_DynamicMethod_create_dynamic_method (MonoReflectionDynamicMethodHandle mb, MonoError *error)
+ves_icall_DynamicMethod_create_dynamic_method (MonoReflectionDynamicMethodHandle mb, MonoStringHandle name, guint32 attrs, guint32 call_conv, MonoError *error)
 {
 	error_init (error);
 }
