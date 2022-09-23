@@ -3703,6 +3703,22 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 #ifdef FEATURE_HW_INTRINSICS
     if ((ni > NI_HW_INTRINSIC_START) && (ni < NI_HW_INTRINSIC_END))
     {
+        if (!isIntrinsic)
+        {
+#if defined(TARGET_XARCH)
+            if (ni < NI_Vector256_Xor)
+#elif defined(TARGET_ARM64)
+            if (ni < NI_Vector128_Xor)
+#else
+#error Unsupported platform
+#endif
+            {
+                // Several of the NI_Vector64/128/256 APIs do not have
+                // all overloads as intrinsic today so they will assert
+                return nullptr;
+            }
+        }
+
         GenTree* hwintrinsic = impHWIntrinsic(ni, clsHnd, method, sig, mustExpand);
 
         if (mustExpand && (hwintrinsic == nullptr))
