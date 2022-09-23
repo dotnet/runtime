@@ -18,7 +18,7 @@ internal sealed unsafe partial class MsQuicApi
 {
     private static readonly Version MinWindowsVersion = new Version(10, 0, 20145, 1000);
 
-    private static readonly Version MsQuicVersion = new Version(2, 1);
+    private static readonly Version MinMsQuicVersion = new Version(2, 1);
 
     private static readonly delegate* unmanaged[Cdecl]<uint, QUIC_API_TABLE**, int> MsQuicOpenVersion;
     private static readonly delegate* unmanaged[Cdecl]<QUIC_API_TABLE*, void> MsQuicClose;
@@ -51,8 +51,8 @@ internal sealed unsafe partial class MsQuicApi
         }
     }
 
-    private static readonly Lazy<MsQuicApi> _api = new Lazy<MsQuicApi>(AllocateMsQuicApi);
-    internal static MsQuicApi Api => _api.Value;
+    private static readonly Lazy<MsQuicApi> s_api = new Lazy<MsQuicApi>(AllocateMsQuicApi);
+    internal static MsQuicApi Api => s_api.Value;
 
     internal static bool IsQuicSupported { get; }
 
@@ -64,7 +64,7 @@ internal sealed unsafe partial class MsQuicApi
 #pragma warning disable CA1810 // Initialize all static fields in 'MsQuicApi' when those fields are declared and remove the explicit static constructor
     static MsQuicApi()
     {
-        if (!NativeLibrary.TryLoad($"{Interop.Libraries.MsQuic}.{MsQuicVersion.Major}", typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out IntPtr msQuicHandle) &&
+        if (!NativeLibrary.TryLoad($"{Interop.Libraries.MsQuic}.{MinMsQuicVersion.Major}", typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out IntPtr msQuicHandle) &&
             !NativeLibrary.TryLoad(Interop.Libraries.MsQuic, typeof(MsQuicApi).Assembly, DllImportSearchPath.AssemblyDirectory, out msQuicHandle))
         {
             // MsQuic library not loaded
@@ -83,20 +83,20 @@ internal sealed unsafe partial class MsQuicApi
         try
         {
             // Check version
-            int arraySize = 4;
-            uint* libVersion = stackalloc uint[arraySize];
-            uint size = (uint)arraySize * sizeof(uint);
+            const int ArraySize = 4;
+            uint* libVersion = stackalloc uint[ArraySize];
+            uint size = (uint)ArraySize * sizeof(uint);
             if (StatusFailed(apiTable->GetParam(null, QUIC_PARAM_GLOBAL_LIBRARY_VERSION, &size, libVersion)))
             {
                 return;
             }
 
             var version = new Version((int)libVersion[0], (int)libVersion[1], (int)libVersion[2], (int)libVersion[3]);
-            if (version < MsQuicVersion)
+            if (version < MinMsQuicVersion)
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    NetEventSource.Info(null, $"Incompatible MsQuic library version '{version}', expecting '{MsQuicVersion}'");
+                    NetEventSource.Info(null, $"Incompatible MsQuic library version '{version}', expecting at least '{MinMsQuicVersion}'");
                 }
                 return;
             }
@@ -151,7 +151,7 @@ internal sealed unsafe partial class MsQuicApi
         Debug.Assert(MsQuicOpenVersion != null);
 
         QUIC_API_TABLE* table = null;
-        openStatus = MsQuicOpenVersion((uint)MsQuicVersion.Major, &table);
+        openStatus = MsQuicOpenVersion((uint)MinMsQuicVersion.Major, &table);
         if (StatusFailed(openStatus))
         {
             if (NetEventSource.Log.IsEnabled())
