@@ -927,8 +927,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                 if (!op1->IsVectorConst() || !op2->IsVectorConst())
                 {
-                    retNode = gtNewSimdHWIntrinsicNode(retType, op1, NI_Vector128_ToVector256Unsafe, simdBaseJitType,
-                                                       16);
+                    retNode =
+                        gtNewSimdHWIntrinsicNode(retType, op1, NI_Vector128_ToVector256Unsafe, simdBaseJitType, 16);
                     retNode = gtNewSimdWithUpperNode(retType, retNode, op2, simdBaseJitType, simdSize,
                                                      /* isSimdAsHWIntrinsic */ false);
                 }

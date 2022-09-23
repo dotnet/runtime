@@ -993,8 +993,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 }
             }
 
-
-
             if (simdSize == 16)
             {
                 GenTreeVecCon* vecCon = gtNewVconNode(simdType, vectorCreateType);

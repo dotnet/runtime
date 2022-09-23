@@ -17093,7 +17093,7 @@ bool GenTreeVecCon::IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd32
             {
                 assert(argCnt == 2);
 
-                GenTree* op1     = node->Op(1);
+                GenTree* op1         = node->Op(1);
                 simd32_t simd32Lower = {};
 
                 if (!op1->OperIsHWIntrinsic() || !IsHWIntrinsicCreateConstant(op1->AsHWIntrinsic(), simd32Lower))
@@ -17101,7 +17101,7 @@ bool GenTreeVecCon::IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd32
                     return false;
                 }
 
-                GenTree* op2     = node->Op(2);
+                GenTree* op2         = node->Op(2);
                 simd32_t simd32Upper = {};
 
                 if (!op2->OperIsHWIntrinsic() || !IsHWIntrinsicCreateConstant(op2->AsHWIntrinsic(), simd32Lower))
@@ -17147,7 +17147,7 @@ bool GenTreeVecCon::IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd32
                 }
                 else
                 {
-                    //These intrinsics are meant to set the same value to every element
+                    // These intrinsics are meant to set the same value to every element
 
                     for (unsigned i = 1; i < simdSize / genTypeSize(simdBaseType); i++)
                     {
@@ -19653,8 +19653,8 @@ GenTree* Compiler::gtNewSimdBinOpNode(genTreeOps  op,
                     if (scalarOp != nullptr)
                     {
                         intrinsic = NI_AdvSimd_Arm64_MultiplyByScalar;
-                        *scalarOp = gtNewSimdCreateBroadcastNode(TYP_SIMD8, *scalarOp, simdBaseJitType, 8,
-                                                                 isSimdAsHWIntrinsic);
+                        *scalarOp =
+                            gtNewSimdCreateBroadcastNode(TYP_SIMD8, *scalarOp, simdBaseJitType, 8, isSimdAsHWIntrinsic);
                     }
                     else
                     {
@@ -20818,7 +20818,7 @@ GenTree* Compiler::gtNewSimdCreateBroadcastNode(
     // TODO-XARCH-CQ: It may be beneficial to emit the movq
     // instruction, which takes a 64-bit memory address and
     // works on 32-bit x86 systems.
-    assert (!varTypeIsLong(simdBaseType));
+    assert(!varTypeIsLong(simdBaseType));
 #endif // TARGET_X86
 
     if (simdSize == 32)
@@ -22796,7 +22796,7 @@ GenTree* Compiler::gtNewSimdWithElementNode(var_types   type,
             unreached();
     }
 
-    hwIntrinsicID = NI_AdvSimd_Insert;
+    hwIntrinsicID   = NI_AdvSimd_Insert;
 #else
 #error Unsupported platform
 #endif // !TARGET_XARCH && !TARGET_ARM64
