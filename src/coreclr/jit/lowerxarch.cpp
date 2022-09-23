@@ -893,7 +893,9 @@ void Lowering::LowerFusedMultiplyAdd(GenTreeHWIntrinsic* node)
 //
 GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    if (node->TypeGet() == TYP_SIMD12)
+    var_types simdType = node->TypeGet();
+
+    if (simdType == TYP_SIMD12)
     {
         // GT_HWINTRINSIC node requiring to produce TYP_SIMD12 in fact
         // produces a TYP_SIMD16 result
@@ -922,6 +924,24 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             // intrinsics that are not Vector*.Create
 
             return LowerHWIntrinsicCreate(node);
+        }
+
+        case NI_Vector128_CreateScalar:
+        case NI_Vector256_CreateScalar:
+        {
+            CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+            unsigned    simdSize        = node->GetSimdSize();
+
+            GenTree* zeroCon = comp->gtNewZeroConNode(simdType, simdBaseJitType);
+            BlockRange().InsertBefore(node, zeroCon);
+
+            GenTree* idxCon = comp->gtNewIconNode(0);
+            BlockRange().InsertAfter(zeroCon, idxCon);
+
+            intrinsicId = (simdSize == 16) ? NI_Vector128_WithElement : NI_Vector256_WithElement;
+            node->ResetHWIntrinsicId(intrinsicId, comp, zeroCon, idxCon, node->Op(1));
+
+            return LowerHWIntrinsicWithElement(node);
         }
 
         case NI_Vector128_Dot:

@@ -936,9 +936,10 @@ void Lowering::LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node)
 //
 GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    assert(node->TypeGet() != TYP_SIMD32);
+    var_types simdType = node->TypeGet();
+    assert(simdType != TYP_SIMD32);
 
-    if (node->TypeGet() == TYP_SIMD12)
+    if (simdType == TYP_SIMD12)
     {
         // GT_HWINTRINSIC node requiring to produce TYP_SIMD12 in fact
         // produces a TYP_SIMD16 result
@@ -958,6 +959,52 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             // the same intrinsic as when it came in.
 
             return LowerHWIntrinsicCreate(node);
+        }
+
+        case NI_Vector64_CreateScalar:
+        case NI_Vector128_CreateScalar:
+        {
+            CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+            var_types   simdBaseType    = node->GetSimdBaseType();
+            unsigned    simdSize        = node->GetSimdSize();
+
+            switch (simdBaseType)
+            {
+                case TYP_LONG:
+                case TYP_ULONG:
+                case TYP_DOUBLE:
+                {
+                    if (simdSize == 8)
+                    {
+                        node->ResetHWIntrinsicId(NI_Vector64_Create, comp, node->Op(1));
+                        return LowerHWIntrinsicCreate(node);
+                    }
+                    FALLTHROUGH;
+                }
+
+                case TYP_FLOAT:
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                case TYP_SHORT:
+                case TYP_USHORT:
+                case TYP_INT:
+                case TYP_UINT:
+                {
+                    GenTree* zeroCon = comp->gtNewZeroConNode(simdType, simdBaseJitType);
+                    BlockRange().InsertBefore(node, zeroCon);
+
+                    GenTree* idxCon = comp->gtNewIconNode(0);
+                    BlockRange().InsertAfter(zeroCon, idxCon);
+
+                    node->ResetHWIntrinsicId(NI_AdvSimd_Insert, comp, zeroCon, idxCon, node->Op(1));
+                    return LowerHWIntrinsic(node);
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
         }
 
         case NI_Vector64_Dot:

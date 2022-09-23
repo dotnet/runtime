@@ -17077,12 +17077,16 @@ bool GenTreeVecCon::IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd32
     switch (id)
     {
         case NI_Vector128_Create:
-#if defined(TARGET_XARCH)
+        case NI_Vector128_CreateScalar:
         case NI_Vector128_CreateScalarUnsafe:
+#if defined(TARGET_XARCH)
         case NI_Vector256_Create:
+        case NI_Vector256_CreateScalar:
         case NI_Vector256_CreateScalarUnsafe:
 #elif defined(TARGET_ARM64)
         case NI_Vector64_Create:
+        case NI_Vector64_CreateScalar:
+        case NI_Vector64_CreateScalarUnsafe:
 #endif
         {
             if (varTypeIsStruct(node->Op(1)))
@@ -17123,14 +17127,32 @@ bool GenTreeVecCon::IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd32
 #error Unsupported platform
 #endif
             }
-            else if ((argCnt == 1) && HandleArgForHWIntrinsicCreate(node->Op(1), 0, simd32Val, simdBaseType))
+            else if (argCnt == 1)
             {
-                // These intrinsics are meant to set the same value to every element.
-
-                // Now assign the rest of the arguments.
-                for (unsigned i = 1; i < simdSize / genTypeSize(simdBaseType); i++)
+                if (!HandleArgForHWIntrinsicCreate(node->Op(1), 0, simd32Val, simdBaseType))
                 {
-                    HandleArgForHWIntrinsicCreate(node->Op(1), i, simd32Val, simdBaseType);
+                    return false;
+                }
+
+#if defined(TARGET_XARCH)
+                if ((id == NI_Vector128_CreateScalar) || (id == NI_Vector256_CreateScalar))
+#elif defined(TARGET_ARM64)
+                if ((id == NI_Vector64_CreateScalar) || (id == NI_Vector128_CreateScalar))
+#else
+#error Unsupported platform
+#endif
+                {
+                    // These intrinsics have the upper elements all set to zero
+                    memset(&simd32Val, 0, simdSize - genTypeSize(simdBaseType));
+                }
+                else
+                {
+                    //These intrinsics are meant to set the same value to every element
+
+                    for (unsigned i = 1; i < simdSize / genTypeSize(simdBaseType); i++)
+                    {
+                        HandleArgForHWIntrinsicCreate(node->Op(1), i, simd32Val, simdBaseType);
+                    }
                 }
 
                 cnsArgCnt = 1;
