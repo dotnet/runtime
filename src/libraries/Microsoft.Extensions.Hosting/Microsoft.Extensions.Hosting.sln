@@ -75,6 +75,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Loggin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Generators.Roslyn4.0", "..\Microsoft.Extensions.Logging.Abstractions\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.0.csproj", "{5F6EF6F2-A742-445B-9418-682188F61130}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Generators.Roslyn4.4", "..\Microsoft.Extensions.Logging.Abstractions\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.4.csproj", "{3F732A69-1E48-4EA7-A40E-9C6C9332388E}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Abstractions", "..\Microsoft.Extensions.Logging.Abstractions\ref\Microsoft.Extensions.Logging.Abstractions.csproj", "{42E1BF94-6FE0-4017-9702-55913BD95EDE}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Abstractions", "..\Microsoft.Extensions.Logging.Abstractions\src\Microsoft.Extensions.Logging.Abstractions.csproj", "{8845E6FF-94B2-4994-A8F4-DF30844A2168}"
@@ -144,6 +146,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration.Roslyn3.11", "..\System.Text.Json\gen\System.Text.Json.SourceGeneration.Roslyn3.11.csproj", "{0A495D7B-44DE-4E59-8497-6CBF7C55CFA5}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration.Roslyn4.0", "..\System.Text.Json\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj", "{B69B7D59-6E7D-43FC-B83F-AA481B677B06}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json.SourceGeneration.Roslyn4.4", "..\System.Text.Json\gen\System.Text.Json.SourceGeneration.Roslyn4.4.csproj", "{4F7612BF-0AFB-4AC5-952F-7D12D99FA357}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Json", "..\System.Text.Json\ref\System.Text.Json.csproj", "{1E3D79D4-51D6-46C6-BF0F-DF51A47C5952}"
 EndProject
@@ -315,6 +319,10 @@ Global
 		{5F6EF6F2-A742-445B-9418-682188F61130}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5F6EF6F2-A742-445B-9418-682188F61130}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5F6EF6F2-A742-445B-9418-682188F61130}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3F732A69-1E48-4EA7-A40E-9C6C9332388E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F732A69-1E48-4EA7-A40E-9C6C9332388E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F732A69-1E48-4EA7-A40E-9C6C9332388E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F732A69-1E48-4EA7-A40E-9C6C9332388E}.Release|Any CPU.Build.0 = Release|Any CPU
 		{42E1BF94-6FE0-4017-9702-55913BD95EDE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{42E1BF94-6FE0-4017-9702-55913BD95EDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{42E1BF94-6FE0-4017-9702-55913BD95EDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -455,6 +463,10 @@ Global
 		{B69B7D59-6E7D-43FC-B83F-AA481B677B06}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B69B7D59-6E7D-43FC-B83F-AA481B677B06}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B69B7D59-6E7D-43FC-B83F-AA481B677B06}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4F7612BF-0AFB-4AC5-952F-7D12D99FA357}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4F7612BF-0AFB-4AC5-952F-7D12D99FA357}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4F7612BF-0AFB-4AC5-952F-7D12D99FA357}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4F7612BF-0AFB-4AC5-952F-7D12D99FA357}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1E3D79D4-51D6-46C6-BF0F-DF51A47C5952}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1E3D79D4-51D6-46C6-BF0F-DF51A47C5952}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1E3D79D4-51D6-46C6-BF0F-DF51A47C5952}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -539,10 +551,12 @@ Global
 		{0813853E-8C78-429A-B01A-3FB2EF1898F8} = {59A29BF0-B76B-41F8-A733-E2A0847AB992}
 		{1B235247-6666-4B62-95A4-AC043626FDEA} = {A9A8D649-4C09-4FD1-9837-EE7B9D902253}
 		{5F6EF6F2-A742-445B-9418-682188F61130} = {A9A8D649-4C09-4FD1-9837-EE7B9D902253}
+		{3F732A69-1E48-4EA7-A40E-9C6C9332388E} = {A9A8D649-4C09-4FD1-9837-EE7B9D902253}
 		{C00722C2-E56B-424F-9216-FA6A91788986} = {A9A8D649-4C09-4FD1-9837-EE7B9D902253}
 		{90DD4D77-E3DC-456E-A27F-F13DA6194481} = {A9A8D649-4C09-4FD1-9837-EE7B9D902253}
 		{0A495D7B-44DE-4E59-8497-6CBF7C55CFA5} = {A9A8D649-4C09-4FD1-9837-EE7B9D902253}
 		{B69B7D59-6E7D-43FC-B83F-AA481B677B06} = {A9A8D649-4C09-4FD1-9837-EE7B9D902253}
+		{4F7612BF-0AFB-4AC5-952F-7D12D99FA357} = {A9A8D649-4C09-4FD1-9837-EE7B9D902253}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {971198CC-ACB9-4718-9024-42A87E02E503}

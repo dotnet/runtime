@@ -32,8 +32,7 @@ steps:
       curl -o NuGet.config 'https://raw.githubusercontent.com/dotnet/maui/b3747563c1fe5b6321ca3bc852ea6a998f91ae9a/NuGet.config'
       curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
       chmod -R a+rx .
-      # TODO: Change ga back to daily once daily version workloads are fixed
-      ./dotnet-install.sh --channel 6.0.4xx --quality ga --install-dir .
+      ./dotnet-install.sh --channel 6.0 --quality daily --install-dir .
       ./dotnet --info
       ./dotnet workload install maui --from-rollback-file https://aka.ms/dotnet/maui/net6.0.json --configfile NuGet.config
     displayName: Install MAUI workload

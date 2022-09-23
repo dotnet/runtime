@@ -478,8 +478,9 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         assert(vnStore->IsVNConstant(vnLibNorm));
 
         // We don't share small offset constants when they require a reloc
+        // Also, we don't share non-null const gc handles
         //
-        if (!tree->AsIntConCommon()->ImmedValNeedsReloc(this))
+        if (!tree->AsIntConCommon()->ImmedValNeedsReloc(this) && ((tree->IsIntegralConst(0)) || !varTypeIsGC(tree)))
         {
             // Here we make constants that have the same upper bits use the same key
             //
@@ -811,7 +812,7 @@ bool Compiler::optValnumCSE_Locate()
                     if (!enableConstCSE &&
                         // Unconditionally allow these constant handles to be CSE'd
                         !tree->IsIconHandle(GTF_ICON_STATIC_HDL) && !tree->IsIconHandle(GTF_ICON_CLASS_HDL) &&
-                        !tree->IsIconHandle(GTF_ICON_STR_HDL))
+                        !tree->IsIconHandle(GTF_ICON_STR_HDL) && !tree->IsIconHandle(GTF_ICON_OBJ_HDL))
                     {
                         continue;
                     }

@@ -8756,18 +8756,6 @@ void emitter::emitDispAddrMode(instrDesc* id, bool noDetail)
 
     printf("]");
 
-// pretty print string if it looks like one
-#ifdef DEBUG
-    if ((id->idGCref() == GCT_GCREF) && (id->idIns() == INS_mov) && (id->idAddr()->iiaAddrMode.amBaseReg == REG_NA))
-    {
-        const WCHAR* str = emitComp->eeGetCPString(disp);
-        if (str != nullptr)
-        {
-            printf("      '%S'", str);
-        }
-    }
-#endif
-
     if (jdsc && !noDetail)
     {
         unsigned     cnt = (jdsc->dsSize - 1) / TARGET_POINTER_SIZE;

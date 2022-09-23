@@ -698,9 +698,6 @@ namespace System.Xml
         [MemberNotNull(nameof(_xmlnsAttributes))]
         private void AddXmlnsAttribute(ref XmlnsAttribute xmlnsAttribute)
         {
-            //            Console.WriteLine("{0}={1}", Encoding.UTF8.GetString(xmlnsBuffer, xmlnsAttribute.prefixOffset, xmlnsAttribute.prefixLength),
-            //                                Encoding.UTF8.GetString(xmlnsBuffer, xmlnsAttribute.nsOffset, xmlnsAttribute.nsLength));
-
             if (_xmlnsAttributes == null)
             {
                 _xmlnsAttributes = new XmlnsAttribute[4];
@@ -856,8 +853,6 @@ namespace System.Xml
 
         private static int Compare(byte[] buffer1, int offset1, int length1, byte[] buffer2, int offset2, int length2)
         {
-            //            Console.WriteLine("Compare: \"{0}\", \"{1}\"", Encoding.UTF8.GetString(sourceBuffer, offset1, length1), Encoding.UTF8.GetString(sourceBuffer, offset2, length2));
-
             int length = Math.Min(length1, length2);
 
             int s = 0;
@@ -876,8 +871,6 @@ namespace System.Xml
 
         private static bool Equals(byte[] buffer1, int offset1, int length1, byte[] buffer2, int offset2, int length2)
         {
-            //            Console.WriteLine("Equals: \"{0}\", \"{1}\"", Encoding.UTF8.GetString(buffer1, offset1, length1), Encoding.UTF8.GetString(buffer2, offset2, length2));
-
             if (length1 != length2)
                 return false;
 

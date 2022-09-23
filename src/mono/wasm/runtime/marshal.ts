@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { js_owned_gc_handle_symbol, teardown_managed_proxy } from "./gc-handles";
-import { Module } from "./imports";
+import { Module, runtimeHelpers } from "./imports";
 import { getF32, getF64, getI16, getI32, getI64Big, getU16, getU32, getU8, setF32, setF64, setI16, setI32, setI64Big, setU16, setU32, setU8 } from "./memory";
 import { mono_wasm_new_external_root } from "./roots";
 import { mono_assert, GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerArguments, JSFunctionSignature, JSMarshalerType, JSMarshalerArgument, MarshalerToJs, MarshalerToCs, WasmRoot } from "./types";
@@ -317,13 +317,31 @@ export class ManagedObject implements IDisposable {
 }
 
 export class ManagedError extends Error implements IDisposable {
+    private superStack: any;
     constructor(message: string) {
         super(message);
+        this.superStack = Object.getOwnPropertyDescriptor(this, "stack"); // this works on Chrome
+        Object.defineProperty(this, "stack", {
+            get: this.getManageStack,
+        });
     }
 
-    get stack(): string | undefined {
-        //todo implement lazy managed stack strace from  this[js_owned_gc_handle_symbol]!
-        return super.stack;
+    getSuperStack() {
+        if (this.superStack) {
+            return this.superStack.value;
+        }
+        return super.stack; // this works on FF
+    }
+
+    getManageStack() {
+        const gc_handle = (<any>this)[js_owned_gc_handle_symbol];
+        if (gc_handle) {
+            const managed_stack = runtimeHelpers.javaScriptExports.get_managed_stack_trace(gc_handle);
+            if (managed_stack) {
+                return managed_stack + "\n" + this.getSuperStack();
+            }
+        }
+        return this.getSuperStack();
     }
 
     dispose(): void {
@@ -332,10 +350,6 @@ export class ManagedError extends Error implements IDisposable {
 
     get isDisposed(): boolean {
         return (<any>this)[js_owned_gc_handle_symbol] === GCHandleNull;
-    }
-
-    toString(): string {
-        return `ManagedError(gc_handle: ${(<any>this)[js_owned_gc_handle_symbol]})`;
     }
 }
 

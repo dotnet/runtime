@@ -74,15 +74,9 @@ PhaseStatus Compiler::optRedundantBranches()
         }
     };
 
+    optReachableBitVecTraits = nullptr;
     OptRedundantBranchesDomTreeVisitor visitor(this);
     visitor.WalkTree();
-
-    // Reset visited flags, in case we set any.
-    //
-    for (BasicBlock* const block : Blocks())
-    {
-        block->bbFlags &= ~BBF_VISITED;
-    }
 
 #if DEBUG
     if (verbose && visitor.madeChanges)
@@ -143,7 +137,8 @@ struct RelopImplicationRule
 //
 // clang-format off
 //
-#define V(x) (VNFunc)GT_##x
+#define V(x) (VNFunc)GT_ ## x
+#define U(x) VNF_ ## x ## _UN
 
 static const RelopImplicationRule s_implicationRules[] =
 {
@@ -151,13 +146,17 @@ static const RelopImplicationRule s_implicationRules[] =
     {V(EQ),  true, false, V(GE), false},
     {V(EQ),  true, false, V(LE), false},
     {V(EQ),  true, false, V(GT),  true},
+    {V(EQ),  true, false, U(GT),  true},
     {V(EQ),  true, false, V(LT),  true},
+    {V(EQ),  true, false, U(LT),  true},
 
     // NE
     {V(NE), false,  true, V(GE),  true},
     {V(NE), false,  true, V(LE),  true},
     {V(NE), false,  true, V(GT), false},
+    {V(NE), false,  true, U(GT), false},
     {V(NE), false,  true, V(LT), false},
+    {V(NE), false,  true, U(LT), false},
 
     // LE
     {V(LE), false,  true, V(EQ), false},
@@ -165,11 +164,23 @@ static const RelopImplicationRule s_implicationRules[] =
     {V(LE), false,  true, V(GE),  true},
     {V(LE), false,  true, V(LT), false},
 
+    // LE_UN
+    {U(LE), false,  true, V(EQ), false},
+    {U(LE), false,  true, V(NE),  true},
+    {U(LE), false,  true, U(GE),  true},
+    {U(LE), false,  true, U(LT), false},
+
     // GT
     {V(GT),  true, false, V(EQ),  true},
     {V(GT),  true, false, V(NE), false},
     {V(GT),  true, false, V(GE), false},
     {V(GT),  true, false, V(LT),  true},
+
+    // GT_UN
+    {U(GT),  true, false, V(EQ),  true},
+    {U(GT),  true, false, V(NE), false},
+    {U(GT),  true, false, U(GE), false},
+    {U(GT),  true, false, U(LT),  true},
 
     // GE
     {V(GE), false,  true, V(EQ), false},
@@ -177,11 +188,23 @@ static const RelopImplicationRule s_implicationRules[] =
     {V(GE), false,  true, V(LE),  true},
     {V(GE), false,  true, V(GT), false},
 
+    // GE_UN
+    {U(GE), false,  true, V(EQ), false},
+    {U(GE), false,  true, V(NE),  true},
+    {U(GE), false,  true, U(LE),  true},
+    {U(GE), false,  true, U(GT), false},
+
     // LT
     {V(LT),  true, false, V(EQ),  true},
     {V(LT),  true, false, V(NE), false},
     {V(LT),  true, false, V(LE), false},
     {V(LT),  true, false, V(GT),  true},
+
+    // LT_UN
+    {U(LT),  true, false, V(EQ),  true},
+    {U(LT),  true, false, V(NE), false},
+    {U(LT),  true, false, U(LE), false},
+    {U(LT),  true, false, U(GT),  true},
 };
 // clang-format on
 
@@ -237,17 +260,15 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
     // VNs are not directly related. See if dominating
     // compare encompasses a related VN.
     //
-    VNFuncApp funcApp;
-    if (!vnStore->GetVNFunc(rii->domCmpNormVN, &funcApp))
+    VNFuncApp domApp;
+    if (!vnStore->GetVNFunc(rii->domCmpNormVN, &domApp))
     {
         return;
     }
 
-    genTreeOps const oper = genTreeOps(funcApp.m_func);
-
     // Exclude floating point relops.
     //
-    if (varTypeIsFloating(vnStore->TypeOfVN(funcApp.m_args[0])))
+    if (varTypeIsFloating(vnStore->TypeOfVN(domApp.m_args[0])))
     {
         return;
     }
@@ -261,30 +282,29 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
     const bool inRange = true;
 #endif
 
-    // Dominating compare has the form R(x,y)
-    // See if tree compare has the form R*(x,y) or R*(y,x) where we can infer R* from R
+    // If the dominating compare has the form R(x,y), see if tree compare has the
+    // form R*(x,y) or R*(y,x) where we can infer R* from R.
     //
-    // Could also extend to the unsigned VN relops.
-    //
-    VNFuncApp treeApp;
-    if (inRange && GenTree::OperIsCompare(oper) && vnStore->GetVNFunc(rii->treeNormVN, &treeApp))
+    VNFunc const domFunc = domApp.m_func;
+    VNFuncApp    treeApp;
+    if (inRange && ValueNumStore::VNFuncIsComparison(domFunc) && vnStore->GetVNFunc(rii->treeNormVN, &treeApp))
     {
-        genTreeOps const treeOper = genTreeOps(treeApp.m_func);
-        genTreeOps       domOper  = oper;
-
-        if (((treeApp.m_args[0] == funcApp.m_args[0]) && (treeApp.m_args[1] == funcApp.m_args[1])) ||
-            ((treeApp.m_args[0] == funcApp.m_args[1]) && (treeApp.m_args[1] == funcApp.m_args[0])))
+        if (((treeApp.m_args[0] == domApp.m_args[0]) && (treeApp.m_args[1] == domApp.m_args[1])) ||
+            ((treeApp.m_args[0] == domApp.m_args[1]) && (treeApp.m_args[1] == domApp.m_args[0])))
         {
-            const bool swapped = (treeApp.m_args[0] == funcApp.m_args[1]);
+            const bool swapped = (treeApp.m_args[0] == domApp.m_args[1]);
+
+            VNFunc const treeFunc = treeApp.m_func;
+            VNFunc       domFunc1 = domFunc;
 
             if (swapped)
             {
-                domOper = GenTree::SwapRelop(domOper);
+                domFunc1 = ValueNumStore::SwapRelop(domFunc);
             }
 
             for (const RelopImplicationRule& rule : s_implicationRules)
             {
-                if ((rule.domRelop == (VNFunc)domOper) && (rule.treeRelop == (VNFunc)treeOper))
+                if ((rule.domRelop == domFunc1) && (rule.treeRelop == treeFunc))
                 {
                     rii->canInfer          = true;
                     rii->vnRelation        = ValueNumStore::VN_RELATION_KIND::VRK_Inferred;
@@ -292,8 +312,8 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
                     rii->canInferFromFalse = rule.canInferFromFalse;
                     rii->reverseSense      = rule.reverse;
 
-                    JITDUMP("Can infer %s from [%s] %s\n", GenTree::OpName(treeOper),
-                            rii->canInferFromTrue ? "true" : "false", GenTree::OpName(oper));
+                    JITDUMP("Can infer %s from [%s] dominating %s\n", ValueNumStore::VNFuncName(treeFunc),
+                            rii->canInferFromTrue ? "true" : "false", ValueNumStore::VNFuncName(domFunc));
                     return;
                 }
             }
@@ -305,17 +325,18 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
     //
     // Look for {EQ,NE}({AND,OR,NOT}, 0)
     //
+    genTreeOps const oper = genTreeOps(domFunc);
     if (!GenTree::StaticOperIs(oper, GT_EQ, GT_NE))
     {
         return;
     }
 
-    if (funcApp.m_args[1] != vnStore->VNZeroForType(TYP_INT))
+    if (domApp.m_args[1] != vnStore->VNZeroForType(TYP_INT))
     {
         return;
     }
 
-    const ValueNum predVN = funcApp.m_args[0];
+    const ValueNum predVN = domApp.m_args[0];
     VNFuncApp      predFuncApp;
     if (!vnStore->GetVNFunc(predVN, &predFuncApp))
     {
@@ -1566,9 +1587,15 @@ bool Compiler::optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlo
         return true;
     }
 
-    for (BasicBlock* const block : Blocks())
+    if (optReachableBitVecTraits == nullptr)
     {
-        block->bbFlags &= ~BBF_VISITED;
+        optReachableBitVecTraits = new (this, CMK_Reachability) BitVecTraits(fgBBNumMax + 1, this);
+        optReachableBitVec       = BitVecOps::MakeEmpty(optReachableBitVecTraits);
+    }
+    else
+    {
+        assert(BitVecTraits::GetSize(optReachableBitVecTraits) == fgBBNumMax + 1);
+        BitVecOps::ClearD(optReachableBitVecTraits, optReachableBitVec);
     }
 
     ArrayStack<BasicBlock*> stack(getAllocator(CMK_Reachability));
@@ -1577,7 +1604,6 @@ bool Compiler::optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlo
     while (!stack.Empty())
     {
         BasicBlock* const nextBlock = stack.Pop();
-        nextBlock->bbFlags |= BBF_VISITED;
         assert(nextBlock != toBlock);
 
         if (nextBlock == excludedBlock)
@@ -1592,10 +1618,12 @@ bool Compiler::optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlo
                 return true;
             }
 
-            if ((succ->bbFlags & BBF_VISITED) != 0)
+            if (BitVecOps::IsMember(optReachableBitVecTraits, optReachableBitVec, succ->bbNum))
             {
                 continue;
             }
+
+            BitVecOps::AddElemD(optReachableBitVecTraits, optReachableBitVec, succ->bbNum);
 
             stack.Push(succ);
         }

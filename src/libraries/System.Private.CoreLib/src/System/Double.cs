@@ -1563,7 +1563,7 @@ namespace System
                     else
                     {
                         // x or y is insignificant compared to the other
-                        result = x + y;
+                        result = ax + ay;
                     }
                 }
             }
