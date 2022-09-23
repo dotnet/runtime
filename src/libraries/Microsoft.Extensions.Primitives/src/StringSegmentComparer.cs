@@ -43,9 +43,9 @@ namespace Microsoft.Extensions.Primitives
         }
 
         /// <summary>
-        /// Returns a hash code for a <see cref="StringSegment"/>.
+        /// Returns a hash code for a <see cref="StringSegment"/> object.
         /// </summary>
-        /// <param name="obj">The <see cref="StringSegment"/> to get a hash code from.</param>
+        /// <param name="obj">The <see cref="StringSegment"/> to get a hash code for.</param>
         /// <returns>A hash code for a <see cref="StringSegment"/>, suitable for use in hashing algorithms and data structures like a hash table.</returns>
         public int GetHashCode(StringSegment obj)
         {
