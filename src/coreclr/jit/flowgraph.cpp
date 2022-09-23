@@ -3200,6 +3200,12 @@ BasicBlock* Compiler::fgGetDomSpeculatively(const BasicBlock* block)
             }
             lastReachablePred = predBlock;
         }
+        else if (predBlock == block->bbIDom)
+        {
+            // IDom is unreachable, so assume this block is too.
+            //
+            return nullptr;
+        }
     }
 
     return lastReachablePred == nullptr ? block->bbIDom : lastReachablePred;
