@@ -1327,13 +1327,11 @@ typedef struct {
 typedef struct {
 	MonoObject object;
 	MonoMethod *mhandle;
-	MonoString *name;
 	MonoReflectionType *rtype;
 	MonoArray *parameters;
-	guint32 attrs;
-	guint32 call_conv;
 	MonoReflectionModule *module;
 	MonoBoolean skip_visibility;
+	MonoBoolean restricted_skip_visibility;
 	MonoBoolean init_locals;
 	MonoReflectionILGen *ilgen;
 	gint32 nrefs;

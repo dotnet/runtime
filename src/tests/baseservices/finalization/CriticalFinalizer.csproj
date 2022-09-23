@@ -3,6 +3,6 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="critical_finalization.cs" />
+    <Compile Include="CriticalFinalizer.cs" />
   </ItemGroup>
 </Project>

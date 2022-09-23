@@ -92,7 +92,7 @@ SPTR_IMPL(SystemDomain, SystemDomain, m_pSystemDomain);
 #ifndef DACCESS_COMPILE
 
 // Base Domain Statics
-CrstStatic          BaseDomain::m_SpecialStaticsCrst;
+CrstStatic          BaseDomain::m_MethodTableExposedClassObjectCrst;
 
 int                 BaseDomain::m_iNumberOfProcessors = 0;
 
@@ -556,7 +556,7 @@ OBJECTHANDLE ThreadStaticHandleTable::AllocateHandles(DWORD nRequested)
 //*****************************************************************************
 void BaseDomain::Attach()
 {
-    m_SpecialStaticsCrst.Init(CrstSpecialStatics);
+    m_MethodTableExposedClassObjectCrst.Init(CrstMethodTableExposedObject);
 }
 
 BaseDomain::BaseDomain()
