@@ -134,13 +134,18 @@ namespace System.Xml.XmlSchemaValidatorApiTests
                     {
                         _output.WriteLine(e2.ToString());
                     }
+                    catch (PlatformNotSupportedException e3)
+                    {
+                        // NativeAOT doesn't support assembly loading
+                        _output.WriteLine(e3.ToString());
+                    }
                 }
             }
             catch (Exception e)
             {
                 _output.WriteLine("Exception: " + e.Message);
                 _output.WriteLine("Stack: " + e.StackTrace);
-                throw new VerifyException("Error while loading assembly");
+                throw new VerifyException("Error while loading assembly", e);
             }
 
             string[] resArray;
@@ -394,6 +399,10 @@ namespace System.Xml.XmlSchemaValidatorApiTests
     {
         public VerifyException(string msg)
             : base(msg)
+        { }
+
+        public VerifyException(string msg, Exception innerException)
+            : base(msg, innerException)
         { }
     }
 }
