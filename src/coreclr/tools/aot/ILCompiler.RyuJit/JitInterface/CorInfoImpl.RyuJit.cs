@@ -2204,17 +2204,16 @@ namespace Internal.JitInterface
             return index;
         }
 
-#pragma warning disable CA1822 // Mark members as static
         private CORINFO_CLASS_STRUCT_* getObjectType(void* objPtr)
-#pragma warning restore CA1822 // Mark members as static
         {
-            // only strings are passed here for now
             object obj = HandleToObject((IntPtr)objPtr);
-            if (obj is string)
+            if (obj is FrozenStringNode)
             {
                 return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String));
             }
-            return (CORINFO_CLASS_STRUCT_*)IntPtr.Zero;
+
+            // For now only frozen strings can come here
+            throw new NotImplementedException($"Unexpected object in getObjectType: {obj}");
         }
     }
 }
