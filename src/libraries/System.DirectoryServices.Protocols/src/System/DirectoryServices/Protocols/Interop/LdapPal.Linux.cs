@@ -180,19 +180,7 @@ namespace System.DirectoryServices.Protocols
         internal static unsafe IntPtr StringToPtr(string s, out int length)
         {
             var pointer = StringToPtr(s);
-            length = 0;
-
-            if (pointer == IntPtr.Zero)
-            {
-                return pointer;
-            }
-
-            byte* stringPtr = (byte*)pointer;
-            while (stringPtr[length] != '\0')
-            {
-                length++;
-            }
-
+            length = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((byte*)pointer).Length;
             return pointer;
         }
 
