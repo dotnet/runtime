@@ -30,7 +30,6 @@ MethodContext::MethodContext()
 
     cr    = new CompileResult();
     index = -1;
-    isReadyToRunCompilation = ReadyToRunCompilation::Uninitialized;
 }
 
 MethodContext::~MethodContext()
@@ -1236,7 +1235,6 @@ void MethodContext::recGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes, DW
     //       zero.
     GetJitFlags->Add(0, value);
     DEBUG_REC(dmpGetJitFlags(0, value));
-    InitReadyToRunFlag(jitFlags);
 }
 void MethodContext::dmpGetJitFlags(DWORD key, DD value)
 {
@@ -1261,7 +1259,6 @@ DWORD MethodContext::repGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
     CORJIT_FLAGS* resultFlags = (CORJIT_FLAGS*)GetJitFlags->GetBuffer(value.A);
     Assert(sizeInBytes >= value.B);
     memcpy(jitFlags, resultFlags, value.B);
-    InitReadyToRunFlag(resultFlags);
     return value.B;
 }
 
@@ -7429,20 +7426,6 @@ bool MethodContext::IsStringContentEqual(LightWeightMap<DWORD, DWORD>* prev, Lig
         return (prev == curr);
     }
 }
-
-void MethodContext::InitReadyToRunFlag(const CORJIT_FLAGS* jitFlags)
-{
-    if (jitFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_READYTORUN))
-    {
-        isReadyToRunCompilation = ReadyToRunCompilation::ReadyToRun;
-    }
-    else
-    {
-        isReadyToRunCompilation = ReadyToRunCompilation::NotReadyToRun;
-    }
-
-}
-
 
 bool g_debugRec = false;
 bool g_debugRep = false;
