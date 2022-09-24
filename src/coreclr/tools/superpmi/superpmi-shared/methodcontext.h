@@ -314,6 +314,10 @@ public:
     void dmpGetRuntimeTypePointer(DWORDLONG key, DWORDLONG value);
     void* repGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls);
 
+    void recGetObjectType(void* typeObj, CORINFO_CLASS_HANDLE result);
+    void dmpGetObjectType(DWORDLONG key, DWORDLONG value);
+    CORINFO_CLASS_HANDLE repGetObjectType(void* typeObj);
+
     void recGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                 CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                 CorInfoHelpFunc         id,
@@ -1144,6 +1148,7 @@ enum mcPackets
     Packet_GetRuntimeTypePointer = 196,
     Packet_ObjectToString = 197,
     Packet_GetReadonlyStaticFieldValue = 198,
+    Packet_GetObjectType = 199,
 };
 
 void SetDebugDumpVariables();

@@ -6016,6 +6016,32 @@ void* CEEInfo::getRuntimeTypePointer(CORINFO_CLASS_HANDLE clsHnd)
 }
 
 /***********************************************************************/
+CORINFO_CLASS_HANDLE CEEInfo::getObjectType(void* typeObj)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    CORINFO_CLASS_HANDLE handle = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    if (typeObj != nullptr)
+    {
+        GCX_COOP();
+        Object* obj = (Object*)typeObj;
+        VALIDATEOBJECT(obj);
+        handle = (CORINFO_CLASS_HANDLE)obj->GetMethodTable();
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return handle;
+}
+
+/***********************************************************************/
 bool CEEInfo::getReadyToRunHelper(
         CORINFO_RESOLVED_TOKEN *        pResolvedToken,
         CORINFO_LOOKUP_KIND *           pGenericLookupKind,

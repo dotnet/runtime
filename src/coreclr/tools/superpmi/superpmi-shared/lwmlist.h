@@ -140,6 +140,7 @@ LWM(GetTypeForPrimitiveNumericClass, DWORDLONG, DWORD)
 LWM(GetUnboxedEntry, DWORDLONG, DLD);
 LWM(GetUnBoxHelper, DWORDLONG, DWORD)
 LWM(GetRuntimeTypePointer, DWORDLONG, DWORDLONG)
+LWM(GetObjectType, DWORDLONG, DWORDLONG)
 LWM(GetVarArgsHandle, GetVarArgsHandleValue, DLDL)
 LWM(GetVars, DWORDLONG, Agnostic_GetVars)
 LWM(InitClass, Agnostic_InitClass, DWORD)

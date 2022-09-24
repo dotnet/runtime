@@ -551,6 +551,13 @@ void* interceptor_ICJI::getRuntimeTypePointer(
     return original_ICorJitInfo->getRuntimeTypePointer(cls);
 }
 
+CORINFO_CLASS_HANDLE interceptor_ICJI::getObjectType(
+          void* typeObj)
+{
+    mcs->AddCall("getObjectType");
+    return original_ICorJitInfo->getObjectType(typeObj);
+}
+
 bool interceptor_ICJI::getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,
           CORINFO_LOOKUP_KIND* pGenericLookupKind,

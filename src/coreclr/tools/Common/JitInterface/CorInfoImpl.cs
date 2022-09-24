@@ -2350,6 +2350,13 @@ namespace Internal.JitInterface
             return (void*)IntPtr.Zero;
         }
 
+#pragma warning disable CA1822 // Mark members as static
+        private CORINFO_CLASS_STRUCT_* getObjectType(void* typeObj)
+#pragma warning restore CA1822 // Mark members as static
+        {
+            return (CORINFO_CLASS_STRUCT_*)IntPtr.Zero;
+        }
+
         private byte* getHelperName(CorInfoHelpFunc helpFunc)
         {
             return (byte*)GetPin(StringToUTF8(helpFunc.ToString()));

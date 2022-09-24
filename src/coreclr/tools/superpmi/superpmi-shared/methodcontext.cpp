@@ -2210,6 +2210,29 @@ void* MethodContext::repGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
     return (void*)value;
 }
 
+void MethodContext::recGetObjectType(void* typeObj, CORINFO_CLASS_HANDLE result)
+{
+    if (GetObjectType == nullptr)
+        GetObjectType = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    DWORDLONG key = (DWORDLONG)typeObj;
+    DWORDLONG value = (DWORDLONG)result;
+    GetObjectType->Add(key, value);
+    DEBUG_REC(dmpGetObjectType(key, value));
+}
+void MethodContext::dmpGetObjectType(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetObjectType key obj-%016llX, value res-%016llX", key, value);
+}
+CORINFO_CLASS_HANDLE MethodContext::repGetObjectType(void* typeObj)
+{
+    DWORDLONG key = (DWORDLONG)typeObj;
+    AssertMapAndKeyExist(GetObjectType, key, ": key %016llX", key);
+    DWORDLONG value = GetObjectType->Get(key);
+    DEBUG_REP(dmpGetObjectType(key, value));
+    return (CORINFO_CLASS_HANDLE)value;
+}
+
 void MethodContext::recGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                            CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                            CorInfoHelpFunc         id,

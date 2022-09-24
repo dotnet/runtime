@@ -679,6 +679,13 @@ void* MyICJI::getRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
+CORINFO_CLASS_HANDLE MyICJI::getObjectType(void* typeObj)
+{
+    jitInstance->mc->cr->AddCall("getObjectType");
+    CORINFO_CLASS_HANDLE result = jitInstance->mc->repGetObjectType(typeObj);
+    return result;
+}
+
 bool MyICJI::getReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                  CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                  CorInfoHelpFunc         id,
