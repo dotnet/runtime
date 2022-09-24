@@ -17078,8 +17078,8 @@ bool GenTreeVecCon::IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd32
     {
         case NI_Vector128_Create:
         case NI_Vector128_CreateScalar:
-        case NI_Vector128_CreateScalarUnsafe:
 #if defined(TARGET_XARCH)
+        case NI_Vector128_CreateScalarUnsafe:
         case NI_Vector256_Create:
         case NI_Vector256_CreateScalar:
         case NI_Vector256_CreateScalarUnsafe:

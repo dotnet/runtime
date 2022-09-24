@@ -922,8 +922,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                     break;
                 }
 
-                op1 = impSIMDPopStack(TYP_SIMD16);
                 op2 = impSIMDPopStack(TYP_SIMD16);
+                op1 = impSIMDPopStack(TYP_SIMD16);
 
                 if (!op1->IsVectorConst() || !op2->IsVectorConst())
                 {

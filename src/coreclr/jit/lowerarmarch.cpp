@@ -951,60 +951,16 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     switch (intrinsicId)
     {
         case NI_Vector64_Create:
+        case NI_Vector64_CreateScalar:
         case NI_Vector128_Create:
+        case NI_Vector128_CreateScalar:
         {
-            // We don't directly support the Vector64.Create or Vector128.Create methods in codegen
+            // We don't directly support the Vector64/128.Create[Scalar] methods in codegen
             // and instead lower them to other intrinsic nodes in LowerHWIntrinsicCreate so we expect
             // that the node is modified to either not be a HWIntrinsic node or that it is no longer
             // the same intrinsic as when it came in.
 
             return LowerHWIntrinsicCreate(node);
-        }
-
-        case NI_Vector64_CreateScalar:
-        case NI_Vector128_CreateScalar:
-        {
-            CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
-            var_types   simdBaseType    = node->GetSimdBaseType();
-            unsigned    simdSize        = node->GetSimdSize();
-
-            switch (simdBaseType)
-            {
-                case TYP_LONG:
-                case TYP_ULONG:
-                case TYP_DOUBLE:
-                {
-                    if (simdSize == 8)
-                    {
-                        node->ResetHWIntrinsicId(NI_Vector64_Create, comp, node->Op(1));
-                        return LowerHWIntrinsicCreate(node);
-                    }
-                    FALLTHROUGH;
-                }
-
-                case TYP_FLOAT:
-                case TYP_BYTE:
-                case TYP_UBYTE:
-                case TYP_SHORT:
-                case TYP_USHORT:
-                case TYP_INT:
-                case TYP_UINT:
-                {
-                    GenTree* zeroCon = comp->gtNewZeroConNode(simdType, simdBaseJitType);
-                    BlockRange().InsertBefore(node, zeroCon);
-
-                    GenTree* idxCon = comp->gtNewIconNode(0);
-                    BlockRange().InsertAfter(zeroCon, idxCon);
-
-                    node->ResetHWIntrinsicId(NI_AdvSimd_Insert, comp, zeroCon, idxCon, node->Op(1));
-                    return LowerHWIntrinsic(node);
-                }
-
-                default:
-                {
-                    unreached();
-                }
-            }
         }
 
         case NI_Vector64_Dot:
@@ -1380,28 +1336,73 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
     }
     else if (argCnt == 1)
     {
-        // We have the following (where simd is simd8 or simd16):
-        //          /--*  op1  T
-        //   node = *  HWINTRINSIC   simd   T Create
-
-        // We will be constructing the following parts:
-        //           /--*  op1  T
-        //   node  = *  HWINTRINSIC   simd   T DuplicateToVector
-
-        // This is roughly the following managed code:
-        //   return AdvSimd.Arm64.DuplicateToVector(op1);
-
-        if (varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE))
+        if ((intrinsicId == NI_Vector64_CreateScalar) || (intrinsicId == NI_Vector128_CreateScalar))
         {
-            node->ChangeHWIntrinsicId((simdType == TYP_SIMD8) ? NI_AdvSimd_Arm64_DuplicateToVector64
-                                                              : NI_AdvSimd_Arm64_DuplicateToVector128);
+            GenTree* op1 = node->Op(1);
+
+            switch (simdBaseType)
+            {
+                case TYP_LONG:
+                case TYP_ULONG:
+                case TYP_DOUBLE:
+                {
+                    if (simdSize == 8)
+                    {
+                        node->ResetHWIntrinsicId(NI_Vector64_Create, comp, op1);
+                        break;
+                    }
+                    FALLTHROUGH;
+                }
+
+                case TYP_FLOAT:
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                case TYP_SHORT:
+                case TYP_USHORT:
+                case TYP_INT:
+                case TYP_UINT:
+                {
+                    GenTree* zeroCon = comp->gtNewZeroConNode(simdType, simdBaseJitType);
+                    BlockRange().InsertBefore(op1, zeroCon);
+                    LowerNode(zeroCon);
+
+                    GenTree* idxCon = comp->gtNewIconNode(0);
+                    BlockRange().InsertAfter(zeroCon, idxCon);
+
+                    node->ResetHWIntrinsicId(NI_AdvSimd_Insert, comp, zeroCon, idxCon, op1);
+                    break;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
         }
         else
         {
-            node->ChangeHWIntrinsicId((simdType == TYP_SIMD8) ? NI_AdvSimd_DuplicateToVector64
-                                                              : NI_AdvSimd_DuplicateToVector128);
-        }
+            // We have the following (where simd is simd8 or simd16):
+            //          /--*  op1  T
+            //   node = *  HWINTRINSIC   simd   T Create
 
+            // We will be constructing the following parts:
+            //           /--*  op1  T
+            //   node  = *  HWINTRINSIC   simd   T DuplicateToVector
+
+            // This is roughly the following managed code:
+            //   return AdvSimd.Arm64.DuplicateToVector(op1);
+
+            if (varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE))
+            {
+                node->ChangeHWIntrinsicId((simdType == TYP_SIMD8) ? NI_AdvSimd_Arm64_DuplicateToVector64
+                    : NI_AdvSimd_Arm64_DuplicateToVector128);
+            }
+            else
+            {
+                node->ChangeHWIntrinsicId((simdType == TYP_SIMD8) ? NI_AdvSimd_DuplicateToVector64
+                    : NI_AdvSimd_DuplicateToVector128);
+            }
+        }
         return LowerNode(node);
     }
 

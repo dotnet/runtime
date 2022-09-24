@@ -568,8 +568,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 assert(isCreate && (sig->numArgs == 2));
                 assert(intrinsic == NI_Vector128_Create);
 
-                op1 = impSIMDPopStack(TYP_SIMD8);
                 op2 = impSIMDPopStack(TYP_SIMD8);
+                op1 = impSIMDPopStack(TYP_SIMD8);
 
                 if (!op1->IsVectorConst() || !op2->IsVectorConst())
                 {
