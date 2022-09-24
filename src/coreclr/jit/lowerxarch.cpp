@@ -2891,8 +2891,8 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
                 //   ...
                 //   op1 = op1.GetLower();
 
-                tmp1 = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector256_GetLower, simdBaseJitType,
-                                                      simdSize);
+                tmp1 =
+                    comp->gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_Vector256_GetLower, simdBaseJitType, simdSize);
                 BlockRange().InsertAfter(op1, tmp1);
                 LowerNode(tmp1);
             }
@@ -2906,7 +2906,7 @@ GenTree* Lowering::LowerHWIntrinsicWithElement(GenTreeHWIntrinsic* node)
         }
         else
         {
-            node->ChangeHWIntrinsicId(NI_Vector128_ToVector256Unsafe, result);
+            node->ResetHWIntrinsicId(NI_Vector128_ToVector256Unsafe, result);
         }
     }
 

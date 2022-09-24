@@ -1395,12 +1395,12 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             if (varTypeIsLong(simdBaseType) || (simdBaseType == TYP_DOUBLE))
             {
                 node->ChangeHWIntrinsicId((simdType == TYP_SIMD8) ? NI_AdvSimd_Arm64_DuplicateToVector64
-                    : NI_AdvSimd_Arm64_DuplicateToVector128);
+                                                                  : NI_AdvSimd_Arm64_DuplicateToVector128);
             }
             else
             {
                 node->ChangeHWIntrinsicId((simdType == TYP_SIMD8) ? NI_AdvSimd_DuplicateToVector64
-                    : NI_AdvSimd_DuplicateToVector128);
+                                                                  : NI_AdvSimd_DuplicateToVector128);
             }
         }
         return LowerNode(node);
