@@ -103,10 +103,10 @@ namespace System.Threading.RateLimiting
     public partial class RateLimiterStatistics
     {
         public RateLimiterStatistics() { }
-        public long CurrentAvailablePermits { get { throw null; } set { } }
-        public long CurrentQueuedCount { get { throw null; } set { } }
-        public long TotalFailedLeases { get { throw null; } set { } }
-        public long TotalSuccessfulLeases { get { throw null; } set { } }
+        public long CurrentAvailablePermits { get { throw null; } init { } }
+        public long CurrentQueuedCount { get { throw null; } init { } }
+        public long TotalFailedLeases { get { throw null; } init { } }
+        public long TotalSuccessfulLeases { get { throw null; } init { } }
     }
     public abstract partial class RateLimitLease : System.IDisposable
     {

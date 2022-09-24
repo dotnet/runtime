@@ -58,8 +58,8 @@ jobs:
     - ${{ if ne(parameters.osGroup, 'windows') }}:
       - name: compilerArg
         value: '-clang9'
-      # Building for x64 MUSL happens on Alpine Linux and we need to use the stable version available there
-      - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64')) }}:
+      # We need to use the stable version available on Alpine Linux
+      - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl')) }}:
         - name: compilerArg
           value: ''
       # AppleClang has different version scheme, so we let compiler introspection pick up the available clang from PATH

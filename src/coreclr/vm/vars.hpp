@@ -89,16 +89,8 @@ class Crst;
 class RCWCleanupList;
 #endif // FEATURE_COMINTEROP
 
-//
-// loader handles are opaque types that track object pointers that have a lifetime
-// that matches that of a loader allocator
-//
-struct LOADERHANDLE__
-{
-    void* unused;
-};
 typedef TADDR LOADERHANDLE;
-
+typedef TADDR RUNTIMETYPEHANDLE;
 
 #ifdef DACCESS_COMPILE
 void OBJECTHANDLE_EnumMemoryRegions(OBJECTHANDLE handle);

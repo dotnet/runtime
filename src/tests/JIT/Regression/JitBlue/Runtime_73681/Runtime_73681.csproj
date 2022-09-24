@@ -1,8 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="critical_finalization.cs" />
+    <Compile Include="$(MSBuildProjectName).cs">
+      <HasDisasmCheck>true</HasDisasmCheck>
+    </Compile>
   </ItemGroup>
 </Project>
