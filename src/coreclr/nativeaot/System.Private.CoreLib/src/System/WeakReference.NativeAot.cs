@@ -30,7 +30,7 @@ namespace System
                 GCHandle.InternalFree(handle);
 
                 // keep the bit that indicates whether this reference was tracking resurrection
-                m_handleAndKind &= TracksResurrectionBit;
+                _handleAndKind &= TracksResurrectionBit;
             }
         }
     }

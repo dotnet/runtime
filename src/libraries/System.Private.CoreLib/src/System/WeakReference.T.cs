@@ -72,23 +72,23 @@ namespace System
 
         // the handle field is effectively readonly, not formally readonly because we assign it in "Create".
         // the lowermost bit is used to indicate whether the handle is tracking resurrection
-        private IntPtr m_handleAndKind;
+        private IntPtr _handleAndKind;
         private const nint TracksResurrectionBit = 1;
 
         //Returns a boolean indicating whether or not we're tracking objects until they're collected (true)
         //or just until they're finalized (false).
-        private bool IsTrackResurrection() => (m_handleAndKind & TracksResurrectionBit) != 0;
+        private bool IsTrackResurrection() => (_handleAndKind & TracksResurrectionBit) != 0;
 
         //Creates a new WeakReference that keeps track of target.
         private void Create(T target, bool trackResurrection)
         {
             IntPtr h = GCHandle.InternalAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
-            m_handleAndKind = trackResurrection ?
+            _handleAndKind = trackResurrection ?
                 h | TracksResurrectionBit :
                 h;
         }
 
-        private IntPtr Handle => m_handleAndKind & ~TracksResurrectionBit;
+        private IntPtr Handle => _handleAndKind & ~TracksResurrectionBit;
 
         public void SetTarget(T target)
         {
