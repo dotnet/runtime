@@ -464,7 +464,8 @@ enum GenTreeFlags : unsigned int
 
     GTF_VAR_MULTIREG        = 0x02000000, // This is a struct or (on 32-bit platforms) long variable that is used or defined
                                           // to/from a multireg source or destination (e.g. a call arg or return, or an op
-                                          // that returns its result in multiple registers such as a long multiply).
+                                          // that returns its result in multiple registers such as a long multiply). Set by
+                                          // (and thus only valid after) lowering.
 
     GTF_LIVENESS_MASK   = GTF_VAR_DEF | GTF_VAR_USEASG | GTF_VAR_DEATH_MASK,
 

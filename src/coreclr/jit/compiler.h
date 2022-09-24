@@ -5900,8 +5900,6 @@ private:
     // the variable is not enregistered, and is therefore not promoted independently.
     void fgLclFldAssign(unsigned lclNum);
 
-    static fgWalkPreFn gtHasLocalsWithAddrOpCB;
-
     enum TypeProducerKind
     {
         TPK_Unknown = 0, // May not be a RuntimeType
@@ -6971,6 +6969,8 @@ public:
     bool optRedundantBranch(BasicBlock* const block);
     bool optJumpThread(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
     bool optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock, BasicBlock* const excludedBlock);
+    BitVecTraits* optReachableBitVecTraits;
+    BitVec        optReachableBitVec;
     void optRelopImpliesRelop(RelopImplicationInfo* rii);
 
     /**************************************************************************

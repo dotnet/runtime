@@ -1493,18 +1493,9 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
         }
     }
 
-    if (dest->OperIs(GT_LCL_VAR) &&
-        (src->IsMultiRegNode() ||
-         (src->OperIs(GT_RET_EXPR) && src->AsRetExpr()->gtInlineCandidate->AsCall()->HasMultiRegRetVal())))
+    if (dest->OperIs(GT_LCL_VAR) && src->IsMultiRegNode())
     {
-        if (lvaEnregMultiRegVars && varTypeIsStruct(dest))
-        {
-            dest->AsLclVar()->SetMultiReg();
-        }
-        if (src->OperIs(GT_CALL))
-        {
-            lvaGetDesc(dest->AsLclVar())->lvIsMultiRegRet = true;
-        }
+        lvaGetDesc(dest->AsLclVar())->lvIsMultiRegRet = true;
     }
 
     dest->gtFlags |= destFlags;
@@ -3889,8 +3880,14 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 GenTree*  lclVar     = gtNewLclvNode(rawHandleSlot, TYP_I_IMPL);
                 GenTree*  lclVarAddr = gtNewOperNode(GT_ADDR, TYP_I_IMPL, lclVar);
                 var_types resultType = JITtype2varType(sig->retType);
-                retNode              = gtNewOperNode(GT_IND, resultType, lclVarAddr);
-
+                if (resultType == TYP_STRUCT)
+                {
+                    retNode = gtNewObjNode(sig->retTypeClass, lclVarAddr);
+                }
+                else
+                {
+                    retNode = gtNewIndir(resultType, lclVarAddr);
+                }
                 break;
             }
 
@@ -17017,7 +17014,7 @@ GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree*             op,
 
     assert(IsMultiRegReturnedType(hClass, callConv));
 
-    // Mark the var so that fields are not promoted and stay together.
+    // Set "lvIsMultiRegRet" to block promotion under "!lvaEnregMultiRegVars".
     lvaTable[tmpNum].lvIsMultiRegRet = true;
 
     return ret;
