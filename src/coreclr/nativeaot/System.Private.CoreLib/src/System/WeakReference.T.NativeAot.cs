@@ -26,12 +26,6 @@ namespace System
         {
             IntPtr h = GCHandle.InternalAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
             m_handleAndKind = trackResurrection ? h | 1 : h;
-
-            if (target != null)
-            {
-                // Set the conditional weak table if the target is a __ComObject.
-                TrySetComTarget(target);
-            }
         }
 
         private IntPtr Handle => m_handleAndKind & ~1;
@@ -44,9 +38,6 @@ namespace System
             // That, however, cannot happen while we use the instance.
             if (default(IntPtr) == h)
                 throw new InvalidOperationException(SR.InvalidOperation_HandleIsNotInitialized);
-
-            // Update the conditionalweakTable in case the target is __ComObject.
-            TrySetComTarget(target);
 
             GCHandle.InternalSet(h, target);
 
@@ -66,51 +57,13 @@ namespace System
                     return default;
 
                 // unsafe cast is ok as the handle cannot be destroyed and recycled while we keep the instance alive
-                T? target = Unsafe.As<T?>(GCHandle.InternalGet(h)) ?? TryGetComTarget() as T;
+                T? target = Unsafe.As<T?>(GCHandle.InternalGet(h));
 
                 // must keep the instance alive as long as we use the handle.
                 GC.KeepAlive(this);
 
                 return target;
             }
-        }
-
-        /// <summary>
-        /// This method checks whether the target to the weakreference is a native COMObject in which case the native object might still be alive although the RuntimeHandle could be null.
-        /// Hence we check in the conditionalweaktable maintained by the System.Private.Interop.dll that maps weakreferenceInstance->nativeComObject to check whether the native COMObject is alive or not.
-        /// and gets\create a new RCW in case it is alive.
-        /// </summary>
-        private static object? TryGetComTarget()
-        {
-#if ENABLE_WINRT
-            WinRTInteropCallbacks callbacks = WinRTInterop.UnsafeCallbacks;
-            if (callbacks != null)
-            {
-                return callbacks.GetCOMWeakReferenceTarget(this);
-            }
-            else
-            {
-                Debug.Fail("WinRTInteropCallback is null");
-            }
-#endif // ENABLE_WINRT
-            return null;
-        }
-
-        /// <summary>
-        /// This method notifies the System.Private.Interop.dll to update the conditionalweaktable for weakreferenceInstance->target in case the target is __ComObject. This ensures that we have a means to
-        /// go from the managed weak reference to the actual native object even though the managed counterpart might have been collected.
-        /// </summary>
-        private static void TrySetComTarget(object? target)
-        {
-#if ENABLE_WINRT
-            WinRTInteropCallbacks callbacks = WinRTInterop.UnsafeCallbacks;
-            if (callbacks != null)
-                callbacks.SetCOMWeakReferenceTarget(this, target);
-            else
-            {
-                Debug.Fail("WinRTInteropCallback is null");
-            }
-#endif // ENABLE_WINRT
         }
 
         // Note: While WeakReference<T> is a formally a finalizable type, the finalizer does not actually run.
