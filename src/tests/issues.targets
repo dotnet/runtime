@@ -11,6 +11,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Int128/Int128Test/*">
             <Issue>https://github.com/dotnet/runtime/issues/74209</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/finalization/CriticalFinalizer/*">
+            <Issue>https://github.com/dotnet/runtime/issues/76041</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All OS/Arch CoreCLR excludes -->
