@@ -8118,51 +8118,65 @@ GenTree* Compiler::impInitClass(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 
 GenTree* Compiler::impImportStaticReadOnlyField(uint8_t* buffer, int bufferSize, var_types valueType)
 {
-    // We plan to support bigger values for structs, but for now it's always 64bit
+    // We plan to support larger values (for structs), for now let's keep it 64 bit
     assert(bufferSize == sizeof(INT64));
 
     GenTree* tree = nullptr;
     switch (valueType)
     {
+// Use memcpy to read from the buffer and create an Icon/Dcon tree
+#define CreateTreeFromBuffer(type, treeFactory)                                                                        \
+    type v##type##;                                                                                                    \
+    memcpy(&v##type##, buffer, sizeof(type));                                                                          \
+    tree = treeFactory(v##type##);
+
         case TYP_BOOL:
+        {
+            CreateTreeFromBuffer(bool, gtNewIconNode);
+            break;
+        }
         case TYP_BYTE:
+        {
+            CreateTreeFromBuffer(int8_t, gtNewIconNode);
+            break;
+        }
         case TYP_UBYTE:
+        {
+            CreateTreeFromBuffer(uint8_t, gtNewIconNode);
+            break;
+        }
         case TYP_SHORT:
+        {
+            CreateTreeFromBuffer(int16_t, gtNewIconNode);
+            break;
+        }
         case TYP_USHORT:
+        {
+            CreateTreeFromBuffer(uint16_t, gtNewIconNode);
+            break;
+        }
         case TYP_UINT:
         case TYP_INT:
         {
-            ssize_t i32;
-            memcpy(&i32, buffer, sizeof(ssize_t));
-            tree = gtNewIconNode(i32);
+            CreateTreeFromBuffer(int32_t, gtNewIconNode);
             break;
         }
-
         case TYP_LONG:
         case TYP_ULONG:
         {
-            INT64 i64;
-            memcpy(&i64, buffer, sizeof(INT64));
-            tree = gtNewLconNode(i64);
+            CreateTreeFromBuffer(int64_t, gtNewIconNode);
             break;
         }
-
         case TYP_FLOAT:
         {
-            float f32;
-            memcpy(&f32, buffer, sizeof(float));
-            tree = gtNewDconNode(f32);
+            CreateTreeFromBuffer(float, gtNewDconNode);
             break;
         }
-
         case TYP_DOUBLE:
         {
-            double f64;
-            memcpy(&f64, buffer, sizeof(double));
-            tree = gtNewDconNode(f64);
+            CreateTreeFromBuffer(double, gtNewDconNode);
             break;
         }
-
         case TYP_REF:
         {
             ssize_t ptr;

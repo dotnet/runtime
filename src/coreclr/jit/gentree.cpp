@@ -17581,7 +17581,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                 objClass = info.compCompHnd->getObjectType((void*)tree->AsIntCon()->IconValue());
                 if (objClass != NO_CLASS_HANDLE)
                 {
-                    // if we manage to get the class handle it's definitely not null
+                    // if we managed to get a class handle it's definitely not null
                     *pIsNonNull = true;
                 }
             }
