@@ -3,6 +3,9 @@
 
 using System.IO;
 using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Speech.Internal
 {
@@ -79,30 +82,30 @@ namespace System.Speech.Internal
         /// </summary>
         private static Stream DownloadData(Uri uri, out Uri redirectedUri)
         {
-#pragma warning disable SYSLIB0014
-            // Create a request for the URL.
-            WebRequest request = WebRequest.Create(uri);
-
-            // If required by the server, set the credentials.
-            request.Credentials = CredentialCache.DefaultCredentials;
-
-            // Get the response.
-            using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+            // Create an HttpClient that uses default credentials
+            using (HttpClient client = new HttpClient(new HttpClientHandler() { UseDefaultCredentials = true }))
             {
-                // Get the stream containing content returned by the server.
-                using (Stream dataStream = response.GetResponseStream())
-                {
-                    redirectedUri = response.ResponseUri;
+                // Get the socket to close after the conenction
+                client.DefaultRequestHeaders.ConnectionClose = true;
+                // Get the message
+                HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Get, uri);
 
-                    // http:// Load the data from the web
-                    using (WebClient client = new())
-                    {
-                        client.UseDefaultCredentials = true;
-                        return new MemoryStream(client.DownloadData(redirectedUri));
-                    }
-                }
+                // Get the response
+#if NET5_0_OR_GREATER
+                HttpResponseMessage response = client.Send(message);
+#else
+                HttpResponseMessage response = Task.Run(() => client.SendAsync(message)).Result;
+#endif
+
+                // Ensure we got a success status code
+                response.EnsureSuccessStatusCode();
+
+                // Set redirectedUri
+                redirectedUri = response.RequestMessage.RequestUri;
+
+                // Get the stream containing content returned by the server.
+                return response.Content.ReadAsStream();
             }
-#pragma warning restore SYSLIB0014
         }
 
         #endregion

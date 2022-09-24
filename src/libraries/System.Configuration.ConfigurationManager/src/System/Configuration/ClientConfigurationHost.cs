@@ -5,7 +5,10 @@ using System.Configuration.Internal;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Configuration
 {
@@ -278,33 +281,31 @@ namespace System.Configuration
         public override Stream OpenStreamForRead(string streamName)
         {
             // the streamName can either be a file name, or a URI
-            if (IsFile(streamName)) return Host.OpenStreamForRead(streamName);
 
             if (streamName == null) return null;
 
-#pragma warning disable SYSLIB0014 // WebClient is obsolete.
-            // scheme is http
-            WebClient client = new WebClient();
+            if (IsFile(streamName)) return Host.OpenStreamForRead(streamName);
 
-            // Try using default credentials
-            try
+            using (HttpClient client = new HttpClient(new HttpClientHandler() { UseDefaultCredentials = true }))
             {
-                client.Credentials = CredentialCache.DefaultCredentials;
+                // Get the socket to close after the conenction
+                client.DefaultRequestHeaders.ConnectionClose = true;
+#if NET5_0_OR_GREATER
+                // Get the message
+                HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Get, streamName);
+
+                // Get the response
+                HttpResponseMessage response = client.Send(message);
+
+                // Ensure we got a success status code
+                response.EnsureSuccessStatusCode();
+
+                // Get the stream containing content returned by the server.
+                return response.Content.ReadAsStream();
+#else
+                return Task.Run(() => client.GetStreamAsync(streamName)).Result;
+#endif
             }
-            catch { }
-
-            byte[] fileData = null;
-            try
-            {
-                fileData = client.DownloadData(streamName);
-            }
-            catch { }
-#pragma warning restore SYSLIB0014
-
-            if (fileData == null) return null;
-
-            MemoryStream stream = new MemoryStream(fileData);
-            return stream;
         }
 
         public override Stream OpenStreamForWrite(string streamName, string templateStreamName, ref object writeContext)
