@@ -15,7 +15,7 @@ namespace System
         // Free all system resources associated with this reference.
         ~WeakReference()
         {
-            // Note: While WeakReference is a formally a finalizable type, the finalizer does not actually run.
+            // Note: While WeakReference is formally a finalizable type, the finalizer does not actually run.
             //       Instead the instances are treated specially in GC when scanning for no longer strongly-reachable
             //       finalizable objects.
             //
