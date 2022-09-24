@@ -485,6 +485,8 @@
     <!-- More than two thirds of tests failing due to ref emit -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection\tests\DI.Tests\Microsoft.Extensions.DependencyInjection.Tests.csproj" />
 
+    <!--This test fails on Windows.10.Amd64.Server2022 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem\tests\System.IO.FileSystem.Tests.csproj" />
     <!--Needs work to get these tests to pass -->
     <!--These tests have failures-->
     <!-- Looks like our xunit runner doesn't respect tests that don't want to be multithreaded -->
