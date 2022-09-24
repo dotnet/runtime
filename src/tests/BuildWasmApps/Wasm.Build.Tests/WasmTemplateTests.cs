@@ -182,10 +182,18 @@ namespace Wasm.Build.Tests
         [InlineData("Debug", true)]
         [InlineData("Release", false)]
         [InlineData("Release", true)]
-        public void ConsoleBuildAndRun(string config, bool relinking)
+        public void ConsoleBuildAndRunDefault(string config, bool relinking)
+            => ConsoleBuildAndRun(config, relinking, string.Empty);
+
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [InlineData("Debug", "-f net7.0")]
+        public void ConsoleBuildAndRunForSpecificTFM(string config, string extraNewArgs)
+            => ConsoleBuildAndRun(config, false, extraNewArgs);
+
+        private void ConsoleBuildAndRun(string config, bool relinking, string extraNewArgs)
         {
             string id = $"{config}_{Path.GetRandomFileName()}";
-            string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
+            string projectFile = CreateWasmTemplateProject(id, "wasmconsole", extraNewArgs);
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
             UpdateProgramCS();
@@ -432,12 +440,14 @@ namespace Wasm.Build.Tests
             Assert.Equal("Current count: 1", txt);
         }
 
-        [ConditionalFact(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        public async Task BrowserTest()
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [InlineData("")]
+        [InlineData("-f net7.0")]
+        public async Task BrowserBuildAndRun(string extraNewArgs)
         {
             string config = "Debug";
             string id = $"browser_{config}_{Path.GetRandomFileName()}";
-            CreateWasmTemplateProject(id, "wasmbrowser");
+            CreateWasmTemplateProject(id, "wasmbrowser", extraNewArgs);
 
             // var buildArgs = new BuildArgs(projectName, config, false, id, null);
             // buildArgs = ExpandBuildArgs(buildArgs);
