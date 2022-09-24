@@ -3307,10 +3307,10 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private void* getFrozenHandleFromInitedStaticField(CORINFO_FIELD_STRUCT_* field)
+        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* field, ref ulong pHandle)
 #pragma warning restore CA1822 // Mark members as static
         {
-            return null;
+            return false;
         }
 
         private CORINFO_CLASS_STRUCT_* getStaticFieldCurrentClass(CORINFO_FIELD_STRUCT_* field, byte* pIsSpeculative)

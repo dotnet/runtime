@@ -11788,7 +11788,7 @@ void* CEEJitInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
     return result;
 }
 
-void* CEEJitInfo::getFrozenHandleFromInitedStaticField(CORINFO_FIELD_HANDLE fieldHnd)
+bool CEEJitInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint64_t* pValue)
 {
     CONTRACTL {
         THROWS;
@@ -11796,12 +11796,15 @@ void* CEEJitInfo::getFrozenHandleFromInitedStaticField(CORINFO_FIELD_HANDLE fiel
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    void* ptr = nullptr;
+    _ASSERT(fieldHnd != NULL);
+    _ASSERT(pValue != NULL);
+
+    bool result = false;
 
     JIT_TO_EE_TRANSITION();
 
     FieldDesc* field = (FieldDesc*)fieldHnd;
-    if (field->IsStatic() && field->IsObjRef() && !field->IsThreadStatic())
+    if (field->IsStatic() && !field->IsThreadStatic())
     {
         MethodTable* pEnclosingMT = field->GetEnclosingMethodTable();
         if (!pEnclosingMT->IsSharedByGenericInstantiations())
@@ -11812,13 +11815,82 @@ void* CEEJitInfo::getFrozenHandleFromInitedStaticField(CORINFO_FIELD_HANDLE fiel
             pLocalModule->PopulateClass(pEnclosingMT);
 
             GCX_COOP();
-            OBJECTREF fieldObj = field->GetStaticOBJECTREF();
-            if (fieldObj != NULL && pEnclosingMT->IsClassInited() && IsFdInitOnly(field->GetAttributes()))
+            if (pEnclosingMT->IsClassInited() && IsFdInitOnly(field->GetAttributes()))
             {
-                Object* obj = OBJECTREFToObject(fieldObj);
-                if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj))
+                if (field->IsObjRef())
                 {
-                    ptr = (void*)obj;
+                    OBJECTREF fieldObj = field->GetStaticOBJECTREF();
+                    if (fieldObj != NULL)
+                    {
+                        Object* obj = OBJECTREFToObject(fieldObj);
+                        if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj))
+                        {
+                            *pValue = (uint64_t)obj;
+                            result = true;
+                        }
+                    }
+                    else
+                    {
+                        *pValue = 0;
+                        result = true;
+                    }
+                }
+                else
+                {
+                    void* fldAddr = field->GetStaticAddressHandle(field->IsRVA() ? nullptr : (void*)field->GetBase());
+                    if (fldAddr != nullptr)
+                    {
+                        _ASSERTE(!pEnclosingMT->ContainsGenericVariables());
+                        result = true;
+                        switch (field->GetFieldType())
+                        {
+                            case ELEMENT_TYPE_BOOLEAN:
+                                *pValue = (uint64_t)*((uint8_t*)fldAddr);
+                                break;
+                            case ELEMENT_TYPE_CHAR:
+                                *pValue = (uint64_t)*((uint16_t*)fldAddr);
+                                break;
+                            case ELEMENT_TYPE_I1:
+                                *pValue = (uint64_t)*((int8_t*)fldAddr);
+                                break;
+                            case ELEMENT_TYPE_U1:
+                                *pValue = (uint64_t)*((uint8_t*)fldAddr);
+                                break;
+                            case ELEMENT_TYPE_I2:
+                                *pValue = (uint64_t)*((int16_t*)fldAddr);
+                                break;
+                            case ELEMENT_TYPE_U2:
+                                *pValue = (uint64_t)*((uint16_t*)fldAddr);
+                                break;
+                            case ELEMENT_TYPE_I4:
+                                *pValue = (uint64_t)*((int32_t*)fldAddr);
+                                break;
+                            case ELEMENT_TYPE_U4:
+                                *pValue = (uint64_t)*((uint32_t*)fldAddr);
+                                break;
+                            case ELEMENT_TYPE_I8:
+                                *pValue = (uint64_t)*((int32_t*)fldAddr);
+                                break;
+                            case ELEMENT_TYPE_U8:
+                                *pValue = (uint64_t)*((uint64_t*)fldAddr);
+                                break;
+                            case ELEMENT_TYPE_R4:
+                                *pValue = (uint64_t)*((float*)fldAddr);
+                                break;
+                            case ELEMENT_TYPE_R8:
+                                *pValue = (uint64_t)*((double*)fldAddr);
+                                break;
+                            case ELEMENT_TYPE_I:
+                                *pValue = (uint64_t)*((intptr_t*)fldAddr);
+                                break;
+                            case ELEMENT_TYPE_U:
+                                *pValue = (uint64_t)*((uintptr_t*)fldAddr);
+                                break;
+                            default:
+                                result = false;
+                                break;
+                        }
+                    }
                 }
             }
         }
@@ -11826,7 +11898,7 @@ void* CEEJitInfo::getFrozenHandleFromInitedStaticField(CORINFO_FIELD_HANDLE fiel
 
     EE_TO_JIT_TRANSITION();
 
-    return ptr;
+    return result;
 }
 
 /*********************************************************************/
@@ -14369,7 +14441,7 @@ void* CEEInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
     return result;
 }
 
-void* CEEInfo::getFrozenHandleFromInitedStaticField(CORINFO_FIELD_HANDLE CORINFO_FIELD_HANDLE)
+bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint64_t* pValue)
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE();      // only called on derived class.

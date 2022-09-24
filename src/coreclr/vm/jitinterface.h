@@ -925,7 +925,7 @@ public:
     InfoAccessType constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd, mdToken metaTok, void **ppValue) override final;
     InfoAccessType emptyStringLiteral(void ** ppValue) override final;
     void* getFieldAddress(CORINFO_FIELD_HANDLE field, void **ppIndirection) override final;
-    void* getFrozenHandleFromInitedStaticField(CORINFO_FIELD_HANDLE field) override final;
+    bool getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint64_t *pValue) override final;
     CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative) override final;
     void* getMethodSync(CORINFO_METHOD_HANDLE ftnHnd, void **ppIndirection) override final;
 

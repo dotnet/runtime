@@ -8083,133 +8083,56 @@ GenTree* Compiler::impInitClass(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     return node;
 }
 
-GenTree* Compiler::impImportStaticReadOnlyField(void* fldAddr, var_types lclTyp)
+GenTree* Compiler::impImportStaticReadOnlyField(UINT64 value, var_types valueType)
 {
-    GenTree* op1 = nullptr;
-
-#if defined(DEBUG)
-    // If we're replaying under SuperPMI, we're going to read the data stored by SuperPMI and use it
-    // for optimization. Unfortunately, SuperPMI doesn't implement a guarantee on the alignment of
-    // this data, so for some platforms which don't allow unaligned access (e.g., Linux arm32),
-    // this can fault. We should fix SuperPMI to guarantee alignment, but that is a big change.
-    // Instead, simply fix up the data here for future use.
-
-    // This variable should be the largest size element, with the largest alignment requirement,
-    // and the native C++ compiler should guarantee sufficient alignment.
-    double aligned_data   = 0.0;
-    void*  p_aligned_data = &aligned_data;
-    if (info.compMethodSuperPMIIndex != -1)
+    GenTree* tree = nullptr;
+    switch (valueType)
     {
-        switch (lclTyp)
-        {
-            case TYP_BOOL:
-            case TYP_BYTE:
-            case TYP_UBYTE:
-                static_assert_no_msg(sizeof(unsigned __int8) == sizeof(bool));
-                static_assert_no_msg(sizeof(unsigned __int8) == sizeof(signed char));
-                static_assert_no_msg(sizeof(unsigned __int8) == sizeof(unsigned char));
-                // No alignment necessary for byte.
-                break;
-
-            case TYP_SHORT:
-            case TYP_USHORT:
-                static_assert_no_msg(sizeof(unsigned __int16) == sizeof(short));
-                static_assert_no_msg(sizeof(unsigned __int16) == sizeof(unsigned short));
-                if ((size_t)fldAddr % sizeof(unsigned __int16) != 0)
-                {
-                    *(unsigned __int16*)p_aligned_data = GET_UNALIGNED_16(fldAddr);
-                    fldAddr                            = p_aligned_data;
-                }
-                break;
-
-            case TYP_INT:
-            case TYP_UINT:
-            case TYP_FLOAT:
-                static_assert_no_msg(sizeof(unsigned __int32) == sizeof(int));
-                static_assert_no_msg(sizeof(unsigned __int32) == sizeof(unsigned int));
-                static_assert_no_msg(sizeof(unsigned __int32) == sizeof(float));
-                if ((size_t)fldAddr % sizeof(unsigned __int32) != 0)
-                {
-                    *(unsigned __int32*)p_aligned_data = GET_UNALIGNED_32(fldAddr);
-                    fldAddr                            = p_aligned_data;
-                }
-                break;
-
-            case TYP_LONG:
-            case TYP_ULONG:
-            case TYP_DOUBLE:
-                static_assert_no_msg(sizeof(unsigned __int64) == sizeof(__int64));
-                static_assert_no_msg(sizeof(unsigned __int64) == sizeof(double));
-                if ((size_t)fldAddr % sizeof(unsigned __int64) != 0)
-                {
-                    *(unsigned __int64*)p_aligned_data = GET_UNALIGNED_64(fldAddr);
-                    fldAddr                            = p_aligned_data;
-                }
-                break;
-
-            default:
-                assert(!"Unexpected lclTyp");
-                break;
-        }
-    }
-#endif // DEBUG
-
-    switch (lclTyp)
-    {
-        int     ival;
-        __int64 lval;
-        double  dval;
-
         case TYP_BOOL:
-            ival = *((bool*)fldAddr);
-            goto IVAL_COMMON;
-
         case TYP_BYTE:
-            ival = *((signed char*)fldAddr);
-            goto IVAL_COMMON;
-
         case TYP_UBYTE:
-            ival = *((unsigned char*)fldAddr);
-            goto IVAL_COMMON;
-
         case TYP_SHORT:
-            ival = *((short*)fldAddr);
-            goto IVAL_COMMON;
-
         case TYP_USHORT:
-            ival = *((unsigned short*)fldAddr);
-            goto IVAL_COMMON;
-
         case TYP_UINT:
         case TYP_INT:
-            ival = *((int*)fldAddr);
-        IVAL_COMMON:
-            op1 = gtNewIconNode(ival);
+            tree = gtNewIconNode((ssize_t)value);
             break;
 
         case TYP_LONG:
         case TYP_ULONG:
-            lval = *((__int64*)fldAddr);
-            op1  = gtNewLconNode(lval);
+            tree = gtNewLconNode((INT64)value);
             break;
 
         case TYP_FLOAT:
-            dval        = *((float*)fldAddr);
-            op1         = gtNewDconNode(dval);
-            op1->gtType = TYP_FLOAT;
+            tree = gtNewDconNode(*((float*)&value));
             break;
 
         case TYP_DOUBLE:
-            dval = *((double*)fldAddr);
-            op1  = gtNewDconNode(dval);
+            tree = gtNewDconNode(*((double*)&value));
             break;
 
-        default:
-            assert(!"Unexpected lclTyp");
+        case TYP_REF:
+        {
+            if (value == 0)
+            {
+                tree = gtNewNull();
+            }
+            else
+            {
+                setMethodHasFrozenObjects();
+                tree         = gtNewIconEmbHndNode((void*)value, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+                tree->gtType = TYP_REF;
+                INDEBUG(tree->AsIntCon()->gtTargetHandle = (size_t)value);
+            }
             break;
+        }
+        default:
+            return nullptr;
     }
 
-    return op1;
+    assert(tree != nullptr);
+    tree->gtType = genActualType(valueType);
+    return tree;
 }
 
 GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedToken,
@@ -15286,51 +15209,19 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_ADDRESS:
                         // Replace static read-only fields with constant if possible
                         if ((aflags & CORINFO_ACCESS_GET) && (fieldInfo.fieldFlags & CORINFO_FLG_FIELD_FINAL) &&
-                            !(fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP) &&
-                            (varTypeIsIntegral(lclTyp) || varTypeIsFloating(lclTyp) || (lclTyp == TYP_REF)))
+                            !(fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP))
                         {
-                            CorInfoInitClassResult initClassResult =
-                                info.compCompHnd->initClass(resolvedToken.hField, info.compMethodHnd,
-                                                            impTokenLookupContextHandle);
-
-                            if (initClassResult & CORINFO_INITCLASS_INITIALIZED)
+                            UINT64 value;
+                            if (info.compCompHnd->getReadonlyStaticFieldValue(resolvedToken.hField, &value))
                             {
-                                if (varTypeIsIntegral(lclTyp) || varTypeIsFloating(lclTyp))
+                                GenTree* cnsValue = impImportStaticReadOnlyField(value, lclTyp);
+                                if (cnsValue != nullptr)
                                 {
-                                    void** pFldAddr = nullptr;
-                                    void*  fldAddr =
-                                        info.compCompHnd->getFieldAddress(resolvedToken.hField, (void**)&pFldAddr);
-
-                                    // We should always be able to access this static's address directly
-                                    //
-                                    assert(pFldAddr == nullptr);
-
-                                    op1 = impImportStaticReadOnlyField(fldAddr, lclTyp);
-
-                                    // Widen small types since we're propagating the value
-                                    // instead of producing an indir.
-                                    //
-                                    op1->gtType = genActualType(lclTyp);
-
+                                    op1 = cnsValue;
                                     goto FIELD_DONE;
-                                }
-                                else
-                                {
-                                    assert(lclTyp == TYP_REF);
-                                    void* frozenHandle =
-                                        info.compCompHnd->getFrozenHandleFromInitedStaticField(resolvedToken.hField);
-                                    if (frozenHandle != nullptr)
-                                    {
-                                        setMethodHasFrozenObjects();
-                                        op1 = gtNewIconEmbHndNode(frozenHandle, nullptr, GTF_ICON_OBJ_HDL, nullptr);
-                                        op1->gtType = TYP_REF;
-                                        INDEBUG(op1->AsIntCon()->gtTargetHandle = (size_t)frozenHandle);
-                                        goto FIELD_DONE;
-                                    }
                                 }
                             }
                         }
-
                         FALLTHROUGH;
 
                     case CORINFO_FIELD_STATIC_RVA_ADDRESS:

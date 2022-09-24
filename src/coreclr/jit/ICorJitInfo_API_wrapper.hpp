@@ -1450,12 +1450,13 @@ void* WrapICorJitInfo::getFieldAddress(
     return temp;
 }
 
-void* WrapICorJitInfo::getFrozenHandleFromInitedStaticField(
-          CORINFO_FIELD_HANDLE field)
+bool WrapICorJitInfo::getReadonlyStaticFieldValue(
+          CORINFO_FIELD_HANDLE field,
+          uint64_t* pValue)
 {
-    API_ENTER(getFrozenHandleFromInitedStaticField);
-    void* temp = wrapHnd->getFrozenHandleFromInitedStaticField(field);
-    API_LEAVE(getFrozenHandleFromInitedStaticField);
+    API_ENTER(getReadonlyStaticFieldValue);
+    bool temp = wrapHnd->getReadonlyStaticFieldValue(field, pValue);
+    API_LEAVE(getReadonlyStaticFieldValue);
     return temp;
 }
 

@@ -1040,10 +1040,11 @@ void* interceptor_ICJI::getFieldAddress(
     return original_ICorJitInfo->getFieldAddress(field, ppIndirection);
 }
 
-void* interceptor_ICJI::getFrozenHandleFromInitedStaticField(
-          CORINFO_FIELD_HANDLE field)
+bool interceptor_ICJI::getReadonlyStaticFieldValue(
+          CORINFO_FIELD_HANDLE field,
+          uint64_t* pValue)
 {
-    return original_ICorJitInfo->getFrozenHandleFromInitedStaticField(field);
+    return original_ICorJitInfo->getReadonlyStaticFieldValue(field, pValue);
 }
 
 CORINFO_CLASS_HANDLE interceptor_ICJI::getStaticFieldCurrentClass(

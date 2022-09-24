@@ -3653,29 +3653,58 @@ void* MethodContext::repGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppInd
     return temp;
 }
 
-void MethodContext::recGetFrozenHandleFromInitedStaticField(CORINFO_FIELD_HANDLE field, void* result)
+void MethodContext::recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint64_t value, bool result)
 {
-    if (GetFrozenHandleFromInitedStaticField == nullptr)
-        GetFrozenHandleFromInitedStaticField = new LightWeightMap<DWORDLONG, DWORDLONG>();
+    if (GetReadonlyStaticFieldValue == nullptr)
+        GetReadonlyStaticFieldValue = new LightWeightMap<DWORDLONG, DLD>();
+
+    DWORDLONG key = CastHandle(field);
+    DLD       val;
+    val.A = (DWORDLONG)value;
+    val.B = (DWORD)result;
+    GetReadonlyStaticFieldValue->Add(key, val);
+    DEBUG_REC(dmpGetReadonlyStaticFieldValue(key, val));
+}
+void MethodContext::dmpGetReadonlyStaticFieldValue(DWORDLONG key, DLD value)
+{
+    printf("GetReadonlyStaticFieldValue key field-%016llX, value-%016llX result-%08X", key, value.A, value.B);
+}
+bool MethodContext::repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint64_t* value)
+{
+    DWORDLONG key = CastHandle(field);
+    AssertMapAndKeyExist(GetReadonlyStaticFieldValue, key, ": key %016llX", key);
+
+    DLD val = GetReadonlyStaticFieldValue->Get(key);
+    DEBUG_REP(dmpGetReadonlyStaticFieldValue(key, val));
+
+    *value = (uint64_t)val.A;
+    return (bool)val.B;
+}
+
+/*
+void MethodContext::recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, void* result)
+{
+    if (GetReadonlyStaticFieldValue == nullptr)
+        GetReadonlyStaticFieldValue = new LightWeightMap<DWORDLONG, DWORDLONG>();
 
     DWORDLONG key = CastHandle(field);
     DWORDLONG value = DWORDLONG(result);
-    GetFrozenHandleFromInitedStaticField->Add(key, value);
-    DEBUG_REC(dmpGetFrozenHandleFromInitedStaticField(key, value));
+    GetReadonlyStaticFieldValue->Add(key, value);
+    DEBUG_REC(dmpGetReadonlyStaticFieldValue(key, value));
 }
-void MethodContext::dmpGetFrozenHandleFromInitedStaticField(DWORDLONG key, DWORDLONG value)
+void MethodContext::dmpGetReadonlyStaticFieldValue(DWORDLONG key, DWORDLONG value)
 {
-    printf("GetFrozenHandleFromInitedStaticField key field-%016llX, value field-%016llX", key, value);
+    printf("GetReadonlyStaticFieldValue key field-%016llX, value field-%016llX", key, value);
 }
-void* MethodContext::repGetFrozenHandleFromInitedStaticField(CORINFO_FIELD_HANDLE field)
+void* MethodContext::repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field)
 {
     DWORDLONG key = CastHandle(field);
-    AssertMapAndKeyExist(GetFrozenHandleFromInitedStaticField, key, ": key %016llX", key);
-    DWORDLONG value = GetFrozenHandleFromInitedStaticField->Get(key);
-    DEBUG_REP(dmpGetFrozenHandleFromInitedStaticField(key, value));
+    AssertMapAndKeyExist(GetReadonlyStaticFieldValue, key, ": key %016llX", key);
+    DWORDLONG value = GetReadonlyStaticFieldValue->Get(key);
+    DEBUG_REP(dmpGetReadonlyStaticFieldValue(key, value));
     void* result = (void*)value;
     return result;
-}
+}*/
 
 void MethodContext::recGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field,
                                                   bool                 isSpeculative,

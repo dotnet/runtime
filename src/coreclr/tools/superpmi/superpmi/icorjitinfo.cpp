@@ -1503,10 +1503,10 @@ void* MyICJI::getFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndirection)
     return jitInstance->mc->repGetFieldAddress(field, ppIndirection);
 }
 
-void* MyICJI::getFrozenHandleFromInitedStaticField(CORINFO_FIELD_HANDLE field)
+bool MyICJI::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint64_t* pValue)
 {
-    jitInstance->mc->cr->AddCall("getFrozenHandleFromInitedStaticField");
-    return jitInstance->mc->repGetFrozenHandleFromInitedStaticField(field);
+    jitInstance->mc->cr->AddCall("getReadonlyStaticFieldValue");
+    return jitInstance->mc->repGetReadonlyStaticFieldValue(field, pValue);
 }
 
 // return the class handle for the current value of a static field

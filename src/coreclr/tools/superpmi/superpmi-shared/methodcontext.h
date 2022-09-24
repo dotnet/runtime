@@ -480,9 +480,9 @@ public:
     void dmpGetFieldAddress(DWORDLONG key, const Agnostic_GetFieldAddress& value);
     void* repGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndirection);
 
-    void recGetFrozenHandleFromInitedStaticField(CORINFO_FIELD_HANDLE field, void* result);
-    void dmpGetFrozenHandleFromInitedStaticField(DWORDLONG key, DWORDLONG value);
-    void* repGetFrozenHandleFromInitedStaticField(CORINFO_FIELD_HANDLE field);
+    void recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint64_t value, bool result);
+    void dmpGetReadonlyStaticFieldValue(DWORDLONG key, DLD value);
+    bool repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint64_t* pValue);
 
     void recGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool isSpeculative, CORINFO_CLASS_HANDLE result);
     void dmpGetStaticFieldCurrentClass(DWORDLONG key, const Agnostic_GetStaticFieldCurrentClass& value);
@@ -1143,7 +1143,7 @@ enum mcPackets
     Packet_GetExactClasses = 195,
     Packet_GetRuntimeTypePointer = 196,
     Packet_ObjectToString = 197,
-    Packet_GetFrozenHandleFromInitedStaticField = 198,
+    Packet_GetReadonlyStaticFieldValue = 198,
 };
 
 void SetDebugDumpVariables();

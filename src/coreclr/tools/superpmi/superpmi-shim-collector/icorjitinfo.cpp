@@ -1723,11 +1723,11 @@ void* interceptor_ICJI::getFieldAddress(CORINFO_FIELD_HANDLE field, void** ppInd
     return temp;
 }
 
-void* interceptor_ICJI::getFrozenHandleFromInitedStaticField(CORINFO_FIELD_HANDLE field)
+bool interceptor_ICJI::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint64_t* pValue)
 {
-    mc->cr->AddCall("getFrozenHandleFromInitedStaticField");
-    void* result = original_ICorJitInfo->getFrozenHandleFromInitedStaticField(field);
-    mc->recGetFrozenHandleFromInitedStaticField(field, result);
+    mc->cr->AddCall("getReadonlyStaticFieldValue");
+    bool result = original_ICorJitInfo->getReadonlyStaticFieldValue(field, pValue);
+    mc->recGetReadonlyStaticFieldValue(field, *pValue, result);
     return result;
 }
 
