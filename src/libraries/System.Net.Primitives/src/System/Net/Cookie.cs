@@ -585,14 +585,17 @@ namespace System.Net
             }
             set
             {
-                m_port_implicit = false;
                 if (string.IsNullOrEmpty(value))
                 {
                     // "Port" is present but has no value.
+                    // Therefore; the effective port value is implicit.
+                    m_port_implicit = true;
                     m_port = string.Empty;
                 }
                 else
                 {
+                    // "Port" value is present, so we use the provided value rather than an implicit one.
+                    m_port_implicit = false;
                     // Parse port list
                     if (!value.StartsWith('\"') || !value.EndsWith('\"'))
                     {
