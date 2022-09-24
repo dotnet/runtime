@@ -2203,5 +2203,18 @@ namespace Internal.JitInterface
             Debug.Assert(index <= maxExactClasses);
             return index;
         }
+
+#pragma warning disable CA1822 // Mark members as static
+        private CORINFO_CLASS_STRUCT_* getObjectType(void* objPtr)
+#pragma warning restore CA1822 // Mark members as static
+        {
+            // only strings are passed here for now
+            object obj = HandleToObject((IntPtr)objPtr);
+            if (obj is string)
+            {
+                return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String));
+            }
+            return (CORINFO_CLASS_STRUCT_*)IntPtr.Zero;
+        }
     }
 }

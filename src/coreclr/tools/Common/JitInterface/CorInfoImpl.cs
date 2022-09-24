@@ -2347,14 +2347,8 @@ namespace Internal.JitInterface
         private void* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
 #pragma warning restore CA1822 // Mark members as static
         {
+            // TODO: https://github.com/dotnet/runtime/pull/75573#issuecomment-1250824543
             return (void*)IntPtr.Zero;
-        }
-
-#pragma warning disable CA1822 // Mark members as static
-        private CORINFO_CLASS_STRUCT_* getObjectType(void* typeObj)
-#pragma warning restore CA1822 // Mark members as static
-        {
-            return (CORINFO_CLASS_STRUCT_*)IntPtr.Zero;
         }
 
         private byte* getHelperName(CorInfoHelpFunc helpFunc)

@@ -2992,5 +2992,10 @@ namespace Internal.JitInterface
             // Not implemented for R2R yet
             return 0;
         }
+
+        private CORINFO_CLASS_STRUCT_* getObjectType(void* objPtr)
+        {
+            return (CORINFO_CLASS_STRUCT_*)IntPtr.Zero;
+        }
     }
 }
