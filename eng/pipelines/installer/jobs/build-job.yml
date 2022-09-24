@@ -200,34 +200,24 @@ jobs:
         value: ${{ eq(parameters.osSubgroup, '') }}
 
       - ${{ if and(eq(parameters.osSubgroup, '_musl'), eq(parameters.osGroup, 'Linux')) }}:
-        # Set output RID manually: musl isn't properly detected. Make sure to also convert linux to
-        # lowercase for RID format. (Detection normally converts, but we're preventing it.)
-        - name: OutputRidArg
-          value: /p:OutputRid=linux-musl-${{ parameters.archType }}
-        - name: RuntimeOSArg
-          value: /p:RuntimeOS=linux-musl
         - name: _PortableBuild
           value: true
+
+      - ${{ if eq(parameters.crossBuild, true) }}:
+        - name: ArchArg
+          value: -arch ${{ parameters.archType }}
 
       - name: BaseJobBuildCommand
         value: >-
           $(Build.SourcesDirectory)/build.sh -subset host+packs -ci
           $(BuildAction)
+          $(ArchArg)
           /p:CrossBuild=${{ parameters.crossBuild }}
           /p:PortableBuild=$(_PortableBuild)
           /p:SkipTests=$(SkipTests)
           $(pgoInstrumentArg)
           $(LiveOverridePathArgs)
           $(CommonMSBuildArgs)
-          $(OutputRidArg)
-          $(RuntimeOSArg)
-
-      - name: PublishArguments
-        value: >-
-          /p:PortableBuild=$(_PortableBuild)
-          $(CommonMSBuildArgs)
-          $(OutputRidArg)
-          /bl:msbuild.publish.binlog
 
       - name: installersSubsetArg
         value: --subset packs.installers

@@ -5,6 +5,7 @@ using System;
 using System.Net;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 using ILCompiler;
 using Internal.TypeSystem;
@@ -23,6 +24,7 @@ namespace Internal.IL.Stubs
         private readonly MethodDesc _targetMethod;
         private readonly Marshaller[] _marshallers;
         private readonly PInvokeMetadata _importMetadata;
+        private static readonly ConditionalWeakTable<TypeSystemContext, ConcurrentDictionary<MethodDesc, PInvokeTargetNativeMethod>> s_contexts = new ();
 
         private PInvokeILEmitter(MethodDesc targetMethod)
         {
@@ -50,9 +52,19 @@ namespace Internal.IL.Stubs
                 _targetMethod.Signature.Flags, 0, nativeReturnType,
                 nativeParameterTypes);
 
-            var rawTargetMethod = new PInvokeTargetNativeMethod(_targetMethod, nativeSig);
+            var rawTargetMethod = AllocateTargetNativeMethod(_targetMethod, nativeSig);
 
             callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(rawTargetMethod));
+
+            static PInvokeTargetNativeMethod AllocateTargetNativeMethod(MethodDesc targetMethod, MethodSignature nativeSigArg)
+            {
+                var contextMethods = s_contexts.GetOrCreateValue(targetMethod.Context);
+                if (contextMethods.TryGetValue(targetMethod, out var pinvokeTargetMethod))
+                {
+                    return pinvokeTargetMethod;
+                }
+                return contextMethods.GetOrAdd(targetMethod, new PInvokeTargetNativeMethod(targetMethod, nativeSigArg));
+            }
         }
 
         private MethodIL EmitIL()

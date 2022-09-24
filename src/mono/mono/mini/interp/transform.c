@@ -2470,6 +2470,16 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		(!strncmp ("System.Runtime.Intrinsics.Arm", klass_name_space, 29) ||
 		!strncmp ("System.Runtime.Intrinsics.X86", klass_name_space, 29))) {
 		interp_generate_void_throw (td, MONO_JIT_ICALL_mono_throw_platform_not_supported);
+	} else if (in_corlib &&
+			   (!strncmp ("System.Numerics", klass_name_space, 15) &&
+				!strcmp ("Vector", klass_name) &&
+				!strcmp (tm, "get_IsHardwareAccelerated"))) {
+		*op = MINT_LDC_I4_0;
+	} else if (in_corlib &&
+			   (!strncmp ("System.Runtime.Intrinsics", klass_name_space, 25) &&
+				!strncmp ("Vector", klass_name, 6) &&
+				!strcmp (tm, "get_IsHardwareAccelerated"))) {
+		*op = MINT_LDC_I4_0;
 	}
 
 	return FALSE;
@@ -10000,9 +10010,6 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 		header = mono_method_get_header_checked (method, error);
 		return_if_nok (error);
 	}
-
-	g_assert ((signature->param_count + signature->hasthis) < 1000);
-	// g_printerr ("TRANSFORM(0x%016lx): end %s::%s\n", mono_thread_current (), method->klass->name, method->name);
 
 	/* Make modifications to a copy of imethod, copy them back inside the lock */
 	real_imethod = imethod;
