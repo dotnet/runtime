@@ -181,20 +181,7 @@ namespace System
 
             private static void UInt64x64To128(ulong a, ulong b, ref DecCalc result)
             {
-                ulong low = UInt32x32To64((uint)a, (uint)b); // lo partial prod
-                ulong mid = UInt32x32To64((uint)a, (uint)(b >> 32)); // mid 1 partial prod
-                ulong high = UInt32x32To64((uint)(a >> 32), (uint)(b >> 32));
-                high += mid >> 32;
-                low += mid <<= 32;
-                if (low < mid)  // test for carry
-                    high++;
-
-                mid = UInt32x32To64((uint)(a >> 32), (uint)b);
-                high += mid >> 32;
-                low += mid <<= 32;
-                if (low < mid)  // test for carry
-                    high++;
-
+                ulong high = Math.BigMul(a, b, out ulong low);
                 if (high > uint.MaxValue)
                     Number.ThrowOverflowException(TypeCode.Decimal);
                 result.Low64 = low;
