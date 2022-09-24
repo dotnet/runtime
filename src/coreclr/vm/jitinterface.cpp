@@ -6028,8 +6028,6 @@ CORINFO_CLASS_HANDLE CEEInfo::getObjectType(void* typeObj)
 
     JIT_TO_EE_TRANSITION();
 
-    if (typeObj != nullptr)
-    {
         GCX_COOP();
         Object* obj = (Object*)typeObj;
         VALIDATEOBJECT(obj);
