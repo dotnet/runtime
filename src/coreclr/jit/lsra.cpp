@@ -5294,21 +5294,6 @@ void LinearScan::allocateRegisters()
                 {
                     regNumber copyReg        = assignCopyReg(currentRefPosition);
                     lastAllocatedRefPosition = currentRefPosition;
-                    bool unassign            = false;
-                    if (currentInterval->isWriteThru)
-                    {
-                        if (currentRefPosition->refType == RefTypeDef)
-                        {
-                            currentRefPosition->writeThru = true;
-                        }
-                        if (!currentRefPosition->lastUse)
-                        {
-                            if (currentRefPosition->spillAfter)
-                            {
-                                unassign = true;
-                            }
-                        }
-                    }
                     regMaskTP copyRegMask     = getRegMask(copyReg, currentInterval->registerType);
                     regMaskTP assignedRegMask = getRegMask(assignedRegister, currentInterval->registerType);
                     regsInUseThisLocation |= copyRegMask | assignedRegMask;
