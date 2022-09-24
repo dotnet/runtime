@@ -58,7 +58,6 @@ GSCookie**,IntPtr**
 bool*,ref bool
 BoolStar,byte*,bool*,bool*
 uint32_t*,ref uint
-uint64_t*,ref ulong
 void **,ref void*
 VOIDSTARSTAR,void **,void **,void **
 int32_t*,int*
@@ -71,7 +70,6 @@ wchar_t*,char*
 const wchar_t*,String
 
 uint32_t**,ref uint*
-uint64_t**,ref ulong*
 unsigned*,ref uint
 CORJIT_FLAGS*,ref CORJIT_FLAGS
 CORINFO_CONST_LOOKUP*,ref CORINFO_CONST_LOOKUP
@@ -306,7 +304,7 @@ FUNCTIONS
     bool isRIDClassDomainID(CORINFO_CLASS_HANDLE cls);
     unsigned getClassDomainID (CORINFO_CLASS_HANDLE    cls, void                  **ppIndirection);
     void* getFieldAddress(CORINFO_FIELD_HANDLE    field, VOIDSTARSTAR ppIndirection);
-    bool getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint64_t *pValue);
+    bool getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t *buffer, int bufferSize);
     CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE    field,  BoolStar pIsSpeculative);
     CORINFO_VARARGS_HANDLE getVarArgsHandle(CORINFO_SIG_INFO       *pSig, void                  **ppIndirection);
     bool canGetVarArgsHandle(CORINFO_SIG_INFO       *pSig);

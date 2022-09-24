@@ -1048,9 +1048,10 @@ void* interceptor_ICJI::getFieldAddress(
 
 bool interceptor_ICJI::getReadonlyStaticFieldValue(
           CORINFO_FIELD_HANDLE field,
-          uint64_t* pValue)
+          uint8_t* buffer,
+          int bufferSize)
 {
-    return original_ICorJitInfo->getReadonlyStaticFieldValue(field, pValue);
+    return original_ICorJitInfo->getReadonlyStaticFieldValue(field, buffer, bufferSize);
 }
 
 CORINFO_CLASS_HANDLE interceptor_ICJI::getStaticFieldCurrentClass(

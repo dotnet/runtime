@@ -3161,7 +3161,8 @@ public:
     //  * frozen object
     virtual bool getReadonlyStaticFieldValue(
                     CORINFO_FIELD_HANDLE    field,
-                    uint64_t               *pValue
+                    uint8_t                *buffer,
+                    int                     bufferSize
                     ) = 0;
 
     // If pIsSpeculative is NULL, return the class handle for the value of ref-class typed

@@ -8116,8 +8116,11 @@ GenTree* Compiler::impInitClass(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     return node;
 }
 
-GenTree* Compiler::impImportStaticReadOnlyField(UINT64 value, var_types valueType)
+GenTree* Compiler::impImportStaticReadOnlyField(uint8_t* buffer, int bufferSize, var_types valueType)
 {
+    // We plan to support bigger values for structs, but for now it's always 64bit
+    assert(bufferSize == sizeof(INT64));
+
     GenTree* tree = nullptr;
     switch (valueType)
     {
@@ -8128,34 +8131,53 @@ GenTree* Compiler::impImportStaticReadOnlyField(UINT64 value, var_types valueTyp
         case TYP_USHORT:
         case TYP_UINT:
         case TYP_INT:
-            tree = gtNewIconNode((ssize_t)value);
+        {
+            ssize_t i32;
+            memcpy(&i32, buffer, sizeof(ssize_t));
+            tree = gtNewIconNode(i32);
             break;
+        }
 
         case TYP_LONG:
         case TYP_ULONG:
-            tree = gtNewLconNode((INT64)value);
+        {
+            INT64 i64;
+            memcpy(&i64, buffer, sizeof(INT64));
+            tree = gtNewLconNode(i64);
             break;
+        }
 
         case TYP_FLOAT:
-            tree = gtNewDconNode(*((float*)&value));
+        {
+            float f32;
+            memcpy(&f32, buffer, sizeof(float));
+            tree = gtNewDconNode(f32);
             break;
+        }
 
         case TYP_DOUBLE:
-            tree = gtNewDconNode(*((double*)&value));
+        {
+            float f64;
+            memcpy(&f64, buffer, sizeof(double));
+            tree = gtNewDconNode(f64);
             break;
+        }
 
         case TYP_REF:
         {
-            if (value == 0)
+            ssize_t ptr;
+            memcpy(&ptr, buffer, sizeof(ssize_t));
+            
+            if (ptr == 0)
             {
                 tree = gtNewNull();
             }
             else
             {
                 setMethodHasFrozenObjects();
-                tree         = gtNewIconEmbHndNode((void*)value, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+                tree         = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
                 tree->gtType = TYP_REF;
-                INDEBUG(tree->AsIntCon()->gtTargetHandle = (size_t)value);
+                INDEBUG(tree->AsIntCon()->gtTargetHandle = (size_t)ptr);
             }
             break;
         }
@@ -15247,10 +15269,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         if ((aflags & CORINFO_ACCESS_GET) && (fieldInfo.fieldFlags & CORINFO_FLG_FIELD_FINAL) &&
                             !(fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP))
                         {
-                            UINT64 value;
-                            if (info.compCompHnd->getReadonlyStaticFieldValue(resolvedToken.hField, &value))
+                            const int bufferSize = sizeof(uint64_t);
+                            uint8_t buffer[bufferSize] = {0};
+                            if (info.compCompHnd->getReadonlyStaticFieldValue(resolvedToken.hField, buffer, bufferSize))
                             {
-                                GenTree* cnsValue = impImportStaticReadOnlyField(value, lclTyp);
+                                GenTree* cnsValue = impImportStaticReadOnlyField(buffer, bufferSize, lclTyp);
                                 if (cnsValue != nullptr)
                                 {
                                     op1 = cnsValue;

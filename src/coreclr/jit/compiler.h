@@ -3639,7 +3639,7 @@ protected:
 
     GenTree* impInitClass(CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
-    GenTree* impImportStaticReadOnlyField(UINT64 value, var_types valueType);
+    GenTree* impImportStaticReadOnlyField(uint8_t* buffer, int bufferSize, var_types valueType);
 
     GenTree* impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                         CORINFO_ACCESS_FLAGS    access,

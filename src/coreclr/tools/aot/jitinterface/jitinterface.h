@@ -160,7 +160,7 @@ struct JitInterfaceCallbacks
     bool (* isRIDClassDomainID)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     unsigned (* getClassDomainID)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, void** ppIndirection);
     void* (* getFieldAddress)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, void** ppIndirection);
-    bool (* getReadonlyStaticFieldValue)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, uint64_t* pValue);
+    bool (* getReadonlyStaticFieldValue)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize);
     CORINFO_CLASS_HANDLE (* getStaticFieldCurrentClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, bool* pIsSpeculative);
     CORINFO_VARARGS_HANDLE (* getVarArgsHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* pSig, void** ppIndirection);
     bool (* canGetVarArgsHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* pSig);
@@ -1636,10 +1636,11 @@ public:
 
     virtual bool getReadonlyStaticFieldValue(
           CORINFO_FIELD_HANDLE field,
-          uint64_t* pValue)
+          uint8_t* buffer,
+          int bufferSize)
 {
     CorInfoExceptionClass* pException = nullptr;
-    bool temp = _callbacks->getReadonlyStaticFieldValue(_thisHandle, &pException, field, pValue);
+    bool temp = _callbacks->getReadonlyStaticFieldValue(_thisHandle, &pException, field, buffer, bufferSize);
     if (pException != nullptr) throw pException;
     return temp;
 }

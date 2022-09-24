@@ -1461,10 +1461,11 @@ void* WrapICorJitInfo::getFieldAddress(
 
 bool WrapICorJitInfo::getReadonlyStaticFieldValue(
           CORINFO_FIELD_HANDLE field,
-          uint64_t* pValue)
+          uint8_t* buffer,
+          int bufferSize)
 {
     API_ENTER(getReadonlyStaticFieldValue);
-    bool temp = wrapHnd->getReadonlyStaticFieldValue(field, pValue);
+    bool temp = wrapHnd->getReadonlyStaticFieldValue(field, buffer, bufferSize);
     API_LEAVE(getReadonlyStaticFieldValue);
     return temp;
 }

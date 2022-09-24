@@ -3676,58 +3676,60 @@ void* MethodContext::repGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppInd
     return temp;
 }
 
-void MethodContext::recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint64_t value, bool result)
+void MethodContext::recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, bool result)
 {
     if (GetReadonlyStaticFieldValue == nullptr)
-        GetReadonlyStaticFieldValue = new LightWeightMap<DWORDLONG, DLD>();
+        GetReadonlyStaticFieldValue = new LightWeightMap<DLD, DD>();
 
-    DWORDLONG key = CastHandle(field);
-    DLD       val;
-    val.A = (DWORDLONG)value;
-    val.B = (DWORD)result;
-    GetReadonlyStaticFieldValue->Add(key, val);
-    DEBUG_REC(dmpGetReadonlyStaticFieldValue(key, val));
-}
-void MethodContext::dmpGetReadonlyStaticFieldValue(DWORDLONG key, DLD value)
-{
-    printf("GetReadonlyStaticFieldValue key field-%016llX, value-%016llX result-%08X", key, value.A, value.B);
-}
-bool MethodContext::repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint64_t* value)
-{
-    DWORDLONG key = CastHandle(field);
-    AssertMapAndKeyExist(GetReadonlyStaticFieldValue, key, ": key %016llX", key);
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(field);
+    key.B = (DWORD)bufferSize;
 
-    DLD val = GetReadonlyStaticFieldValue->Get(key);
-    DEBUG_REP(dmpGetReadonlyStaticFieldValue(key, val));
+    DWORD tmpBuf = (DWORD)-1;
+    if (buffer != nullptr && result)
+        tmpBuf = (DWORD)GetReadonlyStaticFieldValue->AddBuffer((uint8_t*)buffer, (uint32_t)bufferSize);
 
-    *value = (uint64_t)val.A;
-    return (bool)val.B;
-}
+    DD value;
+    value.A = (DWORD)result;
+    value.B = (DWORD)tmpBuf;
 
-/*
-void MethodContext::recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, void* result)
-{
-    if (GetReadonlyStaticFieldValue == nullptr)
-        GetReadonlyStaticFieldValue = new LightWeightMap<DWORDLONG, DWORDLONG>();
-
-    DWORDLONG key = CastHandle(field);
-    DWORDLONG value = DWORDLONG(result);
     GetReadonlyStaticFieldValue->Add(key, value);
     DEBUG_REC(dmpGetReadonlyStaticFieldValue(key, value));
 }
-void MethodContext::dmpGetReadonlyStaticFieldValue(DWORDLONG key, DWORDLONG value)
+void MethodContext::dmpGetReadonlyStaticFieldValue(DLD key, DD value)
 {
-    printf("GetReadonlyStaticFieldValue key field-%016llX, value field-%016llX", key, value);
+    printf("GetReadonlyStaticFieldValue key fld-%016llX bufSize-%u, result-%u", key.A, key.B, value.A);
+    GetReadonlyStaticFieldValue->Unlock();
 }
-void* MethodContext::repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field)
+bool MethodContext::repGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize)
 {
-    DWORDLONG key = CastHandle(field);
-    AssertMapAndKeyExist(GetReadonlyStaticFieldValue, key, ": key %016llX", key);
-    DWORDLONG value = GetReadonlyStaticFieldValue->Get(key);
-    DEBUG_REP(dmpGetReadonlyStaticFieldValue(key, value));
-    void* result = (void*)value;
-    return result;
-}*/
+    if (GetReadonlyStaticFieldValue == nullptr)
+        return false;
+
+    DLD key;
+    ZeroMemory(&key, sizeof(key));
+    key.A = CastHandle(field);
+    key.B = (DWORD)bufferSize;
+
+    int itemIndex = GetReadonlyStaticFieldValue->GetIndex(key);
+    if (itemIndex < 0)
+    {
+        return false;
+    }
+    else
+    {
+        DD value = GetReadonlyStaticFieldValue->Get(key);
+        DEBUG_REP(dmpGetReadonlyStaticFieldValue(key, value));
+        if (buffer != nullptr && (bool)value.A)
+        {
+            uint8_t* srcBuffer = (uint8_t*)GetReadonlyStaticFieldValue->GetBuffer(value.B);
+            Assert(srcBuffer != nullptr);
+            memcpy(buffer, srcBuffer, bufferSize);
+        }
+        return (bool)value.A;
+    }
+}
 
 void MethodContext::recGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field,
                                                   bool                 isSpeculative,

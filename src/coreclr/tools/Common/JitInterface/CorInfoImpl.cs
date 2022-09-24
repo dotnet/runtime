@@ -3314,7 +3314,7 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* field, ref ulong pHandle)
+        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* field, byte* buffer, int bufferSize)
 #pragma warning restore CA1822 // Mark members as static
         {
             return false;

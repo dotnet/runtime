@@ -11814,7 +11814,7 @@ void* CEEJitInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
     return result;
 }
 
-bool CEEJitInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint64_t* pValue)
+bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint8_t* buffer, int bufferSize)
 {
     CONTRACTL {
         THROWS;
@@ -11823,7 +11823,8 @@ bool CEEJitInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint
     } CONTRACTL_END;
 
     _ASSERT(fieldHnd != NULL);
-    _ASSERT(pValue != NULL);
+    _ASSERT(buffer != NULL);
+    _ASSERT(bufferSize == sizeof(uint64_t));
 
     bool result = false;
 
@@ -11851,13 +11852,14 @@ bool CEEJitInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint
                         Object* obj = OBJECTREFToObject(fieldObj);
                         if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj))
                         {
-                            *pValue = (uint64_t)obj;
+                            intptr_t ptr = (intptr_t)obj;
+                            memcpy(buffer, &ptr, sizeof(intptr_t));
                             result = true;
                         }
                     }
                     else
                     {
-                        *pValue = 0;
+                        memset(buffer, 0, sizeof(intptr_t));
                         result = true;
                     }
                 }
@@ -11871,46 +11873,28 @@ bool CEEJitInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint
                         switch (field->GetFieldType())
                         {
                             case ELEMENT_TYPE_BOOLEAN:
-                                *pValue = (uint64_t)*((uint8_t*)fldAddr);
+                            case ELEMENT_TYPE_I1:
+                            case ELEMENT_TYPE_U1:
+                                memcpy(buffer, fldAddr, sizeof(uint8_t));
                                 break;
                             case ELEMENT_TYPE_CHAR:
-                                *pValue = (uint64_t)*((uint16_t*)fldAddr);
-                                break;
-                            case ELEMENT_TYPE_I1:
-                                *pValue = (uint64_t)*((int8_t*)fldAddr);
-                                break;
-                            case ELEMENT_TYPE_U1:
-                                *pValue = (uint64_t)*((uint8_t*)fldAddr);
-                                break;
                             case ELEMENT_TYPE_I2:
-                                *pValue = (uint64_t)*((int16_t*)fldAddr);
-                                break;
                             case ELEMENT_TYPE_U2:
-                                *pValue = (uint64_t)*((uint16_t*)fldAddr);
+                                memcpy(buffer, fldAddr, sizeof(uint16_t));
                                 break;
                             case ELEMENT_TYPE_I4:
-                                *pValue = (uint64_t)*((int32_t*)fldAddr);
-                                break;
                             case ELEMENT_TYPE_U4:
-                                *pValue = (uint64_t)*((uint32_t*)fldAddr);
+                            case ELEMENT_TYPE_R4:
+                                memcpy(buffer, fldAddr, sizeof(uint32_t));
                                 break;
                             case ELEMENT_TYPE_I8:
-                                *pValue = (uint64_t)*((int32_t*)fldAddr);
-                                break;
                             case ELEMENT_TYPE_U8:
-                                *pValue = (uint64_t)*((uint64_t*)fldAddr);
-                                break;
-                            case ELEMENT_TYPE_R4:
-                                *pValue = (uint64_t)*((float*)fldAddr);
-                                break;
                             case ELEMENT_TYPE_R8:
-                                *pValue = (uint64_t)*((double*)fldAddr);
+                                memcpy(buffer, fldAddr, sizeof(uint64_t));
                                 break;
                             case ELEMENT_TYPE_I:
-                                *pValue = (uint64_t)*((intptr_t*)fldAddr);
-                                break;
                             case ELEMENT_TYPE_U:
-                                *pValue = (uint64_t)*((uintptr_t*)fldAddr);
+                                memcpy(buffer, fldAddr, sizeof(intptr_t));
                                 break;
                             default:
                                 result = false;
@@ -14465,12 +14449,6 @@ void* CEEInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
     EE_TO_JIT_TRANSITION();
 
     return result;
-}
-
-bool CEEInfo::getReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE fieldHnd, uint64_t* pValue)
-{
-    LIMITED_METHOD_CONTRACT;
-    UNREACHABLE();      // only called on derived class.
 }
 
 CORINFO_CLASS_HANDLE CEEInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fieldHnd,

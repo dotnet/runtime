@@ -2214,12 +2214,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static byte _getReadonlyStaticFieldValue(IntPtr thisHandle, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, ulong* pValue)
+        private static byte _getReadonlyStaticFieldValue(IntPtr thisHandle, IntPtr* ppException, CORINFO_FIELD_STRUCT_* field, byte* buffer, int bufferSize)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getReadonlyStaticFieldValue(field, ref *pValue) ? (byte)1 : (byte)0;
+                return _this.getReadonlyStaticFieldValue(field, buffer, bufferSize) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {
@@ -2806,7 +2806,7 @@ namespace Internal.JitInterface
             callbacks[146] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte>)&_isRIDClassDomainID;
             callbacks[147] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, void**, uint>)&_getClassDomainID;
             callbacks[148] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, void**, void*>)&_getFieldAddress;
-            callbacks[149] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, ulong*, byte>)&_getReadonlyStaticFieldValue;
+            callbacks[149] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, byte*, int, byte>)&_getReadonlyStaticFieldValue;
             callbacks[150] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, byte*, CORINFO_CLASS_STRUCT_*>)&_getStaticFieldCurrentClass;
             callbacks[151] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_SIG_INFO*, void**, IntPtr>)&_getVarArgsHandle;
             callbacks[152] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_SIG_INFO*, byte>)&_canGetVarArgsHandle;
