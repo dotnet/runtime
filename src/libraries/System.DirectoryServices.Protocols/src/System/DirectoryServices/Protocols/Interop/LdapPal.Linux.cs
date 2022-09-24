@@ -120,15 +120,15 @@ namespace System.DirectoryServices.Protocols
         // This option is not supported in Linux, so it would most likely throw.
         internal static int SetServerCertOption(ConnectionHandle ldapHandle, LdapOption option, VERIFYSERVERCERT outValue) => Interop.Ldap.ldap_set_option_servercert(ldapHandle, option, outValue);
 
-        internal static int BindToDirectory(ConnectionHandle ld, string who, string passwd)
+        internal static unsafe int BindToDirectory(ConnectionHandle ld, string who, string passwd)
         {
             IntPtr passwordPtr = IntPtr.Zero;
             try
             {
-                passwordPtr = LdapPal.StringToPtr(passwd, out int length);
+                passwordPtr = LdapPal.StringToPtr(passwd);
                 BerVal passwordBerval = new BerVal
                 {
-                    bv_len = length,
+                    bv_len = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((byte*)passwordPtr).Length,
                     bv_val = passwordPtr,
                 };
 
@@ -176,13 +176,6 @@ namespace System.DirectoryServices.Protocols
         internal static string PtrToString(IntPtr requestName) => Marshal.PtrToStringAnsi(requestName);
 
         internal static IntPtr StringToPtr(string s) => Marshal.StringToHGlobalAnsi(s);
-
-        internal static unsafe IntPtr StringToPtr(string s, out int length)
-        {
-            var pointer = StringToPtr(s);
-            length = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((byte*)pointer).Length;
-            return pointer;
-        }
 
         /// <summary>
         /// Function that will be sent to the Sasl interactive bind procedure which will resolve all Sasl challenges
