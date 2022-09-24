@@ -10,7 +10,7 @@ namespace System
     {
         // If you fix bugs here, please fix them in WeakReference at the same time.
 
-        // Note: While WeakReference<T> is a formally a finalizable type, the finalizer does not actually run.
+        // Note: While WeakReference<T> is formally a finalizable type, the finalizer does not actually run.
         //       Instead the instances are treated specially in GC when scanning for no longer strongly-reachable
         //       finalizable objects.
 #pragma warning disable CA1821 // Remove empty Finalizers
