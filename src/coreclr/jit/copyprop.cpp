@@ -140,6 +140,7 @@ int Compiler::optCopyProp_LclVarScore(const LclVarDsc* lclVarDsc, const LclVarDs
 // Arguments:
 //    stmt        -  Statement the tree belongs to
 //    tree        -  The local tree to perform copy propagation on
+//    lclNum      -  Number of the local "tree" refers to
 //    curSsaName  -  The map from lclNum to its recently live definitions as a stack
 //
 // Returns:
@@ -291,13 +292,6 @@ void Compiler::optCopyPropPushDef(GenTree* defNode, GenTreeLclVarCommon* lclNode
     }
 
     auto pushDef = [=](unsigned defLclNum, unsigned defSsaNum) {
-
-        // TODO-CQ: design better heuristics for propagation and remove this.
-        if ((defNode != nullptr) && defNode->IsPhiDefn())
-        {
-            defSsaNum = SsaConfig::RESERVED_SSA_NUM;
-        }
-
         // The default is "not available".
         LclSsaVarDsc* ssaDef = nullptr;
 
@@ -340,7 +334,14 @@ void Compiler::optCopyPropPushDef(GenTree* defNode, GenTreeLclVarCommon* lclNode
     }
     else if (lclNode->HasSsaName())
     {
-        pushDef(lclNum, lclNode->GetSsaNum());
+        unsigned ssaNum = lclNode->GetSsaNum();
+        if ((defNode != nullptr) && defNode->IsPhiDefn())
+        {
+            // TODO-CQ: design better heuristics for propagation and remove this.
+            ssaNum = SsaConfig::RESERVED_SSA_NUM;
+        }
+
+        pushDef(lclNum, ssaNum);
     }
 }
 
