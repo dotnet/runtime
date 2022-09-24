@@ -110,7 +110,7 @@ namespace System.Xml.Tests
                         }
                         break;
                     default:
-                        _asm = Assembly.LoadFrom(GetRuntimeInstallDir() + assemblyName + ".dll");
+                        _asm = Assembly.LoadFrom(Path.Combine(GetRuntimeInstallDir(), assemblyName + ".dll"));
                         break;
                 }
 
@@ -187,7 +187,7 @@ namespace System.Xml.Tests
             // Get mscorlib path
             var s = typeof(object).Module.FullyQualifiedName;
             // Remove mscorlib.dll from the path
-            return Directory.GetParent(s).ToString() + "\\";
+            return Directory.GetParent(s).ToString();
         }
 
         public ExceptionVerifier(string assemblyName, ITestOutputHelper output)
