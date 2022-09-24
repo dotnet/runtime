@@ -106,11 +106,6 @@ namespace System.Reflection
         }
         #endregion
 
-        #region Private Statics
-        private static readonly Type s_DecimalConstantAttributeType = typeof(DecimalConstantAttribute);
-        private static readonly Type s_CustomConstantAttributeType = typeof(CustomConstantAttribute);
-        #endregion
-
         #region Private Data Members
         private int m_tkParamDef;
         private MetadataImport m_scope;
@@ -334,7 +329,7 @@ namespace System.Reflection
                     return GetRawDateTimeConstant(attr);
                 else if (attrType == typeof(DecimalConstantAttribute))
                     return GetRawDecimalConstant(attr);
-                else if (attrType!.IsSubclassOf(s_CustomConstantAttributeType))
+                else if (attrType!.IsSubclassOf(typeof(CustomConstantAttribute)))
                     return GetRawConstant(attr);
             }
             return DBNull.Value;
@@ -350,14 +345,14 @@ namespace System.Reflection
                     return ((DateTimeConstantAttribute)customAttributes[0]).Value;
             }
 
-            customAttributes = GetCustomAttributes(s_CustomConstantAttributeType, false);
+            customAttributes = GetCustomAttributes(typeof(CustomConstantAttribute), false);
             if (customAttributes.Length != 0)
             {
                 return ((CustomConstantAttribute)customAttributes[0]).Value;
             }
             else
             {
-                customAttributes = GetCustomAttributes(s_DecimalConstantAttributeType, false);
+                customAttributes = GetCustomAttributes(typeof(DecimalConstantAttribute), false);
                 if (customAttributes.Length != 0)
                 {
                     return ((DecimalConstantAttribute)customAttributes[0]).Value;
