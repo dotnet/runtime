@@ -91,7 +91,7 @@ size_t reader_t::read_path_string(pal::string_t &str)
 {
     const char* start_ptr = m_ptr;
     size_t size = read_path_length();
-    std::unique_ptr<uint8_t[]> buffer{ new uint8_t[size + 1] };
+    std::unique_ptr<uint8_t[]> buffer { std::make_unique<uint8_t[]>(size + 1) };
     read(buffer.get(), size);
     buffer[size] = 0; // null-terminator
     pal::clr_palstring(reinterpret_cast<const char*>(buffer.get()), &str);
