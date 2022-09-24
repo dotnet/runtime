@@ -3581,70 +3581,13 @@ void MethodContext::recGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndi
         value.ppIndirection = CastPointer(*ppIndirection);
     value.fieldAddress      = CastPointer(result);
 
-    value.fieldValue = (DWORD)-1;
-
-    AssertCodeMsg(isReadyToRunCompilation != ReadyToRunCompilation::Uninitialized, EXCEPTIONCODE_MC,
-                  "ReadyToRun flag should be initialized");
-
-    // Make an attempt at stashing a copy of the value, Jit can try to access
-    // a static readonly field value.
-    if (isReadyToRunCompilation == ReadyToRunCompilation::NotReadyToRun &&
-        result > (void*)0xffff)
-    {
-        DWORDLONG scratch = 0x4242424242424242;
-        switch (cit)
-        {
-            case CORINFO_TYPE_BOOL:
-            case CORINFO_TYPE_BYTE:
-            case CORINFO_TYPE_UBYTE:
-                value.fieldValue =
-                    (DWORD)GetFieldAddress->AddBuffer((unsigned char*)result, sizeof(BYTE),
-                                                      true); // important to not merge two fields into one address
-                break;
-            case CORINFO_TYPE_CHAR:
-            case CORINFO_TYPE_SHORT:
-            case CORINFO_TYPE_USHORT:
-                value.fieldValue =
-                    (DWORD)GetFieldAddress->AddBuffer((unsigned char*)result, sizeof(WORD),
-                                                      true); // important to not merge two fields into one address
-                break;
-            case CORINFO_TYPE_INT:
-            case CORINFO_TYPE_UINT:
-            case CORINFO_TYPE_FLOAT:
-                value.fieldValue =
-                    (DWORD)GetFieldAddress->AddBuffer((unsigned char*)result, sizeof(DWORD),
-                                                      true); // important to not merge two fields into one address
-                break;
-            case CORINFO_TYPE_LONG:
-            case CORINFO_TYPE_ULONG:
-            case CORINFO_TYPE_DOUBLE:
-                value.fieldValue =
-                    (DWORD)GetFieldAddress->AddBuffer((unsigned char*)result, sizeof(DWORDLONG),
-                                                      true); // important to not merge two fields into one address
-                break;
-            case CORINFO_TYPE_NATIVEINT:
-            case CORINFO_TYPE_NATIVEUINT:
-            case CORINFO_TYPE_PTR:
-                value.fieldValue =
-                    (DWORD)GetFieldAddress->AddBuffer((unsigned char*)result, sizeof(size_t),
-                                                      true); // important to not merge two fields into one address
-                GetFieldAddress->AddBuffer((unsigned char*)&scratch, sizeof(DWORD)); // Padding out the data so we
-                                                                                     // can read it back "safetly"
-                                                                                     // on x64
-                break;
-            default:
-                break;
-        }
-    }
-
     DWORDLONG key = CastHandle(field);
     GetFieldAddress->Add(key, value);
     DEBUG_REC(dmpGetFieldAddress(key, value));
 }
 void MethodContext::dmpGetFieldAddress(DWORDLONG key, const Agnostic_GetFieldAddress& value)
 {
-    printf("GetFieldAddress key fld-%016llX, value ppi-%016llX addr-%016llX val-%u", key, value.ppIndirection,
-           value.fieldAddress, value.fieldValue);
+    printf("GetFieldAddress key fld-%016llX, value ppi-%016llX addr-%016llX", key, value.ppIndirection, value.fieldAddress);
 }
 void* MethodContext::repGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndirection)
 {
@@ -3654,26 +3597,11 @@ void* MethodContext::repGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppInd
     Agnostic_GetFieldAddress value = GetFieldAddress->Get(key);
     DEBUG_REP(dmpGetFieldAddress(key, value));
 
-    AssertCodeMsg(isReadyToRunCompilation != ReadyToRunCompilation::Uninitialized,
-        EXCEPTIONCODE_MC, "isReadyToRunCompilation should be initialized");
-
     if (ppIndirection != nullptr)
     {
         *ppIndirection = (void*)value.ppIndirection;
     }
-    void* temp;
-
-    if (value.fieldValue != (DWORD)-1)
-    {
-        temp = (void*)GetFieldAddress->GetBuffer(value.fieldValue);
-        cr->recAddressMap((void*)value.fieldAddress, temp, toCorInfoSize(repGetFieldType(field, nullptr, nullptr)));
-    }
-    else
-    {
-        temp = (void*)value.fieldAddress;
-    }
-
-    return temp;
+    return (void*)value.fieldAddress;
 }
 
 void MethodContext::recGetReadonlyStaticFieldValue(CORINFO_FIELD_HANDLE field, uint8_t* buffer, int bufferSize, bool result)

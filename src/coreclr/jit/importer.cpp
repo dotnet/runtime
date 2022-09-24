@@ -8157,7 +8157,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(uint8_t* buffer, int bufferSize,
 
         case TYP_DOUBLE:
         {
-            float f64;
+            double f64;
             memcpy(&f64, buffer, sizeof(double));
             tree = gtNewDconNode(f64);
             break;
