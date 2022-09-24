@@ -8164,7 +8164,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(uint8_t* buffer, int bufferSize,
         case TYP_LONG:
         case TYP_ULONG:
         {
-            CreateTreeFromBuffer(int64_t, gtNewIconNode);
+            CreateTreeFromBuffer(int64_t, gtNewLconNode);
             break;
         }
         case TYP_FLOAT:
