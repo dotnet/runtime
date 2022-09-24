@@ -125,10 +125,10 @@ namespace System.DirectoryServices.Protocols
             IntPtr passwordPtr = IntPtr.Zero;
             try
             {
-                passwordPtr = LdapPal.StringToPtr(passwd);
+                passwordPtr = LdapPal.StringToPtr(passwd, out int length);
                 BerVal passwordBerval = new BerVal
                 {
-                    bv_len = passwd?.Length ?? 0,
+                    bv_len = length,
                     bv_val = passwordPtr,
                 };
 
@@ -176,6 +176,25 @@ namespace System.DirectoryServices.Protocols
         internal static string PtrToString(IntPtr requestName) => Marshal.PtrToStringAnsi(requestName);
 
         internal static IntPtr StringToPtr(string s) => Marshal.StringToHGlobalAnsi(s);
+
+        internal static unsafe IntPtr StringToPtr(string s, out int length)
+        {
+            var pointer = StringToPtr(s);
+            length = 0;
+
+            if (pointer == IntPtr.Zero)
+            {
+                return pointer;
+            }
+
+            byte* stringPtr = (byte*)pointer;
+            while (stringPtr[length] != '\0')
+            {
+                length++;
+            }
+
+            return pointer;
+        }
 
         /// <summary>
         /// Function that will be sent to the Sasl interactive bind procedure which will resolve all Sasl challenges
