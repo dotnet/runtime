@@ -17143,7 +17143,8 @@ bool GenTreeVecCon::IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd32
 #endif
                 {
                     // These intrinsics have the upper elements all set to zero
-                    memset(&simd32Val, 0, simdSize - genTypeSize(simdBaseType));
+                    unsigned simdBaseSize = genTypeSize(simdBaseType);
+                    memset(reinterpret_cast<uint8_t*>(&simd32Val) + simdBaseSize, 0, simdSize - simdBaseSize);
                 }
                 else
                 {
