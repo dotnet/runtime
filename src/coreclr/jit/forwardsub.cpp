@@ -469,14 +469,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
         return false;
     }
 
-    // If lhs is mulit-reg, rhs must be too.
-    //
-    if (lhsNode->IsMultiRegNode() && !fwdSubNode->IsMultiRegNode())
-    {
-        JITDUMP(" would change multi-reg (assignment)\n");
-        return false;
-    }
-
     // Don't fwd sub overly large trees.
     // Size limit here is ad-hoc. Need to tune.
     //
@@ -663,16 +655,16 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // There are implicit assumptions downstream on where/how multi-reg ops
     // can appear.
     //
-    // Eg if fwdSubNode is a multi-reg call, parent node must be GT_ASG and the
-    // local being defined must be specially marked up.
+    // Eg if fwdSubNode is a multi-reg call, parent node must be GT_ASG and
+    // the local being defined must be specially marked up.
     //
-    if (varTypeIsStruct(fwdSubNode) && fwdSubNode->IsMultiRegCall())
+    if (varTypeIsStruct(fwdSubNode) && fwdSubNode->IsMultiRegNode())
     {
         GenTree* const parentNode = fsv.GetParentNode();
 
         if (!parentNode->OperIs(GT_ASG))
         {
-            JITDUMP(" multi-reg struct call, parent not asg\n");
+            JITDUMP(" multi-reg struct node, parent not asg\n");
             return false;
         }
 
@@ -680,7 +672,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
         if (!parentNodeLHS->OperIs(GT_LCL_VAR))
         {
-            JITDUMP(" multi-reg struct call, parent not asg(lcl, ...)\n");
+            JITDUMP(" multi-reg struct node, parent not asg(lcl, ...)\n");
             return false;
         }
 
@@ -691,7 +683,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
         JITDUMP(" [marking V%02u as multi-reg-ret]", lhsLclNum);
         lhsVarDsc->lvIsMultiRegRet = true;
-        parentNodeLHSLocal->SetMultiReg();
     }
 
     // If a method returns a multi-reg type, only forward sub locals,
@@ -731,16 +722,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
         JITDUMP(" [marking V%02u as multi-reg-ret]", fwdLclNum);
         fwdVarDsc->lvIsMultiRegRet = true;
-        fwdSubNodeLocal->SetMultiReg();
         fwdSubNodeLocal->gtFlags |= GTF_DONT_CSE;
-    }
-
-    // If the use is a multi-reg arg, don't forward sub non-locals.
-    //
-    if (fsv.GetNode()->IsMultiRegNode() && !fwdSubNode->IsMultiRegNode())
-    {
-        JITDUMP(" would change multi-reg (substitution)\n");
-        return false;
     }
 
     // If the initial has truncate on store semantics, we need to replicate

@@ -139,7 +139,7 @@ jobs:
       platform: Linux_musl_arm
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-16.04-cross-arm-alpine-20210923140502-78f7860
+        image: ubuntu-18.04-cross-arm-alpine-20220915134743-78f7860
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
@@ -165,7 +165,7 @@ jobs:
       platform: Linux_musl_arm64
       shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       container:
-        image: ubuntu-16.04-cross-arm64-alpine-20210923140502-78f7860
+        image: ubuntu-22.04-cross-arm64-alpine-20220915142421-44c622d
         registry: mcr
       jobParameters:
         runtimeFlavor: ${{ parameters.runtimeFlavor }}
