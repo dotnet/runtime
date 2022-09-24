@@ -31,6 +31,7 @@
   <ItemGroup>
     <None Include="$(TargetPath)" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     <None Include="$(AssemblyName).props" Pack="true" PackagePath="build" />
+    <Compile Include="..\Common\DefaultMarshallingInfoParser.cs" Link="Common\DefaultMarshallingInfoParser.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -43,7 +43,8 @@ namespace Microsoft.Interop
         private readonly ManagedToNativeStubCodeContext _context;
 
         public ManagedToNativeVTableMethodGenerator(
-            StubEnvironment environment,
+            TargetFramework targetFramework,
+            Version targetFrameworkVersion,
             ImmutableArray<TypePositionInfo> argTypes,
             bool setLastError,
             bool implicitThis,
@@ -73,13 +74,13 @@ namespace Microsoft.Interop
                 argTypes = newArgTypes.ToImmutableArray();
             }
 
-            _context = new ManagedToNativeStubCodeContext(environment, ReturnIdentifier, ReturnIdentifier);
+            _context = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, ReturnIdentifier);
             _marshallers = new BoundGenerators(argTypes, CreateGenerator);
 
             if (_marshallers.ManagedReturnMarshaller.Generator.UsesNativeIdentifier(_marshallers.ManagedReturnMarshaller.TypeInfo, _context))
             {
                 // If we need a different native return identifier, then recreate the context with the correct identifier before we generate any code.
-                _context = new ManagedToNativeStubCodeContext(environment, ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");
+                _context = new ManagedToNativeStubCodeContext(targetFramework, targetFrameworkVersion, ReturnIdentifier, $"{ReturnIdentifier}{StubCodeContext.GeneratedNativeIdentifierSuffix}");
             }
 
             IMarshallingGenerator CreateGenerator(TypePositionInfo p)
@@ -90,7 +91,7 @@ namespace Microsoft.Interop
                     // This check is to help with enabling the source generator for runtime libraries without making each
                     // library directly reference System.Memory and System.Runtime.CompilerServices.Unsafe unless it needs to
                     if (p.MarshallingAttributeInfo is MissingSupportMarshallingInfo
-                        && (environment.TargetFramework == TargetFramework.Net && environment.TargetFrameworkVersion.Major >= 7))
+                        && (targetFramework == TargetFramework.Net && targetFrameworkVersion.Major >= 7))
                     {
                         throw new MarshallingNotSupportedException(p, _context);
                     }

@@ -6,8 +6,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -21,35 +19,27 @@ namespace Microsoft.Interop
     [Generator]
     public sealed class VtableIndexStubGenerator : IIncrementalGenerator
     {
+        internal readonly record struct CallingConventions(ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> Syntax)
+        {
+            public bool Equals(CallingConventions other)
+            {
+                return Syntax.SequenceEqual(other.Syntax, (IEqualityComparer<FunctionPointerUnmanagedCallingConventionSyntax>)SyntaxEquivalentComparer.Instance);
+            }
+
+            public override int GetHashCode() => throw new UnreachableException();
+        }
+
         internal sealed record IncrementalStubGenerationContext(
-            StubEnvironment Environment,
             SignatureContext SignatureContext,
             ContainingSyntaxContext ContainingSyntaxContext,
             ContainingSyntax StubMethodSyntaxTemplate,
             MethodSignatureDiagnosticLocations DiagnosticLocation,
             ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> CallingConvention,
             VirtualMethodIndexData VtableIndexData,
-            IMarshallingGeneratorFactory GeneratorFactory,
+            MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> GeneratorFactory,
             ManagedTypeInfo TypeKeyType,
             ManagedTypeInfo TypeKeyOwner,
-            ImmutableArray<Diagnostic> Diagnostics)
-        {
-            public bool Equals(IncrementalStubGenerationContext? other)
-            {
-                return other is not null
-                    && StubEnvironment.AreCompilationSettingsEqual(Environment, other.Environment)
-                    && SignatureContext.Equals(other.SignatureContext)
-                    && ContainingSyntaxContext.Equals(other.ContainingSyntaxContext)
-                    && VtableIndexData.Equals(other.VtableIndexData)
-                    && CallingConvention.SequenceEqual(other.CallingConvention, (IEqualityComparer<FunctionPointerUnmanagedCallingConventionSyntax>)SyntaxEquivalentComparer.Instance)
-                    && Diagnostics.SequenceEqual(other.Diagnostics);
-            }
-
-            public override int GetHashCode()
-            {
-                throw new UnreachableException();
-            }
-        }
+            ImmutableArray<Diagnostic> Diagnostics);
 
         public static class StepNames
         {
@@ -79,7 +69,7 @@ namespace Microsoft.Interop
             var methodsWithDiagnostics = attributedMethods.Select(static (data, ct) =>
             {
                 Diagnostic? diagnostic = GetDiagnosticIfInvalidMethodForGeneration(data.Syntax, data.Symbol);
-                return new { Syntax = data.Syntax, Symbol = data.Symbol, Diagnostic = diagnostic };
+                return new { data.Syntax, data.Symbol, Diagnostic = diagnostic };
             });
 
             var methodsToGenerate = methodsWithDiagnostics.Where(static data => data.Diagnostic is null);
@@ -300,7 +290,7 @@ namespace Microsoft.Interop
             }
 
             // Create the stub.
-            var signatureContext = SignatureContext.Create(symbol, virtualMethodIndexData, environment, generatorDiagnostics, virtualMethodIndexAttr, typeof(VtableIndexStubGenerator).Assembly);
+            var signatureContext = SignatureContext.Create(symbol, DefaultMarshallingInfoParser.Create(environment, generatorDiagnostics, symbol, virtualMethodIndexData, virtualMethodIndexAttr), environment, typeof(VtableIndexStubGenerator).Assembly);
 
             var containingSyntaxContext = new ContainingSyntaxContext(syntax);
 
@@ -322,14 +312,13 @@ namespace Microsoft.Interop
             }
 
             return new IncrementalStubGenerationContext(
-                environment,
                 signatureContext,
                 containingSyntaxContext,
                 methodSyntaxTemplate,
                 new MethodSignatureDiagnosticLocations(syntax),
                 callConv,
                 virtualMethodIndexData,
-                GetMarshallingGeneratorFactory(environment),
+                ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment),
                 typeKeyType,
                 typeKeyOwner,
                 generatorDiagnostics.Diagnostics.ToImmutableArray());
@@ -365,7 +354,8 @@ namespace Microsoft.Interop
 
             // Generate stub code
             var stubGenerator = new ManagedToNativeVTableMethodGenerator(
-                methodStub.Environment,
+                methodStub.GeneratorFactory.Key.TargetFramework,
+                methodStub.GeneratorFactory.Key.TargetFrameworkVersion,
                 methodStub.SignatureContext.ElementTypeInformation,
                 methodStub.VtableIndexData.SetLastError,
                 methodStub.VtableIndexData.ImplicitThisParameter,
@@ -373,7 +363,7 @@ namespace Microsoft.Interop
                 {
                     diagnostics.ReportMarshallingNotSupported(methodStub.DiagnosticLocation, elementInfo, ex.NotSupportedDetails);
                 },
-                methodStub.GeneratorFactory);
+                methodStub.GeneratorFactory.GeneratorFactory);
 
             BlockSyntax code = stubGenerator.GenerateStubBody(
                 methodStub.VtableIndexData.Index,

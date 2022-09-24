@@ -211,5 +211,52 @@ namespace LibraryImportGenerator.UnitTests
                         output => Assert.Equal(IncrementalStepRunReason.Unchanged, output.Reason));
                 });
         }
+
+        [Fact]
+        public async Task GeneratorRun_WithNewCompilation_DoesNotKeepOldCompilationAlive()
+        {
+            string source = $"namespace NS{{{CodeSnippets.BasicParametersAndModifiers<int>()}}}";
+
+            SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Preview));
+
+            Compilation comp1 = await TestUtils.CreateCompilation(new[] { syntaxTree });
+
+            var (reference, driver) = RunTwoGeneratorOnTwoIterativeCompilationsAndReturnFirst(comp1);
+
+            GC.Collect();
+
+            Assert.False(reference.IsAlive);
+            GC.KeepAlive(driver);
+
+            static (WeakReference reference, GeneratorDriver driver) RunTwoGeneratorOnTwoIterativeCompilationsAndReturnFirst(Compilation startingCompilation)
+            {
+                Compilation comp2 = startingCompilation.AddSyntaxTrees(CSharpSyntaxTree.ParseText("struct NewType {}", new CSharpParseOptions(LanguageVersion.Preview)));
+
+                Microsoft.Interop.LibraryImportGenerator generator = new();
+                GeneratorDriver driver = TestUtils.CreateDriver(comp2, null, new[] { generator }, EnableIncrementalTrackingDriverOptions);
+
+                driver = driver.RunGenerators(comp2);
+
+                Compilation comp3 = comp2.AddSyntaxTrees(CSharpSyntaxTree.ParseText("struct NewType2 {}", new CSharpParseOptions(LanguageVersion.Preview)));
+
+                GeneratorDriver driver2 = driver.RunGenerators(comp3);
+
+                // Assert here that we did use the last result and didn't regenerate.
+                Assert.Collection(driver2.GetRunResult().Results,
+                    result =>
+                    {
+                        Assert.Collection(result.TrackedSteps[StepNames.CalculateStubInformation],
+                            step =>
+                            {
+                                Assert.Collection(step.Outputs,
+                                    output => Assert.Equal(IncrementalStepRunReason.Unchanged, output.Reason));
+                            });
+                    });
+
+                // Return a weak reference to the first edited compilation and the driver from the most recent run.
+                // The most recent run with comp3 shouldn't keep anything from comp2 alive.
+                return (new WeakReference(comp2), driver2);
+            }
+        }
     }
 }

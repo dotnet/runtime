@@ -21,36 +21,24 @@ namespace Microsoft.Interop
     [Generator]
     public sealed class LibraryImportGenerator : IIncrementalGenerator
     {
+        internal readonly record struct ForwardedAttributes(ImmutableArray<AttributeSyntax> Syntax)
+        {
+            public bool Equals(ForwardedAttributes other)
+            {
+                return Syntax.SequenceEqual(other.Syntax, (IEqualityComparer<AttributeSyntax>)SyntaxEquivalentComparer.Instance);
+            }
+
+            public override int GetHashCode() => throw new UnreachableException();
+        }
         internal sealed record IncrementalStubGenerationContext(
-            StubEnvironment Environment,
             SignatureContext SignatureContext,
             ContainingSyntaxContext ContainingSyntaxContext,
             ContainingSyntax StubMethodSyntaxTemplate,
             MethodSignatureDiagnosticLocations DiagnosticLocation,
-            ImmutableArray<AttributeSyntax> ForwardedAttributes,
+            ForwardedAttributes ForwardedAttributes,
             LibraryImportData LibraryImportData,
-            MarshallingGeneratorFactoryKey<(TargetFramework, Version, LibraryImportGeneratorOptions)> GeneratorFactoryKey,
-            ImmutableArray<Diagnostic> Diagnostics)
-        {
-            public bool Equals(IncrementalStubGenerationContext? other)
-            {
-                return other is not null
-                    && StubEnvironment.AreCompilationSettingsEqual(Environment, other.Environment)
-                    && SignatureContext.Equals(other.SignatureContext)
-                    && ContainingSyntaxContext.Equals(other.ContainingSyntaxContext)
-                    && StubMethodSyntaxTemplate.Equals(other.StubMethodSyntaxTemplate)
-                    && LibraryImportData.Equals(other.LibraryImportData)
-                    && DiagnosticLocation.Equals(DiagnosticLocation)
-                    && ForwardedAttributes.SequenceEqual(other.ForwardedAttributes, (IEqualityComparer<AttributeSyntax>)SyntaxEquivalentComparer.Instance)
-                    && GeneratorFactoryKey.Equals(other.GeneratorFactoryKey)
-                    && Diagnostics.SequenceEqual(other.Diagnostics);
-            }
-
-            public override int GetHashCode()
-            {
-                throw new UnreachableException();
-            }
-        }
+            MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version Version, LibraryImportGeneratorOptions Options)> GeneratorFactoryKey,
+            ImmutableArray<Diagnostic> Diagnostics);
 
         public static class StepNames
         {
@@ -318,12 +306,11 @@ namespace Microsoft.Interop
 
             List<AttributeSyntax> additionalAttributes = GenerateSyntaxForForwardedAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute, defaultDllImportSearchPathsAttribute);
             return new IncrementalStubGenerationContext(
-                environment,
                 signatureContext,
                 containingTypeContext,
                 methodSyntaxTemplate,
                 new MethodSignatureDiagnosticLocations(originalSyntax),
-                additionalAttributes.ToImmutableArray(),
+                new ForwardedAttributes(additionalAttributes.ToImmutableArray()),
                 libraryImportData,
                 LibraryImportGeneratorHelpers.CreateGeneratorFactory(environment, options),
                 generatorDiagnostics.Diagnostics.ToImmutableArray());
@@ -341,7 +328,8 @@ namespace Microsoft.Interop
 
             // Generate stub code
             var stubGenerator = new PInvokeStubCodeGenerator(
-                pinvokeStub.Environment,
+                pinvokeStub.GeneratorFactoryKey.Key.TargetFramework,
+                pinvokeStub.GeneratorFactoryKey.Key.Version,
                 pinvokeStub.SignatureContext.ElementTypeInformation,
                 pinvokeStub.LibraryImportData.SetLastError && !options.GenerateForwarders,
                 (elementInfo, ex) =>
@@ -358,7 +346,7 @@ namespace Microsoft.Interop
                 return (PrintForwarderStub(pinvokeStub.StubMethodSyntaxTemplate, !stubGenerator.SupportsTargetFramework, pinvokeStub, diagnostics), pinvokeStub.Diagnostics.AddRange(diagnostics.Diagnostics));
             }
 
-            ImmutableArray<AttributeSyntax> forwardedAttributes = pinvokeStub.ForwardedAttributes;
+            ImmutableArray<AttributeSyntax> forwardedAttributes = pinvokeStub.ForwardedAttributes.Syntax;
 
             const string innerPInvokeName = "__PInvoke";
 
