@@ -13,15 +13,19 @@ namespace System
     {
         // If you fix bugs here, please fix them in WeakReference at the same time.
 
-        // the instance fields are effectively readonly
-        private IntPtr m_handle;
-        private bool m_trackResurrection;
+        // Most methods using the handle should use GC.KeepAlive(this) to avoid potential handle recycling
+        // attacks (i.e. if the WeakReference instance is finalized away underneath you when you're still
+        // handling a cached value of the handle then the handle could be freed and reused).
+
+        // the handle field is effectively readonly, not formally readonly because we assign it in "Create".
+        // the lowermost bit is used to indicate whether the handle is tracking resurrection
+        private IntPtr m_handleAndKind;
 
         //Creates a new WeakReference that keeps track of target.
         private void Create(T target, bool trackResurrection)
         {
-            m_handle = RuntimeImports.RhHandleAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
-            m_trackResurrection = trackResurrection;
+            IntPtr h = RuntimeImports.RhHandleAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
+            m_handleAndKind = trackResurrection ? h | 1 : h;
 
             if (target != null)
             {
@@ -30,9 +34,11 @@ namespace System
             }
         }
 
+        private IntPtr Handle => m_handleAndKind & ~1;
+
         public void SetTarget(T target)
         {
-            IntPtr h = m_handle;
+            IntPtr h = Handle;
             // Should only happen for corner cases, like using a WeakReference from a finalizer.
             // GC can finalize the instance if it becomes F-Reachable.
             // That, however, cannot happen while we use the instance.
@@ -52,7 +58,7 @@ namespace System
         {
             get
             {
-                IntPtr h = m_handle;
+                IntPtr h = Handle;
                 // Should only happen for corner cases, like using a WeakReference from a finalizer.
                 // GC can finalize the instance if it becomes F-Reachable.
                 // That, however, cannot happen while we use the instance.
@@ -107,7 +113,7 @@ namespace System
 #endif // ENABLE_WINRT
         }
 
-        // Note: While WeakReference<T> is formally a finalizable type, the finalizer does not actually run.
+        // Note: While WeakReference<T> is a formally a finalizable type, the finalizer does not actually run.
         //       Instead the instances are treated specially in GC when scanning for no longer strongly-reachable
         //       finalizable objects.
 #pragma warning disable CA1821 // Remove empty Finalizers
@@ -117,6 +123,6 @@ namespace System
         }
 #pragma warning restore CA1821 // Remove empty Finalizers
 
-        private bool IsTrackResurrection() => m_trackResurrection;
+        private bool IsTrackResurrection() => (m_handleAndKind & 1) != 0;
     }
 }

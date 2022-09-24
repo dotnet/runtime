@@ -12,18 +12,18 @@ namespace System
     {
         // If you fix bugs here, please fix them in WeakReference<T> at the same time.
 
-        // Most methods using m_handle should use GC.KeepAlive(this) to avoid potential handle recycling
+        // Most methods using the handle should use GC.KeepAlive(this) to avoid potential handle recycling
         // attacks (i.e. if the WeakReference instance is finalized away underneath you when you're still
         // handling a cached value of the handle then the handle could be freed and reused).
 
-        // the instance fields are effectively readonly
-        internal IntPtr m_handle;
-        private  bool m_trackResurrection;
+        // the handle field is effectively readonly until the object is finalized.
+        // the lowermost bit is used to indicate whether the handle is tracking resurrection
+        private IntPtr m_handleAndKind;
 
         private void Create(object? target, bool trackResurrection)
         {
-            m_handle = RuntimeImports.RhHandleAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
-            m_trackResurrection = trackResurrection;
+            IntPtr h = RuntimeImports.RhHandleAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
+            m_handleAndKind = trackResurrection ? h | 1: h;
 
             if (target != null)
             {
@@ -32,13 +32,15 @@ namespace System
             }
         }
 
+        internal IntPtr Handle => m_handleAndKind & ~1;
+
         //Determines whether or not this instance of WeakReference still refers to an object
         //that has not been collected.
         public virtual bool IsAlive
         {
             get
             {
-                IntPtr h = m_handle;
+                IntPtr h = Handle;
 
                 // In determining whether it is valid to use this object, we need to at least expose this
                 // without throwing an exception.
@@ -60,7 +62,7 @@ namespace System
         {
             get
             {
-                IntPtr h = m_handle;
+                IntPtr h = Handle;
                 // Should only happen for corner cases, like using a WeakReference from a finalizer.
                 // GC can finalize the instance if it becomes F-Reachable.
                 // That, however, cannot happen while we use the instance.
@@ -84,7 +86,7 @@ namespace System
 
             set
             {
-                IntPtr h = m_handle;
+                IntPtr h = Handle;
                 // Should only happen for corner cases, like using a WeakReference from a finalizer.
                 // See the comment in the getter.
                 if (default(IntPtr) == h)
@@ -143,23 +145,27 @@ namespace System
         // Free all system resources associated with this reference.
         ~WeakReference()
         {
-            // Note: While WeakReference is formally a finalizable type, the finalizer does not actually run.
+            // Note: While WeakReference is a formally a finalizable type, the finalizer does not actually run.
             //       Instead the instances are treated specially in GC when scanning for no longer strongly-reachable
             //       finalizable objects.
-            // Unlike WeakReference<T> case, it is possible that this finalizer runs for a derived type.
+            //
+            // Unlike WeakReference<T> case, the instance could be of a derived type and
+            //       in such case it is finalized via a finalizer.
 
             Debug.Assert(this.GetType() != typeof(WeakReference));
 
-            IntPtr handle = m_handle;
+            IntPtr handle = Handle;
             if (handle != default(IntPtr))
             {
-                ((GCHandle)handle).Free();
-                m_handle = default(IntPtr);
+                RuntimeImports.RhHandleFree(handle);
+
+                // keep the lowermost bit that indicates whether this reference was tracking resurrection
+                m_handleAndKind &= 1;
             }
         }
 
         //Returns a boolean indicating whether or not we're tracking objects until they're collected (true)
         //or just until they're finalized (false).
-        private bool IsTrackResurrection() => m_trackResurrection;
+        private bool IsTrackResurrection() => (m_handleAndKind & 1) != 0;
     }
 }
