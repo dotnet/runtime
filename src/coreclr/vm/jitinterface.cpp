@@ -11800,21 +11800,26 @@ void* CEEJitInfo::getFrozenHandleFromInitedStaticField(CORINFO_FIELD_HANDLE fiel
 
     JIT_TO_EE_TRANSITION();
 
-    bool isSpeculative;
-    if (getStaticFieldCurrentClass(fieldHnd, &isSpeculative) != NULL && !isSpeculative)
+    FieldDesc* field = (FieldDesc*)fieldHnd;
+    if (field->IsStatic() && field->IsObjRef() && !field->IsThreadStatic())
     {
-        GCX_COOP();
-
-        FieldDesc* field = (FieldDesc*)fieldHnd;
-        _ASSERT(field->IsStatic() && field->IsObjRef());
-        OBJECTREF fieldObj = field->GetStaticOBJECTREF();
-        if (fieldObj != NULL)
+        MethodTable* pEnclosingMT = field->GetEnclosingMethodTable();
+        if (!pEnclosingMT->IsSharedByGenericInstantiations())
         {
-            Object* obj = OBJECTREFToObject(fieldObj);
-            if (!obj->GetMethodTable()->GetLoaderAllocator()->CanUnload() &&
-                GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj))
+            // Allocate space for the local class if necessary, but don't trigger
+            // class construction.
+            DomainLocalModule* pLocalModule = pEnclosingMT->GetDomainLocalModule();
+            pLocalModule->PopulateClass(pEnclosingMT);
+
+            GCX_COOP();
+            OBJECTREF fieldObj = field->GetStaticOBJECTREF();
+            if (fieldObj != NULL && pEnclosingMT->IsClassInited() && IsFdInitOnly(field->GetAttributes()))
             {
-                ptr = (void*)obj;
+                Object* obj = OBJECTREFToObject(fieldObj);
+                if (GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj))
+                {
+                    ptr = (void*)obj;
+                }
             }
         }
     }
