@@ -270,6 +270,8 @@ int ZEXPORT deflateInit2_(strm, level, method, windowBits, memLevel, strategy,
 #endif
 
     if (windowBits < 0) { /* suppress zlib wrapper */
+        if (windowBits < -15)
+            return Z_STREAM_ERROR;
         wrap = 0;
         windowBits = -windowBits;
     }
@@ -1467,7 +1469,7 @@ ZLIB_INTERNAL void fill_window(s)
  *
  * deflate_stored() is written to minimize the number of times an input byte is
  * copied. It is most efficient with large input and output buffers, which
- * maximizes the opportunites to have a single copy from next_in to next_out.
+ * maximizes the opportunities to have a single copy from next_in to next_out.
  */
 local block_state deflate_stored(s, flush)
     deflate_state *s;
