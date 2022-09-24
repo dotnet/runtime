@@ -8126,9 +8126,9 @@ GenTree* Compiler::impImportStaticReadOnlyField(uint8_t* buffer, int bufferSize,
     {
 // Use memcpy to read from the buffer and create an Icon/Dcon tree
 #define CreateTreeFromBuffer(type, treeFactory)                                                                        \
-    type v##type##;                                                                                                    \
-    memcpy(&v##type##, buffer, sizeof(type));                                                                          \
-    tree = treeFactory(v##type##);
+    type v##type;                                                                                                      \
+    memcpy(&v##type, buffer, sizeof(type));                                                                            \
+    tree = treeFactory(v##type);
 
         case TYP_BOOL:
         {
