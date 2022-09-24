@@ -151,29 +151,6 @@ namespace System
 
 #region Decimal Math Helpers
 
-            private static unsafe uint GetExponent(float f)
-            {
-                // Based on pulling out the exp from this single struct layout
-                // typedef struct {
-                //    ULONG mant:23;
-                //    ULONG exp:8;
-                //    ULONG sign:1;
-                // } SNGSTRUCT;
-
-                return (byte)(*(uint*)&f >> 23);
-            }
-
-            private static unsafe uint GetExponent(double d)
-            {
-                // Based on pulling out the exp from this double struct layout
-                // typedef struct {
-                //   DWORDLONG mant:52;
-                //   DWORDLONG signexp:12;
-                // } DBLSTRUCT;
-
-                return (uint)(*(ulong*)&d >> 52) & 0x7FFu;
-            }
-
             private static ulong UInt32x32To64(uint a, uint b)
             {
                 return (ulong)a * (ulong)b;
@@ -1515,8 +1492,7 @@ ReturnZero:
                 // than 2^93.  So a float with an exponent of -94 could just
                 // barely reach 0.5, but smaller exponents will always round to zero.
                 //
-                const uint SNGBIAS = 126;
-                int exp = (int)(GetExponent(input) - SNGBIAS);
+                int exp = input.Exponent + 1;
                 if (exp < -94)
                     return; // result should be zeroed out
 
@@ -1682,8 +1658,7 @@ ReturnZero:
                 // than 2^93.  So a float with an exponent of -94 could just
                 // barely reach 0.5, but smaller exponents will always round to zero.
                 //
-                const uint DBLBIAS = 1022;
-                int exp = (int)(GetExponent(input) - DBLBIAS);
+                int exp = input.Exponent + 1;
                 if (exp < -94)
                     return; // result should be zeroed out
 
