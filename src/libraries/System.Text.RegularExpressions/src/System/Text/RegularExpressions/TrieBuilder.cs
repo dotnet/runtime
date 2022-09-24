@@ -478,6 +478,7 @@ namespace System.Text.RegularExpressions
         [Conditional("DEBUG")]
         private void ValidateInvariants()
         {
+            TrieNode.ValidateInvariants();
             for (int i = 0; i < _nodes.Count; i++)
             {
                 TrieNode node = _nodes[i];

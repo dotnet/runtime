@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Text.RegularExpressions
 {
@@ -22,7 +23,10 @@ namespace System.Text.RegularExpressions
             };
         }
 
-        public Dictionary<char, int> Children { get; } = new();
+        // A cached empty children dictionary.
+        internal static readonly Dictionary<char, int> s_cachedEmptyChildren = new();
+
+        public Dictionary<char, int> Children { get; private set; } = new();
 
         private bool _isMatch;
 
@@ -48,8 +52,14 @@ namespace System.Text.RegularExpressions
 
         public void SetMatch()
         {
-            Children.Clear();
+            Children = s_cachedEmptyChildren;
             _isMatch = true;
+        }
+
+        [Conditional("DEBUG")]
+        public static void ValidateInvariants()
+        {
+            Debug.Assert(s_cachedEmptyChildren.Count == 0);
         }
     }
 

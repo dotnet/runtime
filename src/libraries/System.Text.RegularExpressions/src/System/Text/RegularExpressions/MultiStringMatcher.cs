@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Text.RegularExpressions
 {
@@ -35,6 +36,7 @@ namespace System.Text.RegularExpressions
             _trie = BuildTrieLinks(trie);
             _trie = RemoveUnreachableNodes(_trie);
             PossibleFirstCharacters = GetPossibleFirstCharacters(trie[TrieNode.Root].Children);
+            ValidateInvariants();
         }
 
         private static string? GetPossibleFirstCharacters(Dictionary<char, int> nodeChildren)
@@ -172,7 +174,7 @@ namespace System.Text.RegularExpressions
                 // Imagine the pattern bc|abcd. The trie's match nodes are "bc" and "abcd" as expected,
                 // but here we will make "abc" a match node because it matches "bc" and we stop. We don't
                 // need "abcd" in the trie. We clear "abc"'s children won't look at them.
-                Dictionary<char, int> children = matchLength == -1 ? node.Children : new Dictionary<char, int>();
+                Dictionary<char, int> children = matchLength == -1 ? node.Children : TrieNode.s_cachedEmptyChildren;
 
                 result[currentVertex] = new TrieNodeWithLinks()
                 {
@@ -191,6 +193,18 @@ namespace System.Text.RegularExpressions
             }
 
             return result;
+        }
+
+        [Conditional("DEBUG")]
+        private void ValidateInvariants()
+        {
+            TrieNode.ValidateInvariants();
+            ReadOnlySpan<TrieNodeWithLinks> trie = Trie;
+            for (int i = 0; i < trie.Length; i++)
+            {
+                ref readonly TrieNodeWithLinks node = ref Trie[i];
+                Debug.Assert((node.MatchLength != -1) == (node.Children.Count == 0), $"Node {i} must be childless if and only if it is a match node.");
+            }
         }
 
         internal int GetMatchCount()
