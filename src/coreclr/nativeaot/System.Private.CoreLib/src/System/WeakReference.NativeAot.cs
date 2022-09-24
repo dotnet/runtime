@@ -26,6 +26,10 @@ namespace System
             m_handleAndKind = trackResurrection ? h | 1: h;
         }
 
+        //Returns a boolean indicating whether or not we're tracking objects until they're collected (true)
+        //or just until they're finalized (false).
+        private bool IsTrackResurrection() => (m_handleAndKind & 1) != 0;
+
         internal IntPtr Handle => m_handleAndKind & ~1;
 
         //Determines whether or not this instance of WeakReference still refers to an object
@@ -114,9 +118,5 @@ namespace System
                 m_handleAndKind &= 1;
             }
         }
-
-        //Returns a boolean indicating whether or not we're tracking objects until they're collected (true)
-        //or just until they're finalized (false).
-        private bool IsTrackResurrection() => (m_handleAndKind & 1) != 0;
     }
 }

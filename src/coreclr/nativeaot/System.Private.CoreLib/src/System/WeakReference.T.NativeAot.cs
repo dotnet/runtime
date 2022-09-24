@@ -21,6 +21,10 @@ namespace System
         // the lowermost bit is used to indicate whether the handle is tracking resurrection
         private IntPtr m_handleAndKind;
 
+        //Returns a boolean indicating whether or not we're tracking objects until they're collected (true)
+        //or just until they're finalized (false).
+        private bool IsTrackResurrection() => (m_handleAndKind & 1) != 0;
+
         //Creates a new WeakReference that keeps track of target.
         private void Create(T target, bool trackResurrection)
         {
@@ -75,7 +79,5 @@ namespace System
             Debug.Assert(false, " WeakReference<T> finalizer should never run");
         }
 #pragma warning restore CA1821 // Remove empty Finalizers
-
-        private bool IsTrackResurrection() => (m_handleAndKind & 1) != 0;
     }
 }
