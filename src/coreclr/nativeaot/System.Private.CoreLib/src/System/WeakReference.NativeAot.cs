@@ -22,7 +22,7 @@ namespace System
 
         private void Create(object? target, bool trackResurrection)
         {
-            IntPtr h = RuntimeImports.RhHandleAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
+            IntPtr h = GCHandle.InternalAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
             m_handleAndKind = trackResurrection ? h | 1: h;
 
             if (target != null)
@@ -47,7 +47,7 @@ namespace System
                 if (default(IntPtr) == h)
                     return false;
 
-                bool result = (RuntimeImports.RhHandleGet(h) != null || TryGetComTarget() != null);
+                bool result = GCHandle.InternalGet(h) != null || TryGetComTarget() != null;
 
                 // must keep the instance alive as long as we use the handle.
                 GC.KeepAlive(this);
@@ -76,7 +76,7 @@ namespace System
                 if (default(IntPtr) == h)
                     return default;
 
-                object? target = RuntimeImports.RhHandleGet(h) ?? TryGetComTarget();
+                object? target = GCHandle.InternalGet(h) ?? TryGetComTarget();
 
                 // must keep the instance alive as long as we use the handle.
                 GC.KeepAlive(this);
@@ -95,7 +95,7 @@ namespace System
                 // Update the conditionalweakTable in case the target is __ComObject.
                 TrySetComTarget(value);
 
-                RuntimeImports.RhHandleSet(h, value);
+                GCHandle.InternalSet(h, value);
 
                 // must keep the instance alive as long as we use the handle.
                 GC.KeepAlive(this);
@@ -157,7 +157,7 @@ namespace System
             IntPtr handle = Handle;
             if (handle != default(IntPtr))
             {
-                RuntimeImports.RhHandleFree(handle);
+                GCHandle.InternalFree(handle);
 
                 // keep the lowermost bit that indicates whether this reference was tracking resurrection
                 m_handleAndKind &= 1;

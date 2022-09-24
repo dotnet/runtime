@@ -24,7 +24,7 @@ namespace System
         //Creates a new WeakReference that keeps track of target.
         private void Create(T target, bool trackResurrection)
         {
-            IntPtr h = RuntimeImports.RhHandleAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
+            IntPtr h = GCHandle.InternalAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
             m_handleAndKind = trackResurrection ? h | 1 : h;
 
             if (target != null)
@@ -48,7 +48,7 @@ namespace System
             // Update the conditionalweakTable in case the target is __ComObject.
             TrySetComTarget(target);
 
-            RuntimeImports.RhHandleSet(h, target);
+            GCHandle.InternalSet(h, target);
 
             // must keep the instance alive as long as we use the handle.
             GC.KeepAlive(this);
@@ -66,7 +66,7 @@ namespace System
                     return default;
 
                 // unsafe cast is ok as the handle cannot be destroyed and recycled while we keep the instance alive
-                T? target = Unsafe.As<T?>(RuntimeImports.RhHandleGet(h)) ?? TryGetComTarget() as T;
+                T? target = Unsafe.As<T?>(GCHandle.InternalGet(h)) ?? TryGetComTarget() as T;
 
                 // must keep the instance alive as long as we use the handle.
                 GC.KeepAlive(this);
