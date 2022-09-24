@@ -33,6 +33,7 @@ namespace System.Text.RegularExpressions
         internal MultiStringMatcher(List<TrieNode> trie)
         {
             _trie = BuildTrieLinks(trie);
+            _trie = RemoveUnreachableNodes(_trie);
             PossibleFirstCharacters = GetPossibleFirstCharacters(trie[TrieNode.Root].Children);
         }
 
@@ -55,6 +56,64 @@ namespace System.Text.RegularExpressions
                     span[i++] = child.Key;
                 }
             });
+        }
+
+        private static TrieNodeWithLinks[] RemoveUnreachableNodes(TrieNodeWithLinks[] trie)
+        {
+            int reachableCount = 0;
+            foreach (ref readonly TrieNodeWithLinks node in trie.AsSpan())
+            {
+                // If a node's children is null it means that it was not touched
+                // during the trie link assignment, and we can remove it.
+                if (node.Children is not null)
+                {
+                    reachableCount++;
+                }
+            }
+
+            // All nodes are reachable; there's nothing to remove.
+            if (reachableCount == trie.Length)
+            {
+                return trie;
+            }
+
+            int[] nodeIndexMapping = new int[reachableCount];
+            int nextNodeIndex = 0;
+            for (int i = 0; i < trie.Length; i++)
+            {
+                if (trie[i].Children is not null)
+                {
+                    nodeIndexMapping[nextNodeIndex++] = i;
+                }
+            }
+
+            TrieNodeWithLinks[] newTrie = new TrieNodeWithLinks[reachableCount];
+
+            for (int i = 0; i < newTrie.Length; i++)
+            {
+                ref readonly TrieNodeWithLinks node = ref trie[i];
+                Dictionary<char, int> children = node.Children;
+                if (children.Count != 0)
+                {
+                    Dictionary<char, int> newChildren = new Dictionary<char, int>();
+                    foreach (KeyValuePair<char, int> child in children)
+                    {
+                        newChildren.Add(child.Key, nodeIndexMapping[child.Value]);
+                    }
+                }
+
+                newTrie[i] = new TrieNodeWithLinks()
+                {
+#if DEBUG
+                    Path = node.Path,
+#endif
+                    Children = children,
+                    SuffixLink = nodeIndexMapping[node.SuffixLink],
+                    MatchLength = node.MatchLength
+                };
+            }
+
+            return newTrie;
         }
 
         private static TrieNodeWithLinks[] BuildTrieLinks(List<TrieNode> trie)
@@ -109,18 +168,23 @@ namespace System.Text.RegularExpressions
 
                     matchLength = node.IsMatch ? node.Depth : result[suffixLink].MatchLength;
                 }
+                // We remove children from match nodes when building the trie, but we have to do it again.
+                // Imagine the pattern bc|abcd. The trie's match nodes are "bc" and "abcd" as expected,
+                // but here we will make "abc" a match node because it matches "bc" and we stop. We don't
+                // need "abcd" in the trie. We clear "abc"'s children won't look at them.
+                Dictionary<char, int> children = matchLength == -1 ? node.Children : new Dictionary<char, int>();
 
                 result[currentVertex] = new TrieNodeWithLinks()
                 {
 #if DEBUG || REGEXGENERATOR
                     Path = node.Path,
 #endif
-                    Children = node.Children,
+                    Children = children,
                     SuffixLink = suffixLink,
                     MatchLength = matchLength
                 };
 
-                foreach (KeyValuePair<char, int> vertex in node.Children)
+                foreach (KeyValuePair<char, int> vertex in children)
                 {
                     vertexQueue.Enqueue(vertex.Value);
                 }
