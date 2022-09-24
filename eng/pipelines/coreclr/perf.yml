@@ -39,6 +39,7 @@ jobs:
 
 - template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
   parameters:
+    collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
     ${{ and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
       runProfile: 'non-v8'
     ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
