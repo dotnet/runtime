@@ -70,7 +70,7 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// The present value of the options, equivalent to <c>Get(Options.CurrentValue)</c>.
+        /// The present value of the options, equivalent to <c>Get(Options.DefaultName)</c>.
         /// </summary>
         /// <exception cref="OptionsValidationException">One or more <see cref="IValidateOptions{TOptions}"/> return failed <see cref="ValidateOptionsResult"/> when validating the <typeparamref name="TOptions"/> instance been created.</exception>
         /// <exception cref="MissingMethodException">The <typeparamref name="TOptions"/> does not have a public parameterless constructor or <typeparamref name="TOptions"/> is <see langword="abstract"/>.</exception>
