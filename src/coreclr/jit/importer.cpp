@@ -8167,7 +8167,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(uint8_t* buffer, int bufferSize,
         {
             ssize_t ptr;
             memcpy(&ptr, buffer, sizeof(ssize_t));
-            
+
             if (ptr == 0)
             {
                 tree = gtNewNull();
@@ -15269,8 +15269,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         if ((aflags & CORINFO_ACCESS_GET) && (fieldInfo.fieldFlags & CORINFO_FLG_FIELD_FINAL) &&
                             !(fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP))
                         {
-                            const int bufferSize = sizeof(uint64_t);
-                            uint8_t buffer[bufferSize] = {0};
+                            const int bufferSize         = sizeof(uint64_t);
+                            uint8_t   buffer[bufferSize] = {0};
                             if (info.compCompHnd->getReadonlyStaticFieldValue(resolvedToken.hField, buffer, bufferSize))
                             {
                                 GenTree* cnsValue = impImportStaticReadOnlyField(buffer, bufferSize, lclTyp);
