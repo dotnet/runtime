@@ -7,43 +7,17 @@ namespace System
 {
     public partial class WeakReference
     {
-        private bool trackResurrection;
-        private GCHandle handle;
-
-        public virtual bool IsAlive => Target != null;
-
-        public virtual object? Target
-        {
-            get
-            {
-                if (!handle.IsAllocated)
-                    return null;
-                return handle.Target;
-            }
-            set
-            {
-                handle.Target = value;
-            }
-        }
-
+        // Free all system resources associated with this reference.
         ~WeakReference()
         {
-            handle.Free();
-        }
+            IntPtr handle = Handle;
+            if (handle != default(IntPtr))
+            {
+                GCHandle.InternalFree(handle);
 
-        private void Create(object? target, bool trackResurrection)
-        {
-            if (trackResurrection)
-            {
-                this.trackResurrection = true;
-                handle = GCHandle.Alloc(target, GCHandleType.WeakTrackResurrection);
-            }
-            else
-            {
-                handle = GCHandle.Alloc(target, GCHandleType.Weak);
+                // keep the bit that indicates whether this reference was tracking resurrection
+                m_handleAndKind &= TracksResurrectionBit;
             }
         }
-
-        private bool IsTrackResurrection() => trackResurrection;
     }
 }

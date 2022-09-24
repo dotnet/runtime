@@ -8,41 +8,17 @@ namespace System
 {
     public partial class WeakReference<T>
     {
-        private GCHandle handle;
-        private bool trackResurrection;
-
-        private T? Target
-        {
-            get
-            {
-                GCHandle h = handle;
-                return h.IsAllocated ? (T?)h.Target : null;
-            }
-        }
-
+        // Free all system resources associated with this reference.
         ~WeakReference()
         {
-            handle.Free();
-        }
+            IntPtr handle = Handle;
+            if (handle != default(IntPtr))
+            {
+                GCHandle.InternalFree(handle);
 
-        private void Create(T target, bool trackResurrection)
-        {
-            if (trackResurrection)
-            {
-                this.trackResurrection = true;
-                handle = GCHandle.Alloc(target, GCHandleType.WeakTrackResurrection);
-            }
-            else
-            {
-                handle = GCHandle.Alloc(target, GCHandleType.Weak);
+                // keep the bit that indicates whether this reference was tracking resurrection
+                m_handleAndKind &= TracksResurrectionBit;
             }
         }
-
-        public void SetTarget(T target)
-        {
-            handle.Target = target;
-        }
-
-        private bool IsTrackResurrection() => trackResurrection;
     }
 }
