@@ -1450,6 +1450,15 @@ void* WrapICorJitInfo::getFieldAddress(
     return temp;
 }
 
+void* WrapICorJitInfo::getFrozenHandleFromInitedStaticField(
+          CORINFO_FIELD_HANDLE field)
+{
+    API_ENTER(getFrozenHandleFromInitedStaticField);
+    void* temp = wrapHnd->getFrozenHandleFromInitedStaticField(field);
+    API_LEAVE(getFrozenHandleFromInitedStaticField);
+    return temp;
+}
+
 CORINFO_CLASS_HANDLE WrapICorJitInfo::getStaticFieldCurrentClass(
           CORINFO_FIELD_HANDLE field,
           bool* pIsSpeculative)

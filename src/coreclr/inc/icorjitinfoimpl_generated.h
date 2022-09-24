@@ -605,6 +605,9 @@ void* getFieldAddress(
           CORINFO_FIELD_HANDLE field,
           void** ppIndirection) override;
 
+void* getFrozenHandleFromInitedStaticField(
+          CORINFO_FIELD_HANDLE field) override;
+
 CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(
           CORINFO_FIELD_HANDLE field,
           bool* pIsSpeculative) override;

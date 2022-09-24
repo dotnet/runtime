@@ -11788,6 +11788,42 @@ void* CEEJitInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
     return result;
 }
 
+void* CEEJitInfo::getFrozenHandleFromInitedStaticField(CORINFO_FIELD_HANDLE fieldHnd)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    void* ptr = nullptr;
+
+    JIT_TO_EE_TRANSITION();
+
+    bool isSpeculative;
+    if (getStaticFieldCurrentClass(fieldHnd, &isSpeculative) != NULL && !isSpeculative)
+    {
+        GCX_COOP();
+
+        FieldDesc* field = (FieldDesc*)fieldHnd;
+        _ASSERT(field->IsStatic() && field->IsObjRef());
+        OBJECTREF fieldObj = field->GetStaticOBJECTREF();
+        if (fieldObj != NULL)
+        {
+            Object* obj = OBJECTREFToObject(fieldObj);
+            if (!obj->GetMethodTable()->GetLoaderAllocator()->CanUnload() &&
+                GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(obj))
+            {
+                ptr = (void*)obj;
+            }
+        }
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return ptr;
+}
+
 /*********************************************************************/
 CORINFO_CLASS_HANDLE CEEJitInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fieldHnd,
                                                             bool* pIsSpeculative)
@@ -14326,6 +14362,12 @@ void* CEEInfo::getFieldAddress(CORINFO_FIELD_HANDLE fieldHnd,
     EE_TO_JIT_TRANSITION();
 
     return result;
+}
+
+void* CEEInfo::getFrozenHandleFromInitedStaticField(CORINFO_FIELD_HANDLE CORINFO_FIELD_HANDLE)
+{
+    LIMITED_METHOD_CONTRACT;
+    UNREACHABLE();      // only called on derived class.
 }
 
 CORINFO_CLASS_HANDLE CEEInfo::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE fieldHnd,

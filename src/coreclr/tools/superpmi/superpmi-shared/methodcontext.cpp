@@ -3653,6 +3653,30 @@ void* MethodContext::repGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppInd
     return temp;
 }
 
+void MethodContext::recGetFrozenHandleFromInitedStaticField(CORINFO_FIELD_HANDLE field, void* result)
+{
+    if (GetFrozenHandleFromInitedStaticField == nullptr)
+        GetFrozenHandleFromInitedStaticField = new LightWeightMap<DWORDLONG, DWORDLONG>();
+
+    DWORDLONG key = CastHandle(field);
+    DWORDLONG value = DWORDLONG(result);
+    GetFrozenHandleFromInitedStaticField->Add(key, value);
+    DEBUG_REC(dmpGetFrozenHandleFromInitedStaticField(key, value));
+}
+void MethodContext::dmpGetFrozenHandleFromInitedStaticField(DWORDLONG key, DWORDLONG value)
+{
+    printf("GetFrozenHandleFromInitedStaticField key field-%016llX, value field-%016llX", key, value);
+}
+void* MethodContext::repGetFrozenHandleFromInitedStaticField(CORINFO_FIELD_HANDLE field)
+{
+    DWORDLONG key = CastHandle(field);
+    AssertMapAndKeyExist(GetFrozenHandleFromInitedStaticField, key, ": key %016llX", key);
+    DWORDLONG value = GetFrozenHandleFromInitedStaticField->Get(key);
+    DEBUG_REP(dmpGetFrozenHandleFromInitedStaticField(key, value));
+    void* result = (void*)value;
+    return result;
+}
+
 void MethodContext::recGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field,
                                                   bool                 isSpeculative,
                                                   CORINFO_CLASS_HANDLE result)

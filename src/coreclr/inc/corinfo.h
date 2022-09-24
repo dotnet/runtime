@@ -3150,6 +3150,11 @@ public:
                     void                  **ppIndirection = NULL
                     ) = 0;
 
+    // Returns frozen object handle if field is a static readonly field of an initialized type
+    virtual void* getFrozenHandleFromInitedStaticField(
+                    CORINFO_FIELD_HANDLE field
+                    ) = 0;
+
     // If pIsSpeculative is NULL, return the class handle for the value of ref-class typed
     // static readonly fields, if there is a unique location for the static and the class
     // is already initialized.

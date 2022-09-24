@@ -1040,6 +1040,12 @@ void* interceptor_ICJI::getFieldAddress(
     return original_ICorJitInfo->getFieldAddress(field, ppIndirection);
 }
 
+void* interceptor_ICJI::getFrozenHandleFromInitedStaticField(
+          CORINFO_FIELD_HANDLE field)
+{
+    return original_ICorJitInfo->getFrozenHandleFromInitedStaticField(field);
+}
+
 CORINFO_CLASS_HANDLE interceptor_ICJI::getStaticFieldCurrentClass(
           CORINFO_FIELD_HANDLE field,
           bool* pIsSpeculative)

@@ -303,6 +303,7 @@ FUNCTIONS
     bool isRIDClassDomainID(CORINFO_CLASS_HANDLE cls);
     unsigned getClassDomainID (CORINFO_CLASS_HANDLE    cls, void                  **ppIndirection);
     void* getFieldAddress(CORINFO_FIELD_HANDLE    field, VOIDSTARSTAR ppIndirection);
+    void* getFrozenHandleFromInitedStaticField(CORINFO_FIELD_HANDLE field);
     CORINFO_CLASS_HANDLE getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE    field,  BoolStar pIsSpeculative);
     CORINFO_VARARGS_HANDLE getVarArgsHandle(CORINFO_SIG_INFO       *pSig, void                  **ppIndirection);
     bool canGetVarArgsHandle(CORINFO_SIG_INFO       *pSig);

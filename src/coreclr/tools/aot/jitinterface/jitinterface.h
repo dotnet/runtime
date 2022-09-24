@@ -159,6 +159,7 @@ struct JitInterfaceCallbacks
     bool (* isRIDClassDomainID)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     unsigned (* getClassDomainID)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, void** ppIndirection);
     void* (* getFieldAddress)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, void** ppIndirection);
+    void* (* getFrozenHandleFromInitedStaticField)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field);
     CORINFO_CLASS_HANDLE (* getStaticFieldCurrentClass)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE field, bool* pIsSpeculative);
     CORINFO_VARARGS_HANDLE (* getVarArgsHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* pSig, void** ppIndirection);
     bool (* canGetVarArgsHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* pSig);
@@ -1619,6 +1620,15 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     void* temp = _callbacks->getFieldAddress(_thisHandle, &pException, field, ppIndirection);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual void* getFrozenHandleFromInitedStaticField(
+          CORINFO_FIELD_HANDLE field)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    void* temp = _callbacks->getFrozenHandleFromInitedStaticField(_thisHandle, &pException, field);
     if (pException != nullptr) throw pException;
     return temp;
 }

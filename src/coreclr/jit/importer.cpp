@@ -15287,7 +15287,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         // Replace static read-only fields with constant if possible
                         if ((aflags & CORINFO_ACCESS_GET) && (fieldInfo.fieldFlags & CORINFO_FLG_FIELD_FINAL) &&
                             !(fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP) &&
-                            (varTypeIsIntegral(lclTyp) || varTypeIsFloating(lclTyp)))
+                            (varTypeIsIntegral(lclTyp) || varTypeIsFloating(lclTyp) || (lclTyp == TYP_REF)))
                         {
                             CorInfoInitClassResult initClassResult =
                                 info.compCompHnd->initClass(resolvedToken.hField, info.compMethodHnd,
@@ -15295,22 +15295,39 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                             if (initClassResult & CORINFO_INITCLASS_INITIALIZED)
                             {
-                                void** pFldAddr = nullptr;
-                                void*  fldAddr =
-                                    info.compCompHnd->getFieldAddress(resolvedToken.hField, (void**)&pFldAddr);
+                                if (varTypeIsIntegral(lclTyp) || varTypeIsFloating(lclTyp))
+                                {
+                                    void** pFldAddr = nullptr;
+                                    void*  fldAddr =
+                                        info.compCompHnd->getFieldAddress(resolvedToken.hField, (void**)&pFldAddr);
 
-                                // We should always be able to access this static's address directly
-                                //
-                                assert(pFldAddr == nullptr);
+                                    // We should always be able to access this static's address directly
+                                    //
+                                    assert(pFldAddr == nullptr);
 
-                                op1 = impImportStaticReadOnlyField(fldAddr, lclTyp);
+                                    op1 = impImportStaticReadOnlyField(fldAddr, lclTyp);
 
-                                // Widen small types since we're propagating the value
-                                // instead of producing an indir.
-                                //
-                                op1->gtType = genActualType(lclTyp);
+                                    // Widen small types since we're propagating the value
+                                    // instead of producing an indir.
+                                    //
+                                    op1->gtType = genActualType(lclTyp);
 
-                                goto FIELD_DONE;
+                                    goto FIELD_DONE;
+                                }
+                                else
+                                {
+                                    assert(lclTyp == TYP_REF);
+                                    void* frozenHandle =
+                                        info.compCompHnd->getFrozenHandleFromInitedStaticField(resolvedToken.hField);
+                                    if (frozenHandle != nullptr)
+                                    {
+                                        setMethodHasFrozenObjects();
+                                        op1 = gtNewIconEmbHndNode(frozenHandle, nullptr, GTF_ICON_OBJ_HDL, nullptr);
+                                        op1->gtType = TYP_REF;
+                                        INDEBUG(op1->AsIntCon()->gtTargetHandle = (size_t)frozenHandle);
+                                        goto FIELD_DONE;
+                                    }
+                                }
                             }
                         }
 

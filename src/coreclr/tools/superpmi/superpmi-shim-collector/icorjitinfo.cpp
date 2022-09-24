@@ -1723,6 +1723,14 @@ void* interceptor_ICJI::getFieldAddress(CORINFO_FIELD_HANDLE field, void** ppInd
     return temp;
 }
 
+void* interceptor_ICJI::getFrozenHandleFromInitedStaticField(CORINFO_FIELD_HANDLE field)
+{
+    mc->cr->AddCall("getFrozenHandleFromInitedStaticField");
+    void* result = original_ICorJitInfo->getFrozenHandleFromInitedStaticField(field);
+    mc->recGetFrozenHandleFromInitedStaticField(field, result);
+    return result;
+}
+
 // return the class handle for the current value of a static field
 CORINFO_CLASS_HANDLE interceptor_ICJI::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative)
 {
