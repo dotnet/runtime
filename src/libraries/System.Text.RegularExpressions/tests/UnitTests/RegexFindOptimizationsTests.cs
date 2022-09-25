@@ -130,6 +130,8 @@ namespace System.Text.RegularExpressions.Tests
         [Theory]
         [InlineData(@".ab", RegexOptions.None, (int)FindNextStartingPositionMode.FixedDistanceString_LeftToRight, "ab", 1)]
         [InlineData(@".ab\w\w\wcdef\w\w\w\w\wghijklmnopq\w\w\w", RegexOptions.None, (int)FindNextStartingPositionMode.FixedDistanceString_LeftToRight, "ghijklmnopq", 15)]
+        [InlineData(@"a[Bb]c[Dd]ef", RegexOptions.None, (int)FindNextStartingPositionMode.FixedDistanceString_LeftToRight, "ef", 4)]
+        [InlineData(@"a[Bb]cd[Ee]fgh[Ii]", RegexOptions.None, (int)FindNextStartingPositionMode.FixedDistanceString_LeftToRight, "fgh", 5)]
         public void FixedDistanceString(string pattern, RegexOptions options, int expectedMode, string expectedString, int distance)
         {
             RegexFindOptimizations opts = ComputeOptimizations(pattern, options);
@@ -141,8 +143,6 @@ namespace System.Text.RegularExpressions.Tests
         [Theory]
         [InlineData(@"january|february|march|april|may|june|july|august|september|october|november|december", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 12, 69)]
         [InlineData(@"a{20}|b|c|d|e|f", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 6, 18)]
-        [InlineData(@"a[Bb]c[Dd]ef", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 4, 18)]
-        [InlineData(@"a[Bb]cd[Ee]fgh[Ii]", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 8, 32)]
         [InlineData(@"(abc|defg){1,2}\z", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 2, 8)]
         [InlineData(@"ab|cd|ef|gh", RegexOptions.None, (int)FindNextStartingPositionMode.LeadingMultiString_LeftToRight, 4, 9)]
         public void LeadingMultiString(string pattern, RegexOptions options, int expectedMode, int expectedMatchCount, int expectedTrieNodeCount)
