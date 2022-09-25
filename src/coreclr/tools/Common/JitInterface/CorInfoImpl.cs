@@ -3312,7 +3312,7 @@ namespace Internal.JitInterface
 #pragma warning restore CA1822 // Mark members as static
         {
             FieldDesc field = HandleToObject(fieldHandle);
-            if (field.IsStatic && !field.IsThreadStatic && field.IsInitOnly && !field.IsIntrinsic && !field.HasGCStaticBase &&
+            if (field.IsStatic && !field.IsThreadStatic && field.IsInitOnly && !field.IsIntrinsic &&
                 !_compilation.HasLazyStaticConstructor(field.OwningType) && field.OwningType is MetadataType owningType)
             {
                 switch (field.FieldType.Category)
@@ -3329,15 +3329,40 @@ namespace Internal.JitInterface
                     case TypeFlags.UInt64:
                     case TypeFlags.Single:
                     case TypeFlags.Double:
+                    case TypeFlags.Class:
                         {
                             PreinitializationManager preinitManager = _compilation.NodeFactory.PreinitializationManager;
                             if (preinitManager.IsPreinitialized(owningType))
                             {
                                 TypePreinit.ISerializableValue value = preinitManager
                                     .GetPreinitializationInfo(owningType).GetFieldValue(field);
-                                if (value.WriteFieldData(new Span<byte>(buffer, bufferSize)))
+
+                                object data;
+                                if (value.GetRawData(out data))
                                 {
-                                    return true;
+                                    if (data is byte[] bytes && bytes.Length <= bufferSize)
+                                    {
+                                        Debug.Assert(!field.HasGCStaticBase);
+                                        bytes.AsSpan().CopyTo(new Span<byte>(buffer, bufferSize));
+                                        return true;
+                                    }
+
+                                    if (data is null)
+                                    {
+                                        Debug.Assert(field.FieldType.Category == TypeFlags.Class && field.HasGCStaticBase);
+
+                                        *((nint*)buffer) = 0;
+                                        return true;
+                                    }
+
+                                    if (data is string str)
+                                    {
+                                        Debug.Assert(field.FieldType.Category == TypeFlags.Class && field.HasGCStaticBase);
+
+                                        FrozenStringNode stringObject = _compilation.NodeFactory.SerializedStringObject(str);
+                                        *((nint*)buffer) = ObjectToHandle(stringObject);
+                                        return true;
+                                    }
                                 }
                             }
                         }

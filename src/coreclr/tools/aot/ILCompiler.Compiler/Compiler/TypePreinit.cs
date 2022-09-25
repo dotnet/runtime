@@ -1705,7 +1705,7 @@ namespace ILCompiler
         {
             void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory);
 
-            bool WriteFieldData(Span<byte> dest);
+            bool GetRawData(out object data);
         }
 
         /// <summary>
@@ -1769,8 +1769,9 @@ namespace ILCompiler
 
             public abstract void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory);
 
-            public virtual bool WriteFieldData(Span<byte> dest)
+            public virtual bool GetRawData(out object data)
             {
+                data = null;
                 return false;
             }
 
@@ -1862,14 +1863,9 @@ namespace ILCompiler
                 builder.EmitBytes(InstanceBytes);
             }
 
-            public override bool WriteFieldData(Span<byte> dest)
+            public override bool GetRawData(out object data)
             {
-                byte[] data = InstanceBytes;
-                if (dest.Length < data.Length)
-                {
-                    return false;
-                }
-                data.AsSpan().CopyTo(dest);
+                data = InstanceBytes;
                 return true;
             }
 
@@ -2241,6 +2237,12 @@ namespace ILCompiler
             public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
             {
                 builder.EmitPointerReloc(factory.SerializedStringObject(_value));
+            }
+
+            public override bool GetRawData(out object data)
+            {
+                data = _value;
+                return true;
             }
 
             public override ReferenceTypeValue ToForeignInstance(int baseInstructionCounter) => this;
