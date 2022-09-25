@@ -903,6 +903,7 @@ private:
         IndirTransform       transform   = SelectLocalIndirTransform(val, user, &indirLayout);
         GenTree*             indir       = val.Node();
         unsigned             lclNum      = val.LclNum();
+        LclVarDsc*           varDsc      = m_compiler->lvaGetDesc(lclNum);
         GenTreeLclVarCommon* lclNode     = nullptr;
 
         switch (transform)
@@ -919,12 +920,17 @@ private:
             case IndirTransform::BitCast:
                 indir->ChangeOper(GT_BITCAST);
                 indir->gtGetOp1()->ChangeOper(GT_LCL_VAR);
-                indir->gtGetOp1()->ChangeType(m_compiler->lvaGetDesc(lclNum)->TypeGet());
+                indir->gtGetOp1()->ChangeType(varDsc->TypeGet());
                 indir->gtGetOp1()->AsLclVar()->SetLclNum(lclNum);
                 lclNode = indir->gtGetOp1()->AsLclVarCommon();
                 break;
 
             case IndirTransform::LclVar:
+                if (indir->TypeGet() != varDsc->TypeGet())
+                {
+                    assert(genTypeSize(indir) == genTypeSize(varDsc)); // BOOL <-> UBYTE.
+                    indir->ChangeType(varDsc->lvNormalizeOnLoad() ? varDsc->TypeGet() : genActualType(varDsc));
+                }
                 indir->ChangeOper(GT_LCL_VAR);
                 indir->AsLclVar()->SetLclNum(lclNum);
                 lclNode = indir->AsLclVarCommon();
@@ -939,7 +945,7 @@ private:
 
                 // Promoted locals aren't currently handled here so partial access can't be
                 // later be transformed into a LCL_VAR and the variable cannot be enregistered.
-                m_compiler->lvaSetVarDoNotEnregister(val.LclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+                m_compiler->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
                 break;
 
             default:
@@ -952,12 +958,15 @@ private:
         {
             lclNodeFlags |= (GTF_VAR_DEF | GTF_DONT_CSE);
 
-            unsigned lhsSize = indir->TypeIs(TYP_STRUCT) ? indirLayout->GetSize() : genTypeSize(indir);
-            unsigned lclSize = m_compiler->lvaLclExactSize(val.LclNum());
-            if (lhsSize != lclSize)
+            if (!indir->OperIs(GT_LCL_VAR))
             {
-                assert(lhsSize < lclSize);
-                lclNodeFlags |= GTF_VAR_USEASG;
+                unsigned lhsSize = indir->TypeIs(TYP_STRUCT) ? indirLayout->GetSize() : genTypeSize(indir);
+                unsigned lclSize = m_compiler->lvaLclExactSize(lclNum);
+                if (lhsSize != lclSize)
+                {
+                    assert(lhsSize < lclSize);
+                    lclNodeFlags |= GTF_VAR_USEASG;
+                }
             }
         }
 
