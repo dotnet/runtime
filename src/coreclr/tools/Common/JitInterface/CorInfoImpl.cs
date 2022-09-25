@@ -3308,9 +3308,26 @@ namespace Internal.JitInterface
         }
 
 #pragma warning disable CA1822 // Mark members as static
-        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* field, byte* buffer, int bufferSize)
+        private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize)
 #pragma warning restore CA1822 // Mark members as static
         {
+            /*
+            FieldDesc field = HandleToObject(fieldHandle);
+            if (field.IsStatic && !field.IsThreadStatic && field.IsInitOnly && !field.IsIntrinsic && !field.HasGCStaticBase &&
+                !_compilation.HasLazyStaticConstructor(field.OwningType))
+            {
+                switch (field.FieldType.Category)
+                {
+                    case TypeFlags.Int32:
+                        {
+                            var baseAddress = _compilation.NodeFactory.TypeGCStaticsSymbol((MetadataType)field.OwningType);
+                            *((int*)buffer) = 42;
+                            return true;
+                        }
+                        break;
+                }
+            }
+            */
             return false;
         }
 

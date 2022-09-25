@@ -15278,6 +15278,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         usesHelper = true;
                         break;
 
+                    case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_ADDRESS:
                         // Replace static read-only fields with constant if possible
                         if ((aflags & CORINFO_ACCESS_GET) && (fieldInfo.fieldFlags & CORINFO_FLG_FIELD_FINAL) &&
@@ -15298,7 +15299,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         FALLTHROUGH;
 
                     case CORINFO_FIELD_STATIC_RVA_ADDRESS:
-                    case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
                         op1 = impImportStaticFieldAccess(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
