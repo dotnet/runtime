@@ -1704,6 +1704,8 @@ namespace ILCompiler
         public interface ISerializableValue
         {
             void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory);
+
+            bool WriteFieldData(Span<byte> dest);
         }
 
         /// <summary>
@@ -1766,6 +1768,11 @@ namespace ILCompiler
             }
 
             public abstract void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory);
+
+            public virtual bool WriteFieldData(Span<byte> dest)
+            {
+                return false;
+            }
 
             private static T ThrowInvalidProgram<T>()
             {
@@ -1853,6 +1860,17 @@ namespace ILCompiler
             public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
             {
                 builder.EmitBytes(InstanceBytes);
+            }
+
+            public override bool WriteFieldData(Span<byte> dest)
+            {
+                byte[] data = InstanceBytes;
+                if (dest.Length < data.Length)
+                {
+                    return false;
+                }
+                data.AsSpan().CopyTo(dest);
+                return true;
             }
 
             private byte[] AsExactByteCount(int size)

@@ -3311,23 +3311,39 @@ namespace Internal.JitInterface
         private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize)
 #pragma warning restore CA1822 // Mark members as static
         {
-            /*
             FieldDesc field = HandleToObject(fieldHandle);
             if (field.IsStatic && !field.IsThreadStatic && field.IsInitOnly && !field.IsIntrinsic && !field.HasGCStaticBase &&
-                !_compilation.HasLazyStaticConstructor(field.OwningType))
+                !_compilation.HasLazyStaticConstructor(field.OwningType) && field.OwningType is MetadataType owningType)
             {
                 switch (field.FieldType.Category)
                 {
+                    case TypeFlags.Boolean:
+                    case TypeFlags.Byte:
+                    case TypeFlags.SByte:
+                    case TypeFlags.Int16:
+                    case TypeFlags.UInt16:
+                    case TypeFlags.Char:
                     case TypeFlags.Int32:
+                    case TypeFlags.UInt32:
+                    case TypeFlags.Int64:
+                    case TypeFlags.UInt64:
+                    case TypeFlags.Single:
+                    case TypeFlags.Double:
                         {
-                            var baseAddress = _compilation.NodeFactory.TypeGCStaticsSymbol((MetadataType)field.OwningType);
-                            *((int*)buffer) = 42;
-                            return true;
+                            PreinitializationManager preinitManager = _compilation.NodeFactory.PreinitializationManager;
+                            if (preinitManager.IsPreinitialized(owningType))
+                            {
+                                TypePreinit.ISerializableValue value = preinitManager
+                                    .GetPreinitializationInfo(owningType).GetFieldValue(field);
+                                if (value.WriteFieldData(new Span<byte>(buffer, bufferSize)))
+                                {
+                                    return true;
+                                }
+                            }
                         }
                         break;
                 }
             }
-            */
             return false;
         }
 
