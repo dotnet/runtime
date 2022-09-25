@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -62,14 +62,15 @@ namespace System.Text.RegularExpressions
 
         private static TrieNodeWithLinks[] RemoveUnreachableNodes(TrieNodeWithLinks[] trie)
         {
+            int[] nodeIndexMapping = new int[trie.Length];
             int reachableCount = 0;
-            foreach (ref readonly TrieNodeWithLinks node in trie.AsSpan())
+            for (int i = 0; i < trie.Length; i++)
             {
                 // If a node's children is null it means that it was not touched
                 // during the trie link assignment, and we can remove it.
-                if (node.Children is not null)
+                if (trie[i].Children is not null)
                 {
-                    reachableCount++;
+                    nodeIndexMapping[i] = reachableCount++;
                 }
             }
 
@@ -79,22 +80,16 @@ namespace System.Text.RegularExpressions
                 return trie;
             }
 
-            int[] nodeIndexMapping = new int[reachableCount];
-            int nextNodeIndex = 0;
-            for (int i = 0; i < trie.Length; i++)
-            {
-                if (trie[i].Children is not null)
-                {
-                    nodeIndexMapping[nextNodeIndex++] = i;
-                }
-            }
-
             TrieNodeWithLinks[] newTrie = new TrieNodeWithLinks[reachableCount];
 
-            for (int i = 0; i < newTrie.Length; i++)
+            for (int i = 0; i < trie.Length; i++)
             {
                 ref readonly TrieNodeWithLinks node = ref trie[i];
                 Dictionary<char, int> children = node.Children;
+                if (children is null)
+                {
+                    continue;
+                }
                 if (children.Count != 0)
                 {
                     Dictionary<char, int> newChildren = new Dictionary<char, int>();
@@ -102,9 +97,10 @@ namespace System.Text.RegularExpressions
                     {
                         newChildren.Add(child.Key, nodeIndexMapping[child.Value]);
                     }
+                    children = newChildren;
                 }
 
-                newTrie[i] = new TrieNodeWithLinks()
+                newTrie[nodeIndexMapping[i]] = new TrieNodeWithLinks()
                 {
 #if DEBUG
                     Path = node.Path,
