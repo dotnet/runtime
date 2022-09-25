@@ -3312,6 +3312,13 @@ namespace Internal.JitInterface
             FieldDesc field = HandleToObject(fieldHandle);
             if (field.IsStatic && !field.IsThreadStatic && field.IsInitOnly && field.OwningType is MetadataType owningType)
             {
+                // Currently, jit is able to handle only these types of objects:
+                // * primitives
+                // * frozen strings
+                // * null
+                //
+                // To add support for mutable objects see https://github.com/dotnet/runtime/pull/76135#issuecomment-1257263126
+
                 switch (field.FieldType.Category)
                 {
                     case TypeFlags.Boolean:
