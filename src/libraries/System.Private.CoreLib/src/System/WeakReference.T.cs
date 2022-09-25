@@ -75,11 +75,11 @@ namespace System
         private IntPtr _handleAndKind;
         private const nint TracksResurrectionBit = 1;
 
-        //Returns a boolean indicating whether or not we're tracking objects until they're collected (true)
-        //or just until they're finalized (false).
+        // Returns a boolean indicating whether or not we're tracking objects until they're collected (true)
+        // or just until they're finalized (false).
         private bool IsTrackResurrection() => (_handleAndKind & TracksResurrectionBit) != 0;
 
-        //Creates a new WeakReference that keeps track of target.
+        // Creates a new WeakReference that keeps track of target.
         private void Create(T target, bool trackResurrection)
         {
             IntPtr h = GCHandle.InternalAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);

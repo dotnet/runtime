@@ -66,14 +66,14 @@ namespace System
                 h;
         }
 
-        //Returns a boolean indicating whether or not we're tracking objects until they're collected (true)
-        //or just until they're finalized (false).
+        // Returns a boolean indicating whether or not we're tracking objects until they're collected (true)
+        // or just until they're finalized (false).
         private bool IsTrackResurrection() => (_handleAndKind & TracksResurrectionBit) != 0;
 
         internal IntPtr Handle => _handleAndKind & ~TracksResurrectionBit;
 
-        //Determines whether or not this instance of WeakReference still refers to an object
-        //that has not been collected.
+        // Determines whether or not this instance of WeakReference still refers to an object
+        // that has not been collected.
         public virtual bool IsAlive
         {
             get
