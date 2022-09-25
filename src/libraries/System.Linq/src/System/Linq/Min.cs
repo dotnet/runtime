@@ -3,94 +3,26 @@
 
 using System.Collections.Generic;
 using System.Numerics;
+using System.Runtime.Intrinsics;
 
 namespace System.Linq
 {
     public static partial class Enumerable
     {
-        public static int Min(this IEnumerable<int> source) => MinInteger(source);
+        public static int Min(this IEnumerable<int> source) => MinMaxInteger<int, MinCalc<int>>(source);
 
-        public static long Min(this IEnumerable<long> source) => MinInteger(source);
+        public static long Min(this IEnumerable<long> source) => MinMaxInteger<long, MinCalc<long>>(source);
+
+        private struct MinCalc<T> : IMinMaxCalc<T> where T : struct, IBinaryInteger<T>
+        {
+            public static bool Compare(T left, T right) => left < right;
+            public static Vector128<T> Compare(Vector128<T> left, Vector128<T> right) => Vector128.Min(left, right);
+            public static Vector256<T> Compare(Vector256<T> left, Vector256<T> right) => Vector256.Min(left, right);
+        }
 
         public static int? Min(this IEnumerable<int?> source) => MinInteger(source);
 
         public static long? Min(this IEnumerable<long?> source) => MinInteger(source);
-
-        private static T MinInteger<T>(this IEnumerable<T> source) where T : struct, IBinaryInteger<T>
-        {
-            T value;
-
-            if (source.TryGetSpan(out ReadOnlySpan<T> span))
-            {
-                if (span.IsEmpty)
-                {
-                    ThrowHelper.ThrowNoElementsException();
-                }
-
-                // Vectorize the search if possible.
-                int index;
-                if (Vector.IsHardwareAccelerated && span.Length >= Vector<T>.Count * 2)
-                {
-                    // The span is at least two vectors long. Create a vector from the first N elements,
-                    // and then repeatedly compare that against the next vector from the span.  At the end,
-                    // the resulting vector will contain the minimum values found, and we then need only
-                    // to find the min of those.
-                    var mins = new Vector<T>(span);
-                    index = Vector<T>.Count;
-                    do
-                    {
-                        mins = Vector.Min(mins, new Vector<T>(span.Slice(index)));
-                        index += Vector<T>.Count;
-                    }
-                    while (index + Vector<T>.Count <= span.Length);
-
-                    value = mins[0];
-                    for (int i = 1; i < Vector<T>.Count; i++)
-                    {
-                        if (mins[i] < value)
-                        {
-                            value = mins[i];
-                        }
-                    }
-                }
-                else
-                {
-                    value = span[0];
-                    index = 1;
-                }
-
-                // Iterate through the remaining elements, comparing against the min.
-                for (int i = index; (uint)i < (uint)span.Length; i++)
-                {
-                    if (span[i] < value)
-                    {
-                        value = span[i];
-                    }
-                }
-
-                return value;
-            }
-
-            using (IEnumerator<T> e = source.GetEnumerator())
-            {
-                if (!e.MoveNext())
-                {
-                    ThrowHelper.ThrowNoElementsException();
-                }
-
-                value = e.Current;
-                while (e.MoveNext())
-                {
-                    T x = e.Current;
-                    if (x < value)
-                    {
-                        value = x;
-                    }
-                }
-            }
-
-            return value;
-        }
 
         private static T? MinInteger<T>(this IEnumerable<T?> source) where T : struct, IBinaryInteger<T>
         {
@@ -351,9 +283,9 @@ namespace System.Linq
         /// <exception cref="ArgumentNullException"><paramref name="source" /> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentException">No object in <paramref name="source" /> implements the <see cref="System.IComparable" /> or <see cref="System.IComparable{T}" /> interface.</exception>
         /// <remarks>
-        /// <para>If type <typeparamref name="TSource" /> implements <see cref="System.IComparable{T}" />, the <see cref="Max{T}(IEnumerable{T})" /> method uses that implementation to compare values. Otherwise, if type <typeparamref name="TSource" /> implements <see cref="System.IComparable" />, that implementation is used to compare values.</para>
+        /// <para>If type <typeparamref name="TSource" /> implements <see cref="System.IComparable{T}" />, the <see cref="Min{T}(IEnumerable{T})" /> method uses that implementation to compare values. Otherwise, if type <typeparamref name="TSource" /> implements <see cref="System.IComparable" />, that implementation is used to compare values.</para>
         /// <para>If <typeparamref name="TSource" /> is a reference type and the source sequence is empty or contains only values that are <see langword="null" />, this method returns <see langword="null" />.</para>
-        /// <para>In Visual Basic query expression syntax, an `Aggregate Into Max()` clause translates to an invocation of <see cref="O:Enumerable.Max" />.</para>
+        /// <para>In Visual Basic query expression syntax, an `Aggregate Into Min()` clause translates to an invocation of <see cref="O:Enumerable.Min" />.</para>
         /// </remarks>
         public static TSource? Min<TSource>(this IEnumerable<TSource> source, IComparer<TSource>? comparer)
         {
@@ -363,6 +295,17 @@ namespace System.Linq
             }
 
             comparer ??= Comparer<TSource>.Default;
+
+            if (typeof(TSource) == typeof(byte) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<byte, MinCalc<byte>>((IEnumerable<byte>)source);
+            if (typeof(TSource) == typeof(sbyte) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<sbyte, MinCalc<sbyte>>((IEnumerable<sbyte>)source);
+            if (typeof(TSource) == typeof(ushort) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<ushort, MinCalc<ushort>>((IEnumerable<ushort>)source);
+            if (typeof(TSource) == typeof(short) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<short, MinCalc<short>>((IEnumerable<short>)source);
+            if (typeof(TSource) == typeof(uint) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<uint, MinCalc<uint>>((IEnumerable<uint>)source);
+            if (typeof(TSource) == typeof(int) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<int, MinCalc<int>>((IEnumerable<int>)source);
+            if (typeof(TSource) == typeof(ulong) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<ulong, MinCalc<ulong>>((IEnumerable<ulong>)source);
+            if (typeof(TSource) == typeof(long) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<long, MinCalc<long>>((IEnumerable<long>)source);
+            if (typeof(TSource) == typeof(nuint) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<nuint, MinCalc<nuint>>((IEnumerable<nuint>)source);
+            if (typeof(TSource) == typeof(nint) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<nint, MinCalc<nint>>((IEnumerable<nint>)source);
 
             TSource? value = default;
             using (IEnumerator<TSource> e = source.GetEnumerator())
