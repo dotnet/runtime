@@ -190,16 +190,15 @@ namespace System.Net
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ushort[] ReadUInt16NumbersFromBytes(ReadOnlySpan<byte> address)
         {
-            if (!BitConverter.IsLittleEndian)
-            {
-                return MemoryMarshal.Cast<byte, ushort>(address).ToArray();
-            }
-
             ushort[] numbers = new ushort[NumberOfLabels];
             if (Vector128.IsHardwareAccelerated)
             {
                 Vector128<ushort> ushorts = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(address)).AsUInt16();
-                ushorts = Vector128.ShiftLeft(ushorts, 8) | Vector128.ShiftRightLogical(ushorts, 8);
+                if (BitConverter.IsLittleEndian)
+                {
+                    // Reverse endianness of each ushort
+                    ushorts = Vector128.ShiftLeft(ushorts, 8) | Vector128.ShiftRightLogical(ushorts, 8);
+                }
                 ushorts.StoreUnsafe(ref MemoryMarshal.GetArrayDataReference(numbers));
             }
             else
@@ -307,7 +306,7 @@ namespace System.Net
             }
             else
             {
-                MemoryMarshal.Cast<ushort, byte>(numbers).CopyTo(destination);
+                MemoryMarshal.AsBytes<ushort>(numbers).CopyTo(destination);
             }
         }
 
