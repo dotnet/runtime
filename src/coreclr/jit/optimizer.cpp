@@ -9241,16 +9241,14 @@ bool OptBoolsDsc::optOptimizeBoolsChkTypeCostCond()
         return false;
 #endif
     // The second condition must not contain side effects
-
+    //
     if (m_c2->gtFlags & GTF_GLOB_EFFECT)
     {
         return false;
     }
 
     // The second condition must not be too expensive
-
-    m_comp->gtPrepareCost(m_c2);
-
+    //
     if (m_c2->GetCostEx() > 12)
     {
         return false;
@@ -9326,7 +9324,6 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     //
     if (m_comp->fgStmtListThreaded)
     {
-        m_comp->gtPrepareCost(m_testInfo1.testTree);
         m_comp->gtSetStmtInfo(m_testInfo1.testStmt);
         m_comp->fgSetStmtSeq(m_testInfo1.testStmt);
     }
@@ -9422,6 +9419,9 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     {
         m_comp->fgUpdateLoopsAfterCompacting(m_b1, m_b3);
     }
+
+    // Update IL range of first block
+    m_b1->bbCodeOffsEnd = optReturnBlock ? m_b3->bbCodeOffsEnd : m_b2->bbCodeOffsEnd;
 }
 
 //-----------------------------------------------------------------------------
@@ -9623,6 +9623,14 @@ void OptBoolsDsc::optOptimizeBoolsGcStress()
     // morphing it into a TYP_I_IMPL.
     noway_assert(relop->AsOp()->gtOp2->gtOper == GT_CNS_INT);
     relop->AsOp()->gtOp2->gtType = TYP_I_IMPL;
+
+    // Recost/rethread the tree if necessary
+    //
+    if (m_comp->fgStmtListThreaded)
+    {
+        m_comp->gtSetStmtInfo(test.testStmt);
+        m_comp->fgSetStmtSeq(test.testStmt);
+    }
 }
 
 #endif

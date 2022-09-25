@@ -10011,9 +10011,6 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 		return_if_nok (error);
 	}
 
-	g_assert ((signature->param_count + signature->hasthis) < 1000);
-	// g_printerr ("TRANSFORM(0x%016lx): end %s::%s\n", mono_thread_current (), method->klass->name, method->name);
-
 	/* Make modifications to a copy of imethod, copy them back inside the lock */
 	real_imethod = imethod;
 	memcpy (&tmp_imethod, imethod, sizeof (InterpMethod));

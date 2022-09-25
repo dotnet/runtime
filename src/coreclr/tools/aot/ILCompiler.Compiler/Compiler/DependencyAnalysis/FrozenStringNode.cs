@@ -59,6 +59,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void EncodeData(ref ObjectDataBuilder dataBuilder, NodeFactory factory, bool relocsOnly)
         {
+            int initialOffset = dataBuilder.CountBytes;
+
             dataBuilder.EmitZeroPointer(); // Sync block
 
             dataBuilder.EmitPointerReloc(GetEETypeNode(factory));
@@ -73,6 +75,12 @@ namespace ILCompiler.DependencyAnalysis
             // Null-terminate for friendliness with interop
             dataBuilder.EmitShort(0);
 
+            int objectSize = dataBuilder.CountBytes - initialOffset;
+            int minimumObjectSize = EETypeNode.GetMinimumObjectSize(factory.TypeSystemContext);
+            if (objectSize < minimumObjectSize)
+            {
+                dataBuilder.EmitZeros(minimumObjectSize - objectSize);
+            }
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);

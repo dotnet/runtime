@@ -115,6 +115,11 @@
     <WasmDebugLevel Condition="('$(WasmDebugLevel)' == '' or '$(WasmDebugLevel)' == '0') and ('$(DebuggerSupport)' == 'true' or '$(Configuration)' == 'Debug')">-1</WasmDebugLevel>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- Allow running/debugging from VS -->
+    <ProjectCapability Include="DotNetCoreWeb"/>
+  </ItemGroup>
+
   <PropertyGroup Label="Identify app bundle directory to run from">
     <!-- Allow running from custom WasmAppDir -->
     <_AppBundleDirForRunCommand Condition="'$(WasmAppDir)' != ''">$(WasmAppDir)</_AppBundleDirForRunCommand>
