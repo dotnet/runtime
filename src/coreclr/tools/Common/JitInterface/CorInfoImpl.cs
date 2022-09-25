@@ -3308,11 +3308,10 @@ namespace Internal.JitInterface
         }
 
         private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize)
-#pragma warning restore CA1822 // Mark members as static
         {
             FieldDesc field = HandleToObject(fieldHandle);
-            if (field.IsStatic && !field.IsThreadStatic && field.IsInitOnly && !field.IsIntrinsic && !field.HasGCStaticBase &&
-                !_compilation.HasLazyStaticConstructor(field.OwningType) && field.OwningType is MetadataType owningType)
+            if (field.IsStatic && !field.IsThreadStatic && field.IsInitOnly) 
+                 field.OwningType is MetadataType owningType)
             {
                 switch (field.FieldType.Category)
                 {

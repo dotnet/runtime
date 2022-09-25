@@ -15282,7 +15282,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_ADDRESS:
                         // Replace static read-only fields with constant if possible
                         if ((aflags & CORINFO_ACCESS_GET) && (fieldInfo.fieldFlags & CORINFO_FLG_FIELD_FINAL) &&
-                            !(fieldInfo.fieldFlags & CORINFO_FLG_FIELD_STATIC_IN_HEAP))
                         {
                             const int bufferSize         = sizeof(uint64_t);
                             uint8_t   buffer[bufferSize] = {0};
