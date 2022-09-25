@@ -86,10 +86,7 @@ namespace System.Text.RegularExpressions
                             {
                                 result = Impl(node.Child(i), false);
                             }
-                            if (result is null)
-                            {
-                                result = Impl(node.Child(node.ChildCount() - 1), isFinal);
-                            }
+                            result ??= Impl(node.Child(node.ChildCount() - 1), isFinal);
                             return result;
                         case RegexNodeKind.Alternate:
                             return true;
