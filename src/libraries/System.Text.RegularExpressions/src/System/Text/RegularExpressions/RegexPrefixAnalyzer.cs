@@ -102,7 +102,22 @@ namespace System.Text.RegularExpressions
                             return (node.M == node.N || (node.M, node.N, isFinal) is (0, 1, false)) && IsSetSufficientlySmall(node.Str!) ? null : false;
                         case RegexNodeKind.Loop:
                         case RegexNodeKind.Lazyloop:
-                            return (node.M == node.N || (node.M, node.N, isFinal) is (0, 1, false)) ? Impl(node.Child(0), isFinal) : false;
+                            // If we are in a non-nullable loop, we must check if it has an alternation.
+                            switch (node.M, node.N)
+                            {
+                                case (0, 1) when !isFinal:
+                                    return Impl(node.Child(0), isFinal);
+                                case (0, _):
+                                    return false;
+                                case (int min, int max):
+                                    result = Impl(node.Child(0), isFinal);
+                                    // If it doesn't and the loop is not constant, we stop.
+                                    if (min != max)
+                                    {
+                                        result ??= false;
+                                    }
+                                    return result;
+                            }
                         default:
                             return false;
                     }
