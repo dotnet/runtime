@@ -19,7 +19,8 @@ namespace System.Security.Cryptography
             // ECDH and ECMQV are not valid in this context.
         };
 
-        private protected static readonly KeySizes[] s_defaultKeySizes = new[] {
+        private protected static readonly KeySizes[] s_defaultKeySizes =
+        {
             new KeySizes(minSize: 256, maxSize: 384, skipSize: 128),
             new KeySizes(minSize: 521, maxSize: 521, skipSize: 0),
         };
