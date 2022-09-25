@@ -3307,7 +3307,6 @@ namespace Internal.JitInterface
             }
         }
 
-#pragma warning disable CA1822 // Mark members as static
         private bool getReadonlyStaticFieldValue(CORINFO_FIELD_STRUCT_* fieldHandle, byte* buffer, int bufferSize)
 #pragma warning restore CA1822 // Mark members as static
         {
