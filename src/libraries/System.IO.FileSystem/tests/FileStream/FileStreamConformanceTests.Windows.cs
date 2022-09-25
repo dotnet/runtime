@@ -95,7 +95,6 @@ namespace System.IO.Tests
                 // the "Server Service" allows for file sharing. It can be disabled on some machines.
                 using (ServiceController sharingService = new ServiceController("Server"))
                 {
-                    Console.WriteLine(sharingService.Status == ServiceControllerStatus.Running);
                     return sharingService.Status == ServiceControllerStatus.Running;
                 }
             }
