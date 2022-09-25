@@ -531,7 +531,7 @@ namespace System.Reflection
             return m_runtimeAssembly;
         }
 
-        protected override ModuleHandle GetModuleHandleImpl()
+        private protected override ModuleHandle GetModuleHandleImpl()
         {
             return new ModuleHandle(this);
         }

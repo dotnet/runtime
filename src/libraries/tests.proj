@@ -193,7 +193,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Primitives/tests/FunctionalTests/System.Net.Primitives.Functional.Tests.csproj" />
 
     <!-- Crashes on CI (possibly flakey) -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/Misc/System.Xml.Misc.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Dynamic.Runtime/tests/System.Dynamic.Runtime.Tests.csproj"/>
 
     <!-- gRPC tests should be run only manually -->
@@ -216,8 +215,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.NameResolution/tests/PalTests/System.Net.NameResolution.Pal.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.WebClient/tests/System.Net.WebClient.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors/tests/System.Numerics.Tensors.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XmlReader/Tests/System.Xml.RW.XmlReader.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml/tests/XPath/XPathDocument/System.Xml.XPath.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Uri/tests/ExtendedFunctionalTests/System.Private.Uri.ExtendedFunctional.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Reflection.DispatchProxy/tests/System.Reflection.DispatchProxy.Tests.csproj" />
   </ItemGroup>
@@ -470,7 +467,6 @@
 
     <!-- Many test failures due to trimming and MakeGeneric. XmlSerializer is not currently supported with NativeAOT. Low priority -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.XmlSerializer.Generator\tests\Microsoft.XmlSerializer.Generator.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\XmlSerializer\System.Xml.XmlSerializer.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.ServiceModel.Syndication\tests\System.ServiceModel.Syndication.Tests.csproj" />
 
     <!-- Not supported with trimming. Low priority -->
@@ -488,12 +484,6 @@
 
     <!-- More than two thirds of tests failing due to ref emit -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyInjection\tests\DI.Tests\Microsoft.Extensions.DependencyInjection.Tests.csproj" />
-
-    <!-- These are failing in localized runs due to satellite assembly reflection in the test. Work fine otherwise. -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\XmlSchema\XmlSchemaValidatorApi\System.Xml.XmlSchema.XmlSchemaValidatorApi.Tests.csproj"
-                      Condition="'$(TargetOS)' == 'windows'"/>
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Private.Xml\tests\Xslt\XslTransformApi\System.Xml.Xsl.XslTransformApi.Tests.csproj"
-                      Condition="'$(TargetOS)' == 'windows'"/>
 
     <!--This test fails on Windows.10.Amd64.Server2022 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem\tests\System.IO.FileSystem.Tests.csproj" />

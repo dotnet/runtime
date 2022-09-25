@@ -530,6 +530,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Matrix4x4.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Plane.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Quaternion.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\TotalOrderIeee754Comparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector_1.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Numerics\Vector2.cs" />
