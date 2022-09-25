@@ -629,7 +629,7 @@ jobs:
 
 #
 # Build Mono debug
-# Only when libraries or mono changed
+# Only when mono changed
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -649,7 +649,6 @@ jobs:
     jobParameters:
       condition: >-
         or(
-          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
@@ -797,6 +796,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
@@ -819,6 +819,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 

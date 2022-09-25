@@ -1493,18 +1493,9 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
         }
     }
 
-    if (dest->OperIs(GT_LCL_VAR) &&
-        (src->IsMultiRegNode() ||
-         (src->OperIs(GT_RET_EXPR) && src->AsRetExpr()->gtInlineCandidate->AsCall()->HasMultiRegRetVal())))
+    if (dest->OperIs(GT_LCL_VAR) && src->IsMultiRegNode())
     {
-        if (lvaEnregMultiRegVars && varTypeIsStruct(dest))
-        {
-            dest->AsLclVar()->SetMultiReg();
-        }
-        if (src->OperIs(GT_CALL))
-        {
-            lvaGetDesc(dest->AsLclVar())->lvIsMultiRegRet = true;
-        }
+        lvaGetDesc(dest->AsLclVar())->lvIsMultiRegRet = true;
     }
 
     dest->gtFlags |= destFlags;
@@ -3624,15 +3615,14 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                                 NamedIntrinsic*         pIntrinsicName,
                                 bool*                   isSpecialIntrinsic)
 {
-    bool           mustExpand  = false;
-    bool           isSpecial   = false;
-    bool           isIntrinsic = false;
-    NamedIntrinsic ni          = NI_Illegal;
+    bool       mustExpand  = false;
+    bool       isSpecial   = false;
+    const bool isIntrinsic = (methodFlags & CORINFO_FLG_INTRINSIC) != 0;
 
-    if ((methodFlags & CORINFO_FLG_INTRINSIC) != 0)
+    NamedIntrinsic ni = lookupNamedIntrinsic(method);
+
+    if (isIntrinsic)
     {
-        isIntrinsic = true;
-
         // The recursive non-virtual calls to Jit intrinsics are must-expand by convention.
         mustExpand = gtIsRecursiveCall(method) && !(methodFlags & CORINFO_FLG_VIRTUAL);
     }
@@ -3643,37 +3633,62 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         assert(!info.compMatchedVM);
     }
 
-    ni = lookupNamedIntrinsic(method);
-
     // We specially support the following on all platforms to allow for dead
     // code optimization and to more generally support recursive intrinsics.
 
-    if (ni == NI_IsSupported_True)
+    if (isIntrinsic)
     {
-        assert(sig->numArgs == 0);
-        return gtNewIconNode(true);
-    }
+        if (ni == NI_IsSupported_True)
+        {
+            assert(sig->numArgs == 0);
+            return gtNewIconNode(true);
+        }
 
-    if (ni == NI_IsSupported_False)
-    {
-        assert(sig->numArgs == 0);
-        return gtNewIconNode(false);
-    }
+        if (ni == NI_IsSupported_False)
+        {
+            assert(sig->numArgs == 0);
+            return gtNewIconNode(false);
+        }
 
-    if (ni == NI_Throw_PlatformNotSupportedException)
-    {
-        return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
-    }
+        if (ni == NI_Throw_PlatformNotSupportedException)
+        {
+            return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
+        }
 
-    if ((ni > NI_SRCS_UNSAFE_START) && (ni < NI_SRCS_UNSAFE_END))
-    {
-        assert(!mustExpand);
-        return impSRCSUnsafeIntrinsic(ni, clsHnd, method, sig);
+        if ((ni > NI_SRCS_UNSAFE_START) && (ni < NI_SRCS_UNSAFE_END))
+        {
+            assert(!mustExpand);
+            return impSRCSUnsafeIntrinsic(ni, clsHnd, method, sig);
+        }
     }
 
 #ifdef FEATURE_HW_INTRINSICS
     if ((ni > NI_HW_INTRINSIC_START) && (ni < NI_HW_INTRINSIC_END))
     {
+        if (!isIntrinsic)
+        {
+#if defined(TARGET_XARCH)
+            // We can't guarantee that all overloads for the xplat intrinsics can be
+            // handled by the AltJit, so limit only the platform specific intrinsics
+            assert((NI_Vector256_Xor + 1) == NI_X86Base_BitScanForward);
+
+            if (ni < NI_Vector256_Xor)
+#elif defined(TARGET_ARM64)
+            // We can't guarantee that all overloads for the xplat intrinsics can be
+            // handled by the AltJit, so limit only the platform specific intrinsics
+            assert((NI_Vector128_Xor + 1) == NI_AdvSimd_Abs);
+
+            if (ni < NI_Vector128_Xor)
+#else
+#error Unsupported platform
+#endif
+            {
+                // Several of the NI_Vector64/128/256 APIs do not have
+                // all overloads as intrinsic today so they will assert
+                return nullptr;
+            }
+        }
+
         GenTree* hwintrinsic = impHWIntrinsic(ni, clsHnd, method, sig, mustExpand);
 
         if (mustExpand && (hwintrinsic == nullptr))
@@ -3684,7 +3699,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         return hwintrinsic;
     }
 
-    if ((ni > NI_SIMD_AS_HWINTRINSIC_START) && (ni < NI_SIMD_AS_HWINTRINSIC_END))
+    if (isIntrinsic && (ni > NI_SIMD_AS_HWINTRINSIC_START) && (ni < NI_SIMD_AS_HWINTRINSIC_END))
     {
         // These intrinsics aren't defined recursively and so they will never be mustExpand
         // Instead, they provide software fallbacks that will be executed instead.
@@ -3693,6 +3708,15 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         return impSimdAsHWIntrinsic(ni, clsHnd, method, sig, newobjThis);
     }
 #endif // FEATURE_HW_INTRINSICS
+
+    if (!isIntrinsic)
+    {
+        // Outside the cases above, there are many intrinsics which apply to only a
+        // subset of overload and where simply matching by name may cause downstream
+        // asserts or other failures. Math.Min is one example, where it only applies
+        // to the floating-point overloads.
+        return nullptr;
+    }
 
     *pIntrinsicName = ni;
 
@@ -3889,8 +3913,14 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 GenTree*  lclVar     = gtNewLclvNode(rawHandleSlot, TYP_I_IMPL);
                 GenTree*  lclVarAddr = gtNewOperNode(GT_ADDR, TYP_I_IMPL, lclVar);
                 var_types resultType = JITtype2varType(sig->retType);
-                retNode              = gtNewOperNode(GT_IND, resultType, lclVarAddr);
-
+                if (resultType == TYP_STRUCT)
+                {
+                    retNode = gtNewObjNode(sig->retTypeClass, lclVarAddr);
+                }
+                else
+                {
+                    retNode = gtNewIndir(resultType, lclVarAddr);
+                }
                 break;
             }
 
@@ -8892,9 +8922,12 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
 #endif // DEBUG
 
+        const bool isIntrinsic = (mflags & CORINFO_FLG_INTRINSIC) != 0;
+
         // <NICE> Factor this into getCallInfo </NICE>
         bool isSpecialIntrinsic = false;
-        if (((mflags & CORINFO_FLG_INTRINSIC) != 0) || !info.compMatchedVM)
+
+        if (isIntrinsic || !info.compMatchedVM)
         {
             // For mismatched VM (AltJit) we want to check all methods as intrinsic to ensure
             // we get more accurate codegen. This particularly applies to HWIntrinsic usage
@@ -17017,7 +17050,7 @@ GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree*             op,
 
     assert(IsMultiRegReturnedType(hClass, callConv));
 
-    // Mark the var so that fields are not promoted and stay together.
+    // Set "lvIsMultiRegRet" to block promotion under "!lvaEnregMultiRegVars".
     lvaTable[tmpNum].lvIsMultiRegRet = true;
 
     return ret;

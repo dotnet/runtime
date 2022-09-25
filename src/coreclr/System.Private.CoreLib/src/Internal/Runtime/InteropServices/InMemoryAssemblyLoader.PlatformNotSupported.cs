@@ -10,7 +10,7 @@ namespace Internal.Runtime.InteropServices
     /// <summary>
     /// This class enables the .NET IJW host to load an in-memory module as a .NET assembly
     /// </summary>
-    public static class InMemoryAssemblyLoader
+    internal static class InMemoryAssemblyLoader
     {
         /// <summary>
         /// Loads into an isolated AssemblyLoadContext an assembly that has already been loaded into memory by the OS loader as a native module.
