@@ -260,18 +260,10 @@ namespace System.Media
             // setup the http stream
             if (_uri != null && !_uri.IsFile && _stream == null)
             {
-                #if NET5_0_OR_GREATER
                 IHttpClientFactory _httpClientFactory = new IHttpClientFactory();
-
+                
                 using (HttpClient httpClient = _httpClientFactory.CreateClient())
-                #else
-                using (HttpClient httpClient = new HttpClient())
-                #endif
                 {
-#if !NET5_0_OR_GREATER
-                    httpClient.DefaultRequestHeaders.ConnectionClose = true;
-#endif
-
                     httpClient.Timeout = new TimeSpan(LoadTimeout);
 
                     HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Post, _uri);
