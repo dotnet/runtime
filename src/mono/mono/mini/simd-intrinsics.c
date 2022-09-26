@@ -4253,7 +4253,7 @@ arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCom
 
 	return NULL;
 }
-#elif TARGET_AMD64
+#elif defined(TARGET_AMD64)
 // TODO: test and enable for x86 too
 static
 MonoInst*
@@ -4280,7 +4280,7 @@ arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCom
 		cfg->uses_simd_intrinsics |= MONO_CFG_USES_SIMD_INTRINSICS;
 	return simd_inst;
 }
-#elif TARGET_WASM
+#elif defined(TARGET_WASM)
 static
 MonoInst*
 arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
