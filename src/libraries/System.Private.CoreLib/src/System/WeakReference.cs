@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
@@ -11,6 +12,18 @@ namespace System
     public partial class WeakReference : ISerializable
     {
         // If you fix bugs here, please fix them in WeakReference<T> at the same time.
+
+        // Most methods using the handle should use GC.KeepAlive(this) to avoid potential handle recycling
+        // attacks (i.e. if the WeakReference instance is finalized away underneath you when you're still
+        // handling a cached value of the handle then the handle could be freed and reused).
+
+#if !CORECLR
+        // the handle field is effectively readonly until the object is finalized.
+        private IntPtr _handleAndKind;
+
+        // the lowermost bit is used to indicate whether the handle is tracking resurrection
+        private const nint TracksResurrectionBit = 1;
+#endif
 
         // Creates a new WeakReference that keeps track of target.
         // Assumes a Short Weak Reference (ie TrackResurrection is false.)
@@ -45,19 +58,9 @@ namespace System
 
         // Returns a boolean indicating whether or not we're tracking objects until they're collected (true)
         // or just until they're finalized (false).
-        //
         public virtual bool TrackResurrection => IsTrackResurrection();
 
 #if !CORECLR
-        // Most methods using the handle should use GC.KeepAlive(this) to avoid potential handle recycling
-        // attacks (i.e. if the WeakReference instance is finalized away underneath you when you're still
-        // handling a cached value of the handle then the handle could be freed and reused).
-
-        // the handle field is effectively readonly until the object is finalized.
-        // the lowermost bit is used to indicate whether the handle is tracking resurrection
-        private IntPtr _handleAndKind;
-        private const nint TracksResurrectionBit = 1;
-
         private void Create(object? target, bool trackResurrection)
         {
             IntPtr h = GCHandle.InternalAlloc(target, trackResurrection ? GCHandleType.WeakTrackResurrection : GCHandleType.Weak);
@@ -134,6 +137,31 @@ namespace System
 
                 // must keep the instance alive as long as we use the handle.
                 GC.KeepAlive(this);
+            }
+        }
+
+        // Free all system resources associated with this reference.
+        ~WeakReference()
+        {
+            // Note: While WeakReference is formally a finalizable type, the finalizer does not actually run.
+            //       Instead the instances are treated specially in GC when scanning for no longer strongly-reachable
+            //       finalizable objects.
+            //
+            // Unlike WeakReference<T> case, the instance could be of a derived type and
+            //       in such case it is finalized via a finalizer.
+
+// eager finalization is NYI on Mono
+#if !MONO
+            Debug.Assert(this.GetType() != typeof(WeakReference));
+#endif
+
+            IntPtr handle = Handle;
+            if (handle != default(IntPtr))
+            {
+                GCHandle.InternalFree(handle);
+
+                // keep the bit that indicates whether this reference was tracking resurrection
+                _handleAndKind &= TracksResurrectionBit;
             }
         }
 #endif
