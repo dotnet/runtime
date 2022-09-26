@@ -5663,6 +5663,15 @@ is_addressable_valuetype_load (MonoCompile* cfg, guint8* ip, MonoType* ldtype)
 	return is_load_instruction && is_in_previous_bb && is_struct;
 }
 
+/*
+ * check_get_virtual_method_assumptions:
+ * 
+ * This shadows mono_class_get_virtual_method, but instead of actually resolving
+ * the virtual method, this only checks if mono_class_get_virtual_method would
+ * succeed. This is in place because that function fails catastrophically in some
+ * cases, bringing down the entire runtime. Returns TRUE if the function is safe 
+ * to call, FALSE otherwise.
+ */
 static gboolean
 check_get_virtual_method_assumptions (MonoClass* klass, MonoMethod* method)
 {
@@ -5708,8 +5717,8 @@ check_get_virtual_method_assumptions (MonoClass* klass, MonoMethod* method)
 static MonoMethod*
 try_prepare_objaddr_callvirt_optimization (MonoCompile *cfg, guchar *next_ip, guchar* end, MonoMethod *method, MonoGenericContext* generic_context, MonoClass *klass)
 {
-	// TODO: relax the _is_def requirement when gsharedvt is checked for
-	if (cfg->compile_aot || cfg->compile_llvm || !klass || !mono_class_is_def(klass))
+	// TODO: relax the _is_def requirement?
+	if (cfg->compile_aot || cfg->compile_llvm || !klass || !mono_class_is_def (klass))
 		return NULL;
 	
 	guchar* callvirt_ip;
@@ -5718,13 +5727,15 @@ try_prepare_objaddr_callvirt_optimization (MonoCompile *cfg, guchar *next_ip, gu
 		!ip_in_bb(cfg, cfg->cbb, callvirt_ip))
 		return NULL;
 
-	// TODO: check if gsharedvt is required, return FALSE instantly if that is the case
-	
-
 	MonoMethod* iface_method = mini_get_method (cfg, method, callvirt_proc_token, NULL, generic_context);
+	if (!iface_method ||
+		iface_method->is_generic ||
+		iface_method->dynamic || 					// Reflection.Emit-generated methods should have this flag
+		!strcmp(iface_method->name, "GetHashCode")) // the callvirt handler itself optimizes those
+		return NULL;
+
 	MonoMethodSignature* iface_method_sig;
-	if(!(iface_method &&
-		(iface_method_sig = mono_method_signature_internal (iface_method)) &&
+	if(!((iface_method_sig = mono_method_signature_internal (iface_method)) &&
 		iface_method_sig->hasthis && 
 		iface_method_sig->param_count == 0 && 
 		!iface_method_sig->has_type_parameters &&
@@ -5732,12 +5743,6 @@ try_prepare_objaddr_callvirt_optimization (MonoCompile *cfg, guchar *next_ip, gu
 		return NULL;
 
 	if (!check_get_virtual_method_assumptions(klass, iface_method))
-		return NULL;
-
-	if(mono_class_has_variant_generic_params(iface_method->klass) ||
-		iface_method->is_generic ||
-		iface_method->dynamic ||
-		(iface_method->slot == -1 && !iface_method->is_inflated))
 		return NULL;
 
 	ERROR_DECL (struct_method_error);
@@ -5757,10 +5762,6 @@ try_prepare_objaddr_callvirt_optimization (MonoCompile *cfg, guchar *next_ip, gu
 		mono_error_cleanup (struct_method_error);
 		return NULL;
 	}
-
-	//printf("   %s ===> %s\n",
-	//		mono_method_get_full_name(iface_method),
-	//		mono_method_get_full_name(struct_method));
 
 	return struct_method;
 }
@@ -7121,12 +7122,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			}
 			*sp++ = ins;
 
-			MonoMethod* callvirt_target = try_prepare_objaddr_callvirt_optimization (cfg, next_ip, end, method, generic_context, param_types[n]->data.klass);
-			if(callvirt_target)
+			if(!m_method_is_icall(method))
 			{
-				cmethod_override = callvirt_target;
-				//printf("--- ldarg+callvirt @ %s\n", mono_method_get_full_name(method));
-			}
+				MonoMethod* callvirt_target = try_prepare_objaddr_callvirt_optimization (cfg, next_ip, end, method, generic_context, param_types[n]->data.klass);
+				if(callvirt_target)
+					cmethod_override = callvirt_target;
+				}
 
 			break;
 		}
