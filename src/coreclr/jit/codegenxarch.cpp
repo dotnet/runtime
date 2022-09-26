@@ -5291,6 +5291,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                 {
                     ins = INS_movbe;
                 }
+#if defined(FEATURE_HW_INTRINSICS)
                 else if (data->OperIsHWIntrinsic())
                 {
                     GenTreeHWIntrinsic* hwintrinsic = data->AsHWIntrinsic();
@@ -5336,6 +5337,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                         }
                     }
                 }
+#endif // FEATURE_HW_INTRINSICS
             }
 
             if (ins == INS_invalid)

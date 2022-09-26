@@ -3408,6 +3408,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         {
             emitIns_C_I(ins, attr, addr->AsClsVar()->gtClsVarHnd, 0, (int)data->AsIntConCommon()->IconValue());
         }
+#if defined(FEATURE_HW_INTRINSICS)
         else if (data->OperIsHWIntrinsic() && data->isContained())
         {
             GenTreeHWIntrinsic* hwintrinsic = data->AsHWIntrinsic();
@@ -3427,6 +3428,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
                 emitIns_C_R_I(ins, attr, addr->AsClsVar()->gtClsVarHnd, 0, op1->GetRegNum(), icon);
             }
         }
+#endif // FEATURE_HW_INTRINSICS
         else
         {
             assert(!data->isContained());
@@ -3444,6 +3446,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         {
             emitIns_S_I(ins, attr, varNode->GetLclNum(), offset, (int)data->AsIntConCommon()->IconValue());
         }
+#if defined(FEATURE_HW_INTRINSICS)
         else if (data->OperIsHWIntrinsic() && data->isContained())
         {
             GenTreeHWIntrinsic* hwintrinsic = data->AsHWIntrinsic();
@@ -3463,6 +3466,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
                 emitIns_S_R_I(ins, attr, varNode->GetLclNum(), offset, op1->GetRegNum(), icon);
             }
         }
+#endif // FEATURE_HW_INTRINSICS
         else
         {
             assert(!data->isContained());
@@ -3487,6 +3491,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         sz = emitInsSizeAM(id, insCodeMI(ins), icon);
         id->idCodeSize(sz);
     }
+#if defined(FEATURE_HW_INTRINSICS)
     else if (data->OperIsHWIntrinsic() && data->isContained())
     {
         GenTreeHWIntrinsic* hwintrinsic = data->AsHWIntrinsic();
@@ -3516,6 +3521,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
             id->idCodeSize(sz);
         }
     }
+#endif // FEATURE_HW_INTRINSICS
     else
     {
         assert(!data->isContained());
