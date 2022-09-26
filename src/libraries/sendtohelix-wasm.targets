@@ -26,6 +26,7 @@
     <WasmBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'build'))</WasmBuildTargetsDir>
     <TestEchoMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'NetCoreServer', '$(Configuration)', '$(AspNetCoreAppCurrent)'))</TestEchoMiddleware>
     <RemoteLoopMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'RemoteLoopServer', '$(Configuration)', '$(AspNetCoreAppCurrent)'))</RemoteLoopMiddleware>
+    <_ShippingPackagesPath>$([MSBuild]::NormalizeDirectory($(ArtifactsDir), 'packages', $(Configuration), 'Shipping'))</_ShippingPackagesPath>
     <WorkItemPrefix Condition="'$(IsWasmDebuggerTests)' == 'true'">$(DebuggerHost)-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(Scenario)' != ''">$(Scenario)-</WorkItemPrefix>
 
@@ -56,6 +57,7 @@
     <NeedsEMSDKNode Condition="'$(Scenario)' == 'WasmTestOnNodeJS' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsEMSDKNode>
     <NeedsToRunOnBrowser Condition="'$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnBrowser>
     <NeedsToRunOnBrowser Condition="'$(NeedsToRunOnBrowser)' == '' and '$(IsWasmDebuggerTests)' == 'true'">true</NeedsToRunOnBrowser>
+    <NeedsBuiltNugets Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsBuiltNugets>
 
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
     <EnableXHarnessTelemetry>false</EnableXHarnessTelemetry>
@@ -118,9 +120,13 @@
     <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' == 'true'">-notrait category=no-workload</_XUnitTraitArg>
     <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
   </PropertyGroup>
+
   <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
     <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
     <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
+
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;BUILT_NUGETS_PATH=%HELIX_CORRELATION_PAYLOAD%/built-nugets&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;BUILT_NUGETS_PATH=$HELIX_CORRELATION_PAYLOAD/built-nugets&quot;" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -186,6 +192,10 @@
     <ItemGroup Condition="'$(Scenario)' == '' or '$(Scenario)' == 'normal' or '$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'WasmTestOnNodeJS'">
       <HelixCorrelationPayload Include="$(TestEchoMiddleware)" Destination="xharness/TestEchoMiddleware" Condition="Exists('$(TestEchoMiddleware)')" />
       <HelixCorrelationPayload Include="$(RemoteLoopMiddleware)" Destination="xharness/RemoteLoopMiddleware" Condition="Exists('$(RemoteLoopMiddleware)')" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(NeedsBuiltNugets)' == 'true'">
+      <HelixCorrelationPayload Include="$(_ShippingPackagesPath)"                Destination="built-nugets" />
     </ItemGroup>
   </Target>
 
@@ -296,7 +306,9 @@
       <_EmSdkFiles Include="$(EMSDK_PATH)\**\*" Exclude="$(EMSDK_PATH)\.git\**\*" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(_EmSdkFiles)" DestinationFolder="$(EmSdkDirForHelixPayload)\%(RecursiveDir)" />
+    <Copy SourceFiles="@(_EmSdkFiles)"
+          DestinationFiles="@(_EmSdkFiles -> '$(EmSdkDirForHelixPayload)\%(RecursiveDir)%(FileName)%(Extension)')"
+          SkipUnchangedFiles="true" />
   </Target>
 
   <Target Name="DownloadFirefoxToSendToHelix" Condition="!Exists($(FirefoxForHelixPayload)) and '$(DebuggerHost)' == 'firefox'">

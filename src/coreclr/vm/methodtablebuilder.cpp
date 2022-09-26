@@ -575,13 +575,6 @@ MethodTableBuilder::LoadApproxInterfaceMap()
         // Use the same injection status as typical instantiation
         bmtInterface->dbg_fShouldInjectInterfaceDuplicates =
             bmtGenerics->Debug_GetTypicalMethodTable()->Debug_HasInjectedInterfaceDuplicates();
-
-        if (GetModule() == g_pObjectClass->GetModule())
-        {   // CoreLib has some weird hardcoded information about interfaces (e.g.
-            // code:CEEPreloader::ApplyTypeDependencyForSZArrayHelper), so we don't inject duplicates into
-            // CoreLib types
-            bmtInterface->dbg_fShouldInjectInterfaceDuplicates = FALSE;
-        }
     }
 #endif //_DEBUG
 

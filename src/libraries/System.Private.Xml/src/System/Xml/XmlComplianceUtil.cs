@@ -147,16 +147,16 @@ namespace System.Xml
             }
         }
 
-        public static bool IsValidLanguageID(char[] value, int startPos, int length)
+        public static bool IsValidLanguageID(string value)
         {
-            int len = length;
+            int len = value.Length;
             if (len < 2)
             {
                 return false;
             }
 
             bool fSeenLetter = false;
-            int i = startPos;
+            int i = 0;
 
             char ch = value[i];
             if (XmlCharType.IsLetter(ch))

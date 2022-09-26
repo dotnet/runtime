@@ -1076,24 +1076,6 @@ namespace System.Net
             }
         }
 
-        private static bool ByteArrayHasPrefix(byte[] prefix, byte[] byteArray)
-        {
-            if (prefix == null || byteArray == null || prefix.Length > byteArray.Length)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < prefix.Length; i++)
-            {
-                if (prefix[i] != byteArray[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
         private static readonly char[] s_parseContentTypeSeparators = new char[] { ';', '=', ' ' };
         private static readonly Encoding[] s_knownEncodings = { Encoding.UTF8, Encoding.UTF32, Encoding.Unicode, Encoding.BigEndianUnicode };
 
@@ -1147,13 +1129,12 @@ namespace System.Net
             if (enc == null)
             {
                 // UTF32 must be tested before Unicode because it's BOM is the same but longer.
-                Encoding[] encodings = s_knownEncodings;
-                for (int i = 0; i < encodings.Length; i++)
+                foreach (Encoding encoding in s_knownEncodings)
                 {
-                    byte[] preamble = encodings[i].GetPreamble();
-                    if (ByteArrayHasPrefix(preamble, data))
+                    ReadOnlySpan<byte> preamble = encoding.Preamble;
+                    if (data.AsSpan().StartsWith(preamble))
                     {
-                        enc = encodings[i];
+                        enc = encoding;
                         bomLengthInData = preamble.Length;
                         break;
                     }
@@ -1166,8 +1147,8 @@ namespace System.Net
             // Calculate BOM length based on encoding guess.  Then check for it in the data.
             if (bomLengthInData == -1)
             {
-                byte[] preamble = enc.GetPreamble();
-                bomLengthInData = ByteArrayHasPrefix(preamble, data) ? preamble.Length : 0;
+                ReadOnlySpan<byte> preamble = enc.Preamble;
+                bomLengthInData = data.AsSpan().StartsWith(preamble) ? preamble.Length : 0;
             }
 
             // Convert byte array to string stripping off any BOM before calling Format().
@@ -1187,88 +1168,9 @@ namespace System.Net
         }
 
         [return: NotNullIfNotNull(nameof(str))]
-        private static string? UrlEncode(string? str)
-        {
-            if (str == null)
-                return null;
-            byte[] bytes = Encoding.UTF8.GetBytes(str);
-            return Encoding.ASCII.GetString(UrlEncodeBytesToBytesInternal(bytes, 0, bytes.Length, false));
-        }
-
-        private static byte[] UrlEncodeBytesToBytesInternal(byte[] bytes, int offset, int count, bool alwaysCreateReturnValue)
-        {
-            int cSpaces = 0;
-            int cUnsafe = 0;
-
-            // Count them first.
-            for (int i = 0; i < count; i++)
-            {
-                char ch = (char)bytes[offset + i];
-
-                if (ch == ' ')
-                {
-                    cSpaces++;
-                }
-                else if (!IsSafe(ch))
-                {
-                    cUnsafe++;
-                }
-            }
-
-            // If nothing to expand.
-            if (!alwaysCreateReturnValue && cSpaces == 0 && cUnsafe == 0)
-                return bytes;
-
-            // Expand not 'safe' characters into %XX, spaces to +.
-            byte[] expandedBytes = new byte[count + cUnsafe * 2];
-            int pos = 0;
-
-            for (int i = 0; i < count; i++)
-            {
-                byte b = bytes[offset + i];
-                char ch = (char)b;
-
-                if (IsSafe(ch))
-                {
-                    expandedBytes[pos++] = b;
-                }
-                else if (ch == ' ')
-                {
-                    expandedBytes[pos++] = (byte)'+';
-                }
-                else
-                {
-                    expandedBytes[pos++] = (byte)'%';
-                    expandedBytes[pos++] = (byte)HexConverter.ToCharLower(b >> 4);
-                    expandedBytes[pos++] = (byte)HexConverter.ToCharLower(b);
-                }
-            }
-
-            return expandedBytes;
-        }
-
-        private static bool IsSafe(char ch)
-        {
-            if (char.IsAsciiLetterOrDigit(ch))
-            {
-                return true;
-            }
-
-            switch (ch)
-            {
-                case '-':
-                case '_':
-                case '.':
-                case '!':
-                case '*':
-                case '\'':
-                case '(':
-                case ')':
-                    return true;
-            }
-
-            return false;
-        }
+        private static string? UrlEncode(string? str) =>
+            str is null ? null :
+            WebUtility.UrlEncode(str);
 
         private void InvokeOperationCompleted(AsyncOperation asyncOp, SendOrPostCallback callback, AsyncCompletedEventArgs eventArgs)
         {

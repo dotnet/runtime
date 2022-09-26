@@ -2674,7 +2674,7 @@ PALIMPORT BOOL PALAPI PAL_GetUnwindInfoSize(SIZE_T baseAddress, ULONG64 ehFrameH
 
 #if defined(__APPLE__) && defined(__i386__)
 #define PAL_CS_NATIVE_DATA_SIZE 76
-#elif defined(__APPLE__) && defined(__x86_64__)
+#elif defined(__APPLE__) && defined(HOST_AMD64)
 #define PAL_CS_NATIVE_DATA_SIZE 120
 #elif defined(__APPLE__) && defined(HOST_ARM64)
 #define PAL_CS_NATIVE_DATA_SIZE 120
@@ -4581,12 +4581,14 @@ void _mm_setcsr(unsigned int i);
 
 #ifdef  __cplusplus
 
+#if defined(HOST_ARM64) && defined(TARGET_ARM64)
 class CORJIT_FLAGS;
 
 PALIMPORT
 VOID
 PALAPI
 PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags);
+#endif // HOST_ARM64 && TARGET_ARM64
 
 #endif
 

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { dotnet } from "./dotnet.js";
+import { dotnet, exit } from "./dotnet.js";
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -43,8 +43,19 @@ function getOnClickHandler(startWork, stopWork, getIterationsDone) {
     }
 }
 
+const isTest = (config) => config.environmentVariables["CI_TEST"] === "true";
+async function runTest({ StartAsyncWork, StopWork, GetIterationsDone }) {
+    const result = await doWork(StartAsyncWork, StopWork, GetIterationsDone);
+    const expectedResult = 55; // the default value of `inputN` is 10 (see index.html)
+    return result === expectedResult;
+}
+
 async function main() {
-    const { MONO, Module, getAssemblyExports } = await dotnet.create()
+    const { MONO, Module, getAssemblyExports, getConfig } = await dotnet
+        .withElementOnExit()
+        .withExitCodeLogging()
+        .create();
+
     globalThis.__Module = Module;
     globalThis.MONO = MONO;
 
@@ -53,6 +64,12 @@ async function main() {
     const btn = document.getElementById("startWork");
     btn.style.backgroundColor = "rgb(192,255,192)";
     btn.onclick = getOnClickHandler(exports.Sample.Test.StartAsyncWork, exports.Sample.Test.StopWork, exports.Sample.Test.GetIterationsDone);
+
+    const config = getConfig();
+    if (isTest(config)) {
+        const succeeded = await runTest(exports.Sample.Test);
+        exit(succeeded ? 0 : 1);
+    }
 }
 
 main();

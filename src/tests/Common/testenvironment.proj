@@ -294,7 +294,8 @@
       <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'monointerpreter'" Include="export MONO_ENV_OPTIONS=--interpreter" />
 
       <!-- Use Mono LLVM JIT when JIT-compiling the non-AOT-compiled parts of the runtime tests -->
-      <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'llvmaot'" Include="export MONO_ENV_OPTIONS=--llvm" />
+      <!-- FIXME: temporarily disable LLVM JIT and use mini JIT until LLVM JIT support is brought back -->
+      <_TestEnvFileLine Condition="'false' == 'true' and '$(RuntimeVariant)' == 'llvmaot'" Include="export MONO_ENV_OPTIONS=--llvm" />
 
       <!-- Use Mono in Full AOT mode when running the full-AOT-compiled runtime tests -->
       <_TestEnvFileLine Condition="'$(RuntimeVariant)' == 'llvmfullaot'" Include="export MONO_ENV_OPTIONS=--full-aot" />

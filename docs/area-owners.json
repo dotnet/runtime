@@ -97,7 +97,6 @@
     {
       "lead": "dotnet/dnr-codeflow",
       "owners": [
-        "danmoseley",
         "jeffschwMSFT",
         "marek-safar",
         "dotnet/dnr-codeflow"
@@ -503,10 +502,9 @@
       "label": "area-Interop-mono"
     },
     {
-      "lead": "danmoseley",
+      "lead": "jeffhandley",
       "pod": "eric-jeff",
       "owners": [
-        "danmoseley",
         "ericstj",
         "jeffhandley",
         "dotnet/area-meta"
@@ -1297,9 +1295,9 @@
       "label": "area-System.ServiceProcess"
     },
     {
-      "lead": "danmoseley",
+      "lead": "jeffhandley",
       "owners": [
-        "danmoseley"
+        "jeffhandley"
       ],
       "label": "area-System.Speech"
     },
@@ -1402,7 +1400,8 @@
     {
       "lead": "HongGit",
       "owners": [
-        "HongGit"
+        "HongGit",
+        "roji"
       ],
       "label": "area-System.Transactions"
     },

@@ -28,6 +28,9 @@
   <UsingTask TaskName="MonoAOTCompiler"
              AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
 
+  <UsingTask TaskName="ILStrip"
+             AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
+
   <Target Name="BuildAppBundle" AfterTargets="CopyFilesToPublishDirectory">
     <PropertyGroup>
       <AppDir>$(MSBuildThisFileDirectory)$(PublishDir)\app</AppDir>
@@ -66,6 +69,8 @@
         LLVMPath="$(MonoAotCrossDir)">
         <Output TaskParameter="CompiledAssemblies" ItemName="BundleAssemblies" />
     </MonoAOTCompiler>
+
+    <ILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(AOTMode)' == 'Full'" Assemblies="@(BundleAssemblies)" />
 
     <AppleAppBuilderTask
         TargetOS="$(TargetOS)"

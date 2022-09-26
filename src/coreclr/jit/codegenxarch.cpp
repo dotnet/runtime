@@ -505,7 +505,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             }
             else
             {
-                double               cns = tree->AsDblCon()->gtDconVal;
+                double               cns = tree->AsDblCon()->DconValue();
                 CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(cns, size);
 
                 emit->emitIns_R_C(ins_Load(targetType), size, targetReg, hnd, 0);
@@ -7507,7 +7507,7 @@ void CodeGen::genSSE41RoundOp(GenTreeOp* treeNode)
                 case GT_CNS_DBL:
                 {
                     GenTreeDblCon*       dblConst = srcNode->AsDblCon();
-                    CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(dblConst->gtDconVal, emitTypeSize(dblConst));
+                    CORINFO_FIELD_HANDLE hnd = emit->emitFltOrDblConst(dblConst->DconValue(), emitTypeSize(dblConst));
 
                     emit->emitIns_R_C_I(ins, size, dstReg, hnd, 0, ival);
                     return;

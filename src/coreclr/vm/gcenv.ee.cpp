@@ -1397,7 +1397,7 @@ namespace
             assert(args != nullptr);
 
             ClrFlsSetThreadType(ThreadType_GC);
-            args->Thread->SetGCSpecial(true);
+            args->Thread->SetGCSpecial();
             STRESS_LOG_RESERVE_MEM(GC_STRESSLOG_MULTIPLY);
             args->HasStarted = !!args->Thread->HasStarted();
 
