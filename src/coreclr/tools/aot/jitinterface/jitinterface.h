@@ -79,7 +79,8 @@ struct JitInterfaceCallbacks
     CorInfoHelpFunc (* getBoxHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     CorInfoHelpFunc (* getUnBoxHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     void* (* getRuntimeTypePointer)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
-    CORINFO_CLASS_HANDLE (* getObjectType)(void * thisHandle, CorInfoExceptionClass** ppException, void* typeObj);
+    bool (* isObjectImmutable)(void * thisHandle, CorInfoExceptionClass** ppException, void* objPtr);
+    CORINFO_CLASS_HANDLE (* getObjectType)(void * thisHandle, CorInfoExceptionClass** ppException, void* objPtr);
     bool (* getReadyToRunHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, CORINFO_LOOKUP_KIND* pGenericLookupKind, CorInfoHelpFunc id, CORINFO_CONST_LOOKUP* pLookup);
     void (* getReadyToRunDelegateCtorHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pTargetMethod, unsigned int targetConstraint, CORINFO_CLASS_HANDLE delegateType, CORINFO_LOOKUP* pLookup);
     const char* (* getHelperName)(void * thisHandle, CorInfoExceptionClass** ppException, CorInfoHelpFunc helpFunc);
@@ -865,11 +866,20 @@ public:
     return temp;
 }
 
-    virtual CORINFO_CLASS_HANDLE getObjectType(
-          void* typeObj)
+    virtual bool isObjectImmutable(
+          void* objPtr)
 {
     CorInfoExceptionClass* pException = nullptr;
-    CORINFO_CLASS_HANDLE temp = _callbacks->getObjectType(_thisHandle, &pException, typeObj);
+    bool temp = _callbacks->isObjectImmutable(_thisHandle, &pException, objPtr);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
+    virtual CORINFO_CLASS_HANDLE getObjectType(
+          void* objPtr)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    CORINFO_CLASS_HANDLE temp = _callbacks->getObjectType(_thisHandle, &pException, objPtr);
     if (pException != nullptr) throw pException;
     return temp;
 }

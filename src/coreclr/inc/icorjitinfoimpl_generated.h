@@ -288,8 +288,11 @@ CorInfoHelpFunc getUnBoxHelper(
 void* getRuntimeTypePointer(
           CORINFO_CLASS_HANDLE cls) override;
 
+bool isObjectImmutable(
+          void* objPtr) override;
+
 CORINFO_CLASS_HANDLE getObjectType(
-          void* typeObj) override;
+          void* objPtr) override;
 
 bool getReadyToRunHelper(
           CORINFO_RESOLVED_TOKEN* pResolvedToken,

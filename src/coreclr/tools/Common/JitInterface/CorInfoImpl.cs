@@ -2343,14 +2343,6 @@ namespace Internal.JitInterface
             return type.IsNullable ? CorInfoHelpFunc.CORINFO_HELP_UNBOX_NULLABLE : CorInfoHelpFunc.CORINFO_HELP_UNBOX;
         }
 
-#pragma warning disable CA1822 // Mark members as static
-        private void* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
-#pragma warning restore CA1822 // Mark members as static
-        {
-            // TODO: https://github.com/dotnet/runtime/pull/75573#issuecomment-1250824543
-            return (void*)IntPtr.Zero;
-        }
-
         private byte* getHelperName(CorInfoHelpFunc helpFunc)
         {
             return (byte*)GetPin(StringToUTF8(helpFunc.ToString()));

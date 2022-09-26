@@ -3000,7 +3000,17 @@ namespace Internal.JitInterface
 
         private CORINFO_CLASS_STRUCT_* getObjectType(void* objPtr)
         {
-            return (CORINFO_CLASS_STRUCT_*)IntPtr.Zero;
+            throw new NotSupportedException();
+        }
+
+        private bool isObjectImmutable(void* objPtr)
+        {
+            throw new NotSupportedException();
+        }
+        
+        private void* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
+        {
+            return null;
         }
     }
 }

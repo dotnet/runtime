@@ -551,11 +551,18 @@ void* interceptor_ICJI::getRuntimeTypePointer(
     return original_ICorJitInfo->getRuntimeTypePointer(cls);
 }
 
+bool interceptor_ICJI::isObjectImmutable(
+          void* objPtr)
+{
+    mcs->AddCall("isObjectImmutable");
+    return original_ICorJitInfo->isObjectImmutable(objPtr);
+}
+
 CORINFO_CLASS_HANDLE interceptor_ICJI::getObjectType(
-          void* typeObj)
+          void* objPtr)
 {
     mcs->AddCall("getObjectType");
-    return original_ICorJitInfo->getObjectType(typeObj);
+    return original_ICorJitInfo->getObjectType(objPtr);
 }
 
 bool interceptor_ICJI::getReadyToRunHelper(

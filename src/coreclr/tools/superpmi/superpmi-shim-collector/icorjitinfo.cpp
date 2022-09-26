@@ -798,6 +798,14 @@ void* interceptor_ICJI::getRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
     return temp;
 }
 
+bool interceptor_ICJI::isObjectImmutable(void* typeObj)
+{
+    mc->cr->AddCall("isObjectImmutable");
+    bool temp = original_ICorJitInfo->isObjectImmutable(typeObj);
+    mc->recIsObjectImmutable(typeObj, temp);
+    return temp;
+}
+
 CORINFO_CLASS_HANDLE interceptor_ICJI::getObjectType(void* typeObj)
 {
     mc->cr->AddCall("getObjectType");

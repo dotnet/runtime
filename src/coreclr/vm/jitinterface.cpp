@@ -6015,6 +6015,39 @@ void* CEEInfo::getRuntimeTypePointer(CORINFO_CLASS_HANDLE clsHnd)
     return pointer;
 }
 
+
+/***********************************************************************/
+bool CEEInfo::isObjectImmutable(void* objPtr)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    bool isImmutable = false;
+
+    JIT_TO_EE_TRANSITION();
+
+    GCX_COOP();
+    Object* obj = (Object*)objPtr;
+    MethodTable* type = obj->GetMethodTable();
+
+    if (type->IsString() || type == g_pRuntimeTypeClass)
+    {
+        isImmutable = true;
+    }
+    else
+    {
+        // Unexpected type of object
+        UNREACHABLE();
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return isImmutable;
+}
+
 /***********************************************************************/
 CORINFO_CLASS_HANDLE CEEInfo::getObjectType(void* objPtr)
 {

@@ -2207,12 +2207,35 @@ void* MethodContext::repGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
     return (void*)value;
 }
 
-void MethodContext::recGetObjectType(void* typeObj, CORINFO_CLASS_HANDLE result)
+void MethodContext::recIsObjectImmutable(void* objPtr, bool result)
+{
+    if (IsObjectImmutable == nullptr)
+        IsObjectImmutable = new LightWeightMap<DWORDLONG, DWORD>();
+
+    DWORDLONG key = (DWORDLONG)objPtr;
+    DWORD value = (DWORD)result;
+    IsObjectImmutable->Add(key, value);
+    DEBUG_REC(dmpIsObjectImmutable(key, value));
+}
+void MethodContext::dmpIsObjectImmutable(DWORDLONG key, DWORD value)
+{
+    printf("IsObjectImmutable key obj-%016llX, value res-%u", key, value);
+}
+bool MethodContext::repIsObjectImmutable(void* objPtr)
+{
+    DWORDLONG key = (DWORDLONG)objPtr;
+    AssertMapAndKeyExist(IsObjectImmutable, key, ": key %016llX", key);
+    DWORD value = IsObjectImmutable->Get(key);
+    DEBUG_REP(dmpIsObjectImmutable(key, value));
+    return (bool)value;
+}
+
+void MethodContext::recGetObjectType(void* objPtr, CORINFO_CLASS_HANDLE result)
 {
     if (GetObjectType == nullptr)
         GetObjectType = new LightWeightMap<DWORDLONG, DWORDLONG>();
 
-    DWORDLONG key = (DWORDLONG)typeObj;
+    DWORDLONG key = (DWORDLONG)objPtr;
     DWORDLONG value = (DWORDLONG)result;
     GetObjectType->Add(key, value);
     DEBUG_REC(dmpGetObjectType(key, value));
@@ -2221,9 +2244,9 @@ void MethodContext::dmpGetObjectType(DWORDLONG key, DWORDLONG value)
 {
     printf("GetObjectType key obj-%016llX, value res-%016llX", key, value);
 }
-CORINFO_CLASS_HANDLE MethodContext::repGetObjectType(void* typeObj)
+CORINFO_CLASS_HANDLE MethodContext::repGetObjectType(void* objPtr)
 {
-    DWORDLONG key = (DWORDLONG)typeObj;
+    DWORDLONG key = (DWORDLONG)objPtr;
     AssertMapAndKeyExist(GetObjectType, key, ": key %016llX", key);
     DWORDLONG value = GetObjectType->Get(key);
     DEBUG_REP(dmpGetObjectType(key, value));

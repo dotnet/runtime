@@ -2253,5 +2253,22 @@ namespace Internal.JitInterface
                 _ => throw new NotImplementedException($"Unexpected object in getObjectType: {obj}")
             };
         }
+
+        private void* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
+        {
+            // TODO: https://github.com/dotnet/runtime/pull/75573#issuecomment-1250824543
+            throw new NotImplementedException();
+        }
+
+        private bool isObjectImmutable(void* objPtr)
+        {
+            object obj = HandleToObject((IntPtr)objPtr);
+            return obj switch
+            {
+                FrozenStringNode => true,
+                FrozenObjectNode => false,
+                _ => throw new NotImplementedException($"Unexpected object in isObjectImmutable: {obj}")
+            };
+        }
     }
 }

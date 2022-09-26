@@ -314,9 +314,13 @@ public:
     void dmpGetRuntimeTypePointer(DWORDLONG key, DWORDLONG value);
     void* repGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls);
 
-    void recGetObjectType(void* typeObj, CORINFO_CLASS_HANDLE result);
+    void recIsObjectImmutable(void* objPtr, bool result);
+    void dmpIsObjectImmutable(DWORDLONG key, DWORD value);
+    bool repIsObjectImmutable(void* objPtr);
+
+    void recGetObjectType(void* objPtr, CORINFO_CLASS_HANDLE result);
     void dmpGetObjectType(DWORDLONG key, DWORDLONG value);
-    CORINFO_CLASS_HANDLE repGetObjectType(void* typeObj);
+    CORINFO_CLASS_HANDLE repGetObjectType(void* objPtr);
 
     void recGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                 CORINFO_LOOKUP_KIND*    pGenericLookupKind,
@@ -1138,6 +1142,7 @@ enum mcPackets
     Packet_ObjectToString = 197,
     Packet_GetReadonlyStaticFieldValue = 198,
     Packet_GetObjectType = 199,
+    Packet_IsObjectImmutable = 200,
 };
 
 void SetDebugDumpVariables();

@@ -2486,8 +2486,12 @@ public:
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
+    virtual bool isObjectImmutable(
+            void*                       objPtr
+            ) = 0;
+
     virtual CORINFO_CLASS_HANDLE getObjectType(
-            void*                       typeObj
+            void*                       objPtr
             ) = 0;
 
     virtual bool getReadyToRunHelper(

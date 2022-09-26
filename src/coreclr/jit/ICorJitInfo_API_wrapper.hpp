@@ -672,11 +672,20 @@ void* WrapICorJitInfo::getRuntimeTypePointer(
     return temp;
 }
 
+bool WrapICorJitInfo::isObjectImmutable(
+          void* objPtr)
+{
+    API_ENTER(isObjectImmutable);
+    bool temp = wrapHnd->isObjectImmutable(objPtr);
+    API_LEAVE(isObjectImmutable);
+    return temp;
+}
+
 CORINFO_CLASS_HANDLE WrapICorJitInfo::getObjectType(
-          void* typeObj)
+          void* objPtr)
 {
     API_ENTER(getObjectType);
-    CORINFO_CLASS_HANDLE temp = wrapHnd->getObjectType(typeObj);
+    CORINFO_CLASS_HANDLE temp = wrapHnd->getObjectType(objPtr);
     API_LEAVE(getObjectType);
     return temp;
 }

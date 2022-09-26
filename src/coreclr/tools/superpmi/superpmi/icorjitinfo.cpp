@@ -679,10 +679,17 @@ void* MyICJI::getRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
     return result;
 }
 
-CORINFO_CLASS_HANDLE MyICJI::getObjectType(void* typeObj)
+bool MyICJI::isObjectImmutable(void* objPtr)
+{
+    jitInstance->mc->cr->AddCall("isObjectImmutable");
+    bool result = jitInstance->mc->repIsObjectImmutable(objPtr);
+    return result;
+}
+
+CORINFO_CLASS_HANDLE MyICJI::getObjectType(void* objPtr)
 {
     jitInstance->mc->cr->AddCall("getObjectType");
-    CORINFO_CLASS_HANDLE result = jitInstance->mc->repGetObjectType(typeObj);
+    CORINFO_CLASS_HANDLE result = jitInstance->mc->repGetObjectType(objPtr);
     return result;
 }
 

@@ -254,6 +254,15 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
 
     if (store->Data()->IsIconHandle(GTF_ICON_OBJ_HDL))
     {
+#ifdef TARGET_ARMARCH
+        const ssize_t handle = store->Data()->AsIntCon()->IconValue();
+        if (!compiler->info.compCompHnd->isObjectImmutable(reinterpret_cast<void*>(handle)))
+        {
+            // See https://github.com/dotnet/runtime/pull/76135#issuecomment-1257258310
+            store->gtFlags |= GTF_IND_VOLATILE;
+        }
+#endif
+
         // Ignore frozen objects
         return WBF_NoBarrier;
     }
