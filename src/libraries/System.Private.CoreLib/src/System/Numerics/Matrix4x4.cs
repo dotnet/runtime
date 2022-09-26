@@ -157,8 +157,7 @@ namespace System.Numerics
         /// <param name="column">The index of the column containing the element to get or set.</param>
         /// <returns>The element at [<paramref name="row" />][<paramref name="column" />].</returns>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// <paramref name="row" /> was less than zero or greater than the number of rows, or
-        /// <paramref name="column" /> was less than zero or greater than the number of columns
+        /// <paramref name="row" /> was less than zero or greater than the number of rows, or <paramref name="column" /> was less than zero or greater than the number of columns.
         /// </exception>
         public unsafe float this[int row, int column]
         {
