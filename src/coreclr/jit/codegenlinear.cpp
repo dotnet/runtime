@@ -1653,23 +1653,75 @@ void CodeGen::genConsumeRegs(GenTree* tree)
 #ifdef FEATURE_HW_INTRINSICS
         else if (tree->OperIs(GT_HWINTRINSIC))
         {
-            // Only load/store HW intrinsics can be contained (and the address may also be contained).
-            HWIntrinsicCategory category = HWIntrinsicInfo::lookupCategory(tree->AsHWIntrinsic()->GetHWIntrinsicId());
-            assert((category == HW_Category_MemoryLoad) || (category == HW_Category_MemoryStore));
-            size_t numArgs = tree->AsHWIntrinsic()->GetOperandCount();
-            genConsumeAddress(tree->AsHWIntrinsic()->Op(1));
-            if (category == HW_Category_MemoryStore)
+            GenTreeHWIntrinsic* hwintrinsic = tree->AsHWIntrinsic();
+            NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+            size_t              numArgs     = hwintrinsic->GetOperandCount();
+            HWIntrinsicCategory category    = HWIntrinsicInfo::lookupCategory(intrinsicId);
+
+            if (category == HW_Category_MemoryLoad)
+            {
+                assert(numArgs == 1);
+
+                GenTree* op1 = hwintrinsic->Op(1);
+                genConsumeAddress(op1);
+            }
+            else if (category == HW_Category_MemoryStore)
             {
                 assert(numArgs == 2);
 
-                GenTree* op2 = tree->AsHWIntrinsic()->Op(2);
+                GenTree* op1 = hwintrinsic->Op(1);
+                genConsumeAddress(op1);
+
+                GenTree* op2 = hwintrinsic->Op(2);
                 assert(op2->isContained());
 
                 genConsumeReg(op2);
             }
             else
             {
-                assert(numArgs == 1);
+                switch (intrinsicId)
+                {
+                    case NI_SSE2_ConvertToInt32:
+                    case NI_SSE2_ConvertToUInt32:
+                    case NI_SSE2_X64_ConvertToInt64:
+                    case NI_SSE2_X64_ConvertToUInt64:
+                    case NI_AVX2_ConvertToInt32:
+                    case NI_AVX2_ConvertToUInt32:
+                    {
+                        // These intrinsics are "ins reg/mem, xmm"
+                        assert(numArgs == 1);
+
+                        GenTree* op1 = hwintrinsic->Op(1);
+                        assert(!op1->isContained());
+                        genConsumeReg(op1);
+
+                        break;
+                    }
+
+                    case NI_SSE2_Extract:
+                    case NI_SSE41_Extract:
+                    case NI_SSE41_X64_Extract:
+                    case NI_AVX_ExtractVector128:
+                    case NI_AVX2_ExtractVector128:
+                    {
+                        // These intrinsics are "ins reg/mem, xmm, imm8"
+                        assert(numArgs == 2);
+
+                        GenTree* op1 = hwintrinsic->Op(1);
+                        assert(!op1->isContained());
+                        genConsumeReg(op1);
+
+                        GenTree* op2 = hwintrinsic->Op(2);
+                        assert(op2->isContained() && op2->IsCnsIntOrI());
+
+                        break;
+                    }
+
+                    default:
+                    {
+                        unreached();
+                    }
+                }
             }
         }
 #endif // FEATURE_HW_INTRINSICS
