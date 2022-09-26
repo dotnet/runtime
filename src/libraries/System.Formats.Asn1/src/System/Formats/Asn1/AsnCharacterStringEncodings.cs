@@ -220,15 +220,12 @@ namespace System.Formats.Asn1
 
             bool[] isAllowed = new bool[0x80];
 
-            for (byte charCode = minCharAllowed; charCode <= maxCharAllowed; charCode++)
-            {
-                isAllowed[charCode] = true;
-            }
+            isAllowed.AsSpan(minCharAllowed, maxCharAllowed - minCharAllowed + 1).Fill(true);
 
             _isAllowed = isAllowed;
         }
 
-        protected RestrictedAsciiStringEncoding(IEnumerable<char> allowedChars)
+        protected RestrictedAsciiStringEncoding(string allowedChars)
         {
             bool[] isAllowed = new bool[0x7F];
 

@@ -33,13 +33,14 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-#if MONO_FEATURE_SRE
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 
 namespace System.Reflection.Emit
 {
@@ -269,6 +270,17 @@ namespace System.Reflection.Emit
             return manifest_module;
         }
 
+        internal static AssemblyBuilder InternalDefineDynamicAssembly(
+            AssemblyName name,
+            AssemblyBuilderAccess access,
+            Assembly? callingAssembly,
+            AssemblyLoadContext? assemblyLoadContext,
+            IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
+        {
+            Debug.Assert(assemblyLoadContext is null);
+            return DefineDynamicAssembly(name, access, assemblyAttributes);
+        }
+
         public ModuleBuilder? GetDynamicModule(string name)
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
@@ -387,4 +399,3 @@ namespace System.Reflection.Emit
         public override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttribute.GetCustomAttributesData(this);
     }
 }
-#endif

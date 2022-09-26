@@ -188,6 +188,11 @@
         $(LibrariesNativeArtifactsPath)dotnet.timezones.blat;
         $(LibrariesNativeArtifactsPath)*.dat;"
         IsNative="true" />
+      <!-- for threaded wasm -->
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser' and Exists('$(LibrariesNativeArtifactsPath)dotnet.worker.js')"
+                             Include="
+        $(LibrariesNativeArtifactsPath)dotnet.worker.js"
+        IsNative="true" />
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
                              Include="
         $(LibrariesNativeArtifactsPath)src\*.c;

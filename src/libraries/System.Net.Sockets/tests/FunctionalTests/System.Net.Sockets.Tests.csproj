@@ -4,6 +4,7 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
+    <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Accept.cs" />

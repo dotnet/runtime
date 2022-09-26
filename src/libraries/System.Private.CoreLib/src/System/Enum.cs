@@ -327,10 +327,10 @@ namespace System
         /// </summary>
         /// <typeparam name="TEnum">An enumeration type.</typeparam>
         /// /// <remarks>
-        /// This method can be used to get enumeration values when creating an array of the enumeration type is challenging.
-        /// For example, <see cref="T:System.Reflection.MetadataLoadContext" /> or on a platform where runtime codegen is not available.
+        /// You can use this method to get enumeration values when it's hard to create an array of the enumeration type.
+        /// For example, you might use this method for the <see cref="T:System.Reflection.MetadataLoadContext" /> enumeration or on a platform where run-time code generation is not available.
         /// </remarks>
-        /// <returns>An array that contains the values of the underlying type constants in enumType.</returns>
+        /// <returns>An array that contains the values of the underlying type constants in <typeparamref name="TEnum" />.</returns>
         public static Array GetValuesAsUnderlyingType<TEnum>() where TEnum : struct, Enum =>
             typeof(TEnum).GetEnumValuesAsUnderlyingType();
 
@@ -339,16 +339,14 @@ namespace System
         /// </summary>
         /// <param name="enumType">An enumeration type.</param>
         /// <remarks>
-        /// This method can be used to get enumeration values when creating an array of the enumeration type is challenging.
-        /// For example, <see cref="T:System.Reflection.MetadataLoadContext" /> or on a platform where runtime codegen is not available.
+        /// You can use this method to get enumeration values when it's hard to create an array of the enumeration type.
+        /// For example, you might use this method for the <see cref="T:System.Reflection.MetadataLoadContext" /> enumeration or on a platform where run-time code generation is not available.
         /// </remarks>
         /// <returns>An array that contains the values of the underlying type constants in  <paramref name="enumType" />.</returns>
-        /// <exception cref="ArgumentNullException">
-        /// Thrown when the enumeration type is null.
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        /// Thrown when the type is not an enumeration type.
-        /// </exception>
+        /// <exception cref="T:System.ArgumentNullException">
+        /// <paramref name="enumType" /> is null.</exception>
+        /// <exception cref="T:System.ArgumentException">
+        /// <paramref name="enumType" /> is not an enumeration type.</exception>
         public static Array GetValuesAsUnderlyingType(Type enumType)
         {
             ArgumentNullException.ThrowIfNull(enumType);

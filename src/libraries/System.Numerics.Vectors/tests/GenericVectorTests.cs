@@ -25,6 +25,13 @@ namespace System.Numerics.Tests
             dummy = System.Numerics.Vector<float>.One;
         }
 
+        [Fact]
+        public unsafe void IsHardwareAcceleratedTest()
+        {
+            MethodInfo methodInfo = typeof(Vector).GetMethod("get_IsHardwareAccelerated");
+            Assert.Equal(Vector.IsHardwareAccelerated, methodInfo.Invoke(null, null));
+        }
+
         #region Constructor Tests
 
         [Fact]

@@ -271,7 +271,6 @@ namespace Microsoft.Extensions.Logging.Console.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73436", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void AddJsonConsole_ChangeProperties_IsReadFromLoggingConfiguration()
         {
             var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[] {

@@ -42,6 +42,8 @@ namespace System.Net.WebSockets
 
         #region HTTP Settings
 
+        /// <summary>Gets or sets the HTTP version to use.</summary>
+        /// <value>The HTTP message version. The default value is <c>1.1</c>.</value>
         public Version HttpVersion
         {
             get => _version;
@@ -54,6 +56,8 @@ namespace System.Net.WebSockets
             }
         }
 
+        /// <summary>Gets or sets the policy that determines how <see cref="ClientWebSocketOptions.HttpVersion" /> is interpreted and how the final HTTP version is negotiated with the server.</summary>
+        /// <value>The version policy used when the HTTP connection is established.</value>
         public HttpVersionPolicy HttpVersionPolicy
         {
             get => _versionPolicy;

@@ -140,3 +140,6 @@ build-dbg-proxy:
 	$(DOTNET) build $(TOP)/src/mono/wasm/debugger/BrowserDebugHost $(MSBUILD_ARGS)
 build-dbg-testsuite:
 	$(DOTNET) build $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(MSBUILD_ARGS)
+
+patch-deterministic:
+	cd emsdk/upstream/emscripten/ && patch -p1 < ../../../runtime/deterministic.diff

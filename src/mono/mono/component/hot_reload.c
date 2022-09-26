@@ -2118,6 +2118,13 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 			if (func_code == ENC_FUNC_ADD_PARAM)
 				break;
 
+			if (!base_info->method_table_update)
+				base_info->method_table_update = g_hash_table_new (g_direct_hash, g_direct_equal);
+			if (!delta_info->method_table_update)
+				delta_info->method_table_update = g_hash_table_new (g_direct_hash, g_direct_equal);
+			if (!delta_info->method_ppdb_table_update)
+				delta_info->method_ppdb_table_update = g_hash_table_new (g_direct_hash, g_direct_equal);
+
 			if (is_addition) {
 				g_assertf (add_member_typedef, "EnC: new method added but I don't know the class, should be caught by pass1");
 				if (pass2_context_is_skeleton (ctx, add_member_typedef)) {
@@ -2138,14 +2145,6 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 				}
 				add_member_typedef = 0;
 			}
-
-			if (!base_info->method_table_update)
-				base_info->method_table_update = g_hash_table_new (g_direct_hash, g_direct_equal);
-			if (!delta_info->method_table_update)
-				delta_info->method_table_update = g_hash_table_new (g_direct_hash, g_direct_equal);
-			if (!delta_info->method_ppdb_table_update)
-
-				delta_info->method_ppdb_table_update = g_hash_table_new (g_direct_hash, g_direct_equal);
 
 			int mapped_token = hot_reload_relative_delta_index (image_dmeta, delta_info, mono_metadata_make_token (token_table, token_index));
 			guint32 rva = mono_metadata_decode_row_col (&image_dmeta->tables [MONO_TABLE_METHOD], mapped_token - 1, MONO_METHOD_RVA);

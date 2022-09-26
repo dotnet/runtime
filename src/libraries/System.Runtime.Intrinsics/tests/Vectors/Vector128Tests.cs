@@ -10,6 +10,13 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
     public sealed class Vector128Tests
     {
         [Fact]
+        public unsafe void Vector128IsHardwareAcceleratedTest()
+        {
+            MethodInfo methodInfo = typeof(Vector128).GetMethod("get_IsHardwareAccelerated");
+            Assert.Equal(Vector128.IsHardwareAccelerated, methodInfo.Invoke(null, null));
+        }
+
+        [Fact]
         public unsafe void Vector128ByteExtractMostSignificantBitsTest()
         {
             Vector128<byte> vector = Vector128.Create(

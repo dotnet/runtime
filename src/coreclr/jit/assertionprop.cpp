@@ -1155,8 +1155,14 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
 
                     if (op1Type == TYP_REF)
                     {
-                        assert(curAssertion->op2.u1.iconVal == 0);
-                        printf("null");
+                        if (curAssertion->op2.u1.iconVal == 0)
+                        {
+                            printf("null");
+                        }
+                        else
+                        {
+                            printf("[%08p]", dspPtr(curAssertion->op2.u1.iconVal));
+                        }
                     }
                     else
                     {
@@ -1473,13 +1479,30 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
     //
     else if (op1->gtOper == GT_LCL_VAR)
     {
-        unsigned   lclNum = op1->AsLclVarCommon()->GetLclNum();
-        LclVarDsc* lclVar = lvaGetDesc(lclNum);
+        unsigned const   lclNum = op1->AsLclVarCommon()->GetLclNum();
+        LclVarDsc* const lclVar = lvaGetDesc(lclNum);
 
-        //  If the local variable has its address exposed then bail
+        // If the local variable has its address exposed then bail
+        //
         if (lclVar->IsAddressExposed())
         {
             goto DONE_ASSERTION; // Don't make an assertion
+        }
+
+        // If the local is a promoted struct and has an exposed field then bail.
+        //
+        if (lclVar->lvPromoted)
+        {
+            for (unsigned childLclNum = lclVar->lvFieldLclStart;
+                 childLclNum < lclVar->lvFieldLclStart + lclVar->lvFieldCnt; ++childLclNum)
+            {
+                LclVarDsc* const childVar = lvaGetDesc(childLclNum);
+
+                if (childVar->IsAddressExposed())
+                {
+                    goto DONE_ASSERTION;
+                }
+            }
         }
 
         if (helperCallArgs)
@@ -1618,11 +1641,11 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     {
                         noway_assert(op2->gtOper == GT_CNS_DBL);
                         /* If we have an NaN value then don't record it */
-                        if (_isnan(op2->AsDblCon()->gtDconVal))
+                        if (_isnan(op2->AsDblCon()->DconValue()))
                         {
                             goto DONE_ASSERTION; // Don't make an assertion
                         }
-                        assertion.op2.dconVal = op2->AsDblCon()->gtDconVal;
+                        assertion.op2.dconVal = op2->AsDblCon()->DconValue();
                     }
 
                     //
@@ -1699,6 +1722,22 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     if (lclVar2->IsAddressExposed())
                     {
                         goto DONE_ASSERTION; // Don't make an assertion
+                    }
+
+                    // If the local is a promoted struct and has an exposed field then bail.
+                    //
+                    if (lclVar2->lvPromoted)
+                    {
+                        for (unsigned childLclNum = lclVar2->lvFieldLclStart;
+                             childLclNum < lclVar2->lvFieldLclStart + lclVar2->lvFieldCnt; ++childLclNum)
+                        {
+                            LclVarDsc* const childVar = lvaGetDesc(childLclNum);
+
+                            if (childVar->IsAddressExposed())
+                            {
+                                goto DONE_ASSERTION;
+                            }
+                        }
                     }
 
                     assertion.op2.kind       = O2K_LCLVAR_COPY;
@@ -2110,7 +2149,7 @@ void Compiler::optDebugCheckAssertion(AssertionDsc* assertion)
                     break;
                 case O1K_LCLVAR:
                     assert((lvaGetDesc(assertion->op1.lcl.lclNum)->lvType != TYP_REF) ||
-                           (assertion->op2.u1.iconVal == 0) || doesMethodHaveFrozenString());
+                           (assertion->op2.u1.iconVal == 0) || doesMethodHaveFrozenObjects());
                     break;
                 case O1K_VALUE_NUMBER:
                     assert((vnStore->TypeOfVN(assertion->op1.vn) != TYP_REF) || (assertion->op2.u1.iconVal == 0));
@@ -2613,8 +2652,10 @@ AssertionInfo Compiler::optAssertionGenJtrue(GenTree* tree)
         GenTree* objectNode      = call->gtArgs.GetArgByIndex(1)->GetNode();
         GenTree* methodTableNode = call->gtArgs.GetArgByIndex(0)->GetNode();
 
-        assert(objectNode->TypeGet() == TYP_REF);
-        assert(methodTableNode->TypeGet() == TYP_I_IMPL);
+        // objectNode can be TYP_I_IMPL in case if it's a constant handle
+        // (e.g. a string literal from frozen segments)
+        assert(objectNode->TypeIs(TYP_REF, TYP_I_IMPL));
+        assert(methodTableNode->TypeIs(TYP_I_IMPL));
 
         // Reverse the assertion
         assert((assertionKind == OAK_EQUAL) || (assertionKind == OAK_NOT_EQUAL));
@@ -3101,11 +3142,9 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 
         case TYP_REF:
         {
-            assert(vnStore->ConstantValue<size_t>(vnCns) == 0);
-            // Support onle ref(ref(0)), do not support other forms (e.g byref(ref(0)).
             if (tree->TypeGet() == TYP_REF)
             {
-                conValTree = gtNewIconNode(0, TYP_REF);
+                conValTree = gtNewIconNode(vnStore->ConstantValue<size_t>(vnCns), TYP_REF);
             }
         }
         break;
@@ -3172,7 +3211,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
         {
             simd8_t value = vnStore->ConstantValue<simd8_t>(vnCns);
 
-            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet(), CORINFO_TYPE_FLOAT);
+            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
             vecCon->gtSimd8Val    = value;
 
             conValTree = vecCon;
@@ -3183,7 +3222,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
         {
             simd12_t value = vnStore->ConstantValue<simd12_t>(vnCns);
 
-            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet(), CORINFO_TYPE_FLOAT);
+            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
             vecCon->gtSimd12Val   = value;
 
             conValTree = vecCon;
@@ -3194,7 +3233,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
         {
             simd16_t value = vnStore->ConstantValue<simd16_t>(vnCns);
 
-            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet(), CORINFO_TYPE_FLOAT);
+            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
             vecCon->gtSimd16Val   = value;
 
             conValTree = vecCon;
@@ -3205,7 +3244,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
         {
             simd32_t value = vnStore->ConstantValue<simd32_t>(vnCns);
 
-            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet(), CORINFO_TYPE_FLOAT);
+            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
             vecCon->gtSimd32Val   = value;
 
             conValTree = vecCon;
@@ -3381,6 +3420,18 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
                 // Here we have to allocate a new 'large' node to replace the old one
                 newTree = gtNewIconHandleNode(curAssertion->op2.u1.iconVal,
                                               curAssertion->op2.u1.iconFlags & GTF_ICON_HDL_MASK);
+
+                // Make sure we don't retype const gc handles to TYP_I_IMPL
+                // Although, it's possible for e.g. GTF_ICON_STATIC_HDL
+                if (!newTree->IsIntegralConst(0) && newTree->IsIconHandle(GTF_ICON_OBJ_HDL))
+                {
+                    if (tree->TypeIs(TYP_BYREF))
+                    {
+                        // Conservatively don't allow propagation of ICON TYP_REF into BYREF
+                        return nullptr;
+                    }
+                    newTree->ChangeType(tree->TypeGet());
+                }
             }
             else
             {
@@ -3430,15 +3481,14 @@ GenTree* Compiler::optConstantAssertionProp(AssertionDsc*        curAssertion,
 //
 bool Compiler::optZeroObjAssertionProp(GenTree* tree, ASSERT_VALARG_TP assertions)
 {
-    assert(varTypeIsStruct(tree));
-
     // We only make ZEROOBJ assertions in local propagation.
     if (!optLocalAssertionProp)
     {
         return false;
     }
 
-    if (!tree->OperIs(GT_LCL_VAR) || lvaGetDesc(tree->AsLclVar())->IsAddressExposed())
+    // And only into local nodes
+    if (!tree->OperIsLocal())
     {
         return false;
     }
@@ -3450,7 +3500,14 @@ bool Compiler::optZeroObjAssertionProp(GenTree* tree, ASSERT_VALARG_TP assertion
         return false;
     }
 
-    const unsigned lclNum         = tree->AsLclVar()->GetLclNum();
+    LclVarDsc* const lclVarDsc = lvaGetDesc(tree->AsLclVarCommon());
+
+    if (lclVarDsc->IsAddressExposed())
+    {
+        return false;
+    }
+
+    const unsigned lclNum         = tree->AsLclVarCommon()->GetLclNum();
     AssertionIndex assertionIndex = optLocalAssertionIsEqualOrNotEqual(O1K_LCLVAR, lclNum, O2K_ZEROOBJ, 0, assertions);
     if (assertionIndex == NO_ASSERTION_INDEX)
     {
@@ -3606,7 +3663,7 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc*        curAssertion,
     //
     if (tree->OperIs(GT_LCL_FLD))
     {
-        if (copyVarDsc->IsEnregisterableLcl() || copyVarDsc->lvPromotedStruct())
+        if (copyVarDsc->IsEnregisterableLcl() || copyVarDsc->lvPromoted)
         {
             return nullptr;
         }
@@ -3778,25 +3835,38 @@ GenTree* Compiler::optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeL
             break;
         }
 
-        // See if the variable is equal to another variable.
-        AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
+        // See if the variable is equal to another variable or a constant.
+        //
+        AssertionDsc* const curAssertion = optGetAssertion(assertionIndex);
         if (!curAssertion->CanPropLclVar())
         {
             continue;
         }
 
-        // Copy prop.
+        // Copy prop
+        //
         if (curAssertion->op2.kind == O2K_LCLVAR_COPY)
         {
-            // Perform copy assertion prop.
-            GenTree* newTree = optCopyAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
+            GenTree* const newTree = optCopyAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
+            if (newTree != nullptr)
+            {
+                return newTree;
+            }
+
+            continue;
+        }
+
+        // Constant prop
+        //
+        if (curAssertion->op1.lcl.lclNum == tree->GetLclNum())
+        {
+            GenTree* const newTree = optConstantAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
+
             if (newTree != nullptr)
             {
                 return newTree;
             }
         }
-
-        continue;
     }
 
     return nullptr;
@@ -3821,12 +3891,90 @@ GenTree* Compiler::optAssertionProp_LclFld(ASSERT_VALARG_TP assertions, GenTreeL
 GenTree* Compiler::optAssertionProp_Asg(ASSERT_VALARG_TP assertions, GenTreeOp* asg, Statement* stmt)
 {
     GenTree* rhs = asg->gtGetOp2();
-    if (asg->OperIsCopyBlkOp() && varTypeIsStruct(rhs))
+
+    // Try and simplify the RHS.
+    //
+    bool madeChanges = false;
+    if (asg->OperIsCopyBlkOp())
     {
         if (optZeroObjAssertionProp(rhs, assertions))
         {
-            return optAssertionProp_Update(asg, asg, stmt);
+            madeChanges = true;
+            rhs         = asg->gtGetOp2();
         }
+    }
+
+    // If we're assigning a value to a lcl/field that already has
+    // that value, suppress the assignment.
+    //
+    // For now we just check for zero.
+    //
+    // In particular we want to make sure that for struct S the
+    // "redundant init" pattern
+    //
+    //   S s = new S();
+    //   s.field = 0;
+    //
+    // does not kill the zerobj assertion for s.
+    //
+    if (optLocalAssertionProp)
+    {
+        GenTreeLclVarCommon* lhsVarTree = nullptr;
+        if (asg->DefinesLocal(this, &lhsVarTree))
+        {
+            unsigned const       lhsLclNum      = lhsVarTree->GetLclNum();
+            LclVarDsc* const     lhsLclDsc      = lvaGetDesc(lhsLclNum);
+            bool const           lhsLclIsStruct = varTypeIsStruct(lhsLclDsc->TypeGet());
+            AssertionIndex const lhsIndex =
+                optLocalAssertionIsEqualOrNotEqual(O1K_LCLVAR, lhsLclNum, lhsLclIsStruct ? O2K_ZEROOBJ : O2K_CONST_INT,
+                                                   0, assertions);
+            if (lhsIndex != NO_ASSERTION_INDEX)
+            {
+                AssertionDsc* const lhsAssertion = optGetAssertion(lhsIndex);
+                if ((lhsAssertion->assertionKind == OAK_EQUAL) && (lhsAssertion->op2.u1.iconVal == 0))
+                {
+                    bool canOptimize = false;
+
+                    // LHS is zero. Is RHS a literal zero? If so we don't need the assignment.
+                    //
+                    // The latter part of the if below is a heuristic.
+                    //
+                    // If we elimiate a zero assignment for integral lclVars it can lead to
+                    // unnecessary cloning. We need to make sure `optExtractInitTestIncr`
+                    // still sees zero loop iter lower bounds.
+                    //
+                    if (rhs->IsIntegralConst(0) && (lhsLclIsStruct || varTypeIsGC(lhsVarTree)))
+                    {
+                        JITDUMP(
+                            "[%06u] is assigning a constant zero to a struct field or gc local that is already zero\n",
+                            dspTreeID(asg));
+                        JITDUMPEXEC(optPrintAssertion(lhsAssertion));
+                        canOptimize = true;
+                    }
+
+                    if (canOptimize)
+                    {
+                        GenTree* list = nullptr;
+                        gtExtractSideEffList(asg, &list, GTF_SIDE_EFFECT, /* ignoreRoot */ true);
+
+                        if (list != nullptr)
+                        {
+                            return optAssertionProp_Update(list, asg, stmt);
+                        }
+
+                        asg->gtBashToNOP();
+                        return optAssertionProp_Update(asg, asg, stmt);
+                    }
+                }
+            }
+        }
+    }
+
+    // We might have simplified the RHS but were not able to remove the assignment
+    //
+    if (madeChanges)
+    {
+        return optAssertionProp_Update(asg, asg, stmt);
     }
 
     return nullptr;
@@ -4155,8 +4303,14 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
             else if (op1->TypeGet() == TYP_REF)
             {
                 // The only constant of TYP_REF that ValueNumbering supports is 'null'
-                assert(vnStore->ConstantValue<size_t>(vnCns) == 0);
-                printf("null\n");
+                if (vnStore->ConstantValue<size_t>(vnCns) == 0)
+                {
+                    printf("null\n");
+                }
+                else
+                {
+                    printf("%d (gcref)\n", static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
+                }
             }
             else if (op1->TypeGet() == TYP_BYREF)
             {
@@ -4209,9 +4363,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions, Gen
         }
         else if (op1->TypeGet() == TYP_REF)
         {
-            op1->BashToConst(0, TYP_REF);
-            // The only constant of TYP_REF that ValueNumbering supports is 'null'
-            noway_assert(vnStore->ConstantValue<size_t>(vnCns) == 0);
+            op1->BashToConst(static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)), TYP_REF);
         }
         else if (op1->TypeGet() == TYP_BYREF)
         {

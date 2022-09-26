@@ -348,10 +348,10 @@ namespace System.Runtime.Serialization.Json
                             break;
                         case CollectionKind.GenericCollection:
                         case CollectionKind.GenericList:
-                            incrementCollectionCountMethod = MakeIncrementCollectionCountGenericMethod(collectionContract.ItemType);
+                            incrementCollectionCountMethod = XmlFormatGeneratorStatics.IncrementCollectionCountGenericMethod.MakeGenericMethod(collectionContract.ItemType);
                             break;
                         case CollectionKind.GenericDictionary:
-                            incrementCollectionCountMethod = MakeIncrementCollectionCountGenericMethod(Globals.TypeOfKeyValuePair.MakeGenericType(collectionContract.ItemType.GetGenericArguments()));
+                            incrementCollectionCountMethod = XmlFormatGeneratorStatics.IncrementCollectionCountGenericMethod.MakeGenericMethod(Globals.TypeOfKeyValuePair.MakeGenericType(collectionContract.ItemType.GetGenericArguments()));
                             break;
                     }
                     if (incrementCollectionCountMethod != null)
@@ -501,10 +501,6 @@ namespace System.Runtime.Serialization.Json
                         _ilg.EndIf();
                     }
                 }
-
-                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
-                Justification = "The call to MakeGenericMethod is safe due to the fact that IncrementCollectionCountGeneric is not annotated.")]
-                static MethodInfo MakeIncrementCollectionCountGenericMethod(Type itemType) => XmlFormatGeneratorStatics.IncrementCollectionCountGenericMethod.MakeGenericMethod(itemType);
             }
 
             [RequiresDynamicCode(DataContract.SerializerAOTWarning)]

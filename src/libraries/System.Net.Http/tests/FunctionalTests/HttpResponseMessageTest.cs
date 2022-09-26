@@ -103,12 +103,26 @@ namespace System.Net.Http.Functional.Tests
             {
                 var ex = Assert.Throws<HttpRequestException>(() => m.EnsureSuccessStatusCode());
                 Assert.Equal(HttpStatusCode.MultipleChoices, ex.StatusCode);
+                Assert.Contains(((int)HttpStatusCode.MultipleChoices).ToString(), ex.Message);
+                Assert.Contains("(", ex.Message);
             }
 
             using (var m = new HttpResponseMessage(HttpStatusCode.BadGateway))
             {
                 var ex = Assert.Throws<HttpRequestException>(() => m.EnsureSuccessStatusCode());
                 Assert.Equal(HttpStatusCode.BadGateway, ex.StatusCode);
+                Assert.Contains(((int)HttpStatusCode.BadGateway).ToString(), ex.Message);
+                Assert.Contains("(", ex.Message);
+            }
+
+            using (var m = new HttpResponseMessage(HttpStatusCode.BadGateway))
+            {
+                m.ReasonPhrase = " \t ";
+                var ex = Assert.Throws<HttpRequestException>(() => m.EnsureSuccessStatusCode());
+                Assert.Equal(HttpStatusCode.BadGateway, ex.StatusCode);
+                Assert.Contains(((int)HttpStatusCode.BadGateway).ToString(), ex.Message);
+                Assert.DoesNotContain("(", ex.Message);
+                Assert.DoesNotContain(" \t ", ex.Message);
             }
 
             using (var response = new HttpResponseMessage(HttpStatusCode.OK))

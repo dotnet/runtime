@@ -264,6 +264,8 @@ public class KeyParserTests
     {
         get
         {
+            // Control+C
+            yield return (new string((char)3, 1), new[] { new ConsoleKeyInfo((char)3, ConsoleKey.C, false, false, true) });
             // Backspace
             yield return (new string((char)127, 1), new[] { new ConsoleKeyInfo((char)127, ConsoleKey.Backspace, false, false, false) });
             // Ctrl+Backspace
@@ -448,7 +450,7 @@ public class GNOMETerminalData : TerminalData
         {
             yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, true, false, false));
             yield return (new byte[] { 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, false));
-            yield return (new byte[] { 1 }, new ConsoleKeyInfo(default, ConsoleKey.A, false, false, true));
+            yield return (new byte[] { 1 }, new ConsoleKeyInfo((char)1, ConsoleKey.A, false, false, true));
             yield return (new byte[] { 27, 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, false));
             yield return (new byte[] { 27, 1 }, new ConsoleKeyInfo(default, ConsoleKey.A, false, true, true));
             yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
@@ -613,7 +615,7 @@ public class XTermData : TerminalData
         {
             yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, true, false, false));
             yield return (new byte[] { 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, false));
-            yield return (new byte[] { 1 }, new ConsoleKeyInfo(default, ConsoleKey.A, false, false, true));
+            yield return (new byte[] { 1 }, new ConsoleKeyInfo((char)1, ConsoleKey.A, false, false, true));
             yield return (new byte[] { 195, 161 }, new ConsoleKeyInfo('\u00E1', default, false, false, false));
             yield return (new byte[] { 194, 129 }, new ConsoleKeyInfo('\u0081', default, false, false, false));
             yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));
@@ -886,7 +888,7 @@ public class WindowsTerminalData : TerminalData
         {
             yield return (new byte[] { 90 }, new ConsoleKeyInfo('Z', ConsoleKey.Z, true, false, false));
             yield return (new byte[] { 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, false, false));
-            yield return (new byte[] { 1 }, new ConsoleKeyInfo(default, ConsoleKey.A, false, false, true));
+            yield return (new byte[] { 1 }, new ConsoleKeyInfo((char)1, ConsoleKey.A, false, false, true));
             yield return (new byte[] { 27, 97 }, new ConsoleKeyInfo('a', ConsoleKey.A, false, true, false));
             yield return (new byte[] { 27, 1 }, new ConsoleKeyInfo(default, ConsoleKey.A, false, true, true));
             yield return (new byte[] { 49 }, new ConsoleKeyInfo('1', ConsoleKey.D1, false, false, false));

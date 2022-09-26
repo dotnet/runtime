@@ -299,11 +299,9 @@ struct MethodTableWriteableData
     };
     DWORD      m_dwFlags;                  // Lot of empty bits here.
 
-    /*
-     * m_hExposedClassObject is LoaderAllocator slot index to
-     * a RuntimeType instance for this class.
-     */
-    LOADERHANDLE m_hExposedClassObject;
+    // Non-unloadable context: internal RuntimeType object handle
+    // Unloadable context: slot index in LoaderAllocator's pinned table
+    RUNTIMETYPEHANDLE m_hExposedClassObject;
 
 #ifdef _DEBUG
     // to avoid verify same method table too many times when it's not changing, we cache the GC count
@@ -335,7 +333,7 @@ public:
 #endif
 
 
-    inline LOADERHANDLE GetExposedClassObjectHandle() const
+    inline RUNTIMETYPEHANDLE GetExposedClassObjectHandle() const
     {
         LIMITED_METHOD_CONTRACT;
         return m_hExposedClassObject;
@@ -2717,7 +2715,6 @@ public:
     //  GetManagedClassObjectIfExists() will return null if the Type object doesn't exist.
     OBJECTREF GetManagedClassObject();
     OBJECTREF GetManagedClassObjectIfExists();
-
 
     // ------------------------------------------------------------------
     // Private part of MethodTable
