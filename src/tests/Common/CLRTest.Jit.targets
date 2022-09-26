@@ -235,16 +235,18 @@ IF NOT DEFINED DoLink (
 
       <BashCLRTestPreCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
 if [[ "$COMPlus_TieredPGO" != "1" ]]; then
-  @(DisasmCheckFiles -> '  dotnet $CORE_ROOT/SuperFileCheck/SuperFileCheck.dll --csharp-list-method-names "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) > "$(BashDisasmListOutputFile)"
-    ERRORLEVEL=$?
-    export COMPlus_JitDisasm=`cat $(BashDisasmListOutputFile)`
-    export COMPlus_JitDiffableDasm=1
-    export COMPlus_JitStdOutFile=$(BashDisasmOutputFile)
-    if [[ $ERRORLEVEL -ne 0 ]]
-    then
-      echo EXECUTION OF FILECHECK - FAILED $ERRORLEVEL
-      exit 1
-    fi', '%0a')
+  if [[ -n $COMPlus_JitDisasm ]]; then
+    @(DisasmCheckFiles -> '  dotnet $CORE_ROOT/SuperFileCheck/SuperFileCheck.dll --csharp-list-method-names "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) > "$(BashDisasmListOutputFile)"
+      ERRORLEVEL=$?
+      export COMPlus_JitDisasm=`cat $(BashDisasmListOutputFile)`
+      export COMPlus_JitDiffableDasm=1
+      export COMPlus_JitStdOutFile=$(BashDisasmOutputFile)
+      if [[ $ERRORLEVEL -ne 0 ]]
+      then
+        echo EXECUTION OF FILECHECK - FAILED $ERRORLEVEL
+        exit 1
+      fi', '%0a')
+  fi
 fi
 ]]>
       </BashCLRTestPreCommands>
