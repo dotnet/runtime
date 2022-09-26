@@ -599,6 +599,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                             from = args["to"].Value<string>()
                         });
                         await SendEvent(sessionId, "", o, token);
+
                         Frame scope = context.CallStack.First<Frame>();
                         string expression = args?["text"]?.Value<string>();
                         var osend = JObject.FromObject(new
