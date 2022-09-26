@@ -529,8 +529,8 @@ namespace System.Text.Json.Serialization.Converters
 #if NET7_0_OR_GREATER
                     if (!char.IsAsciiLetterOrDigit(cha) && cha != '_')
 #else
-                    if ((uint)((cha | 0x20) - 'a') > 'z' - 'a' && 
-                     (uint)(char - '0') > '9' - '0' && 
+                    if ((uint)((cha | 0x20) - 'a') > 'z' - 'a' &&
+                     (uint)(cha - '0') > '9' - '0' &&
                      cha != '_')
 #endif
                     {
