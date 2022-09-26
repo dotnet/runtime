@@ -140,7 +140,9 @@ unsigned __stdcall IlmethodEmit(unsigned size, COR_ILMETHOD_FAT* header,
         fatHeader->SetSize(sizeof(COR_ILMETHOD_FAT) / 4);
     }
 #ifndef SOS_INCLUDE
+#ifdef _DEBUG
     assert(&origBuff[size] == outBuff);
+#endif
 #endif // !SOS_INCLUDE
     return(size);
 }
