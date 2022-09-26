@@ -5,6 +5,7 @@
   "generatorVersions": "[1.0.0.0-*)",
   "identity": "WebAssembly.Browser",
   "name": "WebAssembly Browser App",
+  "description": "A project template for creating a .NET app that runs on WebAssembly in the browser",
   "shortName": "wasmbrowser",
   "sourceName": "browser.0",
   "preferNameDirectory": true,
