@@ -2230,12 +2230,8 @@ namespace Internal.JitInterface
                                 bytes.AsSpan().CopyTo(new Span<byte>(buffer, bufferSize));
                                 return true;
 
-                            case FrozenStringNode str:
-                                *((nint*)buffer) = ObjectToHandle(str);
-                                return true;
-
-                            case FrozenObjectNode node:
-                                *((nint*)buffer) = ObjectToHandle(node);
+                            case FrozenObjectNode or FrozenStringNode:
+                                *(nint*)buffer = ObjectToHandle(data);
                                 return true;
                         }
                     }
