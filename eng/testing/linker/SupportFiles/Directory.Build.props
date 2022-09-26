@@ -12,5 +12,8 @@
     <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <NoWarn>$(NoWarn);IL2121</NoWarn>
+
+    <!-- EventSourceSupport is disabled by default with PublishAot=true, so need to enable it here. -->
+    <EventSourceSupport>true</EventSourceSupport>
   </PropertyGroup>
 </Project>

@@ -32,6 +32,7 @@
     <IlcBuildTasksPath>{IlcBuildTasksPath}</IlcBuildTasksPath>
     <IlcSdkPath>{IlcSdkPath}</IlcSdkPath>
     <IlcFrameworkPath>{IlcFrameworkPath}</IlcFrameworkPath>
+    <CoreCLRBuildIntegrationDir>{CoreCLRBuildIntegrationDir}</CoreCLRBuildIntegrationDir>
   </PropertyGroup>
 
   <ItemGroup>
