@@ -65,7 +65,7 @@ namespace System.Net.Security
 
             if (context == null && sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
             {
-                var alpn = sslAuthenticationOptions.ApplicationProtocols;
+                List<SslApplicationProtocol> alpn = sslAuthenticationOptions.ApplicationProtocols;
 
                 if (alpn.Count == 1 && alpn[0] == SslApplicationProtocol.Http11)
                 {
@@ -78,7 +78,6 @@ namespace System.Net.Security
                 else if (alpn.Count == 2 && alpn[0] == SslApplicationProtocol.Http11 && alpn[1] == SslApplicationProtocol.Http2)
                 {
                     inputBuffers.SetNextBuffer(new InputSecurityBuffer(s_http12, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
-
                 }
                 else if (alpn.Count == 2 && alpn[0] == SslApplicationProtocol.Http2 && alpn[1] == SslApplicationProtocol.Http11)
                 {
@@ -127,7 +126,7 @@ namespace System.Net.Security
             inputBuffers.SetNextBuffer(new InputSecurityBuffer(default, SecurityBufferType.SECBUFFER_EMPTY));
             if (context == null && sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
             {
-                var alpn = sslAuthenticationOptions.ApplicationProtocols;
+                List<SslApplicationProtocol> alpn = sslAuthenticationOptions.ApplicationProtocols;
 
                 if (alpn.Count == 1 && alpn[0] == SslApplicationProtocol.Http11)
                 {
@@ -140,7 +139,6 @@ namespace System.Net.Security
                 else if (alpn.Count == 2 && alpn[0] == SslApplicationProtocol.Http11 && alpn[1] == SslApplicationProtocol.Http2)
                 {
                     inputBuffers.SetNextBuffer(new InputSecurityBuffer(s_http12, SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
-
                 }
                 else if (alpn.Count == 2 && alpn[0] == SslApplicationProtocol.Http2 && alpn[1] == SslApplicationProtocol.Http11)
                 {
