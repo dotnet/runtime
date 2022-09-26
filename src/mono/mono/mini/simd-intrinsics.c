@@ -1140,7 +1140,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
-	case SN_AndNot:
+	case SN_AndNot: {
 		if (!is_element_type_primitive (fsig->params [0])) 
 			return NULL;
 #ifdef TARGET_ARM64
@@ -1161,6 +1161,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #else
 		return NULL;
 #endif
+	}
 	case SN_As:
 	case SN_AsByte:
 	case SN_AsDouble:
