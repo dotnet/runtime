@@ -7,11 +7,6 @@ namespace System.IO.IsolatedStorage
 {
     public sealed partial class IsolatedStorageFile : IsolatedStorage, IDisposable
     {
-        private static void InitializeIsoStorageDirectoryName()
-        {
-            Helper.IsolatedStorageDirectoryName = "IsolatedStorage";
-        }
-
         private string GetIsolatedStorageRoot()
         {
             StringBuilder root = new StringBuilder(Helper.GetRootDirectory(Scope));

@@ -5,8 +5,6 @@ namespace System.IO.IsolatedStorage
 {
     internal static partial class Helper
     {
-        public static string IsolatedStorageDirectoryName { get; set;} = "IsolatedStorage";
-
         private static string? s_machineRootDirectory;
         private static string? s_roamingUserRootDirectory;
         private static string? s_userRootDirectory;

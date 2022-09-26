@@ -40,9 +40,6 @@ namespace System.IO.IsolatedStorage
             // Evidence isn't currently available: https://github.com/dotnet/runtime/issues/18208
             // public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, Evidence domainEvidence, Type domainEvidenceType, Evidence assemblyEvidence, Type assemblyEvidenceType) { return default(IsolatedStorageFile); }
 
-            // for non mobile platforms IsolatedStorageDirectoryName is "IsolatedStorage", for mobile platforms ".isolated-storage"
-            InitializeIsoStorageDirectoryName();
-
             // InitStore will set up the IdentityHash
             InitStore(scope, null, null);
 
