@@ -246,7 +246,7 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
 
     assert(NULL != filename && NULL != argv && NULL != envp && NULL != stdinFd &&
             NULL != stdoutFd && NULL != stderrFd && NULL != childPid &&
-            (groupsLength == || groups != NULL) && "null argument.");
+            (groupsLength == 0 || groups != NULL) && "null argument.");
 
     assert((redirectStdin & ~1) == 0 && (redirectStdout & ~1) == 0 &&
             (redirectStderr & ~1) == 0 && (setCredentials & ~1) == 0 &&
