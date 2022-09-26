@@ -10,11 +10,6 @@ variables:
 
 jobs:
 
-#
-# Evaluate paths
-#
-- template: /eng/pipelines/common/evaluate-default-paths.yml
-
 - template: /eng/pipelines/runtime-extra-platforms-androidemulator.yml
   parameters:
     isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
