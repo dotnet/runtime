@@ -23,7 +23,7 @@
     <Compile Include="System\IO\IsolatedStorage\Helper.AnyMobile.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFile.AnyMobile.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Android' and '$(TargetPlatformIdentifier)' != 'iOS' and '$(TargetPlatformIdentifier)' != 'MacCatalyst' and '$(TargetPlatformIdentifier)' != 'tvOS'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Android' and '$(TargetPlatformIdentifier)' != 'iOS' and '$(TargetPlatformIdentifier)' != 'MacCatalyst' and '$(TargetPlatformIdentifier)' != 'tvOS' and '$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\IO\IsolatedStorage\Helper.NonMobile.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFile.NonMobile.cs" />
   </ItemGroup>

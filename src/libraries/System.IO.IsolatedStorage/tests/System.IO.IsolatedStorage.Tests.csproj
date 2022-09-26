@@ -57,7 +57,7 @@
     <Compile Include="..\src\System\IO\IsolatedStorage\Helper.AnyMobile.cs" />
     <Compile Include="System\IO\IsolatedStorage\TestHelper.AnyMobile.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Android' and '$(TargetPlatformIdentifier)' != 'iOS' and '$(TargetPlatformIdentifier)' != 'MacCatalyst' and '$(TargetPlatformIdentifier)' != 'tvOS'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Android' and '$(TargetPlatformIdentifier)' != 'iOS' and '$(TargetPlatformIdentifier)' != 'MacCatalyst' and '$(TargetPlatformIdentifier)' != 'tvOS' and '$(TargetPlatformIdentifier)' != ''">
     <Compile Include="..\src\System\IO\IsolatedStorage\Helper.NonMobile.cs" />
     <Compile Include="System\IO\IsolatedStorage\TestHelper.NonMobile.cs" />
   </ItemGroup>
