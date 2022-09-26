@@ -1424,7 +1424,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/76093", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         public async Task TestClassWithManyConstructorParameters()
         {
             ClassWithManyConstructorParameters value = ClassWithManyConstructorParameters.Create();
