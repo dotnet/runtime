@@ -9,7 +9,8 @@
     <SdkBandVersion>7.0.100</SdkBandVersion>
     <PackageVersionNet6>6.0.9</PackageVersionNet6>
     <PreReleaseVersionLabel>rtm</PreReleaseVersionLabel>
-    <PreReleaseVersionIteration></PreReleaseVersionIteration>
+    <PreReleaseVersionIteration>
+    </PreReleaseVersionIteration>
     <!-- Set assembly version to align with major and minor version,
          as for the patches and revisions should be manually updated per assembly if it is serviced. -->
     <AssemblyVersion>$(MajorVersion).$(MinorVersion).0.0</AssemblyVersion>
@@ -22,8 +23,8 @@
     <UsingToolXliff>false</UsingToolXliff>
     <LastReleasedStableAssemblyVersion>$(AssemblyVersion)</LastReleasedStableAssemblyVersion>
     <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
-    <MicrosoftNETWorkloadEmscriptennet6Manifest70100Version>7.0.0-rtm.22468.1</MicrosoftNETWorkloadEmscriptennet6Manifest70100Version>
-    <MicrosoftNETWorkloadEmscriptennet7Manifest70100Version>7.0.0-rtm.22468.1</MicrosoftNETWorkloadEmscriptennet7Manifest70100Version>
+    <MicrosoftNETWorkloadEmscriptennet6Manifest70100Version>7.0.0-rtm.22476.2</MicrosoftNETWorkloadEmscriptennet6Manifest70100Version>
+    <MicrosoftNETWorkloadEmscriptennet7Manifest70100Version>7.0.0-rtm.22476.2</MicrosoftNETWorkloadEmscriptennet7Manifest70100Version>
   </PropertyGroup>
   <!--
     For source generator support we need to target multiple versions of Roslyn in order to be able to run on older versions of Roslyn.
