@@ -173,7 +173,7 @@ namespace System.Formats.Tar.Tests
 
             if (entryType is TarEntryType.SymbolicLink)
             {
-                expectedChecksum += GetLinkChecksum(longLink, out string linkName);
+                expectedChecksum += GetLinkChecksum(format, longLink, out string linkName);
                 entry.LinkName = linkName;
             }
 
@@ -199,7 +199,9 @@ namespace System.Formats.Tar.Tests
 
                 // V7 does not support name fields larger than 100
                 if (format is not TarEntryFormat.V7)
+                {
                     entryName += "/" + new string('a', 50);
+                }
 
                 // Gnu and Pax writes first 100 bytes in 'name' field, then the full name is written in a metadata entry that precedes this one.
                 if (format is TarEntryFormat.Ustar)
@@ -211,7 +213,7 @@ namespace System.Formats.Tar.Tests
             return expectedChecksum;
         }
 
-        private int GetLinkChecksum(bool longLink, out string linkName)
+        private int GetLinkChecksum(TarEntryFormat format, bool longLink, out string linkName)
         {
             int expectedChecksum = 0;
             if (!longLink)
@@ -222,12 +224,16 @@ namespace System.Formats.Tar.Tests
             }
             else
             {
-                linkName = new string('a', 150);
-                // 100 * 97 = 9700 (first 100 bytes go into 'linkName' field)
+                linkName = new string('a', 100); // 100 * 97 = 9700 (first 100 bytes go into 'linkName' field)
                 expectedChecksum += 9700;
-                // - V7 and Ustar ignore the rest of the bytes
-                // - Pax and Gnu write first 100 bytes in 'linkName' field, then the full link name is written in the
+
+                // V7 and Ustar does not support name fields larger than 100
+                // Pax and Gnu write first 100 bytes in 'linkName' field, then the full link name is written in the
                 // preceding metadata entry (extended attributes for PAX, LongLink for GNU).
+                if (format is not TarEntryFormat.V7 and not TarEntryFormat.Ustar)
+                {
+                    linkName += "/" + new string('a', 50);
+                }
             }
             return expectedChecksum;
 

@@ -377,5 +377,75 @@ namespace System.Formats.Tar.Tests
             TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, entryType, name);
             Assert.Throws<ArgumentException>("entry", () => writer.WriteEntry(entry));
         }
+
+        public static IEnumerable<object[]> WriteEntry_TooLongLinkName_Throws_TheoryData()
+        {
+            foreach (TarEntryType entryType in new[] { TarEntryType.SymbolicLink, TarEntryType.HardLink })
+            {
+                foreach (string name in GetTooLongNamesTestData(NameCapabilities.Name))
+                {
+                    yield return new object[] { TarEntryFormat.V7, entryType, name };
+                }
+
+                foreach (string name in GetTooLongNamesTestData(NameCapabilities.NameAndPrefix))
+                {
+                    yield return new object[] { TarEntryFormat.Ustar, entryType, name };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(WriteEntry_TooLongLinkName_Throws_TheoryData))] // change usar, v7
+        public void WriteEntry_TooLongLinkName_Throws(TarEntryFormat entryFormat, TarEntryType entryType, string linkName)
+        {
+            using TarWriter writer = new(new MemoryStream());
+
+            TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, entryType, "foo");
+            entry.LinkName = linkName;
+
+            Assert.Throws<ArgumentException>("entry", () => writer.WriteEntry(entry));
+        }
+
+        public static IEnumerable<object[]> WriteEntry_TooLongUserGroupName_Throws_TheoryData()
+        {
+            // Not testing Pax as it supports unlimited size uname/gname.
+            foreach (TarEntryFormat entryFormat in new[] { TarEntryFormat.Ustar, TarEntryFormat.Gnu })
+            {
+                // Last character doesn't fit fully.
+                yield return new object[] { entryFormat, Repeat(OneByteCharacter, 32 + 1) };
+                yield return new object[] { entryFormat, Repeat(TwoBytesCharacter, 32 / 2 + 1) };
+                yield return new object[] { entryFormat, Repeat(FourBytesCharacter, 32 / 4 + 1) };
+
+                // Last character doesn't fit by one byte.
+                yield return new object[] { entryFormat, Repeat(TwoBytesCharacter, 32 - 2 + 1) + TwoBytesCharacter };
+                yield return new object[] { entryFormat, Repeat(FourBytesCharacter, 32 - 4 + 1) + FourBytesCharacter };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(WriteEntry_TooLongUserGroupName_Throws_TheoryData))]
+        public void WriteEntry_TooLongUserName_Throws(TarEntryFormat entryFormat, string userName)
+        {
+            using TarWriter writer = new(new MemoryStream());
+
+            TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, TarEntryType.RegularFile, "foo");
+            PosixTarEntry posixEntry = Assert.IsAssignableFrom<PosixTarEntry>(entry);
+            posixEntry.UserName = userName;
+
+            Assert.Throws<ArgumentException>("entry", () => writer.WriteEntry(entry));
+        }
+
+        [Theory]
+        [MemberData(nameof(WriteEntry_TooLongUserGroupName_Throws_TheoryData))]
+        public void WriteEntry_TooLongGroupName_Throws(TarEntryFormat entryFormat, string groupName)
+        {
+            using TarWriter writer = new(new MemoryStream());
+
+            TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, TarEntryType.RegularFile, "foo");
+            PosixTarEntry posixEntry = Assert.IsAssignableFrom<PosixTarEntry>(entry);
+            posixEntry.GroupName = groupName;
+
+            Assert.Throws<ArgumentException>("entry", () => writer.WriteEntry(entry));
+        }
     }
 }
