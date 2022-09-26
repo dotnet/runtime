@@ -11338,6 +11338,9 @@ heap_segment* gc_heap::get_free_region (int gen_number, size_t size)
             heap_number, (size_t)region,
             region_start, region_end,
             gen_number));
+
+        // Something is wrong if a free region is already filled
+        assert (heap_segment_allocated(region) == heap_segment_mem (region));
     }
     else
     {
@@ -12583,6 +12586,20 @@ void gc_heap::distribute_free_regions()
 {
 #ifdef USE_REGIONS
     const int kind_count = large_free_region + 1;
+
+#ifdef MULTIPLE_HEAPS
+    BOOL joined_last_gc_before_oom = FALSE;
+    for (int i = 0; i < n_heaps; i++)
+    {
+        if (g_heaps[i]->last_gc_before_oom)
+        {
+            joined_last_gc_before_oom = TRUE;
+            break;
+        }
+    }
+#else
+    BOOL joined_last_gc_before_oom = last_gc_before_oom;
+#endif //MULTIPLE_HEAPS
     if (settings.reason == reason_induced_aggressive)
     {
 #ifdef MULTIPLE_HEAPS
@@ -12630,7 +12647,6 @@ void gc_heap::distribute_free_regions()
                 }
             }
         }
-
         return;
     }
 
@@ -12669,7 +12685,8 @@ void gc_heap::distribute_free_regions()
             for (heap_segment* region = region_list.get_first_free_region(); region != nullptr; region = next_region)
             {
                 next_region = heap_segment_next (region);
-                if (heap_segment_age_in_free (region) >= AGE_IN_FREE_TO_DECOMMIT)
+                if ((heap_segment_age_in_free (region) >= AGE_IN_FREE_TO_DECOMMIT) ||
+                    ((get_region_committed_size (region) == GC_PAGE_SIZE) && joined_last_gc_before_oom))
                 {
                     num_decommit_regions_by_time++;
                     size_decommit_regions_by_time += get_region_committed_size (region);
@@ -21500,6 +21517,9 @@ void gc_heap::gc1()
     recover_bgc_settings();
 #endif //BACKGROUND_GC
 #endif //MULTIPLE_HEAPS
+#ifdef USE_REGIONS
+    last_gc_before_oom = FALSE;
+#endif //USE_REGIONS
 }
 
 void gc_heap::save_data_for_no_gc()
@@ -41038,7 +41058,6 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
 #ifdef USE_REGIONS
     if (special_sweep_p)
     {
-        last_gc_before_oom = FALSE;
         return FALSE;
     }
 #endif //USE_REGIONS
@@ -41055,7 +41074,9 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
     if ((condemned_gen_number == max_generation) && last_gc_before_oom)
     {
         should_compact = TRUE;
+#ifndef USE_REGIONS
         last_gc_before_oom = FALSE;
+#endif //!USE_REGIONS
         get_gc_data_per_heap()->set_mechanism (gc_heap_compact, compact_last_gc);
     }
 
