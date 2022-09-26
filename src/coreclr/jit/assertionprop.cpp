@@ -1489,22 +1489,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
             goto DONE_ASSERTION; // Don't make an assertion
         }
 
-        // If the local is a promoted struct and has an exposed field then bail.
-        //
-        if (lclVar->lvPromoted)
-        {
-            for (unsigned childLclNum = lclVar->lvFieldLclStart;
-                 childLclNum < lclVar->lvFieldLclStart + lclVar->lvFieldCnt; ++childLclNum)
-            {
-                LclVarDsc* const childVar = lvaGetDesc(childLclNum);
-
-                if (childVar->IsAddressExposed())
-                {
-                    goto DONE_ASSERTION;
-                }
-            }
-        }
-
         if (helperCallArgs)
         {
             //
@@ -1722,22 +1706,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     if (lclVar2->IsAddressExposed())
                     {
                         goto DONE_ASSERTION; // Don't make an assertion
-                    }
-
-                    // If the local is a promoted struct and has an exposed field then bail.
-                    //
-                    if (lclVar2->lvPromoted)
-                    {
-                        for (unsigned childLclNum = lclVar2->lvFieldLclStart;
-                             childLclNum < lclVar2->lvFieldLclStart + lclVar2->lvFieldCnt; ++childLclNum)
-                        {
-                            LclVarDsc* const childVar = lvaGetDesc(childLclNum);
-
-                            if (childVar->IsAddressExposed())
-                            {
-                                goto DONE_ASSERTION;
-                            }
-                        }
                     }
 
                     assertion.op2.kind       = O2K_LCLVAR_COPY;
