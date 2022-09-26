@@ -2248,7 +2248,7 @@ namespace Internal.JitInterface
                 FrozenStringNode => ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String)),
 
                 // and frozen objects like arrays
-                FrozenObjectNode frozenObj => ObjectToHandle(frozenObj.OwningType),
+                FrozenObjectNode frozenObj => ObjectToHandle(frozenObj.ObjectType),
 
                 _ => throw new NotImplementedException($"Unexpected object in getObjectType: {obj}")
             };
