@@ -2566,9 +2566,6 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
     {
         assert(varTypeIsIntegral(tree));
 
-        // A subset of operations can still set flags
-        assert(((tree->gtFlags & GTF_SET_FLAGS) == 0) || tree->OperIs(GT_ADD, GT_SUB, GT_AND));
-
         GenTree* a = op1;
         GenTree* b = op2->gtGetOp1();
         GenTree* c = op2->gtGetOp2();
@@ -2578,6 +2575,37 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
 
         instruction ins = genGetInsForOper(tree->OperGet(), targetType);
         insOpts     opt = INS_OPTS_NONE;
+
+        if ((tree->gtFlags & GTF_SET_FLAGS) != 0)
+        {
+            // A subset of operations can still set flags
+
+            switch (oper)
+            {
+                case GT_ADD:
+                {
+                    ins = INS_adds;
+                    break;
+                }
+
+                case GT_SUB:
+                {
+                    ins = INS_subs;
+                    break;
+                }
+
+                case GT_AND:
+                {
+                    ins = INS_ands;
+                    break;
+                }
+
+                default:
+                {
+                    noway_assert(!"Unexpected BinaryOp with GTF_SET_FLAGS set");
+                }
+            }
+        }
 
         switch (op2->gtOper)
         {
