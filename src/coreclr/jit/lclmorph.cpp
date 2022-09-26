@@ -606,18 +606,8 @@ private:
     {
         assert(val.IsAddress());
 
-        LclVarDsc* varDsc = m_compiler->lvaGetDesc(val.LclNum());
-
-        // In general we don't know how an exposed struct field address will be used - it may be used to
-        // access only that specific field or it may be used to access other fields in the same struct
-        // by using pointer/ref arithmetic. It seems reasonable to make an exception for the "this" arg
-        // of calls - it would be highly unusual for a struct member method to attempt to access memory
-        // beyond "this" instance. And calling struct member methods is common enough that attempting to
-        // mark the entire struct as address exposed results in CQ regressions.
-        GenTreeCall* callTree  = user->IsCall() ? user->AsCall() : nullptr;
-        bool         isThisArg = (callTree != nullptr) && callTree->gtArgs.HasThisPointer() &&
-                         (val.Node() == callTree->gtArgs.GetThisArg()->GetNode());
-        bool exposeParentLcl = varDsc->lvIsStructField && !isThisArg;
+        unsigned   lclNum = val.LclNum();
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
         bool hasHiddenStructArg = false;
         if (m_compiler->opts.compJitOptimizeStructHiddenBuffer)
@@ -627,20 +617,20 @@ private:
             // b) Do not later turn into indirections.
             //
             bool isSuitableLocal =
-                varTypeIsStruct(varDsc) && varDsc->lvIsTemp && !m_compiler->lvaIsImplicitByRefLocal(val.LclNum());
+                varTypeIsStruct(varDsc) && varDsc->lvIsTemp && !m_compiler->lvaIsImplicitByRefLocal(lclNum);
 #ifdef TARGET_X86
-            if (m_compiler->lvaIsArgAccessedViaVarArgsCookie(val.LclNum()))
+            if (m_compiler->lvaIsArgAccessedViaVarArgsCookie(lclNum))
             {
                 isSuitableLocal = false;
             }
 #endif // TARGET_X86
 
+            GenTreeCall* callTree = user->IsCall() ? user->AsCall() : nullptr;
+
             if (isSuitableLocal && (callTree != nullptr) && callTree->gtArgs.HasRetBuffer() &&
                 (val.Node() == callTree->gtArgs.GetRetBufferArg()->GetNode()))
             {
-                assert(!exposeParentLcl);
-
-                m_compiler->lvaSetHiddenBufferStructArg(val.LclNum());
+                m_compiler->lvaSetHiddenBufferStructArg(lclNum);
                 hasHiddenStructArg = true;
                 callTree->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG_LCLOPT;
             }
@@ -649,7 +639,7 @@ private:
         if (!hasHiddenStructArg)
         {
             m_compiler->lvaSetVarAddrExposed(
-                exposeParentLcl ? varDsc->lvParentLcl : val.LclNum() DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+                varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
         }
 #ifdef TARGET_64BIT
         // If the address of a variable is passed in a call and the allocation size of the variable
