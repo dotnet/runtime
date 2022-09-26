@@ -4,10 +4,8 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics.X86;
 using System.Text;
 
 namespace System.Runtime.Intrinsics
@@ -30,22 +28,19 @@ namespace System.Runtime.Intrinsics
     public readonly struct Vector256<T> : IEquatable<Vector256<T>>
         where T : struct
     {
-        // These fields exist to ensure the alignment is 8, rather than 1.
-        // This also allows the debug view to work https://github.com/dotnet/runtime/issues/9495)
-        private readonly ulong _00;
-        private readonly ulong _01;
-        private readonly ulong _02;
-        private readonly ulong _03;
+        private readonly Vector128<T> _lower;
+        private readonly Vector128<T> _upper;
 
         /// <summary>Gets a new <see cref="Vector256{T}" /> with all bits set to 1.</summary>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
         public static Vector256<T> AllBitsSet
         {
             [Intrinsic]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
-                return Vector256.Create(0xFFFFFFFF).As<uint, T>();
+                Vector128<T> vector = Vector128<T>.AllBitsSet;
+                return Vector256.Create(vector, vector);
             }
         }
 
@@ -54,10 +49,10 @@ namespace System.Runtime.Intrinsics
         public static int Count
         {
             [Intrinsic]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
-                return Vector256.Size / Unsafe.SizeOf<T>();
+                return Vector128<T>.Count * 2;
             }
         }
 
@@ -66,18 +61,21 @@ namespace System.Runtime.Intrinsics
         public static bool IsSupported
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (typeof(T) == typeof(byte)) ||
-                   (typeof(T) == typeof(double)) ||
-                   (typeof(T) == typeof(short)) ||
-                   (typeof(T) == typeof(int)) ||
-                   (typeof(T) == typeof(long)) ||
-                   (typeof(T) == typeof(nint)) ||
-                   (typeof(T) == typeof(nuint)) ||
-                   (typeof(T) == typeof(sbyte)) ||
-                   (typeof(T) == typeof(float)) ||
-                   (typeof(T) == typeof(ushort)) ||
-                   (typeof(T) == typeof(uint)) ||
-                   (typeof(T) == typeof(ulong));
+            get
+            {
+                return (typeof(T) == typeof(byte)) ||
+                       (typeof(T) == typeof(double)) ||
+                       (typeof(T) == typeof(short)) ||
+                       (typeof(T) == typeof(int)) ||
+                       (typeof(T) == typeof(long)) ||
+                       (typeof(T) == typeof(nint)) ||
+                       (typeof(T) == typeof(nuint)) ||
+                       (typeof(T) == typeof(sbyte)) ||
+                       (typeof(T) == typeof(float)) ||
+                       (typeof(T) == typeof(ushort)) ||
+                       (typeof(T) == typeof(uint)) ||
+                       (typeof(T) == typeof(ulong));
+            }
         }
 
         /// <summary>Gets a new <see cref="Vector256{T}" /> with all elements initialized to zero.</summary>
@@ -85,6 +83,7 @@ namespace System.Runtime.Intrinsics
         public static Vector256<T> Zero
         {
             [Intrinsic]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
@@ -107,24 +106,27 @@ namespace System.Runtime.Intrinsics
             }
         }
 
-        public T this[int index] => this.GetElement(index);
+        public T this[int index]
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return this.GetElement(index);
+            }
+        }
 
         /// <summary>Adds two vectors to compute their sum.</summary>
         /// <param name="left">The vector to add with <paramref name="right" />.</param>
         /// <param name="right">The vector to add with <paramref name="left" />.</param>
         /// <returns>The sum of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector256<T> operator +(Vector256<T> left, Vector256<T> right)
         {
-            Unsafe.SkipInit(out Vector256<T> result);
-
-            for (int index = 0; index < Count; index++)
-            {
-                T value = Scalar<T>.Add(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
-                result.SetElementUnsafe(index, value);
-            }
-
-            return result;
+            return Vector256.Create(
+                left.GetLower() + right.GetLower(),
+                left.GetUpper() + right.GetUpper()
+            );
         }
 
         /// <summary>Computes the bitwise-and of two vectors.</summary>
@@ -132,17 +134,13 @@ namespace System.Runtime.Intrinsics
         /// <param name="right">The vector to bitwise-and with <paramref name="left" />.</param>
         /// <returns>The bitwise-and of <paramref name="left" /> and <paramref name="right"/>.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector256<T> operator &(Vector256<T> left, Vector256<T> right)
         {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
-            Unsafe.SkipInit(out Vector256<T> result);
-
-            Unsafe.AsRef(in result._00) = left._00 & right._00;
-            Unsafe.AsRef(in result._01) = left._01 & right._01;
-            Unsafe.AsRef(in result._02) = left._02 & right._02;
-            Unsafe.AsRef(in result._03) = left._03 & right._03;
-
-            return result;
+            return Vector256.Create(
+                left.GetLower() & right.GetLower(),
+                left.GetUpper() & right.GetUpper()
+            );
         }
 
         /// <summary>Computes the bitwise-or of two vectors.</summary>
@@ -150,17 +148,13 @@ namespace System.Runtime.Intrinsics
         /// <param name="right">The vector to bitwise-or with <paramref name="left" />.</param>
         /// <returns>The bitwise-or of <paramref name="left" /> and <paramref name="right"/>.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector256<T> operator |(Vector256<T> left, Vector256<T> right)
         {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
-            Unsafe.SkipInit(out Vector256<T> result);
-
-            Unsafe.AsRef(in result._00) = left._00 | right._00;
-            Unsafe.AsRef(in result._01) = left._01 | right._01;
-            Unsafe.AsRef(in result._02) = left._02 | right._02;
-            Unsafe.AsRef(in result._03) = left._03 | right._03;
-
-            return result;
+            return Vector256.Create(
+                left.GetLower() | right.GetLower(),
+                left.GetUpper() | right.GetUpper()
+            );
         }
 
         /// <summary>Divides two vectors to compute their quotient.</summary>
@@ -168,17 +162,13 @@ namespace System.Runtime.Intrinsics
         /// <param name="right">The vector that will divide <paramref name="left" />.</param>
         /// <returns>The quotient of <paramref name="left" /> divided by <paramref name="right" />.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector256<T> operator /(Vector256<T> left, Vector256<T> right)
         {
-            Unsafe.SkipInit(out Vector256<T> result);
-
-            for (int index = 0; index < Count; index++)
-            {
-                T value = Scalar<T>.Divide(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
-                result.SetElementUnsafe(index, value);
-            }
-
-            return result;
+            return Vector256.Create(
+                left.GetLower() / right.GetLower(),
+                left.GetUpper() / right.GetUpper()
+            );
         }
 
         /// <summary>Compares two vectors to determine if all elements are equal.</summary>
@@ -186,16 +176,11 @@ namespace System.Runtime.Intrinsics
         /// <param name="right">The vector to compare with <paramref name="left" />.</param>
         /// <returns><c>true</c> if all elements in <paramref name="left" /> were equal to the corresponding element in <paramref name="right" />.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Vector256<T> left, Vector256<T> right)
         {
-            for (int index = 0; index < Count; index++)
-            {
-                if (!Scalar<T>.Equals(left.GetElementUnsafe(index), right.GetElementUnsafe(index)))
-                {
-                    return false;
-                }
-            }
-            return true;
+            return (left.GetLower() == right.GetLower())
+                && (left.GetUpper() == right.GetUpper());
         }
 
         /// <summary>Computes the exclusive-or of two vectors.</summary>
@@ -203,17 +188,13 @@ namespace System.Runtime.Intrinsics
         /// <param name="right">The vector to exclusive-or with <paramref name="left" />.</param>
         /// <returns>The exclusive-or of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector256<T> operator ^(Vector256<T> left, Vector256<T> right)
         {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
-            Unsafe.SkipInit(out Vector256<T> result);
-
-            Unsafe.AsRef(in result._00) = left._00 ^ right._00;
-            Unsafe.AsRef(in result._01) = left._01 ^ right._01;
-            Unsafe.AsRef(in result._02) = left._02 ^ right._02;
-            Unsafe.AsRef(in result._03) = left._03 ^ right._03;
-
-            return result;
+            return Vector256.Create(
+                left.GetLower() ^ right.GetLower(),
+                left.GetUpper() ^ right.GetUpper()
+            );
         }
 
         /// <summary>Compares two vectors to determine if any elements are not equal.</summary>
@@ -223,24 +204,23 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Vector256<T> left, Vector256<T> right)
-            => !(left == right);
+        {
+            return (left.GetLower() != right.GetLower())
+                || (left.GetUpper() != right.GetUpper());
+        }
 
         /// <summary>Multiplies two vectors to compute their element-wise product.</summary>
         /// <param name="left">The vector to multiply with <paramref name="right" />.</param>
         /// <param name="right">The vector to multiply with <paramref name="left" />.</param>
         /// <returns>The element-wise product of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector256<T> operator *(Vector256<T> left, Vector256<T> right)
         {
-            Unsafe.SkipInit(out Vector256<T> result);
-
-            for (int index = 0; index < Count; index++)
-            {
-                T value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
-                result.SetElementUnsafe(index, value);
-            }
-
-            return result;
+            return Vector256.Create(
+                left.GetLower() * right.GetLower(),
+                left.GetUpper() * right.GetUpper()
+            );
         }
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
@@ -248,17 +228,13 @@ namespace System.Runtime.Intrinsics
         /// <param name="right">The scalar to multiply with <paramref name="left" />.</param>
         /// <returns>The product of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> operator *(Vector256<T> left, T right)
         {
-            Unsafe.SkipInit(out Vector256<T> result);
-
-            for (int index = 0; index < Count; index++)
-            {
-                T value = Scalar<T>.Multiply(left.GetElementUnsafe(index), right);
-                result.SetElementUnsafe(index, value);
-            }
-
-            return result;
+            return Vector256.Create(
+                left.GetLower() * right,
+                left.GetUpper() * right
+            );
         }
 
         /// <summary>Multiplies a vector by a scalar to compute their product.</summary>
@@ -268,31 +244,38 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<T> operator *(T left, Vector256<T> right)
-            => right * left;
+        {
+            return Vector256.Create(
+                left * right.GetLower(),
+                left * right.GetUpper()
+            );
+        }
 
         /// <summary>Computes the ones-complement of a vector.</summary>
         /// <param name="vector">The vector whose ones-complement is to be computed.</param>
         /// <returns>A vector whose elements are the ones-complement of the corresponding elements in <paramref name="vector" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> operator ~(Vector256<T> vector) => AllBitsSet ^ vector;
+        public static Vector256<T> operator ~(Vector256<T> vector)
+        {
+            return Vector256.Create(
+                ~vector.GetLower(),
+                ~vector.GetUpper()
+            );
+        }
 
         /// <summary>Subtracts two vectors to compute their difference.</summary>
         /// <param name="left">The vector from which <paramref name="right" /> will be subtracted.</param>
         /// <param name="right">The vector to subtract from <paramref name="left" />.</param>
         /// <returns>The difference of <paramref name="left" /> and <paramref name="right" />.</returns>
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector256<T> operator -(Vector256<T> left, Vector256<T> right)
         {
-            Unsafe.SkipInit(out Vector256<T> result);
-
-            for (int index = 0; index < Count; index++)
-            {
-                T value = Scalar<T>.Subtract(left.GetElementUnsafe(index), right.GetElementUnsafe(index));
-                result.SetElementUnsafe(index, value);
-            }
-
-            return result;
+            return Vector256.Create(
+                left.GetLower() - right.GetLower(),
+                left.GetUpper() - right.GetUpper()
+            );
         }
 
         /// <summary>Computes the unary negation of a vector.</summary>
@@ -300,7 +283,13 @@ namespace System.Runtime.Intrinsics
         /// <returns>A vector whose elements are the unary negation of the corresponding elements in <paramref name="vector" />.</returns>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector256<T> operator -(Vector256<T> vector) => Zero - vector;
+        public static Vector256<T> operator -(Vector256<T> vector)
+        {
+            return Vector256.Create(
+                -vector.GetLower(),
+                -vector.GetUpper()
+            );
+        }
 
         /// <summary>Returns a given vector unchanged.</summary>
         /// <param name="value">The vector.</param>
@@ -313,8 +302,8 @@ namespace System.Runtime.Intrinsics
         /// <param name="obj">The object to compare with the current instance.</param>
         /// <returns><c>true</c> if <paramref name="obj" /> is a <see cref="Vector256{T}" /> and is equal to the current instance; otherwise, <c>false</c>.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        public override bool Equals([NotNullWhen(true)] object? obj)
-            => (obj is Vector256<T> other) && Equals(other);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override bool Equals([NotNullWhen(true)] object? obj) => (obj is Vector256<T> other) && Equals(other);
 
         /// <summary>Determines whether the specified <see cref="Vector256{T}" /> is equal to the current instance.</summary>
         /// <param name="other">The <see cref="Vector256{T}" /> to compare with the current instance.</param>
@@ -338,19 +327,10 @@ namespace System.Runtime.Intrinsics
                     return this == other;
                 }
             }
-
-            return SoftwareFallback(in this, other);
-
-            static bool SoftwareFallback(in Vector256<T> self, Vector256<T> other)
+            else
             {
-                for (int index = 0; index < Count; index++)
-                {
-                    if (!Scalar<T>.ObjectEquals(self.GetElementUnsafe(index), other.GetElementUnsafe(index)))
-                    {
-                        return false;
-                    }
-                }
-                return true;
+                return this.GetLower().Equals(other.GetLower())
+                    && this.GetUpper().Equals(other.GetUpper());
             }
         }
 
@@ -373,8 +353,8 @@ namespace System.Runtime.Intrinsics
         /// <summary>Converts the current instance to an equivalent string representation.</summary>
         /// <returns>An equivalent string representation of the current instance.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        public override string ToString()
-            => ToString("G", CultureInfo.InvariantCulture);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public override string ToString() => ToString("G", CultureInfo.InvariantCulture);
 
         private string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
         {

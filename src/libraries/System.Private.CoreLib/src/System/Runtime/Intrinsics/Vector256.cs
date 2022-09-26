@@ -1418,6 +1418,31 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector256<ulong>>(pResult);
         }
 
+        /// <summary>Creates a new <see cref="Vector256{T}" /> instance from two <see cref="Vector128{T}" /> instances.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="lower">The value that the lower 128-bits will be initialized to.</param>
+        /// <param name="upper">The value that the upper 128-bits will be initialized to.</param>
+        /// <returns>A new <see cref="Vector256{T}" /> initialized from <paramref name="lower" /> and <paramref name="upper" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe Vector256<T> Create<T>(Vector128<T> lower, Vector128<T> upper)
+            where T : struct
+        {
+            if (Avx.IsSupported)
+            {
+                Vector256<T> result = lower.ToVector256Unsafe();
+                return result.WithUpper(upper);
+            }
+            else
+            {
+                Unsafe.SkipInit(out Vector256<T> result);
+
+                result.SetLowerUnsafe(lower);
+                result.SetUpperUnsafe(upper);
+
+                return result;
+            }
+        }
+
         /// <summary>Creates a new <see cref="Vector256{Byte}" /> instance from two <see cref="Vector128{Byte}" /> instances.</summary>
         /// <param name="lower">The value that the lower 128-bits will be initialized to.</param>
         /// <param name="upper">The value that the upper 128-bits will be initialized to.</param>
@@ -3883,6 +3908,20 @@ namespace System.Runtime.Intrinsics
         {
             Debug.Assert((index >= 0) && (index < Vector256<T>.Count));
             Unsafe.Add(ref Unsafe.As<Vector256<T>, T>(ref Unsafe.AsRef(in vector)), index) = value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void SetLowerUnsafe<T>(in this Vector256<T> vector, Vector128<T> value)
+            where T : struct
+        {
+            Unsafe.Add(ref Unsafe.As<Vector256<T>, Vector128<T>>(ref Unsafe.AsRef(in vector)), 0) = value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void SetUpperUnsafe<T>(in this Vector256<T> vector, Vector128<T> value)
+            where T : struct
+        {
+            Unsafe.Add(ref Unsafe.As<Vector256<T>, Vector128<T>>(ref Unsafe.AsRef(in vector)), 1) = value;
         }
 
         [Intrinsic]
