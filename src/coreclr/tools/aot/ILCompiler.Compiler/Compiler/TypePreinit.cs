@@ -1705,7 +1705,7 @@ namespace ILCompiler
         {
             void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory);
 
-            bool GetRawData(out object data);
+            bool GetRawData(NodeFactory factory, out object data);
         }
 
         /// <summary>
@@ -1769,7 +1769,7 @@ namespace ILCompiler
 
             public abstract void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory);
 
-            public virtual bool GetRawData(out object data)
+            public virtual bool GetRawData(NodeFactory factory, out object data)
             {
                 data = null;
                 return false;
@@ -1863,7 +1863,7 @@ namespace ILCompiler
                 builder.EmitBytes(InstanceBytes);
             }
 
-            public override bool GetRawData(out object data)
+            public override bool GetRawData(NodeFactory factory, out object data)
             {
                 data = InstanceBytes;
                 return true;
@@ -2127,6 +2127,12 @@ namespace ILCompiler
                 _data = new byte[elementCount * _elementSize];
             }
 
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = null;
+                return false;
+            }
+
             public bool TryInitialize(byte[] bytes)
             {
                 if (bytes.Length != _data.Length)
@@ -2239,9 +2245,9 @@ namespace ILCompiler
                 builder.EmitPointerReloc(factory.SerializedStringObject(_value));
             }
 
-            public override bool GetRawData(out object data)
+            public override bool GetRawData(NodeFactory factory, out object data)
             {
-                data = _value;
+                data = factory.SerializedStringObject(_value);
                 return true;
             }
 

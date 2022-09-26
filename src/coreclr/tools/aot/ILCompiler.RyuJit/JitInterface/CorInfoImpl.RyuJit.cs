@@ -2209,66 +2209,32 @@ namespace Internal.JitInterface
             FieldDesc field = HandleToObject(fieldHandle);
             if (field.IsStatic && !field.IsThreadStatic && field.IsInitOnly && field.OwningType is MetadataType owningType)
             {
-                // Currently, jit is able to handle only these types of objects:
-                // * primitives
-                // * frozen strings
-                // * null
-                //
-                // To add support for mutable objects see https://github.com/dotnet/runtime/pull/76135#issuecomment-1257263126
-
-                switch (field.FieldType.Category)
+                PreinitializationManager preinitManager = _compilation.NodeFactory.PreinitializationManager;
+                if (preinitManager.IsPreinitialized(owningType))
                 {
-                    case TypeFlags.Boolean:
-                    case TypeFlags.Byte:
-                    case TypeFlags.SByte:
-                    case TypeFlags.Int16:
-                    case TypeFlags.UInt16:
-                    case TypeFlags.Char:
-                    case TypeFlags.Int32:
-                    case TypeFlags.UInt32:
-                    case TypeFlags.Int64:
-                    case TypeFlags.UInt64:
-                    case TypeFlags.Single:
-                    case TypeFlags.Double:
-                    case TypeFlags.Class:
+                    TypePreinit.ISerializableValue value = preinitManager
+                        .GetPreinitializationInfo(owningType).GetFieldValue(field);
+
+                    if (value == null)
+                    {
+                        *((nint*)buffer) = 0;
+                        return true;
+                    }
+
+                    object data;
+                    if (value.GetRawData(_compilation.NodeFactory, out data))
+                    {
+                        switch (data)
                         {
-                            PreinitializationManager preinitManager = _compilation.NodeFactory.PreinitializationManager;
-                            if (preinitManager.IsPreinitialized(owningType))
-                            {
-                                TypePreinit.ISerializableValue value = preinitManager
-                                    .GetPreinitializationInfo(owningType).GetFieldValue(field);
+                            case byte[] bytes when bytes.Length <= bufferSize:
+                                bytes.AsSpan().CopyTo(new Span<byte>(buffer, bufferSize));
+                                return true;
 
-                                if (value == null)
-                                {
-                                    Debug.Assert(field.FieldType.Category == TypeFlags.Class && field.HasGCStaticBase);
-
-                                    *((nint*)buffer) = 0;
-                                    return true;
-                                }
-
-                                object data;
-                                if (value.GetRawData(out data))
-                                {
-                                    if (data is byte[] bytes && bytes.Length <= bufferSize)
-                                    {
-                                        Debug.Assert(!field.HasGCStaticBase);
-
-                                        bytes.AsSpan().CopyTo(new Span<byte>(buffer, bufferSize));
-                                        return true;
-                                    }
-
-                                    if (data is string str)
-                                    {
-                                        Debug.Assert(field.FieldType.Category == TypeFlags.Class && field.HasGCStaticBase);
-
-                                        FrozenStringNode stringObject = _compilation.NodeFactory.SerializedStringObject(str);
-                                        *((nint*)buffer) = ObjectToHandle(stringObject);
-                                        return true;
-                                    }
-                                }
-                            }
+                            case FrozenStringNode str:
+                                *((nint*)buffer) = ObjectToHandle(str);
+                                return true;
                         }
-                        break;
+                    }
                 }
             }
             return false;
