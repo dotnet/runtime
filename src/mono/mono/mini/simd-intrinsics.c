@@ -1517,14 +1517,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (size != 16) 		// Only works with Vector128
 			return NULL;
 
-		int instc0 = INTRINS_SSE_SQRT_PD;
-		MonoCPUFeatures feature = MONO_CPU_X86_SSE2;
-		if (arg0_type == MONO_TYPE_R4) {
-			instc0 = INTRINS_SSE_SQRT_PS;
-			feature = MONO_CPU_X86_SSE;
-		}
-		if (!is_SIMD_feature_supported (cfg, feature))
-			return NULL;
+		int instc0 = arg0_type == MONO_TYPE_R4 ? INTRINS_SSE_SQRT_PS : INTRINS_SSE_SQRT_PD;
 
 		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_X_X, instc0, arg0_type, fsig, args);
 #else
