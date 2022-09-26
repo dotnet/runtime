@@ -1514,7 +1514,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #elif defined(TARGET_AMD64)
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		int size = mono_class_value_size (arg_class, NULL);
-		if ( size != 16 ) 		// Only works with Vector128
+		if (size != 16) 		// Only works with Vector128
 			return NULL;
 
 		int instc0 = INTRINS_SSE_SQRT_PD;
@@ -1523,7 +1523,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			instc0 = INTRINS_SSE_SQRT_PS;
 			feature = MONO_CPU_X86_SSE;
 		}
-
 		if (!is_SIMD_feature_supported (cfg, feature))
 			return NULL;
 
