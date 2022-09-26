@@ -8848,7 +8848,7 @@ mono_test_interp_cprop (TransformData *td)
 }
 
 static gboolean
-get_sreg_imm (TransformData *td, int sreg, gint16 *imm)
+get_sreg_imm (TransformData *td, int sreg, gint16 *imm, int result_mt)
 {
 	InterpInst *def = td->locals [sreg].def;
 	if (def != NULL && td->local_ref_count [sreg] == 1) {
@@ -8859,7 +8859,31 @@ get_sreg_imm (TransformData *td, int sreg, gint16 *imm)
 			ct = interp_get_const_from_ldc_i8 (def);
 		else
 			return FALSE;
-		if (ct >= G_MININT16 && ct <= G_MAXINT16) {
+		gint64 min_val, max_val;
+		// We only propagate the immediate only if it fits into the desired type,
+		// so we don't accidentaly handle conversions wrong
+		switch (result_mt) {
+			case MINT_TYPE_I1:
+				min_val = G_MININT8;
+				max_val = G_MAXINT8;
+				break;
+			case MINT_TYPE_I2:
+				min_val = G_MININT16;
+				max_val = G_MAXINT16;
+				break;
+			case MINT_TYPE_U1:
+				min_val = 0;
+				max_val = G_MAXUINT8;
+				break;
+			case MINT_TYPE_U2:
+				min_val = 0;
+				max_val = G_MAXINT16;
+				break;
+			default:
+				g_assert_not_reached ();
+
+		}
+		if (ct >= min_val && ct <= max_val) {
 			*imm = (gint16)ct;
 			mono_interp_stats.super_instructions++;
 			return TRUE;
@@ -8959,11 +8983,11 @@ interp_super_instructions (TransformData *td)
 			if (mono_interp_op_dregs [opcode] && !(td->locals [ins->dreg].flags & INTERP_LOCAL_FLAG_GLOBAL))
 				td->locals [ins->dreg].def = ins;
 
-			if (opcode == MINT_RET) {
+			if (opcode == MINT_RET || (opcode >= MINT_RET_I1 && opcode <= MINT_RET_U2)) {
 				// ldc + ret -> ret.imm
 				int sreg = ins->sregs [0];
 				gint16 imm;
-				if (get_sreg_imm (td, sreg, &imm)) {
+				if (get_sreg_imm (td, sreg, &imm, (opcode == MINT_RET) ? MINT_TYPE_I2 : opcode - MINT_RET_I1)) {
 					InterpInst *def = td->locals [sreg].def;
 					int ret_op = MINT_IS_LDC_I4 (def->opcode) ? MINT_RET_I4_IMM : MINT_RET_I8_IMM;
 					InterpInst *new_inst = interp_insert_ins (td, ins, ret_op);
@@ -8982,10 +9006,10 @@ interp_super_instructions (TransformData *td)
 				int sreg = -1;
 				int sreg_imm = -1;
 				gint16 imm;
-				if (get_sreg_imm (td, ins->sregs [0], &imm)) {
+				if (get_sreg_imm (td, ins->sregs [0], &imm, MINT_TYPE_I2)) {
 					sreg = ins->sregs [1];
 					sreg_imm = ins->sregs [0];
-				} else if (get_sreg_imm (td, ins->sregs [1], &imm)) {
+				} else if (get_sreg_imm (td, ins->sregs [1], &imm, MINT_TYPE_I2)) {
 					sreg = ins->sregs [0];
 					sreg_imm = ins->sregs [1];
 				}
@@ -9014,7 +9038,7 @@ interp_super_instructions (TransformData *td)
 				// ldc + sub -> add.-imm
 				gint16 imm;
 				int sreg_imm = ins->sregs [1];
-				if (get_sreg_imm (td, sreg_imm, &imm) && imm != G_MININT16) {
+				if (get_sreg_imm (td, sreg_imm, &imm, MINT_TYPE_I2) && imm != G_MININT16) {
 					int add_op = opcode == MINT_SUB_I4 ? MINT_ADD_I4_IMM : MINT_ADD_I8_IMM;
 					InterpInst *new_inst = interp_insert_ins (td, ins, add_op);
 					new_inst->dreg = ins->dreg;
@@ -9032,7 +9056,7 @@ interp_super_instructions (TransformData *td)
 				// ldc + sh -> sh.imm
 				gint16 imm;
 				int sreg_imm = ins->sregs [1];
-				if (get_sreg_imm (td, sreg_imm, &imm)) {
+				if (get_sreg_imm (td, sreg_imm, &imm, MINT_TYPE_I2)) {
 					int shift_op = MINT_SHR_UN_I4_IMM + (opcode - MINT_SHR_UN_I4);
 					InterpInst *new_inst = interp_insert_ins (td, ins, shift_op);
 					new_inst->dreg = ins->dreg;
@@ -9125,7 +9149,7 @@ interp_super_instructions (TransformData *td)
 			} else if (MINT_IS_BINOP_CONDITIONAL_BRANCH (opcode) && is_short_offset (noe, ins->info.target_bb->native_offset_estimate)) {
 				gint16 imm;
 				int sreg_imm = ins->sregs [1];
-				if (get_sreg_imm (td, sreg_imm, &imm)) {
+				if (get_sreg_imm (td, sreg_imm, &imm, MINT_TYPE_I2)) {
 					int condbr_op = get_binop_condbr_imm_sp (opcode);
 					if (condbr_op != MINT_NOP) {
 						InterpInst *prev_ins = interp_prev_ins (ins);
