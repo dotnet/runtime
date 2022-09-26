@@ -181,7 +181,7 @@ void    AsmMan::AddFile(_In_ __nullterminated char* szName, DWORD dwAttr, BinStr
         tmp->tkTok = TokenFromRid(m_FileLst.COUNT(),mdtFile);
     }
     pAsm->m_tkCurrentCVOwner = 0;
-    if(tmp) pAsm->m_pCustomDescrList = &(tmp->m_CustomDescrList);
+    pAsm->m_pCustomDescrList = &(tmp->m_CustomDescrList);
 }
 //==============================================================================================================
 

@@ -4526,7 +4526,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 impPopStack();
                 impPopStack();
 
-                GenTreeVecCon* vecCon = gtNewVconNode(TYP_SIMD16, callJitType);
+                GenTreeVecCon* vecCon = gtNewVconNode(TYP_SIMD16);
 
                 if (callJitType == CORINFO_TYPE_FLOAT)
                 {
