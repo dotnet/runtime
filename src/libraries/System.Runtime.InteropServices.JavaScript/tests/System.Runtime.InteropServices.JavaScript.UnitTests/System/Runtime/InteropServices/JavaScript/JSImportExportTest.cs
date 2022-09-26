@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
@@ -16,6 +17,19 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public unsafe void StructSize()
         {
             Assert.Equal(16, sizeof(JSMarshalerArgument));
+        }
+
+        [Fact]
+        public async Task MultipleImportAsync()
+        {
+            var first = await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs");
+            var second = await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs");
+            Assert.NotNull(first);
+            Assert.NotNull(second);
+            Assert.Equal("object", first.GetTypeOfProperty("instance"));
+            var instance1 = first.GetPropertyAsJSObject("instance");
+            var instance2 = second.GetPropertyAsJSObject("instance");
+            Assert.Equal(instance1, instance2);
         }
 
         [Fact]
