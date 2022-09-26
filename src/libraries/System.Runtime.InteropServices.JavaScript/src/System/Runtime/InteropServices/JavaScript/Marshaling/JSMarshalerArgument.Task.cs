@@ -13,6 +13,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Helps with marshaling of the Task result or Function arguments.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <typeparam name="T">Type of the marshaled value</typeparam>
+        /// <param name="arg">Low level argument representation.</param>
+        /// <param name="value">Value to be marshaled</param>
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public delegate void ArgumentToManagedCallback<T>(ref JSMarshalerArgument arg, out T value);
 
@@ -20,6 +23,9 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Helps with marshaling of the Task result or Function arguments.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <typeparam name="T">Type of the marshaled value</typeparam>
+        /// <param name="arg">Low level argument representation.</param>
+        /// <param name="value">Value to be marshaled</param>
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public delegate void ArgumentToJSCallback<T>(ref JSMarshalerArgument arg, T value);
 
@@ -27,6 +33,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">Value to be marshaled.</param>
         public unsafe void ToManaged(out Task? value)
         {
             if (slot.Type == MarshalerType.None)
@@ -63,6 +70,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">Value to be marshaled.</param>
+        /// <param name="marshaler">Generated callback which marshals the result value of the task.</param>
         public unsafe void ToManaged<T>(out Task<T>? value, ArgumentToManagedCallback<T> marshaler)
         {
             if (slot.Type == MarshalerType.None)
@@ -177,6 +186,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">Value to be marshaled.</param>
         public void ToJS(Task? value)
         {
             Task? task = value;
@@ -248,6 +258,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
+        /// <param name="value">Value to be marshaled.</param>
+        /// <param name="marshaler">Generated callback which marshals the result value of the task.</param>
         public void ToJS<T>(Task<T>? value, ArgumentToJSCallback<T> marshaler)
         {
             Task<T>? task = value;

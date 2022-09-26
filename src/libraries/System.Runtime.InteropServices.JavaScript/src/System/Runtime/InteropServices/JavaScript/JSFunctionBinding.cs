@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
+
 namespace System.Runtime.InteropServices.JavaScript
 {
     /// <summary>
@@ -15,8 +16,10 @@ namespace System.Runtime.InteropServices.JavaScript
     [CLSCompliant(false)]
     [SupportedOSPlatform("browser")]
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public sealed partial class JSFunctionBinding
+    public sealed class JSFunctionBinding
     {
+        internal JSFunctionBinding() { }
+
         #region intentionally opaque internal structure
         internal unsafe JSBindingHeader* Header;
         internal unsafe JSBindingType* Sigs;// points to first arg, not exception, not result
