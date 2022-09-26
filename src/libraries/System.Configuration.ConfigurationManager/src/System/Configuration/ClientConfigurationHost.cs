@@ -277,10 +277,10 @@ namespace System.Configuration
         // null means stream doesn't exist for this name
         public override Stream OpenStreamForRead(string streamName)
         {
+            if (streamName == null) return null;
+
             // the streamName can either be a file name, or a URI
             if (IsFile(streamName)) return Host.OpenStreamForRead(streamName);
-
-            if (streamName == null) return null;
 
 #pragma warning disable SYSLIB0014 // WebClient is obsolete.
             // scheme is http
