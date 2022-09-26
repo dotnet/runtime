@@ -9,7 +9,7 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageException.cs" />
-    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFile.cs" />    
+    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFile.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFileStream.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorage.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageScope.cs" />
