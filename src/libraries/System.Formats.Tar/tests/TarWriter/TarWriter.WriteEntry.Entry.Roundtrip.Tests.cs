@@ -15,14 +15,13 @@ namespace System.Formats.Tar.Tests
         {
             foreach (TarEntryType entryType in new[] { TarEntryType.RegularFile, TarEntryType.Directory })
             {
-                TarEntryType v7EntryType = entryType is TarEntryType.RegularFile ? TarEntryType.V7RegularFile : entryType;
                 foreach (string name in GetNamesNonAsciiTestData(NameCapabilities.Name).Concat(GetNamesPrefixedTestData(NameCapabilities.Name)))
                 {
+                    TarEntryType v7EntryType = entryType is TarEntryType.RegularFile ? TarEntryType.V7RegularFile : entryType;
                     yield return new object[] { TarEntryFormat.V7, v7EntryType, name };
                 }
 
-                // TODO: Use NameCapabilities.NameAndPrefix once https://github.com/dotnet/runtime/issues/75360 is fixed.
-                foreach (string name in GetNamesNonAsciiTestData(NameCapabilities.Name).Concat(GetNamesPrefixedTestData(NameCapabilities.Name)))
+                foreach (string name in GetNamesNonAsciiTestData(NameCapabilities.NameAndPrefix).Concat(GetNamesPrefixedTestData(NameCapabilities.NameAndPrefix)))
                 {
                     yield return new object[] { TarEntryFormat.Ustar, entryType, name };
                 }
@@ -63,7 +62,6 @@ namespace System.Formats.Tar.Tests
                 foreach (string name in GetNamesNonAsciiTestData(NameCapabilities.Name).Concat(GetNamesPrefixedTestData(NameCapabilities.Name)))
                 {
                     yield return new object[] { TarEntryFormat.V7, entryType, name };
-                    // TODO: Use NameCapabilities.NameAndPrefix once https://github.com/dotnet/runtime/issues/75360 is fixed.
                     yield return new object[] { TarEntryFormat.Ustar, entryType, name };
                 }
 
@@ -97,7 +95,6 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(name, entry.Name);
             Assert.Equal(linkName, entry.LinkName);
         }
-
 
         public static IEnumerable<object[]> UserNameGroupNameRoundtripsTheoryData()
         {

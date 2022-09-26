@@ -261,7 +261,7 @@
   <data name="TarInvalidNumber" xml:space="preserve">
     <value>Unable to parse number.</value>
   </data>
-  <data name="TarEntryNameExceedsMaxLength" xml:space="preserve">
-    <value>The name exceeds the maximum allowed length for this format.</value>
+  <data name="TarEntryFieldExceedsMaxLength" xml:space="preserve">
+    <value>The field '{0}' exceeds the maximum allowed length for this format.</value>
   </data>
 </root>

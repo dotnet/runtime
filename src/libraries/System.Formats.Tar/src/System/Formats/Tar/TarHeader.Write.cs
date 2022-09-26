@@ -5,9 +5,7 @@ using System.Buffers;
 using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Numerics;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -363,18 +361,20 @@ namespace System.Formats.Tar
         private int WriteName(Span<byte> buffer)
         {
             ReadOnlySpan<char> name = _name;
-            int utf16NameTruncatedLength = GetUtf16TruncatedTextLength(name, FieldLengths.Name);
+            int encodedLength = GetUtf8TextLength(name);
 
-            if (_format is TarEntryFormat.V7 && name.Length != utf16NameTruncatedLength)
+            if (encodedLength > FieldLengths.Name)
             {
-                throw new ArgumentException(SR.TarEntryNameExceedsMaxLength, ArgNameEntry);
+                if (_format is TarEntryFormat.V7)
+                {
+                    throw new ArgumentException(SR.Format(SR.TarEntryFieldExceedsMaxLength, nameof(TarEntry.Name)), ArgNameEntry);
+                }
+
+                int utf16NameTruncatedLength = GetUtf16TruncatedTextLength(name, FieldLengths.Name);
+                name = name.Slice(0, utf16NameTruncatedLength);
             }
 
-            ReadOnlySpan<char> truncatedName = name.Slice(0, utf16NameTruncatedLength);
-            Span<byte> destination = buffer.Slice(FieldLocations.Name, FieldLengths.Name);
-            int encoded = Encoding.UTF8.GetBytes(truncatedName, destination);
-
-            return Checksum(destination.Slice(0, encoded));
+            return WriteAsUtf8String(name, buffer.Slice(FieldLocations.Name, FieldLengths.Name));
         }
 
         // 'https://www.freebsd.org/cgi/man.cgi?tar(5)'
@@ -382,52 +382,58 @@ namespace System.Formats.Tar
         // it can be split at any / character with the first portion going into the prefix field.
         private int WriteUstarName(Span<byte> buffer)
         {
-            const int MaxPathname = FieldLengths.Prefix + 1 + FieldLengths.Name;
-            if (Encoding.UTF8.GetByteCount(_name) > MaxPathname)
+            // We can have a pathname as big as 256, prefix + '/' + name,
+            // the separator in between can be neglected as the reader will append it when it joins both fields.
+            const int MaxPathname = FieldLengths.Prefix + FieldLengths.Name + 1;
+
+            if (GetUtf8TextLength(_name) > MaxPathname)
             {
-                throw new ArgumentException(SR.TarEntryNameExceedsMaxLength, ArgNameEntry);
+                throw new ArgumentException(SR.TarEntryFieldExceedsMaxLength, ArgNameEntry);
             }
 
             Span<byte> encodingBuffer = stackalloc byte[MaxPathname];
             int encoded = Encoding.UTF8.GetBytes(_name, encodingBuffer);
-            ReadOnlySpan<byte> nameAndPrefixBytes = encodingBuffer.Slice(0, encoded);
+            ReadOnlySpan<byte> pathnameBytes = encodingBuffer.Slice(0, encoded);
 
-            if (nameAndPrefixBytes.Length <= FieldLengths.Name)
+            // If the pathname is able to fit in Name, we can write it down there and avoid calculating Prefix.
+            if (pathnameBytes.Length <= FieldLengths.Name)
             {
-                return WriteLeftAlignedBytesAndGetChecksum(nameAndPrefixBytes, buffer.Slice(FieldLocations.Name, FieldLengths.Name));
+                return WriteLeftAlignedBytesAndGetChecksum(pathnameBytes, buffer.Slice(FieldLocations.Name, FieldLengths.Name));
             }
 
-            int lastIdx = nameAndPrefixBytes.LastIndexOfAny(PathInternal.Utf8DirectorySeparators);
+            int lastIdx = pathnameBytes.LastIndexOfAny(PathInternal.Utf8DirectorySeparators);
             scoped ReadOnlySpan<byte> name;
             scoped ReadOnlySpan<byte> prefix;
 
-            if (lastIdx == -1)
+            if (lastIdx < 1) // splitting at the root is not allowed.
             {
-                name = nameAndPrefixBytes;
+                name = pathnameBytes;
                 prefix = default;
             }
             else
             {
-                name = nameAndPrefixBytes.Slice(lastIdx + 1);
-                prefix = nameAndPrefixBytes.Slice(0, Math.Max(lastIdx, 1)); // need at least the separator
+                name = pathnameBytes.Slice(lastIdx + 1);
+                prefix = pathnameBytes.Slice(0, lastIdx);
             }
 
-            // At this point nameAndPrefixBytes.Length > 100.
+            // At this point pathnameBytes.Length > 100.
             // Attempt to split it in a way it can use prefix.
             while (prefix.Length - name.Length > FieldLengths.Prefix)
             {
                 lastIdx = prefix.LastIndexOfAny(PathInternal.Utf8DirectorySeparators);
-                if (lastIdx < 0)
+                if (lastIdx < 1)
                 {
                     break;
                 }
 
-                name = nameAndPrefixBytes.Slice(lastIdx + 1);
-                prefix = nameAndPrefixBytes.Slice(0, Math.Max(lastIdx, 1)); // need at least the separator
+                name = pathnameBytes.Slice(lastIdx + 1);
+                prefix = pathnameBytes.Slice(0, lastIdx);
             }
 
             if (prefix.Length <= FieldLengths.Prefix && name.Length <= FieldLengths.Name)
             {
+                Debug.Assert(prefix.Length != 1 || !PathInternal.Utf8DirectorySeparators.Contains(prefix[0]));
+
                 int checksum = WriteLeftAlignedBytesAndGetChecksum(prefix, buffer.Slice(FieldLocations.Prefix, FieldLengths.Prefix));
                 checksum += WriteLeftAlignedBytesAndGetChecksum(name, buffer.Slice(FieldLocations.Name, FieldLengths.Name));
 
@@ -435,7 +441,7 @@ namespace System.Formats.Tar
             }
             else
             {
-                throw new ArgumentException(SR.TarEntryNameExceedsMaxLength, ArgNameEntry);
+                throw new ArgumentException(SR.Format(SR.TarEntryFieldExceedsMaxLength, nameof(TarEntry.Name)), ArgNameEntry);
             }
         }
 
@@ -477,7 +483,20 @@ namespace System.Formats.Tar
 
             if (!string.IsNullOrEmpty(_linkName))
             {
-                checksum += WriteAsUtf8String(_linkName, buffer.Slice(FieldLocations.LinkName, FieldLengths.LinkName));
+                ReadOnlySpan<char> linkName = _linkName;
+
+                if (GetUtf8TextLength(linkName) > FieldLengths.LinkName)
+                {
+                    if (_format is not TarEntryFormat.Pax and not TarEntryFormat.Gnu)
+                    {
+                        throw new ArgumentException(SR.Format(SR.TarEntryFieldExceedsMaxLength, nameof(TarEntry.LinkName)), ArgNameEntry);
+                    }
+
+                    int truncatedLength = GetUtf16TruncatedTextLength(linkName, FieldLengths.LinkName);
+                    linkName = linkName.Slice(0, truncatedLength);
+                }
+
+                checksum += WriteAsUtf8String(linkName, buffer.Slice(FieldLocations.LinkName, FieldLengths.LinkName));
             }
 
             return checksum;
@@ -521,12 +540,37 @@ namespace System.Formats.Tar
 
             if (!string.IsNullOrEmpty(_uName))
             {
-                checksum += WriteAsUtf8String(_uName, buffer.Slice(FieldLocations.UName, FieldLengths.UName));
+                ReadOnlySpan<char> uName = _uName;
+
+                if (GetUtf8TextLength(uName) > FieldLengths.UName)
+                {
+                    if (_format is not TarEntryFormat.Pax)
+                    {
+                        throw new ArgumentException(SR.Format(SR.TarEntryFieldExceedsMaxLength, nameof(PaxTarEntry.UserName)), ArgNameEntry);
+                    }
+
+                    int truncatedLength = GetUtf16TruncatedTextLength(uName, FieldLengths.UName);
+                    uName = uName.Slice(0, truncatedLength);
+                }
+
+                checksum += WriteAsUtf8String(uName, buffer.Slice(FieldLocations.UName, FieldLengths.UName));
             }
 
             if (!string.IsNullOrEmpty(_gName))
             {
-                checksum += WriteAsUtf8String(_gName, buffer.Slice(FieldLocations.GName, FieldLengths.GName));
+                ReadOnlySpan<char> gName = _gName;
+                if (GetUtf8TextLength(gName) > FieldLengths.GName)
+                {
+                    if (_format is not TarEntryFormat.Pax)
+                    {
+                        throw new ArgumentException(SR.Format(SR.TarEntryFieldExceedsMaxLength, nameof(PaxTarEntry.GroupName)), ArgNameEntry);
+                    }
+
+                    int truncatedLength = GetUtf16TruncatedTextLength(gName, FieldLengths.UName);
+                    gName = gName.Slice(0, truncatedLength);
+                }
+
+                checksum += WriteAsUtf8String(gName, buffer.Slice(FieldLocations.GName, FieldLengths.GName));
             }
 
             if (_devMajor > 0)
@@ -821,10 +865,10 @@ namespace System.Formats.Tar
         }
 
         // Writes the specified text as an UTF8 string aligned to the left, and returns its checksum.
-        private static int WriteAsUtf8String(string str, Span<byte> buffer)
+        private static int WriteAsUtf8String(ReadOnlySpan<char> text, Span<byte> buffer)
         {
-            byte[] bytes = Encoding.UTF8.GetBytes(str);
-            return WriteLeftAlignedBytesAndGetChecksum(bytes.AsSpan(), buffer);
+            int encoded = Encoding.UTF8.GetBytes(text, buffer);
+            return WriteLeftAlignedBytesAndGetChecksum(buffer.Slice(0, encoded), buffer);
         }
 
         // Gets the special name for the 'name' field in an extended attribute entry.
@@ -874,15 +918,12 @@ namespace System.Formats.Tar
             return result;
         }
 
+        private static int GetUtf8TextLength(ReadOnlySpan<char> text)
+            => Encoding.UTF8.GetByteCount(text);
+
         // Returns the text's utf16 length truncated at the specified utf8 max length.
         private static int GetUtf16TruncatedTextLength(ReadOnlySpan<char> text, int utf8MaxLength)
         {
-            // fast path, most entries will be smaller than maxLength.
-            if (Encoding.UTF8.GetByteCount(text) <= utf8MaxLength)
-            {
-                return text.Length;
-            }
-
             int utf8Length = 0;
             int utf16TruncatedLength = 0;
 
