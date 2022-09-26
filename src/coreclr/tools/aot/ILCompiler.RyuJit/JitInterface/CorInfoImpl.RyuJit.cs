@@ -2233,6 +2233,10 @@ namespace Internal.JitInterface
                             case FrozenStringNode str:
                                 *((nint*)buffer) = ObjectToHandle(str);
                                 return true;
+
+                            case FrozenObjectNode node:
+                                *((nint*)buffer) = ObjectToHandle(node);
+                                return true;
                         }
                     }
                 }
@@ -2247,8 +2251,10 @@ namespace Internal.JitInterface
             {
                 return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String));
             }
-
-            // For now only frozen strings can come here
+            else if (obj is FrozenObjectNode)
+            {
+                return null; // TODO: how to implement properly?
+            }
             throw new NotImplementedException($"Unexpected object in getObjectType: {obj}");
         }
     }

@@ -2036,6 +2036,17 @@ namespace ILCompiler
                     Type,
                     new AllocationSite(AllocationSite.OwningType, AllocationSite.InstructionCounter - baseInstructionCounter),
                     this);
+
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                if (this is ISerializableReference serializableRef)
+                {
+                    data = factory.SerializedFrozenObject(AllocationSite.OwningType, AllocationSite.InstructionCounter, serializableRef);
+                    return true;
+                }
+                data = null;
+                return false;
+            }
         }
 
 #pragma warning disable CA1852
@@ -2125,12 +2136,6 @@ namespace ILCompiler
                 _elementCount = elementCount;
                 _elementSize = type.ElementType.GetElementSize().AsInt;
                 _data = new byte[elementCount * _elementSize];
-            }
-
-            public override bool GetRawData(NodeFactory factory, out object data)
-            {
-                data = null;
-                return false;
             }
 
             public bool TryInitialize(byte[] bytes)
