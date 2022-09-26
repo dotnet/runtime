@@ -10,7 +10,7 @@ const { setModuleImports, getAssemblyExports, getConfig, runMainAndExit } = awai
     .withDiagnosticTracing(false)
     .create();
 
-setModuleImports("main.mjs", {
+setModuleImports('main.mjs', {
     node: {
         process: {
             version: () => globalThis.process.version
@@ -23,4 +23,4 @@ const exports = await getAssemblyExports(config.mainAssemblyName);
 const text = exports.MyClass.Greeting();
 console.log(text);
 
-await runMainAndExit(config.mainAssemblyName, ["dotnet", "is", "great!"]);
+await runMainAndExit(config.mainAssemblyName, ['dotnet', 'is', 'great!']);
