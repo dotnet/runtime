@@ -186,6 +186,11 @@ static int GetNumericPattern(const UNumberFormat* pNumberFormat,
 
     free(icuPattern);
 
+    if (!normalizedPattern)
+    {
+        return U_MEMORY_ALLOCATION_ERROR;
+    }
+
     size_t normalizedPatternLength = strlen(normalizedPattern);
 
     assert(normalizedPatternLength > 0);
