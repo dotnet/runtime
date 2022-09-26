@@ -2516,6 +2516,8 @@ int         gc_heap::num_sip_regions = 0;
 
 size_t      gc_heap::end_gen0_region_space = 0;
 
+size_t      gc_heap::end_gen0_region_committed_space = 0;
+
 size_t      gc_heap::gen0_pinned_free_space = 0;
 
 bool        gc_heap::gen0_large_chunk_found = false;
@@ -14204,6 +14206,7 @@ gc_heap::init_gc_heap (int h_number)
     num_condemned_regions = 0;
 #endif //STRESS_REGIONS
     end_gen0_region_space = 0;
+    end_gen0_region_committed_space = 0;
     gen0_pinned_free_space = 0;
     gen0_large_chunk_found = false;
     // REGIONS PERF TODO: we should really allocate the POH regions together just so that
@@ -16197,7 +16200,7 @@ BOOL gc_heap::short_on_end_of_seg (heap_segment* seg)
     uint8_t* allocated = heap_segment_allocated (seg);
 
 #ifdef USE_REGIONS
-    BOOL sufficient_p = sufficient_space_regions (end_gen0_region_space, end_space_after_gc());
+    BOOL sufficient_p = sufficient_space_regions_for_allocation (end_gen0_region_space, end_space_after_gc());
 #else
     BOOL sufficient_p = sufficient_space_end_seg (allocated,
                                                   heap_segment_committed (seg),
@@ -22293,6 +22296,7 @@ void gc_heap::init_records()
 
 #ifdef USE_REGIONS
     end_gen0_region_space = 0;
+    end_gen0_region_committed_space = 0;
     gen0_pinned_free_space = 0;
     gen0_large_chunk_found = false;
     num_regions_freed_in_sweep = 0;
@@ -28680,7 +28684,7 @@ void gc_heap::get_gen0_end_plan_space()
     }
 }
 
-size_t gc_heap::get_gen0_end_space()
+size_t gc_heap::get_gen0_end_space(memory_type type)
 {
     size_t end_space = 0;
     heap_segment* seg = generation_start_segment (generation_of (0));
@@ -28694,12 +28698,13 @@ size_t gc_heap::get_gen0_end_space()
         //uint8_t* allocated = ((seg == ephemeral_heap_segment) ?
         //                      alloc_allocated : heap_segment_allocated (seg));
         uint8_t* allocated = heap_segment_allocated (seg);
-        end_space += heap_segment_reserved (seg) - allocated;
+        uint8_t* end = (type == memory_type_reserved) ? heap_segment_reserved (seg) : heap_segment_committed (seg);
 
+        end_space += end - allocated;
         dprintf (REGIONS_LOG, ("h%d gen0 seg %Ix, end %Ix-%Ix=%Ix, end_space->%Id",
             heap_number, heap_segment_mem (seg),
-            heap_segment_reserved (seg), allocated,
-            (heap_segment_reserved (seg) - allocated),
+            end, allocated,
+            (end - allocated),
             end_space));
 
         seg = heap_segment_next (seg);
@@ -30465,6 +30470,10 @@ void gc_heap::plan_phase (int condemned_gen_number)
 #endif //!USE_REGIONS
 
         {
+#ifdef USE_REGIONS
+            end_gen0_region_committed_space = get_gen0_end_space (memory_type_committed);
+            dprintf(REGIONS_LOG, ("h%d computed the end_gen0_region_committed_space value to be %Id", heap_number, end_gen0_region_committed_space));
+#endif //USE_REGIONS
 #ifdef MULTIPLE_HEAPS
             dprintf(3, ("Joining after end of compaction"));
             gc_t_join.join(this, gc_join_adjust_handle_age_compact);
@@ -30726,6 +30735,11 @@ void gc_heap::plan_phase (int condemned_gen_number)
                 heap_number, total_recovered_sweep_size,
                 generation_free_obj_space (generation_of (max_generation))));
         }
+
+#ifdef USE_REGIONS
+        end_gen0_region_committed_space = get_gen0_end_space (memory_type_committed);
+        dprintf(REGIONS_LOG, ("h%d computed the end_gen0_region_committed_space value to be %Id", heap_number, end_gen0_region_committed_space));
+#endif //USE_REGIONS
 
 #ifdef MULTIPLE_HEAPS
         dprintf(3, ("Joining after end of sweep"));
@@ -31851,7 +31865,7 @@ void gc_heap::make_free_lists (int condemned_gen_number)
         ephemeral_heap_segment = generation_start_segment (gen_gen0);
         alloc_allocated = heap_segment_allocated (ephemeral_heap_segment);
         // Since we didn't compact, we should recalculate the end_gen0_region_space.
-        end_gen0_region_space = get_gen0_end_space();
+        end_gen0_region_space = get_gen0_end_space (memory_type_reserved);
 #else //USE_REGIONS
         int bottom_gen = 0;
         args.free_list_gen_number--;
@@ -41261,7 +41275,7 @@ bool gc_heap::check_against_hard_limit (size_t space_required)
 }
 
 #ifdef USE_REGIONS
-bool gc_heap::sufficient_space_regions (size_t end_space, size_t end_space_required)
+bool gc_heap::sufficient_space_regions_for_allocation (size_t end_space, size_t end_space_required)
 {
     // REGIONS PERF TODO: we can repurpose large regions here too, if needed.
     size_t free_regions_space = (free_regions[basic_free_region].get_num_free_regions() * ((size_t)1 << min_segment_size_shr)) +
@@ -41269,12 +41283,41 @@ bool gc_heap::sufficient_space_regions (size_t end_space, size_t end_space_requi
     size_t total_alloc_space = end_space + free_regions_space;
     dprintf (REGIONS_LOG, ("h%d required %Id, end %Id + free %Id=%Id",
         heap_number, end_space_required, end_space, free_regions_space, total_alloc_space));
+    size_t total_commit_space = end_gen0_region_committed_space + free_regions[basic_free_region].get_size_committed_in_free();
     if (total_alloc_space > end_space_required)
     {
-        return check_against_hard_limit (end_space_required);
+        if (end_space_required > total_commit_space)
+        {
+            return check_against_hard_limit (end_space_required - total_commit_space);
+        }
+        else
+        {
+            return true;
+        }
     }
     else
+    {
         return false;
+    }
+}
+
+bool gc_heap::sufficient_space_regions (size_t end_space, size_t end_space_required)
+{
+    // REGIONS PERF TODO: we can repurpose large regions here too, if needed.
+    // REGIONS PERF TODO: for callsites other than allocation, we should take commit into account
+    size_t free_regions_space = (free_regions[basic_free_region].get_num_free_regions() * ((size_t)1 << min_segment_size_shr)) +
+                                global_region_allocator.get_free();
+    size_t total_alloc_space = end_space + free_regions_space;
+    dprintf (REGIONS_LOG, ("h%d required %Id, end %Id + free %Id=%Id",
+        heap_number, end_space_required, end_space, free_regions_space, total_alloc_space));
+    if (total_alloc_space > end_space_required)
+    {
+        return check_against_hard_limit (end_space_required - end_gen0_region_committed_space);
+    }
+    else
+    {
+        return false;
+    }
 }
 #else //USE_REGIONS
 BOOL gc_heap::sufficient_space_end_seg (uint8_t* start, uint8_t* committed, uint8_t* reserved, size_t end_space_required)
@@ -41449,7 +41492,7 @@ BOOL gc_heap::ephemeral_gen_fit_p (gc_tuning_point tp)
         }
 
 #ifdef USE_REGIONS
-        size_t gen0_end_space = get_gen0_end_space();
+        size_t gen0_end_space = get_gen0_end_space (memory_type_reserved);
         BOOL can_fit = sufficient_space_regions (gen0_end_space, end_space);
 #else //USE_REGIONS
         BOOL can_fit = sufficient_space_end_seg (start, heap_segment_committed (ephemeral_heap_segment), heap_segment_reserved (ephemeral_heap_segment), end_space);

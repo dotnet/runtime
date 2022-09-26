@@ -429,6 +429,12 @@ const int recorded_committed_bucket_counts = recorded_committed_bookkeeping_buck
 
 gc_oh_num gen_to_oh (int gen);
 
+enum memory_type
+{
+    memory_type_reserved = 0,
+    memory_type_committed = 1
+};
+
 #if defined(TRACE_GC) && defined(BACKGROUND_GC)
 static const char * const str_bgc_state[] =
 {
@@ -1370,6 +1376,8 @@ public:
     PER_HEAP
     bool sufficient_space_regions (size_t end_space, size_t end_space_required);
     PER_HEAP
+    bool sufficient_space_regions_for_allocation (size_t end_space, size_t end_space_required);
+    PER_HEAP
     bool initial_make_soh_regions (gc_heap* hp);
     PER_HEAP
     bool initial_make_uoh_regions (int gen, gc_heap* hp);
@@ -1432,7 +1440,7 @@ public:
     PER_HEAP
     void get_gen0_end_plan_space();
     PER_HEAP
-    size_t get_gen0_end_space();
+    size_t get_gen0_end_space(memory_type type);
     PER_HEAP
     bool decide_on_compaction_space();
     PER_HEAP
@@ -3671,6 +3679,10 @@ public:
     // but if we end up sweeping, we recalculate it at the end of
     // sweep.
     size_t end_gen0_region_space;
+
+    PER_HEAP
+    // After GC we calculate this
+    size_t end_gen0_region_committed_space;
 
     // These are updated as we plan and will be used to make compaction
     // decision.
