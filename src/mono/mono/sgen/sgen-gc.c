@@ -2819,11 +2819,13 @@ sgen_gc_is_object_ready_for_finalization (GCObject *object)
 void
 sgen_queue_finalization_entry (GCObject *obj)
 {
-	gboolean critical = sgen_client_object_has_critical_finalizer (obj);
+	if (!sgen_client_object_finalize_eagerly (obj)) {
+		gboolean critical = sgen_client_object_has_critical_finalizer (obj);
 
-	sgen_pointer_queue_add (critical ? &critical_fin_queue : &fin_ready_queue, obj);
+		sgen_pointer_queue_add (critical ? &critical_fin_queue : &fin_ready_queue, obj);
 
-	sgen_client_object_queued_for_finalization (obj);
+		sgen_client_object_queued_for_finalization (obj);
+	}
 }
 
 gboolean

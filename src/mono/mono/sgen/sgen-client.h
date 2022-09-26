@@ -47,6 +47,12 @@ gboolean sgen_client_object_is_array_fill (GCObject *o);
 gboolean sgen_client_object_has_critical_finalizer (GCObject *obj);
 
 /*
+ * Called when object is ready for finalization. Returns whether the object was finalized
+ * eagerly. Otherwise `sgen_client_object_queued_for_finalization` is called.
+ */
+gboolean sgen_client_object_finalize_eagerly (GCObject *obj);
+
+/*
  * Called after an object is enqueued for finalization.  This is a very low-level callback.
  * It should almost certainly be a NOP.
  *
