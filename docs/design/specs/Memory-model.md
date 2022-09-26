@@ -112,7 +112,7 @@ Memory ordering honors data dependency. When performing indirect reads from a lo
 ## Object assignment
 Object assignment to a location potentially accessible by other threads is a release with respect to write operations to the instance’s fields and metadata.
 The motivation is to ensure that storing an object reference to shared memory acts as a "committing point" to all modifications that are reachable through the instance reference. It also guarantees that a freshly allocated instance is valid (i.e. method table and necessary flags are set) when other threads, including background GC threads are able to access the instance.
-The reading thread does not need to perform an acquiring read before accessing the content of an instance since all supported platforms honor ordering of data-dependent reads.
+The reading thread does not need to perform an acquiring read before accessing the content of an instance since runtime guarantees ordering of data-dependent reads.
 
 However, the ordering sideeffects of reference assignment should not be used for general ordering purposes because:
 -	ordinary reference assignments are still treated as ordinary assignments and could be reordered by the compiler.
@@ -143,8 +143,8 @@ That applies even for locations targeted by overlapping aligned reads and writes
 *	It is possible to implement release consistency memory model.
 Either the platform defaults to release consistency or stronger (i.e. x64 is TSO, which is stronger), or provides means to implement release consistency via fencing operations.
 
-*	It is possible to guarantee ordering of data dependent reads.
-Either the platform honors data dependedncy by default (all currently supported platforms), or provides means to order data dependent reads via fencing operations.
+*	It is possible to guarantee ordering of data-dependent reads.
+Either the platform honors data dependedncy by default (all currently supported platforms), or provides means to order data-dependent reads via fencing operations.
 
 ## Examples and common patterns
 The following examples work correctly on all supported implementations of .NET runtime regardless of the target OS or architecture.
@@ -182,7 +182,7 @@ void ThreadFunc2()
         // accessing members of the local object is safe because
         // - reads cannot be introduced, thus localObj cannot be re-read and become null
         // - publishing assignment to obj will not become visible earlier than write operations in the MyClass constructor
-        // - indirect accesses via an instance are dependent reads, thus we will see results of constructor's writes
+        // - indirect accesses via an instance are data-dependent reads, thus we will see results of constructor's writes
         System.Console.WriteLine(localObj.ToString());
     }
 }
