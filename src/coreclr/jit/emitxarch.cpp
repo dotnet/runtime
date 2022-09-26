@@ -3410,10 +3410,10 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         }
         else if (data->OperIsHWIntrinsic() && data->isContained())
         {
-            GenTreeHWIntrinsic* hwintrinsic   = data->AsHWIntrinsic();
-            NamedIntrinsic      intrinsicId   = hwintrinsic->GetHWIntrinsicId();
-            size_t              numArgs       = hwintrinsic->GetOperandCount();
-            GenTree*            op1           = hwintrinsic->Op(1);
+            GenTreeHWIntrinsic* hwintrinsic = data->AsHWIntrinsic();
+            NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+            size_t              numArgs     = hwintrinsic->GetOperandCount();
+            GenTree*            op1         = hwintrinsic->Op(1);
 
             if (numArgs == 1)
             {
@@ -3446,10 +3446,10 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         }
         else if (data->OperIsHWIntrinsic() && data->isContained())
         {
-            GenTreeHWIntrinsic* hwintrinsic   = data->AsHWIntrinsic();
-            NamedIntrinsic      intrinsicId   = hwintrinsic->GetHWIntrinsicId();
-            size_t              numArgs       = hwintrinsic->GetOperandCount();
-            GenTree*            op1           = hwintrinsic->Op(1);
+            GenTreeHWIntrinsic* hwintrinsic = data->AsHWIntrinsic();
+            NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+            size_t              numArgs     = hwintrinsic->GetOperandCount();
+            GenTree*            op1         = hwintrinsic->Op(1);
 
             if (numArgs == 1)
             {
@@ -3489,10 +3489,10 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
     }
     else if (data->OperIsHWIntrinsic() && data->isContained())
     {
-        GenTreeHWIntrinsic* hwintrinsic   = data->AsHWIntrinsic();
-        NamedIntrinsic      intrinsicId   = hwintrinsic->GetHWIntrinsicId();
-        size_t              numArgs       = hwintrinsic->GetOperandCount();
-        GenTree*            op1           = hwintrinsic->Op(1);
+        GenTreeHWIntrinsic* hwintrinsic = data->AsHWIntrinsic();
+        NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+        size_t              numArgs     = hwintrinsic->GetOperandCount();
+        GenTree*            op1         = hwintrinsic->Op(1);
 
         if (numArgs == 1)
         {
@@ -6213,7 +6213,8 @@ void emitter::emitIns_AR_R(instruction ins, emitAttr attr, regNumber reg, regNum
 //    reg       - The register operand
 //    ival      - The immediate value
 //
-void emitter::emitIns_C_R_I(instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs, regNumber reg, int ival)
+void emitter::emitIns_C_R_I(
+    instruction ins, emitAttr attr, CORINFO_FIELD_HANDLE fldHnd, int offs, regNumber reg, int ival)
 {
     assert(IsSSEOrAVXInstruction(ins));
     assert(reg != REG_NA);
