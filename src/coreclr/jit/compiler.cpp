@@ -9218,10 +9218,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[VAR_USEASG]");
                 }
-                if (tree->gtFlags & GTF_VAR_CAST)
-                {
-                    chars += printf("[VAR_CAST]");
-                }
                 if (tree->gtFlags & GTF_VAR_ITERATOR)
                 {
                     chars += printf("[VAR_ITERATOR]");
@@ -9415,6 +9411,11 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     case GTF_ICON_STR_HDL:
 
                         chars += printf("[ICON_STR_HDL]");
+                        break;
+
+                    case GTF_ICON_OBJ_HDL:
+
+                        chars += printf("[ICON_OBJ_HDL]");
                         break;
 
                     case GTF_ICON_CONST_PTR:

@@ -15,6 +15,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Loggin
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Generators.Roslyn4.0", "..\Microsoft.Extensions.Logging.Abstractions\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.0.csproj", "{AA692D58-2C6C-4307-A13F-0884B6164026}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Generators.Roslyn4.4", "..\Microsoft.Extensions.Logging.Abstractions\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.4.csproj", "{4F09A07F-70C7-4288-A6F3-EFBD5306E1F7}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Abstractions", "..\Microsoft.Extensions.Logging.Abstractions\ref\Microsoft.Extensions.Logging.Abstractions.csproj", "{B1BE2665-7E3F-46FB-BCE1-774D5984F76C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Logging.Abstractions", "..\Microsoft.Extensions.Logging.Abstractions\src\Microsoft.Extensions.Logging.Abstractions.csproj", "{6C2850C7-56F0-4DCF-BFBF-4365DE2FC439}"
@@ -95,6 +97,10 @@ Global
 		{AA692D58-2C6C-4307-A13F-0884B6164026}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AA692D58-2C6C-4307-A13F-0884B6164026}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AA692D58-2C6C-4307-A13F-0884B6164026}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4F09A07F-70C7-4288-A6F3-EFBD5306E1F7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4F09A07F-70C7-4288-A6F3-EFBD5306E1F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4F09A07F-70C7-4288-A6F3-EFBD5306E1F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4F09A07F-70C7-4288-A6F3-EFBD5306E1F7}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B1BE2665-7E3F-46FB-BCE1-774D5984F76C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B1BE2665-7E3F-46FB-BCE1-774D5984F76C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B1BE2665-7E3F-46FB-BCE1-774D5984F76C}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -196,6 +202,7 @@ Global
 		{204919F3-8E5C-4D4D-9E3B-ADFB1E453972} = {FD104C22-7ECA-47DD-8877-26AC1E0E5ECC}
 		{2F5646F6-8247-42E5-ACF5-8732ACB7067A} = {677D11A9-4811-41EA-8F93-F8DB15BF27DD}
 		{AA692D58-2C6C-4307-A13F-0884B6164026} = {677D11A9-4811-41EA-8F93-F8DB15BF27DD}
+		{4F09A07F-70C7-4288-A6F3-EFBD5306E1F7} = {677D11A9-4811-41EA-8F93-F8DB15BF27DD}
 		{7D8210EC-014D-4901-97D4-0C8AC919804E} = {677D11A9-4811-41EA-8F93-F8DB15BF27DD}
 		{82D7CA6B-8647-49A1-B4A1-40A8C6B9D7C2} = {677D11A9-4811-41EA-8F93-F8DB15BF27DD}
 	EndGlobalSection
