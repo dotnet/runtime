@@ -2254,7 +2254,9 @@ namespace Internal.JitInterface
             };
         }
 
+#pragma warning disable CA1822 // Mark members as static
         private void* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
+#pragma warning restore CA1822 // Mark members as static
         {
             // TODO: https://github.com/dotnet/runtime/pull/75573#issuecomment-1250824543
             return null;
