@@ -96,6 +96,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 #
 # Build the whole product using GNU compiler toolchain
 # When CoreCLR, Mono, Libraries, Installer and src/tests are changed
@@ -118,6 +119,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 #
 # Build CoreCLR OSX_x64 checked
 # Only when CoreCLR or Libraries is changed
@@ -136,6 +138,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 #
 # Build CoreCLR release
 # Always as they are needed by Installer and we always build and test the Installer.
@@ -188,6 +191,7 @@ jobs:
           or(
             eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr_jit.containsChange'], true),
             eq(variables['isRollingBuild'], true)))
+
 #
 # CoreCLR NativeAOT debug build and smoke tests
 # Only when CoreCLR is changed
@@ -210,6 +214,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isFullMatrix'], true))
+
 #
 # CoreCLR NativeAOT checked build and smoke tests
 # Only when CoreCLR is changed
@@ -231,6 +236,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isFullMatrix'], true))
+
 #
 # CoreCLR NativeAOT release build and smoke tests
 # Only when CoreCLR is changed
@@ -254,6 +260,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isFullMatrix'], true))
+
 #
 # CoreCLR NativeAOT release build and libraries tests
 # Only when CoreCLR or library is changed
@@ -282,6 +289,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
           eq(variables['isFullMatrix'], true))
+
 # Build and test clr tools
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -296,6 +304,7 @@ jobs:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 # Build Mono AOT offset headers once, for consumption elsewhere
 # Only when mono changed
 #
@@ -317,6 +326,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 # Build the whole product using Mono runtime
 # Only when libraries, mono or installer are changed
 #
@@ -339,6 +349,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -357,6 +368,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 #
 # WebAssembly legs
 #
@@ -488,6 +500,7 @@ jobs:
           eq(variables['librariesContainsChange'], true),
           eq(variables['monoContainsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 #
 # MacCatalyst interp - requires AOT Compilation and Interp flags
 # Build the whole product using Mono and run libraries tests
@@ -529,6 +542,7 @@ jobs:
             eq(variables['librariesContainsChange'], true),
             eq(variables['monoContainsChange'], true),
             eq(variables['isRollingBuild'], true))
+
 #
 # Build Mono and Installer on LLVMJIT mode
 #
@@ -550,6 +564,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -569,6 +584,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 #
 # Build Mono and Installer on LLVMAOT mode
 #
@@ -591,6 +607,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -609,6 +626,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 #
 # Build Mono debug
 # Only when mono changed
@@ -633,6 +651,7 @@ jobs:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 #
 # Build Mono release AOT cross-compilers
 # Only when mono changed
@@ -663,6 +682,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/mono/templates/build-job.yml
@@ -689,6 +709,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 #
 # Build Mono release
 # Only when libraries or mono changed
@@ -711,6 +732,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 #
 # Build Mono release
 # Only when libraries, mono, or the runtime tests changed
@@ -730,6 +752,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 #
 # Build Mono release with LLVM AOT
 # Only when mono, or the runtime tests changed
@@ -749,6 +772,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 #
 # Build libraries using live CoreLib
 # These set of libraries are built always no matter what changed
@@ -814,6 +838,7 @@ jobs:
       jobParameters:
         condition: >-
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true)
+
 #
 # Libraries release build that only runs when coreclr is changed in PRs
 # We need these for checked coreclr + release libraries tests runs.
@@ -829,6 +854,7 @@ jobs:
       jobParameters:
         condition: >-
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true)
+
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
@@ -844,6 +870,7 @@ jobs:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/libraries/build-job.yml
@@ -858,6 +885,7 @@ jobs:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 #
 # Installer Build and Test
 # These are always built since they only take like 15 minutes
@@ -921,6 +949,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 #
 # CoreCLR Test executions using live libraries
 # Only when CoreCLR is changed
@@ -943,6 +972,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
@@ -962,6 +992,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
@@ -977,6 +1008,7 @@ jobs:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr_AppleSilicon.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 #
 # Mono Test builds with CoreCLR runtime tests using live libraries debug build
 # Only when Mono is changed
@@ -994,6 +1026,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 #
 # Mono CoreCLR runtime Test executions using live libraries in jit mode
 # Only when Mono is changed
@@ -1017,6 +1050,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 #
 # Mono CoreCLR runtime Test executions using live libraries in interpreter mode
 # Only when Mono is changed
@@ -1064,6 +1098,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 #
 # Mono CoreCLR runtime Test executions using live libraries and LLVM Full AOT
 # Only when Mono is changed
@@ -1088,6 +1123,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 #
 # Libraries Release Test Execution against a release mono runtime.
 # Only when libraries or mono changed
@@ -1113,6 +1149,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 #
 # Libraries Release Test Execution against a release mono interpreter runtime.
 # Only when libraries or mono changed
@@ -1138,6 +1175,7 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 #
 # Libraries Release Test Execution against a release coreclr runtime
 # Only when the PR contains a libraries change
@@ -1157,6 +1195,7 @@ jobs:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 #
 # Libraries Debug Test Execution against a release coreclr runtime
 # Only when the PR contains a libraries change
@@ -1179,6 +1218,7 @@ jobs:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 # The next three jobs run checked coreclr + <either debug or release in PR> libraries tests.
 # The matrix looks like the following, where the right columns specify which configurations
 # the libraries tests are built in.
@@ -1215,6 +1255,7 @@ jobs:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 #
 # Release Libraries Test Execution against a checked runtime
 # Only if CoreCLR or Libraries is changed
@@ -1237,6 +1278,7 @@ jobs:
         or(
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
           eq(variables['isRollingBuild'], true))
+
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
