@@ -11,7 +11,6 @@ namespace System.IO.IsolatedStorage
         private static List<string> GetRoots()
         {
             List<string> roots = new List<string>();
-            Helper.IsolatedStorageDirectoryName = ".isolated-storage";
             string userRoot = Helper.GetDataDirectory(IsolatedStorageScope.User);
             string randomUserRoot = Helper.GetRandomDirectory(userRoot, IsolatedStorageScope.User);
             roots.Add(randomUserRoot);
