@@ -246,9 +246,15 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
 
         target_ssize_t shiftAmount = (target_ssize_t)shiftAmountNode->AsIntCon()->gtIconVal;
 
-        if ((shiftAmount < 0x00) || (shiftAmount > 0x3F))
+        if ((shiftAmount < 0x01) || (shiftAmount > 0x3F))
         {
-            // Cannot contain if the shift amount is negative or greater than 63
+            // Cannot contain if the shift amount is less than 1 or greater than 63
+            return false;
+        }
+
+        if (!varTypeIsLong(childNode) && (shiftAmount > 0x1F))
+        {
+            // Cannot contain if the shift amount is greater than 31
             return false;
         }
 
