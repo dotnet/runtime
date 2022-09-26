@@ -2257,7 +2257,7 @@ namespace Internal.JitInterface
         private void* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
         {
             // TODO: https://github.com/dotnet/runtime/pull/75573#issuecomment-1250824543
-            throw new NotImplementedException();
+            return null;
         }
 
         private bool isObjectImmutable(void* objPtr)
