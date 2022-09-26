@@ -118,6 +118,8 @@ However, the ordering sideeffects of reference assignment should not be used for
 -	ordinary reference assignments are still treated as ordinary assignments and could be reordered by the compiler.
 -	an optimizing compiler can omit the release semantics if it can prove that the instance is not shared with other threads.
 
+There was a lot of ambiguity around the guarantees provided by object assignments. Going forward the runtimes will only provide the guarantees described in this document.
+
 ## Instance constructors
 .NET runtime does not specify any ordering effects to the instance constructors.
 
