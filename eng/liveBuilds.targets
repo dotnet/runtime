@@ -223,6 +223,7 @@
             ResolveLibrariesRuntimeFilesFromLocalBuild" />
 
   <PropertyGroup>
-    <BundledRuntimeIdentifierGraphFile>$(SourceRuntimeIdentifierGraphFile)</BundledRuntimeIdentifierGraphFile>
+    <BundledRuntimeIdentifierGraphFile>$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'Microsoft.NETCore.Platforms', 'src', 'runtime.json'))</BundledRuntimeIdentifierGraphFile>
+    <BundledRuntimeIdentifierGraphFile Condition="Exists('$(GeneratedRuntimeIdentifierGraphFile)')">$(GeneratedRuntimeIdentifierGraphFile)</BundledRuntimeIdentifierGraphFile>
   </PropertyGroup>
 </Project>

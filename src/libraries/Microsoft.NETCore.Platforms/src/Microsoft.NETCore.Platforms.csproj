@@ -8,6 +8,8 @@
     <AssemblyName>Microsoft.NETCore.Platforms.BuildTasks</AssemblyName>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <IncludeSymbols>false</IncludeSymbols>
+    <!-- Generate a package only during the allconfigurations leg to avoid package clashes during publish. -->
+    <GeneratePackageOnBuild Condition="'$(BuildAllConfigurations)' != 'true'">false</GeneratePackageOnBuild>
 
     <IsPackable>true</IsPackable>
     <PackageId>$(MSBuildProjectName)</PackageId>
@@ -56,7 +58,7 @@
   
   <UsingTask TaskName="GenerateRuntimeGraph" AssemblyFile="$(_generateRuntimeGraphTask)"/>
 
-  <Target Name="GenerateRuntimeJson" BeforeTargets="Build">
+  <Target Name="GenerateRuntimeJson" AfterTargets="Build">
     <MakeDir Directories="$(IntermediateOutputPath)" />
     <GenerateRuntimeGraph Condition="'$(AdditionalRuntimeIdentifiers)' != ''"
                           RuntimeGroups="@(RuntimeGroupWithQualifiers)"
