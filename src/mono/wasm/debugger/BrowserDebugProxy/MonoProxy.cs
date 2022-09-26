@@ -214,15 +214,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "Debugger.scriptParsed":
                     {
                         string url = args?["url"]?.Value<string>() ?? "";
-
-                        switch (url)
-                        {
-                            case var _ when url == "":
-                            {
-                                logger.LogTrace($"ignoring empty: Debugger.scriptParsed {url}");
-                                return true;
-                            }
-                        }
                         logger.LogTrace($"proxying Debugger.scriptParsed ({sessionId.sessionId}) {url} {args}");
                         break;
                     }
