@@ -48,6 +48,38 @@
       <Uri>https://github.com/dotnet/llvm-project</Uri>
       <Sha>8688ea2538ef1287c6619d35a26b5750d355cc18</Sha>
     </Dependency>
+    <Dependency Name="runtime.linux-arm64.Microsoft.NETCore.Runtime.JIT.Tools" Version="1.0.0-alpha.1.22431.4">
+      <Uri>https://github.com/dotnet/llvm-project</Uri>
+      <Sha>c1304304028d603e34f6803b0740c34441f80d2e</Sha>
+    </Dependency>
+    <Dependency Name="runtime.linux-x64.Microsoft.NETCore.Runtime.JIT.Tools" Version="1.0.0-alpha.1.22431.4">
+      <Uri>https://github.com/dotnet/llvm-project</Uri>
+      <Sha>c1304304028d603e34f6803b0740c34441f80d2e</Sha>
+    </Dependency>
+    <Dependency Name="runtime.linux-musl-arm64.Microsoft.NETCore.Runtime.JIT.Tools" Version="1.0.0-alpha.1.22431.4">
+      <Uri>https://github.com/dotnet/llvm-project</Uri>
+      <Sha>c1304304028d603e34f6803b0740c34441f80d2e</Sha>
+    </Dependency>
+    <Dependency Name="runtime.linux-musl-x64.Microsoft.NETCore.Runtime.JIT.Tools" Version="1.0.0-alpha.1.22431.4">
+      <Uri>https://github.com/dotnet/llvm-project</Uri>
+      <Sha>754d13817d834b716d339183e21aac7d2489c496</Sha>
+    </Dependency>
+    <Dependency Name="runtime.win-arm64.Microsoft.NETCore.Runtime.JIT.Tools" Version="1.0.0-alpha.1.22431.4">
+      <Uri>https://github.com/dotnet/llvm-project</Uri>
+      <Sha>c1304304028d603e34f6803b0740c34441f80d2e</Sha>
+    </Dependency>
+    <Dependency Name="runtime.win-x64.Microsoft.NETCore.Runtime.JIT.Tools" Version="1.0.0-alpha.1.22431.4">
+      <Uri>https://github.com/dotnet/llvm-project</Uri>
+      <Sha>c1304304028d603e34f6803b0740c34441f80d2e</Sha>
+    </Dependency>
+    <Dependency Name="runtime.osx.11.0-arm64.Microsoft.NETCore.Runtime.JIT.Tools" Version="1.0.0-alpha.1.22431.4">
+      <Uri>https://github.com/dotnet/llvm-project</Uri>
+      <Sha>c1304304028d603e34f6803b0740c34441f80d2e</Sha>
+    </Dependency>
+    <Dependency Name="runtime.osx.10.12-x64.Microsoft.NETCore.Runtime.JIT.Tools" Version="1.0.0-alpha.1.22431.4">
+      <Uri>https://github.com/dotnet/llvm-project</Uri>
+      <Sha>c1304304028d603e34f6803b0740c34441f80d2e</Sha>
+    </Dependency>
     <Dependency Name="System.CommandLine" Version="2.0.0-beta4.22355.1">
       <Uri>https://github.com/dotnet/command-line-api</Uri>
       <Sha>5618b2d243ccdeb5c7e50a298b33b13036b4351b</Sha>
@@ -262,17 +294,17 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>45633fd5ebcbf81ffa26fb2348bdefbd8014cca3</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="1.1.0-alpha.0.22469.1">
+    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="1.1.0-alpha.0.22470.1">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
-      <Sha>4c0c939101f7a6f9e61494b1631a014e75acc414</Sha>
+      <Sha>14a4f4c6e6478b84cac9037935f823b40ddad01d</Sha>
     </Dependency>
     <Dependency Name="System.Runtime.Numerics.TestData" Version="7.0.0-beta.22456.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>3453104731a7fd5af1b7613bb9dc9dfa6263b312</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="7.0.0-preview1.22466.1">
+    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="7.0.0-preview1.22471.2">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>10a460bb34f36dfb3be9fe463d343ad71a9a2961</Sha>
+      <Sha>bce5d7e440efbfc33bf28bd9e4357a9446d5f7e2</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.ApiCompat.Task" Version="8.0.100-alpha.1.22462.3">
       <Uri>https://github.com/dotnet/sdk</Uri>

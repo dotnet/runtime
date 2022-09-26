@@ -252,6 +252,12 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
         return WBF_NoBarrier;
     }
 
+    if (store->Data()->IsIconHandle(GTF_ICON_OBJ_HDL))
+    {
+        // Ignore frozen objects
+        return WBF_NoBarrier;
+    }
+
     WriteBarrierForm wbf = gcWriteBarrierFormFromTargetAddress(store->Addr());
 
     if (wbf == WBF_BarrierUnknown)

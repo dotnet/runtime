@@ -1594,6 +1594,7 @@ namespace System.Security.Cryptography.Xml.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/74115")]
         public void VerifyXmlResolver(bool provideResolver)
         {
             TcpListener listener = new TcpListener(IPAddress.Loopback, 0);

@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.Xml.XslCompiledTransformApiTests
 {
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class XslCompilerTests
     {
         [Fact]

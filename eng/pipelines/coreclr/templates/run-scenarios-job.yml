@@ -107,6 +107,7 @@ jobs:
         - AdditionalHelixPreCommands: $(HelixPreCommandOSX)
         - AdditionalHelixPostCommands: $(HelixPostCommandOSX)
 
+    - ExtraSetupArguments: ''
     - name: ExtraSetupArguments
       ${{ if ne(parameters.runtimeType, 'wasm') }}:
         value: --install-dir $(PayloadDirectory)/dotnet
