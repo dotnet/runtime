@@ -39,55 +39,17 @@ function print_usage {
     echo '  --limitedDumpGeneration          : '
 }
 
-function check_cpu_architecture {
-    local CPUName=$(uname -m)
-    local __arch=
-
-    if [[ "$(uname -s)" == "SunOS" ]]; then
-        CPUName=$(isainfo -n)
-    fi
-
-    case $CPUName in
-        i686)
-            __arch=x86
-            ;;
-        amd64|x86_64)
-            __arch=x64
-            ;;
-        armv7l)
-            __arch=arm
-            ;;
-        aarch64|arm64)
-            __arch=arm64
-            ;;
-        loongarch64)
-            __arch=loongarch64
-            ;;
-        riscv64)
-            __arch=riscv64
-            ;;
-        *)
-            echo "Unknown CPU $CPUName detected, configuring as if for x64"
-            __arch=x64
-            ;;
-    esac
-
-    echo "$__arch"
-}
-
-################################################################################
-# Handle Arguments
-################################################################################
-
-ARCH=$(check_cpu_architecture)
-
 # Exit code constants
 readonly EXIT_CODE_SUCCESS=0       # Script ran normally.
 readonly EXIT_CODE_EXCEPTION=1     # Script exited because something exceptional happened (e.g. bad arguments, Ctrl-C interrupt).
 readonly EXIT_CODE_TEST_FAILURE=2  # Script completed successfully, but one or more tests failed.
 
+scriptPath="$(cd "$(dirname "$BASH_SOURCE[0]")"; pwd -P)"
+repoRootDir="$(cd "$scriptPath"/../..; pwd -P)"
+source "$repoRootDir/eng/native/init-os-and-arch.sh"
+
 # Argument variables
-buildArch=$ARCH
+buildArch="$arch"
 buildOS=
 buildConfiguration="Debug"
 testRootDir=
@@ -128,6 +90,9 @@ do
             ;;
         arm64)
             buildArch="arm64"
+            ;;
+        loongarch64)
+            buildArch="loongarch64"
             ;;
         wasm)
             buildArch="wasm"
@@ -234,8 +199,6 @@ fi
 ################################################################################
 
 runtestPyArguments=("-arch" "${buildArch}" "-build_type" "${buildConfiguration}")
-scriptPath="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
-repoRootDir=$scriptPath/../..
 
 echo "Build Architecture            : ${buildArch}"
 echo "Build Configuration           : ${buildConfiguration}"

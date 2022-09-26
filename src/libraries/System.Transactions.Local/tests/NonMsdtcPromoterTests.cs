@@ -21,7 +21,6 @@ namespace System.Transactions.Tests
         private static MethodInfo s_setDistributedTransactionIdentifierMethodInfo;
         private static MethodInfo s_getPromotedTokenMethodInfo;
         private static PropertyInfo s_promoterTypePropertyInfo;
-        private static FieldInfo s_promoterTypeDtcFieldInfo;
 
         public NonMsdtcPromoterTests()
         {
@@ -51,17 +50,12 @@ namespace System.Transactions.Tests
 
                 // And the PropertyInfo objects for PromoterType
                 s_promoterTypePropertyInfo = typeof(Transaction).GetTypeInfo().GetProperty("PromoterType", typeof(Guid));
-
-                // And the FieldInfo for TransactionInterop.PromoterTypeDtc
-                s_promoterTypeDtcFieldInfo = typeof(TransactionInterop).GetTypeInfo().GetField("PromoterTypeDtc", BindingFlags.Public | BindingFlags.Static);
             }
 
             bool allMethodsAreThere = ((s_enlistPromotableSinglePhaseMethodInfo != null) &&
                 (s_setDistributedTransactionIdentifierMethodInfo != null) &&
                 (s_getPromotedTokenMethodInfo != null) &&
-                (s_promoterTypePropertyInfo != null) &&
-                (s_promoterTypeDtcFieldInfo != null)
-                );
+                (s_promoterTypePropertyInfo != null));
             Assert.True(allMethodsAreThere, "At least one of the expected new methods or properties is not implemented by the available System.Transactions.");
         }
 
@@ -337,14 +331,6 @@ namespace System.Transactions.Tests
         private static byte[] TxPromotedToken(Transaction txToGet)
         {
             return (byte[])s_getPromotedTokenMethodInfo.Invoke(txToGet, null);
-        }
-
-        private static Guid PromoterTypeDtc
-        {
-            get
-            {
-                return (Guid)s_promoterTypeDtcFieldInfo.GetValue(null);
-            }
         }
 
         #endregion
@@ -1706,45 +1692,6 @@ namespace System.Transactions.Tests
             TestPassed();
         }
 
-        private static void TestCase_PromoterTypeMSDTC()
-        {
-            string testCaseDescription = "TestCase_PromoterTypeMSDTC";
-
-            Trace("**** " + testCaseDescription + " ****");
-
-            AutoResetEvent volCompleted = new AutoResetEvent(false);
-            MyEnlistment vol = null;
-
-            try
-            {
-                using (TransactionScope ts = new TransactionScope())
-                {
-                    Assert.Equal(Guid.Empty, TxPromoterType(Transaction.Current));
-
-                    vol = CreateVolatileEnlistment(volCompleted);
-
-                    // Force MSDTC promotion.
-                    TransactionInterop.GetDtcTransaction(Transaction.Current);
-
-                    // TransactionInterop.PromoterTypeDtc
-                    Assert.Equal(PromoterTypeDtc, TxPromoterType(Transaction.Current));
-
-                    ts.Complete();
-                }
-            }
-            catch (Exception ex)
-            {
-                Trace(string.Format("Caught unexpected exception {0}:{1}", ex.GetType().ToString(), ex.ToString()));
-                return;
-            }
-
-            Assert.True(volCompleted.WaitOne(TimeSpan.FromSeconds(5)));
-
-            Assert.True(vol.CommittedOutcome);
-
-            TestPassed();
-        }
-
         private static void TestCase_FailPromotableSinglePhaseNotificationCalls()
         {
             string testCaseDescription = "TestCase_FailPromotableSinglePhaseNotificationCalls";
@@ -2131,16 +2078,6 @@ namespace System.Transactions.Tests
         {
             // get_PromoterType
             TestCase_PromoterType();
-        }
-
-        /// <summary>
-        /// PSPE Non-MSDTC Get PromoterType.
-        /// </summary>
-        [Fact]
-        public void PSPENonMsdtcGetPromoterTypeMSDTC()
-        {
-            // get_PromoterType
-            TestCase_PromoterTypeMSDTC();
         }
 
         /// <summary>

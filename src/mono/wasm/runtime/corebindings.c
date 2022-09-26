@@ -30,6 +30,7 @@ extern void mono_wasm_typed_array_from_ref (int ptr, int begin, int end, int byt
 
 extern void mono_wasm_bind_js_function(MonoString **function_name, MonoString **module_name, void *signature, int* function_js_handle, int *is_exception, MonoObject **result);
 extern void mono_wasm_invoke_bound_function(int function_js_handle, void *data);
+extern void mono_wasm_invoke_import(int fn_handle, void *data);
 extern void mono_wasm_bind_cs_function(MonoString **fully_qualified_name, int signature_hash, void* signatures, int *is_exception, MonoObject **result);
 extern void mono_wasm_marshal_promise(void *data);
 
@@ -49,6 +50,7 @@ void core_initialize_internals ()
 
 	mono_add_internal_call ("Interop/Runtime::BindJSFunction", mono_wasm_bind_js_function);
 	mono_add_internal_call ("Interop/Runtime::InvokeJSFunction", mono_wasm_invoke_bound_function);
+	mono_add_internal_call ("Interop/Runtime::InvokeImport", mono_wasm_invoke_import);
 	mono_add_internal_call ("Interop/Runtime::BindCSFunction", mono_wasm_bind_cs_function);
 	mono_add_internal_call ("Interop/Runtime::MarshalPromise", mono_wasm_marshal_promise);
 	mono_add_internal_call ("Interop/Runtime::RegisterGCRoot", mono_wasm_register_root);

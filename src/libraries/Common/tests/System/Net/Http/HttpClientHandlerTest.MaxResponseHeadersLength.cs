@@ -2,7 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Test.Common;
+#if !WINHTTPHANDLER_TEST
+using System.Net.Quic;
+#endif
+using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,6 +25,8 @@ namespace System.Net.Http.Functional.Tests
 
     public abstract class HttpClientHandler_MaxResponseHeadersLength_Test : HttpClientHandlerTestBase
     {
+        private const int Http3ExcessiveLoad = 0x107;
+
         public HttpClientHandler_MaxResponseHeadersLength_Test(ITestOutputHelper output) : base(output) { }
 
         [Theory]
@@ -81,7 +88,15 @@ namespace System.Net.Http.Functional.Tests
             },
             async server =>
             {
-                await server.HandleRequestAsync(headers: new[] { new HttpHeaderData("Foo", new string('a', handler.MaxResponseHeadersLength * 1024)) });
+                try
+                {
+                    await server.HandleRequestAsync(headers: new[] { new HttpHeaderData("Foo", new string('a', handler.MaxResponseHeadersLength * 1024)) });
+                }
+                // Client can respond by closing/aborting the underlying stream while we are still sending the headers, ignore these exceptions
+                catch (IOException ex) when (ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.Shutdown) { }
+#if !WINHTTPHANDLER_TEST
+                catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad) {}
+#endif
             });
         }
 
@@ -125,7 +140,15 @@ namespace System.Net.Http.Functional.Tests
                     headers.Add(new HttpHeaderData($"Custom-{i}", new string('a', 480)));
                 }
 
-                await server.HandleRequestAsync(headers: headers);
+                try
+                {
+                    await server.HandleRequestAsync(headers: headers);
+                }
+                // Client can respond by closing/aborting the underlying stream while we are still sending the headers, ignore these exceptions
+                catch (IOException ex) when (ex.InnerException is SocketException se && se.SocketErrorCode == SocketError.Shutdown) { }
+#if !WINHTTPHANDLER_TEST
+                catch (QuicException ex) when (ex.QuicError == QuicError.StreamAborted && ex.ApplicationErrorCode == Http3ExcessiveLoad) {}
+#endif
             });
         }
     }

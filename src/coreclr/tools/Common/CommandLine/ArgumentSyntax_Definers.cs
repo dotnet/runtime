@@ -10,7 +10,7 @@ namespace Internal.CommandLine
     public partial class ArgumentSyntax
     {
         private static readonly Func<string, string> s_stringParser = v => v;
-        private static readonly Func<string, bool> s_booleanParser = v => bool.Parse(v);
+        private static readonly Func<string, bool> s_booleanParser = bool.Parse;
         private static readonly Func<string, int> s_int32Parser = v => int.Parse(v, CultureInfo.InvariantCulture);
 
         // Commands

@@ -10,11 +10,11 @@ using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
-    partial class CompilerTypeSystemContext
+    public partial class CompilerTypeSystemContext
     {
         private MethodDesc _objectEqualsMethod;
 
-        private class ValueTypeMethodHashtable : LockFreeReaderHashtable<DefType, MethodDesc>
+        private sealed class ValueTypeMethodHashtable : LockFreeReaderHashtable<DefType, MethodDesc>
         {
             protected override int GetKeyHashCode(DefType key) => key.GetHashCode();
             protected override int GetValueHashCode(MethodDesc value) => value.OwningType.GetHashCode();
@@ -54,8 +54,7 @@ namespace ILCompiler
 
         private bool RequiresGetFieldHelperMethod(MetadataType valueType)
         {
-            if (_objectEqualsMethod == null)
-                _objectEqualsMethod = GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null);
+            _objectEqualsMethod ??= GetWellKnownType(WellKnownType.Object).GetMethod("Equals", null);
 
             // If the classlib doesn't have Object.Equals, we don't need this.
             if (_objectEqualsMethod == null)
@@ -77,7 +76,7 @@ namespace ILCompiler
             return !_typeStateHashtable.GetOrCreateValue(valueType).CanCompareValueTypeBits;
         }
 
-        private class TypeState
+        private sealed class TypeState
         {
             private enum Flags
             {
@@ -180,7 +179,7 @@ namespace ILCompiler
             }
         }
 
-        private class TypeStateHashtable : LockFreeReaderHashtable<TypeDesc, TypeState>
+        private sealed class TypeStateHashtable : LockFreeReaderHashtable<TypeDesc, TypeState>
         {
             protected override int GetKeyHashCode(TypeDesc key) => key.GetHashCode();
             protected override int GetValueHashCode(TypeState value) => value.Type.GetHashCode();

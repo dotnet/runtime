@@ -11,6 +11,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.InteropServi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JSImportGenerator.Unit.Tests", "tests\JSImportGenerator.UnitTest\JSImportGenerator.Unit.Tests.csproj", "{BFED925C-18F2-4C98-833E-66F205234598}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.InteropServices.JavaScript.Legacy.UnitTests", "tests\System.Runtime.InteropServices.JavaScript.Legacy.UnitTests\System.Runtime.InteropServices.JavaScript.Legacy.UnitTests.csproj", "{ABA5A92B-CAD8-47E8-A7CE-D28A67FB69C0}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.InteropServices.JavaScript.Tests", "tests\System.Runtime.InteropServices.JavaScript.UnitTests\System.Runtime.InteropServices.JavaScript.Tests.csproj", "{765B4AA5-723A-44FF-BC4E-EB0F03103F6D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", "..\System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj", "{09AA6758-0BD3-4312-9C07-AE9F1D50A3AD}"
@@ -59,6 +61,10 @@ Global
 		{BFED925C-18F2-4C98-833E-66F205234598}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BFED925C-18F2-4C98-833E-66F205234598}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BFED925C-18F2-4C98-833E-66F205234598}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ABA5A92B-CAD8-47E8-A7CE-D28A67FB69C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ABA5A92B-CAD8-47E8-A7CE-D28A67FB69C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ABA5A92B-CAD8-47E8-A7CE-D28A67FB69C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ABA5A92B-CAD8-47E8-A7CE-D28A67FB69C0}.Release|Any CPU.Build.0 = Release|Any CPU
 		{765B4AA5-723A-44FF-BC4E-EB0F03103F6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{765B4AA5-723A-44FF-BC4E-EB0F03103F6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{765B4AA5-723A-44FF-BC4E-EB0F03103F6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -86,6 +92,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{ED86AB26-1CFB-457D-BF87-B7A0D8FAF272} = {26A72FFB-871A-4F2F-A513-B2F6E09F358C}
 		{BFED925C-18F2-4C98-833E-66F205234598} = {26A72FFB-871A-4F2F-A513-B2F6E09F358C}
+		{ABA5A92B-CAD8-47E8-A7CE-D28A67FB69C0} = {26A72FFB-871A-4F2F-A513-B2F6E09F358C}
 		{765B4AA5-723A-44FF-BC4E-EB0F03103F6D} = {26A72FFB-871A-4F2F-A513-B2F6E09F358C}
 		{EC3ADEFA-1FF3-482C-8CCB-FE4C77292532} = {26A72FFB-871A-4F2F-A513-B2F6E09F358C}
 		{8B1D80E9-AE0D-4E3C-9F91-E6862B49AEF3} = {C22C479B-769A-4859-B974-E9B9D65918DE}

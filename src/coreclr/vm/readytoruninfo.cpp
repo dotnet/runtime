@@ -619,7 +619,7 @@ void ReadyToRunInfo::RegisterUnrelatedR2RModule()
         {
             ReadyToRunInfo* oldGlobalValue;
             oldGlobalValue = s_pGlobalR2RModules;
-            if (InterlockedCompareExchangeT(&m_pNextR2RForUnrelatedCode, oldGlobalValue, NULL) != NULL)
+            if (InterlockedCompareExchangeT(&m_pNextR2RForUnrelatedCode, dac_cast<PTR_ReadyToRunInfo>(dac_cast<TADDR>(oldGlobalValue) | 0x1), NULL) != NULL)
             {
                 // Some other thread is registering or has registered this R2R image for unrelated generics
                 // ReadyToRun code loading. we can simply return, as this process cannot fail.
@@ -629,7 +629,7 @@ void ReadyToRunInfo::RegisterUnrelatedR2RModule()
             while (InterlockedCompareExchangeT(&s_pGlobalR2RModules, this, oldGlobalValue) != oldGlobalValue)
             {
                 oldGlobalValue = s_pGlobalR2RModules;
-                m_pNextR2RForUnrelatedCode = oldGlobalValue;
+                m_pNextR2RForUnrelatedCode = dac_cast<PTR_ReadyToRunInfo>(dac_cast<TADDR>(oldGlobalValue) | 0x1);
             }
         }
     }

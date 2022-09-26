@@ -20,7 +20,10 @@
 
     <!-- We want to bundle these assemblies, so build them first -->
     <ProjectReference Include="..\ApplyUpdateReferencedAssembly\ApplyUpdateReferencedAssembly.csproj" />
+    <ProjectReference Include="..\ApplyUpdateReferencedAssembly2\ApplyUpdateReferencedAssembly2.csproj" />
+    <ProjectReference Include="..\ApplyUpdateReferencedAssemblyChineseCharInPathㄨ\ApplyUpdateReferencedAssemblyChineseCharInPathㄨ.csproj" />
     <ProjectReference Include="..\debugger-test-special-char-in-path-#@\debugger-test-special-char-in-path.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\debugger-test-chinese-char-in-path-ㄨ\debugger-test-chinese-char-in-path-ㄨ.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\debugger-test-with-source-link\debugger-test-with-source-link.csproj" ReferenceOutputAssembly="false" Private="true" />
     <ProjectReference Include="..\debugger-test-without-debug-symbols-to-load\debugger-test-without-debug-symbols-to-load.csproj" Private="true" />
     <ProjectReference Include="..\debugger-test-with-non-user-code-class\debugger-test-with-non-user-code-class.csproj" Private="true" />
@@ -29,6 +32,7 @@
 
     <!-- These are only loaded dynamically -->
     <_AssemblyForDynamicLoading Include="lazy-debugger-test" />
+    <_AssemblyForDynamicLoading Include="lazy-debugger-test-chinese-char-in-path-ㄨ" />
     <_AssemblyForDynamicLoading Include="debugger-test-with-full-debug-type" />
     <_AssemblyForDynamicLoading Include="debugger-test-with-pdb-deleted" />
     <_AssemblyForDynamicLoading Include="debugger-test-without-debug-symbols" />
@@ -53,6 +57,7 @@
     <ItemGroup>
       <WasmAssembliesToBundle Include="$(OutDir)\$(TargetFileName)" />
       <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-special-char-in-path.dll" />
+      <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-chinese-char-in-path-ㄨ.dll" />
       <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-with-source-link.dll" />
       <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-without-debug-symbols-to-load.dll" />
       <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-with-non-user-code-class.dll" />
@@ -77,6 +82,9 @@
       <!-- Don't modify EnC test assemblies -->
       <TrimmerRootAssembly
           Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('ApplyUpdateReferencedAssembly.dll'))"
+          Include="%(ResolvedFileToPublish.FullPath)" />
+      <TrimmerRootAssembly
+          Condition="$([System.String]::Copy('%(ResolvedFileToPublish.FileName)%(ResolvedFileToPublish.Extension)').EndsWith('ApplyUpdateReferencedAssemblyChineseCharInPathㄨ.dll'))"
           Include="%(ResolvedFileToPublish.FullPath)" />
     </ItemGroup>
   </Target>

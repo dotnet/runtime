@@ -37,6 +37,7 @@ namespace Microsoft.NET.HostModel.AppHost
         public readonly MachOFormatError Error;
 
         internal AppHostMachOFormatException(MachOFormatError error)
+            : base($"Failed to process MachO file: {error}")
         {
             Error = error;
         }

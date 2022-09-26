@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Diagnostics;
-
 using Internal.TypeSystem;
 
 namespace Internal.Runtime
@@ -17,27 +14,27 @@ namespace Internal.Runtime
         }
 
         /// <summary>
-        /// IF THESE SEMANTICS EVER CHANGE UPDATE THE LOGIC WHICH DEFINES THIS BEHAVIOR IN 
-        /// THE DYNAMIC TYPE LOADER AS WELL AS THE COMPILER. 
+        /// IF THESE SEMANTICS EVER CHANGE UPDATE THE LOGIC WHICH DEFINES THIS BEHAVIOR IN
+        /// THE DYNAMIC TYPE LOADER AS WELL AS THE COMPILER.
         /// (There is a version of this in TypeLoaderEnvironment.SignatureParsing.cs that must be kept in sync with this.)
         ///
         /// Parameter's are considered to have type layout dependent on their generic instantiation
-        /// if the type of the parameter in its signature is a type variable, or if the type is a generic 
+        /// if the type of the parameter in its signature is a type variable, or if the type is a generic
         /// structure which meets 2 characteristics:
         /// 1. Structure size/layout is affected by the size/layout of one or more of its generic parameters
         /// 2. One or more of the generic parameters is a type variable, or a generic structure which also recursively
         ///    would satisfy constraint 2. (Note, that in the recursion case, whether or not the structure is affected
         ///    by the size/layout of its generic parameters is not investigated.)
-        ///    
+        ///
         /// Examples parameter types, and behavior.
-        /// 
+        ///
         /// T = true
         /// List[T] = false
         /// StructNotDependentOnArgsForSize[T] = false
         /// GenStructDependencyOnArgsForSize[T] = true
         /// StructNotDependentOnArgsForSize[GenStructDependencyOnArgsForSize[T]] = true
         /// StructNotDependentOnArgsForSize[GenStructDependencyOnArgsForSize[List[T]]]] = false
-        /// 
+        ///
         /// Example non-parameter type behavior
         /// T = true
         /// List[T] = false

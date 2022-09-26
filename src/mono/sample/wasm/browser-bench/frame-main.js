@@ -31,9 +31,9 @@ try {
     }
 
     const runtime = await dotnet
-        .withElementOnExit()
-        .withExitCodeLogging()
         .withModuleConfig({
+            printErr: () => undefined,
+            print: () => undefined,
             onConfigLoaded: (config) => {
                 if (window.parent != window) {
                     window.parent.resolveAppStartEvent("onConfigLoaded");

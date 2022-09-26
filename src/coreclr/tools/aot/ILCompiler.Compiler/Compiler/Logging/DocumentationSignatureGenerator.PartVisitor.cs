@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Text;
@@ -134,7 +133,7 @@ namespace ILCompiler.Logging
 
                     // If the containing type is nested within other types.
                     // e.g. A<T>.B<U>.M<V>(T t, U u, V v) should be M(`0, `1, ``0).
-                    // Roslyn needs to add generic arities of parents, but the innermost type redeclares 
+                    // Roslyn needs to add generic arities of parents, but the innermost type redeclares
                     // all generic parameters so we don't need to add them.
                     builder.Append('`');
                 }
@@ -178,7 +177,7 @@ namespace ILCompiler.Logging
 
                 string unmangledName = type.Name;
                 int totalArity = type.Instantiation.Length;
-                string expectedSuffix = $"`{totalArity.ToString()}";
+                string expectedSuffix = $"`{totalArity}";
                 if (unmangledName.EndsWith(expectedSuffix))
                     unmangledName = unmangledName.Substring(0, unmangledName.Length - expectedSuffix.Length);
 

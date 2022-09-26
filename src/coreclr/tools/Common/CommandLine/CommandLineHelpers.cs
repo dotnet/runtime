@@ -12,7 +12,7 @@ namespace Internal.CommandLine
     //
     // Helpers for command line processing
     //
-    internal class Helpers
+    internal static class Helpers
     {
         // Helper to create a collection of paths unique in their simple names.
         public static void AppendExpandedPaths(Dictionary<string, string> dictionary, string pattern, bool strict)
@@ -102,7 +102,7 @@ namespace Internal.CommandLine
                 }
             }
 
-            HashCode hashCodeOfArgs = new HashCode();
+            HashCode hashCodeOfArgs = default(HashCode);
             foreach (string s in details)
                 hashCodeOfArgs.Add(s);
 
@@ -143,7 +143,7 @@ namespace Internal.CommandLine
                                 Dictionary<string, string> dictionary = new Dictionary<string, string>();
                                 foreach (string optInList in (IEnumerable)option.Value)
                                 {
-                                    Helpers.AppendExpandedPaths(dictionary, optInList, false);
+                                    AppendExpandedPaths(dictionary, optInList, false);
                                 }
                                 foreach (string inputFile in dictionary.Values)
                                 {

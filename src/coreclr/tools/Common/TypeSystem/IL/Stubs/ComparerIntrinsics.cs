@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 
 using Internal.TypeSystem;
@@ -165,7 +164,7 @@ namespace Internal.IL.Stubs
             {
                 // This can be any of the comparers we have.
 
-                ArrayBuilder<TypeDesc> universalComparers = new ArrayBuilder<TypeDesc>();
+                ArrayBuilder<TypeDesc> universalComparers = default(ArrayBuilder<TypeDesc>);
 
                 universalComparers.Add(context.SystemModule.GetKnownType("System.Collections.Generic", $"Nullable{flavor}`1")
                         .MakeInstantiatedType(type));
@@ -182,7 +181,7 @@ namespace Internal.IL.Stubs
 
                 return universalComparers.ToArray();
             }
-            
+
             // This mirrors exactly what GetUnknownEquatableComparer and GetUnknownComparer (in the class library)
             // will need at runtime. This is the general purpose code path that can be used to compare
             // anything.
@@ -203,7 +202,7 @@ namespace Internal.IL.Stubs
                         .MakeInstantiatedType(type),
                 };
             }
-            
+
             return new TypeDesc[]
             {
                 context.SystemModule.GetKnownType("System.Collections.Generic", $"Generic{flavor}`1")
@@ -226,8 +225,7 @@ namespace Internal.IL.Stubs
                 if (interfaceInstantiation.Length == 1 &&
                     interfaceInstantiation[0] == type)
                 {
-                    if (interfaceType == null)
-                        interfaceType = type.Context.SystemModule.GetKnownType("System", interfaceName);
+                    interfaceType ??= interfaceType = type.Context.SystemModule.GetKnownType("System", interfaceName);
 
                     if (implementedInterface.GetTypeDefinition() == interfaceType)
                         return true;

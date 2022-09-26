@@ -1362,6 +1362,14 @@ ep_rt_thread_create (
 static
 inline
 void
+ep_rt_set_server_name()
+{
+	mono_native_thread_set_name(mono_native_thread_id_get(), ".NET EventPipe");
+}
+
+static
+inline
+void
 ep_rt_thread_sleep (uint64_t ns)
 {
 	MONO_REQ_GC_UNSAFE_MODE;

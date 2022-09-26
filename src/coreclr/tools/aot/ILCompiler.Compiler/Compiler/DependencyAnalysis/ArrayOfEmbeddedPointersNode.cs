@@ -43,7 +43,7 @@ namespace ILCompiler.DependencyAnalysis
             return new EmbeddedPointerIndirectionWithSymbolNode(this, target, GetNextId());
         }
 
-        int GetNextId()
+        private int GetNextId()
         {
             return System.Threading.Interlocked.Increment(ref _nextId);
         }
@@ -52,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override int ClassCode => (int)ObjectNodeOrder.ArrayOfEmbeddedPointersNode;
 
-        private class PointerIndirectionNodeComparer : IComparer<EmbeddedPointerIndirectionNode<TTarget>>
+        private sealed class PointerIndirectionNodeComparer : IComparer<EmbeddedPointerIndirectionNode<TTarget>>
         {
             private IComparer<TTarget> _innerComparer;
 
@@ -98,7 +98,7 @@ namespace ILCompiler.DependencyAnalysis
             public override int ClassCode => -66002498;
         }
 
-        private class EmbeddedPointerIndirectionWithSymbolNode : SimpleEmbeddedPointerIndirectionNode, ISymbolDefinitionNode
+        private sealed class EmbeddedPointerIndirectionWithSymbolNode : SimpleEmbeddedPointerIndirectionNode, ISymbolDefinitionNode
         {
             private int _id;
 

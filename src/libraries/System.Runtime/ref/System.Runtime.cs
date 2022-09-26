@@ -10530,6 +10530,15 @@ namespace System.Numerics
     public partial interface IUnsignedNumber<TSelf> : System.Numerics.INumberBase<TSelf> where TSelf : System.Numerics.IUnsignedNumber<TSelf>?
     {
     }
+    public readonly partial struct TotalOrderIeee754Comparer<T> : System.Collections.Generic.IComparer<T>, System.Collections.Generic.IEqualityComparer<T>, System.IEquatable<System.Numerics.TotalOrderIeee754Comparer<T>> where T : System.Numerics.IFloatingPointIeee754<T>?
+    {
+        public int Compare(T? x, T? y) { throw null; }
+        public bool Equals(System.Numerics.TotalOrderIeee754Comparer<T> other) { throw null; }
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public bool Equals(T? x, T? y) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public int GetHashCode([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T obj) { throw null; }
+    }
 }
 namespace System.Reflection
 {

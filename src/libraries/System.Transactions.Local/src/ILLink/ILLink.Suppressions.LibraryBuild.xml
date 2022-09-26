@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <assembly fullname="System.Transactions.Local">
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
+      <property name="Target">M:System.Transactions.DtcProxyShim.DtcProxyShimFactory.ConnectToProxyCore(System.String,System.Guid,System.Object,System.Boolean@,System.Byte[]@,System.Transactions.DtcProxyShim.ResourceManagerShim@)</property>
+      <property name="Justification">This warning is left in the product so developers get an ILLink warning when trimming an app using this transaction support</property>
+    </attribute>
+  </assembly>
+</linker>

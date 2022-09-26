@@ -10700,7 +10700,7 @@ namespace Internal.Metadata.NativeFormat
         public ConstantStringValue GetConstantStringValue(ConstantStringValueHandle handle)
         {
             if (IsNull(handle))
-                return new ConstantStringValue();
+                return default(ConstantStringValue);
             ConstantStringValue record;
             record._reader = this;
             record._handle = handle;

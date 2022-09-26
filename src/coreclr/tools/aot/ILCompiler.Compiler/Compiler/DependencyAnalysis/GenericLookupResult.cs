@@ -4,8 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-
-using Internal.IL;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -1360,7 +1358,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void EmitDictionaryEntry(ref ObjectDataBuilder builder, NodeFactory factory, GenericLookupResultContext dictionary, GenericDictionaryNode dictionaryNode)
         {
-            TypeDesc instantiatedType = _type.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
             int typeSize;
 
             if (_type.IsDefType)
@@ -1411,9 +1408,9 @@ namespace ILCompiler.DependencyAnalysis
 
     internal sealed class ConstrainedMethodUseLookupResult : GenericLookupResult
     {
-        MethodDesc _constrainedMethod;
-        TypeDesc _constraintType;
-        bool _directCall;
+        private MethodDesc _constrainedMethod;
+        private TypeDesc _constraintType;
+        private bool _directCall;
 
         protected override int ClassCode => -1525377658;
 
@@ -1547,7 +1544,7 @@ namespace ILCompiler.DependencyAnalysis
 
     public sealed class IntegerLookupResult : GenericLookupResult
     {
-        int _integerValue;
+        private int _integerValue;
 
         public IntegerLookupResult(int integer)
         {
@@ -1611,7 +1608,7 @@ namespace ILCompiler.DependencyAnalysis
 
     public sealed class PointerToSlotLookupResult : GenericLookupResult
     {
-        int _slotIndex;
+        private int _slotIndex;
 
         public PointerToSlotLookupResult(int slotIndex)
         {

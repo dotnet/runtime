@@ -288,6 +288,8 @@ namespace System.Formats.Tar.Tests
 
             // LinkName
             Assert.Equal(DefaultLinkName, hardLink.LinkName);
+            Assert.Throws<ArgumentNullException>(() => hardLink.LinkName = null);
+            Assert.Throws<ArgumentException>(() => hardLink.LinkName = string.Empty);
             hardLink.LinkName = TestLinkName;
         }
 
@@ -299,6 +301,8 @@ namespace System.Formats.Tar.Tests
 
             // LinkName
             Assert.Equal(DefaultLinkName, symbolicLink.LinkName);
+            Assert.Throws<ArgumentNullException>(() => symbolicLink.LinkName = null);
+            Assert.Throws<ArgumentException>(() => symbolicLink.LinkName = string.Empty);
             symbolicLink.LinkName = TestLinkName;
         }
 
@@ -401,6 +405,13 @@ namespace System.Formats.Tar.Tests
             if (isFromWriter)
             {
                 Assert.Null(entry.DataStream);
+
+                using (MemoryStream ms = new MemoryStream())
+                using (WrappedStream ws = new WrappedStream(ms, canRead: false, canWrite: true, canSeek: true))
+                {
+                    Assert.Throws<ArgumentException>(() => entry.DataStream = ws);
+                }
+
                 entry.DataStream = new MemoryStream();
                 // Verify it is not modified or wrapped in any way
                 Assert.True(entry.DataStream.CanRead);
@@ -436,7 +447,7 @@ namespace System.Formats.Tar.Tests
                 TarEntryFormat.Ustar => typeof(UstarTarEntry),
                 TarEntryFormat.Pax => typeof(PaxTarEntry),
                 TarEntryFormat.Gnu => typeof(GnuTarEntry),
-                _ => throw new FormatException($"Unrecognized format: {expectedFormat}"),
+                _ => throw new InvalidDataException($"Unrecognized format: {expectedFormat}"),
             };
         }
 
@@ -472,7 +483,7 @@ namespace System.Formats.Tar.Tests
                 TarEntryFormat.Ustar => new UstarTarEntry(entryType, entryName),
                 TarEntryFormat.Pax => new PaxTarEntry(entryType, entryName),
                 TarEntryFormat.Gnu => new GnuTarEntry(entryType, entryName),
-                _ => throw new FormatException($"Unexpected format: {targetFormat}")
+                _ => throw new InvalidDataException($"Unexpected format: {targetFormat}")
             };
 
         public static IEnumerable<object[]> GetFormatsAndLinks()

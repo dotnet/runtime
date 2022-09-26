@@ -846,6 +846,14 @@ MINI_OP(OP_EXPAND_R8, "expand_r8", XREG, FREG, NONE)
 
 #endif
 
+// wasm specific SIMD v128
+
+#if defined(TARGET_WASM)
+MINI_OP(OP_WASM_SIMD_BITMASK, "wasm_bitmask", IREG, XREG, NONE)
+MINI_OP3(OP_WASM_SIMD_SHUFFLE, "wasm_shuffle", VREG, XREG, XREG, XREG)
+MINI_OP(OP_WASM_SIMD_SWIZZLE, "wasm_swizzle", VREG, XREG, XREG)
+#endif
+
 #if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_WASM)
 
 MINI_OP(OP_ADDPS, "addps", XREG, XREG, XREG)
@@ -1711,7 +1719,6 @@ MINI_OP(OP_ARM64_FCVTL2, "arm64_fcvtl2", XREG, XREG, NONE)
 
 MINI_OP(OP_ARM64_CMTST, "arm64_cmtst", XREG, XREG, XREG)
 
-MINI_OP3(OP_ARM64_BSL, "arm64_bsl", XREG, XREG, XREG, XREG)
 MINI_OP(OP_ARM64_BIC, "arm64_bic", XREG, XREG, XREG)
 
 MINI_OP(OP_ARM64_MVN, "arm64_mvn", XREG, XREG, NONE)
@@ -1769,3 +1776,7 @@ MINI_OP3(OP_ARM64_SQRDMLSH_SCALAR, "arm64_sqrdmlsh_scalar", XREG, XREG, XREG, XR
 #if defined(TARGET_WASM)
 MINI_OP(OP_WASM_ONESCOMPLEMENT, "wasm_onescomplement", XREG, XREG, NONE)
 #endif
+
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+MINI_OP3(OP_BSL, "bitwise_select", XREG, XREG, XREG, XREG)
+#endif // TARGET_ARM64 || TARGET_AMD64

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.Dataflow
 {
@@ -10,7 +9,7 @@ namespace ILCompiler.Dataflow
     {
     }
 
-    class MethodReturnOrigin : Origin
+    internal sealed class MethodReturnOrigin : Origin
     {
         public MethodDesc Method { get; }
 
@@ -22,7 +21,7 @@ namespace ILCompiler.Dataflow
         public string GetDisplayName() => Method.GetDisplayName();
     }
 
-    class ParameterOrigin : Origin
+    internal sealed class ParameterOrigin : Origin
     {
         public MethodDesc Method { get; }
         public int Index { get; }
@@ -36,7 +35,7 @@ namespace ILCompiler.Dataflow
         public string GetDisplayName() => Method.GetDisplayName();
     }
 
-    class MethodOrigin : Origin
+    internal sealed class MethodOrigin : Origin
     {
         public MethodDesc Method { get; }
 
@@ -48,7 +47,7 @@ namespace ILCompiler.Dataflow
         public string GetDisplayName() => Method.GetDisplayName();
     }
 
-    class FieldOrigin : Origin
+    internal sealed class FieldOrigin : Origin
     {
         public FieldDesc Field { get; }
 
@@ -60,7 +59,7 @@ namespace ILCompiler.Dataflow
         public string GetDisplayName() => Field.GetDisplayName();
     }
 
-    class TypeOrigin : Origin
+    internal sealed class TypeOrigin : Origin
     {
         public MetadataType Type { get; }
 
@@ -72,7 +71,7 @@ namespace ILCompiler.Dataflow
         public string GetDisplayName() => Type.GetDisplayName();
     }
 
-    class GenericParameterOrigin : Origin
+    internal sealed class GenericParameterOrigin : Origin
     {
         public GenericParameterDesc GenericParameter { get; }
 

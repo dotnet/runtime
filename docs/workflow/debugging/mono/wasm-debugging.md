@@ -83,14 +83,10 @@ and change the
 This will hopefully cause the failure to happen reliably.
 
 There is another random number generator in `upstream/emscripten/src/deterministic.js`
-which needs the same treatment:
-```
-var randomBuffer3 = new Uint8Array(2);
-crypto.getRandomValues(randomBuffer3);
+which needs the same treatment.
 
-var MAGIC = (randomBuffer3 [0] << 8) | randomBuffer3 [1];
-console.log ("SEED2: " + MAGIC);
-```
+Running `make patch-deterministic` in `src/mono/wasm` will patch the
+emscripten installation in `src/mono/wasm/emsdk` with these changes.
 
 # Debugging signature mismatch errors
 

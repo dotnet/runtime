@@ -7,6 +7,7 @@ using System.Runtime.InteropServices.JavaScript;
 using Microsoft.CodeAnalysis;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Data;
 
 namespace Microsoft.Interop.JavaScript
 {
@@ -34,51 +35,51 @@ namespace Microsoft.Interop.JavaScript
             }
             bool isToJs = info.ManagedIndex != TypePositionInfo.ReturnIndex ^ context is JSExportCodeContext;
 
-            switch (info)
+            switch (jsMarshalingInfo)
             {
                 // invalid
-                case { ManagedType: JSInvalidTypeInfo }:
+                case { TypeInfo: JSInvalidTypeInfo }:
                     throw new MarshallingNotSupportedException(info, context);
 
                 // void
-                case { ManagedType: SpecialTypeInfo sd } when sd.SpecialType == SpecialType.System_Void && jsMarshalingInfo.JSType == JSTypeFlags.Discard:
-                case { ManagedType: SpecialTypeInfo sv } when sv.SpecialType == SpecialType.System_Void && jsMarshalingInfo.JSType == JSTypeFlags.Void:
-                case { ManagedType: SpecialTypeInfo sn } when sn.SpecialType == SpecialType.System_Void && jsMarshalingInfo.JSType == JSTypeFlags.None:
-                case { ManagedType: SpecialTypeInfo sm } when sm.SpecialType == SpecialType.System_Void && jsMarshalingInfo.JSType == JSTypeFlags.Missing:
+                case { TypeInfo: JSSimpleTypeInfo(KnownManagedType.Void), JSType: JSTypeFlags.Discard }:
+                case { TypeInfo: JSSimpleTypeInfo(KnownManagedType.Void), JSType: JSTypeFlags.Void }:
+                case { TypeInfo: JSSimpleTypeInfo(KnownManagedType.Void), JSType: JSTypeFlags.None }:
+                case { TypeInfo: JSSimpleTypeInfo(KnownManagedType.Void), JSType: JSTypeFlags.Missing }:
                     return new VoidGenerator(jsMarshalingInfo.JSType == JSTypeFlags.Void ? MarshalerType.Void : MarshalerType.Discard);
 
                 // discard no void
-                case { } when jsMarshalingInfo.JSType == JSTypeFlags.Discard:
+                case { JSType: JSTypeFlags.Discard }:
                     throw fail(SR.DiscardOnlyVoid);
 
                 // primitive
-                case { ManagedType: JSSimpleTypeInfo simple }:
+                case { TypeInfo: JSSimpleTypeInfo simple }:
                     return Create(info, isToJs, simple.KnownType, Array.Empty<KnownManagedType>(), jsMarshalingInfo.JSType, Array.Empty<JSTypeFlags>(), fail);
 
                 // nullable
-                case { ManagedType: JSNullableTypeInfo nullable }:
+                case { TypeInfo: JSNullableTypeInfo nullable }:
                     return Create(info, isToJs, nullable.KnownType, new[] { nullable.ResultTypeInfo.KnownType }, jsMarshalingInfo.JSType, null, fail);
 
                 // array
-                case { ManagedType: JSArrayTypeInfo array }:
+                case { TypeInfo: JSArrayTypeInfo array }:
                     return Create(info, isToJs, array.KnownType, new[] { array.ElementTypeInfo.KnownType }, jsMarshalingInfo.JSType, jsMarshalingInfo.JSTypeArguments, fail);
 
                 // array segment
-                case { ManagedType: JSArraySegmentTypeInfo segment }:
+                case { TypeInfo: JSArraySegmentTypeInfo segment }:
                     return Create(info, isToJs, segment.KnownType, new[] { segment.ElementTypeInfo.KnownType }, jsMarshalingInfo.JSType, jsMarshalingInfo.JSTypeArguments, fail);
 
                 // span
-                case { ManagedType: JSSpanTypeInfo span }:
+                case { TypeInfo: JSSpanTypeInfo span }:
                     return Create(info, isToJs, span.KnownType, new[] { span.ElementTypeInfo.KnownType }, jsMarshalingInfo.JSType, jsMarshalingInfo.JSTypeArguments, fail);
 
                 // task
-                case { ManagedType: JSTaskTypeInfo task } when task.ResultTypeInfo is JSSimpleTypeInfo taskRes && taskRes.FullTypeName == "void":
+                case { TypeInfo: JSTaskTypeInfo(JSSimpleTypeInfo(KnownManagedType.Void)) task }:
                     return Create(info, isToJs, task.KnownType, Array.Empty<KnownManagedType>(), jsMarshalingInfo.JSType, jsMarshalingInfo.JSTypeArguments, fail);
-                case { ManagedType: JSTaskTypeInfo task }:
+                case { TypeInfo: JSTaskTypeInfo task }:
                     return Create(info, isToJs, task.KnownType, new[] { task.ResultTypeInfo.KnownType }, jsMarshalingInfo.JSType, jsMarshalingInfo.JSTypeArguments, fail);
 
                 // action + function
-                case { ManagedType: JSFunctionTypeInfo function }:
+                case { TypeInfo: JSFunctionTypeInfo function }:
                     return Create(info, isToJs, function.KnownType, function.ArgsTypeInfo.Select(a => a.KnownType).ToArray(), jsMarshalingInfo.JSType, jsMarshalingInfo.JSTypeArguments, fail);
 
                 default:

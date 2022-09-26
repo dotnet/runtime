@@ -27,15 +27,16 @@ namespace System.Formats.Tar
         /// Initializes a <see cref="TarReader"/> instance that can read tar entries from the specified stream, and can optionally leave the stream open upon disposal of this instance.
         /// </summary>
         /// <param name="archiveStream">The stream to read from.</param>
-        /// <param name="leaveOpen"><see langword="false"/> to dispose the <paramref name="archiveStream"/> when this instance is disposed; <see langword="true"/> to leave the stream open.</param>
-        /// <exception cref="IOException"><paramref name="archiveStream"/> is unreadable.</exception>
+        /// <param name="leaveOpen"><see langword="false"/> to dispose the <paramref name="archiveStream"/> when this instance is disposed, as well as all the non-null <see cref="TarEntry.DataStream"/> instances from the entries that were visited by this reader; <see langword="true"/> to leave all the streams open.</param>
+        /// <exception cref="ArgumentException"><paramref name="archiveStream"/> does not support reading.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="archiveStream"/> is <see langword="null"/>.</exception>
         public TarReader(Stream archiveStream, bool leaveOpen = false)
         {
             ArgumentNullException.ThrowIfNull(archiveStream);
 
             if (!archiveStream.CanRead)
             {
-                throw new IOException(SR.IO_NotSupported_UnreadableStream);
+                throw new ArgumentException(SR.IO_NotSupported_UnreadableStream, nameof(archiveStream));
             }
 
             _archiveStream = archiveStream;
@@ -47,7 +48,7 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// Disposes the current <see cref="TarReader"/> instance, and disposes the streams of all the entries that were read from the archive.
+        /// Disposes the current <see cref="TarReader"/> instance, and disposes the non-null <see cref="TarEntry.DataStream"/> instances of all the entries that were read from the archive.
         /// </summary>
         /// <remarks>The <see cref="TarEntry.DataStream"/> property of any entry can be replaced with a new stream. If the user decides to replace it on a <see cref="TarEntry"/> instance that was obtained using a <see cref="TarReader"/>, the underlying stream gets disposed immediately, freeing the <see cref="TarReader"/> of origin from the responsibility of having to dispose it.</remarks>
         public void Dispose()
@@ -67,7 +68,7 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// Asynchronously disposes the current <see cref="TarReader"/> instance, and disposes the streams of all the entries that were read from the archive.
+        /// Asynchronously disposes the current <see cref="TarReader"/> instance, and disposes the non-null <see cref="TarEntry.DataStream"/> instances of all the entries that were read from the archive.
         /// </summary>
         /// <remarks>The <see cref="TarEntry.DataStream"/> property of any entry can be replaced with a new stream. If the user decides to replace it on a <see cref="TarEntry"/> instance that was obtained using a <see cref="TarReader"/>, the underlying stream gets disposed immediately, freeing the <see cref="TarReader"/> of origin from the responsibility of having to dispose it.</remarks>
         public async ValueTask DisposeAsync()
@@ -93,7 +94,7 @@ namespace System.Formats.Tar
         /// <para>Set it to <see langword="false"/> if the data should not be copied into a new stream. If the underlying stream is unseekable, the user has the responsibility of reading and processing the <see cref="TarEntry.DataStream"/> immediately after calling this method.</para>
         /// <para>The default value is <see langword="false"/>.</para></param>
         /// <returns>A <see cref="TarEntry"/> instance if a valid entry was found, or <see langword="null"/> if the end of the archive has been reached.</returns>
-        /// <exception cref="FormatException"><para>The archive is malformed.</para>
+        /// <exception cref="InvalidDataException"><para>The entry's data is malformed.</para>
         /// <para>-or-</para>
         /// <para>The archive contains entries in different formats.</para>
         /// <para>-or-</para>
@@ -153,7 +154,7 @@ namespace System.Formats.Tar
         /// <para>The default value is <see langword="false"/>.</para></param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None" />.</param>
         /// <returns>A value task containing a <see cref="TarEntry"/> instance if a valid entry was found, or <see langword="null"/> if the end of the archive has been reached.</returns>
-        /// <exception cref="FormatException"><para>The archive is malformed.</para>
+        /// <exception cref="InvalidDataException"><para>The archive is malformed.</para>
         /// <para>-or-</para>
         /// <para>The archive contains entries in different formats.</para>
         /// <para>-or-</para>
@@ -400,7 +401,7 @@ namespace System.Formats.Tar
                 TarEntryType.LongLink or
                 TarEntryType.LongPath)
             {
-                throw new FormatException(string.Format(SR.TarUnexpectedMetadataEntry, actualHeader._typeFlag, TarEntryType.ExtendedAttributes));
+                throw new InvalidDataException(string.Format(SR.TarUnexpectedMetadataEntry, actualHeader._typeFlag, TarEntryType.ExtendedAttributes));
             }
 
             // Replace all the attributes representing standard fields with the extended ones, if any
@@ -432,13 +433,13 @@ namespace System.Formats.Tar
                 TarEntryType.LongLink or
                 TarEntryType.LongPath)
             {
-                throw new FormatException(string.Format(SR.TarUnexpectedMetadataEntry, actualHeader._typeFlag, TarEntryType.ExtendedAttributes));
+                throw new InvalidDataException(string.Format(SR.TarUnexpectedMetadataEntry, actualHeader._typeFlag, TarEntryType.ExtendedAttributes));
             }
 
             // Can't have two extended attribute metadata entries in a row
             if (actualHeader._typeFlag is TarEntryType.ExtendedAttributes)
             {
-                throw new FormatException(string.Format(SR.TarUnexpectedMetadataEntry, TarEntryType.ExtendedAttributes, TarEntryType.ExtendedAttributes));
+                throw new InvalidDataException(string.Format(SR.TarUnexpectedMetadataEntry, TarEntryType.ExtendedAttributes, TarEntryType.ExtendedAttributes));
             }
 
             // Replace all the attributes representing standard fields with the extended ones, if any
@@ -467,7 +468,7 @@ namespace System.Formats.Tar
             // Can't have two identical metadata entries in a row
             if (secondHeader._typeFlag == header._typeFlag)
             {
-                throw new FormatException(string.Format(SR.TarUnexpectedMetadataEntry, secondHeader._typeFlag, header._typeFlag));
+                throw new InvalidDataException(string.Format(SR.TarUnexpectedMetadataEntry, secondHeader._typeFlag, header._typeFlag));
             }
 
             // It's possible to have the two different metadata entries in a row
@@ -485,7 +486,7 @@ namespace System.Formats.Tar
                 // Can't have three GNU metadata entries in a row
                 if (thirdHeader._typeFlag is TarEntryType.LongLink or TarEntryType.LongPath)
                 {
-                    throw new FormatException(string.Format(SR.TarUnexpectedMetadataEntry, thirdHeader._typeFlag, secondHeader._typeFlag));
+                    throw new InvalidDataException(string.Format(SR.TarUnexpectedMetadataEntry, thirdHeader._typeFlag, secondHeader._typeFlag));
                 }
 
                 if (header._typeFlag is TarEntryType.LongLink)
@@ -542,7 +543,7 @@ namespace System.Formats.Tar
             // Can't have two identical metadata entries in a row
             if (secondHeader._typeFlag == header._typeFlag)
             {
-                throw new FormatException(string.Format(SR.TarUnexpectedMetadataEntry, secondHeader._typeFlag, header._typeFlag));
+                throw new InvalidDataException(string.Format(SR.TarUnexpectedMetadataEntry, secondHeader._typeFlag, header._typeFlag));
             }
 
             TarHeader finalHeader;
@@ -561,7 +562,7 @@ namespace System.Formats.Tar
                 // Can't have three GNU metadata entries in a row
                 if (thirdHeader._typeFlag is TarEntryType.LongLink or TarEntryType.LongPath)
                 {
-                    throw new FormatException(string.Format(SR.TarUnexpectedMetadataEntry, thirdHeader._typeFlag, secondHeader._typeFlag));
+                    throw new InvalidDataException(string.Format(SR.TarUnexpectedMetadataEntry, thirdHeader._typeFlag, secondHeader._typeFlag));
                 }
 
                 if (header._typeFlag is TarEntryType.LongLink)

@@ -888,6 +888,9 @@
 /* Define to 1 if you have /usr/include/malloc.h. */
 #cmakedefine HAVE_USR_INCLUDE_MALLOC_H 1
 
+/* Define to 1 if you have linux cgroups */
+#cmakedefine HAVE_CGROUP_SUPPORT 1
+
 /* The architecture this is running on */
 #define MONO_ARCHITECTURE @MONO_ARCHITECTURE@
 

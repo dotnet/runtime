@@ -1931,6 +1931,7 @@ struct CORINFO_VarArgInfo
 #define SIZEOF__CORINFO_Object                            TARGET_POINTER_SIZE /* methTable */
 
 #define CORINFO_Array_MaxLength                           0x7FFFFFC7
+#define CORINFO_String_MaxLength                          0x3FFFFFDF
 
 #define OFFSETOF__CORINFO_Array__length                   SIZEOF__CORINFO_Object
 #ifdef TARGET_64BIT
@@ -2264,6 +2265,13 @@ public:
             int                         bufferSize  /* IN  */
             ) = 0;
 
+    // Calls ToString() for given pinned/frozen object handle
+    virtual int objectToString (
+            void*                       handle,     /* IN  */
+            char*                       buffer,     /* OUT */
+            int                         bufferSize  /* IN  */
+            ) = 0;
+
     /**********************************************************************************/
     //
     // ICorClassInfo
@@ -2471,6 +2479,10 @@ public:
     // helper has been created.
 
     virtual CorInfoHelpFunc getUnBoxHelper(
+            CORINFO_CLASS_HANDLE        cls
+            ) = 0;
+
+    virtual void* getRuntimeTypePointer(
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
@@ -2893,9 +2905,15 @@ public:
             CORINFO_METHOD_HANDLE hMethod
             ) = 0;
 
-    // this function is for debugging only.  It returns the method name
-    // and if 'moduleName' is non-null, it sets it to something that will
-    // says which method (a class name, or a module name)
+    // This function returns the method name and if 'moduleName' is non-null,
+    // it sets it to something that contains the method (a class
+    // name, or a module name). Note that the moduleName parameter is for
+    // diagnostics only.
+    //
+    // The method name returned is the same as getMethodNameFromMetadata except
+    // in the case of functions without metadata (e.g. IL stubs), where this
+    // function still returns a reasonable name while getMethodNameFromMetadata
+    // returns null.
     virtual const char* getMethodName (
             CORINFO_METHOD_HANDLE       ftn,        /* IN */
             const char                **moduleName  /* OUT */

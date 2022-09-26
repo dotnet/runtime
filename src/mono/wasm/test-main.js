@@ -205,7 +205,7 @@ const App = {
         if ((arguments.length > 2) && (typeof (signature) !== "string"))
             throw new Error("Invalid number of arguments for call_test_method");
 
-        const fqn = "[System.Private.Runtime.InteropServices.JavaScript.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name;
+        const fqn = "[System.Runtime.InteropServices.JavaScript.Legacy.UnitTests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name;
         try {
             const method = App.runtime.BINDING.bind_static_method(fqn, signature);
             return method.apply(null, args || []);
@@ -259,6 +259,7 @@ async function run() {
             .withVirtualWorkingDirectory(runArgs.workingDirectory)
             .withEnvironmentVariables(runArgs.environmentVariables)
             .withDiagnosticTracing(runArgs.diagnosticTracing)
+            .withExitOnUnhandledError()
             .withExitCodeLogging()
             .withElementOnExit();
 
@@ -266,7 +267,7 @@ async function run() {
             dotnet
                 .withEnvironmentVariable("NodeJSPlatform", process.platform)
                 .withAsyncFlushOnExit();
-            
+
             const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
             if (modulesToLoad) {
                 dotnet.withModuleConfig({
@@ -292,7 +293,7 @@ async function run() {
         App.runtime = await dotnet.create();
         App.runArgs = runArgs
 
-        console.info("Initializing.....");
+        console.info("Initializing dotnet version " + App.runtime.runtimeBuildInfo.productVersion + " commit hash " + App.runtime.runtimeBuildInfo.gitHash);
 
         for (let i = 0; i < runArgs.profilers.length; ++i) {
             const init = App.runtime.Module.cwrap('mono_wasm_load_profiler_' + runArgs.profilers[i], 'void', ['string']);
