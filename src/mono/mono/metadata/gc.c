@@ -249,6 +249,15 @@ mono_gc_run_finalize (void *obj, void *data)
 			return;
 	}
 
+	if (o->vtable->klass == mono_defaults.weakreference_class ||
+	    o->vtable->klass == mono_defaults.generic_weakreference_class) {
+		MonoWeakReference *wr = (MonoWeakReference*)o;
+		MonoGCHandle gc_handle = (MonoGCHandle)(wr->handleAndKind & ~(gsize)1);
+		mono_gchandle_free_internal (gc_handle);
+		wr->handleAndKind &= (gsize)1;
+		return;
+	}
+
 	if (m_class_get_image (mono_object_class (o)) == mono_defaults.corlib && !strcmp (o_name, "DynamicMethod") && finalizing_root_domain) {
 		/*
 		 * These can't be finalized during unloading/shutdown, since that would

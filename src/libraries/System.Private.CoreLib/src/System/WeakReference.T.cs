@@ -130,8 +130,6 @@ namespace System
             }
         }
 
-// eager finalization is NYI on Mono
-#if !MONO
         // Note: While WeakReference<T> is formally a finalizable type, the finalizer does not actually run.
         //       Instead the instances are treated specially in GC when scanning for no longer strongly-reachable
         //       finalizable objects.
@@ -141,21 +139,6 @@ namespace System
             Debug.Assert(false, " WeakReference<T> finalizer should never run");
         }
 #pragma warning restore CA1821 // Remove empty Finalizers
-
-#else
-        // Free all system resources associated with this reference.
-        ~WeakReference()
-        {
-            IntPtr handle = Handle;
-            if (handle != default(IntPtr))
-            {
-                GCHandle.InternalFree(handle);
-
-                // keep the bit that indicates whether this reference was tracking resurrection
-                _handleAndKind &= TracksResurrectionBit;
-            }
-        }
-#endif
 
 #endif
     }
