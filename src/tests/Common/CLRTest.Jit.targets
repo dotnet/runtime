@@ -222,7 +222,10 @@ IF NOT DEFINED DoLink (
           DependsOnTargets="GetDisasmCheckData">
     <PropertyGroup>
       <HasBashDisasmCheck>false</HasBashDisasmCheck>
-      <HasBashDisasmCheck Condition="'$(HasDisasmCheck)' == 'true' and '$(RuntimeFlavor)' == 'coreclr' and ('$(TargetOS)' == 'Linux' or '$(TargetOS)' == 'OSX') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')">true</HasBashDisasmCheck>
+      <HasBashDisasmCheck Condition="'$(HasDisasmCheck)' == 'true' and '$(RuntimeFlavor)' == 'coreclr' and ('$(TargetOS)' == 'Linux' or '$(TargetOS)' == 'OSX') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64') and '$(RunCrossGen2)' != 'true' and '$(RuntimeIdentifier)' != 'linux-musl-arm64' and '$(RuntimeIdentifier)' != 'linux-musl-arm'">true</HasBashDisasmCheck>
+
+      <GCStressIncompatible Condition="'$(HasBashDisasmCheck)' == 'true'">true</GCStressIncompatible>
+      <HeapVerifyIncompatible Condition="'$(HasBashDisasmCheck)' == 'true'">true</HeapVerifyIncompatible>
 
       <BashDisasmOutputFile>/dev/null</BashDisasmOutputFile>
       <BashDisasmOutputFile Condition="'$(HasBashDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm.out</BashDisasmOutputFile>
@@ -231,29 +234,33 @@ IF NOT DEFINED DoLink (
       <BashDisasmListOutputFile Condition="'$(HasBashDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm_list.out</BashDisasmListOutputFile>
 
       <BashCLRTestPreCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
-@(DisasmCheckFiles -> '  dotnet $CORE_ROOT/SuperFileCheck/SuperFileCheck.dll --csharp-list-method-names "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) > "$(BashDisasmListOutputFile)"
-  ERRORLEVEL=$?
-  export COMPlus_JitDisasm=`cat $(BashDisasmListOutputFile)`
-  export COMPlus_JitDiffableDasm=1
-  export COMPlus_JitStdOutFile=$(BashDisasmOutputFile)
-  if [[ $ERRORLEVEL -ne 0 ]]
-  then
-    echo EXECUTION OF FILECHECK - FAILED $ERRORLEVEL
-    exit 1
-  fi', '%0a')
-]]>
-      </BashCLRTestPreCommands>
-
-      <BashDisasmCheckPostCommands></BashDisasmCheckPostCommands>
-      <BashDisasmCheckPostCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
-if [[ -n $COMPlus_JitDisasm ]]; then
-  @(DisasmCheckFiles -> '  dotnet $CORE_ROOT/SuperFileCheck/SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) --dump-input-context 25 --input-file "$(BashDisasmOutputFile)"
+if [[ "$COMPlus_TieredPGO" != "1" ]]; then
+  @(DisasmCheckFiles -> '  dotnet $CORE_ROOT/SuperFileCheck/SuperFileCheck.dll --csharp-list-method-names "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) > "$(BashDisasmListOutputFile)"
     ERRORLEVEL=$?
+    export COMPlus_JitDisasm=`cat $(BashDisasmListOutputFile)`
+    export COMPlus_JitDiffableDasm=1
+    export COMPlus_JitStdOutFile=$(BashDisasmOutputFile)
     if [[ $ERRORLEVEL -ne 0 ]]
     then
       echo EXECUTION OF FILECHECK - FAILED $ERRORLEVEL
       exit 1
     fi', '%0a')
+fi
+]]>
+      </BashCLRTestPreCommands>
+
+      <BashDisasmCheckPostCommands></BashDisasmCheckPostCommands>
+      <BashDisasmCheckPostCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
+if [[ "$COMPlus_TieredPGO" != "1" ]]; then
+  if [[ -n $COMPlus_JitDisasm ]]; then
+    @(DisasmCheckFiles -> '  dotnet $CORE_ROOT/SuperFileCheck/SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) --dump-input-context 25 --input-file "$(BashDisasmOutputFile)"
+      ERRORLEVEL=$?
+      if [[ $ERRORLEVEL -ne 0 ]]
+      then
+        echo EXECUTION OF FILECHECK - FAILED $ERRORLEVEL
+        exit 1
+      fi', '%0a')
+  fi
 fi
 ]]>
       </BashDisasmCheckPostCommands>
@@ -265,7 +272,10 @@ fi
           DependsOnTargets="GetDisasmCheckData">
     <PropertyGroup>
       <HasBatchDisasmCheck>false</HasBatchDisasmCheck>
-      <HasBatchDisasmCheck Condition="'$(HasDisasmCheck)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">true</HasBatchDisasmCheck>
+      <HasBatchDisasmCheck Condition="'$(HasDisasmCheck)' == 'true' and '$(RuntimeFlavor)' == 'coreclr' and '$(RunCrossGen2)' != 'true'">true</HasBatchDisasmCheck>
+
+      <GCStressIncompatible Condition="'$(HasBatchDisasmCheck)' == 'true'">true</GCStressIncompatible>
+      <HeapVerifyIncompatible Condition="'$(HasBatchDisasmCheck)' == 'true'">true</HeapVerifyIncompatible>
 
       <BatchDisasmOutputFile>NUL</BatchDisasmOutputFile>
       <BatchDisasmOutputFile Condition="'$(HasBatchDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm.out</BatchDisasmOutputFile>
@@ -276,25 +286,29 @@ fi
       <CLRTestBatchPreCommands Condition="'$(HasBatchDisasmCheck)' == 'true'">
 <![CDATA[
       $(CLRTestBatchPreCommands)
-@(DisasmCheckFiles -> '  dotnet %CORE_ROOT%\SuperFileCheck\SuperFileCheck.dll --csharp-list-method-names "%(Identity)" --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) > "$(BatchDisasmListOutputFile)"
-  IF NOT "!ERRORLEVEL!" == "0" (
-    ECHO EXECUTION OF FILECHECK LISTING METHOD NAMES - FAILED !ERRORLEVEL!
-    Exit /b 1
-  )', '%0d%0a')
-  for /F "delims=" %%g in ($(BatchDisasmListOutputFile)) do set COMPlus_JitDisasm=%%g
-  set COMPlus_JitDiffableDasm=1
-  set COMPlus_JitStdOutFile=$(BatchDisasmOutputFile)
+IF NOT "%COMPlus_TieredPGO%" == "1" (
+  @(DisasmCheckFiles -> '  dotnet %CORE_ROOT%\SuperFileCheck\SuperFileCheck.dll --csharp-list-method-names "%(Identity)" --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) > "$(BatchDisasmListOutputFile)"
+    IF NOT "!ERRORLEVEL!" == "0" (
+      ECHO EXECUTION OF FILECHECK LISTING METHOD NAMES - FAILED !ERRORLEVEL!
+      Exit /b 1
+    )', '%0d%0a')
+    for /F "delims=" %%g in ($(BatchDisasmListOutputFile)) do set COMPlus_JitDisasm=%%g
+    set COMPlus_JitDiffableDasm=1
+    set COMPlus_JitStdOutFile=$(BatchDisasmOutputFile)
+)
 ]]>
       </CLRTestBatchPreCommands>
 
       <BatchDisasmCheckPostCommands></BatchDisasmCheckPostCommands>
       <BatchDisasmCheckPostCommands Condition="'$(HasBatchDisasmCheck)' == 'true'"><![CDATA[
-IF NOT "%COMPlus_JitDisasm%" == "" (
-  @(DisasmCheckFiles -> '  dotnet %CORE_ROOT%\SuperFileCheck\SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) --dump-input-context 25 --input-file "$(BatchDisasmOutputFile)"
-    IF NOT "!ERRORLEVEL!" == "0" (
-      ECHO EXECUTION OF FILECHECK - FAILED !ERRORLEVEL!
-      Exit /b 1
-    )', '%0d%0a')
+IF NOT "%COMPlus_TieredPGO%" == "1" (
+  IF NOT "%COMPlus_JitDisasm%" == "" (
+    @(DisasmCheckFiles -> '  dotnet %CORE_ROOT%\SuperFileCheck\SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) --dump-input-context 25 --input-file "$(BatchDisasmOutputFile)"
+      IF NOT "!ERRORLEVEL!" == "0" (
+        ECHO EXECUTION OF FILECHECK - FAILED !ERRORLEVEL!
+        Exit /b 1
+      )', '%0d%0a')
+  )
 )
 ]]>
       </BatchDisasmCheckPostCommands>
