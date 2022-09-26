@@ -1,7 +1,7 @@
 
 # .NET memory model
 
-## ECMA 335 vs. .NET memory models.
+## ECMA 335 vs. .NET memory models
 ECMA 335 standard defines a very weak memory model. After two decades the desire to have a flexible model did not result in considerable benefits due to hardware being more strict. On the other hand programming against ECMA model requires extra complexity to handle scenarios that are hard to comprehend and not possible to test.
 
 In the course of multiple releases .NET runtime implementations settled around a memory model that is a practical compromise between what can be implemented efficiently on the current hardware, while staying reasonably approachable by the developers. This document rationalizes the invariants provided and expected by the .NET runtimes in their current implementation with expectation of that being carried to future releases.
@@ -28,7 +28,7 @@ The following methods perform atomic memory accesses regardless of the platform 
 
 **Example:** `Volatile.Read<double>(ref location)` on a 32 bit platform is atomic, while an ordinary read of `location` may not be.
 
-## Unmanaged memory access.
+## Unmanaged memory access
 As unmanaged pointers can point to any addressable memory, operations with such pointers may violate guarantees provided by the runtime and expose undefined or platform-specific behavior.
 **Example:** memory accesses through pointers which are *not properly aligned* may be not atomic or cause faults depending on the platform and hardware configuration.
 
@@ -40,7 +40,7 @@ These facilities ensure fault-free access to potentially unaligned locations, bu
 
 As of this writing there is no specific support for operating with incoherent memory, device memory or similar. Passing non-ordinary memory to the runtime by the means of pointer operations or native interop results in Undefined Behavior.
 
-## Sideeffects and optimizations of memory accesses.
+## Sideeffects and optimizations of memory accesses
 .NET runtime assumes that the sideeffects of memory reads and writes include only changing and observing values at specified memory locations. This applies to all reads and writes - volatile or not. **This is different from ECMA model.**
 
 As a consequence:
@@ -50,14 +50,14 @@ As a consequence:
 * Adjacent nonvolatile reads from the same location can be coalesced.
 * Adjacent nonvolatile writes to the same location can be coalesced.
 
-## Thread-local memory accesses.
+## Thread-local memory accesses
 It may be possible for an optimizing compiler to prove that some data is accessible only by a single thread. In such case it is permitted to perform further optimizations such as duplicating or removal of memory accesses.
 
-## Cross-thread access to local variables.
+## Cross-thread access to local variables
 -	There is no type-safe mechanism for accessing locations on one thread’s stack from another thread.
 -	Accessing managed references located on the stack of a different thread by the means of unsafe code will result in Undefined Behavior.
 
-## Order of memory operations.
+## Order of memory operations
 * **Ordinary memory accesses**
 The effects of ordinary reads and writes can be reordered as long as that preserves single-thread consistency. Such reordering can happen both due to code generation strategy of the compiler or due to weak memory ordering in the hardware.
 
@@ -94,7 +94,7 @@ It may be possible for an optimizing compiler to prove that some data is accessi
      - `System.Thread.MemoryBarrier`
      - `System.Threading.Interlocked` methods
 
-## C# `volatile` feature.
+## C# `volatile` feature
 One common way to introduce volatile memory accesses is by using C# `volatile` language feature. Declaring a field as `volatile` does not have any effect on how .NET runtime treats the field. The decoration works as a hint to the C# compiler itself (and compilers for other .Net languages) to emit reads and writes of such field as  reads and writes with `volatile.` prefix.
 
 ## Process-wide barrier
@@ -102,10 +102,10 @@ Process-wide barrier has full-fence semantics with an additional guarantee that 
 
 The actual implementation may vary depending on the platform. For example interrupting the execution of every core in the current process' affinity mask could be a suitable implementation.
 
-## Synchronized methods.
+## Synchronized methods
 Methods decorated with ```MethodImpl(MethodImplOptions.Synchronized)``` attribute have the same memory access semantics as if a lock is acquired at an entrance to the method and released upon leaving the method.
 
-## Data-dependent reads are ordered.
+## Data-dependent reads are ordered
 Memory ordering honors data dependency. When performing indirect reads from a location derived from a reference, it is guaranteed that reading of the data will not happen ahead of obtaining the reference.
 **Example:** reading a field, will not use a cached value fetched from the location of the field prior obtaining a reference to the instance.
 
@@ -146,7 +146,7 @@ Either the platform defaults to release consistency or stronger (i.e. x64 is TSO
 *	It is possible to guarantee ordering of data dependent reads.
 Either the platform honors data dependedncy by default (all currently supported platforms), or provides means to order data dependent reads via fencing operations.
 
-## Examples and common patterns:
+## Examples and common patterns
 The following examples work correctly on all supported implementations of .NET runtime regardless of the target OS or architecture.
 
 *   Constructing an instance and sharing with another thread is safe and does not require explicit fences.
@@ -251,7 +251,7 @@ public class Singleton
 }
 ```
 
-* Communicating with another thread by checking a flag.
+* Communicating with another thread by checking a flag
 
 ```cs
 internal class Program
