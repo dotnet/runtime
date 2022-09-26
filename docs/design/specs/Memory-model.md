@@ -105,6 +105,10 @@ The actual implementation may vary depending on the platform. For example interr
 ## Synchronized methods.
 Methods decorated with ```MethodImpl(MethodImplOptions.Synchronized)``` attribute have the same memory access semantics as if a lock is acquired at an entrance to the method and released upon leaving the method.
 
+## Data-dependent reads are ordered.
+In all implementations of .NET runtime, memory ordering honors data dependency. When performing indirect reads from a location derived from a reference, it is guaranteed that reading of the data will not happen ahead of obtaining the reference.
+**Example:** reading a field, will not use a cached value fetched from the location of the field prior obtaining a reference to the instance.
+
 ## Object assignment
 Object assignment to a location potentially accessible by other threads is a release with respect to write operations to the instance’s fields and metadata.
 The motivation is to ensure that storing an object reference to shared memory acts as a "committing point" to all modifications that are reachable through the instance reference. It also guarantees that a freshly allocated instance is valid (i.e. method table and necessary flags are set) when other threads, including background GC threads are able to access the instance.
@@ -137,9 +141,8 @@ That applies even for locations targeted by overlapping aligned reads and writes
 *	It is possible to implement release consistency memory model.
 Either the platform defaults to release consistency or stronger (i.e. x64 is TSO, which is stronger), or provides means to implement release consistency via fencing operations.
 
-*	Memory ordering honors data dependency
-**Example:** reading a field, will not use a cached value fetched from the location of the field prior obtaining a reference to the instance.
-(Some versions of Alpha processors did not support this, most current architectures do)
+*	It is possible to guarantee ordering of data dependent reads.
+Either the platform honors data dependedncy by default (all currently supported platforms), or provides means to order data dependent reads via fencing operations.
 
 ## Examples and common patterns:
 The following examples work correctly on all supported implementations of .NET runtime regardless of the target OS or architecture.
