@@ -17,6 +17,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     /***********************************************************/
 
     //[TestCase(Name = "XsltArgumentList - GetParam", Desc = "Get Param Test Cases")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CArgIntegrity : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;

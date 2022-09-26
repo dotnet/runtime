@@ -715,6 +715,51 @@ int CEEInfo::getStringLiteral (
     return result;
 }
 
+int CEEInfo::objectToString (
+        void* handle,
+        char* buffer,
+        int   bufferSize)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    int charsCount = 0;
+
+    // NOTE: this function is used for pinned/frozen handles
+    // it doesn't need to null-terminate the string
+
+    _ASSERT(handle != nullptr && buffer != nullptr && bufferSize > 0);
+
+    JIT_TO_EE_TRANSITION();
+
+    Object* obj = (Object*)handle;
+
+    GCX_COOP();
+
+    StackSString stackStr;
+
+    // Currently only supported for String and RuntimeType
+    if (obj->GetMethodTable()->IsString())
+    {
+        ((StringObject*)obj)->GetSString(stackStr);
+    }
+    else if (obj->GetMethodTable() == g_pRuntimeTypeClass)
+    {
+        ((ReflectClassBaseObject*)obj)->GetType().GetName(stackStr);
+    }
+
+    const UTF8* utf8data = stackStr.GetUTF8();
+    charsCount = stackStr.GetCount();
+    memcpy((BYTE*)buffer, (BYTE*)utf8data, min(bufferSize, charsCount));
+
+    EE_TO_JIT_TRANSITION();
+
+    return charsCount;
+}
+
 /* static */
 size_t CEEInfo::findNameOfToken (Module* module,
                                                  mdToken metaTOK,
@@ -5943,6 +5988,31 @@ CorInfoHelpFunc CEEInfo::getUnBoxHelper(CORINFO_CLASS_HANDLE clsHnd)
         return CORINFO_HELP_UNBOX_NULLABLE;
 
     return CORINFO_HELP_UNBOX;
+}
+
+/***********************************************************************/
+void* CEEInfo::getRuntimeTypePointer(CORINFO_CLASS_HANDLE clsHnd)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    void* pointer = nullptr;
+
+    JIT_TO_EE_TRANSITION();
+
+    TypeHandle typeHnd(clsHnd);
+    if (!typeHnd.IsCanonicalSubtype() && typeHnd.IsManagedClassObjectPinned())
+    {
+        GCX_COOP();
+        pointer = OBJECTREFToObject(typeHnd.GetManagedClassObject());
+    }
+
+    EE_TO_JIT_TRANSITION();
+
+    return pointer;
 }
 
 /***********************************************************************/

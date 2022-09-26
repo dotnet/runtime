@@ -27,6 +27,15 @@ using System.Text;
 
 namespace Internal.JitInterface
 {
+    class InfiniteCompileStress
+    {
+        public static bool Enabled;
+        static InfiniteCompileStress()
+        {
+            Enabled = JitConfigProvider.Instance.GetIntConfigValue("InfiniteCompileStress", 0) != 0;
+        }
+    }
+
     internal class RequiresRuntimeJitIfUsedSymbol
     {
         public RequiresRuntimeJitIfUsedSymbol(string message)
@@ -441,6 +450,7 @@ namespace Internal.JitInterface
         private UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
         private List<ISymbolNode> _precodeFixups;
         private List<EcmaMethod> _ilBodiesNeeded;
+        private Dictionary<TypeDesc, bool> _preInitedTypes = new Dictionary<TypeDesc, bool>();
 
         public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
             : this()
@@ -543,7 +553,7 @@ namespace Internal.JitInterface
         partial void DetermineIfCompilationShouldBeRetried(ref CompilationResult result)
         {
             // If any il bodies need to be recomputed, force recompilation
-            if (_ilBodiesNeeded != null)
+            if ((_ilBodiesNeeded != null) || InfiniteCompileStress.Enabled)
             {
                 _compilation.PrepareForCompilationRetry(_methodCodeNode, _ilBodiesNeeded);
                 result = CompilationResult.CompilationRetryRequested;
@@ -1357,57 +1367,64 @@ namespace Internal.JitInterface
             return CorInfoHelpFunc.CORINFO_HELP_NEWARR_1_DIRECT;
         }
 
-        private static bool IsClassPreInited(TypeDesc type)
+        private bool IsClassPreInited(TypeDesc type)
         {
             if (type.IsGenericDefinition)
             {
                 return true;
             }
-            if (type.HasStaticConstructor)
-            {
-                return false;
-            }
-            if (HasBoxedRegularStatics(type))
-            {
-                return false;
-            }
-            if (IsDynamicStatics(type))
-            {
-                return false;
-            }
-            return true;
-        }
 
-        private static bool HasBoxedRegularStatics(TypeDesc type)
-        {
-            foreach (FieldDesc field in type.GetFields())
+            var uninstantiatedType = type.GetTypeDefinition();
+
+            if (_preInitedTypes.TryGetValue(uninstantiatedType, out bool preInited))
             {
-                if (field.IsStatic &&
-                    !field.IsLiteral &&
-                    !field.HasRva &&
-                    !field.IsThreadStatic &&
-                    field.FieldType.IsValueType &&
-                    !field.FieldType.UnderlyingType.IsPrimitive)
+                return preInited;
+            }
+
+            preInited = ComputeIsClassPreInited(type);
+            _preInitedTypes.Add(uninstantiatedType, preInited);
+            return preInited;
+
+            static bool ComputeIsClassPreInited(TypeDesc type)
+            {
+                if (type.IsGenericDefinition)
                 {
                     return true;
                 }
-            }
-            return false;
-        }
 
-        private static bool IsDynamicStatics(TypeDesc type)
-        {
-            if (type.HasInstantiation)
+                if (type.HasStaticConstructor)
+                {
+                    return false;
+                }
+                if (IsDynamicStaticsOrHasBoxedRegularStatics(type))
+                {
+                    return false;
+                }
+                return true;
+            }
+
+            static bool IsDynamicStaticsOrHasBoxedRegularStatics(TypeDesc type)
             {
+                bool typeHasInstantiation = type.HasInstantiation;
                 foreach (FieldDesc field in type.GetFields())
                 {
-                    if (field.IsStatic && !field.IsLiteral)
+                    if (!field.IsStatic || field.IsLiteral)
+                        continue;
+
+                    if (typeHasInstantiation)
+                        return true; // Dynamic statics
+
+                    if (!field.HasRva &&
+                        !field.IsThreadStatic &&
+                        field.FieldType.IsValueType &&
+                        !field.FieldType.UnderlyingType.IsPrimitive)
                     {
-                        return true;
+                        return true; // HasBoxedRegularStatics
                     }
                 }
+
+                return false;
             }
-            return false;
         }
 
         private bool IsGenericTooDeeplyNested(Instantiation instantiation, int nestingLevel)
@@ -2729,9 +2746,9 @@ namespace Internal.JitInterface
         private void getAddressOfPInvokeTarget(CORINFO_METHOD_STRUCT_* method, ref CORINFO_CONST_LOOKUP pLookup)
         {
             MethodDesc methodDesc = HandleToObject(method);
-            Debug.Assert(_compilation.CompilationModuleGroup.VersionsWithMethodBody(methodDesc));
             if (methodDesc is IL.Stubs.PInvokeTargetNativeMethod rawPInvoke)
                 methodDesc = rawPInvoke.Target;
+            Debug.Assert(_compilation.CompilationModuleGroup.VersionsWithMethodBody(methodDesc));
             EcmaMethod ecmaMethod = (EcmaMethod)methodDesc;
             ModuleToken moduleToken = new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
             MethodWithToken methodWithToken = new MethodWithToken(ecmaMethod, moduleToken, constrainedType: null, unboxing: false, context: null);

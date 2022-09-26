@@ -11,6 +11,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Int128/Int128Test/*">
             <Issue>https://github.com/dotnet/runtime/issues/74209</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/finalization/CriticalFinalizer/*">
+            <Issue>https://github.com/dotnet/runtime/issues/76041</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All OS/Arch CoreCLR excludes -->
@@ -50,9 +53,6 @@
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/r2rdump/BasicTests/R2RDumpTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/10888 https://github.com/dotnet/runtime/issues/11823 </Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/DevDiv_255294/DevDiv_255294/*">
-            <Issue>https://github.com/dotnet/runtime/issues/44341</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/rvastatics/RVAOrderingTest/*">
             <Issue>https://github.com/dotnet/runtime/issues/55966</Issue>
@@ -562,12 +562,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_45929/test45929/*">
             <Issue>https://github.com/dotnet/runtime/issues/60152</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/GetTotalPauseDuration/*">
-            <Issue>https://github.com/dotnet/runtime/issues/74631</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/GetGCMemoryInfo/*">
-            <Issue>https://github.com/dotnet/runtime/issues/74902</Issue>
-        </ExcludeList>    
     </ItemGroup>
 
     <!-- The following are x64 Unix failures on CoreCLR. -->
@@ -3351,7 +3345,7 @@
 
 
     <ItemGroup Condition=" '$(TargetArchitecture)' == 'wasm' " >
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/critical_finalization/critical_finalization/**">
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/finalization/CriticalFinalizer/**">
             <Issue>https://github.com/dotnet/runtime/issues/75756</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Intrinsics/TypeIntrinsics_r/**">
@@ -3519,7 +3513,7 @@
             <Issue>https://github.com/dotnet/runtime/issues/56804</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/**">
-            <Issue>https://github.com/dotnet/runtime/issues/41520</Issue>
+            <Issue>tries to access project source code - not supported on mobile and wasm</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/mandelbrot/mandelbrot-2/**">
             <Issue>https://github.com/dotnet/runtime/issues/56814</Issue>
@@ -3804,7 +3798,7 @@
             <Issue>https://github.com/dotnet/runtime/issues/70820</Issue>
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/**">
-            <Issue>needs triage</Issue>
+            <Issue>Tries to access project source code - not supported on mobile and wasm</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XUnitTestBinBase)/JIT/Directed/aliasing_retbuf/**/*">
             <Issue>https://github.com/dotnet/runtime/issues/73539</Issue>
@@ -4097,7 +4091,7 @@
         </ExcludeList>
 
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/*">
-            <Issue>CORE_ROOT must be set</Issue>
+            <Issue>Tries to access project source code - not supported on mobile and wasm</Issue>
         </ExcludeList>
 
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_25468/GitHub_25468/**">

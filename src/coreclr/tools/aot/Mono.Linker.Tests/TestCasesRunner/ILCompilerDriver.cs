@@ -73,6 +73,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				logger,
 				Array.Empty<KeyValuePair<string, bool>> (),
 				Array.Empty<string> (),
+				Array.Empty<string> (),
 				options.TrimAssemblies.ToArray ());
 
 			CompilationBuilder builder = new RyuJitCompilationBuilder (typeSystemContext, compilationGroup)

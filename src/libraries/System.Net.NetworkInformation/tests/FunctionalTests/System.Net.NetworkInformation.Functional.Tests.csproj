@@ -5,6 +5,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
     <DefineConstants>$(DefineConstants);NETWORKINFORMATION_TEST</DefineConstants>
+    <EventSourceSupport Condition="'$(TestNativeAot)' == 'true'">true</EventSourceSupport>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />

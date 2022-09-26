@@ -766,9 +766,6 @@ namespace System.Reflection
 
     internal static unsafe class CustomAttribute
     {
-        private static readonly RuntimeType Type_RuntimeType = (RuntimeType)typeof(RuntimeType);
-        private static readonly RuntimeType Type_Type = (RuntimeType)typeof(Type);
-
         #region Internal Static Members
         internal static bool IsDefined(RuntimeType type, RuntimeType? caType, bool inherit)
         {
@@ -1221,9 +1218,9 @@ namespace System.Reflection
                             if (type is null && value is not null)
                             {
                                 type = (RuntimeType)value.GetType();
-                                if (type == Type_RuntimeType)
+                                if (type == typeof(RuntimeType))
                                 {
-                                    type = Type_Type;
+                                    type = (RuntimeType)typeof(Type);
                                 }
                             }
 

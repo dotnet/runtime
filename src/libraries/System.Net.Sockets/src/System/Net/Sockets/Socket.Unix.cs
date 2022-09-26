@@ -170,14 +170,17 @@ namespace System.Net.Sockets
 #pragma warning disable CA1822
         private Socket? GetOrCreateAcceptSocket(Socket? acceptSocket, bool checkDisconnected, string propertyName, out SafeSocketHandle? handle)
         {
-            if (acceptSocket != null && acceptSocket._handle.HasShutdownSend)
+            if (acceptSocket != null)
             {
-                throw new SocketException((int)SocketError.InvalidArgument);
-            }
+                if (acceptSocket._handle.HasShutdownSend)
+                {
+                    throw new SocketException((int)SocketError.InvalidArgument);
+                }
 
-            if (acceptSocket != null && acceptSocket._rightEndPoint != null && (!checkDisconnected || !acceptSocket._isDisconnected))
-            {
-                throw new InvalidOperationException(SR.Format(SR.net_sockets_namedmustnotbebound, propertyName));
+                if (acceptSocket._rightEndPoint != null && (!checkDisconnected || !acceptSocket._isDisconnected))
+                {
+                    throw new InvalidOperationException(SR.Format(SR.net_sockets_namedmustnotbebound, propertyName));
+                }
             }
 
             handle = null;
@@ -273,39 +276,7 @@ namespace System.Net.Sockets
             {
                 object? origValue = pi.GetValue(source);
                 object? cloneValue = pi.GetValue(this);
-
-                if (origValue is IEnumerable origEnumerable)
-                {
-                    IEnumerable? cloneEnumerable = cloneValue as IEnumerable;
-                    Debug.Assert(cloneEnumerable != null, $"{pi.Name}. Expected enumerable cloned value.");
-
-                    IEnumerator e1 = origEnumerable.GetEnumerator();
-                    try
-                    {
-                        IEnumerator e2 = cloneEnumerable.GetEnumerator();
-                        try
-                        {
-                            while (e1.MoveNext())
-                            {
-                                Debug.Assert(e2.MoveNext(), $"{pi.Name}. Cloned enumerator too short.");
-                                Debug.Assert(Equals(e1.Current, e2.Current), $"{pi.Name}. Cloned enumerator's values don't match.");
-                            }
-                            Debug.Assert(!e2.MoveNext(), $"{pi.Name}. Cloned enumerator too long.");
-                        }
-                        finally
-                        {
-                            (e2 as IDisposable)?.Dispose();
-                        }
-                    }
-                    finally
-                    {
-                        (e1 as IDisposable)?.Dispose();
-                    }
-                }
-                else
-                {
-                    Debug.Assert(Equals(origValue, cloneValue), $"{pi.Name}. Expected: {origValue}, Actual: {cloneValue}");
-                }
+                Debug.Assert(Equals(origValue, cloneValue), $"{pi.Name}. Expected: {origValue}, Actual: {cloneValue}");
             }
 #endif
             return this;
