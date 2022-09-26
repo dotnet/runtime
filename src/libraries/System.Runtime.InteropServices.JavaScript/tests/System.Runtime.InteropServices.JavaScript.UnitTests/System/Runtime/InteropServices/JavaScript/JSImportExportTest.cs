@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
@@ -29,7 +28,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal("object", first.GetTypeOfProperty("instance"));
             var instance1 = first.GetPropertyAsJSObject("instance");
             var instance2 = second.GetPropertyAsJSObject("instance");
-            Assert.Equal(instance1, instance2);
+            Assert.Same(instance1, instance2);
         }
 
         [Fact]
