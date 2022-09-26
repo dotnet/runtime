@@ -1781,12 +1781,19 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             GenTreeIntConCommon* con    = tree->AsIntConCommon();
             ssize_t              cnsVal = con->IconValue();
 
-            // if (con->ImmedValNeedsReloc(compiler))
+            // TODO-CQ: Currently we cannot do this for all handles because of
+            // https://github.com/dotnet/runtime/issues/60712
             if (con->ImmedValNeedsReloc(compiler) && compiler->opts.compReloc)
             {
-                // instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, targetReg, cnsVal);
-                assert(compiler->opts.compReloc);
-                GetEmitter()->emitIns_R_AI(INS_bl, EA_HANDLE_CNS_RELOC, targetReg, cnsVal);
+                emitAttr attr = emitActualTypeSize(targetType);
+
+                attr = EA_SET_FLG(attr, EA_CNS_RELOC_FLG);
+                if (targetType == TYP_BYREF)
+                {
+                    attr = EA_SET_FLG(attr, EA_BYREF_FLG);
+                }
+
+                GetEmitter()->emitIns_R_AI(INS_bl, attr, targetReg, cnsVal);
                 regSet.verifyRegUsed(targetReg);
             }
             else
@@ -5667,15 +5674,15 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 //
 void CodeGen::genSetRegToIcon(regNumber reg, ssize_t val, var_types type)
 {
+    emitAttr attr = emitActualTypeSize(type);
+    if (!compiler->opts.compReloc)
+    {
+        attr = EA_SIZE(attr);
+    }
     // Reg cannot be a FP reg
     assert(!genIsValidFloatReg(reg));
 
-    // The only TYP_REF constant that can come this path is a managed 'null' since it is not
-    // relocatable.  Other ref type constants (e.g. string objects) go through a different
-    // code path.
-    noway_assert((type != TYP_REF) || (val == 0));
-
-    GetEmitter()->emitIns_I_la(emitActualTypeSize(type), reg, val);
+    GetEmitter()->emitIns_I_la(attr, reg, val);
     regSet.verifyRegUsed(reg);
 }
 
