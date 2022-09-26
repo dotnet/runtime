@@ -17054,12 +17054,13 @@ bool GenTreeVecCon::IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd32
     switch (node->GetHWIntrinsicId())
     {
         case NI_Vector128_Create:
-#if defined(TARGET_XARCH)
         case NI_Vector128_CreateScalarUnsafe:
+#if defined(TARGET_XARCH)
         case NI_Vector256_Create:
         case NI_Vector256_CreateScalarUnsafe:
 #elif defined(TARGET_ARM64)
         case NI_Vector64_Create:
+        case NI_Vector64_CreateScalarUnsafe:
 #endif
         {
             // These intrinsics are meant to set the same value to every element.
