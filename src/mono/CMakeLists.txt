@@ -604,7 +604,7 @@ if(LLVM_PREFIX)
 
   # llvm-config --cflags
   set(llvm_cflags "-I${LLVM_PREFIX}/include -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
-  set(llvm_cxxflags "-I{LLVM_PREFIX}/include -std=c++14 -fno-exceptions -fno-rtti -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+  set(llvm_cxxflags "-I${LLVM_PREFIX}/include -std=c++14 -fno-exceptions -fno-rtti -D__STDC_CONSTANT_MACROS -D__STD_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
   set(llvm_includedir "${LLVM_PREFIX}/include")
 
   if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
@@ -620,19 +620,6 @@ if(LLVM_PREFIX)
 
   # Check codegen libs and add needed libraries.
   set(llvm_extra ${MONO_llvm_extra_libs_${llvm_codegen_libs}})
-  if("${llvm_extra}" STREQUAL "" AND NOT "${TARGET_ARCH}" STREQUAL "wasm")
-    message(FATAL_ERROR "FIXME: ${TARGET_ARCH}")
-  endif()
-
-  set(llvm_libs ${llvm_core_libs} ${llvm_extra})
-  list(TRANSFORM llvm_libs PREPEND "${LLVM_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}")
-  list(TRANSFORM llvm_libs APPEND "${CMAKE_STATIC_LIBRARY_SUFFIX}")
-
-  # llvm-config --libs analysis core bitwriter mcjit orcjit
-  set(llvm_core_libs ${MONO_llvm_core_libs_${llvm_api_version}})
-
-  # Check codegen libs and add needed libraries.
-  set(llvm_extra ${MONO_llvm_extra_libs_${llvm_codegen_libs}_${llvm_api_version}})
   if("${llvm_extra}" STREQUAL "" AND NOT "${TARGET_ARCH}" STREQUAL "wasm")
     message(FATAL_ERROR "FIXME: ${TARGET_ARCH}")
   endif()
