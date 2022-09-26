@@ -218,6 +218,16 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalDetachThread(void* thread)
     return true;
 }
 
+extern "C" uint64_t PalQueryPerformanceCounter()
+{
+    return GCToOSInterface::QueryPerformanceCounter();
+}
+
+extern "C" uint64_t PalQueryPerformanceFrequency()
+{
+    return GCToOSInterface::QueryPerformanceFrequency();
+}
+
 extern "C" uint64_t PalGetCurrentThreadIdForLogging()
 {
     return GetCurrentThreadId();
@@ -563,6 +573,31 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalIsAvxEnabled()
     return TRUE;
 }
 
+REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalIsAvx512Enabled()
+{
+    typedef DWORD64(WINAPI* PGETENABLEDXSTATEFEATURES)();
+    PGETENABLEDXSTATEFEATURES pfnGetEnabledXStateFeatures = NULL;
+
+    HMODULE hMod = LoadLibraryExW(L"kernel32", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if (hMod == NULL)
+        return FALSE;
+
+    pfnGetEnabledXStateFeatures = (PGETENABLEDXSTATEFEATURES)GetProcAddress(hMod, "GetEnabledXStateFeatures");
+
+    if (pfnGetEnabledXStateFeatures == NULL)
+    {
+        return FALSE;
+    }
+
+    DWORD64 FeatureMask = pfnGetEnabledXStateFeatures();
+    if ((FeatureMask & XSTATE_MASK_AVX512) == 0)
+    {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 REDHAWK_PALEXPORT void* REDHAWK_PALAPI PalAddVectoredExceptionHandler(uint32_t firstHandler, _In_ PVECTORED_EXCEPTION_HANDLER vectoredHandler)
 {
     return AddVectoredExceptionHandler(firstHandler, vectoredHandler);
@@ -597,6 +632,11 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddre
 {
     DWORD oldProtect;
     return VirtualProtect(pAddress, size, protect, &oldProtect);
+}
+
+REDHAWK_PALEXPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size)
+{
+    FlushInstructionCache(GetCurrentProcess(), pAddress, size);
 }
 
 REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer)

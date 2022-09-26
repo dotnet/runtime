@@ -950,7 +950,8 @@ namespace ILCompiler.DependencyAnalysis
 
         private ISymbolNode GetStaticsNode(NodeFactory context, out BagElementKind staticsBagKind)
         {
-            ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromStaticLayout(_type.GetClosestDefType()));
+            DefType closestCanonDefType = (DefType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific);
+            ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromStaticLayout(closestCanonDefType));
             staticsBagKind = BagElementKind.GcStaticDesc;
 
             return symbol;
@@ -958,7 +959,8 @@ namespace ILCompiler.DependencyAnalysis
 
         private ISymbolNode GetThreadStaticsNode(NodeFactory context, out BagElementKind staticsBagKind)
         {
-            ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromThreadStaticLayout(_type.GetClosestDefType()));
+            DefType closestCanonDefType = (DefType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific);
+            ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromThreadStaticLayout(closestCanonDefType));
             staticsBagKind = BagElementKind.ThreadStaticDesc;
 
             return symbol;
@@ -994,13 +996,14 @@ namespace ILCompiler.DependencyAnalysis
 
             if (!_isUniversalCanon)
             {
-                if (_type.GetClosestDefType().GCStaticFieldSize.AsInt > 0)
+                DefType closestCanonDefType = (DefType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific);
+                if (closestCanonDefType.GCStaticFieldSize.AsInt > 0)
                 {
                     BagElementKind ignored;
                     yield return new DependencyListEntry(GetStaticsNode(context, out ignored), "type gc static info");
                 }
 
-                if (_type.GetClosestDefType().ThreadGcStaticFieldSize.AsInt > 0)
+                if (closestCanonDefType.ThreadGcStaticFieldSize.AsInt > 0)
                 {
                     BagElementKind ignored;
                     yield return new DependencyListEntry(GetThreadStaticsNode(context, out ignored), "type thread static info");
@@ -1200,24 +1203,24 @@ namespace ILCompiler.DependencyAnalysis
 
             if (!_isUniversalCanon)
             {
-                DefType closestDefType = _type.GetClosestDefType();
-                if (closestDefType.NonGCStaticFieldSize.AsInt != 0)
+                DefType closestCanonDefType = (DefType)_type.GetClosestDefType().ConvertToCanonForm(CanonicalFormKind.Specific);
+                if (closestCanonDefType.NonGCStaticFieldSize.AsInt != 0)
                 {
-                    layoutInfo.AppendUnsigned(BagElementKind.NonGcStaticDataSize, checked((uint)closestDefType.NonGCStaticFieldSize.AsInt));
+                    layoutInfo.AppendUnsigned(BagElementKind.NonGcStaticDataSize, checked((uint)closestCanonDefType.NonGCStaticFieldSize.AsInt));
                 }
 
-                if (closestDefType.GCStaticFieldSize.AsInt != 0)
+                if (closestCanonDefType.GCStaticFieldSize.AsInt != 0)
                 {
-                    layoutInfo.AppendUnsigned(BagElementKind.GcStaticDataSize, checked((uint)closestDefType.GCStaticFieldSize.AsInt));
+                    layoutInfo.AppendUnsigned(BagElementKind.GcStaticDataSize, checked((uint)closestCanonDefType.GCStaticFieldSize.AsInt));
                     BagElementKind staticDescBagType;
                     ISymbolNode staticsDescSymbol = GetStaticsNode(factory, out staticDescBagType);
                     uint gcStaticsSymbolIndex = factory.MetadataManager.NativeLayoutInfo.StaticsReferences.GetIndex(staticsDescSymbol);
                     layoutInfo.AppendUnsigned(staticDescBagType, gcStaticsSymbolIndex);
                 }
 
-                if (closestDefType.ThreadGcStaticFieldSize.AsInt != 0)
+                if (closestCanonDefType.ThreadGcStaticFieldSize.AsInt != 0)
                 {
-                    layoutInfo.AppendUnsigned(BagElementKind.ThreadStaticDataSize, checked((uint)closestDefType.ThreadGcStaticFieldSize.AsInt));
+                    layoutInfo.AppendUnsigned(BagElementKind.ThreadStaticDataSize, checked((uint)closestCanonDefType.ThreadGcStaticFieldSize.AsInt));
                     BagElementKind threadStaticDescBagType;
                     ISymbolNode threadStaticsDescSymbol = GetThreadStaticsNode(factory, out threadStaticDescBagType);
                     uint threadStaticsSymbolIndex = factory.MetadataManager.NativeLayoutInfo.StaticsReferences.GetIndex(threadStaticsDescSymbol);

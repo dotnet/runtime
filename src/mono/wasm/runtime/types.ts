@@ -414,6 +414,9 @@ export interface JavaScriptExports {
 
     // the marshaled signature is: void InstallSynchronizationContext()
     install_synchronization_context(): void;
+
+    // the marshaled signature is: string GetManagedStackTrace(GCHandle exception)
+    get_managed_stack_trace(exception_gc_handle: GCHandle): string | null
 }
 
 export type MarshalerToJs = (arg: JSMarshalerArgument, sig?: JSMarshalerType, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs) => any;
@@ -518,6 +521,7 @@ export type RuntimeAPI = {
     runtimeId: number,
     runtimeBuildInfo: {
         productVersion: string,
+        gitHash: string,
         buildConfiguration: string,
     }
 } & APIType

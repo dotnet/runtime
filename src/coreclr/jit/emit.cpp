@@ -4130,41 +4130,14 @@ void emitter::emitDispCommentForHandle(size_t handle, size_t cookie, GenTreeFlag
     const char* str = nullptr;
     if (flag == GTF_ICON_STR_HDL)
     {
+        str = "string handle";
+    }
+    else if (flag == GTF_ICON_OBJ_HDL)
+    {
 #ifdef DEBUG
-        const WCHAR* wstr = emitComp->eeGetCPString(handle);
-        // NOTE: eGetCPString always returns nullptr on Linux/ARM
-        if (wstr == nullptr)
-        {
-            str = "string handle";
-        }
-        else
-        {
-            const size_t actualLen = wcslen(wstr);
-            const size_t maxLength = 63;
-            const size_t newLen    = min(maxLength, actualLen);
-
-            // +1 for null terminator
-            WCHAR buf[maxLength + 1] = {0};
-            wcsncpy(buf, wstr, newLen);
-            for (size_t i = 0; i < newLen; i++)
-            {
-                // Escape \n and \r symbols
-                if (buf[i] == L'\n' || buf[i] == L'\r')
-                {
-                    buf[i] = L' ';
-                }
-            }
-            if (actualLen > maxLength)
-            {
-                // Append "..." for long strings
-                buf[maxLength - 3] = L'.';
-                buf[maxLength - 2] = L'.';
-                buf[maxLength - 1] = L'.';
-            }
-            printf("%s \"%S\"", commentPrefix, buf);
-        }
+        emitComp->eePrintFrozenObjectDescription(commentPrefix, handle);
 #else
-        str                   = "string handle";
+        str                   = "frozen object handle";
 #endif
     }
     else if (flag == GTF_ICON_CLASS_HDL)

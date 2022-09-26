@@ -98,7 +98,7 @@ namespace System.Resources
             public ResourceSet? lastResourceSet;
         }
 
-        protected string BaseNameField;
+        protected string BaseNameField; // The field is protected for .NET Framework compatibility
         protected Assembly? MainAssembly;    // Need the assembly manifest sometimes.
 
         private Dictionary<string, ResourceSet>? _resourceSets;

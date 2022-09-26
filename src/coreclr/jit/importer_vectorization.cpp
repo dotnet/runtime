@@ -236,7 +236,7 @@ GenTree* Compiler::impExpandHalfConstEqualsSIMD(
         return nullptr;
     }
 
-    GenTree* zero = gtNewZeroConNode(simdType, baseType);
+    GenTree* zero = gtNewZeroConNode(simdType);
 
     GenTree* offset1  = gtNewIconNode(dataOffset, TYP_I_IMPL);
     GenTree* offset2  = gtNewIconNode(dataOffset + len * sizeof(USHORT) - simdSize, TYP_I_IMPL);
@@ -867,7 +867,7 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
     if (unrolled != nullptr)
     {
         // We succeeded, fill the placeholders:
-        impAssignTempGen(spanObjRef, impGetStructAddr(spanObj, spanCls, (unsigned)CHECK_SPILL_NONE, true));
+        impAssignTempGen(spanObjRef, impGetStructAddr(spanObj, spanCls, CHECK_SPILL_NONE, true));
         impAssignTempGen(spanDataTmp, spanData);
         if (unrolled->OperIs(GT_QMARK))
         {

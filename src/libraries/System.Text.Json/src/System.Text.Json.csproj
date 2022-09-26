@@ -36,6 +36,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="..\Common\JsonSourceGenerationMode.cs" Link="Common\System\Text\Json\Serialization\JsonSourceGenerationMode.cs" />
     <Compile Include="..\Common\JsonSourceGenerationOptionsAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonSourceGenerationOptionsAttribute.cs" />
     <Compile Include="..\Common\ReflectionExtensions.cs" Link="Common\System\Text\Json\Serialization\ReflectionExtensions.cs" />
+    <Compile Include="System\Text\Json\AppContextSwitchHelper.cs" />
     <Compile Include="System\Text\Json\BitStack.cs" />
     <Compile Include="System\Text\Json\Document\JsonDocument.cs" />
     <Compile Include="System\Text\Json\Document\JsonDocument.DbRow.cs" />
@@ -384,5 +385,6 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
   <ItemGroup>
     <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn3.11.csproj" Pack="true" ReferenceAnalyzer="false" Condition="'$(DotNetBuildFromSource)' != 'true'" />
     <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj" Pack="true" ReferenceAnalyzer="false" />
+    <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn4.4.csproj" Pack="true" ReferenceAnalyzer="false" />
   </ItemGroup>
 </Project>

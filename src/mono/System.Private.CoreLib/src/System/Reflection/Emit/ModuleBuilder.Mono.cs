@@ -33,8 +33,8 @@
 // (C) 2001 Ximian, Inc.  http://www.ximian.com
 //
 
-#if MONO_FEATURE_SRE
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -48,7 +48,7 @@ namespace System.Reflection.Emit
     {
 #region Sync with MonoReflectionModuleBuilder in object-internals.h
 
-#region This class inherits from Module, but the runtime expects it to have the same layout as MonoModule
+#region This class inherits from Module, but the runtime expects it to have the same layout as RuntimeModule
         internal IntPtr _impl; /* a pointer to a MonoImage */
         internal Assembly assembly;
         internal string fqname;
@@ -248,8 +248,6 @@ namespace System.Reflection.Emit
             num_types++;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
-            Justification = "Reflection.Emit is not subject to trimming")]
         private TypeBuilder DefineType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
             ArgumentNullException.ThrowIfNull(name, "fullname");
@@ -507,6 +505,17 @@ namespace System.Reflection.Emit
             ArgumentNullException.ThrowIfNull(field);
 
             return field.MetadataToken;
+        }
+
+        internal static Module GetRuntimeModuleFromModule(Module? m)
+        {
+            if (m is ModuleBuilder)
+            {
+                // TODO: Should return RuntimeModule
+                return m;
+            }
+
+            return (m as RuntimeModule)!;
         }
 
         // FIXME:
@@ -779,7 +788,7 @@ namespace System.Reflection.Emit
 
         internal IntPtr GetUnderlyingNativeHandle() { return _impl; }
 
-        protected override ModuleHandle GetModuleHandleImpl() => new ModuleHandle(_impl);
+        private protected override ModuleHandle GetModuleHandleImpl() => new ModuleHandle(_impl);
 
         [RequiresUnreferencedCode("Methods might be removed")]
         protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
@@ -953,5 +962,3 @@ namespace System.Reflection.Emit
         }
     }
 }
-
-#endif

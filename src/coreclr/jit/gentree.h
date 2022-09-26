@@ -464,15 +464,15 @@ enum GenTreeFlags : unsigned int
 
     GTF_VAR_MULTIREG        = 0x02000000, // This is a struct or (on 32-bit platforms) long variable that is used or defined
                                           // to/from a multireg source or destination (e.g. a call arg or return, or an op
-                                          // that returns its result in multiple registers such as a long multiply).
+                                          // that returns its result in multiple registers such as a long multiply). Set by
+                                          // (and thus only valid after) lowering.
 
     GTF_LIVENESS_MASK   = GTF_VAR_DEF | GTF_VAR_USEASG | GTF_VAR_DEATH_MASK,
 
-    GTF_VAR_CAST        = 0x01000000, // GT_LCL_VAR -- has been explicitly cast (variable node may not be type of local)
-    GTF_VAR_ITERATOR    = 0x00800000, // GT_LCL_VAR -- this is a iterator reference in the loop condition
-    GTF_VAR_CLONED      = 0x00400000, // GT_LCL_VAR -- this node has been cloned or is a clone
-    GTF_VAR_CONTEXT     = 0x00200000, // GT_LCL_VAR -- this node is part of a runtime lookup
-    GTF_VAR_FOLDED_IND  = 0x00100000, // GT_LCL_VAR -- this node was folded from *(typ*)&lclVar expression tree in fgMorphSmpOp()
+    GTF_VAR_ITERATOR    = 0x01000000, // GT_LCL_VAR -- this is a iterator reference in the loop condition
+    GTF_VAR_CLONED      = 0x00800000, // GT_LCL_VAR -- this node has been cloned or is a clone
+    GTF_VAR_CONTEXT     = 0x00400000, // GT_LCL_VAR -- this node is part of a runtime lookup
+    GTF_VAR_FOLDED_IND  = 0x00200000, // GT_LCL_VAR -- this node was folded from *(typ*)&lclVar expression tree in fgMorphSmpOp()
                                       // where 'typ' is a small type and 'lclVar' corresponds to a normalized-on-store local variable.
                                       // This flag identifies such nodes in order to make sure that fgDoNormalizeOnStore() is called
                                       // on their parents in post-order morph.
@@ -554,7 +554,8 @@ enum GenTreeFlags : unsigned int
     GTF_ICON_METHOD_HDL         = 0x03000000, // GT_CNS_INT -- constant is a method handle
     GTF_ICON_FIELD_HDL          = 0x04000000, // GT_CNS_INT -- constant is a field handle
     GTF_ICON_STATIC_HDL         = 0x05000000, // GT_CNS_INT -- constant is a handle to static data
-    GTF_ICON_STR_HDL            = 0x06000000, // GT_CNS_INT -- constant is a string handle
+    GTF_ICON_STR_HDL            = 0x06000000, // GT_CNS_INT -- constant is a pinned handle pointing to a string object
+    GTF_ICON_OBJ_HDL            = 0x12000000, // GT_CNS_INT -- constant is an object handle (e.g. frozen string or Type object)
     GTF_ICON_CONST_PTR          = 0x07000000, // GT_CNS_INT -- constant is a pointer to immutable data, (e.g. IAT_PPVALUE)
     GTF_ICON_GLOBAL_PTR         = 0x08000000, // GT_CNS_INT -- constant is a pointer to mutable data (e.g. from the VM state)
     GTF_ICON_VARG_HDL           = 0x09000000, // GT_CNS_INT -- constant is a var arg cookie handle
@@ -2313,20 +2314,18 @@ public:
     bool IsReuseRegVal() const
     {
         // This can be extended to non-constant nodes, but not to local or indir nodes.
-        if (IsInvariant() && ((gtFlags & GTF_REUSE_REG_VAL) != 0))
-        {
-            return true;
-        }
-        return false;
+        return OperIsConst() && ((gtFlags & GTF_REUSE_REG_VAL) != 0);
     }
+
     void SetReuseRegVal()
     {
-        assert(IsInvariant());
+        assert(OperIsConst());
         gtFlags |= GTF_REUSE_REG_VAL;
     }
+
     void ResetReuseRegVal()
     {
-        assert(IsInvariant());
+        assert(OperIsConst());
         gtFlags &= ~GTF_REUSE_REG_VAL;
     }
 
@@ -3306,7 +3305,19 @@ inline void GenTreeIntConCommon::SetValueTruncating(T value)
 
 struct GenTreeDblCon : public GenTree
 {
+private:
     double gtDconVal;
+
+public:
+    double DconValue() const
+    {
+        return gtDconVal;
+    }
+
+    void SetDconValue(double value)
+    {
+        gtDconVal = FloatingPointUtils::normalize(value);
+    }
 
     bool isBitwiseEqual(GenTreeDblCon* other)
     {
@@ -3315,9 +3326,10 @@ struct GenTreeDblCon : public GenTree
         return (bits == otherBits);
     }
 
-    GenTreeDblCon(double val, var_types type = TYP_DOUBLE) : GenTree(GT_CNS_DBL, type), gtDconVal(val)
+    GenTreeDblCon(double val, var_types type = TYP_DOUBLE) : GenTree(GT_CNS_DBL, type)
     {
         assert(varTypeIsFloating(type));
+        SetDconValue(val);
     }
 #if DEBUGGABLE_GENTREE
     GenTreeDblCon() : GenTree()
@@ -3364,26 +3376,6 @@ struct GenTreeVecCon : public GenTree
         simd16_t gtSimd16Val;
         simd32_t gtSimd32Val;
     };
-
-private:
-    // TODO-1stClassStructs: Tracking the size and base type should be unnecessary since the
-    // size should be `gtType` and the handle should be looked up at callsites where required
-
-    unsigned char gtSimdBaseJitType; // SIMD vector base JIT type
-
-public:
-    CorInfoType GetSimdBaseJitType() const
-    {
-        return (CorInfoType)gtSimdBaseJitType;
-    }
-
-    void SetSimdBaseJitType(CorInfoType simdBaseJitType)
-    {
-        gtSimdBaseJitType = (unsigned char)simdBaseJitType;
-        assert(gtSimdBaseJitType == simdBaseJitType);
-    }
-
-    var_types GetSimdBaseType() const;
 
 #if defined(FEATURE_HW_INTRINSICS)
     static bool IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd32_t& simd32Val);
@@ -3507,11 +3499,9 @@ public:
         }
     }
 
-    GenTreeVecCon(var_types type, CorInfoType simdBaseJitType)
-        : GenTree(GT_CNS_VEC, type), gtSimdBaseJitType((unsigned char)simdBaseJitType)
+    GenTreeVecCon(var_types type) : GenTree(GT_CNS_VEC, type)
     {
         assert(varTypeIsSIMD(type));
-        assert(gtSimdBaseJitType == simdBaseJitType);
     }
 
 #if DEBUGGABLE_GENTREE
@@ -8446,7 +8436,7 @@ inline bool GenTree::IsFloatAllBitsSet() const
 {
     if (IsCnsFltOrDbl())
     {
-        double constValue = AsDblCon()->gtDconVal;
+        double constValue = AsDblCon()->DconValue();
 
         if (TypeIs(TYP_FLOAT))
         {
@@ -8473,7 +8463,7 @@ inline bool GenTree::IsFloatNaN() const
 {
     if (IsCnsFltOrDbl())
     {
-        double constValue = AsDblCon()->gtDconVal;
+        double constValue = AsDblCon()->DconValue();
         return FloatingPointUtils::isNaN(constValue);
     }
 
@@ -8491,7 +8481,7 @@ inline bool GenTree::IsFloatNegativeZero() const
 {
     if (IsCnsFltOrDbl())
     {
-        double constValue = AsDblCon()->gtDconVal;
+        double constValue = AsDblCon()->DconValue();
         return FloatingPointUtils::isNegativeZero(constValue);
     }
 
@@ -8512,7 +8502,7 @@ inline bool GenTree::IsFloatPositiveZero() const
         // This implementation is almost identical to IsCnsNonZeroFltOrDbl
         // but it is easier to parse out
         // rather than using !IsCnsNonZeroFltOrDbl.
-        double constValue = AsDblCon()->gtDconVal;
+        double constValue = AsDblCon()->DconValue();
         return FloatingPointUtils::isPositiveZero(constValue);
     }
 
@@ -9300,7 +9290,7 @@ inline bool GenTree::IsCnsNonZeroFltOrDbl() const
 {
     if (IsCnsFltOrDbl())
     {
-        double constValue = AsDblCon()->gtDconVal;
+        double constValue = AsDblCon()->DconValue();
         return *(__int64*)&constValue != 0;
     }
 

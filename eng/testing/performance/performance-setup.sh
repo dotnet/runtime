@@ -38,6 +38,7 @@ iosmono=false
 iosllvmbuild=""
 maui_version=""
 only_sanity=false
+dotnet_versions=""
 
 while (($# > 0)); do
   lowerI="$(echo $1 | tr "[:upper:]" "[:lower:]")"
@@ -148,6 +149,10 @@ while (($# > 0)); do
       use_latest_dotnet=true
       shift 1
       ;;
+    --dotnetversions)
+      dotnet_versions="$2"
+      shift 2
+      ;;
     --iosmono)
       iosmono=true
       shift 1
@@ -196,12 +201,13 @@ while (($# > 0)); do
       echo "  --wasmbundle                   Path to the wasm bundle containing the dotnet, and data needed for helix payload"
       echo "  --wasmaot                      Indicate wasm aot"
       echo "  --latestdotnet                 --dotnet-versions will not be specified. --dotnet-versions defaults to LKG version in global.json "
+      echo "  --dotnetversions               Passed as '--dotnet-versions <value>' to the setup script"
       echo "  --alpine                       Set for runs on Alpine"
       echo "  --iosmono                      Set for ios Mono/Maui runs"
       echo "  --iosllvmbuild                 Set LLVM for iOS Mono/Maui runs"
       echo "  --mauiversion                  Set the maui version for Mono/Maui runs"
       echo ""
-      exit 0
+      exit 1
       ;;
   esac
 done
@@ -352,6 +358,10 @@ if [[ -n "$mono_dotnet" && "$monoaot" == "false" ]]; then
     using_mono=true
     mono_dotnet_path=$payload_directory/dotnet-mono
     mv $mono_dotnet $mono_dotnet_path
+fi
+
+if [[ -n "$dotnet_versions" ]]; then
+    setup_arguments="$setup_arguments --dotnet-versions $dotnet_versions"
 fi
 
 if [[ "$monoaot" == "true" ]]; then

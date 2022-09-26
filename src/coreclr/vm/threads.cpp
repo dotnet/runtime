@@ -575,7 +575,7 @@ DWORD Thread::StartThread()
 #endif
 
     _ASSERTE (GetThreadHandle() != INVALID_HANDLE_VALUE);
-    DWORD dwRetVal = ::ResumeThread(GetThreadHandle());
+    DWORD dwRetVal = ClrResumeThread(GetThreadHandle());
     return dwRetVal;
 }
 

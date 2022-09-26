@@ -17,6 +17,24 @@ parameters:
         src/tasks/WasmAppBuilder/*
         src/tasks/WasmBuildTasks/*
         src/tasks/WorkloadBuildTasks/*
+        src/tests/Common/wasm-test-runner/*
+    ]
+    _wasm_pipelines: [
+        eng/pipelines/*wasm*
+        eng/pipelines/common/templates/*wasm*
+        eng/pipelines/common/templates/runtime/wasm*
+        eng/pipelines/coreclr/*wasm*
+    ]
+    # src/workloads is only used in runtime-official builds
+    # where evaluate-paths is not used
+    _always_exclude: [
+        eng/pipelines/common/evaluate-default-paths.yml
+        eng/pipelines/coreclr/*
+        eng/pipelines/installer/*
+        eng/pipelines/libraries/*
+        eng/pipelines/mono/*
+        eng/pipelines/runtime*
+        src/workloads/*
     ]
 
 jobs:
@@ -41,10 +59,8 @@ jobs:
       - src/libraries/*
       - src/native/libs/*
       - src/tests/*
-      - eng/pipelines/installer/*
-      - eng/pipelines/mono/*
-      - eng/pipelines/libraries/*
-      - eng/pipelines/common/evaluate-default-paths.yml
+      - ${{ parameters._const_paths._wasm_pipelines }}
+      - ${{ parameters._const_paths._always_exclude }}
 
     - subset: mono_excluding_wasm
       include:
@@ -54,6 +70,8 @@ jobs:
       - src/native/libs/System.IO.Compression.Native/*
       exclude:
       - ${{ parameters._const_paths._wasm_specific_only }}
+      - ${{ parameters._const_paths._wasm_pipelines }}
+      - ${{ parameters._const_paths._always_exclude }}
 
       - eng/Version.Details.xml
       - '*.md'
@@ -66,10 +84,6 @@ jobs:
       - src/libraries/*
       - src/native/libs/*
       - src/tests/*
-      - eng/pipelines/installer/*
-      - eng/pipelines/coreclr/*
-      - eng/pipelines/libraries/*
-      - eng/pipelines/common/evaluate-default-paths.yml
 
     - subset: libraries
       exclude:
@@ -84,14 +98,19 @@ jobs:
       - src/coreclr/*
       - src/tests/*
       - src/native/eventpipe/*
-      - eng/pipelines/coreclr/*
-      - eng/pipelines/mono/*
-      - eng/pipelines/installer/*
-      - eng/pipelines/common/evaluate-default-paths.yml
+      - ${{ parameters._const_paths._wasm_pipelines }}
+      - ${{ parameters._const_paths._always_exclude }}
 
     - subset: runtimetests
       include:
       - src/tests/*
+
+    - subset: non_runtimetests
+      exclude:
+      - src/tests/*
+      - ${{ parameters._const_paths._wasm_pipelines }}
+      - ${{ parameters._const_paths._always_exclude }}
+
     - subset: installer
       include:
       - docs/manpages/*
@@ -107,10 +126,8 @@ jobs:
       - src/libraries/*
       - src/tests/*
       - src/native/eventpipe/*
-      - eng/pipelines/coreclr/*
-      - eng/pipelines/mono/*
-      - eng/pipelines/libraries/*
-      - eng/pipelines/common/evaluate-default-paths.yml
+      - ${{ parameters._const_paths._wasm_pipelines }}
+      - ${{ parameters._const_paths._always_exclude }}
 
     # We have limited Apple Silicon testing capacity
     # We want PR testing on a narrower set of changes
@@ -150,6 +167,8 @@ jobs:
       - src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
       - src/mono/nuget/Microsoft.NET.Runtime.wasm.Sample.Mono/*
       - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Manifest/*
+      - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.net6.Manifest/*
+      - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.net7.Manifest/*
       - src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
       - src/mono/wasm/build/*
       - src/mono/wasm/emscripten-version.txt
@@ -172,6 +191,8 @@ jobs:
       exclude:
       - src/mono/wasm/Wasm.Build.Tests/*
       - src/mono/wasm/debugger/*
+      - ${{ parameters._const_paths._wasm_pipelines }}
+      - ${{ parameters._const_paths._always_exclude }}
 
     - subset: wasm_wbt_or_dbg
       include:
@@ -209,15 +230,15 @@ jobs:
     - subset: non_wasm
       exclude:
       - ${{ parameters._const_paths._wasm_specific_only }}
-
-      # having this ensures that change in evaluate-default-paths.yml won't
-      # trigger non-onlywasm jobs
-      - eng/pipelines/common/evaluate-default-paths.yml
+      - ${{ parameters._const_paths._wasm_pipelines }}
+      - ${{ parameters._const_paths._always_exclude }}
 
     # anything other than mono, or wasm specific paths
     - subset: non_mono_and_wasm
       exclude:
       - ${{ parameters._const_paths._wasm_specific_only }}
+      - ${{ parameters._const_paths._wasm_pipelines }}
+      - ${{ parameters._const_paths._always_exclude }}
 
       - eng/testing/tests.mobile.targets
       - src/mono/*

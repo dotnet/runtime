@@ -946,7 +946,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 // We do this as it simplifies the logic and allows certain code paths to
                 // have better codegen, such as for 0, AllBitsSet, or certain small constants
 
-                GenTreeVecCon* vecCon = gtNewVconNode(retType, simdBaseJitType);
+                GenTreeVecCon* vecCon = gtNewVconNode(retType);
 
                 switch (simdBaseType)
                 {
@@ -1040,7 +1040,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                         for (uint32_t index = 0; index < sig->numArgs; index++)
                         {
-                            cnsVal = static_cast<float>(impPopStack().val->AsDblCon()->gtDconVal);
+                            cnsVal = static_cast<float>(impPopStack().val->AsDblCon()->DconValue());
                             vecCon->gtSimd32Val.f32[simdLength - 1 - index] = cnsVal;
                         }
 
@@ -1060,7 +1060,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                         for (uint32_t index = 0; index < sig->numArgs; index++)
                         {
-                            cnsVal = static_cast<double>(impPopStack().val->AsDblCon()->gtDconVal);
+                            cnsVal = static_cast<double>(impPopStack().val->AsDblCon()->DconValue());
                             vecCon->gtSimd32Val.f64[simdLength - 1 - index] = cnsVal;
                         }
 
@@ -1383,7 +1383,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_get_AllBitsSet:
         {
             assert(sig->numArgs == 0);
-            retNode = gtNewAllBitsSetConNode(retType, simdBaseJitType);
+            retNode = gtNewAllBitsSetConNode(retType);
             break;
         }
 
@@ -1402,7 +1402,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_get_Zero:
         {
             assert(sig->numArgs == 0);
-            retNode = gtNewZeroConNode(retType, simdBaseJitType);
+            retNode = gtNewZeroConNode(retType);
             break;
         }
 
@@ -2540,7 +2540,7 @@ GenTree* Compiler::impSSEIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAND
             else
             {
                 GenTree* clonedOp1 = nullptr;
-                op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
                                    nullptr DEBUGARG("Clone op1 for Sse.CompareScalarGreaterThan"));
 
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, simdBaseJitType, simdSize);
@@ -2620,7 +2620,7 @@ GenTree* Compiler::impSSE2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HAN
             else
             {
                 GenTree* clonedOp1 = nullptr;
-                op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
+                op1                = impCloneExpr(op1, &clonedOp1, NO_CLASS_HANDLE, CHECK_SPILL_ALL,
                                    nullptr DEBUGARG("Clone op1 for Sse2.CompareScalarGreaterThan"));
 
                 retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op2, op1, intrinsic, simdBaseJitType, simdSize);

@@ -14,13 +14,6 @@ namespace System
         // This field is not a regular GC handle. It can have a special values that are used to prevent a race condition between setting the target and finalization.
         internal IntPtr m_handle;
 
-        // Migrating InheritanceDemands requires this default ctor, so we can mark it SafeCritical
-        protected WeakReference()
-        {
-            Debug.Fail("WeakReference's protected default ctor should never be used!");
-            throw new NotImplementedException();
-        }
-
         // Determines whether or not this instance of WeakReference still refers to an object
         // that has not been collected.
         //
@@ -29,11 +22,6 @@ namespace System
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
         }
-
-        // Returns a boolean indicating whether or not we're tracking objects until they're collected (true)
-        // or just until they're finalized (false).
-        //
-        public virtual bool TrackResurrection => IsTrackResurrection();
 
         // Gets the Object stored in the handle if it's accessible.
         // Or sets it.

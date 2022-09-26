@@ -993,7 +993,7 @@ private:
             return IndirTransform::None;
         }
 
-        if (!varTypeIsStruct(indir))
+        if (!indir->TypeIs(TYP_STRUCT))
         {
             if (varDsc->lvPromoted)
             {
@@ -1006,26 +1006,6 @@ private:
             // possible transformation for non-STRUCT indirect uses is LCL_FLD.
             assert(varDsc->TypeGet() == TYP_STRUCT);
             return IndirTransform::LclFld;
-        }
-
-        if (varTypeIsSIMD(indir))
-        {
-            // TODO-ADDR: Skip SIMD indirs for now, SIMD typed LCL_FLDs works most of the time
-            // but there are exceptions - fgMorphFieldAssignToSimdSetElement for example.
-            return IndirTransform::None;
-        }
-
-        if (indir->OperIs(GT_IND)) // IND<struct>
-        {
-            // TODO-ADDR: add this case to the "don't expect" assert above; it requires updating
-            // "cpblk" import to not create such nodes for block copies of known size.
-            return IndirTransform::None;
-        }
-
-        if (!user->OperIs(GT_ASG, GT_CALL, GT_RETURN))
-        {
-            // TODO-ADDR: define the contract for "COMMA(..., LCL<struct>)".
-            return IndirTransform::None;
         }
 
         ClassLayout* indirLayout = nullptr;

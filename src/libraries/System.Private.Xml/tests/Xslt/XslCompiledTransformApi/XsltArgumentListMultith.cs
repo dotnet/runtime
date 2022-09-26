@@ -1,14 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Xunit;
-using Xunit.Abstractions;
 using System.IO;
+using System.Xml.Tests;
 using System.Xml.XPath;
 using System.Xml.Xsl;
 using XmlCoreTest.Common;
+using Xunit;
+using Xunit.Abstractions;
 
-namespace System.Xml.Tests
+namespace System.Xml.XslCompiledTransformApiTests
 {
     public class CSameInstanceXsltArgTestCase2 : XsltApiTestCaseBase2
     {
@@ -54,6 +55,7 @@ namespace System.Xml.Tests
     }
 
     //[TestCase(Name = "Same instance testing: XsltArgList - GetParam", Desc = "GetParam test cases")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CSameInstanceXsltArgumentListGetParam : CSameInstanceXsltArgTestCase2
     {
         private ITestOutputHelper _output;
@@ -139,6 +141,7 @@ namespace System.Xml.Tests
     }
 
     //[TestCase(Name = "Same instance testing: XsltArgList - GetExtensionObject", Desc = "GetExtensionObject test cases")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CSameInstanceXsltArgumentListGetExtnObject : CSameInstanceXsltArgTestCase2
     {
         private ITestOutputHelper _output;
@@ -223,6 +226,7 @@ namespace System.Xml.Tests
     }
 
     //[TestCase(Name = "Same instance testing: XsltArgList - Transform", Desc = "Multiple transforms")]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class CSameInstanceXsltArgumentListTransform : CSameInstanceXsltArgTestCase2
     {
         private ITestOutputHelper _output;

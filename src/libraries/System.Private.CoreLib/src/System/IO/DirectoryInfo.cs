@@ -227,5 +227,20 @@ namespace System.IO
             FileSystem.RemoveDirectory(FullPath, recursive);
             Invalidate();
         }
+
+        public override bool Exists
+        {
+            get
+            {
+                try
+                {
+                    return ExistsCore;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
     }
 }
