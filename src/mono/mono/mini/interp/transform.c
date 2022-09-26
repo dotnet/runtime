@@ -4880,7 +4880,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		case CEE_RET: {
 			link_bblocks = FALSE;
 			MonoType *ult = mini_type_get_underlying_type (signature->ret);
-			if (ult->type != MONO_TYPE_VOID) {
+			mt = mint_type (ult);
+			if (mt != MINT_TYPE_VOID) {
 				// Convert stack contents to return type if necessary
 				CHECK_STACK (td, 1);
 				emit_convert (td, td->sp - 1, ult);
@@ -4901,9 +4902,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			}
 
 			int vt_size = 0;
-			if (ult->type != MONO_TYPE_VOID) {
+			if (mt != MINT_TYPE_VOID) {
 				--td->sp;
-				if (mint_type (ult) == MINT_TYPE_VT)
+				if (mt == MINT_TYPE_VT)
 					vt_size = mono_class_value_size (mono_class_from_mono_type_internal (ult), NULL);
 			}
 			if (td->sp > td->stack) {
@@ -4923,7 +4924,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				exit_profiling |= PROFILING_FLAG;
 			if (exit_profiling) {
 				/* This does the return as well */
-				gboolean is_void = ult->type == MONO_TYPE_VOID;
+				gboolean is_void = mt == MINT_TYPE_VOID;
 				interp_add_ins (td, is_void ? MINT_PROF_EXIT_VOID : MINT_PROF_EXIT);
 				td->last_ins->data [0] = exit_profiling;
 				if (!is_void) {
@@ -4932,10 +4933,19 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				}
 			} else {
 				if (vt_size == 0) {
-					if (ult->type == MONO_TYPE_VOID) {
+					if (mt == MINT_TYPE_VOID) {
 						interp_add_ins (td, MINT_RET_VOID);
 					} else {
-						interp_add_ins (td, MINT_RET);
+						if (mt == MINT_TYPE_I1)
+							interp_add_ins (td, MINT_RET_I1);
+						else if (mt == MINT_TYPE_U1)
+							interp_add_ins (td, MINT_RET_U1);
+						else if (mt == MINT_TYPE_I2)
+							interp_add_ins (td, MINT_RET_I2);
+						else if (mt == MINT_TYPE_U2)
+							interp_add_ins (td, MINT_RET_U2);
+						else
+							interp_add_ins (td, MINT_RET);
 						interp_ins_set_sreg (td->last_ins, td->sp [0].local);
 					}
 				} else {
@@ -9648,8 +9658,30 @@ interp_fix_localloc_ret (TransformData *td)
 	for (InterpBasicBlock *bb = td->entry_bb; bb != NULL; bb = bb->next_bb) {
 		InterpInst *ins = bb->first_ins;
 		while (ins) {
-			if (ins->opcode >= MINT_RET && ins->opcode <= MINT_RET_VT)
+			if (ins->opcode >= MINT_RET && ins->opcode <= MINT_RET_VT) {
 				ins->opcode += MINT_RET_LOCALLOC - MINT_RET;
+			} else if (ins->opcode >= MINT_RET_I1 && ins->opcode <= MINT_RET_U2) {
+				int mt = ins->opcode - MINT_RET_I1;
+				int var = ins->sregs [0];
+				int opcode;
+				switch (mt) {
+					case MINT_TYPE_I1: opcode = MINT_CONV_I1_I4; break;
+					case MINT_TYPE_U1: opcode = MINT_CONV_U1_I4; break;
+					case MINT_TYPE_I2: opcode = MINT_CONV_I2_I4; break;
+					case MINT_TYPE_U2: opcode = MINT_CONV_U2_I4; break;
+					default: g_assert_not_reached ();
+				}
+				// This path should be rare enough not to bother with specific opcodes
+				// Add implicit conversion and then return
+				interp_clear_ins (ins);
+				ins = interp_insert_ins (td, ins, opcode);
+				interp_ins_set_dreg (ins, var);
+				interp_ins_set_sreg (ins, var);
+
+				ins = interp_insert_ins (td, ins, MINT_RET_LOCALLOC);
+				interp_ins_set_dreg (ins, var);
+				interp_ins_set_sreg (ins, var);
+			}
 			ins = ins->next;
 		}
 	}
