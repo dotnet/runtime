@@ -314,7 +314,7 @@ jobs:
     buildConfig: release
     platforms:
     - Android_x64
-    #- Browser_wasm - unused
+    - Browser_wasm
     - tvOS_arm64
     - iOS_arm64
     - MacCatalyst_x64
