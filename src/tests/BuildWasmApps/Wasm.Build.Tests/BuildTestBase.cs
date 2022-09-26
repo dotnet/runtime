@@ -442,7 +442,7 @@ namespace Wasm.Build.Tests
             return contents.Replace(s_nugetInsertionTag, $@"<add key=""nuget-local"" value=""{localNuGetsPath}"" />");
         }
 
-        public string CreateWasmTemplateProject(string id, string template = "wasmbrowser")
+        public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "")
         {
             InitPaths(id);
             InitProjectDir(id);
@@ -459,7 +459,7 @@ namespace Wasm.Build.Tests
 
             new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                     .WithWorkingDirectory(_projectDir!)
-                    .ExecuteWithCapturedOutput($"new {template}")
+                    .ExecuteWithCapturedOutput($"new {template} {extraArgs}")
                     .EnsureSuccessful();
 
             return Path.Combine(_projectDir!, $"{id}.csproj");
