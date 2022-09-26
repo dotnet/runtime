@@ -35,6 +35,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
+        public MetadataType OwningType => _owningType;
+
         int ISymbolNode.Offset => 0;
 
         int ISymbolDefinitionNode.Offset

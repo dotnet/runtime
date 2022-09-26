@@ -2221,8 +2221,7 @@ namespace Internal.JitInterface
                         return true;
                     }
 
-                    object data;
-                    if (value.GetRawData(_compilation.NodeFactory, out data))
+                    if (value.GetRawData(_compilation.NodeFactory, out object data))
                     {
                         switch (data)
                         {
@@ -2243,15 +2242,16 @@ namespace Internal.JitInterface
         private CORINFO_CLASS_STRUCT_* getObjectType(void* objPtr)
         {
             object obj = HandleToObject((IntPtr)objPtr);
-            if (obj is FrozenStringNode)
+            return obj switch
             {
-                return ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String));
-            }
-            else if (obj is FrozenObjectNode)
-            {
-                return null; // TODO: how to implement properly?
-            }
-            throw new NotImplementedException($"Unexpected object in getObjectType: {obj}");
+                // For now we only support frozen strings
+                FrozenStringNode => ObjectToHandle(_compilation.TypeSystemContext.GetWellKnownType(WellKnownType.String)),
+
+                // and frozen objects like arrays
+                FrozenObjectNode frozenObj => ObjectToHandle(frozenObj.OwningType),
+
+                _ => throw new NotImplementedException($"Unexpected object in getObjectType: {obj}")
+            };
         }
     }
 }
