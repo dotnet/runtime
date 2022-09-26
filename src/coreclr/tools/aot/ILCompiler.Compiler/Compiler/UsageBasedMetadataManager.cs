@@ -26,7 +26,6 @@ using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore
 using EcmaModule = Internal.TypeSystem.Ecma.EcmaModule;
 using EcmaType = Internal.TypeSystem.Ecma.EcmaType;
 using FlowAnnotations = ILLink.Shared.TrimAnalysis.FlowAnnotations;
-using MetadataExtensions = Internal.TypeSystem.Ecma.MetadataExtensions;
 
 namespace ILCompiler
 {
@@ -211,13 +210,13 @@ namespace ILCompiler
 
         protected override void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            dependencies = dependencies ?? new DependencyList();
+            dependencies ??= new DependencyList();
             dependencies.Add(factory.MethodMetadata(method.GetTypicalMethodDefinition()), "Reflectable method");
         }
 
         protected override void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, FieldDesc field)
         {
-            dependencies = dependencies ?? new DependencyList();
+            dependencies ??= new DependencyList();
             dependencies.Add(factory.FieldMetadata(field.GetTypicalFieldDefinition()), "Reflectable field");
         }
 
@@ -230,8 +229,6 @@ namespace ILCompiler
             }
             if (module is EcmaModule ecmaModule)
             {
-                PEMemoryBlock resourceDirectory = ecmaModule.PEReader.GetSectionData(ecmaModule.PEReader.PEHeaders.CorHeader.ResourcesDirectory.RelativeVirtualAddress);
-
                 foreach (var resourceHandle in ecmaModule.MetadataReader.ManifestResources)
                 {
                     ManifestResource resource = ecmaModule.MetadataReader.GetManifestResource(resourceHandle);
@@ -287,7 +284,7 @@ namespace ILCompiler
                     {
                         if (!method.Signature.IsStatic && method.IsSpecialName)
                         {
-                            dependencies = dependencies ?? new DependencyList();
+                            dependencies ??= new DependencyList();
                             dependencies.Add(factory.CanonicalEntrypoint(method), "Anonymous type accessor");
                         }
                     }
@@ -335,7 +332,7 @@ namespace ILCompiler
 
                 if (fullyRoot)
                 {
-                    dependencies = dependencies ?? new DependencyList();
+                    dependencies ??= new DependencyList();
                     var rootProvider = new RootingServiceProvider(factory, dependencies.Add);
                     foreach (TypeDesc t in mdType.Module.GetAllTypes())
                     {
@@ -351,12 +348,12 @@ namespace ILCompiler
                 AddEventSourceSpecialTypeDependencies(ref dependencies, factory, mdType.GetNestedType("Tasks"));
                 AddEventSourceSpecialTypeDependencies(ref dependencies, factory, mdType.GetNestedType("Opcodes"));
 
-                void AddEventSourceSpecialTypeDependencies(ref DependencyList dependencies, NodeFactory factory, MetadataType type)
+                static void AddEventSourceSpecialTypeDependencies(ref DependencyList dependencies, NodeFactory factory, MetadataType type)
                 {
                     if (type != null)
                     {
                         const string reason = "Event source";
-                        dependencies = dependencies ?? new DependencyList();
+                        dependencies ??= new DependencyList();
                         dependencies.Add(factory.TypeMetadata(type), reason);
                         foreach (FieldDesc field in type.GetFields())
                         {
@@ -507,14 +504,14 @@ namespace ILCompiler
         {
             if (!IsReflectionBlocked(field))
             {
-                dependencies = dependencies ?? new DependencyList();
+                dependencies ??= new DependencyList();
                 dependencies.Add(factory.ReflectableField(field), "LDTOKEN field");
             }
         }
 
         public override void GetDependenciesDueToLdToken(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
-            dependencies = dependencies ?? new DependencyList();
+            dependencies ??= new DependencyList();
 
             if (!IsReflectionBlocked(method))
                 dependencies.Add(factory.ReflectableMethod(method), "LDTOKEN method");
@@ -524,7 +521,7 @@ namespace ILCompiler
         {
             if (!IsReflectionBlocked(target))
             {
-                dependencies = dependencies ?? new DependencyList();
+                dependencies ??= new DependencyList();
                 dependencies.Add(factory.ReflectableMethod(target), "Target of a delegate");
             }
         }
@@ -646,7 +643,7 @@ namespace ILCompiler
                 // for the metadata manager. Metadata manager treats that node the same as a body.
                 if (method.IsAbstract && GetMetadataCategory(method) != 0)
                 {
-                    dependencies = dependencies ?? new DependencyList();
+                    dependencies ??= new DependencyList();
                     dependencies.Add(factory.ReflectableMethod(method), "Abstract reflectable method");
                 }
             }
@@ -739,7 +736,7 @@ namespace ILCompiler
                     }
                 }
 
-                dependencies = dependencies ?? new DependencyList();
+                dependencies ??= new DependencyList();
                 dependencies.Add(factory.ReflectableField(fieldToReport), reason);
             }
         }
@@ -983,7 +980,7 @@ namespace ILCompiler
             if (CompilerGeneratedState.IsNestedFunctionOrStateMachineMember(methodILDefinition.OwningMethod))
                 return;
 
-            dependencies = dependencies ?? new DependencyList();
+            dependencies ??= new DependencyList();
             dependencies.Add(factory.DataflowAnalyzedMethod(methodILDefinition), reason);
         }
 
@@ -1078,7 +1075,7 @@ namespace ILCompiler
             }
         }
 
-        private class FeatureSwitchHashtable : LockFreeReaderHashtable<EcmaModule, AssemblyFeatureInfo>
+        private sealed class FeatureSwitchHashtable : LockFreeReaderHashtable<EcmaModule, AssemblyFeatureInfo>
         {
             private readonly Dictionary<string, bool> _switchValues;
 
@@ -1098,7 +1095,7 @@ namespace ILCompiler
             }
         }
 
-        private class AssemblyFeatureInfo
+        private sealed class AssemblyFeatureInfo
         {
             public EcmaModule Module { get; }
 
@@ -1139,7 +1136,7 @@ namespace ILCompiler
             }
         }
 
-        private class LinkAttributesReader : ProcessXmlBase
+        private sealed class LinkAttributesReader : ProcessXmlBase
         {
             private readonly HashSet<TypeDesc> _removedAttributes;
 

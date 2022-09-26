@@ -628,6 +628,22 @@ namespace System.Net.Http.Tests
             CheckInvalidParse("\u4F1A", 0);
         }
 
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData(" ")]
+        [InlineData(",")]
+        [InlineData(",,")]
+        [InlineData(" , , ")]
+        public void CacheControlHeaderValue_EmptyValue_Parsed(string value)
+        {
+            Assert.NotNull(CacheControlHeaderValue.Parse(value));
+
+            Assert.True(CacheControlHeaderValue.TryParse(value, out CacheControlHeaderValue headerValue));
+            Assert.NotNull(headerValue);
+        }
+
         [Fact]
         public void TryParse_SetOfValidValueStrings_ParsedCorrectly()
         {

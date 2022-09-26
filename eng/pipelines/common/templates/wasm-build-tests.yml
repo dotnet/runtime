@@ -20,27 +20,12 @@ jobs:
     shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
     variables:
       # map dependencies variables to local variables
-      - name: wasmbuildtestsContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'] ]
-      - name: allWasmContainsChange
-        value: $[ dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'] ]
       - name: alwaysRunVar
         value: ${{ parameters.alwaysRun }}
-      - name: isDefaultPipeline
-        # default pipeline, so not runtime-wasm, and not
-        # runtime-extra-platforms+rolling build
-        value: ${{
-            and(
-              ne(parameters.isWasmOnlyBuild, true),
-              or(
-                ne(parameters.isExtraPlatformsBuild, true),
-                eq(variables['isRollingBuild'], true)))
-          }}
       - name: shouldRunOnDefaultPipelines
         value: $[
           or(
             eq(variables['wasmDarcDependenciesChanged'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_allwasm.containsChange'], true),
             eq(dependencies.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true))
           ]
     jobParameters:
@@ -66,3 +51,4 @@ jobs:
         extraHelixArguments: /p:BrowserHost=$(_hostedOs)
         scenarios:
         - buildwasmapps
+

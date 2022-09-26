@@ -86,7 +86,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // The next entry is a pointer to the context to be used for the canonical method
             builder.EmitPointerReloc(contextParameter);
-            
+
             return builder.ToObjectData();
         }
 

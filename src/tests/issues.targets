@@ -562,6 +562,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_45929/test45929/*">
             <Issue>https://github.com/dotnet/runtime/issues/60152</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/GC/API/GC/GetTotalPauseDuration.csproj">
+            <Issue>https://github.com/dotnet/runtime/issues/74631</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- The following are x64 Unix failures on CoreCLR. -->
@@ -2684,6 +2687,9 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_64125/Runtime_64125/**">
             <Issue>needs triage</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/JIT/Regression/JitBlue/Runtime_74635/Runtime_74635/**">
+            <Issue>https://github.com/dotnet/runtime/issues/74687</Issue>
         </ExcludeList>
         <!-- End interpreter issues -->
     </ItemGroup>

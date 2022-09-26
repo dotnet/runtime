@@ -30,7 +30,7 @@ namespace System.Formats.Tar.Tests
             malformed.Seek(0, SeekOrigin.Begin);
 
             using TarReader reader = new TarReader(malformed);
-            Assert.Throws<FormatException>(() => reader.GetNextEntry());
+            Assert.Throws<InvalidDataException>(() => reader.GetNextEntry());
         }
 
         [Fact]

@@ -7713,6 +7713,14 @@ MONO_RESTORE_WARNING
 			default:
 				element_ix = const_int32 (ins->inst_c0);
 			}
+
+#ifdef TARGET_WASM
+			// LLVM seems to return an invalid result when the input is undef (i.e. the result of an invalid shufflevector for example)
+			if (LLVMIsUndef (lhs)) {
+				values [ins->dreg] = LLVMConstNull (LLVMGetElementType (LLVMTypeOf (lhs)));
+				break;
+			}
+#endif
 			LLVMTypeRef lhs_t = LLVMTypeOf (lhs);
 			int vec_width = mono_llvm_get_prim_size_bits (lhs_t);
 			int elem_width = mono_llvm_get_prim_size_bits (elt_t);
@@ -9717,8 +9725,20 @@ MONO_RESTORE_WARNING
 			break;
 		}
 		case OP_WASM_SIMD_SWIZZLE: {
-			LLVMValueRef args [] = { lhs, rhs };
-			values [ins->dreg] = call_intrins (ctx, INTRINS_WASM_SWIZZLE, args, "");
+			int nelems = LLVMGetVectorSize (LLVMTypeOf (lhs));
+			if (nelems == 16) {
+				LLVMValueRef args [] = { lhs, rhs };
+				values [ins->dreg] = call_intrins (ctx, INTRINS_WASM_SWIZZLE, args, "");
+				break;
+			}
+
+			LLVMValueRef indexes [16];
+			for (int i = 0; i < nelems; ++i)
+				indexes [i] = LLVMBuildExtractElement (builder, rhs, const_int32 (i), "");
+			LLVMValueRef shuffle_val = LLVMConstNull (LLVMVectorType (i4_t, nelems));
+			for (int i = 0; i < nelems; ++i)
+				shuffle_val = LLVMBuildInsertElement (builder, shuffle_val, convert (ctx, indexes [i], i4_t), const_int32 (i), "");
+			values [ins->dreg] = LLVMBuildShuffleVector (builder, lhs, LLVMGetUndef (LLVMTypeOf (lhs)), shuffle_val, "");
 			break;
 		}
 #endif
@@ -9946,18 +9966,6 @@ MONO_RESTORE_WARNING
 			LLVMValueRef mask = bitcast_to_integral (ctx, rhs);
 			mask = LLVMBuildNot (builder, mask, "");
 			result = LLVMBuildAnd (builder, mask, result, "arm64_bic");
-			result = convert (ctx, result, ret_t);
-			values [ins->dreg] = result;
-			break;
-		}
-		case OP_ARM64_BSL: {
-			LLVMTypeRef ret_t = LLVMTypeOf (rhs);
-			LLVMValueRef select = bitcast_to_integral (ctx, lhs);
-			LLVMValueRef left = bitcast_to_integral (ctx, rhs);
-			LLVMValueRef right = bitcast_to_integral (ctx, arg3);
-			LLVMValueRef result1 = LLVMBuildAnd (builder, select, left, "arm64_bsl");
-			LLVMValueRef result2 = LLVMBuildAnd (builder, LLVMBuildNot (builder, select, ""), right, "");
-			LLVMValueRef result = LLVMBuildOr (builder, result1, result2, "");
 			result = convert (ctx, result, ret_t);
 			values [ins->dreg] = result;
 			break;
@@ -11274,6 +11282,21 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = LLVMBuildBitCast (builder, result, ret_t, "");
 			break;
 		}
+#endif
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
+		case OP_BSL: {
+			LLVMTypeRef ret_t = LLVMTypeOf (rhs);
+			LLVMValueRef select = bitcast_to_integral (ctx, lhs);
+			LLVMValueRef left = bitcast_to_integral (ctx, rhs);
+			LLVMValueRef right = bitcast_to_integral (ctx, arg3);
+			LLVMValueRef result1 = LLVMBuildAnd (builder, select, left, "bit_select");
+			LLVMValueRef result2 = LLVMBuildAnd (builder, LLVMBuildNot (builder, select, ""), right, "");
+			LLVMValueRef result = LLVMBuildOr (builder, result1, result2, "");
+			result = convert (ctx, result, ret_t);
+			values [ins->dreg] = result;
+			break;
+		}
+
 #endif
 
 #ifdef TARGET_AMD64
