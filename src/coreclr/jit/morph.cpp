@@ -1297,6 +1297,11 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
         sortedArgs[argCount++] = &arg;
     }
 
+    if (comp->opts.OptimizationDisabled())
+    {
+        return;
+    }
+
     // Set the beginning and end for the new argument table
     unsigned curInx;
     int      regCount      = 0;
