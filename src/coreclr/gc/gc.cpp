@@ -2861,6 +2861,8 @@ bool gc_heap::special_sweep_p = false;
 
 /* end of per heap static initialization */
 
+const size_t uninitialized_end_gen0_region_space = (size_t)(-1);
+
 // budget smoothing
 size_t     gc_heap::smoothed_desired_per_heap[total_generation_count];
 /* end of static initialization */
@@ -16197,6 +16199,7 @@ BOOL gc_heap::short_on_end_of_seg (heap_segment* seg)
     uint8_t* allocated = heap_segment_allocated (seg);
 
 #ifdef USE_REGIONS
+    assert (end_gen0_region_space != uninitialized_end_gen0_region_space);
     BOOL sufficient_p = sufficient_space_regions (end_gen0_region_space, end_space_after_gc());
 #else
     BOOL sufficient_p = sufficient_space_end_seg (allocated,
@@ -21155,6 +21158,12 @@ void gc_heap::gc1()
             dprintf (3, ("New allocation quantum: %d(0x%Ix)", allocation_quantum, allocation_quantum));
         }
     }
+#ifdef USE_REGIONS
+    if (end_gen0_region_space == uninitialized_end_gen0_region_space)
+    {
+        end_gen0_region_space = get_gen0_end_space();
+    }
+#endif //USE_REGIONS
 
     descr_generations ("END");
 
@@ -22292,7 +22301,7 @@ void gc_heap::init_records()
     }
 
 #ifdef USE_REGIONS
-    end_gen0_region_space = 0;
+    end_gen0_region_space = uninitialized_end_gen0_region_space;
     gen0_pinned_free_space = 0;
     gen0_large_chunk_found = false;
     num_regions_freed_in_sweep = 0;
@@ -28649,6 +28658,7 @@ void gc_heap::update_planned_gen0_free_space (size_t free_size, uint8_t* plug)
 // the regions again and do this update in plan phase.
 void gc_heap::get_gen0_end_plan_space()
 {
+    end_gen0_region_space = 0;
     for (int gen_idx = settings.condemned_generation; gen_idx >= 0; gen_idx--)
     {
         generation* gen = generation_of (gen_idx);
@@ -31850,8 +31860,6 @@ void gc_heap::make_free_lists (int condemned_gen_number)
         generation* gen_gen0 = generation_of (0);
         ephemeral_heap_segment = generation_start_segment (gen_gen0);
         alloc_allocated = heap_segment_allocated (ephemeral_heap_segment);
-        // Since we didn't compact, we should recalculate the end_gen0_region_space.
-        end_gen0_region_space = get_gen0_end_space();
 #else //USE_REGIONS
         int bottom_gen = 0;
         args.free_list_gen_number--;
