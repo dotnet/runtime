@@ -15,7 +15,7 @@ Native-sized integer types and pointers have alignment that matches their size o
 
 The alignment of fields is not guaranteed when `FieldOffsetAttribute` is used to explicitly adjust field offsets.
 
-## Atomic memory accesses.
+## Atomic memory accesses
 Memory accesses to *properly aligned* data of primitive types are always atomic. The value that is observed is always a result of complete read and write operations.
 
 Values of unmanaged pointers are treated as native integer primitive types. Memory accesses to *properly aligned* values of unmanaged pointers are atomic.
@@ -106,7 +106,7 @@ The actual implementation may vary depending on the platform. For example interr
 Methods decorated with ```MethodImpl(MethodImplOptions.Synchronized)``` attribute have the same memory access semantics as if a lock is acquired at an entrance to the method and released upon leaving the method.
 
 ## Data-dependent reads are ordered.
-In all implementations of .NET runtime, memory ordering honors data dependency. When performing indirect reads from a location derived from a reference, it is guaranteed that reading of the data will not happen ahead of obtaining the reference.
+Memory ordering honors data dependency. When performing indirect reads from a location derived from a reference, it is guaranteed that reading of the data will not happen ahead of obtaining the reference.
 **Example:** reading a field, will not use a cached value fetched from the location of the field prior obtaining a reference to the instance.
 
 ## Object assignment
