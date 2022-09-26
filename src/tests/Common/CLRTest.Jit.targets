@@ -222,7 +222,7 @@ IF NOT DEFINED DoLink (
           DependsOnTargets="GetDisasmCheckData">
     <PropertyGroup>
       <HasBashDisasmCheck>false</HasBashDisasmCheck>
-      <HasBashDisasmCheck Condition="'$(HasDisasmCheck)' == 'true' and '$(RuntimeFlavor)' == 'coreclr' and ('$(TargetOS)' == 'Linux' or '$(TargetOS)' == 'OSX') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64') and '$(RunCrossGen2)' != 'true' and '$(RuntimeIdentifier)' != 'linux-musl-arm64' and '$(RuntimeIdentifier)' != 'linux-musl-arm'">true</HasBashDisasmCheck>
+      <HasBashDisasmCheck Condition="'$(HasDisasmCheck)' == 'true' and '$(RuntimeFlavor)' == 'coreclr' and ('$(TargetOS)' == 'Linux' or '$(TargetOS)' == 'OSX') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64') and '$(RunCrossGen2)' != 'true' and '$(RuntimeIdentifier)' != 'linux-musl-arm64' and '$(RuntimeIdentifier)' != 'linux-musl-arm' and '$(RuntimeIdentifier)' != 'linux-musl-x64'">true</HasBashDisasmCheck>
 
       <GCStressIncompatible Condition="'$(HasBashDisasmCheck)' == 'true'">true</GCStressIncompatible>
       <HeapVerifyIncompatible Condition="'$(HasBashDisasmCheck)' == 'true'">true</HeapVerifyIncompatible>
