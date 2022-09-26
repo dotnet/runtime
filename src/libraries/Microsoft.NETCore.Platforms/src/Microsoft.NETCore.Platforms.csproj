@@ -8,10 +8,10 @@
     <AssemblyName>Microsoft.NETCore.Platforms.BuildTasks</AssemblyName>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <IncludeSymbols>false</IncludeSymbols>
-    <!-- Generate a package only during the allconfigurations leg to avoid package clashes during publish. -->
-    <GeneratePackageOnBuild Condition="'$(BuildAllConfigurations)' != 'true'">false</GeneratePackageOnBuild>
 
     <IsPackable>true</IsPackable>
+    <!-- Generate a package only during the allconfigurations leg to avoid package clashes during publish. -->
+    <GeneratePackageOnBuild Condition="'$(BuildAllConfigurations)' != 'true'">false</GeneratePackageOnBuild>
     <PackageId>$(MSBuildProjectName)</PackageId>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <PackageDescription>Provides runtime information required to resolve target framework, platform, and runtime specific implementations of .NETCore packages.</PackageDescription>
@@ -44,7 +44,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="$(GeneratedRuntimeIdentifierGraphFile)" PackagePath="/" />
+    <Content Condition="'$(AdditionalRuntimeIdentifiers)' == ''" Include="runtime.json" PackagePath="/" />
+    <Content Condition="'$(AdditionalRuntimeIdentifiers)' != ''" Include="$(GeneratedRuntimeIdentifierGraphFile)" PackagePath="/" />
     <Content Include="$(PlaceholderFile)" PackagePath="lib/netstandard1.0" />
   </ItemGroup>
 
@@ -58,17 +59,13 @@
   
   <UsingTask TaskName="GenerateRuntimeGraph" AssemblyFile="$(_generateRuntimeGraphTask)"/>
 
-  <Target Name="GenerateRuntimeJson" AfterTargets="Build">
+  <Target Name="GenerateRuntimeJson" AfterTargets="Build" Condition="'$(AdditionalRuntimeIdentifiers)' != ''">
     <MakeDir Directories="$(IntermediateOutputPath)" />
-    <GenerateRuntimeGraph Condition="'$(AdditionalRuntimeIdentifiers)' != ''"
-                          RuntimeGroups="@(RuntimeGroupWithQualifiers)"
+    <GenerateRuntimeGraph RuntimeGroups="@(RuntimeGroupWithQualifiers)"
                           AdditionalRuntimeIdentifiers="$(AdditionalRuntimeIdentifiers)"
                           AdditionalRuntimeIdentifierParent="$(AdditionalRuntimeIdentifierParent)"
                           RuntimeJson="$(GeneratedRuntimeIdentifierGraphFile)"
                           UpdateRuntimeFiles="True" />
-    <Copy Condition="'$(AdditionalRuntimeIdentifiers)' == ''"
-          SourceFiles="runtime.json"
-          DestinationFiles="$(GeneratedRuntimeIdentifierGraphFile)" />
   </Target>
 
   <Target Name="UpdateRuntimeJson">
