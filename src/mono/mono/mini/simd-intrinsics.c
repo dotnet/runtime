@@ -386,7 +386,7 @@ emit_simd_ins_for_unary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSignat
 		break;
 	case SN_OnesComplement:
 	case SN_op_OnesComplement:
-		op = OP_ONESCOMPLEMENT;
+		op = OP_ONES_COMPLEMENT;
 		break;
 	default:
 		g_assert_not_reached ();
@@ -2496,7 +2496,7 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_NegateSaturate, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_SQNEG},
 	{SN_NegateSaturateScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_SQNEG},
 	{SN_NegateScalar, OP_NEGATION_SCALAR},
-	{SN_Not, OP_ARM64_MVN},
+	{SN_Not, OP_ONES_COMPLEMENT},
 	{SN_Or, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_OR},
 	{SN_OrNot, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_ORNOT},
 	{SN_PolynomialMultiply, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_PMUL},

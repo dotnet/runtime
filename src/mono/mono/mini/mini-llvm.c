@@ -11286,7 +11286,7 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = result;
 			break;
 		}
-		case OP_ONESCOMPLEMENT: {
+		case OP_ONES_COMPLEMENT: {
 			LLVMTypeRef ret_t = LLVMTypeOf (lhs);
 			LLVMValueRef result = bitcast_to_integral (ctx, lhs);
 			result = LLVMBuildNot (builder, result, "");

@@ -1776,5 +1776,5 @@ MINI_OP(OP_WASM_ONESCOMPLEMENT, "wasm_onescomplement", XREG, XREG, NONE)
 MINI_OP3(OP_BSL,            "bitwise_select", XREG, XREG, XREG, XREG)
 MINI_OP(OP_NEGATION,        "negate", XREG, XREG, NONE)
 MINI_OP(OP_NEGATION_SCALAR, "negate_scalar", XREG, XREG, NONE)
-MINI_OP(OP_ONESCOMPLEMENT,  "onescomplement", XREG, XREG, NONE)
+MINI_OP(OP_ONES_COMPLEMENT,  "ones complement", XREG, XREG, NONE)
 #endif // TARGET_ARM64 || TARGET_AMD64
