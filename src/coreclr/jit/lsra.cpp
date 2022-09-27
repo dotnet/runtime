@@ -5044,8 +5044,8 @@ void LinearScan::allocateRegisters()
             // enough that it may not warrant the additional complexity.
             if (assignedRegister != REG_NA)
             {
-                RegRecord* regRecord = getRegisterRecord(assignedRegister);
-                Interval* assignedInterval = regRecord->assignedInterval;
+                RegRecord* regRecord        = getRegisterRecord(assignedRegister);
+                Interval*  assignedInterval = regRecord->assignedInterval;
                 unassignPhysReg(regRecord, currentInterval->firstRefPosition);
                 if (assignedInterval->isConstant)
                 {
