@@ -23,7 +23,7 @@
         "low": 5000,
         "high": 5300
       },
-	    "replaces": "5000"
+      "replaces": "5000"
     },
     "kestrelHttpsPortGenerated": {
       "type": "generated",
@@ -32,7 +32,8 @@
         "low": 7000,
         "high": 7300
       },
-	    "replaces": "5001"
+     "replaces": "5001"
+    },
     "framework": {
       "type": "parameter",
       "description": "The target framework for the project.",
