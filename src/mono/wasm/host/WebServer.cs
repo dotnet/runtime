@@ -20,7 +20,7 @@ public class WebServer
 {
     internal static async Task<(ServerURLs, IWebHost)> StartAsync(WebServerOptions options, ILogger logger, CancellationToken token)
     {
-        string[]? urls = new string[] { $"http://127.0.0.1:{options.Port}", "https://127.0.0.1:0" };
+        string[] urls = options.Urls;
 
         IWebHostBuilder builder = new WebHostBuilder()
             .UseKestrel()

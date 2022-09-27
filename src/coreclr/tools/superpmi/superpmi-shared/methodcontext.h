@@ -310,6 +310,10 @@ public:
     void dmpGetUnBoxHelper(DWORDLONG key, DWORD value);
     CorInfoHelpFunc repGetUnBoxHelper(CORINFO_CLASS_HANDLE cls);
 
+    void recGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls, void* result);
+    void dmpGetRuntimeTypePointer(DWORDLONG key, DWORDLONG value);
+    void* repGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls);
+
     void recGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                 CORINFO_LOOKUP_KIND*    pGenericLookupKind,
                                 CorInfoHelpFunc         id,
@@ -617,6 +621,10 @@ public:
     void recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize, int length);
     void dmpGetStringLiteral(DLDD key, DD value);
     int repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize);
+
+    void recObjectToString(void* handle, char* buffer, int bufferSize, int length);
+    void dmpObjectToString(DLD key, DD value);
+    int repObjectToString(void* handle, char* buffer, int bufferSize);
 
     void recGetHelperName(CorInfoHelpFunc funcNum, const char* result);
     void dmpGetHelperName(DWORD key, DWORD value);
@@ -1129,6 +1137,8 @@ enum mcPackets
     Packet_UpdateEntryPointForTailCall = 193,
     Packet_GetLoongArch64PassStructInRegisterFlags = 194,
     Packet_GetExactClasses = 195,
+    Packet_GetRuntimeTypePointer = 196,
+    Packet_ObjectToString = 197,
 };
 
 void SetDebugDumpVariables();

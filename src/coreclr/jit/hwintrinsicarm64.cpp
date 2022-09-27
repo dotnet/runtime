@@ -595,7 +595,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 // We do this as it simplifies the logic and allows certain code paths to
                 // have better codegen, such as for 0, AllBitsSet, or certain small constants
 
-                GenTreeVecCon* vecCon = gtNewVconNode(retType, simdBaseJitType);
+                GenTreeVecCon* vecCon = gtNewVconNode(retType);
 
                 switch (simdBaseType)
                 {
@@ -968,7 +968,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                                /* isSimdAsHWIntrinsic */ false);
                 op1 = gtNewCastNode(TYP_INT, op1, /* isUnsigned */ true, TYP_INT);
 
-                GenTree* zero  = gtNewZeroConNode(simdType, simdBaseJitType);
+                GenTree* zero  = gtNewZeroConNode(simdType);
                 ssize_t  index = 8 / genTypeSize(simdBaseType);
 
                 op2 = gtNewSimdHWIntrinsicNode(simdType, op2, zero, gtNewIconNode(index), NI_AdvSimd_ExtractVector128,
@@ -1035,7 +1035,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_get_AllBitsSet:
         {
             assert(sig->numArgs == 0);
-            retNode = gtNewAllBitsSetConNode(retType, simdBaseJitType);
+            retNode = gtNewAllBitsSetConNode(retType);
             break;
         }
 
@@ -1043,7 +1043,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_get_Zero:
         {
             assert(sig->numArgs == 0);
-            retNode = gtNewZeroConNode(retType, simdBaseJitType);
+            retNode = gtNewZeroConNode(retType);
             break;
         }
 
@@ -1067,7 +1067,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             //   AdvSimd.ExtractVector128(vector, Vector128<T>.Zero, 8 / sizeof(T)).GetLower();
             assert(numArgs == 1);
             op1            = impPopStack().val;
-            GenTree* zero  = gtNewZeroConNode(retType, simdBaseJitType);
+            GenTree* zero  = gtNewZeroConNode(retType);
             ssize_t  index = 8 / genTypeSize(simdBaseType);
 
             retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, zero, gtNewIconNode(index), NI_AdvSimd_ExtractVector128,
@@ -1800,27 +1800,10 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 }
             }
 
-            GenTree* loadIntrinsic = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
-            // This operation contains an implicit indirection
-            //   it could point into the global heap or
-            //   it could throw a null reference exception.
-            //
-            loadIntrinsic->gtFlags |= (GTF_GLOB_REF | GTF_EXCEPT);
-
             assert(HWIntrinsicInfo::IsMultiReg(intrinsic));
 
-            const unsigned lclNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg intrinsic"));
-            impAssignTempGen(lclNum, loadIntrinsic, sig->retTypeSigClass, CHECK_SPILL_ALL);
-
-            LclVarDsc* varDsc = lvaGetDesc(lclNum);
-            // The following is to exclude the fields of the local to have SSA.
-            varDsc->lvIsMultiRegRet = true;
-
-            GenTreeLclVar* lclVar = gtNewLclvNode(lclNum, varDsc->lvType);
-            lclVar->SetDoNotCSE();
-            lclVar->SetMultiReg();
-
-            retNode = lclVar;
+            op1     = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
+            retNode = impAssignMultiRegTypeToVar(op1, sig->retTypeSigClass DEBUGARG(CorInfoCallConvExtension::Managed));
             break;
         }
 

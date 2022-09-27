@@ -403,6 +403,12 @@ while [[ $# > 0 ]]; do
       shift 1
       ;;
 
+     *crossbuild=true*)
+      crossBuild=1
+      extraargs="$extraargs $1"
+      shift 1
+      ;;
+
      -clang*)
       compiler="${opt/#-/}" # -clang-9 => clang-9 or clang-9 => (unchanged)
       arguments="$arguments /p:Compiler=$compiler /p:CppCompilerAndLinker=$compiler"

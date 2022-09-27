@@ -113,6 +113,7 @@
     <Compile Include="System\NullReferenceExceptionTests.cs" />
     <Compile Include="System\Numerics\IExponentialFunctionsTests.cs" />
     <Compile Include="System\Numerics\IFloatingPointTests.cs" />
+    <Compile Include="System\Numerics\TotalOrderIeee754ComparerTests.cs" />
     <Compile Include="System\ObjectTests.cs" />
     <Compile Include="System\ObjectDisposedExceptionTests.cs" />
     <Compile Include="System\ObsoleteAttributeTests.cs" />

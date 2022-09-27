@@ -1609,6 +1609,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     dispAttrStr = dispAttrStr.Replace(",nq", "");
                 }
+                if (dispAttrStr.Contains(", raw"))
+                {
+                    dispAttrStr = dispAttrStr.Replace(", raw", "");
+                }
+                if (dispAttrStr.Contains(",raw"))
+                {
+                    dispAttrStr = dispAttrStr.Replace(",raw", "");
+                }
                 expr = "$\"" + dispAttrStr + "\"";
                 JObject retValue = await resolver.Resolve(expr, token);
                 retValue ??= await ExpressionEvaluator.CompileAndRunTheExpression(expr, resolver, logger, token);

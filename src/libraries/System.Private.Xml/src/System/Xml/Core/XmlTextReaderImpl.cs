@@ -5119,7 +5119,7 @@ namespace System.Xml
                         PushXmlContext();
                     }
 
-                    switch (XmlConvert.TrimString(attr.StringValue))
+                    switch (attr.StringValue.AsSpan().Trim(XmlConvert.WhitespaceChars))
                     {
                         case "preserve":
                             _xmlContext.xmlSpace = XmlSpace.Preserve;

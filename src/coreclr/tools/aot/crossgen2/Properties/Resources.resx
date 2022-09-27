@@ -393,4 +393,7 @@
   <data name="SupportIbc" xml:space="preserve">
     <value>Enable processing of Ibc data embedded in the input assembly.</value>
   </data>
+  <data name="Crossgen2BannerText" xml:space="preserve">
+    <value>.NET Crossgen2 Compiler</value>
+  </data>
 </root>
