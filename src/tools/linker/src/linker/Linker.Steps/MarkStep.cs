@@ -611,7 +611,7 @@ namespace Mono.Linker.Steps
 						if (bases is null)
 							continue;
 						foreach (var @base in bases) {
-							if (@base.DeclaringType.IsInterface && IgnoreScope (@base.DeclaringType.Scope))
+							if (@base.DeclaringType is not null && @base.DeclaringType.IsInterface && IgnoreScope (@base.DeclaringType.Scope))
 								_interfaceOverrides.Add ((new OverrideInformation (@base, method, Context), ScopeStack.CurrentScope));
 						}
 					}
@@ -2406,6 +2406,9 @@ namespace Mono.Linker.Steps
 		{
 			var @base = overrideInformation.Base;
 			var method = overrideInformation.Override;
+			if (@base is null || method is null || @base.DeclaringType is null)
+				return false;
+
 			if (Annotations.IsMarked (method))
 				return false;
 
