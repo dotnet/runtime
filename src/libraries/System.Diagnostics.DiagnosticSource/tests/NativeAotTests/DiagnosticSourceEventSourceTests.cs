@@ -83,7 +83,8 @@ internal class Program
         }
     }
 
-    // can be removed once https://github.com/dotnet/runtime/issues/50454 is implemented
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+        Justification = "The value being passed into Write has the necessary properties being preserved with DynamicallyAccessedMembers.")]
     private static void Write<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(
         DiagnosticSource diagnosticSource,
         string name,
