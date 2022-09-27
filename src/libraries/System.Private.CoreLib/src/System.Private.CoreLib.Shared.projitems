@@ -187,6 +187,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Concurrent\IProducerConsumerCollectionDebugView.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\DictionaryEntry.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\ArraySortHelper.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\CollectionExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\Comparer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\Dictionary.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\EqualityComparer.cs" />
