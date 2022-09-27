@@ -113,7 +113,7 @@ static void CALLBACK CheckPromoted(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t * /*
     LOG((LF_GC, LL_INFO100000, LOG_HANDLE_OBJECT_CLASS("Checking referent of Weak-", pObjRef, "to ", *pObjRef)));
 
     Object **pRef = (Object **)pObjRef;
-    if (!g_theGCHeap->IsPromoted(*pRef))
+    if (!g_theGCHeap->IsPromoted(*pRef) && !g_theGCHeap->IsInFrozenSegment(*pRef))
     {
         LOG((LF_GC, LL_INFO100, LOG_HANDLE_OBJECT_CLASS("Severing Weak-", pObjRef, "to unreachable ", *pObjRef)));
 
