@@ -12,42 +12,47 @@ namespace System.Formats.Tar.Tests
     {
         public static IEnumerable<object[]> NameRoundtripsTheoryData()
         {
-            foreach (TarEntryType entryType in new[] { TarEntryType.RegularFile, TarEntryType.Directory })
+            foreach (bool unseekableStream in new[] { false, true })
             {
-                foreach (string name in GetNamesNonAsciiTestData(NameCapabilities.Name).Concat(GetNamesPrefixedTestData(NameCapabilities.Name)))
+                foreach (TarEntryType entryType in new[] { TarEntryType.RegularFile, TarEntryType.Directory })
                 {
-                    TarEntryType v7EntryType = entryType is TarEntryType.RegularFile ? TarEntryType.V7RegularFile : entryType;
-                    yield return new object[] { TarEntryFormat.V7, v7EntryType, name };
-                }
+                    foreach (string name in GetNamesNonAsciiTestData(NameCapabilities.Name).Concat(GetNamesPrefixedTestData(NameCapabilities.Name)))
+                    {
+                        TarEntryType v7EntryType = entryType is TarEntryType.RegularFile ? TarEntryType.V7RegularFile : entryType;
+                        yield return new object[] { TarEntryFormat.V7, v7EntryType, unseekableStream, name };
+                    }
 
-                foreach (string name in GetNamesNonAsciiTestData(NameCapabilities.NameAndPrefix).Concat(GetNamesPrefixedTestData(NameCapabilities.NameAndPrefix)))
-                {
-                    yield return new object[] { TarEntryFormat.Ustar, entryType, name };
-                }
+                    foreach (string name in GetNamesNonAsciiTestData(NameCapabilities.NameAndPrefix).Concat(GetNamesPrefixedTestData(NameCapabilities.NameAndPrefix)))
+                    {
+                        yield return new object[] { TarEntryFormat.Ustar, entryType, unseekableStream, name };
+                    }
 
-                foreach (string name in GetNamesNonAsciiTestData(NameCapabilities.Unlimited).Concat(GetNamesPrefixedTestData(NameCapabilities.Unlimited)))
-                {
-                    yield return new object[] { TarEntryFormat.Pax, entryType, name };
-                    yield return new object[] { TarEntryFormat.Gnu, entryType, name };
+                    foreach (string name in GetNamesNonAsciiTestData(NameCapabilities.Unlimited).Concat(GetNamesPrefixedTestData(NameCapabilities.Unlimited)))
+                    {
+                        yield return new object[] { TarEntryFormat.Pax, entryType, unseekableStream, name };
+                        yield return new object[] { TarEntryFormat.Gnu, entryType, unseekableStream, name };
+                    }
                 }
             }
         }
 
         [Theory]
         [MemberData(nameof(NameRoundtripsTheoryData))]
-        public void NameRoundtrips(TarEntryFormat entryFormat, TarEntryType entryType, string name)
+        public void NameRoundtrips(TarEntryFormat entryFormat, TarEntryType entryType, bool unseekableStream, string name)
         {
             TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, entryType, name);
             entry.Name = name;
 
             MemoryStream ms = new();
-            using (TarWriter writer = new(ms, leaveOpen: true))
+            Stream s = unseekableStream ? new WrappedStream(ms, ms.CanRead, ms.CanWrite, canSeek: false) : ms;
+
+            using (TarWriter writer = new(s, leaveOpen: true))
             {
                 writer.WriteEntry(entry);
             }
 
             ms.Position = 0;
-            using TarReader reader = new(ms);
+            using TarReader reader = new(s);
 
             entry = reader.GetNextEntry();
             Assert.Null(reader.GetNextEntry());
@@ -56,38 +61,43 @@ namespace System.Formats.Tar.Tests
 
         public static IEnumerable<object[]> LinkNameRoundtripsTheoryData()
         {
-            foreach (TarEntryType entryType in new[] { TarEntryType.SymbolicLink, TarEntryType.HardLink })
+            foreach (bool unseekableStream in new[] { false, true })
             {
-                foreach (string name in GetNamesNonAsciiTestData(NameCapabilities.Name).Concat(GetNamesPrefixedTestData(NameCapabilities.Name)))
+                foreach (TarEntryType entryType in new[] { TarEntryType.SymbolicLink, TarEntryType.HardLink })
                 {
-                    yield return new object[] { TarEntryFormat.V7, entryType, name };
-                    yield return new object[] { TarEntryFormat.Ustar, entryType, name };
-                }
+                    foreach (string name in GetNamesNonAsciiTestData(NameCapabilities.Name).Concat(GetNamesPrefixedTestData(NameCapabilities.Name)))
+                    {
+                        yield return new object[] { TarEntryFormat.V7, entryType, unseekableStream, name };
+                        yield return new object[] { TarEntryFormat.Ustar, entryType, unseekableStream, name };
+                    }
 
-                foreach (string name in GetNamesNonAsciiTestData(NameCapabilities.Unlimited).Concat(GetNamesPrefixedTestData(NameCapabilities.Unlimited)))
-                {
-                    yield return new object[] { TarEntryFormat.Pax, entryType, name };
-                    yield return new object[] { TarEntryFormat.Gnu, entryType, name };
+                    foreach (string name in GetNamesNonAsciiTestData(NameCapabilities.Unlimited).Concat(GetNamesPrefixedTestData(NameCapabilities.Unlimited)))
+                    {
+                        yield return new object[] { TarEntryFormat.Pax, entryType, unseekableStream, name };
+                        yield return new object[] { TarEntryFormat.Gnu, entryType, unseekableStream, name };
+                    }
                 }
             }
         }
 
         [Theory]
         [MemberData(nameof(LinkNameRoundtripsTheoryData))]
-        public void LinkNameRoundtrips(TarEntryFormat entryFormat, TarEntryType entryType, string linkName)
+        public void LinkNameRoundtrips(TarEntryFormat entryFormat, TarEntryType entryType, bool unseekableStream, string linkName)
         {
             string name = "foo";
             TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, entryType, name);
             entry.LinkName = linkName;
 
             MemoryStream ms = new();
-            using (TarWriter writer = new(ms, leaveOpen: true))
+            Stream s = unseekableStream ? new WrappedStream(ms, ms.CanRead, ms.CanWrite, canSeek: false) : ms;
+
+            using (TarWriter writer = new(s, leaveOpen: true))
             {
                 writer.WriteEntry(entry);
             }
 
             ms.Position = 0;
-            using TarReader reader = new(ms);
+            using TarReader reader = new(s);
 
             entry = reader.GetNextEntry();
             Assert.Null(reader.GetNextEntry());
@@ -97,17 +107,20 @@ namespace System.Formats.Tar.Tests
 
         public static IEnumerable<object[]> UserNameGroupNameRoundtripsTheoryData()
         {
-            foreach (TarEntryFormat entryFormat in new[] { TarEntryFormat.Ustar, TarEntryFormat.Pax, TarEntryFormat.Gnu })
+            foreach (bool unseekableStream in new[] { false, true })
             {
-                yield return new object[] { entryFormat, Repeat(OneByteCharacter, 32) };
-                yield return new object[] { entryFormat, Repeat(TwoBytesCharacter, 32 / 2) };
-                yield return new object[] { entryFormat, Repeat(FourBytesCharacter, 32 / 4) };
+                foreach (TarEntryFormat entryFormat in new[] { TarEntryFormat.Ustar, TarEntryFormat.Pax, TarEntryFormat.Gnu })
+                {
+                    yield return new object[] { entryFormat, unseekableStream, Repeat(OneByteCharacter, 32) };
+                    yield return new object[] { entryFormat, unseekableStream, Repeat(TwoBytesCharacter, 32 / 2) };
+                    yield return new object[] { entryFormat, unseekableStream, Repeat(FourBytesCharacter, 32 / 4) };
+                }
             }
         }
 
         [Theory]
         [MemberData(nameof(UserNameGroupNameRoundtripsTheoryData))]
-        public void UserNameGroupNameRoundtrips(TarEntryFormat entryFormat, string userGroupName)
+        public void UserNameGroupNameRoundtrips(TarEntryFormat entryFormat, bool unseekableStream, string userGroupName)
         {
             string name = "foo";
             TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, TarEntryType.RegularFile, name);
@@ -116,13 +129,15 @@ namespace System.Formats.Tar.Tests
             posixEntry.GroupName = userGroupName;
 
             MemoryStream ms = new();
-            using (TarWriter writer = new(ms, leaveOpen: true))
+            Stream s = unseekableStream ? new WrappedStream(ms, ms.CanRead, ms.CanWrite, canSeek: false) : ms;
+
+            using (TarWriter writer = new(s, leaveOpen: true))
             {
                 writer.WriteEntry(posixEntry);
             }
 
             ms.Position = 0;
-            using TarReader reader = new(ms);
+            using TarReader reader = new(s);
 
             entry = reader.GetNextEntry();
             posixEntry = Assert.IsAssignableFrom<PosixTarEntry>(entry);
