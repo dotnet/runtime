@@ -1030,14 +1030,7 @@ bool CodeGen::genCreateAddrMode(
 
     if (!addr->OperIs(GT_ADD))
     {
-#if TARGET_ARM64
-        if (!addr->OperIs(GT_ADDEX))
-        {
-            return false;
-        }
-#else
         return false;
-#endif
     }
 
     GenTree* rv1 = nullptr;
@@ -1065,19 +1058,15 @@ bool CodeGen::genCreateAddrMode(
     }
 
 #if TARGET_ARM64
-    if (addr->OperIs(GT_ADDEX))
+    if (op2->isContained() && op2->OperIs(GT_CAST))
     {
-        if (op2->isContained() && op2->OperIs(GT_CAST))
-        {
-            *rv1Ptr = op1;
-            *rv2Ptr = op2;
-            *mulPtr = 1;
-            *cnsPtr = 0;
-            *revPtr = false; // op2 is never a gc type
-            assert(!varTypeIsGC(op2));
-            return true;
-        }
-        return false;
+        *rv1Ptr = op1;
+        *rv2Ptr = op2;
+        *mulPtr = 1;
+        *cnsPtr = 0;
+        *revPtr = false; // op2 is never a gc type
+        assert(!varTypeIsGC(op2));
+        return true;
     }
 #endif
 
