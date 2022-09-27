@@ -274,7 +274,7 @@ namespace Wasm.Build.Tests
                 using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                             .WithWorkingDirectory(workingDir);
 
-                await using var runner = new BrowserRunner();
+                await using var runner = new BrowserRunner(_testOutput);
                 var page = await runner.RunAsync(runCommand, $"run -c {config} --project {projectFile} --forward-console");
                 await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
                 Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
@@ -284,7 +284,7 @@ namespace Wasm.Build.Tests
                 using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                             .WithWorkingDirectory(workingDir);
 
-                await using var runner = new BrowserRunner();
+                await using var runner = new BrowserRunner(_testOutput);
                 var page = await runner.RunAsync(runCommand, $"run -c {config} --no-build --project {projectFile} --forward-console");
                 await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
                 Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
@@ -429,7 +429,7 @@ namespace Wasm.Build.Tests
             using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                         .WithWorkingDirectory(_projectDir!);
 
-            await using var runner = new BrowserRunner();
+            await using var runner = new BrowserRunner(_testOutput);
             var page = await runner.RunAsync(runCommand, $"run -c {config} --no-build");
 
             await page.Locator("text=Counter").ClickAsync();
@@ -461,7 +461,7 @@ namespace Wasm.Build.Tests
             using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                         .WithWorkingDirectory(_projectDir!);
 
-            await using var runner = new BrowserRunner();
+            await using var runner = new BrowserRunner(_testOutput);
             var page = await runner.RunAsync(runCommand, $"run -c {config} --no-build -r browser-wasm --forward-console");
             await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
             Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));

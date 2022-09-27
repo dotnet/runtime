@@ -290,13 +290,25 @@ namespace Wasm.Build.Tests
             Directory.CreateDirectory(_logPath);
         }
 
-        protected static void InitProjectDir(string dir)
+        protected static void InitProjectDir(string dir, bool addNuGetSourceForLocalPackages = false)
         {
             Directory.CreateDirectory(dir);
             File.WriteAllText(Path.Combine(dir, "Directory.Build.props"), s_buildEnv.DirectoryBuildPropsContents);
             File.WriteAllText(Path.Combine(dir, "Directory.Build.targets"), s_buildEnv.DirectoryBuildTargetsContents);
 
-            File.Copy(Path.Combine(BuildEnvironment.TestDataPath, NuGetConfigFileNameForDefaultFramework), Path.Combine(dir, "nuget.config"));
+            string targetNuGetConfigPath = Path.Combine(dir, "nuget.config");
+            if (addNuGetSourceForLocalPackages)
+            {
+                File.WriteAllText(targetNuGetConfigPath,
+                                    GetNuGetConfigWithLocalPackagesPath(
+                                                Path.Combine(BuildEnvironment.TestDataPath, NuGetConfigFileNameForDefaultFramework),
+                                                s_buildEnv.BuiltNuGetsPath));
+            }
+            else
+            {
+                File.Copy(Path.Combine(BuildEnvironment.TestDataPath, NuGetConfigFileNameForDefaultFramework),
+                            targetNuGetConfigPath);
+            }
             Directory.CreateDirectory(Path.Combine(dir, ".nuget"));
         }
 
@@ -447,7 +459,7 @@ namespace Wasm.Build.Tests
         public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "")
         {
             InitPaths(id);
-            InitProjectDir(id);
+            InitProjectDir(id, addNuGetSourceForLocalPackages: true);
 
             File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.props"), "<Project />");
             File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.targets"),
