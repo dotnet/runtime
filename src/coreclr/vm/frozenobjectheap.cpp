@@ -11,15 +11,12 @@
 
 FrozenObjectHeapManager::FrozenObjectHeapManager():
     m_Crst(CrstFrozenObjectHeap, CRST_UNSAFE_COOPGC),
-    m_CurrentSegment(nullptr),
-    m_Enabled(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_UseFrozenObjectHeap) != 0)
+    m_CurrentSegment(nullptr)
 {
 }
 
 // Allocates an object of the give size (including header) on a frozen segment.
-// May return nullptr in the following cases:
-//   1) DOTNET_UseFrozenObjectHeap is 0 (disabled)
-//   2) Object is too large (large than FOH_COMMIT_SIZE)
+// May return nullptr if object is too large (larger than FOH_COMMIT_SIZE)
 // in such cases caller is responsible to find a more appropriate heap to allocate it
 Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t objectSize)
 {
@@ -36,12 +33,6 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
 #else // FEATURE_BASICFREEZE
 
     CrstHolder ch(&m_Crst);
-
-    if (!m_Enabled)
-    {
-        // Disabled via DOTNET_UseFrozenObjectHeap=0
-        return nullptr;
-    }
 
     _ASSERT(type != nullptr);
     _ASSERT(FOH_COMMIT_SIZE >= MIN_OBJECT_SIZE);
@@ -84,7 +75,6 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
     return obj;
 #endif // !FEATURE_BASICFREEZE
 }
-
 
 FrozenObjectSegment::FrozenObjectSegment():
     m_pStart(nullptr),

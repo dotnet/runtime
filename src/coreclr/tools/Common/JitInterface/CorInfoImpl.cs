@@ -9,6 +9,7 @@ using System.Text;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Text.Unicode;
 
 #if SUPPORT_JIT
 using Internal.Runtime.CompilerServices;
@@ -1830,6 +1831,21 @@ namespace Internal.JitInterface
             return str.Length;
         }
 
+#pragma warning disable CA1822 // Mark members as static
+        private int objectToString(void* handle, byte* buffer, int bufferSize)
+#pragma warning restore CA1822 // Mark members as static
+        {
+            Debug.Assert(bufferSize > 0 && handle != null && buffer != null);
+
+            // NOTE: this function is used for pinned/frozen handles
+            // it doesn't need to null-terminate the string
+
+            ReadOnlySpan<char> objStr = HandleToObject((IntPtr)handle).ToString();
+            var bufferSpan = new Span<byte>(buffer, bufferSize);
+            Utf8.FromUtf16(objStr, bufferSpan, out _, out int written);
+            return written;
+        }
+
         private CorInfoType asCorInfoType(CORINFO_CLASS_STRUCT_* cls)
         {
             var type = HandleToObject(cls);
@@ -2325,6 +2341,13 @@ namespace Internal.JitInterface
             var type = HandleToObject(cls);
 
             return type.IsNullable ? CorInfoHelpFunc.CORINFO_HELP_UNBOX_NULLABLE : CorInfoHelpFunc.CORINFO_HELP_UNBOX;
+        }
+
+#pragma warning disable CA1822 // Mark members as static
+        private void* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
+#pragma warning restore CA1822 // Mark members as static
+        {
+            return (void*)IntPtr.Zero;
         }
 
         private byte* getHelperName(CorInfoHelpFunc helpFunc)

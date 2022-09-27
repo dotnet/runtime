@@ -453,6 +453,17 @@ int interceptor_ICJI::getStringLiteral(CORINFO_MODULE_HANDLE module,    /* IN  *
     return temp;
 }
 
+int interceptor_ICJI::objectToString(void* handle,    /* IN  */
+                                     char* buffer,    /* OUT */
+                                     int   bufferSize /* IN  */
+                                     )
+{
+    mc->cr->AddCall("objectToString");
+    int temp = original_ICorJitInfo->objectToString(handle, buffer, bufferSize);
+    mc->recObjectToString(handle, buffer, bufferSize, temp);
+    return temp;
+}
+
 /**********************************************************************************/
 //
 // ICorClassInfo
@@ -776,6 +787,14 @@ CorInfoHelpFunc interceptor_ICJI::getUnBoxHelper(CORINFO_CLASS_HANDLE cls)
     mc->cr->AddCall("getUnBoxHelper");
     CorInfoHelpFunc temp = original_ICorJitInfo->getUnBoxHelper(cls);
     mc->recGetUnBoxHelper(cls, temp);
+    return temp;
+}
+
+void* interceptor_ICJI::getRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
+{
+    mc->cr->AddCall("getRuntimeTypePointer");
+    void* temp = original_ICorJitInfo->getRuntimeTypePointer(cls);
+    mc->recGetRuntimeTypePointer(cls, temp);
     return temp;
 }
 

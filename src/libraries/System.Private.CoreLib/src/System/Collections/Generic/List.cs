@@ -241,7 +241,38 @@ namespace System.Collections.Generic
         // capacity or the new size, whichever is larger.
         //
         public void AddRange(IEnumerable<T> collection)
-            => InsertRange(_size, collection);
+        {
+            if (collection == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
+            }
+
+            if (collection is ICollection<T> c)
+            {
+                int count = c.Count;
+                if (count > 0)
+                {
+                    if (_items.Length - _size < count)
+                    {
+                        Grow(_size + count);
+                    }
+
+                    c.CopyTo(_items, _size);
+                    _size += count;
+                    _version++;
+                }
+            }
+            else
+            {
+                using (IEnumerator<T> en = collection.GetEnumerator())
+                {
+                    while (en.MoveNext())
+                    {
+                        Add(en.Current);
+                    }
+                }
+            }
+        }
 
         public ReadOnlyCollection<T> AsReadOnly()
             => new ReadOnlyCollection<T>(this);
@@ -776,6 +807,7 @@ namespace System.Collections.Generic
                         c.CopyTo(_items, index);
                     }
                     _size += count;
+                    _version++;
                 }
             }
             else
@@ -788,7 +820,6 @@ namespace System.Collections.Generic
                     }
                 }
             }
-            _version++;
         }
 
         // Returns the index of the last occurrence of a given value in a range of

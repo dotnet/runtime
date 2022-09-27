@@ -110,7 +110,7 @@ namespace System.Xml.Tests
                         }
                         break;
                     default:
-                        _asm = Assembly.LoadFrom(GetRuntimeInstallDir() + assemblyName + ".dll");
+                        _asm = Assembly.LoadFrom(Path.Combine(GetRuntimeInstallDir(), assemblyName + ".dll"));
                         break;
                 }
 
@@ -134,13 +134,18 @@ namespace System.Xml.Tests
                     {
                         _output.WriteLine(e2.ToString());
                     }
+                    catch (PlatformNotSupportedException e3)
+                    {
+                        // NativeAOT doesn't support assembly loading
+                        _output.WriteLine(e3.ToString());
+                    }
                 }
             }
             catch (Exception e)
             {
                 _output.WriteLine("Exception: " + e.Message);
                 _output.WriteLine("Stack: " + e.StackTrace);
-                throw new VerifyException("Error while loading assembly");
+                throw new VerifyException("Error while loading assembly", e);
             }
 
             string[] resArray;
@@ -187,7 +192,7 @@ namespace System.Xml.Tests
             // Get mscorlib path
             var s = typeof(object).Module.FullyQualifiedName;
             // Remove mscorlib.dll from the path
-            return Directory.GetParent(s).ToString() + "\\";
+            return Directory.GetParent(s).ToString();
         }
 
         public ExceptionVerifier(string assemblyName, ITestOutputHelper output)
@@ -392,6 +397,10 @@ namespace System.Xml.Tests
     {
         public VerifyException(string msg)
             : base(msg)
+        { }
+
+        public VerifyException(string msg, Exception innerException)
+            : base(msg, innerException)
         { }
     }
 }

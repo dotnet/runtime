@@ -25,6 +25,17 @@ parameters:
         eng/pipelines/common/templates/runtime/wasm*
         eng/pipelines/coreclr/*wasm*
     ]
+    # src/workloads is only used in runtime-official builds
+    # where evaluate-paths is not used
+    _always_exclude: [
+        eng/pipelines/common/evaluate-default-paths.yml
+        eng/pipelines/coreclr/*
+        eng/pipelines/installer/*
+        eng/pipelines/libraries/*
+        eng/pipelines/mono/*
+        eng/pipelines/runtime*
+        src/workloads/*
+    ]
 
 jobs:
 - template: /eng/pipelines/common/evaluate-paths-job.yml
@@ -48,11 +59,8 @@ jobs:
       - src/libraries/*
       - src/native/libs/*
       - src/tests/*
-      - eng/pipelines/installer/*
-      - eng/pipelines/mono/*
-      - eng/pipelines/libraries/*
-      - eng/pipelines/common/evaluate-default-paths.yml
       - ${{ parameters._const_paths._wasm_pipelines }}
+      - ${{ parameters._const_paths._always_exclude }}
 
     - subset: mono_excluding_wasm
       include:
@@ -63,6 +71,7 @@ jobs:
       exclude:
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
+      - ${{ parameters._const_paths._always_exclude }}
 
       - eng/Version.Details.xml
       - '*.md'
@@ -75,10 +84,6 @@ jobs:
       - src/libraries/*
       - src/native/libs/*
       - src/tests/*
-      - eng/pipelines/installer/*
-      - eng/pipelines/coreclr/*
-      - eng/pipelines/libraries/*
-      - eng/pipelines/common/evaluate-default-paths.yml
 
     - subset: libraries
       exclude:
@@ -93,11 +98,8 @@ jobs:
       - src/coreclr/*
       - src/tests/*
       - src/native/eventpipe/*
-      - eng/pipelines/coreclr/*
-      - eng/pipelines/mono/*
-      - eng/pipelines/installer/*
-      - eng/pipelines/common/evaluate-default-paths.yml
       - ${{ parameters._const_paths._wasm_pipelines }}
+      - ${{ parameters._const_paths._always_exclude }}
 
     - subset: runtimetests
       include:
@@ -107,10 +109,7 @@ jobs:
       exclude:
       - src/tests/*
       - ${{ parameters._const_paths._wasm_pipelines }}
-
-      # having this ensures that change in evaluate-default-paths.yml
-      # doesn't trigger jobs
-      - eng/pipelines/common/evaluate-default-paths.yml
+      - ${{ parameters._const_paths._always_exclude }}
 
     - subset: installer
       include:
@@ -127,11 +126,8 @@ jobs:
       - src/libraries/*
       - src/tests/*
       - src/native/eventpipe/*
-      - eng/pipelines/coreclr/*
-      - eng/pipelines/mono/*
-      - eng/pipelines/libraries/*
-      - eng/pipelines/common/evaluate-default-paths.yml
       - ${{ parameters._const_paths._wasm_pipelines }}
+      - ${{ parameters._const_paths._always_exclude }}
 
     # We have limited Apple Silicon testing capacity
     # We want PR testing on a narrower set of changes
@@ -196,10 +192,7 @@ jobs:
       - src/mono/wasm/Wasm.Build.Tests/*
       - src/mono/wasm/debugger/*
       - ${{ parameters._const_paths._wasm_pipelines }}
-
-      # having this ensures that change in evaluate-default-paths.yml
-      # doesn't trigger jobs
-      - eng/pipelines/common/evaluate-default-paths.yml
+      - ${{ parameters._const_paths._always_exclude }}
 
     - subset: wasm_wbt_or_dbg
       include:
@@ -238,16 +231,14 @@ jobs:
       exclude:
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
-
-      # having this ensures that change in evaluate-default-paths.yml won't
-      # trigger non-onlywasm jobs
-      - eng/pipelines/common/evaluate-default-paths.yml
+      - ${{ parameters._const_paths._always_exclude }}
 
     # anything other than mono, or wasm specific paths
     - subset: non_mono_and_wasm
       exclude:
       - ${{ parameters._const_paths._wasm_specific_only }}
       - ${{ parameters._const_paths._wasm_pipelines }}
+      - ${{ parameters._const_paths._always_exclude }}
 
       - eng/testing/tests.mobile.targets
       - src/mono/*
@@ -258,10 +249,6 @@ jobs:
       - src/tasks/WasmAppBuilder/*
       - src/tasks/WasmBuildTasks/*
       - src/tasks/WorkloadBuildTasks/*
-
-      # having this ensures that change in evaluate-default-paths.yml
-      # doesn't trigger jobs
-      - eng/pipelines/common/evaluate-default-paths.yml
 
     - ${{ if ne(parameters.extraSubsets, '') }}:
       - ${{ parameters.extraSubsets }}
