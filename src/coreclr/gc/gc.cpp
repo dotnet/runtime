@@ -45164,7 +45164,7 @@ HRESULT GCHeap::Initialize()
 // GC callback functions
 bool GCHeap::IsPromoted(Object* object)
 {
-    if (IsInFrozenSegment (object))
+    if (object != nullptr && IsInFrozenSegment (object))
     {
         return true;
     }
