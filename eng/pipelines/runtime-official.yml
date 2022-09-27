@@ -28,7 +28,7 @@ resources:
   - container: debpkg
     image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-debpkg-latest
   - container: rpmpkg
-    image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-rpmpkg-20210714125410-daa5116
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-rpmpkg-lates
 
 variables:
 - template: /eng/pipelines/common/variables.yml
