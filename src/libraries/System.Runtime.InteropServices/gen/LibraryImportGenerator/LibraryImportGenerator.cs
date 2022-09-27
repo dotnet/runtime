@@ -12,7 +12,6 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.DotnetRuntime.Extensions;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-US")]
@@ -64,7 +63,6 @@ namespace Microsoft.Interop
             // Collect all methods adorned with LibraryImportAttribute
             var attributedMethods = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
-                    context,
                     TypeNames.LibraryImportAttribute,
                     static (node, ct) => node is MethodDeclarationSyntax,
                     static (context, ct) => context.TargetSymbol is IMethodSymbol methodSymbol

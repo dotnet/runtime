@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <Compile Include="AllowDefaultResolverContext.cs" />
+    <Compile Include="ExceptionVerifier.cs" />
     <Compile Include="$(CommonTestPath)\TestUtilities\System\DisableParallelizationPerAssembly.cs" Link="Common\TestUtilities\System\DisableParallelizationPerAssembly.cs" />
   </ItemGroup>
 
@@ -401,7 +402,6 @@
   <ItemGroup>
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\Constructor_AddSchema.cs" />
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\CustomImplementations.cs" />
-    <Compile Include="XmlSchema\XmlSchemaValidatorApi\ExceptionVerifier.cs" />
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\GetExpectedAttributes.cs" />
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\GetExpectedParticles.cs" />
     <Compile Include="XmlSchema\XmlSchemaValidatorApi\Initialize_EndValidation.cs" />
@@ -641,7 +641,6 @@
     <Compile Include="Xslt\XslTransformApi\CThreads.cs" />
     <Compile Include="Xslt\XslTransformApi\CXmlCache.cs" />
     <Compile Include="Xslt\XslTransformApi\DataHelper.cs" />
-    <Compile Include="Xslt\XslTransformApi\ExceptionVerifier.cs" />
     <Compile Include="Xslt\XslTransformApi\MyNavigator.cs" />
     <Compile Include="Xslt\XslTransformApi\ReaderType.cs" />
     <Compile Include="Xslt\XslTransformApi\ThreadFunc.cs" />

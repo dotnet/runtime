@@ -74,7 +74,7 @@ namespace Microsoft.Interop.Analyzers
                     context.Diagnostics);
                 if (!bool.Parse(diagnostic.Properties[ConvertToLibraryImportAnalyzer.ExactSpelling]))
                 {
-                    CharSet charSet = (CharSet)Enum.Parse(typeof(CharSet), diagnostic.Properties[ConvertToLibraryImportAnalyzer.CharSet]);
+                    CharSet charSet = (CharSet)Enum.Parse(typeof(CharSet), diagnostic.Properties[ConvertToLibraryImportAnalyzer.CharSet]!);
                     // CharSet.Auto traditionally maps to either an A or W suffix
                     // depending on the default CharSet of the platform.
                     // We will offer both suffix options when CharSet.Auto is provided

@@ -168,6 +168,8 @@ namespace System.Tests
         [InlineData(0.0f,                   3.0f,                   3.0f,                   0.0f)]
         [InlineData(0.0f,                   10.0f,                  10.0f,                  0.0f)]
         [InlineData(1.0f,                   1.0f,                   1.41421356f,            CrossPlatformMachineEpsilon * 10)]
+        [InlineData(1.0f,                   1e+10f,                 1e+10f,                 0.0)] // dotnet/runtime#75651
+        [InlineData(1.0f,                   1e+20f,                 1e+20f,                 0.0)] // dotnet/runtime#75651
         [InlineData(2.71828183f,            0.318309886f,           2.73685536f,            CrossPlatformMachineEpsilon * 10)]   // x: (e)   y: (1 / pi)
         [InlineData(2.71828183f,            0.434294482f,           2.75275640f,            CrossPlatformMachineEpsilon * 10)]   // x: (e)   y: (log10(e))
         [InlineData(2.71828183f,            0.636619772f,           2.79183467f,            CrossPlatformMachineEpsilon * 10)]   // x: (e)   y: (2 / pi)
@@ -188,7 +190,7 @@ namespace System.Tests
         [InlineData(10.0f,                  0.693147181f,           10.0239939f,            CrossPlatformMachineEpsilon * 100)]  //          y: (ln(2))
         [InlineData(10.0f,                  0.707106781f,           10.0249688f,            CrossPlatformMachineEpsilon * 100)]  //          y: (1 / sqrt(2))
         [InlineData(10.0f,                  0.785398163f,           10.0307951f,            CrossPlatformMachineEpsilon * 100)]  //          y: (pi / 4)
-        [InlineData(10.0f,                  1.0f,                   10.0498756f,            CrossPlatformMachineEpsilon * 100)]  //       
+        [InlineData(10.0f,                  1.0f,                   10.0498756f,            CrossPlatformMachineEpsilon * 100)]  //
         [InlineData(10.0f,                  1.12837917f,            10.0634606f,            CrossPlatformMachineEpsilon * 100)]  //          y: (2 / sqrt(pi))
         [InlineData(10.0f,                  1.41421356f,            10.0995049f,            CrossPlatformMachineEpsilon * 100)]  //          y: (sqrt(2))
         [InlineData(10.0f,                  1.44269504f,            10.1035325f,            CrossPlatformMachineEpsilon * 100)]  //          y: (log2(e))
@@ -603,7 +605,7 @@ namespace System.Tests
         [InlineData(-0.0f,                    2,  0.0f,                   0.0f)]
         [InlineData(-0.0f,                    3, -0.0f,                   0.0f)]
         [InlineData(-0.0f,                    4,  0.0f,                   0.0f)]
-        [InlineData(-0.0f,                    5, -0.0f,                   0.0f)]                                  
+        [InlineData(-0.0f,                    5, -0.0f,                   0.0f)]
         [InlineData( float.NaN,              -5,  float.NaN,              0.0f)]
         [InlineData( float.NaN,              -4,  float.NaN,              0.0f)]
         [InlineData( float.NaN,              -3,  float.NaN,              0.0f)]
@@ -1383,7 +1385,7 @@ namespace System.Tests
             AssertExtensions.Equal(+expectedResult, float.AsinPi(+value), allowedVariance);
         }
 
-        [Theory]                                                      
+        [Theory]
         [InlineData( float.NaN,               float.NaN,               float.NaN,    0.0f)]
         [InlineData( 0.0f,                   -1.0f,                    1.0f,         CrossPlatformMachineEpsilon)]  // y: sinpi(0)              x:  cospi(1)            ; This should be exact, but has an issue on WASM/Unix
         [InlineData( 0.0f,                   -0.0f,                    1.0f,         CrossPlatformMachineEpsilon)]  // y: sinpi(0)              x: -cospi(0.5)          ; This should be exact, but has an issue on WASM/Unix
@@ -1425,8 +1427,8 @@ namespace System.Tests
         [InlineData(-2.18503986f,            -0.363380228f, CrossPlatformMachineEpsilon)]
         [InlineData(-1.44060844f,            -0.306852819f, CrossPlatformMachineEpsilon)]
         [InlineData(-1.31367571f,            -0.292893219f, CrossPlatformMachineEpsilon)]
-        [InlineData(-0.79909940f,            -0.214601837f, CrossPlatformMachineEpsilon)]     
-        [InlineData( 0.42670634f,             0.128379167f, CrossPlatformMachineEpsilon)]    
+        [InlineData(-0.79909940f,            -0.214601837f, CrossPlatformMachineEpsilon)]
+        [InlineData( 0.42670634f,             0.128379167f, CrossPlatformMachineEpsilon)]
         [InlineData( 3.62021857f,             0.414213562f, CrossPlatformMachineEpsilon)]
         [InlineData( 5.49452594f,             0.442695041f, CrossPlatformMachineEpsilon)]
         [InlineData(-4.42175222f,            -0.429203673f, CrossPlatformMachineEpsilon)]

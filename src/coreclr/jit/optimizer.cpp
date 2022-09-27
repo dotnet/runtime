@@ -5850,12 +5850,6 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
                     tree->gtType = dstt;
                     tree->SetVNs(vnpNarrow);
-
-                    /* Make sure we don't mess up the variable type */
-                    if ((oper == GT_LCL_VAR) || (oper == GT_LCL_FLD))
-                    {
-                        tree->gtFlags |= GTF_VAR_CAST;
-                    }
                 }
 
                 return true;
@@ -8860,9 +8854,10 @@ ssize_t Compiler::optGetArrayRefScaleAndIndex(GenTree* mul, GenTree** pIndex DEB
 //
 struct OptTestInfo
 {
-    GenTree* testTree; // The root node of basic block with GT_JTRUE or GT_RETURN type to check boolean condition on
-    GenTree* compTree; // The compare node (i.e. GT_EQ or GT_NE node) of the testTree
-    bool     isBool;   // If the compTree is boolean expression
+    Statement* testStmt; // Last statement of the basic block
+    GenTree*   testTree; // The root node of the testStmt (GT_JTRUE or GT_RETURN).
+    GenTree*   compTree; // The compare node (i.e. GT_EQ or GT_NE node) of the testTree
+    bool       isBool;   // If the compTree is boolean expression
 };
 
 //-----------------------------------------------------------------------------
@@ -9202,7 +9197,9 @@ Statement* OptBoolsDsc::optOptimizeBoolsChkBlkCond()
         m_t3 = testTree3;
     }
 
+    m_testInfo1.testStmt = s1;
     m_testInfo1.testTree = testTree1;
+    m_testInfo2.testStmt = s2;
     m_testInfo2.testTree = testTree2;
 
     return s1;
@@ -9244,16 +9241,14 @@ bool OptBoolsDsc::optOptimizeBoolsChkTypeCostCond()
         return false;
 #endif
     // The second condition must not contain side effects
-
+    //
     if (m_c2->gtFlags & GTF_GLOB_EFFECT)
     {
         return false;
     }
 
     // The second condition must not be too expensive
-
-    m_comp->gtPrepareCost(m_c2);
-
+    //
     if (m_c2->GetCostEx() > 12)
     {
         return false;
@@ -9324,6 +9319,14 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     //
     cmpOp1->gtRequestSetFlags();
 #endif
+
+    // Recost/rethread the tree if necessary
+    //
+    if (m_comp->fgStmtListThreaded)
+    {
+        m_comp->gtSetStmtInfo(m_testInfo1.testStmt);
+        m_comp->fgSetStmtSeq(m_testInfo1.testStmt);
+    }
 
     if (!optReturnBlock)
     {
@@ -9416,6 +9419,9 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     {
         m_comp->fgUpdateLoopsAfterCompacting(m_b1, m_b3);
     }
+
+    // Update IL range of first block
+    m_b1->bbCodeOffsEnd = optReturnBlock ? m_b3->bbCodeOffsEnd : m_b2->bbCodeOffsEnd;
 }
 
 //-----------------------------------------------------------------------------
@@ -9584,11 +9590,13 @@ void OptBoolsDsc::optOptimizeBoolsGcStress()
     }
 
     assert(m_b1->bbJumpKind == BBJ_COND);
-    GenTree* cond = m_b1->lastStmt()->GetRootNode();
+    Statement* const stmt = m_b1->lastStmt();
+    GenTree* const   cond = stmt->GetRootNode();
 
     assert(cond->gtOper == GT_JTRUE);
 
     OptTestInfo test;
+    test.testStmt = stmt;
     test.testTree = cond;
 
     GenTree* comparand = optIsBoolComp(&test);
@@ -9615,6 +9623,14 @@ void OptBoolsDsc::optOptimizeBoolsGcStress()
     // morphing it into a TYP_I_IMPL.
     noway_assert(relop->AsOp()->gtOp2->gtOper == GT_CNS_INT);
     relop->AsOp()->gtOp2->gtType = TYP_I_IMPL;
+
+    // Recost/rethread the tree if necessary
+    //
+    if (m_comp->fgStmtListThreaded)
+    {
+        m_comp->gtSetStmtInfo(test.testStmt);
+        m_comp->fgSetStmtSeq(test.testStmt);
+    }
 }
 
 #endif
