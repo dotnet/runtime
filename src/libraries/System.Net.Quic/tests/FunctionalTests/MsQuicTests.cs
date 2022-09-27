@@ -1256,6 +1256,7 @@ namespace System.Net.Quic.Tests
 
             // dispose resources
             cmd.Dispose();
+            client.Dispose();
         }
     }
 }
