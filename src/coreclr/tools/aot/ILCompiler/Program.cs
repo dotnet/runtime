@@ -759,8 +759,40 @@ namespace ILCompiler
 
         private T Get<T>(Option<T> option) => _command.Result.GetValueForOption(option);
 
+        private static bool TryReadResponseFile(string filePath, out IReadOnlyList<string> newTokens, out string error)
+        {
+            try
+            {
+                var tokens = new List<string>();
+                foreach (string line in File.ReadAllLines(filePath))
+                {
+                    string token = line.Trim();
+                    if (token.Length > 0 && token[0] != '#')
+                    {
+                        tokens.Add(token);
+                    }
+                }
+
+                newTokens = tokens;
+                error = null;
+                return true;
+            }
+            catch (FileNotFoundException)
+            {
+                error = $"Response file not found: '{filePath}'";
+            }
+            catch (IOException e)
+            {
+                error = $"Error reading response file '{filePath}': {e}";
+            }
+
+            newTokens = null;
+            return false;
+        }
+
         private static int Main(string[] args) =>
             new CommandLineBuilder(new ILCompilerRootCommand(args))
+                .UseTokenReplacer(TryReadResponseFile)
                 .UseVersionOption("-v")
                 .UseHelp(context => context.HelpBuilder.CustomizeLayout(ILCompilerRootCommand.GetExtendedHelp))
                 .UseParseErrorReporting()
