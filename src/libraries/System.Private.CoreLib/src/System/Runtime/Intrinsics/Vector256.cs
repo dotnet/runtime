@@ -545,10 +545,7 @@ namespace System.Runtime.Intrinsics
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
-            if (destination is null)
-            {
-                ThrowHelper.ThrowNullReferenceException();
-            }
+            // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
 
             if (destination.Length < Vector256<T>.Count)
             {
@@ -573,10 +570,7 @@ namespace System.Runtime.Intrinsics
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
-            if (destination is null)
-            {
-                ThrowHelper.ThrowNullReferenceException();
-            }
+            // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
 
             if ((uint)startIndex >= (uint)destination.Length)
             {
@@ -737,10 +731,7 @@ namespace System.Runtime.Intrinsics
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
-            if (values is null)
-            {
-                ThrowHelper.ThrowNullReferenceException();
-            }
+            // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
 
             if (values.Length < Vector256<T>.Count)
             {
@@ -764,10 +755,7 @@ namespace System.Runtime.Intrinsics
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
 
-            if (values is null)
-            {
-                ThrowHelper.ThrowNullReferenceException();
-            }
+            // We explicitly don't check for `null` because historically this has thrown `NullReferenceException` for perf reasons
 
             if ((index < 0) || ((values.Length - index) < Vector256<T>.Count))
             {
