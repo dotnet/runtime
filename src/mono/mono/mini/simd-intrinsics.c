@@ -1140,14 +1140,28 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
-	case SN_AndNot:
-#ifdef TARGET_ARM64
-		if (!is_element_type_primitive (fsig->params [0]))
+	case SN_AndNot: {
+		if (!is_element_type_primitive (fsig->params [0])) 
 			return NULL;
+#ifdef TARGET_ARM64
 		return emit_simd_ins_for_sig (cfg, klass, OP_ARM64_BIC, -1, arg0_type, fsig, args);
+#elif defined(TARGET_AMD64)
+		MonoClass* arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		int size = mono_class_value_size (arg_class, NULL);
+		if (size != 16) 		// Works only with Vector128
+			return NULL;
+
+		/* Swap lhs and rhs because Vector128 needs lhs & !rhs
+		   whereas SSE2 does !lhs & rhs */
+		MonoInst *tmp = args[0];
+		args[0] = args[1];
+		args[1] = tmp;
+
+		return emit_simd_ins_for_sig (cfg, klass, OP_SSE_ANDN, -1, arg0_type, fsig, args);
 #else
 		return NULL;
 #endif
+	}
 	case SN_As:
 	case SN_AsByte:
 	case SN_AsDouble:

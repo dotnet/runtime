@@ -244,23 +244,13 @@ int32_t SystemNative_ForkAndExecProcess(const char* filename,
     pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &thread_cancel_state);
 #endif
 
-    // Validate arguments
-    if (NULL == filename || NULL == argv || NULL == envp || NULL == stdinFd || NULL == stdoutFd ||
-        NULL == stderrFd || NULL == childPid || (groupsLength > 0 && groups == NULL))
-    {
-        assert(false && "null argument.");
-        errno = EINVAL;
-        success = false;
-        goto done;
-    }
+    assert(NULL != filename && NULL != argv && NULL != envp && NULL != stdinFd &&
+            NULL != stdoutFd && NULL != stderrFd && NULL != childPid &&
+            (groupsLength == 0 || groups != NULL) && "null argument.");
 
-    if ((redirectStdin & ~1) != 0 || (redirectStdout & ~1) != 0 || (redirectStderr & ~1) != 0 || (setCredentials & ~1) != 0)
-    {
-        assert(false && "Boolean redirect* inputs must be 0 or 1.");
-        errno = EINVAL;
-        success = false;
-        goto done;
-    }
+    assert((redirectStdin & ~1) == 0 && (redirectStdout & ~1) == 0 &&
+            (redirectStderr & ~1) == 0 && (setCredentials & ~1) == 0 &&
+            "Boolean redirect* inputs must be 0 or 1.");
 
     if (setCredentials && groupsLength > 0)
     {

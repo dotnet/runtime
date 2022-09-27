@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace System.Net
 {
@@ -54,11 +55,13 @@ namespace System.Net
 
         internal const int NumberOfLabels = IPAddressParserStatics.IPv6AddressBytes / 2;
 
+        [MemberNotNullWhen(false, nameof(_numbers))]
         private bool IsIPv4
         {
             get { return _numbers == null; }
         }
 
+        [MemberNotNullWhen(true, nameof(_numbers))]
         private bool IsIPv6
         {
             get { return _numbers != null; }
@@ -104,7 +107,7 @@ namespace System.Net
         /// </devdoc>
         public IPAddress(long newAddress)
         {
-            if (newAddress < 0 || newAddress > 0x00000000FFFFFFFF)
+            if ((ulong)newAddress > 0x00000000FFFFFFFF)
             {
                 throw new ArgumentOutOfRangeException(nameof(newAddress));
             }
@@ -131,18 +134,12 @@ namespace System.Net
 
             // Consider: Since scope is only valid for link-local and site-local
             //           addresses we could implement some more robust checking here
-            if (scopeid < 0 || scopeid > 0x00000000FFFFFFFF)
+            if ((ulong)scopeid > 0x00000000FFFFFFFF)
             {
                 throw new ArgumentOutOfRangeException(nameof(scopeid));
             }
 
-            _numbers = new ushort[NumberOfLabels];
-
-            for (int i = 0; i < NumberOfLabels; i++)
-            {
-                _numbers[i] = (ushort)(address[i * 2] * 256 + address[i * 2 + 1]);
-            }
-
+            _numbers = ReadUInt16NumbersFromBytes(address);
             PrivateScopeId = (uint)scopeid;
         }
 
@@ -151,13 +148,7 @@ namespace System.Net
             Debug.Assert(numbers != null);
             Debug.Assert(numbers.Length == NumberOfLabels);
 
-            var arr = new ushort[NumberOfLabels];
-            for (int i = 0; i < arr.Length; i++)
-            {
-                arr[i] = numbers[i];
-            }
-
-            _numbers = arr;
+            _numbers = numbers.ToArray();
             PrivateScopeId = scopeid;
         }
 
@@ -188,17 +179,37 @@ namespace System.Net
             }
             else if (address.Length == IPAddressParserStatics.IPv6AddressBytes)
             {
-                _numbers = new ushort[NumberOfLabels];
-
-                for (int i = 0; i < NumberOfLabels; i++)
-                {
-                    _numbers[i] = (ushort)(address[i * 2] * 256 + address[i * 2 + 1]);
-                }
+                _numbers = ReadUInt16NumbersFromBytes(address);
             }
             else
             {
                 throw new ArgumentException(SR.dns_bad_ip_address, nameof(address));
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ushort[] ReadUInt16NumbersFromBytes(ReadOnlySpan<byte> address)
+        {
+            ushort[] numbers = new ushort[NumberOfLabels];
+            if (Vector128.IsHardwareAccelerated)
+            {
+                Vector128<ushort> ushorts = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(address)).AsUInt16();
+                if (BitConverter.IsLittleEndian)
+                {
+                    // Reverse endianness of each ushort
+                    ushorts = Vector128.ShiftLeft(ushorts, 8) | Vector128.ShiftRightLogical(ushorts, 8);
+                }
+                ushorts.StoreUnsafe(ref MemoryMarshal.GetArrayDataReference(numbers));
+            }
+            else
+            {
+                for (int i = 0; i < numbers.Length; i++)
+                {
+                    numbers[i] = BinaryPrimitives.ReadUInt16BigEndian(address.Slice(i * 2));
+                }
+            }
+
+            return numbers;
         }
 
         // We need this internally since we need to interface with winsock,
@@ -274,12 +285,28 @@ namespace System.Net
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void WriteIPv6Bytes(Span<byte> destination)
         {
-            Debug.Assert(_numbers != null && _numbers.Length == NumberOfLabels);
-            int j = 0;
-            for (int i = 0; i < NumberOfLabels; i++)
+            ushort[]? numbers = _numbers;
+            Debug.Assert(numbers != null && numbers.Length == NumberOfLabels);
+
+            if (BitConverter.IsLittleEndian)
             {
-                destination[j++] = (byte)((_numbers[i] >> 8) & 0xFF);
-                destination[j++] = (byte)((_numbers[i]) & 0xFF);
+                if (Vector128.IsHardwareAccelerated)
+                {
+                    Vector128<ushort> ushorts = Vector128.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(numbers));
+                    ushorts = Vector128.ShiftLeft(ushorts, 8) | Vector128.ShiftRightLogical(ushorts, 8);
+                    ushorts.AsByte().StoreUnsafe(ref MemoryMarshal.GetReference(destination));
+                }
+                else
+                {
+                    for (int i = 0; i < numbers.Length; i++)
+                    {
+                        BinaryPrimitives.WriteUInt16BigEndian(destination.Slice(i * 2), numbers[i]);
+                    }
+                }
+            }
+            else
+            {
+                MemoryMarshal.AsBytes<ushort>(numbers).CopyTo(destination);
             }
         }
 
@@ -365,13 +392,13 @@ namespace System.Net
         public override string ToString() =>
             _toString ??= IsIPv4 ?
                 IPAddressParser.IPv4AddressToString(PrivateAddress) :
-                IPAddressParser.IPv6AddressToString(_numbers!, PrivateScopeId);
+                IPAddressParser.IPv6AddressToString(_numbers, PrivateScopeId);
 
         public bool TryFormat(Span<char> destination, out int charsWritten)
         {
             return IsIPv4 ?
                 IPAddressParser.IPv4AddressToString(PrivateAddress, destination, out charsWritten) :
-                IPAddressParser.IPv6AddressToString(_numbers!, PrivateScopeId, destination, out charsWritten);
+                IPAddressParser.IPv6AddressToString(_numbers, PrivateScopeId, destination, out charsWritten);
         }
 
         public static long HostToNetworkOrder(long host)
@@ -429,7 +456,7 @@ namespace System.Net
         {
             get
             {
-                return IsIPv6 && ((_numbers![0] & 0xFF00) == 0xFF00);
+                return IsIPv6 && ((_numbers[0] & 0xFF00) == 0xFF00);
             }
         }
 
@@ -442,7 +469,7 @@ namespace System.Net
         {
             get
             {
-                return IsIPv6 && ((_numbers![0] & 0xFFC0) == 0xFE80);
+                return IsIPv6 && ((_numbers[0] & 0xFFC0) == 0xFE80);
             }
         }
 
@@ -455,7 +482,7 @@ namespace System.Net
         {
             get
             {
-                return IsIPv6 && ((_numbers![0] & 0xFFC0) == 0xFEC0);
+                return IsIPv6 && ((_numbers[0] & 0xFFC0) == 0xFEC0);
             }
         }
 
@@ -464,8 +491,8 @@ namespace System.Net
             get
             {
                 return IsIPv6 &&
-                       (_numbers![0] == 0x2001) &&
-                       (_numbers![1] == 0);
+                       (_numbers[0] == 0x2001) &&
+                       (_numbers[1] == 0);
             }
         }
 
@@ -474,7 +501,7 @@ namespace System.Net
         {
             get
             {
-                return IsIPv6 && ((_numbers![0] & 0xFE00) == 0xFC00);
+                return IsIPv6 && ((_numbers[0] & 0xFE00) == 0xFC00);
             }
         }
 
@@ -487,14 +514,11 @@ namespace System.Net
                 {
                     return false;
                 }
-                for (int i = 0; i < 5; i++)
-                {
-                    if (_numbers![i] != 0)
-                    {
-                        return false;
-                    }
-                }
-                return (_numbers![5] == 0xFFFF);
+
+                ReadOnlySpan<byte> numbers = MemoryMarshal.AsBytes(new ReadOnlySpan<ushort>(_numbers));
+                return
+                    MemoryMarshal.Read<ulong>(numbers) == 0 &&
+                    BinaryPrimitives.ReadUInt32LittleEndian(numbers.Slice(8)) == 0xFFFF0000;
             }
         }
 
@@ -622,7 +646,7 @@ namespace System.Net
                 return this;
             }
 
-            uint address = (uint)_numbers![6] << 16 | (uint)_numbers[7];
+            uint address = (uint)_numbers[6] << 16 | (uint)_numbers[7];
             return new IPAddress((uint)HostToNetworkOrder(unchecked((int)address)));
         }
 
