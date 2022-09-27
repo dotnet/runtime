@@ -2,6 +2,7 @@
 
 open System
 open System.Text.Json
+open System.Text.Json.Serialization
 open Xunit
 
 [<Flags>]
@@ -18,10 +19,16 @@ type GoodEnum =
 
 let goodEnum = (GoodEnum.``Thereisnocommainmyname_1`` ||| GoodEnum.``Thereisnocommaevenhere_2``).ToString()
 
+
+let options = new JsonSerializerOptions()
+options.Converters.Add(new JsonStringEnumConverter())
+
 [<Fact>]
 let ``Throw Exception If Enum Contains Special Char`` () =
-    Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<BadEnum>(badEnum) |> ignore)
+    Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<BadEnum>(@$"""{badEnum}""", options) |> ignore)
 
 [<Fact>]
 let ``Successful deserialize normal enum`` () =
-    Assert.Throws<JsonException>(fun () -> JsonSerializer.Deserialize<BadEnum>(goodEnum) |> ignore)
+    let actual = JsonSerializer.Deserialize<GoodEnum>(@$"""{goodEnum}""", options)
+    Assert.Equal(GoodEnum.Thereisnocommainmyname_1 ||| GoodEnum.Thereisnocommaevenhere_2, actual)
+
