@@ -571,7 +571,6 @@ int __cdecl main(int argc, char* argv[])
                 {
                     NearDifferResult result = InvokeNearDiffer(&nearDiffer, &mc, &crl, &reader);
 
-                    bool addDiffsCsvRow = false;
                     switch (result)
                     {
                     case NearDifferResult::SuccessWithDiff:
@@ -586,18 +585,16 @@ int __cdecl main(int argc, char* argv[])
                         // Otherwise this will end up in failingMCList
                         if (o.diffsInfo != nullptr)
                         {
-                            addDiffsCsvRow = true;
+                            PrintDiffsCsvRow(
+                                diffCsv,
+                                reader->GetMethodContextIndex(),
+                                baseMetrics.NumCodeBytes, diffMetrics.NumCodeBytes,
+                                baseMetrics.NumExecutedInstructions, diffMetrics.NumExecutedInstructions,
+                                mcb.size);
                         }
                         else if (o.mclFilename != nullptr)
                         {
                             failingToReplayMCL.AddMethodToMCL(reader->GetMethodContextIndex());
-                        }
-
-                        break;
-                    case NearDifferResult::SuccessWithoutDiff:
-                        if (o.diffsInfo != nullptr)
-                        {
-                            addDiffsCsvRow = true;
                         }
 
                         break;
@@ -606,16 +603,6 @@ int __cdecl main(int argc, char* argv[])
                             failingToReplayMCL.AddMethodToMCL(reader->GetMethodContextIndex());
 
                         break;
-                    }
-
-                    if (addDiffsCsvRow)
-                    {
-                        PrintDiffsCsvRow(
-                            diffCsv,
-                            reader->GetMethodContextIndex(),
-                            baseMetrics.NumCodeBytes, diffMetrics.NumCodeBytes,
-                            baseMetrics.NumExecutedInstructions, diffMetrics.NumExecutedInstructions,
-                            mcb.size);
                     }
 
                     totalBaseMetrics.Overall.NumDiffedCodeBytes += baseMetrics.NumCodeBytes;
