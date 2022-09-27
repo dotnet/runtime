@@ -245,7 +245,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
         }
 
         const ssize_t shiftAmount = shiftAmountNode->AsIntCon()->IconValue();
-        const ssize_t maxShift    = (static_cast<ssize_t>(genTypeSize(node)) * BITS_IN_BYTE) - 1;
+        const ssize_t maxShift    = (static_cast<ssize_t>(genTypeSize(parentNode)) * BITS_IN_BYTE) - 1;
 
         if ((shiftAmount < 0x01) || (shiftAmount > maxShift))
         {
@@ -286,34 +286,32 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
     if (childNode->OperIs(GT_CAST))
     {
         // Find "a op cast(b)"
+        GenTree* castOp = childNode->AsCast()->CastOp();
 
-        if (childNode->gtGetOp1()->isContained())
+        if (castOp->isContained())
         {
             // Cannot contain if the childs op1 is already contained
             return false;
         }
 
-        switch (childNode->CastToType())
-        {
-            case TYP_LONG:
-            {
-                if (childNode->CastFromType() != TYP_INT)
-                {
-                    // Cannot contain other cast types
-                    return false;
-                }
-            }
+        bool isSupportedCast = false;
 
-            default:
-            {
-                // TODO: Handle byte->ushort, ushort->uint, and signed variants
-                return false;
-            }
+        if (varTypeIsSmall(childNode->CastToType()))
+        {
+            // The JIT doesn't track upcasts from small types, instead most types
+            // are tracked as TYP_INT and then we get explicit downcasts to the
+            // desired small type instead.
+
+            isSupportedCast = true;
+        }
+        else if (childNode->TypeIs(TYP_LONG) && genActualTypeIsInt(castOp))
+        {
+            // We can handle "INT -> LONG", "INT -> ULONG", "UINT -> LONG", and "UINT -> ULONG"
+            isSupportedCast = true;
         }
 
-        if (genTypeSize() > genTypeSize()
+        if (!isSupportedCast)
         {
-            // Cannot contain if we're casting from large to small
             return false;
         }
 

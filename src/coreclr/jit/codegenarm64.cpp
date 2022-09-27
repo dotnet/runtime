@@ -2644,7 +2644,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
         assert(varTypeIsIntegral(tree));
 
         GenTree* a = op1;
-        GenTree* b = op2->gtGetOp1();
+        GenTree* b = op2->AsCast()->CastOp();
 
         instruction ins = genGetInsForOper(tree->OperGet(), targetType);
         insOpts     opt = INS_OPTS_NONE;
@@ -2674,19 +2674,20 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
             }
         }
 
-        switch (childNode->CastToType())
-        {
-            case TYP_LONG:
-            {
-                assert(childNode->CastFromType() == TYP_INT);
-                opt = b->AsCast()->IsUnsigned() ? INS_OPTS_UXTW : INS_OPTS_SXTW;
-                break;
-            }
+        bool isZeroExtending = op2->AsCast()->IsZeroExtending();
 
-            default:
-            {
-                unreached();
-            }
+        if (varTypeIsByte(op2->CastToType()))
+        {
+            opt = isZeroExtending  ? INS_OPTS_UXTB : INS_OPTS_SXTB;
+        }
+        else if (varTypeIsShort(op2->CastToType()))
+        {
+            opt = isZeroExtending  ? INS_OPTS_UXTH : INS_OPTS_SXTH;
+        }
+        else
+        {
+            assert(op2->TypeIs(TYP_LONG) && genActualTypeIsInt(b));
+            opt = isZeroExtending  ? INS_OPTS_UXTW : INS_OPTS_SXTW;
         }
 
         emit->emitIns_R_R_R(ins, emitActualTypeSize(tree), targetReg, a->GetRegNum(), b->GetRegNum(), opt);

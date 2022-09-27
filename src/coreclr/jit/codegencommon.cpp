@@ -1058,7 +1058,7 @@ bool CodeGen::genCreateAddrMode(
     }
 
 #if TARGET_ARM64
-    if (op2->isContained() && op2->OperIs(GT_CAST))
+    if (op2->OperIsLIR() && op2->isContained() && op2->OperIs(GT_CAST))
     {
         *rv1Ptr = op1;
         *rv2Ptr = op2;
