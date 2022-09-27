@@ -1298,17 +1298,17 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
     }
 
     //// Set the beginning and end for the new argument table
-    //unsigned curInx;
-    //int      regCount      = 0;
-    //unsigned begTab        = 0;
-    //unsigned endTab        = argCount - 1;
-    //unsigned argsRemaining = argCount;
+    // unsigned curInx;
+    // int      regCount      = 0;
+    // unsigned begTab        = 0;
+    // unsigned endTab        = argCount - 1;
+    // unsigned argsRemaining = argCount;
 
     //// First take care of arguments that are constants.
     //// [We use a backward iterator pattern]
     ////
-    //curInx = argCount;
-    //do
+    // curInx = argCount;
+    // do
     //{
     //    curInx--;
 
@@ -1350,7 +1350,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
     //    }
     //} while (curInx > 0);
 
-    //if (argsRemaining > 0)
+    // if (argsRemaining > 0)
     //{
     //    // Next take care of arguments that are calls.
     //    // [We use a forward iterator pattern]
@@ -1387,7 +1387,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
     //    }
     //}
 
-    //if (argsRemaining > 0)
+    // if (argsRemaining > 0)
     //{
     //    // Next take care arguments that are temps.
     //    // These temps come before the arguments that are
@@ -1423,7 +1423,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
     //    }
     //}
 
-    //if (argsRemaining > 0)
+    // if (argsRemaining > 0)
     //{
     //    // Next take care of local var and local field arguments.
     //    // These are moved towards the end of the argument evaluation.
@@ -1467,8 +1467,8 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
 
     //// Finally, take care of all the remaining arguments.
     //// Note that we fill in one arg at a time using a while loop.
-    //bool costsPrepared = false; // Only prepare tree costs once, the first time through this loop
-    //while (argsRemaining > 0)
+    // bool costsPrepared = false; // Only prepare tree costs once, the first time through this loop
+    // while (argsRemaining > 0)
     //{
     //    /* Find the most expensive arg remaining and evaluate it next */
 
@@ -1545,8 +1545,8 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
 
     //// The table should now be completely filled and thus begTab should now be adjacent to endTab
     //// and regArgsRemaining should be zero
-    //assert(begTab == (endTab + 1));
-    //assert(argsRemaining == 0);
+    // assert(begTab == (endTab + 1));
+    // assert(argsRemaining == 0);
 }
 
 //------------------------------------------------------------------------------
