@@ -215,16 +215,6 @@ namespace System.Reflection.Tests
             Assert.Equal(DBNull.Value, raw);
         }
 
-            // public void DecimalParamWithDateTimeConstantAttr([DecimalConstant(1, 1, 2, 3, 4)] decimal dec) { }
-            // public void DecimalNullableParamWithDateTimeConstantAttrDefaultValue([CustomDecimalConstant(Value = 42)] decimal dec = null) { }
-            // public void DecimalParamWithCustomConstantAttrNoDefaultValue([CustomDecimalConstant(Value = 42)] decimal dec) { }
-            // public void DecimalParamWithTwoCustomConstantAttrsNoDefaultValue1([CustomDecimalConstant(Value = 42)][DecimalConstant(1, 1, 2, 3, 4)] decimal dec) { }
-            // public void DecimalParamWithTwoCustomConstantAttrsNoDefaultValue2([DecimalConstant(1, 1, 2, 3, 4)][CustomDecimalConstant(Value = 42)] decimal dec) { }
-            // public void ObjectParamWithDateTimeConstantAttr([DateTimeConstant(42)] object obj) { }
-            // public void ObjectParamWithDecimalConstantAttr([DecimalConstant(1, 1, 2, 3, 4)] object obj) { }
-            // public void ObjectParamWithCustomIntConstantAttr([CustomIntConstant(Value = 42)] object obj) { }
-            // public void ObjectParamWithTwoCustomConstantAttr([DecimalConstant(1, 1, 2, 3, 4)][CustomIntConstant(Value = 42)] object obj) { }
-
         [Fact]
         public void RawDefaultValue_DecimalParamWithDateTimeConstantAttr()
         {
