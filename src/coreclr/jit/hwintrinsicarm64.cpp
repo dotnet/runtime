@@ -546,7 +546,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_Vector64_Create:
+        case NI_Vector64_CreateScalarUnsafe:
         case NI_Vector128_Create:
+        case NI_Vector128_CreateScalarUnsafe:
         {
             uint32_t simdLength = getSIMDVectorLength(simdSize, simdBaseType);
             assert((sig->numArgs == 1) || (sig->numArgs == simdLength));
