@@ -225,7 +225,6 @@ namespace std
                 , m_isBufferOwner(v.m_isBufferOwner)
             {
                 v.m_isBufferOwner = false;
-                return *this;
             }
 
             vector<T>& operator=(vector<T>&& v) noexcept
