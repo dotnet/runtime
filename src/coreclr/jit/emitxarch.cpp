@@ -6280,7 +6280,7 @@ void emitter::emitIns_S_R_I(instruction ins, emitAttr attr, int varNum, int offs
 }
 
 //------------------------------------------------------------------------
-// emitIns_A_R_I: emits the code for an instruction that takes a static member,
+// emitIns_A_R_I: emits the code for an instruction that takes an address,
 //                a register operand, and an immediate.
 //
 // Arguments:
