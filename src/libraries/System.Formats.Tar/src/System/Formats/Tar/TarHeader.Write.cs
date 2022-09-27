@@ -559,6 +559,7 @@ namespace System.Formats.Tar
             if (!string.IsNullOrEmpty(_gName))
             {
                 ReadOnlySpan<char> gName = _gName;
+
                 if (GetUtf8TextLength(gName) > FieldLengths.GName)
                 {
                     if (_format is not TarEntryFormat.Pax)
@@ -566,7 +567,7 @@ namespace System.Formats.Tar
                         throw new ArgumentException(SR.Format(SR.TarEntryFieldExceedsMaxLength, nameof(PaxTarEntry.GroupName)), ArgNameEntry);
                     }
 
-                    int truncatedLength = GetUtf16TruncatedTextLength(gName, FieldLengths.UName);
+                    int truncatedLength = GetUtf16TruncatedTextLength(gName, FieldLengths.GName);
                     gName = gName.Slice(0, truncatedLength);
                 }
 
@@ -924,6 +925,8 @@ namespace System.Formats.Tar
         // Returns the text's utf16 length truncated at the specified utf8 max length.
         private static int GetUtf16TruncatedTextLength(ReadOnlySpan<char> text, int utf8MaxLength)
         {
+            Debug.Assert(GetUtf8TextLength(text) > utf8MaxLength);
+
             int utf8Length = 0;
             int utf16TruncatedLength = 0;
 
