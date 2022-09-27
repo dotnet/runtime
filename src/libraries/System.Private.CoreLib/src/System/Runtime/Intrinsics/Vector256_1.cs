@@ -28,8 +28,8 @@ namespace System.Runtime.Intrinsics
     public readonly struct Vector256<T> : IEquatable<Vector256<T>>
         where T : struct
     {
-        private readonly Vector128<T> _lower;
-        private readonly Vector128<T> _upper;
+        internal readonly Vector128<T> _lower;
+        internal readonly Vector128<T> _upper;
 
         /// <summary>Gets a new <see cref="Vector256{T}" /> with all bits set to 1.</summary>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
