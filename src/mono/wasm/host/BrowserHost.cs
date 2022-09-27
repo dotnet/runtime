@@ -72,8 +72,8 @@ internal sealed class BrowserHost
         runArgsJson.Save(Path.Combine(_args.CommonConfig.AppPath, "runArgs.json"));
 
         var urls = new string[] { $"http://localhost:{_args.CommonConfig.HostProperties.WebServerPort}", "https://localhost:0" };
-        if (envVars["ASPNETCORE_URLS"] is not null)
-            urls = envVars["ASPNETCORE_URLS"].Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+        if (envVars.TryGetValue("ASPNETCORE_URLS", out string? aspnetUrls))
+            urls = aspnetUrls.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
 
         (ServerURLs serverURLs, IWebHost host) = await StartWebServerAsync(_args.CommonConfig.AppPath,
                                                                            _args.ForwardConsoleOutput ?? false,
