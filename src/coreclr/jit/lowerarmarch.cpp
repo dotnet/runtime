@@ -244,7 +244,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
             return false;
         }
 
-        target_ssize_t shiftAmount = (target_ssize_t)shiftAmountNode->AsIntCon()->gtIconVal;
+        ssize_t shiftAmount = shiftAmountNode->AsIntCon()->IconValue();
 
         if ((shiftAmount < 0x01) || (shiftAmount > 0x3F))
         {
@@ -279,7 +279,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
         {
             if (IsSafeToContainMem(parentNode, childNode))
             {
-                MakeSrcContained(childNode, shiftAmountNode);
+                assert(shiftAmountNode->isContained());
                 return true;
             }
         }
