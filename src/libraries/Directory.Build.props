@@ -131,13 +131,15 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">
-    <SdkWithNoWorkloadForTestingPath>$(ArtifactsBinDir)sdk-no-workload\</SdkWithNoWorkloadForTestingPath>
+    <SdkWithNoWorkloadForTestingPath>$(ArtifactsBinDir)dotnet-none\</SdkWithNoWorkloadForTestingPath>
     <SdkWithNoWorkloadForTestingPath>$([MSBuild]::NormalizeDirectory($(SdkWithNoWorkloadForTestingPath)))</SdkWithNoWorkloadForTestingPath>
 
     <SdkWithNoWorkloadStampPath>$(SdkWithNoWorkloadForTestingPath)version-$(SdkVersionForWorkloadTesting).stamp</SdkWithNoWorkloadStampPath>
     <SdkWithNoWorkload_WorkloadStampPath>$(SdkWithNoWorkloadForTestingPath)workload.stamp</SdkWithNoWorkload_WorkloadStampPath>
 
-    <SdkWithWorkloadForTestingPath>$(ArtifactsBinDir)dotnet-workload\</SdkWithWorkloadForTestingPath>
+    <!-- FIXME: Using net7 workload here, since we are building the test projects with net7.0
+                right now. -->
+    <SdkWithWorkloadForTestingPath>$(ArtifactsBinDir)dotnet-net7+latest\</SdkWithWorkloadForTestingPath>
     <SdkWithWorkloadForTestingPath>$([MSBuild]::NormalizeDirectory($(SdkWithWorkloadForTestingPath)))</SdkWithWorkloadForTestingPath>
 
     <SdkWithWorkloadStampPath>$(SdkWithWorkloadForTestingPath)version-$(SdkVersionForWorkloadTesting).stamp</SdkWithWorkloadStampPath>

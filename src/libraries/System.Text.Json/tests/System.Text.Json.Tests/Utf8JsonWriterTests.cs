@@ -23,8 +23,6 @@ namespace System.Text.Json.Tests
         private const int MaxEscapedTokenSize = 1_000_000_000;   // Max size for already escaped value.
         private const int MaxUnescapedTokenSize = MaxEscapedTokenSize / MaxExpansionFactorWhileEscaping;  // 166_666_666 bytes
 
-        public static bool IsX64 { get; } = IntPtr.Size >= 8;
-
         [Theory]
         [InlineData(true, true)]
         [InlineData(true, false)]
@@ -742,7 +740,7 @@ namespace System.Text.Json.Tests
         /// Also see <see cref="WriteRawLargeJsonToStreamWithoutFlushing"/>
         /// </summary>
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [ConditionalFact(nameof(IsX64))]
+        [ConditionalFact(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         public void WriteLargeJsonToStreamWithoutFlushing()
         {
@@ -2969,7 +2967,7 @@ namespace System.Text.Json.Tests
         //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
         //       time the memory is accessed which triggers the full memory allocation.
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [ConditionalTheory(nameof(IsX64))]
+        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         [InlineData(true, true)]
         [InlineData(true, false)]
@@ -3014,7 +3012,7 @@ namespace System.Text.Json.Tests
         //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
         //       time the memory is accessed which triggers the full memory allocation.
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [ConditionalTheory(nameof(IsX64))]
+        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         [InlineData(true, true)]
         [InlineData(true, false)]
@@ -3054,7 +3052,7 @@ namespace System.Text.Json.Tests
             }
         }
 
-        [ConditionalTheory(nameof(IsX64))]
+        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         [InlineData(true, true)]
         [InlineData(true, false)]
@@ -3128,7 +3126,7 @@ namespace System.Text.Json.Tests
         //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
         //       time the memory is accessed which triggers the full memory allocation.
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [ConditionalTheory(nameof(IsX64))]
+        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         [InlineData(true, true)]
         [InlineData(true, false)]
@@ -6165,7 +6163,7 @@ namespace System.Text.Json.Tests
         //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
         //       time the memory is accessed which triggers the full memory allocation.
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [ConditionalTheory(nameof(IsX64))]
+        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         [InlineData(true, true)]
         [InlineData(true, false)]
@@ -6213,7 +6211,7 @@ namespace System.Text.Json.Tests
         //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
         //       time the memory is accessed which triggers the full memory allocation.
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [ConditionalTheory(nameof(IsX64))]
+        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         [InlineData(true, true)]
         [InlineData(true, false)]
@@ -6247,7 +6245,7 @@ namespace System.Text.Json.Tests
         //       succeed even if there is not enough memory but then the test may get killed by the OOM killer at the
         //       time the memory is accessed which triggers the full memory allocation.
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [ConditionalTheory(nameof(IsX64))]
+        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         [InlineData(true, true)]
         [InlineData(true, false)]
@@ -6641,7 +6639,7 @@ namespace System.Text.Json.Tests
             }
         }
 
-        [ConditionalTheory(nameof(IsX64))]
+        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         [InlineData(true, true)]
         [InlineData(false, true)]

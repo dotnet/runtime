@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections;
 using ILLink.Shared.TypeSystemProxy;
 using Internal.TypeSystem;
-using Internal.TypeSystem.Ecma;
 
 using TypeSystemWellKnownType = Internal.TypeSystem.WellKnownType;
 using ILLinkSharedWellKnownType = ILLink.Shared.TypeSystemProxy.WellKnownType;
@@ -14,7 +12,7 @@ using ILLinkSharedWellKnownType = ILLink.Shared.TypeSystemProxy.WellKnownType;
 
 namespace ILCompiler.Dataflow
 {
-    static class TypeExtensions
+    internal static class TypeExtensions
     {
         public static bool IsTypeOf(this TypeDesc type, string ns, string name)
         {

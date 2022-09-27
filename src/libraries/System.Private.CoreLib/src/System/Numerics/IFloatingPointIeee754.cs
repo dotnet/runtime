@@ -13,7 +13,7 @@ namespace System.Numerics
           IPowerFunctions<TSelf>,
           IRootFunctions<TSelf>,
           ITrigonometricFunctions<TSelf>
-        where TSelf : IFloatingPointIeee754<TSelf>
+        where TSelf : IFloatingPointIeee754<TSelf>?
     {
         /// <summary>Gets the smallest value such that can be added to <c>0</c> that does not result in <c>0</c>.</summary>
         static abstract TSelf Epsilon { get; }

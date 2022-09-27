@@ -1,11 +1,9 @@
-import createDotnetRuntime from './dotnet.js'
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
-const dllName = "Wasm.Console.V8.Sample.dll";
-const app_args = Array.from(arguments);
+import { dotnet } from './dotnet.js'
 
-async function main() {
-    const { runMainAndExit } = await createDotnetRuntime();
-    await runMainAndExit(dllName, app_args);
-}
-
-main();
+dotnet
+    .withDiagnosticTracing(false)
+    .withApplicationArguments(...arguments)
+    .run()

@@ -46,6 +46,7 @@ namespace System.Tests
             var exception = new MissingMethodException(className, memberName);
             Assert.Contains(className, exception.Message);
             Assert.Contains(memberName, exception.Message);
+            Assert.Equal(COR_E_MISSINGMETHOD, exception.HResult);
         }
     }
 }

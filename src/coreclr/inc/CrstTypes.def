@@ -202,7 +202,7 @@ Crst Exception
 End
 
 Crst ExecutableAllocatorLock
-    AcquiredAfter LoaderHeap ArgBasedStubCache UMEntryThunkFreeListLock
+    AcquiredAfter LoaderHeap ArgBasedStubCache UMEntryThunkFreeListLock COMCallWrapper
 End
 
 Crst ExecuteManRangeLock
@@ -292,7 +292,7 @@ End
 Crst JumpStubCache
     AcquiredBefore ExecuteManRangeLock LoaderHeap SingleUseLock
     AcquiredAfter AppDomainCache
-                  ILStubGen ThreadpoolTimerQueue ThreadpoolWaitThreads
+                  ILStubGen
                   TypeIDMap BaseDomain AssemblyLoader
 End
 
@@ -476,18 +476,6 @@ End
 Crst ThreadIdDispenser
 End
 
-Crst ThreadpoolTimerQueue
-    AcquiredBefore UniqueStack
-End
-
-Crst ThreadpoolWaitThreads
-    AcquiredBefore UniqueStack
-End
-
-Crst ThreadpoolWorker
-    AcquiredBefore ThreadIdDispenser ThreadStore
-End
-
 Crst ThreadStore
     AcquiredBefore AvailableParamTypes DeadlockDetection DebuggerController
                    DebuggerHeapLock DebuggerJitInfo DynamicIL ExecuteManRangeLock HandleTable IbcProfile
@@ -561,7 +549,7 @@ End
 
 Crst TieredCompilation
     AcquiredAfter CodeVersioning
-    AcquiredBefore ThreadpoolTimerQueue
+    AcquiredBefore FuncPtrStubs
 End
 
 Crst COMCallWrapper

@@ -28,6 +28,9 @@ namespace System.Net.Quic.Tests
 
         public static bool IsSupported => QuicListener.IsSupported && QuicConnection.IsSupported;
 
+        private static readonly Lazy<bool> _isIPv6Available = new Lazy<bool>(GetIsIPv6Available);
+        public static bool IsIPv6Available => _isIPv6Available.Value;
+
         public static SslApplicationProtocol ApplicationProtocol { get; } = new SslApplicationProtocol("quictest");
 
         public readonly X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
@@ -365,6 +368,20 @@ namespace System.Net.Quic.Tests
             finally
             {
                 ArrayPool<byte>.Shared.Return(buffer);
+            }
+        }
+
+        internal static bool GetIsIPv6Available()
+        {
+            try
+            {
+                using Socket s = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
+                s.Bind(new IPEndPoint(IPAddress.IPv6Loopback, 0));
+                return true;
+            }
+            catch (SocketException)
+            {
+                return false;
             }
         }
     }

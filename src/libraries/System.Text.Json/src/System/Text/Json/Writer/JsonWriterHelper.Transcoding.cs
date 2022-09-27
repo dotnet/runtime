@@ -29,7 +29,7 @@ namespace System.Text.Json
         {
             //
             //
-            // KEEP THIS IMPLEMENTATION IN SYNC WITH https://github.com/dotnet/coreclr/blob/master/src/System.Private.CoreLib/shared/System/Text/UTF8Encoding.cs#L841
+            // KEEP THIS IMPLEMENTATION IN SYNC WITH https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/Text/UTF8Encoding.cs#L845
             //
             //
             fixed (byte* chars = &MemoryMarshal.GetReference(utf16Source))

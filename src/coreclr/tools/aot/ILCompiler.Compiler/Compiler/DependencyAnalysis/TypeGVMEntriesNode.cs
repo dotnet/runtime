@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -27,7 +26,7 @@ namespace ILCompiler.DependencyAnalysis
             public MethodDesc ImplementationMethod { get; }
         }
 
-        internal class InterfaceGVMEntryInfo : TypeGVMEntryInfo
+        internal sealed class InterfaceGVMEntryInfo : TypeGVMEntryInfo
         {
             public InterfaceGVMEntryInfo(MethodDesc callingMethod, MethodDesc implementationMethod,
                 TypeDesc implementationType, DefaultInterfaceMethodResolution defaultResolution)
@@ -40,7 +39,7 @@ namespace ILCompiler.DependencyAnalysis
             public TypeDesc ImplementationType { get; }
             public DefaultInterfaceMethodResolution DefaultResolution { get; }
         }
-         
+
         private readonly TypeDesc _associatedType;
         private DependencyList _staticDependencies;
 
@@ -89,7 +88,7 @@ namespace ILCompiler.DependencyAnalysis
                 return true;
 
             //
-            // Check if the type implements any interface with GVM methods, where the method implementations could be on 
+            // Check if the type implements any interface with GVM methods, where the method implementations could be on
             // base types.
             // Example:
             //      interface IFace {

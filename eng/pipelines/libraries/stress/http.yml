@@ -12,6 +12,7 @@ schedules:
     include:
     - main
     - release/6.0
+    - release/7.0
 
 variables:
   - template: ../variables.yml
@@ -30,7 +31,7 @@ jobs:
   variables:
     DUMPS_SHARE_MOUNT_ROOT: "/dumps-share"
   pool:
-    name: NetCore1ESPool-Public
+    name: NetCore-Public
     demands: ImageOverride -equals 1es-ubuntu-1804-open
 
   steps:
@@ -96,7 +97,7 @@ jobs:
   variables:
     DUMPS_SHARE_MOUNT_ROOT: "C:/dumps-share"
   pool:
-    name: NetCore1ESPool-Public
+    name: NetCore-Public
     demands: ImageOverride -equals 1es-windows-2022-open
 
   steps:

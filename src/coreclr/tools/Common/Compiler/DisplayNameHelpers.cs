@@ -7,8 +7,6 @@ using System.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
-using Debug = System.Diagnostics.Debug;
-
 namespace ILCompiler
 {
     public static class DisplayNameHelpers
@@ -39,6 +37,7 @@ namespace ILCompiler
             {
                 sb.Append(method.OwningType.GetDisplayNameWithoutNamespace());
             }
+#if !READYTORUN
             else if (method.GetPropertyForAccessor() is PropertyPseudoDesc property)
             {
                 sb.Append(property.Name);
@@ -46,6 +45,22 @@ namespace ILCompiler
                 sb.Append(property.GetMethod == method ? "get" : "set");
                 return sb.ToString();
             }
+            else if (method.GetEventForAccessor() is EventPseudoDesc @event)
+            {
+                sb.Append(@event.Name);
+                sb.Append('.');
+                string accessor;
+                if (method.Name == @event.AddMethod.Name)
+                    accessor = "add";
+                else if (method.Name == @event.RemoveMethod.Name)
+                    accessor = "remove";
+                else if (method.Name == @event.RaiseMethod.Name)
+                    accessor = "raise";
+                else
+                    throw new NotSupportedException();
+                sb.Append(accessor);
+            }
+#endif
             else
             {
                 sb.Append(method.Name);
@@ -123,9 +138,9 @@ namespace ILCompiler
             return Formatter.Instance.FormatName(type, FormatOptions.None);
         }
 
-        private class Formatter : TypeNameFormatter<Formatter.Unit, FormatOptions>
+        private sealed class Formatter : TypeNameFormatter<Formatter.Unit, FormatOptions>
         {
-            public readonly static Formatter Instance = new Formatter();
+            public static readonly Formatter Instance = new Formatter();
 
             public override Unit AppendName(StringBuilder sb, ArrayType type, FormatOptions options)
             {
@@ -226,7 +241,7 @@ namespace ILCompiler
                 return default;
             }
 
-            private void NamespaceQualify(StringBuilder sb, DefType type, FormatOptions options)
+            private static void NamespaceQualify(StringBuilder sb, DefType type, FormatOptions options)
             {
                 if ((options & FormatOptions.NamespaceQualify) != 0)
                 {

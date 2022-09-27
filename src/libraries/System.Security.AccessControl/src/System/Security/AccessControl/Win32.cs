@@ -32,7 +32,7 @@ namespace System.Security.AccessControl
 
             if (!Interop.Advapi32.ConvertSdToStringSd(binaryForm, (uint)requestedRevision, (uint)si, out ByteArray, ref ByteArraySize))
             {
-                errorCode = Marshal.GetLastWin32Error();
+                errorCode = Marshal.GetLastPInvokeError();
                 goto Error;
             }
 

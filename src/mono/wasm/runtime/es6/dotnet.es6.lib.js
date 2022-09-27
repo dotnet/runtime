@@ -88,19 +88,13 @@ const linked_functions = [
     "mono_wasm_compile_function_ref",
     "mono_wasm_bind_js_function",
     "mono_wasm_invoke_bound_function",
+    "mono_wasm_invoke_import",
     "mono_wasm_bind_cs_function",
     "mono_wasm_marshal_promise",
 
     // pal_icushim_static.c
     "mono_wasm_load_icu_data",
     "mono_wasm_get_icudt_name",
-
-    // pal_crypto_webworker.c
-    "dotnet_browser_can_use_subtle_crypto_impl",
-    "dotnet_browser_simple_digest_hash",
-    "dotnet_browser_sign",
-    "dotnet_browser_encrypt_decrypt",
-    "dotnet_browser_derive_bits",
 
     #if USE_PTHREADS
     /// mono-threads-wasm.c

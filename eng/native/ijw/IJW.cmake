@@ -32,7 +32,7 @@ if (CLR_CMAKE_HOST_WIN32)
   endfunction()
 
   # 4365 - signed/unsigned mismatch
-  # 4679 - Could not import member. This is an issue with IJW and static abstract methods in interfaces. 
+  # 4679 - Could not import member. This is an issue with IJW and static abstract methods in interfaces.
   add_compile_options(/wd4365 /wd4679)
 
   # IJW

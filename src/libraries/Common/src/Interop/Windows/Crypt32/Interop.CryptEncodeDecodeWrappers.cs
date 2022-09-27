@@ -30,13 +30,13 @@ internal static partial class Interop
 
             if (!CryptDecodeObject(MsgEncodingType.All, (IntPtr)lpszStructType, pbEncoded, cbEncoded, 0, null, ref cbRequired))
             {
-                throw Marshal.GetLastWin32Error().ToCryptographicException();
+                throw Marshal.GetLastPInvokeError().ToCryptographicException();
             }
 
             SafeHandle sh = SafeHeapAllocHandle.Alloc(cbRequired);
             if (!CryptDecodeObject(MsgEncodingType.All, (IntPtr)lpszStructType, pbEncoded, cbEncoded, 0, (void*)sh.DangerousGetHandle(), ref cbRequired))
             {
-                Exception e = Marshal.GetLastWin32Error().ToCryptographicException();
+                Exception e = Marshal.GetLastPInvokeError().ToCryptographicException();
                 sh.Dispose();
                 throw e;
             }
@@ -49,13 +49,13 @@ internal static partial class Interop
             int cb = 0;
             if (!CryptEncodeObject(MsgEncodingType.All, lpszStructType, decoded, null, ref cb))
             {
-                throw Marshal.GetLastWin32Error().ToCryptographicException();
+                throw Marshal.GetLastPInvokeError().ToCryptographicException();
             }
 
             byte[] encoded = new byte[cb];
             if (!CryptEncodeObject(MsgEncodingType.All, lpszStructType, decoded, encoded, ref cb))
             {
-                throw Marshal.GetLastWin32Error().ToCryptographicException();
+                throw Marshal.GetLastPInvokeError().ToCryptographicException();
             }
 
             return encoded.Resize(cb);

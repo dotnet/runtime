@@ -143,7 +143,7 @@ StringLiteralMap::~StringLiteralMap()
 
 
 
-STRINGREF *StringLiteralMap::GetStringLiteral(EEStringData *pStringData, BOOL bAddIfNotFound, BOOL bAppDomainWontUnload)
+STRINGREF *StringLiteralMap::GetStringLiteral(EEStringData *pStringData, BOOL bAddIfNotFound, BOOL bIsCollectible, void** ppPinnedString)
 {
     CONTRACTL
     {
@@ -165,7 +165,9 @@ STRINGREF *StringLiteralMap::GetStringLiteral(EEStringData *pStringData, BOOL bA
     // someone beat us to inserting it. (m_StringToEntryHashTable->GetValue(pStringData, &Data))
     // (Rather than waiting until after we look the string up in the global map)
 
-    StringLiteralEntryHolder pEntry(SystemDomain::GetGlobalStringLiteralMap()->GetStringLiteral(pStringData, dwHash, bAddIfNotFound));
+    // Don't use FOH for collectible modules to avoid potential memory leaks
+    const bool preferFrozenObjectHeap = !bIsCollectible;
+    StringLiteralEntryHolder pEntry(SystemDomain::GetGlobalStringLiteralMap()->GetStringLiteral(pStringData, dwHash, bAddIfNotFound, preferFrozenObjectHeap));
 
     _ASSERTE(pEntry || !bAddIfNotFound);
 
@@ -177,7 +179,7 @@ STRINGREF *StringLiteralMap::GetStringLiteral(EEStringData *pStringData, BOOL bA
         // TODO: except that by not inserting into our local table we always take the global map lock
         // and come into this path, when we could succeed at a lock free lookup above.
 
-        if (!bAppDomainWontUnload)
+        if (bIsCollectible)
         {
             // Make sure some other thread has not already added it.
             if (!m_StringToEntryHashTable->GetValue(pStringData, &Data))
@@ -201,6 +203,12 @@ STRINGREF *StringLiteralMap::GetStringLiteral(EEStringData *pStringData, BOOL bA
         // Retrieve the string objectref from the string literal entry.
         pStrObj = pEntry->GetStringObject();
         _ASSERTE(!bAddIfNotFound || pStrObj);
+
+
+        if (pStrObj != nullptr && ppPinnedString != nullptr && preferFrozenObjectHeap && pEntry->IsStringFrozen())
+        {
+            *ppPinnedString = *reinterpret_cast<void**>(pStrObj);
+        }
         return pStrObj;
     }
     // If the bAddIfNotFound flag is set then we better have a string
@@ -209,7 +217,7 @@ STRINGREF *StringLiteralMap::GetStringLiteral(EEStringData *pStringData, BOOL bA
     return NULL;
 }
 
-STRINGREF *StringLiteralMap::GetInternedString(STRINGREF *pString, BOOL bAddIfNotFound, BOOL bAppDomainWontUnload)
+STRINGREF *StringLiteralMap::GetInternedString(STRINGREF *pString, BOOL bAddIfNotFound, BOOL bIsCollectible)
 {
     CONTRACTL
     {
@@ -242,7 +250,10 @@ STRINGREF *StringLiteralMap::GetInternedString(STRINGREF *pString, BOOL bAddIfNo
         // (Rather than waiting until after we look the string up in the global map)
 
         // Retrieve the string literal from the global string literal map.
-        StringLiteralEntryHolder pEntry(SystemDomain::GetGlobalStringLiteralMap()->GetInternedString(pString, dwHash, bAddIfNotFound));
+
+        // Don't use FOH for collectible modules to avoid potential memory leaks
+        const bool preferFrozenObjectHeap = !bIsCollectible;
+        StringLiteralEntryHolder pEntry(SystemDomain::GetGlobalStringLiteralMap()->GetInternedString(pString, dwHash, bAddIfNotFound, preferFrozenObjectHeap));
 
         _ASSERTE(pEntry || !bAddIfNotFound);
 
@@ -254,7 +265,7 @@ STRINGREF *StringLiteralMap::GetInternedString(STRINGREF *pString, BOOL bAddIfNo
             // TODO: except that by not inserting into our local table we always take the global map lock
             // and come into this path, when we could succeed at a lock free lookup above.
 
-            if (!bAppDomainWontUnload)
+            if (bIsCollectible)
             {
                 // Since GlobalStringLiteralMap::GetInternedString() could have caused a GC,
                 // we need to recreate the string data.
@@ -357,7 +368,7 @@ void GlobalStringLiteralMap::Init()
         ThrowOutOfMemory();
 }
 
-StringLiteralEntry *GlobalStringLiteralMap::GetStringLiteral(EEStringData *pStringData, DWORD dwHash, BOOL bAddIfNotFound)
+StringLiteralEntry *GlobalStringLiteralMap::GetStringLiteral(EEStringData *pStringData, DWORD dwHash, BOOL bAddIfNotFound, BOOL bPreferFrozenObjectHeap)
 {
     CONTRACTL
     {
@@ -383,13 +394,15 @@ StringLiteralEntry *GlobalStringLiteralMap::GetStringLiteral(EEStringData *pStri
     else
     {
         if (bAddIfNotFound)
-            pEntry = AddStringLiteral(pStringData);
+        {
+            pEntry = AddStringLiteral(pStringData, bPreferFrozenObjectHeap);
+        }
     }
 
     return pEntry;
 }
 
-StringLiteralEntry *GlobalStringLiteralMap::GetInternedString(STRINGREF *pString, DWORD dwHash, BOOL bAddIfNotFound)
+StringLiteralEntry *GlobalStringLiteralMap::GetInternedString(STRINGREF *pString, DWORD dwHash, BOOL bAddIfNotFound, BOOL bPreferFrozenObjectHeap)
 {
     CONTRACTL
     {
@@ -417,7 +430,7 @@ StringLiteralEntry *GlobalStringLiteralMap::GetInternedString(STRINGREF *pString
     else
     {
         if (bAddIfNotFound)
-            pEntry = AddInternedString(pString);
+            pEntry = AddInternedString(pString, bPreferFrozenObjectHeap);
     }
 
     return pEntry;
@@ -439,7 +452,7 @@ static void LogStringLiteral(_In_z_ const char* action, EEStringData *pStringDat
 }
 #endif
 
-STRINGREF AllocateStringObject(EEStringData *pStringData)
+STRINGREF AllocateStringObject(EEStringData *pStringData, bool preferFrozenObjHeap, bool* pIsFrozen)
 {
     CONTRACTL
     {
@@ -452,7 +465,7 @@ STRINGREF AllocateStringObject(EEStringData *pStringData)
     // Create the COM+ string object.
     DWORD cCount = pStringData->GetCharCount();
 
-    STRINGREF strObj = AllocateString(cCount);
+    STRINGREF strObj = AllocateString(cCount, preferFrozenObjHeap, pIsFrozen);
 
     GCPROTECT_BEGIN(strObj)
     {
@@ -468,7 +481,7 @@ STRINGREF AllocateStringObject(EEStringData *pStringData)
 
     return strObj;
 }
-StringLiteralEntry *GlobalStringLiteralMap::AddStringLiteral(EEStringData *pStringData)
+StringLiteralEntry *GlobalStringLiteralMap::AddStringLiteral(EEStringData *pStringData, bool preferFrozenObjHeap)
 {
     CONTRACTL
     {
@@ -482,32 +495,46 @@ StringLiteralEntry *GlobalStringLiteralMap::AddStringLiteral(EEStringData *pStri
 
     StringLiteralEntry *pRet;
 
+    bool isFrozen = false;
+    STRINGREF strObj = AllocateStringObject(pStringData, preferFrozenObjHeap, &isFrozen);
+    if (isFrozen)
     {
-    PinnedHeapHandleBlockHolder pStrObj(&m_PinnedHeapHandleTable,1);
-    // Create the COM+ string object.
-    STRINGREF strObj = AllocateStringObject(pStringData);
+        _ASSERT(preferFrozenObjHeap);
+        StringLiteralEntryHolder pEntry(StringLiteralEntry::AllocateFrozenEntry(pStringData, strObj));
+        m_StringToEntryHashTable->InsertValue(pStringData, pEntry, FALSE);
+        pEntry.SuppressRelease();
+        pRet = pEntry;
+        _ASSERT(pRet->IsStringFrozen());
+    }
+    else
+    {
+        GCPROTECT_BEGIN(strObj)
+        {
+            // If it's not frozen we need to gc allocate a pinned handle to the non-pinned string object
+            PinnedHeapHandleBlockHolder pStrObj(&m_PinnedHeapHandleTable,1);
 
-    // Allocate a handle for the string.
-    SetObjectReference(pStrObj[0], (OBJECTREF) strObj);
+            // Allocate a handle for the string.
+            SetObjectReference(pStrObj[0], strObj);
 
-
-    // Allocate the StringLiteralEntry.
-    StringLiteralEntryHolder pEntry(StringLiteralEntry::AllocateEntry(pStringData, (STRINGREF*)pStrObj[0]));
-    pStrObj.SuppressRelease();
-    // Insert the handle to the string into the hash table.
-    m_StringToEntryHashTable->InsertValue(pStringData, (LPVOID)pEntry, FALSE);
-    pEntry.SuppressRelease();
-    pRet = pEntry;
+            // Allocate the StringLiteralEntry.
+            StringLiteralEntryHolder pEntry(StringLiteralEntry::AllocateEntry(pStringData, (STRINGREF*)pStrObj[0]));
+            pStrObj.SuppressRelease();
+            // Insert the handle to the string into the hash table.
+            m_StringToEntryHashTable->InsertValue(pStringData, pEntry, FALSE);
+            pEntry.SuppressRelease();
+            pRet = pEntry;
+        }
+        GCPROTECT_END();
+    }
 
 #ifdef LOGGING
     LogStringLiteral("added", pStringData);
 #endif
-    }
 
     return pRet;
 }
 
-StringLiteralEntry *GlobalStringLiteralMap::AddInternedString(STRINGREF *pString)
+StringLiteralEntry *GlobalStringLiteralMap::AddInternedString(STRINGREF *pString, bool preferFrozenObjHeap)
 {
 
     CONTRACTL
@@ -521,26 +548,7 @@ StringLiteralEntry *GlobalStringLiteralMap::AddInternedString(STRINGREF *pString
     CONTRACTL_END;
 
     EEStringData StringData = EEStringData((*pString)->GetStringLength(), (*pString)->GetBuffer());
-    StringLiteralEntry *pRet;
-
-    {
-    PinnedHeapHandleBlockHolder pStrObj(&m_PinnedHeapHandleTable,1);
-    SetObjectReference(pStrObj[0], (OBJECTREF) *pString);
-
-    // Since the allocation might have caused a GC we need to re-get the
-    // string data.
-    StringData = EEStringData((*pString)->GetStringLength(), (*pString)->GetBuffer());
-
-    StringLiteralEntryHolder pEntry(StringLiteralEntry::AllocateEntry(&StringData, (STRINGREF*)pStrObj[0]));
-    pStrObj.SuppressRelease();
-
-    // Insert the handle to the string into the hash table.
-    m_StringToEntryHashTable->InsertValue(&StringData, (LPVOID)pEntry, FALSE);
-    pEntry.SuppressRelease();
-    pRet = pEntry;
-    }
-
-    return pRet;
+    return AddStringLiteral(&StringData, preferFrozenObjHeap);
 }
 
 void GlobalStringLiteralMap::RemoveStringLiteralEntry(StringLiteralEntry *pEntry)
@@ -577,16 +585,19 @@ void GlobalStringLiteralMap::RemoveStringLiteralEntry(StringLiteralEntry *pEntry
         }
 #endif
 
-        // Release the object handle that the entry was using.
-        STRINGREF *pObjRef = pEntry->GetStringObject();
-        m_PinnedHeapHandleTable.ReleaseHandles((OBJECTREF*)pObjRef, 1);
+        if (!pEntry->IsStringFrozen())
+        {
+            // Release the object handle that the entry was using.
+            STRINGREF *pObjRef = pEntry->GetStringObject();
+            m_PinnedHeapHandleTable.ReleaseHandles((OBJECTREF*)pObjRef, 1);
+        }
     }
 
     // We do not delete the StringLiteralEntry itself that will be done in the
     // release method of the StringLiteralEntry.
 }
 
-StringLiteralEntry *StringLiteralEntry::AllocateEntry(EEStringData *pStringData, STRINGREF *pStringObj)
+void* StringLiteralEntry::AllocateEntryInternal()
 {
    CONTRACTL
     {
@@ -618,7 +629,17 @@ StringLiteralEntry *StringLiteralEntry::AllocateEntry(EEStringData *pStringData,
     }
     _ASSERTE (pMem && "Unable to allocate String literal Entry");
 
-    return new (pMem) StringLiteralEntry (pStringData, pStringObj);
+    return pMem;
+}
+
+StringLiteralEntry* StringLiteralEntry::AllocateEntry(EEStringData* pStringData, STRINGREF* pStringObj)
+{
+    return new (AllocateEntryInternal()) StringLiteralEntry(pStringData, pStringObj);
+}
+
+StringLiteralEntry* StringLiteralEntry::AllocateFrozenEntry(EEStringData* pStringData, STRINGREF pFrozenStringObj)
+{
+    return new (AllocateEntryInternal()) StringLiteralEntry(pStringData, pFrozenStringObj);
 }
 
 void StringLiteralEntry::DeleteEntry (StringLiteralEntry *pEntry)
@@ -631,13 +652,9 @@ void StringLiteralEntry::DeleteEntry (StringLiteralEntry *pEntry)
     }
     CONTRACTL_END;
 
-    _ASSERTE (VolatileLoad(&pEntry->m_dwRefCount) == 0);
-
+    _ASSERTE (pEntry->IsStringFrozen() || pEntry->GetRefCount() == 0);
 #ifdef _DEBUG
-    memset (pEntry, 0xc, sizeof(StringLiteralEntry));
-#endif
-
-#ifdef _DEBUG
+    memset (&pEntry->m_pStringObj, 0xc, sizeof(pEntry->m_pStringObj));
     pEntry->m_bDeleted = TRUE;
 #endif
 

@@ -470,8 +470,10 @@ namespace DebuggerTests
                 });
         }
 
-        [ConditionalFact(nameof(RunningOnChrome))]
-        public async Task CreateGoodBreakpointAndHitGoToNonWasmPageComeBackAndHitAgain()
+        [ConditionalTheory(nameof(RunningOnChrome))]
+        [InlineData("load_non_wasm_page")]
+        [InlineData("load_non_wasm_page_forcing_runtime_ready")] //to simulate the same behavior that has when debugging from VS and OnDefaultContextCreated is called
+        public async Task CreateGoodBreakpointAndHitGoToNonWasmPageComeBackAndHitAgain(string func_name)
         {
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
             var pause_location = await EvaluateAndCheck(
@@ -500,7 +502,7 @@ namespace DebuggerTests
 
             var run_method = JObject.FromObject(new
             {
-                expression = "window.setTimeout(function() { load_non_wasm_page(); }, 1);"
+                expression = "window.setTimeout(function() { " + func_name + "(); }, 1);"
             });
             await cli.SendCommand("Runtime.evaluate", run_method, token);
             await Task.Delay(1000, token);

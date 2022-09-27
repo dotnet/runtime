@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 
 using Internal.Runtime;
@@ -12,7 +11,7 @@ namespace ILCompiler.DependencyAnalysis
 {
     public class ReadyToRunHeaderNode : ObjectNode, ISymbolDefinitionNode
     {
-        struct HeaderItem
+        private struct HeaderItem
         {
             public HeaderItem(ReadyToRunSectionType id, ObjectNode node, ISymbolNode startSymbol, ISymbolNode endSymbol)
             {
@@ -22,14 +21,14 @@ namespace ILCompiler.DependencyAnalysis
                 EndSymbol = endSymbol;
             }
 
-            readonly public ReadyToRunSectionType Id;
-            readonly public ObjectNode Node;
-            readonly public ISymbolNode StartSymbol;
-            readonly public ISymbolNode EndSymbol;
+            public readonly ReadyToRunSectionType Id;
+            public readonly ObjectNode Node;
+            public readonly ISymbolNode StartSymbol;
+            public readonly ISymbolNode EndSymbol;
         }
 
-        List<HeaderItem> _items = new List<HeaderItem>();
-        TargetDetails _target;
+        private List<HeaderItem> _items = new List<HeaderItem>();
+        private TargetDetails _target;
 
         public ReadyToRunHeaderNode(TargetDetails target)
         {

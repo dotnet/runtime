@@ -19,13 +19,13 @@ using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.Single
 namespace ILLink.Shared.TrimAnalysis
 {
 	[StructLayout (LayoutKind.Auto)] // A good way to avoid CS0282, we don't really care about field order
-	partial struct HandleCallAction
+	internal partial struct HandleCallAction
 	{
-		static ValueSetLattice<SingleValue> MultiValueLattice => default;
+		private static ValueSetLattice<SingleValue> MultiValueLattice => default;
 
-		readonly DiagnosticContext _diagnosticContext;
-		readonly FlowAnnotations _annotations;
-		readonly RequireDynamicallyAccessedMembersAction _requireDynamicallyAccessedMembersAction;
+		private readonly DiagnosticContext _diagnosticContext;
+		private readonly FlowAnnotations _annotations;
+		private readonly RequireDynamicallyAccessedMembersAction _requireDynamicallyAccessedMembersAction;
 
 		public bool Invoke (MethodProxy calledMethod, MultiValue instanceValue, IReadOnlyList<MultiValue> argumentValues, out MultiValue methodReturnValue, out IntrinsicId intrinsicId)
 		{
@@ -1198,7 +1198,7 @@ namespace ILLink.Shared.TrimAnalysis
 			}
 		}
 
-		IEnumerable<MultiValue> ProcessGetMethodByName (TypeProxy type, string methodName, BindingFlags? bindingFlags)
+		private IEnumerable<MultiValue> ProcessGetMethodByName (TypeProxy type, string methodName, BindingFlags? bindingFlags)
 		{
 			bool foundAny = false;
 			foreach (var method in GetMethodsOnTypeHierarchy (type, methodName, bindingFlags)) {
@@ -1215,7 +1215,7 @@ namespace ILLink.Shared.TrimAnalysis
 				yield return NullValue.Instance;
 		}
 
-		bool AnalyzeGenericInstantiationTypeArray (in MultiValue arrayParam, in MethodProxy calledMethod, ImmutableArray<GenericParameterValue> genericParameters)
+		private bool AnalyzeGenericInstantiationTypeArray (in MultiValue arrayParam, in MethodProxy calledMethod, ImmutableArray<GenericParameterValue> genericParameters)
 		{
 			bool hasRequirements = false;
 			foreach (var genericParameter in genericParameters) {
@@ -1278,7 +1278,7 @@ namespace ILLink.Shared.TrimAnalysis
 			}
 		}
 
-		void ValidateGenericMethodInstantiation (
+		private void ValidateGenericMethodInstantiation (
 			MethodProxy genericMethod,
 			in MultiValue genericParametersArray,
 			MethodProxy reflectionMethod)
@@ -1293,7 +1293,7 @@ namespace ILLink.Shared.TrimAnalysis
 			}
 		}
 
-		ImmutableArray<GenericParameterValue> GetGenericParameterValues (ImmutableArray<GenericParameterProxy> genericParameters)
+		private ImmutableArray<GenericParameterValue> GetGenericParameterValues (ImmutableArray<GenericParameterProxy> genericParameters)
 		{
 			if (genericParameters.IsEmpty)
 				return ImmutableArray<GenericParameterValue>.Empty;
@@ -1305,7 +1305,7 @@ namespace ILLink.Shared.TrimAnalysis
 			return builder.ToImmutableArray ();
 		}
 
-		void ProcessCreateInstanceByName (MethodProxy calledMethod, IReadOnlyList<MultiValue> argumentValues)
+		private void ProcessCreateInstanceByName (MethodProxy calledMethod, IReadOnlyList<MultiValue> argumentValues)
 		{
 			BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 			bool parameterlessConstructor = true;

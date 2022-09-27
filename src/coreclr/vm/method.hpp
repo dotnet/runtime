@@ -323,6 +323,8 @@ public:
 
     LPCUTF8 GetName(USHORT slot);
 
+    LPCUTF8 GetNameThrowing();
+
     BOOL MightHaveName(ULONG nameHashValue);
 
     FORCEINLINE LPCUTF8 GetNameOnNonArrayClass()

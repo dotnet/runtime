@@ -111,7 +111,7 @@ HHANDLETABLE HndCreateHandleTable(const uint32_t *pTypeFlags, uint32_t uTypeCoun
     if (pTable == NULL)
         return NULL;
 
-    memset (pTable, 0, dwSize);
+    memset ((void*)pTable, 0, dwSize);
 
     // allocate the initial handle segment
     pTable->pSegmentList = SegmentAlloc(pTable);
@@ -521,6 +521,7 @@ void HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
         FIRE_EVENT(SetGCHandle, (void *)handle, (void *)value, hndType, generation);
         FIRE_EVENT(PrvSetGCHandle, (void *) handle, (void *)value, hndType, generation);
 
+#ifdef FEATURE_ASYNC_PINNED_HANDLES
         // Also fire the things pinned by Async pinned handles
         if (hndType == HNDTYPE_ASYNCPINNED)
         {
@@ -531,6 +532,7 @@ void HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
                 FIRE_EVENT(SetGCHandle, (void *)overlapped, (void *)to, HNDTYPE_PINNED, generation);
             });
         }
+#endif
     }
 #else
     UNREFERENCED_PARAMETER(handle);
@@ -578,12 +580,14 @@ void HndWriteBarrierWorker(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
         int generation = g_theGCHeap->WhichGeneration(value);
         uint32_t uType = HandleFetchType(handle);
 
+#ifdef FEATURE_ASYNC_PINNED_HANDLES
         //OverlappedData need special treatment: because all user data pointed by it needs to be reported by this handle,
         //its age is consider to be min age of the user data, to be simple, we just make it 0
         if (uType == HNDTYPE_ASYNCPINNED)
         {
             generation = 0;
         }
+#endif
 
         if (uType == HNDTYPE_DEPENDENT)
         {

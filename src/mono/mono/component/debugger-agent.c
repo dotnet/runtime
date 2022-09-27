@@ -1039,7 +1039,7 @@ socket_transport_connect (const char *address)
 	MonoAddressEntry *rp;
 	SOCKET sfd = INVALID_SOCKET;
 	int s = 0, res;
-	char *host;
+	char *host = NULL;
 	int port;
 
 	MONO_REQ_GC_SAFE_MODE;
@@ -8573,6 +8573,8 @@ method_commands_internal (int command, MonoMethod *method, MonoDomain *domain, g
 	}
 	case CMD_METHOD_GET_PARAM_INFO: {
 		MonoMethodSignature *sig = mono_method_signature_internal (method);
+		if (!sig)
+			return ERR_INVALID_ARGUMENT;
 		char **names;
 
 		/* FIXME: mono_class_from_mono_type_internal () and byrefs */

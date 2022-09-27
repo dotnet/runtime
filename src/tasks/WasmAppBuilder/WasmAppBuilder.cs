@@ -75,6 +75,8 @@ public class WasmAppBuilder : Task
 
     private sealed class WasmAppConfig
     {
+        [JsonPropertyName("mainAssemblyName")]
+        public string? MainAssemblyName { get; set; }
         [JsonPropertyName("assemblyRootFolder")]
         public string AssemblyRootFolder { get; set; } = "managed";
         [JsonPropertyName("debugLevel")]
@@ -105,11 +107,6 @@ public class WasmAppBuilder : Task
     private sealed class WasmEntry : AssetEntry
     {
         public WasmEntry(string name) : base(name, "dotnetwasm") { }
-    }
-
-    private sealed class CryptoWorkerEntry : AssetEntry
-    {
-        public CryptoWorkerEntry(string name) : base(name, "js-module-crypto") { }
     }
 
     private sealed class ThreadsWorkerEntry : AssetEntry
@@ -181,7 +178,10 @@ public class WasmAppBuilder : Task
         }
         MainAssemblyName = Path.GetFileName(MainAssemblyName);
 
-        var config = new WasmAppConfig ();
+        var config = new WasmAppConfig ()
+        {
+            MainAssemblyName = MainAssemblyName,
+        };
 
         // Create app
         var asmRootPath = Path.Combine(AppDir, config.AssemblyRootFolder);
@@ -315,7 +315,6 @@ public class WasmAppBuilder : Task
 
         config.Assets.Add(new VfsEntry ("dotnet.timezones.blat") { VirtualPath = "/usr/share/zoneinfo/"});
         config.Assets.Add(new WasmEntry ("dotnet.wasm") );
-        config.Assets.Add(new CryptoWorkerEntry ("dotnet-crypto-worker.js") );
         if (IncludeThreadsWorker)
             config.Assets.Add(new ThreadsWorkerEntry ("dotnet.worker.js") );
 

@@ -41,7 +41,7 @@ static gboolean
 mono_is_usermode_native_debugger_present_slow (void)
 // PAL_IsDebuggerPresent
 // based closely on with some local cleanup:
-//   https://github.com/dotnet/coreclr/blob/master/src/pal/src/init/pal.cpp
+//   https://github.com/dotnet/runtime/blob/main/src/coreclr/pal/src/init/pal.cpp
 //   https://raw.githubusercontent.com/dotnet/coreclr/f1c9dac3e2db2397e01cd2da3e8aaa4f81a80013/src/pal/src/init/pal.cpp
 {
 #if defined (__APPLE__)

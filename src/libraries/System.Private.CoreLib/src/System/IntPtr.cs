@@ -223,6 +223,7 @@ namespace System
             return nint_t.TryParse(s, out Unsafe.As<nint, nint_t>(ref result));
         }
 
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out nint result)
         {
             Unsafe.SkipInit(out result);
@@ -1117,7 +1118,7 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<nint>.TryConvertToChecked<TOther>(nint value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<nint>.TryConvertToChecked<TOther>(nint value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1178,14 +1179,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<nint>.TryConvertToSaturating<TOther>(nint value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<nint>.TryConvertToSaturating<TOther>(nint value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1250,14 +1251,14 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<nint>.TryConvertToTruncating<TOther>(nint value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<nint>.TryConvertToTruncating<TOther>(nint value, [MaybeNullWhen(false)] out TOther result)
         {
             // In order to reduce overall code duplication and improve the inlinabilty of these
             // methods for the corelib types we have `ConvertFrom` handle the same sign and
@@ -1318,7 +1319,7 @@ namespace System
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }

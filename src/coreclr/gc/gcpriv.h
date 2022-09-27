@@ -648,8 +648,6 @@ struct etw_bucket_info
     uint32_t count;
     size_t size;
 
-    etw_bucket_info() {}
-
     void set (uint16_t _index, uint32_t _count, size_t _size)
     {
         index = _index;
@@ -3852,7 +3850,7 @@ public:
     PER_HEAP_ISOLATED
     VOLATILE(bool) full_gc_approach_event_set;
 
-    PER_HEAP_ISOLATED
+    PER_HEAP
     bool special_sweep_p;
 
 #ifdef BACKGROUND_GC
@@ -3919,7 +3917,7 @@ public:
 #else //MULTIPLE_HEAPS
 
     PER_HEAP
-    size_t allocation_running_time;
+    uint64_t allocation_running_time;
 
     PER_HEAP
     size_t allocation_running_amount;
@@ -4962,8 +4960,10 @@ protected:
     PER_HEAP
     heap_segment* freeable_uoh_segment;
 
+#ifndef USE_REGIONS
     PER_HEAP_ISOLATED
     heap_segment* segment_standby_list;
+#endif
 
 #ifdef USE_REGIONS
     PER_HEAP_ISOLATED

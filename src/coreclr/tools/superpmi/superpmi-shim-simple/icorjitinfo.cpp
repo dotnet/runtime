@@ -277,6 +277,14 @@ int interceptor_ICJI::getStringLiteral(
     return original_ICorJitInfo->getStringLiteral(module, metaTOK, buffer, bufferSize);
 }
 
+int interceptor_ICJI::objectToString(
+          void* handle,
+          char* buffer,
+          int bufferSize)
+{
+    return original_ICorJitInfo->objectToString(handle, buffer, bufferSize);
+}
+
 CorInfoType interceptor_ICJI::asCorInfoType(
           CORINFO_CLASS_HANDLE cls)
 {
@@ -467,6 +475,12 @@ CorInfoHelpFunc interceptor_ICJI::getUnBoxHelper(
           CORINFO_CLASS_HANDLE cls)
 {
     return original_ICorJitInfo->getUnBoxHelper(cls);
+}
+
+void* interceptor_ICJI::getRuntimeTypePointer(
+          CORINFO_CLASS_HANDLE cls)
+{
+    return original_ICorJitInfo->getRuntimeTypePointer(cls);
 }
 
 bool interceptor_ICJI::getReadyToRunHelper(
@@ -728,6 +742,14 @@ CorInfoTypeWithMod interceptor_ICJI::getArgType(
           CORINFO_CLASS_HANDLE* vcTypeRet)
 {
     return original_ICorJitInfo->getArgType(sig, args, vcTypeRet);
+}
+
+int interceptor_ICJI::getExactClasses(
+          CORINFO_CLASS_HANDLE baseType,
+          int maxExactClasses,
+          CORINFO_CLASS_HANDLE* exactClsRet)
+{
+    return original_ICorJitInfo->getExactClasses(baseType, maxExactClasses, exactClsRet);
 }
 
 CORINFO_CLASS_HANDLE interceptor_ICJI::getArgClass(

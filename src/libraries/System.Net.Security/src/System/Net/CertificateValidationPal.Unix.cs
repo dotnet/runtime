@@ -30,24 +30,21 @@ namespace System.Net
             ref X509Chain? chain,
             X509ChainPolicy? chainPolicy)
         {
-            bool gotReference = false;
-
             if (securityContext == null)
             {
                 return null;
             }
 
             X509Certificate2? result = null;
-            SafeFreeCertContext? remoteContext = null;
+            IntPtr remoteCertificate = Interop.OpenSsl.GetPeerCertificate((SafeSslHandle)securityContext);
             try
             {
-                QueryContextRemoteCertificate(securityContext, out remoteContext);
-
-                if (remoteContext != null && !remoteContext.IsInvalid)
+                if (remoteCertificate == IntPtr.Zero)
                 {
-                    remoteContext.DangerousAddRef(ref gotReference);
-                    result = new X509Certificate2(remoteContext.DangerousGetHandle());
+                    return null;
                 }
+
+                result = new X509Certificate2(remoteCertificate);
 
                 if (retrieveChainCertificates)
                 {
@@ -58,7 +55,7 @@ namespace System.Net
                     }
 
                     using (SafeSharedX509StackHandle chainStack =
-                        Interop.OpenSsl.GetPeerCertificateChain(((SafeDeleteSslContext)securityContext).SslContext))
+                        Interop.OpenSsl.GetPeerCertificateChain((SafeSslHandle)securityContext))
                     {
                         if (!chainStack.IsInvalid)
                         {
@@ -86,14 +83,11 @@ namespace System.Net
             }
             finally
             {
-                if (remoteContext != null)
+                if (remoteCertificate != IntPtr.Zero)
                 {
-                    if (gotReference)
-                    {
-                        remoteContext.DangerousRelease();
-                    }
-
-                    remoteContext.Dispose();
+                    // Creating X509Certificate will increase the reference count
+                    // so we need to release it explicitly on either success or failure.
+                    Interop.Crypto.X509Destroy(remoteCertificate);
                 }
             }
 
@@ -106,7 +100,7 @@ namespace System.Net
         //
         internal static string[] GetRequestCertificateAuthorities(SafeDeleteContext securityContext)
         {
-            using (SafeSharedX509NameStackHandle names = Interop.Ssl.SslGetClientCAList(((SafeDeleteSslContext)securityContext).SslContext))
+            using (SafeSharedX509NameStackHandle names = Interop.Ssl.SslGetClientCAList((SafeSslHandle)securityContext))
             {
                 if (names.IsInvalid)
                 {
@@ -153,22 +147,6 @@ namespace System.Net
             store.Open(OpenFlags.ReadOnly);
 
             return store;
-        }
-
-        private static int QueryContextRemoteCertificate(SafeDeleteContext securityContext, out SafeFreeCertContext? remoteCertContext)
-        {
-            remoteCertContext = null;
-            try
-            {
-                SafeX509Handle remoteCertificate = Interop.OpenSsl.GetPeerCertificate(((SafeDeleteSslContext)securityContext).SslContext);
-                // Note that cert ownership is transferred to SafeFreeCertContext
-                remoteCertContext = new SafeFreeCertContext(remoteCertificate);
-                return 0;
-            }
-            catch
-            {
-                return -1;
-            }
         }
     }
 }

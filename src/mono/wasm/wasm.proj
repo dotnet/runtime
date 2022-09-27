@@ -26,7 +26,6 @@
     <_EmccCompileRspPath>$(NativeBinDir)src\emcc-compile.rsp</_EmccCompileRspPath>
     <_EmccLinkRspPath>$(NativeBinDir)src\emcc-link.rsp</_EmccLinkRspPath>
     <WasmNativeStrip Condition="'$(ContinuousIntegrationBuild)' == 'true'">false</WasmNativeStrip>
-    <SystemCryptoNativeDir>$(RepoRoot)\src\native\libs\System.Security.Cryptography.Native.Browser</SystemCryptoNativeDir>
   </PropertyGroup>
 
   <Target Name="CheckEnv">
@@ -62,7 +61,6 @@
       <WasmPInvokeModule Include="libSystem.Native" />
       <WasmPInvokeModule Include="libSystem.IO.Compression.Native" />
       <WasmPInvokeModule Include="libSystem.Globalization.Native" />
-      <WasmPInvokeModule Include="libSystem.Security.Cryptography.Native.Browser" />
       <WasmPInvokeAssembly Include="@(LibrariesRuntimeFiles)" Condition="'%(Extension)' == '.dll' and '%(IsNative)' != 'true'" />
     </ItemGroup>
 
@@ -261,7 +259,8 @@
 
     <Copy SourceFiles="runtime/es6/dotnet.es6.pre.js;
                        runtime/es6/dotnet.es6.lib.js;
-                       runtime/es6/dotnet.es6.post.js;"
+                       runtime/es6/dotnet.es6.post.js;
+                       runtime/es6/dotnet.es6.extpost.js;"
           DestinationFolder="$(NativeBinDir)src/es6"
           SkipUnchangedFiles="true" />
 
@@ -294,7 +293,6 @@
                        $(NativeBinDir)dotnet-legacy.d.ts;
                        $(NativeBinDir)package.json;
                        $(NativeBinDir)dotnet.wasm;
-                       $(NativeBinDir)\src\dotnet-crypto-worker.js;
                        $(NativeBinDir)dotnet.timezones.blat"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />

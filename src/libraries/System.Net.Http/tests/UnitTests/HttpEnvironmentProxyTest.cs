@@ -99,16 +99,15 @@ namespace System.Net.Http.Tests
                 u = p.GetProxy(fooWss);
                 Assert.True(u != null && u.Host == "1.1.1.1" && u.Port == 3000);
 
-                // Try valid URI with unsupported protocol. It will be ignored
-                // to mimic curl behavior.
+                // Try with socks5 protocol
                 Environment.SetEnvironmentVariable("https_proxy", "socks5://1.1.1.4:3004");
                 Assert.True(HttpEnvironmentProxy.TryCreate(out p));
                 Assert.NotNull(p);
                 u = p.GetProxy(fooHttps);
-                Assert.True(u != null && u.Host == "1.1.1.1" && u.Port == 3000);
+                Assert.True(u != null && u.Host == "1.1.1.4" && u.Port == 3004);
 
                 u = p.GetProxy(fooWss);
-                Assert.True(u != null && u.Host == "1.1.1.1" && u.Port == 3000);
+                Assert.True(u != null && u.Host == "1.1.1.4" && u.Port == 3004);
 
                 // Set https to valid URI but different from http.
                 Environment.SetEnvironmentVariable("https_proxy", "http://1.1.1.5:3005");
@@ -140,6 +139,9 @@ namespace System.Net.Http.Tests
         [InlineData("HTTP://ABC.COM/", "abc.com", "80", null, null)]
         [InlineData("http://10.30.62.64:7890/", "10.30.62.64", "7890", null, null)]
         [InlineData("http://1.2.3.4:8888/foo", "1.2.3.4", "8888", null, null)]
+        [InlineData("socks4://1.2.3.4:8888/foo", "1.2.3.4", "8888", null, null)]
+        [InlineData("socks4a://1.2.3.4:8888/foo", "1.2.3.4", "8888", null, null)]
+        [InlineData("socks5://1.2.3.4:8888/foo", "1.2.3.4", "8888", null, null)]
         public void HttpProxy_Uri_Parsing(string _input, string _host, string _port, string _user, string _password)
         {
             RemoteExecutor.Invoke((input, host, port, user, password) =>

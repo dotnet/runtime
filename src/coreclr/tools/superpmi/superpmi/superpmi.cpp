@@ -67,14 +67,14 @@ void SetSuperPmiTargetArchitecture(const char* targetArchitecture)
 // This function uses PAL_TRY, so it can't be in the a function that requires object unwinding. Extracting it out here
 // avoids compiler error.
 //
-void InvokeNearDiffer(NearDiffer*           nearDiffer,
-                      CommandLine::Options* o,
-                      MethodContext**       mc,
-                      CompileResult**       crl,
-                      int*                  matchCount,
-                      MethodContextReader** reader,
-                      MCList*               failingMCL,
-                      MCList*               diffMCL)
+static void InvokeNearDiffer(NearDiffer*           nearDiffer,
+                             CommandLine::Options* o,
+                             MethodContext**       mc,
+                             CompileResult**       crl,
+                             bool*                 hasDiff,
+                             MethodContextReader** reader,
+                             MCList*               failingMCL,
+                             MCList*               diffMCL)
 {
     struct Param : FilterSuperPMIExceptionsParam_CaptureException
     {
@@ -82,7 +82,7 @@ void InvokeNearDiffer(NearDiffer*           nearDiffer,
         CommandLine::Options* o;
         MethodContext**       mc;
         CompileResult**       crl;
-        int*                  matchCount;
+        bool*                 hasDiff;
         MethodContextReader** reader;
         MCList*               failingMCL;
         MCList*               diffMCL;
@@ -91,19 +91,17 @@ void InvokeNearDiffer(NearDiffer*           nearDiffer,
     param.o          = o;
     param.mc         = mc;
     param.crl        = crl;
-    param.matchCount = matchCount;
+    param.hasDiff    = hasDiff;
     param.reader     = reader;
     param.failingMCL = failingMCL;
     param.diffMCL    = diffMCL;
+    *hasDiff = false;
 
     PAL_TRY(Param*, pParam, &param)
     {
-        if (pParam->nearDiffer->compare(*pParam->mc, *pParam->crl, (*pParam->mc)->cr))
+        if (!pParam->nearDiffer->compare(*pParam->mc, *pParam->crl, (*pParam->mc)->cr))
         {
-            (*pParam->matchCount)++;
-        }
-        else
-        {
+            *pParam->hasDiff = true;
             LogIssue(ISSUE_ASM_DIFF, "main method %d of size %d differs", (*pParam->reader)->GetMethodContextIndex(),
                      (*pParam->mc)->methodSize);
 
@@ -250,7 +248,6 @@ int __cdecl main(int argc, char* argv[])
 
     int loadedCount       = 0;
     int jittedCount       = 0;
-    int matchCount        = 0;
     int failToReplayCount = 0;
     int errorCount        = 0;
     int errorCount2       = 0;
@@ -269,8 +266,8 @@ int __cdecl main(int argc, char* argv[])
         }
     }
 
-    MetricsSummary totalBaseMetrics;
-    MetricsSummary totalDiffMetrics;
+    MetricsSummaries totalBaseMetrics;
+    MetricsSummaries totalDiffMetrics;
 
     while (true)
     {
@@ -289,9 +286,9 @@ int __cdecl main(int argc, char* argv[])
             st1.Stop();
             if (o.applyDiff)
             {
-                LogVerbose(" %2.1f%% - Loaded %d  Jitted %d  Matching %d  FailedCompile %d at %d per second",
-                           reader->PercentComplete(), loadedCount, jittedCount, matchCount, failToReplayCount,
-                           (int)((double)500 / st1.GetSeconds()));
+                LogVerbose(" %2.1f%% - Loaded %d  Jitted %d  Diffs %d  FailedCompile %d at %d per second",
+                           reader->PercentComplete(), loadedCount, jittedCount, totalBaseMetrics.Overall.NumContextsWithDiffs,
+                           failToReplayCount, (int)((double)500 / st1.GetSeconds()));
             }
             else
             {
@@ -367,18 +364,27 @@ int __cdecl main(int argc, char* argv[])
         }
 
         MetricsSummary baseMetrics;
+        bool isMinOpts;
         jittedCount++;
         st3.Start();
-        res = jit->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput, &baseMetrics);
+        res = jit->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput, &baseMetrics, &isMinOpts);
         st3.Stop();
         LogDebug("Method %d compiled%s in %fms, result %d",
             reader->GetMethodContextIndex(), (o.nameOfJit2 == nullptr) ? "" : " by JIT1", st3.GetMilliseconds(), res);
 
-        totalBaseMetrics.AggregateFrom(baseMetrics);
+        MetricsSummary& totalBaseMetricsOpts = isMinOpts ? totalBaseMetrics.MinOpts : totalBaseMetrics.FullOpts;
+        MetricsSummary& totalDiffMetricsOpts = isMinOpts ? totalDiffMetrics.MinOpts : totalDiffMetrics.FullOpts;
 
-        if ((res == JitInstance::RESULT_SUCCESS) && Logger::IsLogLevelEnabled(LOGLEVEL_DEBUG))
+        totalBaseMetrics.Overall.AggregateFrom(baseMetrics);
+
+        if (res == JitInstance::RESULT_SUCCESS)
         {
-            mc->cr->dumpToConsole(); // Dump the compile results if doing debug logging
+            totalBaseMetricsOpts.AggregateFrom(baseMetrics);
+
+            if (Logger::IsLogLevelEnabled(LOGLEVEL_DEBUG))
+            {
+                mc->cr->dumpToConsole(); // Dump the compile results if doing debug logging
+            }
         }
 
         MetricsSummary diffMetrics;
@@ -391,17 +397,23 @@ int __cdecl main(int argc, char* argv[])
             crl    = mc->cr;
             mc->cr = new CompileResult();
 
+            bool isMinOptsDiff;
             st4.Start();
-            res2 = jit2->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput, &diffMetrics);
+            res2 = jit2->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput, &diffMetrics, &isMinOptsDiff);
             st4.Stop();
             LogDebug("Method %d compiled by JIT2 in %fms, result %d", reader->GetMethodContextIndex(),
                      st4.GetMilliseconds(), res2);
 
-            totalDiffMetrics.AggregateFrom(diffMetrics);
+            totalDiffMetrics.Overall.AggregateFrom(diffMetrics);
 
-            if ((res2 == JitInstance::RESULT_SUCCESS) && Logger::IsLogLevelEnabled(LOGLEVEL_DEBUG))
+            if (res2 == JitInstance::RESULT_SUCCESS)
             {
-                mc->cr->dumpToConsole(); // Dump the compile results if doing debug logging
+                totalDiffMetricsOpts.AggregateFrom(diffMetrics);
+
+                if (Logger::IsLogLevelEnabled(LOGLEVEL_DEBUG))
+                {
+                    mc->cr->dumpToConsole(); // Dump the compile results if doing debug logging
+                }
             }
 
             if (res2 == JitInstance::RESULT_ERROR)
@@ -540,13 +552,29 @@ int __cdecl main(int argc, char* argv[])
                 }
                 else
                 {
-                    InvokeNearDiffer(&nearDiffer, &o, &mc, &crl, &matchCount, &reader, &failingToReplayMCL, &diffMCL);
+                    bool hasDiff;
+                    InvokeNearDiffer(&nearDiffer, &o, &mc, &crl, &hasDiff, &reader, &failingToReplayMCL, &diffMCL);
 
-                    totalBaseMetrics.NumDiffedCodeBytes += baseMetrics.NumCodeBytes;
-                    totalDiffMetrics.NumDiffedCodeBytes += diffMetrics.NumCodeBytes;
+                    if (hasDiff)
+                    {
+                        totalBaseMetrics.Overall.NumContextsWithDiffs++;
+                        totalDiffMetrics.Overall.NumContextsWithDiffs++;
 
-                    totalBaseMetrics.NumDiffExecutedInstructions += baseMetrics.NumExecutedInstructions;
-                    totalDiffMetrics.NumDiffExecutedInstructions += diffMetrics.NumExecutedInstructions;
+                        totalBaseMetricsOpts.NumContextsWithDiffs++;
+                        totalDiffMetricsOpts.NumContextsWithDiffs++;
+                    }
+
+                    totalBaseMetrics.Overall.NumDiffedCodeBytes += baseMetrics.NumCodeBytes;
+                    totalDiffMetrics.Overall.NumDiffedCodeBytes += diffMetrics.NumCodeBytes;
+
+                    totalBaseMetricsOpts.NumDiffedCodeBytes += baseMetrics.NumCodeBytes;
+                    totalDiffMetricsOpts.NumDiffedCodeBytes += diffMetrics.NumCodeBytes;
+
+                    totalBaseMetrics.Overall.NumDiffExecutedInstructions += baseMetrics.NumExecutedInstructions;
+                    totalDiffMetrics.Overall.NumDiffExecutedInstructions += diffMetrics.NumExecutedInstructions;
+
+                    totalBaseMetricsOpts.NumDiffExecutedInstructions += baseMetrics.NumExecutedInstructions;
+                    totalDiffMetricsOpts.NumDiffExecutedInstructions += diffMetrics.NumExecutedInstructions;
                 }
             }
         }
@@ -617,7 +645,7 @@ int __cdecl main(int argc, char* argv[])
     if (o.applyDiff)
     {
         LogInfo(g_AsmDiffsSummaryFormatString, loadedCount, jittedCount, failToReplayCount, excludedCount,
-                missingCount, jittedCount - failToReplayCount - matchCount);
+                missingCount, totalDiffMetrics.Overall.NumContextsWithDiffs);
     }
     else
     {
@@ -658,7 +686,7 @@ int __cdecl main(int argc, char* argv[])
     {
         result = SpmiResult::Error;
     }
-    else if (o.applyDiff && (matchCount != jittedCount - missingCount))
+    else if (o.applyDiff && (totalDiffMetrics.Overall.NumContextsWithDiffs > 0))
     {
         result = SpmiResult::Diffs;
     }

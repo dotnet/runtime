@@ -1840,6 +1840,9 @@ arch_emit_objc_selector_ref (MonoAotCompile *acfg, guint8 *code, int index, int 
 /* Keep in sync with tramp-amd64.c, aot_arch_get_plt_entry_index. */
 #define PLT_ENTRY_OFFSET_REG AMD64_RAX
 #endif
+#ifdef MONO_VALIDATE_PLT_ENTRY_INDEX
+extern guint64 mono_arch_plt_entry_index_xor_key;
+#endif
 #endif
 
 /*
@@ -1867,7 +1870,11 @@ arch_emit_plt_entry (MonoAotCompile *acfg, const char *got_symbol, guint32 plt_i
 #ifdef MONO_ARCH_CODE_EXEC_ONLY
 		guint8 buf [16];
 		guint8 *code = buf;
-
+#ifdef MONO_VALIDATE_PLT_ENTRY_INDEX
+		guint64 plt_index_debug = ((guint64)plt_index << 32) | (guint64)plt_index;
+		plt_index_debug = plt_index_debug ^ mono_arch_plt_entry_index_xor_key;
+		amd64_mov_reg_imm_size (code, PLT_ENTRY_OFFSET_REG, plt_index_debug, sizeof(plt_index_debug));
+#else
 		/* Emit smallest possible imm size 1, 2 or 4 bytes based on total number of PLT entries. */
 		if (acfg->plt_offset <= (guint32)0xFF) {
 			amd64_emit_rex(code, sizeof (guint8), 0, 0, PLT_ENTRY_OFFSET_REG);
@@ -1881,6 +1888,7 @@ arch_emit_plt_entry (MonoAotCompile *acfg, const char *got_symbol, guint32 plt_i
 		} else {
 			amd64_mov_reg_imm_size (code, PLT_ENTRY_OFFSET_REG, plt_index, sizeof(plt_index));
 		}
+#endif
 		emit_bytes (acfg, buf, code - buf);
 		acfg->stats.plt_size += code - buf;
 
@@ -12737,7 +12745,12 @@ compile_asm (MonoAotCompile *acfg)
 	if (ld_binary_name == NULL) {
 		ld_binary_name = LD_NAME;
 	}
-	g_string_append_printf (str, "%s%s %s", tool_prefix, ld_binary_name, LD_OPTIONS);
+	if (acfg->aot_opts.tool_prefix)
+		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, LD_OPTIONS);
+	else if (acfg->aot_opts.llvm_only)
+		g_string_append_printf (str, "%s", acfg->aot_opts.clangxx);
+	else
+		g_string_append_printf (str, "\"%s%s\" %s", tool_prefix, ld_binary_name, LD_OPTIONS);
 #else
 	if (ld_binary_name == NULL) {
 		ld_binary_name = "ld";

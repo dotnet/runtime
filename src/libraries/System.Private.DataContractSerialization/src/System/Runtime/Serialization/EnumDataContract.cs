@@ -20,6 +20,7 @@ namespace System.Runtime.Serialization.DataContracts
 
         private readonly EnumDataContractCriticalHelper _helper;
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal EnumDataContract(Type type) : base(new EnumDataContractCriticalHelper(type))
         {
@@ -33,6 +34,7 @@ namespace System.Runtime.Serialization.DataContracts
 
         public override DataContract BaseContract
         {
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get => _helper.BaseContract;
         }
@@ -40,6 +42,7 @@ namespace System.Runtime.Serialization.DataContracts
         internal XmlQualifiedName BaseContractName
         {
             get => _helper.BaseContractName;
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             set => _helper.BaseContractName = value;
         }
@@ -116,6 +119,7 @@ namespace System.Runtime.Serialization.DataContracts
                 return retVal;
             }
 
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal EnumDataContractCriticalHelper(
                 [DynamicallyAccessedMembers(ClassDataContract.DataContractPreserveMemberTypes)]
@@ -157,6 +161,7 @@ namespace System.Runtime.Serialization.DataContracts
             {
                 get => _baseContract.XmlName;
 
+                [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
                 [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
                 set
                 {
@@ -434,12 +439,14 @@ namespace System.Runtime.Serialization.DataContracts
             return false;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
         {
             WriteEnumValue(xmlWriter, obj);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
         {

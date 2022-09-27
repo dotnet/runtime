@@ -41,10 +41,10 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData(10)] // 2 bytes settings value.
-        [InlineData(100)] // 4 bytes settings value.
-        [InlineData(10_000_000)] // 8 bytes settings value.
-        public async Task ClientSettingsReceived_Success(int headerSizeLimit)
+        [InlineData(10, 10240)] // 2 bytes settings value.
+        [InlineData(100, 102400)] // 4 bytes settings value.
+        [InlineData(10_000_000, int.MaxValue)] // 8 bytes settings value.
+        public async Task ClientSettingsReceived_Success(int headerSizeLimit, int expectedHeaderSizeLimitBytes)
         {
             using Http3LoopbackServer server = CreateHttp3LoopbackServer();
 
@@ -58,7 +58,7 @@ namespace System.Net.Http.Functional.Tests
                 await using (requestStream)
                 {
                     Assert.False(settingsStream.CanWrite, "Expected unidirectional control stream.");
-                    Assert.Equal(headerSizeLimit * 1024L, connection.MaxHeaderListSize);
+                    Assert.Equal(expectedHeaderSizeLimitBytes, connection.MaxHeaderListSize);
 
                     await requestStream.ReadRequestDataAsync();
                     await requestStream.SendResponseAsync();

@@ -606,9 +606,9 @@ void ReportExceptionStackHelper(OBJECTREF exObj, EventReporter& reporter, SmallS
         EXCEPTIONREF ex;
         STRINGREF remoteStackTraceString;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
     gc.exObj = exObj;
     gc.ex = (EXCEPTIONREF)exObj;
+    gc.remoteStackTraceString = NULL;
 
     GCPROTECT_BEGIN(gc);
 

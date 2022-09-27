@@ -27,12 +27,14 @@ namespace System.Runtime.Serialization.DataContracts
             _helper = (base.Helper as PrimitiveDataContractCriticalHelper)!;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static PrimitiveDataContract? GetPrimitiveDataContract(Type type)
         {
             return DataContract.GetBuiltInDataContract(type) as PrimitiveDataContract;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static PrimitiveDataContract? GetPrimitiveDataContract(string name, string ns)
         {
@@ -92,6 +94,7 @@ namespace System.Runtime.Serialization.DataContracts
         internal MethodInfo XmlFormatReaderMethod =>
             _helper.XmlFormatReaderMethod ??= typeof(XmlReaderDelegator).GetMethod(ReadMethodName, Globals.ScanAllMembers)!;
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
         {
@@ -176,12 +179,14 @@ namespace System.Runtime.Serialization.DataContracts
         internal override string WriteMethodName => "WriteChar";
         internal override string ReadMethodName => "ReadElementContentAsChar";
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteChar((char)obj);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
@@ -189,6 +194,7 @@ namespace System.Runtime.Serialization.DataContracts
                 : HandleReadValue(reader.ReadElementContentAsChar(), context);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
@@ -210,12 +216,14 @@ namespace System.Runtime.Serialization.DataContracts
         internal override string WriteMethodName => "WriteBoolean";
         internal override string ReadMethodName => "ReadElementContentAsBoolean";
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteBoolean((bool)obj);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
@@ -223,6 +231,7 @@ namespace System.Runtime.Serialization.DataContracts
                 : HandleReadValue(reader.ReadElementContentAsBoolean(), context);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
@@ -239,12 +248,14 @@ namespace System.Runtime.Serialization.DataContracts
         internal override string WriteMethodName => "WriteSignedByte";
         internal override string ReadMethodName => "ReadElementContentAsSignedByte";
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteSignedByte((sbyte)obj);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
@@ -252,6 +263,7 @@ namespace System.Runtime.Serialization.DataContracts
                 : HandleReadValue(reader.ReadElementContentAsSignedByte(), context);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
@@ -268,12 +280,14 @@ namespace System.Runtime.Serialization.DataContracts
         internal override string WriteMethodName => "WriteUnsignedByte";
         internal override string ReadMethodName => "ReadElementContentAsUnsignedByte";
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteUnsignedByte((byte)obj);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
@@ -281,6 +295,7 @@ namespace System.Runtime.Serialization.DataContracts
                 : HandleReadValue(reader.ReadElementContentAsUnsignedByte(), context);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
@@ -297,12 +312,14 @@ namespace System.Runtime.Serialization.DataContracts
         internal override string WriteMethodName => "WriteShort";
         internal override string ReadMethodName => "ReadElementContentAsShort";
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteShort((short)obj);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
@@ -310,6 +327,7 @@ namespace System.Runtime.Serialization.DataContracts
                 : HandleReadValue(reader.ReadElementContentAsShort(), context);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
@@ -326,12 +344,14 @@ namespace System.Runtime.Serialization.DataContracts
         internal override string WriteMethodName => "WriteUnsignedShort";
         internal override string ReadMethodName => "ReadElementContentAsUnsignedShort";
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteUnsignedShort((ushort)obj);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
@@ -339,6 +359,7 @@ namespace System.Runtime.Serialization.DataContracts
                 : HandleReadValue(reader.ReadElementContentAsUnsignedShort(), context);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
@@ -377,18 +398,21 @@ namespace System.Runtime.Serialization.DataContracts
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             throw new NotImplementedException();
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             throw new NotImplementedException();
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
@@ -405,12 +429,14 @@ namespace System.Runtime.Serialization.DataContracts
         internal override string WriteMethodName => "WriteInt";
         internal override string ReadMethodName => "ReadElementContentAsInt";
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteInt((int)obj);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
@@ -418,6 +444,7 @@ namespace System.Runtime.Serialization.DataContracts
                 : HandleReadValue(reader.ReadElementContentAsInt(), context);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
@@ -434,12 +461,14 @@ namespace System.Runtime.Serialization.DataContracts
         internal override string WriteMethodName => "WriteUnsignedInt";
         internal override string ReadMethodName => "ReadElementContentAsUnsignedInt";
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteUnsignedInt((uint)obj);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
@@ -447,6 +476,7 @@ namespace System.Runtime.Serialization.DataContracts
                 : HandleReadValue(reader.ReadElementContentAsUnsignedInt(), context);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
@@ -467,12 +497,14 @@ namespace System.Runtime.Serialization.DataContracts
         internal override string WriteMethodName => "WriteLong";
         internal override string ReadMethodName => "ReadElementContentAsLong";
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteLong((long)obj);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
@@ -480,6 +512,7 @@ namespace System.Runtime.Serialization.DataContracts
                 : HandleReadValue(reader.ReadElementContentAsLong(), context);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
@@ -521,12 +554,14 @@ namespace System.Runtime.Serialization.DataContracts
         internal override string WriteMethodName => "WriteUnsignedLong";
         internal override string ReadMethodName => "ReadElementContentAsUnsignedLong";
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteUnsignedLong((ulong)obj);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
@@ -534,6 +569,7 @@ namespace System.Runtime.Serialization.DataContracts
                 : HandleReadValue(reader.ReadElementContentAsUnsignedLong(), context);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
@@ -550,12 +586,14 @@ namespace System.Runtime.Serialization.DataContracts
         internal override string WriteMethodName => "WriteFloat";
         internal override string ReadMethodName => "ReadElementContentAsFloat";
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteFloat((float)obj);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
@@ -563,6 +601,7 @@ namespace System.Runtime.Serialization.DataContracts
                 : HandleReadValue(reader.ReadElementContentAsFloat(), context);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
@@ -579,12 +618,14 @@ namespace System.Runtime.Serialization.DataContracts
         internal override string WriteMethodName => "WriteDouble";
         internal override string ReadMethodName => "ReadElementContentAsDouble";
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteDouble((double)obj);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
@@ -592,6 +633,7 @@ namespace System.Runtime.Serialization.DataContracts
                 : HandleReadValue(reader.ReadElementContentAsDouble(), context);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
@@ -608,12 +650,14 @@ namespace System.Runtime.Serialization.DataContracts
         internal override string WriteMethodName => "WriteDecimal";
         internal override string ReadMethodName => "ReadElementContentAsDecimal";
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteDecimal((decimal)obj);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
@@ -621,6 +665,7 @@ namespace System.Runtime.Serialization.DataContracts
                 : HandleReadValue(reader.ReadElementContentAsDecimal(), context);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
@@ -630,10 +675,6 @@ namespace System.Runtime.Serialization.DataContracts
 
     internal sealed class DateTimeDataContract : PrimitiveDataContract
     {
-        [UnconditionalSuppressMessage ("ReflectionAnalysis", "IL2118",
-            Justification = "DAM on the first parameter of the PrimitiveDataContract constructor references methods of DateTime, " +
-                            "which has a compiler-generated local function LowGranularityNonCachedFallback that calls PInvokes " +
-                            "which are considered potentially dangerous. Data contract serialization will not access this local function.")]
         public DateTimeDataContract() : base(typeof(DateTime), DictionaryGlobals.DateTimeLocalName, DictionaryGlobals.SchemaNamespace)
         {
         }
@@ -641,12 +682,14 @@ namespace System.Runtime.Serialization.DataContracts
         internal override string WriteMethodName => "WriteDateTime";
         internal override string ReadMethodName => "ReadElementContentAsDateTime";
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteDateTime((DateTime)obj);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
@@ -654,6 +697,7 @@ namespace System.Runtime.Serialization.DataContracts
                 : HandleReadValue(reader.ReadElementContentAsDateTime(), context);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
@@ -674,12 +718,14 @@ namespace System.Runtime.Serialization.DataContracts
         internal override string WriteMethodName => "WriteString";
         internal override string ReadMethodName => "ReadElementContentAsString";
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteString((string)obj);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
@@ -693,6 +739,7 @@ namespace System.Runtime.Serialization.DataContracts
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
@@ -809,12 +856,14 @@ namespace System.Runtime.Serialization.DataContracts
         internal override string WriteMethodName => "WriteBase64";
         internal override string ReadMethodName => "ReadElementContentAsBase64";
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteBase64((byte[])obj);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
@@ -828,6 +877,7 @@ namespace System.Runtime.Serialization.DataContracts
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
@@ -846,12 +896,14 @@ namespace System.Runtime.Serialization.DataContracts
         internal override string WriteMethodName => "WriteAnyType";
         internal override string ReadMethodName => "ReadElementContentAsAnyType";
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             // write nothing
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
@@ -897,12 +949,14 @@ namespace System.Runtime.Serialization.DataContracts
         internal override string WriteMethodName => "WriteTimeSpan";
         internal override string ReadMethodName => "ReadElementContentAsTimeSpan";
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteTimeSpan((TimeSpan)obj);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
@@ -910,6 +964,7 @@ namespace System.Runtime.Serialization.DataContracts
                 : HandleReadValue(reader.ReadElementContentAsTimeSpan(), context);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlElement(XmlWriterDelegator writer, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
@@ -935,12 +990,14 @@ namespace System.Runtime.Serialization.DataContracts
         internal override string WriteMethodName => "WriteGuid";
         internal override string ReadMethodName => "ReadElementContentAsGuid";
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteGuid((Guid)obj);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
@@ -948,6 +1005,7 @@ namespace System.Runtime.Serialization.DataContracts
                 : HandleReadValue(reader.ReadElementContentAsGuid(), context);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlElement(XmlWriterDelegator xmlWriter, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
@@ -969,12 +1027,14 @@ namespace System.Runtime.Serialization.DataContracts
         internal override string WriteMethodName => "WriteUri";
         internal override string ReadMethodName => "ReadElementContentAsUri";
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteUri((Uri)obj);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
@@ -988,6 +1048,7 @@ namespace System.Runtime.Serialization.DataContracts
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlElement(XmlWriterDelegator writer, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {
@@ -1006,12 +1067,14 @@ namespace System.Runtime.Serialization.DataContracts
 
         internal override bool IsPrimitive => false;
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlValue(XmlWriterDelegator writer, object obj, XmlObjectSerializerWriteContext? context)
         {
             writer.WriteQName((XmlQualifiedName)obj);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
@@ -1025,6 +1088,7 @@ namespace System.Runtime.Serialization.DataContracts
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteXmlElement(XmlWriterDelegator writer, object? obj, XmlObjectSerializerWriteContext context, XmlDictionaryString name, XmlDictionaryString? ns)
         {

@@ -148,7 +148,7 @@ void ThreadStore::AttachCurrentThread()
     AttachCurrentThread(true);
 }
 
-void ThreadStore::DetachCurrentThread()
+void ThreadStore::DetachCurrentThread(bool shutdownStarted)
 {
     // The thread may not have been initialized because it may never have run managed code before.
     Thread * pDetachingThread = RawGetCurrentThread();
@@ -165,11 +165,21 @@ void ThreadStore::DetachCurrentThread()
     }
 
     {
+        // remove the thread from the list.
+        // this must be done even when shutdown is in progress.
+        // departing threads will be releasing their TLS storage and if not removed,
+        // will corrupt the thread list, while some prior to shutdown detach might still be in progress.
         ThreadStore* pTS = GetThreadStore();
         ReaderWriterLock::WriteHolder write(&pTS->m_Lock);
         ASSERT(rh::std::count(pTS->m_ThreadList.Begin(), pTS->m_ThreadList.End(), pDetachingThread) == 1);
         pTS->m_ThreadList.RemoveFirst(pDetachingThread);
         pDetachingThread->Detach();
+    }
+
+    // the rest of cleanup is not necessary if we are shutting down.
+    if (shutdownStarted)
+    {
+        return;
     }
 
     pDetachingThread->Destroy();
@@ -200,12 +210,8 @@ void ThreadStore::UnlockThreadStore()
 // when iteration == -1, only usecLimit is used
 void SpinWait(int iteration, int usecLimit)
 {
-    LARGE_INTEGER li;
-    PalQueryPerformanceCounter(&li);
-    int64_t startTicks = li.QuadPart;
-
-    PalQueryPerformanceFrequency(&li);
-    int64_t ticksPerSecond = li.QuadPart;
+    int64_t startTicks = PalQueryPerformanceCounter();
+    int64_t ticksPerSecond = PalQueryPerformanceFrequency();
     int64_t endTicks = startTicks + (usecLimit * ticksPerSecond) / 1000000;
 
     int l = min((unsigned)iteration, 30);
@@ -216,8 +222,7 @@ void SpinWait(int iteration, int usecLimit)
             System_YieldProcessor();
         }
 
-        PalQueryPerformanceCounter(&li);
-        int64_t currentTicks = li.QuadPart;
+        int64_t currentTicks = PalQueryPerformanceCounter();
         if (currentTicks > endTicks)
         {
             break;
@@ -528,7 +533,7 @@ bool ThreadStore::GetExceptionsForCurrentThread(Array* pOutputArray, int32_t* pW
     }
 
     // No input array provided, or it was of the wrong kind.  We'll fill out the count and return false.
-    if ((pOutputArray == NULL) || (pOutputArray->get_EEType()->get_ComponentSize() != POINTER_SIZE))
+    if ((pOutputArray == NULL) || (pOutputArray->get_EEType()->RawGetComponentSize() != POINTER_SIZE))
         goto Error;
 
     // Input array was not big enough.  We don't even partially fill it.

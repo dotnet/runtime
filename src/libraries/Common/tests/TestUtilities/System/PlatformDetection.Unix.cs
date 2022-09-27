@@ -34,6 +34,9 @@ namespace System
         public static bool IsFedora => IsDistroAndVersion("fedora");
         public static bool IsLinuxBionic => IsBionic();
 
+        public static bool IsMonoLinuxArm64 => IsMonoRuntime && IsLinux && IsArm64Process;
+        public static bool IsNotMonoLinuxArm64 => !IsMonoLinuxArm64;
+
         // OSX family
         public static bool IsOSXLike => IsOSX || IsiOS || IstvOS || IsMacCatalyst;
         public static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);

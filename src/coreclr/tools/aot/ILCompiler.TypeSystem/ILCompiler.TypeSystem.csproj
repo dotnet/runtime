@@ -18,6 +18,7 @@
     <GenerateDependencyFile>false</GenerateDependencyFile>
     <Configurations>Debug;Release;Checked</Configurations>
     <IsTrimmable>true</IsTrimmable>
+    <RunAnalyzers>true</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup Label="Embedded Resources">
@@ -31,6 +32,7 @@
       <Version>1.4.0</Version>
     </PackageReference>
   </ItemGroup>
+
   <ItemGroup>
     <Compile Include="..\..\Common\TypeSystem\Common\ArrayMethod.Diagnostic.cs">
       <Link>TypeSystem\Common\ArrayMethod.Diagnostic.cs</Link>
@@ -358,6 +360,9 @@
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Common\RuntimeInterfacesAlgorithm.cs">
       <Link>TypeSystem\Common\RuntimeInterfacesAlgorithm.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Common\TypeSystem\Common\PortableExecutableMethodExtensions.cs">
+      <Link>Compiler\PortableExecutableMethodExtensions.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\Ecma\CustomAttributeTypeProvider.cs">
       <Link>Ecma\CustomAttributeTypeProvider.cs</Link>

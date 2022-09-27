@@ -26,11 +26,12 @@
     <WasmBuildTargetsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'build'))</WasmBuildTargetsDir>
     <TestEchoMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'NetCoreServer', '$(Configuration)', '$(AspNetCoreAppCurrent)'))</TestEchoMiddleware>
     <RemoteLoopMiddleware>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'bin', 'RemoteLoopServer', '$(Configuration)', '$(AspNetCoreAppCurrent)'))</RemoteLoopMiddleware>
+    <_ShippingPackagesPath>$([MSBuild]::NormalizeDirectory($(ArtifactsDir), 'packages', $(Configuration), 'Shipping'))</_ShippingPackagesPath>
     <WorkItemPrefix Condition="'$(IsWasmDebuggerTests)' == 'true'">$(DebuggerHost)-</WorkItemPrefix>
     <WorkItemPrefix Condition="'$(WorkItemPrefix)' == '' and '$(Scenario)' != ''">$(Scenario)-</WorkItemPrefix>
 
     <IsWasmDebuggerTests Condition="'$(Scenario)' == 'WasmDebuggerTests'">true</IsWasmDebuggerTests>
-    <IsRunningLibraryTests Condition="'$(Scenario)' == 'normal' or '$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'WasmTestOnNodeJs'">true</IsRunningLibraryTests>
+    <IsRunningLibraryTests Condition="'$(Scenario)' == 'normal' or '$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'WasmTestOnNodeJS'">true</IsRunningLibraryTests>
 
     <HelixExtensionTargets />
     <PrepareForBuildHelixWorkItems_WasmDependsOn>
@@ -53,9 +54,10 @@
 
     <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
     <NeedsEMSDK Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">true</NeedsEMSDK>
-    <NeedsEMSDKNode Condition="'$(Scenario)' == 'WasmTestOnNodeJs' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsEMSDKNode>
+    <NeedsEMSDKNode Condition="'$(Scenario)' == 'WasmTestOnNodeJS' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsEMSDKNode>
     <NeedsToRunOnBrowser Condition="'$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsToRunOnBrowser>
     <NeedsToRunOnBrowser Condition="'$(NeedsToRunOnBrowser)' == '' and '$(IsWasmDebuggerTests)' == 'true'">true</NeedsToRunOnBrowser>
+    <NeedsBuiltNugets Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsBuiltNugets>
 
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
     <EnableXHarnessTelemetry>false</EnableXHarnessTelemetry>
@@ -76,7 +78,7 @@
     <HelixPreCommand Condition="'$(Scenario)' != ''" Include="export SCENARIO=$(Scenario)" />
     <HelixPreCommand Condition="'$(Scenario)' != 'WasmTestOnBrowser'" Include="export XHARNESS_COMMAND=test" />
     <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnBrowser'" Include="export XHARNESS_COMMAND=test-browser" />
-    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnNodeJs'" Include="export JS_ENGINE=--engine=NodeJS" />
+    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnNodeJS'" Include="export JS_ENGINE=--engine=NodeJS" />
 
     <HelixPreCommand Include="export XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
@@ -89,7 +91,7 @@
     <HelixPreCommand Condition="'$(Scenario)' != ''" Include="set SCENARIO=$(Scenario)" />
     <HelixPreCommand Condition="'$(Scenario)' != 'WasmTestOnBrowser'" Include="set XHARNESS_COMMAND=test" />
     <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnBrowser'" Include="set XHARNESS_COMMAND=test-browser" />
-    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnNodeJs'" Include="set &quot;JS_ENGINE=--engine^=NodeJS&quot;" />
+    <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnNodeJS'" Include="set &quot;JS_ENGINE=--engine^=NodeJS&quot;" />
 
     <HelixPreCommand Include="set XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="set XHARNESS_LOG_WITH_TIMESTAMPS=true" />
@@ -118,9 +120,13 @@
     <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' == 'true'">-notrait category=no-workload</_XUnitTraitArg>
     <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
   </PropertyGroup>
+
   <ItemGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
     <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
     <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
+
+    <HelixPreCommand Condition="'$(WindowsShell)' == 'true'" Include="set &quot;BUILT_NUGETS_PATH=%HELIX_CORRELATION_PAYLOAD%/built-nugets&quot;" />
+    <HelixPreCommand Condition="'$(WindowsShell)' != 'true'" Include="export &quot;BUILT_NUGETS_PATH=$HELIX_CORRELATION_PAYLOAD/built-nugets&quot;" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -187,6 +193,10 @@
       <HelixCorrelationPayload Include="$(TestEchoMiddleware)" Destination="xharness/TestEchoMiddleware" Condition="Exists('$(TestEchoMiddleware)')" />
       <HelixCorrelationPayload Include="$(RemoteLoopMiddleware)" Destination="xharness/RemoteLoopMiddleware" Condition="Exists('$(RemoteLoopMiddleware)')" />
     </ItemGroup>
+
+    <ItemGroup Condition="'$(NeedsBuiltNugets)' == 'true'">
+      <HelixCorrelationPayload Include="$(_ShippingPackagesPath)"                Destination="built-nugets" />
+    </ItemGroup>
   </Target>
 
   <Target Name="PrepareForBuildHelixWorkItems_Wasm"
@@ -196,8 +206,8 @@
     <ItemGroup Label="Add samples">
       <_WasmWorkItem Include="$(TestArchiveRoot)browseronly/**/*.zip"     Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
       <_WasmWorkItem Include="$(TestArchiveRoot)browserornodejs/**/*.zip" Condition="'$(Scenario)' == 'WasmTestOnBrowser'" />
-      <_WasmWorkItem Include="$(TestArchiveRoot)browserornodejs/**/*.zip" Condition="'$(Scenario)' == 'WasmTestOnNodeJs'" />
-      <_WasmWorkItem Include="$(TestArchiveRoot)nodejsonly/**/*.zip"      Condition="'$(Scenario)' == 'WasmTestOnNodeJs'" />
+      <_WasmWorkItem Include="$(TestArchiveRoot)browserornodejs/**/*.zip" Condition="'$(Scenario)' == 'WasmTestOnNodeJS'" />
+      <_WasmWorkItem Include="$(TestArchiveRoot)nodejsonly/**/*.zip"      Condition="'$(Scenario)' == 'WasmTestOnNodeJS'" />
 
       <HelixWorkItem Include="@(_WasmWorkItem -> '$(WorkItemPrefix)%(FileName)')">
         <PayloadArchive>%(Identity)</PayloadArchive>
@@ -209,7 +219,7 @@
     <!-- Create work items for run-only WASM sample apps  -->
     <ItemGroup>
       <_WasmSampleZipFile Condition="'$(Scenario)' == 'normal' or '$(Scenario)' == ''" Include="$(TestArchiveRoot)runonly/**/*.Console.V8.*.Sample.zip" />
-      <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnNodeJs'"              Include="$(TestArchiveRoot)runonly/**/*.Console.Node.*.Sample.zip" />
+      <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnNodeJS'"              Include="$(TestArchiveRoot)runonly/**/*.Console.Node.*.Sample.zip" />
       <_WasmSampleZipFile Condition="'$(Scenario)' == 'WasmTestOnBrowser'"             Include="$(TestArchiveRoot)runonly/**/*.Browser.*.Sample.zip" />
 
       <HelixWorkItem Include="@(_WasmSampleZipFile -> '%(FileName)')">
@@ -296,7 +306,9 @@
       <_EmSdkFiles Include="$(EMSDK_PATH)\**\*" Exclude="$(EMSDK_PATH)\.git\**\*" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(_EmSdkFiles)" DestinationFolder="$(EmSdkDirForHelixPayload)\%(RecursiveDir)" />
+    <Copy SourceFiles="@(_EmSdkFiles)"
+          DestinationFiles="@(_EmSdkFiles -> '$(EmSdkDirForHelixPayload)\%(RecursiveDir)%(FileName)%(Extension)')"
+          SkipUnchangedFiles="true" />
   </Target>
 
   <Target Name="DownloadFirefoxToSendToHelix" Condition="!Exists($(FirefoxForHelixPayload)) and '$(DebuggerHost)' == 'firefox'">

@@ -89,34 +89,23 @@ namespace System.IO
             {
                 // The operation failed.  Within reason, try to determine which path caused the problem
                 // so we can throw a detailed exception.
-                string? path = null;
-                bool isDirectory = false;
                 if (errorInfo.Error == Interop.Error.ENOENT)
                 {
                     if (!Directory.Exists(Path.GetDirectoryName(destFullPath)))
                     {
-                        // The parent directory of destFile can't be found.
-                        // Windows distinguishes between whether the directory or the file isn't found,
-                        // and throws a different exception in these cases.  We attempt to approximate that
-                        // here; there is a race condition here, where something could change between
-                        // when the error occurs and our checks, but it's the best we can do, and the
-                        // worst case in such a race condition (which could occur if the file system is
-                        // being manipulated concurrently with these checks) is that we throw a
-                        // FileNotFoundException instead of DirectoryNotFoundexception.
-                        path = destFullPath;
-                        isDirectory = true;
+                        throw Interop.GetExceptionForIoErrno(errorInfo, destFullPath, isDirError: true);
                     }
                     else
                     {
-                        path = sourceFullPath;
+                        throw Interop.GetExceptionForIoErrno(errorInfo, sourceFullPath);
                     }
                 }
                 else if (errorInfo.Error == Interop.Error.EEXIST)
                 {
-                    path = destFullPath;
+                    throw Interop.GetExceptionForIoErrno(errorInfo, destFullPath);
                 }
 
-                throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirectory);
+                throw Interop.GetExceptionForIoErrno(errorInfo);
             }
         }
 
@@ -125,12 +114,8 @@ namespace System.IO
         {
             // Unix rename works in more cases, we limit to what is allowed by Windows File.Replace.
             // These checks are not atomic, the file could change after a check was performed and before it is renamed.
-            Interop.Sys.FileStatus sourceStat;
-            if (Interop.Sys.LStat(sourceFullPath, out sourceStat) != 0)
-            {
-                Interop.ErrorInfo errno = Interop.Sys.GetLastErrorInfo();
-                throw Interop.GetExceptionForIoErrno(errno, sourceFullPath);
-            }
+            Interop.CheckIo(Interop.Sys.LStat(sourceFullPath, out Interop.Sys.FileStatus sourceStat), sourceFullPath);
+
             // Check source is not a directory.
             if ((sourceStat.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
             {
@@ -208,16 +193,7 @@ namespace System.IO
                     }
                     else
                     {
-                        // Windows distinguishes between whether the directory or the file isn't found,
-                        // and throws a different exception in these cases.  We attempt to approximate that
-                        // here; there is a race condition here, where something could change between
-                        // when the error occurs and our checks, but it's the best we can do, and the
-                        // worst case in such a race condition (which could occur if the file system is
-                        // being manipulated concurrently with these checks) is that we throw a
-                        // FileNotFoundException instead of DirectoryNotFoundException.
-                        throw Interop.GetExceptionForIoErrno(errorInfo, destFullPath,
-                            isDirectory: errorInfo.Error == Interop.Error.ENOENT && !Directory.Exists(Path.GetDirectoryName(destFullPath))   // The parent directory of destFile can't be found
-                            );
+                        throw Interop.GetExceptionForIoErrno(errorInfo, destFullPath);
                     }
                 }
 
@@ -305,7 +281,10 @@ namespace System.IO
                 return; // fullPath is '/'.
             }
 
-            int result = Interop.Sys.MkDir(fullPath, (int)unixCreateMode);
+            // macOS returns ENOTDIR when the path refers to a file and ends with '/'.
+            // Trim the separator so we get EEXIST instead.
+            ReadOnlySpan<char> path = PathInternal.TrimEndingDirectorySeparator(fullPath.AsSpan());
+            int result = Interop.Sys.MkDir(path, (int)unixCreateMode);
             if (result == 0)
             {
                 return; // Created directory.
@@ -322,7 +301,7 @@ namespace System.IO
             }
             else
             {
-                throw Interop.GetExceptionForIoErrno(errorInfo, fullPath, isDirectory: true);
+                throw Interop.GetExceptionForIoErrno(errorInfo, fullPath);
             }
         }
 
@@ -349,7 +328,7 @@ namespace System.IO
                 }
 
                 ReadOnlySpan<char> mkdirPath = fullPath.AsSpan(0, i);
-                int result = Interop.Sys.MkDir(mkdirPath, (int)unixCreateMode);
+                int result = Interop.Sys.MkDir(mkdirPath, (int)DefaultUnixCreateDirectoryMode);
                 if (result == 0)
                 {
                     break; // Created parent.
@@ -372,7 +351,7 @@ namespace System.IO
                 }
                 else
                 {
-                    throw Interop.GetExceptionForIoErrno(errorInfo, mkdirPath.ToString(), isDirectory: true);
+                    throw Interop.GetExceptionForIoErrno(errorInfo, mkdirPath.ToString());
                 }
                 i--;
             } while (i > 0);
@@ -381,7 +360,8 @@ namespace System.IO
             for (i = stackDir.Length - 1; i >= 0; i--)
             {
                 ReadOnlySpan<char> mkdirPath = fullPath.AsSpan(0, stackDir[i]);
-                int result = Interop.Sys.MkDir(mkdirPath, (int)unixCreateMode);
+                UnixFileMode mode = i == 0 ? unixCreateMode : DefaultUnixCreateDirectoryMode;
+                int result = Interop.Sys.MkDir(mkdirPath, (int)mode);
                 if (result < 0)
                 {
                     Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
@@ -400,7 +380,7 @@ namespace System.IO
                         }
                     }
 
-                    throw Interop.GetExceptionForIoErrno(errorInfo, mkdirPath.ToString(), isDirectory: true);
+                    throw Interop.GetExceptionForIoErrno(errorInfo, mkdirPath.ToString());
                 }
             }
         }
@@ -469,7 +449,7 @@ namespace System.IO
                     case Interop.Error.ENOTDIR: // sourceFullPath exists and it's not a directory
                         throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
                     default:
-                        throw Interop.GetExceptionForIoErrno(errorInfo, isDirectory: true);
+                        throw Interop.GetExceptionForIoErrno(errorInfo);
                 }
             }
         }
@@ -576,7 +556,7 @@ namespace System.IO
                     throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, fullPath));
                 }
 
-                throw Interop.GetExceptionForIoErrno(errorInfo, fullPath, isDirectory: true);
+                throw Interop.GetExceptionForIoErrno(errorInfo, fullPath, isDirError: true);
             }
 
             return true;
@@ -595,7 +575,7 @@ namespace System.IO
             FileAttributes attributes = new FileInfo(fullPath, null).Attributes;
 
             if (attributes == (FileAttributes)(-1))
-                FileSystemInfo.ThrowNotFound(fullPath);
+                throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(Interop.Error.ENOENT), fullPath);
 
             return attributes;
         }
@@ -614,7 +594,7 @@ namespace System.IO
             UnixFileMode mode = default(FileStatus).GetUnixFileMode(fullPath);
 
             if (mode == (UnixFileMode)(-1))
-                FileSystemInfo.ThrowNotFound(fullPath);
+                throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(Interop.Error.ENOENT), fullPath);
 
             return mode;
         }
@@ -675,7 +655,7 @@ namespace System.IO
 
         internal static void CreateSymbolicLink(string path, string pathToTarget, bool isDirectory)
         {
-            Interop.CheckIo(Interop.Sys.SymLink(pathToTarget, path), path, isDirectory);
+            Interop.CheckIo(Interop.Sys.SymLink(pathToTarget, path), path);
         }
 
         internal static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget, bool isDirectory)

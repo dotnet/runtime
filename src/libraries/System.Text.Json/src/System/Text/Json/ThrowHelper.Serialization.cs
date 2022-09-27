@@ -41,12 +41,6 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowNotSupportedException_ConstructorMaxOf64Parameters(Type type)
-        {
-            throw new NotSupportedException(SR.Format(SR.ConstructorMaxOf64Parameters, type));
-        }
-
-        [DoesNotReturn]
         public static void ThrowNotSupportedException_DictionaryKeyTypeNotSupported(Type keyType, JsonConverter converter)
         {
             throw new NotSupportedException(SR.Format(SR.DictionaryKeyTypeNotSupported, keyType, converter.GetType()));
@@ -139,9 +133,9 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_JsonTypeInfoUsedButTypeInfoResolverNotSet()
+        public static void ThrowInvalidOperationException_JsonSerializerOptionsNoTypeInfoResolverSpecified()
         {
-            throw new InvalidOperationException(SR.JsonTypeInfoUsedButTypeInfoResolverNotSet);
+            throw new InvalidOperationException(SR.JsonSerializerOptionsNoTypeInfoResolverSpecified);
         }
 
         [DoesNotReturn]
@@ -170,11 +164,11 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowInvalidOperationException_SerializerOptionsImmutable(JsonSerializerContext? context)
+        public static void ThrowInvalidOperationException_SerializerOptionsReadOnly(JsonSerializerContext? context)
         {
             string message = context == null
-                ? SR.SerializerOptionsImmutable
-                : SR.SerializerContextOptionsImmutable;
+                ? SR.SerializerOptionsReadOnly
+                : SR.SerializerContextOptionsReadOnly;
 
             throw new InvalidOperationException(message);
         }

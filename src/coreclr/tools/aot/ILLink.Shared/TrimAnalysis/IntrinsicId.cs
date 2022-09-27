@@ -7,7 +7,7 @@
 namespace ILLink.Shared.TrimAnalysis
 {
 	[StaticCs.Closed]
-	enum IntrinsicId
+	internal enum IntrinsicId
 	{
 		None = 0,
 		IntrospectionExtensions_GetTypeInfo,

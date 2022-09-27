@@ -18,7 +18,7 @@ namespace System.Numerics
         public static bool IsHardwareAccelerated
         {
             [Intrinsic]
-            get => false;
+            get => IsHardwareAccelerated;
         }
 
         /// <summary>Computes the absolute value of each element in a vector.</summary>
@@ -895,6 +895,14 @@ namespace System.Numerics
         public static bool LessThanOrEqualAny<T>(Vector<T> left, Vector<T> right)
             where T : struct => LessThanOrEqual(left, right).As<T, nuint>() != Vector<nuint>.Zero;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector<T> LoadUnsafe<T>(ref T source, nuint elementOffset)
+            where T : struct
+        {
+            source = ref Unsafe.Add(ref source, elementOffset);
+            return Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref source));
+        }
+
         /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>
         /// <param name="right">The vector to compare with <paramref name="left" />.</param>
@@ -1656,6 +1664,14 @@ namespace System.Numerics
             }
 
             return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void StoreUnsafe<T>(this Vector<T> source, ref T destination, nuint elementOffset)
+            where T : struct
+        {
+            destination = ref Unsafe.Add(ref destination, elementOffset);
+            Unsafe.WriteUnaligned(ref Unsafe.As<T, byte>(ref destination), source);
         }
 
         /// <summary>Subtracts two vectors to compute their difference.</summary>

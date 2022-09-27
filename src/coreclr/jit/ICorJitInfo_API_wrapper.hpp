@@ -374,6 +374,17 @@ int WrapICorJitInfo::getStringLiteral(
     return temp;
 }
 
+int WrapICorJitInfo::objectToString(
+          void* handle,
+          char* buffer,
+          int bufferSize)
+{
+    API_ENTER(objectToString);
+    int temp = wrapHnd->objectToString(handle, buffer, bufferSize);
+    API_LEAVE(objectToString);
+    return temp;
+}
+
 CorInfoType WrapICorJitInfo::asCorInfoType(
           CORINFO_CLASS_HANDLE cls)
 {
@@ -649,6 +660,15 @@ CorInfoHelpFunc WrapICorJitInfo::getUnBoxHelper(
     API_ENTER(getUnBoxHelper);
     CorInfoHelpFunc temp = wrapHnd->getUnBoxHelper(cls);
     API_LEAVE(getUnBoxHelper);
+    return temp;
+}
+
+void* WrapICorJitInfo::getRuntimeTypePointer(
+          CORINFO_CLASS_HANDLE cls)
+{
+    API_ENTER(getRuntimeTypePointer);
+    void* temp = wrapHnd->getRuntimeTypePointer(cls);
+    API_LEAVE(getRuntimeTypePointer);
     return temp;
 }
 
@@ -1012,6 +1032,17 @@ CorInfoTypeWithMod WrapICorJitInfo::getArgType(
     API_ENTER(getArgType);
     CorInfoTypeWithMod temp = wrapHnd->getArgType(sig, args, vcTypeRet);
     API_LEAVE(getArgType);
+    return temp;
+}
+
+int WrapICorJitInfo::getExactClasses(
+          CORINFO_CLASS_HANDLE baseType,
+          int maxExactClasses,
+          CORINFO_CLASS_HANDLE* exactClsRet)
+{
+    API_ENTER(getExactClasses);
+    int temp = wrapHnd->getExactClasses(baseType, maxExactClasses, exactClsRet);
+    API_LEAVE(getExactClasses);
     return temp;
 }
 

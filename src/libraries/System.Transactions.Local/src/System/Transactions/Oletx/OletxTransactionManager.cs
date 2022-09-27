@@ -773,12 +773,9 @@ internal sealed class OletxInternalResourceManager
             while (tableEnum.MoveNext())
             {
                 OletxResourceManager? oletxRM = (OletxResourceManager?)tableEnum.Value;
-                if (oletxRM != null)
-                {
-                    // When the RM spins through its enlistments, it will need to make sure that
-                    // the enlistment is for this particular TM.
-                    oletxRM.TMDownFromInternalRM(_oletxTm);
-                }
+                // When the RM spins through its enlistments, it will need to make sure that
+                // the enlistment is for this particular TM.
+                oletxRM?.TMDownFromInternalRM(_oletxTm);
             }
         }
 

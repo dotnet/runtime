@@ -8,7 +8,7 @@ namespace System
     /// <summary>Defines a mechanism for parsing a string to a value.</summary>
     /// <typeparam name="TSelf">The type that implements this interface.</typeparam>
     public interface IParsable<TSelf>
-        where TSelf : IParsable<TSelf>
+        where TSelf : IParsable<TSelf>?
     {
         /// <summary>Parses a string into a value.</summary>
         /// <param name="s">The string to parse.</param>

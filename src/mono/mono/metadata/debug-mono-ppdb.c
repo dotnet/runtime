@@ -780,7 +780,7 @@ compare_guid (guint8* guid1, guint8* guid2)
 }
 
 // for parent_type see HasCustomDebugInformation table at
-// https://github.com/dotnet/corefx/blob/master/src/System.Reflection.Metadata/specs/PortablePdb-Metadata.md
+// https://github.com/dotnet/runtime/blob/main/docs/design/specs/PortablePdb-Metadata.md
 static const char*
 lookup_custom_debug_information (MonoImage* image, guint32 token, uint8_t parent_type, guint8* guid)
 {

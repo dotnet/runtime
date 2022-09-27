@@ -64,12 +64,14 @@ namespace System.Runtime.Serialization.DataContracts
 
         public DataContract MemberTypeContract
         {
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get => _helper.MemberTypeContract;
         }
 
         internal PrimitiveDataContract? MemberPrimitiveContract
         {
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get => _helper.MemberPrimitiveContract;
         }
@@ -182,6 +184,7 @@ namespace System.Runtime.Serialization.DataContracts
 
             internal DataContract MemberTypeContract
             {
+                [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
                 [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
                 get
                 {
@@ -221,6 +224,7 @@ namespace System.Runtime.Serialization.DataContracts
 
             internal PrimitiveDataContract? MemberPrimitiveContract
             {
+                [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
                 [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
                 get
                 {
@@ -284,6 +288,7 @@ namespace System.Runtime.Serialization.DataContracts
             return false;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal DataMember BindGenericParameters(DataContract[] paramContracts, Dictionary<DataContract, DataContract>? boundContracts = null)
         {
@@ -297,6 +302,7 @@ namespace System.Runtime.Serialization.DataContracts
             return boundDataMember;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal bool Equals(object? other, HashSet<DataContractPairKey>? checkedContracts)
         {

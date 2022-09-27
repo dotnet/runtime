@@ -932,7 +932,8 @@ mono_class_setup_vtable_full (MonoClass *klass, GList *in_setup)
 		context = mono_class_get_context (klass);
 		type_token = mono_class_get_generic_class (klass)->container_class->type_token;
 	} else {
-		context = (MonoGenericContext *) mono_class_try_get_generic_container (klass); //FIXME is this a case of a try?
+		MonoGenericContainer *container = mono_class_try_get_generic_container (klass); //FIXME is this a case of a try?
+		context = container ? &container->context : NULL;
 		type_token = klass->type_token;
 	}
 
@@ -1010,30 +1011,14 @@ apply_override (MonoClass *klass, MonoClass *override_class, MonoMethod **vtable
 	MonoMethod *prev_override = (MonoMethod*)g_hash_table_lookup (map, decl);
 	MonoClass *prev_override_class = (MonoClass*)g_hash_table_lookup (class_map, decl);
 
+	g_assert (override_class == override->klass);
+
 	g_hash_table_insert (map, decl, override);
 	g_hash_table_insert (class_map, decl, override_class);
 
 	/* Collect potentially conflicting overrides which are introduced by default interface methods */
 	if (prev_override) {
-		ERROR_DECL (error);
-
-		/*
-		 * The override methods are part of the generic definition, need to inflate them so their
-		 * parent class becomes the actual interface/class containing the override, i.e.
-		 * IFace<T> in:
-		 * class Foo<T> : IFace<T>
-		 * This is needed so the mono_class_is_assignable_from_internal () calls in the
-		 * conflict resolution work.
-		 */
-		if (mono_class_is_ginst (override_class)) {
-			override = mono_class_inflate_generic_method_checked (override, &mono_class_get_generic_class (override_class)->context, error);
-			mono_error_assert_ok (error);
-		}
-
-		if (mono_class_is_ginst (prev_override_class)) {
-			prev_override = mono_class_inflate_generic_method_checked (prev_override, &mono_class_get_generic_class (prev_override_class)->context, error);
-			mono_error_assert_ok (error);
-		}
+		g_assert (prev_override->klass == prev_override_class);
 
 		if (!*conflict_map)
 			*conflict_map = g_hash_table_new (mono_aligned_addr_hash, NULL);
@@ -1771,10 +1756,9 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 			MonoMethod *override = iface_overrides [i*2 + 1];
 			if (mono_class_is_gtd (override->klass)) {
 				override = mono_class_inflate_generic_method_full_checked (override, ic, mono_class_get_context (ic), error);
-			} else if (decl->is_inflated) {
-				override = mono_class_inflate_generic_method_checked (override, mono_method_get_context (decl), error);
-				mono_error_assert_ok (error);
-			}
+			} 
+			// there used to be code here to inflate decl if decl->is_inflated, but in https://github.com/dotnet/runtime/pull/64102#discussion_r790019545 we
+			// think that this does not correspond to any real code.
 			if (!apply_override (klass, ic, vtable, decl, override, &override_map, &override_class_map, &conflict_map))
 				goto fail;
 		}
@@ -1786,6 +1770,18 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 		MonoMethod *decl = overrides [i*2];
 		MonoMethod *override = overrides [i*2 + 1];
 		if (MONO_CLASS_IS_INTERFACE_INTERNAL (decl->klass)) {
+			/*
+			 * We expect override methods that are part of a generic definition, to have
+			 * their parent class be the actual interface/class containing the override,
+			 * i.e.
+			 *
+			 * IFace<T> in:
+			 * class Foo<T> : IFace<T>
+			 *
+			 * This is needed so the mono_class_is_assignable_from_internal () calls in the
+			 * conflict resolution work.
+			 */
+			g_assert (override->klass == klass);
 			if (!apply_override (klass, klass, vtable, decl, override, &override_map, &override_class_map, &conflict_map))
 				goto fail;
 		}

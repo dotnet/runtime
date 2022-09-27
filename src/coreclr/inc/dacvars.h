@@ -100,20 +100,6 @@ DEFINE_DACVAR(PTR_CallCountingStubManager, CallCountingStubManager__g_pManager, 
 
 DEFINE_DACVAR(PTR_ThreadStore, ThreadStore__s_pThreadStore, ThreadStore::s_pThreadStore)
 
-DEFINE_DACVAR(int, ThreadpoolMgr__cpuUtilization, ThreadpoolMgr::cpuUtilization)
-DEFINE_DACVAR(ThreadpoolMgr::ThreadCounter, ThreadpoolMgr__WorkerCounter, ThreadpoolMgr::WorkerCounter)
-DEFINE_DACVAR(int, ThreadpoolMgr__MinLimitTotalWorkerThreads, ThreadpoolMgr::MinLimitTotalWorkerThreads)
-DEFINE_DACVAR(DWORD, ThreadpoolMgr__MaxLimitTotalWorkerThreads, ThreadpoolMgr::MaxLimitTotalWorkerThreads)
-DEFINE_DACVAR(UNKNOWN_POINTER_TYPE /*PTR_WorkRequest*/, ThreadpoolMgr__WorkRequestHead, ThreadpoolMgr::WorkRequestHead)  // PTR_WorkRequest is not defined. So use a pointer type
-DEFINE_DACVAR(UNKNOWN_POINTER_TYPE  /*PTR_WorkRequest*/, ThreadpoolMgr__WorkRequestTail, ThreadpoolMgr::WorkRequestTail) //
-DEFINE_DACVAR(ThreadpoolMgr::ThreadCounter, ThreadpoolMgr__CPThreadCounter, ThreadpoolMgr::CPThreadCounter)
-DEFINE_DACVAR(LONG, ThreadpoolMgr__MaxFreeCPThreads, ThreadpoolMgr::MaxFreeCPThreads)
-DEFINE_DACVAR(LONG, ThreadpoolMgr__MaxLimitTotalCPThreads, ThreadpoolMgr::MaxLimitTotalCPThreads)
-DEFINE_DACVAR(LONG, ThreadpoolMgr__MinLimitTotalCPThreads, ThreadpoolMgr::MinLimitTotalCPThreads)
-DEFINE_DACVAR_NO_DUMP(SIZE_T, dac__HillClimbingLog, ::HillClimbingLog)
-DEFINE_DACVAR(int, dac__HillClimbingLogFirstIndex, ::HillClimbingLogFirstIndex)
-DEFINE_DACVAR(int, dac__HillClimbingLogSize, ::HillClimbingLogSize)
-
 DEFINE_DACVAR(PTR_Thread, dac__g_pFinalizerThread, ::g_pFinalizerThread)
 DEFINE_DACVAR(PTR_Thread, dac__g_pSuspensionThread, ::g_pSuspensionThread)
 
@@ -170,7 +156,6 @@ DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pExecutionEngineExceptionClass, ::g_p
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pDelegateClass, ::g_pDelegateClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pMulticastDelegateClass, ::g_pMulticastDelegateClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pFreeObjectMethodTable, ::g_pFreeObjectMethodTable)
-DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pOverlappedDataClass, ::g_pOverlappedDataClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pValueTypeClass, ::g_pValueTypeClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pEnumClass, ::g_pEnumClass)
 DEFINE_DACVAR(UNKNOWN_POINTER_TYPE, dac__g_pThreadClass, ::g_pThreadClass)

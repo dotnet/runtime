@@ -1,11 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Immutable;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection.Metadata;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -15,7 +13,6 @@ using ILCompiler.Logging;
 using static ILCompiler.Dataflow.DynamicallyAccessedMembersBinder;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
-using MethodAttributes = System.Reflection.MethodAttributes;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -23,7 +20,7 @@ namespace ILCompiler.DependencyAnalysis
     /// Computes the list of dependencies from DynamicDependencyAttribute.
     /// https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.codeanalysis.dynamicdependencyattribute
     /// </summary>
-    internal class DynamicDependencyAttributeAlgorithm
+    internal static class DynamicDependencyAttributeAlgorithm
     {
         public static void AddDependenciesDueToDynamicDependencyAttribute(ref DependencyList dependencies, NodeFactory factory, EcmaMethod method)
         {

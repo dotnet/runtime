@@ -325,8 +325,7 @@ namespace System.Reflection.Emit
                 ((call_conv & CallingConventions.VarArgs) != 0 ||
                  (call_conv & CallingConventions.HasThis) != 0))
                 throw new TypeLoadException();
-            if (ilgen != null)
-                ilgen.label_fixup(this);
+            ilgen?.label_fixup(this);
         }
 
         internal void ResolveUserTypes()

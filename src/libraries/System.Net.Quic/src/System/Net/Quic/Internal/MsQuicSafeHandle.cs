@@ -39,10 +39,25 @@ internal unsafe class MsQuicSafeHandle : SafeHandle
         }
     }
 
+    public MsQuicSafeHandle(QUIC_HANDLE* handle, SafeHandleType safeHandleType)
+        : this(
+            handle,
+            safeHandleType switch
+            {
+                SafeHandleType.Registration => MsQuicApi.Api.ApiTable->RegistrationClose,
+                SafeHandleType.Configuration => MsQuicApi.Api.ApiTable->ConfigurationClose,
+                SafeHandleType.Listener => MsQuicApi.Api.ApiTable->ListenerClose,
+                SafeHandleType.Connection => MsQuicApi.Api.ApiTable->ConnectionClose,
+                SafeHandleType.Stream => MsQuicApi.Api.ApiTable->StreamClose,
+                _ => throw new ArgumentException($"Unexpected value: {safeHandleType}", nameof(safeHandleType))
+            },
+            safeHandleType) { }
+
     protected override bool ReleaseHandle()
     {
-        _releaseAction(QuicHandle);
+        QUIC_HANDLE* quicHandle = QuicHandle;
         SetHandle(IntPtr.Zero);
+        _releaseAction(quicHandle);
 
         if (NetEventSource.Log.IsEnabled())
         {
@@ -77,8 +92,8 @@ internal sealed class MsQuicContextSafeHandle : MsQuicSafeHandle
     /// </summary>
     private readonly MsQuicSafeHandle? _parent;
 
-    public unsafe MsQuicContextSafeHandle(QUIC_HANDLE* handle, GCHandle context, delegate* unmanaged[Cdecl]<QUIC_HANDLE*, void> releaseAction, SafeHandleType safeHandleType, MsQuicSafeHandle? parent = null)
-        : base(handle, releaseAction, safeHandleType)
+    public unsafe MsQuicContextSafeHandle(QUIC_HANDLE* handle, GCHandle context, SafeHandleType safeHandleType, MsQuicSafeHandle? parent = null)
+        : base(handle, safeHandleType)
     {
         _context = context;
         if (parent is not null)

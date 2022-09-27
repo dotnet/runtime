@@ -74,13 +74,9 @@ class AppDomain;
 #ifdef EnC_SUPPORTED
 class EnCSyncBlockInfo;
 typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
-
 #endif // EnC_SUPPORTED
 
 #include "eventstore.hpp"
-
-#include "eventstore.hpp"
-
 #include "synch.h"
 
 // At a negative offset from each Object is an ObjHeader.  The 'size' of the
@@ -626,9 +622,25 @@ public:
 #endif // !TARGET_UNIX
 
     InteropSyncBlockInfo()
+        : m_pUMEntryThunk{}
+#ifdef FEATURE_COMINTEROP
+        , m_pCCW{}
+#ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+        , m_pCCF{}
+#endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
+        , m_pRCW{}
+#endif // FEATURE_COMINTEROP
+#ifdef FEATURE_COMWRAPPERS
+        , m_externalComObjectContext{}
+        , m_managedObjectComWrapperLock{}
+        , m_managedObjectComWrapperMap{}
+#endif // FEATURE_COMWRAPPERS
+#ifdef FEATURE_OBJCMARSHAL
+        , m_taggedMemory{}
+        , m_taggedAlloc{}
+#endif // FEATURE_OBJCMARSHAL
     {
         LIMITED_METHOD_CONTRACT;
-        ZeroMemory(this, sizeof(InteropSyncBlockInfo));
 
 #if defined(FEATURE_COMWRAPPERS)
         // The GC thread does enumerate these objects so add CRST_UNSAFE_COOPGC.

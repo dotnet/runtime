@@ -23,8 +23,10 @@ namespace Sample
             new AppStartTask(),
             new ExceptionsTask(),
             new JsonTask(),
+            new SpanTask(),
             new VectorTask(),
-            new WebSocketTask()
+            new JSInteropTask(),
+            new WebSocketTask(),
         };
         static Test instance = new Test();
         Formatter formatter = new HTMLFormatter();
@@ -206,7 +208,7 @@ namespace Sample
             public DateTime timeStamp;
         }
 
-        string GetJsonResults ()
+        string GetJsonResults()
         {
             var options = new JsonSerializerOptions { IncludeFields = true, WriteIndented = true };
             var jsonObject = new JsonResultsData { results = results, minTimes = minTimes, timeStamp = DateTime.UtcNow };
@@ -216,7 +218,7 @@ namespace Sample
         private void PrintJsonResults()
         {
             Console.WriteLine("=== json results start ===");
-            Console.WriteLine(GetJsonResults ());
+            Console.WriteLine(GetJsonResults());
             Console.WriteLine("=== json results end ===");
         }
     }

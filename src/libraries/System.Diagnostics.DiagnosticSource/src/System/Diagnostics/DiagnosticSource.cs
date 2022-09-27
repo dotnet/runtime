@@ -11,7 +11,7 @@ namespace System.Diagnostics
     /// (which can also write object), but is intended to log complex objects that can't be serialized.
     ///
     /// Please See the DiagnosticSource Users Guide
-    /// https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/DiagnosticSourceUsersGuide.md
+    /// https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/DiagnosticSourceUsersGuide.md
     /// for instructions on its use.
     /// </summary>
     public abstract partial class DiagnosticSource

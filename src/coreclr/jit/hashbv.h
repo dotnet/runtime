@@ -4,7 +4,7 @@
 #ifndef HASHBV_H
 #define HASHBV_H
 
-#if defined(_M_AMD64) || defined(_M_X86)
+#if defined(HOST_AMD64) || defined(HOST_X86)
 #include <xmmintrin.h>
 #endif
 

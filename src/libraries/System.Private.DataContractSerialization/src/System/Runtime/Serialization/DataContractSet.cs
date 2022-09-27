@@ -31,6 +31,7 @@ namespace System.Runtime.Serialization.DataContracts
             _referencedCollectionTypes = referencedCollectionTypes != null ? new List<Type>(referencedCollectionTypes) : null;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public DataContractSet(DataContractSet dataContractSet)
         {
@@ -74,6 +75,7 @@ namespace System.Runtime.Serialization.DataContracts
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.GenericTypeNotExportable, type)));
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void Add(Type type)
         {
@@ -82,12 +84,14 @@ namespace System.Runtime.Serialization.DataContracts
             Add(dataContract);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void Add(DataContract dataContract)
         {
             Add(dataContract.XmlName, dataContract);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void Add(XmlQualifiedName name, DataContract dataContract)
         {
@@ -96,6 +100,7 @@ namespace System.Runtime.Serialization.DataContracts
             InternalAdd(name, dataContract);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void InternalAdd(XmlQualifiedName name, DataContract dataContract)
         {
@@ -131,6 +136,7 @@ namespace System.Runtime.Serialization.DataContracts
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void AddClassDataContract(ClassDataContract classDataContract)
         {
@@ -164,6 +170,7 @@ namespace System.Runtime.Serialization.DataContracts
             AddKnownDataContracts(classDataContract.KnownDataContracts);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void AddCollectionDataContract(CollectionDataContract collectionDataContract)
         {
@@ -184,12 +191,14 @@ namespace System.Runtime.Serialization.DataContracts
             AddKnownDataContracts(collectionDataContract.KnownDataContracts);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void AddXmlDataContract(XmlDataContract xmlDataContract)
         {
             AddKnownDataContracts(xmlDataContract.KnownDataContracts);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void AddKnownDataContracts(DataContractDictionary? knownDataContracts)
         {
@@ -202,6 +211,7 @@ namespace System.Runtime.Serialization.DataContracts
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal XmlQualifiedName GetXmlName(Type clrType)
         {
@@ -213,6 +223,7 @@ namespace System.Runtime.Serialization.DataContracts
             return DataContract.GetXmlName(clrType);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public DataContract GetDataContract(Type type)
         {
@@ -235,6 +246,7 @@ namespace System.Runtime.Serialization.DataContracts
             return dataContract;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public DataContract? GetDataContract(XmlQualifiedName key)
         {
@@ -246,6 +258,7 @@ namespace System.Runtime.Serialization.DataContracts
             return dataContract;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal DataContract GetMemberTypeDataContract(DataMember dataMember)
         {
@@ -275,6 +288,7 @@ namespace System.Runtime.Serialization.DataContracts
             return dataMember.MemberTypeContract;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal DataContract GetItemTypeDataContract(CollectionDataContract collectionContract)
         {
@@ -283,6 +297,7 @@ namespace System.Runtime.Serialization.DataContracts
             return collectionContract.ItemContract;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal bool Remove(XmlQualifiedName key)
         {
@@ -294,6 +309,7 @@ namespace System.Runtime.Serialization.DataContracts
         private Dictionary<XmlQualifiedName, object>? _referencedTypesDictionary;
         private Dictionary<XmlQualifiedName, object>? _referencedCollectionTypesDictionary;
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private Dictionary<XmlQualifiedName, object> GetReferencedTypes()
         {
@@ -317,6 +333,7 @@ namespace System.Runtime.Serialization.DataContracts
             return _referencedTypesDictionary;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private Dictionary<XmlQualifiedName, object> GetReferencedCollectionTypes()
         {
@@ -339,6 +356,7 @@ namespace System.Runtime.Serialization.DataContracts
             return _referencedCollectionTypesDictionary;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void AddReferencedType(Dictionary<XmlQualifiedName, object> referencedTypes, Type type)
         {
@@ -385,6 +403,7 @@ namespace System.Runtime.Serialization.DataContracts
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private static bool IsTypeReferenceable(Type type)
         {
@@ -409,6 +428,7 @@ namespace System.Runtime.Serialization.DataContracts
             return false;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public Type? GetReferencedType(XmlQualifiedName xmlName, DataContract dataContract, out DataContract? referencedContract, out object[]? genericParameters, bool? supportGenericTypes = null)
         {
@@ -437,6 +457,7 @@ namespace System.Runtime.Serialization.DataContracts
             return type;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private Type? GetReferencedGenericTypeInternal(GenericInfo genInfo, out DataContract? referencedContract, out object[]? genericParameters)
         {
@@ -498,6 +519,7 @@ namespace System.Runtime.Serialization.DataContracts
             return type;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private Type? GetReferencedTypeInternal(XmlQualifiedName xmlName, DataContract? dataContract)
         {
@@ -532,18 +554,21 @@ namespace System.Runtime.Serialization.DataContracts
             return null;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal bool TryGetReferencedType(XmlQualifiedName xmlName, DataContract? dataContract, [NotNullWhen(true)] out Type? type)
         {
             return TryGetReferencedType(xmlName, dataContract, false/*useReferencedCollectionTypes*/, out type);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal bool TryGetReferencedCollectionType(XmlQualifiedName xmlName, DataContract? dataContract, [NotNullWhen(true)] out Type? type)
         {
             return TryGetReferencedType(xmlName, dataContract, true/*useReferencedCollectionTypes*/, out type);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private bool TryGetReferencedType(XmlQualifiedName xmlName, DataContract? dataContract, bool useReferencedCollectionTypes, [NotNullWhen(true)] out Type? type)
         {
@@ -620,6 +645,7 @@ namespace System.Runtime.Serialization.DataContracts
             return Contracts.GetEnumerator();
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public void ImportSchemaSet(XmlSchemaSet schemaSet, IEnumerable<XmlQualifiedName>? typeNames, bool importXmlDataType)
         {
@@ -627,6 +653,7 @@ namespace System.Runtime.Serialization.DataContracts
             importer.Import(out List<XmlQualifiedName> _);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public List<XmlQualifiedName> ImportSchemaSet(XmlSchemaSet schemaSet, IEnumerable<XmlSchemaElement> elements, bool importXmlDataType)
         {

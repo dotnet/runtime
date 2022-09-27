@@ -4,12 +4,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using Xunit;
 using static System.Text.Json.Serialization.Tests.PolymorphicTests;
 
-namespace System.Text.Json.Tests.Serialization
+namespace System.Text.Json.Serialization.Tests
 {
     public static class JsonPolymorphismOptionsTests
     {

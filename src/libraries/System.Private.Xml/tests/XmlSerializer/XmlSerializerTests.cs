@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using SerializationTypes;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -13,17 +12,22 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
+using System.Runtime.Serialization.Tests;
 using System.Text;
-using System.Threading;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Schema;
 using System.Xml.Serialization;
+using SerializationTypes;
 using Xunit;
 
+#if !ReflectionOnly && !XMLSERIALIZERGENERATORTESTS
+// Many test failures due to trimming and MakeGeneric. XmlSerializer is not currently supported with NativeAOT.
+[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
+#endif
 public static partial class XmlSerializerTests
 {
-#if ReflectionOnly|| XMLSERIALIZERGENERATORTESTS
+#if ReflectionOnly || XMLSERIALIZERGENERATORTESTS
     private static readonly string SerializationModeSetterName = "set_Mode";
 
     static XmlSerializerTests()
@@ -38,8 +42,6 @@ public static partial class XmlSerializerTests
 #endif
     }
 #endif
-
-    private static bool IsTimeSpanSerializationAvailable => true;
 
     [Fact]
     public static void Xml_TypeWithDateTimePropertyAsXmlTime()
@@ -64,14 +66,11 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
             Value = new DateTime(549269870000L, DateTimeKind.Utc)
         };
 
-        if (IsTimeSpanSerializationAvailable)
-        {
-            TypeWithDateTimePropertyAsXmlTime utcTimeRoundTrip = SerializeAndDeserialize(utcTimeObject,
-    @"<?xml version=""1.0"" encoding=""utf-8""?>
+        TypeWithDateTimePropertyAsXmlTime utcTimeRoundTrip = SerializeAndDeserialize(utcTimeObject,
+@"<?xml version=""1.0"" encoding=""utf-8""?>
 <TypeWithDateTimePropertyAsXmlTime xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">15:15:26.9870000Z</TypeWithDateTimePropertyAsXmlTime>");
 
-            Assert.StrictEqual(utcTimeObject.Value, utcTimeRoundTrip.Value);
-        }
+        Assert.StrictEqual(utcTimeObject.Value, utcTimeRoundTrip.Value);
     }
 
     [Fact]
@@ -203,6 +202,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 // horizon that it's not worth the trouble.
 #if !XMLSERIALIZERGENERATORTESTS
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/74247", TestPlatforms.tvOS)]
     public static void Xml_ReadOnlyCollection()
     {
         ReadOnlyCollection<string> roc = new ReadOnlyCollection<string>(new string[] { "one", "two" });
@@ -224,6 +224,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 
     [Theory]
     [MemberData(nameof(Xml_ImmutableCollections_MemberData))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/74247", TestPlatforms.tvOS)]
     public static void Xml_ImmutableCollections(Type type, object collection, Type createException, Type addException, string expectedXml, string exMsg = null)
     {
         XmlSerializer serializer;
@@ -810,7 +811,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         }
     }
 
-    [ConditionalFact(nameof(IsTimeSpanSerializationAvailable))]
+    [Fact]
     public static void Xml_TypeWithTimeSpanProperty()
     {
         var obj = new TypeWithTimeSpanProperty { TimeSpanProperty = TimeSpan.FromMilliseconds(1) };
@@ -822,7 +823,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.StrictEqual(obj.TimeSpanProperty, deserializedObj.TimeSpanProperty);
     }
 
-    [ConditionalFact(nameof(IsTimeSpanSerializationAvailable))]
+    [Fact]
     public static void Xml_TypeWithDefaultTimeSpanProperty()
     {
         var obj = new TypeWithDefaultTimeSpanProperty { TimeSpanProperty2 = new TimeSpan(0, 1, 0) };
@@ -2110,6 +2111,51 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
             GC.WaitForPendingFinalizers();
         }
         Assert.True(!weakRef.IsAlive);
+    }
+
+    [Fact]
+    public static void ValidateXElement()
+    {
+        XElement xe = new XElement("Root");
+        XElementWrapper wrapper = new XElementWrapper() { Value = xe };
+
+        XElementWrapper retWrapper = SerializeAndDeserialize<XElementWrapper>(wrapper, null, () => new XmlSerializer(typeof(XElementWrapper)), true);
+
+        Assert.NotNull(retWrapper);
+        Assert.NotNull(retWrapper.Value);
+        Assert.Equal("Root", retWrapper.Value.Name);
+        Assert.Equivalent(wrapper, retWrapper);
+    }
+
+    [Fact]
+    public static void ValidateXElementStruct()
+    {
+
+        XElement ele = new XElement("Test");
+        XElementStruct xstruct;
+        xstruct.xelement = ele;
+
+        XElementStruct rets = SerializeAndDeserialize<XElementStruct>(xstruct, null, () => new XmlSerializer(typeof(XElementStruct)), true);
+
+        Assert.NotNull(rets.xelement);
+        Assert.NotNull(rets.xelement.Name);
+        Assert.Equal("Test", rets.xelement.Name);
+    }
+
+    [Fact]
+    public static void ValidateXElementArray()
+    {
+        XElementArrayWrapper xarray = new XElementArrayWrapper
+        {
+            xelements = new XElement[] { new XElement("Root"), new XElement("Member") }
+        };
+
+        XElementArrayWrapper retarray = SerializeAndDeserialize<XElementArrayWrapper>(xarray, null, () => new XmlSerializer(typeof(XElementArrayWrapper)), true);
+
+        Assert.NotNull(retarray);
+        Assert.True(retarray.xelements.Length == 2);
+        Assert.Equal("Root", retarray.xelements[0].Name);
+        Assert.Equal("Member", retarray.xelements[1].Name);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

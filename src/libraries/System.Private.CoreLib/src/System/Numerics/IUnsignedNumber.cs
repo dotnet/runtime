@@ -7,7 +7,7 @@ namespace System.Numerics
     /// <typeparam name="TSelf">The type that implements the interface.</typeparam>
     public interface IUnsignedNumber<TSelf>
         : INumberBase<TSelf>
-        where TSelf : IUnsignedNumber<TSelf>
+        where TSelf : IUnsignedNumber<TSelf>?
     {
     }
 }

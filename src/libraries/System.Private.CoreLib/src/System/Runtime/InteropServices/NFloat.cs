@@ -1492,14 +1492,14 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<NFloat>.TryConvertToChecked<TOther>(NFloat value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<NFloat>.TryConvertToChecked<TOther>(NFloat value, [MaybeNullWhen(false)] out TOther result)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1605,26 +1605,26 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<NFloat>.TryConvertToSaturating<TOther>(NFloat value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<NFloat>.TryConvertToSaturating<TOther>(NFloat value, [MaybeNullWhen(false)] out TOther result)
         {
             return TryConvertTo<TOther>(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<NFloat>.TryConvertToTruncating<TOther>(NFloat value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<NFloat>.TryConvertToTruncating<TOther>(NFloat value, [MaybeNullWhen(false)] out TOther result)
         {
             return TryConvertTo<TOther>(value, out result);
         }
 
-        private static bool TryConvertTo<TOther>(NFloat value, [NotNullWhen(true)] out TOther result)
+        private static bool TryConvertTo<TOther>(NFloat value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
@@ -1754,7 +1754,7 @@ namespace System.Runtime.InteropServices
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }

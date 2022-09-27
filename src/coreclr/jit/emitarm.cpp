@@ -6770,16 +6770,37 @@ void emitter::emitDispInst(instruction ins, insFlags flags)
  *
  *  Display an immediate value
  */
-void emitter::emitDispImm(int imm, bool addComma, bool alwaysHex /* =false */)
+void emitter::emitDispImm(int imm, bool addComma, bool alwaysHex /* =false */, bool isAddrOffset /*= false*/)
 {
     if (!alwaysHex && (imm > -1000) && (imm < 1000))
+    {
         printf("%d", imm);
+    }
     else if ((imm > 0) ||
              (imm == -imm) || // -0x80000000 == 0x80000000. So we don't want to add an extra "-" at the beginning.
              (emitComp->opts.disDiffable && (imm == (int)0xD1FFAB1E))) // Don't display this as negative
-        printf("0x%02x", imm);
-    else // val <= -1000
-        printf("-0x%02x", -imm);
+    {
+        if (isAddrOffset)
+        {
+            printf("0x%02X", imm);
+        }
+        else
+        {
+            printf("0x%02x", imm);
+        }
+    }
+    else
+    {
+        // val <= -1000
+        if (isAddrOffset)
+        {
+            printf("-0x%02X", -imm);
+        }
+        else
+        {
+            printf("-0x%02x", -imm);
+        }
+    }
 
     if (addComma)
         printf(", ");
@@ -6953,7 +6974,7 @@ void emitter::emitDispAddrRI(regNumber reg, int imm, emitAttr attr)
             printf("+");
 #endif
         }
-        emitDispImm(imm, false, regIsSPorFP);
+        emitDispImm(imm, false, true, true);
     }
     printf("]");
     emitDispGC(attr);
@@ -7029,7 +7050,7 @@ void emitter::emitDispAddrPUW(regNumber reg, int imm, insOpts opt, emitAttr attr
             printf("+");
 #endif
         }
-        emitDispImm(imm, false, regIsSPorFP);
+        emitDispImm(imm, false, true, true);
     }
     printf("]");
 
@@ -7718,7 +7739,7 @@ void emitter::emitDispLargeJmp(
     // Next, display the unconditional branch
 
     // Reset the local instrDesc
-    memset(&idJmp, 0, sizeof(idJmp));
+    memset(pidJmp, 0, sizeof(instrDescJmp));
 
     pidJmp->idIns(INS_b);
     pidJmp->idInsFmt(IF_T2_J2);

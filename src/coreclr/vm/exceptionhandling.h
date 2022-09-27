@@ -17,9 +17,8 @@
 #define INVALID_RESUME_ADDRESS 0x000000000000bad0
 
 EXTERN_C EXCEPTION_DISPOSITION
-ProcessCLRException(IN     PEXCEPTION_RECORD     pExceptionRecord
-          BIT64_ARG(IN     ULONG64               MemoryStackFp)
-      NOT_BIT64_ARG(IN     ULONG                 MemoryStackFp),
+ProcessCLRException(IN     PEXCEPTION_RECORD     pExceptionRecord,
+                    IN     PVOID                 pEstablisherFrame,
                     IN OUT PT_CONTEXT            pContextRecord,
                     IN OUT PT_DISPATCHER_CONTEXT pDispatcherContext);
 

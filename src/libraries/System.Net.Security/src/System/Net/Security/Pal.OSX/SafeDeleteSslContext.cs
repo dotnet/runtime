@@ -25,16 +25,14 @@ namespace System.Net
 
         public SafeSslHandle SslContext => _sslContext;
 
-        public SafeDeleteSslContext(SafeFreeSslCredentials credential, SslAuthenticationOptions sslAuthenticationOptions)
-            : base(credential)
+        public SafeDeleteSslContext(SslAuthenticationOptions sslAuthenticationOptions)
+            : base(IntPtr.Zero)
         {
-            Debug.Assert((null != credential) && !credential.IsInvalid, "Invalid credential used in SafeDeleteSslContext");
-
             try
             {
                 int osStatus;
 
-                _sslContext = CreateSslContext(credential, sslAuthenticationOptions);
+                _sslContext = CreateSslContext(sslAuthenticationOptions);
 
                 // Make sure the class instance is associated to the session and is provided
                 // in the Read/Write callback connection parameter
@@ -129,9 +127,9 @@ namespace System.Net
             }
         }
 
-        private static SafeSslHandle CreateSslContext(SafeFreeSslCredentials credential, SslAuthenticationOptions sslAuthenticationOptions)
+        private static SafeSslHandle CreateSslContext(SslAuthenticationOptions sslAuthenticationOptions)
         {
-            switch (credential.Policy)
+            switch (sslAuthenticationOptions.EncryptionPolicy)
             {
                 case EncryptionPolicy.RequireEncryption:
 #pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
@@ -142,7 +140,7 @@ namespace System.Net
                     break;
 #pragma warning restore SYSLIB0040
                 default:
-                    throw new PlatformNotSupportedException(SR.Format(SR.net_encryptionpolicy_notsupported, credential.Policy));
+                    throw new PlatformNotSupportedException(SR.Format(SR.net_encryptionpolicy_notsupported, sslAuthenticationOptions.EncryptionPolicy));
             }
 
             SafeSslHandle sslContext = Interop.AppleCrypto.SslCreateContext(sslAuthenticationOptions.IsServer ? 1 : 0);

@@ -30,10 +30,10 @@ namespace System.IO.Enumeration
                 throw new ArgumentException(SR.Arg_Path2IsRooted, nameof(expression));
 
             if (expression.Contains('\0'))
-                throw new ArgumentException(SR.Argument_InvalidPathChars, expression);
+                throw new ArgumentException(SR.Argument_NullCharInPath, expression);
 
             if (directory.Contains('\0'))
-                throw new ArgumentException(SR.Argument_InvalidPathChars, directory);
+                throw new ArgumentException(SR.Argument_NullCharInPath, directory);
 
             // We always allowed breaking the passed ref directory and filter to be separated
             // any way the user wanted. Looking for "C:\foo\*.cs" could be passed as "C:\" and

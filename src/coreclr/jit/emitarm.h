@@ -28,7 +28,7 @@ unsigned emitOutput_Thumb2Instr(BYTE* dst, code_t code);
 /************************************************************************/
 
 void emitDispInst(instruction ins, insFlags flags);
-void emitDispImm(int imm, bool addComma, bool alwaysHex = false);
+void emitDispImm(int imm, bool addComma, bool alwaysHex = false, bool isAddrOffset = false);
 void emitDispReloc(BYTE* addr);
 void emitDispCond(int cond);
 void emitDispShiftOpts(insOpts opt);

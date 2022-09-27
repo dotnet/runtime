@@ -20,6 +20,11 @@ namespace System.Security.Cryptography.Xml
 
         public RSAKeyValue(RSA key)
         {
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
             _key = key;
         }
 
@@ -29,8 +34,16 @@ namespace System.Security.Cryptography.Xml
 
         public RSA Key
         {
-            get { return _key; }
-            set { _key = value; }
+            get => _key;
+            set
+            {
+                if (value is null)
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
+
+                _key = value;
+            }
         }
 
         //

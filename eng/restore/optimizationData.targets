@@ -3,7 +3,9 @@
     <!-- Mibc data to use when exact architecture match is available -->
     <MIBCPackageDef Include="optimization.windows_nt-x86.mibc.runtime" Version="$(optimizationwindows_ntx86MIBCRuntimeVersion)" MibcArchitecture="Windows/x86"/>
     <MIBCPackageDef Include="optimization.windows_nt-x64.mibc.runtime" Version="$(optimizationwindows_ntx64MIBCRuntimeVersion)" MibcArchitecture="Windows/x64"/>
+    <MIBCPackageDef Include="optimization.windows_nt-arm64.mibc.runtime" Version="$(optimizationwindows_ntarm64MIBCRuntimeVersion)" MibcArchitecture="Windows/arm64"/>
     <MIBCPackageDef Include="optimization.linux-x64.mibc.runtime" Version="$(optimizationlinuxx64MIBCRuntimeVersion)" MibcArchitecture="Linux/x64"/>
+    <MIBCPackageDef Include="optimization.linux-arm64.mibc.runtime" Version="$(optimizationlinuxarm64MIBCRuntimeVersion)" MibcArchitecture="Linux/arm64"/>
 
     <!-- Mibc data to use when exact architecture match not available -->
     <MIBCPackageDef Include="optimization.windows_nt-x64.mibc.runtime" Version="$(optimizationwindows_ntx64MIBCRuntimeVersion)" MibcArchitecture="Windows"/>

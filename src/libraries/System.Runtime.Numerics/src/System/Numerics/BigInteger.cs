@@ -4489,7 +4489,7 @@ namespace System.Numerics
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToChecked{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<BigInteger>.TryConvertToChecked<TOther>(BigInteger value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<BigInteger>.TryConvertToChecked<TOther>(BigInteger value, [MaybeNullWhen(false)] out TOther result)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -4601,14 +4601,14 @@ namespace System.Numerics
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToSaturating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<BigInteger>.TryConvertToSaturating<TOther>(BigInteger value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<BigInteger>.TryConvertToSaturating<TOther>(BigInteger value, [MaybeNullWhen(false)] out TOther result)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -4794,14 +4794,14 @@ namespace System.Numerics
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumberBase<BigInteger>.TryConvertToTruncating<TOther>(BigInteger value, [NotNullWhen(true)] out TOther result)
+        static bool INumberBase<BigInteger>.TryConvertToTruncating<TOther>(BigInteger value, [MaybeNullWhen(false)] out TOther result)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -5190,7 +5190,7 @@ namespace System.Numerics
             }
             else
             {
-                result = default!;
+                result = default;
                 return false;
             }
         }
