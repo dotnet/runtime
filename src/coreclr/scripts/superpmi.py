@@ -342,7 +342,6 @@ asm_diff_parser.add_argument("--gcinfo", action="store_true", help="Include GC i
 asm_diff_parser.add_argument("--debuginfo", action="store_true", help="Include debug info after disassembly (sets COMPlus_JitDebugDump).")
 asm_diff_parser.add_argument("-tag", help="Specify a word to add to the directory name where the asm diffs will be placed")
 asm_diff_parser.add_argument("-metrics", action="append", help="Metrics option to pass to jit-analyze. Can be specified multiple times, or pass comma-separated values.")
-asm_diff_parser.add_argument("-retainOnlyTopFiles", action="store_true", help="Retain only top .dasm files with largest improvements or regressions and delete remaining files.")
 asm_diff_parser.add_argument("--diff_with_release", action="store_true", help="Specify if this is asmdiff using release binaries.")
 asm_diff_parser.add_argument("--git_diff", action="store_true", help="Produce a '.diff' file from 'base' and 'diff' folders if there were any differences.")
 
@@ -1769,8 +1768,6 @@ class SuperPMIReplayAsmDiffs:
                                 # It appears we have a built jit-analyze on the path, so try to run it.
                                 jit_analyze_summary_file = os.path.join(asm_root_dir, "summary.md")
                                 command = [ jit_analyze_path, "--md", jit_analyze_summary_file, "-r", "--base", base_asm_location, "--diff", diff_asm_location ]
-                                if self.coreclr_args.retainOnlyTopFiles:
-                                    command += [ "--retainOnlyTopFiles" ]
                                 if self.coreclr_args.metrics:
                                     command += [ "--metrics", ",".join(self.coreclr_args.metrics) ]
                                 elif base_bytes is not None and diff_bytes is not None:
@@ -3969,11 +3966,6 @@ def setup_args(args):
                             "metrics",
                             lambda unused: True,
                             "Unable to set metrics.")
-
-        coreclr_args.verify(args,
-                            "retainOnlyTopFiles",
-                            lambda unused: True,
-                            "Unable to set retainOnlyTopFiles.")
 
         coreclr_args.verify(args,
                             "diff_with_release",
