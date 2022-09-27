@@ -7493,10 +7493,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (constrained_class) {
 				if (m_method_is_static (cil_method) && mini_class_check_context_used (cfg, constrained_class)) {
 					/* get_constrained_method () doesn't work on the gparams used by generic sharing */
-					// FIXME: Other configurations
-					//if (!cfg->gsharedvt)
-					//	GENERIC_SHARING_FAILURE (CEE_CALL);
 					gshared_static_virtual = TRUE;
+					if (!cfg->gsharedvt)
+						/*
+						 * We can't resolve these calls at compile time, and they are used in
+						 * perf-sensitive code in the BCL, so ask the AOT compiler to try to use specific instances
+						 * instead of this gshared method.
+						 */
+						cfg->prefer_instances = TRUE;
 				} else {
 					cmethod = get_constrained_method (cfg, image, token, cil_method, constrained_class, generic_context);
 					CHECK_CFG_ERROR;

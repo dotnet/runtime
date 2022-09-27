@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ILLinkKeepDepAttributes>false</ILLinkKeepDepAttributes> <!-- See comments in Cookie.cs -->
@@ -158,6 +158,7 @@
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.Intrinsics" />
     <Reference Include="System.Threading" />
   </ItemGroup>
 </Project>

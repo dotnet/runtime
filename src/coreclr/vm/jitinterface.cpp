@@ -715,51 +715,6 @@ int CEEInfo::getStringLiteral (
     return result;
 }
 
-int CEEInfo::objectToString (
-        void* handle,
-        char* buffer,
-        int   bufferSize)
-{
-    CONTRACTL{
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    int charsCount = 0;
-
-    // NOTE: this function is used for pinned/frozen handles
-    // it doesn't need to null-terminate the string
-
-    _ASSERT(handle != nullptr && buffer != nullptr && bufferSize > 0);
-
-    JIT_TO_EE_TRANSITION();
-
-    Object* obj = (Object*)handle;
-
-    GCX_COOP();
-
-    StackSString stackStr;
-
-    // Currently only supported for String and RuntimeType
-    if (obj->GetMethodTable()->IsString())
-    {
-        ((StringObject*)obj)->GetSString(stackStr);
-    }
-    else if (obj->GetMethodTable() == g_pRuntimeTypeClass)
-    {
-        ((ReflectClassBaseObject*)obj)->GetType().GetName(stackStr);
-    }
-
-    const UTF8* utf8data = stackStr.GetUTF8();
-    charsCount = stackStr.GetCount();
-    memcpy((BYTE*)buffer, (BYTE*)utf8data, min(bufferSize, charsCount));
-
-    EE_TO_JIT_TRANSITION();
-
-    return charsCount;
-}
-
 /* static */
 size_t CEEInfo::findNameOfToken (Module* module,
                                                  mdToken metaTOK,
@@ -5991,31 +5946,6 @@ CorInfoHelpFunc CEEInfo::getUnBoxHelper(CORINFO_CLASS_HANDLE clsHnd)
 }
 
 /***********************************************************************/
-void* CEEInfo::getRuntimeTypePointer(CORINFO_CLASS_HANDLE clsHnd)
-{
-    CONTRACTL{
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    void* pointer = nullptr;
-
-    JIT_TO_EE_TRANSITION();
-
-    TypeHandle typeHnd(clsHnd);
-    if (!typeHnd.IsCanonicalSubtype() && typeHnd.IsManagedClassObjectPinned())
-    {
-        GCX_COOP();
-        pointer = OBJECTREFToObject(typeHnd.GetManagedClassObject());
-    }
-
-    EE_TO_JIT_TRANSITION();
-
-    return pointer;
-}
-
-/***********************************************************************/
 bool CEEInfo::getReadyToRunHelper(
         CORINFO_RESOLVED_TOKEN *        pResolvedToken,
         CORINFO_LOOKUP_KIND *           pGenericLookupKind,
@@ -7212,6 +7142,25 @@ bool getILIntrinsicImplementationForInterlocked(MethodDesc * ftn,
     return true;
 }
 
+bool IsBitwiseEquatable(TypeHandle typeHandle, MethodTable * methodTable)
+{
+    if (!methodTable->IsValueType() ||
+        !CanCompareBitsOrUseFastGetHashCode(methodTable))
+    {
+        return false;
+    }
+
+    // CanCompareBitsOrUseFastGetHashCode checks for an object.Equals override.
+    // We also need to check for an IEquatable<T> implementation.
+    Instantiation inst(&typeHandle, 1);
+    if (typeHandle.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(inst)))
+    {
+        return false;
+    }
+
+    return true;
+}
+
 bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
     CORINFO_METHOD_INFO * methInfo)
 {
@@ -7262,8 +7211,9 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
         static const BYTE returnFalse[] = { CEE_LDC_I4_0, CEE_RET };
 
         // Ideally we could detect automatically whether a type is trivially equatable
-        // (i.e., its operator == could be implemented via memcmp). But for now we'll
-        // do the simple thing and hardcode the list of types we know fulfill this contract.
+        // (i.e., its operator == could be implemented via memcmp). The best we can do
+        // for now is hardcode a list of known supported types and then also include anything
+        // that doesn't provide its own object.Equals override / IEquatable<T> implementation.
         // n.b. This doesn't imply that the type's CompareTo method can be memcmp-implemented,
         // as a method like CompareTo may need to take a type's signedness into account.
 
@@ -7280,7 +7230,8 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
             || methodTable == CoreLibBinder::GetClass(CLASS__INTPTR)
             || methodTable == CoreLibBinder::GetClass(CLASS__UINTPTR)
             || methodTable == CoreLibBinder::GetClass(CLASS__RUNE)
-            || methodTable->IsEnum())
+            || methodTable->IsEnum()
+            || IsBitwiseEquatable(typeHandle, methodTable))
         {
             methInfo->ILCode = const_cast<BYTE*>(returnTrue);
         }
