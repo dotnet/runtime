@@ -4,7 +4,7 @@
     <!-- Build for NetCoreAppCurrent by default if no BuildTargetFramework is supplied or if not all configurations are built. -->
     <TargetFramework>$([MSBuild]::ValueOrDefault('$(BuildTargetFramework)', '$(NetCoreAppCurrent)'))-$(TargetOS)</TargetFramework>
     <!-- Filter ProjectReferences to build the best matching target framework only. -->
-    <FilterTraversalProjectReferences Condition="'$(TestTrimming)' != 'true' and '$(TestNativeAot)' != 'true'">true</FilterTraversalProjectReferences>
+    <FilterTraversalProjectReferences Condition="'$(TestTrimming)' != 'true' and '$(RunNativeAotTestApps)' != 'true'">true</FilterTraversalProjectReferences>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -18,7 +18,7 @@
     <TestAssemblies Condition="'$(TestAssemblies)' == ''">true</TestAssemblies>
     <TestPackages Condition="'$(TestPackages)' == ''">false</TestPackages>
     <TestTrimming Condition="'$(TestTrimming)' == ''">false</TestTrimming>
-    <TestNativeAot Condition="'$(TestNativeAot)' == ''">false</TestNativeAot>
+    <RunNativeAotTestApps Condition="'$(RunNativeAotTestApps)' == ''">false</RunNativeAotTestApps>
 
     <RunHighAOTResourceRequiringTestsOnly Condition="'$(RunHighAOTResourceRequiringTestsOnly)' == ''">false</RunHighAOTResourceRequiringTestsOnly>
 
@@ -591,11 +591,11 @@
                       Condition="'$(TestTrimming)' == 'true'"
                       AdditionalProperties="%(AdditionalProperties);SkipTrimmingProjectsRestore=true" />
     <ProjectReference Include="@(TrimmingTestProjects)" />
-    <NativeAotTestProjects Include="$(MSBuildThisFileDirectory)*\tests\**\*.NativeAotTests.proj"
-                           Exclude="@(ProjectExclusions)"
-                           Condition="'$(TestNativeAot)' == 'true'"
-                           AdditionalProperties="%(AdditionalProperties);SkipTrimmingProjectsRestore=true" />
-    <ProjectReference Include="@(NativeAotTestProjects)" />
+    <NativeAotTestAppProjects Include="$(MSBuildThisFileDirectory)*\tests\**\*.NativeAotTests.proj"
+                              Exclude="@(ProjectExclusions)"
+                              Condition="'$(RunNativeAotTestApps)' == 'true'"
+                              AdditionalProperties="%(AdditionalProperties);SkipTrimmingProjectsRestore=true" />
+    <ProjectReference Include="@(NativeAotTestAppProjects)" />
 
     <!-- wasm.build.tests are run on _WasmBuildTests job on CI, and with library tests locally. -->
     <ProjectReference Include="$(RepoRoot)\src\mono\wasm\Wasm.Build.Tests\*.Tests.csproj"
@@ -766,12 +766,12 @@
                Directories="$(AppBundleRoot)" />
   </Target>
 
-  <!-- Restoring all trimming/NativeAot test projects upfront in one single call to RestorePublishedAppTestProjects
+  <!-- Restoring all trimming/NativeAot test app projects upfront in one single call to RestorePublishedAppTestProjects
   so as to avoid possible race conditions that could happen if we restore each individually. -->
   <Target Name="RestorePublishedAppTestProjects"
           BeforeTargets="Build"
-          Condition="'$(TestTrimming)' == 'true' or '$(TestNativeAot)' == 'true'">
-    <MSBuild Projects="@(TrimmingTestProjects);@(NativeAotTestProjects)"
+          Condition="'$(TestTrimming)' == 'true' or '$(RunNativeAotTestApps)' == 'true'">
+    <MSBuild Projects="@(TrimmingTestProjects);@(NativeAotTestAppProjects)"
              Targets="GetTrimmingProjectsToRestore">
       <Output TaskParameter="TargetOutputs" ItemName="_PublishedAppTestProjectsToRestore" />
     </MSBuild>
