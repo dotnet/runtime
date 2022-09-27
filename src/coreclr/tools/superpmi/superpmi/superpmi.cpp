@@ -598,6 +598,8 @@ int __cdecl main(int argc, char* argv[])
                         }
 
                         break;
+                    case NearDifferResult::SuccessWithoutDiff:
+                        break;
                     case NearDifferResult::Failure:
                         if (o.mclFilename != nullptr)
                             failingToReplayMCL.AddMethodToMCL(reader->GetMethodContextIndex());
