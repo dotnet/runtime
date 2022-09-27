@@ -1253,6 +1253,9 @@ namespace System.Net.Quic.Tests
             cmd.StandardInput.Flush();
             cmd.StandardInput.Close();
             cmd.WaitForExit();
+
+            // dispose resources
+            cmd.Dispose();
         }
     }
 }
