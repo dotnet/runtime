@@ -49,8 +49,8 @@ namespace Microsoft.NET.HostModel.AppHost
     /// </summary>
     public sealed class AppHostNotCUIException : AppHostUpdateException
     {
-        internal AppHostNotCUIException()
-            : base($"Selected apphost is not a CUI Windows application.")
+        internal AppHostNotCUIException(ushort subsystem)
+            : base($"Selected apphost is not a CUI Windows application. Subsystem: {subsystem}")
         {
         }
     }
@@ -92,7 +92,7 @@ namespace Microsoft.NET.HostModel.AppHost
         public string LongName { get; }
 
         internal AppNameTooLongException(string name)
-            : base($"The name of the app is too long (must be less than 1024). Name: {name}")
+            : base($"The name of the app is too long (must be less than 1024 bytes). Name: {name}")
         {
             LongName = name;
         }

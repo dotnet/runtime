@@ -106,7 +106,7 @@ namespace Microsoft.NET.HostModel.AppHost
                 // The subsystem of the prebuilt apphost should be set to CUI
                 if (subsystem[0] != WindowsCUISubsystem)
                 {
-                    throw new AppHostNotCUIException();
+                    throw new AppHostNotCUIException(subsystem[0]);
                 }
 
                 // Set the subsystem to GUI
