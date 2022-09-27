@@ -1718,7 +1718,7 @@ class SuperPMIReplayAsmDiffs:
                         logging.info("Creating JitDump files: %s %s", base_dump_location, diff_dump_location)
                         subproc_helper.run_to_completion(create_replay_artifacts, self, mch_file, jit_dump_complus_vars_full_env, jit_dump_differences, base_dump_location, diff_dump_location, ".txt")
 
-                    logging.info("Contexts with differences found. To replay SuperPMI use:".format(len(diffs)))
+                    logging.info("Differences found. To replay SuperPMI use:".format(len(diffs)))
 
                     logging.info("")
                     for var, value in asm_complus_vars.items():
@@ -1734,7 +1734,7 @@ class SuperPMIReplayAsmDiffs:
                         logging.info("%s %s -c ### %s %s", self.superpmi_path, " ".join(altjit_replay_flags), self.diff_jit_path, mch_file)
                         logging.info("")
 
-                    smallest = sorted(diffs, key=lambda r: int(r["Context size"]))[20:]
+                    smallest = sorted(diffs, key=lambda r: int(r["Context size"]))[:20]
                     logging.debug("Smallest {} contexts with binary differences:".format(len(smallest)))
                     for diff in smallest:
                         logging.debug(diff["Context"])
