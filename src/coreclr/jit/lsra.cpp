@@ -4798,6 +4798,7 @@ void LinearScan::allocateRegisters()
                     }
                     else
                     {
+                        // Available registers should not hold constants
                         assert(isRegAvailable(reg, physRegRecord->registerType));
                         assert(!isRegConstant(reg, physRegRecord->registerType));
                         assert(nextIntervalRef[reg] == MaxLocation);
@@ -5047,7 +5048,13 @@ void LinearScan::allocateRegisters()
             // enough that it may not warrant the additional complexity.
             if (assignedRegister != REG_NA)
             {
-                unassignPhysReg(getRegisterRecord(assignedRegister), currentInterval->firstRefPosition);
+                RegRecord* regRecord        = getRegisterRecord(assignedRegister);
+                Interval*  assignedInterval = regRecord->assignedInterval;
+                unassignPhysReg(regRecord, currentInterval->firstRefPosition);
+                if (assignedInterval->isConstant)
+                {
+                    clearConstantReg(assignedRegister, assignedInterval->registerType);
+                }
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_REG_ALLOCATED, currentInterval));
             }
             currentRefPosition->registerAssignment = RBM_NONE;
