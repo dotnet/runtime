@@ -15,19 +15,21 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         [MemberData(nameof(NameRoundtripsAsyncTheoryData))]
-        public async Task NameRoundtripsAsync(TarEntryFormat entryFormat, TarEntryType entryType, string name)
+        public async Task NameRoundtripsAsync(TarEntryFormat entryFormat, TarEntryType entryType, bool unseekableStream, string name)
         {
             TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, entryType, name);
             entry.Name = name;
 
             MemoryStream ms = new();
-            using (TarWriter writer = new(ms, leaveOpen: true))
+            Stream s = unseekableStream ? new WrappedStream(ms, ms.CanRead, ms.CanWrite, canSeek: false) : ms;
+
+            using (TarWriter writer = new(s, leaveOpen: true))
             {
                 await writer.WriteEntryAsync(entry);
             }
 
             ms.Position = 0;
-            using TarReader reader = new(ms);
+            using TarReader reader = new(s);
 
             entry = await reader.GetNextEntryAsync();
             Assert.Null(await reader.GetNextEntryAsync());
@@ -39,20 +41,22 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         [MemberData(nameof(LinkNameRoundtripsAsyncTheoryData))]
-        public async Task LinkNameRoundtrips(TarEntryFormat entryFormat, TarEntryType entryType, string linkName)
+        public async Task LinkNameRoundtrips(TarEntryFormat entryFormat, TarEntryType entryType, bool unseekableStream, string linkName)
         {
             string name = "foo";
             TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, entryType, name);
             entry.LinkName = linkName;
 
             MemoryStream ms = new();
-            using (TarWriter writer = new(ms, leaveOpen: true))
+            Stream s = unseekableStream ? new WrappedStream(ms, ms.CanRead, ms.CanWrite, canSeek: false) : ms;
+
+            using (TarWriter writer = new(s, leaveOpen: true))
             {
                 await writer.WriteEntryAsync(entry);
             }
 
             ms.Position = 0;
-            using TarReader reader = new(ms);
+            using TarReader reader = new(s);
 
             entry = await reader.GetNextEntryAsync();
             Assert.Null(await reader.GetNextEntryAsync());
@@ -65,7 +69,7 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         [MemberData(nameof(UserNameGroupNameRoundtripsAsyncTheoryData))]
-        public async Task UserNameGroupNameRoundtrips(TarEntryFormat entryFormat, string userGroupName)
+        public async Task UserNameGroupNameRoundtrips(TarEntryFormat entryFormat, bool unseekableStream, string userGroupName)
         {
             string name = "foo";
             TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, TarEntryType.RegularFile, name);
@@ -74,13 +78,15 @@ namespace System.Formats.Tar.Tests
             posixEntry.GroupName = userGroupName;
 
             MemoryStream ms = new();
-            using (TarWriter writer = new(ms, leaveOpen: true))
+            Stream s = unseekableStream ? new WrappedStream(ms, ms.CanRead, ms.CanWrite, canSeek: false) : ms;
+
+            using (TarWriter writer = new(s, leaveOpen: true))
             {
                 await writer.WriteEntryAsync(posixEntry);
             }
 
             ms.Position = 0;
-            using TarReader reader = new(ms);
+            using TarReader reader = new(s);
 
             entry = await reader.GetNextEntryAsync();
             posixEntry = Assert.IsAssignableFrom<PosixTarEntry>(entry);
