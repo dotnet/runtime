@@ -4,11 +4,13 @@
 #ifndef _FileIO
 #define _FileIO
 
-template<typename HandleType, HandleType InvalidHandleValue, typename FreeFunction>
+template<typename HandleSpec>
 struct HandleWrapper
 {
+    using HandleType = typename HandleSpec::Type;
+
     HandleWrapper()
-        : m_handle(InvalidHandleValue)
+        : m_handle(HandleSpec::Invalid())
     {
     }
 
@@ -19,59 +21,63 @@ struct HandleWrapper
 
     ~HandleWrapper()
     {
-        if (m_handle != InvalidHandleValue)
+        if (m_handle != HandleSpec::Invalid())
         {
-            FreeFunction{}(m_handle);
-
-            m_handle = InvalidHandleValue;
+            HandleSpec::Close(m_handle);
+            m_handle = HandleSpec::Invalid();
         }
     }
 
     HandleWrapper(const HandleWrapper&) = delete;
     HandleWrapper& operator=(HandleWrapper&) = delete;
 
-    HandleWrapper(HandleWrapper&& hw)
+    HandleWrapper(HandleWrapper&& hw) noexcept
         : m_handle(hw.m_handle)
     {
-        hw.m_handle = INVALID_HANDLE_VALUE;
+        hw.m_handle = HandleSpec::Invalid();
     }
 
-    HandleWrapper& operator=(HandleWrapper&& hw)
+    HandleWrapper& operator=(HandleWrapper&& hw) noexcept
     {
-        if (m_handle != InvalidHandleValue)
-            CloseHandle(m_handle);
+        if (m_handle != HandleSpec::Invalid())
+            HandleSpec::Close(m_handle);
 
         m_handle = hw.m_handle;
-        hw.m_handle = InvalidHandleValue;
+        hw.m_handle = HandleSpec::Invalid();
         return *this;
     }
 
-    bool IsValid() { return m_handle != InvalidHandleValue; }
+    bool IsValid() { return m_handle != HandleSpec::Invalid(); }
     HandleType Get() { return m_handle; }
 
 private:
     HandleType m_handle;
 };
 
-struct CloseHandleFunctor
+struct FileHandleSpec
 {
-    void operator()(HANDLE handle)
-    {
-        CloseHandle(handle);
-    }
+    using Type = HANDLE;
+    static HANDLE Invalid() { return INVALID_HANDLE_VALUE; }
+    static void Close(HANDLE h) { CloseHandle(h); }
 };
 
-struct UnmapViewOfFileFunctor
+struct FileMappingHandleSpec
 {
-    void operator()(LPVOID view)
-    {
-        UnmapViewOfFile(view);
-    }
+    using Type = HANDLE;
+    static HANDLE Invalid() { return nullptr; }
+    static void Close(HANDLE h) { CloseHandle(h); }
 };
 
-typedef HandleWrapper<HANDLE, INVALID_HANDLE_VALUE, CloseHandleFunctor> FileHandle;
-typedef HandleWrapper<HANDLE, nullptr, CloseHandleFunctor> FileMappingHandle;
-typedef HandleWrapper<LPVOID, nullptr, UnmapViewOfFileFunctor> FileViewHandle;
+struct FileViewHandleSpec
+{
+    using Type = LPVOID;
+    static LPVOID Invalid() { return nullptr; }
+    static void Close(LPVOID p) { UnmapViewOfFile(p); }
+};
+
+typedef HandleWrapper<FileHandleSpec> FileHandle;
+typedef HandleWrapper<FileMappingHandleSpec> FileMappingHandle;
+typedef HandleWrapper<FileViewHandleSpec> FileViewHandle;
 
 class FileWriter
 {
@@ -113,6 +119,8 @@ class FileLineReader
 
 public:
     FileLineReader()
+        : m_cur(nullptr)
+        , m_end(nullptr)
     {
     }
 
