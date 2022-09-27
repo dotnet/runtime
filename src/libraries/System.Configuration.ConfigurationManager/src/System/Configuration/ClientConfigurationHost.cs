@@ -293,18 +293,19 @@ namespace System.Configuration
             }
             catch { }
 
-            byte[] fileData = null;
+            Stream fileData = null;
             try
             {
-                fileData = client.DownloadData(streamName);
+                fileData = client.OpenRead(streamName);
             }
-            catch { }
+            catch 
+            {
+                fileData?.close();
+                return null;
+            }
 #pragma warning restore SYSLIB0014
 
-            if (fileData == null) return null;
-
-            MemoryStream stream = new MemoryStream(fileData);
-            return stream;
+            return fileData;
         }
 
         public override Stream OpenStreamForWrite(string streamName, string templateStreamName, ref object writeContext)
