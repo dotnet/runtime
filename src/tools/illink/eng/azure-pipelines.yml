@@ -56,7 +56,7 @@ stages:
             vmImage: windows-latest
           ${{ if eq(variables.officialBuild, 'true') }}:
             name: NetCore1ESPool-Internal
-            demands: ImageOverride -equals Build.Windows.10.Amd64.VS2019
+            demands: ImageOverride -equals 1es-windows-2019
         variables:
           - ${{ if eq(variables.officialBuild, 'false') }}:
             - _SignType: test
