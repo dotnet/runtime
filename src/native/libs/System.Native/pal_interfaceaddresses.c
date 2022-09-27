@@ -353,7 +353,13 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
     // To save allocation need for separate free() we will allocate one memory chunk
     // where we first write out NetworkInterfaceInfo entries immediately followed by
     // IpAddressInfo list.
-    void * memoryBlock = calloc((size_t)count, sizeof(NetworkInterfaceInfo));
+#if TARGET_ANDROID
+    int interfacesCount = count;
+#else
+    int interfacesCount = count - ip4count - ip6count;
+#endif
+    size_t interfacesAndAddressesCount = (size_t)(interfacesCount + ip4count + ip6count);
+    void * memoryBlock = calloc(interfacesAndAddressesCount, sizeof(NetworkInterfaceInfo));
     if (memoryBlock == NULL)
     {
         errno = ENOMEM;
@@ -364,7 +370,7 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
     ifaddrsEntry = head;
     *interfaceList = nii = (NetworkInterfaceInfo*)memoryBlock;
     // address of first IpAddressInfo after all NetworkInterfaceInfo entries.
-    *addressList = ai = (IpAddressInfo*)(nii + (count - ip4count - ip6count));
+    *addressList = ai = (IpAddressInfo*)(nii + interfacesCount);
 
     while (ifaddrsEntry != NULL)
     {
