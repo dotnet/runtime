@@ -4,6 +4,7 @@
 #include "standardpch.h"
 #include "metricssummary.h"
 #include "logging.h"
+#include "fileio.h"
 
 void MetricsSummary::AggregateFrom(const MetricsSummary& other)
 {
@@ -60,14 +61,13 @@ static bool FilePrintf(HANDLE hFile, const char* fmt, ...)
 
 bool MetricsSummaries::SaveToFile(const char* path)
 {
-    FileHandleWrapper file(CreateFile(path, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr));
-    if (file.get() == INVALID_HANDLE_VALUE)
+    FileWriter file;
+    if (!FileWriter::CreateNew(path, &file))
     {
         return false;
     }
 
-    if (!FilePrintf(
-        file.get(),
+    if (!file.Printf(
         "Successful compiles,Failing compiles,Missing compiles,Contexts with diffs,"
         "Code bytes,Diffed code bytes,Executed instructions,Diff executed instructions,Name\n"))
     {
@@ -75,16 +75,15 @@ bool MetricsSummaries::SaveToFile(const char* path)
     }
 
     return
-        WriteRow(file.get(), "Overall", Overall) &&
-        WriteRow(file.get(), "MinOpts", MinOpts) &&
-        WriteRow(file.get(), "FullOpts", FullOpts);
+        WriteRow(file, "Overall", Overall) &&
+        WriteRow(file, "MinOpts", MinOpts) &&
+        WriteRow(file, "FullOpts", FullOpts);
 }
 
-bool MetricsSummaries::WriteRow(HANDLE hFile, const char* name, const MetricsSummary& summary)
+bool MetricsSummaries::WriteRow(FileWriter& fw, const char* name, const MetricsSummary& summary)
 {
     return
-        FilePrintf(
-            hFile,
+        fw.Printf(
             "%d,%d,%d,%d,%lld,%lld,%lld,%lld,%s\n",
             summary.SuccessfulCompiles,
             summary.FailingCompiles,
