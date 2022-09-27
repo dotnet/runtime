@@ -51,6 +51,7 @@
     <Compile Include="TarWriter\TarWriter.WriteEntryAsync.File.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntry.Base.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntryAsync.Tests.cs" />
+    <Compile Include="TarWriter\TarWriter.WriteEntryAsync.Entry.Roundtrip.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntryAsync.Entry.Ustar.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntryAsync.Entry.V7.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntryAsync.Entry.Pax.Tests.cs" />
