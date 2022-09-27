@@ -189,7 +189,7 @@ namespace Wasm.Build.Tests
             => ConsoleBuildAndRun(config, relinking, string.Empty);
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        // [InlineData("Debug", "-f net7.0")] FIXME: -- enable when updated template packages are available
+        [InlineData("Debug", "-f net7.0")]//FIXME: -- enable when updated template packages are available
         [InlineData("Debug", "-f net8.0")]
         public void ConsoleBuildAndRunForSpecificTFM(string config, string extraNewArgs)
             => ConsoleBuildAndRun(config, false, extraNewArgs);
@@ -443,7 +443,7 @@ namespace Wasm.Build.Tests
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
         [InlineData("")]
-        // [InlineData("-f net7.0")] FIXME: -- enable when updated template packages are available
+        [InlineData("-f net7.0")] //FIXME: -- enable when updated template packages are available
         [InlineData("-f net8.0")]
         public async Task BrowserBuildAndRun(string extraNewArgs)
         {
