@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Net.Http;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -49,6 +50,8 @@ namespace System.Net.Quic.Tests
     [ConditionalClass(typeof(QuicTestBase), nameof(QuicTestBase.IsSupported))]
     public class MsQuicTests : QuicTestBase, IClassFixture<CertificateSetup>
     {
+        public static bool IsProcessElevated => AdminHelpers.IsProcessElevated();
+        public static bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         private static byte[] s_data = "Hello world!"u8.ToArray();
         readonly CertificateSetup _certificates;
 
@@ -1199,6 +1202,55 @@ namespace System.Net.Quic.Tests
                 await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await serverStream.WriteAsync(new byte[10])).WaitAsync(TimeSpan.FromSeconds(10));
                 await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await acceptTask).WaitAsync(TimeSpan.FromSeconds(10));
             }
+        }
+
+        [ConditionalFact(nameof(IsProcessElevated), nameof(IsWindows))]
+        public async Task ReturnWSAENETUNREACH_WhenIpv6Disabled()
+        {
+            Process cmd = new Process();
+            cmd.StartInfo.FileName = "pwsh.exe";
+            cmd.StartInfo.RedirectStandardInput = true;
+            cmd.StartInfo.RedirectStandardOutput = true;
+            cmd.StartInfo.CreateNoWindow = true;
+            cmd.StartInfo.UseShellExecute = false;
+
+            // read ipv6 address of bing
+            cmd.Start();
+            cmd.StandardInput.WriteLine("nslookup -query=AAAA www.bing.com");
+            cmd.StandardInput.Flush();
+            cmd.StandardInput.Close();
+            cmd.WaitForExit();
+            string ipLookupResult = cmd.StandardOutput.ReadToEnd();
+            string ipKey = "Addresses: ";
+            string ipAddress = ipLookupResult.Substring(ipLookupResult.IndexOf(ipKey) + 1 + ipKey.Length, 25);
+
+            // disable ipv6 on all network interfaces
+            cmd.Start();
+            cmd.StandardInput.WriteLine("Disable-NetAdapterBinding -Name \"*\" -ComponentID ms_tcpip6");
+            cmd.StandardInput.Flush();
+            cmd.StandardInput.Close();
+            cmd.WaitForExit();
+            var handler = new HttpClientHandler();
+            handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+            handler.ServerCertificateCustomValidationCallback =
+                (httpRequestMessage, cert, cetChain, policyErrors) =>
+                {
+                    return true;
+                };
+            var client = new HttpClient(handler);
+            client.DefaultRequestVersion = HttpVersion.Version30;
+            client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
+            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync($"https://[{ipAddress}]:443"));
+            Assert.NotNull(ex.InnerException);
+            Assert.IsType<QuicException>(ex.InnerException);
+            Assert.Equal(10051, ex.HResult & 0xFFFF);
+
+            // re-enable ipv6 on all network interfaces
+            cmd.Start();
+            cmd.StandardInput.WriteLine("Enable-NetAdapterBinding -Name \"*\" -ComponentID ms_tcpip6");
+            cmd.StandardInput.Flush();
+            cmd.StandardInput.Close();
+            cmd.WaitForExit();
         }
     }
 }
