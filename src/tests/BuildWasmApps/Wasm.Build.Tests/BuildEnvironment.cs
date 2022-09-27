@@ -117,12 +117,6 @@ namespace Wasm.Build.Tests
             // helps with debugging
             EnvVars["WasmNativeStrip"] = "false";
 
-            // Works around an issue in msbuild due to which
-            // second, and subsequent builds fail without any details
-            // in the logs
-            EnvVars["DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER"] = "1";
-            DefaultBuildArgs += " /nr:false";
-
             if (OperatingSystem.IsWindows())
             {
                 EnvVars["WasmCachePath"] = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
