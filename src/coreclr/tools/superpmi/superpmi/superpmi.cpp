@@ -124,17 +124,17 @@ static NearDifferResult InvokeNearDiffer(NearDiffer*           nearDiffer,
 
 static bool PrintDiffsCsvHeader(FileWriter& fw)
 {
-    return fw.Printf("Context,Base size,Diff size,Base instructions,Diff instructions,Context size\n");
+    return fw.Printf("Context,Context size,Base size,Diff size,Base instructions,Diff instructions\n");
 }
 
 static bool PrintDiffsCsvRow(
     FileWriter& fw,
     int context,
+    uint32_t contextSize,
     long long baseSize, long long diffSize,
-    long long baseInstructions, long long diffInstructions,
-    uint32_t contextSize)
+    long long baseInstructions, long long diffInstructions)
 {
-    return fw.Printf("%d,%lld,%lld,%lld,%lld,%u\n", context, baseSize, diffSize, baseInstructions, diffInstructions, contextSize);
+    return fw.Printf("%d,%u,%lld,%lld,%lld,%lld\n", context, contextSize, baseSize, diffSize, baseInstructions, diffInstructions);
 }
 
 // Run superpmi. The return value is as follows:
@@ -279,7 +279,10 @@ int __cdecl main(int argc, char* argv[])
         {
             return (int)SpmiResult::GeneralFailure;
         }
+    }
 
+    if (o.diffsInfo != nullptr)
+    {
         PrintDiffsCsvHeader(diffCsv);
     }
 
@@ -573,38 +576,38 @@ int __cdecl main(int argc, char* argv[])
 
                     switch (result)
                     {
-                    case NearDifferResult::SuccessWithDiff:
-                        totalBaseMetrics.Overall.NumContextsWithDiffs++;
-                        totalDiffMetrics.Overall.NumContextsWithDiffs++;
+                        case NearDifferResult::SuccessWithDiff:
+                            totalBaseMetrics.Overall.NumContextsWithDiffs++;
+                            totalDiffMetrics.Overall.NumContextsWithDiffs++;
 
-                        totalBaseMetricsOpts.NumContextsWithDiffs++;
-                        totalDiffMetricsOpts.NumContextsWithDiffs++;
+                            totalBaseMetricsOpts.NumContextsWithDiffs++;
+                            totalDiffMetricsOpts.NumContextsWithDiffs++;
 
-                        // This is a difference in ASM outputs from Jit1 & Jit2 and not a playback failure
-                        // We will add this MC to the diffs info if there is one.
-                        // Otherwise this will end up in failingMCList
-                        if (o.diffsInfo != nullptr)
-                        {
-                            PrintDiffsCsvRow(
-                                diffCsv,
-                                reader->GetMethodContextIndex(),
-                                baseMetrics.NumCodeBytes, diffMetrics.NumCodeBytes,
-                                baseMetrics.NumExecutedInstructions, diffMetrics.NumExecutedInstructions,
-                                mcb.size);
-                        }
-                        else if (o.mclFilename != nullptr)
-                        {
-                            failingToReplayMCL.AddMethodToMCL(reader->GetMethodContextIndex());
-                        }
+                            // This is a difference in ASM outputs from Jit1 & Jit2 and not a playback failure
+                            // We will add this MC to the diffs info if there is one.
+                            // Otherwise this will end up in failingMCList
+                            if (o.diffsInfo != nullptr)
+                            {
+                                PrintDiffsCsvRow(
+                                    diffCsv,
+                                    reader->GetMethodContextIndex(),
+                                    mcb.size,
+                                    baseMetrics.NumCodeBytes, diffMetrics.NumCodeBytes,
+                                    baseMetrics.NumExecutedInstructions, diffMetrics.NumExecutedInstructions);
+                            }
+                            else if (o.mclFilename != nullptr)
+                            {
+                                failingToReplayMCL.AddMethodToMCL(reader->GetMethodContextIndex());
+                            }
 
-                        break;
-                    case NearDifferResult::SuccessWithoutDiff:
-                        break;
-                    case NearDifferResult::Failure:
-                        if (o.mclFilename != nullptr)
-                            failingToReplayMCL.AddMethodToMCL(reader->GetMethodContextIndex());
+                            break;
+                        case NearDifferResult::SuccessWithoutDiff:
+                            break;
+                        case NearDifferResult::Failure:
+                            if (o.mclFilename != nullptr)
+                                failingToReplayMCL.AddMethodToMCL(reader->GetMethodContextIndex());
 
-                        break;
+                            break;
                     }
 
                     totalBaseMetrics.Overall.NumDiffedCodeBytes += baseMetrics.NumCodeBytes;
