@@ -298,6 +298,74 @@ namespace System.Reflection
             return defaultValue;
         }
 
+        private bool ParameterTypeIsDateTime { get => ParameterType == typeof(DateTime) || ParameterType == typeof(DateTime?); }
+
+        private CustomAttributeData? GetPrioritizedCustomAttributeDataForRawDefaultValueResolution(IEnumerable<CustomAttributeData> customAttributes)
+        {
+            CustomAttributeData? previousAttributeData = null;
+            foreach (CustomAttributeData currentAttributeData in customAttributes)
+            {
+                Type currentAttributeType = currentAttributeData.AttributeType;
+                if (ParameterTypeIsDateTime && currentAttributeType == typeof(DateTimeConstantAttribute))
+                {
+                    previousAttributeData = currentAttributeData;
+                    break;
+                }
+                else if (previousAttributeData == null && (currentAttributeType.IsSubclassOf(typeof(CustomConstantAttribute)) || currentAttributeType == typeof(DecimalConstantAttribute)))
+                {
+                    previousAttributeData = currentAttributeData;
+                }
+                else if (previousAttributeData != null && (currentAttributeType.IsSubclassOf(typeof(CustomConstantAttribute)) && previousAttributeData.AttributeType == typeof(DecimalConstantAttribute)))
+                {
+                    previousAttributeData = currentAttributeData;
+                    break;
+                }
+            }
+            return previousAttributeData;
+        }
+
+        private object? GetDefaultValueFromCustomAttributeData()
+        {
+            CustomAttributeData? attr = GetPrioritizedCustomAttributeDataForRawDefaultValueResolution(RuntimeCustomAttributeData.GetCustomAttributes(this));
+            if (attr != null)
+            {
+                Type? attrType = attr.Constructor.DeclaringType;
+                if (attrType == typeof(DateTimeConstantAttribute))
+                    return GetRawDateTimeConstant(attr);
+                else if (attrType == typeof(DecimalConstantAttribute))
+                    return GetRawDecimalConstant(attr);
+                else if (attrType!.IsSubclassOf(s_CustomConstantAttributeType))
+                    return GetRawConstant(attr);
+            }
+            return DBNull.Value;
+        }
+
+        private object? GetDefaultValueFromCustomAttributes()
+        {
+            object[] customAttributes;
+            if (ParameterTypeIsDateTime)
+            {
+                customAttributes = GetCustomAttributes(typeof(DateTimeConstantAttribute), false);
+                if (customAttributes != null && customAttributes.Length != 0)
+                    return ((DateTimeConstantAttribute)customAttributes[0]).Value;
+            }
+
+            customAttributes = GetCustomAttributes(s_CustomConstantAttributeType, false);
+            if (customAttributes.Length != 0)
+            {
+                return ((CustomConstantAttribute)customAttributes[0]).Value;
+            }
+            else
+            {
+                customAttributes = GetCustomAttributes(s_DecimalConstantAttributeType, false);
+                if (customAttributes.Length != 0)
+                {
+                    return ((DecimalConstantAttribute)customAttributes[0]).Value;
+                }
+            }
+            return DBNull.Value;
+        }
+
         // returns DBNull.Value if the parameter doesn't have a default value
         private object? GetDefaultValueInternal(bool raw)
         {
@@ -308,32 +376,7 @@ namespace System.Reflection
 
             object? defaultValue = null;
 
-            // Why check the parameter type only for DateTime and only for the ctor arguments?
-            // No check on the parameter type is done for named args and for Decimal.
-
-            // We should move this after MdToken.IsNullToken(m_tkParamDef) and combine it
-            // with the other custom attribute logic. But will that be a breaking change?
-            // For a DateTime parameter on which both an md constant and a ca constant are set,
-            // which one should win?
-            if (ParameterType == typeof(DateTime))
-            {
-                if (raw)
-                {
-                    CustomAttributeTypedArgument value =
-                        RuntimeCustomAttributeData.Filter(
-                            RuntimeCustomAttributeData.GetCustomAttributes(this), typeof(DateTimeConstantAttribute), 0);
-
-                    if (value.ArgumentType != null)
-                        return new DateTime((long)value.Value!);
-                }
-                else
-                {
-                    object[] dt = GetCustomAttributes(typeof(DateTimeConstantAttribute), false);
-                    if (dt != null && dt.Length != 0)
-                        return ((DateTimeConstantAttribute)dt[0]).Value;
-                }
-            }
-
+            // Prioritize metadata constant over custom attribute constant
             #region Look for a default value in metadata
             if (!MdToken.IsNullToken(m_tkParamDef))
             {
@@ -342,46 +385,14 @@ namespace System.Reflection
             }
             #endregion
 
+            // If default value is not specified in metadata, look for it in custom attributes
             if (defaultValue == DBNull.Value)
             {
-                #region Look for a default value in the custom attributes
-                if (raw)
-                {
-                    foreach (CustomAttributeData attr in CustomAttributeData.GetCustomAttributes(this))
-                    {
-                        Type? attrType = attr.Constructor.DeclaringType;
-
-                        if (attrType == typeof(DateTimeConstantAttribute))
-                        {
-                            defaultValue = GetRawDateTimeConstant(attr);
-                        }
-                        else if (attrType == typeof(DecimalConstantAttribute))
-                        {
-                            defaultValue = GetRawDecimalConstant(attr);
-                        }
-                        else if (attrType!.IsSubclassOf(s_CustomConstantAttributeType))
-                        {
-                            defaultValue = GetRawConstant(attr);
-                        }
-                    }
-                }
-                else
-                {
-                    object[] CustomAttrs = GetCustomAttributes(s_CustomConstantAttributeType, false);
-                    if (CustomAttrs.Length != 0)
-                    {
-                        defaultValue = ((CustomConstantAttribute)CustomAttrs[0]).Value;
-                    }
-                    else
-                    {
-                        CustomAttrs = GetCustomAttributes(s_DecimalConstantAttributeType, false);
-                        if (CustomAttrs.Length != 0)
-                        {
-                            defaultValue = ((DecimalConstantAttribute)CustomAttrs[0]).Value;
-                        }
-                    }
-                }
-                #endregion
+                // Custom attributes are prioritized according to the following rules:
+                // - if declared parameter type is DateTime (or DateTime?), then DateTimeConstantAttribute is favoured over others
+                // - else if there is at least one CustomConstantAttribute, then it is favoured over others
+                // - else use the first attribute providing the default value
+                defaultValue = raw ? GetDefaultValueFromCustomAttributeData() : GetDefaultValueFromCustomAttributes();
             }
 
             if (defaultValue == DBNull.Value)
@@ -394,6 +405,7 @@ namespace System.Reflection
         {
             Debug.Assert(attr.Constructor.DeclaringType == typeof(DecimalConstantAttribute));
 
+            // FIXME: Is this even possible?
             foreach (CustomAttributeNamedArgument namedArgument in attr.NamedArguments)
             {
                 if (namedArgument.MemberInfo.Name.Equals("Value"))
@@ -439,6 +451,7 @@ namespace System.Reflection
             Debug.Assert(attr.Constructor.DeclaringType == typeof(DateTimeConstantAttribute));
             Debug.Assert(attr.ConstructorArguments.Count == 1);
 
+            // FIXME: Is this even possible?
             foreach (CustomAttributeNamedArgument namedArgument in attr.NamedArguments)
             {
                 if (namedArgument.MemberInfo.Name.Equals("Value"))
@@ -453,6 +466,8 @@ namespace System.Reflection
 
         private static object? GetRawConstant(CustomAttributeData attr)
         {
+            // FIXME: Why are we relying only on named arguments, constructor arguments
+            // should work just fine
             foreach (CustomAttributeNamedArgument namedArgument in attr.NamedArguments)
             {
                 if (namedArgument.MemberInfo.Name.Equals("Value"))
