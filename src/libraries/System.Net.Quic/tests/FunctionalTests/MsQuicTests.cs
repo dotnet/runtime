@@ -1232,6 +1232,8 @@ namespace System.Net.Quic.Tests
             cmd.StandardInput.Flush();
             cmd.StandardInput.Close();
             cmd.WaitForExit();
+
+            // make http call with quic
             var handler = new HttpClientHandler();
             handler.ClientCertificateOptions = ClientCertificateOption.Manual;
             handler.ServerCertificateCustomValidationCallback =
@@ -1257,6 +1259,7 @@ namespace System.Net.Quic.Tests
             // dispose resources
             cmd.Dispose();
             client.Dispose();
+            handler.Dispose();
         }
     }
 }
