@@ -3,7 +3,10 @@
   "author": "Microsoft",
   "classifications": [ "Web", "WebAssembly", "Browser" ],
   "generatorVersions": "[1.0.0.0-*)",
-  "identity": "WebAssembly.Browser",
+  "groupIdentity": "WebAssembly.Browser",
+  "precedence": 7000,
+  "identity": "WebAssembly.Browser.7.0",
+  "description": "WebAssembly Browser App",
   "name": "WebAssembly Browser App",
   "shortName": "wasmbrowser",
   "sourceName": "browser.0",
@@ -30,6 +33,19 @@
         "high": 7300
       },
 	    "replaces": "5001"
+    "framework": {
+      "type": "parameter",
+      "description": "The target framework for the project.",
+      "datatype": "choice",
+      "choices": [
+        {
+          "choice": "net7.0",
+          "description": "Target net7.0",
+          "displayName": ".NET 7.0"
+        }
+      ],
+      "defaultValue": "net7.0",
+      "displayName": "framework"
     }
   }
 }

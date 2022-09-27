@@ -68,8 +68,7 @@ namespace BrowserDebugProxy
             fieldValue["__section"] = field.Attributes switch
             {
                 FieldAttributes.Private => "private",
-                FieldAttributes.Public => "result",
-                _ => "internal"
+                _ => "result"
             };
 
             if (field.IsBackingField)
@@ -432,8 +431,7 @@ namespace BrowserDebugProxy
                 backingField["__section"] = getterMemberAccessAttrs switch
                 {
                     MethodAttributes.Private => "private",
-                    MethodAttributes.Public => "result",
-                    _ => "internal"
+                    _ => "result"
                 };
                 backingField["__state"] = state?.ToString();
 
@@ -481,8 +479,7 @@ namespace BrowserDebugProxy
                 propRet["__section"] = getterAttrs switch
                 {
                     MethodAttributes.Private => "private",
-                    MethodAttributes.Public => "result",
-                    _ => "internal"
+                    _ => "result"
                 };
                 propRet["__state"] = state?.ToString();
                 if (parentTypeId != -1)
@@ -659,25 +656,21 @@ namespace BrowserDebugProxy
 
     internal sealed class GetMembersResult
     {
-        // public:
+        // public / protected / internal:
         public JArray Result { get; set; }
         // private:
         public JArray PrivateMembers { get; set; }
-        // protected / internal:
-        public JArray OtherMembers { get; set; }
 
         public JObject JObject => JObject.FromObject(new
         {
             result = Result,
-            privateProperties = PrivateMembers,
-            internalProperties = OtherMembers
+            privateProperties = PrivateMembers
         });
 
         public GetMembersResult()
         {
             Result = new JArray();
             PrivateMembers = new JArray();
-            OtherMembers = new JArray();
         }
 
         public GetMembersResult(JArray value, bool sortByAccessLevel)
@@ -685,7 +678,6 @@ namespace BrowserDebugProxy
             var t = FromValues(value, sortByAccessLevel);
             Result = t.Result;
             PrivateMembers = t.PrivateMembers;
-            OtherMembers = t.OtherMembers;
         }
 
         public static GetMembersResult FromValues(IEnumerable<JToken> values, bool splitMembersByAccessLevel = false) =>
@@ -720,9 +712,6 @@ namespace BrowserDebugProxy
                 case "private":
                     PrivateMembers.Add(member);
                     return;
-                case "internal":
-                    OtherMembers.Add(member);
-                    return;
                 default:
                     Result.Add(member);
                     return;
@@ -733,7 +722,6 @@ namespace BrowserDebugProxy
         {
             Result = (JArray)Result.DeepClone(),
             PrivateMembers = (JArray)PrivateMembers.DeepClone(),
-            OtherMembers = (JArray)OtherMembers.DeepClone()
         };
 
         public IEnumerable<JToken> Where(Func<JToken, bool> predicate)
@@ -752,26 +740,17 @@ namespace BrowserDebugProxy
                     yield return item;
                 }
             }
-            foreach (var item in OtherMembers)
-            {
-                if (predicate(item))
-                {
-                    yield return item;
-                }
-            }
         }
 
         internal JToken FirstOrDefault(Func<JToken, bool> p)
             => Result.FirstOrDefault(p)
-            ?? PrivateMembers.FirstOrDefault(p)
-            ?? OtherMembers.FirstOrDefault(p);
+            ?? PrivateMembers.FirstOrDefault(p);
 
         internal JArray Flatten()
         {
             var result = new JArray();
             result.AddRange(Result);
             result.AddRange(PrivateMembers);
-            result.AddRange(OtherMembers);
             return result;
         }
         public override string ToString() => $"{JObject}\n";
