@@ -29,7 +29,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Marshaling validates that the JavaScript function returned undefined value.
         /// </summary>
-        /// <returns>Marshaler metadata</returns>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType Void { get; } = new JSMarshalerType(new JSFunctionBinding.JSBindingType
         {
             Type = MarshalerType.Void
@@ -38,43 +38,43 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Marshaling ignores result of the JavaScript function.
         /// </summary>
-        /// <returns>Marshaler metadata</returns>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType Discard { get; } = new JSMarshalerType(new JSFunctionBinding.JSBindingType
         {
             Type = MarshalerType.Discard
         });
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</see> type.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean.</see> type.
         /// </summary>
-        /// <returns>Marshaler metadata</returns>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType Boolean { get; } = new JSMarshalerType(new JSFunctionBinding.JSBindingType
         {
             Type = MarshalerType.Boolean
         });
 
         /// <summary>
-        /// Marshal as JavaScript Number via <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array">Uint8Array</see>.
+        /// Marshal as JavaScript Number via <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array">Uint8Array.</see>.
         /// </summary>
-        /// <returns>Marshaler metadata</returns>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType Byte { get; } = new JSMarshalerType(new JSFunctionBinding.JSBindingType
         {
             Type = MarshalerType.Byte
         });
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</see> one character long.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String.</see> one character long.
         /// </summary>
-        /// <returns>Marshaler metadata</returns>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType Char { get; } = new JSMarshalerType(new JSFunctionBinding.JSBindingType
         {
             Type = MarshalerType.Char
         });
 
         /// <summary>
-        /// Marshal as JavaScript Number via <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int16Array">Int16Array</see>.
+        /// Marshal as JavaScript Number via <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int16Array">Int16Array.</see>.
         /// </summary>
-        /// <returns>Marshaler metadata</returns>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType Int16 { get; } = new JSMarshalerType(new JSFunctionBinding.JSBindingType
         {
             Type = MarshalerType.Int16
@@ -82,9 +82,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
 
         /// <summary>
-        /// Marshal as JavaScript Number via <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int32Array">Int32Array</see>.
+        /// Marshal as JavaScript Number via <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int32Array">Int32Array.</see>.
         /// </summary>
-        /// <returns>Marshaler metadata</returns>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType Int32 { get; } = new JSMarshalerType(new JSFunctionBinding.JSBindingType
         {
             Type = MarshalerType.Int32
@@ -93,52 +93,52 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Marshal as JavaScript Number within -9007199254740991 and 9007199254740991 range.
         /// </summary>
-        /// <returns>Marshaler metadata</returns>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType Int52 { get; } = new JSMarshalerType(new JSFunctionBinding.JSBindingType
         {
             Type = MarshalerType.Int52
         });
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt">BigInt</see>.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt">BigInt.</see>.
         /// </summary>
-        /// <returns>Marshaler metadata</returns>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType BigInt64 { get; } = new JSMarshalerType(new JSFunctionBinding.JSBindingType
         {
             Type = MarshalerType.BigInt64
         });
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</see>.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number.</see>.
         /// </summary>
-        /// <returns>Marshaler metadata</returns>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType Double { get; } = new JSMarshalerType(new JSFunctionBinding.JSBindingType
         {
             Type = MarshalerType.Double
         });
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</see>.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number.</see>.
         /// </summary>
-        /// <returns>Marshaler metadata</returns>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType Single { get; } = new JSMarshalerType(new JSFunctionBinding.JSBindingType
         {
             Type = MarshalerType.Single
         });
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number</see>.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number">Number.</see>.
         /// </summary>
-        /// <returns>Marshaler metadata</returns>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType IntPtr { get; } = new JSMarshalerType(new JSFunctionBinding.JSBindingType
         {
             Type = MarshalerType.IntPtr
         });
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</see> or it's JSObject proxy on managed side.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object.</see> or it's JSObject proxy on managed side.
         /// </summary>
-        /// <returns>Marshaler metadata</returns>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType JSObject { get; } = new JSMarshalerType(new JSFunctionBinding.JSBindingType
         {
             Type = MarshalerType.JSObject
@@ -147,43 +147,43 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Dynamic marshal as best fit. For <see cref="object"/> maps to ManagedObject proxy on JavaScript side.
         /// </summary>
-        /// <returns>Marshaler metadata</returns>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType Object { get; } = new JSMarshalerType(new JSFunctionBinding.JSBindingType
         {
             Type = MarshalerType.Object
         });
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</see>.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String.</see>.
         /// </summary>
-        /// <returns>Marshaler metadata</returns>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType String { get; } = new JSMarshalerType(new JSFunctionBinding.JSBindingType
         {
             Type = MarshalerType.String
         });
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error">Error</see>.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error">Error.</see>.
         /// </summary>
-        /// <returns>Marshaler metadata</returns>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType Exception { get; } = new JSMarshalerType(new JSFunctionBinding.JSBindingType
         {
             Type = MarshalerType.Exception
         });
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date">Date</see>.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date">Date.</see>.
         /// </summary>
-        /// <returns>Marshaler metadata</returns>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType DateTime { get; } = new JSMarshalerType(new JSFunctionBinding.JSBindingType
         {
             Type = MarshalerType.DateTime
         });
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date">Date</see>.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date">Date.</see>.
         /// </summary>
-        /// <returns>Marshaler metadata</returns>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType DateTimeOffset { get; } = new JSMarshalerType(new JSFunctionBinding.JSBindingType
         {
             Type = MarshalerType.DateTimeOffset
@@ -192,8 +192,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         /// Marshal as JavaScript underlying primitive type.
         /// </summary>
-        /// <param name="primitive">Underlying primitive type</param>
-        /// <returns>Marshaler metadata</returns>
+        /// <param name="primitive">Underlying primitive type.</param>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType Nullable(JSMarshalerType primitive)
         {
             CheckNullable(primitive);
@@ -210,19 +210,19 @@ namespace System.Runtime.InteropServices.JavaScript
         });
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</see>.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise.</see>.
         /// </summary>
-        /// <returns>Marshaler metadata</returns>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType Task()
         {
             return _task;
         }
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise</see>.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise">Promise.</see>.
         /// </summary>
-        /// <returns>Marshaler metadata</returns>
-        /// <param name="result">Metadata about type of the Task result value</param>
+        /// <returns>The marshaler metadata.</returns>
+        /// <param name="result">Metadata about the type of the <see cref="System.Threading.Tasks.Task"/> result value.</param>
         public static JSMarshalerType Task(JSMarshalerType result)
         {
             CheckTask(result);
@@ -234,10 +234,10 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array</see>.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array">Array.</see>.
         /// </summary>
-        /// <param name="element">Metadata about type of the array element</param>
-        /// <returns>Marshaler metadata</returns>
+        /// <param name="element">Metadata about the type of the array element.</param>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType Array(JSMarshalerType element)
         {
             CheckArray(element);
@@ -254,8 +254,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <remarks>
         /// ArraySegment will hold <see cref="GCHandleType.Pinned"/> to underlying array until disposed or garbage collected on JS side.
         /// </remarks>
-        /// <param name="element">Metadata about type of the array element</param>
-        /// <returns>Marshaler metadata</returns>
+        /// <param name="element">Metadata about the type of the array element.</param>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType ArraySegment(JSMarshalerType element)
         {
             CheckArraySegment(element);
@@ -270,8 +270,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Marshal as instance of Span class on JavaScript side.
         /// </summary>
         /// <remarks>Marshaler is not pinning the data, caller is responsible for doing that.</remarks>
-        /// <param name="element">Metadata about type of the span element</param>
-        /// <returns>Marshaler metadata</returns>
+        /// <param name="element">Metadata about the type of the span element.</param>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType Span(JSMarshalerType element)
         {
             CheckArraySegment(element);
@@ -288,17 +288,19 @@ namespace System.Runtime.InteropServices.JavaScript
         });
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function">Function</see>.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function">Function.</see>.
         /// </summary>
-        /// <returns>Marshaler metadata</returns>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType Action()
         {
             return _action;
         }
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function">Function</see>.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function">Function.</see>.
         /// </summary>
+        /// <param name="arg1">Metadata about the type of the first argument of the <see cref="System.Action{T1}"/>.</param>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType Action(JSMarshalerType arg1)
         {
             CheckTask(arg1);
@@ -310,8 +312,11 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function">Function</see>.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function">Function.</see>.
         /// </summary>
+        /// <param name="arg1">Metadata about the type of the first argument of the <see cref="System.Action{T1,T2}"/>.</param>
+        /// <param name="arg2">Metadata about the type of the second argument of the <see cref="System.Action{T1,T2}"/>.</param>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType Action(JSMarshalerType arg1, JSMarshalerType arg2)
         {
             CheckTask(arg1);
@@ -325,8 +330,12 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function">Function</see>.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function">Function.</see>.
         /// </summary>
+        /// <param name="arg1">Metadata about the type of the first argument of the <see cref="System.Action{T1,T2,T3}"/>.</param>
+        /// <param name="arg2">Metadata about the type of the second argument of the <see cref="System.Action{T1,T2,T3}"/>.</param>
+        /// <param name="arg3">Metadata about the type of the third argument of the <see cref="System.Action{T1,T2,T3}"/>.</param>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType Action(JSMarshalerType arg1, JSMarshalerType arg2, JSMarshalerType arg3)
         {
             CheckTask(arg1);
@@ -342,8 +351,10 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function">Function</see>.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function">Function.</see>.
         /// </summary>
+        /// <param name="result">Metadata about the type of the result of the <see cref="System.Func{TRes}"/>.</param>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType Function(JSMarshalerType result)
         {
             CheckTask(result);
@@ -355,8 +366,11 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function">Function</see>.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function">Function.</see>.
         /// </summary>
+        /// <param name="arg1">Metadata about the type of the first argument of the <see cref="System.Func{TRes,T1}"/>.</param>
+        /// <param name="result">Metadata about the type of the result of the <see cref="System.Func{TRes,T1}"/>.</param>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType Function(JSMarshalerType arg1, JSMarshalerType result)
         {
             CheckTask(arg1);
@@ -370,8 +384,12 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function">Function</see>.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function">Function.</see>.
         /// </summary>
+        /// <param name="arg1">Metadata about the type of the first argument of the <see cref="System.Func{TRes,T1,T2}"/>.</param>
+        /// <param name="arg2">Metadata about the type of the second argument of the <see cref="System.Func{TRes,T1,T2}"/>.</param>
+        /// <param name="result">Metadata about the type of the result of the <see cref="System.Func{TRes,T1,T2}"/>.</param>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType Function(JSMarshalerType arg1, JSMarshalerType arg2, JSMarshalerType result)
         {
             CheckTask(arg1);
@@ -387,8 +405,13 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function">Function</see>.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function">Function.</see>.
         /// </summary>
+        /// <param name="arg1">Metadata about the type of the first argument of the <see cref="System.Func{TRes,T1,T2,T3}"/>.</param>
+        /// <param name="arg2">Metadata about the type of the second argument of the <see cref="System.Func{TRes,T1,T2,T3}"/>.</param>
+        /// <param name="arg3">Metadata about the type of the third argument of the <see cref="System.Func{TRes,T1,T2,T3}"/>.</param>
+        /// <param name="result">Metadata about the type of the result of the <see cref="System.Func{TRes,T1,T2,T3}"/>.</param>
+        /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType Function(JSMarshalerType arg1, JSMarshalerType arg2, JSMarshalerType arg3, JSMarshalerType result)
         {
             CheckTask(arg1);

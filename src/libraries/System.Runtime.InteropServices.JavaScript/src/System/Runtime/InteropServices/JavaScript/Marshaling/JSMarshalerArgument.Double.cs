@@ -11,7 +11,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
-        /// <param name="value">Value to be marshaled.</param>
+        /// <param name="value">The value to be marshaled.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out double value)
         {
@@ -27,7 +27,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
-        /// <param name="value">Value to be marshaled.</param>
+        /// <param name="value">The value to be marshaled.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ToJS(double value)
         {
@@ -39,7 +39,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
-        /// <param name="value">Value to be marshaled.</param>
+        /// <param name="value">The value to be marshaled.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out double? value)
         {
@@ -55,7 +55,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
-        /// <param name="value">Value to be marshaled.</param>
+        /// <param name="value">The value to be marshaled.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ToJS(double? value)
         {
@@ -74,7 +74,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
-        /// <param name="value">Value to be marshaled.</param>
+        /// <param name="value">The value to be marshaled.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe void ToManaged(out double[]? value)
         {
@@ -92,7 +92,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
-        /// <param name="value">Value to be marshaled.</param>
+        /// <param name="value">The value to be marshaled.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void ToJS(double[] value)
         {
@@ -112,7 +112,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
-        /// <param name="value">Value to be marshaled.</param>
+        /// <param name="value">The value to be marshaled.</param>
         // this only supports array round-trip
         public unsafe void ToManaged(out ArraySegment<double> value)
         {
@@ -126,7 +126,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
-        /// <param name="value">Value to be marshaled.</param>
+        /// <param name="value">The value to be marshaled.</param>
         public unsafe void ToJS(ArraySegment<double> value)
         {
             if (value.Array == null)
@@ -145,7 +145,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
-        /// <param name="value">Value to be marshaled.</param>
+        /// <param name="value">The value to be marshaled.</param>
         public unsafe void ToManaged(out Span<double> value)
         {
             value = new Span<double>((void*)slot.IntPtrValue, slot.Length);
@@ -155,8 +155,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Implementation of the argument marshaling.
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
-        /// <remarks>caller is responsible for pinning</remarks>
-        /// <param name="value">Value to be marshaled.</param>
+        /// <remarks>caller is responsible for pinning.</remarks>
+        /// <param name="value">The value to be marshaled.</param>
         public unsafe void ToJS(Span<double> value)
         {
             slot.Length = value.Length;
