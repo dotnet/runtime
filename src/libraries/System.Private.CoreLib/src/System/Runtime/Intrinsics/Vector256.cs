@@ -1070,6 +1070,7 @@ namespace System.Runtime.Intrinsics
             }
             else
             {
+                ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
                 Unsafe.SkipInit(out Vector256<T> result);
 
                 result.SetLowerUnsafe(lower);
@@ -1273,7 +1274,9 @@ namespace System.Runtime.Intrinsics
             // This relies on us stripping the "init" flag from the ".locals"
             // declaration to let the upper bits be uninitialized.
 
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
             Unsafe.SkipInit(out Vector256<T> result);
+
             result.SetElementUnsafe(0, value);
             return result;
         }
@@ -2701,7 +2704,7 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void StoreAlignedNonTemporal<T>(this Vector256<T> source, T* destination)
-            where T : unmanaged => source.StoreAlignedNonTemporal(destination);
+            where T : unmanaged => source.StoreAligned(destination);
 
         /// <summary>Stores a vector at the given destination.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
