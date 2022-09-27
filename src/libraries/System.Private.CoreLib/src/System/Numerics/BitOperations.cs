@@ -739,20 +739,19 @@ namespace System.Numerics
         /// <param name="data">The data for which to compute the checksum</param>
         /// <returns>The CRC-checksum</returns>
         [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint Crc32C(uint crc, byte data)
         {
             if (Sse42.IsSupported)
             {
-                // uint32_t __crc32b (uint32_t a, uint8_t b)
                 return Sse42.Crc32(crc, data);
             }
+
             if (Crc32.IsSupported)
             {
-                // uint32_t __crc32cb (uint32_t a, uint8_t b)
                 return Crc32.ComputeCrc32C(crc, data);
             }
 
-            // Software fallback
             return Crc32Fallback.Crc32C(crc, data);
         }
 
@@ -763,20 +762,19 @@ namespace System.Numerics
         /// <param name="data">The data for which to compute the checksum</param>
         /// <returns>The CRC-checksum</returns>
         [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint Crc32C(uint crc, ushort data)
         {
             if (Sse42.IsSupported)
             {
-                // unsigned int _mm_crc32_u16 (unsigned int crc, unsigned short v)
                 return Sse42.Crc32(crc, data);
             }
+
             if (Crc32.IsSupported)
             {
-                // uint32_t __crc32ch (uint32_t a, uint16_t b)
                 return Crc32.ComputeCrc32C(crc, data);
             }
 
-            // Software fallback
             return Crc32Fallback.Crc32C(crc, data);
         }
 
@@ -787,20 +785,19 @@ namespace System.Numerics
         /// <param name="data">The data for which to compute the checksum</param>
         /// <returns>The CRC-checksum</returns>
         [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint Crc32C(uint crc, uint data)
         {
             if (Sse42.IsSupported)
             {
-                // unsigned int _mm_crc32_u32 (unsigned int crc, unsigned int v)
                 return Sse42.Crc32(crc, data);
             }
+
             if (Crc32.IsSupported)
             {
-                // uint32_t __crc32ch (uint32_t a, uint32_t b)
                 return Crc32.ComputeCrc32C(crc, data);
             }
 
-            // Software fallback
             return Crc32Fallback.Crc32C(crc, data);
         }
 
@@ -811,28 +808,35 @@ namespace System.Numerics
         /// <param name="data">The data for which to compute the checksum</param>
         /// <returns>The CRC-checksum</returns>
         [CLSCompliant(false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static uint Crc32C(uint crc, ulong data)
         {
             if (Sse42.X64.IsSupported)
             {
+                // This intrinsic returns a 64-bit register with the upper 32-bits set to 0.
                 return (uint)Sse42.X64.Crc32(crc, data);
             }
+
             if (Sse42.IsSupported)
             {
-                return Sse42.Crc32(Sse42.Crc32(crc, (uint)data), (uint)(data >> 32));
+                uint result = Sse42.Crc32(crc, (uint)(data));
+                return Sse42.Crc32(result, (uint)(data >> 32));
             }
+
             if (Crc32.Arm64.IsSupported)
             {
-                // uint32_t __crc32cd (uint32_t a, uint64_t b)
                 return Crc32.Arm64.ComputeCrc32C(crc, data);
             }
 
-            // Software fallback
             return Crc32Fallback.Crc32C(crc, data);
         }
 
         private static class Crc32Fallback
         {
+            // Pre-computed CRC-32 transition table.
+            // While this implementation is based on the Castagnoli CRC-32 polynomial (CRC-32C),
+            // x32 + x28 + x27 + x26 + x25 + x23 + x22 + x20 + x19 + x18 + x14 + x13 + x11 + x10 + x9 + x8 + x6 + x0,
+            // this version uses reflected bit ordering, so 0x1EDC6F41 becomes 0x82F63B78u
             private static readonly uint[] s_crcTable = Crc32ReflectedTable.Generate(0x82F63B78u);
 
             internal static uint Crc32C(uint crc, byte data)
@@ -845,11 +849,6 @@ namespace System.Numerics
 
             internal static uint Crc32C(uint crc, ushort data)
             {
-                if (!BitConverter.IsLittleEndian)
-                {
-                    data = BinaryPrimitives.ReverseEndianness(data);
-                }
-
                 ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
 
                 crc = Unsafe.Add(ref lookupTable, (nint)(byte)(crc ^ (byte)data)) ^ (crc >> 8);
@@ -861,22 +860,12 @@ namespace System.Numerics
 
             internal static uint Crc32C(uint crc, uint data)
             {
-                if (!BitConverter.IsLittleEndian)
-                {
-                    data = BinaryPrimitives.ReverseEndianness(data);
-                }
-
                 ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
                 return Crc32CCore(ref lookupTable, crc, data);
             }
 
             internal static uint Crc32C(uint crc, ulong data)
             {
-                if (!BitConverter.IsLittleEndian)
-                {
-                    data = BinaryPrimitives.ReverseEndianness(data);
-                }
-
                 ref uint lookupTable = ref MemoryMarshal.GetArrayDataReference(s_crcTable);
 
                 crc = Crc32CCore(ref lookupTable, crc, (uint)data);
