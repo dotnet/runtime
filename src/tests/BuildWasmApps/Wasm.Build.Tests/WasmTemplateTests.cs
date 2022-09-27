@@ -52,7 +52,7 @@ namespace Wasm.Build.Tests
 
             mainJsContent = mainJsContent
                 .Replace(".create()", ".withConsoleForwarding().create()")
-                .Replace("['dotnet', 'is', 'great!']", "(await import(/* webpackIgnore: true */\"process\")).argv.slice(2)");
+                .Replace("['dotnet', 'is', 'great!']", "(await import('process')).argv.slice(2)");
 
             File.WriteAllText(mainJsPath, mainJsContent);
         }

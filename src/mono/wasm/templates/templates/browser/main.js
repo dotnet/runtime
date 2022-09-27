@@ -3,10 +3,7 @@
 
 import { dotnet } from './dotnet.js'
 
-const is_browser = typeof window != 'undefined';
-if (!is_browser) throw new Error('Expected to be running in a browser');
-
-const { setModuleImports, getAssemblyExports, getConfig, runMainAndExit } = await dotnet
+const { setModuleImports, getAssemblyExports, getConfig } = await dotnet
     .withDiagnosticTracing(false)
     .withApplicationArgumentsFromQuery()
     .create();
@@ -25,4 +22,4 @@ const text = exports.MyClass.Greeting();
 console.log(text);
 
 document.getElementById('out').innerHTML = text;
-await runMainAndExit(config.mainAssemblyName, ['dotnet', 'is', 'great!']);
+await dotnet.run();
