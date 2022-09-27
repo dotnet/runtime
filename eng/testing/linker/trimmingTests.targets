@@ -92,6 +92,7 @@
                                                  .Replace('{IlcBuildTasksPath}', '$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll')
                                                  .Replace('{IlcSdkPath}', '$(CoreCLRAotSdkDir)')
                                                  .Replace('{IlcFrameworkPath}', '$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)')
+                                                 .Replace('{IlcFrameworkNativePath}', '$(MicrosoftNetCoreAppRuntimePackNativeDir)')
                                                  .Replace('{CoreCLRBuildIntegrationDir}', '$(CoreCLRBuildIntegrationDir)')
                                                  .Replace('{RuntimeHostConfigurationOptions}', '$(_runtimeHostConfigurationOptionsString)')
                                                  .Replace('{AdditionalProjectReferences}', '$(_additionalProjectReferencesString)')
