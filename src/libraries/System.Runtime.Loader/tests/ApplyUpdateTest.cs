@@ -309,6 +309,36 @@ namespace System.Reflection.Metadata
         }
 
         [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+        public static void TestAddInstanceField()
+        {
+            // Test that adding a new instance field to an existing class is supported
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.AddInstanceField).Assembly;
+
+                var x1 = new System.Reflection.Metadata.ApplyUpdate.Test.AddInstanceField();
+
+                x1.TestMethod();
+
+                Assert.Equal ("abcd", x1.GetStringField);
+                Assert.Equal (3.14159, x1.GetDoubleField);
+
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                x1.TestMethod();
+
+                Assert.Equal ("4567", x1.GetStringField);
+                Assert.Equal (0.707106, x1.GetDoubleField);
+
+                var x2 = new System.Reflection.Metadata.ApplyUpdate.Test.AddInstanceField();
+
+                Assert.Equal ("New Initial Value", x2.GetStringField);
+                Assert.Equal (-5.5e12, x2.GetDoubleField);
+                
+            });
+        }
+
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
         public static void TestAddNestedClass()
         {
             // Test that adding a new nested class to an existing class is supported
