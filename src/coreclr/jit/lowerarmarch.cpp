@@ -264,7 +264,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
 
             if (IsSafeToContainMem(parentNode, childNode))
             {
-                MakeSrcContained(childNode, shiftAmountNode);
+                assert(shiftAmountNode->isContained());
                 return true;
             }
         }
