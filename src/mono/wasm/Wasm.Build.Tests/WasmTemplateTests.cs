@@ -189,7 +189,7 @@ namespace Wasm.Build.Tests
             => ConsoleBuildAndRun(config, relinking, string.Empty);
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [InlineData("Debug", "-f net7.0")]//FIXME: -- enable when updated template packages are available
+        [InlineData("Debug", "-f net7.0")]
         [InlineData("Debug", "-f net8.0")]
         public void ConsoleBuildAndRunForSpecificTFM(string config, string extraNewArgs)
             => ConsoleBuildAndRun(config, false, extraNewArgs);
@@ -243,9 +243,9 @@ namespace Wasm.Build.Tests
                 //data.Add(runOutsideProjectDirectory, forConsole, string.Empty);
 
                 data.Add(runOutsideProjectDirectory, forConsole,
-                                $"<OutputPath>{Path.Combine(Path.GetTempPath(), Path.GetRandomFileName())}</OutputPath>");
+                                $"<OutputPath>{Path.Combine(BuildEnvironment.TmpPath, Path.GetRandomFileName())}</OutputPath>");
                 data.Add(runOutsideProjectDirectory, forConsole,
-                                $"<WasmAppDir>{Path.Combine(Path.GetTempPath(), Path.GetRandomFileName())}</WasmAppDir>");
+                                $"<WasmAppDir>{Path.Combine(BuildEnvironment.TmpPath, Path.GetRandomFileName())}</WasmAppDir>");
             }
 
             return data;
@@ -268,7 +268,7 @@ namespace Wasm.Build.Tests
             if (!string.IsNullOrEmpty(extraProperties))
                 AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
 
-            string workingDir = runOutsideProjectDirectory ? Path.GetTempPath() : _projectDir!;
+            string workingDir = runOutsideProjectDirectory ? BuildEnvironment.TmpPath : _projectDir!;
 
             {
                 using var runCommand = new RunCommand(s_buildEnv, _testOutput)
@@ -302,7 +302,7 @@ namespace Wasm.Build.Tests
             if (!string.IsNullOrEmpty(extraProperties))
                 AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
 
-            string workingDir = runOutsideProjectDirectory ? Path.GetTempPath() : _projectDir!;
+            string workingDir = runOutsideProjectDirectory ? BuildEnvironment.TmpPath : _projectDir!;
 
             {
                 string runArgs = $"run -c {config} --project {projectFile}";
@@ -443,7 +443,7 @@ namespace Wasm.Build.Tests
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
         [InlineData("")]
-        [InlineData("-f net7.0")] //FIXME: -- enable when updated template packages are available
+        [InlineData("-f net7.0")]
         [InlineData("-f net8.0")]
         public async Task BrowserBuildAndRun(string extraNewArgs)
         {
