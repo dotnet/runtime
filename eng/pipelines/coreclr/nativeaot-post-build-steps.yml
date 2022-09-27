@@ -30,5 +30,7 @@ steps:
       - script: $(Build.SourcesDirectory)/src/tests/run.sh --runnativeaottests $(buildConfigUpper) ${{ parameters.archType }}
         displayName: Run tests in single file mode
 
-  - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) -s libs.tests -c $(_BuildConfig) /p:TestAssemblies=false /p:TestNativeAot=true $(_officialBuildParameter) $(_crossBuildPropertyArg) /bl:$(Build.SourcesDirectory)/artifacts/log/$(buildConfigUpper)/NativeAotTests.binlog ${{ parameters.extraTestArgs }}
-    displayName: Run NativeAot Library Tests
+  # Publishing tooling doesn't support different configs between runtime and libs, so only run tests in Release config
+  - ${{ if eq(parameters.jobParameters.buildConfig, 'release') }}:
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) -s libs.tests -c $(_BuildConfig) /p:TestAssemblies=false /p:TestNativeAot=true $(_officialBuildParameter) $(_crossBuildPropertyArg) /bl:$(Build.SourcesDirectory)/artifacts/log/$(buildConfigUpper)/NativeAotTests.binlog ${{ parameters.extraTestArgs }}
+      displayName: Run NativeAot Library Tests
