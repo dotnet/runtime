@@ -1057,19 +1057,6 @@ bool CodeGen::genCreateAddrMode(
         op2 = addr->AsOp()->gtOp2;
     }
 
-#if TARGET_ARM64
-    if (op2->OperIsLIR() && op2->isContained() && op2->OperIs(GT_CAST))
-    {
-        *rv1Ptr = op1;
-        *rv2Ptr = op2;
-        *mulPtr = 1;
-        *cnsPtr = 0;
-        *revPtr = false; // op2 is never a gc type
-        assert(!varTypeIsGC(op2));
-        return true;
-    }
-#endif
-
     // Can't use indirect addressing mode as we need to check for overflow.
     // Also, can't use 'lea' as it doesn't set the flags.
 
