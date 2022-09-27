@@ -45164,6 +45164,13 @@ HRESULT GCHeap::Initialize()
 // GC callback functions
 bool GCHeap::IsPromoted(Object* object)
 {
+#ifdef FEATURE_BASICFREEZE
+    if (gc_heap::frozen_object_p (object))
+    {
+        return true;
+    }
+#endif
+
     uint8_t* o = (uint8_t*)object;
 
     bool is_marked;
