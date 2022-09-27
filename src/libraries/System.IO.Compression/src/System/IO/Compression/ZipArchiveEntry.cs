@@ -37,7 +37,7 @@ namespace System.IO.Compression
         private bool _currentlyOpenForWrite;
         private bool _everOpenedForWrite;
         private Stream? _outstandingWriteStream;
-        private int _externalFileAttr;
+        private uint _externalFileAttr;
         private string _storedEntryName;
         private byte[] _storedEntryNameBytes;
         // only apply to update mode
@@ -181,12 +181,12 @@ namespace System.IO.Compression
         {
             get
             {
-                return _externalFileAttr;
+                return (int)_externalFileAttr;
             }
             set
             {
                 ThrowIfInvalidArchive();
-                _externalFileAttr = value;
+                _externalFileAttr = (uint)value;
             }
         }
 
