@@ -5724,18 +5724,18 @@ try_prepare_objaddr_callvirt_optimization (MonoCompile *cfg, guchar *next_ip, gu
 	guchar* callvirt_ip;
 	guint32 callvirt_proc_token;
 	if (!(callvirt_ip = il_read_callvirt (next_ip, end, &callvirt_proc_token)) ||
-		!ip_in_bb(cfg, cfg->cbb, callvirt_ip))
+		!ip_in_bb (cfg, cfg->cbb, callvirt_ip))
 		return NULL;
 
 	MonoMethod* iface_method = mini_get_method (cfg, method, callvirt_proc_token, NULL, generic_context);
 	if (!iface_method ||
 		iface_method->is_generic ||
 		iface_method->dynamic || 					// Reflection.Emit-generated methods should have this flag
-		!strcmp(iface_method->name, "GetHashCode")) // the callvirt handler itself optimizes those
+		!strcmp (iface_method->name, "GetHashCode")) // the callvirt handler itself optimizes those
 		return NULL;
 
 	MonoMethodSignature* iface_method_sig;
-	if(!((iface_method_sig = mono_method_signature_internal (iface_method)) &&
+	if (!((iface_method_sig = mono_method_signature_internal (iface_method)) &&
 		iface_method_sig->hasthis && 
 		iface_method_sig->param_count == 0 && 
 		!iface_method_sig->has_type_parameters &&
@@ -7113,40 +7113,33 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		case MONO_CEE_LDARG_3:
 		case MONO_CEE_LDARG_S:
 		case MONO_CEE_LDARG:
-		{
 			CHECK_ARG (n);
-			if (next_ip < end && is_addressable_valuetype_load (cfg, next_ip, cfg->arg_types[n])) {
+			if (next_ip < end && is_addressable_valuetype_load (cfg, next_ip, cfg->arg_types [n])) {
 				EMIT_NEW_ARGLOADA (cfg, ins, n);
 			} else {
 				EMIT_NEW_ARGLOAD (cfg, ins, n);
 			}
 			*sp++ = ins;
-
-			if(!m_method_is_icall(method))
-			{
-				MonoMethod* callvirt_target = try_prepare_objaddr_callvirt_optimization (cfg, next_ip, end, method, generic_context, param_types[n]->data.klass);
-				if(callvirt_target)
+			if (!m_method_is_icall (method)) {
+				MonoMethod* callvirt_target = try_prepare_objaddr_callvirt_optimization (cfg, next_ip, end, method, generic_context, param_types [n]->data.klass);
+				if (callvirt_target)
 					cmethod_override = callvirt_target;
-				}
-
+			}
 			break;
-		}
 		case MONO_CEE_LDLOC_0:
 		case MONO_CEE_LDLOC_1:
 		case MONO_CEE_LDLOC_2:
 		case MONO_CEE_LDLOC_3:
 		case MONO_CEE_LDLOC_S:
 		case MONO_CEE_LDLOC:
-		{
 			CHECK_LOCAL (n);
-			if (next_ip < end && is_addressable_valuetype_load (cfg, next_ip, header->locals[n])) {
+			if (next_ip < end && is_addressable_valuetype_load (cfg, next_ip, header->locals [n])) {
 				EMIT_NEW_LOCLOADA (cfg, ins, n);
 			} else {
 				EMIT_NEW_LOCLOAD (cfg, ins, n);
 			}
 			*sp++ = ins;
 			break;
-		}
 		case MONO_CEE_STLOC_0:
 		case MONO_CEE_STLOC_1:
 		case MONO_CEE_STLOC_2:
