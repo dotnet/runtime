@@ -274,7 +274,6 @@
     <PackageProjectUrl>https://dot.net</PackageProjectUrl>
     <Owners>microsoft,dotnetframework</Owners>
     <IncludeSymbols>true</IncludeSymbols>
-    <GeneratedRuntimeIdentifierGraphFile>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Microsoft.NETCore.Platforms', 'runtime.json'))</GeneratedRuntimeIdentifierGraphFile>
     <LicenseFile>$(MSBuildThisFileDirectory)LICENSE.TXT</LicenseFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>

@@ -45,7 +45,7 @@
 
   <ItemGroup>
     <Content Condition="'$(AdditionalRuntimeIdentifiers)' == ''" Include="runtime.json" PackagePath="/" />
-    <Content Condition="'$(AdditionalRuntimeIdentifiers)' != ''" Include="$(GeneratedRuntimeIdentifierGraphFile)" PackagePath="/" />
+    <Content Condition="'$(AdditionalRuntimeIdentifiers)' != ''" Include="$(BaseOutputPath)runtime.json" PackagePath="/" />
     <Content Include="$(PlaceholderFile)" PackagePath="lib/netstandard1.0" />
   </ItemGroup>
 
@@ -64,7 +64,7 @@
     <GenerateRuntimeGraph RuntimeGroups="@(RuntimeGroupWithQualifiers)"
                           AdditionalRuntimeIdentifiers="$(AdditionalRuntimeIdentifiers)"
                           AdditionalRuntimeIdentifierParent="$(AdditionalRuntimeIdentifierParent)"
-                          RuntimeJson="$(GeneratedRuntimeIdentifierGraphFile)"
+                          RuntimeJson="$(BaseOutputPath)runtime.json"
                           UpdateRuntimeFiles="True" />
   </Target>
 
