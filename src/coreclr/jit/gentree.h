@@ -1861,6 +1861,9 @@ public:
     // Returns the GTF flag equivalent for the regIndex'th register of a multi-reg node.
     GenTreeFlags GetRegSpillFlagByIdx(int regIndex) const;
 
+    // Sets the GTF flag equivalent for the regIndex'th register of a multi-reg node.
+    void SetRegSpillFlagByIdx(GenTreeFlags flags, int regIndex);
+
     // Last-use information for either GenTreeLclVar or GenTreeCopyOrReload nodes.
 private:
     GenTreeFlags GetLastUseBit(int regIndex) const;
@@ -5979,12 +5982,12 @@ private:
 struct GenTreeJitIntrinsic : public GenTreeMultiOp
 {
 protected:
-    GenTree*       gtInlineOperands[2];
-    uint16_t       gtLayoutNum;
-    unsigned char  gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
-    regNumberSmall gtOtherReg;         // For intrinsics that return 2 registers
-    unsigned char  gtSimdBaseJitType;  // SIMD vector base JIT type
-    unsigned char  gtSimdSize;         // SIMD vector size in bytes, use 0 for scalar intrinsics
+    GenTree*           gtInlineOperands[2];
+    regNumberSmall     gtOtherReg;    // The second register for multi-reg intrinsics.
+    MultiRegSpillFlags gtSpillFlags;  // Spill flags for multi-reg intrinsics.
+    unsigned char gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
+    unsigned char gtSimdBaseJitType;  // SIMD vector base JIT type
+    unsigned char gtSimdSize;         // SIMD vector size in bytes, use 0 for scalar intrinsics
 
 #if defined(FEATURE_SIMD)
     union {
@@ -5996,17 +5999,6 @@ protected:
 #endif
 
 public:
-    unsigned GetLayoutNum() const
-    {
-        return gtLayoutNum;
-    }
-
-    void SetLayoutNum(unsigned layoutNum)
-    {
-        assert(FitsIn<uint16_t>(layoutNum));
-        gtLayoutNum = static_cast<uint16_t>(layoutNum);
-    }
-
     regNumber GetOtherReg() const
     {
         return (regNumber)gtOtherReg;
@@ -6016,6 +6008,16 @@ public:
     {
         gtOtherReg = (regNumberSmall)reg;
         assert(gtOtherReg == reg);
+    }
+
+    GenTreeFlags GetRegSpillFlagByIdx(unsigned idx) const
+    {
+        return GetMultiRegSpillFlagsByIdx(gtSpillFlags, idx);
+    }
+
+    void SetRegSpillFlagByIdx(GenTreeFlags flags, unsigned idx)
+    {
+        gtSpillFlags = SetMultiRegSpillFlagsByIdx(gtSpillFlags, flags, idx);
     }
 
     CorInfoType GetAuxiliaryJitType() const
@@ -6091,9 +6093,9 @@ public:
                         unsigned      simdSize,
                         Operands... operands)
         : GenTreeMultiOp(oper, type, allocator, gtInlineOperands DEBUGARG(false), operands...)
-        , gtLayoutNum(0)
-        , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
         , gtOtherReg(REG_NA)
+        , gtSpillFlags(0)
+        , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
         , gtSimdBaseJitType((unsigned char)simdBaseJitType)
         , gtSimdSize((unsigned char)simdSize)
         , gtHWIntrinsicId(NI_Illegal)
@@ -6119,9 +6121,9 @@ protected:
                          nodeBuilder.GetBuiltOperands(),
                          nodeBuilder.GetOperandCount(),
                          gtInlineOperands DEBUGARG(false))
-        , gtLayoutNum(0)
-        , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
         , gtOtherReg(REG_NA)
+        , gtSpillFlags(0)
+        , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
         , gtSimdBaseJitType((unsigned char)simdBaseJitType)
         , gtSimdSize((unsigned char)simdSize)
         , gtHWIntrinsicId(NI_Illegal)
@@ -9073,6 +9075,13 @@ inline GenTreeFlags GenTree::GetRegSpillFlagByIdx(int regIndex) const
 #endif // !defined(TARGET_64BIT)
 #endif // FEATURE_MULTIREG_RET
 
+#ifdef FEATURE_HW_INTRINSICS
+    if (OperIsHWIntrinsic())
+    {
+        return AsHWIntrinsic()->GetRegSpillFlagByIdx(regIndex);
+    }
+#endif // FEATURE_HW_INTRINSICS
+
     if (OperIsScalarLocal())
     {
         return AsLclVar()->GetRegSpillFlagByIdx(regIndex);
@@ -9080,6 +9089,63 @@ inline GenTreeFlags GenTree::GetRegSpillFlagByIdx(int regIndex) const
 
     assert(!"Invalid node type for GetRegSpillFlagByIdx");
     return GTF_EMPTY;
+}
+
+//-----------------------------------------------------------------------------------
+// SetRegSpillFlagByIdx: Set a specific register's spill flags, based on regIndex,
+//                       for this multi-reg node.
+//
+// Arguments:
+//     flags    - the flags to set
+//     regIndex - which register's spill flags to set
+//
+// Notes:
+//     This must be a multireg node and 'regIndex' must be a valid index for this node.
+//     This method takes the GTF "equivalent" flags and sets the packed flags on the
+//     multireg node.
+//
+inline void GenTree::SetRegSpillFlagByIdx(GenTreeFlags flags, int regIndex)
+{
+#if FEATURE_MULTIREG_RET
+    if (IsMultiRegCall())
+    {
+        AsCall()->SetRegSpillFlagByIdx(flags, regIndex);
+        return;
+    }
+
+#if FEATURE_ARG_SPLIT
+    if (OperIsPutArgSplit())
+    {
+        AsPutArgSplit()->SetRegSpillFlagByIdx(flags, regIndex);
+        return;
+    }
+#endif // FEATURE_ARG_SPLIT
+
+#if !defined(TARGET_64BIT)
+    if (OperIsMultiRegOp())
+    {
+        AsMultiRegOp()->SetRegSpillFlagByIdx(flags, regIndex);
+        return;
+    }
+#endif // !defined(TARGET_64BIT)
+
+#endif // FEATURE_MULTIREG_RET
+
+#ifdef FEATURE_HW_INTRINSICS
+    if (OperIsHWIntrinsic())
+    {
+        AsHWIntrinsic()->SetRegSpillFlagByIdx(flags, regIndex);
+        return;
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+    if (OperIsScalarLocal())
+    {
+        AsLclVar()->SetRegSpillFlagByIdx(flags, regIndex);
+        return;
+    }
+
+    assert(!"Invalid node type for SetRegSpillFlagByIdx");
 }
 
 //-----------------------------------------------------------------------------------

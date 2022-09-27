@@ -18567,7 +18567,6 @@ bool GenTreeSIMD::OperIsMemoryLoad() const
     return GetSIMDIntrinsicId() == SIMDIntrinsicInitArray;
 }
 
-// TODO-Review: why are layouts not compared here?
 /* static */ bool GenTreeSIMD::Equals(GenTreeSIMD* op1, GenTreeSIMD* op2)
 {
     return (op1->TypeGet() == op2->TypeGet()) && (op1->GetSIMDIntrinsicId() == op2->GetSIMDIntrinsicId()) &&
@@ -22816,7 +22815,6 @@ void GenTreeHWIntrinsic::SetHWIntrinsicId(NamedIntrinsic intrinsicId)
     gtHWIntrinsicId = intrinsicId;
 }
 
-// TODO-Review: why are layouts not compared here?
 /* static */ bool GenTreeHWIntrinsic::Equals(GenTreeHWIntrinsic* op1, GenTreeHWIntrinsic* op2)
 {
     return (op1->TypeGet() == op2->TypeGet()) && (op1->GetHWIntrinsicId() == op2->GetHWIntrinsicId()) &&
