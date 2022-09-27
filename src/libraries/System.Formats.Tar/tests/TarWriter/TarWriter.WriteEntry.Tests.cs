@@ -395,7 +395,7 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [MemberData(nameof(WriteEntry_TooLongLinkName_Throws_TheoryData))] // change usar, v7
+        [MemberData(nameof(WriteEntry_TooLongLinkName_Throws_TheoryData))]
         public void WriteEntry_TooLongLinkName_Throws(TarEntryFormat entryFormat, TarEntryType entryType, string linkName)
         {
             using TarWriter writer = new(new MemoryStream());
