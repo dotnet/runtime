@@ -29,7 +29,7 @@ public abstract class Base {
 }
 
 public class PseudoBase : Base {
-        public override I getI() => new C ("PseudoBase");
+    public override I getI() => new C ("PseudoBase");
 }
 
 public abstract class Intermediate : PseudoBase {
@@ -44,9 +44,9 @@ public class Leaf : Intermediate {
 public interface I {}
 
 public class C : I {
-        private readonly string _repr;
-        public C(string s) { _repr = s; }
-        public override string ToString() => _repr;
+    private readonly string _repr;
+    public C(string s) { _repr = s; }
+    public override string ToString() => _repr;
 }
 
 
