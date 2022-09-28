@@ -18644,9 +18644,24 @@ bool GenTree::isContainableHWIntrinsic() const
         case NI_SSE2_LoadVector128:
         case NI_AVX_LoadAlignedVector256:
         case NI_AVX_LoadVector256:
+        {
+            // These loads are contained as part of a HWIntrinsic operation
+            return true;
+        }
+
+        case NI_SSE2_ConvertToInt32:
+        case NI_SSE2_ConvertToUInt32:
+        case NI_SSE2_X64_ConvertToInt64:
+        case NI_SSE2_X64_ConvertToUInt64:
+        case NI_SSE2_Extract:
+        case NI_SSE41_Extract:
+        case NI_SSE41_X64_Extract:
         case NI_AVX_ExtractVector128:
+        case NI_AVX2_ConvertToInt32:
+        case NI_AVX2_ConvertToUInt32:
         case NI_AVX2_ExtractVector128:
         {
+            // These HWIntrinsic operations are contained as part of a store
             return true;
         }
 
