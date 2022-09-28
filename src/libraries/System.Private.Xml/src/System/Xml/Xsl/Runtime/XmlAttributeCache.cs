@@ -1,16 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
+using System;
+using System.Diagnostics;
+using System.Xml;
+using System.Xml.XPath;
+using System.Xml.Schema;
+
 namespace System.Xml.Xsl.Runtime
 {
-    using System;
-    using System.Diagnostics;
-    using System.Xml;
-    using System.Xml.XPath;
-    using System.Xml.Schema;
-
-
     /// <summary>
     /// This writer supports only writer methods which write attributes.  Attributes are stored in a
     /// data structure until StartElementContent() is called, at which time the attributes are flushed
@@ -18,9 +16,9 @@ namespace System.Xml.Xsl.Runtime
     /// </summary>
     internal sealed class XmlAttributeCache : XmlRawWriter, IRemovableWriter
     {
-        private XmlRawWriter _wrapped;
-        private OnRemoveWriter _onRemove;        // Event handler that is called when cached attributes are flushed to wrapped writer
-        private AttrNameVal[] _arrAttrs;         // List of cached attribute names and value parts
+        private XmlRawWriter? _wrapped;
+        private OnRemoveWriter? _onRemove;        // Event handler that is called when cached attributes are flushed to wrapped writer
+        private AttrNameVal[]? _arrAttrs;         // List of cached attribute names and value parts
         private int _numEntries;                 // Number of attributes in the cache
         private int _idxLastName;                // The entry containing the name of the last attribute to be cached
         private int _hashCodeUnion;              // Set of hash bits that can quickly guarantee a name is not a duplicate
@@ -55,7 +53,7 @@ namespace System.Xml.Xsl.Runtime
         /// This writer will raise this event once cached attributes have been flushed in order to signal that the cache
         /// no longer needs to be part of the pipeline.
         /// </summary>
-        public OnRemoveWriter OnRemoveWriterEvent
+        public OnRemoveWriter? OnRemoveWriterEvent
         {
             get { return _onRemove; }
             set { _onRemove = value; }
@@ -64,10 +62,10 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// The wrapped writer will callback on this method if it wishes to remove itself from the pipeline.
         /// </summary>
-        private void SetWrappedWriter(XmlRawWriter writer)
+        private void SetWrappedWriter(XmlRawWriter? writer)
         {
             // If new writer might remove itself from pipeline, have it callback on this method when its ready to go
-            IRemovableWriter removable = writer as IRemovableWriter;
+            IRemovableWriter? removable = writer as IRemovableWriter;
             if (removable != null)
                 removable.OnRemoveWriterEvent = SetWrappedWriter;
 
@@ -82,7 +80,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Add an attribute to the cache.  If an attribute if the same name already exists, replace it.
         /// </summary>
-        public override void WriteStartAttribute(string prefix, string localName, string ns)
+        public override void WriteStartAttribute(string? prefix, string localName, string? ns)
         {
             int hashCode;
             int idx = 0;
@@ -99,7 +97,7 @@ namespace System.Xml.Xsl.Runtime
 
                 do
                 {
-                    if (_arrAttrs[idx].IsDuplicate(localName, ns, hashCode))
+                    if (_arrAttrs![idx].IsDuplicate(localName, ns, hashCode))
                         break;
 
                     // Next attribute name
@@ -116,9 +114,9 @@ namespace System.Xml.Xsl.Runtime
             // Insert new attribute; link attribute names together in a list
             EnsureAttributeCache();
             if (_numEntries != 0)
-                _arrAttrs[_idxLastName].NextNameIndex = _numEntries;
+                _arrAttrs![_idxLastName].NextNameIndex = _numEntries;
             _idxLastName = _numEntries++;
-            _arrAttrs[_idxLastName].Init(prefix, localName, ns, hashCode);
+            _arrAttrs![_idxLastName].Init(prefix, localName, ns, hashCode);
         }
 
         /// <summary>
@@ -134,14 +132,14 @@ namespace System.Xml.Xsl.Runtime
         internal override void WriteNamespaceDeclaration(string prefix, string ns)
         {
             FlushAttributes();
-            _wrapped.WriteNamespaceDeclaration(prefix, ns);
+            _wrapped!.WriteNamespaceDeclaration(prefix, ns);
         }
 
         /// <summary>
         /// Add a block of text to the cache.  This text block makes up some or all of the untyped string
         /// value of the current attribute.
         /// </summary>
-        public override void WriteString(string text)
+        public override void WriteString(string? text)
         {
             Debug.Assert(text != null);
             Debug.Assert(_arrAttrs != null && _numEntries != 0);
@@ -170,22 +168,22 @@ namespace System.Xml.Xsl.Runtime
             FlushAttributes();
 
             // Call StartElementContent on wrapped writer
-            _wrapped.StartElementContent();
+            _wrapped!.StartElementContent();
         }
 
-        public override void WriteStartElement(string prefix, string localName, string ns)
+        public override void WriteStartElement(string? prefix, string localName, string? ns)
         {
             Debug.Fail("Should never be called on XmlAttributeCache.");
         }
-        internal override void WriteEndElement(string prefix, string localName, string ns)
+        internal override void WriteEndElement(string? prefix, string localName, string? ns)
         {
             Debug.Fail("Should never be called on XmlAttributeCache.");
         }
-        public override void WriteComment(string text)
+        public override void WriteComment(string? text)
         {
             Debug.Fail("Should never be called on XmlAttributeCache.");
         }
-        public override void WriteProcessingInstruction(string name, string text)
+        public override void WriteProcessingInstruction(string name, string? text)
         {
             Debug.Fail("Should never be called on XmlAttributeCache.");
         }
@@ -194,7 +192,7 @@ namespace System.Xml.Xsl.Runtime
             Debug.Fail("Should never be called on XmlAttributeCache.");
         }
 
-        public override void WriteValue(string value)
+        public override void WriteValue(string? value)
         {
             Debug.Fail("Should never be called on XmlAttributeCache.");
         }
@@ -204,7 +202,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public override void Close()
         {
-            _wrapped.Close();
+            _wrapped!.Close();
         }
 
         /// <summary>
@@ -212,7 +210,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public override void Flush()
         {
-            _wrapped.Flush();
+            _wrapped!.Flush();
         }
 
 
@@ -223,12 +221,12 @@ namespace System.Xml.Xsl.Runtime
         private void FlushAttributes()
         {
             int idx = 0, idxNext;
-            string localName;
+            string? localName;
 
             while (idx != _numEntries)
             {
                 // Get index of next attribute's name (0 if this is the last attribute)
-                idxNext = _arrAttrs[idx].NextNameIndex;
+                idxNext = _arrAttrs![idx].NextNameIndex;
                 if (idxNext == 0)
                     idxNext = _numEntries;
 
@@ -239,17 +237,17 @@ namespace System.Xml.Xsl.Runtime
                     string prefix = _arrAttrs[idx].Prefix;
                     string ns = _arrAttrs[idx].Namespace;
 
-                    _wrapped.WriteStartAttribute(prefix, localName, ns);
+                    _wrapped!.WriteStartAttribute(prefix, localName, ns);
 
                     // Output all of this attribute's text or typed values
                     while (++idx != idxNext)
                     {
-                        string text = _arrAttrs[idx].Text;
+                        string? text = _arrAttrs[idx].Text;
 
                         if (text != null)
                             _wrapped.WriteString(text);
                         else
-                            _wrapped.WriteValue(_arrAttrs[idx].Value);
+                            _wrapped.WriteValue(_arrAttrs[idx].Value!);
                     }
 
                     _wrapped.WriteEndAttribute();
@@ -262,25 +260,24 @@ namespace System.Xml.Xsl.Runtime
             }
 
             // Notify event listener that attributes have been flushed
-            if (_onRemove != null)
-                _onRemove(_wrapped);
+            _onRemove?.Invoke(_wrapped!);
         }
 
         private struct AttrNameVal
         {
-            private string _localName;
+            private string? _localName;
             private string _prefix;
             private string _namespaceName;
-            private string _text;
-            private XmlAtomicValue _value;
+            private string? _text;
+            private XmlAtomicValue? _value;
             private int _hashCode;
             private int _nextNameIndex;
 
-            public string LocalName { get { return _localName; } }
+            public string? LocalName { get { return _localName; } }
             public string Prefix { get { return _prefix; } }
             public string Namespace { get { return _namespaceName; } }
-            public string Text { get { return _text; } }
-            public XmlAtomicValue Value { get { return _value; } }
+            public string? Text { get { return _text; } }
+            public XmlAtomicValue? Value { get { return _value; } }
             public int NextNameIndex { get { return _nextNameIndex; } set { _nextNameIndex = value; } }
 
             /// <summary>

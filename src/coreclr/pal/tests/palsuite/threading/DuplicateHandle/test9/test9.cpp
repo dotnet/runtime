@@ -39,7 +39,7 @@ PALTEST(threading_DuplicateHandle_test9_paltest_duplicatehandle_test9, "threadin
     ZeroMemory( &lpBuffer, sizeof(lpBuffer) );
     ZeroMemory( &lpDupBuffer, sizeof(lpDupBuffer) );
 
-    /* Get current proces, this will be duplicated.
+    /* Get current process, this will be duplicated.
     */
     hProcess = GetCurrentProcess();
     if(hProcess == NULL)

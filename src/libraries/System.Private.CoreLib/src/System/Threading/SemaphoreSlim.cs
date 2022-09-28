@@ -101,19 +101,17 @@ namespace System.Threading
                 CheckDispose();
 
                 // Return it directly if it is not null
-                if (m_waitHandle is not null)
-                    return m_waitHandle;
-
-                // lock the count to avoid multiple threads initializing the handle if it is null
-                lock (m_lockObjAndDisposed)
+                if (m_waitHandle is null)
                 {
-                    if (m_waitHandle is null)
+                    // lock the count to avoid multiple threads initializing the handle if it is null
+                    lock (m_lockObjAndDisposed)
                     {
                         // The initial state for the wait handle is true if the count is greater than zero
                         // false otherwise
-                        m_waitHandle = new ManualResetEvent(m_currentCount != 0);
+                        m_waitHandle ??= new ManualResetEvent(m_currentCount != 0);
                     }
                 }
+
                 return m_waitHandle;
             }
         }

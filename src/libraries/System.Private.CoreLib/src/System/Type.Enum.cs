@@ -130,7 +130,7 @@ namespace System
                 object val = values[i];
                 bool exchanged = false;
 
-                // Since the elements are sorted we only need to do one comparision, we keep the check for j inside the loop.
+                // Since the elements are sorted we only need to do one comparison, we keep the check for j inside the loop.
                 while (comparer.Compare(values[j - 1], val) > 0)
                 {
                     names[j] = names[j - 1];

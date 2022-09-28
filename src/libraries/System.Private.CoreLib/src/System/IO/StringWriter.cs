@@ -57,17 +57,7 @@ namespace System.IO
         }
 
 
-        public override Encoding Encoding
-        {
-            get
-            {
-                if (s_encoding == null)
-                {
-                    s_encoding = new UnicodeEncoding(false, false);
-                }
-                return s_encoding;
-            }
-        }
+        public override Encoding Encoding => s_encoding ??= new UnicodeEncoding(false, false);
 
         // Returns the underlying StringBuilder. This is either the StringBuilder
         // that was passed to the constructor, or the StringBuilder that was

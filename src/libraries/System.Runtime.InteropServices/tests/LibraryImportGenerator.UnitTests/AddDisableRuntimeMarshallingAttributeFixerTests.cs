@@ -41,17 +41,21 @@ partial class Foo
     public static partial void {|CS8795:PInvoke|}(S {|#0:s|});
 }
 
-[NativeMarshalling(typeof(Native))]
+[NativeMarshalling(typeof(Marshaller))]
 struct S
 {
 }
 
-[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
-    public Native(S s) {}
+}
 
-    public S ToManaged() => new S();
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+static class Marshaller
+{
+    public static Native ConvertToUnmanaged(S s) => default;
+
+    public static S ConvertToManaged(Native n) => default;
 }
 ";
             var expectedPropertiesFile = "[assembly: System.Runtime.CompilerServices.DisableRuntimeMarshalling]" + Environment.NewLine;
@@ -72,17 +76,21 @@ partial class Foo
     public static partial void {|CS8795:PInvoke|}(S {|#0:s|});
 }
 
-[NativeMarshalling(typeof(Native))]
+[NativeMarshalling(typeof(Marshaller))]
 struct S
 {
 }
 
-[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
-    public Native(S s) {}
+}
 
-    public S ToManaged() => new S();
+[CustomMarshaller(typeof(S), MarshalMode.Default, typeof(Marshaller))]
+static class Marshaller
+{
+    public static Native ConvertToUnmanaged(S s) => default;
+
+    public static S ConvertToManaged(Native n) => default;
 }
 ";
             var propertiesFile = @"

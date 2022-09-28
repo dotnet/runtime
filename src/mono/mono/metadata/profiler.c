@@ -165,7 +165,7 @@ mono_profiler_load (const char *desc)
 #endif
 
 	if ((col = strchr (desc, ':')) != NULL) {
-		mname = (char *) g_memdup (desc, col - desc + 1);
+		mname = (char *) g_memdup (desc, GPTRDIFF_TO_UINT (col - desc + 1));
 		mname [col - desc] = 0;
 	} else {
 		mname = g_strdup (desc);
@@ -388,7 +388,7 @@ mono_profiler_get_coverage_data (MonoProfilerHandle handle, MonoMethod *method, 
 		guchar *cil_code = info->data [i].cil_code;
 
 		if (cil_code && cil_code >= start && cil_code < end) {
-			guint32 offset = cil_code - start;
+			guint32 offset = GPTRDIFF_TO_UINT32 (cil_code - start);
 
 			MonoProfilerCoverageData data;
 			memset (&data, 0, sizeof (data));

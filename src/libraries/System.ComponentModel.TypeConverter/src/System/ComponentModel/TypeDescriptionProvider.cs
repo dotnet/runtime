@@ -101,7 +101,7 @@ namespace System.ComponentModel
                 return _parent.GetExtendedTypeDescriptor(instance);
             }
 
-            return _emptyDescriptor ?? (_emptyDescriptor = new EmptyCustomTypeDescriptor());
+            return _emptyDescriptor ??= new EmptyCustomTypeDescriptor();
         }
 
         protected internal virtual IExtenderProvider[] GetExtenderProviders(object instance)
@@ -256,7 +256,7 @@ namespace System.ComponentModel
                 return _parent.GetTypeDescriptor(objectType, instance);
             }
 
-            return _emptyDescriptor ?? (_emptyDescriptor = new EmptyCustomTypeDescriptor());
+            return _emptyDescriptor ??= new EmptyCustomTypeDescriptor();
         }
 
         /// <summary>

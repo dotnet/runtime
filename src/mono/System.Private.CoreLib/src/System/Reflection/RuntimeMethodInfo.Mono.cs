@@ -384,49 +384,6 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern object? InternalInvoke(object? obj, in Span<object?> parameters, out Exception? exc);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr* byrefParameters, Span<object?> argsForTemporaryMonoSupport, BindingFlags invokeAttr)
-        {
-            Exception? exc;
-            object? o;
-
-            if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
-            {
-                try
-                {
-                    o = InternalInvoke(obj, argsForTemporaryMonoSupport, out exc);
-                }
-                catch (Mono.NullByRefReturnException)
-                {
-                    throw new NullReferenceException();
-                }
-                catch (OverflowException)
-                {
-                    throw;
-                }
-                catch (Exception e)
-                {
-                    throw new TargetInvocationException(e);
-                }
-            }
-            else
-            {
-                try
-                {
-                    o = InternalInvoke(obj, argsForTemporaryMonoSupport, out exc);
-                }
-                catch (Mono.NullByRefReturnException)
-                {
-                    throw new NullReferenceException();
-                }
-            }
-
-            if (exc != null)
-                throw exc;
-
-            return o;
-        }
-
         public override RuntimeMethodHandle MethodHandle
         {
             get
@@ -845,10 +802,13 @@ namespace System.Reflection
             }
         }
 
-        private static void InvokeClassConstructor()
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern void InvokeClassConstructor(QCallTypeHandle type);
+
+        private void InvokeClassConstructor()
         {
-            // [TODO] Mechanism for invoking class constructor
-            // See https://github.com/dotnet/runtime/issues/40351
+            RuntimeType type = (RuntimeType)DeclaringType;
+            InvokeClassConstructor(new QCallTypeHandle(ref type));
         }
 
         /*
@@ -857,43 +817,6 @@ namespace System.Reflection
          */
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern object InternalInvoke(object? obj, in Span<object?> parameters, out Exception exc);
-
-        [DebuggerHidden]
-        [DebuggerStepThrough]
-        internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr* byrefParameters, Span<object?> argsForTemporaryMonoSupport, BindingFlags invokeAttr)
-        {
-            Exception exc;
-            object? o;
-
-            if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
-            {
-                try
-                {
-                    o = InternalInvoke(obj, argsForTemporaryMonoSupport, out exc);
-                }
-                catch (MethodAccessException)
-                {
-                    throw;
-                }
-                catch (OverflowException)
-                {
-                    throw;
-                }
-                catch (Exception e)
-                {
-                    throw new TargetInvocationException(e);
-                }
-            }
-            else
-            {
-                o = InternalInvoke(obj, argsForTemporaryMonoSupport, out exc);
-            }
-
-            if (exc != null)
-                throw exc;
-
-            return obj == null ? o : null;
-        }
 
         public override RuntimeMethodHandle MethodHandle
         {

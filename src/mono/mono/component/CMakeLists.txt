@@ -28,6 +28,7 @@ set(${MONO_DEBUGGER_COMPONENT_NAME}-sources
   ${MONO_COMPONENT_PATH}/debugger-state-machine.h
   ${MONO_COMPONENT_PATH}/debugger-state-machine.c
   ${MONO_COMPONENT_PATH}/mini-wasm-debugger.c
+  ${MONO_COMPONENT_PATH}/mini-wasi-debugger.c
   ${MONO_COMPONENT_PATH}/debugger-protocol.h
   ${MONO_COMPONENT_PATH}/debugger-protocol.c
   )
@@ -65,6 +66,7 @@ set(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-sources
   ${diagnostic_server_sources}
   ${MONO_COMPONENT_PATH}/event_pipe.c
   ${MONO_COMPONENT_PATH}/event_pipe.h
+  ${MONO_COMPONENT_PATH}/event_pipe-wasm.h
   ${MONO_COMPONENT_PATH}/diagnostics_server.c
   ${MONO_COMPONENT_PATH}/diagnostics_server.h
   )

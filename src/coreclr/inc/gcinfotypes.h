@@ -5,14 +5,14 @@
 #ifndef __GCINFOTYPES_H__
 #define __GCINFOTYPES_H__
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NATIVEAOT
 #include "gcinfo.h"
 #endif
 
 // *****************************************************************************
 // WARNING!!!: These values and code are also used by SOS in the diagnostics
 // repo. Should updated in a backwards and forwards compatible way.
-// See: https://github.com/dotnet/diagnostics/blob/master/src/inc/gcinfotypes.h
+// See: https://github.com/dotnet/diagnostics/blob/main/src/shared/inc/gcinfotypes.h
 // *****************************************************************************
 
 #define PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
@@ -753,6 +753,7 @@ void FASTCALL decodeCallPattern(int         pattern,
 #define STACK_BASE_REGISTER_ENCBASE 2 // FP encoded as 0, SP as 2.
 #define SIZE_OF_STACK_AREA_ENCBASE 3
 #define SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE 4
+#define SIZE_OF_EDIT_AND_CONTINUE_FIXED_STACK_FRAME_ENCBASE 4
 #define REVERSE_PINVOKE_FRAME_ENCBASE 6
 #define NUM_REGISTERS_ENCBASE 3
 #define NUM_STACK_SLOTS_ENCBASE 2

@@ -341,10 +341,6 @@ namespace System.Text.RegularExpressions
                     }
                     break;
 
-                case RegexNodeKind.Group | BeforeChild:
-                case RegexNodeKind.Group | AfterChild:
-                    break;
-
                 case RegexNodeKind.Capture | BeforeChild:
                     Emit(RegexOpcode.Setmark);
                     break;

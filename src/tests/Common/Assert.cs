@@ -29,7 +29,7 @@ namespace Xunit
         ///     Asserts that the given delegate throws an <see cref="Exception"/> of type <typeparam name="T" />.
         /// </summary>
         /// <param name="action">
-        ///     The delagate of type <see cref="Action"/> to execute.
+        ///     The delegate of type <see cref="Action"/> to execute.
         /// </param>
         /// <param name="message">
         ///     A <see cref="String"/> containing additional information for when the assertion fails.

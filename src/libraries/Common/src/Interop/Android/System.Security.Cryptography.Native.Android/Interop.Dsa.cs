@@ -192,7 +192,9 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(handle != IntPtr.Zero);
 
-            return new SafeDsaHandle(Interop.JObjectLifetime.NewGlobalReference(handle));
+            var duplicate = new SafeDsaHandle();
+            duplicate.SetHandle(Interop.JObjectLifetime.NewGlobalReference(handle));
+            return duplicate;
         }
 
         internal override SafeDsaHandle DuplicateHandle() => DuplicateHandle(DangerousGetHandle());

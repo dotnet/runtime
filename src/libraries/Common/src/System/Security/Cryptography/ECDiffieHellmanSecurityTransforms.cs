@@ -27,18 +27,8 @@ namespace System.Security.Cryptography
                 KeySizeValue = _ecc.SetKeyAndGetSize(SecKeyPair.PublicPrivatePair(publicKey, privateKey));
             }
 
-            public override KeySizes[] LegalKeySizes
-            {
-                get
-                {
-                    // Return the three sizes that can be explicitly set (for backwards compatibility)
-                    return new[]
-                    {
-                        new KeySizes(minSize: 256, maxSize: 384, skipSize: 128),
-                        new KeySizes(minSize: 521, maxSize: 521, skipSize: 0),
-                    };
-                }
-            }
+            // Return the three sizes that can be explicitly set (for backwards compatibility)
+            public override KeySizes[] LegalKeySizes => s_defaultKeySizes.CloneKeySizesArray();
 
             public override int KeySize
             {
@@ -136,7 +126,7 @@ namespace System.Security.Cryptography
                     hashAlgorithm,
                     secretPrepend,
                     secretAppend,
-                    (pubKey, hasher) => DeriveSecretAgreement(pubKey, hasher));
+                    DeriveSecretAgreement);
             }
 
             public override byte[] DeriveKeyFromHmac(
@@ -157,7 +147,7 @@ namespace System.Security.Cryptography
                     hmacKey,
                     secretPrepend,
                     secretAppend,
-                    (pubKey, hasher) => DeriveSecretAgreement(pubKey, hasher));
+                    DeriveSecretAgreement);
             }
 
             public override byte[] DeriveKeyTls(ECDiffieHellmanPublicKey otherPartyPublicKey, byte[] prfLabel, byte[] prfSeed)
@@ -172,7 +162,7 @@ namespace System.Security.Cryptography
                     otherPartyPublicKey,
                     prfLabel,
                     prfSeed,
-                    (pubKey, hasher) => DeriveSecretAgreement(pubKey, hasher));
+                    DeriveSecretAgreement);
             }
 
             private byte[]? DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey, IncrementalHash? hasher)

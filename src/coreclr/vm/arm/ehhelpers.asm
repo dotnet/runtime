@@ -7,8 +7,6 @@
 
 #include "asmmacros.h"
 
-    IMPORT FixContextHandler
-    IMPORT LinkFrameAndThrow
     IMPORT HijackHandler
     IMPORT ThrowControlForThread
 
@@ -75,27 +73,6 @@ OFFSET_OF_FRAME SETA 4 + SIZEOF__GSCookie
         NESTED_END $STUB
 
         MEND
-
-; ------------------------------------------------------------------
-;
-; Helpers for async (NullRef, AccessViolation) exceptions
-;
-
-        NESTED_ENTRY NakedThrowHelper2,,FixContextHandler
-        PROLOG_PUSH         {r0, lr}
-
-        ; On entry:
-        ;
-        ; R0 = Address of FaultingExceptionFrame
-        bl LinkFrameAndThrow
-
-        ; Target should not return.
-        EMIT_BREAKPOINT
-
-        NESTED_END NakedThrowHelper2
-
-
-        GenerateRedirectedStubWithFrame NakedThrowHelper, NakedThrowHelper2
 
 ; ------------------------------------------------------------------
 ;

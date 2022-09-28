@@ -542,7 +542,7 @@ namespace R2RDump
         internal override void DumpFixupStats()
         {
             WriteDivider("Eager fixup counts across all methods");
-            
+
             // Group all fixups across methods by fixup kind, and sum each category
             var sortedFixupCounts = _r2r.Methods.Where(m => m.Fixups != null)
                 .SelectMany(m => m.Fixups)
@@ -564,7 +564,7 @@ namespace R2RDump
              *
              * The reason we want them to be at least 5, is because in the case of only
              * getting values shorter than 5 digits (Length of "Fixup" and "Count"),
-             * the formatting could be messed up. The likelyhood of this happening
+             * the formatting could be messed up. The likelihood of this happening
              * is apparently 0%, but better safe than sorry. */
 
             int fixupPadding = 5;

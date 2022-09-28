@@ -190,10 +190,7 @@ namespace System.ComponentModel.Composition.Hosting
                     {
                         sourceProvider.ExportsChanging -= OnExportsChangingInternal;
                         newImportEngine!.Dispose();
-                        if (aggregateExportProvider != null)
-                        {
-                            aggregateExportProvider.Dispose();
-                        }
+                        aggregateExportProvider?.Dispose();
                     }
                 }
             }
@@ -256,20 +253,14 @@ namespace System.ComponentModel.Composition.Hosting
                             catalogToUnsubscribeFrom.Changing -= OnCatalogChanging;
                         }
 
-                        if (aggregateExportProvider != null)
-                        {
-                            aggregateExportProvider.Dispose();
-                        }
+                        aggregateExportProvider?.Dispose();
 
                         if (sourceProvider != null)
                         {
                             sourceProvider.ExportsChanging -= OnExportsChangingInternal;
                         }
 
-                        if (importEngine != null)
-                        {
-                            importEngine.Dispose();
-                        }
+                        importEngine?.Dispose();
 
                         if (partsToDispose != null)
                         {
@@ -509,10 +500,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             // if disposableNewPart != null, this means we have created a new instance of something disposable and not used it
             // Dispose of it now
-            if (disposableNewPart != null)
-            {
-                disposableNewPart.Dispose();
-            }
+            disposableNewPart?.Dispose();
 
             return catalogPart;
         }
@@ -579,10 +567,7 @@ namespace System.ComponentModel.Composition.Hosting
 
                 importEngine = _importEngine;
             }
-            if (importEngine != null)
-            {
-                importEngine.ReleaseImports(catalogPart.Part, atomicComposition);
-            }
+            importEngine?.ReleaseImports(catalogPart.Part, atomicComposition);
             if (exportedValue != null)
             {
                 atomicComposition.AddCompleteActionAllowNull(() =>
@@ -625,10 +610,7 @@ namespace System.ComponentModel.Composition.Hosting
                 List<ComposablePart>? partList;
 
                 ConditionalWeakTable<object, List<ComposablePart>>? gcRoots = _gcRoots;
-                if (gcRoots == null)
-                {
-                    gcRoots = new ConditionalWeakTable<object, List<ComposablePart>>();
-                }
+                gcRoots ??= new ConditionalWeakTable<object, List<ComposablePart>>();
 
                 if (!gcRoots.TryGetValue(exportedValue, out partList))
                 {

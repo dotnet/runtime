@@ -675,7 +675,7 @@ namespace System.IO.Tests
         }
 
         // Generate data for TextWriter.Write* methods that take a stringBuilder.
-        // We test both the synchronized and unsynchronized variation, on strinbuilder swith 0, small and large values.
+        // We test both the synchronized and unsynchronized variation, on strinbuilder with 0, small and large values.
         public static IEnumerable<object[]> GetStringBuilderTestData()
         {
             // Make a string that has 10 or so 8K chunks (probably).

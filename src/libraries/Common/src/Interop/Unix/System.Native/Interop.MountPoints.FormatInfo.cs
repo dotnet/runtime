@@ -60,7 +60,7 @@ internal static partial class Interop
                 // Check if we have a numeric answer or string
                 format = numericFormat != -1 ?
                     Enum.GetName(typeof(UnixFileSystemTypes), numericFormat) ?? string.Empty :
-                    Marshal.PtrToStringAnsi((IntPtr)formatBuffer)!;
+                    Marshal.PtrToStringUTF8((IntPtr)formatBuffer)!;
                 type = GetDriveType(format);
             }
             else

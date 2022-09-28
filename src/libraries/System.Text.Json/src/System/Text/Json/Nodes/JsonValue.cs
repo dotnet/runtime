@@ -92,10 +92,7 @@ namespace System.Text.Json.Nodes
         {
             Debug.Assert(child == null);
 
-            if (Parent != null)
-            {
-                Parent.GetPath(path, this);
-            }
+            Parent?.GetPath(path, this);
         }
 
         /// <summary>

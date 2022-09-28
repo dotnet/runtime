@@ -12,7 +12,7 @@ namespace System
     {
 #if TARGET_BROWSER
         // Tracking issue https://github.com/dotnet/runtime/issues/47909
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.Runtime", "System.Private.Runtime.InteropServices.JavaScript")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.JSFunctionBinding", "System.Runtime.InteropServices.JavaScript")]
 #endif
         protected ValueType()
         {

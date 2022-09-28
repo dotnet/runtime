@@ -30,10 +30,12 @@ public:
     //    - The default value passed in
     static DWORD GetKnobDWORDValue(LPCWSTR name, DWORD defaultValue);
 
-    // Unfortunately our traditional config system insists on interpreting numbers as 32-bit so intepret the config
+    // Unfortunately our traditional config system insists on interpreting numbers as 32-bit so interpret the config
     // in the traditional way separately if you need to.
     //
-    // Returns value for name if found in config.
+    // Returns (in priority order):
+    //    - The value of the ConfigurationKnob (searched by name) if it's set (performs a _wcstoui64)
+    //    - The default value passed in
     static ULONGLONG GetKnobULONGLONGValue(LPCWSTR name, ULONGLONG defaultValue);
 
     // Returns (in priority order):
@@ -48,10 +50,16 @@ public:
     static LPCWSTR GetKnobStringValue(LPCWSTR name);
 
     // Returns (in priority order):
-    //    - The value of the ConfigDWORDInfo if it's set (1 is true, anything else is false)
+    //    - The value of the ConfigDWORDInfo if it's set (0 is false, anything else is true)
     //    - The value of the ConfigurationKnob (searched by name) if it's set (performs a wcscmp with "true").
-    //    - The default set in the ConfigDWORDInfo (1 is true, anything else is false)
+    //    - The default set in the ConfigDWORDInfo (0 is false, anything else is true)
     static bool GetKnobBooleanValue(LPCWSTR name, const CLRConfig::ConfigDWORDInfo& dwordInfo);
+
+    // Returns (in priority order):
+    //    - The value of the ConfigDWORDInfo if it's set (0 is false, anything else is true)
+    //    - The value of the ConfigurationKnob (searched by name) if it's set (performs a wcscmp with "true").
+    //    - The default value passed in
+    static bool GetKnobBooleanValue(LPCWSTR name, const CLRConfig::ConfigDWORDInfo& dwordInfo, bool defaultValue);
 
     // Returns (in priority order):
     //    - The value of the ConfigurationKnob (searched by name) if it's set (performs a wcscmp with "true").

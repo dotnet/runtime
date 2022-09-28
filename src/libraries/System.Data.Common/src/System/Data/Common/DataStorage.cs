@@ -206,7 +206,7 @@ namespace System.Data.Common
 
         public abstract int Compare(int recordNo1, int recordNo2);
 
-        // only does comparision, expect value to be of the correct type
+        // only does comparison, expect value to be of the correct type
         public abstract int CompareValueTo(int recordNo1, object? value);
 
         // only does conversion with support for reference null

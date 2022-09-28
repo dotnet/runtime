@@ -59,6 +59,36 @@ namespace HostActivation.Tests
         }
 
         [Fact]
+        public void Running_Publish_Output_Standalone_EXE_with_no_DepsJson_and_no_RuntimeConfig_Local_Succeeds()
+        {
+            var fixture = sharedTestState.StandaloneAppFixture_Published
+                .Copy();
+
+            var appExe = fixture.TestProject.AppExe;
+            File.Delete(fixture.TestProject.RuntimeConfigJson);
+            File.Delete(fixture.TestProject.DepsJson);
+
+            // Make sure normal run succeeds and doesn't print any errors
+            Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                // Note that this is an exact match - we don't expect any output from the host itself
+                .And.HaveStdOut($"Hello World!{Environment.NewLine}{Environment.NewLine}.NET {sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}{Environment.NewLine}")
+                .And.NotHaveStdErr();
+
+            // Make sure tracing indicates there is no runtime config and no deps json
+            Command.Create(appExe)
+                .EnableTracingAndCaptureOutputs()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOut($"Hello World!{Environment.NewLine}{Environment.NewLine}.NET {sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}{Environment.NewLine}")
+                .And.HaveStdErrContaining($"Runtime config does not exist at [{fixture.TestProject.RuntimeConfigJson}]")
+                .And.HaveStdErrContaining($"Could not locate the dependencies manifest file [{fixture.TestProject.DepsJson}]");
+        }
+
+        [Fact]
         public void Running_Publish_Output_Standalone_EXE_with_Unbound_AppHost_Fails()
         {
             var fixture = sharedTestState.StandaloneAppFixture_Published
@@ -72,7 +102,7 @@ namespace HostActivation.Tests
             int exitCode = Command.Create(appExe)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .ExitCode;
 
             if (OperatingSystem.IsWindows())
@@ -101,7 +131,7 @@ namespace HostActivation.Tests
             int exitCode = Command.Create(appExe)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .ExitCode;
 
             if (OperatingSystem.IsWindows())
@@ -202,7 +232,7 @@ namespace HostActivation.Tests
             Command.Create(appExe)
                 .EnableTracingAndCaptureOutputs()
                 .DotNetRoot(newOutDir)
-                .Execute(fExpectedToFail: true)
+                .Execute(expectedToFail: true)
                 .Should().Fail()
                 .And.HaveUsedDotNetRootInstallLocation(Path.GetFullPath(newOutDir), fixture.CurrentRid)
                 .And.HaveStdErrContaining($"The required library {RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr")} could not be found.");

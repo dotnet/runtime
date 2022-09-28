@@ -206,7 +206,7 @@
     <value>This verification operation applies to 'Pkcs12IntegrityMode.{0}', but the target object is in 'Pkcs12IntegrityMode.{1}'.</value>
   </data>
   <data name="Cryptography_Pkcs_InvalidSignatureParameters" xml:space="preserve">
-    <value>Invalid signature paramters.</value>
+    <value>Invalid signature parameters.</value>
   </data>
   <data name="Cryptography_Pkcs8_EncryptedReadFailed" xml:space="preserve">
     <value>The EncryptedPrivateKeyInfo structure was decoded but was not successfully interpreted, the password may be incorrect.</value>

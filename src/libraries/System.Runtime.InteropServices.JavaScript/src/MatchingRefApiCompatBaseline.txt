@@ -1,0 +1,8 @@
+Compat issues with assembly System.Runtime.InteropServices.JavaScript:
+TypesMustExist : Type 'System.Runtime.InteropServices.JavaScript.Array' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Runtime.InteropServices.JavaScript.ArrayBuffer' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Runtime.InteropServices.JavaScript.DataView' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Runtime.InteropServices.JavaScript.Function' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Runtime.InteropServices.JavaScript.Runtime' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Runtime.InteropServices.JavaScript.Uint8Array' does not exist in the reference but it does exist in the implementation.
+Total Issues: 6

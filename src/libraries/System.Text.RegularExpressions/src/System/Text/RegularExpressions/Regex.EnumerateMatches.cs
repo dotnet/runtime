@@ -41,7 +41,7 @@ namespace System.Text.RegularExpressions
         /// <exception cref="ArgumentNullException"><paramref name="pattern"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> is not a valid bitwise combination of RegexOptions values.</exception>
         /// <exception cref="RegexParseException">A regular expression parsing error occurred.</exception>
-        public static ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options) =>
+        public static ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.Regex, nameof(options))] string pattern, RegexOptions options) =>
             RegexCache.GetOrAdd(pattern, options, s_defaultMatchTimeout).EnumerateMatches(input);
 
         /// <summary>
@@ -61,7 +61,7 @@ namespace System.Text.RegularExpressions
         /// <exception cref="ArgumentNullException"><paramref name="pattern"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="options"/> is not a valid bitwise combination of RegexOptions values, or <paramref name="matchTimeout"/> is negative, zero, or greater than approximately 24 days.</exception>
         /// <exception cref="RegexParseException">A regular expression parsing error occurred.</exception>
-        public static ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.Regex, "options")] string pattern, RegexOptions options, TimeSpan matchTimeout) =>
+        public static ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.Regex, nameof(options))] string pattern, RegexOptions options, TimeSpan matchTimeout) =>
             RegexCache.GetOrAdd(pattern, options, matchTimeout).EnumerateMatches(input);
 
         /// <summary>
@@ -77,6 +77,21 @@ namespace System.Text.RegularExpressions
         /// <returns>A <see cref="ValueMatchEnumerator"/> to iterate over the matches.</returns>
         public ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<char> input) =>
             new ValueMatchEnumerator(this, input, RightToLeft ? input.Length : 0);
+
+        /// <summary>
+        /// Searches an input span for all occurrences of a regular expression and returns a <see cref="ValueMatchEnumerator"/> to iterate over the matches.
+        /// </summary>
+        /// <remarks>
+        /// Each match won't actually happen until <see cref="ValueMatchEnumerator.MoveNext"/> is invoked on the enumerator, with one match being performed per <see cref="ValueMatchEnumerator.MoveNext"/> call.
+        /// Since the evaluation of the match happens lazily, any changes to the passed in input in between calls to <see cref="ValueMatchEnumerator.MoveNext"/> will affect the match results.
+        /// The enumerator returned by this method, as well as the structs returned by the enumerator that wrap each match found in the input are ref structs which
+        /// make this method be amortized allocation free.
+        /// </remarks>
+        /// <param name="input">The span to search for a match.</param>
+        /// <param name="startat">The zero-based character position at which to start the search.</param>
+        /// <returns>A <see cref="ValueMatchEnumerator"/> to iterate over the matches.</returns>
+        public ValueMatchEnumerator EnumerateMatches(ReadOnlySpan<char> input, int startat) =>
+            new ValueMatchEnumerator(this, input, startat);
 
         /// <summary>
         /// Represents an enumerator containing the set of successful matches found by iteratively applying a regular expression pattern to the input span.

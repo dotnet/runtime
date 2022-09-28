@@ -518,7 +518,7 @@ namespace System.Globalization
         public int GetWeekOfYear(DateTime time, CalendarWeekRule rule, DayOfWeek firstDayOfWeek)
         {
             CheckTicksRange(time.Ticks);
-            // Use GregorianCalendar to get around the problem that the implmentation in Calendar.GetWeekOfYear()
+            // Use GregorianCalendar to get around the problem that the implementation in Calendar.GetWeekOfYear()
             // can call GetYear() that exceeds the supported range of the Gregorian-based calendars.
             return GregorianCalendar.GetDefaultInstance().GetWeekOfYear(time, rule, firstDayOfWeek);
         }

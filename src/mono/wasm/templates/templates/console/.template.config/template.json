@@ -5,6 +5,8 @@
   "identity": "WebAssembly.Console",
   "name": "WebAssembly Console App",
   "shortName": "wasmconsole",
+  "sourceName": "console.0",
+  "preferNameDirectory": true,
   "tags": {
     "language": "C#",
     "type": "project"

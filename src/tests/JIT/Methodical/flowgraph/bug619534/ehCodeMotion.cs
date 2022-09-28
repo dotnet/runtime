@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*
- * Actually it was a case of the JIT incorrectly move the 'ret=true' down to a point where logically it was reachable via the artifical edges we add to simulate the EH flow, but in reality it was totally unreachable. 
+ * Actually it was a case of the JIT incorrectly move the 'ret=true' down to a point where logically it was reachable via the artificial edges we add to simulate the EH flow, but in reality it was totally unreachable.
  * The fix is to recognize such situations and not place code there.
- * 
+ *
  * Notes from the bug:
  * Compile the following with no additional command line args.
  * If you run the resulting assembly on the x86 runtime, it will correctly print "Main: True".

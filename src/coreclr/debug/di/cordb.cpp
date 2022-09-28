@@ -99,7 +99,7 @@ STDAPI CreateCordbObject(int iDebuggerVersion, IUnknown ** ppCordb)
 //
 // Public API.
 // Creation path with Mac sandbox support and explicit DAC module path for single-file apps
-// This supercedes code:CoreCLRCreateCordbObjectEx
+// This supersedes code:CoreCLRCreateCordbObjectEx
 //
 // Arguments:
 //    iDebuggerVersion - version of ICorDebug interfaces that the debugger is requesting
@@ -153,7 +153,7 @@ STDAPI DLLEXPORT CoreCLRCreateCordbObject3(int iDebuggerVersion, DWORD pid, LPCW
 //
 // Public API.
 // Creation path with Mac sandbox support - only way to debug a sandboxed application on Mac.
-// This supercedes code:CoreCLRCreateCordbObject
+// This supersedes code:CoreCLRCreateCordbObject
 //
 // Arguments:
 //    iDebuggerVersion - version of ICorDebug interfaces that the debugger is requesting
@@ -175,7 +175,7 @@ STDAPI DLLEXPORT CoreCLRCreateCordbObjectEx(int iDebuggerVersion, DWORD pid, LPC
 //
 // Public API.
 // Creation path - only way to debug multi-instance.
-// This supercedes code:CreateCordbObject
+// This supersedes code:CreateCordbObject
 //
 // Arguments:
 //    iDebuggerVersion - version of ICorDebug interfaces that the debugger is requesting

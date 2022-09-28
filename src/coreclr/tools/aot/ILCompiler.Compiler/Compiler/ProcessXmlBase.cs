@@ -175,7 +175,7 @@ namespace ILCompiler
             if (ShouldProcessElement())
             {
                 string signature = _reader.GetAttribute("signature");
-                if (!String.IsNullOrEmpty(signature))
+                if (!string.IsNullOrEmpty(signature))
                 {
                     MethodDesc method = GetMethod(type, signature);
                     if (method == null)
@@ -188,7 +188,7 @@ namespace ILCompiler
                 }
 
                 string methodName = _reader.GetAttribute("name");
-                if (!String.IsNullOrEmpty(methodName))
+                if (!string.IsNullOrEmpty(methodName))
                 {
                     bool foundMatch = false;
                     foreach (MethodDesc method in type.GetMethods())
@@ -217,7 +217,7 @@ namespace ILCompiler
             if (ShouldProcessElement())
             {
                 string fieldName = _reader.GetAttribute("name");
-                if (!String.IsNullOrEmpty(fieldName))
+                if (!string.IsNullOrEmpty(fieldName))
                 {
                     FieldDesc field = type.GetField(fieldName);
 
@@ -245,7 +245,7 @@ namespace ILCompiler
         {
         }
 
-        protected MethodDesc GetMethod(TypeDesc type, string signature)
+        protected static MethodDesc GetMethod(TypeDesc type, string signature)
         {
             foreach (MethodDesc meth in type.GetMethods())
                 if (signature == GetMethodSignature(meth, false))
@@ -312,7 +312,7 @@ namespace ILCompiler
             return bValue == featureSetting;
         }
 
-        class CecilTypeNameFormatter : TypeNameFormatter
+        private sealed class CecilTypeNameFormatter : TypeNameFormatter
         {
             public static readonly CecilTypeNameFormatter Instance = new CecilTypeNameFormatter();
 
@@ -338,22 +338,22 @@ namespace ILCompiler
 
             public override void AppendName(StringBuilder sb, FunctionPointerType type)
             {
-                sb.Append(" ");
+                sb.Append(' ');
                 AppendName(sb, type.Signature.ReturnType);
                 sb.Append(" *");
 
-                sb.Append("(");
+                sb.Append('(');
 
                 for (int i = 0; i < type.Signature.Length; i++)
                 {
                     var parameter = type.Signature[i];
                     if (i > 0)
-                        sb.Append(",");
+                        sb.Append(',');
 
                     AppendName(sb, parameter);
                 }
 
-                sb.Append(")");
+                sb.Append(')');
             }
 
             public override void AppendName(StringBuilder sb, GenericParameterDesc type)
@@ -384,7 +384,7 @@ namespace ILCompiler
             }
             protected override void AppendNameForNamespaceType(StringBuilder sb, DefType type)
             {
-                if (!String.IsNullOrEmpty(type.Namespace))
+                if (!string.IsNullOrEmpty(type.Namespace))
                 {
                     sb.Append(type.Namespace);
                     sb.Append('.');

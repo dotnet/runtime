@@ -9,7 +9,7 @@ namespace System.Security.Cryptography.Xml.Tests
 {
     public static class Helpers
     {
-        public static bool VerifyCryptoExceptionOnLoad(string xml, bool loadXmlThrows)
+        public static void VerifyCryptoExceptionOnLoad(string xml, bool loadXmlThrows, bool validSignature = true, bool checkSignatureThrows = false)
         {
             var xmlDoc = new XmlDocument();
             xmlDoc.PreserveWhitespace = true;
@@ -25,10 +25,16 @@ namespace System.Security.Cryptography.Xml.Tests
 
             if (!loadXmlThrows)
             {
-                bool checkSigResult = signedXml.CheckSignature();
-                return checkSigResult;
+                if (checkSignatureThrows)
+                {
+                    Assert.ThrowsAny<CryptographicException>(() => signedXml.CheckSignature());
+                }
+                else
+                {
+                    bool checkSigResult = signedXml.CheckSignature();
+                    Assert.Equal(validSignature, checkSigResult);
+                }
             }
-            return false;
         }
     }
 }

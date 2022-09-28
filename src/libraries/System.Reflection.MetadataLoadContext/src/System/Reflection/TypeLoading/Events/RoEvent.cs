@@ -32,7 +32,7 @@ namespace System.Reflection.TypeLoading
 
         public sealed override Type ReflectedType => _reflectedType;
 
-        public sealed override string Name => _lazyName ?? (_lazyName = ComputeName());
+        public sealed override string Name => _lazyName ??= ComputeName();
         protected abstract string ComputeName();
         private volatile string? _lazyName;
 
@@ -50,7 +50,7 @@ namespace System.Reflection.TypeLoading
         private const EventAttributes EventAttributesSentinel = (EventAttributes)(-1);
         private volatile EventAttributes _lazyEventAttributes = EventAttributesSentinel;
 
-        public sealed override Type EventHandlerType => _lazyEventType ?? (_lazyEventType = ComputeEventHandlerType());
+        public sealed override Type EventHandlerType => _lazyEventType ??= ComputeEventHandlerType();
         protected abstract Type ComputeEventHandlerType();
         private volatile Type? _lazyEventType;
 

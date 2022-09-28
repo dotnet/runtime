@@ -578,7 +578,8 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         private static byte[] DESEncryptDirectKey(DES des, byte[] key, byte[] iv, byte[] plainBytes)
         {
             using (MemoryStream output = new MemoryStream())
-            using (CryptoStream cryptoStream = new CryptoStream(output, des.CreateEncryptor(key, iv), CryptoStreamMode.Write))
+            using (ICryptoTransform encryptor = des.CreateEncryptor(key, iv))
+            using (CryptoStream cryptoStream = new CryptoStream(output, encryptor, CryptoStreamMode.Write))
             {
                 cryptoStream.Write(plainBytes, 0, plainBytes.Length);
                 cryptoStream.FlushFinalBlock();
@@ -590,7 +591,8 @@ namespace System.Security.Cryptography.Encryption.Des.Tests
         private static byte[] DESDecryptDirectKey(DES des, byte[] key, byte[] iv, byte[] cipherBytes)
         {
             using (MemoryStream output = new MemoryStream())
-            using (CryptoStream cryptoStream = new CryptoStream(output, des.CreateDecryptor(key, iv), CryptoStreamMode.Write))
+            using (ICryptoTransform decryptor = des.CreateDecryptor(key, iv))
+            using (CryptoStream cryptoStream = new CryptoStream(output, decryptor, CryptoStreamMode.Write))
             {
                 cryptoStream.Write(cipherBytes, 0, cipherBytes.Length);
                 cryptoStream.FlushFinalBlock();

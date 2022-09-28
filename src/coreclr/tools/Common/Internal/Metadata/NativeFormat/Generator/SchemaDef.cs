@@ -82,7 +82,7 @@ public class MemberDef
             }
             else
             {
-                typeName = (kind == MemberTypeKind.WriterField) ? 
+                typeName = (kind == MemberTypeKind.WriterField) ?
                     (TypeName != null ? (string)TypeName : "MetadataRecord"): $"{TypeName}Handle";
             }
         }
@@ -267,14 +267,14 @@ class SchemaDef
     //
 
     // Set of record schema definitions (see format description in "Metadata records" section below)
-    // that represent contant primitive type values. Adds concept of constant managed reference, which
+    // that represent constant primitive type values. Adds concept of constant managed reference, which
     // must always have a null value (thus the use of the NotPersisted flag).
 
     private static readonly RecordDef[] ConstantValueRecordSchema =
         (
             from primitiveType in PrimitiveTypes select
                 new RecordDef(
-                    name: "Constant" + primitiveType.TypeName + "Value",
+                    name: "Constant" + primitiveType.Name + "Value",
                     members: new MemberDef[] {
                         new MemberDef(name: "Value", typeName: primitiveType.Name,
                             flags: primitiveType.CustomCompare ? MemberDefFlags.CustomCompare : 0)
@@ -301,7 +301,7 @@ class SchemaDef
         .ToArray();
 
     // Set of record schema definitions (see format description in "Metadata records" section below)
-    // that represent contant arrays primitive type values. Adds concept of a constant array of handle values (currently used to store
+    // that represent constant arrays primitive type values. Adds concept of a constant array of handle values (currently used to store
     // an array TypeDefOrRefOrSpec handles corresponding to System.Type arguments to the instantiation of a custom attribute, or to store
     // custom initialized object[] arrays in custom attributes).
 
@@ -309,9 +309,9 @@ class SchemaDef
         (
             from primitiveType in PrimitiveTypes select
                 new RecordDef(
-                    name: "Constant" + primitiveType.TypeName + "Array",
+                    name: "Constant" + primitiveType.Name + "Array",
                     members: new MemberDef[] {
-                        new MemberDef(name: "Value", typeName: primitiveType.TypeName,
+                        new MemberDef(name: "Value", typeName: primitiveType.Name,
                             flags: MemberDefFlags.Array | (primitiveType.CustomCompare ? MemberDefFlags.CustomCompare : 0))
                     }
                 )
@@ -342,7 +342,7 @@ class SchemaDef
         )
         .ToArray();
 
-    private static readonly RecordDef[] ConstantRecordSchema = 
+    private static readonly RecordDef[] ConstantRecordSchema =
         ConstantValueRecordSchema.Concat(ConstantArrayRecordSchema)
         .OrderBy(record => record.Name, StringComparer.Ordinal)
         .ToArray();
@@ -759,10 +759,10 @@ class SchemaDef
     public static readonly string[] TypeNamesWithCollectionTypes =
         RecordSchema.SelectMany(r =>
             from member in r.Members
-            let memberTypeName = member.TypeName as string
-            where memberTypeName != null &&
+            let memberName = member.Name as string
+            where memberName != null &&
                 (member.Flags & MemberDefFlags.Collection) != 0 &&
-                !PrimitiveTypes.Any(pt => pt.TypeName == memberTypeName)
-            select memberTypeName
+                !PrimitiveTypes.Any(pt => pt.Name == memberName)
+            select memberName
         ).Concat(new[] { "ScopeDefinition" }).Distinct().ToArray();
 }

@@ -48,6 +48,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         public DirectoryInfo DumpWorstOverlapGraphsTo;
         public int DumpWorstOverlapGraphs = -1;
         public bool InheritTimestamp;
+        public bool AutomaticReferences;
 
         public string[] HelpArgs = Array.Empty<string>();
 
@@ -126,6 +127,13 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 }
 
                 Reference = DefineFileOptionList(name: "r|reference", help: "If a reference is not located on disk at the same location as used in the process, it may be specified with a --reference parameter. Multiple --reference parameters may be specified. The wild cards * and ? are supported by this option.");
+
+                AutomaticReferences = true;
+                syntax.DefineOption(
+                    name: "automatic-references",
+                    value: ref AutomaticReferences,
+                    help: "Attempt to find references by using paths embedded in the trace file. Defaults to true.",
+                    requireValue: true);
 
                 ExcludeEventsBefore = Double.MinValue;
                 syntax.DefineOption(

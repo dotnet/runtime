@@ -224,7 +224,7 @@ emit_managed_allocator_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_no_nullcheck (mb);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		mono_mb_emit_icon (mb, m_class_offsetof_instance_size ());
+		mono_mb_emit_icon (mb, GINTPTR_TO_INT32 (m_class_offsetof_instance_size ()));
 		mono_mb_emit_byte (mb, CEE_ADD);
 		/* FIXME: assert instance_size stays a 4 byte integer */
 		mono_mb_emit_no_nullcheck (mb);
@@ -263,7 +263,7 @@ emit_managed_allocator_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_no_nullcheck (mb);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
-		mono_mb_emit_icon (mb, m_class_offsetof_sizes ());
+		mono_mb_emit_icon (mb, GINTPTR_TO_INT32 (m_class_offsetof_sizes ()));
 		mono_mb_emit_byte (mb, CEE_ADD);
 		mono_mb_emit_no_nullcheck (mb);
 		mono_mb_emit_byte (mb, CEE_LDIND_U4);
@@ -484,7 +484,7 @@ emit_managed_allocator_ilgen (MonoMethodBuilder *mb, gboolean slowpath, gboolean
 	mono_mb_emit_byte (mb, CEE_MONO_MEMORY_BARRIER);
 #endif
 	/*
-	We must make sure both vtable and max_length are globaly visible before returning to managed land.
+	We must make sure both vtable and max_length are globally visible before returning to managed land.
 	*/
 	mono_mb_emit_i4 (mb, MONO_MEMORY_BARRIER_REL);
 

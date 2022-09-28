@@ -43,7 +43,7 @@ struct ProfilingScanContext : ScanContext
 
 namespace ETW
 {
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NATIVEAOT
 
     class LoggedTypesFromModule;
 
@@ -163,7 +163,7 @@ namespace ETW
         static void OnTypesKeywordTurnedOff();
     };
 
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NATIVEAOT
 
     // Class to wrap all GC logic for ETW
     class GCLog
@@ -180,11 +180,11 @@ namespace ETW
         // we'll attach this sequence number to that GC instead of to the WPA-induced GC,
         // but who cares? When parsing ETW logs later on, it's indistinguishable if both
         // GCs really were induced at around the same time.
-#ifdef FEATURE_REDHAWK
+#ifdef FEATURE_NATIVEAOT
         static volatile LONGLONG s_l64LastClientSequenceNumber;
-#else // FEATURE_REDHAWK
+#else // FEATURE_NATIVEAOT
         static Volatile<LONGLONG> s_l64LastClientSequenceNumber;
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NATIVEAOT
 
     public:
         typedef union st_GCEventInfo {
@@ -311,9 +311,9 @@ namespace ETW
         static void MovedReference(BYTE * pbMemBlockStart, BYTE * pbMemBlockEnd, ptrdiff_t cbRelocDistance, size_t profilingContext, BOOL fCompacting, BOOL fAllowProfApiNotification = TRUE);
         static void EndMovedReferences(size_t profilingContext, BOOL fAllowProfApiNotification = TRUE);
         static void WalkStaticsAndCOMForETW();
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NATIVEAOT
         static void SendFinalizeObjectEvent(MethodTable * pMT, Object * pObj);
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NATIVEAOT
     };
 };
 

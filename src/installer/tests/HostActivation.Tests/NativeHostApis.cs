@@ -28,9 +28,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             dotnet.Exec(appDll)
                 .EnvironmentVariable("CORE_BREADCRUMBS", sharedTestState.BreadcrumbLocation)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdOut()
-                .CaptureStdErr()
+                .EnableTracingAndCaptureOutputs()
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
@@ -46,12 +44,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             dotnet.Exec(appDll)
                 .EnvironmentVariable("CORE_BREADCRUMBS", sharedTestState.BreadcrumbLocation)
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+                .EnableTracingAndCaptureOutputs()
+                .Execute(expectedToFail: true)
                 .Should().Fail()
-                .And.HaveStdErrContaining("Unhandled exception. System.Exception: Goodbye World")
+                .And.HaveStdErrContaining("Unhandled exception.")
+                .And.HaveStdErrContaining("System.Exception: Goodbye World")
                 .And.NotHaveStdErrContaining("Done waiting for breadcrumb thread to exit...");
         }
 
@@ -442,14 +439,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var f = new SdkResolutionFixture(sharedTestState);
 
             f.Dotnet.Exec(f.AppDll, new[] { "hostfxr_get_dotnet_environment_info", "test_invalid_result_ptr" })
-            .EnvironmentVariable("COREHOST_TRACE", "1")
-            .CaptureStdOut()
-            .CaptureStdErr()
-            .Execute()
-            .Should().Pass()
-            // 0x80008081 (InvalidArgFailure)
-            .And.HaveStdOutContaining("hostfxr_get_dotnet_environment_info:Fail[-2147450751]")
-            .And.HaveStdErrContaining("hostfxr_get_dotnet_environment_info received an invalid argument: result should not be null.");
+                .EnableTracingAndCaptureOutputs()
+                .Execute()
+                .Should().Pass()
+                // 0x80008081 (InvalidArgFailure)
+                .And.HaveStdOutContaining("hostfxr_get_dotnet_environment_info:Fail[-2147450751]")
+                .And.HaveStdErrContaining("hostfxr_get_dotnet_environment_info received an invalid argument: result should not be null.");
         }
 
         [Fact]
@@ -458,14 +453,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var f = new SdkResolutionFixture(sharedTestState);
 
             f.Dotnet.Exec(f.AppDll, new[] { "hostfxr_get_dotnet_environment_info", "test_invalid_reserved_ptr" })
-            .EnvironmentVariable("COREHOST_TRACE", "1")
-            .CaptureStdOut()
-            .CaptureStdErr()
-            .Execute()
-            .Should().Pass()
-            // 0x80008081 (InvalidArgFailure)
-            .And.HaveStdOutContaining("hostfxr_get_dotnet_environment_info:Fail[-2147450751]")
-            .And.HaveStdErrContaining("hostfxr_get_dotnet_environment_info received an invalid argument: reserved should be null.");
+                .EnableTracingAndCaptureOutputs()
+                .Execute()
+                .Should().Pass()
+                // 0x80008081 (InvalidArgFailure)
+                .And.HaveStdOutContaining("hostfxr_get_dotnet_environment_info:Fail[-2147450751]")
+                .And.HaveStdErrContaining("hostfxr_get_dotnet_environment_info received an invalid argument: reserved should be null.");
         }
 
         [Fact]

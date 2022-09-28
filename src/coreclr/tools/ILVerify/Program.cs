@@ -4,8 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
-using System.CommandLine.Builder;
-using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
 using System.IO;
 using System.Linq;
@@ -505,7 +503,7 @@ namespace ILVerify
                 AddOption(Verbose);
                 AddOption(Tokens);
 
-                this.SetHandler<InvocationContext>((InvocationContext context) =>
+                this.SetHandler(context =>
                 {
                     try
                     {

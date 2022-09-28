@@ -220,19 +220,21 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [OuterLoop("Failing connection attempts take long on windows")]
         [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/66692", TestPlatforms.OSX)]
-        public async Task GetContentAsync_WhenCanNotConnect_ExceptionContainsHostInfo()
+        public async Task GetContentAsync_WhenCannotConnect_ExceptionContainsHostInfo()
         {
-            using Socket portReserver = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            portReserver.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-            IPEndPoint ep = (IPEndPoint)portReserver.LocalEndPoint;
+            const string Host = "localhost:1234";
 
-            using var client = CreateHttpClient();
+            using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
+            var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
+            socketsHandler.ConnectCallback = (context, token) =>
+            {
+                throw new InvalidOperationException(nameof(GetContentAsync_WhenCannotConnect_ExceptionContainsHostInfo));
+            };
 
-            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStreamAsync($"http://localhost:{ep.Port}"));
-            Assert.Contains($"localhost:{ep.Port}", ex.Message);
+            using var client = CreateHttpClient(handler);
+            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStreamAsync($"http://{Host}"));
+            Assert.Contains(Host, ex.Message);
         }
 
         [Fact]
@@ -795,6 +797,48 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        public async Task ConnectTimeout_NotWrappedInMultipleTimeoutExceptions()
+        {
+            using var handler = CreateHttpClientHandler();
+
+            SocketsHttpHandler socketsHttpHandler = GetUnderlyingSocketsHttpHandler(handler);
+
+            socketsHttpHandler.ConnectTimeout = TimeSpan.FromMilliseconds(1);
+            socketsHttpHandler.ConnectCallback = async (context, cancellation) =>
+            {
+                await Task.Delay(-1, cancellation);
+                throw new UnreachableException();
+            };
+
+            using var client = CreateHttpClient(handler);
+            client.Timeout = TimeSpan.FromSeconds(42);
+
+            TaskCanceledException e = await Assert.ThrowsAsync<TaskCanceledException>(() => client.GetAsync(CreateFakeUri()));
+
+            TimeoutException connectTimeoutException = Assert.IsType<TimeoutException>(e.InnerException);
+            Assert.Contains("ConnectTimeout", connectTimeoutException.Message);
+
+            Assert.Null(connectTimeoutException.InnerException);
+            Assert.DoesNotContain("HttpClient.Timeout", e.ToString());
+        }
+
+        [Fact]
+        public async Task UnknownOperationCanceledException_NotWrappedInATimeoutException()
+        {
+            using var client = new HttpClient(new CustomResponseHandler((request, cancellation) =>
+            {
+                throw new OperationCanceledException("Foo");
+            }));
+            client.Timeout = TimeSpan.FromSeconds(42);
+
+            OperationCanceledException e = await Assert.ThrowsAsync<OperationCanceledException>(() => client.GetAsync(CreateFakeUri()));
+
+            Assert.Null(e.InnerException);
+            Assert.Equal("Foo", e.Message);
+            Assert.DoesNotContain("HttpClient.Timeout", e.ToString());
+        }
+
         [Fact]
         public void DefaultProxy_SetNull_Throws()
         {
@@ -918,6 +962,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(HttpCompletionOption.ResponseContentRead)]
         [InlineData(HttpCompletionOption.ResponseHeadersRead)]
         [SkipOnPlatform(TestPlatforms.Browser, "Synchronous Send is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
         public async Task Send_SingleThread_Loopback_Succeeds(HttpCompletionOption completionOption)
         {
             string content = "Test content";
@@ -972,6 +1017,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         [OuterLoop]
         [SkipOnPlatform(TestPlatforms.Browser, "Synchronous Send is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
         public async Task Send_CancelledRequestContent_Throws()
         {
             CancellationTokenSource cts = new CancellationTokenSource();
@@ -1023,6 +1069,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         [OuterLoop]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39056")]
+        [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
         public async Task Send_TimeoutRequestContent_Throws()
         {
             await LoopbackServer.CreateClientAndServerAsync(
@@ -1071,6 +1118,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         [OuterLoop]
         [SkipOnPlatform(TestPlatforms.Browser, "Synchronous Send is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
         public async Task Send_CancelledResponseContent_Throws()
         {
             string content = "Test content";
@@ -1126,6 +1174,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         [OuterLoop]
         [SkipOnPlatform(TestPlatforms.Browser, "Synchronous Send is not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Android, "Synchronous Send is not supported on Android")]
         public async Task Send_TimeoutResponseContent_Throws()
         {
             const string Content = "Test content";
@@ -1191,11 +1240,7 @@ namespace System.Net.Http.Functional.Tests
                         VersionPolicy = versionPolicy
                     };
 
-                    using HttpClientHandler handler = CreateHttpClientHandler();
-                    if (useSsl)
-                    {
-                        handler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-                    }
+                    using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: useSsl);
                     using HttpClient client = CreateHttpClient(handler);
                     client.Timeout = TimeSpan.FromSeconds(30);
 
@@ -1458,6 +1503,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [SkipOnPlatform(TestPlatforms.Android, "The Send method is not implemented on mobile platforms")]
         public void Send_NullRequest_ThrowsException()
         {
             using var client = new CustomHttpClient();

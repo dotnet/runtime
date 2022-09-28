@@ -14,12 +14,13 @@ namespace System.IO.Compression
         private BrotliEncoder _encoder;
 
         /// <summary>Initializes a new instance of the <see cref="System.IO.Compression.BrotliStream" /> class by using the specified stream and compression level.</summary>
-        /// <param name="stream">The stream to compress.</param>
-        /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression efficiency when compressing the stream.</param>
+        /// <param name="stream">The stream to which compressed data is written.</param>
+        /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression efficiency when compressing data to the stream.</param>
         public BrotliStream(Stream stream, CompressionLevel compressionLevel) : this(stream, compressionLevel, leaveOpen: false) { }
+
         /// <summary>Initializes a new instance of the <see cref="System.IO.Compression.BrotliStream" /> class by using the specified stream and compression level, and optionally leaves the stream open.</summary>
-        /// <param name="stream">The stream to compress.</param>
-        /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression efficiency when compressing the stream.</param>
+        /// <param name="stream">The stream to which compressed data is written.</param>
+        /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression efficiency when compressing data to the stream.</param>
         /// <param name="leaveOpen"><see langword="true" /> to leave the stream open after disposing the <see cref="System.IO.Compression.BrotliStream" /> object; otherwise, <see langword="false" />.</param>
         public BrotliStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen) : this(stream, CompressionMode.Compress, leaveOpen)
         {
@@ -46,7 +47,7 @@ namespace System.IO.Compression
         /// <para>The encoder ran into invalid data.</para></exception>
         public override void WriteByte(byte value)
         {
-            WriteCore(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
+            WriteCore(new ReadOnlySpan<byte>(in value));
         }
 
         /// <summary>Writes a sequence of bytes to the current Brotli stream from a read-only byte span and advances the current position within this Brotli stream by the number of bytes written.</summary>

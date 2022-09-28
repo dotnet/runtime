@@ -141,7 +141,7 @@ namespace System.Diagnostics
         /// <returns><see langword="this" /> for convenient chaining.</returns>
         /// <remarks>
         /// When passing code value different than ActivityStatusCode.Error, the Activity.StatusDescription will reset to null value.
-        /// The description paramater will be respected only when passing ActivityStatusCode.Error value.
+        /// The description parameter will be respected only when passing ActivityStatusCode.Error value.
         /// </remarks>
         public Activity SetStatus(ActivityStatusCode code, string? description = null)
         {
@@ -208,7 +208,7 @@ namespace System.Diagnostics
         /// <see cref="Start"/> is called by appending suffix to Parent.Id
         /// or ParentId; Activity has no Id until it started
         /// <para/>
-        /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
+        /// See <see href="https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
         /// </summary>
         /// <example>
         /// Id looks like '|a000b421-5d183ab6.1.8e2d4c28_1.':<para />
@@ -246,7 +246,7 @@ namespace System.Diagnostics
         /// from the parent).   This accessor fetches the parent ID if it exists at all.
         /// Note this can be null if this is a root Activity (it has no parent)
         /// <para/>
-        /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
+        /// See <see href="https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
         /// </summary>
         public string? ParentId
         {
@@ -279,7 +279,7 @@ namespace System.Diagnostics
         /// Root Id is substring from Activity.Id (or ParentId) between '|' (or beginning) and first '.'.
         /// Filtering by root Id allows to find all Activities involved in operation processing.
         /// RootId may be null if Activity has neither ParentId nor Id.
-        /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
+        /// See <see href="https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
         /// </summary>
         public string? RootId
         {
@@ -437,7 +437,7 @@ namespace System.Diagnostics
         public Activity(string operationName)
         {
             Source = s_defaultSource;
-            // Allow data by default in the constructor to keep the compatability.
+            // Allow data by default in the constructor to keep the compatibility.
             IsAllDataRequested = true;
 
             if (string.IsNullOrEmpty(operationName))
@@ -1757,7 +1757,7 @@ namespace System.Diagnostics
     public enum ActivityIdFormat
     {
         Unknown = 0,      // ID format is not known.
-        Hierarchical = 1, //|XXXX.XX.X_X ... see https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format
+        Hierarchical = 1, //|XXXX.XX.X_X ... see https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format
         W3C = 2,          // 00-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-XXXXXXXXXXXXXXXX-XX see https://w3c.github.io/trace-context/
     };
 

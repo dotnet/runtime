@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <assert.h>
+#include <math.h>
 #include <dlfcn.h>
 #include <sys/stat.h>
 
@@ -18,6 +19,7 @@
 #include <mono/metadata/loader.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/object.h>
+#include <mono/metadata/debug-helpers.h>
 // FIXME: unavailable in emscripten
 // #include <mono/metadata/gc-internals.h>
 
@@ -30,13 +32,17 @@
 
 #include "wasm-config.h"
 #include "pinvoke.h"
+
+#ifdef GEN_PINVOKE
+#include "wasm_m2n_invoke.g.h"
+#endif
 #include "gc-common.h"
 
 #ifdef CORE_BINDINGS
 void core_initialize_internals ();
 #endif
 
-extern MonoString* mono_wasm_invoke_js (MonoString *str, int *is_exception);
+extern void mono_wasm_set_entrypoint_breakpoint (const char* assembly_name, int method_token);
 
 // Blazor specific custom routines - see dotnet_support.js for backing code
 extern void* mono_wasm_invoke_js_blazor (MonoString **exceptionMessage, void *callInfo, void* arg0, void* arg1, void* arg2);
@@ -49,6 +55,7 @@ int mono_wasm_register_root (char *start, size_t size, const char *name);
 void mono_wasm_deregister_root (char *addr);
 
 void mono_ee_interp_init (const char *opts);
+void mono_marshal_lightweight_init (void);
 void mono_marshal_ilgen_init (void);
 void mono_method_builder_ilgen_init (void);
 void mono_sgen_mono_ilgen_init (void);
@@ -230,6 +237,24 @@ mono_wasm_assembly_already_added (const char *assembly_name)
 	return 0;
 }
 
+const unsigned char *
+mono_wasm_get_assembly_bytes (const char *assembly_name, unsigned int *size)
+{
+	if (assembly_count == 0)
+		return 0;
+
+	WasmAssembly *entry = assemblies;
+	while (entry != NULL) {
+		if (strcmp (entry->assembly.name, assembly_name) == 0)
+		{
+			*size = entry->assembly.size;
+			return entry->assembly.data;
+		}
+		entry = entry->next;
+	}
+	return NULL;
+}
+
 typedef struct WasmSatelliteAssembly_ WasmSatelliteAssembly;
 
 struct WasmSatelliteAssembly_ {
@@ -254,6 +279,12 @@ EMSCRIPTEN_KEEPALIVE void
 mono_wasm_setenv (const char *name, const char *value)
 {
 	monoeg_g_setenv (strdup (name), strdup (value), 1);
+}
+
+EMSCRIPTEN_KEEPALIVE char *
+mono_wasm_getenv (const char *name)
+{
+	return monoeg_g_getenv (name); // JS must free
 }
 
 static void *sysglobal_native_handle;
@@ -418,11 +449,11 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 	return addr;
 }
 
+typedef void (*background_job_cb)(void);
+void mono_threads_schedule_background_job (background_job_cb cb);
+
 void mono_initialize_internals ()
 {
-	mono_add_internal_call ("Interop/Runtime::InvokeJS", mono_wasm_invoke_js);
-	// TODO: what happens when two types in different assemblies have the same FQN?
-
 	// Blazor specific custom routines - see dotnet_support.js for backing code
 	mono_add_internal_call ("WebAssembly.JSInterop.InternalCalls::InvokeJS", mono_wasm_invoke_js_blazor);
 
@@ -430,6 +461,7 @@ void mono_initialize_internals ()
 	core_initialize_internals();
 #endif
 
+	mono_add_internal_call ("System.Runtime.InteropServices.JavaScript.JSSynchronizationContext::ScheduleBackgroundJob", mono_threads_schedule_background_job);
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -470,7 +502,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	// We should enable this as part of the wasm build later
 #ifndef DISABLE_THREADS
 	monoeg_g_setenv ("MONO_THREADS_SUSPEND", "coop", 0);
-	monoeg_g_setenv ("MONO_SLEEP_ABORT_LIMIT", "250", 0);
+	monoeg_g_setenv ("MONO_SLEEP_ABORT_LIMIT", "5000", 0);
 #endif
 
 #ifdef DEBUG
@@ -514,6 +546,10 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
+
+#ifdef GEN_PINVOKE
+	mono_wasm_install_interp_to_native_callback (mono_wasm_interp_to_native_callback);
+#endif
 
 #ifdef ENABLE_AOT
 	monoeg_g_setenv ("MONO_AOT_MODE", "aot", 1);
@@ -559,7 +595,8 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 #endif
 #ifdef NEED_INTERP
 	mono_ee_interp_init (interp_opts);
-	mono_marshal_ilgen_init ();
+	mono_marshal_lightweight_init ();
+	mono_marshal_ilgen_init();
 	mono_method_builder_ilgen_init ();
 	mono_sgen_mono_ilgen_init ();
 #endif
@@ -623,6 +660,22 @@ mono_wasm_assembly_find_class (MonoAssembly *assembly, const char *namespace, co
 	MONO_EXIT_GC_UNSAFE;
 	return result;
 }
+
+extern int mono_runtime_run_module_cctor (MonoImage *image, MonoError *error);
+
+EMSCRIPTEN_KEEPALIVE void
+mono_wasm_runtime_run_module_cctor (MonoAssembly *assembly)
+{
+	assert (assembly);
+	MonoError error;
+	MONO_ENTER_GC_UNSAFE;
+	MonoImage *image = mono_assembly_get_image (assembly);
+    if (!mono_runtime_run_module_cctor(image, &error)) {
+        //g_print ("Failed to run module constructor due to %s\n", mono_error_get_message (error));
+    }
+	MONO_EXIT_GC_UNSAFE;
+}
+
 
 EMSCRIPTEN_KEEPALIVE MonoMethod*
 mono_wasm_assembly_find_method (MonoClass *klass, const char *name, int arguments)
@@ -711,8 +764,27 @@ mono_wasm_invoke_method (MonoMethod *method, MonoObject *this_arg, void *params[
 	return result;
 }
 
+EMSCRIPTEN_KEEPALIVE MonoObject*
+mono_wasm_invoke_method_bound (MonoMethod *method, void* args)// JSMarshalerArguments
+{
+	MonoObject *exc = NULL;
+	MonoObject *res;
+
+	void *invoke_args[1] = { args };
+
+	mono_runtime_invoke (method, NULL, invoke_args, &exc);
+	if (exc) {
+		MonoObject *exc2 = NULL;
+		res = (MonoObject*)mono_object_to_string (exc, &exc2);
+		if (exc2)
+			res = (MonoObject*) mono_string_new (root_domain, "Exception Double Fault");
+		return res;
+	}
+	return NULL;
+}
+
 EMSCRIPTEN_KEEPALIVE MonoMethod*
-mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
+mono_wasm_assembly_get_entry_point (MonoAssembly *assembly, int auto_insert_breakpoint)
 {
 	MonoImage *image;
 	MonoMethod *method;
@@ -765,6 +837,13 @@ mono_wasm_assembly_get_entry_point (MonoAssembly *assembly)
 
 	end:
 	MONO_EXIT_GC_UNSAFE;
+	if (auto_insert_breakpoint)
+	{
+		MonoAssemblyName *aname = mono_assembly_get_name (assembly);
+		const char *name = mono_assembly_name_get_name (aname);
+		if (name != NULL)
+			mono_wasm_set_entrypoint_breakpoint(name, mono_method_get_token (method));
+	}
 	return method;
 }
 
@@ -875,13 +954,13 @@ _marshal_type_from_mono_type (int mono_type, MonoClass *klass, MonoType *type)
 	case MONO_TYPE_PTR:
 		return MARSHAL_TYPE_POINTER;
 	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
 	case MONO_TYPE_I2:
-	case MONO_TYPE_U2:
 	case MONO_TYPE_I4:
 		return MARSHAL_TYPE_INT;
 	case MONO_TYPE_CHAR:
 		return MARSHAL_TYPE_CHAR;
+	case MONO_TYPE_U1:
+	case MONO_TYPE_U2:
 	case MONO_TYPE_U4:  // The distinction between this and signed int is
 						// important due to how numbers work in JavaScript
 		return MARSHAL_TYPE_UINT32;
@@ -1002,6 +1081,7 @@ static int
 _mono_wasm_try_unbox_primitive_and_get_type_ref_impl (PVOLATILE(MonoObject) obj, void *result, int result_capacity) {
 	void **resultP = result;
 	int *resultI = result;
+	uint32_t *resultU = result;
 	int64_t *resultL = result;
 	float *resultF = result;
 	double *resultD = result;
@@ -1045,22 +1125,21 @@ _mono_wasm_try_unbox_primitive_and_get_type_ref_impl (PVOLATILE(MonoObject) obj,
 			*resultI = *(signed char*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_U1:
-			*resultI = *(unsigned char*)mono_object_unbox (obj);
+			*resultU = *(unsigned char*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_I2:
 		case MONO_TYPE_CHAR:
 			*resultI = *(short*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_U2:
-			*resultI = *(unsigned short*)mono_object_unbox (obj);
+			*resultU = *(unsigned short*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_I4:
 		case MONO_TYPE_I:
 			*resultI = *(int*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_U4:
-			// FIXME: Will this behave the way we want for large unsigned values?
-			*resultI = *(int*)mono_object_unbox (obj);
+			*resultU = *(uint32_t*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_R4:
 			*resultF = *(float*)mono_object_unbox (obj);
@@ -1069,7 +1148,7 @@ _mono_wasm_try_unbox_primitive_and_get_type_ref_impl (PVOLATILE(MonoObject) obj,
 			*resultD = *(double*)mono_object_unbox (obj);
 			break;
 		case MONO_TYPE_PTR:
-			*resultL = (int64_t)(*(void**)mono_object_unbox (obj));
+			*resultU = (uint32_t)(*(void**)mono_object_unbox (obj));
 			break;
 		case MONO_TYPE_I8:
 		case MONO_TYPE_U8:
@@ -1346,4 +1425,56 @@ mono_wasm_init_finalizer_thread (void)
 #if 0
 	mono_gc_init_finalizer_thread ();
 #endif
+}
+
+#define I52_ERROR_NONE 0
+#define I52_ERROR_NON_INTEGRAL 1
+#define I52_ERROR_OUT_OF_RANGE 2
+
+#define U52_MAX_VALUE ((1ULL << 53) - 1)
+#define I52_MAX_VALUE ((1LL << 53) - 1)
+#define I52_MIN_VALUE -I52_MAX_VALUE
+
+EMSCRIPTEN_KEEPALIVE double mono_wasm_i52_to_f64 (int64_t *source, int *error) {
+	int64_t value = *source;
+
+	if ((value < I52_MIN_VALUE) || (value > I52_MAX_VALUE)) {
+		*error = I52_ERROR_OUT_OF_RANGE;
+		return NAN;
+	}
+
+	*error = I52_ERROR_NONE;
+	return (double)value;
+}
+
+EMSCRIPTEN_KEEPALIVE double mono_wasm_u52_to_f64 (uint64_t *source, int *error) {
+	uint64_t value = *source;
+
+	if (value > U52_MAX_VALUE) {
+		*error = I52_ERROR_OUT_OF_RANGE;
+		return NAN;
+	}
+
+	*error = I52_ERROR_NONE;
+	return (double)value;
+}
+
+EMSCRIPTEN_KEEPALIVE int mono_wasm_f64_to_u52 (uint64_t *destination, double value) {
+	if ((value < 0) || (value > U52_MAX_VALUE))
+		return I52_ERROR_OUT_OF_RANGE;
+	if (floor(value) != value)
+		return I52_ERROR_NON_INTEGRAL;
+
+	*destination = (uint64_t)value;
+	return I52_ERROR_NONE;
+}
+
+EMSCRIPTEN_KEEPALIVE int mono_wasm_f64_to_i52 (int64_t *destination, double value) {
+	if ((value < I52_MIN_VALUE) || (value > I52_MAX_VALUE))
+		return I52_ERROR_OUT_OF_RANGE;
+	if (floor(value) != value)
+		return I52_ERROR_NON_INTEGRAL;
+
+	*destination = (int64_t)value;
+	return I52_ERROR_NONE;
 }

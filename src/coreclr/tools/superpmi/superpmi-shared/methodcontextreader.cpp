@@ -44,7 +44,7 @@ std::string MethodContextReader::CheckForPairedFile(const std::string& fileName,
 
     // First, check to see if foo.origSuffix exists and is not a directory name
     size_t suffix_offset = fileName.find_last_of('.');
-    if ((SSIZE_T)suffix_offset <= 0 || (tmp != to_lower(fileName.substr(suffix_offset))))
+    if (suffix_offset == std::string::npos || suffix_offset == 0 || (tmp != to_lower(fileName.substr(suffix_offset))))
         return std::string();
 
     DWORD attribs = GetFileAttributesA(fileName.c_str());

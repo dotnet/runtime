@@ -100,10 +100,7 @@ namespace System.ComponentModel.Design.Serialization
         {
             ArgumentNullException.ThrowIfNull(context);
 
-            if (_contextStack == null)
-            {
-                _contextStack = new List<object>();
-            }
+            _contextStack ??= new List<object>();
             _contextStack.Insert(0, context);
         }
 
@@ -132,10 +129,7 @@ namespace System.ComponentModel.Design.Serialization
         {
             ArgumentNullException.ThrowIfNull(context);
 
-            if (_contextStack == null)
-            {
-                _contextStack = new List<object>();
-            }
+            _contextStack ??= new List<object>();
             _contextStack.Add(context);
         }
     }

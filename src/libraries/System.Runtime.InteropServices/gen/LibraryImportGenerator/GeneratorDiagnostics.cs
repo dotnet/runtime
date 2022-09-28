@@ -17,12 +17,14 @@ namespace Microsoft.Interop
     {
         public class Ids
         {
-            // SYSLIB1050-SYSLIB1059 are reserved for LibraryImportGenerator
+            // SYSLIB1050-SYSLIB1069 are reserved for LibraryImportGenerator
             public const string Prefix = "SYSLIB";
             public const string InvalidLibraryImportAttributeUsage = Prefix + "1050";
             public const string TypeNotSupported = Prefix + "1051";
             public const string ConfigurationNotSupported = Prefix + "1052";
             public const string CannotForwardToDllImport = Prefix + "1053";
+
+            public const string RequiresAllowUnsafeBlocks = Prefix + "1062";
         }
 
         private const string Category = "LibraryImportGenerator";
@@ -157,6 +159,16 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.CannotForwardToDllImportDescription)));
 
+        public static readonly DiagnosticDescriptor RequiresAllowUnsafeBlocks =
+            new DiagnosticDescriptor(
+                Ids.RequiresAllowUnsafeBlocks,
+                GetResourceString(nameof(SR.RequiresAllowUnsafeBlocksTitle)),
+                GetResourceString(nameof(SR.RequiresAllowUnsafeBlocksMessage)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.RequiresAllowUnsafeBlocksDescription)));
+
         private readonly List<Diagnostic> _diagnostics = new List<Diagnostic>();
 
         public IEnumerable<Diagnostic> Diagnostics => _diagnostics;
@@ -210,11 +222,11 @@ namespace Microsoft.Interop
         /// <summary>
         /// Report diagnostic for marshalling of a parameter/return that is not supported
         /// </summary>
-        /// <param name="method">Method with the parameter/return</param>
+        /// <param name="diagnosticLocations">Method with the parameter/return</param>
         /// <param name="info">Type info for the parameter/return</param>
         /// <param name="notSupportedDetails">[Optional] Specific reason for lack of support</param>
         public void ReportMarshallingNotSupported(
-            MethodDeclarationSyntax method,
+            MethodSignatureDiagnosticLocations diagnosticLocations,
             TypePositionInfo info,
             string? notSupportedDetails,
             ImmutableDictionary<string, string> diagnosticProperties)
@@ -224,15 +236,14 @@ namespace Microsoft.Interop
 
             if (info.IsManagedReturnPosition)
             {
-                diagnosticLocation = Location.Create(method.SyntaxTree, method.Identifier.Span);
-                elementName = method.Identifier.ValueText;
+                diagnosticLocation = diagnosticLocations.FallbackLocation;
+                elementName = diagnosticLocations.MethodIdentifier;
             }
             else
             {
-                Debug.Assert(info.ManagedIndex <= method.ParameterList.Parameters.Count);
-                ParameterSyntax param = method.ParameterList.Parameters[info.ManagedIndex];
-                diagnosticLocation = Location.Create(param.SyntaxTree, param.Identifier.Span);
-                elementName = param.Identifier.ValueText;
+                Debug.Assert(info.ManagedIndex <= diagnosticLocations.ManagedParameterLocations.Length);
+                diagnosticLocation = diagnosticLocations.ManagedParameterLocations[info.ManagedIndex];
+                elementName = info.InstanceIdentifier;
             }
 
             if (!string.IsNullOrEmpty(notSupportedDetails))
@@ -322,12 +333,12 @@ namespace Microsoft.Interop
         /// <param name="method">Method with the configuration that cannot be forwarded</param>
         /// <param name="name">Configuration name</param>
         /// <param name="value">Configuration value</param>
-        public void ReportCannotForwardToDllImport(MethodDeclarationSyntax method, string name, string? value = null)
+        public void ReportCannotForwardToDllImport(MethodSignatureDiagnosticLocations method, string name, string? value = null)
         {
             _diagnostics.Add(
                 Diagnostic.Create(
                     CannotForwardToDllImport,
-                    Location.Create(method.SyntaxTree, method.Identifier.Span),
+                    method.FallbackLocation,
                     value is null ? name : $"{name}={value}"));
         }
 

@@ -225,8 +225,7 @@ namespace System.Data.Odbc
         { // V1.2.3300, XXXParameter V1.0.3300
             get
             {
-                string? parameterName = _parameterName;
-                return ((null != parameterName) ? parameterName : string.Empty);
+                return _parameterName ?? string.Empty;
             }
             set
             {
@@ -1082,7 +1081,7 @@ namespace System.Data.Odbc
             }
             else
             {
-                // always set ouput only and return value parameter values to null when executing
+                // always set output only and return value parameter values to null when executing
                 _internalValue = null;
 
                 //Always initialize the intbuffer (for output params).  Since we need to know

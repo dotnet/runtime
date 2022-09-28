@@ -905,7 +905,7 @@ retry_contended:
 				if (delta >= ms) {
 					ms = 0;
 				} else {
-					ms -= delta;
+					ms -= GINT64_TO_UINT32 (delta);
 				}
 			}
 			/* retry from the top */
@@ -986,7 +986,7 @@ MonoBoolean
 mono_monitor_enter_internal (MonoObject *obj)
 {
 	const int timeout_milliseconds = MONO_INFINITE_WAIT;
-	const gboolean allow_interruption = TRUE;
+	const MonoBoolean allow_interruption = TRUE;
 	MonoError * const error = NULL;
 	MonoBoolean lock_taken;
 
@@ -1158,7 +1158,7 @@ mono_monitor_try_enter_loop_if_interrupted (MonoObject *obj, guint32 ms,
 
 	/*It's safe to do it from here since interruption would happen only on the wrapper.*/
 	*lockTaken = res == 1;
-	return res;
+	return !!res;
 }
 
 void
@@ -1309,7 +1309,7 @@ mono_monitor_wait (MonoObjectHandle obj_handle, guint32 ms, MonoBoolean allow_in
 	HANDLE event;
 	guint32 nest;
 	MonoW32HandleWaitRet ret;
-	gboolean success = FALSE;
+	MonoBoolean success = FALSE;
 	gint32 regain;
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	int const id = mono_thread_info_get_small_id ();

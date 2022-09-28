@@ -27,6 +27,7 @@ namespace System.Runtime.CompilerServices
             }
         }
 
+        [Obsolete("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData
         {
             [Intrinsic]

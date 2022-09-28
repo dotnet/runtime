@@ -23,7 +23,7 @@ namespace System.Reflection.Emit
 
         internal void GetCallableMethod(RuntimeModule module, DynamicMethod dm)
         {
-            dm.m_methodHandle = ModuleHandle.GetDynamicMethod(dm,
+            dm._methodHandle = ModuleHandle.GetDynamicMethod(dm,
                                           module,
                                           m_methodBuilder.Name,
                                           (byte[])m_scope[m_methodSigToken]!,
@@ -191,15 +191,17 @@ namespace System.Reflection.Emit
                                        Type[]? optionalParameterTypes)
         {
             int stackchange = 0;
-            SignatureHelper sig;
             if (optionalParameterTypes != null)
                 if ((callingConvention & CallingConventions.VarArgs) == 0)
                     throw new InvalidOperationException(SR.InvalidOperation_NotAVarArgCallingConvention);
 
-            sig = GetMemberRefSignature(callingConvention,
-                                        returnType,
-                                        parameterTypes,
-                                        optionalParameterTypes);
+
+            SignatureHelper sig = GetMethodSigHelper(callingConvention,
+                                                     returnType,
+                                                     parameterTypes,
+                                                     null,
+                                                     null,
+                                                     optionalParameterTypes);
 
             EnsureCapacity(7);
             Emit(OpCodes.Calli);
@@ -228,17 +230,10 @@ namespace System.Reflection.Emit
         {
             int stackchange = 0;
             int cParams = 0;
-            int i;
-            SignatureHelper sig;
-
             if (parameterTypes != null)
                 cParams = parameterTypes.Length;
 
-            sig = SignatureHelper.GetMethodSigHelper(unmanagedCallConv, returnType);
-
-            if (parameterTypes != null)
-                for (i = 0; i < cParams; i++)
-                    sig.AddArgument(parameterTypes[i]);
+            SignatureHelper sig = GetMethodSigHelper(unmanagedCallConv, returnType, parameterTypes);
 
             // If there is a non-void return type, push one.
             if (returnType != typeof(void))
@@ -346,7 +341,7 @@ namespace System.Reflection.Emit
             current.MarkFilterAddr(ILOffset);
         }
 
-        public override void BeginCatchBlock(Type exceptionType)
+        public override void BeginCatchBlock(Type? exceptionType)
         {
             if (CurrExcStackCount == 0)
                 throw new NotSupportedException(SR.Argument_NotInExceptionBlock);
@@ -444,7 +439,7 @@ namespace System.Reflection.Emit
                 optionalCustomModifiers = null;
             }
 
-            SignatureHelper sig = GetMemberRefSignature(methodInfo.CallingConvention,
+            SignatureHelper sig = GetMethodSigHelper(methodInfo.CallingConvention,
                                                      MethodBuilder.GetMethodBaseReturnType(methodInfo),
                                                      parameterTypes,
                                                      requiredCustomModifiers,
@@ -457,7 +452,17 @@ namespace System.Reflection.Emit
                 return GetTokenForVarArgMethod(dm!, sig);
         }
 
-        internal override SignatureHelper GetMemberRefSignature(
+        private SignatureHelper GetMethodSigHelper(
+                                                CallingConvention unmanagedCallConv,
+                                                Type? returnType,
+                                                Type[]? parameterTypes)
+        {
+            SignatureHelper sigHelp = SignatureHelper.GetMethodSigHelper(null, unmanagedCallConv, returnType);
+            AddParameters(sigHelp, parameterTypes, null, null);
+            return sigHelp;
+        }
+
+        private SignatureHelper GetMethodSigHelper(
                                                 CallingConventions call,
                                                 Type? returnType,
                                                 Type[]? parameterTypes,
@@ -465,14 +470,31 @@ namespace System.Reflection.Emit
                                                 Type[][]? optionalCustomModifiers,
                                                 Type[]? optionalParameterTypes)
         {
-            SignatureHelper sig = SignatureHelper.GetMethodSigHelper(null, call, returnType, null, null, parameterTypes, requiredCustomModifiers, optionalCustomModifiers);
-
+            SignatureHelper sig = SignatureHelper.GetMethodSigHelper(call, returnType);
+            AddParameters(sig, parameterTypes, requiredCustomModifiers, optionalCustomModifiers);
             if (optionalParameterTypes != null && optionalParameterTypes.Length != 0)
             {
                 sig.AddSentinel();
                 sig.AddArguments(optionalParameterTypes, null, null);
             }
             return sig;
+        }
+
+        private void AddParameters(SignatureHelper sigHelp, Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers)
+        {
+            if (requiredCustomModifiers != null && (parameterTypes == null || requiredCustomModifiers.Length != parameterTypes.Length))
+                throw new ArgumentException(SR.Format(SR.Argument_MismatchedArrays, nameof(requiredCustomModifiers), nameof(parameterTypes)));
+
+            if (optionalCustomModifiers != null && (parameterTypes == null || optionalCustomModifiers.Length != parameterTypes.Length))
+                throw new ArgumentException(SR.Format(SR.Argument_MismatchedArrays, nameof(optionalCustomModifiers), nameof(parameterTypes)));
+
+            if (parameterTypes != null)
+            {
+                for (int i = 0; i < parameterTypes.Length; i++)
+                {
+                    sigHelp.AddDynamicArgument(m_scope, parameterTypes[i], requiredCustomModifiers?[i], optionalCustomModifiers?[i]);
+                }
+            }
         }
 
         internal override void RecordTokenFixup()
@@ -568,7 +590,7 @@ namespace System.Reflection.Emit
             m_scope = ilGenerator.m_scope;
 
             m_method = (DynamicMethod)ilGenerator.m_methodBuilder;
-            m_method.m_resolver = this;
+            m_method._resolver = this;
         }
 
         internal DynamicResolver(DynamicILInfo dynamicILInfo)
@@ -580,7 +602,7 @@ namespace System.Reflection.Emit
             m_scope = dynamicILInfo.DynamicScope;
 
             m_method = dynamicILInfo.DynamicMethod;
-            m_method.m_resolver = this;
+            m_method._resolver = this;
         }
 
         //
@@ -606,7 +628,7 @@ namespace System.Reflection.Emit
             if (method == null)
                 return;
 
-            if (method.m_methodHandle == null)
+            if (method._methodHandle == null)
                 return;
 
             DestroyScout scout;
@@ -623,7 +645,7 @@ namespace System.Reflection.Emit
 
             // We can never ever have two active destroy scouts for the same method. We need to initialize the scout
             // outside the try/reregister block to avoid possibility of reregistration for finalization with active scout.
-            scout.m_methodHandle = method.m_methodHandle.Value;
+            scout.m_methodHandle = method._methodHandle.Value;
         }
 
         private sealed class DestroyScout
@@ -665,12 +687,12 @@ namespace System.Reflection.Emit
 
             SecurityControlFlags flags = SecurityControlFlags.Default;
 
-            if (m_method.m_restrictedSkipVisibility)
+            if (m_method._restrictedSkipVisibility)
                 flags |= SecurityControlFlags.RestrictedSkipVisibilityChecks;
-            else if (m_method.m_skipVisibility)
+            else if (m_method._skipVisibility)
                 flags |= SecurityControlFlags.SkipVisibilityChecks;
 
-            typeOwner = m_method.m_typeOwner;
+            typeOwner = m_method._typeOwner;
 
             securityControlFlags = (int)flags;
 
@@ -862,7 +884,7 @@ namespace System.Reflection.Emit
         #region Internal Methods
         internal void GetCallableMethod(RuntimeModule module, DynamicMethod dm)
         {
-            dm.m_methodHandle = ModuleHandle.GetDynamicMethod(dm,
+            dm._methodHandle = ModuleHandle.GetDynamicMethod(dm,
                 module, m_method.Name, (byte[])m_scope[m_methodSignature]!, new DynamicResolver(this));
         }
 

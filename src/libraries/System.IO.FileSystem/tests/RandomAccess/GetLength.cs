@@ -36,5 +36,23 @@ namespace System.IO.Tests
                 Assert.Equal(fileSize, RandomAccess.GetLength(handle));
             }
         }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsAndElevated))]
+        [MemberData(nameof(GetSyncAsyncOptions))]
+        public void ReturnsActualLengthForDevices(FileOptions options)
+        {
+            // Both File.Exists and Path.Exists return false when "\\?\PhysicalDrive0" exists
+            // that is why we just try and swallow the exception when it occurs.
+            // Exception can be also thrown when the file is in use (#73925).
+            try
+            {
+                using (SafeFileHandle handle = File.OpenHandle(@"\\?\PhysicalDrive0", FileMode.Open, options: options))
+                {
+                    long length = RandomAccess.GetLength(handle);
+                    Assert.True(length > 0);
+                }
+            }
+            catch (IOException) { }
+        }
     }
 }

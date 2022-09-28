@@ -221,6 +221,11 @@ class Program
         AssertEquals("System.Collections.Generic.EnumComparer`1[System.Runtime.CompilerServices.MethodImplOptions]", Comparer<MethodImplOptions>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.NullableComparer`1[System.Byte]", Comparer<byte?>.Default.GetType().ToString());
         AssertEquals("System.Collections.Generic.ObjectComparer`1[Struct1]", Comparer<Struct1>.Default.GetType().ToString());
+
+        AssertEquals("System.Collections.Generic.NullableComparer`1[System.Runtime.CompilerServices.MethodImplOptions]", Comparer<MethodImplOptions?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableEqualityComparer`1[System.Runtime.CompilerServices.MethodImplOptions]", EqualityComparer<MethodImplOptions?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableComparer`1[Struct1]", Comparer<Struct1?>.Default.GetType().ToString());
+        AssertEquals("System.Collections.Generic.NullableEqualityComparer`1[Struct1]", EqualityComparer<Struct1?>.Default.GetType().ToString());
     }
     private static int GetHashCodeTests()
     {

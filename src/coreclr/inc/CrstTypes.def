@@ -77,9 +77,9 @@ Crst AppDomainCache
     AcquiredBefore UniqueStack UnresolvedClassLock
 End
 
-Crst AppDomainHandleTable
+Crst PinnedHeapHandleTable
     AcquiredBefore AvailableParamTypes HandleTable IbcProfile SyncBlockCache SystemDomainDelayedUnloadList
-                   ThreadStore SystemDomain
+                   SystemDomain
 End
 
 Crst ArgBasedStubCache
@@ -185,7 +185,7 @@ Crst DelegateToFPtrHash
 End
 
 Crst DomainLocalBlock
-    AcquiredBefore AppDomainHandleTable IbcProfile LoaderHeap SystemDomainDelayedUnloadList UniqueStack
+    AcquiredBefore PinnedHeapHandleTable IbcProfile LoaderHeap SystemDomainDelayedUnloadList UniqueStack
 End
 
 Crst DynamicIL
@@ -202,7 +202,7 @@ Crst Exception
 End
 
 Crst ExecutableAllocatorLock
-    AcquiredAfter LoaderHeap ArgBasedStubCache UMEntryThunkFreeListLock
+    AcquiredAfter LoaderHeap ArgBasedStubCache UMEntryThunkFreeListLock COMCallWrapper
 End
 
 Crst ExecuteManRangeLock
@@ -230,7 +230,7 @@ Crst GCCover
 End
 
 Crst GlobalStrLiteralMap
-    AcquiredBefore HandleTable IbcProfile SyncBlockCache SystemDomainDelayedUnloadList ThreadStore UniqueStack
+    AcquiredBefore PinnedHeapHandleTable HandleTable IbcProfile SyncBlockCache SystemDomainDelayedUnloadList ThreadStore UniqueStack
 End
 
 Crst HandleTable
@@ -256,7 +256,7 @@ Crst InstMethodHashTable
 End
 
 Crst Interop
-    AcquiredBefore AppDomainHandleTable AvailableParamTypes ClassInit DeadlockDetection DomainLocalBlock
+    AcquiredBefore PinnedHeapHandleTable AvailableParamTypes ClassInit DeadlockDetection DomainLocalBlock
                    HandleTable InstMethodHashTable InteropData JitGenericHandleCache LoaderHeap SigConvert
                    StubDispatchCache StubUnwindInfoHeapSegments SyncBlockCache TypeIDMap UnresolvedClassLock
                    PendingTypeLoadEntry
@@ -292,7 +292,7 @@ End
 Crst JumpStubCache
     AcquiredBefore ExecuteManRangeLock LoaderHeap SingleUseLock
     AcquiredAfter AppDomainCache
-                  ILStubGen ThreadpoolTimerQueue ThreadpoolWaitThreads
+                  ILStubGen
                   TypeIDMap BaseDomain AssemblyLoader
 End
 
@@ -305,7 +305,7 @@ Crst LeafLock
 End
 
 Crst LoaderAllocator
-    AcquiredBefore AppDomainHandleTable HandleTable UniqueStack ThreadStore
+    AcquiredBefore PinnedHeapHandleTable HandleTable UniqueStack ThreadStore
     AcquiredAfter DomainLocalBlock
 End
 
@@ -334,7 +334,7 @@ Crst Module
 End
 
 Crst ModuleFixup
-    AcquiredBefore AppDomainHandleTable GlobalStrLiteralMap IbcProfile SyncBlockCache
+    AcquiredBefore PinnedHeapHandleTable GlobalStrLiteralMap IbcProfile SyncBlockCache
 End
 
 Crst ModuleLookupTable
@@ -353,7 +353,7 @@ Crst PEImage
 End
 
 Crst PendingTypeLoadEntry
-    AcquiredBefore AppDomainCache AppDomainHandleTable AssemblyLoader AvailableClass AvailableParamTypes
+    AcquiredBefore AppDomainCache PinnedHeapHandleTable AssemblyLoader AvailableClass AvailableParamTypes
                    BaseDomain ClassInit DeadlockDetection DebuggerController DebuggerJitInfo DebuggerMutex
                    DomainLocalBlock Exception ExecuteManRangeLock FuncPtrStubs
                    FusionAppCtx GlobalStrLiteralMap HandleTable IbcProfile
@@ -476,18 +476,6 @@ End
 Crst ThreadIdDispenser
 End
 
-Crst ThreadpoolTimerQueue
-    AcquiredBefore UniqueStack
-End
-
-Crst ThreadpoolWaitThreads
-    AcquiredBefore UniqueStack
-End
-
-Crst ThreadpoolWorker
-    AcquiredBefore ThreadIdDispenser ThreadStore
-End
-
 Crst ThreadStore
     AcquiredBefore AvailableParamTypes DeadlockDetection DebuggerController
                    DebuggerHeapLock DebuggerJitInfo DynamicIL ExecuteManRangeLock HandleTable IbcProfile
@@ -561,7 +549,7 @@ End
 
 Crst TieredCompilation
     AcquiredAfter CodeVersioning
-    AcquiredBefore ThreadpoolTimerQueue
+    AcquiredBefore FuncPtrStubs
 End
 
 Crst COMCallWrapper

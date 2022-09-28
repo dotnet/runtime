@@ -196,7 +196,6 @@ protected:
     void*     coldCodePtr;
     void*     consPtr;
 
-#ifdef DEBUG
     // Last instr we have displayed for dspInstrs
     unsigned genCurDispOffset;
 
@@ -204,7 +203,6 @@ protected:
     const char* genInsDisplayName(emitter::instrDesc* id);
 
     static const char* genSizeStr(emitAttr size);
-#endif // DEBUG
 
     void genInitialize();
 
@@ -236,7 +234,6 @@ protected:
     void genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind, BasicBlock* failBlk = nullptr);
 
 #ifdef TARGET_LOONGARCH64
-    void genSetRegToIcon(regNumber reg, ssize_t val, var_types type);
     void genJumpToThrowHlpBlk_la(SpecialCodeKind codeKind,
                                  instruction     ins,
                                  regNumber       reg1,
@@ -642,6 +639,7 @@ protected:
     virtual void SetSaveFpLrWithAllCalleeSavedRegisters(bool value);
     virtual bool IsSaveFpLrWithAllCalleeSavedRegisters() const;
     bool         genSaveFpLrWithAllCalleeSavedRegisters;
+    bool         genForceFuncletFrameType5;
 #endif // TARGET_ARM64
 
     //-------------------------------------------------------------------------
@@ -673,11 +671,15 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     void genIPmappingAdd(IPmappingDscKind kind, const DebugInfo& di, bool isLabel);
     void genIPmappingAddToFront(IPmappingDscKind kind, const DebugInfo& di, bool isLabel);
     void genIPmappingGen();
+    void genAddRichIPMappingHere(const DebugInfo& di);
+
+    void genReportRichDebugInfo();
+
+    void genRecordRichDebugInfoInlineTree(InlineContext* context, ICorDebugInfo::InlineTreeNode* tree);
 
 #ifdef DEBUG
-    void genDumpPreciseDebugInfo();
-    void genDumpPreciseDebugInfoInlineTree(FILE* file, InlineContext* context, bool* first);
-    void genAddPreciseIPMappingHere(const DebugInfo& di);
+    void genReportRichDebugInfoToFile();
+    void genReportRichDebugInfoInlineTreeToFile(FILE* file, InlineContext* context, bool* first);
 #endif
 
     void genEnsureCodeEmitted(const DebugInfo& di);
@@ -949,8 +951,11 @@ protected:
     void genLeaInstruction(GenTreeAddrMode* lea);
     void genSetRegToCond(regNumber dstReg, GenTree* tree);
 
-#if defined(TARGET_ARMARCH)
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
     void genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg, regNumber indexReg, int scale);
+#endif // TARGET_ARMARCH || TARGET_LOONGARCH64
+
+#if defined(TARGET_ARMARCH)
     void genCodeForMulLong(GenTreeOp* mul);
 #endif // TARGET_ARMARCH
 
@@ -987,6 +992,13 @@ protected:
             ZERO_EXTEND_INT,
             SIGN_EXTEND_INT,
 #endif
+            LOAD_ZERO_EXTEND_SMALL_INT,
+            LOAD_SIGN_EXTEND_SMALL_INT,
+#ifdef TARGET_64BIT
+            LOAD_ZERO_EXTEND_INT,
+            LOAD_SIGN_EXTEND_INT,
+#endif
+            LOAD_SOURCE
         };
 
     private:
@@ -1041,6 +1053,11 @@ protected:
     void genIntToFloatCast(GenTree* treeNode);
     void genCkfinite(GenTree* treeNode);
     void genCodeForCompare(GenTreeOp* tree);
+#ifdef TARGET_ARM64
+    void genCodeForConditionalCompare(GenTreeOp* tree, GenCondition prevCond);
+    void genCodeForContainedCompareChain(GenTree* tree, bool* inchain, GenCondition* prevCond);
+    void genCodeForSelect(GenTreeConditional* tree);
+#endif
     void genIntrinsic(GenTree* treeNode);
     void genPutArgStk(GenTreePutArgStk* treeNode);
     void genPutArgReg(GenTreeOp* tree);
@@ -1131,6 +1148,7 @@ protected:
     void genPCLMULQDQIntrinsic(GenTreeHWIntrinsic* node);
     void genPOPCNTIntrinsic(GenTreeHWIntrinsic* node);
     void genXCNTIntrinsic(GenTreeHWIntrinsic* node, instruction ins);
+    void genX86SerializeIntrinsic(GenTreeHWIntrinsic* node);
     template <typename HWIntrinsicSwitchCaseBody>
     void genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsic,
                                          regNumber                 nonConstImmReg,
@@ -1334,10 +1352,10 @@ protected:
 
     void genPutStructArgStk(GenTreePutArgStk* treeNode);
 
-    unsigned genMove8IfNeeded(unsigned size, regNumber tmpReg, GenTree* srcAddr, unsigned offset);
-    unsigned genMove4IfNeeded(unsigned size, regNumber tmpReg, GenTree* srcAddr, unsigned offset);
-    unsigned genMove2IfNeeded(unsigned size, regNumber tmpReg, GenTree* srcAddr, unsigned offset);
-    unsigned genMove1IfNeeded(unsigned size, regNumber tmpReg, GenTree* srcAddr, unsigned offset);
+    unsigned genMove8IfNeeded(unsigned size, regNumber tmpReg, GenTree* src, unsigned offset);
+    unsigned genMove4IfNeeded(unsigned size, regNumber tmpReg, GenTree* src, unsigned offset);
+    unsigned genMove2IfNeeded(unsigned size, regNumber tmpReg, GenTree* src, unsigned offset);
+    unsigned genMove1IfNeeded(unsigned size, regNumber tmpReg, GenTree* src, unsigned offset);
     void genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree* base, unsigned offset);
     void genStoreRegToStackArg(var_types type, regNumber reg, int offset);
     void genStructPutArgRepMovs(GenTreePutArgStk* putArgStkNode);
@@ -1378,8 +1396,6 @@ protected:
 #endif
 #if defined(TARGET_ARM64)
     void genCodeForJumpCompare(GenTreeOp* tree);
-    void genCodeForMadd(GenTreeOp* tree);
-    void genCodeForMsub(GenTreeOp* tree);
     void genCodeForBfiz(GenTreeOp* tree);
     void genCodeForAddEx(GenTreeOp* tree);
     void genCodeForCond(GenTreeOp* tree);
@@ -1393,10 +1409,6 @@ protected:
 
     void genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode);
     void genMultiRegStoreToLocal(GenTreeLclVar* lclNode);
-
-#if defined(TARGET_LOONGARCH64)
-    void genMultiRegCallStoreToLocal(GenTree* treeNode);
-#endif
 
     // Codegen for multi-register struct returns.
     bool isStructReturn(GenTree* treeNode);
@@ -1448,7 +1460,10 @@ protected:
 #endif // !FEATURE_PUT_STRUCT_ARG_STK
 
 #if defined(DEBUG) && defined(TARGET_XARCH)
-    void genStackPointerCheck(bool doStackPointerCheck, unsigned lvaStackPointerVar);
+    void genStackPointerCheck(bool      doStackPointerCheck,
+                              unsigned  lvaStackPointerVar,
+                              ssize_t   offset = 0,
+                              regNumber regTmp = REG_NA);
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 
 #ifdef DEBUG
@@ -1477,8 +1492,11 @@ protected:
 
 public:
     void instGen(instruction ins);
-
+#if defined(TARGET_XARCH)
+    void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock, bool isRemovableJmpCandidate = false);
+#else
     void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock);
+#endif
 
     void inst_SET(emitJumpKind condition, regNumber reg);
 
@@ -1704,6 +1722,11 @@ public:
 #ifdef TARGET_XARCH
     instruction genMapShiftInsToShiftByConstantIns(instruction ins, int shiftByValue);
 #endif // TARGET_XARCH
+
+#ifdef TARGET_ARM64
+    static insCflags InsCflagsForCcmp(GenCondition cond);
+    static insCond JumpKindToInsCond(emitJumpKind condition);
+#endif
 
 #ifndef TARGET_LOONGARCH64
     // Maps a GenCondition code to a sequence of conditional jumps or other conditional instructions

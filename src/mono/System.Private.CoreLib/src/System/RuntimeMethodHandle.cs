@@ -56,6 +56,10 @@ namespace System
             return value.GetHashCode();
         }
 
+        public static RuntimeMethodHandle FromIntPtr(IntPtr value) => new RuntimeMethodHandle(value);
+
+        public static IntPtr ToIntPtr(RuntimeMethodHandle value) => value.Value;
+
         public static bool operator ==(RuntimeMethodHandle left, RuntimeMethodHandle right)
         {
             return left.Equals(right);
@@ -85,5 +89,8 @@ namespace System
         {
             return value == IntPtr.Zero;
         }
+
+        // Temporary placeholder until Mono adds support for supporting boxing true Nullables.
+        internal static object? ReboxFromNullable(object? src) => src;
     }
 }

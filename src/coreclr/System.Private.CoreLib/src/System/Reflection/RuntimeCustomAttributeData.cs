@@ -766,9 +766,6 @@ namespace System.Reflection
 
     internal static unsafe class CustomAttribute
     {
-        private static readonly RuntimeType Type_RuntimeType = (RuntimeType)typeof(RuntimeType);
-        private static readonly RuntimeType Type_Type = (RuntimeType)typeof(Type);
-
         #region Internal Static Members
         internal static bool IsDefined(RuntimeType type, RuntimeType? caType, bool inherit)
         {
@@ -1137,7 +1134,7 @@ namespace System.Reflection
             return result;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2065:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:MethodParameterDoesntMeetThisParameterRequirements",
             Justification = "Linker guarantees presence of all the constructor parameters, property setters and fields which are accessed by any " +
                             "attribute instantiation which is present in the code linker has analyzed." +
                             "As such the reflection usage in this method will never fail as those methods/fields will be present.")]
@@ -1221,9 +1218,9 @@ namespace System.Reflection
                             if (type is null && value is not null)
                             {
                                 type = (RuntimeType)value.GetType();
-                                if (type == Type_RuntimeType)
+                                if (type == typeof(RuntimeType))
                                 {
-                                    type = Type_Type;
+                                    type = (RuntimeType)typeof(Type);
                                 }
                             }
 
@@ -1544,7 +1541,7 @@ namespace System.Reflection
         {
             Type[] pcas = new Type[]
             {
-                // See https://github.com/dotnet/coreclr/blob/master/src/md/compiler/custattr_emit.cpp
+                // See https://github.com/dotnet/runtime/blob/main/src/coreclr/md/compiler/custattr_emit.cpp
                 typeof(FieldOffsetAttribute), // field
                 typeof(SerializableAttribute), // class, struct, enum, delegate
                 typeof(MarshalAsAttribute), // parameter, field, return-value

@@ -17,7 +17,7 @@ WCHAR OutBuffer_FormatMessageW_test2[1024];
 
 /* Pass this test the string "INSERT" and it will succeed */
 
-int test1(int num, ...) 
+int test1(int num, ...)
 {
 
     WCHAR * TheString = convert("Pal %1!s! Testing");
@@ -25,7 +25,7 @@ int test1(int num, ...)
     va_list TheList;
     va_start(TheList,num);
     memset( OutBuffer_FormatMessageW_test2, 0, 1024 * sizeof(OutBuffer_FormatMessageW_test2[0]) );
-    
+
     ReturnResult = FormatMessage(
         FORMAT_MESSAGE_FROM_STRING,      /* source and processing options */
         TheString,                       /* message source */
@@ -35,39 +35,39 @@ int test1(int num, ...)
         1024,                            /* maximum size of message buffer */
         &TheList                             /* array of message inserts */
         );
-  
+
     va_end(TheList);
-  
-    if(ReturnResult == 0) 
+
+    if(ReturnResult == 0)
     {
         Fail("ERROR: The return value was 0, which indicates failure.  "
              "The function failed when trying to Format a simple string,"
              " with the 's' formatter.");
-    
+
     }
-  
+
     if(memcmp(OutBuffer_FormatMessageW_test2, convert("Pal INSERT Testing"),
-              wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0) 
+              wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0)
     {
-        Fail("ERROR:  The formated string should have been 'Pal INSERT "
+        Fail("ERROR:  The formatted string should have been 'Pal INSERT "
              "Testing' but '%s' was returned.",
              convertC(OutBuffer_FormatMessageW_test2));
     }
 
-    
+
     return PASS;
 }
 
 /* Pass this test the int 40 and it will succeed */
 
-int test2(int num, ...) 
+int test2(int num, ...)
 {
 
     WCHAR * TheString = convert("Pal %1!i! Testing");
     int ReturnResult;
     va_list TheList;
     va_start(TheList,num);
-  
+
     memset( OutBuffer_FormatMessageW_test2, 0, 1024 * sizeof(OutBuffer_FormatMessageW_test2[0]) );
 
     ReturnResult = FormatMessage(
@@ -79,19 +79,19 @@ int test2(int num, ...)
         1024,                            /* maximum size of message buffer */
         &TheList                             /* array of message inserts */
         );
-  
+
     va_end(TheList);
-  
-    if(ReturnResult == 0) 
+
+    if(ReturnResult == 0)
     {
         Fail("ERROR: The return value was 0, which indicates failure.  "
-             "The function failed when trying to Format a simple string," 
-             " with the 'i' formatter.");    
+             "The function failed when trying to Format a simple string,"
+             " with the 'i' formatter.");
     }
-    
-    if(memcmp(OutBuffer_FormatMessageW_test2, convert("Pal 40 Testing"),wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0) 
+
+    if(memcmp(OutBuffer_FormatMessageW_test2, convert("Pal 40 Testing"),wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0)
     {
-        Fail("ERROR:  The formated string should have been 'Pal 40 Testing' "
+        Fail("ERROR:  The formatted string should have been 'Pal 40 Testing' "
              "but '%s' was returned.", convertC(OutBuffer_FormatMessageW_test2));
     }
     return PASS;
@@ -115,23 +115,23 @@ int test3(int num, ...) {
         1024,                            /* maximum size of message buffer */
         &TheList                             /* array of message inserts */
         );
-  
+
     va_end(TheList);
-  
-    if(ReturnResult == 0) 
+
+    if(ReturnResult == 0)
     {
         Fail("ERROR: The return value was 0, which indicates failure.  "
              "The function failed when trying to Format a simple string,"
              " with the 'c' formatter.");
     }
-    
-    if(memcmp(OutBuffer_FormatMessageW_test2, convert("Pal a Testing"),wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0) 
+
+    if(memcmp(OutBuffer_FormatMessageW_test2, convert("Pal a Testing"),wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0)
     {
-        Fail("ERROR:  The formated string should have been 'Pal a Testing' "
+        Fail("ERROR:  The formatted string should have been 'Pal a Testing' "
              "but '%s' was returned.", convertC(OutBuffer_FormatMessageW_test2));
-    
+
     }
-    
+
     return PASS;
 }
 
@@ -153,28 +153,28 @@ int test4(int num, ...) {
         1024,                            /* maximum size of message buffer */
         &TheList                             /* array of message inserts */
         );
-  
+
     va_end(TheList);
-  
-    if(ReturnResult == 0) 
+
+    if(ReturnResult == 0)
     {
         Fail("ERROR: The return value was 0, which indicates failure.  "
              "The function failed when trying to Format a simple string,"
-             " with the 'C' formatter.");  
+             " with the 'C' formatter.");
     }
-    
-    if(memcmp(OutBuffer_FormatMessageW_test2, convert("Pal a Testing"),wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0) 
+
+    if(memcmp(OutBuffer_FormatMessageW_test2, convert("Pal a Testing"),wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0)
     {
-        Fail("ERROR:  The formated string should have been 'Pal a Testing' "
+        Fail("ERROR:  The formatted string should have been 'Pal a Testing' "
              "but '%s' was returned.",convertC(OutBuffer_FormatMessageW_test2));
     }
-    
+
     return PASS;
 }
 
 /* Pass this test the number 57 and it will succeed */
 
-int test5(int num, ...) 
+int test5(int num, ...)
 {
 
     WCHAR * TheString = convert("Pal %1!d! Testing");
@@ -192,24 +192,24 @@ int test5(int num, ...)
         1024,                            /* maximum size of message buffer */
         &TheList                             /* array of message inserts */
         );
-  
+
     va_end(TheList);
-  
-    if(ReturnResult == 0) 
+
+    if(ReturnResult == 0)
     {
         Fail("ERROR: The return value was 0, which indicates failure.  "
              "The function failed when trying to Format a simple string, "
              "with the 'd' formatter.");
-    
+
     }
-    
+
     if(memcmp(OutBuffer_FormatMessageW_test2, convert("Pal 57 Testing"),wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0)
     {
-        Fail("ERROR:  The formated string should have been 'Pal 57 Testing' "
+        Fail("ERROR:  The formatted string should have been 'Pal 57 Testing' "
              "but '%s' was returned.",convertC(OutBuffer_FormatMessageW_test2));
-    
+
     }
-    
+
     return PASS;
 }
 
@@ -232,25 +232,25 @@ int test6(int num, ...) {
         1024,                            /* maximum size of message buffer */
         &TheList                             /* array of message inserts */
         );
-  
+
     va_end(TheList);
-  
-    if(ReturnResult == 0) 
+
+    if(ReturnResult == 0)
     {
         Fail("ERROR: The return value was 0, which indicates failure.  "
              "The function failed when trying to Format a simple string, "
              "with the 'hc' and 'hC' formatters.");
-    
+
     }
-    
+
     if(memcmp(OutBuffer_FormatMessageW_test2, convert("Pal a and b Testing"),
-              wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0) 
+              wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0)
     {
-        Fail("ERROR:  The formated string should have been 'Pal a and b "
+        Fail("ERROR:  The formatted string should have been 'Pal a and b "
              "Testing' but '%s' was returned.", convertC(OutBuffer_FormatMessageW_test2));
-    
+
     }
-    
+
     return PASS;
 }
 
@@ -274,25 +274,25 @@ int test7(int num, ...)
         1024,                            /* maximum size of message buffer */
         &TheList                             /* array of message inserts */
         );
-  
+
     va_end(TheList);
-  
-    if(ReturnResult == 0) 
+
+    if(ReturnResult == 0)
     {
         Fail("ERROR: The return value was 0, which indicates failure.  "
              "The function failed when trying to Format a simple string, "
              "with the 'hd', 'hs' and 'hS' formatters.");
-    
+
     }
-    
-    if(memcmp(OutBuffer_FormatMessageW_test2, 
+
+    if(memcmp(OutBuffer_FormatMessageW_test2,
               convert("Pal 90 and foo and bar Testing"),
-              wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0) 
+              wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0)
     {
-        Fail("ERROR:  The formated string should have been 'Pal 90 and foo "
+        Fail("ERROR:  The formatted string should have been 'Pal 90 and foo "
              "and bar Testing' but '%s' was returned.",convertC(OutBuffer_FormatMessageW_test2));
     }
-    
+
     return PASS;
 }
 
@@ -301,7 +301,7 @@ int test7(int num, ...)
 int test8(int num, ...)
 {
 
-    WCHAR * TheString = 
+    WCHAR * TheString =
         convert("Pal %1!lc! and %2!lC! and %3!ld! and %4!li! Testing");
     int ReturnResult;
     va_list TheList;
@@ -317,31 +317,31 @@ int test8(int num, ...)
         1024,                            /* maximum size of message buffer */
         &TheList                             /* array of message inserts */
         );
-  
+
     va_end(TheList);
-  
-    if(ReturnResult == 0) 
+
+    if(ReturnResult == 0)
     {
         Fail("ERROR: The return value was 0, which indicates failure.  "
              "The function failed when trying to Format a simple string, "
              "with the 'lc', 'lC', 'ld' and 'li' formatters.");
-    
+
     }
-    
-    if(memcmp(OutBuffer_FormatMessageW_test2, 
+
+    if(memcmp(OutBuffer_FormatMessageW_test2,
               convert("Pal a and b and 50 and 100 Testing"),
-              wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0) 
+              wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0)
     {
-        Fail("ERROR:  The formated string should have been 'Pal a and b and 50"
+        Fail("ERROR:  The formatted string should have been 'Pal a and b and 50"
              " and 100 Testing' but '%s' was returned.",convertC(OutBuffer_FormatMessageW_test2));
-    
+
     }
-    
+
     return PASS;
 }
 
-/* Pass this test the wide string 'foo' and 'bar' and the unsigned 
-   int 56 to pass 
+/* Pass this test the wide string 'foo' and 'bar' and the unsigned
+   int 56 to pass
 */
 
 int test9(int num, ...) {
@@ -360,26 +360,26 @@ int test9(int num, ...) {
         1024,                            /* maximum size of message buffer */
         &TheList                             /* array of message inserts */
         );
-  
+
     va_end(TheList);
-  
-    if(ReturnResult == 0) 
+
+    if(ReturnResult == 0)
     {
         Fail("ERROR: The return value was 0, which indicates failure.  "
-             "The function failed when trying to Format a simple string," 
+             "The function failed when trying to Format a simple string,"
              " with the 'ls', 'lS' and 'lu' formatters.");
-    
+
     }
-    
-    if(memcmp(OutBuffer_FormatMessageW_test2, 
+
+    if(memcmp(OutBuffer_FormatMessageW_test2,
               convert("Pal foo and bar and 56 Testing"),
-              wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0) 
+              wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0)
     {
-        Fail("ERROR:  The formated string should have been 'Pal foo and bar "
+        Fail("ERROR:  The formatted string should have been 'Pal foo and bar "
              "and 56 Testing' but '%s' was returned.",convertC(OutBuffer_FormatMessageW_test2));
-    
+
     }
-    
+
     return PASS;
 }
 
@@ -402,26 +402,26 @@ int test10(int num, ...)
         1024,                            /* maximum size of message buffer */
         &TheList                             /* array of message inserts */
         );
-  
+
     va_end(TheList);
-  
-    if(ReturnResult == 0) 
+
+    if(ReturnResult == 0)
     {
         Fail("ERROR: The return value was 0, which indicates failure.  "
              "The function failed when trying to Format a simple string, "
              "with the 'lx' and 'lX' formatters.");
-    
+
     }
-    
-    if(memcmp(OutBuffer_FormatMessageW_test2, 
+
+    if(memcmp(OutBuffer_FormatMessageW_test2,
               convert("Pal 123ab and 123CD Testing"),
-              wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0) 
+              wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0)
     {
-        Fail("ERROR:  The formated string should have been 'Pal 123ab and "
+        Fail("ERROR:  The formatted string should have been 'Pal 123ab and "
              "123CD Testing' but '%s' was returned.", convertC(OutBuffer_FormatMessageW_test2));
-    
+
     }
-    
+
     return PASS;
 }
 
@@ -445,59 +445,59 @@ int test11(int num, ...)
         1024,                            /* maximum size of message buffer */
         &TheList                             /* array of message inserts */
         );
-  
+
     va_end(TheList);
-  
-    if(ReturnResult == 0) 
+
+    if(ReturnResult == 0)
     {
         Fail("ERROR: The return value was 0, which indicates failure.  "
              "The function failed when trying to Format a simple string, "
              "with the 'p' and 'S' formatters.");
-    
+
     }
-    
+
 /*
 **  Run only on 64 bit platforms
 */
 #if defined(HOST_64BIT)
 	Trace("Testing for 64 Bit Platforms \n");
-	if(memcmp(OutBuffer_FormatMessageW_test2, 
+	if(memcmp(OutBuffer_FormatMessageW_test2,
               convert("Pal 00000000000123AB and foo Testing"),
-              wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0 && 
+              wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0 &&
        /* BSD style */
        memcmp( OutBuffer_FormatMessageW_test2,
                convert( "Pal 0x123ab and foo Testing" ),
-               wcslen(OutBuffer_FormatMessageW_test2)*2+2 ) != 0 )  
+               wcslen(OutBuffer_FormatMessageW_test2)*2+2 ) != 0 )
     {
-        Fail("ERROR:  The formated string should have been 'Pal 000123AB and "
+        Fail("ERROR:  The formatted string should have been 'Pal 000123AB and "
              "foo Testing' but '%s' was returned.",convertC(OutBuffer_FormatMessageW_test2));
-    
+
     }
 
 #else
 	Trace("Testing for Non 64 Bit Platforms \n");
-	if(memcmp(OutBuffer_FormatMessageW_test2, 
+	if(memcmp(OutBuffer_FormatMessageW_test2,
               convert("Pal 000123AB and foo Testing"),
-              wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0 && 
+              wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0 &&
        /* BSD style */
        memcmp( OutBuffer_FormatMessageW_test2,
                convert( "Pal 0x123ab and foo Testing" ),
-               wcslen(OutBuffer_FormatMessageW_test2)*2+2 ) != 0 )  
+               wcslen(OutBuffer_FormatMessageW_test2)*2+2 ) != 0 )
     {
-        Fail("ERROR:  The formated string should have been 'Pal 000123AB and "
+        Fail("ERROR:  The formatted string should have been 'Pal 000123AB and "
              "foo Testing' but '%s' was returned.",convertC(OutBuffer_FormatMessageW_test2));
-    
+
     }
 
 #endif
-    
+
    return PASS;
 }
 
-/* Pass this test the unsigned int 100 and the hex values 0x123ab and 0x123cd 
+/* Pass this test the unsigned int 100 and the hex values 0x123ab and 0x123cd
 to succeed */
 
-int test12(int num, ...) 
+int test12(int num, ...)
 {
 
     WCHAR * TheString = convert("Pal %1!u! and %2!x! and %3!X! Testing");
@@ -515,27 +515,27 @@ int test12(int num, ...)
         1024,                            /* maximum size of message buffer */
         &TheList                             /* array of message inserts */
         );
-  
+
     va_end(TheList);
-  
-    if(ReturnResult == 0) 
+
+    if(ReturnResult == 0)
     {
         Fail("ERROR: The return value was 0, which indicates failure.  "
              "The function failed when trying to Format a simple string, "
              "with the 'u', 'x' and 'X' formatters.");
-    
+
     }
-    
-    if(memcmp(OutBuffer_FormatMessageW_test2, 
+
+    if(memcmp(OutBuffer_FormatMessageW_test2,
               convert("Pal 100 and 123ab and 123CD Testing"),
-              wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0) 
+              wcslen(OutBuffer_FormatMessageW_test2)*2+2) != 0)
     {
-        Fail("ERROR:  The formated string should have been 'Pal 100 and "
+        Fail("ERROR:  The formatted string should have been 'Pal 100 and "
              "123ab and 123CD Testing' but '%s' was returned.",
              convertC(OutBuffer_FormatMessageW_test2));
-    
+
     }
-    
+
     return PASS;
 }
 
@@ -555,7 +555,7 @@ PALTEST(miscellaneous_FormatMessageW_test2_paltest_formatmessagew_test2, "miscel
     }
 
     if(test1(0,szwInsert) ||                        /* Test %s */
-       test2(0,40) ||                               /* Test %i */ 
+       test2(0,40) ||                               /* Test %i */
        test3(0,'a') ||                              /* Test %c */
        test4(0,'a') ||                              /* Test %C */
        test5(0,57) ||                               /* Test %d */
@@ -567,13 +567,13 @@ PALTEST(miscellaneous_FormatMessageW_test2_paltest_formatmessagew_test2, "miscel
        test11(0,(void *)0x123ab,"foo") ||           /* Test %p, %S */
        test12(0,100,0x123ab,0x123cd))               /* Test %u,x,X */
     {
-        
-      
+
+
     }
-  
+
     PAL_Terminate();
     return PASS;
- 
+
 }
 
 

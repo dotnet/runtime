@@ -36,8 +36,8 @@ namespace Microsoft.Extensions.Options
             void RegisterSource(IOptionsChangeTokenSource<TOptions> source)
             {
                 IDisposable registration = ChangeToken.OnChange(
-                          () => source.GetChangeToken(),
-                          (name) => InvokeChanged(name),
+                          source.GetChangeToken,
+                          InvokeChanged,
                           source.Name);
 
                 _registrations.Add(registration);
@@ -63,13 +63,10 @@ namespace Microsoft.Extensions.Options
 
         private void InvokeChanged(string? name)
         {
-            name = name ?? Options.DefaultName;
+            name ??= Options.DefaultName;
             _cache.TryRemove(name);
             TOptions options = Get(name);
-            if (_onChange != null)
-            {
-                _onChange.Invoke(options, name);
-            }
+            _onChange?.Invoke(options, name);
         }
 
         /// <summary>

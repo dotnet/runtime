@@ -44,6 +44,20 @@ namespace Microsoft.Interop
         }
 
         public static Diagnostic CreateDiagnostic(
+            this AttributeData attributeData,
+            DiagnosticDescriptor descriptor,
+            ImmutableDictionary<string, string> properties,
+            params object[] args)
+        {
+            SyntaxReference? syntaxReference = attributeData.ApplicationSyntaxReference;
+            Location location = syntaxReference is not null
+                ? syntaxReference.SyntaxTree.GetLocation(syntaxReference.Span)
+                : Location.None;
+
+            return location.CreateDiagnostic(descriptor, properties, args);
+        }
+
+        public static Diagnostic CreateDiagnostic(
             this ImmutableArray<Location> locations,
             DiagnosticDescriptor descriptor,
             params object[] args)

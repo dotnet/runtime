@@ -494,7 +494,7 @@ namespace System.Numerics.Tests
         }
 
         // A test for Lerp (Vector2f, Vector2f, float)
-        // Lerp test with values known to be innacurate with the old lerp impl
+        // Lerp test with values known to be inaccurate with the old lerp impl
         [Fact]
         public void Vector2LerpTest7()
         {
@@ -509,7 +509,7 @@ namespace System.Numerics.Tests
         }
 
         // A test for Lerp (Vector2f, Vector2f, float)
-        // Lerp test with values known to be innacurate with the old lerp impl
+        // Lerp test with values known to be inaccurate with the old lerp impl
         // (Old code incorrectly gets 0.33333588)
         [Fact]
         public void Vector2LerpTest8()
@@ -577,7 +577,7 @@ namespace System.Numerics.Tests
             Vector2 actual;
 
             actual = Vector2.TransformNormal(v, m);
-            Assert.True(MathHelper.Equal(expected, actual), "Vector2f.Tranform did not return the expected value.");
+            Assert.True(MathHelper.Equal(expected, actual), "Vector2f.Transform did not return the expected value.");
         }
 
         // A test for TransformNormal (Vector2f, Matrix3x2)

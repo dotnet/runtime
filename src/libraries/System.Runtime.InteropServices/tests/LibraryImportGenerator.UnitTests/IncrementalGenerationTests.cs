@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis.Text;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -87,7 +88,7 @@ namespace LibraryImportGenerator.UnitTests
 
             driver = driver.RunGenerators(comp1);
 
-            Compilation comp2 = comp1.AddSyntaxTrees(CSharpSyntaxTree.ParseText(CodeSnippets.BasicParametersAndModifiers<bool>(), new CSharpParseOptions(LanguageVersion.Preview)));
+            Compilation comp2 = comp1.AddSyntaxTrees(CSharpSyntaxTree.ParseText(CodeSnippets.MarshalAsParametersAndModifiers<bool>(UnmanagedType.I1), new CSharpParseOptions(LanguageVersion.Preview)));
 
             GeneratorDriver driver2 = driver.RunGenerators(comp2);
             GeneratorRunResult runResult = driver2.GetRunResult().Results[0];
@@ -108,7 +109,7 @@ namespace LibraryImportGenerator.UnitTests
         [Fact]
         public async Task ReplacingFileWithNewLibraryImport_DoesNotRegenerateStubsInOtherFiles()
         {
-            Compilation comp1 = await TestUtils.CreateCompilation(new string[] { CodeSnippets.BasicParametersAndModifiers<int>(), CodeSnippets.BasicParametersAndModifiers<bool>() });
+            Compilation comp1 = await TestUtils.CreateCompilation(new string[] { CodeSnippets.BasicParametersAndModifiers<int>(), CodeSnippets.MarshalAsParametersAndModifiers<bool>(UnmanagedType.I1) });
 
             Microsoft.Interop.LibraryImportGenerator generator = new();
             GeneratorDriver driver = TestUtils.CreateDriver(comp1, null, new[] { generator }, EnableIncrementalTrackingDriverOptions);
@@ -135,7 +136,7 @@ namespace LibraryImportGenerator.UnitTests
         [Fact]
         public async Task ChangingMarshallingStrategy_RegeneratesStub()
         {
-            string stubSource = CodeSnippets.BasicParametersAndModifiers("CustomType");
+            string stubSource = CodeSnippets.BasicParametersAndModifiers("CustomType", CodeSnippets.DisableRuntimeMarshalling);
 
             string customTypeImpl1 = "struct CustomType { System.IntPtr handle; }";
 

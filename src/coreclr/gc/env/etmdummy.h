@@ -78,6 +78,7 @@
 #define FireEtwThreadPoolWorkerThreadAdjustmentAdjustment(AverageThroughput, NewWorkerThreadCount, Reason, ClrInstanceID) 0
 #define FireEtwThreadPoolWorkerThreadAdjustmentStats(Duration, Throughput, ThreadWave, ThroughputWave, ThroughputErrorEstimate, AverageThroughputErrorEstimate, ThroughputRatio, Confidence, NewControlSetting, NewThreadWaveMagnitude, ClrInstanceID) 0
 #define FireEtwThreadPoolWorkerThreadWait(ActiveWorkerThreadCount, RetiredWorkerThreadCount, ClrInstanceID) 0
+#define FireEtwThreadPoolMinMaxThreads (MinWorkerThreads, MaxWorkerThreads, MinIOCompletionThreads, MaxIOCompletionThreads, ClrInstanceID) 0
 #define FireEtwThreadPoolWorkingThreadCount(Count, ClrInstanceID) 0
 #define FireEtwThreadPoolEnqueue(WorkID, ClrInstanceID) 0
 #define FireEtwThreadPoolDequeue(WorkID, ClrInstanceID) 0

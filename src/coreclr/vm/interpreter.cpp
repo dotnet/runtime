@@ -285,7 +285,7 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
                 }
                 m_argDescs[k].m_typeStackNormal = m_argDescs[k].m_type;
                 m_argDescs[k].m_nativeOffset = argOffsets_[k];
-                m_argDescs[k].m_directOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*))));
+                m_argDescs[k].m_directOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndiannessFixup(directOffset, sizeof(void*))));
                 directOffset++;
                 k++;
             }
@@ -308,18 +308,18 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
 #endif // defined(HOST_ARM)
                 )
             {
-                directRetBuffOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*))));
+                directRetBuffOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndiannessFixup(directOffset, sizeof(void*))));
                 directOffset++;
             }
 #if defined(HOST_AMD64)
             if (GetFlag<Flag_isVarArg>())
             {
-                directVarArgOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*))));
+                directVarArgOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndiannessFixup(directOffset, sizeof(void*))));
                 directOffset++;
             }
             if (GetFlag<Flag_hasGenericsContextArg>())
             {
-                directTypeParamOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*))));
+                directTypeParamOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndiannessFixup(directOffset, sizeof(void*))));
                 directOffset++;
             }
 #endif
@@ -349,11 +349,11 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
                 // When invoking the interpreter directly, large value types are always passed by reference.
                 if (it.IsLargeStruct(comp))
                 {
-                    m_argDescs[k].m_directOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, sizeof(void*))));
+                    m_argDescs[k].m_directOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndiannessFixup(directOffset, sizeof(void*))));
                 }
                 else
                 {
-                    m_argDescs[k].m_directOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndianessFixup(directOffset, it.Size(comp))));
+                    m_argDescs[k].m_directOffset = static_cast<short>(reinterpret_cast<intptr_t>(ArgSlotEndiannessFixup(directOffset, it.Size(comp))));
                 }
                 argPtr = comp->getArgNext(argPtr);
                 directOffset++;
@@ -428,7 +428,7 @@ void InterpreterMethodInfo::InitArgInfo(CEEInfo* comp, CORINFO_METHOD_INFO* meth
         break;
 
     default:
-        _ASSERTE_ALL_BUILDS(__FILE__, false); // shouldn't get here
+        _ASSERTE_ALL_BUILDS(false); // shouldn't get here
     }
 }
 
@@ -858,7 +858,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
     // push ebp
     // mov ebp, esp
     // [if there are register arguments in ecx or edx, push them]
-    // ecx := addr of InterpretMethodInfo for the method to be intepreted.
+    // ecx := addr of InterpretMethodInfo for the method to be interpreted.
     // edx = esp  /*pointer to argument structure*/
     // call to Interpreter::InterpretMethod
     // [if we pushed register arguments, increment esp by the right amount.]
@@ -1095,7 +1095,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
                 case CORINFO_TYPE_UNDEF:
                 case CORINFO_TYPE_VOID:
                 case CORINFO_TYPE_VAR:
-                    _ASSERTE_ALL_BUILDS(__FILE__, false);  // Should not happen;
+                    _ASSERTE_ALL_BUILDS(false);  // Should not happen;
                     break;
 
                     // One integer slot arguments:
@@ -1363,7 +1363,7 @@ CorJitResult Interpreter::GenerateInterpreterStub(CEEInfo* comp,
         break;
 
     default:
-        _ASSERTE_ALL_BUILDS(__FILE__, false); // shouldn't get here
+        _ASSERTE_ALL_BUILDS(false); // shouldn't get here
     }
 
     delete[] argPerm;
@@ -1830,7 +1830,7 @@ HCIMPL3(float, InterpretMethodFloat, struct InterpreterMethodInfo* interpMethInf
     retVal = (ARG_SLOT)Interpreter::InterpretMethodBody(interpMethInfo, false, ilArgs, stubContext);
     HELPER_METHOD_FRAME_END();
 
-    return *reinterpret_cast<float*>(ArgSlotEndianessFixup(&retVal, sizeof(float)));
+    return *reinterpret_cast<float*>(ArgSlotEndiannessFixup(&retVal, sizeof(float)));
 }
 HCIMPLEND
 
@@ -1845,7 +1845,7 @@ HCIMPL3(double, InterpretMethodDouble, struct InterpreterMethodInfo* interpMethI
     retVal = Interpreter::InterpretMethodBody(interpMethInfo, false, ilArgs, stubContext);
     HELPER_METHOD_FRAME_END();
 
-    return *reinterpret_cast<double*>(ArgSlotEndianessFixup(&retVal, sizeof(double)));
+    return *reinterpret_cast<double*>(ArgSlotEndiannessFixup(&retVal, sizeof(double)));
 }
 HCIMPLEND
 
@@ -3784,12 +3784,12 @@ void Interpreter::GCScanRoots(promote_func* pf, ScanContext* sc)
         void* localPtr = NULL;
         if (it.IsLargeStruct(&m_interpCeeInfo))
         {
-            void* structPtr = ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), sizeof(void**));
+            void* structPtr = ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), sizeof(void**));
             localPtr = *reinterpret_cast<void**>(structPtr);
         }
         else
         {
-            localPtr = ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), it.Size(&m_interpCeeInfo));
+            localPtr = ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), it.Size(&m_interpCeeInfo));
         }
         GCScanRootAtLoc(reinterpret_cast<Object**>(localPtr), it, pf, sc, m_methInfo->GetPinningBit(i));
     }
@@ -3824,7 +3824,7 @@ void Interpreter::GCScanRoots(promote_func* pf, ScanContext* sc)
         InterpreterType it = m_argTypes[i];
         if (it != undef && !it.IsLargeStruct(&m_interpCeeInfo))
         {
-            BYTE* argPtr = ArgSlotEndianessFixup(&m_args[i], it.Size(&m_interpCeeInfo));
+            BYTE* argPtr = ArgSlotEndiannessFixup(&m_args[i], it.Size(&m_interpCeeInfo));
             GCScanRootAtLoc(reinterpret_cast<Object**>(argPtr), it, pf, sc);
         }
     }
@@ -4253,12 +4253,12 @@ void Interpreter::LdLocA(int locNum)
     void* addr;
     if (tp.IsLargeStruct(&m_interpCeeInfo))
     {
-        void* structPtr = ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(locNum)), sizeof(void**));
+        void* structPtr = ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(locNum)), sizeof(void**));
         addr = *reinterpret_cast<void**>(structPtr);
     }
     else
     {
-        addr = ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(locNum)), tp.Size(&m_interpCeeInfo));
+        addr = ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(locNum)), tp.Size(&m_interpCeeInfo));
     }
     // The "addr" above, while a byref, is never a heap pointer, so we're robust if
     // any of these were to cause a GC.
@@ -6921,7 +6921,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
         }
         else
         {
-            VerificationError("Binary comparision operation: type mismatch.");
+            VerificationError("Binary comparison operation: type mismatch.");
         }
         break;
     case CORINFO_TYPE_NATIVEINT:
@@ -6978,7 +6978,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
         }
         else
         {
-            VerificationError("Binary comparision operation: type mismatch.");
+            VerificationError("Binary comparison operation: type mismatch.");
         }
         break;
     case CORINFO_TYPE_LONG:
@@ -7015,7 +7015,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
             }
             else
             {
-                VerificationError("Binary comparision operation: type mismatch.");
+                VerificationError("Binary comparison operation: type mismatch.");
             }
         }
         break;
@@ -7037,12 +7037,12 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
             }
             else
             {
-                VerificationError("Binary comparision operation: type mismatch.");
+                VerificationError("Binary comparison operation: type mismatch.");
             }
         }
         else
         {
-            VerificationError("Binary comparision operation: type mismatch.");
+            VerificationError("Binary comparison operation: type mismatch.");
         }
         break;
 
@@ -7084,7 +7084,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
             }
             else
             {
-                VerificationError("Binary comparision operation: type mismatch.");
+                VerificationError("Binary comparison operation: type mismatch.");
             }
         }
         break;
@@ -7126,7 +7126,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
             }
             else
             {
-                VerificationError("Binary comparision operation: type mismatch.");
+                VerificationError("Binary comparison operation: type mismatch.");
             }
         }
         break;
@@ -7169,7 +7169,7 @@ INT32 Interpreter::CompareOpRes(unsigned op1idx)
         }
         else
         {
-            VerificationError("Binary comparision operation: type mismatch.");
+            VerificationError("Binary comparison operation: type mismatch.");
         }
         break;
 
@@ -8722,7 +8722,7 @@ void Interpreter::Unbox()
                 CorElementType type1 = pMT1->GetInternalCorElementType();
                 CorElementType type2 = pMT2->GetInternalCorElementType();
 
-                // we allow enums and their primitive type to be interchangable
+                // we allow enums and their primitive type to be interchangeable
                 if (type1 == type2)
                 {
                     if ((pMT1->IsEnum() || pMT1->IsTruePrimitive()) &&
@@ -9177,14 +9177,6 @@ void Interpreter::DoCallWork(bool virtualCall, void* thisArg, CORINFO_RESOLVED_T
     {
         switch (intrinsicId)
         {
-        case NI_System_ByReference_ctor:
-            DoByReferenceCtor();
-            didIntrinsic = true;
-            break;
-        case NI_System_ByReference_get_Value:
-            DoByReferenceValue();
-            didIntrinsic = true;
-            break;
 #if INTERP_ILSTUBS
         case NI_System_StubHelpers_GetStubContext:
             OpStackSet<void*>(m_curStackHt, GetStubContext());
@@ -10752,74 +10744,6 @@ void Interpreter::DoGetTypeFromHandle()
     OpStackTypeSet(ind, InterpreterType(CORINFO_TYPE_CLASS));
 }
 
-void Interpreter::DoByReferenceCtor()
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    // Note 'this' is not passed on the operand stack...
-    _ASSERTE(m_curStackHt > 0);
-    _ASSERTE(m_callThisArg != NULL);
-    unsigned valInd = m_curStackHt - 1;
-    CorInfoType valCit = OpStackTypeGet(valInd).ToCorInfoType();
-
-#ifdef _DEBUG
-    if (valCit != CORINFO_TYPE_BYREF)
-    {
-        VerificationError("ByReference<T>.ctor called with non-byref value.");
-    }
-#endif // _DEBUG
-
-#if INTERP_TRACING
-    if (s_TraceInterpreterILFlag.val(CLRConfig::INTERNAL_TraceInterpreterIL))
-    {
-        fprintf(GetLogFile(), "    ByReference<T>.ctor -- intrinsic\n");
-    }
-#endif // INTERP_TRACING
-
-    GCX_FORBID();
-    void** thisPtr = reinterpret_cast<void**>(m_callThisArg);
-    void* val = OpStackGet<void*>(valInd);
-    *thisPtr = val;
-    m_curStackHt--;
-}
-
-void Interpreter::DoByReferenceValue()
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    _ASSERTE(m_curStackHt > 0);
-    unsigned slot = m_curStackHt - 1;
-    CorInfoType thisCit = OpStackTypeGet(slot).ToCorInfoType();
-
-#ifdef _DEBUG
-    if (thisCit != CORINFO_TYPE_BYREF)
-    {
-        VerificationError("ByReference<T>.get_Value called with non-byref this");
-    }
-#endif // _DEBUG
-
-#if INTERP_TRACING
-    if (s_TraceInterpreterILFlag.val(CLRConfig::INTERNAL_TraceInterpreterIL))
-    {
-        fprintf(GetLogFile(), "    ByReference<T>.getValue -- intrinsic\n");
-    }
-#endif // INTERP_TRACING
-
-    GCX_FORBID();
-    void** thisPtr = OpStackGet<void**>(slot);
-    void* value = *thisPtr;
-    OpStackSet<void*>(slot, value);
-    OpStackTypeSet(slot, InterpreterType(CORINFO_TYPE_BYREF));
-}
-
 void Interpreter::DoSIMDHwAccelerated()
 {
     CONTRACTL {
@@ -11885,12 +11809,12 @@ void Interpreter::PrintLocals()
             void* localPtr = NULL;
             if (it.IsLargeStruct(&m_interpCeeInfo))
             {
-                void* structPtr = ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), sizeof(void**));
+                void* structPtr = ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), sizeof(void**));
                 localPtr = *reinterpret_cast<void**>(structPtr);
             }
             else
             {
-                localPtr = ArgSlotEndianessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), it.Size(&m_interpCeeInfo));
+                localPtr = ArgSlotEndiannessFixup(reinterpret_cast<ARG_SLOT*>(FixedSizeLocalSlot(i)), it.Size(&m_interpCeeInfo));
             }
             fprintf(GetLogFile(), "      loc%-4d: %10s: ", i, CorInfoTypeNames[cit]);
             PrintValue(it, reinterpret_cast<BYTE*>(localPtr));

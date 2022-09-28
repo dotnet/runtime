@@ -23,7 +23,7 @@ namespace System.Diagnostics
     /// will fire for every live DiagnosticListener in the appdomain (past or present).
     ///
     /// Please See the DiagnosticSource Users Guide
-    /// https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/DiagnosticSourceUsersGuide.md
+    /// https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/DiagnosticSourceUsersGuide.md
     /// for instructions on its use.
     /// </summary>
     public partial class DiagnosticListener : DiagnosticSource, IObservable<KeyValuePair<string, object?>>, IDisposable
@@ -34,6 +34,8 @@ namespace System.Diagnostics
         /// </summary>
         public static IObservable<DiagnosticListener> AllListeners
         {
+            [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+               Justification = "ENABLE_HTTP_HANDLER is not enabled in the .NET current version")]
             get
             {
 #if ENABLE_HTTP_HANDLER
@@ -253,6 +255,7 @@ namespace System.Diagnostics
         /// Override abstract method
         /// </summary>
         [RequiresUnreferencedCode(WriteRequiresUnreferencedCode)]
+        [RequiresDynamicCode(WriteRequiresDynamicCode)]
         public override void Write(string name, object? value)
         {
             for (DiagnosticSubscription? curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)

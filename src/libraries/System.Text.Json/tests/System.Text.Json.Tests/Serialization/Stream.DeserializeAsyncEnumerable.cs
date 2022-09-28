@@ -64,7 +64,8 @@ namespace System.Text.Json.Serialization.Tests
         {
             JsonSerializerOptions options = new JsonSerializerOptions
             {
-                DefaultBufferSize = bufferSize
+                DefaultBufferSize = bufferSize,
+                TypeInfoResolver = new DefaultJsonTypeInfoResolver()
             };
 
             byte[] data = JsonSerializer.SerializeToUtf8Bytes(source);
@@ -82,7 +83,12 @@ namespace System.Text.Json.Serialization.Tests
             string json = JsonSerializer.Serialize(Enumerable.Range(0, 100));
 
             using var stream = new Utf8MemoryStream(json);
-            IAsyncEnumerable<int> asyncEnumerable = DeserializeAsyncEnumerableWrapper<int>(stream, new JsonSerializerOptions { DefaultBufferSize = 1 }, useJsonTypeInfoOverload: useJsonTypeInfoOverload);
+            JsonSerializerOptions options = new JsonSerializerOptions
+            {
+                DefaultBufferSize = 1
+            };
+
+            IAsyncEnumerable<int> asyncEnumerable = DeserializeAsyncEnumerableWrapper<int>(stream, options, useJsonTypeInfoOverload: useJsonTypeInfoOverload);
             await using IAsyncEnumerator<int> asyncEnumerator = asyncEnumerable.GetAsyncEnumerator();
 
             for (int i = 0; i < 20; i++)
@@ -181,7 +187,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             JsonSerializerOptions options = new JsonSerializerOptions
             {
-                DefaultBufferSize = 1
+                DefaultBufferSize = 1,
             };
 
             byte[] data = JsonSerializer.SerializeToUtf8Bytes(Enumerable.Range(1, 100));
@@ -246,10 +252,9 @@ namespace System.Text.Json.Serialization.Tests
 
         private static JsonTypeInfo<T> ResolveJsonTypeInfo<T>(JsonSerializerOptions? options = null)
         {
-            // TODO replace with contract resolver once implemented -- only works with value converters.
             options ??= JsonSerializerOptions.Default;
-            JsonConverter<T> converter = (JsonConverter<T>)options.GetConverter(typeof(T));
-            return JsonMetadataServices.CreateValueInfo<T>(options, converter);
+            JsonSerializer.Serialize(42, options); // Lock the options instance before initializing metadata
+            return (JsonTypeInfo<T>)options.TypeInfoResolver.GetTypeInfo(typeof(T), options);
         }
 
         private static async Task<List<T>> ToListAsync<T>(this IAsyncEnumerable<T> source)

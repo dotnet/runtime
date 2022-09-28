@@ -111,6 +111,7 @@ namespace System.Globalization.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Windows locale support doesn't rely on LANG variable
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "Bionic is not normal Linux, has no normal locales")]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("en-US.UTF-8", "en-US")]
         [InlineData("en-US", "en-US")]
@@ -137,6 +138,7 @@ namespace System.Globalization.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "Remote executor has problems with exit codes")]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("")]
         [InlineData(null)]
@@ -179,7 +181,7 @@ namespace System.Globalization.Tests
 
         private static void CopyEssentialTestEnvironment(IDictionary<string, string> environment)
         {
-            string[] essentialVariables = { "HOME", "LD_LIBRARY_PATH" };
+            string[] essentialVariables = { "HOME", "LD_LIBRARY_PATH", "ICU_DATA" };
             string[] prefixedVariables = { "DOTNET_", "COMPlus_" };
 
             foreach (DictionaryEntry de in Environment.GetEnvironmentVariables())

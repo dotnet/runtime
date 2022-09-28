@@ -16,7 +16,7 @@ using MethodImplAttributes = System.Reflection.MethodImplAttributes;
 
 namespace ILCompiler.Metadata
 {
-    partial class Transform<TPolicy>
+    internal partial class Transform<TPolicy>
     {
         internal EntityMap<Cts.MethodDesc, MetadataRecord> _methods
             = new EntityMap<Cts.MethodDesc, MetadataRecord>(EqualityComparer<Cts.MethodDesc>.Default);
@@ -55,7 +55,7 @@ namespace ILCompiler.Metadata
         {
             Debug.Assert(method.IsTypicalMethodDefinition);
             Debug.Assert(_policy.GeneratesMetadata(method));
-            return (Method)_methods.GetOrCreate(method, _initMethodDef ?? (_initMethodDef = InitializeMethodDefinition));
+            return (Method)_methods.GetOrCreate(method, _initMethodDef ??= InitializeMethodDefinition);
         }
 
         private void InitializeMethodDefinition(Cts.MethodDesc entity, Method record)
@@ -87,7 +87,7 @@ namespace ILCompiler.Metadata
                         Name = HandleString(reader.GetString(param.Name)),
                         Sequence = checked((ushort)param.SequenceNumber)
                     };
-                    
+
                     Ecma.ConstantHandle defaultValue = param.GetDefaultValue();
                     if (!defaultValue.IsNil)
                     {
@@ -116,14 +116,14 @@ namespace ILCompiler.Metadata
 
             record.Flags = GetMethodAttributes(entity);
             record.ImplFlags = GetMethodImplAttributes(entity);
-            
+
             //TODO: RVA
         }
 
         private MemberReference HandleMethodReference(Cts.MethodDesc method)
         {
             Debug.Assert(method.IsMethodDefinition);
-            return (MemberReference)_methods.GetOrCreate(method, _initMethodRef ?? (_initMethodRef = InitializeMethodReference));
+            return (MemberReference)_methods.GetOrCreate(method, _initMethodRef ??= InitializeMethodReference);
         }
 
         private void InitializeMethodReference(Cts.MethodDesc entity, MemberReference record)
@@ -135,7 +135,7 @@ namespace ILCompiler.Metadata
 
         private MethodInstantiation HandleMethodInstantiation(Cts.MethodDesc method)
         {
-            return (MethodInstantiation)_methods.GetOrCreate(method, _initMethodInst ?? (_initMethodInst = InitializeMethodInstantiation));
+            return (MethodInstantiation)_methods.GetOrCreate(method, _initMethodInst ??= InitializeMethodInstantiation);
         }
 
         private void InitializeMethodInstantiation(Cts.MethodDesc entity, MethodInstantiation record)
@@ -170,7 +170,7 @@ namespace ILCompiler.Metadata
             return result;
         }
 
-        private MethodAttributes GetMethodAttributes(Cts.MethodDesc method)
+        private static MethodAttributes GetMethodAttributes(Cts.MethodDesc method)
         {
             var ecmaMethod = method as Cts.Ecma.EcmaMethod;
             if (ecmaMethod != null)
@@ -183,7 +183,7 @@ namespace ILCompiler.Metadata
                 throw new NotImplementedException();
         }
 
-        private MethodImplAttributes GetMethodImplAttributes(Cts.MethodDesc method)
+        private static MethodImplAttributes GetMethodImplAttributes(Cts.MethodDesc method)
         {
             var ecmaMethod = method as Cts.Ecma.EcmaMethod;
             if (ecmaMethod != null)
@@ -196,7 +196,7 @@ namespace ILCompiler.Metadata
                 throw new NotImplementedException();
         }
 
-        private CallingConventions GetSignatureCallingConvention(Cts.MethodSignature signature)
+        private static CallingConventions GetSignatureCallingConvention(Cts.MethodSignature signature)
         {
             CallingConventions callingConvention = CallingConventions.Standard;
             if ((signature.Flags & Cts.MethodSignatureFlags.Static) == 0)

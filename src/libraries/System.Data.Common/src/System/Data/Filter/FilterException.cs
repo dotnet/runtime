@@ -162,14 +162,14 @@ namespace System.Data
             return _Syntax(SR.Format(SR.Expr_UnknownToken1, tokExpected.ToString(), tokCurr.ToString(), position.ToString(CultureInfo.InvariantCulture)));
         }
 
-        public static Exception DatatypeConvertion(Type type1, Type type2)
+        public static Exception DatatypeConversion(Type type1, Type type2)
         {
-            return _Eval(SR.Format(SR.Expr_DatatypeConvertion, type1.ToString(), type2.ToString()));
+            return _Eval(SR.Format(SR.Expr_DatatypeConversion, type1.ToString(), type2.ToString()));
         }
 
-        public static Exception DatavalueConvertion(object value, Type type, Exception? innerException)
+        public static Exception DatavalueConversion(object value, Type type, Exception? innerException)
         {
-            return _Eval(SR.Format(SR.Expr_DatavalueConvertion, value.ToString(), type.ToString()), innerException);
+            return _Eval(SR.Format(SR.Expr_DatavalueConversion, value.ToString(), type.ToString()), innerException);
         }
 
         public static Exception InvalidName(string name)
@@ -287,9 +287,9 @@ namespace System.Data
             return _Eval(SR.Format(SR.Expr_ComputeNotAggregate, expr));
         }
 
-        public static Exception FilterConvertion(string expr)
+        public static Exception FilterConversion(string expr)
         {
-            return _Eval(SR.Format(SR.Expr_FilterConvertion, expr));
+            return _Eval(SR.Format(SR.Expr_FilterConversion, expr));
         }
 
         public static Exception LookupArgument()

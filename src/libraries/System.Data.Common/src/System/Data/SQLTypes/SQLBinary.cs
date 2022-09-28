@@ -338,10 +338,8 @@ namespace System.Data.SqlTypes
         // If object is not of same type, this method throws an ArgumentException.
         public int CompareTo(object? value)
         {
-            if (value is SqlBinary)
+            if (value is SqlBinary i)
             {
-                SqlBinary i = (SqlBinary)value;
-
                 return CompareTo(i);
             }
             throw ADP.WrongType(value!.GetType(), typeof(SqlBinary));
@@ -464,6 +462,11 @@ namespace System.Data.SqlTypes
         public static XmlQualifiedName GetXsdType(XmlSchemaSet schemaSet)
         {
             return new XmlQualifiedName("base64Binary", XmlSchema.Namespace);
+        }
+
+        public static SqlBinary WrapBytes(byte[] bytes)
+        {
+            return new SqlBinary(bytes, ignored: true);
         }
 
         /// <summary>

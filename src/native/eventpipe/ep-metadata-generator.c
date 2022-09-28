@@ -176,6 +176,7 @@ metadata_generator_write_uint32_to_buffer (
 	uint32_t value)
 {
 	EP_ASSERT ((*offset + sizeof (value)) <= buffer_len);
+	value = ep_rt_val_uint32_t (value);
 	memcpy (buffer + *offset, &value, sizeof (value));
 	*offset += sizeof (value);
 }
@@ -189,6 +190,7 @@ metadata_generator_write_int64_to_buffer (
 	int64_t value)
 {
 	EP_ASSERT ((*offset + sizeof (value)) <= buffer_len);
+	value = ep_rt_val_int64_t (value);
 	memcpy (buffer + *offset, &value, sizeof (value));
 	*offset += sizeof (value);
 }

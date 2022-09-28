@@ -30,7 +30,7 @@ namespace System.IO.Pipes
                 throw new IOException(SR.IO_IO_PipeBroken);
             }
 
-            // PipeState must be either Disconected or Connected
+            // PipeState must be either Disconnected or Connected
             pipeSecurity.Persist(handle);
         }
     }

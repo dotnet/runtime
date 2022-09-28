@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.Interop
 {
-    public abstract class StubCodeContext
+    public abstract record StubCodeContext
     {
         /// <summary>
         /// Code generation stage
@@ -34,6 +34,11 @@ namespace Microsoft.Interop
             Pin,
 
             /// <summary>
+            /// Convert managed data to native data, assuming that any values pinned in the <see cref="Pin"/> stage are pinned.
+            /// </summary>
+            PinnedMarshal,
+
+            /// <summary>
             /// Call the generated P/Invoke
             /// </summary>
             /// <remarks>
@@ -43,19 +48,25 @@ namespace Microsoft.Interop
             Invoke,
 
             /// <summary>
+            /// Capture native values to ensure that we do not leak if an exception is thrown during unmarshalling
+            /// </summary>
+            UnmarshalCapture,
+
+            /// <summary>
             /// Convert native data to managed data
             /// </summary>
             Unmarshal,
 
             /// <summary>
+            /// Notify a marshaller object that the Invoke stage and all stages preceding the Invoke stage
+            /// successfully completed without any exceptions.
+            /// </summary>
+            NotifyForSuccessfulInvoke,
+
+            /// <summary>
             /// Perform any cleanup required
             /// </summary>
             Cleanup,
-
-            /// <summary>
-            /// Keep alive any managed objects that need to stay alive across the call.
-            /// </summary>
-            KeepAlive,
 
             /// <summary>
             /// Convert native data to managed data even in the case of an exception during
@@ -64,7 +75,22 @@ namespace Microsoft.Interop
             GuaranteedUnmarshal
         }
 
-        public Stage CurrentStage { get; set; } = Stage.Invalid;
+        /// <summary>
+        /// The current stage being generated.
+        /// </summary>
+        public Stage CurrentStage { get; init; } = Stage.Invalid;
+
+        /// <summary>
+        /// <c>CustomTypeMarshallingDirection.In</c> means method import like <c>[LibraryImport]</c>.
+        /// <c>CustomTypeMarshallingDirection.Out</c> means method export like in <c>[UnmanagedCallersOnly]</c> or in <c>[JSExport]</c>
+        /// </summary>
+        public CustomTypeMarshallingDirection Direction { get; init; } = CustomTypeMarshallingDirection.In;
+
+        /// <summary>
+        /// Gets the currently targeted framework and version for stub code generation.
+        /// </summary>
+        /// <returns>A framework value and version.</returns>
+        public abstract (TargetFramework framework, Version version) GetTargetFramework();
 
         /// <summary>
         /// The stub emits code that runs in a single stack frame and the frame spans over the native context.
@@ -89,9 +115,12 @@ namespace Microsoft.Interop
         /// <summary>
         /// If this context is a nested context, return the parent context. Otherwise, return <c>null</c>.
         /// </summary>
-        public StubCodeContext? ParentContext { get; protected set; }
+        public StubCodeContext? ParentContext { get; protected init; }
 
-        public const string GeneratedNativeIdentifierSuffix = "_gen_native";
+        /// <summary>
+        /// Suffix for all generated native identifiers.
+        /// </summary>
+        public const string GeneratedNativeIdentifierSuffix = "_native";
 
         /// <summary>
         /// Get managed and native instance identifiers for the <paramref name="info"/>
@@ -103,6 +132,12 @@ namespace Microsoft.Interop
             return (info.InstanceIdentifier, $"__{info.InstanceIdentifier.TrimStart('@')}{GeneratedNativeIdentifierSuffix}");
         }
 
+        /// <summary>
+        /// Compute identifiers that are unique for this generator
+        /// </summary>
+        /// <param name="info">TypePositionInfo the new identifier is used in service of.</param>
+        /// <param name="name">Name of variable.</param>
+        /// <returns>New identifier name for use.</returns>
         public virtual string GetAdditionalIdentifier(TypePositionInfo info, string name)
         {
             return $"{GetIdentifiers(info).native}__{name}";

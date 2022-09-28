@@ -29,12 +29,6 @@ namespace System.Net.Security
             }
 
             return new GenericIdentity(name, protocol);
-
-        }
-
-        internal static string QueryContextAssociatedName(SafeDeleteContext? securityContext)
-        {
-            throw new PlatformNotSupportedException(SR.net_nego_server_not_supported);
         }
 
         internal static void ValidateImpersonationLevel(TokenImpersonationLevel impersonationLevel)

@@ -40,6 +40,7 @@ using (var myListener = new RuntimeEventListener())
 
 public class RuntimeEventListener : EventListener
 {
+    internal int observedProcessorCount = -1;
     internal readonly Dictionary<string, bool> ObservedEvents = new Dictionary<string, bool>();
 
     private static readonly string[] s_expectedEvents = new[] {
@@ -57,7 +58,7 @@ public class RuntimeEventListener : EventListener
     {
         if (source.Name.Equals("System.Runtime"))
         {
-            EnableEvents(source, EventLevel.Informational, (EventKeywords)1 /* RuntimeEventSource.Keywords.AppContext */);
+            EnableEvents(source, EventLevel.Informational, (EventKeywords)3 /* RuntimeEventSource.Keywords.AppContext | RuntimeEventSource.Keywords.ProcessorCount */);
         }
     }
 
@@ -70,6 +71,11 @@ public class RuntimeEventListener : EventListener
             var switchName = (string)eventData.Payload[0];
             ObservedEvents[switchName] = ((int)eventData.Payload[1]) == 1;
             return;
+        }
+        else if (eventData is { EventName: "ProcessorCount",
+                                Payload: { Count: 1 } })
+        {
+            observedProcessorCount = (int)eventData.Payload[0];
         }
     }
 
@@ -95,6 +101,11 @@ public class RuntimeEventListener : EventListener
                 Console.WriteLine($"Should not have seen {key}");
                 return false;
             }
+        }
+        if (observedProcessorCount != Environment.ProcessorCount)
+        {
+            Console.WriteLine($"Expected {Environment.ProcessorCount}, but got {observedProcessorCount}");
+            return false;
         }
         return true;
     }

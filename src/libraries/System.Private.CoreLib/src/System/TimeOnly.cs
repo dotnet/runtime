@@ -16,10 +16,7 @@ namespace System
           IComparable<TimeOnly>,
           IEquatable<TimeOnly>,
           ISpanFormattable,
-          IComparisonOperators<TimeOnly, TimeOnly>,
-          IMinMaxValue<TimeOnly>,
-          ISpanParsable<TimeOnly>,
-          ISubtractionOperators<TimeOnly, TimeOnly, TimeSpan>
+          ISpanParsable<TimeOnly>
     {
         // represent the number of ticks map to the time of the day. 1 ticks = 100-nanosecond in time measurements.
         private readonly long _ticks;
@@ -224,7 +221,7 @@ namespace System
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns>true if left and right represent the same time; otherwise, false.</returns>
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Equality(TSelf, TOther)" />
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Equality(TSelf, TOther)" />
         public static bool operator ==(TimeOnly left, TimeOnly right) => left._ticks == right._ticks;
 
         /// <summary>
@@ -233,7 +230,7 @@ namespace System
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns>true if left and right do not represent the same time; otherwise, false.</returns>
-        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther}.op_Inequality(TSelf, TOther)" />
+        /// <inheritdoc cref="IEqualityOperators{TSelf, TOther, TResult}.op_Inequality(TSelf, TOther)" />
         public static bool operator !=(TimeOnly left, TimeOnly right) => left._ticks != right._ticks;
 
         /// <summary>
@@ -242,7 +239,7 @@ namespace System
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns>true if left is later than right; otherwise, false.</returns>
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThan(TSelf, TOther)" />
         public static bool operator >(TimeOnly left, TimeOnly right) => left._ticks > right._ticks;
 
         /// <summary>
@@ -251,7 +248,7 @@ namespace System
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns>true if left is the same as or later than right; otherwise, false.</returns>
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_GreaterThanOrEqual(TSelf, TOther)" />
         public static bool operator >=(TimeOnly left, TimeOnly right) => left._ticks >= right._ticks;
 
         /// <summary>
@@ -260,7 +257,7 @@ namespace System
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns>true if left is earlier than right; otherwise, false.</returns>
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThan(TSelf, TOther)" />
         public static bool operator <(TimeOnly left, TimeOnly right) => left._ticks < right._ticks;
 
         /// <summary>
@@ -269,7 +266,7 @@ namespace System
         /// <param name="left">The first object to compare.</param>
         /// <param name="right">The second object to compare.</param>
         /// <returns>true if left is the same as or earlier than right; otherwise, false.</returns>
-        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther, TResult}.op_LessThanOrEqual(TSelf, TOther)" />
         public static bool operator <=(TimeOnly left, TimeOnly right) => left._ticks <= right._ticks;
 
         /// <summary>
@@ -936,8 +933,10 @@ namespace System
         // IParsable
         //
 
+        /// <inheritdoc cref="IParsable{TSelf}.Parse(string, IFormatProvider?)" />
         public static TimeOnly Parse(string s, IFormatProvider? provider) => Parse(s, provider, DateTimeStyles.None);
 
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
         public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out TimeOnly result) => TryParse(s, provider, DateTimeStyles.None, out result);
 
         //
@@ -949,12 +948,5 @@ namespace System
 
         /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out TimeOnly result) => TryParse(s, provider, DateTimeStyles.None, out result);
-
-        //
-        // ISubtractionOperators
-        //
-
-        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        static TimeSpan ISubtractionOperators<TimeOnly, TimeOnly, TimeSpan>.operator checked -(TimeOnly left, TimeOnly right) => left - right;
     }
 }

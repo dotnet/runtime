@@ -16,7 +16,6 @@
 #if defined(FEATURE_SVR_GC)
 
 #include <sigformat.h>
-#include <win32threadpool.h>
 #include "request_common.h"
 
 int GCHeapCount()
@@ -47,6 +46,18 @@ HRESULT GetServerHeapData(CLRDATA_ADDRESS addr, DacpHeapSegmentData *pSegment)
     pSegment->mem = (CLRDATA_ADDRESS)(ULONG_PTR) (pHeapSegment->mem);
     pSegment->next = (CLRDATA_ADDRESS)dac_cast<TADDR>(pHeapSegment->next);
     pSegment->gc_heap = (CLRDATA_ADDRESS)pHeapSegment->heap;
+
+    TADDR heapAddress = TO_TADDR(pSegment->gc_heap);
+    dac_gc_heap heap = LoadGcHeapData(heapAddress);
+
+    if (pSegment->segmentAddr == heap.ephemeral_heap_segment.GetAddr())
+    {
+        pSegment->highAllocMark = (CLRDATA_ADDRESS)(ULONG_PTR)heap.alloc_allocated;
+    }
+    else
+    {
+        pSegment->highAllocMark = pSegment->allocated;
+    }
 
     return S_OK;
 }

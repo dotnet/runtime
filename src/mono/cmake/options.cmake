@@ -56,6 +56,7 @@ option (ENABLE_OVERRIDABLE_ALLOCATORS "Enable overridable allocator support")
 option (ENABLE_SIGALTSTACK "Enable support for using sigaltstack for SIGSEGV and stack overflow handling, this doesn't work on some platforms")
 option (USE_MALLOC_FOR_MEMPOOLS "Use malloc for each single mempool allocation, so tools like Valgrind can run better")
 option (STATIC_COMPONENTS "Compile mono runtime components as static (not dynamic) libraries")
+option (DISABLE_WASM_USER_THREADS "Disable creation of user managed threads on WebAssembly, only allow runtime internal managed and native threads")
 
 set (MONO_GC "sgen" CACHE STRING "Garbage collector implementation (sgen or boehm). Default: sgen")
 set (GC_SUSPEND "default" CACHE STRING "GC suspend method (default, preemptive, coop, hybrid)")

@@ -647,10 +647,7 @@ namespace System.Data.Common
                     }
                     finally
                     {
-                        if (null != dataReader)
-                        {
-                            dataReader.Dispose();
-                        }
+                        dataReader?.Dispose();
                     }
                 }
                 finally
@@ -1375,7 +1372,7 @@ namespace System.Data.Common
             }
             catch (DbException e)
             {
-                // an exception was thrown be but some part of the batch may have been succesfull
+                // an exception was thrown be but some part of the batch may have been successful
                 ADP.TraceExceptionForCapture(e);
                 rowUpdatedEvent.Errors = e;
                 rowUpdatedEvent.Status = UpdateStatus.ErrorsOccurred;

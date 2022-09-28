@@ -49,9 +49,9 @@ mono_socket_address_init (MonoSocketAddress *sa, socklen_t *len, int family, con
 	if (family == AF_INET) {
 		*len = sizeof (struct sockaddr_in);
 
-		sa->v4.sin_family = family;
+		sa->v4.sin_family = AF_INET;
 		sa->v4.sin_addr = *(struct in_addr*)address;
-		sa->v4.sin_port = htons (port);
+		sa->v4.sin_port = htons (GINT_TO_UINT16 (port));
 #if HAVE_SOCKADDR_IN_SIN_LEN
 		sa->v4.sin_len = sizeof (*len);
 #endif
@@ -59,9 +59,9 @@ mono_socket_address_init (MonoSocketAddress *sa, socklen_t *len, int family, con
 	} else if (family == AF_INET6) {
 		*len = sizeof (struct sockaddr_in6);
 
-		sa->v6.sin6_family = family;
+		sa->v6.sin6_family = AF_INET6;
 		sa->v6.sin6_addr = *(struct in6_addr*)address;
-		sa->v6.sin6_port = htons (port);
+		sa->v6.sin6_port = htons (GINT_TO_UINT16 (port));
 #if HAVE_SOCKADDR_IN6_SIN_LEN
 		sa->v6.sin6_len = sizeof (*len);
 #endif

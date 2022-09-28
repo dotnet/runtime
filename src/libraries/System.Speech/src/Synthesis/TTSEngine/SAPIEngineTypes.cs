@@ -114,7 +114,7 @@ namespace System.Speech.Synthesis.TtsEngine
     internal enum SPPARTOFSPEECH
     {
         //--- SAPI5 public POS category values (bits 28-31)
-        SPPS_NotOverriden = -1,
+        SPPS_NotOverridden = -1,
         SPPS_Unknown = 0,
         SPPS_Noun = 0x1000,
         SPPS_Verb = 0x2000,

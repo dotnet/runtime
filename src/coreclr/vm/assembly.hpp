@@ -285,7 +285,7 @@ public:
                                      mdTypeDef mdNested,
                                      mdTypeDef *pCL);
 
-    static Module * FindModuleByTypeRef(Module *         pModule,
+    static Module * FindModuleByTypeRef(ModuleBase *     pModule,
                                         mdTypeRef        typeRef,
                                         Loader::LoadFlag loadFlag,
                                         BOOL *           pfNoResolutionScope);

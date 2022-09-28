@@ -366,11 +366,9 @@ GenTree* DecomposeLongs::DecomposeLclVar(LIR::Use& use)
         m_compiler->lvaSetVarDoNotEnregister(varNum DEBUGARG(DoNotEnregisterReason::LocalField));
         loResult->SetOper(GT_LCL_FLD);
         loResult->AsLclFld()->SetLclOffs(0);
-        loResult->AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
 
         hiResult->SetOper(GT_LCL_FLD);
         hiResult->AsLclFld()->SetLclOffs(4);
-        hiResult->AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
     }
 
     return FinalizeDecomposition(use, loResult, hiResult, hiResult);
@@ -933,7 +931,6 @@ GenTree* DecomposeLongs::DecomposeNeg(LIR::Use& use)
     Range().InsertAfter(loResult, zero, hiAdjust, hiResult);
 
     loResult->gtFlags |= GTF_SET_FLAGS;
-    hiAdjust->gtFlags |= GTF_USE_FLAGS;
 
 #elif defined(TARGET_ARM)
 
@@ -944,7 +941,6 @@ GenTree* DecomposeLongs::DecomposeNeg(LIR::Use& use)
     Range().InsertAfter(loResult, hiResult);
 
     loResult->gtFlags |= GTF_SET_FLAGS;
-    hiResult->gtFlags |= GTF_USE_FLAGS;
 
 #endif
 
@@ -999,7 +995,6 @@ GenTree* DecomposeLongs::DecomposeArith(LIR::Use& use)
     if ((oper == GT_ADD) || (oper == GT_SUB))
     {
         loResult->gtFlags |= GTF_SET_FLAGS;
-        hiResult->gtFlags |= GTF_USE_FLAGS;
 
         if ((loResult->gtFlags & GTF_OVERFLOW) != 0)
         {
@@ -1355,10 +1350,11 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
                 unreached();
         }
 
-        GenTreeCall* call = m_compiler->gtNewHelperCallNode(helper, TYP_LONG);
-        call->gtArgs.PushFront(m_compiler, shiftByOp);
-        call->gtArgs.PushFront(m_compiler, hiOp1, WellKnownArg::ShiftHigh);
-        call->gtArgs.PushFront(m_compiler, loOp1, WellKnownArg::ShiftLow);
+        GenTreeCall* call       = m_compiler->gtNewHelperCallNode(helper, TYP_LONG);
+        NewCallArg   loArg      = NewCallArg::Primitive(loOp1).WellKnown(WellKnownArg::ShiftLow);
+        NewCallArg   hiArg      = NewCallArg::Primitive(hiOp1).WellKnown(WellKnownArg::ShiftHigh);
+        NewCallArg   shiftByArg = NewCallArg::Primitive(shiftByOp);
+        call->gtArgs.PushFront(m_compiler, loArg, hiArg, shiftByArg);
         call->gtFlags |= shift->gtFlags & GTF_ALL_EFFECT;
 
         if (shift->IsUnusedValue())
@@ -1798,7 +1794,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
 //------------------------------------------------------------------------
 // OptimizeCastFromDecomposedLong: optimizes a cast from GT_LONG by discarding
 // the high part of the source and, if the cast is to INT, the cast node itself.
-// Accounts for side effects and marks nodes unused as neccessary.
+// Accounts for side effects and marks nodes unused as necessary.
 //
 // Only accepts casts to integer types that are not long.
 // Does not optimize checked casts.
@@ -2135,6 +2131,7 @@ void DecomposeLongs::PromoteLongVars()
                 m_compiler->lvaGrabTemp(false DEBUGARG(bufp)); // Lifetime of field locals might span multiple BBs, so
                                                                // they are long lifetime temps.
 
+            varDsc                       = m_compiler->lvaGetDesc(lclNum);
             LclVarDsc* fieldVarDsc       = m_compiler->lvaGetDesc(varNum);
             fieldVarDsc->lvType          = TYP_INT;
             fieldVarDsc->lvExactSize     = genTypeSize(TYP_INT);
@@ -2142,11 +2139,20 @@ void DecomposeLongs::PromoteLongVars()
             fieldVarDsc->lvFldOffset     = (unsigned char)(index * genTypeSize(TYP_INT));
             fieldVarDsc->lvFldOrdinal    = (unsigned char)index;
             fieldVarDsc->lvParentLcl     = lclNum;
+
             // Currently we do not support enregistering incoming promoted aggregates with more than one field.
             if (isParam)
             {
                 fieldVarDsc->lvIsParam = true;
                 m_compiler->lvaSetVarDoNotEnregister(varNum DEBUGARG(DoNotEnregisterReason::LongParamField));
+
+#if FEATURE_MULTIREG_ARGS
+                if (varDsc->lvIsRegArg)
+                {
+                    fieldVarDsc->lvIsRegArg = 1; // Longs are never split.
+                    fieldVarDsc->SetArgReg((index == 0) ? varDsc->GetArgReg() : varDsc->GetOtherArgReg());
+                }
+#endif // FEATURE_MULTIREG_ARGS
             }
         }
     }

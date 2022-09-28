@@ -41,8 +41,6 @@
     <!-- System.Net.Internals -->
     <Compile Include="$(CommonPath)System\Net\Internals\IPAddressExtensions.cs"
              Link="Common\System\Net\Internals\IPAddressExtensions.cs" />
-    <Compile Include="$(CommonPath)System\Net\Internals\SocketExceptionFactory.Windows.cs"
-             Link="Common\System\Net\Internals\SocketExceptionFactory.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.Windows.cs"
              Link="Common\System\Net\SocketProtocolSupportPal.Windows" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Windows.cs"
@@ -81,10 +79,6 @@
              Link="Common\System\Net\Internals\SocketAddressPal.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.Unix.cs"
              Link="Common\System\Net\SocketProtocolSupportPal.Unix" />
-    <Compile Include="$(CommonPath)System\Net\Internals\SocketExceptionFactory.cs"
-             Link="Common\System\Net\Internals\SocketExceptionFactory.cs" />
-    <Compile Include="$(CommonPath)System\Net\Internals\SocketExceptionFactory.Unix.cs"
-             Link="Common\System\Net\Internals\SocketExceptionFactory.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Interop.CheckedAccess.cs"
              Link="Common\System\Net\Internals\Interop.CheckedAccess.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Errors.cs"

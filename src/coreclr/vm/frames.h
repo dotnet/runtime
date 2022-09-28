@@ -770,7 +770,7 @@ protected:
 // exception.  The FRAME_ATTR_RESUMABLE flag tells
 // the GC that the preceding frame needs to be treated
 // like the top of stack (with the important implication that
-// caller-save-regsiters will be potential roots).
+// caller-save-registers will be potential roots).
 //-----------------------------------------------------------------------------
 #ifdef FEATURE_HIJACK
 //-----------------------------------------------------------------------------
@@ -951,7 +951,7 @@ public:
 
     //---------------------------------------------------------------
     // Gets value indicating whether the generic parameter type
-    // argument should be supressed.
+    // argument should be suppressed.
     //---------------------------------------------------------------
     virtual BOOL SuppressParamTypeArg()
     {
@@ -3112,7 +3112,7 @@ private:
 
 //-----------------------------------------------------------------------------
 // FrameWithCookie is used to declare a Frame in source code with a cookie
-// immediately preceeding it.
+// immediately preceding it.
 // This is just a specialized version of GSCookieFor<T>
 //
 // For Frames that are set up by stubs, the stub is responsible for setting up
@@ -3321,7 +3321,7 @@ public:
 //     uses "sizeof" to count the OBJECTREF's.
 //
 //   - GCPROTECT_BEGIN spiritually violates our normal convention of not passing
-//     non-const refernce arguments. Unfortunately, this is necessary in
+//     non-const reference arguments. Unfortunately, this is necessary in
 //     order for the sizeof thing to work.
 //
 //   - GCPROTECT_BEGIN does _not_ zero out the OBJECTREF's. You must have

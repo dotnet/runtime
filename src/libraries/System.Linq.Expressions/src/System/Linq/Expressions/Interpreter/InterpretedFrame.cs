@@ -142,10 +142,7 @@ namespace System.Linq.Expressions.Interpreter
 
         internal void SaveTraceToException(Exception exception)
         {
-            if (exception.Data[typeof(InterpretedFrameInfo)] == null)
-            {
-                exception.Data[typeof(InterpretedFrameInfo)] = new List<InterpretedFrameInfo>(GetStackTraceDebugInfo()).ToArray();
-            }
+            exception.Data[typeof(InterpretedFrameInfo)] ??= new List<InterpretedFrameInfo>(GetStackTraceDebugInfo()).ToArray();
         }
 
         public static InterpretedFrameInfo[]? GetExceptionStackTrace(Exception exception)

@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Text.RegularExpressions;
 using System.Xml.Schema;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlSchemaValidatorApiTests
 {
     public class TCValidateAfterAdd : CXmlSchemaValidatorTestCase
     {
@@ -420,6 +419,7 @@ namespace System.Xml.Tests
         [InlineData("SCHEMA", "schB1_a.xsd", 1, 3, 3)]
         [InlineData("SCHEMA", "schM2_a.xsd", 1, 3, 3)]
         [InlineData("SCHEMA", "schH2_a.xsd", 1, 3, 3)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75132", TestPlatforms.Browser)]
         public void AddValid_Import_Include_Redefine(string testDir, string testFile, int expCount, int expCountGT, int expCountGE)
         {
             string xsd = Path.Combine(path, testDir, testFile);
@@ -1111,6 +1111,47 @@ namespace System.Xml.Tests
             Assert.Equal(0, warningCount);
             Assert.Equal(1, errorCount);
             return;
+        }
+
+        [Fact]
+        public static void XmlSchemaReadNullStream()
+        {
+            Assert.Throws<ArgumentNullException>(() => XmlSchema.Read(default(Stream), validationEventHandler: null));
+        }
+
+        [Fact]
+        public static void XmlSchemaReadNullTextReader()
+        {
+            Assert.Throws<ArgumentNullException>(() => XmlSchema.Read(default(TextReader), validationEventHandler: null));
+        }
+
+        [Fact]
+        public static void XmlSchemaReadNullReader()
+        {
+            Assert.Throws<ArgumentNullException>(() => XmlSchema.Read(default(XmlReader), validationEventHandler: null));
+        }
+
+        [Fact]
+        public static void XmlSchemaWriteNullStream()
+        {
+            XmlSchema schema = new XmlSchema();
+            Assert.Throws<ArgumentNullException>(() => schema.Write(default(Stream), namespaceManager: null));
+        }
+
+        [Fact]
+        public static void XmlSchemaWriteNullTextWriter()
+        {
+            XmlSchema schema = new XmlSchema();
+            Assert.Throws<ArgumentNullException>(() => schema.Write(default(TextWriter)));
+            Assert.Throws<ArgumentNullException>(() => schema.Write(default(TextWriter), namespaceManager: null));
+        }
+
+        [Fact]
+        public static void XmlSchemaWriteNullWriter()
+        {
+            XmlSchema schema = new XmlSchema();
+            Assert.Throws<ArgumentNullException>(() => schema.Write(default(XmlWriter)));
+            Assert.Throws<ArgumentNullException>(() => schema.Write(default(XmlWriter), namespaceManager: null));
         }
     }
 }

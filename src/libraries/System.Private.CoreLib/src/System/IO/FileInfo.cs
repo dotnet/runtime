@@ -25,12 +25,14 @@ namespace System.IO
             // Want to throw the original argument name
             OriginalPath = originalPath;
 
-            fullPath = fullPath ?? originalPath;
+            fullPath ??= originalPath;
             Debug.Assert(!isNormalized || !PathInternal.IsPartiallyQualified(fullPath.AsSpan()), "should be fully qualified if normalized");
 
             FullPath = isNormalized ? fullPath ?? originalPath : Path.GetFullPath(fullPath);
-            _name = fileName ?? Path.GetFileName(originalPath);
+            _name = fileName;
         }
+
+        public override string Name => _name ??= Path.GetFileName(OriginalPath);
 
         public long Length
         {
@@ -109,6 +111,21 @@ namespace System.IO
         {
             FileSystem.DeleteFile(FullPath);
             Invalidate();
+        }
+
+        public override bool Exists
+        {
+            get
+            {
+                try
+                {
+                    return ExistsCore;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
         }
 
         public FileStream Open(FileMode mode)

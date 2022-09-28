@@ -284,14 +284,8 @@ namespace System.Linq.Parallel
 
             protected override void Dispose(bool disposing)
             {
-                if (_leftSource != null)
-                {
-                    _leftSource.Dispose();
-                }
-                if (_rightSource != null)
-                {
-                    _rightSource.Dispose();
-                }
+                _leftSource?.Dispose();
+                _rightSource?.Dispose();
             }
         }
 
@@ -325,12 +319,7 @@ namespace System.Linq.Parallel
 
                 _leftOrdered = leftOrdered;
                 _rightOrdered = rightOrdered;
-                _comparer = comparer;
-
-                if (_comparer == null)
-                {
-                    _comparer = EqualityComparer<TInputOutput>.Default;
-                }
+                _comparer = comparer ?? EqualityComparer<TInputOutput>.Default;
 
                 _cancellationToken = cancellationToken;
             }

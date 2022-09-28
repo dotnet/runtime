@@ -175,6 +175,34 @@ namespace System.Data.Odbc.Tests
             }
         }
 
+        [Fact]
+        public static void ParametersWithNoNameAreAssignedUniqueNames()
+        {
+            using OdbcCommand command = new();
+            command.Parameters.Add(new OdbcParameter { ParameterName = "Parameter2" });
+            command.Parameters.Add(new OdbcParameter { ParameterName = "parameter1" });
+            command.Parameters.Add(new OdbcParameter { ParameterName = "custom" });
+
+            OdbcParameter unnamed = new();
+            command.Parameters.Add(unnamed);
+            Assert.Equal("Parameter3", unnamed.ParameterName);
+        }
+
+        [Fact]
+        public static void TestParameterNameAutoGenerationCompatibility()
+        {
+            using OdbcCommand command = new();
+            for (var i = 1; i <= 5; ++i)
+            {
+                command.Parameters.Add(new OdbcParameter() { Value = i });
+            }
+
+            foreach (OdbcParameter parameter in command.Parameters)
+            {
+                Assert.Equal($"Parameter{parameter.Value}", parameter.ParameterName);
+            }
+        }
+
         private class DbAccessor
         {
             private OdbcConnection con = null;
@@ -182,10 +210,7 @@ namespace System.Data.Odbc.Tests
 
             public bool connectSqlServer(string connStr)
             {
-                if (con == null)
-                {
-                    con = new OdbcConnection(connStr);
-                }
+                con ??= new OdbcConnection(connStr);
 
                 con.Open();
                 trn = con.BeginTransaction();

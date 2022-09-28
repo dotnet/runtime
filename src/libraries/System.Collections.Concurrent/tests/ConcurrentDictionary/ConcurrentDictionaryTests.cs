@@ -593,24 +593,9 @@ namespace System.Collections.Concurrent.Tests
         [Fact]
         public static void TestBugFix669376()
         {
-            var cd = new ConcurrentDictionary<string, int>(new OrdinalStringComparer());
+            var cd = new ConcurrentDictionary<string, int>(EqualityComparer<string>.Create((x, y) => string.Equals(x, y, StringComparison.OrdinalIgnoreCase), x => 0));
             cd["test"] = 10;
             Assert.True(cd.ContainsKey("TEST"), "Customized comparer didn't work");
-        }
-
-        private class OrdinalStringComparer : IEqualityComparer<string>
-        {
-            public bool Equals(string x, string y)
-            {
-                var xlower = x.ToLowerInvariant();
-                var ylower = y.ToLowerInvariant();
-                return string.CompareOrdinal(xlower, ylower) == 0;
-            }
-
-            public int GetHashCode(string obj)
-            {
-                return 0;
-            }
         }
 
         [Fact]
@@ -622,7 +607,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(1, dictionary.Values.Count);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public static void TestDebuggerAttributes()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(new ConcurrentDictionary<string, int>());
@@ -635,7 +620,7 @@ namespace System.Collections.Concurrent.Tests
             Assert.Equal(dict, items);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public static void TestDebuggerAttributes_Null()
         {
             Type proxyType = DebuggerAttributes.GetProxyType(new ConcurrentDictionary<string, int>());

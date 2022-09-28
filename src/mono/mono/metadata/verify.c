@@ -33,7 +33,7 @@
 #include <ctype.h>
 
 /*
- * Returns TURE if @type is VAR or MVAR
+ * Returns TRUE if @type is VAR or MVAR
  */
 static gboolean
 mono_type_is_generic_argument (MonoType *type)

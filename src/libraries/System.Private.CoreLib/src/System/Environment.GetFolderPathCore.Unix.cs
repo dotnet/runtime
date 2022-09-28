@@ -9,6 +9,9 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+#if TARGET_OSX
+using NSSearchPathDirectory = Interop.Sys.NSSearchPathDirectory;
+#endif
 
 namespace System
 {
@@ -17,7 +20,7 @@ namespace System
         private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption option)
         {
             // Get the path for the SpecialFolder
-            string path = GetFolderPathCoreWithoutValidation(folder);
+            string path = GetFolderPathCoreWithoutValidation(folder) ?? string.Empty;
             Debug.Assert(path != null);
 
             // If we didn't get one, or if we got one but we're not supposed to verify it,
@@ -43,7 +46,7 @@ namespace System
             return path;
         }
 
-        private static string GetFolderPathCoreWithoutValidation(SpecialFolder folder)
+        private static string? GetFolderPathCoreWithoutValidation(SpecialFolder folder)
         {
             // First handle any paths that involve only static paths, avoiding the overheads of getting user-local paths.
             // https://www.freedesktop.org/software/systemd/man/file-hierarchy.html
@@ -85,42 +88,54 @@ namespace System
             switch (folder)
             {
                 case SpecialFolder.UserProfile:
-                case SpecialFolder.MyDocuments: // same value as Personal
                     return home;
+
+                case SpecialFolder.Templates:
+                    return ReadXdgDirectory(home, "XDG_TEMPLATES_DIR", "Templates");
+                // TODO: Consider merging the OSX path with the rest of the Apple systems here:
+                // https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/Environment.iOS.cs
+#if TARGET_OSX
+                case SpecialFolder.Desktop:
+                case SpecialFolder.DesktopDirectory:
+                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSDesktopDirectory);
+                case SpecialFolder.ApplicationData:
+                case SpecialFolder.LocalApplicationData:
+                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSApplicationSupportDirectory);
+                case SpecialFolder.MyDocuments: // same value as Personal
+                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSDocumentDirectory);
+                case SpecialFolder.MyMusic:
+                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSMusicDirectory);
+                case SpecialFolder.MyVideos:
+                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSMoviesDirectory);
+                case SpecialFolder.MyPictures:
+                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSPicturesDirectory);
+                case SpecialFolder.Fonts:
+                    return Path.Combine(home, "Library", "Fonts");
+                case SpecialFolder.Favorites:
+                    return Path.Combine(home, "Library", "Favorites");
+                case SpecialFolder.InternetCache:
+                    return Interop.Sys.SearchPath(NSSearchPathDirectory.NSCachesDirectory);
+#else
+                case SpecialFolder.Desktop:
+                case SpecialFolder.DesktopDirectory:
+                    return ReadXdgDirectory(home, "XDG_DESKTOP_DIR", "Desktop");
                 case SpecialFolder.ApplicationData:
                     return GetXdgConfig(home);
                 case SpecialFolder.LocalApplicationData:
                     // "$XDG_DATA_HOME defines the base directory relative to which user specific data files should be stored."
                     // "If $XDG_DATA_HOME is either not set or empty, a default equal to $HOME/.local/share should be used."
                     string? data = GetEnvironmentVariable("XDG_DATA_HOME");
-                    if (string.IsNullOrEmpty(data) || data[0] != '/')
+                    if (data is null || !data.StartsWith('/'))
                     {
                         data = Path.Combine(home, ".local", "share");
                     }
                     return data;
-
-                case SpecialFolder.Desktop:
-                case SpecialFolder.DesktopDirectory:
-                    return ReadXdgDirectory(home, "XDG_DESKTOP_DIR", "Desktop");
-                case SpecialFolder.Templates:
-                    return ReadXdgDirectory(home, "XDG_TEMPLATES_DIR", "Templates");
-                case SpecialFolder.MyVideos:
-                    return ReadXdgDirectory(home, "XDG_VIDEOS_DIR", "Videos");
-
-#if TARGET_OSX
-                case SpecialFolder.MyMusic:
-                    return Path.Combine(home, "Music");
-                case SpecialFolder.MyPictures:
-                    return Path.Combine(home, "Pictures");
-                case SpecialFolder.Fonts:
-                    return Path.Combine(home, "Library", "Fonts");
-                case SpecialFolder.Favorites:
-                    return Path.Combine(home, "Library", "Favorites");
-                case SpecialFolder.InternetCache:
-                    return Path.Combine(home, "Library", "Caches");
-#else
+                case SpecialFolder.MyDocuments: // same value as Personal
+                    return ReadXdgDirectory(home, "XDG_DOCUMENTS_DIR", "Documents");
                 case SpecialFolder.MyMusic:
                     return ReadXdgDirectory(home, "XDG_MUSIC_DIR", "Music");
+                case SpecialFolder.MyVideos:
+                    return ReadXdgDirectory(home, "XDG_VIDEOS_DIR", "Videos");
                 case SpecialFolder.MyPictures:
                     return ReadXdgDirectory(home, "XDG_PICTURES_DIR", "Pictures");
                 case SpecialFolder.Fonts:
@@ -137,7 +152,7 @@ namespace System
             // "$XDG_CONFIG_HOME defines the base directory relative to which user specific configuration files should be stored."
             // "If $XDG_CONFIG_HOME is either not set or empty, a default equal to $HOME/.config should be used."
             string? config = GetEnvironmentVariable("XDG_CONFIG_HOME");
-            if (string.IsNullOrEmpty(config) || config[0] != '/')
+            if (config is null || !config.StartsWith('/'))
             {
                 config = Path.Combine(home, ".config");
             }
@@ -151,7 +166,7 @@ namespace System
             Debug.Assert(!string.IsNullOrEmpty(fallback), $"Expected non-empty fallback");
 
             string? envPath = GetEnvironmentVariable(key);
-            if (!string.IsNullOrEmpty(envPath) && envPath[0] == '/')
+            if (envPath is not null && envPath.StartsWith('/'))
             {
                 return envPath;
             }

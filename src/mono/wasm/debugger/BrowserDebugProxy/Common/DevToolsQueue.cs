@@ -19,6 +19,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public Task? CurrentSend { get { return current_send; } }
 
         public WasmDebuggerConnection Connection { get; init; }
+        public string Id => Connection.Id;
 
         public DevToolsQueue(WasmDebuggerConnection conn)
         {

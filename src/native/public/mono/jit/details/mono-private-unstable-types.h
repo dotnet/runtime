@@ -63,6 +63,7 @@ typedef void  (*MonoFreeAotDataFunc)          (MonoAssembly *assembly, int size,
 
 //#ifdef HOST_WASM
 typedef void* (*MonoWasmGetNativeToInterpTramp) (MonoMethod *method, void *extra_arg);
+typedef void* (*MonoWasmNativeToInterpCallback) (char * cookie);
 //#endif
 
 MONO_END_DECLS

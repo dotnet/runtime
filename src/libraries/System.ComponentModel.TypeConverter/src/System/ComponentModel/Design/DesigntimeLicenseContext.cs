@@ -61,15 +61,8 @@ namespace System.ComponentModel.Design
         {
             if (_savedLicenseKeys == null || _savedLicenseKeys[type.AssemblyQualifiedName!] == null)
             {
-                if (_savedLicenseKeys == null)
-                {
-                    _savedLicenseKeys = new Hashtable();
-                }
-
-                if (resourceAssembly == null)
-                {
-                    resourceAssembly = Assembly.GetEntryAssembly();
-                }
+                _savedLicenseKeys ??= new Hashtable();
+                resourceAssembly ??= Assembly.GetEntryAssembly();
 
                 if (resourceAssembly == null)
                 {
@@ -85,12 +78,10 @@ namespace System.ComponentModel.Design
                         string fileName = new FileInfo(location).Name;
 
                         Stream? s = asm.GetManifestResourceStream(fileName + ".licenses");
-                        if (s == null)
-                        {
-                            // Since the casing may be different depending on how the assembly was loaded,
-                            // we'll do a case insensitive lookup for this manifest resource stream...
-                            s = CaseInsensitiveManifestResourceStreamLookup(asm, fileName + ".licenses");
-                        }
+
+                        // Since the casing may be different depending on how the assembly was loaded,
+                        // we'll do a case insensitive lookup for this manifest resource stream...
+                        s ??= CaseInsensitiveManifestResourceStreamLookup(asm, fileName + ".licenses");
 
                         if (s != null)
                         {

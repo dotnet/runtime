@@ -106,6 +106,12 @@ extern "C" BOOL CRTInitStdStreams( void );
 
 extern bool g_running_in_exe;
 
+#if defined(HOST_ARM64)
+// Flag to check if atomics feature is available on
+// the machine
+bool g_arm64_atomics_present = false;
+#endif
+
 Volatile<INT> init_count = 0;
 Volatile<BOOL> shutdown_intent = 0;
 Volatile<LONG> g_coreclrInitialized = 0;
@@ -1041,14 +1047,14 @@ void PALSetShutdownIntent()
 Function:
   PALInitLock
 
-Take the initializaiton critical section (init_critsec). necessary to serialize
+Take the initialization critical section (init_critsec). necessary to serialize
 TerminateProcess along with PAL_Terminate and PAL_Initialize
 
 (no parameters)
 
 Return value :
     TRUE if critical section existed (and was acquired)
-    FALSE if critical section doens't exist yet
+    FALSE if critical section doesn't exist yet
 --*/
 BOOL PALInitLock(void)
 {

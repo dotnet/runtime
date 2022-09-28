@@ -196,8 +196,7 @@ namespace System.Resources
 
             // Check for duplicate resources whose names vary only by case.
             _caseInsensitiveDups.Add(name, null);
-            if (_preserializedData == null)
-                _preserializedData = new Dictionary<string, PrecannedResource>(FastResourceComparer.Default);
+            _preserializedData ??= new Dictionary<string, PrecannedResource>(FastResourceComparer.Default);
 
             _preserializedData.Add(name, new PrecannedResource(typeName, data));
         }
@@ -242,10 +241,7 @@ namespace System.Resources
                 {
                     Generate();
                 }
-                if (_output != null)
-                {
-                    _output.Dispose();
-                }
+                _output?.Dispose();
             }
 
             _output = null!;

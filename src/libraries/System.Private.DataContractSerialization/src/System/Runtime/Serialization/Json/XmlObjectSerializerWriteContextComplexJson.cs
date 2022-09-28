@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Reflection;
+using System.Runtime.Serialization.DataContracts;
 using System.Text;
 using System.Xml;
-using System.Reflection;
-using System.Collections;
-using System.IO;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Serialization.Json
 {
@@ -90,6 +91,7 @@ namespace System.Runtime.Serialization.Json
             return dataContractNamespace;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         protected override bool WriteTypeInfo(XmlWriterDelegator writer, DataContract contract, DataContract declaredContract)
         {
@@ -141,6 +143,7 @@ namespace System.Runtime.Serialization.Json
             writer.WriteAttributeString(null, JsonGlobals.serverTypeString, null, typeInformation);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         protected override void WriteDataContractValue(DataContract dataContract, XmlWriterDelegator xmlWriter, object obj, RuntimeTypeHandle declaredTypeHandle)
         {
@@ -163,6 +166,7 @@ namespace System.Runtime.Serialization.Json
             get { return JsonGlobals.itemDictionaryString; }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         protected override void SerializeWithXsiType(XmlWriterDelegator xmlWriter, object obj, RuntimeTypeHandle objectTypeHandle, Type? objectType, int declaredTypeID, RuntimeTypeHandle declaredTypeHandle, Type declaredType)
         {
@@ -195,6 +199,7 @@ namespace System.Runtime.Serialization.Json
             SerializeAndVerifyType(dataContract, xmlWriter, obj, verifyKnownType, declaredType.TypeHandle, declaredType);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void HandleCollectionAssignedToObject(Type declaredType, ref DataContract dataContract, ref object obj, ref bool verifyKnownType)
         {
@@ -230,6 +235,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void SerializeWithXsiTypeAtTopLevel(DataContract dataContract, XmlWriterDelegator xmlWriter, object obj, RuntimeTypeHandle originalDeclaredTypeHandle, Type graphType)
         {
@@ -251,11 +257,12 @@ namespace System.Runtime.Serialization.Json
             SerializeAndVerifyType(dataContract, xmlWriter, obj, verifyKnownType, declaredType.TypeHandle, declaredType);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         private void VerifyType(DataContract dataContract, Type declaredType)
         {
             bool knownTypesAddedInCurrentScope = false;
-            if (dataContract.KnownDataContracts != null)
+            if (dataContract.KnownDataContracts?.Count > 0)
             {
                 scopedKnownTypes.Push(dataContract.KnownDataContracts);
                 knownTypesAddedInCurrentScope = true;
@@ -263,7 +270,7 @@ namespace System.Runtime.Serialization.Json
 
             if (!IsKnownType(dataContract, declaredType))
             {
-                throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.DcTypeNotFoundOnSerialize, DataContract.GetClrTypeFullName(dataContract.UnderlyingType), dataContract.StableName.Name, dataContract.StableName.Namespace));
+                throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.DcTypeNotFoundOnSerialize, DataContract.GetClrTypeFullName(dataContract.UnderlyingType), dataContract.XmlName.Name, dataContract.XmlName.Namespace));
             }
 
             if (knownTypesAddedInCurrentScope)
@@ -278,6 +285,7 @@ namespace System.Runtime.Serialization.Json
             xmlWriter.WriteAttributeString(null, JsonGlobals.itemString, null, memberNames[index].Value);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override void WriteExtensionDataTypeInfo(XmlWriterDelegator xmlWriter, IDataNode dataNode)
         {
@@ -321,6 +329,7 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void WriteJsonISerializable(XmlWriterDelegator xmlWriter, ISerializable obj)
         {
@@ -337,7 +346,8 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-        [return: NotNullIfNotNull("oldItemContract")]
+        [return: NotNullIfNotNull(nameof(oldItemContract))]
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static DataContract? GetRevisedItemContract(DataContract oldItemContract)
         {
@@ -350,6 +360,7 @@ namespace System.Runtime.Serialization.Json
             return oldItemContract;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override DataContract GetDataContract(RuntimeTypeHandle typeHandle, Type? type)
         {
@@ -358,6 +369,7 @@ namespace System.Runtime.Serialization.Json
             return dataContract;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override DataContract GetDataContractSkipValidation(int typeId, RuntimeTypeHandle typeHandle, Type? type)
         {
@@ -366,6 +378,7 @@ namespace System.Runtime.Serialization.Json
             return dataContract;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal override DataContract GetDataContract(int id, RuntimeTypeHandle typeHandle)
         {
@@ -374,16 +387,18 @@ namespace System.Runtime.Serialization.Json
             return dataContract;
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         protected override DataContract? ResolveDataContractFromRootDataContract(XmlQualifiedName typeQName)
         {
             return XmlObjectSerializerWriteContextComplexJson.ResolveJsonDataContractFromRootDataContract(this, typeQName, rootTypeDataContract!);
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal static DataContract? ResolveJsonDataContractFromRootDataContract(XmlObjectSerializerContext context, XmlQualifiedName typeQName, DataContract rootTypeDataContract)
         {
-            if (rootTypeDataContract.StableName == typeQName)
+            if (rootTypeDataContract.XmlName == typeQName)
                 return rootTypeDataContract;
 
             CollectionDataContract? collectionContract = rootTypeDataContract as CollectionDataContract;
@@ -399,7 +414,7 @@ namespace System.Runtime.Serialization.Json
                 {
                     itemContract = context.GetDataContract(context.GetSurrogatedType(collectionContract.ItemType));
                 }
-                if (itemContract.StableName == typeQName)
+                if (itemContract.XmlName == typeQName)
                 {
                     return itemContract;
                 }

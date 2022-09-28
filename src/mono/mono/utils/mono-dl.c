@@ -98,7 +98,7 @@ read_string (char *p, FILE *file)
 		if (!endp)
 			return NULL;
 		*endp = 0;
-		return (char *) g_memdup (startp, (endp - startp) + 1);
+		return (char *) g_memdup (startp, GPTRDIFF_TO_UINT ((endp - startp) + 1));
 	}
 	if (*p == 0)
 		return NULL;
@@ -106,7 +106,7 @@ read_string (char *p, FILE *file)
 	while (*p && !isspace (*p))
 		++p;
 	*p = 0;
-	return (char *) g_memdup (startp, (p - startp) + 1);
+	return (char *) g_memdup (startp, GPTRDIFF_TO_UINT ((p - startp) + 1));
 }
 
 /*
@@ -158,7 +158,7 @@ static const char *
 fix_libc_name (const char *name)
 {
 	if (name != NULL && strcmp (name, "libc") == 0) {
-		// Taken from CoreCLR: https://github.com/dotnet/coreclr/blob/6b0dab793260d36e35d66c82678c63046828d01b/src/pal/src/loader/module.cpp#L568-L576
+		// Taken from CoreCLR: https://github.com/dotnet/runtime/blob/732b7434a2ff453048c1647262c00bc8b7652112/src/coreclr/pal/src/loader/module.cpp#L569-L577
 #if defined (HOST_DARWIN)
 		return "/usr/lib/libc.dylib";
 #elif defined (__FreeBSD__)

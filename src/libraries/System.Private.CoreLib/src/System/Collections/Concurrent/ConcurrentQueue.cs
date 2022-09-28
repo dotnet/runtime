@@ -683,7 +683,7 @@ namespace System.Collections.Concurrent
             // check and this check, another item could have arrived).
             if (head._nextSegment == null)
             {
-                result = default!;
+                result = default;
                 return false;
             }
 

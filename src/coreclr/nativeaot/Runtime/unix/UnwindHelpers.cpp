@@ -17,21 +17,23 @@
 
 // libunwind headers
 #include <libunwind.h>
-#include <src/config.h>
-#include <src/Registers.hpp>
-#include <src/AddressSpace.hpp>
+#include <external/llvm-libunwind/src/config.h>
+#include <external/llvm-libunwind/src/Registers.hpp>
+#include <external/llvm-libunwind/src/AddressSpace.hpp>
 #if defined(TARGET_ARM)
-#include <src/libunwind_ext.h>
+#include <external/llvm-libunwind/src/libunwind_ext.h>
 #endif
-#include <src/UnwindCursor.hpp>
+#include <external/llvm-libunwind/src/UnwindCursor.hpp>
 
 
 #if defined(TARGET_AMD64)
 using libunwind::Registers_x86_64;
+using libunwind::CompactUnwinder_x86_64;
 #elif defined(TARGET_ARM)
 using libunwind::Registers_arm;
 #elif defined(TARGET_ARM64)
 using libunwind::Registers_arm64;
+using libunwind::CompactUnwinder_arm64;
 #elif defined(TARGET_X86)
 using libunwind::Registers_x86;
 #else
@@ -58,6 +60,7 @@ struct Registers_REGDISPLAY : REGDISPLAY
         switch (regNum)
         {
         case UNW_REG_IP:
+        case UNW_X86_64_RIP:
             return IP;
         case UNW_REG_SP:
             return SP;
@@ -104,6 +107,7 @@ struct Registers_REGDISPLAY : REGDISPLAY
         switch (regNum)
         {
         case UNW_REG_IP:
+        case UNW_X86_64_RIP:
             IP = value;
             pIP = (PTR_PCODE)location;
             return;
@@ -178,7 +182,7 @@ struct Registers_REGDISPLAY : REGDISPLAY
             return true;
         if (regNum < 0)
             return false;
-        if (regNum > 15)
+        if (regNum > 16)
             return false;
         return true;
     }
@@ -488,7 +492,7 @@ struct Registers_REGDISPLAY : REGDISPLAY
     uint64_t    getRegister(int num) const;
     void        setRegister(int num, uint64_t value, uint64_t location);
 
-    double      getFloatRegister(int num) {abort();}
+    double      getFloatRegister(int num) const {abort();}
     void        setFloatRegister(int num, double value) {abort();}
 
     libunwind::v128    getVectorRegister(int num) const;
@@ -499,6 +503,8 @@ struct Registers_REGDISPLAY : REGDISPLAY
     uint64_t    getIP() const         { return IP;}
     void        setIP(uint64_t value, uint64_t location)
     { IP = value; pIP = (PTR_UIntNative)location; }
+    uint64_t    getFP() const         { return *pFP;}
+    void        setFP(uint64_t value, uint64_t location) { pFP = (PTR_UIntNative)location;}
 };
 
 inline bool Registers_REGDISPLAY::validRegister(int num) const {
@@ -770,7 +776,37 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
 #endif
 
 #if _LIBUNWIND_SUPPORT_DWARF_UNWIND
-    bool retVal = uc.getInfoFromDwarfSection(pc, uwInfoSections, 0 /* fdeSectionOffsetHint */);
+    uint32_t dwarfOffsetHint = 0;
+
+#if _LIBUNWIND_SUPPORT_COMPACT_UNWIND
+    // If there is a compact unwind encoding table, look there first.
+    if (uwInfoSections.compact_unwind_section != 0 && uc.getInfoFromCompactEncodingSection(pc, uwInfoSections)) {
+        unw_proc_info_t procInfo;
+        uc.getInfo(&procInfo);
+
+#if defined(TARGET_ARM64)
+        if ((procInfo.format & UNWIND_ARM64_MODE_MASK) != UNWIND_ARM64_MODE_DWARF) {
+            CompactUnwinder_arm64<LocalAddressSpace, Registers_REGDISPLAY> compactInst;
+            int stepRet = compactInst.stepWithCompactEncoding(procInfo.format, procInfo.start_ip, _addressSpace, *(Registers_REGDISPLAY*)regs);
+            return stepRet == UNW_STEP_SUCCESS;
+        } else {
+            dwarfOffsetHint = procInfo.format & UNWIND_ARM64_DWARF_SECTION_OFFSET;
+        }
+#elif defined(TARGET_AMD64)
+        if ((procInfo.format & UNWIND_X86_64_MODE_MASK) != UNWIND_X86_64_MODE_DWARF) {
+            CompactUnwinder_x86_64<LocalAddressSpace, Registers_REGDISPLAY> compactInst;
+            int stepRet = compactInst.stepWithCompactEncoding(procInfo.format, procInfo.start_ip, _addressSpace, *(Registers_REGDISPLAY*)regs);
+            return stepRet == UNW_STEP_SUCCESS;
+        } else {
+            dwarfOffsetHint = procInfo.format & UNWIND_X86_64_DWARF_SECTION_OFFSET;
+        }
+#else
+        PORTABILITY_ASSERT("DoTheStep");
+#endif
+    }
+#endif
+
+    bool retVal = uc.getInfoFromDwarfSection(pc, uwInfoSections, dwarfOffsetHint);
     if (!retVal)
     {
         return false;
@@ -778,13 +814,14 @@ bool DoTheStep(uintptr_t pc, UnwindInfoSections uwInfoSections, REGDISPLAY *regs
 
     unw_proc_info_t procInfo;
     uc.getInfo(&procInfo);
+    bool isSignalFrame = false;
 
 #if defined(TARGET_ARM)
     DwarfInstructions<LocalAddressSpace, Registers_arm_rt> dwarfInst;
-    int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, procInfo.unwind_info, *(Registers_arm_rt*)regs);
+    int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, procInfo.unwind_info, *(Registers_arm_rt*)regs, isSignalFrame);
 #else
     DwarfInstructions<LocalAddressSpace, Registers_REGDISPLAY> dwarfInst;
-    int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, procInfo.unwind_info, *(Registers_REGDISPLAY*)regs);
+    int stepRet = dwarfInst.stepWithDwarf(_addressSpace, pc, procInfo.unwind_info, *(Registers_REGDISPLAY*)regs, isSignalFrame);
 #endif
 
     if (stepRet != UNW_STEP_SUCCESS)

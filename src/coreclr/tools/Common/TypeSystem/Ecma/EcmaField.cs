@@ -113,6 +113,19 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
+        // This is extremely rarely needed. Don't cache it at all.
+        public override EmbeddedSignatureData[] GetEmbeddedSignatureData()
+        {
+            var metadataReader = MetadataReader;
+            BlobReader signatureReader = metadataReader.GetBlobReader(metadataReader.GetFieldDefinition(_handle).Signature);
+
+            EcmaSignatureParser parser = new EcmaSignatureParser(Module, signatureReader, NotFoundBehavior.Throw);
+            var fieldType = parser.ParseFieldSignature(out var embeddedSig);
+            Debug.Assert(fieldType == FieldType);
+            return embeddedSig;
+        }
+
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         private int InitializeFieldFlags(int mask)
         {

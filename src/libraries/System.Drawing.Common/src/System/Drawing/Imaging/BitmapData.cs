@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 #if NET7_0_OR_GREATER
@@ -112,18 +113,13 @@ namespace System.Drawing.Imaging
         internal ref int GetPinnableReference() => ref _width;
 
 #if NET7_0_OR_GREATER
-        [CustomTypeMarshaller(typeof(BitmapData), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-        internal unsafe struct PinningMarshaller
+        [CustomMarshaller(typeof(BitmapData), MarshalMode.ManagedToUnmanagedIn, typeof(PinningMarshaller))]
+        internal static unsafe class PinningMarshaller
         {
-            private readonly BitmapData _managed;
-            public PinningMarshaller(BitmapData managed)
-            {
-                _managed = managed;
-            }
+            public static ref int GetPinnableReference(BitmapData managed) => ref (managed is null ? ref Unsafe.NullRef<int>() : ref managed.GetPinnableReference());
 
-            public ref int GetPinnableReference() => ref (_managed is null ? ref Unsafe.NullRef<int>() : ref _managed.GetPinnableReference());
-
-            public void* ToNativeValue() => Unsafe.AsPointer(ref GetPinnableReference());
+            // All usages in our currently supported scenarios will always go through GetPinnableReference
+            public static int* ConvertToUnmanaged(BitmapData managed) => throw new UnreachableException();
         }
 #endif
     }

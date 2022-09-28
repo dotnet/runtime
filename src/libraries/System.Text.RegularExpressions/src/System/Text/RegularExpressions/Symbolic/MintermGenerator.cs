@@ -15,29 +15,24 @@ namespace System.Text.RegularExpressions.Symbolic
     /// if the sets are [0-9] and [0-4], then there are three minterms: [0-4], [5-9] and [^0-9]. Notably, there is no
     /// minterm corresponding to "[0-9] and not [0-4]", since that is unsatisfiable (empty).
     /// </remarks>
-    internal sealed class MintermGenerator<TSet> where TSet : IComparable<TSet>
+    internal static class MintermGenerator<TSet> where TSet : IComparable<TSet>
     {
-        private readonly ISolver<TSet> _solver;
-
-        /// <summary>Constructs a minterm generator for a given solver.</summary>
-        /// <param name="solver">The solver for operating over sets.</param>
-        public MintermGenerator(ISolver<TSet> solver) => _solver = solver;
-
         /// <summary>
         /// Given an array of sets {p_1, p_2, ..., p_n} where n>=0,
         /// enumerate all satisfiable (non-empty) Boolean combinations Tuple({b_1, b_2, ..., b_n}, p)
         /// where p is satisfiable and equivalent to p'_1 &amp; p'_2 &amp; ... &amp; p'_n,
         /// where p'_i = p_i if b_i = true and p'_i is Not(p_i). Otherwise, if n=0 return Tuple({},True).
         /// </summary>
+        /// <param name="solver">The solver to use for processing the sets.</param>
         /// <param name="sets">The sets from which to generate the minterms.</param>
         /// <returns>All minterms of the given set sequence</returns>
-        public List<TSet> GenerateMinterms(HashSet<TSet> sets)
+        public static List<TSet> GenerateMinterms(ISolver<TSet> solver, HashSet<TSet> sets)
         {
-            var tree = new PartitionTree(_solver.Full);
+            var tree = new PartitionTree(solver.Full);
             foreach (TSet set in sets)
             {
                 // Push each set into the partition tree
-                tree.Refine(_solver, set);
+                tree.Refine(solver, set);
             }
 
             // Return all minterms as the leaves of the partition tree

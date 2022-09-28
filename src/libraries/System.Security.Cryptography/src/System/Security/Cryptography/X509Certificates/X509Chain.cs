@@ -37,24 +37,11 @@ namespace System.Security.Cryptography.X509Certificates
             return new X509Chain();
         }
 
-        public X509ChainElementCollection ChainElements
-        {
-            get
-            {
-                if (_chainElements == null)
-                    _chainElements = new X509ChainElementCollection();
-                return _chainElements;
-            }
-        }
+        public X509ChainElementCollection ChainElements => _chainElements ??= new X509ChainElementCollection();
 
         public X509ChainPolicy ChainPolicy
         {
-            get
-            {
-                if (_chainPolicy == null)
-                    _chainPolicy = new X509ChainPolicy();
-                return _chainPolicy;
-            }
+            get => _chainPolicy ??= new X509ChainPolicy();
             set
             {
                 ArgumentNullException.ThrowIfNull(value);
@@ -67,10 +54,7 @@ namespace System.Security.Cryptography.X509Certificates
             get
             {
                 // We give the user a reference to the array since we'll never access it.
-                X509ChainStatus[]? chainStatus = _lazyChainStatus;
-                if (chainStatus == null)
-                    chainStatus = _lazyChainStatus = (_pal == null ? Array.Empty<X509ChainStatus>() : _pal.ChainStatus!);
-                return chainStatus;
+                return _lazyChainStatus ??= (_pal == null ? Array.Empty<X509ChainStatus>() : _pal.ChainStatus!);
             }
         }
 
@@ -149,7 +133,7 @@ namespace System.Security.Cryptography.X509Certificates
                     chainPolicy.RevocationFlag,
                     chainPolicy._customTrustStore,
                     chainPolicy.TrustMode,
-                    chainPolicy.VerificationTime,
+                    chainPolicy.VerificationTimeIgnored ? DateTime.Now : chainPolicy.VerificationTime,
                     chainPolicy.UrlRetrievalTimeout,
                     chainPolicy.DisableCertificateDownloads);
 
@@ -198,9 +182,11 @@ namespace System.Security.Cryptography.X509Certificates
             _useMachineContext = false;
 
             IChainPal? pal = _pal;
-            _pal = null;
             if (pal != null)
+            {
+                _pal = null;
                 pal.Dispose();
+            }
         }
     }
 }

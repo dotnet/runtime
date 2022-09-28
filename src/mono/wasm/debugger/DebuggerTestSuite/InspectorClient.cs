@@ -71,7 +71,7 @@ namespace DebuggerTests
                 }
             };
 
-            await ConnectWithMainLoops(uri, HandleMessage, cts);
+            await ConnectAndStartRunLoopAsync(uri, HandleMessage, cts);
         }
 
         public Task<Result> SendCommand(string method, JObject args, CancellationToken token)

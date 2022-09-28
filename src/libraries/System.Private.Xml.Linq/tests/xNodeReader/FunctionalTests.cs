@@ -471,7 +471,7 @@ namespace CoreXml.Test.XLinq
                     this.AddChild(new TestVariation(TestReadInnerXml17) { Attribute = new VariationAttribute("ReadInnerXml on XmlDeclaration") });
                     this.AddChild(new TestVariation(TestReadInnerXml18) { Attribute = new VariationAttribute("Current node after ReadInnerXml on element") { Priority = 0 } });
                     this.AddChild(new TestVariation(TestReadInnerXml19) { Attribute = new VariationAttribute("Current node after ReadInnerXml on element") });
-                    this.AddChild(new TestVariation(TestTextReadInnerXml2) { Attribute = new VariationAttribute("ReadInnerXml with entity references, EntityHandling = ExpandCharEntites") });
+                    this.AddChild(new TestVariation(TestTextReadInnerXml2) { Attribute = new VariationAttribute("ReadInnerXml with entity references, EntityHandling = ExpandCharEntities") });
                     this.AddChild(new TestVariation(TestTextReadInnerXml4) { Attribute = new VariationAttribute("ReadInnerXml on EntityReference") });
                     this.AddChild(new TestVariation(TestTextReadInnerXml5) { Attribute = new VariationAttribute("ReadInnerXml on EndEntity") });
                     this.AddChild(new TestVariation(TestTextReadInnerXml18) { Attribute = new VariationAttribute("One large element") });
@@ -826,7 +826,7 @@ namespace CoreXml.Test.XLinq
                     this.AddChild(new TestVariation(ReadOuterXml17) { Attribute = new VariationAttribute("ReadOuterXml on ProcessingInstruction") });
                     this.AddChild(new TestVariation(ReadOuterXml24) { Attribute = new VariationAttribute("ReadOuterXml on CDATA") });
                     this.AddChild(new TestVariation(TRReadOuterXml27) { Attribute = new VariationAttribute("ReadOuterXml on element with entities, EntityHandling = ExpandCharEntities") });
-                    this.AddChild(new TestVariation(TRReadOuterXml28) { Attribute = new VariationAttribute("ReadOuterXml on attribute with entities, EntityHandling = ExpandCharEntites") });
+                    this.AddChild(new TestVariation(TRReadOuterXml28) { Attribute = new VariationAttribute("ReadOuterXml on attribute with entities, EntityHandling = ExpandCharEntities") });
                     this.AddChild(new TestVariation(TestTextReadOuterXml29) { Attribute = new VariationAttribute("One large element") });
                     this.AddChild(new TestVariation(ReadOuterXmlWhenNamespacesEqualsToFalseAndHasAnAttributeXmlns) { Attribute = new VariationAttribute("Read OuterXml when Namespaces=false and has an attribute xmlns") });
                 }

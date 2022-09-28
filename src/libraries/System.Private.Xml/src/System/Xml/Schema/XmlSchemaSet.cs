@@ -134,18 +134,12 @@ namespace System.Xml.Schema
             {
                 _eventHandler -= _internalEventHandler;
                 _eventHandler += value;
-                if (_eventHandler == null)
-                {
-                    _eventHandler = _internalEventHandler;
-                }
+                _eventHandler ??= _internalEventHandler;
             }
             remove
             {
                 _eventHandler -= value;
-                if (_eventHandler == null)
-                {
-                    _eventHandler = _internalEventHandler;
-                }
+                _eventHandler ??= _internalEventHandler;
             }
         }
 
@@ -191,53 +185,13 @@ namespace System.Xml.Schema
             }
         }
 
-        public XmlSchemaObjectTable GlobalElements
-        {
-            get
-            {
-                if (elements == null)
-                {
-                    elements = new XmlSchemaObjectTable();
-                }
-                return elements;
-            }
-        }
+        public XmlSchemaObjectTable GlobalElements => elements ??= new XmlSchemaObjectTable();
 
-        public XmlSchemaObjectTable GlobalAttributes
-        {
-            get
-            {
-                if (attributes == null)
-                {
-                    attributes = new XmlSchemaObjectTable();
-                }
-                return attributes;
-            }
-        }
+        public XmlSchemaObjectTable GlobalAttributes => attributes ??= new XmlSchemaObjectTable();
 
-        public XmlSchemaObjectTable GlobalTypes
-        {
-            get
-            {
-                if (schemaTypes == null)
-                {
-                    schemaTypes = new XmlSchemaObjectTable();
-                }
-                return schemaTypes;
-            }
-        }
+        public XmlSchemaObjectTable GlobalTypes => schemaTypes ??= new XmlSchemaObjectTable();
 
-        internal XmlSchemaObjectTable SubstitutionGroups
-        {
-            get
-            {
-                if (substitutionGroups == null)
-                {
-                    substitutionGroups = new XmlSchemaObjectTable();
-                }
-                return substitutionGroups;
-            }
-        }
+        internal XmlSchemaObjectTable SubstitutionGroups => substitutionGroups ??= new XmlSchemaObjectTable();
 
         /// <summary>
         /// Table of all types extensions
@@ -253,17 +207,8 @@ namespace System.Xml.Schema
         /// <summary>
         /// Table of all types extensions
         /// </summary>
-        internal XmlSchemaObjectTable TypeExtensions
-        {
-            get
-            {
-                if (_typeExtensions == null)
-                {
-                    _typeExtensions = new XmlSchemaObjectTable();
-                }
-                return _typeExtensions;
-            }
-        }
+        internal XmlSchemaObjectTable TypeExtensions => _typeExtensions ??= new XmlSchemaObjectTable();
+
         //Public Methods
 
         /// <summary>
@@ -287,11 +232,7 @@ namespace System.Xml.Schema
             lock (InternalSyncObject)
             {
                 //Check if schema from url has already been added
-                XmlResolver? tempResolver = _readerSettings.GetXmlResolver();
-                if (tempResolver == null)
-                {
-                    tempResolver = new XmlUrlResolver();
-                }
+                XmlResolver tempResolver = _readerSettings.GetXmlResolver() ?? new XmlUrlResolver();
                 Uri tempSchemaUri = tempResolver.ResolveUri(null, schemaUri);
                 if (IsSchemaLoaded(tempSchemaUri, targetNamespace, out schema))
                 {
@@ -397,11 +338,7 @@ namespace System.Xml.Schema
                     string? tns = null;
                     foreach (XmlSchema? schema in schemas.SortedSchemas.Values)
                     {
-                        tns = schema!.TargetNamespace;
-                        if (tns == null)
-                        {
-                            tns = string.Empty;
-                        }
+                        tns = schema!.TargetNamespace ?? string.Empty;
                         if (_schemas.ContainsKey(schema.SchemaId) || FindSchemaByNSAndUrl(schema.BaseUri, tns, null) != null)
                         { //Do not already existing url
                             continue;
@@ -486,10 +423,9 @@ namespace System.Xml.Schema
                     //Removal list is all schemas imported by this schema directly or indirectly
                     //Need to check if other schemas in the set import schemaToRemove / any of its imports
                     ArrayList needToCheckSchemaList = new ArrayList();
-                    XmlSchema? mainSchema;
                     for (int i = 0; i < _schemas.Count; i++)
                     {
-                        mainSchema = (XmlSchema)_schemas.GetByIndex(i)!;
+                        XmlSchema mainSchema = (XmlSchema)_schemas.GetByIndex(i)!;
                         if (mainSchema == schemaToRemove ||
                             schemaToRemove.ImportedSchemas.Contains(mainSchema))
                         {
@@ -498,10 +434,9 @@ namespace System.Xml.Schema
                         needToCheckSchemaList.Add(mainSchema);
                     }
 
-                    mainSchema = null;
                     for (int i = 0; i < needToCheckSchemaList.Count; i++)
                     { //Perf: Not using nested foreach here
-                        mainSchema = (XmlSchema)needToCheckSchemaList[i]!;
+                        XmlSchema mainSchema = (XmlSchema)needToCheckSchemaList[i]!;
 
                         if (mainSchema.ImportedNamespaces.Count > 0)
                         {
@@ -530,10 +465,7 @@ namespace System.Xml.Schema
 
         public bool Contains(string? targetNamespace)
         {
-            if (targetNamespace == null)
-            {
-                targetNamespace = string.Empty;
-            }
+            targetNamespace ??= string.Empty;
 
             return _targetNamespaces[targetNamespace] != null;
         }
@@ -747,10 +679,7 @@ namespace System.Xml.Schema
         {
             ArrayList tnsSchemas = new ArrayList();
             XmlSchema currentSchema;
-            if (targetNamespace == null)
-            {
-                targetNamespace = string.Empty;
-            }
+            targetNamespace ??= string.Empty;
             for (int i = 0; i < _schemas.Count; i++)
             {
                 currentSchema = (XmlSchema)_schemas.GetByIndex(i)!;
@@ -828,9 +757,7 @@ namespace System.Xml.Schema
                 }
                 XmlQualifiedName head = element.SubstitutionGroup;
                 if (!head.IsEmpty) {
-                    if (substTable == null) {
-                        substTable = new XmlSchemaObjectTable();
-                    }
+                    substTable ??= new XmlSchemaObjectTable();
                     XmlSchemaSubstitutionGroup substitutionGroup = (XmlSchemaSubstitutionGroup)substTable[head];
                     if (substitutionGroup == null) {
                         substitutionGroup = new XmlSchemaSubstitutionGroup();
@@ -866,10 +793,7 @@ namespace System.Xml.Schema
         {
             ArgumentNullException.ThrowIfNull(reader);
 
-            if (targetNamespace == null)
-            {
-                targetNamespace = string.Empty;
-            }
+            targetNamespace ??= string.Empty;
             if (validatedNamespaces[targetNamespace] != null)
             {
                 if (FindSchemaByNSAndUrl(new Uri(reader.BaseURI!, UriKind.RelativeOrAbsolute), targetNamespace, null) != null)
@@ -904,11 +828,7 @@ namespace System.Xml.Schema
                     for (int i = 0; i < schema.ImportedSchemas.Count; ++i)
                     {
                         XmlSchema impSchema = (XmlSchema)schema.ImportedSchemas[i]!;
-                        tns = impSchema.TargetNamespace;
-                        if (tns == null)
-                        {
-                            tns = string.Empty;
-                        }
+                        tns = impSchema.TargetNamespace ?? string.Empty;
                         if (validatedNamespaces[tns] != null && (FindSchemaByNSAndUrl(impSchema.BaseUri, tns, oldLocations) == null))
                         {
                             RemoveRecursive(schema);
@@ -946,7 +866,7 @@ namespace System.Xml.Schema
             if (schema != null)
             {
                 Debug.Assert(ns != null);
-                string tns = schema.TargetNamespace == null ? string.Empty : schema.TargetNamespace;
+                string tns = schema.TargetNamespace ?? string.Empty;
                 if (tns == ns)
                 {
                     return schema;
@@ -1079,10 +999,7 @@ namespace System.Xml.Schema
                         XmlSchemaElement element1 = (XmlSchemaElement)g.Members[j]!;
                         if (element1 != element)
                         { //Exclude the head
-                            if (newMembers == null)
-                            {
-                                newMembers = new List<XmlSchemaElement>();
-                            }
+                            newMembers ??= new List<XmlSchemaElement>();
                             newMembers.Add(element1);
                         }
                     }
@@ -1169,10 +1086,9 @@ namespace System.Xml.Schema
             SchemaNames schemaNames = GetSchemaNames(readerNameTable);
             Parser parser = new Parser(SchemaType.XSD, readerNameTable, schemaNames, _eventHandler);
             parser.XmlResolver = _readerSettings.GetXmlResolver_CheckConfig();
-            SchemaType schemaType;
             try
             {
-                schemaType = parser.Parse(reader, targetNamespace);
+                parser.Parse(reader, targetNamespace);
             }
             catch (XmlSchemaException e)
             {
@@ -1314,20 +1230,13 @@ namespace System.Xml.Schema
             }
             else
             {
-                if (_schemaNames == null)
-                {
-                    _schemaNames = new SchemaNames(_nameTable);
-                }
-                return _schemaNames;
+                return _schemaNames ??= new SchemaNames(_nameTable);
             }
         }
 
         internal bool IsSchemaLoaded(Uri schemaUri, string? targetNamespace, out XmlSchema? schema)
         {
-            if (targetNamespace == null)
-            {
-                targetNamespace = string.Empty;
-            }
+            targetNamespace ??= string.Empty;
             if (GetSchemaByUri(schemaUri, out schema))
             {
                 if (_schemas.ContainsKey(schema.SchemaId) && (targetNamespace.Length == 0 || targetNamespace == schema.TargetNamespace))
@@ -1383,7 +1292,7 @@ namespace System.Xml.Schema
 
         internal static string GetTargetNamespace(XmlSchema schema)
         {
-            return schema.TargetNamespace == null ? string.Empty : schema.TargetNamespace;
+            return schema.TargetNamespace ?? string.Empty;
         }
 
         internal SortedList SortedSchemas
@@ -1528,22 +1437,10 @@ namespace System.Xml.Schema
 
         private void VerifyTables()
         {
-            if (elements == null)
-            {
-                elements = new XmlSchemaObjectTable();
-            }
-            if (attributes == null)
-            {
-                attributes = new XmlSchemaObjectTable();
-            }
-            if (schemaTypes == null)
-            {
-                schemaTypes = new XmlSchemaObjectTable();
-            }
-            if (substitutionGroups == null)
-            {
-                substitutionGroups = new XmlSchemaObjectTable();
-            }
+            elements ??= new XmlSchemaObjectTable();
+            attributes ??= new XmlSchemaObjectTable();
+            schemaTypes ??= new XmlSchemaObjectTable();
+            substitutionGroups ??= new XmlSchemaObjectTable();
         }
 
         private void InternalValidationCallback(object? sender, ValidationEventArgs e)

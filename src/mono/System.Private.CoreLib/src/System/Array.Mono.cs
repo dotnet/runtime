@@ -281,6 +281,21 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void InternalCreate(ref Array? result, IntPtr elementType, int rank, int* lengths, int* lowerBounds);
 
+        private unsafe nint GetFlattenedIndex(int rawIndex)
+        {
+            // Checked by the caller
+            Debug.Assert(Rank == 1);
+
+            int index = rawIndex - GetLowerBound(0);
+            int length = GetLength(0);
+
+            if ((uint)index >= (uint)length)
+                ThrowHelper.ThrowIndexOutOfRangeException();
+
+            Debug.Assert((uint)index < (nuint)LongLength);
+            return index;
+        }
+
         private unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)
         {
             // Checked by the caller

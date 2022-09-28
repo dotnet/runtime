@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <IlcArg Include="--instructionset:avx2" />
+    <IlcArg Include="--instruction-set:avx2" />
   </ItemGroup>
 
   <PropertyGroup>

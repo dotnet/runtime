@@ -73,7 +73,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
             try
             {
-                type = _idParser.ResolveTypeHandle(input, false);
+                bool unusedNonLoadableModule = false;
+                type = _idParser.ResolveTypeHandle(input, ref unusedNonLoadableModule, false);
             }
             catch
             { }
@@ -94,7 +95,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
             try
             {
-                method = _idParser.ResolveMethodID(input, false);
+                method = _idParser.ResolveMethodID(input, out _, false);
             }
             catch
             { }
@@ -214,7 +215,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 ZippedETLReader etlReader = new ZippedETLReader(inputFileName, log);
                 etlReader.EtlFileName = unzipedEtlFile;
 
-                // Figure out where to put the symbols.  
+                // Figure out where to put the symbols.
                 var inputDir = Path.GetDirectoryName(inputFileName);
                 if (inputDir.Length == 0)
                 {
@@ -354,6 +355,38 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             return 0;
         }
 
+        static MibcConfig ParseMibcConfigsAndMerge(TypeSystemContext tsc, params PEReader[] pEReader)
+        {
+            MibcConfig firstCfg = null;
+            foreach (PEReader peReader in pEReader)
+            {
+                MibcConfig config = MIbcProfileParser.ParseMibcConfig(tsc, peReader);
+                if (firstCfg == null)
+                {
+                    firstCfg = config;
+                }
+                else
+                {
+                    if (firstCfg.Runtime != config.Runtime)
+                    {
+                        PrintMessage(
+                            $"Warning: Attempting to merge MIBCs collected on different runtimes: {firstCfg.Runtime} != {config.Runtime}");
+                    }
+                    if (firstCfg.FormatVersion != config.FormatVersion)
+                    {
+                        PrintMessage(
+                            $"Warning: Attempting to merge MIBCs with different format versions: {firstCfg.FormatVersion} != {config.FormatVersion}");
+                    }
+                    if (firstCfg.Os != config.Os ||
+                        firstCfg.Arch != config.Arch)
+                    {
+                        PrintMessage(
+                            $"Warning: Attempting to merge MIBCs collected on different RIDs: {firstCfg.Os}-{firstCfg.Arch} != {config.Os}-{config.Arch}");
+                    }
+                }
+            }
+            return firstCfg;
+        }
 
         static int InnerMergeMain(CommandLineOptions commandLineOptions)
         {
@@ -399,7 +432,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     ProfileData.MergeProfileData(ref partialNgen, mergedProfileData, MIbcProfileParser.ParseMIbcFile(tsc, peReader, assemblyNamesInBubble, onlyDefinedInAssembly: null));
                 }
 
-                int result = MibcEmitter.GenerateMibcFile(tsc, commandLineOptions.OutputFileName, mergedProfileData.Values, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
+                MibcConfig mergedConfig = ParseMibcConfigsAndMerge(tsc, mibcReaders);
+                int result = MibcEmitter.GenerateMibcFile(mergedConfig, tsc, commandLineOptions.OutputFileName, mergedProfileData.Values, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
                 if (result == 0 && commandLineOptions.InheritTimestamp)
                 {
                     commandLineOptions.OutputFileName.CreationTimeUtc = commandLineOptions.InputFilesToMerge.Max(fi => fi.CreationTimeUtc);
@@ -794,7 +828,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
         static void PrintMibcStats(ProfileData data)
         {
-            List<MethodProfileData> methods = data.GetAllMethodProfileData().ToList();
+            PrintOutput(data.Config?.ToString());
+            List <MethodProfileData> methods = data.GetAllMethodProfileData().ToList();
             List<MethodProfileData> profiledMethods = methods.Where(spd => spd.SchemaData != null).ToList();
             PrintOutput($"# Methods: {methods.Count}");
             PrintOutput($"# Methods with any profile data: {profiledMethods.Count(spd => spd.SchemaData.Length > 0)}");
@@ -1143,12 +1178,13 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     }
                 }
 
-                var tsc = new TraceTypeSystemContext(pgoProcess, clrInstanceId.Value, s_logger);
+                var tsc = new TraceTypeSystemContext(pgoProcess, clrInstanceId.Value, s_logger, commandLineOptions.AutomaticReferences);
 
                 if (commandLineOptions.VerboseWarnings)
                     PrintWarning($"{traceLog.EventsLost} Lost events");
 
                 bool filePathError = false;
+                HashSet<ModuleDesc> modulesLoadedViaReference = new HashSet<ModuleDesc>();
                 if (commandLineOptions.Reference != null)
                 {
                     foreach (FileInfo fileReference in commandLineOptions.Reference)
@@ -1162,7 +1198,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                             }
                             else
                             {
-                                tsc.GetModuleFromPath(fileReference.FullName, throwIfNotLoadable: false);
+                                var module = tsc.GetModuleFromPath(fileReference.FullName, throwIfNotLoadable: false);
+                                if (module != null)
+                                    modulesLoadedViaReference.Add(module);
                             }
                         }
                         catch (Internal.TypeSystem.TypeSystemException.BadImageFormatException)
@@ -1181,6 +1219,64 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 if (!tsc.Initialize())
                     return -12;
 
+                Dictionary<string, HashSet<string>> duplicateModuleAnalysis = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+                foreach (var module in pgoProcess.EnumerateLoadedManagedModules())
+                {
+                    var managedModule = module.ManagedModule;
+
+                    if (module.ClrInstanceID != clrInstanceId.Value)
+                        continue;
+
+                    if (managedModule.ModuleFile != null)
+                    {
+                        string simpleName = managedModule.ModuleFile.Name;
+                        if (simpleName.EndsWith(".il"))
+                            simpleName = simpleName.Substring(0, simpleName.Length - 3);
+
+                        string filePathTemp = PgoTraceProcess.ComputeFilePathOnDiskForModule(managedModule);
+                        string candidateFilePath;
+
+                        // This path may be normalized
+                        if (File.Exists(filePathTemp) || !tsc._normalizedFilePathToFilePath.TryGetValue(filePathTemp, out candidateFilePath))
+                            candidateFilePath = filePathTemp;
+
+                        if (!duplicateModuleAnalysis.TryGetValue(simpleName, out HashSet<string> candidatePaths))
+                        {
+                            duplicateModuleAnalysis[simpleName] = candidatePaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        }
+                        candidatePaths.Add(candidateFilePath);
+                    }
+                }
+
+                bool duplicateError = false;
+                foreach (var assembliesWithDuplicates in duplicateModuleAnalysis)
+                {
+                    if (assembliesWithDuplicates.Value.Count == 1)
+                        continue;
+
+                    ModuleDesc loadedViaReference = null;
+                    foreach (var module in modulesLoadedViaReference)
+                    {
+                        if (string.Equals(module.Assembly.GetName().Name, assembliesWithDuplicates.Key, StringComparison.OrdinalIgnoreCase))
+                        {
+                            loadedViaReference = module;
+                            break;
+                        }
+                    }
+                    if ((loadedViaReference == null)
+                        && commandLineOptions.AutomaticReferences) // AutomaticReferences set to false disables this error, as no more references can actually be loaded past this point and cause a problem.
+                    {
+                        duplicateError = true;
+                        PrintError($"Multiple assemblies with the same simple name loaded into the process. Specify the preferred module via the -reference parameter.");
+                        foreach (string path in assembliesWithDuplicates.Value)
+                        {
+                            PrintMessage(path);
+                        }
+                    }
+                }
+                if (duplicateError)
+                    return -13;
+
                 TraceRuntimeDescToTypeSystemDesc idParser = new TraceRuntimeDescToTypeSystemDesc(p, tsc, clrInstanceId.Value);
 
                 int mismatchErrors = 0;
@@ -1189,7 +1285,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     ModuleDesc loadedModule = idParser.ResolveModuleID(e.ModuleID, false);
                     if (loadedModule == null)
                     {
-                        PrintWarning($"Unable to find loaded module {e.ModuleILFileName} to verify match");
+                        if (!idParser.IsDynamicModuleID(e.ModuleID))
+                            PrintWarning($"Unable to find loaded module {e.ModuleILFileName} to verify match");
                         continue;
                     }
 
@@ -1201,7 +1298,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                     bool matched = false;
                     bool mismatch = false;
-                    foreach (var debugEntry in ecmaModule.PEReader.ReadDebugDirectory())
+                    bool mismatchHandled = false;
+                    foreach (DebugDirectoryEntry debugEntry in ecmaModule.PEReader.SafeReadDebugDirectory())
                     {
                         if (debugEntry.Type == DebugDirectoryEntryType.CodeView)
                         {
@@ -1210,9 +1308,19 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                                 continue;
                             if (codeViewData.Guid != e.ManagedPdbSignature)
                             {
-                                PrintError($"Dll mismatch between assembly located at \"{e.ModuleILPath}\" during trace collection and module \"{tsc.PEReaderToFilePath(ecmaModule.PEReader)}\"");
-                                mismatchErrors++;
-                                mismatch = true;
+                                if (modulesLoadedViaReference.Contains(ecmaModule) && duplicateModuleAnalysis[ecmaModule.Assembly.GetName().Name].Count > 1)
+                                {
+                                    // This is the case where a duplicate dll mismatch was avoided by specifying a -reference parameter
+                                    PrintMessage($"Disabling load of assembly data from assembly located at \"{e.ModuleILPath}\" during trace collection as module \"{tsc.PEReaderToFilePath(ecmaModule.PEReader)}\" is preferred, and does not match");
+                                    idParser.RemoveModuleIDFromLoader(e.ModuleID);
+                                    mismatchHandled = true;
+                                }
+                                else
+                                {
+                                    PrintError($"Dll mismatch between assembly located at \"{e.ModuleILPath}\" during trace collection and module \"{tsc.PEReaderToFilePath(ecmaModule.PEReader)}\"");
+                                    mismatchErrors++;
+                                    mismatch = true;
+                                }
                                 continue;
                             }
                             else
@@ -1222,7 +1330,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         }
                     }
 
-                    if (!matched && !mismatch)
+                    if (!matched && !mismatch && !mismatchHandled)
                     {
                         PrintMessage($"Unable to validate match between assembly located at \"{e.ModuleILPath}\" during trace collection and module \"{tsc.PEReaderToFilePath(ecmaModule.PEReader)}\"");
                     }
@@ -1259,9 +1367,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         }
                         MethodDesc method = null;
                         string extraWarningText = null;
+                        bool failedDueToNonloadableModule = false;
                         try
                         {
-                            method = idParser.ResolveMethodID(e.MethodID, commandLineOptions.VerboseWarnings);
+                            method = idParser.ResolveMethodID(e.MethodID, out failedDueToNonloadableModule, commandLineOptions.VerboseWarnings);
                         }
                         catch (Exception exception)
                         {
@@ -1270,7 +1379,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                         if (method == null)
                         {
-                            if ((e.MethodNamespace == "dynamicClass") || !commandLineOptions.Warnings)
+                            if ((e.MethodNamespace == "dynamicClass") || failedDueToNonloadableModule || !commandLineOptions.Warnings)
                                 continue;
 
                             PrintWarning($"Unable to parse {methodNameFromEventDirectly} when looking up R2R methods");
@@ -1304,9 +1413,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                         MethodDesc method = null;
                         string extraWarningText = null;
+                        bool failedDueToNonloadableModule = false;
                         try
                         {
-                            method = idParser.ResolveMethodID(e.MethodID, commandLineOptions.VerboseWarnings);
+                            method = idParser.ResolveMethodID(e.MethodID, out failedDueToNonloadableModule, commandLineOptions.VerboseWarnings);
                         }
                         catch (Exception exception)
                         {
@@ -1315,7 +1425,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                         if (method == null)
                         {
-                            if ((e.MethodNamespace == "dynamicClass") || !commandLineOptions.Warnings)
+                            if ((e.MethodNamespace == "dynamicClass") || failedDueToNonloadableModule || !commandLineOptions.Warnings)
                                 continue;
 
                             PrintWarning($"Unable to parse {methodNameFromEventDirectly}");
@@ -1443,7 +1553,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     MethodDesc method = null;
                     try
                     {
-                        method = idParser.ResolveMethodID(methodID, commandLineOptions.VerboseWarnings);
+                        method = idParser.ResolveMethodID(methodID, out _, commandLineOptions.VerboseWarnings);
                     }
                     catch (Exception)
                     {
@@ -1516,7 +1626,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                                     if (data->ProcessId != p.ProcessID)
                                         continue;
 
-                                    Span<LbrEntry32> lbr32 = data->Entries(e.EventDataLength);
+                                    Span<LbrEntry32> lbr32 = LbrTraceEventData32.Entries(ref *data, e.EventDataLength);
                                     correlator.AttributeSampleToLbrRuns(lbr32);
                                 }
                                 else
@@ -1530,7 +1640,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                                     if (data->ProcessId != p.ProcessID)
                                         continue;
 
-                                    Span<LbrEntry64> lbr64 = data->Entries(e.EventDataLength);
+                                    Span<LbrEntry64> lbr64 = LbrTraceEventData64.Entries(ref *data, e.EventDataLength);
                                     correlator.AttributeSampleToLbrRuns(lbr64);
                                 }
                             }
@@ -1659,13 +1769,24 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                     GenerateJittraceFile(commandLineOptions.OutputFileName, methodsUsedInProcess, commandLineOptions.JitTraceOptions);
                 else if (commandLineOptions.FileType.Value == PgoFileType.mibc)
                 {
+                    var config = new MibcConfig();
+
+                    // Look for OS and Arch, e.g. "Windows" and "x64"
+                    TraceEvent processInfo = p.EventsInProcess.Filter(t => t.EventName == "ProcessInfo").FirstOrDefault();
+                    config.Os = processInfo?.PayloadByName("OSInformation")?.ToString();
+                    config.Arch = processInfo?.PayloadByName("ArchInformation")?.ToString();
+
+                    // Look for Sku, e.g. "CoreClr"
+                    TraceEvent runtimeStart = p.EventsInProcess.Filter(t => t.EventName == "Runtime/Start").FirstOrDefault();
+                    config.Runtime = runtimeStart?.PayloadByName("Sku")?.ToString();
+
                     ILCompiler.MethodProfileData[] methodProfileData = new ILCompiler.MethodProfileData[methodsUsedInProcess.Count];
                     for (int i = 0; i < methodProfileData.Length; i++)
                     {
                         ProcessedMethodData processedData = methodsUsedInProcess[i];
                         methodProfileData[i] = new ILCompiler.MethodProfileData(processedData.Method, ILCompiler.MethodProfilingDataFlags.ReadMethodCode, processedData.ExclusiveWeight, processedData.WeightedCallData, 0xFFFFFFFF, processedData.InstrumentationData);
                     }
-                    return MibcEmitter.GenerateMibcFile(tsc, commandLineOptions.OutputFileName, methodProfileData, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
+                    return MibcEmitter.GenerateMibcFile(config, tsc, commandLineOptions.OutputFileName, methodProfileData, commandLineOptions.ValidateOutputFile, commandLineOptions.Uncompressed);
                 }
             }
             return 0;
@@ -1692,7 +1813,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                 methodPrepareInstruction.Clear();
                 instantiationBuilder.Clear();
-                // Format is FriendlyNameOfMethod~typeIndex~ArgCount~GenericParameterCount:genericParamsSeperatedByColons~MethodName
+                // Format is FriendlyNameOfMethod~typeIndex~ArgCount~GenericParameterCount:genericParamsSeparatedByColons~MethodName
                 // This format is not sufficient to exactly describe methods, so the runtime component may compile similar methods
                 // In the various strings \ is escaped to \\ and in the outer ~ csv the ~ character is escaped to \s. In the inner csv : is escaped to \s
                 try

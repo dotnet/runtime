@@ -7,16 +7,15 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Win32.SafeHandles;
 
-#pragma warning disable CA1419 // TODO https://github.com/dotnet/roslyn-analyzers/issues/5232: not intended for use with P/Invoke
-
 namespace System.Net.Security
 {
     internal sealed class SafeDeleteNegoContext : SafeDeleteContext
     {
         private SafeGssCredHandle? _acceptorCredential;
         private SafeGssNameHandle? _targetName;
-        private SafeGssContextHandle? _context;
+        private SafeGssContextHandle _context;
         private bool _isNtlmUsed;
+        private SafeFreeNegoCredentials? _credential;
 
         public SafeGssCredHandle AcceptorCredential
         {
@@ -38,34 +37,41 @@ namespace System.Net.Security
             get { return _isNtlmUsed; }
         }
 
-        public SafeGssContextHandle? GssContext
+        public SafeGssContextHandle GssContext
         {
             get { return _context; }
         }
 
         public SafeDeleteNegoContext(SafeFreeNegoCredentials credential)
-            : base(credential)
+            : base(IntPtr.Zero)
         {
             Debug.Assert((null != credential), "Null credential in SafeDeleteNegoContext");
+            bool added = false;
+            credential.DangerousAddRef(ref added);
+            _credential = credential;
+            _context = new SafeGssContextHandle();
         }
 
         public SafeDeleteNegoContext(SafeFreeNegoCredentials credential, string targetName)
-            : this(credential)
+            : base(IntPtr.Zero)
         {
             try
             {
                 _targetName = SafeGssNameHandle.CreateTarget(targetName);
+                _context = new SafeGssContextHandle();
             }
             catch
             {
                 Dispose();
                 throw;
             }
+            _credential = credential;
+            bool ignore = false;
+            _credential.DangerousAddRef(ref ignore);
         }
 
         public void SetGssContext(SafeGssContextHandle context)
         {
-            Debug.Assert(context != null && !context.IsInvalid, "Invalid context passed to SafeDeleteNegoContext");
             _context = context;
         }
 
@@ -74,15 +80,16 @@ namespace System.Net.Security
             _isNtlmUsed = isNtlmUsed;
         }
 
+        public override bool IsInvalid
+        {
+            get { return (null == _credential); }
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                if (null != _context)
-                {
-                    _context.Dispose();
-                    _context = null;
-                }
+                _context.Dispose();
 
                 if (_targetName != null)
                 {
@@ -97,6 +104,12 @@ namespace System.Net.Security
                 }
             }
             base.Dispose(disposing);
+        }
+
+        protected override bool ReleaseHandle()
+        {
+            _credential?.DangerousRelease();
+            return true;
         }
     }
 }

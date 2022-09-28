@@ -94,7 +94,13 @@ struct LocalComTypeDescr
     mdToken             tkImplementation;
     WCHAR*              wzName;
     DWORD               dwFlags;
-    LocalComTypeDescr()  { wzName=NULL; };
+    LocalComTypeDescr(mdExportedType exportedType, mdTypeDef typeDef, mdToken impl, WCHAR* name, DWORD flags)
+        : tkComTypeTok{exportedType}
+        , tkTypeDef{typeDef}
+        , tkImplementation{impl}
+        , wzName{name}
+        , dwFlags{flags}
+    { };
     ~LocalComTypeDescr() { if(wzName) SDELETE(wzName); };
 };
 

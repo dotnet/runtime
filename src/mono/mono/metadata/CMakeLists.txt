@@ -18,6 +18,8 @@ set(ilgen_base_sources
     method-builder-ilgen-internals.h
     marshal-ilgen.c
     marshal-ilgen.h
+    marshal-lightweight.c
+    marshal-lightweight.h
     marshal-shared.c
     marshal-shared.h
     sgen-mono-ilgen.c

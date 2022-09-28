@@ -34,7 +34,7 @@ inline SIZE_T Object::GetSize()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    // mask the alignment bits because this methos is called during GC
+    // mask the alignment bits because this method is called during GC
     MethodTable *mT = GetGCSafeMethodTable();
 
     // strings have component size2, all other non-arrays should have 0

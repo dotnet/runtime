@@ -6,7 +6,7 @@ using System.Text;
 namespace ILCompiler.Reflection.ReadyToRun
 {
     /// <summary>
-    /// based on <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/nativeformatreader.h">NativeFormat::NativeArray</a>
+    /// based on <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/vm/nativeformatreader.h">NativeFormat::NativeArray</a>
     /// </summary>
     public class NativeArray
     {

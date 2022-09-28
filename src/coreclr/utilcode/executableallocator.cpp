@@ -249,7 +249,8 @@ bool ExecutableAllocator::Initialize()
     {
         if (!VMToOSInterface::CreateDoubleMemoryMapper(&m_doubleMemoryMapperHandle, &m_maxExecutableCodeSize))
         {
-            return false;
+            g_isWXorXEnabled = false;
+            return true;
         }
 
         m_CriticalSection = ClrCreateCriticalSection(CrstExecutableAllocatorLock,CrstFlags(CRST_UNSAFE_ANYMODE | CRST_DEBUGGER_THREAD));
@@ -258,7 +259,7 @@ bool ExecutableAllocator::Initialize()
     return true;
 }
 
-//#define ENABLE_CACHED_MAPPINGS
+#define ENABLE_CACHED_MAPPINGS
 
 void ExecutableAllocator::UpdateCachedMapping(BlockRW* pBlock)
 {

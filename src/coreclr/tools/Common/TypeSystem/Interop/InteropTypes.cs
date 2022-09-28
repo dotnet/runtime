@@ -3,8 +3,6 @@
 
 using Internal.IL;
 
-using Debug = System.Diagnostics.Debug;
-
 namespace Internal.TypeSystem.Interop
 {
     public static class InteropTypes
@@ -42,11 +40,6 @@ namespace Internal.TypeSystem.Interop
         public static MetadataType GetMemoryMarshal(TypeSystemContext context)
         {
             return context.SystemModule.GetKnownType("System.Runtime.InteropServices", "MemoryMarshal");
-        }
-
-        public static MetadataType GetStubHelpers(TypeSystemContext context)
-        {
-            return context.SystemModule.GetKnownType("System.StubHelpers", "StubHelpers");
         }
 
         public static MetadataType GetNativeFunctionPointerWrapper(TypeSystemContext context)
@@ -120,11 +113,6 @@ namespace Internal.TypeSystem.Interop
         public static bool IsSystemArgIterator(TypeSystemContext context, TypeDesc type)
         {
             return IsCoreNamedType(context, type, "System", "ArgIterator");
-        }
-
-        public static bool IsSystemByReference(TypeSystemContext context, TypeDesc type)
-        {
-            return IsCoreNamedType(context, type, "System", "ByReference`1");
         }
 
         public static bool IsSystemSpan(TypeSystemContext context, TypeDesc type)

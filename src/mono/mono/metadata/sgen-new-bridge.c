@@ -744,10 +744,10 @@ static int num_registered_bridges, hash_table_size;
 static void
 processing_build_callback_data (int generation)
 {
-	int i, j;
+	int j;
 	int num_sccs, num_xrefs;
 	int max_entries, max_xrefs;
-	MonoObject *obj = NULL;
+	MonoObject *obj G_GNUC_UNUSED;
 	HashEntry *entry;
 	HashEntry **all_entries;
 	MonoGCBridgeSCC **api_sccs;
@@ -791,7 +791,7 @@ processing_build_callback_data (int generation)
 	/* second DFS pass */
 
 	dyn_array_scc_init (&sccs);
-	for (i = 0; i < hash_table.num_entries; ++i) {
+	for (guint i = 0; i < hash_table.num_entries; ++i) {
 		entry = all_entries [i];
 		if (entry->v.dfs2.scc_index < 0) {
 			int index = dyn_array_scc_size (&sccs);
@@ -836,7 +836,7 @@ processing_build_callback_data (int generation)
 	}
 #endif
 
-	for (i = 0; i < dyn_array_scc_size (&sccs); ++i) {
+	for (int i = 0; i < dyn_array_scc_size (&sccs); ++i) {
 		SCC *scc = dyn_array_scc_get_ptr (&sccs, i);
 		g_assert (scc->index == i);
 		if (!scc->num_bridge_entries)
@@ -857,7 +857,7 @@ processing_build_callback_data (int generation)
 	}
 
 #ifdef TEST_NEW_XREFS
-	for (i = 0; i < dyn_array_scc_size (&sccs); ++i) {
+	for (int i = 0; i < dyn_array_scc_size (&sccs); ++i) {
 		SCC *scc = dyn_array_scc_get_ptr (&sccs, i);
 		g_assert (scc->index == i);
 		if (!scc->num_bridge_entries)
@@ -887,7 +887,7 @@ processing_build_callback_data (int generation)
 	 * direction as the other logging loop that records live/dead information.
 	 */
 	if (bridge_accounting_enabled) {
-		for (i = hash_table.num_entries - 1; i >= 0; --i) {
+		for (int i = hash_table.num_entries - 1; i >= 0; --i) {
 			double w;
 			HashEntryWithAccounting *entry_acc = (HashEntryWithAccounting*)all_entries [i];
 
@@ -898,7 +898,7 @@ processing_build_callback_data (int generation)
 				other->weight += w;
 			}
 		}
-		for (i = 0; i < hash_table.num_entries; ++i) {
+		for (guint i = 0; i < hash_table.num_entries; ++i) {
 			HashEntryWithAccounting *entry_acc = (HashEntryWithAccounting*)all_entries [i];
 			if (entry_acc->entry.is_bridge) {
 				MonoObject *instance = sgen_hash_table_key_for_value_pointer (entry_acc);
@@ -908,7 +908,7 @@ processing_build_callback_data (int generation)
 		}
 	}
 
-	for (i = 0; i < hash_table.num_entries; ++i) {
+	for (guint i = 0; i < hash_table.num_entries; ++i) {
 		entry = all_entries [i];
 		second_pass_links += dyn_array_ptr_size (&entry->srcs);
 	}
@@ -923,7 +923,7 @@ processing_build_callback_data (int generation)
 	/* init data for callback */
 
 	num_sccs = 0;
-	for (i = 0; i < dyn_array_scc_size (&sccs); ++i) {
+	for (int i = 0; i < dyn_array_scc_size (&sccs); ++i) {
 		SCC *scc = dyn_array_scc_get_ptr (&sccs, i);
 		g_assert (scc->index == i);
 		if (scc->num_bridge_entries)
@@ -935,7 +935,7 @@ processing_build_callback_data (int generation)
 	api_sccs = (MonoGCBridgeSCC **)sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeSCC*) * num_sccs, INTERNAL_MEM_BRIDGE_DATA, TRUE);
 	num_xrefs = 0;
 	j = 0;
-	for (i = 0; i < dyn_array_scc_size (&sccs); ++i) {
+	for (int i = 0; i < dyn_array_scc_size (&sccs); ++i) {
 		SCC *scc = dyn_array_scc_get_ptr (&sccs, i);
 		if (!scc->num_bridge_entries)
 			continue;
@@ -958,7 +958,7 @@ processing_build_callback_data (int generation)
 
 	api_xrefs = (MonoGCBridgeXRef *)sgen_alloc_internal_dynamic (sizeof (MonoGCBridgeXRef) * num_xrefs, INTERNAL_MEM_BRIDGE_DATA, TRUE);
 	j = 0;
-	for (i = 0; i < dyn_array_scc_size (&sccs); ++i) {
+	for (int i = 0; i < dyn_array_scc_size (&sccs); ++i) {
 		int k;
 		SCC *scc = dyn_array_scc_get_ptr (&sccs, i);
 		if (!scc->num_bridge_entries)
@@ -980,7 +980,7 @@ processing_build_callback_data (int generation)
 
 	j = 0;
 	max_entries = max_xrefs = 0;
-	for (i = 0; i < dyn_array_scc_size (&sccs); ++i) {
+	for (int i = 0; i < dyn_array_scc_size (&sccs); ++i) {
 		SCC *scc = dyn_array_scc_get_ptr (&sccs, i);
 		if (scc->num_bridge_entries)
 			++j;

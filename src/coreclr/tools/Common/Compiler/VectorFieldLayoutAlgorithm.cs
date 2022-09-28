@@ -36,7 +36,7 @@ namespace ILCompiler
             {
                 if (defType.Context.Target.Architecture == TargetArchitecture.ARM)
                 {
-                    // The Procedure Call Standard for ARM defaults to 8-byte alignment for __m128 
+                    // The Procedure Call Standard for ARM defaults to 8-byte alignment for __m128
                     alignment = new LayoutInt(8);
                 }
                 else
@@ -50,13 +50,13 @@ namespace ILCompiler
 
                 if (defType.Context.Target.Architecture == TargetArchitecture.ARM)
                 {
-                    // No such type exists for the Procedure Call Standard for ARM. We will default 
+                    // No such type exists for the Procedure Call Standard for ARM. We will default
                     // to the same alignment as __m128, which is supported by the ABI.
                     alignment = new LayoutInt(8);
                 }
                 else if (defType.Context.Target.Architecture == TargetArchitecture.ARM64)
                 {
-                    // The Procedure Call Standard for ARM 64-bit (with SVE support) defaults to 
+                    // The Procedure Call Standard for ARM 64-bit (with SVE support) defaults to
                     // 16-byte alignment for __m256.
                     alignment = new LayoutInt(16);
                 }

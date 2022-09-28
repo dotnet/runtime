@@ -23,7 +23,6 @@ namespace ILCompiler
 
         private readonly IEnumerable<string> _inputFiles;
         private readonly string _compositeRootPath;
-        private bool _ibcTuning;
         private bool _generateMapFile;
         private bool _generateMapCsvFile;
         private bool _generatePdbFile;
@@ -41,6 +40,7 @@ namespace ILCompiler
         private bool _verifyTypeAndFieldLayout;
         private CompositeImageSettings _compositeImageSettings;
         private ulong _imageBase;
+        private NodeFactoryOptimizationFlags _nodeFactoryOptimizationFlags = new NodeFactoryOptimizationFlags();
 
         private string _jitPath;
         private string _outputFile;
@@ -48,7 +48,7 @@ namespace ILCompiler
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
-        private ILProvider _ilProvider = new ReadyToRunILProvider();
+        private ILProvider _ilProvider;
 
         public ReadyToRunCodegenCompilationBuilder(
             CompilerTypeSystemContext context,
@@ -57,6 +57,7 @@ namespace ILCompiler
             string compositeRootPath)
             : base(context, group, new NativeAotNameMangler())
         {
+            _ilProvider = new ReadyToRunILProvider(group);
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;
 
@@ -108,12 +109,6 @@ namespace ILCompiler
         public ReadyToRunCodegenCompilationBuilder UseJitPath(string jitPath)
         {
             _jitPath = jitPath;
-            return this;
-        }
-
-        public ReadyToRunCodegenCompilationBuilder UseIbcTuning(bool ibcTuning)
-        {
-            _ibcTuning = ibcTuning;
             return this;
         }
 
@@ -205,6 +200,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseNodeFactoryOptimizationFlags(NodeFactoryOptimizationFlags flags)
+        {
+            _nodeFactoryOptimizationFlags = flags;
+            return this;
+        }
+
         public override ICompilation ToCompilation()
         {
             // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
@@ -248,6 +249,7 @@ namespace ILCompiler
                 debugDirectoryNode,
                 win32Resources,
                 flags,
+                _nodeFactoryOptimizationFlags,
                 _imageBase
                 );
 
@@ -279,9 +281,6 @@ namespace ILCompiler
                     corJitFlags.Add(CorJitFlag.CORJIT_FLAG_BBOPT);
                     break;
             }
-
-            if (_ibcTuning)
-                corJitFlags.Add(CorJitFlag.CORJIT_FLAG_BBINSTR);
 
             if (!_isJitInitialized)
             {

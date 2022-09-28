@@ -1053,8 +1053,7 @@ namespace System.Diagnostics
         // The EventLog.set_Source used to do some normalization and throw some exceptions.  We mimic that behavior here.
         private static string CheckAndNormalizeSourceName(string source)
         {
-            if (source == null)
-                source = string.Empty;
+            source ??= string.Empty;
 
             // this 254 limit is the max length of a registry key.
             if (source.Length + EventLogKey.Length > 254)

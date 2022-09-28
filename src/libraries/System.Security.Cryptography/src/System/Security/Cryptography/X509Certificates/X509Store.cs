@@ -113,10 +113,7 @@ namespace System.Security.Cryptography.X509Certificates
             get
             {
                 X509Certificate2Collection certificates = new X509Certificate2Collection();
-                if (_storePal != null)
-                {
-                    _storePal.CloneTo(certificates);
-                }
+                _storePal?.CloneTo(certificates);
                 return certificates;
             }
         }
@@ -211,9 +208,9 @@ namespace System.Security.Cryptography.X509Certificates
         public void Close()
         {
             IStorePal? storePal = _storePal;
-            _storePal = null;
             if (storePal != null)
             {
+                _storePal = null;
                 storePal.Dispose();
             }
         }

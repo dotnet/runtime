@@ -3,10 +3,11 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <EnableDefaultItems>true</EnableDefaultItems>
     <IsPackable>true</IsPackable>
-    <PackageDescription>Abstractions for reading `.deps` files.
+    <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
+    <PackageDescription>Provides abstractions for reading `.deps` files. When a .NET application is compiled, the SDK generates a JSON manifest file (`&lt;ApplicationName&gt;.deps.json`) that contains information about application dependencies. You can use `Microsoft.Extensions.DependencyModel` to read information from this manifest at run time. This is useful when you want to dynamically compile code (for example, using Roslyn Emit API) referencing the same dependencies as your main application.
 
-Commonly Used Types:
-Microsoft.Extensions.DependencyModel.DependencyContext</PackageDescription>
+By default, the dependency manifest contains information about the application's target framework and runtime dependencies. Set the PreserveCompilationContext project property to `true` to additionally include information about reference assemblies used during compilation.</PackageDescription>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,6 +15,7 @@ Microsoft.Extensions.DependencyModel.DependencyContext</PackageDescription>
              Link="System\Numerics\Hashing\HashHelpers.cs" />
     <Compile Include="$(CommonPath)System\ThrowHelper.cs"
              Link="Common\System\ThrowHelper.cs" />
+    <None Include="README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">

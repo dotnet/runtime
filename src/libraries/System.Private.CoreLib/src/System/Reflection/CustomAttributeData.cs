@@ -83,7 +83,7 @@ namespace System.Reflection
         #region Public Members
         public virtual Type AttributeType => Constructor.DeclaringType!;
 
-        // Expected to be overriden
+        // Expected to be overridden
         public virtual ConstructorInfo Constructor => null!;
         public virtual IList<CustomAttributeTypedArgument> ConstructorArguments => null!;
         public virtual IList<CustomAttributeNamedArgument> NamedArguments => null!;

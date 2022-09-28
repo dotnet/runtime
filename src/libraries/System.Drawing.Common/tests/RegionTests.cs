@@ -2019,7 +2019,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Tranform_InfinityIntersectScale_Success()
+        public void Transform_InfinityIntersectScale_Success()
         {
             using (var region = new Region())
             using (var matrix = new Matrix())
@@ -2035,7 +2035,7 @@ namespace System.Drawing.Tests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void Tranform_InfinityIntersectTransform_Success()
+        public void Transform_InfinityIntersectTransform_Success()
         {
             using (var region = new Region())
             using (var matrix = new Matrix(2, 0, 0, 0.5f, 10, 10))

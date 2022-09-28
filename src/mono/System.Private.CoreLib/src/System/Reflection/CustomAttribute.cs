@@ -48,8 +48,8 @@ namespace System.Reflection
                 return false;
             if ((obj is Type))
                 return true;
-            if (corlib == null)
-                corlib = typeof(int).Assembly;
+
+            corlib ??= typeof(int).Assembly;
             return obj.GetType().Assembly != corlib;
         }
 
@@ -282,7 +282,7 @@ namespace System.Reflection
                     inheritanceLevel++;
                     res = GetCustomAttributesBase(btype, attributeType, true);
                 }
-            } while (inherit && btype != null);
+            } while (btype != null);
 
             if (attributeType == null || attributeType.IsValueType)
                 array = new Attribute[a.Count];
@@ -450,7 +450,7 @@ namespace System.Reflection
                     inheritanceLevel++;
                     res = GetCustomAttributesDataBase(btype, attributeType, true);
                 }
-            } while (inherit && btype != null);
+            } while (btype != null);
 
             return a.ToArray();
         }
@@ -733,13 +733,48 @@ namespace System.Reflection
         {
             AttributeUsageAttribute? usageAttribute;
             /* Usage a thread-local cache to speed this up, since it is called a lot from GetCustomAttributes () */
-            if (usage_cache == null)
-                usage_cache = new Dictionary<Type, AttributeUsageAttribute>();
+            usage_cache ??= new Dictionary<Type, AttributeUsageAttribute>();
             if (usage_cache.TryGetValue(attributeType, out usageAttribute))
                 return usageAttribute;
             usageAttribute = RetrieveAttributeUsageNoCache(attributeType);
             usage_cache[attributeType] = usageAttribute;
             return usageAttribute;
+        }
+
+        internal static object[] CreateAttributeArrayHelper(RuntimeType caType, int elementCount)
+        {
+            bool useAttributeArray = false;
+            bool useObjectArray = false;
+
+            if (caType == typeof(Attribute))
+            {
+                useAttributeArray = true;
+            }
+            else if (caType.IsValueType)
+            {
+                useObjectArray = true;
+            }
+            else if (caType.ContainsGenericParameters)
+            {
+                if (caType.IsSubclassOf(typeof(Attribute)))
+                {
+                    useAttributeArray = true;
+                }
+                else
+                {
+                    useObjectArray = true;
+                }
+            }
+
+            if (useAttributeArray)
+            {
+                return elementCount == 0 ? Array.Empty<Attribute>() : new Attribute[elementCount];
+            }
+            if (useObjectArray)
+            {
+                return elementCount == 0 ? Array.Empty<object>() : new object[elementCount];
+            }
+            return /*elementCount == 0 ? caType.GetEmptyArray() :*/ (object[])Array.CreateInstance(caType, elementCount);
         }
 
         private static readonly AttributeUsageAttribute DefaultAttributeUsage =

@@ -582,5 +582,26 @@ namespace System.Data.Tests.SqlTypes
                 Assert.Throws<InvalidOperationException>(() => ReadWriteXmlTestInternal(xml3, test3, "BA03"));
             Assert.Equal(typeof(FormatException), ex.InnerException.GetType());
         }
+
+        [Fact]
+        public void WriteTdsValue()
+        {
+            uint[] array = new uint[5];
+            Span<uint> span = array;
+            Array.Clear(array, 0, array.Length);
+
+            int count = SqlDecimal.MaxValue.WriteTdsValue(span);
+            Assert.Equal(4, count);
+            Assert.Equal(0xFFFFFFFFu, array[0]);
+            Assert.Equal(0x098a223fu, array[1]);
+            Assert.Equal(0x5a86c47au, array[2]);
+            Assert.Equal(0x4b3b4ca8u, array[3]);
+
+            Assert.Equal(0u, array[4]);
+
+            array = new uint[3];
+            Assert.Throws<ArgumentOutOfRangeException>( () => { _ = SqlDecimal.MaxValue.WriteTdsValue(array); } );
+
+        }
     }
 }

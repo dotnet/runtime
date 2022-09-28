@@ -11,12 +11,13 @@ namespace System.Diagnostics
     /// (which can also write object), but is intended to log complex objects that can't be serialized.
     ///
     /// Please See the DiagnosticSource Users Guide
-    /// https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/DiagnosticSourceUsersGuide.md
+    /// https://github.com/dotnet/runtime/blob/main/src/libraries/System.Diagnostics.DiagnosticSource/src/DiagnosticSourceUsersGuide.md
     /// for instructions on its use.
     /// </summary>
     public abstract partial class DiagnosticSource
     {
         internal const string WriteRequiresUnreferencedCode = "The type of object being written to DiagnosticSource cannot be discovered statically.";
+        internal const string WriteRequiresDynamicCode = "DiagnosticSource may require creating new generic types or methods, which requires creating code at runtime. This may not work when AOT compiling.";
 
         /// <summary>
         /// Write is a generic way of logging complex payloads.  Each notification
@@ -35,6 +36,7 @@ namespace System.Diagnostics
         /// <param name="value">An object that represent the value being passed as a payload for the event.
         /// This is often an anonymous type which contains several sub-values.</param>
         [RequiresUnreferencedCode(WriteRequiresUnreferencedCode)]
+        [RequiresDynamicCode(WriteRequiresDynamicCode)]
         public abstract void Write(string name, object? value);
 
         /// <summary>

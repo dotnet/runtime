@@ -96,7 +96,6 @@ namespace DebuggerTests
                 ContentTypeProvider = provider
             });
 
-            var devToolsUrl = options.DevToolsUrl;
             app.UseRouter(router =>
             {
                 router.MapGet("launch-host-and-connect", async context =>

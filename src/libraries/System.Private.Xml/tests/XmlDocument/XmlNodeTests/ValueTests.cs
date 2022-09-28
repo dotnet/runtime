@@ -3,7 +3,7 @@
 
 using Xunit;
 
-namespace System.Xml.Tests
+namespace System.Xml.XmlDocumentTests
 {
     public static class ValueTests
     {
@@ -136,6 +136,61 @@ namespace System.Xml.Tests
 
             Assert.Null(node.Value);
             Assert.Throws<InvalidOperationException>(() => node.Value = "some value");
+        }
+
+        [Fact]
+        public static void CreateProcessingInstructionTranslatesNullIntoEmptyString()
+        {
+            var xmlDocument = new XmlDocument();
+            XmlProcessingInstruction pi = xmlDocument.CreateProcessingInstruction("test", null);
+            Assert.Equal(string.Empty, pi.Data);
+            Assert.Equal(string.Empty, pi.Value);
+            Assert.Equal(string.Empty, pi.InnerText);
+        }
+
+        [Fact]
+        public static void SettingNullDataTranslatesIntoEmptyString()
+        {
+            var xmlDocument = new XmlDocument();
+            XmlProcessingInstruction pi = xmlDocument.CreateProcessingInstruction("test", "foo");
+            Assert.Equal("foo", pi.Data);
+            Assert.Equal("foo", pi.Value);
+            Assert.Equal("foo", pi.InnerText);
+
+            pi.Data = null;
+            Assert.Equal(string.Empty, pi.Data);
+            Assert.Equal(string.Empty, pi.Value);
+            Assert.Equal(string.Empty, pi.InnerText);
+        }
+
+        [Fact]
+        public static void SettingNullValueTranslatesIntoEmptyString()
+        {
+            var xmlDocument = new XmlDocument();
+            XmlProcessingInstruction pi = xmlDocument.CreateProcessingInstruction("test", "foo");
+            Assert.Equal("foo", pi.Data);
+            Assert.Equal("foo", pi.Value);
+            Assert.Equal("foo", pi.InnerText);
+
+            pi.Value = null;
+            Assert.Equal(string.Empty, pi.Data);
+            Assert.Equal(string.Empty, pi.Value);
+            Assert.Equal(string.Empty, pi.InnerText);
+        }
+
+        [Fact]
+        public static void SettingNullInnerTextTranslatesIntoEmptyString()
+        {
+            var xmlDocument = new XmlDocument();
+            XmlProcessingInstruction pi = xmlDocument.CreateProcessingInstruction("test", "foo");
+            Assert.Equal("foo", pi.Data);
+            Assert.Equal("foo", pi.Value);
+            Assert.Equal("foo", pi.InnerText);
+
+            pi.InnerText = null;
+            Assert.Equal(string.Empty, pi.Data);
+            Assert.Equal(string.Empty, pi.Value);
+            Assert.Equal(string.Empty, pi.InnerText);
         }
     }
 }

@@ -11,7 +11,7 @@ namespace System.Net.Http
     {
         private sealed class ChunkedEncodingWriteStream : HttpContentWriteStream
         {
-            private static readonly byte[] s_finalChunkBytes = { (byte)'0', (byte)'\r', (byte)'\n', (byte)'\r', (byte)'\n' };
+            private static readonly byte[] s_finalChunkBytes = "0\r\n\r\n"u8.ToArray();
 
             public ChunkedEncodingWriteStream(HttpConnection connection) : base(connection)
             {

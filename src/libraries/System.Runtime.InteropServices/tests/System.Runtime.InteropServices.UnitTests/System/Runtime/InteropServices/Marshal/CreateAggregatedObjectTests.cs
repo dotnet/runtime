@@ -9,8 +9,7 @@ namespace System.Runtime.InteropServices.Tests
 {
     public partial class CreateAggregatedObjectTests
     {
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void CreateAggregatedObject_Generic_ReturnsExpected()
         {
             var original = new object();
@@ -38,8 +37,7 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void CreateAggregatedObject_NonGeneric_ReturnsExpected()
         {
             var original = new object();
@@ -74,22 +72,19 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<PlatformNotSupportedException>(() => Marshal.CreateAggregatedObject(IntPtr.Zero, 1));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void CreateAggregateObject_ZeroPointer_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("pOuter", () => Marshal.CreateAggregatedObject(IntPtr.Zero, 1));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void CreateAggregateObject_NullObject_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("o", () => Marshal.CreateAggregatedObject((IntPtr)1, null));
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         public void CreateAggregatedObject_AlreadyHasContainer_ThrowsArgumentException()
         {
             var o1 = new object();

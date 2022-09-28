@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
-using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using System.Text;
+
 using LibraryNameVariation = System.Runtime.Loader.LibraryNameVariation;
 
 namespace System.Runtime.InteropServices
@@ -60,7 +58,7 @@ namespace System.Runtime.InteropServices
         {
             IntPtr ret;
 
-            int loadWithAlteredPathFlags = 0;
+            int loadWithAlteredPathFlags = LoadWithAlteredSearchPathFlag;
             bool libNameIsRelativePath = !Path.IsPathFullyQualified(libraryName);
 
             // P/Invokes are often declared with variations on the actual library name.
@@ -107,7 +105,7 @@ namespace System.Runtime.InteropServices
         private static IntPtr LoadFromPath(string libraryName, bool throwOnError)
         {
             LoadLibErrorTracker errorTracker = default;
-            IntPtr ret = LoadLibraryHelper(libraryName, 0, ref errorTracker);
+            IntPtr ret = LoadLibraryHelper(libraryName, LoadWithAlteredSearchPathFlag, ref errorTracker);
             if (throwOnError && ret == IntPtr.Zero)
             {
                 errorTracker.Throw(libraryName);
@@ -116,102 +114,13 @@ namespace System.Runtime.InteropServices
             return ret;
         }
 
-        private static IntPtr LoadLibraryHelper(string libraryName, int flags, ref LoadLibErrorTracker errorTracker)
-        {
-#if TARGET_WINDOWS
-            IntPtr ret = Interop.Kernel32.LoadLibraryEx(libraryName, IntPtr.Zero, flags);
-            if (ret != IntPtr.Zero)
-            {
-                return ret;
-            }
-
-            int lastError = Marshal.GetLastWin32Error();
-            if (lastError != LoadLibErrorTracker.ERROR_INVALID_PARAMETER)
-            {
-                errorTracker.TrackErrorCode(lastError);
-            }
-
-            return ret;
-#else
-            IntPtr ret = IntPtr.Zero;
-            if (libraryName == null)
-            {
-                errorTracker.TrackErrorCode(LoadLibErrorTracker.ERROR_MOD_NOT_FOUND);
-            }
-            else if (libraryName == string.Empty)
-            {
-                errorTracker.TrackErrorCode(LoadLibErrorTracker.ERROR_INVALID_PARAMETER);
-            }
-            else
-            {
-                // TODO: FileDosToUnixPathA
-                ret = Interop.Sys.LoadLibrary(libraryName);
-                if (ret == IntPtr.Zero)
-                {
-                    errorTracker.TrackErrorCode(LoadLibErrorTracker.ERROR_MOD_NOT_FOUND);
-                }
-            }
-
-            return ret;
-#endif
-        }
-
-        private static void FreeLib(IntPtr handle)
-        {
-            Debug.Assert(handle != IntPtr.Zero);
-
-#if !TARGET_UNIX
-            bool result = Interop.Kernel32.FreeLibrary(handle);
-            if (!result)
-                throw new InvalidOperationException();
-#else
-            Interop.Sys.FreeLibrary(handle);
-#endif
-        }
-
         private static unsafe IntPtr GetSymbol(IntPtr handle, string symbolName, bool throwOnError)
         {
-            IntPtr ret;
-#if !TARGET_UNIX
-            var symbolBytes = new byte[Encoding.UTF8.GetByteCount(symbolName) + 1];
-            Encoding.UTF8.GetBytes(symbolName, symbolBytes);
-            fixed (byte* pSymbolBytes = symbolBytes)
-            {
-                ret = Interop.Kernel32.GetProcAddress(handle, pSymbolBytes);
-            }
-#else
-            ret = Interop.Sys.GetProcAddress(handle, symbolName);
-#endif
+            IntPtr ret = GetSymbolOrNull(handle, symbolName);
             if (throwOnError && ret == IntPtr.Zero)
                 throw new EntryPointNotFoundException(SR.Format(SR.Arg_EntryPointNotFoundExceptionParameterizedNoLibrary, symbolName));
 
             return ret;
-        }
-
-        // TODO: copy the nice error logic from CoreCLR's LoadLibErrorTracker
-        // to get fine-grained error messages that take into account access denied, etc.
-        internal struct LoadLibErrorTracker
-        {
-            internal const int ERROR_INVALID_PARAMETER = 0x57;
-            internal const int ERROR_MOD_NOT_FOUND = 126;
-            internal const int ERROR_BAD_EXE_FORMAT = 193;
-
-            private int _errorCode;
-
-            public void Throw(string libraryName)
-            {
-                if (_errorCode == ERROR_BAD_EXE_FORMAT)
-                {
-                    throw new BadImageFormatException();
-                }
-
-                throw new DllNotFoundException(SR.Format(SR.Arg_DllNotFoundExceptionParameterized, libraryName));
-            }
-
-            public void TrackErrorCode(int errorCode)
-            {
-                _errorCode = errorCode;
-            }
         }
     }
 }

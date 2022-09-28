@@ -814,7 +814,6 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50866", TestPlatforms.Android)]
         public void LoadIncorrectJsonFile_ThrowException()
         {
             var json = @"{

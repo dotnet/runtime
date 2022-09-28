@@ -15,12 +15,11 @@ using System.Text;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.Runtime;
 using System.Xml.Xsl.XPath;
+using ScopeRecord = System.Xml.Xsl.Xslt.CompilerScopeManager<System.Xml.Xsl.Qil.QilIterator>.ScopeRecord;
+using T = System.Xml.Xsl.XmlQueryTypeFactory;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using ScopeRecord = CompilerScopeManager<QilIterator>.ScopeRecord;
-    using T = XmlQueryTypeFactory;
-
     // Everywhere in this code in case of error in the stylesheet we should call ReportError or ReportWarning
 
     internal sealed class ReferenceReplacer : QilReplaceVisitor
@@ -348,7 +347,7 @@ namespace System.Xml.Xsl.Xslt
         // 3. In context of global variable
         // We treating this methods differentely when they are called to create implicit arguments.
         // Implicite argument (position, last) are rare and lead to uneficiant code. So we treating them
-        // specialy to be able eliminate them later, wen we compiled everithing and can detect was they used or not.
+        // specially to be able eliminate them later, wen we compiled everithing and can detect was they used or not.
 
         // Returns context node
         private QilNode GetCurrentNode()
@@ -947,7 +946,7 @@ namespace System.Xml.Xsl.Xslt
                 else
                 {
                     nsUri = (string)(QilLiteral)qilNs;
-                    // if both name and ns are non AVT and this ns is already bind to the same prefix we can avoid reseting ns management
+                    // if both name and ns are non AVT and this ns is already bind to the same prefix we can avoid resetting ns management
                     explicitNamespace = true;
                 }
                 // Check the case <xsl:attribute name="foo:xmlns" namespace=""/>
@@ -1055,7 +1054,7 @@ namespace System.Xml.Xsl.Xslt
             return result;
         }
 
-        [return: NotNullIfNotNull("avt")]
+        [return: NotNullIfNotNull(nameof(avt))]
         private QilNode? CompileStringAvt(string? avt)
         {
             if (avt == null)
@@ -1620,15 +1619,18 @@ namespace System.Xml.Xsl.Xslt
                         if (!fwdCompat)
                         {
                             // check for qname-but-not-ncname
-                            string prefix, nsUri;
-                            bool isValid = _compiler.ParseQName(dataType, out prefix, out _, (IErrorHelper)this);
-                            nsUri = isValid ? ResolvePrefix(/*ignoreDefaultNs:*/true, prefix) : _compiler.CreatePhantomNamespace();
-
-                            if (nsUri.Length == 0)
+                            if (_compiler.ParseQName(dataType, out string prefix, out _, (IErrorHelper)this))
                             {
-                                // this is a ncname; we might report SR.Xslt_InvalidAttrValue,
-                                // but the following error message is more user friendly
+                                ResolvePrefix(/*ignoreDefaultNs:*/true, prefix);
                             }
+                            else
+                            {
+                                _compiler.CreatePhantomNamespace();
+                            }
+
+                            // If nsUri.Length == 0, this is a ncname; we might report SR.Xslt_InvalidAttrValue,
+                            // but the following error message is more user friendly
+
                             ReportError(/*[XT_034]*/SR.Xslt_BistateAttribute, "data-type", DtText, DtNumber);
                         }
                         // fall through to default case
@@ -1679,7 +1681,7 @@ namespace System.Xml.Xsl.Xslt
         /// returning "1" if AVT evaluates to value1, or "0" if AVT evaluates to value0 or any other value.
         /// If AVT evaluates to neither value0 nor value1 and fwdCompat == false, an error is reported.
         /// </returns>
-        [return: NotNullIfNotNull("attName")]
+        [return: NotNullIfNotNull(nameof(attName))]
         private QilNode CompileOrderAttribute(string attName, string? attValue, string value0, string value1, bool fwdCompat)
         {
             QilNode? result = CompileStringAvt(attValue);
@@ -1906,7 +1908,7 @@ namespace System.Xml.Xsl.Xslt
             QilNode countMatches, fromMatches, A, F, AF;
             QilIterator i, j;
 
-            countPattern2 = (countPattern != null) ? countPattern.DeepClone(_f.BaseFactory) : null;
+            countPattern2 = countPattern?.DeepClone(_f.BaseFactory);
             countMatches = _f.Filter(i = _f.For(_f.AncestorOrSelf(GetCurrentNode())), MatchCountPattern(countPattern, i));
             if (multiple)
             {
@@ -2422,10 +2424,7 @@ namespace System.Xml.Xsl.Xslt
             XPathScanner scanner;
             QilNode result;
 
-            if (_keyMatchBuilder == null)
-            {
-                _keyMatchBuilder = new KeyMatchBuilder((IXPathEnvironment)this);
-            }
+            _keyMatchBuilder ??= new KeyMatchBuilder((IXPathEnvironment)this);
             SetEnvironmentFlags(/*allowVariables:*/false, /*allowCurrent:*/false, /*allowKey:*/false);
             if (pttrn == null)
             {
@@ -2562,7 +2561,7 @@ namespace System.Xml.Xsl.Xslt
 
         // Fills invokeArgs with values from actualArgs in order given by formalArgs
         // Returns true if formalArgs maps 1:1 with actual args.
-        // Formaly this is n*n algorithm. We can optimize it by calculationg "signature"
+        // Formally this is n*n algorithm. We can optimize it by calculationg "signature"
         // of the function as sum of all hashes of its args names.
         private static bool FillupInvokeArgs(IList<QilNode> formalArgs, IList<XslNode> actualArgs, QilList invokeArgs)
         {

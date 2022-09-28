@@ -1,21 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Security;
+using System.Text.RegularExpressions;
+using System.Xml;
+using System.Xml.Schema;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Serialization
 {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Reflection;
-    using System.Reflection.Emit;
-    using System.Security;
-    using System.Text.RegularExpressions;
-    using System.Xml;
-    using System.Xml.Schema;
-    using System.Diagnostics.CodeAnalysis;
-
     internal sealed partial class XmlSerializationReaderILGen : XmlSerializationILGen
     {
         private readonly Dictionary<string, string> _idNames = new Dictionary<string, string>();
@@ -24,17 +24,7 @@ namespace System.Xml.Serialization
         private Dictionary<string, EnumMapping>? _enums;
         private int _nextIdNumber;
 
-        internal Dictionary<string, EnumMapping> Enums
-        {
-            get
-            {
-                if (_enums == null)
-                {
-                    _enums = new Dictionary<string, EnumMapping>();
-                }
-                return _enums;
-            }
-        }
+        internal Dictionary<string, EnumMapping> Enums => _enums ??= new Dictionary<string, EnumMapping>();
 
         private sealed class Member
         {
@@ -106,7 +96,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    _arraySource = arraySource == null ? source : arraySource;
+                    _arraySource = arraySource ?? source;
                     _choiceArraySource = _choiceSource;
                 }
                 _mapping = mapping;
@@ -265,7 +255,7 @@ namespace System.Xml.Serialization
 
             this.typeBuilder.DefineDefaultConstructor(
                 CodeGenerator.PublicMethodAttributes);
-            Type readerType = this.typeBuilder.CreateTypeInfo()!.AsType();
+            Type readerType = this.typeBuilder.CreateType();
             CreatedTypes.Add(readerType.Name, readerType);
         }
 
@@ -1192,11 +1182,10 @@ namespace System.Xml.Serialization
             {
                 foreach (Mapping m in scope.TypeMappings)
                 {
-                    if (m is EnumMapping)
+                    if (m is EnumMapping enumMapping)
                     {
-                        EnumMapping mapping = (EnumMapping)m;
                         ilg.InitElseIf();
-                        WriteQNameEqual("xsiType", mapping.TypeName, mapping.Namespace);
+                        WriteQNameEqual("xsiType", enumMapping.TypeName, enumMapping.Namespace);
                         ilg.AndIf();
                         MethodInfo XmlSerializationReader_get_Reader = typeof(XmlSerializationReader).GetMethod(
                             "get_Reader",
@@ -1211,16 +1200,16 @@ namespace System.Xml.Serialization
                         ilg.Ldarg(0);
                         ilg.Call(XmlSerializationReader_get_Reader);
                         ilg.Call(XmlReader_ReadStartElement);
-                        string? methodName = ReferenceMapping(mapping);
+                        string? methodName = ReferenceMapping(enumMapping);
 #if DEBUG
                         // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                        if (methodName == null) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorMethod, mapping.TypeDesc!.Name));
+                        if (methodName == null) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorMethod, enumMapping.TypeDesc!.Name));
 #endif
                         LocalBuilder eLoc = ilg.DeclareOrGetLocal(typeof(object), "e");
                         MethodBuilder methodBuilder = EnsureMethodBuilder(typeBuilder,
                             methodName!,
                             CodeGenerator.PrivateMethodAttributes,
-                            mapping.TypeDesc!.Type,
+                            enumMapping.TypeDesc!.Type,
                             new Type[] { typeof(string) }
                             );
                         MethodInfo XmlSerializationReader_CollapseWhitespace = typeof(XmlSerializationReader).GetMethod(
@@ -1254,25 +1243,24 @@ namespace System.Xml.Serialization
                         ilg.Br(ilg.ReturnLabel);
                         // Caller own calling ilg.EndIf();
                     }
-                    else if (m is ArrayMapping)
+                    else if (m is ArrayMapping arrayMapping)
                     {
-                        ArrayMapping mapping = (ArrayMapping)m;
-                        if (mapping.TypeDesc!.HasDefaultConstructor)
+                        if (arrayMapping.TypeDesc!.HasDefaultConstructor)
                         {
                             ilg.InitElseIf();
-                            WriteQNameEqual("xsiType", mapping.TypeName, mapping.Namespace);
+                            WriteQNameEqual("xsiType", arrayMapping.TypeName, arrayMapping.Namespace);
                             ilg.AndIf();
                             ilg.EnterScope();
                             MemberMapping memberMapping = new MemberMapping();
-                            memberMapping.TypeDesc = mapping.TypeDesc;
-                            memberMapping.Elements = mapping.Elements;
+                            memberMapping.TypeDesc = arrayMapping.TypeDesc;
+                            memberMapping.Elements = arrayMapping.Elements;
                             string aVar = "a";
                             string zVar = "z";
                             Member member = new Member(this, aVar, zVar, 0, memberMapping);
 
-                            TypeDesc td = mapping.TypeDesc;
-                            LocalBuilder aLoc = ilg.DeclareLocal(mapping.TypeDesc.Type!, aVar);
-                            if (mapping.TypeDesc.IsValueType)
+                            TypeDesc td = arrayMapping.TypeDesc;
+                            LocalBuilder aLoc = ilg.DeclareLocal(arrayMapping.TypeDesc.Type!, aVar);
+                            if (arrayMapping.TypeDesc.IsValueType)
                             {
                                 ReflectionAwareILGen.ILGenForCreateInstance(ilg, td.Type!, false, false);
                             }
@@ -1280,7 +1268,7 @@ namespace System.Xml.Serialization
                                 ilg.Load(null);
                             ilg.Stloc(aLoc);
 
-                            WriteArray(member.Source, member.ArrayName, mapping, false, false, -1, 0);
+                            WriteArray(member.Source, member.ArrayName, arrayMapping, false, false, -1, 0);
                             ilg.Ldloc(aLoc);
                             ilg.Stloc(ilg.ReturnLocal);
                             ilg.Br(ilg.ReturnLabel);
@@ -1816,12 +1804,7 @@ namespace System.Xml.Serialization
 
         private void WriteID(string? name)
         {
-            if (name == null)
-            {
-                //Writer.Write("null");
-                //return;
-                name = "";
-            }
+            name ??= "";
             if (!_idNames.ContainsKey(name))
             {
                 string? idName = NextIdName(name);
@@ -2066,10 +2049,8 @@ namespace System.Xml.Serialization
         {
             AttributeAccessor attribute = member.Mapping.Attribute!;
 
-            if (attribute.Mapping is SpecialMapping)
+            if (attribute.Mapping is SpecialMapping special)
             {
-                SpecialMapping special = (SpecialMapping)attribute.Mapping;
-
                 if (special.TypeDesc!.Kind == TypeKind.Attribute)
                 {
                     WriteSourceBegin(member.ArraySource);
@@ -2186,7 +2167,7 @@ namespace System.Xml.Serialization
                     }
                     else
                     {
-                        if (member.Source[member.Source.Length - 1] == '(' || member.Source[member.Source.Length - 1] == '{')
+                        if (member.Source.EndsWith('(') || member.Source.EndsWith('{'))
                         {
                             WriteCreateInstance(a, typeDesc.CannotNew, typeDesc.Type!);
                             WriteSourceBegin(member.Source);
@@ -2195,7 +2176,7 @@ namespace System.Xml.Serialization
                         }
                         else
                         {
-                            if (member.IsList && !member.Mapping.ReadOnly && member.Mapping.TypeDesc.IsNullable)
+                            if (member.IsList && !member.Mapping.ReadOnly) //&& member.Mapping.TypeDesc.IsNullable) // nullable or not, we are likely to assign null in the next step if we don't do this initialization. So just do this.
                             {
                                 // we need to new the Collections and ArrayLists
                                 ILGenLoad(member.Source, typeof(object));
@@ -2354,9 +2335,8 @@ namespace System.Xml.Serialization
         {
             TextAccessor text = member.Mapping.Text!;
 
-            if (text.Mapping is SpecialMapping)
+            if (text.Mapping is SpecialMapping special)
             {
-                SpecialMapping special = (SpecialMapping)text.Mapping;
                 WriteSourceBeginTyped(member.ArraySource, special.TypeDesc);
                 switch (special.TypeDesc!.Kind)
                 {
@@ -2724,10 +2704,10 @@ namespace System.Xml.Serialization
             WriteSourceBegin(source);
         }
 
-        [RegexGenerator("(?<locA1>[^ ]+) = .+EnsureArrayIndex[(](?<locA2>[^,]+), (?<locI1>[^,]+),[^;]+;(?<locA3>[^[]+)[[](?<locI2>[^+]+)[+][+][]]")]
+        [GeneratedRegex("(?<locA1>[^ ]+) = .+EnsureArrayIndex[(](?<locA2>[^,]+), (?<locI1>[^,]+),[^;]+;(?<locA3>[^[]+)[[](?<locI2>[^+]+)[+][+][]]")]
         private static partial Regex EnsureArrayIndexRegex();
 
-        [RegexGenerator("(?<a>[^[]+)[[](?<ia>.+)[]]")]
+        [GeneratedRegex("(?<a>[^[]+)[[](?<ia>.+)[]]")]
         private static partial Regex P0Regex();
 
         private void WriteSourceBegin(string source)
@@ -2901,7 +2881,8 @@ namespace System.Xml.Serialization
                 )!;
             ilg.Ldarg(0);
             ilg.Call(XmlSerializationReader_ReadNull);
-            ilg.IfNot();
+            ilg.IfNot();    // if (!ReadNull()) { // EnterScope
+            ilg.EnterScope();
 
             MemberMapping memberMapping = new MemberMapping();
             memberMapping.Elements = arrayMapping.Elements;
@@ -2996,11 +2977,14 @@ namespace System.Xml.Serialization
 
             if (isNullable)
             {
-                ilg.Else();
+                ilg.ExitScope();    // if(!ReadNull()) { ExitScope
+                ilg.Else();         // } else { EnterScope
+                ilg.EnterScope();
                 member.IsNullable = true;
                 WriteMemberBegin(members);
                 WriteMemberEnd(members);
             }
+            ilg.ExitScope();    // if(!ReadNull())/else ExitScope
             ilg.EndIf();
         }
 
@@ -3215,9 +3199,8 @@ namespace System.Xml.Serialization
                     // 'If' begins in checkForNull above
                     ilg.EndIf();
             }
-            else if (element.Mapping is SpecialMapping)
+            else if (element.Mapping is SpecialMapping special)
             {
-                SpecialMapping special = (SpecialMapping)element.Mapping;
                 switch (special.TypeDesc!.Kind)
                 {
                     case TypeKind.Node:
@@ -3541,19 +3524,19 @@ namespace System.Xml.Serialization
             ReflectionAwareILGen.WriteLocalDecl(variableName, initValue);
         }
 
-        [RegexGenerator("UnknownNode[(]null, @[\"](?<qnames>[^\"]*)[\"][)];")]
+        [GeneratedRegex("UnknownNode[(]null, @[\"](?<qnames>[^\"]*)[\"][)];")]
         private static partial Regex UnknownNodeNullAnyTypeRegex();
 
-        [RegexGenerator("UnknownNode[(][(]object[)](?<o>[^,]+), @[\"](?<qnames>[^\"]*)[\"][)];")]
+        [GeneratedRegex("UnknownNode[(][(]object[)](?<o>[^,]+), @[\"](?<qnames>[^\"]*)[\"][)];")]
         private static partial Regex UnknownNodeObjectEmptyRegex();
 
-        [RegexGenerator("UnknownNode[(][(]object[)](?<o>[^,]+), null[)];")]
+        [GeneratedRegex("UnknownNode[(][(]object[)](?<o>[^,]+), null[)];")]
         private static partial Regex UnknownNodeObjectNullRegex();
 
-        [RegexGenerator("UnknownNode[(][(]object[)](?<o>[^)]+)[)];")]
+        [GeneratedRegex("UnknownNode[(][(]object[)](?<o>[^)]+)[)];")]
         private static partial Regex UnknownNodeObjectRegex();
 
-        [RegexGenerator("paramsRead\\[(?<index>[0-9]+)\\]")]
+        [GeneratedRegex("paramsRead\\[(?<index>[0-9]+)\\]")]
         private static partial Regex ParamsReadRegex();
 
         private void ILGenElseString(string elseString)

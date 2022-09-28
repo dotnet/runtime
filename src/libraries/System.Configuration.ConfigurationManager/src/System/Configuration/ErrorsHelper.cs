@@ -23,7 +23,7 @@ namespace System.Configuration
             Debug.Assert(e != null, "e != null");
 
             // Create on demand
-            if (errors == null) errors = new List<ConfigurationException>();
+            errors ??= new List<ConfigurationException>();
 
             ConfigurationErrorsException ce = e as ConfigurationErrorsException;
             if (ce == null) errors.Add(e);

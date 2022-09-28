@@ -37,13 +37,10 @@ namespace System.Resources.Extensions
 #pragma warning disable SYSLIB0011
         private object ReadBinaryFormattedObject()
         {
-            if (_formatter == null)
+            _formatter ??= new BinaryFormatter()
             {
-                _formatter = new BinaryFormatter()
-                {
-                    Binder = new UndoTruncatedTypeNameSerializationBinder()
-                };
-            }
+                Binder = new UndoTruncatedTypeNameSerializationBinder()
+            };
 
             return _formatter.Deserialize(_store.BaseStream);
         }

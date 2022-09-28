@@ -61,6 +61,7 @@ PGET_GCMARKER_EXCEPTION_CODE g_getGcMarkerExceptionCode = NULL;
 // Return address of the SEHProcessException, which is used to enable walking over
 // the signal handler trampoline on some Unixes where the libunwind cannot do that.
 void* g_SEHProcessExceptionReturnAddress = NULL;
+void* g_InvokeActivationHandlerReturnAddress = NULL;
 
 /* Internal function definitions **********************************************/
 
@@ -277,6 +278,7 @@ SEHProcessException(PAL_SEHException* exception)
         if (CatchHardwareExceptionHolder::IsEnabled())
         {
             EnsureExceptionRecordsOnHeap(exception);
+            exception->IsExternal = true;
             PAL_ThrowExceptionFromContext(exception->GetContextRecord(), exception);
         }
     }

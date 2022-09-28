@@ -5,7 +5,6 @@ using System;
 
 namespace System.Runtime.CompilerServices
 {
-    [DeveloperExperienceModeOnly]
     internal static class DeveloperExperienceState
     {
         public static bool DeveloperExperienceModeEnabled

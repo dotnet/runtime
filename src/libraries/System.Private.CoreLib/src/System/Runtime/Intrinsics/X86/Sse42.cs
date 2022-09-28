@@ -26,7 +26,7 @@ namespace System.Runtime.Intrinsics.X86
             /// <summary>
             /// unsigned __int64 _mm_crc32_u64 (unsigned __int64 crc, unsigned __int64 v)
             ///   CRC32 reg, reg/m64
-            /// This intrinisc is only available on 64-bit processes
+            /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static ulong Crc32(ulong crc, ulong data) => Crc32(crc, data);
         }

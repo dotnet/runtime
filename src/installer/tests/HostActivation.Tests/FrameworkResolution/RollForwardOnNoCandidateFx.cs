@@ -643,7 +643,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         // Verifies that rollForwardOnNoCandidateFx and applyPatches settings correctly roll
         // from a pre-release version 5.1.1-preview.1 to another pre-release - latest patch.
         // 3.0 change:
-        // 2.* - Pre-release will only match the extact x.y.z version, regardless of settings
+        // 2.* - Pre-release will only match the exact x.y.z version, regardless of settings
         // 3.* - Pre-release uses normal roll forward rules, including rolling over minor/patches and obeying settings but does not roll to latest patch.
         [Theory] // rollForwardOnNoCandidateFx  applyPatches  resolvedFramework
         [InlineData(null,                       null,         "5.1.3-preview.1")]
@@ -712,7 +712,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         // from a release version 6.1.0 to another release version.
         // When rolling from release, pre-release is ignored if any release which matches can be found
         // 6.1.1 and 6.1.2-preview.1 is available so pure latest patch should pick the 6.1.2-preview.1
-        // but release is prefered if available.
+        // but release is preferred if available.
         [Theory] // rollForwardOnNoCandidateFx
         [InlineData(null)]
         [InlineData(1)]

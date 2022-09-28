@@ -70,6 +70,7 @@ namespace System
         private DelegateData data;
 
         private bool method_is_virtual;
+        private bool bound;
         #endregion
 
         [RequiresUnreferencedCode("The target method might be removed")]
@@ -209,7 +210,7 @@ namespace System
             if (invoke is null)
                 return null;
 
-            ParameterInfo[] delargs = invoke.GetParametersInternal();
+            ParameterInfo[] delargs = invoke.GetParametersNoCopy();
             Type[] delargtypes = new Type[delargs.Length];
 
             for (int i = 0; i < delargs.Length; i++)
@@ -249,8 +250,8 @@ namespace System
                 return false;
             }
 
-            ParameterInfo[] delargs = invoke.GetParametersInternal();
-            ParameterInfo[] args = method.GetParametersInternal();
+            ParameterInfo[] delargs = invoke.GetParametersNoCopy();
+            ParameterInfo[] args = method.GetParametersNoCopy();
 
             bool argLengthMatch;
 
@@ -430,8 +431,7 @@ namespace System
 
             object? target = _target;
 
-            if (data is null)
-                data = CreateDelegateData();
+            data ??= CreateDelegateData();
 
             // replace all Type.Missing with default values defined on parameters of the delegate if any
             MethodInfo? invoke = GetType().GetMethod("Invoke");

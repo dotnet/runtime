@@ -189,13 +189,11 @@ public:
         return m_prot;
     }
 
-        // Please only use this in a path that you have already guarenteed
+        // Please only use this in a path that you have already guaranteed
         // the assert is true
     DWORD GetOffsetUnsafe()
     {
         LIMITED_METHOD_CONTRACT;
-
-        g_IBCLogger.LogFieldDescsAccess(this);
         _ASSERTE(m_dwOffset <= FIELD_OFFSET_LAST_REAL_OFFSET);
         return m_dwOffset;
     }
@@ -203,7 +201,6 @@ public:
     DWORD GetOffset()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        g_IBCLogger.LogFieldDescsAccess(this);
         return GetOffset_NoLogging();
     }
 
@@ -395,7 +392,6 @@ public:
     PTR_MethodTable GetApproxEnclosingMethodTable()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        g_IBCLogger.LogFieldDescsAccess(this);
         return GetApproxEnclosingMethodTable_NoLogging();
     }
 

@@ -68,12 +68,12 @@ namespace System.Xml
             }
 
             _nsMgr = nsMgr;
-            _docTypeName = (null == docTypeName ? string.Empty : docTypeName);
-            _pubId = (null == pubId ? string.Empty : pubId);
-            _sysId = (null == sysId ? string.Empty : sysId);
-            _internalSubset = (null == internalSubset ? string.Empty : internalSubset);
-            _baseURI = (null == baseURI ? string.Empty : baseURI);
-            _xmlLang = (null == xmlLang ? string.Empty : xmlLang);
+            _docTypeName = docTypeName ?? string.Empty;
+            _pubId = pubId ?? string.Empty;
+            _sysId = sysId ?? string.Empty;
+            _internalSubset = internalSubset ?? string.Empty;
+            _baseURI = baseURI ?? string.Empty;
+            _xmlLang = xmlLang ?? string.Empty;
             _xmlSpace = xmlSpace;
             _encoding = enc;
         }
@@ -111,7 +111,7 @@ namespace System.Xml
             }
             set
             {
-                _docTypeName = (null == value ? string.Empty : value);
+                _docTypeName = value ?? string.Empty;
             }
         }
 
@@ -124,7 +124,7 @@ namespace System.Xml
             }
             set
             {
-                _pubId = (null == value ? string.Empty : value);
+                _pubId = value ?? string.Empty;
             }
         }
 
@@ -137,7 +137,7 @@ namespace System.Xml
             }
             set
             {
-                _sysId = (null == value ? string.Empty : value);
+                _sysId = value ?? string.Empty;
             }
         }
 
@@ -150,7 +150,7 @@ namespace System.Xml
             }
             set
             {
-                _baseURI = (null == value ? string.Empty : value);
+                _baseURI = value ?? string.Empty;
             }
         }
 
@@ -163,7 +163,7 @@ namespace System.Xml
             }
             set
             {
-                _internalSubset = (null == value ? string.Empty : value);
+                _internalSubset = value ?? string.Empty;
             }
         }
 
@@ -176,7 +176,7 @@ namespace System.Xml
             }
             set
             {
-                _xmlLang = (null == value ? string.Empty : value);
+                _xmlLang = value ?? string.Empty;
             }
         }
 

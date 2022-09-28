@@ -350,6 +350,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Adds the specified items to the end of the array.
             /// </summary>
+            /// <typeparam name="TDerived">The type that derives from the type of item already in the array.</typeparam>
             /// <param name="items">The items.</param>
             public void AddRange<TDerived>(TDerived[] items) where TDerived : T
             {
@@ -416,6 +417,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Adds the specified items to the end of the array.
             /// </summary>
+            /// <typeparam name="TDerived">The type that derives from the type of item already in the array.</typeparam>
             /// <param name="items">The items to add at the end of the array.</param>
             public void AddRange<TDerived>(ReadOnlySpan<TDerived> items) where TDerived : T
             {
@@ -432,6 +434,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Adds the specified items to the end of the array.
             /// </summary>
+            /// <typeparam name="TDerived">The type that derives from the type of item already in the array.</typeparam>
             /// <param name="items">The items to add at the end of the array.</param>
             public void AddRange<TDerived>(ImmutableArray<TDerived> items) where TDerived : T
             {
@@ -454,6 +457,7 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Adds the specified items to the end of the array.
             /// </summary>
+            /// <typeparam name="TDerived">The type that derives from the type of item already in the array.</typeparam>
             /// <param name="items">The items to add at the end of the array.</param>
             public void AddRange<TDerived>(ImmutableArray<TDerived>.Builder items) where TDerived : T
             {
@@ -770,7 +774,7 @@ namespace System.Collections.Immutable
                 Requires.Range(startIndex >= 0 && startIndex < this.Count, nameof(startIndex));
                 Requires.Range(count >= 0 && startIndex + count <= this.Count, nameof(count));
 
-                equalityComparer = equalityComparer ?? EqualityComparer<T>.Default;
+                equalityComparer ??= EqualityComparer<T>.Default;
                 if (equalityComparer == EqualityComparer<T>.Default)
                 {
                     return Array.IndexOf(_elements, item, startIndex, count);
@@ -867,7 +871,7 @@ namespace System.Collections.Immutable
                 Requires.Range(startIndex >= 0 && startIndex < this.Count, nameof(startIndex));
                 Requires.Range(count >= 0 && startIndex - count + 1 >= 0, nameof(count));
 
-                equalityComparer = equalityComparer ?? EqualityComparer<T>.Default;
+                equalityComparer ??= EqualityComparer<T>.Default;
                 if (equalityComparer == EqualityComparer<T>.Default)
                 {
                     return Array.LastIndexOf(_elements, item, startIndex, count);
@@ -933,11 +937,17 @@ namespace System.Collections.Immutable
 
                 if (Count > 1)
                 {
+#if NET6_0_OR_GREATER
+                    // MemoryExtensions.Sort is not available in .NET Framework / Standard 2.0.
+                    // But the overload with a Comparison argument doesn't allocate.
+                    _elements.AsSpan(0, _count).Sort(comparison);
+#else
                     // Array.Sort does not have an overload that takes both bounds and a Comparison.
                     // We could special case _count == _elements.Length in order to try to avoid
                     // the IComparer allocation, but the Array.Sort overload that takes a Comparison
                     // allocates such an IComparer internally, anyway.
                     Array.Sort(_elements, 0, _count, Comparer<T>.Create(comparison));
+#endif
                 }
             }
 

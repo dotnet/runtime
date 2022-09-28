@@ -27,7 +27,6 @@
 
 HANDLE auto_trace_event;
 static size_t g_n_tracers = 1;
-static const WCHAR* command_format = W("%s -p %d");
 static WCHAR* command = nullptr;
 
 void auto_trace_init()
@@ -42,9 +41,23 @@ void auto_trace_init()
     LPWSTR commandTextValue = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_AutoTrace_Command);
     if (commandTextValue != NULL)
     {
+        // Create a command line with the format: "%s -p %d"
+        const WCHAR flagFormat[] = W(" -p ");
         DWORD currentProcessId = GetCurrentProcessId();
-        command = new WCHAR[8192];
-        _snwprintf_s(command, 8192, _TRUNCATE, command_format, commandTextValue, currentProcessId);
+        size_t bufferLen = 8192;
+        size_t written = 0;
+        command = new WCHAR[bufferLen];
+
+        // Copy in the command - %s
+        wcscpy_s(command, bufferLen, commandTextValue);
+        written += wcslen(commandTextValue);
+
+        // Append " -p "
+        wcscat_s(command, bufferLen - written, flagFormat);
+        written += ARRAY_SIZE(flagFormat) - 1;
+
+        // Append the process ID
+        FormatInteger(command + written, bufferLen - written, "%d", currentProcessId);
     }
     else
     {

@@ -68,6 +68,18 @@ namespace System.Security.Cryptography.X509Certificates
         {
         }
 
+        internal X509Extension(Oid oid, byte[] rawData, bool critical, bool skipCopy)
+            : base(oid, rawData, skipCopy)
+        {
+            if (base.Oid?.Value == null)
+                throw new ArgumentNullException(nameof(oid));
+
+            if (base.Oid.Value.Length == 0)
+                throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "oid.Value"), nameof(oid));
+
+            Critical = critical;
+        }
+
         public bool Critical { get; set; }
 
         public override void CopyFrom(AsnEncodedData asnEncodedData)

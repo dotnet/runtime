@@ -195,16 +195,11 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                if (webSocketHandle != null)
-                {
-                    webSocketHandle.Dispose();
-                }
+                webSocketHandle?.Dispose();
             }
         }
 
-        internal static void WebSocketCreateServerHandle(Interop.WebSocket.Property[] properties,
-            int propertyCount,
-            out SafeWebSocketHandle webSocketHandle)
+        internal static SafeWebSocketHandle WebSocketCreateServerHandle(Interop.WebSocket.Property[] properties, int propertyCount)
         {
             Debug.Assert(propertyCount >= 0, "'propertyCount' MUST NOT be negative.");
             Debug.Assert((properties == null && propertyCount == 0) ||
@@ -216,40 +211,45 @@ namespace System.Net.WebSockets
                 HttpWebSocket.ThrowPlatformNotSupportedException_WSPC();
             }
 
-            int errorCode = Interop.WebSocket.WebSocketCreateServerHandle(properties!, (uint)propertyCount, out webSocketHandle);
-            ThrowOnError(errorCode);
-
-            if (webSocketHandle == null ||
-                webSocketHandle.IsInvalid)
+            SafeWebSocketHandle? webSocketHandle = null;
+            try
             {
-                HttpWebSocket.ThrowPlatformNotSupportedException_WSPC();
+                int errorCode = Interop.WebSocket.WebSocketCreateServerHandle(properties!, (uint)propertyCount, out webSocketHandle);
+                ThrowOnError(errorCode);
+                if (webSocketHandle.IsInvalid)
+                {
+                    HttpWebSocket.ThrowPlatformNotSupportedException_WSPC();
+                }
+
+                // Currently the WSPC doesn't allow to initiate a data session
+                // without also being involved in the http handshake
+                // There is no information whatsoever, which is needed by the
+                // WSPC for parsing WebSocket frames from the HTTP handshake
+                // In the managed implementation the HTTP header handling
+                // will be done using the managed HTTP stack and we will
+                // just fake an HTTP handshake for the WSPC calling
+                // WebSocketBeginServerHandshake and WebSocketEndServerHandshake
+                // with statically defined dummy headers.
+                errorCode = Interop.WebSocket.WebSocketBeginServerHandshake(webSocketHandle,
+                    IntPtr.Zero,
+                    IntPtr.Zero,
+                    0,
+                    s_ServerFakeRequestHeaders!,
+                    (uint)s_ServerFakeRequestHeaders!.Length,
+                    out _,
+                    out _);
+                ThrowOnError(errorCode);
+
+                errorCode = Interop.WebSocket.WebSocketEndServerHandshake(webSocketHandle);
+                ThrowOnError(errorCode);
+            }
+            catch
+            {
+                webSocketHandle?.Dispose();
+                throw;
             }
 
-            // Currently the WSPC doesn't allow to initiate a data session
-            // without also being involved in the http handshake
-            // There is no information whatsoever, which is needed by the
-            // WSPC for parsing WebSocket frames from the HTTP handshake
-            // In the managed implementation the HTTP header handling
-            // will be done using the managed HTTP stack and we will
-            // just fake an HTTP handshake for the WSPC calling
-            // WebSocketBeginServerHandshake and WebSocketEndServerHandshake
-            // with statically defined dummy headers.
-            errorCode = Interop.WebSocket.WebSocketBeginServerHandshake(webSocketHandle!,
-                IntPtr.Zero,
-                IntPtr.Zero,
-                0,
-                s_ServerFakeRequestHeaders!,
-                (uint)s_ServerFakeRequestHeaders!.Length,
-                out _,
-                out _);
-
-            ThrowOnError(errorCode);
-
-            errorCode = Interop.WebSocket.WebSocketEndServerHandshake(webSocketHandle!);
-
-            ThrowOnError(errorCode);
-
-            Debug.Assert(webSocketHandle != null, "'webSocketHandle' MUST NOT be NULL at this point.");
+            return webSocketHandle;
         }
 
         internal static void WebSocketAbortHandle(SafeHandle webSocketHandle)

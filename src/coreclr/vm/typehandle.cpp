@@ -30,11 +30,6 @@ BOOL TypeHandle::Verify()
     if (IsNull())
         return(TRUE);
 
-    // If you try to do IBC logging of a type being created, the type
-    // will look inconsistent. IBC logging knows to filter out such types.
-    if (g_IBCLogger.InstrEnabled())
-        return TRUE;
-
     if (!IsRestored_NoLogging())
         return TRUE;
 
@@ -1003,13 +998,6 @@ BOOL TypeHandle::IsRestored() const
     }
 }
 
-BOOL TypeHandle::IsEncodedFixup() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return CORCOMPILE_IS_POINTER_TAGGED(m_asTAddr);
-}
-
 BOOL TypeHandle::HasUnrestoredTypeKey()  const
 {
     WRAPPER_NO_CONTRACT;
@@ -1027,7 +1015,6 @@ void TypeHandle::CheckRestore() const
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        PRECONDITION(!IsEncodedFixup());
     }
     CONTRACTL_END
 
@@ -1036,8 +1023,6 @@ void TypeHandle::CheckRestore() const
         ClassLoader::EnsureLoaded(*this);
         _ASSERTE(IsFullyLoaded());
     }
-
-    g_IBCLogger.LogTypeMethodTableAccess(this);
 }
 
 #ifndef DACCESS_COMPILE
@@ -1090,7 +1075,7 @@ OBJECTREF TypeHandle::GetManagedClassObject() const
     CONTRACTL_END;
 
 #ifdef _DEBUG
-    // Force a GC here because GetManagedClassObject could trigger GC nondeterminsticaly
+    // Force a GC here because GetManagedClassObject could trigger GC nondeterministicaly
     GCStress<cfg_any, PulseGcTriggerPolicy>::MaybeTrigger();
 #endif // _DEBUG
 
@@ -1353,9 +1338,6 @@ BOOL SatisfiesClassConstraints(TypeHandle instanceTypeHnd, TypeHandle typicalTyp
 
         SigTypeContext typeContext;
         SigTypeContext::InitTypeContext(instanceTypeHnd, &typeContext);
-
-        // Log the TypeVarTypeDesc access
-        g_IBCLogger.LogTypeMethodTableWriteableAccess(&thActualArg);
 
         BOOL bSatisfiesConstraints =
             formalInst[i].AsGenericVariable()->SatisfiesConstraints(&typeContext, thActualArg, pInstContext);

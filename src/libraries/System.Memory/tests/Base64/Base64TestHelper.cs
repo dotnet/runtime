@@ -72,7 +72,7 @@ namespace System.Buffers.Text.Tests
             var rnd = new Random(seed);
             for (int i = 0; i < bytes.Length; i++)
             {
-                int index = (byte)rnd.Next(0, s_encodingMap.Length - 1);    // Do not pick '='
+                int index = (byte)rnd.Next(0, s_encodingMap.Length);
                 bytes[i] = s_encodingMap[index];
             }
         }

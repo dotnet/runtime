@@ -41,7 +41,19 @@ namespace System.Security.Cryptography
         }
 
         [RequiresUnreferencedCode(CreateFromNameUnreferencedCodeMessage)]
-        internal static object? CreateFromName(string name) => s_createFromName(name);
+        internal static T? CreateFromName<T>(string name) where T : class
+        {
+            object? o = s_createFromName(name);
+            try
+            {
+                return (T?)o;
+            }
+            catch
+            {
+                (o as IDisposable)?.Dispose();
+                throw;
+            }
+        }
 
         internal static HashAlgorithm CreateDefaultHashAlgorithm() =>
             throw new PlatformNotSupportedException(SR.Cryptography_DefaultAlgorithm_NotSupported);

@@ -10,7 +10,8 @@ trigger:
     - '*'
     - docs/manpages/*
     exclude:
-    - /**/*.md
+    - '**.md'
+    - .devcontainer/*
     - .github/*
     - docs/*
     - LICENSE.TXT
@@ -18,19 +19,22 @@ trigger:
     - THIRD-PARTY-NOTICES.TXT
 
 # This is an official pipeline that should not be triggerable from a PR,
-# there is no public pipeline assosiated with it.
+# there is no public pipeline associated with it.
 pr: none
+
+resources:
+  containers:
+  # Define auxilary containers used by the installer jobs
+  - container: debpkg
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-debpkg-20220504035737-cfdd435
+  - container: rpmpkg
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-rpmpkg-20210714125410-daa5116
 
 variables:
 - template: /eng/pipelines/common/variables.yml
 # TODO: (Consolidation) Switch away from old signing/validation variables from former Core-Setup. https://github.com/dotnet/runtime/issues/1027
 - name: TeamName
   value: dotnet-core-acquisition
-# Set the target blob feed for package publish during official and validation builds.
-- name: _DotNetArtifactsCategory
-  value: .NETCore
-- name: _DotNetValidationArtifactsCategory
-  value: .NETCoreValidation
 - name: PostBuildSign
   value: true
 
@@ -130,6 +134,8 @@ stages:
       - Linux_arm64
       - Linux_musl_x64
       - Browser_wasm
+      - Linux_bionic_arm64
+      - Linux_bionic_x64
       # - Linux_musl_arm
       # - Linux_musl_arm64
       - windows_x64
@@ -140,6 +146,38 @@ stages:
         buildArgs: -s mono+libs+host+packs+mono.mscordbi -c $(_BuildConfig)
         nameSuffix: AllSubsets_Mono
         isOfficialBuild: ${{ variables.isOfficialBuild }}
+        extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+        extraStepsParameters:
+          name: MonoRuntimePacks
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - Browser_wasm
+      jobParameters:
+        buildArgs: -s mono+libs+host+packs+mono.mscordbi -c $(_BuildConfig) /p:MonoWasmBuildVariant=perftrace
+        nameSuffix: AllSubsets_Mono_perftrace
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        runtimeVariant: perftrace
+        extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+        extraStepsParameters:
+          name: MonoRuntimePacks
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - Browser_wasm
+      jobParameters:
+        buildArgs: -s mono+libs+host+packs+mono.mscordbi -c $(_BuildConfig) /p:MonoWasmBuildVariant=multithread
+        nameSuffix: AllSubsets_Mono_multithread
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        runtimeVariant: multithread
         extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
         extraStepsParameters:
           name: MonoRuntimePacks
@@ -347,8 +385,10 @@ stages:
   #
   # Installer Build
   #
-  - template: /eng/pipelines/installer/installer-matrix.yml
+  - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
+      jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
+      buildConfig: Release
       jobParameters:
         liveRuntimeBuildConfig: release
         liveLibrariesBuildConfig: Release
@@ -378,6 +418,8 @@ stages:
       - windows_x64
       - windows_x86
       - Linux_x64
+      - windows_arm64
+      - Linux_arm64
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         signBinaries: false
@@ -387,8 +429,9 @@ stages:
   #
   # PGO Build
   #
-  - template: /eng/pipelines/installer/installer-matrix.yml
+  - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
+      jobTemplate: /eng/pipelines/installer/jobs/build-job.yml
       buildConfig: Release
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
@@ -399,6 +442,8 @@ stages:
       - windows_x64
       - windows_x86
       - Linux_x64
+      - windows_arm64
+      - Linux_arm64
 
   #
   # Build Workloads
@@ -429,6 +474,10 @@ stages:
         - Build_tvOSSimulator_arm64_release_AllSubsets_Mono
         - Build_tvOSSimulator_x64_release_AllSubsets_Mono
         - Build_Windows_x64_release_CrossAOT_Mono
+        - installer__coreclr__windows_x64_Release_
+        - installer__coreclr__windows_x86_Release_
+        - installer__coreclr__windows_arm_Release_
+        - installer__coreclr__windows_arm64_Release_
 
 - ${{ if eq(variables.isOfficialBuild, true) }}:
   - template: /eng/pipelines/official/stages/publish.yml

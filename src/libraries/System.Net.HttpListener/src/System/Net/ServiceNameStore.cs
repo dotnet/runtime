@@ -14,17 +14,7 @@ namespace System.Net
         private readonly List<string> _serviceNames;
         private ServiceNameCollection? _serviceNameCollection;
 
-        public ServiceNameCollection ServiceNames
-        {
-            get
-            {
-                if (_serviceNameCollection == null)
-                {
-                    _serviceNameCollection = new ServiceNameCollection(_serviceNames);
-                }
-                return _serviceNameCollection;
-            }
-        }
+        public ServiceNameCollection ServiceNames => _serviceNameCollection ??= new ServiceNameCollection(_serviceNames);
 
         public ServiceNameStore()
         {
@@ -93,7 +83,7 @@ namespace System.Net
                     port = hostAndPort.Substring(colonIndex);
                 }
 
-                hostType = Uri.CheckHostName(host); // Revaidate the host
+                hostType = Uri.CheckHostName(host); // Revalidate the host
             }
 
             if (hostType != UriHostNameType.Dns)

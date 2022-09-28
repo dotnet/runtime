@@ -200,16 +200,15 @@ namespace System.Data.SqlTypes
                 if (offset < 0 || offset >= Length)
                     throw new ArgumentOutOfRangeException(nameof(offset));
 
-                if (_rgbWorkBuf == null)
-                    _rgbWorkBuf = new byte[1];
+                _rgbWorkBuf ??= new byte[1];
 
                 Read(offset, _rgbWorkBuf, 0, 1);
                 return _rgbWorkBuf[0];
             }
             set
             {
-                if (_rgbWorkBuf == null)
-                    _rgbWorkBuf = new byte[1];
+                _rgbWorkBuf ??= new byte[1];
+
                 _rgbWorkBuf[0] = value;
                 Write(offset, _rgbWorkBuf, 0, 1);
             }

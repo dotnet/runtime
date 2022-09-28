@@ -33,16 +33,15 @@ print_implemented_interfaces (MonoClass *klass)
 	char *name;
 	ERROR_DECL (error);
 	GPtrArray *ifaces = NULL;
-	int i;
 	int ancestor_level = 0;
 
 	name = mono_type_get_full_name (klass);
 	printf ("Packed interface table for class %s has size %d\n", name, klass->interface_offsets_count);
 	g_free (name);
 
-	for (i = 0; i < klass->interface_offsets_count; i++) {
+	for (guint16 i = 0; i < klass->interface_offsets_count; i++) {
 		char *ic_name = mono_type_get_full_name (klass->interfaces_packed [i]);
-		printf ("  [%03d][UUID %03d][SLOT %03d][SIZE  %03d] interface %s\n", i,
+		printf ("  [%03hu][UUID %03d][SLOT %03d][SIZE  %03d] interface %s\n", i,
 				klass->interfaces_packed [i]->interface_id,
 				klass->interface_offsets_packed [i],
 				mono_class_get_method_count (klass->interfaces_packed [i]),
@@ -50,7 +49,7 @@ print_implemented_interfaces (MonoClass *klass)
 		g_free (ic_name);
 	}
 	printf ("Interface flags: ");
-	for (i = 0; i <= klass->max_interface_id; i++)
+	for (guint32 i = 0; i <= klass->max_interface_id; i++)
 		if (MONO_CLASS_IMPLEMENTS_INTERFACE (klass, i))
 			printf ("(%d,T)", i);
 		else
@@ -60,7 +59,7 @@ print_implemented_interfaces (MonoClass *klass)
 #ifdef COMPRESSED_INTERFACE_BITMAP
 	{
 		const uint8_t* p = klass->interface_bitmap;
-		i = klass->max_interface_id;
+		guint32 i = klass->max_interface_id;
 		while (i > 0) {
 			printf (" %d x 00 %02X", p [0], p [1]);
 			i -= p [0] * 8;
@@ -68,7 +67,7 @@ print_implemented_interfaces (MonoClass *klass)
 		}
 	}
 #else
-	for (i = 0; i < ((((klass->max_interface_id + 1) >> 3)) + (((klass->max_interface_id + 1) & 7)? 1 :0)); i++)
+	for (guint32 i = 0; i < ((((klass->max_interface_id + 1) >> 3)) + (((klass->max_interface_id + 1) & 7)? 1 :0)); i++)
 		printf (" %02X", klass->interface_bitmap [i]);
 #endif
 	printf ("\n");
@@ -79,7 +78,7 @@ print_implemented_interfaces (MonoClass *klass)
 			printf ("  Type failed due to %s\n", mono_error_get_message (error));
 			mono_error_cleanup (error);
 		} else if (ifaces) {
-			for (i = 0; i < ifaces->len; i++) {
+			for (guint i = 0; i < ifaces->len; i++) {
 				MonoClass *ic = (MonoClass *)g_ptr_array_index (ifaces, i);
 				printf ("  [UIID %d] interface %s\n", ic->interface_id, ic->name);
 				printf ("  [%03d][UUID %03d][SLOT %03d][SIZE  %03d] interface %s.%s\n", i,
@@ -117,6 +116,21 @@ set_interface_and_offset (int num_ifaces, MonoClass **interfaces_full, int *inte
 }
 
 /**
+ * mono_class_setup_invalidate_interface_offsets:
+ *
+ * Sets a field in the MonoClass to make mono_class_setup_interface_offsets_internal publish its results when called.
+ *
+ * This is a hack used by sre to compute the interface offsets
+ */
+void
+mono_class_setup_invalidate_interface_offsets (MonoClass *klass)
+{
+	g_assert (MONO_CLASS_IS_INTERFACE_INTERNAL (klass));
+	g_assert (!mono_class_is_ginst (klass));
+	klass->interface_offsets_packed = NULL;
+}
+
+/**
  * mono_class_setup_interface_offsets_internal:
  *
  * Do not call this function outside of class creation.
@@ -125,11 +139,11 @@ set_interface_and_offset (int num_ifaces, MonoClass **interfaces_full, int *inte
  * LOCKING: Acquires the loader lock.
  */
 int
-mono_class_setup_interface_offsets_internal (MonoClass *klass, int cur_slot, gboolean overwrite)
+mono_class_setup_interface_offsets_internal (MonoClass *klass, int cur_slot, int setup_itf_offsets_flags)
 {
 	ERROR_DECL (error);
 	MonoClass *k, *ic;
-	int i, j, num_ifaces;
+	int num_ifaces;
 	guint32 max_iid;
 	MonoClass **interfaces_full = NULL;
 	int *interface_offsets_full = NULL;
@@ -138,6 +152,8 @@ mono_class_setup_interface_offsets_internal (MonoClass *klass, int cur_slot, gbo
 	int interface_offsets_count;
 	max_iid = 0;
 	num_ifaces = interface_offsets_count = 0;
+	gboolean overwrite = (setup_itf_offsets_flags & MONO_SETUP_ITF_OFFSETS_OVERWRITE) != 0;
+	gboolean bitmap_only = (setup_itf_offsets_flags & MONO_SETUP_ITF_OFFSETS_BITMAP_ONLY) != 0;
 
 	mono_loader_lock ();
 
@@ -151,7 +167,7 @@ mono_class_setup_interface_offsets_internal (MonoClass *klass, int cur_slot, gbo
 		interface_offsets_full = (int *)g_malloc (sizeof (int) * num_ifaces);
 
 		cur_slot = 0;
-		for (i = 0; i < num_ifaces; ++i) {
+		for (int i = 0; i < num_ifaces; ++i) {
 			MonoClass *gklass_ic = gklass->interfaces_packed [i];
 			MonoClass *inflated = mono_class_inflate_generic_class_checked (gklass_ic, mono_class_get_context(klass), error);
 			if (!is_ok (error)) {
@@ -165,7 +181,8 @@ mono_class_setup_interface_offsets_internal (MonoClass *klass, int cur_slot, gbo
 			mono_class_setup_interface_id_nolock (inflated);
 
 			interfaces_full [i] = inflated;
-			interface_offsets_full [i] = gklass->interface_offsets_packed [i];
+			if (!bitmap_only)
+				interface_offsets_full [i] = gklass->interface_offsets_packed [i];
 
 			int count = mono_class_setup_count_virtual_methods (inflated);
 			if (count == -1) {
@@ -186,11 +203,11 @@ mono_class_setup_interface_offsets_internal (MonoClass *klass, int cur_slot, gbo
 	max_iid = 0;
 	num_ifaces = 0; /* this can include duplicated ones */
 	ifaces_array = g_new0 (GPtrArray *, klass->idepth);
-	for (j = 0; j < klass->idepth; j++) {
+	for (guint16 j = 0; j < klass->idepth; j++) {
 		k = klass->supertypes [j];
 		g_assert (k);
 		num_ifaces += k->interface_count;
-		for (i = 0; i < k->interface_count; i++) {
+		for (guint16 i = 0; i < k->interface_count; i++) {
 			ic = k->interfaces [i];
 
 			/* A gparam does not have any interface_id set. */
@@ -211,7 +228,7 @@ mono_class_setup_interface_offsets_internal (MonoClass *klass, int cur_slot, gbo
 		}
 		if (ifaces) {
 			num_ifaces += ifaces->len;
-			for (i = 0; i < ifaces->len; ++i) {
+			for (guint i = 0; i < ifaces->len; ++i) {
 				ic = (MonoClass *)g_ptr_array_index (ifaces, i);
 				if (max_iid < ic->interface_id)
 					max_iid = ic->interface_id;
@@ -230,25 +247,30 @@ mono_class_setup_interface_offsets_internal (MonoClass *klass, int cur_slot, gbo
 	interfaces_full = (MonoClass **)g_malloc0 (sizeof (MonoClass*) * num_ifaces);
 	interface_offsets_full = (int *)g_malloc (sizeof (int) * num_ifaces);
 
-	for (i = 0; i < num_ifaces; i++)
+	for (int i = 0; i < num_ifaces; i++)
 		interface_offsets_full [i] = -1;
 
 	/* skip the current class */
-	for (j = 0; j < klass->idepth - 1; j++) {
+	for (guint16 j = 0; j < klass->idepth - 1; j++) {
 		k = klass->supertypes [j];
 		ifaces = ifaces_array [j];
 
 		if (ifaces) {
-			for (i = 0; i < ifaces->len; ++i) {
-				int io;
+			for (guint i = 0; i < ifaces->len; ++i) {
+				int io = -1;
 				ic = (MonoClass *)g_ptr_array_index (ifaces, i);
 
 				/*Force the sharing of interface offsets between parent and subtypes.*/
-				io = mono_class_interface_offset (k, ic);
-				g_assertf (io >= 0, "class %s parent %s has no offset for iface %s",
-					mono_type_get_full_name (klass),
-					mono_type_get_full_name (k),
-					mono_type_get_full_name (ic));
+				if (!bitmap_only) {
+					io = mono_class_interface_offset (k, ic);
+					g_assertf (io >= 0, "class %s parent %s has no offset for iface %s",
+						   mono_type_get_full_name (klass),
+						   mono_type_get_full_name (k),
+						   mono_type_get_full_name (ic));
+				} else {
+					/* if we don't care about offsets, just use a fake one */
+					io = 0;
+				}
 
 				set_interface_and_offset (num_ifaces, interfaces_full, interface_offsets_full, ic, io, TRUE);
 			}
@@ -258,7 +280,7 @@ mono_class_setup_interface_offsets_internal (MonoClass *klass, int cur_slot, gbo
 	g_assert (klass == klass->supertypes [klass->idepth - 1]);
 	ifaces = ifaces_array [klass->idepth - 1];
 	if (ifaces) {
-		for (i = 0; i < ifaces->len; ++i) {
+		for (guint i = 0; i < ifaces->len; ++i) {
 			int count;
 			ic = (MonoClass *)g_ptr_array_index (ifaces, i);
 			if (set_interface_and_offset (num_ifaces, interfaces_full, interface_offsets_full, ic, cur_slot, FALSE))
@@ -278,7 +300,8 @@ mono_class_setup_interface_offsets_internal (MonoClass *klass, int cur_slot, gbo
 	if (MONO_CLASS_IS_INTERFACE_INTERNAL (klass))
 		set_interface_and_offset (num_ifaces, interfaces_full, interface_offsets_full, klass, cur_slot, TRUE);
 
-	for (interface_offsets_count = 0, i = 0; i < num_ifaces; i++) {
+	interface_offsets_count = 0;
+	for (int i = 0; i < num_ifaces; i++) {
 		if (interface_offsets_full [i] != -1)
 			interface_offsets_count ++;
 	}
@@ -294,35 +317,41 @@ publish:
 	 * mono_class_setup_interface_offsets () passes 0 as CUR_SLOT, so the computed interface offsets will be invalid. This
 	 * means we have to overwrite those when called from other places (#4440).
 	 */
-	if (klass->interfaces_packed) {
+	if (klass->interface_offsets_packed) {
 		if (!overwrite)
 			g_assert (klass->interface_offsets_count == interface_offsets_count);
 	} else {
 		uint8_t *bitmap;
 		int bsize;
-		klass->interface_offsets_count = interface_offsets_count;
+		klass->interface_offsets_count = GINT_TO_UINT16 (interface_offsets_count);
 		klass->interfaces_packed = (MonoClass **)mono_class_alloc (klass, sizeof (MonoClass*) * interface_offsets_count);
-		klass->interface_offsets_packed = (guint16 *)mono_class_alloc (klass, sizeof (guint16) * interface_offsets_count);
+		if (!bitmap_only) {
+			klass->interface_offsets_packed = (guint16 *)mono_class_alloc (klass, sizeof (guint16) * interface_offsets_count);
+		}
 		bsize = (sizeof (guint8) * ((max_iid + 1) >> 3)) + (((max_iid + 1) & 7)? 1 :0);
 #ifdef COMPRESSED_INTERFACE_BITMAP
 		bitmap = g_malloc0 (bsize);
 #else
 		bitmap = (uint8_t *)mono_class_alloc0 (klass, bsize);
 #endif
-		for (i = 0; i < interface_offsets_count; i++) {
+		for (int i = 0; i < interface_offsets_count; i++) {
 			guint32 id = interfaces_full [i]->interface_id;
 			bitmap [id >> 3] |= (1 << (id & 7));
 			klass->interfaces_packed [i] = interfaces_full [i];
-			klass->interface_offsets_packed [i] = interface_offsets_full [i];
+			if (!bitmap_only) {
+				klass->interface_offsets_packed [i] = GINT_TO_UINT16 (interface_offsets_full [i]);
+			}
 		}
+		if (!klass->interface_bitmap) {
 #ifdef COMPRESSED_INTERFACE_BITMAP
-		i = mono_compress_bitmap (NULL, bitmap, bsize);
-		klass->interface_bitmap = mono_class_alloc0 (klass, i);
-		mono_compress_bitmap (klass->interface_bitmap, bitmap, bsize);
-		g_free (bitmap);
+			int i = mono_compress_bitmap (NULL, bitmap, bsize);
+			klass->interface_bitmap = mono_class_alloc0 (klass, i);
+			mono_compress_bitmap (klass->interface_bitmap, bitmap, bsize);
+			g_free (bitmap);
 #else
-		klass->interface_bitmap = bitmap;
+			klass->interface_bitmap = bitmap;
 #endif
+		}
 	}
 end:
 	mono_loader_unlock ();
@@ -330,7 +359,7 @@ end:
 	g_free (interfaces_full);
 	g_free (interface_offsets_full);
 	if (ifaces_array) {
-		for (i = 0; i < klass->idepth; i++) {
+		for (guint16 i = 0; i < klass->idepth; i++) {
 			ifaces = ifaces_array [i];
 			if (ifaces)
 				g_ptr_array_free (ifaces, TRUE);
@@ -365,7 +394,7 @@ mono_class_setup_interface_offsets (MonoClass *klass)
 	 * from 0. That assumption is incorrect for classes and valuetypes.
 	 */
 	g_assert (MONO_CLASS_IS_INTERFACE_INTERNAL (klass) && !mono_class_is_ginst (klass));
-	mono_class_setup_interface_offsets_internal (klass, 0, FALSE);
+	mono_class_setup_interface_offsets_internal (klass, 0, 0);
 }
 
 
@@ -813,7 +842,6 @@ gboolean
 mono_class_check_vtable_constraints (MonoClass *klass, GList *in_setup)
 {
 	MonoGenericInst *ginst;
-	int i;
 
 	if (!mono_class_is_ginst (klass)) {
 		mono_class_setup_vtable_full (klass, in_setup);
@@ -825,7 +853,7 @@ mono_class_check_vtable_constraints (MonoClass *klass, GList *in_setup)
 		return FALSE;
 
 	ginst = mono_class_get_generic_class (klass)->context.class_inst;
-	for (i = 0; i < ginst->type_argc; ++i) {
+	for (guint i = 0; i < ginst->type_argc; ++i) {
 		MonoClass *arg;
 		if (ginst->type_argv [i]->type != MONO_TYPE_GENERICINST)
 			continue;
@@ -904,7 +932,8 @@ mono_class_setup_vtable_full (MonoClass *klass, GList *in_setup)
 		context = mono_class_get_context (klass);
 		type_token = mono_class_get_generic_class (klass)->container_class->type_token;
 	} else {
-		context = (MonoGenericContext *) mono_class_try_get_generic_container (klass); //FIXME is this a case of a try?
+		MonoGenericContainer *container = mono_class_try_get_generic_container (klass); //FIXME is this a case of a try?
+		context = container ? &container->context : NULL;
 		type_token = klass->type_token;
 	}
 
@@ -982,30 +1011,14 @@ apply_override (MonoClass *klass, MonoClass *override_class, MonoMethod **vtable
 	MonoMethod *prev_override = (MonoMethod*)g_hash_table_lookup (map, decl);
 	MonoClass *prev_override_class = (MonoClass*)g_hash_table_lookup (class_map, decl);
 
+	g_assert (override_class == override->klass);
+
 	g_hash_table_insert (map, decl, override);
 	g_hash_table_insert (class_map, decl, override_class);
 
 	/* Collect potentially conflicting overrides which are introduced by default interface methods */
 	if (prev_override) {
-		ERROR_DECL (error);
-
-		/*
-		 * The override methods are part of the generic definition, need to inflate them so their
-		 * parent class becomes the actual interface/class containing the override, i.e.
-		 * IFace<T> in:
-		 * class Foo<T> : IFace<T>
-		 * This is needed so the mono_class_is_assignable_from_internal () calls in the
-		 * conflict resolution work.
-		 */
-		if (mono_class_is_ginst (override_class)) {
-			override = mono_class_inflate_generic_method_checked (override, &mono_class_get_generic_class (override_class)->context, error);
-			mono_error_assert_ok (error);
-		}
-
-		if (mono_class_is_ginst (prev_override_class)) {
-			prev_override = mono_class_inflate_generic_method_checked (prev_override, &mono_class_get_generic_class (prev_override_class)->context, error);
-			mono_error_assert_ok (error);
-		}
+		g_assert (prev_override->klass == prev_override_class);
 
 		if (!*conflict_map)
 			*conflict_map = g_hash_table_new (mono_aligned_addr_hash, NULL);
@@ -1236,18 +1249,18 @@ mono_class_get_virtual_methods (MonoClass* klass, gpointer *iter)
 static void
 print_vtable_layout_result (MonoClass *klass, MonoMethod **vtable, int cur_slot)
 {
-	int i, icount = 0;
+	int icount = 0;
 
 	print_implemented_interfaces (klass);
 
-	for (i = 0; i <= klass->max_interface_id; i++)
+	for (guint32 i = 0; i <= klass->max_interface_id; i++)
 		if (MONO_CLASS_IMPLEMENTS_INTERFACE (klass, i))
 			icount++;
 
 	printf ("VTable %s (vtable entries = %d, interfaces = %d)\n", mono_type_full_name (m_class_get_byval_arg (klass)),
 		klass->vtable_size, icount);
 
-	for (i = 0; i < cur_slot; ++i) {
+	for (int i = 0; i < cur_slot; ++i) {
 		MonoMethod *cm;
 
 		cm = vtable [i];
@@ -1264,7 +1277,7 @@ print_vtable_layout_result (MonoClass *klass, MonoMethod **vtable, int cur_slot)
 		printf ("Interfaces %s.%s (max_iid = %d)\n", klass->name_space,
 			klass->name, klass->max_interface_id);
 
-		for (i = 0; i < klass->interface_count; i++) {
+		for (guint16 i = 0; i < klass->interface_count; i++) {
 			MonoClass *ic = klass->interfaces [i];
 			printf ("  slot offset: %03d, method count: %03d, iid: %03d %s\n",
 				mono_class_interface_offset (klass, ic),
@@ -1272,7 +1285,7 @@ print_vtable_layout_result (MonoClass *klass, MonoMethod **vtable, int cur_slot)
 		}
 
 		for (MonoClass *k = klass->parent; k ; k = k->parent) {
-			for (i = 0; i < k->interface_count; i++) {
+			for (guint16 i = 0; i < k->interface_count; i++) {
 				MonoClass *ic = k->interfaces [i];
 				printf ("  parent slot offset: %03d, method count: %03d, iid: %03d %s\n",
 					mono_class_interface_offset (klass, ic),
@@ -1289,7 +1302,7 @@ static int
 setup_class_vtsize (MonoClass *klass, GList *in_setup, int *cur_slot, int *stelemref_slot, MonoError *error)
 {
 	GPtrArray *ifaces = NULL;
-	int i, max_vtsize = 0;
+	int max_vtsize = 0;
 	ifaces = mono_class_get_implemented_interfaces (klass, error);
 	if (!is_ok (error)) {
 		char *name = mono_type_get_full_name (klass);
@@ -1298,7 +1311,7 @@ setup_class_vtsize (MonoClass *klass, GList *in_setup, int *cur_slot, int *stele
 		mono_error_cleanup (error);
 		return -1;
 	} else if (ifaces) {
-		for (i = 0; i < ifaces->len; i++) {
+		for (guint i = 0; i < ifaces->len; i++) {
 			MonoClass *ic = (MonoClass *)g_ptr_array_index (ifaces, i);
 			max_vtsize += mono_class_get_method_count (ic);
 		}
@@ -1383,7 +1396,7 @@ mono_class_setup_vtable_ginst (MonoClass *klass, GList *in_setup)
  * vtable_slot_has_preserve_base_overrides_attribute:
  *
  * Needs to walk up the class hierarchy looking for the methods in this slot to
- * see if any are tagged with PreserveBaseOverrideAtrribute.
+ * see if any are tagged with PreserveBaseOverrideAttribute.
  */
 static gboolean
 vtable_slot_has_preserve_base_overrides_attribute (MonoClass *klass, int slot, MonoClass **out_klass)
@@ -1574,7 +1587,7 @@ signature_is_subsumed (MonoMethod *impl_method, MonoMethod *decl_method, MonoErr
 static gboolean
 check_signature_covariant (MonoClass *klass, MonoMethod *impl, MonoMethod *decl)
 {
-	TRACE_INTERFACE_VTABLE (printf (" checking covariant signature compatability on behalf of %s: '%s' overriding '%s'\n", mono_type_full_name (m_class_get_byval_arg (klass)), mono_method_full_name (impl, 1), mono_method_full_name (decl, 1)));
+	TRACE_INTERFACE_VTABLE (printf (" checking covariant signature compatibility on behalf of %s: '%s' overriding '%s'\n", mono_type_full_name (m_class_get_byval_arg (klass)), mono_method_full_name (impl, 1), mono_method_full_name (decl, 1)));
 	ERROR_DECL (local_error);
 	gboolean subsumed = signature_is_subsumed (impl, decl, local_error);
 	if (!is_ok (local_error) || !subsumed) {
@@ -1695,7 +1708,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	if (max_vtsize == -1)
 		return;
 
-	cur_slot = mono_class_setup_interface_offsets_internal (klass, cur_slot, TRUE);
+	cur_slot = mono_class_setup_interface_offsets_internal (klass, cur_slot, MONO_SETUP_ITF_OFFSETS_OVERWRITE);
 	if (cur_slot == -1) /*setup_interface_offsets fails the type.*/
 		return;
 
@@ -1743,10 +1756,9 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 			MonoMethod *override = iface_overrides [i*2 + 1];
 			if (mono_class_is_gtd (override->klass)) {
 				override = mono_class_inflate_generic_method_full_checked (override, ic, mono_class_get_context (ic), error);
-			} else if (decl->is_inflated) {
-				override = mono_class_inflate_generic_method_checked (override, mono_method_get_context (decl), error);
-				mono_error_assert_ok (error);
-			}
+			} 
+			// there used to be code here to inflate decl if decl->is_inflated, but in https://github.com/dotnet/runtime/pull/64102#discussion_r790019545 we
+			// think that this does not correspond to any real code.
 			if (!apply_override (klass, ic, vtable, decl, override, &override_map, &override_class_map, &conflict_map))
 				goto fail;
 		}
@@ -1758,6 +1770,18 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 		MonoMethod *decl = overrides [i*2];
 		MonoMethod *override = overrides [i*2 + 1];
 		if (MONO_CLASS_IS_INTERFACE_INTERNAL (decl->klass)) {
+			/*
+			 * We expect override methods that are part of a generic definition, to have
+			 * their parent class be the actual interface/class containing the override,
+			 * i.e.
+			 *
+			 * IFace<T> in:
+			 * class Foo<T> : IFace<T>
+			 *
+			 * This is needed so the mono_class_is_assignable_from_internal () calls in the
+			 * conflict resolution work.
+			 */
+			g_assert (override->klass == klass);
 			if (!apply_override (klass, klass, vtable, decl, override, &override_map, &override_class_map, &conflict_map))
 				goto fail;
 		}
@@ -2100,7 +2124,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 
 	/*
 	 * If a method occupies more than one place in the vtable, and it is
-	 * overriden, then change the other occurrences too.
+	 * overridden, then change the other occurrences too.
 	 */
 	if (override_map) {
 		MonoMethod *cm;

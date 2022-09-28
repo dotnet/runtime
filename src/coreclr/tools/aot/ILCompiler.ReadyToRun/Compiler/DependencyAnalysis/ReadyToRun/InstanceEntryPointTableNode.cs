@@ -51,22 +51,37 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append("__ReadyToRunInstanceEntryPointTable");
         }
 
-        private ArraySignatureBuilder BuildSignatureForMethod(MethodWithGCInfo method, NodeFactory factory)
+        public static byte[] BuildSignatureForMethodDefinedInModule(MethodDesc method, NodeFactory factory)
         {
-            // In composite R2R format, always enforce owning type to let us share generic instantiations among modules
+            EcmaMethod typicalMethod = (EcmaMethod)method.GetTypicalMethodDefinition();
 
-            EcmaMethod typicalMethod = (EcmaMethod)method.Method.GetTypicalMethodDefinition();
-            ModuleToken moduleToken = new ModuleToken(typicalMethod.Module, typicalMethod.Handle);
+            ModuleToken moduleToken;
+            if (factory.CompilationModuleGroup.VersionsWithMethodBody(typicalMethod))
+            {
+                moduleToken = new ModuleToken(typicalMethod.Module, typicalMethod.Handle);
+            }
+            else
+            {
+                MutableModule manifestMetadata = factory.ManifestMetadataTable._mutableModule;
+                var handle = manifestMetadata.TryGetExistingEntityHandle(method.GetTypicalMethodDefinition());
+                Debug.Assert(handle.HasValue);
+                moduleToken = new ModuleToken(factory.ManifestMetadataTable._mutableModule, handle.Value);
+            }
 
             ArraySignatureBuilder signatureBuilder = new ArraySignatureBuilder();
             signatureBuilder.EmitMethodSignature(
-                new MethodWithToken(method.Method, moduleToken, constrainedType: null, unboxing: false, context: null),
+                new MethodWithToken(method, moduleToken, constrainedType: null, unboxing: false, context: null),
                 enforceDefEncoding: true,
-                enforceOwningType: _factory.CompilationModuleGroup.EnforceOwningType(moduleToken.Module),
+                enforceOwningType: moduleToken.Module is EcmaModule ? factory.CompilationModuleGroup.EnforceOwningType((EcmaModule)moduleToken.Module) : true,
                 factory.SignatureContext,
                 isInstantiatingStub: false);
 
-            return signatureBuilder;
+            return signatureBuilder.ToArray();
+        }
+
+        private byte[] BuildSignatureForMethod(MethodWithGCInfo method, NodeFactory factory)
+        {
+            return BuildSignatureForMethodDefinedInModule(method.Method, factory);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
@@ -91,8 +106,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 int methodIndex = factory.RuntimeFunctionsTable.GetIndex(method);
 
-                ArraySignatureBuilder signatureBuilder = BuildSignatureForMethod(method, factory);
-                byte[] signature = signatureBuilder.ToArray();
+                byte[] signature = BuildSignatureForMethod(method, factory);
                 BlobVertex signatureBlob;
                 if (!uniqueSignatures.TryGetValue(signature, out signatureBlob))
                 {

@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.Configuration
         public static string Combine(System.Collections.Generic.IEnumerable<string> pathSegments) { throw null; }
         public static string Combine(params string[] pathSegments) { throw null; }
         public static string? GetParentPath(string? path) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("path")]
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("path")]
         public static string? GetSectionKey(string? path) { throw null; }
     }
     public static partial class ConfigurationRootExtensions

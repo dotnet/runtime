@@ -125,14 +125,15 @@ char* info_t::config_t::map(const pal::string_t& path, const location_t* &locati
 
     trace::info(_X("Mapped bundle for [%s]"), path.c_str());
 
-    return addr + location->offset + app->m_offset_in_file;
+    // Adjust to the beginning of the bundle
+    return addr + (location->offset + app->m_offset_in_file);
 }
 
 void info_t::config_t::unmap(const char* addr, const location_t* location)
 {
-    // Adjust to the beginning of the bundle.
     const bundle::info_t* app = bundle::info_t::the_app;
-    addr -= location->offset - app->m_offset_in_file;
+    // Reverse the adjustment to the beginning of the bundle
+    addr = addr - (location->offset + app->m_offset_in_file);
 
     bundle::info_t::the_app->unmap_bundle(addr);
 }

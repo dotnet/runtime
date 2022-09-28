@@ -12,15 +12,15 @@ namespace BMI1Intrinsics
             // bmi1 expression are folded to to hwintrinsics that return identical results
 
             var values = new (uint input1, uint input2, uint andnExpected, uint blsiExpected, uint blsrExpected, uint blmskExpected)[] {
-                (0, 0, 0, 0 ,0 ,0),
-                (1, 0, 1, 1 ,0 ,0xfffffffe),
-                (uint.MaxValue / 2, 0, 0x7fffffff, 0x1 ,0x7ffffffe ,0xfffffffe),
-                ((uint.MaxValue / 2) - 1,  0, 0x7FFFFFFE, 2 ,0x7FFFFFFC ,0xFFFFFFFC),
-                ((uint.MaxValue / 2) + 1, 0, 0x80000000, 0x80000000 ,0 ,0),
-                (uint.MaxValue - 1, 0, 0xFFFFFFFE, 2 ,0xFFFFFFFC ,0xFFFFFFFC),
-                (uint.MaxValue , 0, 0xFFFFFFFF, 1 ,0xFFFFFFFE ,0xFFFFFFFE),
-                (0xAAAAAAAA,0xAAAAAAAA,0,2,0xAAAAAAA8,0xFFFFFFFC),
-                (0xAAAAAAAA,0x55555555,0xAAAAAAAA,2,0xAAAAAAA8,0xFFFFFFFC),
+                (0, 0, 0, 0 ,0 ,0xFFFFFFFF),
+                (1, 0, 1, 1 ,0 ,1),
+                (uint.MaxValue / 2, 0, 0x7fffffff, 0x1 ,0x7ffffffe ,1),
+                ((uint.MaxValue / 2) - 1,  0, 0x7FFFFFFE, 2 ,0x7FFFFFFC ,3),
+                ((uint.MaxValue / 2) + 1, 0, 0x80000000, 0x80000000 ,0 ,0xFFFFFFFF),
+                (uint.MaxValue - 1, 0, 0xFFFFFFFE, 2 ,0xFFFFFFFC ,3),
+                (uint.MaxValue , 0, 0xFFFFFFFF, 1 ,0xFFFFFFFE ,1),
+                (0xAAAAAAAA,0xAAAAAAAA,0,2,0xAAAAAAA8,3),
+                (0xAAAAAAAA,0x55555555,0xAAAAAAAA,2,0xAAAAAAA8,3),
             };
 
             foreach (var value in values)
@@ -33,15 +33,15 @@ namespace BMI1Intrinsics
 
 
             var values2 = new (ulong input1, ulong input2, ulong andnExpected, ulong blsiExpected, ulong blsrExpected, ulong blmskExpected)[] {
-                (0,                                    0,                  0,                  0,                  0,                  0),
-                (1,                                    0,                  1,                  1,                  0,0xFFFFFFFF_FFFFFFFE),
-                (ulong.MaxValue / 2,                   0,0x7FFFFFFF_FFFFFFFF,                  1,0x7FFFFFFF_FFFFFFFE,0xFFFFFFFF_FFFFFFFE),
-                ((ulong.MaxValue / 2) - 1,             0,0x7FFFFFFF_FFFFFFFE,                  2,0x7FFFFFFF_FFFFFFFC,0xFFFFFFFF_FFFFFFFC),
-                ((ulong.MaxValue / 2) + 1,             0,0x80000000_00000000,0x80000000_00000000,                  0,                  0),
-                (ulong.MaxValue - 1,                   0,0xFFFFFFFF_FFFFFFFE,                  2,0xFFFFFFFF_FFFFFFFC,0xFFFFFFFF_FFFFFFFC),
-                (ulong.MaxValue,                       0,0xFFFFFFFF_FFFFFFFF,                  1,0xFFFFFFFF_FFFFFFFE,0xFFFFFFFF_FFFFFFFE),
-                (0xAAAAAAAA_AAAAAAAA,0xAAAAAAAA_AAAAAAAA,                  0,                  2,0xAAAAAAAA_AAAAAAA8,0xFFFFFFFF_FFFFFFFC),
-                (0xAAAAAAAA_AAAAAAAA,0x55555555_55555555,0xAAAAAAAA_AAAAAAAA,                  2,0xAAAAAAAA_AAAAAAA8,0xFFFFFFFF_FFFFFFFC),
+                (0,                                    0,                  0,                  0,                  0,0xFFFFFFFF_FFFFFFFF),
+                (1,                                    0,                  1,                  1,                  0,                  1),
+                (ulong.MaxValue / 2,                   0,0x7FFFFFFF_FFFFFFFF,                  1,0x7FFFFFFF_FFFFFFFE,                  1),
+                ((ulong.MaxValue / 2) - 1,             0,0x7FFFFFFF_FFFFFFFE,                  2,0x7FFFFFFF_FFFFFFFC,                  3),
+                ((ulong.MaxValue / 2) + 1,             0,0x80000000_00000000,0x80000000_00000000,                  0,0xFFFFFFFF_FFFFFFFF),
+                (ulong.MaxValue - 1,                   0,0xFFFFFFFF_FFFFFFFE,                  2,0xFFFFFFFF_FFFFFFFC,                  3),
+                (ulong.MaxValue,                       0,0xFFFFFFFF_FFFFFFFF,                  1,0xFFFFFFFF_FFFFFFFE,                  1),
+                (0xAAAAAAAA_AAAAAAAA,0xAAAAAAAA_AAAAAAAA,                  0,                  2,0xAAAAAAAA_AAAAAAA8,                  3),
+                (0xAAAAAAAA_AAAAAAAA,0x55555555_55555555,0xAAAAAAAA_AAAAAAAA,                  2,0xAAAAAAAA_AAAAAAA8,                  3),
             };
 
             foreach (var value in values2)
@@ -74,10 +74,10 @@ namespace BMI1Intrinsics
         private static ulong ResetLowestSetBit_64bit(ulong x) => x & (x - 1); // bmi1 blsr
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static uint GetMaskUpToLowestSetBit_32bit(uint x) => (uint)(x ^ (-x)); // bmi1 blmsk
+        private static uint GetMaskUpToLowestSetBit_32bit(uint x) => x ^ (x - 1); // bmi1 blsmsk
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static ulong GetMaskUpToLowestSetBit_64bit(ulong x) => x ^ (ulong)(-(long)x); // bmi1 blmsk
+        private static ulong GetMaskUpToLowestSetBit_64bit(ulong x) => x ^ (x - 1); // bmi1 blsmsk
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void Test(uint input, uint output, uint expected, string callerName)

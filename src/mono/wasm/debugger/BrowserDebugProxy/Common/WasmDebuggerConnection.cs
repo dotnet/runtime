@@ -16,6 +16,7 @@ internal abstract class WasmDebuggerConnection : IDisposable
     protected WasmDebuggerConnection(string id) => Id = id;
 
     public abstract bool IsConnected { get; }
+    public Func<string, CancellationToken, Task>? OnReadAsync { get; set; }
 
     public abstract Task<string?> ReadOneAsync(CancellationToken token);
     public abstract Task SendAsync(byte[] bytes, CancellationToken token);

@@ -817,7 +817,7 @@ namespace System.Text.Json
         }
 
         private static async
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
             ValueTask<ArraySegment<byte>>
 #else
             Task<ArraySegment<byte>>
@@ -855,7 +855,7 @@ namespace System.Text.Json
                     Debug.Assert(rented.Length >= JsonConstants.Utf8Bom.Length);
 
                     lastRead = await stream.ReadAsync(
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
                         rented.AsMemory(written, utf8BomLength - written),
 #else
                         rented,
@@ -886,7 +886,7 @@ namespace System.Text.Json
                     }
 
                     lastRead = await stream.ReadAsync(
-#if BUILDING_INBOX_LIBRARY
+#if NETCOREAPP
                         rented.AsMemory(written),
 #else
                         rented,

@@ -248,7 +248,7 @@ namespace System.Threading.Tasks.Dataflow
                 }
 
                 // If there's a reordering buffer, notify it that this message is done.
-                if (_reorderingBuffer != null) _reorderingBuffer.IgnoreItem(messageWithId.Value);
+                _reorderingBuffer?.IgnoreItem(messageWithId.Value);
 
                 // Signal that we're done this async operation, and remove the bounding
                 // count for the input item that didn't yield any output.

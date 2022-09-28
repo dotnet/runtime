@@ -143,7 +143,7 @@ namespace System.IO.Compression
         public override int ReadByte()
         {
             byte b = default;
-            return Read(MemoryMarshal.CreateSpan(ref b, 1)) == 1 ? b : -1;
+            return Read(new Span<byte>(ref b)) == 1 ? b : -1;
         }
 
         private void EnsureNotDisposed()

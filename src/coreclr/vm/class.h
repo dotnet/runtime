@@ -48,7 +48,6 @@
 
 #include "packedfields.inl"
 #include "array.h"
-#define IBCLOG(x) g_IBCLogger.##x
 
 VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr);
 
@@ -120,9 +119,9 @@ class ExplicitFieldTrust
             kNone         = 0,    // no guarantees at all                                              - Type refuses to load at all.
             kLegal        = 1,    // guarantees no objref <-> scalar overlap and no unaligned objref   - Type loads but field access won't verify
             kVerifiable   = 2,    // guarantees no objref <-> objref overlap and all guarantees above  - Type loads and field access will verify
-            kNonOverLayed = 3,    // guarantees no overlap at all and all guarantees above             - Type loads, field access verifies and Equals() may be optimized if structure is tightly packed
+            kNonOverlaid = 3,    // guarantees no overlap at all and all guarantees above             - Type loads, field access verifies and Equals() may be optimized if structure is tightly packed
 
-            kMaxTrust     = kNonOverLayed,
+            kMaxTrust     = kNonOverlaid,
         };
 
 };
@@ -160,10 +159,10 @@ class ExplicitClassTrust : private ExplicitFieldTrust
             return m_trust >= kVerifiable;
         }
 
-        BOOL IsNonOverLayed()
+        BOOL IsNonOverlaid()
         {
             LIMITED_METHOD_CONTRACT;
-            return m_trust >= kNonOverLayed;
+            return m_trust >= kNonOverlaid;
         }
 
         TrustLevel GetTrustLevel()
@@ -377,7 +376,9 @@ class EEClassLayoutInfo
             // The size of the struct is explicitly specified in the meta-data.
             e_HAS_EXPLICIT_SIZE               = 0x08,
             // The type recursively has a field that is LayoutKind.Auto and not an enum.
-            e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT = 0x10
+            e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT = 0x10,
+            // Type type recursively has a field which is an Int128
+            e_IS_OR_HAS_INT128_FIELD          = 0x20,
         };
 
         BYTE        m_bFlags;
@@ -427,6 +428,12 @@ class EEClassLayoutInfo
             return (m_bFlags & e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT) == e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT;
         }
 
+        BOOL IsInt128OrHasInt128Fields() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return (m_bFlags & e_IS_OR_HAS_INT128_FIELD) == e_IS_OR_HAS_INT128_FIELD;
+        }
+
         BYTE GetPackingSize() const
         {
             LIMITED_METHOD_CONTRACT;
@@ -468,6 +475,13 @@ class EEClassLayoutInfo
             m_bFlags = hasAutoLayoutField ? (m_bFlags | e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT)
                                        : (m_bFlags & ~e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT);
         }
+
+        void SetIsInt128OrHasInt128Fields(BOOL hasInt128Field)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_bFlags = hasInt128Field ? (m_bFlags | e_IS_OR_HAS_INT128_FIELD)
+                                       : (m_bFlags & ~e_IS_OR_HAS_INT128_FIELD);
+        }
 };
 
 //
@@ -508,11 +522,11 @@ typedef struct
 #define DEFAULT_NONSTACK_CLASSNAME_SIZE (MAX_CLASSNAME_LENGTH/4)
 
 #define DefineFullyQualifiedNameForClass() \
-    ScratchBuffer<DEFAULT_NONSTACK_CLASSNAME_SIZE> _scratchbuffer_; \
+    InlineSString<DEFAULT_NONSTACK_CLASSNAME_SIZE> _ssclsname8_; \
     InlineSString<DEFAULT_NONSTACK_CLASSNAME_SIZE> _ssclsname_;
 
 #define DefineFullyQualifiedNameForClassOnStack() \
-    ScratchBuffer<MAX_CLASSNAME_LENGTH> _scratchbuffer_; \
+    InlineSString<MAX_CLASSNAME_LENGTH> _ssclsname8_; \
     InlineSString<MAX_CLASSNAME_LENGTH> _ssclsname_;
 
 #define DefineFullyQualifiedNameForClassW() \
@@ -522,13 +536,13 @@ typedef struct
     InlineSString<MAX_CLASSNAME_LENGTH> _ssclsname_w_;
 
 #define GetFullyQualifiedNameForClassNestedAware(pClass) \
-    pClass->_GetFullyQualifiedNameForClassNestedAware(_ssclsname_).GetUTF8(_scratchbuffer_)
+    (pClass->_GetFullyQualifiedNameForClassNestedAware(_ssclsname_), _ssclsname8_.SetAndConvertToUTF8(_ssclsname_), _ssclsname8_.GetUTF8())
 
 #define GetFullyQualifiedNameForClassNestedAwareW(pClass) \
     pClass->_GetFullyQualifiedNameForClassNestedAware(_ssclsname_w_).GetUnicode()
 
 #define GetFullyQualifiedNameForClass(pClass) \
-    pClass->_GetFullyQualifiedNameForClass(_ssclsname_).GetUTF8(_scratchbuffer_)
+    (pClass->_GetFullyQualifiedNameForClass(_ssclsname_), _ssclsname8_.SetAndConvertToUTF8(_ssclsname_), _ssclsname8_.GetUTF8())
 
 #define GetFullyQualifiedNameForClassW(pClass) \
     pClass->_GetFullyQualifiedNameForClass(_ssclsname_w_).GetUnicode()
@@ -1199,7 +1213,7 @@ public:
     inline void SetHasNoGuid()
     {
         WRAPPER_NO_CONTRACT;
-        FastInterlockOr(&m_VMFlags, VMFLAG_NO_GUID);
+        InterlockedOr((LONG*)&m_VMFlags, VMFLAG_NO_GUID);
     }
 
 public:
@@ -1269,10 +1283,10 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= (DWORD) VMFLAG_HASLAYOUT;  //modified before the class is published
     }
-    inline void SetHasOverLayedFields()
+    inline void SetHasOverlaidFields()
     {
         LIMITED_METHOD_CONTRACT;
-        m_VMFlags |= VMFLAG_HASOVERLAYEDFIELDS;
+        m_VMFlags |= VMFLAG_HASOVERLAIDFIELDS;
     }
     inline void SetIsNested()
     {
@@ -1350,10 +1364,10 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_VMFlags & VMFLAG_HASLAYOUT;
     }
-    BOOL HasOverLayedField()
+    BOOL HasOverlaidField()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_VMFlags & VMFLAG_HASOVERLAYEDFIELDS;
+        return m_VMFlags & VMFLAG_HASOVERLAIDFIELDS;
     }
     BOOL IsNested()
     {
@@ -1411,6 +1425,9 @@ public:
     BOOL HasExplicitSize();
 
     BOOL IsAutoLayoutOrHasAutoLayoutField();
+    
+    // Only accurate on non-auto layout types
+    BOOL IsInt128OrHasInt128Fields(); 
 
     static void GetBestFitMapping(MethodTable * pMT, BOOL *pfBestFitMapping, BOOL *pfThrowOnUnmappableChar);
 
@@ -1688,8 +1705,8 @@ public:
 
         VMFLAG_IS_EQUIVALENT_TYPE              = 0x00000200,
 
-        //   OVERLAYED is used to detect whether Equals can safely optimize to a bit-compare across the structure.
-        VMFLAG_HASOVERLAYEDFIELDS              = 0x00000400,
+        //   OVERLAID is used to detect whether Equals can safely optimize to a bit-compare across the structure.
+        VMFLAG_HASOVERLAIDFIELDS               = 0x00000400,
 
         // Set this if this class or its parent have instance fields which
         // must be explicitly inited in a constructor (e.g. pointers of any
@@ -1784,14 +1801,14 @@ private:
     DWORD m_VMFlags;
 
     /*
-     * We maintain some auxillary flags in DEBUG builds,
+     * We maintain some auxiliary flags in DEBUG builds,
      * this frees up some bits in m_wVMFlags
      */
 #if defined(_DEBUG)
     WORD m_wAuxFlags;
 #endif
 
-    // NOTE: Following BYTE fields are layed out together so they'll fit within the same DWORD for efficient
+    // NOTE: Following BYTE fields are laid out together so they'll fit within the same DWORD for efficient
     // structure packing.
     BYTE m_NormType;
     BYTE m_fFieldsArePacked;        // TRUE iff fields pointed to by GetPackedFields() are in packed state
@@ -2083,7 +2100,7 @@ inline BOOL EEClass::IsBlittable()
     LIMITED_METHOD_CONTRACT;
 
     // Either we have an opaque bunch of bytes, or we have some fields that are
-    // all isomorphic and explicitly layed out.
+    // all isomorphic and explicitly laid out.
     return (HasLayout() && GetLayoutInfo()->IsBlittable());
 }
 
@@ -2104,6 +2121,15 @@ inline BOOL EEClass::IsAutoLayoutOrHasAutoLayoutField()
     LIMITED_METHOD_CONTRACT;
     // If this type is not auto
     return !HasLayout() || GetLayoutInfo()->HasAutoLayoutField();
+}
+
+inline BOOL EEClass::IsInt128OrHasInt128Fields()
+{
+    // The name of this type is a slight misnomer as it doesn't detect Int128 fields on 
+    // auto layout types, but since we only need this for interop scenarios, it works out.
+    LIMITED_METHOD_CONTRACT;
+    // If this type is not auto
+    return HasLayout() && GetLayoutInfo()->IsInt128OrHasInt128Fields();
 }
 
 //==========================================================================

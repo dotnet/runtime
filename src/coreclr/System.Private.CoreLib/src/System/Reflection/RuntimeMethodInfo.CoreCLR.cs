@@ -48,7 +48,7 @@ namespace System.Reflection
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                m_invoker ??= new MethodInvoker(this);
+                m_invoker ??= new MethodInvoker(this, Signature);
                 return m_invoker;
             }
         }
@@ -157,56 +157,18 @@ namespace System.Reflection
             return m_toString;
         }
 
-        public override int GetHashCode()
-        {
-            // See RuntimeMethodInfo.Equals() below.
-            if (IsGenericMethod)
-                return ValueType.GetHashCodeOfPtr(m_handle);
-            else
-                return base.GetHashCode();
-        }
+        // We cannot do simple object identity comparisons due to generic methods.
+        // Equals and GetHashCode will be called in CerHashTable when RuntimeType+RuntimeTypeCache.GetGenericMethodInfo()
+        // retrieve items from and insert items into s_methodInstantiations.
 
-        public override bool Equals(object? obj)
-        {
-            if (!IsGenericMethod)
-                return obj == (object)this;
+        public override int GetHashCode() =>
+            HashCode.Combine(m_handle.GetHashCode(), m_declaringType.GetUnderlyingNativeHandle().GetHashCode());
 
-            // We cannot do simple object identity comparisons for generic methods.
-            // Equals will be called in CerHashTable when RuntimeType+RuntimeTypeCache.GetGenericMethodInfo()
-            // retrieve items from and insert items into s_methodInstantiations which is a CerHashtable.
+        public override bool Equals(object? obj) =>
+            obj is RuntimeMethodInfo m && m_handle == m.m_handle &&
+            ReferenceEquals(m_declaringType, m.m_declaringType) &&
+            ReferenceEquals(m_reflectedTypeCache.GetRuntimeType(), m.m_reflectedTypeCache.GetRuntimeType());
 
-            RuntimeMethodInfo? mi = obj as RuntimeMethodInfo;
-
-            if (mi == null || !mi.IsGenericMethod)
-                return false;
-
-            // now we know that both operands are generic methods
-
-            IRuntimeMethodInfo handle1 = RuntimeMethodHandle.StripMethodInstantiation(this);
-            IRuntimeMethodInfo handle2 = RuntimeMethodHandle.StripMethodInstantiation(mi);
-            if (handle1.Value.Value != handle2.Value.Value)
-                return false;
-
-            Type[] lhs = GetGenericArguments();
-            Type[] rhs = mi.GetGenericArguments();
-
-            if (lhs.Length != rhs.Length)
-                return false;
-
-            for (int i = 0; i < lhs.Length; i++)
-            {
-                if (lhs[i] != rhs[i])
-                    return false;
-            }
-
-            if (DeclaringType != mi.DeclaringType)
-                return false;
-
-            if (ReflectedType != mi.ReflectedType)
-                return false;
-
-            return true;
-        }
         #endregion
 
         #region ICustomAttributeProvider
@@ -351,7 +313,7 @@ namespace System.Reflection
                 StackAllocedArguments argStorage = default;
                 Span<object?> copyOfParameters = new(ref argStorage._arg0, 1);
                 ReadOnlySpan<object?> parameters = new(in parameter);
-                Span<bool> shouldCopyBackParameters = new(ref argStorage._copyBack0, 1);
+                Span<ParameterCopyBackAction> shouldCopyBackParameters = new(ref argStorage._copyBack0, 1);
 
                 StackAllocatedByRefs byrefStorage = default;
                 IntPtr* pByRefStorage = (IntPtr*)&byrefStorage;
@@ -366,31 +328,14 @@ namespace System.Reflection
                     culture,
                     invokeAttr);
 
-                retValue = Invoker.InvokeUnsafe(obj, pByRefStorage, copyOfParameters, invokeAttr);
+#if MONO // Temporary until Mono is updated.
+                retValue = Invoker.InlinedInvoke(obj, copyOfParameters, invokeAttr);
+#else
+                retValue = Invoker.InlinedInvoke(obj, pByRefStorage, invokeAttr);
+#endif
             }
 
             return retValue;
-        }
-
-        [DebuggerHidden]
-        [DebuggerStepThrough]
-        internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr* arguments, Span<object?> argsForTemporaryMonoSupport, BindingFlags invokeAttr)
-        {
-            if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
-            {
-                try
-                {
-                    return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false);
-                }
-                catch (Exception e)
-                {
-                    throw new TargetInvocationException(e);
-                }
-            }
-            else
-            {
-                return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false);
-            }
         }
 
         #endregion

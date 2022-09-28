@@ -17,7 +17,6 @@
 #include "mdlog.h"
 #include "importhelper.h"
 #include "filtermanager.h"
-#include "mdperf.h"
 #include "switches.h"
 #include "posterror.h"
 #include "stgio.h"
@@ -67,7 +66,6 @@ RegMeta::RegMeta() :
     m_SetAPICaller(EXTERNAL_CALLER),
     m_ModuleType(ValidatorModuleTypeInvalid),
     m_bKeepKnownCa(false),
-    m_pCorProfileData(NULL),
     m_ReorderingOptions(NoReordering)
 #ifdef FEATURE_METADATA_RELEASE_MEMORY_ON_REOPEN
     , m_safeToDeleteStgdb(true)

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -28,9 +29,8 @@ namespace System.Text.Json
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static string Serialize<TValue>(TValue value, JsonSerializerOptions? options = null)
         {
-            Type runtimeType = GetRuntimeType(value);
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
-            return WriteStringUsingSerializer(value, jsonTypeInfo);
+            JsonTypeInfo<TValue> jsonTypeInfo = GetTypeInfo<TValue>(options);
+            return WriteString(value, jsonTypeInfo);
         }
 
         /// <summary>
@@ -61,9 +61,9 @@ namespace System.Text.Json
             Type inputType,
             JsonSerializerOptions? options = null)
         {
-            Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, runtimeType);
-            return WriteStringUsingSerializer(value, jsonTypeInfo);
+            ValidateInputType(value, inputType);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, inputType);
+            return WriteStringAsObject(value, jsonTypeInfo);
         }
 
         /// <summary>
@@ -86,7 +86,13 @@ namespace System.Text.Json
         /// </remarks>
         public static string Serialize<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            return WriteStringUsingGeneratedSerializer(value, jsonTypeInfo);
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            jsonTypeInfo.EnsureConfigured();
+            return WriteString(value, jsonTypeInfo);
         }
 
         /// <summary>
@@ -118,48 +124,42 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
-            Type type = GetRuntimeTypeAndValidateInputType(value, inputType);
-            JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, type);
-            return WriteStringUsingGeneratedSerializer(value, jsonTypeInfo);
+            ValidateInputType(value, inputType);
+            JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, inputType);
+            return WriteStringAsObject(value, jsonTypeInfo);
         }
 
-        private static string WriteStringUsingGeneratedSerializer<TValue>(in TValue value, JsonTypeInfo jsonTypeInfo)
+        private static string WriteString<TValue>(in TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            if (jsonTypeInfo is null)
+            Debug.Assert(jsonTypeInfo.IsConfigured);
+
+            Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(jsonTypeInfo.Options, out PooledByteBufferWriter output);
+
+            try
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
-            }
-
-            JsonSerializerOptions options = jsonTypeInfo.Options;
-
-            using (var output = new PooledByteBufferWriter(options.DefaultBufferSize))
-            {
-                using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
-                {
-                    WriteUsingGeneratedSerializer(writer, value, jsonTypeInfo);
-                }
-
+                WriteCore(writer, value, jsonTypeInfo);
                 return JsonReaderHelper.TranscodeHelper(output.WrittenMemory.Span);
+            }
+            finally
+            {
+                Utf8JsonWriterCache.ReturnWriterAndBuffer(writer, output);
             }
         }
 
-        private static string WriteStringUsingSerializer<TValue>(in TValue value, JsonTypeInfo jsonTypeInfo)
+        private static string WriteStringAsObject(object? value, JsonTypeInfo jsonTypeInfo)
         {
-            if (jsonTypeInfo is null)
+            Debug.Assert(jsonTypeInfo.IsConfigured);
+
+            Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(jsonTypeInfo.Options, out PooledByteBufferWriter output);
+
+            try
             {
-                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
-            }
-
-            JsonSerializerOptions options = jsonTypeInfo.Options;
-
-            using (var output = new PooledByteBufferWriter(options.DefaultBufferSize))
-            {
-                using (var writer = new Utf8JsonWriter(output, options.GetWriterOptions()))
-                {
-                    WriteUsingSerializer(writer, value, jsonTypeInfo);
-                }
-
+                WriteCoreAsObject(writer, value, jsonTypeInfo);
                 return JsonReaderHelper.TranscodeHelper(output.WrittenMemory.Span);
+            }
+            finally
+            {
+                Utf8JsonWriterCache.ReturnWriterAndBuffer(writer, output);
             }
         }
     }

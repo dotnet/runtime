@@ -78,7 +78,7 @@ namespace System.Net
                         if (_httpContext.Response.BoundaryType == BoundaryType.Chunked)
                         {
                             string chunkHeader = size.ToString("x", CultureInfo.InvariantCulture);
-                            dataToWrite = dataToWrite + (uint)(chunkHeader.Length + 4);
+                            dataToWrite += (uint)(chunkHeader.Length + 4);
                             bufferAsIntPtr = SafeLocalAllocHandle.LocalAlloc((int)dataToWrite);
                             pBufferAsIntPtr = bufferAsIntPtr.DangerousGetHandle();
                             for (int i = 0; i < chunkHeader.Length; i++)

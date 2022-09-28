@@ -28,7 +28,7 @@ namespace System.Net.Http.WinHttpHandlerFunctional.Tests
 
         protected override Version UseVersion => new Version(2, 0);
 
-        protected static byte[] DataBytes = Encoding.ASCII.GetBytes("data");
+        protected static byte[] DataBytes = "data"u8.ToArray();
 
         protected static readonly IList<HttpHeaderData> TrailingHeaders = new HttpHeaderData[] {
             new HttpHeaderData("MyCoolTrailerHeader", "amazingtrailer"),

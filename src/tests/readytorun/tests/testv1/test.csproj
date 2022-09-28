@@ -4,6 +4,7 @@
     <CLRTestKind>SharedLibrary</CLRTestKind>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\fieldgetter.ilproj" />
     <Compile Include="..\test.cs" />
   </ItemGroup>
 </Project>

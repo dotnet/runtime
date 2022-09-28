@@ -43,7 +43,7 @@ class FirefoxInspectorClient : InspectorClient
                             // Webserver connection is closed
                             // So, stop the loop here too
                             // _clientInitiatedClose.TrySetResult();
-                            await Shutdown(token);
+                            await ShutdownAsync(token);
                         }, TaskContinuationOptions.NotOnRanToCompletion | TaskContinuationOptions.RunContinuationsAsynchronously)
                         .ConfigureAwait(false);
 
@@ -164,7 +164,7 @@ class FirefoxInspectorClient : InspectorClient
                     {
                         method = "Runtime.consoleAPICalled";
                         var args = new JArray();
-                        // FIXME: unncessary alloc
+                        // FIXME: unnecessary alloc
                         foreach (JToken? argument in res["resources"]?[0]?["message"]?["arguments"]?.Value<JArray>() ?? new JArray())
                         {
                             args.Add(JObject.FromObject(new { value = argument.Value<string>()}));

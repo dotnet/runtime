@@ -60,7 +60,7 @@ namespace System.Buffers.Text
 
         private static bool TryFormatFloatingPoint<T>(T value, Span<byte> destination, out int bytesWritten, StandardFormat format) where T : ISpanFormattable
         {
-            Span<char> formatText = stackalloc char[0];
+            scoped Span<char> formatText = default;
 
             if (!format.IsDefault)
             {
@@ -76,7 +76,7 @@ namespace System.Buffers.Text
 
             const int StackBufferLength = 128; // large enough to handle the majority cases
             Span<char> stackBuffer = stackalloc char[StackBufferLength];
-            ReadOnlySpan<char> utf16Text = stackalloc char[0];
+            scoped ReadOnlySpan<char> utf16Text;
 
             // Try to format into the stack buffer.  If we're successful, we can avoid all allocations.
             if (value.TryFormat(stackBuffer, out int formattedLength, formatText, CultureInfo.InvariantCulture))

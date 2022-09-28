@@ -62,7 +62,7 @@ namespace System
                     break;
                 }
 
-                if (c >= '0' && c <= '9')
+                if (char.IsAsciiDigit(c))
                 {
                     hour = hour * 10 + c - '0';
                 }
@@ -77,7 +77,7 @@ namespace System
             {
                 char c = name [where];
 
-                if (c >= '0' && c <= '9')
+                if (char.IsAsciiDigit(c))
                 {
                     min = min * 10 + c - '0';
                 }
@@ -107,7 +107,7 @@ namespace System
             {
                 return new TimeZoneInfo(id, TimeSpan.FromSeconds(0), id, name, name, null, disableDaylightSavingTime:true);
             }
-            if (name.StartsWith("GMT", StringComparison.Ordinal))
+            if (name.Length >= 3 && name[0] == 'G' && name[1] == 'M' && name[2] == 'T')
             {
                 return new TimeZoneInfo(id, TimeSpan.FromSeconds(ParseGMTNumericZone(name)), id, name, name, null, disableDaylightSavingTime:true);
             }

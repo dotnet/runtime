@@ -220,6 +220,11 @@ namespace Internal.TypeSystem
             return type.Context.GetVirtualMethodAlgorithmForType(type).ResolveInterfaceMethodToDefaultImplementationOnType(interfaceMethod, type, out implMethod);
         }
 
+        public static DefaultInterfaceMethodResolution ResolveVariantInterfaceMethodToDefaultImplementationOnType(this TypeDesc type, MethodDesc interfaceMethod, out MethodDesc implMethod)
+        {
+            return type.Context.GetVirtualMethodAlgorithmForType(type).ResolveVariantInterfaceMethodToDefaultImplementationOnType(interfaceMethod, type, out implMethod);
+        }
+
         /// <summary>
         /// Resolves a virtual method call.
         /// </summary>
@@ -358,7 +363,7 @@ namespace Internal.TypeSystem
                     // It is generally a bug to have instantiations over generic parameters
                     // in the system. Typical instantiations are represented as instantiations
                     // over own formals - so these should be signature variables instead.
-                    throw new ArgumentException();
+                    throw new InvalidOperationException();
 
                 default:
                     Debug.Assert(thisType is DefType);

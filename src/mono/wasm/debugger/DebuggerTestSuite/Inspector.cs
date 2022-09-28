@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -12,6 +11,9 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
+using System.Runtime.ExceptionServices;
+using Xunit.Abstractions;
+using System.Collections.Concurrent;
 
 #nullable enable
 
@@ -22,11 +24,11 @@ namespace DebuggerTests
         // https://console.spec.whatwg.org/#formatting-specifiers
         private static Regex _consoleArgsRegex = new(@"(%[sdifoOc])", RegexOptions.Compiled);
 
-        Dictionary<string, TaskCompletionSource<JObject>> notifications = new Dictionary<string, TaskCompletionSource<JObject>>();
-        Dictionary<string, Func<JObject, CancellationToken, Task>> eventListeners = new Dictionary<string, Func<JObject, CancellationToken, Task>>();
+        ConcurrentDictionary<string, TaskCompletionSource<JObject>> notifications = new ();
+        ConcurrentDictionary<string, Func<JObject, CancellationToken, Task<ProtocolEventHandlerReturn>>> eventListeners = new ();
 
         public const string PAUSE = "pause";
-        public const string READY = "ready";
+        public const string APP_READY = "app-ready";
         public CancellationToken Token { get; }
         public InspectorClient Client { get; }
         public DebuggerProxyBase? Proxy { get; }
@@ -34,30 +36,39 @@ namespace DebuggerTests
 
         private CancellationTokenSource _cancellationTokenSource;
         private Exception? _isFailingWithException;
+        private bool _gotRuntimeReady = false;
+        private bool _gotAppReady = false;
 
         protected static Lazy<ILoggerFactory> s_loggerFactory = new(() =>
-        {
-            return LoggerFactory.Create(builder =>
+            LoggerFactory.Create(builder =>
+            {
+                if (TestOptions.LogToConsole)
+                {
                     builder
-                        // .AddFile(logFilePath, minimumLevel: LogLevel.Debug)
                         .AddSimpleConsole(options =>
                             {
                                 options.SingleLine = true;
                                 options.TimestampFormat = "[HH:mm:ss] ";
                             })
-                           .AddFilter(null, LogLevel.Trace));
-        });
+                           .AddFilter(null, LogLevel.Debug);
+                        // .AddFile(logFilePath, minimumLevel: LogLevel.Debug)
+                }
+            }));
 
         protected ILogger _logger;
         public int Id { get; init; }
 
-        public Inspector(int testId)
+        public Inspector(int testId, ITestOutputHelper testOutput)
         {
             Id = testId;
             _cancellationTokenSource = new CancellationTokenSource();
             Token = _cancellationTokenSource.Token;
 
-            _logger = s_loggerFactory.Value.CreateLogger($"{nameof(Inspector)}-{Id}");
+            if (Id == 0)
+                s_loggerFactory.Value.AddXunit(testOutput);
+
+            _logger = s_loggerFactory.Value
+                            .CreateLogger($"{nameof(Inspector)}-{Id}");
             if (DebuggerTestBase.RunningOnChrome)
                 Client = new InspectorClient(_logger);
             else
@@ -70,7 +81,7 @@ namespace DebuggerTests
             {
                 if (tcs.Task.IsCompleted)
                 {
-                    notifications.Remove(what);
+                    notifications.Remove(what, out _);
                     return tcs.Task;
                 }
 
@@ -87,7 +98,7 @@ namespace DebuggerTests
         public void ClearWaiterFor(string what)
         {
             if (notifications.ContainsKey(what))
-                notifications.Remove(what);
+                notifications.Remove(what, out _);
         }
 
         void NotifyOf(string what, JObject args)
@@ -98,7 +109,7 @@ namespace DebuggerTests
                     throw new Exception($"Invalid internal state. Notifying for {what} again, but the previous one hasn't been read.");
 
                 notifications[what].SetResult(args);
-                notifications.Remove(what);
+                notifications.Remove(what, out _);
             }
             else
             {
@@ -108,7 +119,7 @@ namespace DebuggerTests
             }
         }
 
-        public void On(string evtName, Func<JObject, CancellationToken, Task> cb)
+        public void On(string evtName, Func<JObject, CancellationToken, Task<ProtocolEventHandlerReturn>> cb)
         {
             eventListeners[evtName] = cb;
         }
@@ -119,7 +130,7 @@ namespace DebuggerTests
             On(evtName, async (args, token) =>
             {
                 eventReceived.SetResult(args);
-                await Task.CompletedTask;
+                return await Task.FromResult(ProtocolEventHandlerReturn.RemoveHandler);
             });
 
             return eventReceived.Task.WaitAsync(Token);
@@ -145,7 +156,7 @@ namespace DebuggerTests
             }
         }
 
-        private static string FormatConsoleAPICalled(JObject args)
+        private (string line, string type) FormatConsoleAPICalled(JObject args)
         {
             string? type = args?["type"]?.Value<string>();
             List<string> consoleArgs = new();
@@ -155,8 +166,9 @@ namespace DebuggerTests
                     consoleArgs.Add(arg!["value"]!.ToString());
             }
 
+            type ??= "log";
             if (consoleArgs.Count == 0)
-                return "console: <message missing>";
+                return (line: "console: <message missing>", type);
 
             int position = 1;
             string first = consoleArgs[0];
@@ -175,11 +187,11 @@ namespace DebuggerTests
             }
             else
             {
-                if (output.Length > 0 && output[^1] == '\n')
+                if (output.EndsWith('\n'))
                     output = output[..^1];
             }
 
-            return $"console.{type}: {output}";
+            return ($"console.{type}: {output}", type);
         }
 
         async Task OnMessage(string method, JObject args, CancellationToken token)
@@ -191,12 +203,39 @@ namespace DebuggerTests
                     NotifyOf(PAUSE, args);
                     break;
                 case "Mono.runtimeReady":
-                    NotifyOf(READY, args);
+                {
+                    _gotRuntimeReady = true;
+                    if (_gotAppReady || !DebuggerTestBase.RunningOnChrome)
+                    {
+                        // got both the events
+                        NotifyOf(APP_READY, args);
+                    }
                     break;
+                }
                 case "Runtime.consoleAPICalled":
                 {
-                    string line = FormatConsoleAPICalled(args);
-                    _logger.LogInformation(line);
+                    (string line, string type) = FormatConsoleAPICalled(args);
+                    switch (type)
+                    {
+                        case "log": _logger.LogInformation(line); break;
+                        case "debug": _logger.LogDebug(line); break;
+                        case "error": _logger.LogError(line); break;
+                        case "warn": _logger.LogWarning(line); break;
+                        case "trace": _logger.LogTrace(line); break;
+                        default: _logger.LogInformation(line); break;
+                    }
+
+                    if (!_gotAppReady && line == "console.debug: #debugger-app-ready#")
+                    {
+                        _gotAppReady = true;
+
+                        if (_gotRuntimeReady)
+                        {
+                            // got both the events
+                            NotifyOf(APP_READY, args);
+                        }
+                    }
+
                     if (DetectAndFailOnAssertions &&
                             (line.Contains("console.error: [MONO]") || line.Contains("console.warning: [MONO]")))
                     {
@@ -218,9 +257,12 @@ namespace DebuggerTests
                     fail = true;
                     break;
             }
-            if (eventListeners.TryGetValue(method, out var listener))
+            if (eventListeners.TryGetValue(method, out Func<JObject, CancellationToken, Task<ProtocolEventHandlerReturn>>? listener)
+                    && listener != null)
             {
-                await listener(args, token).ConfigureAwait(false);
+                ProtocolEventHandlerReturn result = await listener(args, token).ConfigureAwait(false);
+                if (result is ProtocolEventHandlerReturn.RemoveHandler)
+                    eventListeners.Remove(method, out _);
             }
             else if (fail)
             {
@@ -235,10 +277,10 @@ namespace DebuggerTests
             string uriStr = $"ws://{TestHarnessProxy.Endpoint.Authority}/launch-host-and-connect/?test_id={Id}";
             if (!DebuggerTestBase.RunningOnChrome)
             {
-                uriStr += "&host=firefox&firefox-proxy-port=6002";
+                uriStr += $"&host=firefox&firefox-proxy-port={DebuggerTestBase.FirefoxProxyPort}";
                 // Ensure the listener is running early, so trying to
                 // connect to that does not race with the starting of it
-                FirefoxDebuggerProxy.StartListener(6002, _logger);
+                FirefoxDebuggerProxy.StartListener(DebuggerTestBase.FirefoxProxyPort, _logger);
             }
 
             await Client.Connect(new Uri(uriStr), OnMessage, _cancellationTokenSource);
@@ -285,8 +327,8 @@ namespace DebuggerTests
 
                 var init_cmds = getInitCmds(Client, _cancellationTokenSource.Token);
 
-                Task<Result> readyTask = Task.Run(async () => Result.FromJson(await WaitFor(READY)));
-                init_cmds.Add((READY, readyTask));
+                Task<Result> readyTask = Task.Run(async () => Result.FromJson(await WaitFor(APP_READY)));
+                init_cmds.Add((APP_READY, readyTask));
 
                 _logger.LogInformation("waiting for the runtime to be ready");
                 while (!_cancellationTokenSource.IsCancellationRequested && init_cmds.Count > 0)
@@ -330,7 +372,7 @@ namespace DebuggerTests
                 {
                     Console.WriteLine ($"OpenSession crashing. proxy state: {state}");
                     if (state.reason == RunLoopStopReason.Exception && state.exception is not null)
-                        throw state.exception;
+                        ExceptionDispatchInfo.Capture(state.exception).Throw();
                 }
 
                 throw;
@@ -364,7 +406,7 @@ namespace DebuggerTests
             try
             {
                 TestHarnessProxy.ShutdownProxy(Id.ToString());
-                await Client.Shutdown(_cancellationTokenSource.Token).ConfigureAwait(false);
+                await Client.ShutdownAsync(_cancellationTokenSource.Token).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -378,5 +420,11 @@ namespace DebuggerTests
                 _cancellationTokenSource.Dispose();
             }
         }
+    }
+
+    public enum ProtocolEventHandlerReturn
+    {
+        KeepHandler,
+        RemoveHandler
     }
 }

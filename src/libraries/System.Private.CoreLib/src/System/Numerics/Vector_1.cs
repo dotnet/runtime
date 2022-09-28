@@ -150,7 +150,9 @@ namespace System.Numerics
             }
         }
 
-        internal static bool IsTypeSupported
+        /// <summary>Gets <c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</summary>
+        /// <returns><c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</returns>
+        public static bool IsSupported
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => (typeof(T) == typeof(byte)) ||
@@ -191,7 +193,7 @@ namespace System.Numerics
         {
             get
             {
-                if (IsTypeSupported)
+                if (IsSupported)
                 {
                     return ToString();
                 }
@@ -674,7 +676,7 @@ namespace System.Numerics
 
         /// <summary>Tries to copy a <see cref="Vector{T}" /> to a given span.</summary>
         /// <param name="destination">The span to which the current instance is copied.</param>
-        /// <returns><c>true</c> if the current instance was succesfully copied to <paramref name="destination" />; otherwise, <c>false</c> if the length of <paramref name="destination" /> is less than <c>sizeof(<see cref="Vector{T}" />)</c>.</returns>
+        /// <returns><c>true</c> if the current instance was successfully copied to <paramref name="destination" />; otherwise, <c>false</c> if the length of <paramref name="destination" /> is less than <c>sizeof(<see cref="Vector{T}" />)</c>.</returns>
         public bool TryCopyTo(Span<byte> destination)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();
@@ -690,7 +692,7 @@ namespace System.Numerics
 
         /// <summary>Tries to copy a <see cref="Vector{T}" /> to a given span.</summary>
         /// <param name="destination">The span to which the current instance is copied.</param>
-        /// <returns><c>true</c> if the current instance was succesfully copied to <paramref name="destination" />; otherwise, <c>false</c> if the length of <paramref name="destination" /> is less than <see cref="Vector{T}.Count" />.</returns>
+        /// <returns><c>true</c> if the current instance was successfully copied to <paramref name="destination" />; otherwise, <c>false</c> if the length of <paramref name="destination" /> is less than <see cref="Vector{T}.Count" />.</returns>
         public bool TryCopyTo(Span<T> destination)
         {
             ThrowHelper.ThrowForUnsupportedNumericsVectorBaseType<T>();

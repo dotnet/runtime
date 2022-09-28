@@ -9,8 +9,10 @@ using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.UserSecrets;
 using Microsoft.Extensions.DependencyInjection;
@@ -44,6 +46,36 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal(expected, config["ContentRoot"]);
             var env = host.Services.GetRequiredService<IHostEnvironment>();
             Assert.Equal(expected, env.ContentRootPath);
+        }
+
+        public static bool IsWindowsAndRemotExecutorIsSupported => PlatformDetection.IsWindows && RemoteExecutor.IsSupported;
+
+        [ConditionalFact(typeof(HostTests), nameof(IsWindowsAndRemotExecutorIsSupported))]
+        public void CreateDefaultBuilder_DoesNotChangeContentRootIfCurrentDirectoryIsWindowsSystemDirectory()
+        {
+            using var _ = RemoteExecutor.Invoke(() =>
+            {
+                string systemDirectory = Environment.GetFolderPath(Environment.SpecialFolder.System);
+                if (string.IsNullOrEmpty(systemDirectory))
+                {
+                    // Skip the environments (like Nano Server) where Environment.SpecialFolder.System returns empty - https://github.com/dotnet/runtime/issues/21430
+                    return;
+                }
+
+                // Test that the path gets normalized before comparison. Use C:\WINDOWS\SYSTEM32\ instead of C:\Windows\system32.
+                systemDirectory = systemDirectory.ToUpper() + "\\";
+
+                Environment.CurrentDirectory = systemDirectory;
+
+                IHostBuilder builder = Host.CreateDefaultBuilder();
+                using IHost host = builder.Build();
+
+                var config = host.Services.GetRequiredService<IConfiguration>();
+                var env = host.Services.GetRequiredService<IHostEnvironment>();
+
+                Assert.Null(config[HostDefaults.ContentRootKey]);
+                Assert.Equal(AppContext.BaseDirectory, env.ContentRootPath);
+            });
         }
 
         [Fact]

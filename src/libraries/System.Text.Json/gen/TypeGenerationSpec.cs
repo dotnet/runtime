@@ -12,7 +12,7 @@ using Microsoft.CodeAnalysis;
 namespace System.Text.Json.SourceGeneration
 {
     [DebuggerDisplay("Type={Type}, ClassType={ClassType}")]
-    internal class TypeGenerationSpec
+    internal sealed class TypeGenerationSpec
     {
         /// <summary>
         /// Fully qualified assembly name, prefixed with "global::", e.g. global::System.Numerics.BigInteger.
@@ -30,6 +30,11 @@ namespace System.Text.Json.SourceGeneration
         /// then users will call MyJsonContext.JsonMessage to access generated metadata for the type.
         /// </summary>
         public string TypeInfoPropertyName { get; set; }
+
+        /// <summary>
+        /// Method used to generate JsonTypeInfo given options instance
+        /// </summary>
+        public string CreateTypeInfoMethodName => $"Create_{TypeInfoPropertyName}";
 
         public JsonSourceGenerationMode GenerationMode { get; set; }
 

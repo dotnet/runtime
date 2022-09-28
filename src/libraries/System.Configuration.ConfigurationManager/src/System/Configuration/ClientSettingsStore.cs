@@ -236,17 +236,8 @@ namespace System.Configuration
                 }
             }
 
-            internal static IInternalConfigConfigurationFactory ConfigFactory
-            {
-                get
-                {
-                    if (s_configFactory == null)
-                    {
-                        s_configFactory = TypeUtil.CreateInstance<IInternalConfigConfigurationFactory>(InternalConfigConfigurationFactoryTypeName);
-                    }
-                    return s_configFactory;
-                }
-            }
+            internal static IInternalConfigConfigurationFactory ConfigFactory =>
+                s_configFactory ??= TypeUtil.CreateInstance<IInternalConfigConfigurationFactory>(InternalConfigConfigurationFactoryTypeName);
 
             private ClientSettingsConfigurationHost() { }
 

@@ -478,7 +478,7 @@ HRESULT ImportHelper::FindMemberRef(
         }
         if ((cbSig != 0) && (pbSig != NULL))
         {
-            // signature is specifed
+            // signature is specified
             IfFailGo(pMiniMd->getSignatureOfMemberRef(pMemberRefRec, &pbSigTmp, &cbSigTmp));
             if (cbSigTmp != cbSig)
                 continue;
@@ -1199,7 +1199,7 @@ HRESULT ImportHelper::FindCustomAttributeByToken(
     }
     else
     {
-        CLookUpHash *pHashTable = pMiniMd->m_pLookUpHashs[TBL_CustomAttribute];
+        CLookUpHash *pHashTable = pMiniMd->m_pLookUpHashes[TBL_CustomAttribute];
 
         if (pHashTable)
         {
@@ -2525,8 +2525,8 @@ ImportHelper::ImportTypeDef(
     // Compute the ResolutionScope for the imported type.
     if (bBCL)
     {
-        // This is the case that we are referring to mscorlib.dll but client does not provide the manifest for
-        // mscorlib.dll!! Do not generate ModuleRef to the mscorlib.dll. But instead we should just leave the
+        // This is the case that we are referring to SPCL but client does not provide the manifest for
+        // SPCL!! Do not generate ModuleRef to the SPCL. But instead we should just leave the
         // ResolutionScope empty
         tkOuterRes = mdTokenNil;
     }
@@ -2572,7 +2572,7 @@ ImportHelper::ImportTypeDef(
         else
         {
             // <REVISIT_TODO>@FUTURE: review this fix! We may want to return error in the future.
-            // This is to enable smc to reference mscorlib.dll while it does not have the manifest for mscorlib.dll opened.</REVISIT_TODO>
+            // This is to enable smc to reference SPCL while it does not have the manifest for SPCL opened.</REVISIT_TODO>
             // Create a Nil ResolutionScope to the TypeRef.
             tkOuterRes = mdTokenNil;
         }
@@ -2735,7 +2735,7 @@ HRESULT ImportHelper::ImportTypeRef(
         if (IsNilToken(tkOuterImportRes))
         {
             // <REVISIT_TODO>BUG FIX:: URT 13626
-            // Well, before all of the clients generate AR for mscorlib.dll reference, it is not true
+            // Well, before all of the clients generate AR for SPCL reference, it is not true
             // that tkOuterImportRes == nil will imply that we have to find such an entry in the import manifest!!</REVISIT_TODO>
 
             // Look for a ExportedType entry in the import Assembly.  Its an error
@@ -2979,7 +2979,7 @@ HRESULT ImportHelper::CreateModuleRefFromScope( // S_OK or error.
             *ptkModuleRef = TokenFromRid(iRecordEmit, mdtModuleRef);
             IfFailGo(pMiniMdEmit->UpdateENCLog(*ptkModuleRef));
 
-            // It is a bug to create an ModuleRef to mscorlib.dll
+            // It is a bug to create an ModuleRef to SPCL
             _ASSERTE(strcmp(szName, COM_RUNTIME_LIBRARY) != 0);
 
             // Set the name of ModuleRef.

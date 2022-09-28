@@ -8,7 +8,7 @@ using System.Diagnostics.Tracing;
 namespace System.Net
 {
     [EventSource(Name = "Private.InternalDiagnostics.System.Net.Http", LocalizationResources = "FxResources.System.Net.Http.SR")]
-    internal sealed partial class NetEventSource : EventSource
+    internal sealed partial class NetEventSource
     {
         private const int UriBaseAddressId = NextAvailableEventId;
         private const int ContentNullId = UriBaseAddressId + 1;
@@ -22,12 +22,12 @@ namespace System.Net
         public static void UriBaseAddress(object obj, Uri? baseAddress)
         {
             Debug.Assert(Log.IsEnabled());
-            Log.UriBaseAddress(baseAddress?.ToString(), IdOf(obj), GetHashCode(obj));
+            Log.UriBaseAddress(baseAddress?.ToString(), IdOf(obj));
         }
 
         [Event(UriBaseAddressId, Keywords = Keywords.Debug, Level = EventLevel.Informational)]
-        private void UriBaseAddress(string? uriBaseAddress, string objName, int objHash) =>
-            WriteEvent(UriBaseAddressId, uriBaseAddress, objName, objHash);
+        private void UriBaseAddress(string? uriBaseAddress, string objName) =>
+            WriteEvent(UriBaseAddressId, uriBaseAddress, objName);
 
         [NonEvent]
         public static void ContentNull(object obj)
@@ -74,52 +74,47 @@ namespace System.Net
         public void AuthenticationError(string? uri, string message) =>
             WriteEvent(AuthenticationErrorId, uri, message);
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
-                   Justification = "Parameters to this method are primitive and are trimmer safe")]
-#endif
+                   Justification = EventSourceSuppressMessage)]
         [NonEvent]
         private unsafe void WriteEvent(int eventId, int arg1, int arg2, int arg3, string? arg4, string? arg5)
         {
-            if (IsEnabled())
+            arg4 ??= "";
+            arg5 ??= "";
+
+            fixed (char* string4Bytes = arg4)
+            fixed (char* string5Bytes = arg5)
             {
-                if (arg4 == null) arg4 = "";
-                if (arg5 == null) arg5 = "";
+                const int NumEventDatas = 5;
+                EventData* descrs = stackalloc EventData[NumEventDatas];
 
-                fixed (char* string4Bytes = arg4)
-                fixed (char* string5Bytes = arg5)
+                descrs[0] = new EventData
                 {
-                    const int NumEventDatas = 5;
-                    var descrs = stackalloc EventData[NumEventDatas];
+                    DataPointer = (IntPtr)(&arg1),
+                    Size = sizeof(int)
+                };
+                descrs[1] = new EventData
+                {
+                    DataPointer = (IntPtr)(&arg2),
+                    Size = sizeof(int)
+                };
+                descrs[2] = new EventData
+                {
+                    DataPointer = (IntPtr)(&arg3),
+                    Size = sizeof(int)
+                };
+                descrs[3] = new EventData
+                {
+                    DataPointer = (IntPtr)string4Bytes,
+                    Size = ((arg4.Length + 1) * 2)
+                };
+                descrs[4] = new EventData
+                {
+                    DataPointer = (IntPtr)string5Bytes,
+                    Size = ((arg5.Length + 1) * 2)
+                };
 
-                    descrs[0] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg1),
-                        Size = sizeof(int)
-                    };
-                    descrs[1] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg2),
-                        Size = sizeof(int)
-                    };
-                    descrs[2] = new EventData
-                    {
-                        DataPointer = (IntPtr)(&arg3),
-                        Size = sizeof(int)
-                    };
-                    descrs[3] = new EventData
-                    {
-                        DataPointer = (IntPtr)string4Bytes,
-                        Size = ((arg4.Length + 1) * 2)
-                    };
-                    descrs[4] = new EventData
-                    {
-                        DataPointer = (IntPtr)string5Bytes,
-                        Size = ((arg5.Length + 1) * 2)
-                    };
-
-                    WriteEventCore(eventId, NumEventDatas, descrs);
-                }
+                WriteEventCore(eventId, NumEventDatas, descrs);
             }
         }
     }

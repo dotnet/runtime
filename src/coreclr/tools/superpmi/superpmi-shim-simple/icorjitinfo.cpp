@@ -53,6 +53,13 @@ CorInfoInline interceptor_ICJI::canInline(
     return original_ICorJitInfo->canInline(callerHnd, calleeHnd);
 }
 
+void interceptor_ICJI::beginInlining(
+          CORINFO_METHOD_HANDLE inlinerHnd,
+          CORINFO_METHOD_HANDLE inlineeHnd)
+{
+    original_ICorJitInfo->beginInlining(inlinerHnd, inlineeHnd);
+}
+
 void interceptor_ICJI::reportInliningDecision(
           CORINFO_METHOD_HANDLE inlinerHnd,
           CORINFO_METHOD_HANDLE inlineeHnd,
@@ -688,6 +695,15 @@ void interceptor_ICJI::setVars(
     original_ICorJitInfo->setVars(ftn, cVars, vars);
 }
 
+void interceptor_ICJI::reportRichMappings(
+          ICorDebugInfo::InlineTreeNode* inlineTreeNodes,
+          uint32_t numInlineTreeNodes,
+          ICorDebugInfo::RichOffsetMapping* mappings,
+          uint32_t numMappings)
+{
+    original_ICorJitInfo->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
+}
+
 void* interceptor_ICJI::allocateArray(
           size_t cBytes)
 {
@@ -712,6 +728,14 @@ CorInfoTypeWithMod interceptor_ICJI::getArgType(
           CORINFO_CLASS_HANDLE* vcTypeRet)
 {
     return original_ICorJitInfo->getArgType(sig, args, vcTypeRet);
+}
+
+int interceptor_ICJI::getExactClasses(
+          CORINFO_CLASS_HANDLE baseType,
+          int maxExactClasses,
+          CORINFO_CLASS_HANDLE* exactClsRet)
+{
+    return original_ICorJitInfo->getExactClasses(baseType, maxExactClasses, exactClsRet);
 }
 
 CORINFO_CLASS_HANDLE interceptor_ICJI::getArgClass(
@@ -1215,12 +1239,5 @@ uint32_t interceptor_ICJI::getJitFlags(
           uint32_t sizeInBytes)
 {
     return original_ICorJitInfo->getJitFlags(flags, sizeInBytes);
-}
-
-bool interceptor_ICJI::doesFieldBelongToClass(
-          CORINFO_FIELD_HANDLE fldHnd,
-          CORINFO_CLASS_HANDLE cls)
-{
-    return original_ICorJitInfo->doesFieldBelongToClass(fldHnd, cls);
 }
 

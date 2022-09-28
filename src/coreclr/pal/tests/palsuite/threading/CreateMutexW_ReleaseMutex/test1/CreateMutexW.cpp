@@ -22,7 +22,7 @@
 **          fail.
 **
 **          To increase the probability of identifying problems,
-**          the Fill opeartion has been slowed dowm with a call
+**          the Fill operation has been slowed dowm with a call
 **          to Sleep.  This ensures that one operation will try
 **          to access the shared buffer while the other is in
 **          progress.
@@ -37,7 +37,7 @@
 **               WaitForMultipleObjects
 **               Sleep
 **               memset
-** 
+**
 
 **
 **=========================================================*/
@@ -165,8 +165,8 @@ FillBuffer()
 
 
 
-/* 
- * Producer thread function.  
+/*
+ * Producer thread function.
  */
 DWORD PALAPI Producer(LPVOID lpParam)
 {
@@ -197,8 +197,8 @@ DWORD PALAPI Producer(LPVOID lpParam)
     return 0;
 }
 
-/* 
- * Consumer thread function. 
+/*
+ * Consumer thread function.
  */
 DWORD PALAPI Consumer( LPVOID lpParam )
 {
@@ -234,12 +234,12 @@ PALTEST(threading_CreateMutexW_ReleaseMutex_test1_paltest_createmutexw_releasemu
 {
     DWORD dwThreadId;
     DWORD dwWaitRet;
-    
+
     HANDLE hThread1;    /* handle to consumer thread */
     HANDLE hThread2;    /* handle to producer thread */
-    HANDLE handleArray[2];   
+    HANDLE handleArray[2];
 
-   
+
     if(0 != (PAL_Initialize(argc, argv)))
     {
         return ( FAIL );
@@ -249,7 +249,7 @@ PALTEST(threading_CreateMutexW_ReleaseMutex_test1_paltest_createmutexw_releasemu
     bProdErr = FALSE;
     bConErr = FALSE;
 
-    /* 
+    /*
      * Initialize the Buffer to be empty
      */
     memset(Buffer, 0, MAIN_BUF_SIZE);
@@ -257,7 +257,7 @@ PALTEST(threading_CreateMutexW_ReleaseMutex_test1_paltest_createmutexw_releasemu
     /*
      * Create Mutex
      */
-    hMutex = CreateMutexW (NULL, FALSE, NULL);         
+    hMutex = CreateMutexW (NULL, FALSE, NULL);
 
     if (NULL == hMutex)
     {
@@ -275,12 +275,12 @@ PALTEST(threading_CreateMutexW_ReleaseMutex_test1_paltest_createmutexw_releasemu
     if ( NULL == hThread1 )
     {
         CloseHandle(hMutex);
-            
+
         Fail("CreateThread() returned NULL.  Failing test.\n"
              "GetLastError returned %u\n", GetLastError());
     }
 
-    /* 
+    /*
      * Create the Consumer thread
      */
     hThread2 = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)Consumer,
@@ -289,11 +289,11 @@ PALTEST(threading_CreateMutexW_ReleaseMutex_test1_paltest_createmutexw_releasemu
     if ( NULL == hThread2 )
     {
         CloseHandle(hMutex);
-        
+
         /* Set the error flag and give thread1 some time to exit */
         bConErr = FALSE;
         Sleep(250);
-            
+
         Fail("CreateThread() returned NULL.  Failing test.\n"
              "GetLastError returned %u\n", GetLastError());
     }
@@ -314,7 +314,7 @@ PALTEST(threading_CreateMutexW_ReleaseMutex_test1_paltest_createmutexw_releasemu
         bProdErr = FALSE;
         bConErr = FALSE;
         Sleep(250);
-        
+
         Fail("ERROR: Timeout interval exceeded.\n");
     }
 

@@ -3,10 +3,12 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
+    [RequiresDynamicCode(ServiceProvider.RequiresDynamicCodeMessage)]
     internal sealed class DynamicServiceProviderEngine : CompiledServiceProviderEngine
     {
         private readonly ServiceProvider _serviceProvider;

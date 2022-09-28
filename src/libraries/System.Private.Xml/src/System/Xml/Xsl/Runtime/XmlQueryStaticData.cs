@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -24,14 +23,14 @@ namespace System.Xml.Xsl.Runtime
         private const int CurrentFormatVersion = (0 << 8) | 0;
 
         private readonly XmlWriterSettings _defaultWriterSettings;
-        private readonly IList<WhitespaceRule> _whitespaceRules;
-        private readonly string[] _names;
-        private readonly StringPair[][] _prefixMappingsList;
-        private readonly Int32Pair[] _filters;
-        private readonly XmlQueryType[] _types;
-        private readonly XmlCollation[] _collations;
-        private readonly string[] _globalNames;
-        private readonly EarlyBoundInfo[] _earlyBound;
+        private readonly IList<WhitespaceRule>? _whitespaceRules;
+        private readonly string[]? _names;
+        private readonly StringPair[][]? _prefixMappingsList;
+        private readonly Int32Pair[]? _filters;
+        private readonly XmlQueryType[]? _types;
+        private readonly XmlCollation[]? _collations;
+        private readonly string[]? _globalNames;
+        private readonly EarlyBoundInfo[]? _earlyBound;
 
         /// <summary>
         /// Constructor.
@@ -53,7 +52,7 @@ namespace System.Xml.Xsl.Runtime
 #if DEBUG
             // Round-trip check
             byte[] data;
-            Type[] ebTypes;
+            Type[]? ebTypes;
             this.GetObjectData(out data, out ebTypes);
             XmlQueryStaticData copy = new XmlQueryStaticData(data, ebTypes);
 
@@ -73,9 +72,9 @@ namespace System.Xml.Xsl.Runtime
         /// Deserialize XmlQueryStaticData object from a byte array.
         /// </summary>
         [RequiresUnreferencedCode("This method will create EarlyBoundInfo from passed in ebTypes array which cannot be statically analyzed.")]
-        public XmlQueryStaticData(byte[] data, Type[] ebTypes)
+        public XmlQueryStaticData(byte[] data, Type[]? ebTypes)
         {
-            MemoryStream dataStream = new MemoryStream(data, /*writable:*/false);
+            MemoryStream dataStream = new MemoryStream(data, writable: false);
             XmlQueryDataReader dataReader = new XmlQueryDataReader(dataStream);
             int length;
 
@@ -178,7 +177,7 @@ namespace System.Xml.Xsl.Runtime
                 _earlyBound = new EarlyBoundInfo[length];
                 for (int idx = 0; idx < length; idx++)
                 {
-                    _earlyBound[idx] = new EarlyBoundInfo(dataReader.ReadString(), ebTypes[idx]);
+                    _earlyBound[idx] = new EarlyBoundInfo(dataReader.ReadString(), ebTypes![idx]);
                 }
             }
 
@@ -189,7 +188,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Serialize XmlQueryStaticData object into a byte array.
         /// </summary>
-        public void GetObjectData(out byte[] data, out Type[] ebTypes)
+        public void GetObjectData(out byte[] data, out Type[]? ebTypes)
         {
             MemoryStream dataStream = new MemoryStream(4096);
             XmlQueryDataWriter dataWriter = new XmlQueryDataWriter(dataStream);
@@ -337,7 +336,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return the rules used for whitespace stripping/preservation.
         /// </summary>
-        public IList<WhitespaceRule> WhitespaceRules
+        public IList<WhitespaceRule>? WhitespaceRules
         {
             get { return _whitespaceRules; }
         }
@@ -345,7 +344,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return array of names used by this query.
         /// </summary>
-        public string[] Names
+        public string[]? Names
         {
             get { return _names; }
         }
@@ -353,7 +352,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return array of prefix mappings used by this query.
         /// </summary>
-        public StringPair[][] PrefixMappingsList
+        public StringPair[][]? PrefixMappingsList
         {
             get { return _prefixMappingsList; }
         }
@@ -361,7 +360,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return array of name filter specifications used by this query.
         /// </summary>
-        public Int32Pair[] Filters
+        public Int32Pair[]? Filters
         {
             get { return _filters; }
         }
@@ -369,7 +368,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return array of types used by this query.
         /// </summary>
-        public XmlQueryType[] Types
+        public XmlQueryType[]? Types
         {
             get { return _types; }
         }
@@ -377,7 +376,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return array of collations used by this query.
         /// </summary>
-        public XmlCollation[] Collations
+        public XmlCollation[]? Collations
         {
             get { return _collations; }
         }
@@ -385,7 +384,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return names of all global variables and parameters used by this query.
         /// </summary>
-        public string[] GlobalNames
+        public string[]? GlobalNames
         {
             get { return _globalNames; }
         }
@@ -393,7 +392,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return array of early bound object information related to this query.
         /// </summary>
-        public EarlyBoundInfo[] EarlyBound
+        public EarlyBoundInfo[]? EarlyBound
         {
             get { return _earlyBound; }
         }
@@ -409,7 +408,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Read a string value from the stream. Value can be null.
         /// </summary>
-        public string ReadStringQ()
+        public string? ReadStringQ()
         {
             return ReadBoolean() ? ReadString() : null;
         }
@@ -439,7 +438,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Write a string value to the stream. Value can be null.
         /// </summary>
-        public void WriteStringQ(string value)
+        public void WriteStringQ(string? value)
         {
             Write(value != null);
             if (value != null)

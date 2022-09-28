@@ -39,7 +39,7 @@ namespace System.Net.Mail
         {
             ArgumentNullException.ThrowIfNull(innerExceptions);
 
-            _innerExceptions = innerExceptions == null ? Array.Empty<SmtpFailedRecipientException>() : innerExceptions;
+            _innerExceptions = innerExceptions ?? Array.Empty<SmtpFailedRecipientException>();
         }
 
         internal SmtpFailedRecipientsException(List<SmtpFailedRecipientException> innerExceptions, bool allFailed) :

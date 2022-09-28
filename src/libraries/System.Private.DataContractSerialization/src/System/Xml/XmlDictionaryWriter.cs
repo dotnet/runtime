@@ -72,14 +72,7 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(writer);
 
-            XmlDictionaryWriter? dictionaryWriter = writer as XmlDictionaryWriter;
-
-            if (dictionaryWriter == null)
-            {
-                dictionaryWriter = new XmlWrappedWriter(writer);
-            }
-
-            return dictionaryWriter;
+            return writer as XmlDictionaryWriter ?? new XmlWrappedWriter(writer);
         }
 
         public override Task WriteBase64Async(byte[] buffer, int index, int count)
@@ -169,9 +162,7 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(localName);
 
-            if (namespaceUri == null)
-                namespaceUri = XmlDictionaryString.Empty;
-#pragma warning suppress 56506 // Microsoft, XmlDictionaryString.Empty is never null
+            namespaceUri ??= XmlDictionaryString.Empty;
             WriteQualifiedName(localName.Value, namespaceUri.Value);
         }
 
@@ -217,7 +208,7 @@ namespace System.Xml
                     break;
                 if (blockSize < 65536 && bytesRead == blockSize)
                 {
-                    blockSize = blockSize * 16;
+                    blockSize *= 16;
                     block = new byte[blockSize];
                 }
             }
@@ -260,7 +251,7 @@ namespace System.Xml
             {
                 WriteStartElement(reader.Prefix, reader.LocalName, reader.NamespaceURI);
             }
-            if (defattr || !reader.IsDefault)
+            if (defattr || (!reader.IsDefault && (reader.SchemaInfo == null || !reader.SchemaInfo.IsDefault)))
             {
                 if (reader.MoveToFirstAttribute())
                 {
@@ -384,8 +375,7 @@ namespace System.Xml
 
         public override void WriteNode(XmlReader reader, bool defattr)
         {
-            XmlDictionaryReader? dictionaryReader = reader as XmlDictionaryReader;
-            if (dictionaryReader != null)
+            if (reader is XmlDictionaryReader dictionaryReader)
                 WriteNode(dictionaryReader, defattr);
             else
                 base.WriteNode(reader, defattr);

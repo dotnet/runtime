@@ -160,7 +160,7 @@ typedef enum CorSymVarFlag {
 } CorSymVarFlag;
 
 /* ------------------------------------------------------------------------- *
- * Library defintion
+ * Library definition
  *
  * Use the _SxS coclasses for tools designed to work with .NET Framework
  * 1.1 and above. On computers that only have version 1.0 installed, fall
@@ -1253,7 +1253,7 @@ interface ISymUnmanagedWriter : IUnknown
 
     /*
      * Define a single variable not within a method. This is used for
-     * certian fields in classes, bitfields, etc.
+     * certain fields in classes, bitfields, etc.
      */
     HRESULT DefineField([in] mdTypeDef parent,
                         [in] const WCHAR *name,
@@ -1403,7 +1403,7 @@ interface ISymUnmanagedWriter : IUnknown
 
     /*
      * Same as Initialize except that the final path name is the path string to
-     * name the final location of the pdb file. This is used in build enviroments in
+     * name the final location of the pdb file. This is used in build environments in
      * which the pdb is built in a temporary location and moved when the build is
      * complete.
      */

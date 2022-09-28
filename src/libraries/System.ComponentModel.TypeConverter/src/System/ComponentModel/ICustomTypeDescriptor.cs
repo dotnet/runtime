@@ -30,7 +30,7 @@ namespace System.ComponentModel
         /// Gets a type converter for this object.
         /// </summary>
         [RequiresUnreferencedCode(TypeConverter.RequiresUnreferencedCodeMessage)]
-        TypeConverter GetConverter();
+        TypeConverter? GetConverter();
 
         /// <summary>
         /// Gets the default event for this object.

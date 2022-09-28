@@ -10,7 +10,6 @@ namespace System.Text.RegularExpressions.Symbolic
     internal sealed class BitVectorSolver : ISolver<BitVector>
     {
         private readonly BDD[] _minterms;
-        private readonly MintermGenerator<BitVector> _mintermGenerator;
         internal readonly MintermClassifier _classifier;
         private readonly BitVector[] _mintermVectors;
 
@@ -19,7 +18,6 @@ namespace System.Text.RegularExpressions.Symbolic
             _minterms = minterms;
 
             _classifier = new MintermClassifier(minterms, solver);
-            _mintermGenerator = new MintermGenerator<BitVector>(this);
 
             var singleBitVectors = new BitVector[minterms.Length];
             for (int i = 0; i < singleBitVectors.Length; i++)
@@ -39,8 +37,6 @@ namespace System.Text.RegularExpressions.Symbolic
 
         public bool IsEmpty(BitVector set) => set.Equals(Empty);
 
-        public List<BitVector> GenerateMinterms(HashSet<BitVector> constraints) => _mintermGenerator.GenerateMinterms(constraints);
-
         public BitVector And(BitVector set1, BitVector set2) => BitVector.And(set1, set2);
 
         public BitVector Not(BitVector set) => BitVector.Not(set);
@@ -48,8 +44,6 @@ namespace System.Text.RegularExpressions.Symbolic
         public BitVector Or(ReadOnlySpan<BitVector> sets) => BitVector.Or(sets);
 
         public BitVector Or(BitVector set1, BitVector set2) => BitVector.Or(set1, set2);
-
-        public BitVector CreateFromChar(char c) => _mintermVectors[_classifier.GetMintermID(c)];
 
         /// <summary>
         /// Assumes that set is a union of some minterms (or empty).
@@ -71,6 +65,12 @@ namespace System.Text.RegularExpressions.Symbolic
             return result;
         }
 
+        public BitVector[] GetMinterms() => _mintermVectors;
+
+#if DEBUG
+        /// <summary>Pretty print the bitvector bv as the character set it represents.</summary>
+        public string PrettyPrint(BitVector bv, CharSetSolver solver) => solver.PrettyPrint(ConvertToBDD(bv, solver));
+
         public BDD ConvertToBDD(BitVector set, CharSetSolver solver)
         {
             BDD[] partition = _minterms;
@@ -91,10 +91,6 @@ namespace System.Text.RegularExpressions.Symbolic
 
             return result;
         }
-
-        public BitVector[] GetMinterms() => _mintermVectors;
-
-        /// <summary>Pretty print the bitvector bv as the character set it represents.</summary>
-        public string PrettyPrint(BitVector bv, CharSetSolver solver) => solver.PrettyPrint(ConvertToBDD(bv, solver));
+#endif
     }
 }

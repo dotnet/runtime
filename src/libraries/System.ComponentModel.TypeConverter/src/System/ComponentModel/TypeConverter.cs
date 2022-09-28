@@ -426,10 +426,7 @@ namespace System.ComponentModel
             /// </summary>
             public StandardValuesCollection(ICollection? values)
             {
-                if (values == null)
-                {
-                    values = Array.Empty<object>();
-                }
+                values ??= Array.Empty<object>();
 
                 if (values is Array a)
                 {

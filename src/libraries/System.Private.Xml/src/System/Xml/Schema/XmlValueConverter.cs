@@ -236,10 +236,7 @@ namespace System.Xml.Schema
             {
                 schemaType = schemaType.BaseXmlSchemaType!;
             }
-            if (schemaType == null)
-            { //Did not find any simple type in the parent chain
-                schemaType = XmlSchemaType.GetBuiltInSimpleType(datatype.TypeCode);
-            }
+            schemaType ??= XmlSchemaType.GetBuiltInSimpleType(datatype.TypeCode); //Did not find any simple type in the parent chain
             Debug.Assert(schemaType.Datatype!.Variety != XmlSchemaDatatypeVariety.List, "schemaType must be list's item type, not list itself");
 
             _schemaType = schemaType;
@@ -591,7 +588,7 @@ namespace System.Xml.Schema
         {
             try
             {
-                return XmlConvert.FromBinHexString(XmlConvert.TrimString(value), false);
+                return XmlConvert.FromBinHexString(value.AsSpan().Trim(XmlConvert.WhitespaceChars), false);
             }
             catch (XmlException e)
             {

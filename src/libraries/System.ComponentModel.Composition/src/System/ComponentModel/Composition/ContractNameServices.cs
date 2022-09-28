@@ -32,7 +32,7 @@ namespace System.ComponentModel.Composition
         {
             get
             {
-                return typeIdentityCache = typeIdentityCache ?? new Dictionary<Type, string>();
+                return typeIdentityCache ??= new Dictionary<Type, string>();
             }
         }
 

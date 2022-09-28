@@ -9,7 +9,7 @@ parameters:
   #     Will only include paths specified in the list.
   #  3. exclude + include:
   #     1st we evaluate changes for all paths except ones in excluded list. If we can't find
-  #     any applicable changes like that, then we evaluate changes for incldued paths
+  #     any applicable changes like that, then we evaluate changes for included paths
   #     if any of these two finds changes, then a variable will be set to true.
   #  In order to consume this variable you need to reference it via: $[ dependencies.evaluate_paths.outputs['SetPathVars_<subset>.containschange'] ]
   #
@@ -23,7 +23,6 @@ parameters:
   #
   #  This example will include ALL path changes under src/libraries/ except the ones under src/libraries/*!System.Private.CoreLib/*
   paths: []
-
 
 jobs:
   - job: evaluate_paths
@@ -40,7 +39,7 @@ jobs:
       - ${{ each path in parameters.paths }}:
         - template: evaluate-changed-paths.yml
           parameters:
-            subsetName: ${{ path.subset }} 
+            subsetName: ${{ path.subset }}
             arguments:
             # The commit that we're building is always a merge commit that is merging into the target branch.
             # So the first parent of the commit is on the target branch and the second parent is on the source branch.
@@ -50,3 +49,10 @@ jobs:
               - --includepaths '${{ join('+', path.include) }}'
             - ${{ if ne(path.exclude[0], '') }}:
               - --excludepaths '${{ join('+', path.exclude) }}'
+
+    - template: evaluate-changed-darc-deps.yml
+      parameters:
+        arguments:
+        # The commit that we're building is always a merge commit that is merging into the target branch.
+        # So the first parent of the commit is on the target branch and the second parent is on the source branch.
+        - --difftarget HEAD^1

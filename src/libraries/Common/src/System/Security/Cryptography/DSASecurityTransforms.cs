@@ -163,7 +163,7 @@ namespace System.Security.Cryptography
                     return current;
                 }
 
-                // macOS 10.11 and macOS 10.12 declare DSA invalid for key generation.
+                // macOS declares DSA invalid for key generation.
                 // Rather than write code which might or might not work, returning
                 // (OSStatus)-4 (errSecUnimplemented), just make the exception occur here.
                 //

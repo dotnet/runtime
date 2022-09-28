@@ -1,9 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 namespace Microsoft.Interop
 {
-    internal sealed class LinearCollectionElementMarshallingCodeContext : StubCodeContext
+    internal sealed record LinearCollectionElementMarshallingCodeContext : StubCodeContext
     {
         private readonly string _managedSpanIdentifier;
         private readonly string _nativeSpanIdentifier;
@@ -33,6 +35,9 @@ namespace Microsoft.Interop
             _nativeSpanIdentifier = nativeSpanIdentifier;
             ParentContext = parentContext;
         }
+
+        public override (TargetFramework framework, Version version) GetTargetFramework()
+            => ParentContext!.GetTargetFramework();
 
         /// <summary>
         /// Get managed and native instance identifiers for the <paramref name="info"/>

@@ -308,7 +308,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             public int NodeCount { get; private set; }
 
-            [return: NotNullIfNotNull("e")]
+            [return: NotNullIfNotNull(nameof(e))]
             public override Expression? Visit(Expression? e)
             {
                 base.Visit(e);

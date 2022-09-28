@@ -44,7 +44,7 @@ namespace System.Threading
                     (uint)MutexRights.FullControl // Equivalent to MUTEX_ALL_ACCESS
                 );
 
-                int errorCode = Marshal.GetLastWin32Error();
+                int errorCode = Marshal.GetLastPInvokeError();
 
                 if (handle.IsInvalid)
                 {
@@ -127,9 +127,10 @@ namespace System.Threading
             result = null;
             SafeWaitHandle existingHandle = Interop.Kernel32.OpenMutex((uint)rights, false, name);
 
-            int errorCode = Marshal.GetLastWin32Error();
+            int errorCode = Marshal.GetLastPInvokeError();
             if (existingHandle.IsInvalid)
             {
+                existingHandle.Dispose();
                 return errorCode switch
                 {
                     Interop.Errors.ERROR_FILE_NOT_FOUND or Interop.Errors.ERROR_INVALID_NAME => OpenExistingResult.NameNotFound,

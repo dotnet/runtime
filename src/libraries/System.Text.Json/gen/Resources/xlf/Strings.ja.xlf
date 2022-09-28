@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="FastPathPolymorphismNotSupportedMessageFormat">
         <source>Type '{0}' is annotated with 'JsonDerivedTypeAttribute' which is not supported in 'JsonSourceGenerationMode.Serialization'.</source>
-        <target state="new">Type '{0}' is annotated with 'JsonDerivedTypeAttribute' which is not supported in 'JsonSourceGenerationMode.Serialization'.</target>
+        <target state="translated">型 '{0}' は 'JsonDerivedTypeAttribute' の注釈が付けられていますが、これは 'JsonSourceGenerationMode.Serialization' でサポートされていません。</target>
         <note />
       </trans-unit>
       <trans-unit id="FastPathPolymorphismNotSupportedTitle">
         <source>'JsonDerivedTypeAttribute' is not supported in 'JsonSourceGenerationMode.Serialization'.</source>
-        <target state="new">'JsonDerivedTypeAttribute' is not supported in 'JsonSourceGenerationMode.Serialization'.</target>
+        <target state="translated">'JsonDerivedTypeAttribute' は 'JsonSourceGenerationMode.Serialization' ではサポートされていません。</target>
         <note />
       </trans-unit>
       <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">

@@ -9,6 +9,7 @@
 
 class MethodContext;
 extern MethodContext* g_globalContext;
+extern char*          g_collectionFilter;
 
 void DebugBreakorAV(int val);
 

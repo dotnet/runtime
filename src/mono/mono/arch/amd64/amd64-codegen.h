@@ -80,7 +80,7 @@ typedef enum
   AMD64_REX_B = 1, /* The register in r/m field, base register in SIB byte, or reg in opcode is 8-15 rather than 0-7 */
   AMD64_REX_X = 2, /* The index register in SIB byte is 8-15 rather than 0-7 */
   AMD64_REX_R = 4, /* The reg field of ModRM byte is 8-15 rather than 0-7 */
-  AMD64_REX_W = 8  /* Opeartion is 64-bits instead of 32 (default) or 16 (with 0x66 prefix) */
+  AMD64_REX_W = 8  /* Operation is 64-bits instead of 32 (default) or 16 (with 0x66 prefix) */
 } AMD64_REX_Bits;
 
 #define amd64_codegen_pre(inst)
@@ -1206,6 +1206,7 @@ typedef union {
 #define amd64_alu_membase8_imm_size(inst,opc,basereg,disp,imm,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,(basereg)); x86_alu_membase8_imm((inst),(opc),((basereg)&0x7),(disp),(imm)); amd64_codegen_post(inst); } while (0)
 #define amd64_alu_mem_reg_size(inst,opc,mem,reg,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,(reg)); x86_alu_mem_reg((inst),(opc),(mem),((reg)&0x7)); amd64_codegen_post(inst); } while (0)
 #define amd64_alu_membase_reg_size(inst,opc,basereg,disp,reg,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),(reg),0,(basereg)); x86_alu_membase_reg((inst),(opc),((basereg)&0x7),(disp),((reg)&0x7)); amd64_codegen_post(inst); } while (0)
+#define amd64_alu_membase8_reg_size(inst,opc,basereg,disp,reg,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),(reg),0,(basereg)); x86_alu_membase8_reg((inst),(opc),((basereg)&0x7),(disp),((reg)&0x7)); amd64_codegen_post(inst); } while (0)
 //#define amd64_alu_reg_reg_size(inst,opc,dreg,reg,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),(dreg),0,(reg)); x86_alu_reg_reg((inst),(opc),((dreg)&0x7),((reg)&0x7)); amd64_codegen_post(inst); } while (0)
 #define amd64_alu_reg8_reg8_size(inst,opc,dreg,reg,is_dreg_h,is_reg_h,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),(dreg),0,(reg)); x86_alu_reg8_reg8((inst),(opc),((dreg)&0x7),((reg)&0x7),(is_dreg_h),(is_reg_h)); amd64_codegen_post(inst); } while (0)
 #define amd64_alu_reg_mem_size(inst,opc,reg,mem,size) do { amd64_codegen_pre(inst); amd64_emit_rex ((inst),(size),0,0,(reg)); x86_alu_reg_mem((inst),(opc),((reg)&0x7),(mem)); amd64_codegen_post(inst); } while (0)

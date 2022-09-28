@@ -134,8 +134,7 @@ namespace System.Data.OleDb
         { // V1.2.3300, XXXParameter V1.0.3300
             get
             {
-                string? sourceColumn = _sourceColumn;
-                return ((null != sourceColumn) ? sourceColumn : string.Empty);
+                return _sourceColumn ?? string.Empty;
             }
             set
             {

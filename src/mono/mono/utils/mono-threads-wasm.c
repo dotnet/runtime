@@ -8,6 +8,7 @@
 
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-mmap.h>
+#include <mono/utils/mono-threads-api.h>
 #include <mono/utils/mono-threads-debug.h>
 
 #include <glib.h>
@@ -28,6 +29,7 @@ EMSCRIPTEN_KEEPALIVE
 static int
 wasm_get_stack_base (void)
 {
+	// wasm-mt: add MONO_ENTER_GC_UNSAFE / MONO_EXIT_GC_UNSAFE if this function becomes more complex
 	return emscripten_stack_get_end ();
 }
 
@@ -35,6 +37,7 @@ EMSCRIPTEN_KEEPALIVE
 static int
 wasm_get_stack_size (void)
 {
+	// wasm-mt: add MONO_ENTER_GC_UNSAFE / MONO_EXIT_GC_UNSAFE if this function becomes more complex
 	return (guint8*)emscripten_stack_get_base () - (guint8*)emscripten_stack_get_end ();
 }
 
@@ -177,7 +180,9 @@ mono_threads_platform_yield (void)
 void
 mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
+#ifndef HOST_WASI
 	int tmp;
+#endif	
 #ifdef __EMSCRIPTEN_PTHREADS__
 	pthread_attr_t attr;
 	gint res;
@@ -226,13 +231,14 @@ mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_d
 	pthread_attr_t attr;
 	pthread_t thread;
 	gint res;
-	gsize set_stack_size;
 
 	res = pthread_attr_init (&attr);
 	if (res != 0)
 		g_error ("%s: pthread_attr_init failed, error: \"%s\" (%d)", __func__, g_strerror (res), res);
 
 #if 0
+	gsize set_stack_size;
+
 	if (stack_size)
 		set_stack_size = *stack_size;
 	else
@@ -355,6 +361,7 @@ G_EXTERN_C
 EMSCRIPTEN_KEEPALIVE void
 mono_background_exec (void)
 {
+	MONO_ENTER_GC_UNSAFE;
 #ifndef DISABLE_THREADS
 	g_assert (mono_threads_wasm_is_browser_thread ());
 #endif
@@ -366,6 +373,7 @@ mono_background_exec (void)
 		cb ();
 	}
 	g_slist_free (j);
+	MONO_EXIT_GC_UNSAFE;
 }
 
 gboolean
@@ -388,6 +396,39 @@ mono_threads_wasm_is_browser_thread (void)
 #endif
 }
 
+MonoNativeThreadId
+mono_threads_wasm_browser_thread_tid (void)
+{
+#ifdef DISABLE_THREADS
+	return (MonoNativeThreadId)1;
+#else
+	return (MonoNativeThreadId)emscripten_main_browser_thread_id ();
+#endif
+}
+
+#ifndef DISABLE_THREADS
+extern void
+mono_wasm_pthread_on_pthread_attached (gpointer pthread_id);
+#endif
+
+void
+mono_threads_wasm_on_thread_attached (void)
+{
+#ifdef DISABLE_THREADS
+	return;
+#else
+	if (mono_threads_wasm_is_browser_thread ()) {
+		return;
+	}
+	// Notify JS that the pthread attachd to Mono
+	pthread_t id = pthread_self ();
+	MONO_ENTER_GC_SAFE;
+	mono_wasm_pthread_on_pthread_attached (id);
+	MONO_EXIT_GC_SAFE;
+#endif
+}
+
+
 #ifndef DISABLE_THREADS
 void
 mono_threads_wasm_async_run_in_main_thread (void (*func) (void))
@@ -400,6 +441,14 @@ mono_threads_wasm_async_run_in_main_thread_vi (void (*func) (gpointer), gpointer
 {
 	emscripten_async_run_in_main_runtime_thread (EM_FUNC_SIG_VI, func, user_data);
 }
+
+void
+mono_threads_wasm_async_run_in_main_thread_vii (void (*func) (gpointer, gpointer), gpointer user_data1, gpointer user_data2)
+{
+	emscripten_async_run_in_main_runtime_thread (EM_FUNC_SIG_VII, func, user_data1, user_data2);
+}
+
+
 #endif /* DISABLE_THREADS */
 
 #endif /* HOST_BROWSER */

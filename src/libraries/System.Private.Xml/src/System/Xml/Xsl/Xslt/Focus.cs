@@ -5,11 +5,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Xml.Xsl.XPath;
 using System.Xml.Xsl.Qil;
+using T = System.Xml.Xsl.XmlQueryTypeFactory;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using T = XmlQueryTypeFactory;
-
     // <spec>http://www.w3.org/TR/xslt20/#dt-singleton-focus</spec>
     internal enum SingletonFocusType
     {
@@ -183,15 +182,9 @@ namespace System.Xml.Xsl.Xslt
             return _f.XsltConvert(_f.PositionOf(_current!), T.DoubleX);
         }
 
-        public QilNode GetLast()
-        {
-            if (_last == null)
-            {
-                // Create a let that will be fixed up later in ConstructLoop or by LastFixupVisitor
-                _last = _f.Let(_f.Double(0));
-            }
-            return _last;
-        }
+        public QilNode GetLast() =>
+            // Create a let that will be fixed up later in ConstructLoop or by LastFixupVisitor
+            _last ??= _f.Let(_f.Double(0));
 
         public void EnsureCache()
         {

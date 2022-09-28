@@ -20,18 +20,7 @@ namespace System.Net
         // This can be used to cache the results of HttpListener.AuthenticationSchemeSelectorDelegate.
         internal AuthenticationSchemes AuthenticationSchemes { get; set; }
 
-        public HttpListenerResponse Response
-        {
-            get
-            {
-                if (_response == null)
-                {
-                    _response = new HttpListenerResponse(this);
-                }
-
-                return _response;
-            }
-        }
+        public HttpListenerResponse Response => _response ??= new HttpListenerResponse(this);
 
         public Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(string? subProtocol)
         {

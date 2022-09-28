@@ -4,11 +4,10 @@
     <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <NoWarn>$(NoWarn),CA2007</NoWarn>
+    <UseAppHost>false</UseAppHost>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Serilog.Extensions.Logging.File" Version="2.0.0" />
-
     <ProjectReference Include="..\BrowserDebugProxy\BrowserDebugProxy.csproj" />
   </ItemGroup>
 

@@ -785,18 +785,18 @@ public:
 
 typedef DPTR(TypedByRef) PTR_TypedByRef;
 
-typedef Array<I1>   I1Array;
-typedef Array<I2>   I2Array;
-typedef Array<I4>   I4Array;
-typedef Array<I8>   I8Array;
-typedef Array<R4>   R4Array;
-typedef Array<R8>   R8Array;
-typedef Array<U1>   U1Array;
-typedef Array<U1>   BOOLArray;
-typedef Array<U2>   U2Array;
-typedef Array<WCHAR>   CHARArray;
-typedef Array<U4>   U4Array;
-typedef Array<U8>   U8Array;
+typedef Array<CLR_I1>   I1Array;
+typedef Array<CLR_I2>   I2Array;
+typedef Array<CLR_I4>   I4Array;
+typedef Array<CLR_I8>   I8Array;
+typedef Array<CLR_R4>   R4Array;
+typedef Array<CLR_R8>   R8Array;
+typedef Array<CLR_U1>   U1Array;
+typedef Array<CLR_U1>   BOOLArray;
+typedef Array<CLR_U2>   U2Array;
+typedef Array<CLR_CHAR> CHARArray;
+typedef Array<CLR_U4>   U4Array;
+typedef Array<CLR_U8>   U8Array;
 typedef Array<UPTR> UPTRArray;
 typedef PtrArray    PTRArray;
 
@@ -928,7 +928,7 @@ class StringObject : public Object
     static STRINGREF NewString(LPCUTF8 psz, int cBytes);
 
     static STRINGREF GetEmptyString();
-    static STRINGREF* GetEmptyStringRefPtr();
+    static STRINGREF* GetEmptyStringRefPtr(void** pinnedString);
 
     static STRINGREF* InitEmptyStringRefPtr();
 
@@ -938,7 +938,7 @@ class StringObject : public Object
     static BOOL CaseInsensitiveCompHelper(_In_reads_(aLength) WCHAR * strA, _In_z_ INT8 * strB, int aLength, int bLength, int *result);
 
     /*=================RefInterpretGetStringValuesDangerousForGC======================
-    **N.B.: This perfoms no range checking and relies on the caller to have done this.
+    **N.B.: This performs no range checking and relies on the caller to have done this.
     **Args: (IN)ref -- the String to be interpretted.
     **      (OUT)chars -- a pointer to the characters in the buffer.
     **      (OUT)length -- a pointer to the length of the buffer.
@@ -962,6 +962,7 @@ class StringObject : public Object
 
 private:
     static STRINGREF* EmptyStringRefPtr;
+    static bool EmptyStringIsFrozen;
 };
 
 /*================================GetEmptyString================================
@@ -990,19 +991,27 @@ inline STRINGREF StringObject::GetEmptyString() {
     return *refptr;
 }
 
-inline STRINGREF* StringObject::GetEmptyStringRefPtr() {
+inline STRINGREF* StringObject::GetEmptyStringRefPtr(void** pinnedString) {
 
     CONTRACTL {
         THROWS;
         MODE_ANY;
         GC_TRIGGERS;
     } CONTRACTL_END;
+
     STRINGREF* refptr = EmptyStringRefPtr;
 
     //If we've never gotten a reference to the EmptyString, we need to go get one.
-    if (refptr==NULL) {
+    if (refptr == nullptr)
+    {
         refptr = InitEmptyStringRefPtr();
     }
+
+    if (EmptyStringIsFrozen && pinnedString != nullptr)
+    {
+        *pinnedString = *(void**)refptr;
+    }
+
     //We've already have a reference to the EmptyString, so we can just return it.
     return refptr;
 }
@@ -1097,7 +1106,7 @@ public:
 //   m_object - a field that has a reference type in it. Used only for RuntimeMethodInfoStub to keep the real type alive.
 // This structure matches the structure up to the m_pMD for several different managed types.
 // (RuntimeConstructorInfo, RuntimeMethodInfo, and RuntimeMethodInfoStub). These types are unrelated in the type
-// system except that they all implement a particular interface. It is important that that interface is not attached to any
+// system except that they all implement a particular interface. It is important that such interface is not attached to any
 // type that does not sufficiently match this data structure.
 class ReflectMethodObject : public BaseObjectWithCachedData
 {
@@ -1141,7 +1150,7 @@ public:
 //   m_object - a field that has a reference type in it. Used only for RuntimeFieldInfoStub to keep the real type alive.
 // This structure matches the structure up to the m_pFD for several different managed types.
 // (RtFieldInfo and RuntimeFieldInfoStub). These types are unrelated in the type
-// system except that they all implement a particular interface. It is important that that interface is not attached to any
+// system except that they all implement a particular interface. It is important that such interface is not attached to any
 // type that does not sufficiently match this data structure.
 class ReflectFieldObject : public BaseObjectWithCachedData
 {
@@ -1153,7 +1162,6 @@ protected:
     INT32               m_empty2;
     OBJECTREF           m_empty3;
     OBJECTREF           m_empty4;
-    OBJECTREF           m_empty5;
     FieldDesc *         m_pFD;
 
 public:
@@ -1686,7 +1694,7 @@ class UnknownWrapper : public Object
 {
 protected:
 
-    UnknownWrapper(UnknownWrapper &wrap) {LIMITED_METHOD_CONTRACT}; // dissalow copy construction.
+    UnknownWrapper(UnknownWrapper &wrap) {LIMITED_METHOD_CONTRACT}; // disallow copy construction.
     UnknownWrapper() {LIMITED_METHOD_CONTRACT;}; // don't instantiate this class directly
     ~UnknownWrapper() {LIMITED_METHOD_CONTRACT;};
 
@@ -1722,7 +1730,7 @@ class DispatchWrapper : public Object
 {
 protected:
 
-    DispatchWrapper(DispatchWrapper &wrap) {LIMITED_METHOD_CONTRACT}; // dissalow copy construction.
+    DispatchWrapper(DispatchWrapper &wrap) {LIMITED_METHOD_CONTRACT}; // disallow copy construction.
     DispatchWrapper() {LIMITED_METHOD_CONTRACT;}; // don't instantiate this class directly
     ~DispatchWrapper() {LIMITED_METHOD_CONTRACT;};
 
@@ -1758,7 +1766,7 @@ class VariantWrapper : public Object
 {
 protected:
 
-    VariantWrapper(VariantWrapper &wrap) {LIMITED_METHOD_CONTRACT}; // dissalow copy construction.
+    VariantWrapper(VariantWrapper &wrap) {LIMITED_METHOD_CONTRACT}; // disallow copy construction.
     VariantWrapper() {LIMITED_METHOD_CONTRACT}; // don't instantiate this class directly
     ~VariantWrapper() {LIMITED_METHOD_CONTRACT};
 
@@ -1794,7 +1802,7 @@ class ErrorWrapper : public Object
 {
 protected:
 
-    ErrorWrapper(ErrorWrapper &wrap) {LIMITED_METHOD_CONTRACT}; // dissalow copy construction.
+    ErrorWrapper(ErrorWrapper &wrap) {LIMITED_METHOD_CONTRACT}; // disallow copy construction.
     ErrorWrapper() {LIMITED_METHOD_CONTRACT;}; // don't instantiate this class directly
     ~ErrorWrapper() {LIMITED_METHOD_CONTRACT;};
 
@@ -1837,7 +1845,7 @@ class CurrencyWrapper : public Object
 {
 protected:
 
-    CurrencyWrapper(CurrencyWrapper &wrap) {LIMITED_METHOD_CONTRACT}; // dissalow copy construction.
+    CurrencyWrapper(CurrencyWrapper &wrap) {LIMITED_METHOD_CONTRACT}; // disallow copy construction.
     CurrencyWrapper() {LIMITED_METHOD_CONTRACT;}; // don't instantiate this class directly
     ~CurrencyWrapper() {LIMITED_METHOD_CONTRACT;};
 
@@ -1876,7 +1884,7 @@ class BStrWrapper : public Object
 {
 protected:
 
-    BStrWrapper(BStrWrapper &wrap) {LIMITED_METHOD_CONTRACT}; // dissalow copy construction.
+    BStrWrapper(BStrWrapper &wrap) {LIMITED_METHOD_CONTRACT}; // disallow copy construction.
     BStrWrapper() {LIMITED_METHOD_CONTRACT}; // don't instantiate this class directly
     ~BStrWrapper() {LIMITED_METHOD_CONTRACT};
 
@@ -1913,6 +1921,9 @@ class SafeHandle : public Object
     //   Modifying the order or fields of this object may require
     //   other changes to the classlib class definition of this
     //   object or special handling when loading this system class.
+#if DEBUG
+    STRINGREF m_ctorStackTrace; // Debug-only stack trace captured when the SafeHandle was constructed
+#endif
     Volatile<LPVOID> m_handle;
     Volatile<INT32> m_state;        // Combined ref count and closed/disposed state (for atomicity)
     Volatile<CLR_BOOL> m_ownsHandle;
@@ -2184,7 +2195,7 @@ private:
         return dac_cast<PTR_StackTraceElement>(GetRaw() + sizeof(ArrayHeader));
     }
 
-    I1 const * GetRaw() const
+    CLR_I1 const * GetRaw() const
     {
         WRAPPER_NO_CONTRACT;
         assert(!!m_array);
@@ -2192,13 +2203,13 @@ private:
         return const_cast<I1ARRAYREF &>(m_array)->GetDirectPointerToNonObjectElements();
     }
 
-    PTR_I1 GetRaw()
+    PTR_INT8 GetRaw()
     {
         WRAPPER_NO_CONTRACT;
         SUPPORTS_DAC;
         assert(!!m_array);
 
-        return dac_cast<PTR_I1>(m_array->GetDirectPointerToNonObjectElements());
+        return dac_cast<PTR_INT8>(m_array->GetDirectPointerToNonObjectElements());
     }
 
     ArrayHeader const * GetHeader() const
@@ -2614,7 +2625,6 @@ public:
     static OBJECTREF Box(void* src, MethodTable* nullable);
     static BOOL UnBox(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static BOOL UnBoxNoGC(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
-    static BOOL UnBoxIntoArgNoGC(ArgDestination *argDest, OBJECTREF boxedVal, MethodTable* destMT);
     static void UnBoxNoCheck(void* dest, OBJECTREF boxedVal, MethodTable* destMT);
     static OBJECTREF BoxedNullableNull(TypeHandle nullableType) { return 0; }
 

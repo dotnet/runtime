@@ -218,7 +218,7 @@ BaseDomain *MethodDesc::GetDomain()
         FORBID_FAULT;
         SUPPORTS_DAC;
     }
-    CONTRACTL_END
+    CONTRACTL_END;
 
     return AppDomain::GetCurrentDomain();
 }
@@ -241,6 +241,24 @@ LoaderAllocator * MethodDesc::GetDomainSpecificLoaderAllocator()
 
 #endif //!DACCESS_COMPILE
 
+
+//*******************************************************************************
+LPCUTF8 MethodDesc::GetNameThrowing()
+{
+    CONTRACTL
+    {
+        THROWS;
+    }
+    CONTRACTL_END;
+
+    LPCUTF8 result = GetName();
+    if (result == NULL)
+    {
+        ThrowHR(COR_E_BADIMAGEFORMAT, BFA_METADATA_CORRUPT);
+    }
+    return result;
+}
+
 //*******************************************************************************
 LPCUTF8 MethodDesc::GetName(USHORT slot)
 {
@@ -260,9 +278,8 @@ LPCUTF8 MethodDesc::GetName()
         GC_NOTRIGGER;
         FORBID_FAULT;
         SUPPORTS_DAC;
-    }CONTRACTL_END;
-
-    g_IBCLogger.LogMethodDescAccess(this);
+    }
+    CONTRACTL_END;
 
     if (IsArray())
     {
@@ -342,7 +359,7 @@ VOID MethodDesc::GetMethodInfoWithNewSig(SString &namespaceOrClassName, SString 
 
 /*
  * Function to get a method's full name, something like
- * void [mscorlib]System.StubHelpers.BSTRMarshaler::ClearNative(native int)
+ * void [System.Private.CoreLib]System.StubHelpers.BSTRMarshaler::ClearNative(native int)
  */
 VOID MethodDesc::GetFullMethodInfo(SString& fullMethodSigName)
 {
@@ -355,17 +372,15 @@ VOID MethodDesc::GetFullMethodInfo(SString& fullMethodSigName)
     PCCOR_SIGNATURE pSig;
 
     SString methodFullName;
-    StackScratchBuffer namespaceNameBuffer, methodNameBuffer;
     methodFullName.AppendPrintf(
         (LPCUTF8)"[%s] %s::%s",
         GetModule()->GetAssembly()->GetSimpleName(),
-        namespaceOrClassName.GetUTF8(namespaceNameBuffer),
-        methodName.GetUTF8(methodNameBuffer));
+        namespaceOrClassName.GetUTF8(),
+        methodName.GetUTF8());
 
     GetSig(&pSig, &cSig);
 
-    StackScratchBuffer buffer;
-    PrettyPrintSig(pSig, (DWORD)cSig, methodFullName.GetUTF8(buffer), &qbOut, GetMDImport(), NULL);
+    PrettyPrintSig(pSig, (DWORD)cSig, methodFullName.GetUTF8(), &qbOut, GetMDImport(), NULL);
     fullMethodSigName.AppendUTF8((char *)qbOut.Ptr());
 }
 
@@ -502,8 +517,6 @@ PCODE MethodDesc::GetMethodEntryPoint()
 
     // Keep implementations of MethodDesc::GetMethodEntryPoint and MethodDesc::GetAddrOfSlot in sync!
 
-    g_IBCLogger.LogMethodDescAccess(this);
-
     if (HasNonVtableSlot())
     {
         SIZE_T size = GetBaseSize();
@@ -638,8 +651,6 @@ DWORD MethodDesc::GetNumGenericMethodArgs()
     }
     CONTRACTL_END
 
-    g_IBCLogger.LogMethodDescAccess(this);
-
     if (GetClassification() == mcInstantiated)
     {
         InstantiatedMethodDesc *pIMD = AsInstantiatedMethodDesc();
@@ -760,13 +771,9 @@ Module *MethodDesc::GetDefiningModuleForOpenMethod()
     Instantiation inst = GetMethodInstantiation();
     for (DWORD i = 0; i < inst.GetNumArgs(); i++)
     {
-        // Encoded types are never open
-        if (!inst[i].IsEncodedFixup())
-        {
-            pModule = inst[i].GetDefiningModuleForOpenType();
-            if (pModule != NULL)
-                return pModule;
-        }
+        pModule = inst[i].GetDefiningModuleForOpenType();
+        if (pModule != NULL)
+            return pModule;
     }
 
     return NULL;
@@ -853,8 +860,8 @@ WORD MethodDesc::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
     // We need to make this operation atomic (multiple threads can play with the flags field at the same time). But the flags field
     // is a word and we only have interlock operations over dwords. So we round down the flags field address to the nearest aligned
     // dword (along with the intended bitfield mask). Note that we make the assumption that the flags word is aligned itself, so we
-    // only have two possibilites: the field already lies on a dword boundary or it's precisely one word out.
-    DWORD* pdwFlags = (DWORD*)((ULONG_PTR)&m_wFlags - (offsetof(MethodDesc, m_wFlags) & 0x3));
+    // only have two possibilities: the field already lies on a dword boundary or it's precisely one word out.
+    LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_wFlags - (offsetof(MethodDesc, m_wFlags) & 0x3));
 
 #ifdef _PREFAST_
 #pragma warning(push)
@@ -873,12 +880,10 @@ WORD MethodDesc::InterlockedUpdateFlags(WORD wMask, BOOL fSet)
 #pragma warning(pop)
 #endif
 
-    g_IBCLogger.LogMethodDescWriteAccess(this);
-
     if (fSet)
-        FastInterlockOr(pdwFlags, dwMask);
+        InterlockedOr(pdwFlags, dwMask);
     else
-        FastInterlockAnd(pdwFlags, ~dwMask);
+        InterlockedAnd(pdwFlags, ~dwMask);
 
     return wOldState;
 }
@@ -893,8 +898,8 @@ WORD MethodDesc::InterlockedUpdateFlags3(WORD wMask, BOOL fSet)
     // We need to make this operation atomic (multiple threads can play with the flags field at the same time). But the flags field
     // is a word and we only have interlock operations over dwords. So we round down the flags field address to the nearest aligned
     // dword (along with the intended bitfield mask). Note that we make the assumption that the flags word is aligned itself, so we
-    // only have two possibilites: the field already lies on a dword boundary or it's precisely one word out.
-    DWORD* pdwFlags = (DWORD*)((ULONG_PTR)&m_wFlags3AndTokenRemainder - (offsetof(MethodDesc, m_wFlags3AndTokenRemainder) & 0x3));
+    // only have two possibilities: the field already lies on a dword boundary or it's precisely one word out.
+    LONG* pdwFlags = (LONG*)((ULONG_PTR)&m_wFlags3AndTokenRemainder - (offsetof(MethodDesc, m_wFlags3AndTokenRemainder) & 0x3));
 
 #ifdef _PREFAST_
 #pragma warning(push)
@@ -913,12 +918,10 @@ WORD MethodDesc::InterlockedUpdateFlags3(WORD wMask, BOOL fSet)
 #pragma warning(pop)
 #endif
 
-    g_IBCLogger.LogMethodDescWriteAccess(this);
-
     if (fSet)
-        FastInterlockOr(pdwFlags, dwMask);
+        InterlockedOr(pdwFlags, dwMask);
     else
-        FastInterlockAnd(pdwFlags, ~dwMask);
+        InterlockedAnd(pdwFlags, ~dwMask);
 
     return wOldState;
 }
@@ -938,8 +941,6 @@ PCODE MethodDesc::GetNativeCode()
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
     _ASSERTE(!IsDefaultInterfaceMethod() || HasNativeCodeSlot());
-
-    g_IBCLogger.LogMethodDescAccess(this);
 
     if (HasNativeCodeSlot())
     {
@@ -1282,7 +1283,7 @@ WORD MethodDesc::GetComSlot()
     // COM slots are biased from MethodTable slots depending on interface type
     WORD numExtraSlots = ComMethodTable::GetNumExtraSlots(pMT->GetComInterfaceType());
 
-    // Normal interfaces are layed out the same way as in the MethodTable, while
+    // Normal interfaces are laid out the same way as in the MethodTable, while
     // sparse interfaces need to go through an extra layer of mapping.
     WORD slot;
 
@@ -1377,7 +1378,6 @@ Module *MethodDesc::GetModule() const
     STATIC_CONTRACT_FORBID_FAULT;
     SUPPORTS_DAC;
 
-    g_IBCLogger.LogMethodDescAccess(this);
     Module *pModule = GetModule_NoLogging();
 
     return pModule;
@@ -1837,7 +1837,7 @@ MethodDesc* MethodDesc::ResolveGenericVirtualMethod(OBJECTREF *orThis)
     MethodTable *pTargetMT = pTargetMDBeforeGenericMethodArgs->GetMethodTable();
 
     // No need to find/create a new generic instantiation if the target is the
-    // same as the static, i.e. the virtual method has not been overriden.
+    // same as the static, i.e. the virtual method has not been overridden.
     if (!pTargetMT->IsSharedByGenericInstantiations() && !pTargetMT->IsValueType() &&
         pTargetMDBeforeGenericMethodArgs == pStaticMDWithoutGenericMethodArgs)
         RETURN(pStaticMD);
@@ -2004,9 +2004,6 @@ PCODE MethodDesc::TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags
     }
     CONTRACTL_END
 
-    // Record this method desc if required
-    g_IBCLogger.LogMethodDescAccess(this);
-
     if (IsGenericMethodDefinition())
     {
         _ASSERTE(!"Cannot take the address of an uninstantiated generic method.");
@@ -2137,6 +2134,13 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
             return (MethodDesc*)((FixupPrecode*)pInstr)->GetMethodDesc();
         }
 
+        // Is it an FCALL?
+        MethodDesc* pFCallMD = ECall::MapTargetBackToMethod(entryPoint);
+        if (pFCallMD != NULL)
+        {
+            return pFCallMD;
+        }
+
         return NULL;
     }
 
@@ -2170,11 +2174,6 @@ MethodDesc* Entry2MethodDesc(PCODE entryPoint, MethodTable *pMT)
         RETURN(pMD);
 
     pMD = VirtualCallStubManagerManager::Entry2MethodDesc(entryPoint, pMT);
-    if (pMD != NULL)
-        RETURN(pMD);
-
-    // Is it an FCALL?
-    pMD = ECall::MapTargetBackToMethod(entryPoint);
     if (pMD != NULL)
         RETURN(pMD);
 
@@ -2398,8 +2397,6 @@ void MethodDesc::CheckRestore(ClassLoadLevel level)
 
     if (!GetMethodTable()->IsFullyLoaded())
     {
-        g_IBCLogger.LogMethodDescAccess(this);
-
         if (GetClassification() == mcInstantiated)
         {
 #ifndef DACCESS_COMPILE
@@ -2408,8 +2405,6 @@ void MethodDesc::CheckRestore(ClassLoadLevel level)
             // First restore method table pointer in singleton chunk;
             // it might be out-of-module
             ClassLoader::EnsureLoaded(TypeHandle(GetMethodTable()), level);
-
-            g_IBCLogger.LogMethodDescWriteAccess(this);
 
             pIMD->m_wFlags2 = pIMD->m_wFlags2 & ~InstantiatedMethodDesc::Unrestored;
 
@@ -2981,19 +2976,19 @@ void MethodDesc::InterlockedUpdateFlags2(BYTE bMask, BOOL fSet)
 {
     WRAPPER_NO_CONTRACT;
 
-    ULONG* pLong = (ULONG*)(&m_bFlags2 - 3);
+    LONG* pLong = (LONG*)(&m_bFlags2 - 3);
     static_assert_no_msg(offsetof(MethodDesc, m_bFlags2) % sizeof(LONG) == 3);
 
 #if BIGENDIAN
     if (fSet)
-        FastInterlockOr(pLong, (ULONG)bMask);
+        InterlockedOr(pLong, (ULONG)bMask);
     else
-        FastInterlockAnd(pLong, ~(ULONG)bMask);
+        InterlockedAnd(pLong, ~(ULONG)bMask);
 #else // !BIGENDIAN
     if (fSet)
-        FastInterlockOr(pLong, (ULONG)bMask << (3 * 8));
+        InterlockedOr(pLong, (LONG)bMask << (3 * 8));
     else
-        FastInterlockAnd(pLong, ~((ULONG)bMask << (3 * 8)));
+        InterlockedAnd(pLong, ~((LONG)bMask << (3 * 8)));
 #endif // !BIGENDIAN
 }
 
@@ -3029,7 +3024,7 @@ Precode* MethodDesc::GetOrCreatePrecode()
         AllocMemTracker amt;
         Precode* pPrecode = Precode::Allocate(requiredType, this, GetLoaderAllocator(), &amt);
 
-        if (FastInterlockCompareExchangePointer(pSlot, pPrecode->GetEntryPoint(), tempEntry) == tempEntry)
+        if (InterlockedCompareExchangeT(pSlot, pPrecode->GetEntryPoint(), tempEntry) == tempEntry)
             amt.SuppressRelease();
     }
 
@@ -3320,7 +3315,7 @@ BOOL MethodDesc::SetNativeCodeInterlocked(PCODE addr, PCODE pExpected /*=NULL*/)
 
         expected = *pSlot;
 
-        return FastInterlockCompareExchangePointer(reinterpret_cast<TADDR*>(pSlot),
+        return InterlockedCompareExchangeT(reinterpret_cast<TADDR*>(pSlot),
             (TADDR&)addr, (TADDR&)expected) == (TADDR&)expected;
     }
 
@@ -3357,7 +3352,7 @@ BOOL MethodDesc::SetStableEntryPointInterlocked(PCODE addr)
     PCODE pExpected = GetTemporaryEntryPoint();
     PTR_PCODE pSlot = GetAddrOfSlot();
 
-    BOOL fResult = FastInterlockCompareExchangePointer(pSlot, addr, pExpected) == pExpected;
+    BOOL fResult = InterlockedCompareExchangeT(pSlot, addr, pExpected) == pExpected;
 
     InterlockedUpdateFlags2(enum_flag2_HasStableEntryPoint, TRUE);
 
@@ -3443,7 +3438,7 @@ void NDirectMethodDesc::InterlockedSetNDirectFlags(WORD wFlags)
     ((WORD*)&dwMask)[0] |= wFlags;
 
     // Now, slam all 32 bits atomically.
-    FastInterlockOr((DWORD*)pFlags, dwMask);
+    InterlockedOr((LONG*)pFlags, dwMask);
 }
 
 
@@ -4040,14 +4035,11 @@ void ComPlusCallMethodDesc::InitRetThunk()
     if (m_pComPlusCallInfo->m_pRetThunk != NULL)
         return;
 
-    // Record the fact that we are writting into the ComPlusCallMethodDesc
-    g_IBCLogger.LogMethodDescAccess(this);
-
     UINT numStackBytes = CbStackPop();
 
     LPVOID pRetThunk = ComPlusCall::GetRetThunk(numStackBytes);
 
-    FastInterlockCompareExchangePointer<void *>(&m_pComPlusCallInfo->m_pRetThunk, pRetThunk, NULL);
+    InterlockedCompareExchangeT<void *>(&m_pComPlusCallInfo->m_pRetThunk, pRetThunk, NULL);
 #endif // TARGET_X86
 }
 #endif //!DACCESS_COMPILE

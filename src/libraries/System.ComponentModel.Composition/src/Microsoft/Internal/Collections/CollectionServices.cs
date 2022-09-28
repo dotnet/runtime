@@ -131,10 +131,7 @@ namespace Microsoft.Internal.Collections
 
         private static List<T> FastAppendToListAllowNulls<T>(this List<T>? source, T value)
         {
-            if (source == null)
-            {
-                source = new List<T>();
-            }
+            source ??= new List<T>();
             source.Add(value);
 
             return source;

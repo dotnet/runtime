@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -242,7 +241,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return item at the specified index.
         /// </summary>
-        object System.Collections.IList.this[int index]
+        object? System.Collections.IList.this[int index]
         {
             get
             {
@@ -257,7 +256,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Items may not be added through the IList interface.
         /// </summary>
-        int System.Collections.IList.Add(object value)
+        int System.Collections.IList.Add(object? value)
         {
             throw new NotSupportedException();
         }
@@ -273,23 +272,23 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Returns true if the specified value is in the sequence.
         /// </summary>
-        bool System.Collections.IList.Contains(object value)
+        bool System.Collections.IList.Contains(object? value)
         {
-            return Contains((T)value);
+            return Contains((T)value!);
         }
 
         /// <summary>
         /// Returns the index of the specified value in the sequence.
         /// </summary>
-        int System.Collections.IList.IndexOf(object value)
+        int System.Collections.IList.IndexOf(object? value)
         {
-            return IndexOf((T)value);
+            return IndexOf((T)value!);
         }
 
         /// <summary>
         /// Items may not be added through the IList interface.
         /// </summary>
-        void System.Collections.IList.Insert(int index, object value)
+        void System.Collections.IList.Insert(int index, object? value)
         {
             throw new NotSupportedException();
         }
@@ -297,7 +296,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Items may not be removed through the IList interface.
         /// </summary>
-        void System.Collections.IList.Remove(object value)
+        void System.Collections.IList.Remove(object? value)
         {
             throw new NotSupportedException();
         }
@@ -496,7 +495,7 @@ namespace System.Xml.Xsl.Runtime
     {
         public static new readonly XmlQueryNodeSequence Empty = new XmlQueryNodeSequence();
 
-        private XmlQueryNodeSequence _docOrderDistinct;
+        private XmlQueryNodeSequence? _docOrderDistinct;
 
         /// <summary>
         /// If "seq" is non-null, then clear it and reuse it.  Otherwise, create a new XmlQueryNodeSequence.

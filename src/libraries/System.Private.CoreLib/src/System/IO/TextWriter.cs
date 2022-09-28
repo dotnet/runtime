@@ -110,10 +110,7 @@ namespace System.IO
             get => CoreNewLineStr;
             set
             {
-                if (value == null)
-                {
-                    value = Environment.NewLineConst;
-                }
+                value ??= Environment.NewLineConst;
 
                 CoreNewLineStr = value;
                 CoreNewLine = value.ToCharArray();

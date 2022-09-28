@@ -1,11 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Reflection;
-using System.Xml;
 using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Runtime.Serialization.DataContracts;
+using System.Xml;
 
 namespace System.Runtime.Serialization
 {
@@ -68,8 +69,10 @@ namespace System.Runtime.Serialization
         }
 
         private static PropertyInfo? s_extensionDataProperty;
-        internal static PropertyInfo ExtensionDataProperty => s_extensionDataProperty ??
-                                                              (s_extensionDataProperty = typeof(IExtensibleDataObject).GetProperty("ExtensionData")!);
+        internal static PropertyInfo ExtensionDataProperty => s_extensionDataProperty ??= typeof(IExtensibleDataObject).GetProperty("ExtensionData")!;
+
+        private static MethodInfo? s_boxPointer;
+        internal static MethodInfo BoxPointer => s_boxPointer ??= typeof(Pointer).GetMethod("Box")!;
 
         private static ConstructorInfo? s_dictionaryEnumeratorCtor;
         internal static ConstructorInfo DictionaryEnumeratorCtor
@@ -164,7 +167,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_getUninitializedObjectMethod == null)
                 {
-                    s_getUninitializedObjectMethod = typeof(XmlFormatReaderGenerator).GetMethod("UnsafeGetUninitializedObject", Globals.ScanAllMembers, new Type[] { typeof(int) });
+                    s_getUninitializedObjectMethod = typeof(XmlFormatReaderGenerator).GetMethod("UnsafeGetUninitializedObject", Globals.ScanAllMembers, new Type[] { typeof(int) })!;
                     Debug.Assert(s_getUninitializedObjectMethod != null);
                 }
                 return s_getUninitializedObjectMethod;
@@ -185,6 +188,9 @@ namespace System.Runtime.Serialization
             }
         }
 
+        private static MethodInfo? s_unboxPointer;
+        internal static MethodInfo UnboxPointer => s_unboxPointer ??= typeof(Pointer).GetMethod("Unbox")!;
+
         private static PropertyInfo? s_nodeTypeProperty;
         internal static PropertyInfo NodeTypeProperty
         {
@@ -199,14 +205,16 @@ namespace System.Runtime.Serialization
             }
         }
 
+        private static ConstructorInfo? s_serializationExceptionCtor;
+        internal static ConstructorInfo SerializationExceptionCtor => s_serializationExceptionCtor ??= typeof(SerializationException).GetConstructor(new Type[] { typeof(string) })!;
+
         private static ConstructorInfo? s_extensionDataObjectCtor;
-        internal static ConstructorInfo ExtensionDataObjectCtor => s_extensionDataObjectCtor ??
-                                                                   (s_extensionDataObjectCtor =
-                                                                       typeof(ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, Type.EmptyTypes)!);
+        internal static ConstructorInfo ExtensionDataObjectCtor => s_extensionDataObjectCtor ??= typeof(ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, Type.EmptyTypes)!;
 
         private static ConstructorInfo? s_hashtableCtor;
         internal static ConstructorInfo HashtableCtor
         {
+            [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
@@ -531,9 +539,24 @@ namespace System.Runtime.Serialization
             }
         }
 
+        private static MethodInfo? s_replaceDeserializedObjectMethod;
+        internal static MethodInfo ReplaceDeserializedObjectMethod
+        {
+            get
+            {
+                if (s_replaceDeserializedObjectMethod == null)
+                {
+                    s_replaceDeserializedObjectMethod = typeof(XmlObjectSerializerReadContext).GetMethod("ReplaceDeserializedObject", Globals.ScanAllMembers);
+                    Debug.Assert(s_replaceDeserializedObjectMethod != null);
+                }
+                return s_replaceDeserializedObjectMethod;
+            }
+        }
+
         private static MethodInfo? s_getExistingObjectMethod;
         internal static MethodInfo GetExistingObjectMethod
         {
+            [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             get
             {
                 if (s_getExistingObjectMethod == null)
@@ -612,20 +635,6 @@ namespace System.Runtime.Serialization
                     Debug.Assert(s_getArrayLengthMethod != null);
                 }
                 return s_getArrayLengthMethod;
-            }
-        }
-
-        private static MethodInfo? s_createSerializationExceptionMethod;
-        internal static MethodInfo CreateSerializationExceptionMethod
-        {
-            get
-            {
-                if (s_createSerializationExceptionMethod == null)
-                {
-                    s_createSerializationExceptionMethod = typeof(XmlObjectSerializerReadContext).GetMethod("CreateSerializationException", Globals.ScanAllMembers, new Type[] { typeof(string) });
-                    Debug.Assert(s_createSerializationExceptionMethod != null);
-                }
-                return s_createSerializationExceptionMethod;
             }
         }
 
@@ -759,6 +768,7 @@ namespace System.Runtime.Serialization
             }
         }
 
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod",
                 Justification = "The call to MakeGenericMethod is safe due to the fact that XmlObjectSerializerWriteContext.GetDefaultValue is not annotated.")]
         internal static object? GetDefaultValue(Type type)
@@ -823,33 +833,11 @@ namespace System.Runtime.Serialization
             }
         }
 
-
-        private static MethodInfo? s_isMemberTypeSameAsMemberValue;
-        internal static MethodInfo IsMemberTypeSameAsMemberValue
-        {
-            get
-            {
-                if (s_isMemberTypeSameAsMemberValue == null)
-                {
-                    s_isMemberTypeSameAsMemberValue = typeof(XmlObjectSerializerWriteContext).GetMethod("IsMemberTypeSameAsMemberValue", Globals.ScanAllMembers, new Type[] { typeof(object), typeof(Type) });
-                    Debug.Assert(s_isMemberTypeSameAsMemberValue != null);
-                }
-                return s_isMemberTypeSameAsMemberValue;
-            }
-        }
-
         private static MethodInfo? s_writeExtensionDataMethod;
         internal static MethodInfo WriteExtensionDataMethod
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            get
-            {
-                if (s_writeExtensionDataMethod == null)
-                {
-                    s_writeExtensionDataMethod = typeof(XmlObjectSerializerWriteContext).GetMethod("WriteExtensionData", Globals.ScanAllMembers)!;
-                }
-                return s_writeExtensionDataMethod;
-            }
+            get => s_writeExtensionDataMethod ??= typeof(XmlObjectSerializerWriteContext).GetMethod("WriteExtensionData", Globals.ScanAllMembers)!;
         }
 
         private static MethodInfo? s_writeXmlValueMethod;
@@ -925,8 +913,7 @@ namespace System.Runtime.Serialization
         }
 
         private static MethodInfo? s_extensionDataSetExplicitMethodInfo;
-        internal static MethodInfo ExtensionDataSetExplicitMethodInfo => s_extensionDataSetExplicitMethodInfo ??
-                                                                         (s_extensionDataSetExplicitMethodInfo = typeof(IExtensibleDataObject).GetMethod(Globals.ExtensionDataSetMethod)!);
+        internal static MethodInfo ExtensionDataSetExplicitMethodInfo => s_extensionDataSetExplicitMethodInfo ??= typeof(IExtensibleDataObject).GetMethod(Globals.ExtensionDataSetMethod)!;
 
         private static PropertyInfo? s_childElementNamespacesProperty;
         internal static PropertyInfo ChildElementNamespacesProperty

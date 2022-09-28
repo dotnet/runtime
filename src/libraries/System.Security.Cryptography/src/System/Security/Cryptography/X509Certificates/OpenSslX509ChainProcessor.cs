@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Formats.Asn1;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates.Asn1;
@@ -262,10 +263,7 @@ namespace System.Security.Cryptography.X509Certificates
                         break;
                     }
 
-                    if (downloadedCerts == null)
-                    {
-                        downloadedCerts = new List<X509Certificate2>();
-                    }
+                    downloadedCerts ??= new List<X509Certificate2>();
 
                     AddToStackAndUpRef(downloaded.Handle, _untrustedLookup);
                     downloadedCerts.Add(downloaded);
@@ -637,7 +635,32 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private WorkingChain BuildWorkingChain()
+        [UnmanagedCallersOnly]
+        private static unsafe int VerifyCallback(int ok, IntPtr ctx)
+        {
+            if (ok != 0)
+            {
+                return ok;
+            }
+
+            try
+            {
+                using (var storeCtx = new SafeX509StoreCtxHandle(ctx, ownsHandle: false))
+                {
+                    void* appData = Interop.Crypto.X509StoreCtxGetAppData(storeCtx);
+
+                    ref WorkingChain workingChain = ref Unsafe.As<byte, WorkingChain>(ref *(byte*)appData);
+
+                    return workingChain.VerifyCallback(storeCtx);
+                }
+            }
+            catch
+            {
+                return -1;
+            }
+        }
+
+        private unsafe WorkingChain BuildWorkingChain()
         {
             if (_workingChain != null)
             {
@@ -648,8 +671,8 @@ namespace System.Security.Cryptography.X509Certificates
             WorkingChain? extraDispose = null;
 
             Interop.Crypto.X509StoreCtxReset(_storeCtx);
-            Interop.Crypto.X509StoreVerifyCallback workingCallback = workingChain.VerifyCallback;
-            Interop.Crypto.X509StoreCtxSetVerifyCallback(_storeCtx, workingCallback);
+
+            Interop.Crypto.X509StoreCtxSetVerifyCallback(_storeCtx, &VerifyCallback, Unsafe.AsPointer(ref workingChain));
 
             bool verify = Interop.Crypto.X509VerifyCert(_storeCtx);
 
@@ -661,14 +684,11 @@ namespace System.Security.Cryptography.X509Certificates
                 // Reset to a WorkingChain that won't fail.
                 extraDispose = workingChain;
                 workingChain = new WorkingChain(abortOnSignatureError: false);
-                workingCallback = workingChain.VerifyCallback;
-                Interop.Crypto.X509StoreCtxSetVerifyCallback(_storeCtx, workingCallback);
+
+                Interop.Crypto.X509StoreCtxSetVerifyCallback(_storeCtx, &VerifyCallback, Unsafe.AsPointer(ref workingChain));
 
                 verify = Interop.Crypto.X509VerifyCert(_storeCtx);
             }
-
-            // Keep the bound delegate alive until X509_verify_cert isn't going to call it any longer.
-            GC.KeepAlive(workingCallback);
 
             // Because our callback tells OpenSSL that every problem is ignorable, it should tell us that the
             // chain is just fine (unless it returned a negative code for an exception)
@@ -760,11 +780,11 @@ namespace System.Security.Cryptography.X509Certificates
             using (SafeOcspRequestHandle req = Interop.Crypto.X509ChainBuildOcspRequest(_storeCtx, chainDepth))
             {
                 ArraySegment<byte> encoded = Interop.Crypto.OpenSslRentEncode(
-                    handle => Interop.Crypto.GetOcspRequestDerSize(handle),
-                    (handle, buf) => Interop.Crypto.EncodeOcspRequest(handle, buf),
+                    Interop.Crypto.GetOcspRequestDerSize,
+                    Interop.Crypto.EncodeOcspRequest,
                     req);
 
-                ArraySegment<char> urlEncoded = Base64UrlEncode(encoded);
+                ArraySegment<char> urlEncoded = UrlBase64Encoding.RentEncode(encoded);
                 string requestUrl = UrlPathAppend(baseUri, urlEncoded);
 
                 // Nothing sensitive is in the encoded request (it was sent via HTTP-non-S)
@@ -815,87 +835,12 @@ namespace System.Security.Cryptography.X509Certificates
             Debug.Assert(baseUri.Length > 0);
             Debug.Assert(resource.Length > 0);
 
-            int count = baseUri.Length + resource.Length;
-
-            if (baseUri[baseUri.Length - 1] == '/')
+            if (baseUri.EndsWith('/'))
             {
-                return string.Create(
-                    count,
-                    (baseUri, resource),
-                    (buf, st) =>
-                    {
-                        st.baseUri.CopyTo(buf);
-                        st.resource.Span.CopyTo(buf.Slice(st.baseUri.Length));
-                    });
+                return string.Concat(baseUri, resource.Span);
             }
 
-            return string.Create(
-                count + 1,
-                (baseUri, resource),
-                (buf, st) =>
-                {
-                    st.baseUri.CopyTo(buf);
-                    buf[st.baseUri.Length] = '/';
-                    st.resource.Span.CopyTo(buf.Slice(st.baseUri.Length + 1));
-                });
-        }
-
-        private static ArraySegment<char> Base64UrlEncode(ReadOnlySpan<byte> input)
-        {
-            // Every 3 bytes turns into 4 chars for the Base64 operation
-            int base64Len = ((input.Length + 2) / 3) * 4;
-            char[] base64 = ArrayPool<char>.Shared.Rent(base64Len);
-
-            if (!Convert.TryToBase64Chars(input, base64, out int charsWritten))
-            {
-                Debug.Fail($"Convert.TryToBase64 failed with {input.Length} bytes to a {base64.Length} buffer");
-                throw new CryptographicException();
-            }
-
-            Debug.Assert(charsWritten == base64Len);
-
-            // In the degenerate case every char will turn into 3 chars.
-            int urlEncodedLen = charsWritten * 3;
-            char[] urlEncoded = ArrayPool<char>.Shared.Rent(urlEncodedLen);
-            int writeIdx = 0;
-
-            for (int readIdx = 0; readIdx < charsWritten; readIdx++)
-            {
-                char cur = base64[readIdx];
-
-                if ((cur >= 'A' && cur <= 'Z') ||
-                    (cur >= 'a' && cur <= 'z') ||
-                    (cur >= '0' && cur <= '9'))
-                {
-                    urlEncoded[writeIdx++] = cur;
-                }
-                else if (cur == '+')
-                {
-                    urlEncoded[writeIdx++] = '%';
-                    urlEncoded[writeIdx++] = '2';
-                    urlEncoded[writeIdx++] = 'B';
-                }
-                else if (cur == '/')
-                {
-                    urlEncoded[writeIdx++] = '%';
-                    urlEncoded[writeIdx++] = '2';
-                    urlEncoded[writeIdx++] = 'F';
-                }
-                else if (cur == '=')
-                {
-                    urlEncoded[writeIdx++] = '%';
-                    urlEncoded[writeIdx++] = '3';
-                    urlEncoded[writeIdx++] = 'D';
-                }
-                else
-                {
-                    Debug.Fail($"'{cur}' is not a valid Base64 character");
-                    throw new CryptographicException();
-                }
-            }
-
-            ArrayPool<char>.Shared.Return(base64);
-            return new ArraySegment<char>(urlEncoded, 0, writeIdx);
+            return string.Concat(baseUri, "/", resource.Span);
         }
 
         private X509ChainElement[] BuildChainElements(
@@ -906,7 +851,7 @@ namespace System.Security.Cryptography.X509Certificates
             overallStatus = null;
 
             List<X509ChainStatus>? statusBuilder = null;
-
+            bool overallHasNotSignatureValid = false;
             using (SafeX509StackHandle chainStack = Interop.Crypto.X509StoreCtxGetChain(_storeCtx))
             {
                 int chainSize = Interop.Crypto.GetX509StackFieldCount(chainStack);
@@ -923,7 +868,20 @@ namespace System.Security.Cryptography.X509Certificates
                         statusBuilder ??= new List<X509ChainStatus>();
                         overallStatus ??= new List<X509ChainStatus>();
 
-                        AddElementStatus(elementErrors.Value, statusBuilder, overallStatus);
+                        bool hadSignatureNotValid = overallHasNotSignatureValid;
+                        AddElementStatus(elementErrors.Value, statusBuilder, overallStatus, ref overallHasNotSignatureValid);
+
+                        // Clear NotSignatureValid for the last element when overall chain is not PartialChain or UntrustedRoot.
+                        bool isLastElement = i == chainSize - 1;
+                        if (isLastElement && !hadSignatureNotValid && overallHasNotSignatureValid)
+                        {
+                            if (!ContainsStatus(overallStatus, X509ChainStatusFlags.PartialChain) &&
+                                !ContainsStatus(overallStatus, X509ChainStatusFlags.UntrustedRoot))
+                            {
+                                RemoveStatus(statusBuilder, X509ChainStatusFlags.NotSignatureValid);
+                                RemoveStatus(overallStatus, X509ChainStatusFlags.NotSignatureValid);
+                            }
+                        }
                         status = statusBuilder.ToArray();
                         statusBuilder.Clear();
                     }
@@ -979,10 +937,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (failsPolicyChecks)
             {
-                if (overallStatus == null)
-                {
-                    overallStatus = new List<X509ChainStatus>();
-                }
+                overallStatus ??= new List<X509ChainStatus>();
 
                 X509ChainStatus chainStatus = new X509ChainStatus
                 {
@@ -1015,11 +970,12 @@ namespace System.Security.Cryptography.X509Certificates
         private static void AddElementStatus(
             ErrorCollection errorCodes,
             List<X509ChainStatus> elementStatus,
-            List<X509ChainStatus> overallStatus)
+            List<X509ChainStatus> overallStatus,
+            ref bool overallHasNotSignatureValid)
         {
-            foreach (var errorCode in errorCodes)
+            foreach (Interop.Crypto.X509VerifyStatusCode errorCode in errorCodes)
             {
-                AddElementStatus(errorCode, elementStatus, overallStatus);
+                AddElementStatus(errorCode, elementStatus, overallStatus, ref overallHasNotSignatureValid);
             }
 
             foreach (X509ChainStatus element in elementStatus)
@@ -1044,7 +1000,8 @@ namespace System.Security.Cryptography.X509Certificates
         private static void AddElementStatus(
             Interop.Crypto.X509VerifyStatusCode errorCode,
             List<X509ChainStatus> elementStatus,
-            List<X509ChainStatus> overallStatus)
+            List<X509ChainStatus> overallStatus,
+            ref bool overallHasNotSignatureValid)
         {
             X509ChainStatusFlags statusFlag = MapVerifyErrorToChainStatus(errorCode);
 
@@ -1071,6 +1028,11 @@ namespace System.Security.Cryptography.X509Certificates
 
             elementStatus.Add(chainStatus);
             AddUniqueStatus(overallStatus, ref chainStatus);
+
+            if (statusFlag == X509ChainStatusFlags.NotSignatureValid)
+            {
+                overallHasNotSignatureValid = true;
+            }
         }
 
         private static void AddUniqueStatus(List<X509ChainStatus> list, ref X509ChainStatus status)
@@ -1086,6 +1048,31 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             list.Add(status);
+        }
+
+        private static bool ContainsStatus(List<X509ChainStatus> list, X509ChainStatusFlags statusCode)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i].Status == statusCode)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void RemoveStatus(List<X509ChainStatus> list, X509ChainStatusFlags statusCode)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i].Status == statusCode)
+                {
+                    list.RemoveAt(i);
+                    return;
+                }
+            }
         }
 
         private static X509ChainStatusFlags MapVerifyErrorToChainStatus(Interop.Crypto.X509VerifyStatusCode code)
@@ -1333,7 +1320,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             return s_errorStrings.GetOrAdd(
                 code.Code,
-                c => Interop.Crypto.GetX509VerifyCertErrorString(c));
+                Interop.Crypto.GetX509VerifyCertErrorString);
         }
 
         private sealed class WorkingChain : IDisposable
@@ -1373,66 +1360,50 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            internal int VerifyCallback(int ok, IntPtr ctx)
+            internal int VerifyCallback(SafeX509StoreCtxHandle storeCtx)
             {
-                if (ok != 0)
+                Interop.Crypto.X509VerifyStatusCode errorCode = Interop.Crypto.X509StoreCtxGetError(storeCtx);
+                int errorDepth = Interop.Crypto.X509StoreCtxGetErrorDepth(storeCtx);
+
+                if (AbortOnSignatureError &&
+                    errorCode == X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_SIGNATURE_FAILURE)
                 {
-                    return ok;
+                    AbortedForSignatureError = true;
+                    return 0;
                 }
 
-                try
+                // * We don't report "OK" as an error.
+                // * For compatibility with Windows / .NET Framework, do not report X509_V_CRL_NOT_YET_VALID.
+                // * X509_V_ERR_DIFFERENT_CRL_SCOPE will result in X509_V_ERR_UNABLE_TO_GET_CRL
+                //   which will trigger OCSP, so is ignorable.
+                if (errorCode != X509VerifyStatusCodeUniversal.X509_V_OK &&
+                    errorCode != X509VerifyStatusCodeUniversal.X509_V_ERR_CRL_NOT_YET_VALID &&
+                    errorCode != X509VerifyStatusCodeUniversal.X509_V_ERR_DIFFERENT_CRL_SCOPE)
                 {
-                    using (var storeCtx = new SafeX509StoreCtxHandle(ctx, ownsHandle: false))
+                    if (_errors == null)
                     {
-                        Interop.Crypto.X509VerifyStatusCode errorCode = Interop.Crypto.X509StoreCtxGetError(storeCtx);
-                        int errorDepth = Interop.Crypto.X509StoreCtxGetErrorDepth(storeCtx);
+                        int size = Math.Max(DefaultChainCapacity, errorDepth + 1);
+                        // Since ErrorCollection is a non-public type, this is a private pool.
+                        _errors = ArrayPool<ErrorCollection>.Shared.Rent(size);
 
-                        if (AbortOnSignatureError &&
-                            errorCode == X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_SIGNATURE_FAILURE)
-                        {
-                            AbortedForSignatureError = true;
-                            return 0;
-                        }
+                        // We only do spares writes.
+                        _errors.AsSpan().Clear();
+                    }
+                    else if (errorDepth >= _errors.Length)
+                    {
+                        ErrorCollection[] toReturn = _errors;
+                        _errors = ArrayPool<ErrorCollection>.Shared.Rent(errorDepth + 1);
+                        toReturn.AsSpan().CopyTo(_errors);
 
-                        // * We don't report "OK" as an error.
-                        // * For compatibility with Windows / .NET Framework, do not report X509_V_CRL_NOT_YET_VALID.
-                        // * X509_V_ERR_DIFFERENT_CRL_SCOPE will result in X509_V_ERR_UNABLE_TO_GET_CRL
-                        //   which will trigger OCSP, so is ignorable.
-                        if (errorCode != X509VerifyStatusCodeUniversal.X509_V_OK &&
-                            errorCode != X509VerifyStatusCodeUniversal.X509_V_ERR_CRL_NOT_YET_VALID &&
-                            errorCode != X509VerifyStatusCodeUniversal.X509_V_ERR_DIFFERENT_CRL_SCOPE)
-                        {
-                            if (_errors == null)
-                            {
-                                int size = Math.Max(DefaultChainCapacity, errorDepth + 1);
-                                // Since ErrorCollection is a non-public type, this is a private pool.
-                                _errors = ArrayPool<ErrorCollection>.Shared.Rent(size);
-
-                                // We only do spares writes.
-                                _errors.AsSpan().Clear();
-                            }
-                            else if (errorDepth >= _errors.Length)
-                            {
-                                ErrorCollection[] toReturn = _errors;
-                                _errors = ArrayPool<ErrorCollection>.Shared.Rent(errorDepth + 1);
-                                toReturn.AsSpan().CopyTo(_errors);
-
-                                // We only do spares writes, clear the remainder.
-                                _errors.AsSpan(toReturn.Length).Clear();
-                                ArrayPool<ErrorCollection>.Shared.Return(toReturn);
-                            }
-
-                            LastError = Math.Max(errorDepth, LastError);
-                            _errors[errorDepth].Add(errorCode);
-                        }
+                        // We only do spares writes, clear the remainder.
+                        _errors.AsSpan(toReturn.Length).Clear();
+                        ArrayPool<ErrorCollection>.Shared.Return(toReturn);
                     }
 
-                    return 1;
+                    LastError = Math.Max(errorDepth, LastError);
+                    _errors[errorDepth].Add(errorCode);
                 }
-                catch
-                {
-                    return -1;
-                }
+                return 1;
             }
         }
 

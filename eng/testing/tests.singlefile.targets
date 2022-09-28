@@ -11,7 +11,7 @@
     <RunScriptCommand Condition="'$(TargetOS)' == 'windows'">$(AssemblyName).exe</RunScriptCommand>
     <RunScriptCommand Condition="'$(TargetOS)' != 'windows'">chmod +rwx $(AssemblyName) &amp;&amp; ./$(AssemblyName)</RunScriptCommand>
   </PropertyGroup>
-  
+
   <PropertyGroup Condition="'$(TestNativeAot)' != 'true'">
     <PublishSingleFile>true</PublishSingleFile>
     <UseAppHost>true</UseAppHost>
@@ -21,20 +21,22 @@
   <PropertyGroup Condition="'$(TestNativeAot)' == 'true'">
     <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
     <IlcToolsPath Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)'">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
-    <CppCompilerAndLinker Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(HostOS)' != 'windows'">clang-9</CppCompilerAndLinker>
+    <CppCompilerAndLinker Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(HostOS)' != 'windows' and '$(RuntimeIdentifier)' == 'linux-musl-arm64'">clang-15</CppCompilerAndLinker>
+    <CppCompilerAndLinker Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(HostOS)' != 'windows' and '$(RuntimeIdentifier)' != 'linux-musl-arm64'">clang-9</CppCompilerAndLinker>
     <SysRoot Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' and '$(HostOS)' != 'windows'">$(ROOTFS_DIR)</SysRoot>
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
     <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
     <IlcFrameworkPath>$(NetCoreAppCurrentTestHostSharedFrameworkPath)</IlcFrameworkPath>
-    <NoWarn>$(NoWarn);IL3050;IL3051;IL3052;IL3055;IL1005</NoWarn>
-    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <NoWarn>$(NoWarn);IL1005;IL3002</NoWarn>
+    <TrimMode>partial</TrimMode>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+    <SuppressAotAnalysisWarnings>true</SuppressAotAnalysisWarnings>
 
     <!-- Forced by ILLink targets; we should fix the SDK -->
     <SelfContained>true</SelfContained>
   </PropertyGroup>
 
-  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.targets" Condition="'$(TestNativeAot)' == 'true'" />
+  <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(TestNativeAot)' == 'true'" />
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true'">
     <RdXmlFile Include="$(MSBuildThisFileDirectory)default.rd.xml" />

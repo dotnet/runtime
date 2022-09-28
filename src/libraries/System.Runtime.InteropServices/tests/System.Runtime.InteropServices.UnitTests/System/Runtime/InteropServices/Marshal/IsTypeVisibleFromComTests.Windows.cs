@@ -12,7 +12,7 @@ namespace System.Runtime.InteropServices.Tests
         public static IEnumerable<object[]> IsTypeVisibleFromCom_Windows_TestData()
         {
             yield return new object[] { typeof(ComImportObject), true };
-            yield return new object[] { typeof(InterfaceAndComImportObject), true };
+            yield return new object[] { typeof(InterfaceOnComImportObject), true };
             yield return new object[] { typeof(InterfaceComImportObject), true };
 
             yield return new object[] { typeof(IsTypeVisibleFromComTests), true };
@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { typeof(ManagedClassWithComVisibleTrue), true };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltInComEnabled))]
         [MemberData(nameof(IsTypeVisibleFromCom_Windows_TestData))]
         public void IsTypeVisibleFromCom_Windows_ReturnsExpected(Type value, bool expected)
         {

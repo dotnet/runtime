@@ -38,7 +38,7 @@ namespace System.Diagnostics
                 // Set the values we have; all the other values don't have meaning or don't exist on OSX
                 Interop.libproc.proc_taskallinfo temp = info.Value;
                 string processName;
-                unsafe { processName = Marshal.PtrToStringAnsi(new IntPtr(temp.pbsd.pbi_comm))!; }
+                unsafe { processName = Marshal.PtrToStringUTF8(new IntPtr(temp.pbsd.pbi_comm))!; }
                 if (!string.IsNullOrEmpty(processNameFilter) && !string.Equals(processName, processNameFilter, StringComparison.OrdinalIgnoreCase))
                 {
                     return null;

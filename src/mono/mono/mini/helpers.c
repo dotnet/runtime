@@ -91,7 +91,7 @@ void
 mono_blockset_print (MonoCompile *cfg, MonoBitSet *set, const char *name, guint idom)
 {
 #ifndef DISABLE_LOGGING
-	int i;
+	guint i;
 
 	if (name)
 		g_print ("%s:", name);

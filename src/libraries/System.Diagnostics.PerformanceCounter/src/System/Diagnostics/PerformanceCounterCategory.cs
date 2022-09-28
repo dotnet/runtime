@@ -92,8 +92,7 @@ namespace System.Diagnostics
                 if (_categoryName == null)
                     throw new InvalidOperationException(SR.CategoryNameNotSet);
 
-                if (_categoryHelp == null)
-                    _categoryHelp = PerformanceCounterLib.GetCategoryHelp(_machineName, _categoryName);
+                _categoryHelp ??= PerformanceCounterLib.GetCategoryHelp(_machineName, _categoryName);
 
                 return _categoryHelp;
             }

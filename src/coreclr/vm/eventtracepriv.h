@@ -205,7 +205,7 @@ public:
         return
             sizeof(fixedSizedData) +
             sizeof(cTypeParameters) +
-#ifdef FEATURE_REDHAWK
+#ifdef FEATURE_NATIVEAOT
             sizeof(WCHAR) +                                 // No name in event, so just the null terminator
             cTypeParameters * sizeof(ULONGLONG);            // Type parameters
 #else
@@ -226,17 +226,17 @@ public:
     // when sending the event.
     ULONG cTypeParameters;
 
-#ifdef FEATURE_REDHAWK
+#ifdef FEATURE_NATIVEAOT
     // If > 1 type parameter, this is an array of their EEType*'s
     NewArrayHolder<ULONGLONG> rgTypeParameters;
 
     // If exactly one type parameter, this is its EEType*.  (If != 1 type parameter,
     // this is 0.)
     ULONGLONG ullSingleTypeParameter;
-#else   // FEATURE_REDHAWK
+#else   // FEATURE_NATIVEAOT
     StackSString sName;
     StackSArray<ULONGLONG> rgTypeParameters;
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NATIVEAOT
 };
 
 // Encapsulates all the type event batching we need to do. This is used by
@@ -293,7 +293,7 @@ private:
 
     BYTE *m_pBulkTypeEventBuffer;
 
-#ifdef FEATURE_REDHAWK
+#ifdef FEATURE_NATIVEAOT
     int LogSingleType(EEType * pEEType);
 #else
     int LogSingleType(TypeHandle th);

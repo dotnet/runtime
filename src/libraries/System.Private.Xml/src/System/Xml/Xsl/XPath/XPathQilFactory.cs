@@ -5,11 +5,10 @@ using System.Diagnostics;
 using System.Xml.Schema;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.Runtime;
+using T = System.Xml.Xsl.XmlQueryTypeFactory;
 
 namespace System.Xml.Xsl.XPath
 {
-    using T = XmlQueryTypeFactory;
-
     internal class XPathQilFactory : QilPatternFactory
     {
         public XPathQilFactory(QilFactory f, bool debug) : base(f, debug)

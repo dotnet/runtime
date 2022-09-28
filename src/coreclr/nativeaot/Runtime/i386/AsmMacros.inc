@@ -179,9 +179,7 @@ G_HIGHEST_ADDRESS                           equ _g_highest_address
 G_EPHEMERAL_LOW                             equ _g_ephemeral_low
 G_EPHEMERAL_HIGH                            equ _g_ephemeral_high
 G_CARD_TABLE                                equ _g_card_table
-RhpWaitForSuspend2                          equ @RhpWaitForSuspend2@0
 RhpWaitForGC2                               equ @RhpWaitForGC2@4
-RhpReversePInvokeAttachOrTrapThread2        equ @RhpReversePInvokeAttachOrTrapThread2@4
 RhpTrapThreads                              equ _RhpTrapThreads
 
 ifdef FEATURE_GC_STRESS
@@ -194,9 +192,7 @@ endif ;; FEATURE_GC_STRESS
 ;;
 EXTERN RhpGcAlloc                               : PROC
 EXTERN RhDebugBreak                             : PROC
-EXTERN RhpWaitForSuspend2                       : PROC
 EXTERN RhpWaitForGC2                            : PROC
-EXTERN RhpReversePInvokeAttachOrTrapThread2     : PROC
 EXTERN RhExceptionHandling_FailedAllocation     : PROC
 EXTERN RhThrowHwEx                              : PROC
 EXTERN RhThrowEx                                : PROC

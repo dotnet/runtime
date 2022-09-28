@@ -48,7 +48,7 @@ namespace System.Data.Odbc
                 new SchemaFunctionName(OdbcMetaDataCollectionNames.Tables, ODBC32.SQL_API.SQLTABLES),
                 new SchemaFunctionName(OdbcMetaDataCollectionNames.Views, ODBC32.SQL_API.SQLTABLES)};
 
-            // verify the existance of the table in the data set
+            // verify the existence of the table in the data set
             DataTable? metaDataCollectionsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.MetaDataCollections];
             if (metaDataCollectionsTable == null)
             {
@@ -58,7 +58,7 @@ namespace System.Data.Odbc
             // copy the table filtering out any rows that don't apply to the current version of the provider
             metaDataCollectionsTable = CloneAndFilterCollection(DbMetaDataCollectionNames.MetaDataCollections, null);
 
-            // verify the existance of the table in the data set
+            // verify the existence of the table in the data set
             DataTable? restrictionsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.Restrictions];
             if (restrictionsTable != null)
             {
@@ -328,7 +328,7 @@ namespace System.Data.Odbc
                         case ODBC32.SQL_TYPE.SS_UDT:
                         default:
                             // for User defined types don't know if its long or if it is
-                            // varaible length or not so leave the fields null
+                            // variable length or not so leave the fields null
                             break;
                     }
                 }
@@ -441,7 +441,7 @@ namespace System.Data.Odbc
                 reader.GetValues(values);
                 if (IncludeIndexRow(values[positionOfIndexName],
                                     restrictionIndexName,
-                                    Convert.ToInt16(values[positionOfType], null)) == true)
+                                    Convert.ToInt16(values[positionOfType], null)))
                 {
                     resultTable.Rows.Add(values);
                 }
@@ -463,8 +463,8 @@ namespace System.Data.Odbc
                 // the column type should always be short but need to check just in case
                 if (values[positionOfColumnType].GetType() == typeof(short))
                 {
-                    if ((((short)values[positionOfColumnType] == ODBC32.SQL_RESULT_COL) && (isColumn == true)) ||
-                        (((short)values[positionOfColumnType] != ODBC32.SQL_RESULT_COL) && (isColumn == false)))
+                    if ((((short)values[positionOfColumnType] == ODBC32.SQL_RESULT_COL) && isColumn) ||
+                        (((short)values[positionOfColumnType] != ODBC32.SQL_RESULT_COL) && !isColumn))
                     {
                         resultTable.Rows.Add(values);
                     }
@@ -549,14 +549,8 @@ namespace System.Data.Odbc
 
             finally
             {
-                if (dataReader != null)
-                {
-                    dataReader.Dispose();
-                };
-                if (command != null)
-                {
-                    command.Dispose();
-                };
+                dataReader?.Dispose();;
+                command?.Dispose();;
             }
             return resultTable;
         }
@@ -636,19 +630,19 @@ namespace System.Data.Odbc
                 Common.SupportedJoinOperators supportedJoinOperators = Common.SupportedJoinOperators.None;
                 if ((int32Value & (int)ODBC32.SQL_OJ_CAPABILITIES.LEFT) != 0)
                 {
-                    supportedJoinOperators = supportedJoinOperators | Common.SupportedJoinOperators.LeftOuter;
+                    supportedJoinOperators |= Common.SupportedJoinOperators.LeftOuter;
                 }
                 if ((int32Value & (int)ODBC32.SQL_OJ_CAPABILITIES.RIGHT) != 0)
                 {
-                    supportedJoinOperators = supportedJoinOperators | Common.SupportedJoinOperators.RightOuter;
+                    supportedJoinOperators |= Common.SupportedJoinOperators.RightOuter;
                 }
                 if ((int32Value & (int)ODBC32.SQL_OJ_CAPABILITIES.FULL) != 0)
                 {
-                    supportedJoinOperators = supportedJoinOperators | Common.SupportedJoinOperators.FullOuter;
+                    supportedJoinOperators |= Common.SupportedJoinOperators.FullOuter;
                 }
                 if ((int32Value & (int)ODBC32.SQL_OJ_CAPABILITIES.INNER) != 0)
                 {
-                    supportedJoinOperators = supportedJoinOperators | Common.SupportedJoinOperators.Inner;
+                    supportedJoinOperators |= Common.SupportedJoinOperators.Inner;
                 }
 
                 dataSourceInformation[DbMetaDataColumnNames.SupportedJoinOperators] = supportedJoinOperators;
@@ -790,7 +784,7 @@ namespace System.Data.Odbc
 
 
 
-            // verify the existance of the table in the data set
+            // verify the existence of the table in the data set
             DataTable? dataTypesTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.DataTypes];
             if (dataTypesTable == null)
             {
@@ -817,14 +811,8 @@ namespace System.Data.Odbc
 
             finally
             {
-                if (dataReader != null)
-                {
-                    dataReader.Dispose();
-                };
-                if (command != null)
-                {
-                    command.Dispose();
-                };
+                dataReader?.Dispose();;
+                command?.Dispose();;
             }
             dataTypesTable.AcceptChanges();
             return dataTypesTable;
@@ -872,14 +860,8 @@ namespace System.Data.Odbc
 
             finally
             {
-                if (dataReader != null)
-                {
-                    dataReader.Dispose();
-                };
-                if (command != null)
-                {
-                    command.Dispose();
-                };
+                dataReader?.Dispose();;
+                command?.Dispose();;
             }
             return resultTable;
         }
@@ -900,7 +882,7 @@ namespace System.Data.Odbc
                 dataReader = command.ExecuteReaderFromSQLMethod(allRestrictions, ODBC32.SQL_API.SQLPROCEDURECOLUMNS);
 
                 string collectionName;
-                if (isColumns == true)
+                if (isColumns)
                 {
                     collectionName = OdbcMetaDataCollectionNames.ProcedureColumns;
                 }
@@ -915,14 +897,8 @@ namespace System.Data.Odbc
 
             finally
             {
-                if (dataReader != null)
-                {
-                    dataReader.Dispose();
-                };
-                if (command != null)
-                {
-                    command.Dispose();
-                };
+                dataReader?.Dispose();;
+                command?.Dispose();;
             }
             return resultTable;
         }
@@ -977,14 +953,8 @@ namespace System.Data.Odbc
 
             finally
             {
-                if (dataReader != null)
-                {
-                    dataReader.Dispose();
-                };
-                if (command != null)
-                {
-                    command.Dispose();
-                };
+                dataReader?.Dispose();;
+                command?.Dispose();;
             }
             return resultTable;
         }
@@ -996,7 +966,7 @@ namespace System.Data.Odbc
                 throw ADP.TooManyRestrictions(DbMetaDataCollectionNames.ReservedWords);
             }
 
-            // verify the existance of the table in the data set
+            // verify the existence of the table in the data set
             DataTable? reservedWordsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.ReservedWords];
             if (reservedWordsTable == null)
             {
@@ -1046,7 +1016,7 @@ namespace System.Data.Odbc
                 //command = (OdbcCommand) connection.CreateCommand();
                 command = GetCommand(connection);
                 string[] allArguments = new string[tablesRestrictionsCount + 1];
-                if (isTables == true)
+                if (isTables)
                 {
                     includedTableTypes = includedTableTypesTables;
                     dataTableName = OdbcMetaDataCollectionNames.Tables;
@@ -1067,14 +1037,8 @@ namespace System.Data.Odbc
 
             finally
             {
-                if (dataReader != null)
-                {
-                    dataReader.Dispose();
-                };
-                if (command != null)
-                {
-                    command.Dispose();
-                };
+                dataReader?.Dispose();;
+                command?.Dispose();;
             }
             return resultTable;
         }

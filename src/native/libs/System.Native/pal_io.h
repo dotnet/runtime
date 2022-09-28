@@ -31,6 +31,7 @@ typedef struct
     int64_t BirthTime; // time the file was created
     int64_t BirthTimeNsec; // nanosecond part
     int64_t Dev;       // ID of the device containing the file
+    int64_t RDev;      // ID of the device if it is a special file
     int64_t Ino;       // inode number of the file
     uint32_t UserFlags; // user defined flags
 } FileStatus;
@@ -263,7 +264,7 @@ enum
 typedef enum
 {
     PAL_MADV_DONTFORK = 1, // don't map pages in to forked process
-} MemmoryAdvice;
+} MemoryAdvice;
 
 /**
  * Name argument to SysConf.
@@ -285,7 +286,7 @@ typedef enum
     PAL_POSIX_FADV_SEQUENTIAL = 2, /* sequential I/O access */
     PAL_POSIX_FADV_WILLNEED = 3,   /* will need specified pages */
     PAL_POSIX_FADV_DONTNEED = 4,   /* don't need the specified pages */
-    PAL_POSIX_FADV_NOREUSE = 5,    /* data will only be acessed once */
+    PAL_POSIX_FADV_NOREUSE = 5,    /* data will only be accessed once */
 } FileAdvice;
 
 /**
@@ -522,7 +523,7 @@ PALEXPORT int32_t SystemNative_Access(const char* path, int32_t mode);
 /**
  * Seek to a specified location within a seekable stream
  *
- * On success, the resulting offet, in bytes, from the beginning of the stream; otherwise,
+ * On success, the resulting offset, in bytes, from the beginning of the stream; otherwise,
  * returns -1 and errno is set.
  */
 PALEXPORT int64_t SystemNative_LSeek(intptr_t fd, int64_t offset, int32_t whence);
@@ -543,9 +544,8 @@ PALEXPORT int32_t SystemNative_SymLink(const char* target, const char* linkPath)
 
 /**
  * Given a device ID, extracts the major and minor and components and returns them.
- * Return 0 on success; otherwise, returns -1 and errno is set.
  */
-PALEXPORT int32_t SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* majorNumber, uint32_t* minorNumber);
+PALEXPORT void SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* majorNumber, uint32_t* minorNumber);
 
 /**
  * Creates a special or ordinary file.
@@ -560,6 +560,14 @@ PALEXPORT int32_t SystemNative_MkNod(const char* pathName, uint32_t mode, uint32
  * Returns 0 on success; otherwise, returns -1 and errno is set.
  */
 PALEXPORT int32_t SystemNative_MkFifo(const char* pathName, uint32_t mode);
+
+/**
+ * Creates a directory name that adheres to the specified template, creates the directory on disk with
+ * 0700 permissions, and returns the directory name.
+ *
+ * Returns a pointer to the modified template string on success; otherwise, returns NULL and errno is set.
+ */
+PALEXPORT char* SystemNative_MkdTemp(char* pathTemplate);
 
 /**
  * Creates a file name that adheres to the specified template, creates the file on disk with
@@ -668,7 +676,7 @@ PALEXPORT int32_t SystemNative_ReadLink(const char* path, char* buffer, int32_t 
  * Renames a file, moving to the correct destination if necessary. There are many edge cases to this call, check man 2
  * rename for more info
  *
- * Returns 0 on succes; otherwise, returns -1 and errno is set.
+ * Returns 0 on success; otherwise, returns -1 and errno is set.
  */
 PALEXPORT int32_t SystemNative_Rename(const char* oldPath, const char* newPath);
 
@@ -739,9 +747,9 @@ PALEXPORT char* SystemNative_RealPath(const char* path);
 PALEXPORT int32_t SystemNative_GetPeerID(intptr_t socket, uid_t* euid);
 
 /**
-* Returns file system type on success, or -1 on error.
+* Returns file system type on success, or 0 on error.
 */
-PALEXPORT int64_t SystemNative_GetFileSystemType(intptr_t fd);
+PALEXPORT uint32_t SystemNative_GetFileSystemType(intptr_t fd);
 
 /**
 * Attempts to lock/unlock the region of the file "fd" specified by the offset and length. lockType
@@ -757,6 +765,13 @@ PALEXPORT int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64
 * Returns 0 for success, -1 for failure. Sets errno for failure.
 */
 PALEXPORT int32_t SystemNative_LChflags(const char* path, uint32_t flags);
+
+/**
+* Changes the file flags of the file "fd".
+*
+* Returns 0 for success, -1 for failure. Sets errno for failure.
+*/
+PALEXPORT int32_t SystemNative_FChflags(intptr_t fd, uint32_t flags);
 
 /**
  * Determines if the current platform supports setting UF_HIDDEN (0x8000) flag

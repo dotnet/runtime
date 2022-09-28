@@ -1568,8 +1568,8 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 else
                     _gcvt_s(szf,32,(double)f, 8);
                 float fd = (float)atof(szf);
-                // Must compare as underlying bytes, not floating point otherwise optmizier will
-                // try to enregister and comapre 80-bit precision number with 32-bit precision number!!!!
+                // Must compare as underlying bytes, not floating point otherwise optimizer will
+                // try to enregister and compare 80-bit precision number with 32-bit precision number!!!!
                 if(((__int32&)fd == v)&&!IsSpecialNumber(szf))
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%-10s %s", pszInstrName, szf);
                 else
@@ -1607,8 +1607,8 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
                 else
                     _gcvt_s(szf,32,d, 17);
                 double df = strtod(szf, &pch); //atof(szf);
-                // Must compare as underlying bytes, not floating point otherwise optmizier will
-                // try to enregister and comapre 80-bit precision number with 64-bit precision number!!!!
+                // Must compare as underlying bytes, not floating point otherwise optimizer will
+                // try to enregister and compare 80-bit precision number with 64-bit precision number!!!!
                 if (((__int64&)df == v)&&!IsSpecialNumber(szf))
                     szptr+=sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr), "%-10s %s", pszInstrName, szf);
                 else

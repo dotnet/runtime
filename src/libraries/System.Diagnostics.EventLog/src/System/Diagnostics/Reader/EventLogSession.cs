@@ -94,8 +94,7 @@ namespace System.Diagnostics.Eventing.Reader
 
         public EventLogSession(string server, string domain, string user, SecureString password, SessionAuthentication logOnType)
         {
-            if (server == null)
-                server = "localhost";
+            server ??= "localhost";
 
             _syncObject = new object();
 

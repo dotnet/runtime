@@ -219,7 +219,10 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             object GetScope(ICacheEntry entry)
             {
-                return entry.GetType()
+                // Use Type.GetType so that trimming can know what type we operate on
+                Type cacheEntryType = Type.GetType("Microsoft.Extensions.Caching.Memory.CacheEntry, Microsoft.Extensions.Caching.Memory");
+                Assert.Equal(cacheEntryType, entry.GetType());
+                return cacheEntryType
                     .GetField("_previous", BindingFlags.NonPublic | BindingFlags.Instance)
                     .GetValue(entry);
             }
@@ -543,7 +546,8 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33993")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72879")] // issue in cache
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72890")] // issue in test
         public void GetAndSet_AreThreadSafe_AndUpdatesNeverLeavesNullValues()
         {
             var cache = CreateCache();
@@ -597,7 +601,7 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33993")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72890")]
         public void OvercapacityPurge_AreThreadSafe()
         {
             var cache = new MemoryCache(new MemoryCacheOptions
@@ -657,13 +661,13 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.Equal(TaskStatus.RanToCompletion, task1.Status);
             Assert.Equal(TaskStatus.RanToCompletion, task2.Status);
             Assert.Equal(TaskStatus.RanToCompletion, task3.Status);
-            Assert.Equal(cache.Count, cache.Size);
+            CapacityTests.AssertCacheSize(cache.Count, cache);
             Assert.InRange(cache.Count, 0, 10);
             Assert.False(limitExceeded);
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/33993")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/72890")]
         public void AddAndReplaceEntries_AreThreadSafe()
         {
             var cache = new MemoryCache(new MemoryCacheOptions
@@ -719,7 +723,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 cacheSize += cache.Get<int>(i);
             }
 
-            Assert.Equal(cacheSize, cache.Size);
+            CapacityTests.AssertCacheSize(cacheSize, cache);
             Assert.InRange(cache.Count, 0, 20);
         }
 

@@ -18,15 +18,7 @@ namespace System.Collections
     {
         private ArrayList? _list;
 
-        protected ArrayList InnerList
-        {
-            get
-            {
-                if (_list == null)
-                    _list = new ArrayList();
-                return _list;
-            }
-        }
+        protected ArrayList InnerList => _list ??= new ArrayList();
 
         public virtual int Count
         {

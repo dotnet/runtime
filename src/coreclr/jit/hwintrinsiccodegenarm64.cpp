@@ -613,7 +613,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     assert(intrin.op2->isContainedIntOrIImmed());
                     assert(intrin.op2->AsIntCon()->gtIconVal == 0);
 
-                    const double dataValue = intrin.op3->AsDblCon()->gtDconVal;
+                    const double dataValue = intrin.op3->AsDblCon()->DconValue();
                     GetEmitter()->emitIns_R_F(INS_fmov, emitSize, targetReg, dataValue, opt);
                 }
                 else
@@ -736,15 +736,16 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 if (intrin.op1->isContainedFltOrDblImmed())
                 {
                     // fmov reg, #imm8
-                    const double dataValue = intrin.op1->AsDblCon()->gtDconVal;
+                    const double dataValue = intrin.op1->AsDblCon()->DconValue();
                     GetEmitter()->emitIns_R_F(ins, emitTypeSize(intrin.baseType), targetReg, dataValue, INS_OPTS_NONE);
                 }
                 else if (varTypeIsFloating(intrin.baseType))
                 {
                     // fmov reg1, reg2
                     assert(GetEmitter()->IsMovInstruction(ins));
+                    assert(intrin.baseType == intrin.op1->gtType);
                     GetEmitter()->emitIns_Mov(ins, emitTypeSize(intrin.baseType), targetReg, op1Reg,
-                                              /* canSkip */ false, INS_OPTS_NONE);
+                                              /* canSkip */ true, INS_OPTS_NONE);
                 }
                 else
                 {
@@ -790,17 +791,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            // mvni doesn't support the range of element types, so hard code the 'opts' value.
-            case NI_Vector64_get_Zero:
-            case NI_Vector64_get_AllBitsSet:
-                GetEmitter()->emitIns_R_I(ins, emitSize, targetReg, 0, INS_OPTS_2S);
-                break;
-
-            case NI_Vector128_get_Zero:
-            case NI_Vector128_get_AllBitsSet:
-                GetEmitter()->emitIns_R_I(ins, emitSize, targetReg, 0, INS_OPTS_4S);
-                break;
-
             case NI_AdvSimd_DuplicateToVector64:
             case NI_AdvSimd_DuplicateToVector128:
             case NI_AdvSimd_Arm64_DuplicateToVector64:
@@ -810,14 +800,15 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     if (intrin.op1->isContainedFltOrDblImmed())
                     {
-                        const double dataValue = intrin.op1->AsDblCon()->gtDconVal;
+                        const double dataValue = intrin.op1->AsDblCon()->DconValue();
                         GetEmitter()->emitIns_R_F(INS_fmov, emitSize, targetReg, dataValue, opt);
                     }
                     else if (intrin.id == NI_AdvSimd_Arm64_DuplicateToVector64)
                     {
                         assert(intrin.baseType == TYP_DOUBLE);
                         assert(GetEmitter()->IsMovInstruction(ins));
-                        GetEmitter()->emitIns_Mov(ins, emitSize, targetReg, op1Reg, /* canSkip */ false, opt);
+                        assert(intrin.baseType == intrin.op1->gtType);
+                        GetEmitter()->emitIns_Mov(ins, emitSize, targetReg, op1Reg, /* canSkip */ true, opt);
                     }
                     else
                     {

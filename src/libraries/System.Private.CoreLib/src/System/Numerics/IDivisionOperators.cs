@@ -8,7 +8,7 @@ namespace System.Numerics
     /// <typeparam name="TOther">The type that will divide <typeparamref name="TSelf" />.</typeparam>
     /// <typeparam name="TResult">The type that contains the quotient of <typeparamref name="TSelf" /> and <typeparamref name="TOther" />.</typeparam>
     public interface IDivisionOperators<TSelf, TOther, TResult>
-        where TSelf : IDivisionOperators<TSelf, TOther, TResult>
+        where TSelf : IDivisionOperators<TSelf, TOther, TResult>?
     {
         /// <summary>Divides two values together to compute their quotient.</summary>
         /// <param name="left">The value which <paramref name="right" /> divides.</param>
@@ -21,6 +21,6 @@ namespace System.Numerics
         /// <param name="right">The value which divides <paramref name="left" />.</param>
         /// <returns>The quotient of <paramref name="left" /> divided-by <paramref name="right" />.</returns>
         /// <exception cref="OverflowException">The quotient of <paramref name="left" /> divided-by <paramref name="right" /> is not representable by <typeparamref name="TResult" />.</exception>
-        static abstract TResult operator checked /(TSelf left, TOther right);
+        static virtual TResult operator checked /(TSelf left, TOther right) => left / right;
     }
 }

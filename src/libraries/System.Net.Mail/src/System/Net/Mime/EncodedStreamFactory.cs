@@ -40,6 +40,6 @@ namespace System.Net.Mime
             Encoding.ASCII.GetBytes("=?" + encoding.HeaderName + "?" + (useBase64Encoding ? "B?" : "Q?"));
 
         //The footer that marks the end of a quoted string of some sort
-        private static readonly byte[] s_footer = new byte[] { (byte)'?', (byte)'=' };
+        private static readonly byte[] s_footer = "?="u8.ToArray();
     }
 }

@@ -165,13 +165,12 @@ namespace System.ComponentModel
         /// Gets the name of the category that the member belongs to, as specified
         /// in the <see cref='System.ComponentModel.CategoryAttribute'/>.
         /// </summary>
-        public virtual string Category => _category ?? (_category = ((CategoryAttribute)Attributes[typeof(CategoryAttribute)]!).Category);
+        public virtual string Category => _category ??= ((CategoryAttribute)Attributes[typeof(CategoryAttribute)]!).Category;
 
         /// <summary>
         /// Gets the description of the member as specified in the <see cref='System.ComponentModel.DescriptionAttribute'/>.
         /// </summary>
-        public virtual string Description => _description ??
-                                             (_description = ((DescriptionAttribute)Attributes[typeof(DescriptionAttribute)]!).Description);
+        public virtual string Description => _description ??= ((DescriptionAttribute)Attributes[typeof(DescriptionAttribute)]!).Description;
 
         /// <summary>
         /// Gets a value indicating whether the member is browsable as specified in the

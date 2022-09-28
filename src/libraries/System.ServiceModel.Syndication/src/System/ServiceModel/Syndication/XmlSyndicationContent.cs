@@ -100,10 +100,7 @@ namespace System.ServiceModel.Syndication
 
         public TContent ReadContent<TContent>(XmlObjectSerializer dataContractSerializer)
         {
-            if (dataContractSerializer == null)
-            {
-                dataContractSerializer = new DataContractSerializer(typeof(TContent));
-            }
+            dataContractSerializer ??= new DataContractSerializer(typeof(TContent));
             if (Extension != null)
             {
                 return Extension.GetObject<TContent>(dataContractSerializer);
@@ -122,10 +119,7 @@ namespace System.ServiceModel.Syndication
 
         public TContent ReadContent<TContent>(XmlSerializer serializer)
         {
-            if (serializer == null)
-            {
-                serializer = new XmlSerializer(typeof(TContent));
-            }
+            serializer ??= new XmlSerializer(typeof(TContent));
             if (Extension != null)
             {
                 return Extension.GetObject<TContent>(serializer);

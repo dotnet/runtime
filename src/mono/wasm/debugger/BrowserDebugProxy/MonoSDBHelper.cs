@@ -59,7 +59,9 @@ namespace Microsoft.WebAssembly.Diagnostics
         OwnProperties = 4,
         ForDebuggerProxyAttribute = 8,
         ForDebuggerDisplayAttribute = 16,
-        WithProperties = 32
+        WithProperties = 32,
+        JustMyCode = 64,
+        AutoExpandable = 128
     }
 
     internal enum CommandSet {
@@ -140,7 +142,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         VmReadMemory = 16,
         VmWriteMemory = 17,
         GetAssemblyByName = 18,
-        GetModuleByGUID = 19
+        GetModuleByGUID = 19,
+        GetAssemblyAndPdbBytes = 20
     }
 
     internal enum CmdFrame {
@@ -227,7 +230,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         Assembly = 12,
         ClassToken = 13,
         AsyncDebugInfo = 14,
-        GetNameFull = 15
+        GetNameFull = 15,
+        GetPrettyName = 16
     }
 
     internal enum CmdType {
@@ -402,7 +406,27 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
     }
 
-    internal sealed record MethodInfoWithDebugInformation(MethodInfo Info, int DebugId, string Name);
+    internal sealed class MethodInfoWithDebugInformation
+    {
+        private ParameterInfo[] _paramsInfo;
+        public MethodInfo Info { get; }
+        public int DebugId { get; }
+        public string Name { get; }
+        public ParameterInfo[] GetParametersInfo()
+        {
+            if (_paramsInfo != null)
+                return _paramsInfo;
+            _paramsInfo = Info.GetParametersInfo();
+            return _paramsInfo;
+        }
+
+        public MethodInfoWithDebugInformation(MethodInfo info, int debugId, string name)
+        {
+            Info = info;
+            DebugId = debugId;
+            Name = name;
+        }
+    }
 
     internal sealed class TypeInfoWithDebugInformation
     {
@@ -444,6 +468,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public override string ReadString()
         {
             var valueLen = ReadInt32();
+            if (valueLen == 0)
+                return string.Empty;
             byte[] value = new byte[valueLen];
             Read(value, 0, valueLen);
 
@@ -517,7 +543,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             else if (objectId.Scheme == "valuetype")
             {
-                Write(SdbHelper.valueTypes[objectId.Value].Buffer);
+                if (SdbHelper.ValueCreator.TryGetValueTypeById(objectId.Value, out ValueTypeClass vt))
+                    Write(vt.Buffer);
+                else
+                    throw new ArgumentException($"Could not find any valuetype with id: {objectId.Value}", nameof(objectId.Value));
             }
         }
 
@@ -734,7 +763,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 string displayVarName = varName;
                 if (int.TryParse(varName, out _))
                     displayVarName = $"[{varName}]";
-                _value = await sdbHelper.CreateJObjectForVariableValue(retDebuggerCmdReader, "*" + displayVarName, token);
+                _value = await sdbHelper.ValueCreator.ReadAsVariableValue(retDebuggerCmdReader, "*" + displayVarName, token);
             }
 
             return _value;
@@ -747,19 +776,23 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static int MINOR_VERSION = 61;
         private static int MAJOR_VERSION = 2;
 
+        private int VmMinorVersion { get; set; }
+        private int VmMajorVersion { get; set; }
+
         private Dictionary<int, MethodInfoWithDebugInformation> methods;
         private Dictionary<int, AssemblyInfo> assemblies;
         private Dictionary<int, TypeInfoWithDebugInformation> types;
-
-        internal Dictionary<int, ValueTypeClass> valueTypes = new Dictionary<int, ValueTypeClass>();
-        internal Dictionary<int, PointerValue> pointerValues = new Dictionary<int, PointerValue>();
 
         private MonoProxy proxy;
         private DebugStore store;
         private SessionId sessionId;
 
         private readonly ILogger logger;
-        private Regex regexForAsyncLocals = new Regex(@"\<([^)]*)\>", RegexOptions.Singleline);
+        private static readonly Regex regexForAsyncLocals = new (@"\<([^)]*)\>", RegexOptions.Singleline);
+        private static readonly Regex regexForAsyncMethodName = new (@"\<([^>]*)\>([d][_][_])([0-9]*)", RegexOptions.Compiled);
+        private static readonly Regex regexForGenericArgs = new (@"[`][0-9]+", RegexOptions.Compiled);
+        private static readonly Regex regexForNestedLeftRightAngleBrackets = new ("^(((?'Open'<)[^<>]*)+((?'Close-Open'>)[^<>]*)+)*(?(Open)(?!))[^<>]*", RegexOptions.Compiled);
+        public JObjectValueCreator ValueCreator { get; init; }
 
         public static int GetNewId() { return cmdId++; }
         public static int GetNewObjectId() => Interlocked.Increment(ref debuggerObjectId);
@@ -769,6 +802,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.proxy = proxy;
             this.logger = logger;
             this.sessionId = sessionId;
+            this.VmMajorVersion = -1;
+            this.VmMinorVersion = -1;
+            ValueCreator = new(this, logger);
             ResetStore(null);
         }
 
@@ -797,13 +833,20 @@ namespace Microsoft.WebAssembly.Diagnostics
                 asm = store.GetAssemblyByName(assemblyName);
                 if (asm == null)
                 {
-                    logger.LogDebug($"Unable to find assembly: {assemblyName}");
-                    return null;
+                    asm = new AssemblyInfo(assemblyName, logger);
+                    logger.LogDebug($"Created assembly without debug information: {assemblyName}");
                 }
             }
             asm.SetDebugId(assemblyId);
             assemblies[assemblyId] = asm;
             return asm;
+        }
+        public static string GetPrettierMethodName(string methodName)
+        {
+            methodName = methodName.Replace(':', '.');
+            methodName = methodName.Replace('/', '.');
+            methodName = regexForGenericArgs.Replace(methodName, "");
+            return methodName;
         }
 
         public async Task<MethodInfoWithDebugInformation> GetMethodInfo(int methodId, CancellationToken token)
@@ -838,17 +881,50 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
 
-            if (method == null)
-            {
-                logger.LogDebug($"Unable to find method token: {methodToken} assembly name: {asm.Name}");
-                return null;
-            }
-
             string methodName = await GetMethodName(methodId, token);
+            //get information from runtime
+            method ??= await CreateMethodInfoFromRuntimeInformation(asm, methodId, methodName, methodToken, token);
+            var type = await GetTypeFromMethodIdAsync(methodId, token);
+            var typeInfo = await GetTypeInfo(type, token);
+            try {
+                (int MajorVersion, int MinorVersion) = await GetVMVersion(token);
+                if (MajorVersion == 2 && MinorVersion >= 62)
+                {
+                    if (typeInfo.Info.IsCompilerGenerated || method.IsCompilerGenerated)
+                    {
+                        methodName = await GetPrettyMethodName(methodId, isAnonymous: true, token);
+                    }
+                    else if (await GetIsAsyncFromMethodId(methodId, token))
+                    {
+                        methodName = await GetPrettyMethodName(methodId, isAnonymous: false, token);
+                        method.IsAsync = 1;
+                    }
+                    else
+                    {
+                        methodName = GetPrettierMethodName(methodName);
+                    }
+                }
+                else
+                {
+                    methodName = GetPrettierMethodName(methodName);
+                }
+            }
+            catch (Exception e)
+            {
+                logger.LogDebug($"Unable to generate a pretty method name: {methodName} - {e}");
+                methodName = GetPrettierMethodName(methodName);
+            }
             methods[methodId] = new MethodInfoWithDebugInformation(method, methodId, methodName);
             return methods[methodId];
         }
 
+        public async Task<MethodInfo> CreateMethodInfoFromRuntimeInformation (AssemblyInfo asm, int methodId, string methodName, int methodToken, CancellationToken token )
+        {
+            var typeToken = await GetTypeTokenFromMethodId(methodId, token);
+            TypeInfo typeInfo = asm.TypesByToken[typeToken];
+            var attrs =  await GetAttributesFromMethodId(methodId, token);
+            return new MethodInfo(asm, methodName, methodToken, typeInfo, attrs);
+        }
         public async Task<TypeInfoWithDebugInformation> GetTypeInfo(int typeId, CancellationToken token)
         {
             if (types.TryGetValue(typeId, out TypeInfoWithDebugInformation typeDebugInfo))
@@ -869,20 +945,24 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             asm.TypesByToken.TryGetValue(typeToken, out TypeInfo type);
 
-            if (type == null)
-            {
-                logger.LogDebug($"Unable to find type token: {typeName} assembly name: {asm.Name}");
-                return null;
-            }
+            type ??= asm.CreateTypeInfo(typeName, typeToken);
 
             types[typeId] = new TypeInfoWithDebugInformation(type, typeId, typeName);
             return types[typeId];
         }
 
-        public void ClearCache()
+        public void ClearCache() => ValueCreator.ClearCache();
+
+        public async Task<(int, int)> GetVMVersion(CancellationToken token)
         {
-            valueTypes = new Dictionary<int, ValueTypeClass>();
-            pointerValues = new Dictionary<int, PointerValue>();
+            if (VmMajorVersion != -1)
+                return (VmMajorVersion, VmMinorVersion);
+            using var commandParamsWriter = new MonoBinaryWriter();
+            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdVM.Version, commandParamsWriter, token);
+            retDebuggerCmdReader.ReadString(); //vm version
+            VmMajorVersion = retDebuggerCmdReader.ReadInt32();
+            VmMinorVersion = retDebuggerCmdReader.ReadInt32();
+            return (VmMajorVersion, VmMinorVersion);
         }
 
         public async Task<bool> SetProtocolVersion(CancellationToken token)
@@ -951,6 +1031,25 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write(value);
             using var stringDebuggerCmdReader = await SendDebuggerAgentCommand(CmdAppDomain.CreateString, commandParamsWriter, token);
             return stringDebuggerCmdReader.ReadInt32();
+        }
+
+        public async Task<MethodAttributes> GetAttributesFromMethodId(int methodId, CancellationToken token)
+        {
+            using var commandParamsWriter = new MonoBinaryWriter();
+            commandParamsWriter.Write(methodId);
+
+            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdMethod.GetInfo, commandParamsWriter, token);
+            var flags = retDebuggerCmdReader.ReadInt32();
+            return (MethodAttributes) flags;
+        }
+
+        public async Task<int> GetTypeTokenFromMethodId(int methodId, CancellationToken token)
+        {
+            using var commandParamsWriter = new MonoBinaryWriter();
+            commandParamsWriter.Write(methodId);
+
+            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdMethod.ClassToken, commandParamsWriter, token);
+            return retDebuggerCmdReader.ReadInt32(); //token
         }
 
         public async Task<int> GetMethodToken(int methodId, CancellationToken token)
@@ -1113,22 +1212,95 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write(methodId);
 
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdMethod.GetNameFull, commandParamsWriter, token);
-            var methodName = retDebuggerCmdReader.ReadString();
-            return methodName.Substring(methodName.IndexOf(":")+1);
+            return retDebuggerCmdReader.ReadString();
         }
 
+        public async Task<string> GetPrettyMethodName(int methodId, bool isAnonymous, CancellationToken token)
+        {
+            using var commandParamsWriter = new MonoBinaryWriter();
+            commandParamsWriter.Write(methodId);
+
+            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdMethod.GetPrettyName, commandParamsWriter, token);
+            var type = (ElementType)retDebuggerCmdReader.ReadInt32();
+            switch (type)
+            {
+                case ElementType.GenericInst:
+                {
+                    var ret = retDebuggerCmdReader.ReadString();
+                    if (ret.IndexOf(':') is int index && index > 0)
+                        ret = ret.Substring(0, index);
+                    ret = regexForAsyncMethodName.Replace(ret, "$1");
+                    var numGenericTypeArgs = retDebuggerCmdReader.ReadInt32();
+                    var numGenericMethodArgs = retDebuggerCmdReader.ReadInt32();
+                    int numTotalGenericArgs = numGenericTypeArgs + numGenericMethodArgs;
+                    var genericArgs = new List<string>(capacity: numTotalGenericArgs);
+                    for (int i = 0; i < numTotalGenericArgs; i++)
+                    {
+                        var typeArgC = retDebuggerCmdReader.ReadString();
+                        typeArgC = regexForGenericArgs.Replace(typeArgC, "");
+                        genericArgs.Add(typeArgC);
+                    }
+                    var match = regexForGenericArgs.Match(ret);
+                    while (match.Success)
+                    {
+                        var countArgs = Convert.ToInt32(match.Value.Remove(0, 1));
+                        ret = ret.Remove(match.Index, match.Value.Length);
+                        ret = ret.Insert(match.Index, $"<{string.Join(", ", genericArgs.Take(countArgs))}>");
+                        genericArgs.RemoveRange(0, countArgs);
+                        match = regexForGenericArgs.Match(ret);
+                    }
+                    ret = ret.Replace('/', '.');
+                    return ret;
+                }
+                case ElementType.Class:
+                {
+                    var ret = new StringBuilder(100);
+                    var countNested = retDebuggerCmdReader.ReadInt32();
+                    var anonymousMethodId = "";
+                    for (int i = 0 ; i <= countNested; i++)
+                    {
+                        var klassName = retDebuggerCmdReader.ReadString();
+                        if (klassName.Contains("<>"))
+                        {
+                            if (anonymousMethodId.LastIndexOf('_') >= 0)
+                                anonymousMethodId = klassName.Substring(klassName.LastIndexOf('_') + 1);
+                        }
+                        else
+                        {
+                            var matchOnClassName = regexForNestedLeftRightAngleBrackets.Match(klassName);
+                            if (matchOnClassName.Success && matchOnClassName.Groups[5].Captures.Count > 0)
+                                klassName = matchOnClassName.Groups[5].Captures[0].Value;
+                            if (ret.Length > 0)
+                                ret = ret.Insert(0, ".");
+                            ret = ret.Insert(0, klassName);
+                        }
+                    }
+                    var methodName = retDebuggerCmdReader.ReadString();
+                    var matchOnMethodName = regexForNestedLeftRightAngleBrackets.Match(methodName);
+                    if (matchOnMethodName.Success && matchOnMethodName.Groups[5].Captures.Count > 0)
+                    {
+                        if (isAnonymous && anonymousMethodId.Length == 0 && methodName.Contains("__"))
+                            anonymousMethodId = methodName.Substring(methodName.IndexOf("__") + 2);
+                        methodName =  matchOnMethodName.Groups[5].Captures[0].Value;
+                        ret.Append($".{methodName}");
+                    }
+                    if (isAnonymous && anonymousMethodId.Length > 0)
+                        ret.Append($".AnonymousMethod__{anonymousMethodId}");
+                    return ret.ToString();
+                }
+                default:
+                {
+                    return retDebuggerCmdReader.ReadString();
+                }
+            }
+        }
         public async Task<bool> MethodIsStatic(int methodId, CancellationToken token)
         {
             var methodInfo = await GetMethodInfo(methodId, token);
             if (methodInfo != null)
                 return methodInfo.Info.IsStatic();
-
-            using var commandParamsWriter = new MonoBinaryWriter();
-            commandParamsWriter.Write(methodId);
-
-            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdMethod.GetInfo, commandParamsWriter, token);
-            var flags = retDebuggerCmdReader.ReadInt32();
-            return (flags & 0x0010) > 0; //check method is static
+            var attrs = await GetAttributesFromMethodId(methodId, token);
+            return (attrs & MethodAttributes.Static) > 0;
         }
 
         public async Task<int> GetParamCount(int methodId, CancellationToken token)
@@ -1179,7 +1351,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return parameters;
         }
 
-        public async Task<int> SetBreakpoint(int methodId, long il_offset, CancellationToken token)
+        public async Task<int> SetBreakpointNoThrow(int methodId, long il_offset, CancellationToken token)
         {
             using var commandParamsWriter = new MonoBinaryWriter();
             commandParamsWriter.Write((byte)EventKind.Breakpoint);
@@ -1188,7 +1360,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write((byte)ModifierKind.LocationOnly);
             commandParamsWriter.Write(methodId);
             commandParamsWriter.Write(il_offset);
-            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdEventRequest.Set, commandParamsWriter, token);
+            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdEventRequest.Set, commandParamsWriter, token, throwOnError: false);
+            if (retDebuggerCmdReader.HasError)
+                return -1;
             return retDebuggerCmdReader.ReadInt32();
         }
 
@@ -1243,7 +1417,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write(fieldId);
 
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdType.GetValues, commandParamsWriter, token);
-            return await CreateJObjectForVariableValue(retDebuggerCmdReader, "", token);
+            return await ValueCreator.ReadAsVariableValue(retDebuggerCmdReader, "", token);
         }
 
         public async Task<int> TypeIsInitialized(int typeId, CancellationToken token)
@@ -1362,13 +1536,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return retDebuggerCmdReader;
 
                 //reading buffer only to advance the reader to the next cattr
-                for (int k = 0 ; k < 2; k++)
+                for (int k = 0; k < 2; k++)
                 {
                     var parmCount = retDebuggerCmdReader.ReadInt32();
                     for (int j = 0; j < parmCount; j++)
                     {
                         //to typed_args
-                        await CreateJObjectForVariableValue(retDebuggerCmdReader, "varName", token);
+                        await ValueCreator.ReadAsVariableValue(retDebuggerCmdReader, "varName", token);
                     }
                 }
             }
@@ -1387,6 +1561,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             retDebuggerCmdReader.ReadString();
 
             return retDebuggerCmdReader.ReadInt32();
+        }
+
+        public JToken GetEvaluationResultProperties(string id)
+        {
+            ExecutionContext context = proxy.GetContext(sessionId);
+            var resolver = new MemberReferenceResolver(proxy, context, sessionId, context.CallStack.First().Id, logger);
+            var evaluationResult = resolver.TryGetEvaluationResult(id);
+            return evaluationResult["value"];
         }
 
         public async Task<string> GetValueFromDebuggerDisplayAttribute(DotnetObjectId dotnetObjectId, int typeId, CancellationToken token)
@@ -1411,7 +1593,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     token);
                 JArray objectValues = new JArray(members.Flatten());
 
-                var thisObj = CreateJObject<string>(value: "", type: "object", description: "", writable: false, objectId: dotnetObjectId.ToString());
+                var thisObj = JObjectValueCreator.Create(value: "", type: "object", description: "", writable: false, objectId: dotnetObjectId.ToString());
                 thisObj["name"] = "this";
                 objectValues.Add(thisObj);
 
@@ -1427,10 +1609,17 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     dispAttrStr = dispAttrStr.Replace(",nq", "");
                 }
+                if (dispAttrStr.Contains(", raw"))
+                {
+                    dispAttrStr = dispAttrStr.Replace(", raw", "");
+                }
+                if (dispAttrStr.Contains(",raw"))
+                {
+                    dispAttrStr = dispAttrStr.Replace(",raw", "");
+                }
                 expr = "$\"" + dispAttrStr + "\"";
                 JObject retValue = await resolver.Resolve(expr, token);
-                if (retValue == null)
-                    retValue = await EvaluateExpression.CompileAndRunTheExpression(expr, resolver, token);
+                retValue ??= await ExpressionEvaluator.CompileAndRunTheExpression(expr, resolver, logger, token);
 
                 return retValue?["value"]?.Value<string>();
             }
@@ -1548,7 +1737,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return retDebuggerCmdReader.ReadInt32();
         }
 
-        public async Task<int> GetMethodIdByName(int type_id, string method_name, CancellationToken token)
+        public async Task<int[]> GetMethodIdsByName(int type_id, string method_name, CancellationToken token)
         {
             if (type_id <= 0)
                 throw new DebuggerAgentException($"Invalid type_id {type_id} (method_name: {method_name}");
@@ -1560,7 +1749,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write((int)1); //case sensitive
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdType.GetMethodsByNameFlags, commandParamsWriter, token);
             var nMethods = retDebuggerCmdReader.ReadInt32();
-            return retDebuggerCmdReader.ReadInt32();
+            if (nMethods == 0)
+                return null;
+            int[] methodIds = new int[nMethods];
+            for (int i = 0; i < nMethods; i++)
+                methodIds[i] = retDebuggerCmdReader.ReadInt32();
+            return methodIds;
         }
 
         public async Task<bool> IsDelegate(int objectId, CancellationToken token)
@@ -1605,23 +1799,21 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write(0);
             using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdVM.InvokeMethod, commandParamsWriter, token);
             retDebuggerCmdReader.ReadByte(); //number of objects returned.
-            return await CreateJObjectForVariableValue(retDebuggerCmdReader, name, token);
+            return await ValueCreator.ReadAsVariableValue(retDebuggerCmdReader, name, token);
         }
 
-        public Task<JObject> InvokeMethod(int objectId, int methodId, bool isValueType, CancellationToken token)
+        public Task<JObject> InvokeMethod(int objectId, int methodId, bool isValueType, CancellationToken token, bool isMethodStatic = false)
         {
-            if (isValueType)
+            if (isValueType && !isMethodStatic)
             {
-                return valueTypes.TryGetValue(objectId, out var valueType)
+                return ValueCreator.TryGetValueTypeById(objectId, out var valueType)
                         ? InvokeMethod(valueType.Buffer, methodId, token)
                         : throw new ArgumentException($"Could not find valuetype with id {objectId}, for method id: {methodId}", nameof(objectId));
             }
-            else
-            {
-                using var commandParamsObjWriter = new MonoBinaryWriter();
+            using var commandParamsObjWriter = new MonoBinaryWriter();
+            if (!isMethodStatic)
                 commandParamsObjWriter.Write(ElementType.Class, objectId);
-                return InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, token);
-            }
+            return InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, token);
         }
 
         public Task<JObject> InvokeMethod(DotnetObjectId dotnetObjectId, CancellationToken token, int methodId = -1)
@@ -1631,10 +1823,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                 JObject args = dotnetObjectId.ValueAsJson;
                 int? objectId = args["containerId"]?.Value<int>();
                 int? embeddedMethodId = args["methodId"]?.Value<int>();
+                bool isMethodStatic = args["isStatic"]?.Value<bool>() == true;
 
                 return objectId == null || embeddedMethodId == null
                     ? throw new ArgumentException($"Invalid object id for a method, with missing container, or methodId", nameof(dotnetObjectId))
-                    : InvokeMethod(objectId.Value, embeddedMethodId.Value, isValueType: args["isValueType"]?.Value<bool>() == true, token);
+                    : InvokeMethod(objectId.Value,
+                        embeddedMethodId.Value,
+                        isValueType: args["isValueType"]?.Value<bool>() == true,
+                        token,
+                        isMethodStatic);
             }
 
             return dotnetObjectId.Scheme is "object" or "valuetype"
@@ -1666,392 +1863,31 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public async Task<JObject> GetPointerContent(int pointerId, CancellationToken token)
         {
-            if (!pointerValues.TryGetValue(pointerId, out PointerValue pointerValue))
+            using var commandParamsWriter = new MonoBinaryWriter();
+            PointerValue pointerValue = ValueCreator.GetPointerValue(pointerId);
+            if (pointerValue == null)
                 throw new ArgumentException($"Could not find any pointer with id: {pointerId}", nameof(pointerId));
-
             return await pointerValue.GetValue(this, token);
         }
 
-        public static bool AutoExpandable(string className) {
-            if (className == "System.DateTime" ||
-                className == "System.DateTimeOffset" ||
-                className == "System.TimeSpan")
-                return true;
-            return false;
+        public static int GetNextDebuggerObjectId() => Interlocked.Increment(ref debuggerObjectId);
+
+        public async Task<bool> GetIsAsyncFromMethodId(int methodId, CancellationToken token)
+        {
+            using var commandParamsWriter = new MonoBinaryWriter();
+            commandParamsWriter.Write(methodId);
+
+            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdMethod.AsyncDebugInfo, commandParamsWriter, token);
+            return retDebuggerCmdReader.ReadByte() == 1;
         }
 
-        private static bool AutoInvokeToString(string className) {
-            if (className == "System.DateTime" ||
-                className == "System.DateTimeOffset" ||
-                className == "System.TimeSpan" ||
-                className == "System.Decimal"  ||
-                className == "System.Guid")
-                return true;
-            return false;
-        }
-
-        public static JObject CreateJObject<T>(T value, string type, string description, bool writable, string className = null, string objectId = null, string __custom_type = null, string subtype = null, bool isValueType = false, bool expanded = false, bool isEnum = false)
+        public async Task<int> GetTypeFromMethodIdAsync(int methodId, CancellationToken token)
         {
-            var ret = JObject.FromObject(new {
-                    value = new
-                    {
-                        type,
-                        value,
-                        description
-                    },
-                    writable
-                });
-            if (__custom_type != null)
-                ret["value"]["__custom_type"] = __custom_type;
-            if (className != null)
-                ret["value"]["className"] = className;
-            if (objectId != null)
-                ret["value"]["objectId"] = objectId;
-            if (subtype != null)
-                ret["value"]["subtype"] = subtype;
-            if (isValueType)
-                ret["value"]["isValueType"] = isValueType;
-            if (expanded)
-                ret["value"]["expanded"] = expanded;
-            if (isEnum)
-                ret["value"]["isEnum"] = isEnum;
-            return ret;
+            using var commandParamsWriter = new MonoBinaryWriter();
+            commandParamsWriter.Write(methodId);
 
-        }
-
-        private static JObject CreateJObjectForBoolean(int value)
-        {
-            return CreateJObject<bool>(value == 0 ? false : true, "boolean", value == 0 ? "false" : "true", true);
-        }
-
-        private static JObject CreateJObjectForNumber<T>(T value)
-        {
-            return CreateJObject<T>(value, "number", value.ToString(), true);
-        }
-
-        private static JObject CreateJObjectForChar(int value)
-        {
-            char charValue = Convert.ToChar(value);
-            var description = $"{value} '{charValue}'";
-            return CreateJObject<char>(charValue, "symbol", description, true);
-        }
-
-        public async Task<JObject> CreateJObjectForPtr(ElementType etype, MonoBinaryReader retDebuggerCmdReader, string name, CancellationToken token)
-        {
-            string type;
-            string value;
-            long valueAddress = retDebuggerCmdReader.ReadInt64();
-            var typeId = retDebuggerCmdReader.ReadInt32();
-            string className;
-            if (etype == ElementType.FnPtr)
-                className = "(*())"; //to keep the old behavior
-            else
-                className = "(" + await GetTypeName(typeId, token) + ")";
-
-            int pointerId = -1;
-            if (valueAddress != 0 && className != "(void*)")
-            {
-                pointerId = GetNewObjectId();
-                type = "object";
-                value =  className;
-                pointerValues[pointerId] = new PointerValue(valueAddress, typeId, name);
-            }
-            else
-            {
-                type = "symbol";
-                value = className + " " + valueAddress;
-            }
-            return CreateJObject<string>(value, type, value, false, className, $"dotnet:pointer:{pointerId}", "pointer");
-        }
-
-        public async Task<JObject> CreateJObjectForString(MonoBinaryReader retDebuggerCmdReader, CancellationToken token)
-        {
-            var string_id = retDebuggerCmdReader.ReadInt32();
-            var value = await GetStringValue(string_id, token);
-            return CreateJObject<string>(value, "string", value, false);
-        }
-
-        public async Task<JObject> CreateJObjectForArray(MonoBinaryReader retDebuggerCmdReader, CancellationToken token)
-        {
-            var objectId = retDebuggerCmdReader.ReadInt32();
-            var className = await GetClassNameFromObject(objectId, token);
-            var arrayType = className.ToString();
-            var length = await GetArrayDimensions(objectId, token);
-            if (arrayType.LastIndexOf('[') > 0)
-                arrayType = arrayType.Insert(arrayType.LastIndexOf('[')+1, length.ToString());
-            if (className.LastIndexOf('[') > 0)
-                className = className.Insert(arrayType.LastIndexOf('[')+1, new string(',', length.Rank-1));
-            return CreateJObject<string>(null, "object", description : arrayType, writable : false, className.ToString(), "dotnet:array:" + objectId, null, subtype : length.Rank == 1 ? "array" : null);
-        }
-
-        public async Task<JObject> CreateJObjectForObject(MonoBinaryReader retDebuggerCmdReader, int typeIdFromAttribute, bool forDebuggerDisplayAttribute, CancellationToken token)
-        {
-            var objectId = retDebuggerCmdReader.ReadInt32();
-            var type_id = await GetTypeIdsForObject(objectId, false, token);
-            string className = await GetTypeName(type_id[0], token);
-            string debuggerDisplayAttribute = null;
-            if (!forDebuggerDisplayAttribute)
-                debuggerDisplayAttribute = await GetValueFromDebuggerDisplayAttribute(new DotnetObjectId("object", objectId), type_id[0], token);
-            var description = className.ToString();
-
-            if (debuggerDisplayAttribute != null)
-                description = debuggerDisplayAttribute;
-
-            if (await IsDelegate(objectId, token))
-            {
-                if (typeIdFromAttribute != -1)
-                    className = await GetTypeName(typeIdFromAttribute, token);
-
-                description = await GetDelegateMethodDescription(objectId, token);
-                if (description == "")
-                    return CreateJObject<string>(className.ToString(), "symbol", className.ToString(), false);
-            }
-            return CreateJObject<string>(null, "object", description, false, className, $"dotnet:object:{objectId}");
-        }
-
-        private static readonly string[] s_primitiveTypeNames = new[]
-        {
-            "bool",
-            "char",
-            "string",
-            "byte",
-            "sbyte",
-            "int",
-            "uint",
-            "long",
-            "ulong",
-            "short",
-            "ushort",
-            "float",
-            "double",
-        };
-
-        public static bool IsPrimitiveType(string simplifiedClassName)
-            => s_primitiveTypeNames.Contains(simplifiedClassName);
-
-        public async Task<JObject> CreateJObjectForValueType(
-            MonoBinaryReader retDebuggerCmdReader, string name, long initialPos, bool forDebuggerDisplayAttribute, CancellationToken token)
-        {
-            // FIXME: debugger proxy
-            var isEnum = retDebuggerCmdReader.ReadByte() == 1;
-            var isBoxed = retDebuggerCmdReader.ReadByte() == 1;
-            var typeId = retDebuggerCmdReader.ReadInt32();
-            var className = await GetTypeName(typeId, token);
-            var numValues = retDebuggerCmdReader.ReadInt32();
-
-            if (className.IndexOf("System.Nullable<", StringComparison.Ordinal) == 0) //should we call something on debugger-agent to check???
-            {
-                retDebuggerCmdReader.ReadByte(); //ignoring the boolean type
-                var isNull = retDebuggerCmdReader.ReadInt32();
-
-                // Read the value, even if isNull==true, to correctly advance the reader
-                var value = await CreateJObjectForVariableValue(retDebuggerCmdReader, name, token);
-                if (isNull != 0)
-                    return value;
-                else
-                    return CreateJObject<string>(null, "object", className, false, className, null, null, "null", true);
-            }
-            if (isBoxed && numValues == 1)
-            {
-                if (IsPrimitiveType(className))
-                {
-                    var value = await CreateJObjectForVariableValue(retDebuggerCmdReader, name: null, token);
-                    return value;
-                }
-            }
-
-            ValueTypeClass valueType = await ValueTypeClass.CreateFromReader(
-                                                        this,
-                                                        retDebuggerCmdReader,
-                                                        initialPos,
-                                                        className,
-                                                        typeId,
-                                                        numValues,
-                                                        isEnum,
-                                                        token);
-            valueTypes[valueType.Id.Value] = valueType;
-            return await valueType.ToJObject(this, forDebuggerDisplayAttribute, token);
-        }
-
-        public async Task<JObject> CreateJObjectForNull(MonoBinaryReader retDebuggerCmdReader, CancellationToken token)
-        {
-            string className;
-            ElementType variableType = (ElementType)retDebuggerCmdReader.ReadByte();
-            switch (variableType)
-            {
-                case ElementType.String:
-                case ElementType.Class:
-                {
-                    var type_id = retDebuggerCmdReader.ReadInt32();
-                    className = await GetTypeName(type_id, token);
-                    break;
-
-                }
-                case ElementType.SzArray:
-                case ElementType.Array:
-                {
-                    ElementType byte_type = (ElementType)retDebuggerCmdReader.ReadByte();
-                    retDebuggerCmdReader.ReadInt32(); // rank
-                    if (byte_type == ElementType.Class) {
-                        retDebuggerCmdReader.ReadInt32(); // internal_type_id
-                    }
-                    var type_id = retDebuggerCmdReader.ReadInt32();
-                    className = await GetTypeName(type_id, token);
-                    break;
-                }
-                default:
-                {
-                    var type_id = retDebuggerCmdReader.ReadInt32();
-                    className = await GetTypeName(type_id, token);
-                    break;
-                }
-            }
-            return CreateJObject<string>(null, "object", className, false, className, null, null, "null");
-        }
-
-        public async Task<JObject> CreateJObjectForVariableValue(MonoBinaryReader retDebuggerCmdReader,
-                                                                 string name,
-                                                                 CancellationToken token,
-                                                                 bool isOwn = false,
-                                                                 int typeIdForObject = -1,
-                                                                 bool forDebuggerDisplayAttribute = false)
-        {
-            long initialPos =  /*retDebuggerCmdReader == null ? 0 : */retDebuggerCmdReader.BaseStream.Position;
-            ElementType etype = (ElementType)retDebuggerCmdReader.ReadByte();
-            JObject ret = null;
-            switch (etype) {
-                case ElementType.I:
-                case ElementType.U:
-                case ElementType.Void:
-                case (ElementType)ValueTypeId.VType:
-                case (ElementType)ValueTypeId.FixedArray:
-                    ret = JObject.FromObject(new {
-                        value = new
-                        {
-                            type = "void",
-                            value = "void",
-                            description = "void"
-                        }});
-                    break;
-                case ElementType.Boolean:
-                {
-                    var value = retDebuggerCmdReader.ReadInt32();
-                    ret = CreateJObjectForBoolean(value);
-                    break;
-                }
-                case ElementType.I1:
-                {
-                    var value = retDebuggerCmdReader.ReadSByte();
-                    ret = CreateJObjectForNumber<int>(value);
-                    break;
-                }
-                case ElementType.I2:
-                case ElementType.I4:
-                {
-                    var value = retDebuggerCmdReader.ReadInt32();
-                    ret = CreateJObjectForNumber<int>(value);
-                    break;
-                }
-                case ElementType.U1:
-                {
-                    var value = retDebuggerCmdReader.ReadUByte();
-                    ret = CreateJObjectForNumber<int>(value);
-                    break;
-                }
-                case ElementType.U2:
-                {
-                    var value = retDebuggerCmdReader.ReadUShort();
-                    ret = CreateJObjectForNumber<int>(value);
-                    break;
-                }
-                case ElementType.U4:
-                {
-                    var value = retDebuggerCmdReader.ReadUInt32();
-                    ret = CreateJObjectForNumber<uint>(value);
-                    break;
-                }
-                case ElementType.R4:
-                {
-                    float value = retDebuggerCmdReader.ReadSingle();
-                    ret = CreateJObjectForNumber<float>(value);
-                    break;
-                }
-                case ElementType.Char:
-                {
-                    var value = retDebuggerCmdReader.ReadInt32();
-                    ret = CreateJObjectForChar(value);
-                    break;
-                }
-                case ElementType.I8:
-                {
-                    long value = retDebuggerCmdReader.ReadInt64();
-                    ret = CreateJObjectForNumber<long>(value);
-                    break;
-                }
-                case ElementType.U8:
-                {
-                    ulong value = retDebuggerCmdReader.ReadUInt64();
-                    ret = CreateJObjectForNumber<ulong>(value);
-                    break;
-                }
-                case ElementType.R8:
-                {
-                    double value = retDebuggerCmdReader.ReadDouble();
-                    ret = CreateJObjectForNumber<double>(value);
-                    break;
-                }
-                case ElementType.FnPtr:
-                case ElementType.Ptr:
-                {
-                    ret = await CreateJObjectForPtr(etype, retDebuggerCmdReader, name, token);
-                    break;
-                }
-                case ElementType.String:
-                {
-                    ret = await CreateJObjectForString(retDebuggerCmdReader, token);
-                    break;
-                }
-                case ElementType.SzArray:
-                case ElementType.Array:
-                {
-                    ret = await CreateJObjectForArray(retDebuggerCmdReader, token);
-                    break;
-                }
-                case ElementType.Class:
-                case ElementType.Object:
-                {
-                    ret = await CreateJObjectForObject(retDebuggerCmdReader, typeIdForObject, forDebuggerDisplayAttribute, token);
-                    break;
-                }
-                case ElementType.ValueType:
-                {
-                    ret = await CreateJObjectForValueType(retDebuggerCmdReader, name, initialPos, forDebuggerDisplayAttribute, token);
-                    break;
-                }
-                case (ElementType)ValueTypeId.Null:
-                {
-                    ret = await CreateJObjectForNull(retDebuggerCmdReader, token);
-                    break;
-                }
-                case (ElementType)ValueTypeId.Type:
-                {
-                    retDebuggerCmdReader.ReadInt32();
-                    break;
-                }
-                default:
-                {
-                    logger.LogDebug($"Could not evaluate CreateJObjectForVariableValue invalid type {etype}");
-                    break;
-                }
-            }
-            if (ret != null)
-            {
-                if (isOwn)
-                    ret["isOwn"] = true;
-                if (!string.IsNullOrEmpty(name))
-                    ret["name"] = name;
-            }
-            return ret;
+            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdMethod.GetDeclaringType, commandParamsWriter, token);
+            return retDebuggerCmdReader.ReadInt32();
         }
 
         public async Task<bool> IsAsyncMethod(int methodId, CancellationToken token)
@@ -2061,12 +1897,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 return methodInfo.Info.IsAsync == 1;
             }
-
-            using var commandParamsWriter = new MonoBinaryWriter();
-            commandParamsWriter.Write(methodId);
-
-            using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdMethod.AsyncDebugInfo, commandParamsWriter, token);
-            methodInfo.Info.IsAsync = retDebuggerCmdReader.ReadByte();
+            methodInfo.Info.IsAsync = Convert.ToInt32(await GetIsAsyncFromMethodId(methodId, token));
             return methodInfo.Info.IsAsync == 1;
         }
 
@@ -2143,7 +1974,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdFrame.GetThis, commandParamsWriter, token);
                 retDebuggerCmdReader.ReadByte(); //ignore type
                 var objectId = retDebuggerCmdReader.ReadInt32();
-                GetMembersResult asyncProxyMembers = await MemberObjectsExplorer.GetObjectMemberValues(this, objectId, GetObjectCommandOptions.WithProperties, token);
+                GetMembersResult asyncProxyMembers = await MemberObjectsExplorer.GetObjectMemberValues(this, objectId, GetObjectCommandOptions.WithProperties, token, includeStatic: true);
                 var asyncLocals = await GetHoistedLocalVariables(objectId, asyncProxyMembers.Flatten(), token);
                 return asyncLocals;
             }
@@ -2154,7 +1985,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 try
                 {
-                    var var_json = await CreateJObjectForVariableValue(localsDebuggerCmdReader, var.Name, token);
+                    var var_json = await ValueCreator.ReadAsVariableValue(localsDebuggerCmdReader, var.Name, token, includeStatic: true);
                     locals.Add(var_json);
                 }
                 catch (Exception ex)
@@ -2166,19 +1997,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (!method.Info.IsStatic())
             {
                 using var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdFrame.GetThis, commandParamsWriter, token);
-                var var_json = await CreateJObjectForVariableValue(retDebuggerCmdReader, "this", token);
+                var var_json = await ValueCreator.ReadAsVariableValue(retDebuggerCmdReader, "this", token);
                 var_json.Add("fieldOffset", -1);
                 locals.Add(var_json);
             }
             return locals;
 
-        }
-
-        public ValueTypeClass GetValueTypeClass(int valueTypeId)
-        {
-            if (valueTypes.TryGetValue(valueTypeId, out ValueTypeClass value))
-                return value;
-            return null;
         }
 
         public async Task<JArray> GetArrayValues(int arrayId, CancellationToken token)
@@ -2190,9 +2014,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             commandParamsWriter.Write(dimensions.TotalLength);
             var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdArray.GetValues, commandParamsWriter, token);
             JArray array = new JArray();
-            for (int i = 0 ; i < dimensions.TotalLength; i++)
+            for (int i = 0; i < dimensions.TotalLength; i++)
             {
-                var var_json = await CreateJObjectForVariableValue(retDebuggerCmdReader, dimensions.GetArrayIndexString(i), token);
+                var var_json = await ValueCreator.ReadAsVariableValue(retDebuggerCmdReader, dimensions.GetArrayIndexString(i), token);
                 array.Add(var_json);
             }
             return array;
@@ -2256,16 +2080,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 int methodId = await FindDebuggerProxyConstructorIdFor(typeId, token);
                 if (methodId == -1)
-                {
-                    logger.LogInformation($"GetValuesFromDebuggerProxyAttribute: could not find proxy constructor id for objectId {objectId}");
                     return null;
-                }
 
                 using var ctorArgsWriter = new MonoBinaryWriter();
                 ctorArgsWriter.Write((byte)ValueTypeId.Null);
 
                 // FIXME: move method invocation to valueTypeclass?
-                if (valueTypes.TryGetValue(objectId, out var valueType))
+                if (ValueCreator.TryGetValueTypeById(objectId, out var valueType))
                 {
                     //FIXME: Issue #68390
                     //ctorArgsWriter.Write((byte)0); //not used but needed
@@ -2284,7 +2105,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
 
                 var retMethod = await InvokeMethod(ctorArgsWriter.GetParameterBuffer(), methodId, token);
-                logger.LogInformation($"* GetValuesFromDebuggerProxyAttribute got from InvokeMethod: {retMethod}");
                 if (!DotnetObjectId.TryParse(retMethod?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId dotnetObjectId))
                     throw new Exception($"Invoking .ctor ({methodId}) for DebuggerTypeProxy on type {typeId} returned {retMethod}");
 
@@ -2296,7 +2116,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             catch (Exception e)
             {
-                logger.LogInformation($"Could not evaluate DebuggerTypeProxyAttribute of type {await GetTypeName(typeId, token)} - {e}");
+                logger.LogDebug($"Could not evaluate DebuggerTypeProxyAttribute of type {await GetTypeName(typeId, token)} - {e}");
             }
 
             return null;
@@ -2349,7 +2169,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                             break;
                         cAttrTypeId = genericTypeId;
                     }
-                    methodId = await GetMethodIdByName(cAttrTypeId, ".ctor", token);
+                    int[] methodIds = await GetMethodIdsByName(cAttrTypeId, ".ctor", token);
+                    if (methodIds != null)
+                        methodId = methodIds[0];
                     break;
                 }
 
@@ -2361,6 +2183,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
 
             return -1;
+        }
+
+        public ValueTypeClass GetValueTypeClass(int valueTypeId)
+        {
+            if (ValueCreator.TryGetValueTypeById(valueTypeId, out ValueTypeClass vt))
+                return vt;
+            throw new ArgumentException($"Could not find any valuetype with id: {valueTypeId}", nameof(valueTypeId));
         }
 
         public Task<GetMembersResult> GetTypeMemberValues(DotnetObjectId dotnetObjectId, GetObjectCommandOptions getObjectOptions, CancellationToken token, bool sortByAccessLevel = false)
@@ -2384,7 +2213,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             var typeIds = await GetTypeIdsForObject(objectId, true, token);
             foreach (var typeId in typeIds)
             {
-                var retDebuggerCmdReader =  await GetTypePropertiesReader(typeId, token);
+                var retDebuggerCmdReader = await GetTypePropertiesReader(typeId, token);
                 if (retDebuggerCmdReader == null)
                     return null;
 
@@ -2504,18 +2333,44 @@ namespace Microsoft.WebAssembly.Diagnostics
             await SendDebuggerAgentCommand(CmdModule.ApplyChanges, commandParamsWriter, token);
             return true;
         }
-    }
 
-    internal static class HelperExtensions
-    {
-        public static void AddRange(this JArray arr, JArray addedArr)
+        public async Task<byte[][]> GetBytesFromAssemblyAndPdb(string assemblyName, CancellationToken token)
         {
-            foreach (var item in addedArr)
-                arr.Add(item);
+            using var commandParamsWriter = new MonoBinaryWriter();
+            byte[] assembly_buf = null;
+            byte[] pdb_buf = null;
+            commandParamsWriter.Write(assemblyName);
+            var retDebuggerCmdReader = await SendDebuggerAgentCommand(CmdVM.GetAssemblyAndPdbBytes, commandParamsWriter, token);
+            int assembly_size = retDebuggerCmdReader.ReadInt32();
+            if (assembly_size > 0)
+                assembly_buf = retDebuggerCmdReader.ReadBytes(assembly_size);
+            int pdb_size = retDebuggerCmdReader.ReadInt32();
+            if (pdb_size > 0)
+                pdb_buf = retDebuggerCmdReader.ReadBytes(pdb_size);
+            byte[][] ret = new byte[2][];
+            ret[0] = assembly_buf;
+            ret[1] = pdb_buf;
+            return ret;
         }
+        private static readonly string[] s_primitiveTypeNames = new[]
+            {
+            "bool",
+            "char",
+            "string",
+            "byte",
+            "sbyte",
+            "int",
+            "uint",
+            "long",
+            "ulong",
+            "short",
+            "ushort",
+            "float",
+            "double",
+        };
 
-        public static bool IsNullValuedObject(this JObject obj)
-            => obj != null && obj["type"]?.Value<string>() == "object" && obj["subtype"]?.Value<string>() == "null";
+        public static bool IsPrimitiveType(string simplifiedClassName)
+            => s_primitiveTypeNames.Contains(simplifiedClassName);
 
     }
 }

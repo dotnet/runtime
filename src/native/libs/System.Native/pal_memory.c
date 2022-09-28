@@ -75,11 +75,6 @@ void* SystemNative_Malloc(uintptr_t size)
     return malloc(size);
 }
 
-void* SystemNative_MemSet(void* s, int c, uintptr_t n)
-{
-    return memset(s, c, n);
-}
-
 void* SystemNative_Realloc(void* ptr, uintptr_t new_size)
 {
     return realloc(ptr, new_size);

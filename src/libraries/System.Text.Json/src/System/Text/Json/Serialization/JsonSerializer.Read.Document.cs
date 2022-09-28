@@ -105,6 +105,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
+            jsonTypeInfo.EnsureConfigured();
             return ReadDocument<TValue>(document, jsonTypeInfo);
         }
 

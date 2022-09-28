@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <Nullable>disable</Nullable>
+    <NoWarn>$(NoWarn);nullable</NoWarn>
     <EnableDefaultItems>true</EnableDefaultItems>
     <CLSCompliant>false</CLSCompliant>
     <IsTrimmable>false</IsTrimmable>

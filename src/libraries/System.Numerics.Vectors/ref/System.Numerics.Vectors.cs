@@ -128,8 +128,8 @@ namespace System.Numerics
     }
     public partial struct Plane : System.IEquatable<System.Numerics.Plane>
     {
-        public float D;
         public System.Numerics.Vector3 Normal;
+        public float D;
         public Plane(System.Numerics.Vector3 normal, float d) { throw null; }
         public Plane(System.Numerics.Vector4 value) { throw null; }
         public Plane(float x, float y, float z, float d) { throw null; }
@@ -149,10 +149,10 @@ namespace System.Numerics
     }
     public partial struct Quaternion : System.IEquatable<System.Numerics.Quaternion>
     {
-        public float W;
         public float X;
         public float Y;
         public float Z;
+        public float W;
         public Quaternion(System.Numerics.Vector3 vectorPart, float scalarPart) { throw null; }
         public Quaternion(float x, float y, float z, float w) { throw null; }
         public static System.Numerics.Quaternion Zero { get { throw null; } }
@@ -464,10 +464,10 @@ namespace System.Numerics
     }
     public partial struct Vector4 : System.IEquatable<System.Numerics.Vector4>, System.IFormattable
     {
-        public float W;
         public float X;
         public float Y;
         public float Z;
+        public float W;
         public Vector4(System.Numerics.Vector2 value, float z, float w) { throw null; }
         public Vector4(System.Numerics.Vector3 value, float w) { throw null; }
         public Vector4(float value) { throw null; }
@@ -537,6 +537,7 @@ namespace System.Numerics
         public Vector(T[] values) { throw null; }
         public Vector(T[] values, int index) { throw null; }
         public static int Count { get { throw null; } }
+        public static bool IsSupported { get { throw null; } }
         public T this[int index] { get { throw null; } }
         public static System.Numerics.Vector<T> One { get { throw null; } }
         public static System.Numerics.Vector<T> Zero { get { throw null; } }

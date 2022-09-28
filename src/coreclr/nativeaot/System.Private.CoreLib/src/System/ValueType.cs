@@ -64,11 +64,7 @@ namespace System
 
                 // Compare the memory
                 int valueTypeSize = (int)this.GetEETypePtr().ValueTypeSize;
-                for (int i = 0; i < valueTypeSize; i++)
-                {
-                    if (Unsafe.Add(ref thisRawData, i) != Unsafe.Add(ref thatRawData, i))
-                        return false;
-                }
+                return SpanHelpers.SequenceEqual(ref thisRawData, ref thatRawData, valueTypeSize);
             }
             else
             {

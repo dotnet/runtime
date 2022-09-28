@@ -9,6 +9,7 @@ using System.Globalization;
 using System.IO;
 using System.Runtime.Versioning;
 using System.Text;
+using System.Threading;
 
 namespace System.Diagnostics
 {
@@ -48,6 +49,7 @@ namespace System.Diagnostics
         /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan PrivilegedProcessorTime
         {
             get
@@ -78,33 +80,25 @@ namespace System.Diagnostics
             return dt.ToLocalTime();
         }
 
+        private static long s_bootTimeTicks;
         /// <summary>Gets the system boot time.</summary>
         private static DateTime BootTime
         {
             get
             {
-                // '/proc/stat -> btime' gets the boot time.
-                // btime is the time of system boot in seconds since the Unix epoch.
-                // It includes suspended time and is updated based on the system time (settimeofday).
-                const string StatFile = Interop.procfs.ProcStatFilePath;
-                string text = File.ReadAllText(StatFile);
-                int btimeLineStart = text.IndexOf("\nbtime ", StringComparison.Ordinal);
-                if (btimeLineStart >= 0)
-                {
-                    int btimeStart = btimeLineStart + "\nbtime ".Length;
-                    int btimeEnd = text.IndexOf('\n', btimeStart);
-                    if (btimeEnd > btimeStart)
+               long bootTimeTicks = Interlocked.Read(ref s_bootTimeTicks);
+               if (bootTimeTicks == 0)
+               {
+                    bootTimeTicks = Interop.Sys.GetBootTimeTicks();
+                    long oldValue = Interlocked.CompareExchange(ref s_bootTimeTicks, bootTimeTicks, 0);
+                    if (oldValue != 0) // a different thread has managed to update the ticks first
                     {
-                        if (long.TryParse(text.AsSpan(btimeStart, btimeEnd - btimeStart), out long bootTimeSeconds))
-                        {
-                            return DateTime.UnixEpoch + TimeSpan.FromSeconds(bootTimeSeconds);
-                        }
+                        bootTimeTicks = oldValue; // consistency
                     }
-                }
-
-                return DateTime.UtcNow;
-            }
-        }
+               }
+               return new DateTime(bootTimeTicks);
+           }
+       }
 
         /// <summary>Gets the parent process ID</summary>
         private int ParentProcessId =>
@@ -257,11 +251,8 @@ namespace System.Diagnostics
         /// <param name="processId">The pid for the target process, or -1 for the current process.</param>
         internal static string? GetExePath(int processId = -1)
         {
-            string exeFilePath = processId == -1 ?
-                Interop.procfs.SelfExeFilePath :
-                Interop.procfs.GetExeFilePathForProcess(processId);
-
-            return Interop.Sys.ReadLink(exeFilePath);
+            return processId == -1 ? Environment.ProcessPath :
+                Interop.Sys.ReadLink(Interop.procfs.GetExeFilePathForProcess(processId));
         }
 
         /// <summary>Gets the name that was used to start the process, or null if it could not be retrieved.</summary>

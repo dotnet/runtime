@@ -106,7 +106,7 @@ namespace System.Text.RegularExpressions.Tests
         /// </summary>
         [Theory]
         [MemberData(nameof(TurkishI_Is_Differently_LowerUpperCased_In_Turkish_Culture_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/37069", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/37069", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public void TurkishI_Is_Differently_LowerUpperCased_In_Turkish_Culture(int length, RegexOptions options)
         {
             var turkish = new CultureInfo("tr-TR");
@@ -161,7 +161,7 @@ namespace System.Text.RegularExpressions.Tests
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support NonBacktracking")]
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public async Task TurkishI_Is_Differently_LowerUpperCased_In_Turkish_Culture_NonBacktracking()
         {
             var turkish = new CultureInfo("tr-TR");

@@ -10,13 +10,13 @@ namespace Microsoft.Extensions.Logging.Generators
 {
     public partial class LoggerMessageGenerator
     {
-        internal class Emitter
+        internal sealed class Emitter
         {
             // The maximum arity of LoggerMessage.Define.
             private const int MaxLoggerMessageDefineArguments = 6;
             private const int DefaultStringBuilderCapacity = 1024;
 
-            private static readonly string s_generatedTypeSummary =
+            private const string GeneratedTypeSummary =
                 "<summary> " +
                 "This API supports the logging infrastructure and is not intended to be used directly from your code. " +
                 "It is subject to change in the future. " +
@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Logging.Generators
                 $"global::System.CodeDom.Compiler.GeneratedCodeAttribute(" +
                 $"\"{typeof(Emitter).Assembly.GetName().Name}\", " +
                 $"\"{typeof(Emitter).Assembly.GetName().Version}\")";
-            private static readonly string s_editorBrowsableAttribute =
+            private const string EditorBrowsableAttribute =
                 "global::System.ComponentModel.EditorBrowsableAttribute(" +
                 "global::System.ComponentModel.EditorBrowsableState.Never)";
             private readonly StringBuilder _builder = new StringBuilder(DefaultStringBuilderCapacity);
@@ -119,7 +119,7 @@ namespace {lc.Namespace}
                 parent = lc.ParentClass;
                 while (parent != null)
                 {
-                    nestedIndentation = new String(' ', nestedIndentation.Length - 4);
+                    nestedIndentation = new string(' ', nestedIndentation.Length - 4);
                     _builder.Append($@"
     {nestedIndentation}}}");
                     parent = parent.ParentClass;
@@ -135,9 +135,9 @@ namespace {lc.Namespace}
             private void GenStruct(LoggerMethod lm, string nestedIndentation)
             {
                 _builder.AppendLine($@"
-        {nestedIndentation}/// {s_generatedTypeSummary}
+        {nestedIndentation}/// {GeneratedTypeSummary}
         {nestedIndentation}[{s_generatedCodeAttribute}]
-        {nestedIndentation}[{s_editorBrowsableAttribute}]
+        {nestedIndentation}[{EditorBrowsableAttribute}]
         {nestedIndentation}private readonly struct __{lm.UniqueName}Struct : global::System.Collections.Generic.IReadOnlyList<global::System.Collections.Generic.KeyValuePair<string, object?>>
         {nestedIndentation}{{");
                 GenFields(lm, nestedIndentation);
@@ -217,7 +217,7 @@ namespace {lc.Namespace}
                     int index = 0;
                     foreach (LoggerParameter p in lm.TemplateParameters)
                     {
-                        if (t.Key.Equals(p.Name, System.StringComparison.OrdinalIgnoreCase))
+                        if (t.Key.Equals(p.Name, StringComparison.OrdinalIgnoreCase))
                         {
                             break;
                         }
@@ -503,9 +503,9 @@ namespace {lc.Namespace}
                 if (_needEnumerationHelper)
                 {
                                 _builder.Append($@"
-/// {s_generatedTypeSummary}
+/// {GeneratedTypeSummary}
 [{s_generatedCodeAttribute}]
-[{s_editorBrowsableAttribute}]
+[{EditorBrowsableAttribute}]
 internal static class __LoggerMessageGenerator
 {{
     public static string Enumerate(global::System.Collections.IEnumerable? enumerable)
@@ -559,7 +559,7 @@ internal static class __LoggerMessageGenerator
             int index = 0;
             while (index < s.Length)
             {
-                if (s[index] == '\n' || s[index] == '\r' || s[index] == '"')
+                if (s[index] is '\n' or '\r' or '"')
                 {
                     break;
                 }

@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.ComponentModel.Composition
 {
-    public class ContraintParser
+    public class ConstraintParser
     {
         private static readonly PropertyInfo _exportDefinitionContractNameProperty = typeof(ExportDefinition).GetProperty("ContractName");
         private static readonly PropertyInfo _exportDefinitionMetadataProperty = typeof(ExportDefinition).GetProperty("Metadata");

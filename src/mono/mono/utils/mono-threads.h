@@ -98,7 +98,7 @@ typedef struct {
 } MonoThreadHandle;
 
 /*
-THREAD_INFO_TYPE is a way to make the mono-threads module parametric - or sort of.
+THREAD_INFO_TYPE is a way to make the mono-threads module parameteric - or sort of.
 The GC using mono-threads might extend the MonoThreadInfo struct to add its own
 data, this avoid a pointer indirection on what is on a lot of hot paths.
 
@@ -875,7 +875,7 @@ mono_win32_abort_blocking_io_call (THREAD_INFO_TYPE *info);
 	const DWORD _last_error_restore_point = GetLastError ();
 
 #define W32_RESTORE_LAST_ERROR_FROM_RESTORE_POINT \
-		/* Only restore if changed to prevent unecessary writes. */ \
+		/* Only restore if changed to prevent unnecessary writes. */ \
 		if (GetLastError () != _last_error_restore_point) \
 			mono_SetLastError (_last_error_restore_point);
 

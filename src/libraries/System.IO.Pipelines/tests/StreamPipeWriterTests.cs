@@ -16,7 +16,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public void NothingWrittenToStreamUnlessFlushed()
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] bytes = "Hello World"u8.ToArray();
             var stream = new MemoryStream();
             PipeWriter writer = PipeWriter.Create(stream);
 
@@ -33,7 +33,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public void DataFlushedOnComplete()
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] bytes = "Hello World"u8.ToArray();
             var stream = new MemoryStream();
             PipeWriter writer = PipeWriter.Create(stream, new StreamPipeWriterOptions(leaveOpen: true));
 
@@ -52,7 +52,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task DataFlushedOnCompleteAsync()
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] bytes = "Hello World"u8.ToArray();
             var stream = new MemoryStream();
             PipeWriter writer = PipeWriter.Create(stream, new StreamPipeWriterOptions(leaveOpen: true));
 
@@ -71,7 +71,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public void DataNotFlushedOnCompleteWithException()
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] bytes = "Hello World"u8.ToArray();
             var stream = new MemoryStream();
             PipeWriter writer = PipeWriter.Create(stream, new StreamPipeWriterOptions(leaveOpen: true));
 
@@ -88,7 +88,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task DataNotFlushedOnCompleteAsyncWithException()
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] bytes = "Hello World"u8.ToArray();
             var stream = new MemoryStream();
             PipeWriter writer = PipeWriter.Create(stream, new StreamPipeWriterOptions(leaveOpen: true));
 
@@ -105,7 +105,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task CompleteAsyncDoesNotThrowObjectDisposedException()
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] bytes = "Hello World"u8.ToArray();
             var stream = new MemoryStream();
             PipeWriter writer = PipeWriter.Create(stream, new StreamPipeWriterOptions(leaveOpen: true));
 
@@ -124,7 +124,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task DataWrittenOnFlushAsync()
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] bytes = "Hello World"u8.ToArray();
             var stream = new MemoryStream();
             PipeWriter writer = PipeWriter.Create(stream);
 
@@ -155,7 +155,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task WritesUsingGetSpanWorks()
         {
-            var bytes = Encoding.ASCII.GetBytes("abcdefghijklmnopqrstuvwzyz");
+            byte[] bytes = "abcdefghijklmnopqrstuvwzyz"u8.ToArray();
             var stream = new MemoryStream();
             var options = new StreamPipeWriterOptions(new HeapBufferPool(), minimumBufferSize: 1);
             PipeWriter writer = PipeWriter.Create(stream, options);
@@ -175,7 +175,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task WritesUsingGetMemoryWorks()
         {
-            var bytes = Encoding.ASCII.GetBytes("abcdefghijklmnopqrstuvwzyz");
+            byte[] bytes = "abcdefghijklmnopqrstuvwzyz"u8.ToArray();
             var stream = new MemoryStream();
             var options = new StreamPipeWriterOptions(new HeapBufferPool(), minimumBufferSize: 1);
             PipeWriter writer = PipeWriter.Create(stream, options);
@@ -234,10 +234,10 @@ namespace System.IO.Pipelines.Tests
 
             var data = new List<byte[]>
             {
-                Encoding.ASCII.GetBytes("Hello"),
-                Encoding.ASCII.GetBytes("World"),
-                Encoding.ASCII.GetBytes("This"),
-                Encoding.ASCII.GetBytes("Works"),
+                "Hello"u8.ToArray(),
+                "World"u8.ToArray(),
+                "This"u8.ToArray(),
+                "Works"u8.ToArray(),
             }.
             ToArray();
 
@@ -438,7 +438,7 @@ namespace System.IO.Pipelines.Tests
         {
             using (var pool = new DisposeTrackingBufferPool())
             {
-                byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+                byte[] bytes = "Hello World"u8.ToArray();
                 var stream = new MemoryStream();
                 var options = new StreamPipeWriterOptions(pool);
                 PipeWriter writer = PipeWriter.Create(stream, options);
@@ -484,7 +484,7 @@ namespace System.IO.Pipelines.Tests
         {
             using (var pool = new DisposeTrackingBufferPool())
             {
-                byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+                byte[] bytes = "Hello World"u8.ToArray();
                 var stream = new MemoryStream();
                 var options = new StreamPipeWriterOptions(pool);
                 PipeWriter writer = PipeWriter.Create(stream, options);
@@ -628,7 +628,7 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public void UnflushedBytesWorks()
         {
-            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            byte[] bytes = "Hello World"u8.ToArray();
             var stream = new MemoryStream();
             PipeWriter writer = PipeWriter.Create(stream);
 

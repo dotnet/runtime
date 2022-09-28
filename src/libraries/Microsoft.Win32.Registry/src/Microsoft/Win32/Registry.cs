@@ -56,7 +56,7 @@ namespace Microsoft.Win32
             {
                 subKeyName = (i == -1 || i == keyName.Length) ?
                     string.Empty :
-                    keyName.Substring(i + 1, keyName.Length - i - 1);
+                    keyName.Substring(i + 1);
 
                 return baseKey;
             }

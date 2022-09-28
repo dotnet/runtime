@@ -204,7 +204,7 @@ namespace System.Net.Mail
                     ContentId = cid;
                     return cid;
                 }
-                if (cid.Length >= 2 && cid[0] == '<' && cid[cid.Length - 1] == '>')
+                if (cid.StartsWith('<') && cid.EndsWith('>'))
                 {
                     return cid.Substring(1, cid.Length - 2);
                 }

@@ -46,7 +46,7 @@ namespace System.Net.Security.Tests
             Assert.True(TlsFrameHelper.TryGetFrameInfo(s_validClientHello, ref info));
 
             Assert.Equal(SslProtocols.Tls12, info.Header.Version);
-            Assert.Equal(203, info.Header.Length);
+            Assert.Equal(208, info.Header.Length);
             Assert.Equal(SslProtocols.Tls12, info.SupportedVersions);
             Assert.Equal(TlsFrameHelper.ApplicationProtocolInfo.None, info.ApplicationProtocols);
         }
@@ -86,6 +86,37 @@ namespace System.Net.Security.Tests
             Assert.Equal(SslProtocols.Tls12, info.Header.Version);
             Assert.Equal(SslProtocols.Tls12, info.SupportedVersions);
             Assert.Equal(TlsFrameHelper.ApplicationProtocolInfo.Http2, info.ApplicationProtocols);
+        }
+
+        [Fact]
+        public void TlsFrameHelper_UnifiedClientHello_Ok()
+        {
+            TlsFrameHelper.TlsFrameInfo info = default;
+            Assert.True(TlsFrameHelper.TryGetFrameHeader(s_UnifiedHello,  ref info.Header));
+            Assert.Equal(75, info.Header.Length);
+
+            Assert.True(TlsFrameHelper.TryGetFrameInfo(s_UnifiedHello, ref info));
+#pragma warning disable CS0618      // Ssl2 and Ssl3 are obsolete
+#pragma warning disable SYSLIB0039  // Tls is obsolete
+            Assert.Equal(SslProtocols.Ssl2, info.Header.Version);
+            Assert.Equal(SslProtocols.Ssl2 | SslProtocols.Tls, info.SupportedVersions);
+#pragma warning restore CS0618
+#pragma warning restore SYSLIB0039
+            Assert.Equal(TlsContentType.Handshake, info.Header.Type);
+            Assert.Equal(TlsFrameHelper.ApplicationProtocolInfo.None, info.ApplicationProtocols);
+            Assert.Equal(TlsHandshakeType.ClientHello, info.HandshakeType);
+        }
+
+        [Fact]
+        public void TlsFrameHelper_TlsClientHelloNoExtensions_Ok()
+        {
+            TlsFrameHelper.TlsFrameInfo info = default;
+            Assert.True(TlsFrameHelper.TryGetFrameInfo(s_TlsClientHelloNoExtensions, ref info));
+            Assert.Equal(SslProtocols.Tls12, info.Header.Version);
+            Assert.Equal(SslProtocols.Tls12, info.SupportedVersions);
+            Assert.Equal(TlsContentType.Handshake, info.Header.Type);
+            Assert.Equal(TlsFrameHelper.ApplicationProtocolInfo.None, info.ApplicationProtocols);
+            Assert.Equal(TlsHandshakeType.ClientHello, info.HandshakeType);
         }
 
         public static IEnumerable<object[]> InvalidClientHelloData()
@@ -379,6 +410,36 @@ namespace System.Net.Security.Tests
             0x00, 0x0B, 0x00, 0x02, 0x01, 0x00,
             // Extension.extension_type (application_level_Protocol)
             0x00, 0x10, 0x00, 0x05, 0x00, 0x03, 0x02, 0x68, 0x32,
+        };
+
+        internal static byte[] s_UnifiedHello = new byte[]
+        {
+            // Length
+            0x80, 0x49,
+            // ClientHello
+            0x01,
+            // Version
+            0x03, 0x01,
+            0x00, 0x30, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00,
+            0x2F, 0x00, 0x00, 0x35, 0x00, 0x00, 0x04, 0x00,
+            0x00, 0x05, 0x00, 0x00, 0x0A, 0x01, 0x00, 0x80,
+            0x07, 0x00, 0xC0, 0x03, 0x00, 0x80, 0x00, 0x00,
+            0x09, 0x06, 0x00, 0x40, 0x00, 0x00, 0x64, 0x00,
+            0x00, 0x62, 0x00, 0x00, 0x03, 0x00, 0x00, 0x06,
+            0x02, 0x00, 0x80, 0x04, 0x00, 0x80, 0x5B, 0x0B,
+            0xA1, 0xEB, 0xBF, 0x2D, 0x57, 0xF5, 0xD1, 0x0F,
+            0x52, 0x3B, 0x12, 0x9C, 0xF8, 0xD4,
+        };
+
+        private static byte[] s_TlsClientHelloNoExtensions = new byte[] {
+            0x16, 0x03, 0x03, 0x00, 0x39, 0x01, 0x00, 0x00,
+            0x35, 0x03, 0x03, 0x62, 0x5d, 0x50, 0x2a, 0x41,
+            0x2f, 0xd8, 0xc3, 0x65, 0x35, 0xea, 0x01, 0x70,
+            0x03, 0x7e, 0x7e, 0x2d, 0xd4, 0xfe, 0x93, 0x39,
+            0xa4, 0x04, 0x66, 0xbb, 0x46, 0x91, 0x41, 0xc3,
+            0x48, 0x87, 0x3d, 0x00, 0x00, 0x0e, 0x00, 0x3d,
+            0x00, 0x3c, 0x00, 0x0a, 0x00, 0x35, 0x00, 0x2f,
+            0x00, 0x05, 0x00, 0x04, 0x01, 0x00
         };
 
         private static IEnumerable<byte[]> InvalidClientHello()

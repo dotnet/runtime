@@ -23,6 +23,6 @@ internal static partial class Interop
         private static partial int MkNod(string pathName, uint mode, uint major, uint minor);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetDeviceIdentifiers", SetLastError = true)]
-        internal static unsafe partial int GetDeviceIdentifiers(ulong dev, uint* majorNumber, uint* minorNumber);
+        internal static unsafe partial void GetDeviceIdentifiers(ulong dev, uint* majorNumber, uint* minorNumber);
     }
 }

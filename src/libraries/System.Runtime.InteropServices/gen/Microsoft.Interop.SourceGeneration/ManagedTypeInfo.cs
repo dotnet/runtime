@@ -15,27 +15,37 @@ namespace Microsoft.Interop
     /// </summary>
     public abstract record ManagedTypeInfo(string FullTypeName, string DiagnosticFormattedName)
     {
-        public TypeSyntax Syntax { get; } = SyntaxFactory.ParseTypeName(FullTypeName);
+        private TypeSyntax? _syntax;
+        public TypeSyntax Syntax => _syntax ??= SyntaxFactory.ParseTypeName(FullTypeName);
+
+        protected ManagedTypeInfo(ManagedTypeInfo original)
+        {
+            FullTypeName = original.FullTypeName;
+            DiagnosticFormattedName = original.DiagnosticFormattedName;
+            // Explicitly don't initialize _syntax here. We want Syntax to be recalculated
+            // from the results of a with-expression, which assigns the new property values
+            // to the result of this constructor.
+        }
 
         public static ManagedTypeInfo CreateTypeInfoForTypeSymbol(ITypeSymbol type)
         {
             string typeName = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            string diagonsticFormattedName = type.ToDisplayString();
+            string diagnosticFormattedName = type.ToDisplayString();
             if (type.SpecialType != SpecialType.None)
             {
-                return new SpecialTypeInfo(typeName, diagonsticFormattedName, type.SpecialType);
+                return new SpecialTypeInfo(typeName, diagnosticFormattedName, type.SpecialType);
             }
             if (type.TypeKind == TypeKind.Enum)
             {
-                return new EnumTypeInfo(typeName, diagonsticFormattedName, ((INamedTypeSymbol)type).EnumUnderlyingType!.SpecialType);
+                return new EnumTypeInfo(typeName, diagnosticFormattedName, ((INamedTypeSymbol)type).EnumUnderlyingType!.SpecialType);
             }
             if (type.TypeKind == TypeKind.Pointer)
             {
-                return new PointerTypeInfo(typeName, diagonsticFormattedName, IsFunctionPointer: false);
+                return new PointerTypeInfo(typeName, diagnosticFormattedName, IsFunctionPointer: false);
             }
             if (type.TypeKind == TypeKind.FunctionPointer)
             {
-                return new PointerTypeInfo(typeName, diagonsticFormattedName, IsFunctionPointer: true);
+                return new PointerTypeInfo(typeName, diagnosticFormattedName, IsFunctionPointer: true);
             }
             if (type.TypeKind == TypeKind.Array && type is IArrayTypeSymbol { IsSZArray: true } arraySymbol)
             {
@@ -43,9 +53,17 @@ namespace Microsoft.Interop
             }
             if (type.TypeKind == TypeKind.Delegate)
             {
-                return new DelegateTypeInfo(typeName, diagonsticFormattedName);
+                return new DelegateTypeInfo(typeName, diagnosticFormattedName);
             }
-            return new SimpleManagedTypeInfo(typeName, diagonsticFormattedName);
+            if (type.TypeKind == TypeKind.TypeParameter)
+            {
+                return new TypeParameterTypeInfo(typeName, diagnosticFormattedName);
+            }
+            if (type.IsValueType)
+            {
+                return new ValueTypeInfo(typeName, diagnosticFormattedName, type.IsRefLikeType);
+            }
+            return new ReferenceTypeInfo(typeName, diagnosticFormattedName);
         }
     }
 
@@ -54,6 +72,8 @@ namespace Microsoft.Interop
         public static readonly SpecialTypeInfo Byte = new("byte", "byte", SpecialType.System_Byte);
         public static readonly SpecialTypeInfo Int32 = new("int", "int", SpecialType.System_Int32);
         public static readonly SpecialTypeInfo Void = new("void", "void", SpecialType.System_Void);
+        public static readonly SpecialTypeInfo String = new("string", "string", SpecialType.System_String);
+        public static readonly SpecialTypeInfo Boolean = new("bool", "bool", SpecialType.System_Boolean);
 
         public bool Equals(SpecialTypeInfo? other)
         {
@@ -74,5 +94,9 @@ namespace Microsoft.Interop
 
     public sealed record DelegateTypeInfo(string FullTypeName, string DiagnosticFormattedName) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
 
-    public sealed record SimpleManagedTypeInfo(string FullTypeName, string DiagnosticFormattedName) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
+    public sealed record TypeParameterTypeInfo(string FullTypeName, string DiagnosticFormattedName) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
+
+    public sealed record ValueTypeInfo(string FullTypeName, string DiagnosticFormattedName, bool IsByRefLike) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
+
+    public sealed record ReferenceTypeInfo(string FullTypeName, string DiagnosticFormattedName) : ManagedTypeInfo(FullTypeName, DiagnosticFormattedName);
 }

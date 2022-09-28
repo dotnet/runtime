@@ -436,17 +436,19 @@ namespace System
 
         public static string Format([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
-            return FormatHelper(null, format, new ParamsArray(arg0));
+            return FormatHelper(null, format, new ReadOnlySpan<object?>(in arg0));
         }
 
         public static string Format([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
-            return FormatHelper(null, format, new ParamsArray(arg0, arg1));
+            TwoObjects two = new TwoObjects(arg0, arg1);
+            return FormatHelper(null, format, MemoryMarshal.CreateReadOnlySpan(ref two.Arg0, 2));
         }
 
         public static string Format([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
-            return FormatHelper(null, format, new ParamsArray(arg0, arg1, arg2));
+            ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
+            return FormatHelper(null, format, MemoryMarshal.CreateReadOnlySpan(ref three.Arg0, 3));
         }
 
         public static string Format([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] args)
@@ -458,22 +460,24 @@ namespace System
                 ArgumentNullException.Throw(format is null ? nameof(format) : nameof(args));
             }
 
-            return FormatHelper(null, format, new ParamsArray(args));
+            return FormatHelper(null, format, args);
         }
 
         public static string Format(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
-            return FormatHelper(provider, format, new ParamsArray(arg0));
+            return FormatHelper(provider, format, new ReadOnlySpan<object?>(in arg0));
         }
 
         public static string Format(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
-            return FormatHelper(provider, format, new ParamsArray(arg0, arg1));
+            TwoObjects two = new TwoObjects(arg0, arg1);
+            return FormatHelper(provider, format, MemoryMarshal.CreateReadOnlySpan(ref two.Arg0, 2));
         }
 
         public static string Format(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
-            return FormatHelper(provider, format, new ParamsArray(arg0, arg1, arg2));
+            ThreeObjects three = new ThreeObjects(arg0, arg1, arg2);
+            return FormatHelper(provider, format, MemoryMarshal.CreateReadOnlySpan(ref three.Arg0, 3));
         }
 
         public static string Format(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] args)
@@ -485,10 +489,10 @@ namespace System
                 ArgumentNullException.Throw(format is null ? nameof(format) : nameof(args));
             }
 
-            return FormatHelper(provider, format, new ParamsArray(args));
+            return FormatHelper(provider, format, args);
         }
 
-        private static string FormatHelper(IFormatProvider? provider, string format, ParamsArray args)
+        private static string FormatHelper(IFormatProvider? provider, string format, ReadOnlySpan<object?> args)
         {
             ArgumentNullException.ThrowIfNull(format);
 
@@ -990,7 +994,7 @@ namespace System
             if (firstIndex < 0)
                 return this;
 
-            int remainingLength = Length - firstIndex;
+            nuint remainingLength = (uint)(Length - firstIndex);
             string result = FastAllocateString(Length);
 
             int copyLength = firstIndex;
@@ -1002,35 +1006,56 @@ namespace System
             }
 
             // Copy the remaining characters, doing the replacement as we go.
-            ref ushort pSrc = ref Unsafe.Add(ref Unsafe.As<char, ushort>(ref _firstChar), copyLength);
-            ref ushort pDst = ref Unsafe.Add(ref Unsafe.As<char, ushort>(ref result._firstChar), copyLength);
+            ref ushort pSrc = ref Unsafe.Add(ref GetRawStringDataAsUInt16(), (uint)copyLength);
+            ref ushort pDst = ref Unsafe.Add(ref result.GetRawStringDataAsUInt16(), (uint)copyLength);
+            nuint i = 0;
 
-            if (Vector.IsHardwareAccelerated && remainingLength >= Vector<ushort>.Count)
+            if (Vector.IsHardwareAccelerated && Length >= Vector<ushort>.Count)
             {
-                Vector<ushort> oldChars = new Vector<ushort>(oldChar);
-                Vector<ushort> newChars = new Vector<ushort>(newChar);
+                Vector<ushort> oldChars = new(oldChar);
+                Vector<ushort> newChars = new(newChar);
 
-                do
+                Vector<ushort> original;
+                Vector<ushort> equals;
+                Vector<ushort> results;
+
+                if (remainingLength > (nuint)Vector<ushort>.Count)
                 {
-                    Vector<ushort> original = Unsafe.ReadUnaligned<Vector<ushort>>(ref Unsafe.As<ushort, byte>(ref pSrc));
-                    Vector<ushort> equals = Vector.Equals(original, oldChars);
-                    Vector<ushort> results = Vector.ConditionalSelect(equals, newChars, original);
-                    Unsafe.WriteUnaligned(ref Unsafe.As<ushort, byte>(ref pDst), results);
+                    nuint lengthToExamine = remainingLength - (nuint)Vector<ushort>.Count;
 
-                    pSrc = ref Unsafe.Add(ref pSrc, Vector<ushort>.Count);
-                    pDst = ref Unsafe.Add(ref pDst, Vector<ushort>.Count);
-                    remainingLength -= Vector<ushort>.Count;
+                    do
+                    {
+                        original = Vector.LoadUnsafe(ref pSrc, i);
+                        equals = Vector.Equals(original, oldChars);
+                        results = Vector.ConditionalSelect(equals, newChars, original);
+                        results.StoreUnsafe(ref pDst, i);
+
+                        i += (nuint)Vector<ushort>.Count;
+                    }
+                    while (i < lengthToExamine);
                 }
-                while (remainingLength >= Vector<ushort>.Count);
+
+                // There are [0, Vector<ushort>.Count) elements remaining now.
+                // As the operation is idempotent, and we know that in total there are at least Vector<ushort>.Count
+                // elements available, we read a vector from the very end of the string, perform the replace
+                // and write to the destination at the very end.
+                // Thus we can eliminate the scalar processing of the remaining elements.
+                // We perform this operation even if there are 0 elements remaining, as it is cheaper than the
+                // additional check which would introduce a branch here.
+
+                i = (uint)(Length - Vector<ushort>.Count);
+                original = Vector.LoadUnsafe(ref GetRawStringDataAsUInt16(), i);
+                equals = Vector.Equals(original, oldChars);
+                results = Vector.ConditionalSelect(equals, newChars, original);
+                results.StoreUnsafe(ref result.GetRawStringDataAsUInt16(), i);
             }
-
-            for (; remainingLength > 0; remainingLength--)
+            else
             {
-                ushort currentChar = pSrc;
-                pDst = currentChar == oldChar ? newChar : currentChar;
-
-                pSrc = ref Unsafe.Add(ref pSrc, 1);
-                pDst = ref Unsafe.Add(ref pDst, 1);
+                for (; i < remainingLength; ++i)
+                {
+                    ushort currentChar = Unsafe.Add(ref pSrc, i);
+                    Unsafe.Add(ref pDst, i) = currentChar == oldChar ? newChar : currentChar;
+                }
             }
 
             return result;
@@ -1063,7 +1088,7 @@ namespace System
                 int i = 0;
                 while (true)
                 {
-                    int pos = SpanHelpers.IndexOf(ref Unsafe.Add(ref _firstChar, i), c, Length - i);
+                    int pos = SpanHelpers.IndexOfChar(ref Unsafe.Add(ref _firstChar, i), c, Length - i);
                     if (pos < 0)
                     {
                         break;
@@ -1335,17 +1360,7 @@ namespace System
             {
                 // Per the method's documentation, we'll short-circuit the search for separators.
                 // But we still need to post-process the results based on the caller-provided flags.
-
-                string candidate = this;
-                if (((options & StringSplitOptions.TrimEntries) != 0) && (count > 0))
-                {
-                    candidate = candidate.Trim();
-                }
-                if (((options & StringSplitOptions.RemoveEmptyEntries) != 0) && (candidate.Length == 0))
-                {
-                    count = 0;
-                }
-                return (count == 0) ? Array.Empty<string>() : new string[] { candidate };
+                return CreateSplitArrayOfThisAsSoleValue(options, count);
             }
 
             if (separators.IsEmpty)
@@ -1418,17 +1433,7 @@ namespace System
             {
                 // Per the method's documentation, we'll short-circuit the search for separators.
                 // But we still need to post-process the results based on the caller-provided flags.
-
-                string candidate = this;
-                if (((options & StringSplitOptions.TrimEntries) != 0) && (count > 0))
-                {
-                    candidate = candidate.Trim();
-                }
-                if (((options & StringSplitOptions.RemoveEmptyEntries) != 0) && (candidate.Length == 0))
-                {
-                    count = 0;
-                }
-                return (count == 0) ? Array.Empty<string>() : new string[] { candidate };
+                return CreateSplitArrayOfThisAsSoleValue(options, count);
             }
 
             if (singleSeparator)
@@ -1454,7 +1459,7 @@ namespace System
             // Handle the special case of no replaces.
             if (sepList.Length == 0)
             {
-                return new string[] { this };
+                return CreateSplitArrayOfThisAsSoleValue(options, count);
             }
 
             string[] result = (options != StringSplitOptions.None)
@@ -1467,6 +1472,28 @@ namespace System
             return result;
         }
 
+        private string[] CreateSplitArrayOfThisAsSoleValue(StringSplitOptions options, int count)
+        {
+            Debug.Assert(count >= 0);
+
+            if (count != 0)
+            {
+                string candidate = this;
+
+                if ((options & StringSplitOptions.TrimEntries) != 0)
+                {
+                    candidate = candidate.Trim();
+                }
+
+                if ((options & StringSplitOptions.RemoveEmptyEntries) == 0 || candidate.Length != 0)
+                {
+                    return new string[] { candidate };
+                }
+            }
+
+            return Array.Empty<string>();
+        }
+
         private string[] SplitInternal(string separator, int count, StringSplitOptions options)
         {
             var sepListBuilder = new ValueListBuilder<int>(stackalloc int[StackallocIntBufferSizeLimit]);
@@ -1476,14 +1503,7 @@ namespace System
             if (sepList.Length == 0)
             {
                 // there are no separators so sepListBuilder did not rent an array from pool and there is no need to dispose it
-                string candidate = this;
-                if ((options & StringSplitOptions.TrimEntries) != 0)
-                {
-                    candidate = candidate.Trim();
-                }
-                return ((candidate.Length == 0) && ((options & StringSplitOptions.RemoveEmptyEntries) != 0))
-                    ? Array.Empty<string>()
-                    : new string[] { candidate };
+                return CreateSplitArrayOfThisAsSoleValue(options, count);
             }
 
             string[] result = (options != StringSplitOptions.None)
@@ -1799,41 +1819,63 @@ namespace System
 
         // Returns a substring of this string.
         //
-        public string Substring(int startIndex) => Substring(startIndex, Length - startIndex);
-
-        public string Substring(int startIndex, int length)
+        public string Substring(int startIndex)
         {
-            if (startIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
-            }
-
-            if (startIndex > Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndexLargerThanLength);
-            }
-
-            if (length < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
-            }
-
-            if (startIndex > Length - length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexLength);
-            }
-
-            if (length == 0)
-            {
-                return string.Empty;
-            }
-
-            if (startIndex == 0 && length == this.Length)
+            if (startIndex == 0)
             {
                 return this;
             }
 
+            int length = Length - startIndex;
+            if (length == 0)
+            {
+                return Empty;
+            }
+
+            if ((uint)startIndex > (uint)Length)
+            {
+                ThrowSubstringArgumentOutOfRange(startIndex, length);
+            }
+
             return InternalSubString(startIndex, length);
+        }
+
+        public string Substring(int startIndex, int length)
+        {
+#if TARGET_64BIT
+            // See comment in Span<T>.Slice for how this works.
+            if ((ulong)(uint)startIndex + (ulong)(uint)length > (ulong)(uint)Length)
+#else
+            if ((uint)startIndex > (uint)Length || (uint)length > (uint)(Length - startIndex))
+#endif
+            {
+                ThrowSubstringArgumentOutOfRange(startIndex, length);
+            }
+
+            if (length == 0)
+            {
+                return Empty;
+            }
+
+            if (length == Length)
+            {
+                Debug.Assert(startIndex == 0);
+                return this;
+            }
+
+            return InternalSubString(startIndex, length);
+        }
+
+        [DoesNotReturn]
+        private void ThrowSubstringArgumentOutOfRange(int startIndex, int length)
+        {
+            (string paramName, string message) =
+                startIndex < 0 ? (nameof(startIndex), SR.ArgumentOutOfRange_StartIndex) :
+                startIndex > Length ? (nameof(startIndex), SR.ArgumentOutOfRange_StartIndexLargerThanLength) :
+                length < 0 ? (nameof(length), SR.ArgumentOutOfRange_NegativeLength) :
+                (nameof(length), SR.ArgumentOutOfRange_IndexLength);
+
+            throw new ArgumentOutOfRangeException(paramName, message);
         }
 
         private string InternalSubString(int startIndex, int length)

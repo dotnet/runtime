@@ -5,12 +5,26 @@ namespace System.IO
 {
     internal static partial class FileSystem
     {
+        internal const UnixFileMode ValidUnixFileModes =
+            UnixFileMode.UserRead |
+            UnixFileMode.UserWrite |
+            UnixFileMode.UserExecute |
+            UnixFileMode.GroupRead |
+            UnixFileMode.GroupWrite |
+            UnixFileMode.GroupExecute |
+            UnixFileMode.OtherRead |
+            UnixFileMode.OtherWrite |
+            UnixFileMode.OtherExecute |
+            UnixFileMode.StickyBit |
+            UnixFileMode.SetGroup |
+            UnixFileMode.SetUser;
+
         internal static void VerifyValidPath(string path, string argName)
         {
             ArgumentException.ThrowIfNullOrEmpty(path, argName);
             if (path.Contains('\0'))
             {
-                throw new ArgumentException(SR.Argument_InvalidPathChars, argName);
+                throw new ArgumentException(SR.Argument_NullCharInPath, argName);
             }
         }
 

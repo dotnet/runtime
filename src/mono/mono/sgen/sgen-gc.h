@@ -51,10 +51,6 @@ typedef enum {
 
 NurseryClearPolicy sgen_get_nursery_clear_policy (void);
 
-#if !defined(__MACH__) && !MONO_MACH_ARCH_SUPPORTED && defined(HAVE_PTHREAD_KILL)
-#define SGEN_POSIX_STW 1
-#endif
-
 /*
  * The nursery section uses this struct.
  */
@@ -847,7 +843,7 @@ sgen_safe_object_get_size_unaligned (GCObject *obj)
 		obj = (GCObject*)forwarded;
 	}
 
-	return sgen_client_slow_object_get_size (SGEN_LOAD_VTABLE (obj), obj);
+	return (guint)sgen_client_slow_object_get_size (SGEN_LOAD_VTABLE (obj), obj);
 }
 
 #ifdef SGEN_CLIENT_HEADER

@@ -106,11 +106,6 @@ namespace System.Reflection
         }
         #endregion
 
-        #region Private Statics
-        private static readonly Type s_DecimalConstantAttributeType = typeof(DecimalConstantAttribute);
-        private static readonly Type s_CustomConstantAttributeType = typeof(CustomConstantAttribute);
-        #endregion
-
         #region Private Data Members
         private int m_tkParamDef;
         private MetadataImport m_scope;
@@ -170,7 +165,7 @@ namespace System.Reflection
             PositionImpl = accessor.Position;
             AttrsImpl = accessor.Attributes;
 
-            // Strictly speeking, property's don't contain paramter tokens
+            // Strictly speeking, property's don't contain parameter tokens
             // However we need this to make ca's work... oh well...
             m_tkParamDef = MdToken.IsNullToken(accessor.MetadataToken) ? (int)MetadataTokenType.ParamDef : accessor.MetadataToken;
             m_scope = accessor.m_scope;
@@ -359,7 +354,7 @@ namespace System.Reflection
                         {
                             defaultValue = GetRawDecimalConstant(attr);
                         }
-                        else if (attrType!.IsSubclassOf(s_CustomConstantAttributeType))
+                        else if (attrType!.IsSubclassOf(typeof(CustomConstantAttribute)))
                         {
                             defaultValue = GetRawConstant(attr);
                         }
@@ -367,14 +362,14 @@ namespace System.Reflection
                 }
                 else
                 {
-                    object[] CustomAttrs = GetCustomAttributes(s_CustomConstantAttributeType, false);
+                    object[] CustomAttrs = GetCustomAttributes(typeof(CustomConstantAttribute), false);
                     if (CustomAttrs.Length != 0)
                     {
                         defaultValue = ((CustomConstantAttribute)CustomAttrs[0]).Value;
                     }
                     else
                     {
-                        CustomAttrs = GetCustomAttributes(s_DecimalConstantAttributeType, false);
+                        CustomAttrs = GetCustomAttributes(typeof(DecimalConstantAttribute), false);
                         if (CustomAttrs.Length != 0)
                         {
                             defaultValue = ((DecimalConstantAttribute)CustomAttrs[0]).Value;

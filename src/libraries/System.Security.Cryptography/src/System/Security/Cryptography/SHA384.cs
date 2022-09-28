@@ -35,6 +35,7 @@ namespace System.Security.Cryptography
 
         public static new SHA384 Create() => new Implementation();
 
+        [Obsolete(Obsoletions.CryptoStringFactoryMessage, DiagnosticId = Obsoletions.CryptoStringFactoryDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new SHA384? Create(string hashName) => (SHA384?)CryptoConfig.CreateFromName(hashName);
 

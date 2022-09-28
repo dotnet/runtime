@@ -60,14 +60,14 @@ namespace {namespacename}
 
             sw.WriteLine("        /// <summary>Serialized BDD representation of the set of all whitespace characters.</summary>");
             sw.Write($"        public static ReadOnlySpan<byte> SerializedWhitespaceBDD => ");
-            WriteByteArrayInitSyntax(sw, charSetSolver.CreateSetFromRanges(whitespace.ranges).SerializeToBytes());
+            WriteByteArrayInitSyntax(sw, charSetSolver.CreateBDDFromRanges(whitespace.ranges).SerializeToBytes());
             sw.WriteLine(";");
 
             // Generate a BDD representation of each UnicodeCategory.
             BDD[] catBDDs = new BDD[catMap.Count];
             for (int c = 0; c < catBDDs.Length; c++)
             {
-                catBDDs[c] = charSetSolver.CreateSetFromRanges(catMap[(UnicodeCategory)c].ranges);
+                catBDDs[c] = charSetSolver.CreateBDDFromRanges(catMap[(UnicodeCategory)c].ranges);
             }
 
             sw.WriteLine();

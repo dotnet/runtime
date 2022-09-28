@@ -11,13 +11,16 @@ namespace System.Reflection.PortableExecutable.Tests
 {
     internal static class SigningUtilities
     {
+        public static bool SupportsSigning { get; } =
+            System.Security.Cryptography.Tests.SignatureSupport.CanProduceSha1Signature(RSA.Create());
+
         public static byte[] CalculateRsaSignature(IEnumerable<Blob> content, byte[] privateKey)
         {
             var hash = CalculateSha1(content);
 
             using (var rsa = RSA.Create())
             {
-                rsa.ImportParameters(RSAParamatersFromBlob(privateKey));
+                rsa.ImportParameters(RSAParametersFromBlob(privateKey));
                 var signature = rsa.SignHash(hash, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
                 Array.Reverse(signature);
                 return signature;
@@ -43,7 +46,7 @@ namespace System.Reflection.PortableExecutable.Tests
             }
         }
 
-        private static RSAParameters RSAParamatersFromBlob(byte[] blob)
+        private static RSAParameters RSAParametersFromBlob(byte[] blob)
         {
             RSAParameters key;
 

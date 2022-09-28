@@ -342,8 +342,7 @@ iE/+pIb/4quf+Y524bXUKTGYXzdSUE8Dp1qdZFcwDiCYCTtpL+065fGhmf1KZS2c
 /OMt/tWvtMSj17+dJvShsu/NYJXF5fsfpSJbd3e50Y3AisW0Ob7mmF54KBfg6Y+4
 aATwwQdUIKVzUZsQctsHPjbriQKKn7GKSyUOikBUNQ+TozojX8/g7JAsl+T9jGM=
 -----END ENCRYPTED PRIVATE KEY-----";
-                byte[] passwordBytes = Encoding.UTF8.GetBytes("test");
-                key.ImportFromEncryptedPem(pem, passwordBytes);
+                key.ImportFromEncryptedPem(pem, "test"u8);
                 ECParameters ecParameters = key.ExportParameters(true);
                 ECParameters expected = EccTestData.GetNistP256ReferenceKey();
                 EccTestBase.AssertEqual(expected, ecParameters);
@@ -370,10 +369,9 @@ Evt9yfvEjiP/6yITq59drw1Kcgp6buOCVCY7LZ06aD6WpogiqGDYMuzfvqg5hNFp
 opSAJ/pvHONL5kyAJLeNyG9c/mR2qyrP2L9gL0Z5fB9NyPejKTLi0PXMGQWdDTH8
 Qh0fqdrNovgFLubbJFMQN/MwwIAfIuf0Mn0WFYYeQiBJ3kg=
 -----END ENCRYPTED PRIVATE KEY-----";
-                byte[] passwordBytes = Encoding.UTF8.GetBytes("test");
 
                 ArgumentException ae = AssertExtensions.Throws<ArgumentException>("input", () =>
-                    key.ImportFromEncryptedPem(pem, passwordBytes));
+                    key.ImportFromEncryptedPem(pem, "test"u8));
 
                 Assert.Contains(AmbiguousExceptionMarker, ae.Message);
             }

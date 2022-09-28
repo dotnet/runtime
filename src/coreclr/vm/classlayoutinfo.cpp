@@ -56,7 +56,7 @@ namespace
                 pfwalk->m_sequence = (ULONG)-1;
 
                 // Treat base class as an initial member.
-                if (!SafeAddUINT32(&(pfwalk->m_placement.m_offset), cbAdjustedParentLayoutNativeSize))
+                if (!ClrSafeInt<UINT32>::addition(pfwalk->m_placement.m_offset, cbAdjustedParentLayoutNativeSize, pfwalk->m_placement.m_offset))
                     COMPlusThrowOM();
             }
         }
@@ -172,7 +172,7 @@ namespace
                 // Insert enough padding to align the current data member.
                 while (cbCurOffset % alignmentRequirement)
                 {
-                    if (!SafeAddUINT32(&cbCurOffset, 1))
+                    if (!ClrSafeInt<UINT32>::addition(cbCurOffset, 1, cbCurOffset))
                         COMPlusThrowOM();
                 }
 
@@ -192,11 +192,11 @@ namespace
 
         if (classSizeInMetadata != 0)
         {
-            ULONG classSize = classSizeInMetadata;
-            if (!SafeAddULONG(&classSize, (ULONG)parentSize))
+            ULONG classSize;
+            if (!ClrSafeInt<ULONG>::addition(classSizeInMetadata, (ULONG)parentSize, classSize))
                 COMPlusThrowOM();
 
-            // size must be large enough to accomodate layout. If not, we use the layout size instead.
+            // size must be large enough to accommodate layout. If not, we use the layout size instead.
             calcTotalSize = max(classSize, calcTotalSize);
         }
         else
@@ -207,7 +207,7 @@ namespace
 
             if (calcTotalSize % LargestAlignmentRequirement != 0)
             {
-                if (!SafeAddUINT32(&calcTotalSize, LargestAlignmentRequirement - (calcTotalSize % LargestAlignmentRequirement)))
+                if (!ClrSafeInt<uint32_t>::addition(calcTotalSize, LargestAlignmentRequirement - (calcTotalSize % LargestAlignmentRequirement), calcTotalSize))
                     COMPlusThrowOM();
             }
         }
@@ -301,7 +301,8 @@ namespace
 
     BOOL TypeHasGCPointers(CorElementType corElemType, TypeHandle pNestedType)
     {
-        if (CorTypeInfo::IsPrimitiveType(corElemType) || corElemType == ELEMENT_TYPE_PTR || corElemType == ELEMENT_TYPE_FNPTR)
+        if (CorTypeInfo::IsPrimitiveType(corElemType) || corElemType == ELEMENT_TYPE_PTR || corElemType == ELEMENT_TYPE_FNPTR ||
+            corElemType == ELEMENT_TYPE_BYREF)
         {
             return FALSE;
         }
@@ -323,6 +324,16 @@ namespace
         {
             _ASSERTE(!pNestedType.IsNull());
             return pNestedType.IsEnum() || pNestedType.GetMethodTable()->IsAutoLayoutOrHasAutoLayoutField();
+        }
+        return FALSE;
+    }
+
+    BOOL TypeHasInt128Field(CorElementType corElemType, TypeHandle pNestedType)
+    {
+        if (corElemType == ELEMENT_TYPE_VALUETYPE)
+        {
+            _ASSERTE(!pNestedType.IsNull());
+            return pNestedType.GetMethodTable()->IsInt128OrHasInt128Fields();
         }
         return FALSE;
     }
@@ -453,6 +464,7 @@ namespace
         const SigTypeContext* pTypeContext,
         BOOL* fDisqualifyFromManagedSequential,
         BOOL* fHasAutoLayoutField,
+        BOOL* fHasInt128Field,
         LayoutRawFieldInfo* pFieldInfoArrayOut,
         BOOL* pIsBlittableOut,
         ULONG* cInstanceFields
@@ -531,6 +543,7 @@ namespace
                 pFieldInfoArrayOut->m_placement = GetFieldPlacementInfo(corElemType, typeHandleMaybe);
                 *fDisqualifyFromManagedSequential |= TypeHasGCPointers(corElemType, typeHandleMaybe);
                 *fHasAutoLayoutField |= TypeHasAutoLayoutField(corElemType, typeHandleMaybe);
+                *fHasInt128Field |= TypeHasInt128Field(corElemType, typeHandleMaybe);
 
                 if (!IsFieldBlittable(pModule, fd, fsig.GetArgProps(), pTypeContext, nativeTypeFlags))
                     *pIsBlittableOut = FALSE;
@@ -624,6 +637,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     // function exits.
     BOOL fDisqualifyFromManagedSequential;
     BOOL hasAutoLayoutField = FALSE;
+    BOOL hasInt128Field = FALSE;
 
     // Check if this type might be ManagedSequential. Only valuetypes marked Sequential can be
     // ManagedSequential. Other issues checked below might also disqualify the type.
@@ -638,9 +652,12 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
         fDisqualifyFromManagedSequential = TRUE;
     }
 
-    if (pParentMT && !pParentMT->IsValueTypeClass() && pParentMT->IsAutoLayoutOrHasAutoLayoutField())
+    if (pParentMT && !pParentMT->IsValueTypeClass())
     {
-        hasAutoLayoutField = TRUE;
+        if (pParentMT->IsAutoLayoutOrHasAutoLayoutField())
+            hasAutoLayoutField = TRUE;
+        if (pParentMT->IsInt128OrHasInt128Fields())
+            hasInt128Field = TRUE;
     }
 
 
@@ -691,6 +708,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
         pTypeContext,
         &fDisqualifyFromManagedSequential,
         &hasAutoLayoutField,
+        &hasInt128Field,
         pInfoArrayOut,
         &isBlittable,
         &cInstanceFields
@@ -704,6 +722,8 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     pEEClassLayoutInfoOut->SetIsBlittable(isBlittable);
 
     pEEClassLayoutInfoOut->SetHasAutoLayoutField(hasAutoLayoutField);
+
+    pEEClassLayoutInfoOut->SetIsInt128OrHasInt128Fields(hasInt128Field);
 
     S_UINT32 cbSortArraySize = S_UINT32(cTotalFields) * S_UINT32(sizeof(LayoutRawFieldInfo*));
     if (cbSortArraySize.IsOverflow())
@@ -955,7 +975,9 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
             pNativeLayoutInfo->m_alignmentRequirement = pEEClassLayoutInfo->m_ManagedLargestAlignmentRequirementOfAllMembers;
         }
         else
-        if (pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR64T)) ||
+        if (pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__INT128)) ||
+            pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__UINT128)) ||
+            pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR64T)) ||
             pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR128T)) ||
             pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR256T)))
         {

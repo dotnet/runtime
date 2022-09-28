@@ -140,7 +140,7 @@ namespace System.Management
         {
             CodeTypeDeclaration retType;
 
-            if (systemPropertyClass == true)
+            if (systemPropertyClass)
             {
                 //Initialize the public attributes . private variables
                 InitilializePublicPrivateMembers();
@@ -364,7 +364,7 @@ namespace System.Management
             GenerateDefaultConstructor();
 
             GenerateInitializeObject();
-            if (bSingletonClass == true)
+            if (bSingletonClass)
             {
                 //Now Generate a constructor which accepts only the scope
                 GenerateConstructorWithScope();
@@ -377,7 +377,7 @@ namespace System.Management
             }
             else
             {
-                //Now create the constuctor which accepts the key values
+                //Now create the constructor which accepts the key values
                 GenerateConstructorWithKeys();
 
                 //Also generate a constructor which accepts a scope and keys
@@ -561,9 +561,9 @@ namespace System.Management
                     OriginalNamespace = string.Empty;
                     for (int i = 2; i < Len; i++)
                     {
-                        if (bStart == true)
+                        if (bStart)
                         {
-                            OriginalNamespace = OriginalNamespace + arrString[i];
+                            OriginalNamespace += arrString[i];
                         }
                         else
                             if (arrString[i] == '\\')
@@ -677,7 +677,7 @@ namespace System.Management
         /// <summary>
         /// This function will solve the naming collisions that might occur
         /// due to the collision between the local objects of the generated
-        /// class and the properties/methos of the original WMI Class.
+        /// class and the properties/methods of the original WMI Class.
         /// </summary>
         private void ProcessNamingCollisions()
         {
@@ -793,7 +793,7 @@ namespace System.Management
                 strTemp = strTemp + strToAdd + k.ToString((IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(int)));
             }
 
-            while (bCollision == true)
+            while (bCollision)
             {
                 if (IsContainedIn(strTemp, ref PublicProperties) == -1)
                 {
@@ -816,7 +816,7 @@ namespace System.Management
                 }
                 catch (OverflowException)
                 {
-                    strToAdd = strToAdd + "_";
+                    strToAdd += "_";
                     k = 0;
                 }
                 strTemp = inString + strToAdd + k.ToString((IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(int)));
@@ -825,7 +825,7 @@ namespace System.Management
             if (strTemp.Length > 0)
             {
                 string strFirstChar = strTemp.Substring(0, 1).ToUpperInvariant();
-                strTemp = strFirstChar + strTemp.Substring(1, strTemp.Length - 1);
+                strTemp = strFirstChar + strTemp.Substring(1);
             }
 
             return strTemp;
@@ -948,7 +948,7 @@ namespace System.Management
             cad.Arguments.Add(caa);
             cmp.CustomAttributes.Add(cad);
 
-            if (isLiteral == true)
+            if (isLiteral)
             {
                 cmp.GetStatements.Add(new CodeMethodReturnStatement(new CodeSnippetExpression(propValue.ToString())));
             }
@@ -972,7 +972,7 @@ namespace System.Management
 
             if (isStatic)
             {
-                cmp.Attributes = cmp.Attributes | MemberAttributes.Static;
+                cmp.Attributes |= MemberAttributes.Static;
             }
 
             caa = new CodeAttributeArgument();
@@ -1078,7 +1078,7 @@ namespace System.Management
 
         /// <summary>
         /// Function for generating the helper class "ManagementSystemProperties" which is
-        /// used for seperating the system properties from the other properties. This is used
+        /// used for separating the system properties from the other properties. This is used
         /// just to make the drop down list in the editor to look good.
         /// </summary>
         private CodeTypeDeclaration GenerateSystemPropertiesClass()
@@ -1125,7 +1125,7 @@ namespace System.Management
                 strPropTemp = prop.Name.ToCharArray();
                 for (i = 0; i < strPropTemp.Length; i++)
                 {
-                    if (char.IsLetterOrDigit(strPropTemp[i]) == true)
+                    if (char.IsLetterOrDigit(strPropTemp[i]))
                     {
                         break;
                     }
@@ -1274,7 +1274,7 @@ namespace System.Management
                 //Uncomment the line below when that is fixed.
                 bool isPropertyEnum = GeneratePropertyHelperEnums(prop, PublicProperties[prop.Name].ToString(), bNullable);
 
-                if (bRead == true)
+                if (bRead)
                 {
                     if (IsPropertyValueType(prop.Type) && prop.IsArray == false)
                     {
@@ -1445,7 +1445,7 @@ namespace System.Management
                 }
 
 
-                if (bWrite == true)
+                if (bWrite)
                 {
                     if (bNullable)
                     {
@@ -1481,7 +1481,7 @@ namespace System.Management
                     }
                     else
                     {
-                        if ((isPropertyEnum) && (bNullable == true))
+                        if (isPropertyEnum && bNullable)
                         {
                             /*
                             if (<PropertyName>Values.NULL_ENUM_VALUE == value)
@@ -1622,7 +1622,7 @@ namespace System.Management
                 else if (string.Equals(q.Name, "write", StringComparison.OrdinalIgnoreCase))
                 {
                     hasWrite = true;
-                    if ((bool)q.Value == true)
+                    if ((bool)q.Value)
                     {
                         writeValue = true;
                     }
@@ -1639,7 +1639,7 @@ namespace System.Management
                     {
                         ValueMap.Clear();
                         //Now check whether the type of the property is int
-                        if (isTypeInt(prop.Type) == true)
+                        if (isTypeInt(prop.Type))
                         {
                             if (q.Value != null)
                             {
@@ -1674,7 +1674,7 @@ namespace System.Management
                     try
                     {
                         Values.Clear();
-                        if (isTypeInt(prop.Type) == true)
+                        if (isTypeInt(prop.Type))
                         {
                             if (q.Value != null)
                             {
@@ -1707,7 +1707,7 @@ namespace System.Management
                     try
                     {
                         BitMap.Clear();
-                        if (isTypeInt(prop.Type) == true)
+                        if (isTypeInt(prop.Type))
                         {
                             if (q.Value != null)
                             {
@@ -1736,7 +1736,7 @@ namespace System.Management
                     try
                     {
                         BitValues.Clear();
-                        if (isTypeInt(prop.Type) == true)
+                        if (isTypeInt(prop.Type))
                         {
                             if (q.Value != null)
                             {
@@ -1861,7 +1861,7 @@ namespace System.Management
                 // If there is no 0 valued field in enum, just add a invalid for enum
                 // This is just to show in property browser
 
-                if ((bNullable == true) && (bZeroFieldInEnum == false))
+                if (bNullable && !bZeroFieldInEnum)
                 {
                     // use the 0 enum position for NULL
                     cmf = new CodeMemberField();
@@ -1870,7 +1870,7 @@ namespace System.Management
                     EnumObj.Members.Add(cmf);
                     prop.NullEnumValue = 0;
                 }
-                else if ((bNullable == true) && (bZeroFieldInEnum == true))
+                else if (bNullable && bZeroFieldInEnum)
                 {
                     // must create an entry for NULL that is not zero and is not used
                     // use the another unused enum position for NULL
@@ -1880,7 +1880,7 @@ namespace System.Management
                     EnumObj.Members.Add(cmf);
                     prop.NullEnumValue = (int)(maxValue + 1);
                 }
-                else if ((bNullable == false) && (bZeroFieldInEnum == false))
+                else if (!bNullable && !bZeroFieldInEnum)
                 {
                     // add an entry for 0 valued enum
                     cmf = new CodeMemberField();
@@ -1951,7 +1951,7 @@ namespace System.Management
                         // Now shift 1 more bit so that we can put it for the
                         // next element in the enum
 
-                        bitValue = bitValue << 1;
+                        bitValue <<= 1;
                     }
 
                     if (bZeroFieldInEnum == false)
@@ -1967,7 +1967,7 @@ namespace System.Management
                 // If there is no 0 valued field in enum, just add a invalid for enum
                 // This is just to show in property browser
 
-                if ((bNullable == true) && (bZeroFieldInEnum == false))
+                if (bNullable && !bZeroFieldInEnum)
                 {
                     // use the 0 enum position for NULL
                     cmf = new CodeMemberField();
@@ -1976,7 +1976,7 @@ namespace System.Management
                     EnumObj.Members.Add(cmf);
                     prop.NullEnumValue = 0;
                 }
-                else if ((bNullable == true) && (bZeroFieldInEnum == true))
+                else if (bNullable && bZeroFieldInEnum)
                 {
                     // must create an entry for NULL that is not zero and is not used
                     // use the another unused enum position for NULL
@@ -1984,11 +1984,11 @@ namespace System.Management
                     cmf.Name = "NULL_ENUM_VALUE";
                     if (BitValues.Count > 30)
                     {
-                        maxBitValue = maxBitValue + 1;
+                        maxBitValue++;
                     }
                     else
                     {
-                        maxBitValue = maxBitValue << 1;
+                        maxBitValue <<= 1;
                     }
                     cmf.InitExpression = new CodePrimitiveExpression((int)(maxBitValue));
                     EnumObj.Members.Add(cmf);
@@ -1996,7 +1996,7 @@ namespace System.Management
                     prop.NullEnumValue = (int)(maxBitValue);
 
                 }
-                else if ((bNullable == false) && (bZeroFieldInEnum == false))
+                else if (!bNullable && !bZeroFieldInEnum)
                 {
                     // add an entry for 0 valued enum
                     cmf = new CodeMemberField();
@@ -2046,9 +2046,9 @@ namespace System.Management
             }
 
             string strPath = OriginalNamespace + ":" + OriginalClassName;
-            if (bSingletonClass == true)
+            if (bSingletonClass)
             {
-                strPath = strPath + "=@";
+                strPath += "=@";
                 cmm.Statements.Add(new CodeMethodReturnStatement(new CodePrimitiveExpression(strPath)));
             }
             else
@@ -2107,7 +2107,7 @@ namespace System.Management
             cmieInit.Parameters.Add(new CodePrimitiveExpression(null));
             //If it is a singleton class, then we will make the default constructor to point to the
             //only object available
-            if (bSingletonClass == true)
+            if (bSingletonClass)
             {
                 cmie = new CodeMethodInvokeExpression();
                 cmie.Method.TargetObject = new CodeTypeReferenceExpression(PrivateNamesUsed["GeneratedClassName"].ToString());
@@ -2131,7 +2131,7 @@ namespace System.Management
             cctor.Comments.Add(new CodeCommentStatement(SR.CommentConstructors));
         }
         /// <summary>
-        ///This function create the constuctor which accepts the key values.
+        ///This function create the constructor which accepts the key values.
         ///public cons(UInt32 key_Key1, String key_Key2) :this(null,&lt;ClassName&gt;.ConstructPath(&lt;key1,key2&gt;),null) {
         /// }
         ///</summary>
@@ -2189,7 +2189,7 @@ namespace System.Management
         }
 
         /// <summary>
-        ///This function create the constuctor which accepts a scope and key values.
+        ///This function create the constructor which accepts a scope and key values.
         ///public cons(ManagementScope scope,UInt32 key_Key1, String key_Key2) :this(scope,&lt;ClassName&gt;.ConstructPath(&lt;key1,key2&gt;),null) {
         /// }
         ///</summary>
@@ -2464,7 +2464,7 @@ namespace System.Management
 
                         try
                         {
-                            classobj.Qualifiers["priveleges"].ToString();
+                            classobj.Qualifiers["privileges"].ToString();
                         }
                         catch (ManagementException e)
                         {
@@ -2521,7 +2521,7 @@ namespace System.Management
             cpde.Name = strLateBoundObject;
             cctor.Parameters.Add(cpde);
 
-            // call this to call function to initialize memeber variables
+            // call this to call function to initialize member variables
             InitPrivateMemberVariables(cctor);
 
             cis = new CodeConditionStatement();
@@ -2591,7 +2591,7 @@ namespace System.Management
             cpde.Name = strLateBoundObject;
             cctor.Parameters.Add(cpde);
 
-            // call this to call function to initialize memeber variables
+            // call this to call function to initialize member variables
             InitPrivateMemberVariables(cctor);
 
             cmie = new CodeMethodInvokeExpression();
@@ -2649,7 +2649,7 @@ namespace System.Management
 
             try
             {
-                classobj.Qualifiers["priveleges"].ToString();
+                classobj.Qualifiers["privileges"].ToString();
             }
             catch (ManagementException e)
             {
@@ -2671,7 +2671,7 @@ namespace System.Management
             cmmInit.Parameters.Add(new CodeParameterDeclarationExpression(new CodeTypeReference(PublicNamesUsed["PathClass"].ToString()), strPathObject));
             cmmInit.Parameters.Add(new CodeParameterDeclarationExpression(new CodeTypeReference(PublicNamesUsed["GetOptionsClass"].ToString()), strGetOptions));
 
-            // call this to call function to initialize memeber variables
+            // call this to call function to initialize member variables
             InitPrivateMemberVariables(cmmInit);
 
             //First if path is not null, then we will check whether the class name is the same.
@@ -2722,10 +2722,10 @@ namespace System.Management
                 new CodeVariableReferenceExpression(PrivateNamesUsed["LateBoundObject"].ToString())));
             cc.Members.Add(cmmInit);
             // Enable the privileges if the class has privileges qualifier
-            if (bPrivileges == true)
+            if (bPrivileges)
             {
                 //Generate the statement
-                //    Boolean bPriveleges = PrivateLateBoundObject.Scope.Options.EnablePrivileges;
+                //    Boolean bPrivileges = PrivateLateBoundObject.Scope.Options.EnablePrivileges;
                 cpre = new CodePropertyReferenceExpression(new CodePropertyReferenceExpression(
                     new CodePropertyReferenceExpression(
                     new CodeVariableReferenceExpression(PrivateNamesUsed["LateBoundObject"].ToString()),
@@ -2779,7 +2779,7 @@ namespace System.Management
             string strClassObj = "classObj";
             bool bStatic = false;
             bool bPrivileges = false;
-            CodePropertyReferenceExpression cprePriveleges = null;
+            CodePropertyReferenceExpression cprePrivileges = null;
             CimType cimRetType = CimType.SInt8;                        // Initialized to remove warnings
             CodeTypeReference retRefType = null;
             bool isRetArray = false;
@@ -2853,7 +2853,7 @@ namespace System.Management
                     strInParams, new CodePrimitiveExpression(null)));
 
 
-                if (bStatic == true)
+                if (bStatic)
                 {
                     string strPath = "mgmtPath";
                     CodeObjectCreateExpression cocePath = new CodeObjectCreateExpression();
@@ -2874,11 +2874,11 @@ namespace System.Management
                     strTemp = strClassObj;
                 }
 
-                if (bPrivileges == true)
+                if (bPrivileges)
                 {
                     //Generate the statement
-                    //    Boolean bPriveleges = PrivateLateBoundObject.Scope.Options.EnablePrivileges;
-                    cprePriveleges = new CodePropertyReferenceExpression(new CodePropertyReferenceExpression(
+                    //    Boolean bPrivileges = PrivateLateBoundObject.Scope.Options.EnablePrivileges;
+                    cprePrivileges = new CodePropertyReferenceExpression(new CodePropertyReferenceExpression(
                         new CodePropertyReferenceExpression(
                         new CodeVariableReferenceExpression(bStatic ? strClassObj : PrivateNamesUsed["LateBoundObject"].ToString()),
                         PublicNamesUsed["ScopeProperty"].ToString()),
@@ -2886,9 +2886,9 @@ namespace System.Management
                         "EnablePrivileges");
 
                     cis.TrueStatements.Add(new CodeVariableDeclarationStatement("System.Boolean",
-                        PrivateNamesUsed["Privileges"].ToString(), cprePriveleges));
+                        PrivateNamesUsed["Privileges"].ToString(), cprePrivileges));
 
-                    cis.TrueStatements.Add(new CodeAssignStatement(cprePriveleges, new CodePrimitiveExpression(true)));
+                    cis.TrueStatements.Add(new CodeAssignStatement(cprePrivileges, new CodePrimitiveExpression(true)));
 
                 }
 
@@ -2901,7 +2901,7 @@ namespace System.Management
                         foreach (PropertyData prop in meth.InParameters.Properties)
                         {
                             bIsCimDateTimeInterval = false;
-                            if (bfirst == true)
+                            if (bfirst)
                             {
                                 //Now Generate the statement
                                 //    inParams = privObject.GetMethodParameters(<MethodName>);
@@ -2999,7 +2999,7 @@ namespace System.Management
                         foreach (PropertyData prop in meth.OutParameters.Properties)
                         {
                             bIsCimDateTimeInterval = false;
-                            if (bfirst == true)
+                            if (bfirst)
                             {
                                 //Now generate the statement
                                 //    ManagementBaseObject outParams = privObject.InvokeMethod(<methodName>,inParams,options);
@@ -3023,7 +3023,7 @@ namespace System.Management
                                     bInOut = true;
                                 }
                             }
-                            if (bInOut == true)
+                            if (bInOut)
                                 continue;
 
                             if (string.Equals(prop.Name, "ReturnValue", StringComparison.OrdinalIgnoreCase))
@@ -3177,13 +3177,13 @@ namespace System.Management
                 inoutParams.Clear();
 
                 // Assign the privileges back
-                if (bPrivileges == true)
+                if (bPrivileges)
                 {
-                    cis.TrueStatements.Add(new CodeAssignStatement(cprePriveleges, new CodeVariableReferenceExpression(PrivateNamesUsed["Privileges"].ToString())));
+                    cis.TrueStatements.Add(new CodeAssignStatement(cprePrivileges, new CodeVariableReferenceExpression(PrivateNamesUsed["Privileges"].ToString())));
                 }
 
                 //Now check if there is a return value. If there is one then return it from the function
-                if (bRetVal == true)
+                if (bRetVal)
                 {
                     CodeVariableDeclarationStatement cRetVal = new CodeVariableDeclarationStatement(retRefType, "retVar");
                     cpre = new CodePropertyReferenceExpression(new CodeVariableReferenceExpression(strOutParams), "Properties");
@@ -3699,12 +3699,12 @@ namespace System.Management
             cf = new CodeMemberField();
             cf.Name = memberName;
             cf.Attributes = MemberAttributes.Private | MemberAttributes.Final;
-            if (isStatic == true)
+            if (isStatic)
             {
-                cf.Attributes = cf.Attributes | MemberAttributes.Static;
+                cf.Attributes |= MemberAttributes.Static;
             }
             cf.Type = new CodeTypeReference(MemberType);
-            if (initExpression != null && isStatic == true)
+            if (initExpression != null && isStatic)
             {
                 cf.InitExpression = initExpression;
             }
@@ -4531,7 +4531,7 @@ namespace System.Management
 
         /// <summary>
         /// This function will convert the given CIMTYPE to an acceptable .NET type.
-        /// Since CLS doen't support lotz of the basic types, we are using .NET helper
+        /// Since CLS doesn't support lotz of the basic types, we are using .NET helper
         /// classes here. We safely assume that there won't be any problem using them
         /// since .NET has to be there for the System.Management.Dll to work.
         /// </summary>
@@ -4716,7 +4716,7 @@ namespace System.Management
         }
 
         /// <summary>
-        /// Function to convert a given ValueMap or BitMap name to propert enum name
+        /// Function to convert a given ValueMap or BitMap name to property enum name
         /// </summary>
         private static string ConvertValuesToName(string str)
         {
@@ -4758,7 +4758,7 @@ namespace System.Management
                     strToAdd = new string(arrString[i], 1);
                 }
 
-                if (bAdd == true)
+                if (bAdd)
                 {
                     strRet = string.Concat(strRet, strToAdd);
                 }
@@ -4781,11 +4781,11 @@ namespace System.Management
             {
                 strToAdd = arrIn[i].ToString();
                 strToAdd = ResolveCollision(strToAdd, true);
-                if (true == IsContainedInArray(strToAdd, arrayOut))
+                if (IsContainedInArray(strToAdd, arrayOut))
                 {
                     nCurIndex = 0;
                     strToAdd = arrIn[i].ToString() + nCurIndex.ToString(formatProv);
-                    while (true == IsContainedInArray(strToAdd, arrayOut))
+                    while (IsContainedInArray(strToAdd, arrayOut))
                     {
                         nCurIndex++;
                         strToAdd = arrIn[i].ToString() + nCurIndex.ToString(formatProv);
@@ -4895,7 +4895,7 @@ namespace System.Management
                 throw new ArgumentOutOfRangeException(SR.Format(SR.UnableToCreateCodeGeneratorException, strProvider));
             }
 
-            if (bSucceeded == true)
+            if (bSucceeded)
             {
                 GetUnsignedSupport(lang);
             }
@@ -5012,7 +5012,7 @@ namespace System.Management
                 int Len = bitMap.Length;
                 for (int i = 2; i < Len; i++)
                 {
-                    strTemp = strTemp + arrString[i];
+                    strTemp += arrString[i];
                 }
                 ret = System.Convert.ToInt32(strTemp, (IFormatProvider)CultureInfo.InvariantCulture.GetFormat(typeof(int)));
             }
@@ -5175,7 +5175,7 @@ namespace System.Management
 
 
         /// <summary>
-        /// Converts a numberic value to appropriate type and adds it to array
+        /// Converts a numeric value to appropriate type and adds it to array
         /// </summary>
         private static string ConvertToNumericValueAndAddToArray(CimType cimType, string numericValue, ArrayList arrayToAdd, out string enumType)
         {
@@ -5269,7 +5269,7 @@ namespace System.Management
 
             CommentsString.Add("Name of the WMI class");    // IDS_COMMENT_CLASSNAME;
 
-            CommentsString.Add("Property pointing to a embeded object to get System properties of the WMI object"); // IDS_CommentSystemObject
+            CommentsString.Add("Property pointing to a embedded object to get System properties of the WMI object"); // IDS_CommentSystemObject
 
             CommentsString.Add("Underlying lateBound WMI object"); // IDS_CommentLateBoundObject
 
@@ -5665,7 +5665,7 @@ namespace System.Management
 
                 CodePropertyReferenceExpression LenProp = null;
 
-                if (bIsValueProprequired == true)
+                if (bIsValueProprequired)
                 {
                     LenProp = new CodePropertyReferenceExpression(
                         new CodeCastExpression(
@@ -5734,7 +5734,7 @@ namespace System.Management
 
                 CodeMethodInvokeExpression cmie1 = new CodeMethodInvokeExpression();
                 cmie1.Method.MethodName = "GetValue";
-                if (bIsValueProprequired == true)
+                if (bIsValueProprequired)
                 {
                     cmie1.Method.TargetObject = new CodeCastExpression(new CodeTypeReference("System.Array"), new CodePropertyReferenceExpression(prop, "Value"));
                 }
@@ -5775,10 +5775,7 @@ namespace System.Management
         /// </summary>
         private void AddPropertySet(CodeIndexerExpression prop, bool bArray, CodeStatementCollection statColl, string strType, CodeVariableReferenceExpression varValue)
         {
-            if (varValue == null)
-            {
-                varValue = new CodeVariableReferenceExpression("value");
-            }
+            varValue ??= new CodeVariableReferenceExpression("value");
 
             if (bArray == false)
             {
@@ -6150,7 +6147,7 @@ namespace System.Management
             {
                 if (bTimeSpanConversionFunctionsAdded == false)
                 {
-                    cc.Comments.Add(new CodeCommentStatement(SR.CommentTimeSpanConvertionFunction));
+                    cc.Comments.Add(new CodeCommentStatement(SR.CommentTimeSpanConversionFunction));
                     bTimeSpanConversionFunctionsAdded = true;
                     // Call this function to generate conversion function
                     GenerateTimeSpanConversionFunction();
@@ -6668,7 +6665,7 @@ namespace System.Management
 
                     OffsetToBeAdjusted = UTCOffset-OffsetMins;
 
-                    // We have to substract the minutes from the time
+                    // We have to subtract the minutes from the time
                     datetime = datetime.AddMinutes((System.Double)(OffsetToBeAdjusted));
 
                 }
@@ -7142,7 +7139,7 @@ namespace System.Management
                 else
                 {
                     string strTemp = OffsetMins.ToString();
-                    UtcString = "-" + strTemp.Substring(1, strTemp.Length-1).PadLeft(3,'0');
+                    UtcString = "-" + strTemp.Substring(1).PadLeft(3,'0');
                 }
             */
 

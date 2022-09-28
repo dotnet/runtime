@@ -158,7 +158,7 @@ namespace System.IO
                 continueExecuting = Interop.Kernel32.ReadDirectoryChangesW(
                     state.DirectoryHandle,
                     state.Buffer, // the buffer is kept pinned for the duration of the sync and async operation by the PreAllocatedOverlapped
-                    _internalBufferSize,
+                    (uint)state.Buffer.Length,
                     _includeSubdirectories,
                     (uint)_notifyFilters,
                     null,

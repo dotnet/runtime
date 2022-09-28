@@ -1852,11 +1852,11 @@ namespace System.Data.Tests
             DataRow[] drSelect;
             List<DataRow> al;
 
-            //add some rows
+            // add some rows
             dt.Rows.Add(new object[] { 99, 88, "bla", "wowww" });
             dt.Rows.Add(new object[] { 999, 888, string.Empty, "woowww" });
 
-            //get excepted resault
+            // get excepted result
             al = new List<DataRow>();
             foreach (DataRow dr in dt.Rows)
             {
@@ -1869,7 +1869,7 @@ namespace System.Data.Tests
             drSelect = dt.Select("ChildId=1", "ParentId Desc");
             Assert.Equal(al.ToArray(), drSelect);
 
-            //get excepted resault
+            // get excepted result
             al = new List<DataRow>();
             foreach (DataRow dr in dt.Rows)
             {
@@ -1882,7 +1882,7 @@ namespace System.Data.Tests
             drSelect = dt.Select("String1='1-String1'", "ParentId Desc");
             Assert.Equal(al.ToArray(), drSelect);
 
-            //get excepted resault
+            // get excepted result
             al = new List<DataRow>();
             foreach (DataRow dr in dt.Rows)
             {
@@ -1897,7 +1897,7 @@ namespace System.Data.Tests
             Assert.Equal(al.ToArray(), drSelect);
 
 
-            //get excepted resault
+            // get excepted result
             al = new List<DataRow>();
             foreach (DataRow dr in dt.Rows)
             {

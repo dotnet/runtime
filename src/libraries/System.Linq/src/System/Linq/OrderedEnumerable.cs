@@ -239,6 +239,13 @@ namespace System.Linq
 
     internal abstract class EnumerableSorter<TElement>
     {
+        /// <summary>Function that returns its input unmodified.</summary>
+        /// <remarks>
+        /// Used for reference equality in order to avoid unnecessary computation when a caller
+        /// can benefit from knowing that the produced value is identical to the input.
+        /// </remarks>
+        internal static readonly Func<TElement, TElement> IdentityFunc = e => e;
+
         internal abstract void ComputeKeys(TElement[] elements, int count);
 
         internal abstract int CompareAnyKeys(int index1, int index2);
@@ -308,10 +315,24 @@ namespace System.Linq
 
         internal override void ComputeKeys(TElement[] elements, int count)
         {
-            _keys = new TKey[count];
-            for (int i = 0; i < count; i++)
+            Func<TElement, TKey> keySelector = _keySelector;
+            if (!ReferenceEquals(keySelector, IdentityFunc))
             {
-                _keys[i] = _keySelector(elements[i]);
+                var keys = new TKey[count];
+                for (int i = 0; i < keys.Length; i++)
+                {
+                    keys[i] = keySelector(elements[i]);
+                }
+                _keys = keys;
+            }
+            else
+            {
+                // The key selector is our known identity function, which means we don't
+                // need to invoke the key selector for every element.  Further, we can just
+                // use the original array as the keys (even if count is smaller, as the additional
+                // values will just be ignored).
+                Debug.Assert(typeof(TKey) == typeof(TElement));
+                _keys = (TKey[])(object)elements;
             }
 
             _next?.ComputeKeys(elements, count);

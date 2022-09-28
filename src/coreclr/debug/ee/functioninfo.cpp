@@ -952,7 +952,7 @@ void DebuggerJitInfo::LazyInitBounds()
     EX_CATCH
     {
         LOG((LF_CORDB,LL_WARNING, "DJI::LazyInitBounds: this=0x%x Exception was thrown and caught\n", this));
-        // Just catch the exception. The DJI maps may or may-not be intialized,
+        // Just catch the exception. The DJI maps may or may-not be initialized,
         // but they should still be in a consistent state, so we should be ok.
     }
     EX_END_CATCH(SwallowAllExceptions)
@@ -1230,7 +1230,7 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
 // Init a DJI after it's jitted.
 void DebuggerJitInfo::Init(TADDR newAddress)
 {
-    // Shouldn't initialize while holding the lock b/c intialzing may call functions that lock,
+    // Shouldn't initialize while holding the lock b/c initializing may call functions that lock,
     // and thus we'd have a locking violation.
     _ASSERTE(!g_pDebugger->HasDebuggerDataLock());
 
@@ -1518,6 +1518,9 @@ DebuggerJitInfo * DebuggerMethodInfo::FindJitInfo(MethodDesc * pMD,
     }
     CONTRACTL_END;
 
+#ifdef TARGET_ARM
+    addrNativeStartAddr = addrNativeStartAddr|THUMB_CODE;
+#endif
 
     DebuggerJitInfo * pCheck = m_latestJitInfo;
     while (pCheck != NULL)
@@ -2453,9 +2456,7 @@ DebuggerMethodInfoEntry::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     // For a MiniDumpNormal, what is needed for modules is already enumerated elsewhere.
     // Don't waste time doing it here an extra time. Also, this will add many MB extra into the dump.
-    if ((key.pModule.IsValid()) &&
-        CLRDATA_ENUM_MEM_MINI != flags
-        && CLRDATA_ENUM_MEM_TRIAGE != flags)
+    if ((key.pModule.IsValid()) && CLRDATA_ENUM_MEM_MINI != flags && CLRDATA_ENUM_MEM_TRIAGE != flags && CLRDATA_ENUM_MEM_HEAP2 != flags)
     {
         key.pModule->EnumMemoryRegions(flags, true);
     }
@@ -2473,7 +2474,7 @@ DebuggerMethodInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DAC_ENUM_DTHIS();
     SUPPORTS_DAC;
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
+    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
     {
         // Modules are enumerated already for minidumps, save the empty calls.
         if (m_module.IsValid())
@@ -2502,7 +2503,7 @@ DebuggerJitInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         m_methodInfo->EnumMemoryRegions(flags);
     }
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
+    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
     {
         if (m_nativeCodeVersion.GetMethodDesc().IsValid())
         {

@@ -29,8 +29,7 @@ namespace System.Collections
 
         public static CaseInsensitiveHashCodeProvider Default => new CaseInsensitiveHashCodeProvider();
 
-        public static CaseInsensitiveHashCodeProvider DefaultInvariant => s_invariantCaseInsensitiveHashCodeProvider ??
-            (s_invariantCaseInsensitiveHashCodeProvider = new CaseInsensitiveHashCodeProvider(CultureInfo.InvariantCulture));
+        public static CaseInsensitiveHashCodeProvider DefaultInvariant => s_invariantCaseInsensitiveHashCodeProvider ??= new CaseInsensitiveHashCodeProvider(CultureInfo.InvariantCulture);
 
         public int GetHashCode(object obj)
         {

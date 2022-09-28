@@ -33,6 +33,7 @@ namespace ILCompiler.DependencyAnalysis
         public MethodCodeNode(MethodDesc method)
         {
             Debug.Assert(!method.IsAbstract);
+            Debug.Assert(!method.IsGenericMethodDefinition && !method.OwningType.IsGenericDefinition);
             Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method);
             _method = method;
         }
@@ -57,7 +58,7 @@ namespace ILCompiler.DependencyAnalysis
                     (_isFoldable ? ObjectNodeSection.FoldableManagedCodeUnixContentSection : ObjectNodeSection.ManagedCodeUnixContentSection);
             }
         }
-        
+
         public override bool StaticDependenciesAreComputed => _methodCode != null;
 
         public virtual void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -83,21 +84,19 @@ namespace ILCompiler.DependencyAnalysis
             TypeDesc owningType = _method.OwningType;
             if (factory.PreinitializationManager.HasEagerStaticConstructor(owningType))
             {
-                if (dependencies == null)
-                    dependencies = new DependencyList();
+                dependencies ??= new DependencyList();
                 dependencies.Add(factory.EagerCctorIndirection(owningType.GetStaticConstructor()), "Eager .cctor");
             }
 
             if (_ehInfo != null)
             {
-                if (dependencies == null)
-                    dependencies = new DependencyList();
+                dependencies ??= new DependencyList();
                 dependencies.Add(_ehInfo, "Exception handling information");
             }
 
             if (MethodAssociatedDataNode.MethodHasAssociatedData(factory, this))
             {
-                dependencies = dependencies ?? new DependencyList();
+                dependencies ??= new DependencyList();
                 dependencies.Add(new DependencyListEntry(factory.MethodAssociatedData(this), "Method associated data"));
             }
 
@@ -305,7 +304,7 @@ namespace ILCompiler.DependencyAnalysis
             return _method.ToString();
         }
 
-        internal class MethodCodeNodeDebugView
+        internal sealed class MethodCodeNodeDebugView
         {
             private readonly MethodCodeNode _node;
 

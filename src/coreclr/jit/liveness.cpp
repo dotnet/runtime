@@ -87,7 +87,7 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
             }
         }
 
-        if (varTypeIsStruct(varDsc))
+        if (varTypeIsPromotable(varDsc))
         {
             lvaPromotionType promotionType = lvaGetPromotionType(varDsc);
 
@@ -243,25 +243,23 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             // Otherwise, we treat it as a use here.
             if ((tree->gtFlags & GTF_IND_ASG_LHS) == 0)
             {
-                GenTreeLclVarCommon* dummyLclVarTree = nullptr;
-                bool                 dummyIsEntire   = false;
-                GenTree*             addrArg         = tree->AsOp()->gtOp1->gtEffectiveVal(/*commaOnly*/ true);
-                if (!addrArg->DefinesLocalAddr(this, /*width doesn't matter*/ 0, &dummyLclVarTree, &dummyIsEntire))
+                GenTreeLclVarCommon* lclVarTree = nullptr;
+                GenTree*             addrArg    = tree->AsOp()->gtOp1->gtEffectiveVal(/*commaOnly*/ true);
+                if (!addrArg->DefinesLocalAddr(&lclVarTree))
                 {
                     fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
                 }
                 else
                 {
                     // Defines a local addr
-                    assert(dummyLclVarTree != nullptr);
-                    fgMarkUseDef(dummyLclVarTree->AsLclVarCommon());
+                    assert(lclVarTree != nullptr);
+                    fgMarkUseDef(lclVarTree->AsLclVarCommon());
                 }
             }
             break;
 
         // These should have been morphed away to become GT_INDs:
         case GT_FIELD:
-        case GT_INDEX:
             unreached();
             break;
 
@@ -278,7 +276,7 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             break;
 
         case GT_MEMORYBARRIER:
-            // Simliar to any Volatile indirection, we must handle this as a definition of GcHeap/ByrefExposed
+            // Similar to any Volatile indirection, we must handle this as a definition of GcHeap/ByrefExposed
             fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
             break;
 
@@ -616,7 +614,7 @@ void Compiler::fgMarkInScope(BasicBlock* block, VARSET_VALARG_TP inScope)
     }
 #endif // DEBUG
 
-    /* Record which vars are artifically kept alive for debugging */
+    /* Record which vars are artificially kept alive for debugging */
 
     VarSetOps::Assign(this, block->bbScope, inScope);
 
@@ -625,7 +623,7 @@ void Compiler::fgMarkInScope(BasicBlock* block, VARSET_VALARG_TP inScope)
 
     VarSetOps::UnionD(this, block->bbVarUse, inScope);
 
-    /* Artifically mark all vars in scope as alive */
+    /* Artificially mark all vars in scope as alive */
 
     VarSetOps::UnionD(this, block->bbLiveIn, inScope);
     VarSetOps::UnionD(this, block->bbLiveOut, inScope);
@@ -881,7 +879,7 @@ void Compiler::fgExtendDbgLifetimes()
     fgUnmarkInScope(fgFirstBB, VarSetOps::Diff(this, fgFirstBB->bbScope, noUnmarkVars));
 
     /*-------------------------------------------------------------------------
-     * As we keep variables artifically alive over their entire scope,
+     * As we keep variables artificially alive over their entire scope,
      * we need to also artificially initialize them if the scope does
      * not exactly match the real lifetimes, or they will contain
      * garbage until they are initialized by the IL code.
@@ -1633,7 +1631,7 @@ bool Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
                 return true;
             }
         }
-        else if (varTypeIsStruct(varDsc.lvType))
+        else if (varTypeIsPromotable(varDsc.lvType))
         {
             if (lvaGetPromotionType(&varDsc) != PROMOTION_TYPE_INDEPENDENT)
             {
@@ -1646,7 +1644,7 @@ bool Compiler::fgComputeLifeUntrackedLocal(VARSET_TP&           life,
         }
     }
 
-    if (!varTypeIsStruct(varDsc.lvType) || (lvaGetPromotionType(&varDsc) == PROMOTION_TYPE_NONE))
+    if (!varTypeIsPromotable(varDsc.TypeGet()) || (lvaGetPromotionType(&varDsc) == PROMOTION_TYPE_NONE))
     {
         return false;
     }
@@ -1970,42 +1968,19 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                         {
                             GenTreeIndir* const store = addrUse.User()->AsIndir();
 
-                            // If this is a zero init of an explicit zero init gc local
-                            // that has at least one other reference, we will keep the zero init.
-                            //
-                            const LclVarDsc& varDsc              = lvaTable[node->AsLclVarCommon()->GetLclNum()];
-                            const bool       isExplicitInitLocal = varDsc.lvHasExplicitInit;
-                            const bool       isReferencedLocal   = varDsc.lvRefCnt() > 1;
-                            const bool       isZeroInit          = store->OperIsInitBlkOp();
-                            const bool       isGCInit            = varDsc.HasGCPtr();
-
-                            if (isExplicitInitLocal && isReferencedLocal && isZeroInit && isGCInit)
+                            if (fgTryRemoveDeadStoreLIR(store, node->AsLclVarCommon(), block))
                             {
-                                // Yes, we'd better keep it around.
-                                //
-                                JITDUMP("Keeping dead indirect store -- explicit zero init of gc type\n");
-                                DISPNODE(store);
-                            }
-                            else
-                            {
-                                // Remove the store. DCE will iteratively clean up any ununsed operands.
-                                //
-                                JITDUMP("Removing dead indirect store:\n");
-                                DISPNODE(store);
+                                JITDUMP("Removing dead LclVar address:\n");
+                                DISPNODE(node);
+                                blockRange.Remove(node);
 
-                                assert(store->Addr() == node);
-                                blockRange.Delete(this, block, node);
-
-                                GenTree* data =
-                                    store->OperIs(GT_STOREIND) ? store->AsStoreInd()->Data() : store->AsBlk()->Data();
+                                GenTree* data = store->AsIndir()->Data();
                                 data->SetUnusedValue();
 
                                 if (data->isIndir())
                                 {
                                     Lowering::TransformUnusedIndirection(data->AsIndir(), this, block);
                                 }
-
-                                fgRemoveDeadStoreLIR(store, block);
                             }
                         }
                     }
@@ -2027,17 +2002,16 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                     isDeadStore = fgComputeLifeUntrackedLocal(life, keepAliveVars, varDsc, lclVarNode);
                 }
 
-                if (isDeadStore)
+                if (isDeadStore && fgTryRemoveDeadStoreLIR(node, lclVarNode, block))
                 {
-                    JITDUMP("Removing dead store:\n");
-                    DISPNODE(lclVarNode);
+                    GenTree* data = lclVarNode->Data();
+                    data->SetUnusedValue();
 
-                    // Remove the store. DCE will iteratively clean up any ununsed operands.
-                    lclVarNode->gtOp1->SetUnusedValue();
-
-                    fgRemoveDeadStoreLIR(node, block);
+                    if (data->isIndir())
+                    {
+                        Lowering::TransformUnusedIndirection(data->AsIndir(), this, block);
+                    }
                 }
-
                 break;
             }
 
@@ -2047,6 +2021,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
             case GT_CNS_LNG:
             case GT_CNS_DBL:
             case GT_CNS_STR:
+            case GT_CNS_VEC:
             case GT_CLS_VAR_ADDR:
             case GT_PHYSREG:
                 // These are all side-effect-free leaf nodes.
@@ -2185,17 +2160,41 @@ bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
 }
 
 //---------------------------------------------------------------------
-// fgRemoveDeadStoreLIR - remove a dead store from LIR
+// fgTryRemoveDeadStoreLIR - try to remove a dead store from LIR
 //
-//   store          - A store tree
-//   block          - Block that the store is part of
+// Arguments:
+//   store   - A store tree
+//   lclNode - The node representing the local being stored to
+//   block   - Block that the store is part of
 //
-void Compiler::fgRemoveDeadStoreLIR(GenTree* store, BasicBlock* block)
+// Return Value:
+//    Whether the store was successfully removed from "block"'s range.
+//
+bool Compiler::fgTryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclNode, BasicBlock* block)
 {
-    LIR::Range& blockRange = LIR::AsRange(block);
-    blockRange.Remove(store);
     assert(!opts.MinOpts());
+
+    // We cannot remove stores to (tracked) TYP_STRUCT locals with GC pointers marked as "explicit init",
+    // as said locals will be reported to the GC untracked, and deleting the explicit initializer risks
+    // exposing uninitialized references.
+    if ((lclNode->gtFlags & GTF_VAR_USEASG) == 0)
+    {
+        LclVarDsc* varDsc = lvaGetDesc(lclNode);
+        if (varDsc->lvHasExplicitInit && (varDsc->TypeGet() == TYP_STRUCT) && varDsc->HasGCPtr() &&
+            (varDsc->lvRefCnt() > 1))
+        {
+            JITDUMP("Not removing a potential explicit init [%06u] of V%02u\n", dspTreeID(store), lclNode->GetLclNum());
+            return false;
+        }
+    }
+
+    JITDUMP("Removing dead %s:\n", store->OperIsIndir() ? "indirect store" : "local store");
+    DISPNODE(store);
+
+    LIR::AsRange(block).Remove(store);
     fgStmtRemoved = true;
+
+    return true;
 }
 
 //---------------------------------------------------------------------
@@ -2332,7 +2331,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
 
         assert(asgNode->OperIs(GT_ASG));
 
-        // We are now commited to removing the store.
+        // We are now committed to removing the store.
         *pStoreRemoved = true;
 
         // Check for side effects

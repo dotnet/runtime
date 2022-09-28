@@ -61,7 +61,7 @@ namespace System.Reflection.Emit.Tests
 
             property.SetGetMethod(method);
 
-            Type createdType = type.CreateTypeInfo().AsType();
+            Type createdType = type.CreateType();
             PropertyInfo createdProperty = createdType.GetProperty("TestProperty", bindingAttributes);
             Assert.Equal(defaultValue, createdProperty.GetConstantValue());
         }
@@ -78,7 +78,7 @@ namespace System.Reflection.Emit.Tests
             methodILGenerator.Emit(OpCodes.Ldarg_1);
             methodILGenerator.Emit(OpCodes.Ret);
 
-            type.CreateTypeInfo().AsType();
+            type.CreateType();
             Assert.Throws<InvalidOperationException>(() => property.SetConstant(1));
         }
 

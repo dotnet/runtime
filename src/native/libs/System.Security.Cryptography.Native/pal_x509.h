@@ -215,7 +215,7 @@ PALEXPORT ASN1_OCTET_STRING* CryptoNative_X509FindExtensionData(X509* x, int32_t
 /*
 Shims the X509_STORE_free method.
 */
-PALEXPORT void CryptoNative_X509StoreDestory(X509_STORE* v);
+PALEXPORT void CryptoNative_X509StoreDestroy(X509_STORE* v);
 
 /*
 Shims the X509_STORE_add_crl method.
@@ -291,9 +291,14 @@ Shims the X509_STORE_CTX_get_error_depth method.
 PALEXPORT int32_t CryptoNative_X509StoreCtxGetErrorDepth(X509_STORE_CTX* ctx);
 
 /*
-Shims the X509_STORE_CTX_set_verify_cb function.
+Shims the X509_STORE_CTX_set_verify_cb and X509_STORE_CTX_set_app_data functions.
 */
-PALEXPORT void CryptoNative_X509StoreCtxSetVerifyCallback(X509_STORE_CTX* ctx, X509StoreVerifyCallback callback);
+PALEXPORT int32_t CryptoNative_X509StoreCtxSetVerifyCallback(X509_STORE_CTX* ctx, X509StoreVerifyCallback callback, void* appData);
+
+/*
+Shims the X509_STORE_CTX_get_app_data function.
+*/
+PALEXPORT void* CryptoNative_X509StoreCtxGetAppData(X509_STORE_CTX* ctx);
 
 /*
 Shims the X509_verify_cert_error_string method.
@@ -378,6 +383,11 @@ determined by the chain in storeCtx.
 PALEXPORT int32_t CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* storeCtx, char* cachePath, int chainDepth);
 
 /*
+Build an OCSP request appropriate for the subject certificate (as issued by the issuer certificate)
+*/
+PALEXPORT OCSP_REQUEST* CryptoNative_X509BuildOcspRequest(X509* subject, X509* issuer);
+
+/*
 Build an OCSP request appropriate for the end-entity certificate using the issuer (and trust) as
 determined by the chain in storeCtx.
 */
@@ -397,3 +407,9 @@ PALEXPORT int32_t CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx,
                                                    OCSP_RESPONSE* resp,
                                                    char* cachePath,
                                                    int chainDepth);
+
+/*
+Decode len bytes of buf into an OCSP response, process it against the OCSP request, and return if the bytes were valid.
+If the bytes were valid, and the OCSP response had a nextUpdate value, assign it to expiration.
+*/
+PALEXPORT int32_t CryptoNative_X509DecodeOcspToExpiration(const uint8_t* buf, int32_t len, OCSP_REQUEST* req, X509* subject, X509* issuer, int64_t* expiration);

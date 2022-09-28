@@ -34,6 +34,9 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(JsonElement))]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable))]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithNullableProperties))]
+#if NETCOREAPP
+    [JsonSerializable(typeof(RealWorldContextTests.ClassWithDateOnlyAndTimeOnlyValues))]
+#endif
     [JsonSerializable(typeof(ClassWithCustomConverter))]
     [JsonSerializable(typeof(StructWithCustomConverter))]
     [JsonSerializable(typeof(ClassWithCustomConverterFactory))]
@@ -80,6 +83,9 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(JsonElement), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithNullableProperties), GenerationMode = JsonSourceGenerationMode.Serialization)]
+#if NETCOREAPP
+    [JsonSerializable(typeof(RealWorldContextTests.ClassWithDateOnlyAndTimeOnlyValues), GenerationMode = JsonSourceGenerationMode.Serialization)]
+#endif
     [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithCustomConverterFactory), GenerationMode = JsonSourceGenerationMode.Serialization)]
@@ -127,6 +133,9 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(JsonElement), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithNullableProperties), GenerationMode = JsonSourceGenerationMode.Serialization)]
+#if NETCOREAPP
+    [JsonSerializable(typeof(RealWorldContextTests.ClassWithDateOnlyAndTimeOnlyValues), GenerationMode = JsonSourceGenerationMode.Serialization)]
+#endif
     [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(StructWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Serialization)]
     [JsonSerializable(typeof(ClassWithCustomConverterFactory), GenerationMode = JsonSourceGenerationMode.Serialization)]
@@ -445,6 +454,35 @@ namespace System.Text.Json.SourceGeneration.Tests
                 Assert.Equal(expected.NullablePocoParameter, actual.NullablePocoParameter);
             }
         }
+
+#if NETCOREAPP
+        [Fact]
+        public override void ClassWithDateOnlyAndTimeOnlyValues_Roundtrip()
+        {
+            RunTest(new ClassWithDateOnlyAndTimeOnlyValues
+            {
+                DateOnly = DateOnly.Parse("2022-05-10"),
+                NullableDateOnly = DateOnly.Parse("2022-05-10"),
+
+                TimeOnly = TimeOnly.Parse("21:51:51"),
+                NullableTimeOnly = TimeOnly.Parse("21:51:51"),
+            });
+
+            RunTest(new ClassWithDateOnlyAndTimeOnlyValues());
+
+            void RunTest(ClassWithDateOnlyAndTimeOnlyValues expected)
+            {
+                string json = JsonSerializer.Serialize(expected, DefaultContext.ClassWithDateOnlyAndTimeOnlyValues);
+                ClassWithDateOnlyAndTimeOnlyValues actual = JsonSerializer.Deserialize(json, ((ITestContext)MetadataWithPerTypeAttributeContext.Default).ClassWithDateOnlyAndTimeOnlyValues);
+
+                Assert.Equal(expected.DateOnly, actual.DateOnly);
+                Assert.Equal(expected.NullableDateOnly, actual.NullableDateOnly);
+
+                Assert.Equal(expected.TimeOnly, actual.TimeOnly);
+                Assert.Equal(expected.NullableTimeOnly, actual.NullableTimeOnly);
+            }
+        }
+#endif
 
         [Fact]
         public override void ParameterizedConstructor()

@@ -122,7 +122,7 @@ bool
 ipc_stream_factory_any_suspended_ports (void);
 
 /*
- * Global volatile varaibles, only to be accessed through inlined volatile access functions.
+ * Global volatile variables, only to be accessed through inlined volatile access functions.
  */
 
 volatile EventPipeState _ep_state = EP_STATE_NOT_INITIALIZED;

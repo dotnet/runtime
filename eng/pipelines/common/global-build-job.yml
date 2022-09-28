@@ -75,13 +75,18 @@ jobs:
       - name: _osParameter
         value: -os ${{ parameters.osGroup }}
 
-      - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_musl')) }}:
+      - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_bionic')) }}:
         - name: _osParameter
-          value: /p:RuntimeOS=linux-musl /p:OutputRid=linux-musl-${{ parameters.archType }}
+          value: /p:RuntimeOS=linux-bionic
 
       # Do not rename as it clashes with MSBuild property in libraries/build-native.proj
       - name: _crossBuildPropertyArg
         value: /p:CrossBuild=${{ parameters.crossBuild }}
+
+      - ${{ if ne(parameters.jobParameters.crossrootfsDir, '') }}:
+        # This is only required for cross builds.
+        - name: ROOTFS_DIR
+          value: ${{ parameters.jobParameters.crossrootfsDir }}
 
       - name: _cxx11Parameter
         ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.archType, 'arm64')) }}:
@@ -137,6 +142,9 @@ jobs:
           platform:
             buildScript: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt)
             nonPortable: true
+            # Use a custom RID that isn't in the RID graph here to validate we don't break the usage of custom rids that aren't in the graph.
+            targetRID: banana.24-x64
+            runtimeOS: linux
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'MacCatalyst') }}:
       - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }} ${{ parameters.archType }} azDO
@@ -156,7 +164,7 @@ jobs:
 
     # Build
     - ${{ if eq(parameters.buildingOnSourceBuildImage, false) }}:
-      - script: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_richCodeNavigationParam) $(_buildDarwinFrameworksParameter)
+      - script: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_richCodeNavigationParam) $(_buildDarwinFrameworksParameter) $(_overrideTestScriptWindowsCmdParameter)
         displayName: Build product
         ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
           continueOnError: ${{ parameters.shouldContinueOnError }}

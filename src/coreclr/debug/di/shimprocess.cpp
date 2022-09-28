@@ -344,7 +344,7 @@ void ShimProcess::TrackFileHandleForDebugEvent(const DEBUG_EVENT * pEvent)
 //
 //    We do this in a new thread proc to avoid thread restrictions:
 //    Can't call this on win32 event thread because that can't send the IPC event to
-//    make the aysnc-break request.
+//    make the async-break request.
 //    Can't call this on the RCET because that can't send an async-break (see SendIPCEvent for details)
 //    So we just spin up a new thread to do the work.
 //---------------------------------------------------------------------------------------
@@ -932,7 +932,7 @@ CordbWin32EventThread * ShimProcess::GetWin32EventThread()
 
 
 // Trivial accessor to mark whether we're interop-debugging.
-// Retreived via code:ShimProcess::IsInteropDebugging
+// Retrieved via code:ShimProcess::IsInteropDebugging
 void ShimProcess::SetIsInteropDebugging(bool fIsInteropDebugging)
 {
     m_fIsInteropDebugging = fIsInteropDebugging;
@@ -1563,7 +1563,7 @@ void ShimProcess::PreDispatchEvent(bool fRealCreateProcessEvent /*= false*/)
         // Remember that we're processing the first managed event so that we only call HandleFirstRCEvent() once
         m_fFirstManagedEvent = true;
 
-        // This can fail with the incompatable version HR. The process has already been terminated if this
+        // This can fail with the incompatible version HR. The process has already been terminated if this
         // is the case. This will dispatch an Error callback
         // If this fails, the process is in an undefined state.
         // @dbgtodo ipc-block: this will go away once we get rid

@@ -294,7 +294,7 @@ CCompRC* CCompRC::GetDefaultResourceDll()
 //*****************************************************************************
 //*****************************************************************************
 
-// String resouces packaged as PE files only exist on Windows
+// String resources packaged as PE files only exist on Windows
 #ifdef HOST_WINDOWS
 HRESULT CCompRC::GetLibrary(LocaleID langId, HRESOURCEDLL* phInst)
 {
@@ -541,7 +541,7 @@ HRESULT CCompRC::LoadString(ResourceCategory eCategory, LocaleID langId, UINT iR
 
 #ifndef DACCESS_COMPILE
 
-// String resouces packaged as PE files only exist on Windows
+// String resources packaged as PE files only exist on Windows
 #ifdef HOST_WINDOWS
 HRESULT CCompRC::LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName)
 {
@@ -633,9 +633,6 @@ HRESULT CCompRC::LoadLibraryHelper(HRESOURCEDLL *pHInst,
             {
                 rcPathName.Append(m_pResourceFile);
             }
-
-            // Feedback for debugging to eliminate unecessary loads.
-            DEBUG_STMT(DbgWriteEx(W("Loading %s to load strings.\n"), rcPath.GetUnicode()));
 
             // Load the resource library as a data file, so that the OS doesn't have
             // to allocate it as code.  This only works so long as the file contains

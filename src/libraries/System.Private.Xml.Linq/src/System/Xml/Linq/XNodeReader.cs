@@ -7,8 +7,6 @@ namespace System.Xml.Linq
 {
     internal sealed class XNodeReader : XmlReader, IXmlLineInfo
     {
-        private static readonly char[] s_WhitespaceChars = new char[] { ' ', '\t', '\n', '\r' };
-
         // The reader position is encoded by the tuple (source, parent).
         // Lazy text uses (instance, parent element). Attribute value
         // uses (instance, parent attribute). End element uses (instance,
@@ -24,7 +22,7 @@ namespace System.Xml.Linq
         {
             _source = node;
             _root = node;
-            _nameTable = nameTable != null ? nameTable : CreateNameTable();
+            _nameTable = nameTable ?? CreateNameTable();
             _omitDuplicateNamespaces = (options & ReaderOptions.OmitDuplicateNamespaces) != 0 ? true : false;
         }
 
@@ -430,7 +428,7 @@ namespace System.Xml.Linq
                         XAttribute? a = e.Attribute(name);
                         if (a != null)
                         {
-                            switch (a.Value.Trim(s_WhitespaceChars))
+                            switch (a.Value.AsSpan().Trim(" \t\n\r"))
                             {
                                 case "preserve":
                                     return XmlSpace.Preserve;
@@ -731,11 +729,11 @@ namespace System.Xml.Linq
             {
                 return false;
             }
-            XAttribute? a = _source as XAttribute;
-            if (a == null)
-            {
-                a = _parent as XAttribute;
-            }
+
+            XAttribute? a =
+                _source as XAttribute ??
+                _parent as XAttribute;
+
             if (a != null)
             {
                 if (a.parent != null)
@@ -813,11 +811,11 @@ namespace System.Xml.Linq
                 }
                 return false;
             }
-            XAttribute? a = _source as XAttribute;
-            if (a == null)
-            {
-                a = _parent as XAttribute;
-            }
+
+            XAttribute? a =
+                _source as XAttribute ??
+                _parent as XAttribute;
+
             if (a != null)
             {
                 if (a.parent != null && ((XElement)a.parent).lastAttr != a)
@@ -1152,7 +1150,7 @@ namespace System.Xml.Linq
                     XNamespace? ns = e.GetNamespaceOfPrefix(qualifiedName.Substring(0, i));
                     if (ns != null)
                     {
-                        localName = qualifiedName.Substring(i + 1, qualifiedName.Length - i - 1);
+                        localName = qualifiedName.Substring(i + 1);
                         namespaceName = ns.NamespaceName;
                         return;
                     }

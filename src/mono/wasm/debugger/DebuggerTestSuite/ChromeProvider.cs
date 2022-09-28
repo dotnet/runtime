@@ -14,6 +14,8 @@ using Newtonsoft.Json.Linq;
 using Microsoft.WebAssembly.Diagnostics;
 using System.Threading;
 using System.Collections.Generic;
+using Wasm.Tests.Internal;
+using System.Linq;
 
 #nullable enable
 
@@ -24,7 +26,16 @@ internal class ChromeProvider : WasmHostProvider
     static readonly Regex s_parseConnection = new (@"listening on (ws?s://[^\s]*)");
     private WebSocket? _ideWebSocket;
     private DebuggerProxy? _debuggerProxy;
-    private static readonly Lazy<string> s_browserPath = new(() => GetBrowserPath(GetPathsToProbe()));
+    private static readonly Lazy<string> s_browserPath = new(() =>
+    {
+        string artifactsBinDir = Path.Combine(Path.GetDirectoryName(typeof(ChromeProvider).Assembly.Location)!, "..", "..", "..");
+        return BrowserLocator.FindChrome(artifactsBinDir, "BROWSER_PATH_FOR_TESTS");
+    });
+    private static readonly string[] s_messagesToFilterOut = new[]
+    {
+        "Received unexpected number of handles",
+        "Failed to connect to the bus:",
+    };
 
     public ChromeProvider(string id, ILogger logger) : base(id, logger)
     {
@@ -99,6 +110,14 @@ internal class ChromeProvider : WasmHostProvider
         _isDisposing = false;
     }
 
+    protected override bool ShouldMessageBeLogged(string prefix, string? msg)
+    {
+        if (msg is null || !prefix.Contains("browser-stderr"))
+            return true;
+
+        return !s_messagesToFilterOut.Any(f => msg.Contains(f));
+    }
+
     private async Task<string> ExtractConnUrl (string str, ILogger logger)
     {
         var client = new HttpClient();
@@ -114,7 +133,7 @@ internal class ChromeProvider : WasmHostProvider
             await Task.Delay(100);
 
             var res = await client.GetStringAsync(new Uri(new Uri(str), "/json/list"));
-            logger.LogInformation("res is {0}", res);
+            logger.LogTrace("res is {0}", res);
 
             if (!string.IsNullOrEmpty(res))
             {
@@ -152,29 +171,4 @@ internal class ChromeProvider : WasmHostProvider
         }
         return str;
     }
-
-    private static IEnumerable<string> GetPathsToProbe()
-    {
-        List<string> paths = new();
-        string? asmLocation = Path.GetDirectoryName(typeof(ChromeProvider).Assembly.Location);
-        if (asmLocation is not null)
-        {
-            string baseDir = Path.Combine(asmLocation, "..", "..");
-            paths.Add(Path.Combine(baseDir, "chrome", "chrome-linux", "chrome"));
-            paths.Add(Path.Combine(baseDir, "chrome", "chrome-win", "chrome.exe"));
-        }
-
-        paths.AddRange(new[]
-        {
-            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-            "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
-            "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
-            "/usr/bin/chromium",
-            "C:/Program Files/Google/Chrome/Application/chrome.exe",
-            "/usr/bin/chromium-browser"
-        });
-
-        return paths;
-    }
-
 }

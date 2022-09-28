@@ -231,10 +231,7 @@ namespace System.Diagnostics
             }
             finally
             {
-                if (tokenHandle != null)
-                {
-                    tokenHandle.Dispose();
-                }
+                tokenHandle?.Dispose();
             }
         }
 
@@ -246,6 +243,8 @@ namespace System.Diagnostics
             {
                 return processHandle;
             }
+
+            processHandle.Dispose();
 
             if (processId == 0)
             {
@@ -274,6 +273,7 @@ namespace System.Diagnostics
             int result = Marshal.GetLastWin32Error();
             if (threadHandle.IsInvalid)
             {
+                threadHandle.Dispose();
                 if (result == Interop.Errors.ERROR_INVALID_PARAMETER)
                     throw new InvalidOperationException(SR.Format(SR.ThreadExited, threadId.ToString()));
                 throw new Win32Exception(result);
