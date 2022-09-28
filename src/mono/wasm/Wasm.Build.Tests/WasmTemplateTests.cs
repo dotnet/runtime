@@ -78,6 +78,11 @@ namespace Wasm.Build.Tests
             File.WriteAllText(mainJsPath, mainJsContent);
         }
 
+        private static void UpdateTargetFrameworkVersionHACK(string projectFile, string oldTargetFramework = "net7.0", string newTargetFramework = "net8.0")
+            => File.WriteAllText(projectFile, File.ReadAllText(projectFile)
+                                            .Replace($"<TargetFramework>{oldTargetFramework}</TargetFramework>",
+                                                    $"<TargetFramework>{newTargetFramework}</TargetFramework>"));
+
         [Theory]
         [InlineData("Debug")]
         [InlineData("Release")]
@@ -85,6 +90,7 @@ namespace Wasm.Build.Tests
         {
             string id = $"browser_{config}_{Path.GetRandomFileName()}";
             string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
+            UpdateTargetFrameworkVersionHACK(projectFile);
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
             UpdateBrowserMainJs(DefaultTargetFramework);
@@ -103,7 +109,7 @@ namespace Wasm.Build.Tests
                             TargetFramework: BuildTestBase.DefaultTargetFramework
                         ));
 
-            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true);
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true, targetFramework: DefaultTargetFramework);
 
             if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
                 throw new XunitException($"Test bug: could not get the build product in the cache");
@@ -124,7 +130,7 @@ namespace Wasm.Build.Tests
                             TargetFramework: BuildTestBase.DefaultTargetFramework,
                             UseCache: false));
 
-            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking, targetFramework: DefaultTargetFramework);
         }
 
         [Theory]
@@ -152,9 +158,9 @@ namespace Wasm.Build.Tests
                         TargetFramework: BuildTestBase.DefaultTargetFramework
                         ));
 
-            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true);
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true, targetFramework: DefaultTargetFramework);
 
-            (int exitCode, string output) = RunProcess(s_buildEnv.DotNet, _testOutput, args: $"run --no-build -c {config}", workingDir: _projectDir);
+            (int exitCode, string output) = RunProcess(s_buildEnv.DotNet, _testOutput, args: $"run --no-build -v diag -c {config}", workingDir: _projectDir);
             Assert.Equal(0, exitCode);
             Assert.Contains("Hello, Console!", output);
 
@@ -177,7 +183,7 @@ namespace Wasm.Build.Tests
                             TargetFramework: BuildTestBase.DefaultTargetFramework,
                             UseCache: false));
 
-            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking, targetFramework: DefaultTargetFramework);
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
@@ -189,6 +195,7 @@ namespace Wasm.Build.Tests
         {
             string id = $"{config}_{Path.GetRandomFileName()}";
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
+            UpdateTargetFrameworkVersionHACK(projectFile);
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
             UpdateProgramCS();
@@ -210,9 +217,9 @@ namespace Wasm.Build.Tests
                             TargetFramework: BuildTestBase.DefaultTargetFramework
                             ));
 
-            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !relinking);
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !relinking, targetFramework: DefaultTargetFramework);
 
-            (int exitCode, string output) = RunProcess(s_buildEnv.DotNet, _testOutput, args: $"run --no-build -c {config} x y z", workingDir: _projectDir);
+            (int exitCode, string output) = RunProcess(s_buildEnv.DotNet, _testOutput, args: $"run -v diag --no-build -c {config} x y z", workingDir: _projectDir);
             Assert.Equal(42, exitCode);
             Assert.Contains("args[0] = x", output);
             Assert.Contains("args[1] = y", output);
@@ -253,6 +260,7 @@ namespace Wasm.Build.Tests
         {
             string id = $"browser_{config}_{Path.GetRandomFileName()}";
             string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
+            UpdateTargetFrameworkVersionHACK(projectFile);
 
             UpdateBrowserMainJs(DefaultTargetFramework);
 
@@ -276,7 +284,7 @@ namespace Wasm.Build.Tests
                                             .WithWorkingDirectory(workingDir);
 
                 await using var runner = new BrowserRunner();
-                var page = await runner.RunAsync(runCommand, $"run -c {config} --no-build --project {projectFile} --forward-console");
+                var page = await runner.RunAsync(runCommand, $"run -v diag -c {config} --no-build --project {projectFile} --forward-console");
                 await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
                 Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
             }
@@ -286,6 +294,7 @@ namespace Wasm.Build.Tests
         {
             string id = $"console_{config}_{Path.GetRandomFileName()}";
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
+            UpdateTargetFrameworkVersionHACK(projectFile);
 
             UpdateProgramCS();
             UpdateConsoleMainJs();
@@ -312,7 +321,7 @@ namespace Wasm.Build.Tests
 
             {
                 // Run with --no-build
-                string runArgs = $"run -c {config} --project {projectFile} --no-build";
+                string runArgs = $"run -v diag -c {config} --project {projectFile} --no-build";
                 runArgs += " x y z";
                 using var cmd = new RunCommand(s_buildEnv, _testOutput, label: id)
                                 .WithWorkingDirectory(workingDir);
@@ -350,6 +359,7 @@ namespace Wasm.Build.Tests
         {
             string id = $"{config}_{Path.GetRandomFileName()}";
             string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
+            UpdateTargetFrameworkVersionHACK(projectFile);
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
             UpdateProgramCS();
@@ -384,14 +394,14 @@ namespace Wasm.Build.Tests
             if (!aot)
             {
                 // These are disabled for AOT explicitly
-                AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
+                AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking, targetFramework: DefaultTargetFramework);
             }
             else
             {
                 AssertFilesDontExist(Path.Combine(GetBinDir(config), "AppBundle"), new[] { "dotnet.js.symbols" });
             }
 
-            string runArgs = $"run --no-build -c {config}";
+            string runArgs = $"run -v diag --no-build -c {config}";
             runArgs += " x y z";
             var res = new RunCommand(s_buildEnv, _testOutput, label: id)
                                 .WithWorkingDirectory(_projectDir!)
@@ -411,6 +421,7 @@ namespace Wasm.Build.Tests
             string config = "Debug";
             string id = $"blazor_{config}_{Path.GetRandomFileName()}";
             string projectFile = CreateWasmTemplateProject(id, "blazorwasm");
+            // UpdateTargetFrameworkVersionHACK(projectFile);
 
             new DotNetCommand(s_buildEnv, _testOutput)
                     .WithWorkingDirectory(_projectDir!)
@@ -421,7 +432,7 @@ namespace Wasm.Build.Tests
                                         .WithWorkingDirectory(_projectDir!);
 
             await using var runner = new BrowserRunner();
-            var page = await runner.RunAsync(runCommand, $"run -c {config} --no-build");
+            var page = await runner.RunAsync(runCommand, $"run -v diag -c {config} --no-build");
 
             await page.Locator("text=Counter").ClickAsync();
             var txt = await page.Locator("p[role='status']").InnerHTMLAsync();
@@ -437,7 +448,8 @@ namespace Wasm.Build.Tests
         {
             string config = "Debug";
             string id = $"browser_{config}_{Path.GetRandomFileName()}";
-            CreateWasmTemplateProject(id, "wasmbrowser");
+            string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
+            UpdateTargetFrameworkVersionHACK(projectFile);
 
             UpdateBrowserMainJs(DefaultTargetFramework);
 
@@ -450,7 +462,7 @@ namespace Wasm.Build.Tests
                                         .WithWorkingDirectory(_projectDir!);
 
             await using var runner = new BrowserRunner();
-            var page = await runner.RunAsync(runCommand, $"run -c {config} --no-build -r browser-wasm --forward-console");
+            var page = await runner.RunAsync(runCommand, $"run -v diag -c {config} --no-build -r browser-wasm --forward-console");
             await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
             Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
         }

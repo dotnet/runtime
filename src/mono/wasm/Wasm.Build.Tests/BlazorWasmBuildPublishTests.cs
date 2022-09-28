@@ -26,7 +26,7 @@ namespace Wasm.Build.Tests
         [InlineData("Release")]
         public void DefaultTemplate_WithoutWorkload(string config)
         {
-            string id = $"blz_no_workload_{config}";
+            string id = $"blz_no_workload_{config}_{Path.GetRandomFileName()}";
             CreateBlazorWasmTemplateProject(id);
 
             // Build
@@ -43,7 +43,7 @@ namespace Wasm.Build.Tests
         [InlineData("Release")]
         public void DefaultTemplate_NoAOT_WithWorkload(string config)
         {
-            string id = $"blz_no_aot_{config}";
+            string id = $"blz_no_aot_{config}_{Path.GetRandomFileName()}";
             CreateBlazorWasmTemplateProject(id);
 
             BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.FromRuntimePack));
@@ -63,7 +63,7 @@ namespace Wasm.Build.Tests
         [InlineData("Release")]
         public void DefaultTemplate_AOT_InProjectFile(string config)
         {
-            string id = $"blz_aot_prj_file_{config}";
+            string id = $"blz_aot_prj_file_{config}_{Path.GetRandomFileName()}";
             string projectFile = CreateBlazorWasmTemplateProject(id);
             AddItemsPropertiesToProject(projectFile, extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
 
@@ -85,7 +85,7 @@ namespace Wasm.Build.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/70985", TestPlatforms.Linux)]
         public void NativeBuild_WithDeployOnBuild_UsedByVS(string config, bool nativeRelink)
         {
-            string id = $"blz_deploy_on_build_{config}_{nativeRelink}";
+            string id = $"blz_deploy_on_build_{config}_{nativeRelink}_{Path.GetRandomFileName()}";
             string projectFile = CreateProjectWithNativeReference(id);
             AddItemsPropertiesToProject(projectFile, extraProperties: nativeRelink ? string.Empty : "<RunAOTCompilation>true</RunAOTCompilation>");
 
@@ -147,7 +147,7 @@ namespace Wasm.Build.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/70985", TestPlatforms.Linux)]
         public void WithNativeReference_AOTInProjectFile(string config)
         {
-            string id = $"blz_nativeref_aot_{config}";
+            string id = $"blz_nativeref_aot_{config}_{Path.GetRandomFileName()}";
             string projectFile = CreateProjectWithNativeReference(id);
             AddItemsPropertiesToProject(projectFile, extraProperties: "<RunAOTCompilation>true</RunAOTCompilation>");
 
@@ -165,7 +165,7 @@ namespace Wasm.Build.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/70985", TestPlatforms.Linux)]
         public void WithNativeReference_AOTOnCommandLine(string config)
         {
-            string id = $"blz_nativeref_aot_{config}";
+            string id = $"blz_nativeref_aot_{config}_{Path.GetRandomFileName()}";
             CreateProjectWithNativeReference(id);
 
             BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
@@ -182,7 +182,7 @@ namespace Wasm.Build.Tests
         public void WithDllImportInMainAssembly(string config)
         {
             // Based on https://github.com/dotnet/runtime/issues/59255
-            string id = $"blz_dllimp_{config}";
+            string id = $"blz_dllimp_{config}_{Path.GetRandomFileName()}";
             string projectFile = CreateProjectWithNativeReference(id);
             string nativeSource = @"
                 #include <stdio.h>
@@ -233,7 +233,7 @@ namespace Wasm.Build.Tests
         [Fact]
         public void BugRegression_60479_WithRazorClassLib()
         {
-            string id = "blz_razor_lib_top";
+            string id = $"blz_razor_lib_top_{Path.GetRandomFileName()}";
             InitBlazorWasmProjectDir(id);
 
             string wasmProjectDir = Path.Combine(_projectDir!, "wasm");
@@ -241,6 +241,7 @@ namespace Wasm.Build.Tests
             Directory.CreateDirectory(wasmProjectDir);
             new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                     .WithWorkingDirectory(wasmProjectDir)
+                    .WithEnvironmentVariable("NUGET_PACKAGES", _projectDir!)
                     .ExecuteWithCapturedOutput("new blazorwasm")
                     .EnsureSuccessful();
 
@@ -249,6 +250,7 @@ namespace Wasm.Build.Tests
             Directory.CreateDirectory(razorProjectDir);
             new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                     .WithWorkingDirectory(razorProjectDir)
+                    .WithEnvironmentVariable("NUGET_PACKAGES", _projectDir!)
                     .ExecuteWithCapturedOutput("new razorclasslib")
                     .EnsureSuccessful();
 
