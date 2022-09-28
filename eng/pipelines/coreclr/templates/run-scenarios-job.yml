@@ -129,7 +129,7 @@ jobs:
       displayName: Performance Setup (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
-    - script: $(Build.SourcesDirectory)/eng/testing/performance/performance-setup.sh $(IsInternal) --framework $(_Framework) --kind ${{ parameters.runKind }} --logicalmachine ${{ parameters.logicalMachine }} --use-local-commit-time ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
+    - script: $(Build.SourcesDirectory)/eng/testing/performance/performance-setup.sh $(IsInternal) --framework $(_Framework) --kind ${{ parameters.runKind }} --logicalmachine ${{ parameters.logicalMachine }} --uselocalcommittime ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
       displayName: Performance Setup (Linux/MAC)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
