@@ -2631,21 +2631,32 @@ namespace System
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ReplaceValueType<T>(ref T src, ref T dst, T oldValue, T newValue, nuint length) where T : struct
         {
             Debug.Assert(Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported);
 
-            nuint idx = 0;
-
-            if (!Vector128.IsHardwareAccelerated || length < (uint)Vector128<T>.Count)
+            if (length < (uint)Vector128<T>.Count)
             {
-                for (; idx < length; ++idx)
+                for (nuint idx = 0; idx < length; ++idx)
                 {
                     T original = Unsafe.Add(ref src, idx);
                     Unsafe.Add(ref dst, idx) = EqualityComparer<T>.Default.Equals(original, oldValue) ? newValue : original;
                 }
             }
-            else if (!Vector256.IsHardwareAccelerated || length < (uint)Vector256<T>.Count)
+            else
+            {
+                ReplaceValueTypeVectorized(ref src, ref dst, oldValue, newValue, length);
+            }
+        }
+
+        private static void ReplaceValueTypeVectorized<T>(ref T src, ref T dst, T oldValue, T newValue, nuint length) where T : struct
+        {
+            Debug.Assert(Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported);
+
+            nuint idx = 0;
+
+            if (!Vector256.IsHardwareAccelerated || length < (uint)Vector256<T>.Count)
             {
                 nuint lastVectorIndex = length - (uint)Vector128<T>.Count;
                 Vector128<T> oldValues = Vector128.Create(oldValue);
