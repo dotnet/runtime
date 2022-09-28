@@ -13494,8 +13494,8 @@ GenTree* Compiler::fgMorphModToSubMulDiv(GenTreeOp* tree)
     GenTree* dividend = div->IsReverseOp() ? opB : opA;
     GenTree* divisor  = div->IsReverseOp() ? opA : opB;
 
-    div->gtOp1 = gtClone(dividend);
-    div->gtOp2 = gtClone(divisor);
+    div->gtOp1 = gtCloneExpr(dividend);
+    div->gtOp2 = gtCloneExpr(divisor);
 
     var_types      type = div->gtType;
     GenTree* const mul  = gtNewOperNode(GT_MUL, type, div, divisor);
