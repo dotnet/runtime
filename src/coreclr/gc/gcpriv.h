@@ -4217,7 +4217,7 @@ protected:
     PER_HEAP
     size_t      loh_pinned_queue_length;
 
-    PER_HEAP_ISOLATED
+    PER_HEAP
     int         loh_pinned_queue_decay;
 
     PER_HEAP

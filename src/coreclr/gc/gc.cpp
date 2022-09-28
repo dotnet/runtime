@@ -2742,7 +2742,6 @@ size_t gc_heap::compact_or_sweep_gcs[2];
 #ifdef FEATURE_LOH_COMPACTION
 BOOL                   gc_heap::loh_compaction_always_p = FALSE;
 gc_loh_compaction_mode gc_heap::loh_compaction_mode = loh_compaction_default;
-int                    gc_heap::loh_pinned_queue_decay = LOH_PIN_DECAY;
 #endif //FEATURE_LOH_COMPACTION
 
 GCEvent gc_heap::full_gc_approach_event;
@@ -2856,6 +2855,8 @@ size_t     gc_heap::interesting_mechanism_bits_per_heap[max_gc_mechanism_bits_co
 mark_queue_t gc_heap::mark_queue;
 
 bool gc_heap::special_sweep_p = false;
+
+int gc_heap::loh_pinned_queue_decay = LOH_PIN_DECAY;
 
 #endif // MULTIPLE_HEAPS
 
@@ -27740,8 +27741,7 @@ BOOL gc_heap::plan_loh()
         loh_pinned_queue_length = LOH_PIN_QUEUE_LENGTH;
     }
 
-    if (heap_number == 0)
-        loh_pinned_queue_decay = LOH_PIN_DECAY;
+    loh_pinned_queue_decay = LOH_PIN_DECAY;
 
     loh_pinned_queue_tos = 0;
     loh_pinned_queue_bos = 0;
@@ -30017,37 +30017,15 @@ void gc_heap::plan_phase (int condemned_gen_number)
         should_compact = decide_on_compacting (condemned_gen_number, fragmentation, should_expand);
     }
 
-#ifdef FEATURE_LOH_COMPACTION
-    loh_compacted_p = FALSE;
-#endif //FEATURE_LOH_COMPACTION
-
     if (condemned_gen_number == max_generation)
     {
 #ifdef FEATURE_LOH_COMPACTION
         if (settings.loh_compaction)
         {
-            if (plan_loh())
-            {
-                should_compact = TRUE;
-                get_gc_data_per_heap()->set_mechanism (gc_heap_compact, compact_loh_forced);
-                loh_compacted_p = TRUE;
-            }
+            should_compact = TRUE;
+            get_gc_data_per_heap()->set_mechanism (gc_heap_compact, compact_loh_forced);
         }
         else
-        {
-            if ((heap_number == 0) && (loh_pinned_queue))
-            {
-                loh_pinned_queue_decay--;
-
-                if (!loh_pinned_queue_decay)
-                {
-                    delete loh_pinned_queue;
-                    loh_pinned_queue = 0;
-                }
-            }
-        }
-
-        if (!loh_compacted_p)
 #endif //FEATURE_LOH_COMPACTION
         {
             GCToEEInterface::DiagWalkUOHSurvivors(__this, loh_generation);
@@ -30078,6 +30056,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
     gc_t_join.join(this, gc_join_decide_on_compaction);
     if (gc_t_join.joined())
     {
+#ifndef USE_REGIONS
         //safe place to delete large heap segments
         if (condemned_gen_number == max_generation)
         {
@@ -30086,7 +30065,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
                 g_heaps [i]->rearrange_uoh_segments ();
             }
         }
-
+#endif //!USE_REGIONS
         if (maxgen_size_inc_p && provisional_mode_triggered
 #ifdef BACKGROUND_GC
             && !is_bgc_in_progress()
@@ -30216,13 +30195,13 @@ void gc_heap::plan_phase (int condemned_gen_number)
     should_expand  = (gc_policy >= policy_expand);
 
 #else //MULTIPLE_HEAPS
-
+#ifndef USE_REGIONS
     //safe place to delete large heap segments
     if (condemned_gen_number == max_generation)
     {
         rearrange_uoh_segments ();
     }
-
+#endif //!USE_REGIONS
     if (maxgen_size_inc_p && provisional_mode_triggered
 #ifdef BACKGROUND_GC
         && !is_bgc_in_progress()
@@ -30271,6 +30250,41 @@ void gc_heap::plan_phase (int condemned_gen_number)
     }
 #endif //FEATURE_EVENT_TRACE
 #endif //MULTIPLE_HEAPS
+
+#ifdef FEATURE_LOH_COMPACTION
+    loh_compacted_p = FALSE;
+#endif //FEATURE_LOH_COMPACTION
+
+    if (condemned_gen_number == max_generation)
+    {
+#ifdef FEATURE_LOH_COMPACTION
+        if (settings.loh_compaction)
+        {
+            if (should_compact && plan_loh())
+            {
+                loh_compacted_p = TRUE;
+            }
+            else
+            {
+                GCToEEInterface::DiagWalkUOHSurvivors(__this, loh_generation);
+                sweep_uoh_objects (loh_generation);
+            }
+        }
+        else
+        {
+            if (loh_pinned_queue)
+            {
+                loh_pinned_queue_decay--;
+
+                if (!loh_pinned_queue_decay)
+                {
+                    delete loh_pinned_queue;
+                    loh_pinned_queue = 0;
+                }
+            }
+        }
+#endif //FEATURE_LOH_COMPACTION
+    }
 
     if (!pm_trigger_full_gc && pm_stress_on && provisional_mode_triggered)
     {
@@ -30440,10 +30454,16 @@ void gc_heap::plan_phase (int condemned_gen_number)
 #ifdef MULTIPLE_HEAPS
                 for (int i = 0; i < n_heaps; i++)
                 {
-                    g_heaps[i]->rearrange_heap_segments(TRUE);
+#ifdef USE_REGIONS
+                    g_heaps [i]->rearrange_uoh_segments();
+#endif //USE_REGIONS
+                    g_heaps [i]->rearrange_heap_segments (TRUE);
                 }
 #else //MULTIPLE_HEAPS
-                rearrange_heap_segments(TRUE);
+#ifdef USE_REGIONS
+                rearrange_uoh_segments();
+#endif //USE_REGIONS
+                rearrange_heap_segments (TRUE);
 #endif //MULTIPLE_HEAPS
 
 #ifdef MULTIPLE_HEAPS
