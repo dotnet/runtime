@@ -293,70 +293,35 @@ namespace System.Reflection
             return defaultValue;
         }
 
-        private bool ParameterTypeIsDateTime { get => ParameterType == typeof(DateTime) || ParameterType == typeof(DateTime?); }
-
-        private CustomAttributeData? GetPrioritizedCustomAttributeDataForRawDefaultValueResolution(IEnumerable<CustomAttributeData> customAttributes)
-        {
-            CustomAttributeData? previousAttributeData = null;
-            foreach (CustomAttributeData currentAttributeData in customAttributes)
-            {
-                Type currentAttributeType = currentAttributeData.AttributeType;
-                if (ParameterTypeIsDateTime && currentAttributeType == typeof(DateTimeConstantAttribute))
-                {
-                    previousAttributeData = currentAttributeData;
-                    break;
-                }
-                else if (previousAttributeData == null && (currentAttributeType.IsSubclassOf(typeof(CustomConstantAttribute)) || currentAttributeType == typeof(DecimalConstantAttribute)))
-                {
-                    previousAttributeData = currentAttributeData;
-                }
-                else if (previousAttributeData != null && (currentAttributeType.IsSubclassOf(typeof(CustomConstantAttribute)) && previousAttributeData.AttributeType == typeof(DecimalConstantAttribute)))
-                {
-                    previousAttributeData = currentAttributeData;
-                    break;
-                }
-            }
-            return previousAttributeData;
-        }
-
         private object? GetDefaultValueFromCustomAttributeData()
         {
-            CustomAttributeData? attr = GetPrioritizedCustomAttributeDataForRawDefaultValueResolution(RuntimeCustomAttributeData.GetCustomAttributes(this));
-            if (attr != null)
+            foreach (CustomAttributeData attributeData in RuntimeCustomAttributeData.GetCustomAttributes(this))
             {
-                Type? attrType = attr.Constructor.DeclaringType;
-                if (attrType == typeof(DateTimeConstantAttribute))
-                    return GetRawDateTimeConstant(attr);
-                else if (attrType == typeof(DecimalConstantAttribute))
-                    return GetRawDecimalConstant(attr);
-                else if (attrType!.IsSubclassOf(typeof(CustomConstantAttribute)))
-                    return GetRawConstant(attr);
+                Type attributeType = attributeData.AttributeType;
+                if (attributeType == typeof(DecimalConstantAttribute))
+                {
+                    return GetRawDecimalConstant(attributeData);
+                }
+                else if (attributeType.IsSubclassOf(typeof(CustomConstantAttribute)))
+                {
+                    if (attributeType == typeof(DateTimeConstantAttribute))
+                    {
+                        return GetRawDateTimeConstant(attributeData);
+                    }
+                    return GetRawConstant(attributeData);
+                }
             }
             return DBNull.Value;
         }
 
         private object? GetDefaultValueFromCustomAttributes()
         {
-            object[] customAttributes;
-            if (ParameterTypeIsDateTime)
+            foreach (object customAttribute in GetCustomAttributes(false))
             {
-                customAttributes = GetCustomAttributes(typeof(DateTimeConstantAttribute), false);
-                if (customAttributes != null && customAttributes.Length != 0)
-                    return ((DateTimeConstantAttribute)customAttributes[0]).Value;
-            }
-
-            customAttributes = GetCustomAttributes(typeof(CustomConstantAttribute), false);
-            if (customAttributes.Length != 0)
-            {
-                return ((CustomConstantAttribute)customAttributes[0]).Value;
-            }
-            else
-            {
-                customAttributes = GetCustomAttributes(typeof(DecimalConstantAttribute), false);
-                if (customAttributes.Length != 0)
-                {
-                    return ((DecimalConstantAttribute)customAttributes[0]).Value;
-                }
+                if (customAttribute is DecimalConstantAttribute decimalConstant)
+                    return decimalConstant.Value;
+                else if (customAttribute is CustomConstantAttribute customConstantAttribute)
+                    return customConstantAttribute.Value;
             }
             return DBNull.Value;
         }
@@ -383,10 +348,8 @@ namespace System.Reflection
             // If default value is not specified in metadata, look for it in custom attributes
             if (defaultValue == DBNull.Value)
             {
-                // Custom attributes are prioritized according to the following rules:
-                // - if declared parameter type is DateTime (or DateTime?), then DateTimeConstantAttribute is favoured over others
-                // - else if there is at least one CustomConstantAttribute, then it is favoured over others
-                // - else use the first attribute providing the default value
+                // Always the first DecimalConstantAttribute, DateTimeConstantAttribute or CustomConstantAttribute,
+                // attached to the parameter, is used when resolving default value.
                 defaultValue = raw ? GetDefaultValueFromCustomAttributeData() : GetDefaultValueFromCustomAttributes();
             }
 

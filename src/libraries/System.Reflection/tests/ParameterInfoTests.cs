@@ -165,8 +165,8 @@ namespace System.Reflection.Tests
         {
             ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "DateTimeParamWithTwoCustomConstantAttrsNoDefaultValue1", 0);
             object raw = p.RawDefaultValue;
-            Assert.Equal(typeof(DateTime), raw.GetType());
-            Assert.Equal(new DateTime(43), (DateTime)raw);
+            Assert.Equal(typeof(int), raw.GetType());
+            Assert.Equal(42, raw);
         }
 
         [Fact]
@@ -255,8 +255,8 @@ namespace System.Reflection.Tests
         {
             ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "DecimalParamWithTwoCustomConstantAttrsNoDefaultValue2", 0);
             object raw = p.RawDefaultValue;
-            Assert.Equal(typeof(int), raw.GetType());
-            Assert.Equal(42, raw);
+            Assert.Equal(typeof(decimal), raw.GetType());
+            Assert.Equal(new decimal(4, 3, 2, true, 1), raw);
         }
 
         [Fact]
@@ -282,8 +282,8 @@ namespace System.Reflection.Tests
         {
             ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "ObjectParamWithTwoCustomConstantAttr", 0);
             object raw = p.RawDefaultValue;
-            Assert.Equal(typeof(int), raw.GetType());
-            Assert.Equal(42, raw);
+            Assert.Equal(typeof(decimal), raw.GetType());
+            Assert.Equal(new decimal(4, 3, 2, true, 1), raw);
         }
 
         [Theory]

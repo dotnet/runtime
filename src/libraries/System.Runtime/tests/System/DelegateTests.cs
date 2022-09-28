@@ -330,7 +330,6 @@ namespace System.Tests
                 (DateTime)(new DateTimeWithDefaultValueAttribute(DateTimeMethod)).DynamicInvoke(new object[] { Type.Missing }));
         }
 
-        // Verify that DateTimeConstantAttribute is prioritized over CustomConstantAttribute
         [Fact]
         public static void DynamicInvoke_DateTimeAndCustomConstantAttribute_DateTimeParameterWithMissingValue()
         {
@@ -339,12 +338,11 @@ namespace System.Tests
                 (DateTime)(new DateTimeDelegateWithDateTimeAndCustomConstantAttribute(DateTimeMethod)).DynamicInvoke(new object[] { Type.Missing }));
         }
 
-        // Verify that DateTimeConstantAttribute is prioritized over CustomConstantAttribute
         [Fact]
         public static void DynamicInvoke_CustomConstantAndDateTimeAttribute_DateTimeParameterWithMissingValue()
         {
             Assert.Equal(
-                new DateTime(42),
+                new DateTime(43),
                 (DateTime)(new DateTimeDelegateWithCustomConstantAndDateTimeAttribute(DateTimeMethod)).DynamicInvoke(new object[] { Type.Missing }));
         }
 
@@ -372,16 +370,14 @@ namespace System.Tests
                 (decimal)(new DecimalWithDefaultValueAttribute(DecimalMethod)).DynamicInvoke(new object[] { Type.Missing }));
         }
 
-        // Verify that CustomConstant is prioritized over DecimalConstantAttribute
         [Fact]
         public static void DynamicInvoke_DecimalAndCustomConstantAttribute_DecimalParameterWithAttributeAndMissingValue()
         {
             Assert.Equal(
-                new decimal(12, 13, 14, true, 1),
+                new decimal(4, 3, 2, true, 1),
                 (decimal)(new DecimalDelegateWithDecimalAndCustomConstantAttribute(DecimalMethod)).DynamicInvoke(new object[] { Type.Missing }));
         }
 
-        // Verify that CustomConstant is prioritized over DecimalConstantAttribute
         [Fact]
         public static void DynamicInvoke_CustomConstantAndDecimalAttribute_DecimalParameterWithAttributeAndMissingValue()
         {
