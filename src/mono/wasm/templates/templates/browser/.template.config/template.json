@@ -16,6 +16,24 @@
     "type": "project"
   },
   "symbols": {
+    "kestrelHttpPortGenerated": {
+      "type": "generated",
+      "generator": "port",
+      "parameters": {
+        "low": 5000,
+        "high": 5300
+      },
+      "replaces": "5000"
+    },
+    "kestrelHttpsPortGenerated": {
+      "type": "generated",
+      "generator": "port",
+      "parameters": {
+        "low": 7000,
+        "high": 7300
+      },
+     "replaces": "5001"
+    },
     "framework": {
       "type": "parameter",
       "description": "The target framework for the project.",
