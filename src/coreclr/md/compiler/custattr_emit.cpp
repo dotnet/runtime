@@ -16,7 +16,6 @@
 #include "rwutil.h"
 #include "mdlog.h"
 #include "importhelper.h"
-#include "mdperf.h"
 #include "posterror.h"
 #include "cahlprinternal.h"
 #include "custattr.h"
@@ -712,7 +711,6 @@ STDMETHODIMP RegMeta::DefineCustomAttribute(
 
     LOG((LOGMD, "RegMeta::DefineCustomAttribute(0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n", tkOwner, tkCtor,
             pCustomAttribute, cbCustomAttribute, pcv));
-    START_MD_PERF();
     LOCKWRITE();
 
     _ASSERTE(TypeFromToken(tkCtor) == mdtMethodDef || TypeFromToken(tkCtor) == mdtMemberRef);
@@ -825,7 +823,6 @@ STDMETHODIMP RegMeta::DefineCustomAttribute(
     IfFailGo(UpdateENCLog(TokenFromRid(iRecord, mdtCustomAttribute)));
 
 ErrExit:
-    STOP_MD_PERF(DefineCustomAttribute);
     END_ENTRYPOINT_NOTHROW;
 
     return hr;
@@ -849,7 +846,6 @@ STDMETHODIMP RegMeta::SetCustomAttributeValue(  // Return code.
 
     CustomAttributeRec  *pRecord = NULL;// Existing custom Attribute record.
 
-    START_MD_PERF();
     LOCKWRITE();
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
@@ -863,7 +859,6 @@ STDMETHODIMP RegMeta::SetCustomAttributeValue(  // Return code.
     IfFailGo(UpdateENCLog(tkAttr));
 ErrExit:
 
-    STOP_MD_PERF(SetCustomAttributeValue);
     END_ENTRYPOINT_NOTHROW;
 
     return hr;

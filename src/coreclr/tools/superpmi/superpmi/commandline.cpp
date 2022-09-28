@@ -83,10 +83,6 @@ void CommandLine::DumpHelp(const char* program)
     printf("\n");
     printf(" -metricsSummary <file name>, -baseMetricsSummary <file name.csv>\n");
     printf("     Emit a summary of metrics to the specified file\n");
-    printf("     Currently includes:\n");
-    printf("       Total number of successful SPMI compiles\n");
-    printf("       Total number of failing SPMI compiles\n");
-    printf("       Total amount of ASM code in bytes\n");
     printf("\n");
     printf(" -diffMetricsSummary <file name>\n");
     printf("     Same as above, but emit for the diff/second JIT");

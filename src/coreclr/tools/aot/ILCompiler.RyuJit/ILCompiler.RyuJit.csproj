@@ -59,6 +59,9 @@
     <Compile Include="..\..\Common\TypeSystem\IL\Stubs\TypeSystemThrowingILEmitter.cs">
       <Link>IL\Stubs\TypeSystemThrowingILEmitter.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\JitInterface\IJitHashableOnly.cs">
+      <Link>JitInterface\IJitHashableOnly.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\JitInterface\JitConfigProvider.cs">
       <Link>JitInterface\JitConfigProvider.cs</Link>
     </Compile>

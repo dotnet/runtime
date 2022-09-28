@@ -758,7 +758,7 @@ namespace System.Xml
             {
                 int offset;
                 byte[] buffer = GetTextNodeBuffer(1 + sizeof(float), out offset);
-                buffer[offset + 0] = (byte)XmlBinaryNodeType.FloatText;
+                buffer[offset] = (byte)XmlBinaryNodeType.FloatText;
                 BinaryPrimitives.WriteSingleLittleEndian(buffer.AsSpan(offset + 1, sizeof(float)), f);
                 Advance(1 + sizeof(float));
             }
@@ -775,7 +775,7 @@ namespace System.Xml
             {
                 int offset;
                 byte[] buffer = GetTextNodeBuffer(1 + sizeof(double), out offset);
-                buffer[offset + 0] = (byte)XmlBinaryNodeType.DoubleText;
+                buffer[offset] = (byte)XmlBinaryNodeType.DoubleText;
                 BinaryPrimitives.WriteDoubleLittleEndian(buffer.AsSpan(offset + 1, sizeof(double)), d);
                 Advance(1 + sizeof(double));
             }

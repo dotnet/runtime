@@ -2153,11 +2153,6 @@ sgen_client_thread_attach (SgenThreadInfo* info)
 
 	info->client_info.stack_start = NULL;
 
-#ifdef SGEN_POSIX_STW
-	info->client_info.stop_count = -1;
-	info->client_info.signal = 0;
-#endif
-
 	memset (&info->client_info.ctx, 0, sizeof (MonoContext));
 
 	if (mono_gc_get_gc_callbacks ()->thread_attach_func)

@@ -658,6 +658,7 @@ namespace System.Collections.Generic
         public void RemoveRange(int index, int count) { }
         public void Reverse() { }
         public void Reverse(int index, int count) { }
+        public System.Collections.Generic.List<T> Slice(int start, int length) { throw null; }
         public void Sort() { }
         public void Sort(System.Collections.Generic.IComparer<T>? comparer) { }
         public void Sort(System.Comparison<T> comparison) { }

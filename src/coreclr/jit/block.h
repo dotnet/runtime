@@ -91,23 +91,11 @@ struct StackEntry
     GenTree* val;
     typeInfo seTypeInfo;
 };
-/*****************************************************************************/
-
-enum ThisInitState
-{
-    TIS_Bottom, // We don't know anything about the 'this' pointer.
-    TIS_Uninit, // The 'this' pointer for this constructor is known to be uninitialized.
-    TIS_Init,   // The 'this' pointer for this constructor is known to be initialized.
-    TIS_Top,    // This results from merging the state of two blocks one with TIS_Unint and the other with TIS_Init.
-                // We use this in fault blocks to prevent us from accessing the 'this' pointer, but otherwise
-                // allowing the fault block to generate code.
-};
 
 struct EntryState
 {
-    ThisInitState thisInitialized; // used to track whether the this ptr is initialized.
-    unsigned      esStackDepth;    // size of esStack
-    StackEntry*   esStack;         // ptr to  stack
+    unsigned    esStackDepth; // size of esStack
+    StackEntry* esStack;      // ptr to  stack
 };
 
 // Enumeration of the kinds of memory whose state changes the compiler tracks
@@ -1236,8 +1224,7 @@ struct BasicBlock : private LIR::Range
     unsigned bbID;
 #endif // DEBUG
 
-    ThisInitState bbThisOnEntry() const;
-    unsigned      bbStackDepthOnEntry() const;
+    unsigned bbStackDepthOnEntry() const;
     void bbSetStack(void* stackBuffer);
     StackEntry* bbStackOnEntry() const;
 

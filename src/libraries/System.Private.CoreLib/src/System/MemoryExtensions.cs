@@ -1617,6 +1617,7 @@ namespace System
                                 Unsafe.Add(ref valueRef, 2),
                                 span.Length);
 
+#if !MONO // We don't have a mono overload for 4 values
                         case 4:
                             return SpanHelpers.LastIndexOfAnyValueType(
                                 ref spanRef,
@@ -1625,6 +1626,7 @@ namespace System
                                 Unsafe.Add(ref valueRef, 2),
                                 Unsafe.Add(ref valueRef, 3),
                                 span.Length);
+#endif
 
                         default:
                             return LastIndexOfAnyProbabilistic(ref Unsafe.As<short, char>(ref spanRef), span.Length, ref Unsafe.As<short, char>(ref valueRef), values.Length);
