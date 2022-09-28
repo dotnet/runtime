@@ -48,7 +48,7 @@ namespace System.IO
         {
             // Remove leading separators.
             int nonSlash = path.IndexOfAnyExcept('/', '\\');
-            if (nonSlash == -1)
+            if (nonSlash < 0)
             {
                 nonSlash = path.Length;
             }
@@ -76,12 +76,7 @@ namespace System.IO
 
                     // To ensure tar files remain compatible with Unix, and per the ZIP File Format Specification 4.4.17.1,
                     // all slashes should be forward slashes.
-                    int pos;
-                    while ((pos = dest.IndexOf('\\')) >= 0)
-                    {
-                        dest[pos] = '/';
-                        dest = dest.Slice(pos + 1);
-                    }
+                    dest.Replace('\\', '/');
                 });
             }
         }
