@@ -1,9 +1,16 @@
-trigger:
-- none
+# This is a wrapper yml for `runtime-extra-platforms-maccatalyst.yml`, which
+# has all the Mac Catalyst jobs. This file is essentially so we can have point
+# the pipeline in azdo UI to this, and thus avoid any scheduled triggers
 
-pool:
-  vmImage: 'ubuntu-latest'
+trigger: none
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+jobs:
+
+- template: /eng/pipelines/extra-platforms/runtime-extra-platforms-maccatalyst.yml
+  parameters:
+    isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+    isMacCatalystOnlyBuild: ${{ variables.isMacCatalystOnlyBuild }}
+    isRollingBuild: ${{ variables.isRollingBuild }}
