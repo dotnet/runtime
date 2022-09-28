@@ -12647,7 +12647,7 @@ void gc_heap::distribute_free_regions()
     size_t num_decommit_regions_by_time = 0;
     size_t size_decommit_regions_by_time = 0;
     size_t heap_budget_in_region_units[MAX_SUPPORTED_CPUS][kind_count];
-    size_t min_heap_budget_in_region_units[MAX_SUPPORTED_CPUS][kind_count];
+    size_t min_heap_budget_in_region_units[MAX_SUPPORTED_CPUS];
     size_t region_size[kind_count] = { global_region_allocator.get_region_alignment(), global_region_allocator.get_large_region_alignment() };
     region_free_list surplus_regions[kind_count];
     for (int kind = basic_free_region; kind < kind_count; kind++)
@@ -12694,9 +12694,8 @@ void gc_heap::distribute_free_regions()
         global_free_huge_regions.transfer_regions (&hp->free_regions[huge_free_region]);
 
         heap_budget_in_region_units[i][basic_free_region] = 0;
-        min_heap_budget_in_region_units[i][basic_free_region] = 0;
+        min_heap_budget_in_region_units[i] = 0;
         heap_budget_in_region_units[i][large_free_region] = 0;
-        min_heap_budget_in_region_units[i][large_free_region] = 0;
     }
 
     for (int gen = soh_gen0; gen < total_generation_count; gen++)
@@ -12730,7 +12729,7 @@ void gc_heap::distribute_free_regions()
             if (gen <= soh_gen2)
             {
                 // preserve the budget for the previous generation - we should not go below that
-                min_heap_budget_in_region_units[i][kind] = heap_budget_in_region_units[i][kind];
+                min_heap_budget_in_region_units[i] = heap_budget_in_region_units[i][kind];
             }
             heap_budget_in_region_units[i][kind] += budget_gen_in_region_units;
             total_budget_in_region_units[kind] += budget_gen_in_region_units;
@@ -12794,13 +12793,14 @@ void gc_heap::distribute_free_regions()
                     ptrdiff_t adjustment_per_heap = curr_balance / n_heaps;
                     curr_balance -= adjustment_per_heap * n_heaps;
                     ptrdiff_t new_budget = (ptrdiff_t)heap_budget_in_region_units[i][kind] + adjustment_per_heap;
+                    ptrdiff_t min_budget = (kind == basic_free_region) ? (ptrdiff_t)min_heap_budget_in_region_units[i] : 0;
                     dprintf (REGIONS_LOG, ("adjusting the budget for heap %d from %Id %s regions by %Id to %Id",
                         i,
                         heap_budget_in_region_units[i][kind],
                         kind_name[kind],
                         adjustment_per_heap,
-                        max ((ptrdiff_t)min_heap_budget_in_region_units[i][kind], new_budget)));
-                    heap_budget_in_region_units[i][kind] = max ((ptrdiff_t)min_heap_budget_in_region_units[i][kind], new_budget);
+                        max (min_budget, new_budget)));
+                    heap_budget_in_region_units[i][kind] = max (min_budget, new_budget);
                     rem_balance += new_budget - heap_budget_in_region_units[i][kind];
                 }
                 assert (rem_balance <= 0);
@@ -12811,14 +12811,15 @@ void gc_heap::distribute_free_regions()
                 {
                     for (int i = 0; i < n_heaps; i++)
                     {
-                        if (heap_budget_in_region_units[i][kind] > min_heap_budget_in_region_units[i][kind])
+                        size_t min_budget = (kind == basic_free_region) ? min_heap_budget_in_region_units[i] : 0;
+                        if (heap_budget_in_region_units[i][kind] > min_budget)
                         {
-                        dprintf (REGIONS_LOG, ("adjusting the budget for heap %d from %Id %s regions by %Id to %Id",
-                            i,
-                            heap_budget_in_region_units[i][kind],
-                            kind_name[kind],
-                            -1,
-                            heap_budget_in_region_units[i][kind] - 1));
+                            dprintf (REGIONS_LOG, ("adjusting the budget for heap %d from %Id %s regions by %Id to %Id",
+                                i,
+                                heap_budget_in_region_units[i][kind],
+                                kind_name[kind],
+                                -1,
+                                heap_budget_in_region_units[i][kind] - 1));
 
                             heap_budget_in_region_units[i][kind] -= 1;
                             rem_balance += 1;
