@@ -68,6 +68,7 @@ internal static partial class Interop
                     aadPtr, aad.Length);
 
                 // TODO: Need to throw the AuthenticationTagMismatchException when it gets merged.
+                // When there is an auth tag mismatch, -2 is returned.
                 if (result != Success)
                 {
                     CryptographicOperations.ZeroMemory(plaintext);

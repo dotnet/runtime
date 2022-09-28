@@ -30,6 +30,7 @@ if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVO
 else()
     set(NATIVECRYPTO_SOURCES
         ${NATIVECRYPTO_SOURCES}
+        pal_aead.o
         pal_keychain_macos.c
         pal_keyderivation_macos.c
         pal_seckey_macos.c
@@ -37,6 +38,35 @@ else()
         pal_x509_macos.c
     )
 endif()
+
+# As of CMake 3.20.2 support for Swift only works with the Ninja and XCode
+# generators so we cannot rely on it. Even with the Ninja generator it doesn't
+# work in combination with other languages within the same library.
+#
+# We need to compile the Swift file in a slightly special way to target
+# only the Swift-in-OS runtime and fallback to weak linking on downlevel
+# platforms where Swift runtime is not available.
+if (NOT SWIFT_COMPILER_TARGET AND CLR_CMAKE_TARGET_OSX)
+    set(SWIFT_PLATFORM "macosx")
+    set(SWIFT_PLATFORM_SUFFIX "")
+    set(SWIFT_DEFAULT_DEPLOYMENT_TARGET "10.15")
+
+   if(CMAKE_OSX_DEPLOYMENT_TARGET)
+     set(SWIFT_DEPLOYMENT_TARGET ${CMAKE_OSX_DEPLOYMENT_TARGET})
+   else()
+     set(SWIFT_DEPLOYMENT_TARGET ${SWIFT_DEFAULT_DEPLOYMENT_TARGET})
+   endif()
+
+   set(SWIFT_COMPILER_TARGET "${CMAKE_OSX_ARCHITECTURES}-apple-${SWIFT_PLATFORM}${SWIFT_DEPLOYMENT_TARGET}${SWIFT_PLATFORM_SUFFIX}")
+endif()
+
+add_custom_command(
+    OUTPUT pal_aead.o
+    COMMAND xcrun swiftc -emit-object -static -parse-as-library -runtime-compatibility-version none -sdk ${CMAKE_OSX_SYSROOT} -target ${SWIFT_COMPILER_TARGET} ${CMAKE_CURRENT_SOURCE_DIR}/pal_aead.swift -o pal_aead.o
+    MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/pal_aead.swift
+    COMMENT "Compiling Swift file pal_aead.swift"
+)
+set_source_files_properties(pal_aead.o PROPERTIES EXTERNAL_OBJECT true GENERATED true)
 
 if (CLR_CMAKE_TARGET_MACCATALYST)
     add_definitions(-DTARGET_MACCATALYST)

@@ -4,6 +4,7 @@
 #include <minipal/entrypoints.h>
 
 // Include System.Security.Cryptography.Native.Apple headers
+#include "pal_aead.h"
 #include "pal_digest.h"
 #include "pal_ecc.h"
 #include "pal_hmac.h"
@@ -25,6 +26,8 @@
 
 static const Entry s_cryptoAppleNative[] =
 {
+    DllImportEntry(AppleCryptoNative_ChaCha20Poly1305Encrypt)
+    DllImportEntry(AppleCryptoNative_ChaCha20Poly1305Decrypt)
     DllImportEntry(AppleCryptoNative_DigestFree)
     DllImportEntry(AppleCryptoNative_DigestCreate)
     DllImportEntry(AppleCryptoNative_DigestUpdate)
