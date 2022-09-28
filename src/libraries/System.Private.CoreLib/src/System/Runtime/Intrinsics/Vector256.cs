@@ -1920,8 +1920,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<float> Narrow(Vector256<double> lower, Vector256<double> upper)
         {
             return Create(
-                Vector128.Narrow(lower.GetLower(), upper.GetLower()),
-                Vector128.Narrow(lower.GetUpper(), upper.GetUpper())
+                Vector128.Narrow(lower.GetLower(), lower.GetUpper()),
+                Vector128.Narrow(upper.GetLower(), upper.GetUpper())
             );
         }
 
@@ -1935,8 +1935,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<sbyte> Narrow(Vector256<short> lower, Vector256<short> upper)
         {
             return Create(
-                Vector128.Narrow(lower.GetLower(), upper.GetLower()),
-                Vector128.Narrow(lower.GetUpper(), upper.GetUpper())
+                Vector128.Narrow(lower.GetLower(), lower.GetUpper()),
+                Vector128.Narrow(upper.GetLower(), upper.GetUpper())
             );
         }
 
@@ -1949,8 +1949,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<short> Narrow(Vector256<int> lower, Vector256<int> upper)
         {
             return Create(
-                Vector128.Narrow(lower.GetLower(), upper.GetLower()),
-                Vector128.Narrow(lower.GetUpper(), upper.GetUpper())
+                Vector128.Narrow(lower.GetLower(), lower.GetUpper()),
+                Vector128.Narrow(upper.GetLower(), upper.GetUpper())
             );
         }
 
@@ -1963,8 +1963,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<int> Narrow(Vector256<long> lower, Vector256<long> upper)
         {
             return Create(
-                Vector128.Narrow(lower.GetLower(), upper.GetLower()),
-                Vector128.Narrow(lower.GetUpper(), upper.GetUpper())
+                Vector128.Narrow(lower.GetLower(), lower.GetUpper()),
+                Vector128.Narrow(upper.GetLower(), upper.GetUpper())
             );
         }
 
@@ -1978,8 +1978,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<byte> Narrow(Vector256<ushort> lower, Vector256<ushort> upper)
         {
             return Create(
-                Vector128.Narrow(lower.GetLower(), upper.GetLower()),
-                Vector128.Narrow(lower.GetUpper(), upper.GetUpper())
+                Vector128.Narrow(lower.GetLower(), lower.GetUpper()),
+                Vector128.Narrow(upper.GetLower(), upper.GetUpper())
             );
         }
 
@@ -1993,8 +1993,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<ushort> Narrow(Vector256<uint> lower, Vector256<uint> upper)
         {
             return Create(
-                Vector128.Narrow(lower.GetLower(), upper.GetLower()),
-                Vector128.Narrow(lower.GetUpper(), upper.GetUpper())
+                Vector128.Narrow(lower.GetLower(), lower.GetUpper()),
+                Vector128.Narrow(upper.GetLower(), upper.GetUpper())
             );
         }
 
@@ -2008,8 +2008,8 @@ namespace System.Runtime.Intrinsics
         public static Vector256<uint> Narrow(Vector256<ulong> lower, Vector256<ulong> upper)
         {
             return Create(
-                Vector128.Narrow(lower.GetLower(), upper.GetLower()),
-                Vector128.Narrow(lower.GetUpper(), upper.GetUpper())
+                Vector128.Narrow(lower.GetLower(), lower.GetUpper()),
+                Vector128.Narrow(upper.GetLower(), upper.GetUpper())
             );
         }
 
@@ -2998,9 +2998,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<ushort> WidenLower(Vector256<byte> source)
         {
+            Vector128<byte> lower = source.GetLower();
+
             return Create(
-                Vector128.WidenLower(source.GetLower()),
-                Vector128.WidenLower(source.GetUpper())
+                Vector128.WidenLower(lower),
+                Vector128.WidenUpper(lower)
             );
         }
 
@@ -3008,9 +3010,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<int> WidenLower(Vector256<short> source)
         {
+            Vector128<short> lower = source.GetLower();
+
             return Create(
-                Vector128.WidenLower(source.GetLower()),
-                Vector128.WidenLower(source.GetUpper())
+                Vector128.WidenLower(lower),
+                Vector128.WidenUpper(lower)
             );
         }
 
@@ -3018,9 +3022,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<long> WidenLower(Vector256<int> source)
         {
+            Vector128<int> lower = source.GetLower();
+
             return Create(
-                Vector128.WidenLower(source.GetLower()),
-                Vector128.WidenLower(source.GetUpper())
+                Vector128.WidenLower(lower),
+                Vector128.WidenUpper(lower)
             );
         }
 
@@ -3028,9 +3034,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<short> WidenLower(Vector256<sbyte> source)
         {
+            Vector128<sbyte> lower = source.GetLower();
+
             return Create(
-                Vector128.WidenLower(source.GetLower()),
-                Vector128.WidenLower(source.GetUpper())
+                Vector128.WidenLower(lower),
+                Vector128.WidenUpper(lower)
             );
         }
 
@@ -3038,9 +3046,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<double> WidenLower(Vector256<float> source)
         {
+            Vector128<float> lower = source.GetLower();
+
             return Create(
-                Vector128.WidenLower(source.GetLower()),
-                Vector128.WidenLower(source.GetUpper())
+                Vector128.WidenLower(lower),
+                Vector128.WidenUpper(lower)
             );
         }
 
@@ -3048,9 +3058,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<uint> WidenLower(Vector256<ushort> source)
         {
+            Vector128<ushort> lower = source.GetLower();
+
             return Create(
-                Vector128.WidenLower(source.GetLower()),
-                Vector128.WidenLower(source.GetUpper())
+                Vector128.WidenLower(lower),
+                Vector128.WidenUpper(lower)
             );
         }
 
@@ -3058,9 +3070,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<ulong> WidenLower(Vector256<uint> source)
         {
+            Vector128<uint> lower = source.GetLower();
+
             return Create(
-                Vector128.WidenLower(source.GetLower()),
-                Vector128.WidenLower(source.GetUpper())
+                Vector128.WidenLower(lower),
+                Vector128.WidenUpper(lower)
             );
         }
 
@@ -3068,9 +3082,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<ushort> WidenUpper(Vector256<byte> source)
         {
+            Vector128<byte> upper = source.GetUpper();
+
             return Create(
-                Vector128.WidenUpper(source.GetLower()),
-                Vector128.WidenUpper(source.GetUpper())
+                Vector128.WidenLower(upper),
+                Vector128.WidenUpper(upper)
             );
         }
 
@@ -3078,9 +3094,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<int> WidenUpper(Vector256<short> source)
         {
+            Vector128<short> upper = source.GetUpper();
+
             return Create(
-                Vector128.WidenUpper(source.GetLower()),
-                Vector128.WidenUpper(source.GetUpper())
+                Vector128.WidenLower(upper),
+                Vector128.WidenUpper(upper)
             );
         }
 
@@ -3088,9 +3106,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<long> WidenUpper(Vector256<int> source)
         {
+            Vector128<int> upper = source.GetUpper();
+
             return Create(
-                Vector128.WidenUpper(source.GetLower()),
-                Vector128.WidenUpper(source.GetUpper())
+                Vector128.WidenLower(upper),
+                Vector128.WidenUpper(upper)
             );
         }
 
@@ -3098,9 +3118,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<short> WidenUpper(Vector256<sbyte> source)
         {
+            Vector128<sbyte> upper = source.GetUpper();
+
             return Create(
-                Vector128.WidenUpper(source.GetLower()),
-                Vector128.WidenUpper(source.GetUpper())
+                Vector128.WidenLower(upper),
+                Vector128.WidenUpper(upper)
             );
         }
 
@@ -3108,9 +3130,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<double> WidenUpper(Vector256<float> source)
         {
+            Vector128<float> upper = source.GetUpper();
+
             return Create(
-                Vector128.WidenUpper(source.GetLower()),
-                Vector128.WidenUpper(source.GetUpper())
+                Vector128.WidenLower(upper),
+                Vector128.WidenUpper(upper)
             );
         }
 
@@ -3118,9 +3142,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<uint> WidenUpper(Vector256<ushort> source)
         {
+            Vector128<ushort> upper = source.GetUpper();
+
             return Create(
-                Vector128.WidenUpper(source.GetLower()),
-                Vector128.WidenUpper(source.GetUpper())
+                Vector128.WidenLower(upper),
+                Vector128.WidenUpper(upper)
             );
         }
 
@@ -3128,9 +3154,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static Vector256<ulong> WidenUpper(Vector256<uint> source)
         {
+            Vector128<uint> upper = source.GetUpper();
+
             return Create(
-                Vector128.WidenUpper(source.GetLower()),
-                Vector128.WidenUpper(source.GetUpper())
+                Vector128.WidenLower(upper),
+                Vector128.WidenUpper(upper)
             );
         }
     }
