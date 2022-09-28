@@ -12,12 +12,12 @@ internal static partial class Interop
     internal static partial class BCrypt
     {
         [LibraryImport(Libraries.BCrypt, StringMarshalling = StringMarshalling.Utf16)]
-        private static partial NTSTATUS BCryptImportKeyPair(
+        private static unsafe partial NTSTATUS BCryptImportKeyPair(
             SafeBCryptAlgorithmHandle hAlgorithm,
             IntPtr hImportKey,
             string pszBlobType,
             out SafeBCryptKeyHandle phKey,
-            ref byte pbInput,
+            byte* pbInput,
             int cbInput,
             uint dwFlags);
 
@@ -26,14 +26,20 @@ internal static partial class Interop
             string blobType,
             ReadOnlySpan<byte> keyBlob)
         {
-            NTSTATUS status = BCryptImportKeyPair(
-                algorithm,
-                IntPtr.Zero,
-                blobType,
-                out SafeBCryptKeyHandle key,
-                ref MemoryMarshal.GetReference(keyBlob),
-                keyBlob.Length,
-                0);
+            NTSTATUS status;
+            SafeBCryptKeyHandle key;
+
+            fixed (byte* pBlob = keyBlob)
+            {
+                status = BCryptImportKeyPair(
+                    algorithm,
+                    IntPtr.Zero,
+                    blobType,
+                    out key,
+                    pBlob,
+                    keyBlob.Length,
+                    0);
+            }
 
             if (status != NTSTATUS.STATUS_SUCCESS)
             {

@@ -11,7 +11,7 @@ internal static partial class Interop
     internal static partial class BCrypt
     {
         [Flags]
-        private enum BCryptEncryptFlags
+        private enum BCryptEncryptFlags : uint
         {
             BCRYPT_PAD_PKCS1 = 2,
             BCRYPT_PAD_OAEP = 4,
@@ -20,12 +20,12 @@ internal static partial class Interop
         [LibraryImport(Libraries.BCrypt)]
         private static unsafe partial NTSTATUS BCryptEncrypt(
             SafeBCryptKeyHandle hKey,
-            ref byte pbInput,
+            byte* pbInput,
             int cbInput,
             void* paddingInfo,
             byte* pbIV,
             int cbIV,
-            ref byte pbOutput,
+            byte* pbOutput,
             int cbOutput,
             out int cbResult,
             BCryptEncryptFlags dwFlags);
@@ -33,12 +33,12 @@ internal static partial class Interop
         [LibraryImport(Libraries.BCrypt)]
         private static unsafe partial NTSTATUS BCryptDecrypt(
             SafeBCryptKeyHandle hKey,
-            ref byte pbInput,
+            byte* pbInput,
             int cbInput,
             void* paddingInfo,
             byte* pbIV,
             int cbIV,
-            ref byte pbOutput,
+            byte* pbOutput,
             int cbOutput,
             out int cbResult,
             BCryptEncryptFlags dwFlags);
@@ -63,17 +63,24 @@ internal static partial class Interop
                 effectiveSource = source;
             }
 
-            NTSTATUS status = BCryptEncrypt(
-                key,
-                ref MemoryMarshal.GetReference(effectiveSource),
-                source.Length,
-                pPaddingInfo,
-                null,
-                0,
-                ref MemoryMarshal.GetReference(destination),
-                destination.Length,
-                out int written,
-                dwFlags);
+            NTSTATUS status;
+            int written;
+
+            fixed (byte* pSource = &MemoryMarshal.GetReference(effectiveSource))
+            fixed (byte* pDest = &MemoryMarshal.GetReference(destination))
+            {
+                status = BCryptEncrypt(
+                    key,
+                    pSource,
+                    source.Length,
+                    pPaddingInfo,
+                    null,
+                    0,
+                    pDest,
+                    destination.Length,
+                    out written,
+                    dwFlags);
+            }
 
             if (status != NTSTATUS.STATUS_SUCCESS)
             {
@@ -91,17 +98,24 @@ internal static partial class Interop
             BCryptEncryptFlags dwFlags,
             out int bytesWritten)
         {
-            NTSTATUS status = BCryptDecrypt(
-                key,
-                ref MemoryMarshal.GetReference(source),
-                source.Length,
-                pPaddingInfo,
-                null,
-                0,
-                ref MemoryMarshal.GetReference(destination),
-                destination.Length,
-                out int written,
-                dwFlags);
+            NTSTATUS status;
+            int written;
+
+            fixed (byte* pSource = &MemoryMarshal.GetReference(source))
+            fixed (byte* pDest = &MemoryMarshal.GetReference(destination))
+            {
+                status = BCryptDecrypt(
+                    key,
+                    pSource,
+                    source.Length,
+                    pPaddingInfo,
+                    null,
+                    0,
+                    pDest,
+                    destination.Length,
+                    out written,
+                    dwFlags);
+            }
 
             if (status == NTSTATUS.STATUS_SUCCESS)
             {

@@ -11,7 +11,7 @@ internal static partial class Interop
     internal static partial class BCrypt
     {
         [Flags]
-        private enum BCryptSignVerifyFlags
+        private enum BCryptSignVerifyFlags : uint
         {
             BCRYPT_PAD_PKCS1 = 2,
             BCRYPT_PAD_PSS = 8,
@@ -21,9 +21,9 @@ internal static partial class Interop
         private static unsafe partial NTSTATUS BCryptVerifySignature(
             SafeBCryptKeyHandle hKey,
             void* pPaddingInfo,
-            ref byte pbHash,
+            byte* pbHash,
             int cbHash,
-            ref byte pbSignature,
+            byte* pbSignature,
             int cbSignature,
             BCryptSignVerifyFlags dwFlags);
 
@@ -36,6 +36,8 @@ internal static partial class Interop
             NTSTATUS status;
 
             fixed (char* pHashAlgorithmName = hashAlgorithmName)
+            fixed (byte* pHash = &MemoryMarshal.GetReference(hash))
+            fixed (byte* pSignature = &MemoryMarshal.GetReference(signature))
             {
                 BCRYPT_PKCS1_PADDING_INFO paddingInfo = default;
                 paddingInfo.pszAlgId = (IntPtr)pHashAlgorithmName;
@@ -43,9 +45,9 @@ internal static partial class Interop
                 status = BCryptVerifySignature(
                     key,
                     &paddingInfo,
-                    ref MemoryMarshal.GetReference(hash),
+                    pHash,
                     hash.Length,
-                    ref MemoryMarshal.GetReference(signature),
+                    pSignature,
                     signature.Length,
                     BCryptSignVerifyFlags.BCRYPT_PAD_PKCS1);
             }
@@ -63,6 +65,8 @@ internal static partial class Interop
             NTSTATUS status;
 
             fixed (char* pHashAlgorithmName = hashAlgorithmName)
+            fixed (byte* pHash = &MemoryMarshal.GetReference(hash))
+            fixed (byte* pSignature = &MemoryMarshal.GetReference(signature))
             {
                 BCRYPT_PSS_PADDING_INFO paddingInfo = default;
                 paddingInfo.pszAlgId = (IntPtr)pHashAlgorithmName;
@@ -71,9 +75,9 @@ internal static partial class Interop
                 status = BCryptVerifySignature(
                     key,
                     &paddingInfo,
-                    ref MemoryMarshal.GetReference(hash),
+                    pHash,
                     hash.Length,
-                    ref MemoryMarshal.GetReference(signature),
+                    pSignature,
                     signature.Length,
                     BCryptSignVerifyFlags.BCRYPT_PAD_PSS);
             }

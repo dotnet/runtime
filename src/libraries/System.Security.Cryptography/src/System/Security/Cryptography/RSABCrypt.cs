@@ -10,8 +10,13 @@ namespace System.Security.Cryptography
 {
     internal sealed class RSABCrypt : RSA
     {
-        private static SafeBCryptAlgorithmHandle s_algHandle =
+        private static readonly SafeBCryptAlgorithmHandle s_algHandle =
             Interop.BCrypt.BCryptOpenAlgorithmProvider(BCryptNative.AlgorithmName.RSA);
+
+        // See https://msdn.microsoft.com/en-us/library/windows/desktop/bb931354(v=vs.85).aspx
+        // All values are in bits.
+        private static readonly KeySizes s_keySizes =
+            new KeySizes(minSize: 512, maxSize: 16384, skipSize: 64);
 
         private SafeBCryptKeyHandle? _key;
         private int _lastKeySize;
@@ -336,18 +341,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        public override KeySizes[] LegalKeySizes
-        {
-            get
-            {
-                // See https://msdn.microsoft.com/en-us/library/windows/desktop/bb931354(v=vs.85).aspx
-                return new KeySizes[]
-                {
-                    // All values are in bits.
-                    new KeySizes(minSize: 512, maxSize: 16384, skipSize: 64),
-                };
-            }
-        }
+        public override KeySizes[] LegalKeySizes => new KeySizes[] { s_keySizes };
 
         public override unsafe void ImportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<byte> passwordBytes,

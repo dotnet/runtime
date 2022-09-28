@@ -14,9 +14,9 @@ internal static partial class Interop
         private static unsafe partial NTSTATUS BCryptSignHash(
             SafeBCryptKeyHandle hKey,
             void* pPaddingInfo,
-            ref byte pbInput,
+            byte* pbInput,
             int cbInput,
-            ref byte pbOutput,
+            byte* pbOutput,
             int cbOutput,
             out int pcbResult,
             BCryptSignVerifyFlags dwFlags);
@@ -29,6 +29,8 @@ internal static partial class Interop
             out int bytesWritten)
         {
             fixed (char* pHashAlgorithmName = hashAlgorithmName)
+            fixed (byte* pHash = &MemoryMarshal.GetReference(hash))
+            fixed (byte* pDest = &MemoryMarshal.GetReference(destination))
             {
                 BCRYPT_PKCS1_PADDING_INFO paddingInfo = default;
                 paddingInfo.pszAlgId = (IntPtr)pHashAlgorithmName;
@@ -36,9 +38,9 @@ internal static partial class Interop
                 return BCryptSignHash(
                     key,
                     &paddingInfo,
-                    ref MemoryMarshal.GetReference(hash),
+                    pHash,
                     hash.Length,
-                    ref MemoryMarshal.GetReference(destination),
+                    pDest,
                     destination.Length,
                     out bytesWritten,
                     BCryptSignVerifyFlags.BCRYPT_PAD_PKCS1);
@@ -53,6 +55,8 @@ internal static partial class Interop
             out int bytesWritten)
         {
             fixed (char* pHashAlgorithmName = hashAlgorithmName)
+            fixed (byte* pHash = &MemoryMarshal.GetReference(hash))
+            fixed (byte* pDest = &MemoryMarshal.GetReference(destination))
             {
                 BCRYPT_PSS_PADDING_INFO paddingInfo = default;
                 paddingInfo.pszAlgId = (IntPtr)pHashAlgorithmName;
@@ -61,9 +65,9 @@ internal static partial class Interop
                 return BCryptSignHash(
                     key,
                     &paddingInfo,
-                    ref MemoryMarshal.GetReference(hash),
+                    pHash,
                     hash.Length,
-                    ref MemoryMarshal.GetReference(destination),
+                    pDest,
                     destination.Length,
                     out bytesWritten,
                     BCryptSignVerifyFlags.BCRYPT_PAD_PSS);
