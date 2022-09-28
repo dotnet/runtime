@@ -1106,23 +1106,24 @@ namespace DebuggerTests
         }
 
         [Fact]
-        public async Task InspectReadOnlySpan()
+        public async Task InspectRefFields()
         {
             var expression = $"{{ invoke_static_method('[debugger-test] ReadOnlySpanTest:Run'); }}";
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 1371, 8,
+                "dotnet://debugger-test.dll/debugger-test.cs", 1402, 8,
                 "ReadOnlySpanTest.CheckArguments",
                 wait_for_event_fn: async (pause_location) =>
                 {
                     var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                     await EvaluateOnCallFrameAndCheck(id,
-                        ("parameters.ToString()", TString("System.ReadOnlySpan<Object>[1]"))
+                        ("parameters.ToString()", TString("System.ReadOnlySpan<Object>[1]")),
+                        ("myR1.Run()", TNumber(10))
                     );
                 }
             );
-            await StepAndCheck(StepKind.Resume, "dotnet://debugger-test.dll/debugger-test.cs", 1363, 8, "ReadOnlySpanTest.Run",
+            await StepAndCheck(StepKind.Resume, "dotnet://debugger-test.dll/debugger-test.cs", 1384, 8, "ReadOnlySpanTest.Run",
                 locals_fn: async (locals) =>
                 {
                     await CheckValueType(locals, "var1", "System.ReadOnlySpan<object>", description: "System.ReadOnlySpan<Object>[0]");
