@@ -299,6 +299,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
             // are tracked as TYP_INT and then we get explicit downcasts to the
             // desired small type instead.
 
+            assert(!varTypeIsFloating(castOp));
             isSupportedCast = true;
         }
         else if (childNode->TypeIs(TYP_LONG) && genActualTypeIsInt(castOp))
