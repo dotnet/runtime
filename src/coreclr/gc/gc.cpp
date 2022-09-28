@@ -11013,6 +11013,18 @@ void gc_heap::seg_clear_mark_array_bits_soh (heap_segment* seg)
     }
 }
 
+inline
+void gc_heap::seg_mark_array_bits_soh (heap_segment* seg)
+{
+    uint8_t* range_beg = 0;
+    uint8_t* range_end = 0;
+    if (bgc_mark_array_range (seg, FALSE, &range_beg, &range_end))
+    {
+        // TODO:
+        // mark_array_set_marked (range_beg)
+    }
+}
+
 void gc_heap::bgc_clear_batch_mark_array_bits (uint8_t* start, uint8_t* end)
 {
     if ((start < background_saved_highest_address) &&
@@ -26160,6 +26172,19 @@ void gc_heap::mark_phase (int condemned_gen_number, BOOL mark_only_p)
         gen_to_init = total_generation_count - 1;
     }
 
+#ifdef FEATURE_BASICFREEZE
+#ifdef USE_REGIONS
+    assert (!ro_segments_in_range);
+#else // USE_REGIONS
+    if ((generation_start_segment (generation_of (condemned_gen_number)) != ephemeral_heap_segment) &&
+        ro_segments_in_range)
+    {
+        generation* max_gen = generation_of (max_generation);
+        mark_ro_segments (generation_start_segment (max_gen));
+    }
+#endif // !USE_REGIONS
+#endif // !FEATURE_BASICFREEZE
+
     for (int gen_idx = 0; gen_idx <= gen_to_init; gen_idx++)
     {
         dynamic_data* dd = dynamic_data_of (gen_idx);
@@ -27434,6 +27459,17 @@ retry:
 #endif //!USE_REGIONS
 
 inline
+void gc_heap::seg_set_mark_bits (heap_segment* seg)
+{
+    uint8_t* o = heap_segment_mem (seg);
+    while (o < heap_segment_allocated (seg))
+    {
+        set_marked (o);
+        o = o + Align (size(o));
+    }
+}
+
+inline
 void gc_heap::seg_clear_mark_bits (heap_segment* seg)
 {
     uint8_t* o = heap_segment_mem (seg);
@@ -27443,11 +27479,38 @@ void gc_heap::seg_clear_mark_bits (heap_segment* seg)
         {
             clear_marked (o);
         }
-        o = o  + Align (size (o));
+        o = o + Align (size (o));
     }
 }
 
 #ifdef FEATURE_BASICFREEZE
+void gc_heap::mark_ro_segments (heap_segment* start_seg)
+{
+    //go through all of the segment in range and set the mark bit
+    heap_segment* seg = start_seg;
+
+    while (seg)
+    {
+        if (heap_segment_read_only_p (seg) &&
+            heap_segment_in_range_p (seg))
+        {
+#ifdef BACKGROUND_GC
+            if (settings.concurrent)
+            {
+                // seg_mark_array_bits_soh (seg);
+            }
+            else
+            {
+                seg_set_mark_bits (seg);
+            }
+#else //BACKGROUND_GC
+            seg_set_mark_bits (seg);
+#endif //BACKGROUND_GC
+        }
+        seg = heap_segment_next (seg);
+    }
+}
+
 void gc_heap::sweep_ro_segments (heap_segment* start_seg)
 {
     //go through all of the segment in range and reset the mark bit
@@ -34581,6 +34644,13 @@ void gc_heap::background_mark_phase ()
 
     dprintf(3,("BGC: stack marking"));
     sc.concurrent = TRUE;
+
+#if defined(FEATURE_BASICFREEZE) && !defined(USE_REGIONS)
+    if ((generation_start_segment(gen) != ephemeral_heap_segment) && ro_segments_in_range)
+    {
+        mark_ro_segments(generation_start_segment(gen));
+    }
+#endif // FEATURE_BASICFREEZE
 
     GCScan::GcScanRoots(background_promote_callback,
                             max_generation, max_generation,
@@ -45164,11 +45234,6 @@ HRESULT GCHeap::Initialize()
 // GC callback functions
 bool GCHeap::IsPromoted(Object* object)
 {
-    if (object != nullptr && IsInFrozenSegment (object))
-    {
-        return true;
-    }
-
     uint8_t* o = (uint8_t*)object;
 
     bool is_marked;
@@ -45209,6 +45274,12 @@ bool GCHeap::IsPromoted(Object* object)
     if (o)
     {
         ((CObjectHeader*)o)->Validate(TRUE, TRUE, is_marked);
+    }
+    
+    if (!is_marked && object != nullptr && IsInFrozenSegment (object))
+    {
+        // Frozen objects aren't expected to be "not promoted" here
+        __UNREACHABLE();
     }
 #endif //_DEBUG
 

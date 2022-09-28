@@ -2209,6 +2209,8 @@ protected:
     PER_HEAP
     void seg_clear_mark_array_bits_soh (heap_segment* seg);
     PER_HEAP
+    void seg_mark_array_bits_soh (heap_segment* seg);
+    PER_HEAP
     void bgc_clear_batch_mark_array_bits (uint8_t* start, uint8_t* end);
 #ifdef VERIFY_HEAP
     PER_HEAP
@@ -2862,6 +2864,10 @@ protected:
 
     PER_HEAP
     void seg_clear_mark_bits (heap_segment* seg);
+    PER_HEAP
+    void seg_set_mark_bits (heap_segment* seg);
+    PER_HEAP
+    void mark_ro_segments (heap_segment* start_seg);
     PER_HEAP
     void sweep_ro_segments (heap_segment* start_seg);
     PER_HEAP
