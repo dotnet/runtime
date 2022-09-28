@@ -255,10 +255,17 @@ public class Simple
     }
 
     [MethodImpl (MethodImplOptions.NoInlining)]
-    private static void TestLoadingValueTypeWithStaticMethod() 
+    private static void TestLoadingValueTypesWithMethod() 
     {
-        Console.WriteLine($"{nameof(TestLoadingValueTypeWithStaticMethod)}");
+        Console.WriteLine($"{nameof(TestLoadingValueTypesWithMethod)}");
         Console.WriteLine($"-- {typeof(ValueTypeWithStaticMethod).Name}");
+        Assert.Throws<TypeLoadException>(() => LoadInvalidType());
+    }
+
+    [MethodImpl (MethodImplOptions.NoInlining)]
+    private static void LoadInvalidType()
+    {
+        Console.WriteLine($"-- {typeof(ValueTypeWithInstanceMethod).Name}");
     }
 
     public static int Main(string[] noArgs)
@@ -278,7 +285,7 @@ public class Simple
             TestGenericClassNonEquivalence();
             TestGenericInterfaceEquivalence();
             TestTypeEquivalenceWithTypePunning();
-            TestLoadingValueTypeWithStaticMethod();
+            TestLoadingValueTypesWithMethod();
         }
         catch (Exception e)
         {
