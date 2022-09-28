@@ -4,7 +4,6 @@
 #include <minipal/entrypoints.h>
 
 // Include System.Security.Cryptography.Native.Apple headers
-#include "pal_aead.h"
 #include "pal_digest.h"
 #include "pal_ecc.h"
 #include "pal_hmac.h"
@@ -18,6 +17,7 @@
 #include "pal_seckey_macos.h"
 #include "pal_signverify.h"
 #include "pal_ssl.h"
+#include "pal_swiftbindings.h"
 #include "pal_symmetric.h"
 #include "pal_trust_macos.h"
 #include "pal_x509.h"

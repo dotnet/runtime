@@ -30,7 +30,7 @@ if (CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVO
 else()
     set(NATIVECRYPTO_SOURCES
         ${NATIVECRYPTO_SOURCES}
-        pal_aead.o
+        pal_swiftbindings.o
         pal_keychain_macos.c
         pal_keyderivation_macos.c
         pal_seckey_macos.c
@@ -57,12 +57,12 @@ if (NOT SWIFT_COMPILER_TARGET AND CLR_CMAKE_TARGET_OSX)
 endif()
 
 add_custom_command(
-    OUTPUT pal_aead.o
-    COMMAND xcrun swiftc -emit-object -static -parse-as-library -runtime-compatibility-version none -sdk ${CMAKE_OSX_SYSROOT} -target ${SWIFT_COMPILER_TARGET} ${CMAKE_CURRENT_SOURCE_DIR}/pal_aead.swift -o pal_aead.o
-    MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/pal_aead.swift
-    COMMENT "Compiling Swift file pal_aead.swift"
+    OUTPUT pal_swiftbindings.o
+    COMMAND xcrun swiftc -emit-object -static -parse-as-library -runtime-compatibility-version none -sdk ${CMAKE_OSX_SYSROOT} -target ${SWIFT_COMPILER_TARGET} ${CMAKE_CURRENT_SOURCE_DIR}/pal_swiftbindings.swift -o pal_swiftbindings.o
+    MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/pal_swiftbindings.swift
+    COMMENT "Compiling Swift file pal_swiftbindings.swift"
 )
-set_source_files_properties(pal_aead.o PROPERTIES EXTERNAL_OBJECT true GENERATED true)
+set_source_files_properties(pal_swiftbindings.o PROPERTIES EXTERNAL_OBJECT true GENERATED true)
 
 if (CLR_CMAKE_TARGET_MACCATALYST)
     add_definitions(-DTARGET_MACCATALYST)
