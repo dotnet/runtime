@@ -1746,7 +1746,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
         }
     }
 
-    // Now move args whose placement will potentially clobber a later use to the end of the list.
+    // Now move args whose placement will potentially clobber a later arg to after that arg.
     unsigned max      = beforeFirstConstArgIndex - firstCallArgIndex + 1;
     unsigned curIndex = firstCallArgIndex;
     for (unsigned count = 0; count < max; count++)
@@ -1764,23 +1764,36 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
             clobbered |= genRegMask(arg->AbiInfo.GetRegNum(j));
         }
 
-        unsigned nextIndex = curIndex + 1;
+        unsigned lastClobbered = UINT_MAX;
+        regMaskTP lastClobberedRegs = RBM_NONE;
 
         for (unsigned i = curIndex + 1; i != beforeFirstConstArgIndex + 1; i++)
         {
             regMaskTP usedRegs = EstimateRegisterUses(comp, sortedArgs[i]->GetNode());
             if ((clobbered & usedRegs) != 0)
             {
-                memmove(&sortedArgs[curIndex], &sortedArgs[curIndex + 1],
-                        (beforeFirstConstArgIndex - curIndex) * sizeof(CallArg*));
-                assert(sortedArgs[beforeFirstConstArgIndex - 1] == sortedArgs[beforeFirstConstArgIndex]);
-                sortedArgs[beforeFirstConstArgIndex] = arg;
-                nextIndex--;
-                break;
+                lastClobbered = i;
+                lastClobberedRegs = clobbered & usedRegs;
             }
         }
 
-        curIndex = nextIndex;
+        if (lastClobbered != UINT_MAX)
+        {
+            JITDUMP("  [%06u] -> #%u (clobbers %s used by [%06u])\n", arg->GetNode()->gtTreeID, lastClobbered, getRegName(genRegNumFromMask(genFindLowestReg(lastClobberedRegs))), sortedArgs[lastClobbered]->GetNode()->gtTreeID);
+            memmove(&sortedArgs[curIndex], &sortedArgs[curIndex + 1],
+                (lastClobbered - curIndex) * sizeof(CallArg*));
+            assert(sortedArgs[lastClobbered - 1] == sortedArgs[lastClobbered]);
+            sortedArgs[lastClobbered] = arg;
+
+            JITDUMP("   ");
+            for (unsigned i = 0; i < argCount; i++)
+                JITDUMP(" [%06u]", sortedArgs[i]->GetNode()->gtTreeID);
+            JITDUMP("\n");
+        }
+        else
+        {
+            curIndex++;
+        }
     }
 
     // The table should now be completely filled and thus begTab should now be adjacent to endTab
