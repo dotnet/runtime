@@ -2637,66 +2637,67 @@ namespace System
 
             nuint idx = 0;
 
-            if (Vector128.IsHardwareAccelerated && length >= (uint)Vector128<T>.Count)
-            {
-                Vector128<T> oldValues, newValues;
-
-                if (Vector256.IsHardwareAccelerated && length >= (uint)Vector256<T>.Count)
-                {
-                    nuint lastVector256Index = length - (uint)Vector256<T>.Count;
-
-                    Vector256<T> oldValues256 = Vector256.Create(oldValue);
-                    Vector256<T> newValues256 = Vector256.Create(newValue);
-
-                    do
-                    {
-                        Vector256<T> original256 = Vector256.LoadUnsafe(ref src, idx);
-                        Vector256<T> mask256 = Vector256.Equals(oldValues256, original256);
-                        Vector256<T> result256 = Vector256.ConditionalSelect(mask256, newValues256, original256);
-                        result256.StoreUnsafe(ref dst, idx);
-
-                        idx += (uint)Vector256<T>.Count;
-                    } while (idx <= lastVector256Index);
-
-                    // Re-use the already initialized vectors.
-                    oldValues = oldValues256.GetLower();
-                    newValues = newValues256.GetLower();
-                }
-                else
-                {
-                    oldValues = Vector128.Create(oldValue);
-                    newValues = Vector128.Create(newValue);
-                }
-
-                nuint lastVector128Index = length - (uint)Vector128<T>.Count;
-                Vector128<T> original, mask, result;
-
-                while (idx <= lastVector128Index)
-                {
-                    original = Vector128.LoadUnsafe(ref src, idx);
-                    mask = Vector128.Equals(oldValues, original);
-                    result = Vector128.ConditionalSelect(mask, newValues, original);
-                    result.StoreUnsafe(ref dst, idx);
-
-                    idx += (uint)Vector128<T>.Count;
-                }
-
-                // There are [0, Vector128<T>.Count) elements remaining now.
-                // As the operation is idempotent, and we know that in total there are at least Vector128<T>.Count
-                // elements available, we read a vector from the very end, perform the replace and write to the
-                // the resulting vector at the very end.
-                // Thus we can eliminate the scalar processing of the remaining elements.
-                original = Vector128.LoadUnsafe(ref src, lastVector128Index);
-                mask = Vector128.Equals(oldValues, original);
-                result = Vector128.ConditionalSelect(mask, newValues, original);
-                result.StoreUnsafe(ref dst, lastVector128Index);
-            }
-            else
+            if (!Vector128.IsHardwareAccelerated || length < (uint)Vector128<T>.Count)
             {
                 for (; idx < length; ++idx)
                 {
                     T original = Unsafe.Add(ref src, idx);
                     Unsafe.Add(ref dst, idx) = EqualityComparer<T>.Default.Equals(original, oldValue) ? newValue : original;
+                }
+            }
+            else if (!Vector256.IsHardwareAccelerated || length < (uint)Vector256<T>.Count)
+            {
+                nuint lastVectorIndex = length - (uint)Vector128<T>.Count;
+                Vector128<T> oldValues = Vector128.Create(oldValue);
+                Vector128<T> newValues = Vector128.Create(newValue);
+
+                do
+                {
+                    Vector128<T> original = Vector128.LoadUnsafe(ref src, idx);
+                    Vector128<T> mask = Vector128.Equals(oldValues, original);
+                    Vector128<T> result = Vector128.ConditionalSelect(mask, newValues, original);
+                    result.StoreUnsafe(ref dst, idx);
+
+                    idx += (uint)Vector128<T>.Count;
+                } while (idx <= lastVectorIndex);
+
+                if (idx < length)
+                {
+                    // There are [0, Vector128<T>.Count) elements remaining now.
+                    // As the operation is idempotent, and we know that in total there are at least Vector128<T>.Count
+                    // elements available, we read a vector from the very end, perform the replace and write to the
+                    // the resulting vector at the very end.
+                    // Thus we can eliminate the scalar processing of the remaining elements.
+                    Vector128<T> original = Vector128.LoadUnsafe(ref src, lastVectorIndex);
+                    Vector128<T> mask = Vector128.Equals(oldValues, original);
+                    Vector128<T> result = Vector128.ConditionalSelect(mask, newValues, original);
+                    result.StoreUnsafe(ref dst, lastVectorIndex);
+                }
+            }
+            else
+            {
+                Debug.Assert(Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported);
+
+                nuint lastVectorIndex = length - (uint)Vector256<T>.Count;
+                Vector256<T> oldValues = Vector256.Create(oldValue);
+                Vector256<T> newValues = Vector256.Create(newValue);
+
+                do
+                {
+                    Vector256<T> original = Vector256.LoadUnsafe(ref src, idx);
+                    Vector256<T> mask = Vector256.Equals(oldValues, original);
+                    Vector256<T> result = Vector256.ConditionalSelect(mask, newValues, original);
+                    result.StoreUnsafe(ref dst, idx);
+
+                    idx += (uint)Vector256<T>.Count;
+                } while (idx <= lastVectorIndex);
+
+                if (idx < length)
+                {
+                    Vector256<T> original = Vector256.LoadUnsafe(ref src, lastVectorIndex);
+                    Vector256<T> mask = Vector256.Equals(oldValues, original);
+                    Vector256<T> result = Vector256.ConditionalSelect(mask, newValues, original);
+                    result.StoreUnsafe(ref dst, lastVectorIndex);
                 }
             }
         }
