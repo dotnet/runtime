@@ -1451,7 +1451,7 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             return Vector128.EqualsAny(left.GetLower(), right.GetLower())
-                && Vector128.EqualsAny(left.GetUpper(), right.GetUpper());
+                || Vector128.EqualsAny(left.GetUpper(), right.GetUpper());
         }
 
         /// <summary>Extracts the most significant bit from each element in a vector.</summary>
@@ -1606,7 +1606,7 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             return Vector128.GreaterThanAny(left.GetLower(), right.GetLower())
-                && Vector128.GreaterThanAny(left.GetUpper(), right.GetUpper());
+                || Vector128.GreaterThanAny(left.GetUpper(), right.GetUpper());
         }
 
         /// <summary>Compares two vectors to determine which is greater or equal on a per-element basis.</summary>
@@ -1653,7 +1653,7 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             return Vector128.GreaterThanOrEqualAny(left.GetLower(), right.GetLower())
-                && Vector128.GreaterThanOrEqualAny(left.GetUpper(), right.GetUpper());
+                || Vector128.GreaterThanOrEqualAny(left.GetUpper(), right.GetUpper());
         }
 
         /// <summary>Compares two vectors to determine which is less on a per-element basis.</summary>
@@ -1700,7 +1700,7 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             return Vector128.LessThanAny(left.GetLower(), right.GetLower())
-                && Vector128.LessThanAny(left.GetUpper(), right.GetUpper());
+                || Vector128.LessThanAny(left.GetUpper(), right.GetUpper());
         }
 
         /// <summary>Compares two vectors to determine which is less or equal on a per-element basis.</summary>
@@ -1747,7 +1747,7 @@ namespace System.Runtime.Intrinsics
             where T : struct
         {
             return Vector128.LessThanOrEqualAny(left.GetLower(), right.GetLower())
-                && Vector128.LessThanOrEqualAny(left.GetUpper(), right.GetUpper());
+                || Vector128.LessThanOrEqualAny(left.GetUpper(), right.GetUpper());
         }
 
         /// <summary>Loads a vector from the given source.</summary>
