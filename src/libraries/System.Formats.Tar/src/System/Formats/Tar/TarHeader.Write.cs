@@ -378,45 +378,45 @@ namespace System.Formats.Tar
         }
 
         // 'https://www.freebsd.org/cgi/man.cgi?tar(5)'
-        // If the pathname is too long to fit in the 100 bytes provided by the standard format,
+        // If the path name is too long to fit in the 100 bytes provided by the standard format,
         // it can be split at any / character with the first portion going into the prefix field.
         private int WriteUstarName(Span<byte> buffer)
         {
-            // We can have a pathname as big as 256, prefix + '/' + name,
+            // We can have a path name as big as 256, prefix + '/' + name,
             // the separator in between can be neglected as the reader will append it when it joins both fields.
-            const int MaxPathname = FieldLengths.Prefix + FieldLengths.Name + 1;
+            const int MaxPathName = FieldLengths.Prefix + 1 + FieldLengths.Name;
 
-            if (GetUtf8TextLength(_name) > MaxPathname)
+            if (GetUtf8TextLength(_name) > MaxPathName)
             {
-                throw new ArgumentException(SR.TarEntryFieldExceedsMaxLength, ArgNameEntry);
+                throw new ArgumentException(SR.Format(SR.TarEntryFieldExceedsMaxLength, nameof(TarEntry.Name)), ArgNameEntry);
             }
 
-            Span<byte> encodingBuffer = stackalloc byte[MaxPathname];
+            Span<byte> encodingBuffer = stackalloc byte[MaxPathName];
             int encoded = Encoding.UTF8.GetBytes(_name, encodingBuffer);
-            ReadOnlySpan<byte> pathnameBytes = encodingBuffer.Slice(0, encoded);
+            ReadOnlySpan<byte> pathNameBytes = encodingBuffer.Slice(0, encoded);
 
             // If the pathname is able to fit in Name, we can write it down there and avoid calculating Prefix.
-            if (pathnameBytes.Length <= FieldLengths.Name)
+            if (pathNameBytes.Length <= FieldLengths.Name)
             {
-                return WriteLeftAlignedBytesAndGetChecksum(pathnameBytes, buffer.Slice(FieldLocations.Name, FieldLengths.Name));
+                return WriteLeftAlignedBytesAndGetChecksum(pathNameBytes, buffer.Slice(FieldLocations.Name, FieldLengths.Name));
             }
 
-            int lastIdx = pathnameBytes.LastIndexOfAny(PathInternal.Utf8DirectorySeparators);
+            int lastIdx = pathNameBytes.LastIndexOfAny(PathInternal.Utf8DirectorySeparators);
             scoped ReadOnlySpan<byte> name;
             scoped ReadOnlySpan<byte> prefix;
 
             if (lastIdx < 1) // splitting at the root is not allowed.
             {
-                name = pathnameBytes;
+                name = pathNameBytes;
                 prefix = default;
             }
             else
             {
-                name = pathnameBytes.Slice(lastIdx + 1);
-                prefix = pathnameBytes.Slice(0, lastIdx);
+                name = pathNameBytes.Slice(lastIdx + 1);
+                prefix = pathNameBytes.Slice(0, lastIdx);
             }
 
-            // At this point pathnameBytes.Length > 100.
+            // At this point path name is > 100.
             // Attempt to split it in a way it can use prefix.
             while (prefix.Length - name.Length > FieldLengths.Prefix)
             {
@@ -426,8 +426,8 @@ namespace System.Formats.Tar
                     break;
                 }
 
-                name = pathnameBytes.Slice(lastIdx + 1);
-                prefix = pathnameBytes.Slice(0, lastIdx);
+                name = pathNameBytes.Slice(lastIdx + 1);
+                prefix = pathNameBytes.Slice(0, lastIdx);
             }
 
             if (prefix.Length <= FieldLengths.Prefix && name.Length <= FieldLengths.Name)
