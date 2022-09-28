@@ -93,7 +93,7 @@ namespace System.Collections.Generic
             {
                 if (list._items.Length - list._size < source.Length)
                 {
-                    list.Grow(list._size + source.Length);
+                    list.Grow(checked(list._size + source.Length));
                 }
 
                 source.CopyTo(list._items.AsSpan(list._size));
