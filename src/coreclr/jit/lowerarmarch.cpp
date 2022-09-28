@@ -288,11 +288,8 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
         // Find "a op cast(b)"
         GenTree* castOp = childNode->AsCast()->CastOp();
 
-        if (castOp->isContained() || castOp->IsRegOptional())
-        {
-            // Cannot contain if the childs op1 is already contained
-            return false;
-        }
+        // We want to prefer the combined op here over containment of the cast op
+        castOp->ClearContained();
 
         bool isSupportedCast = false;
 
