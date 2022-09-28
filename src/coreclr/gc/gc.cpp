@@ -27497,7 +27497,7 @@ void gc_heap::mark_ro_segments (heap_segment* start_seg)
 #ifdef BACKGROUND_GC
             if (settings.concurrent)
             {
-                // seg_mark_array_bits_soh (seg);
+                seg_mark_array_bits_soh (seg);
             }
             else
             {
@@ -34645,10 +34645,10 @@ void gc_heap::background_mark_phase ()
     dprintf(3,("BGC: stack marking"));
     sc.concurrent = TRUE;
 
-#if defined(FEATURE_BASICFREEZE) && !defined(USE_REGIONS)
-    if ((generation_start_segment(gen) != ephemeral_heap_segment) && ro_segments_in_range)
+#if defined (FEATURE_BASICFREEZE) && !defined (USE_REGIONS)
+    if ((generation_start_segment (gen) != ephemeral_heap_segment) && ro_segments_in_range)
     {
-        mark_ro_segments(generation_start_segment(gen));
+        mark_ro_segments (generation_start_segment (gen));
     }
 #endif // FEATURE_BASICFREEZE
 
