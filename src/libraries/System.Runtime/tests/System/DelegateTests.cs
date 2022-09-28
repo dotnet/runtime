@@ -374,7 +374,7 @@ namespace System.Tests
         public static void DynamicInvoke_DecimalAndCustomConstantAttribute_DecimalParameterWithAttributeAndMissingValue()
         {
             Assert.Equal(
-                new decimal(4, 3, 2, true, 1),
+                new decimal(12, 13, 14, true, 1),
                 (decimal)(new DecimalDelegateWithDecimalAndCustomConstantAttribute(DecimalMethod)).DynamicInvoke(new object[] { Type.Missing }));
         }
 

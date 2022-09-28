@@ -316,13 +316,14 @@ namespace System.Reflection
 
         private object? GetDefaultValueFromCustomAttributes()
         {
-            foreach (object customAttribute in GetCustomAttributes(false))
-            {
-                if (customAttribute is DecimalConstantAttribute decimalConstant)
-                    return decimalConstant.Value;
-                else if (customAttribute is CustomConstantAttribute customConstantAttribute)
-                    return customConstantAttribute.Value;
-            }
+            object[] customAttributes = GetCustomAttributes(typeof(CustomConstantAttribute), false);
+            if (customAttributes.Length != 0)
+                return ((CustomConstantAttribute)customAttributes[0]).Value;
+
+            customAttributes = GetCustomAttributes(typeof(DecimalConstantAttribute), false);
+            if (customAttributes.Length != 0)
+                return ((DecimalConstantAttribute)customAttributes[0]).Value;
+
             return DBNull.Value;
         }
 
@@ -348,8 +349,13 @@ namespace System.Reflection
             // If default value is not specified in metadata, look for it in custom attributes
             if (defaultValue == DBNull.Value)
             {
-                // Always the first DecimalConstantAttribute, DateTimeConstantAttribute or CustomConstantAttribute,
-                // attached to the parameter, is used when resolving default value.
+                // The resolution of default value is done by following these rules:
+                // 1. For RawDefaultValue, we pick the first custom attribute holding the constant value
+                //  in the following order: DecimalConstantAttribute, DateTimeConstantAttribute, CustomConstantAttribute
+                // 2. For DefaultValue, we first look for CustomConstantAttribute and pick the first occurrence.
+                //  If none is found, then we repeat the same process searching for DecimalConstantAttribute.
+                // IMPORTANT: Please note that there is a subtle difference in order custom attributes are inspected for
+                //  RawDefaultValue and DefaultValue.
                 defaultValue = raw ? GetDefaultValueFromCustomAttributeData() : GetDefaultValueFromCustomAttributes();
             }
 
