@@ -199,7 +199,7 @@ IF NOT DEFINED DoLink (
     </ItemGroup>
     <PropertyGroup>
       <HasDisasmCheck>false</HasDisasmCheck>
-      <HasDisasmCheck Condition="@(DisasmCheckFiles->Count()) &gt; 0 And '$(CLRTestKind)' == 'BuildAndRun' and '$(RunCrossGen2)' != 'true'">true</HasDisasmCheck>
+      <HasDisasmCheck Condition="@(DisasmCheckFiles->Count()) &gt; 0 And '$(CLRTestKind)' == 'BuildAndRun' and '$(RunCrossGen2)' != '1'">true</HasDisasmCheck>
 
       <GCStressIncompatible Condition="'$(HasDisasmCheck)' == 'true'">true</GCStressIncompatible>
       <HeapVerifyIncompatible Condition="'$(HasDisasmCheck)' == 'true'">true</HeapVerifyIncompatible>
@@ -235,7 +235,7 @@ IF NOT DEFINED DoLink (
 
       <BashCLRTestPreCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
 $(BashCLRTestPreCommands)
-if [[ ( -z "$COMPlus_JitStress" ) && ( -z "$COMPlus_JitStressRegs" ) && ( -z "$COMPlus_TailcallStress" ) && ( "$COMPlus_TieredPGO" != "1" ) && ( "$RunCrossGen2" != "1" ) ]]; then
+if [[ ( -z "$COMPlus_JitStress" ) && ( -z "$COMPlus_JitStressRegs" ) && ( -z "$COMPlus_TailcallStress" ) && ( "$COMPlus_TieredPGO" != "1" ) && ( -z "$RunCrossGen2" ) ]]; then
   @(DisasmCheckFiles -> '  dotnet $CORE_ROOT/SuperFileCheck/SuperFileCheck.dll --csharp-list-method-names "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) > "$(BashDisasmListOutputFile)"
     ERRORLEVEL=$?
     export COMPlus_JitDisasm=`cat $(BashDisasmListOutputFile)`
@@ -253,7 +253,7 @@ fi
       <BashDisasmCheckPostCommands></BashDisasmCheckPostCommands>
       <BashDisasmCheckPostCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
 if [[ -n $COMPlus_JitDisasm ]]; then
-  @(DisasmCheckFiles -> '  dotnet $CORE_ROOT/SuperFileCheck/SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) --dump-input-context 25 --input-file "$(BashDisasmOutputFile)"
+  @(DisasmCheckFiles -> '  dotnet $CORE_ROOT/SuperFileCheck/SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) --dump-input-context 40 --input-file "$(BashDisasmOutputFile)"
     ERRORLEVEL=$?
     if [[ $ERRORLEVEL -ne 0 ]]
     then
@@ -298,7 +298,7 @@ IF "%COMPlus_JitStress%"=="" IF "%COMPlus_JitStressRegs%"=="" IF "%COMPlus_Tailc
       <BatchDisasmCheckPostCommands></BatchDisasmCheckPostCommands>
       <BatchDisasmCheckPostCommands Condition="'$(HasBatchDisasmCheck)' == 'true'"><![CDATA[
 IF NOT "%COMPlus_JitDisasm%" == "" (
-  @(DisasmCheckFiles -> '  dotnet %CORE_ROOT%\SuperFileCheck\SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) --dump-input-context 25 --input-file "$(BatchDisasmOutputFile)"
+  @(DisasmCheckFiles -> '  dotnet %CORE_ROOT%\SuperFileCheck\SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) --dump-input-context 40 --input-file "$(BatchDisasmOutputFile)"
     IF NOT "!ERRORLEVEL!" == "0" (
       ECHO EXECUTION OF FILECHECK - FAILED !ERRORLEVEL!
       Exit /b 1
