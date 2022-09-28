@@ -26,6 +26,7 @@
 
     <RepositoryEngineeringDir>{RepositoryEngineeringDir}</RepositoryEngineeringDir>
     <_ExtraTrimmerArgs>{ExtraTrimmerArgs} $(_ExtraTrimmerArgs)</_ExtraTrimmerArgs>
+    {AdditionalProperties}
 
     <!-- Needed for PublishAot -->
     <IlcToolsPath>{IlcToolsPath}</IlcToolsPath>
