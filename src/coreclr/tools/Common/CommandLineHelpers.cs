@@ -24,6 +24,33 @@ namespace System.CommandLine
     {
         public const string DefaultSystemModule = "System.Private.CoreLib";
 
+        public static string Unquote(IReadOnlyList<Token> tokens)
+        {
+            if (tokens.Count == 0)
+            {
+                return null;
+            }
+
+            return tokens[0].Value.Trim('"');
+        }
+
+        public static string[] UnquoteArray(IReadOnlyList<Token> tokens, bool defaultEmpty)
+        {
+            if (tokens.Count == 0)
+            {
+                return defaultEmpty ? Array.Empty<string>() : null;
+            }
+
+            var values = new string[tokens.Count];
+            int i = 0;
+            foreach (Token token in tokens)
+            {
+                values[i++] = token.Value.Trim('"');
+            }
+
+            return values;
+        }
+
         public static Dictionary<string, string> BuildPathDictionay(IReadOnlyList<Token> tokens, bool strict)
         {
             Dictionary<string, string> dictionary = new(StringComparer.OrdinalIgnoreCase);
@@ -244,6 +271,7 @@ namespace System.CommandLine
         private static void AppendExpandedPaths(Dictionary<string, string> dictionary, string pattern, bool strict)
         {
             bool empty = true;
+            pattern = pattern.Trim('"');
             string directoryName = Path.GetDirectoryName(pattern);
             string searchPattern = Path.GetFileName(pattern);
 

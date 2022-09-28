@@ -24,11 +24,11 @@ namespace ILCompiler
         public Option<string> InstructionSet { get; } =
             new(new[] { "--instruction-set" }, SR.InstructionSets);
         public Option<string[]> MibcFilePaths { get; } =
-            new(new[] { "--mibc", "-m" }, Array.Empty<string>, SR.MibcFiles);
+            new(new[] { "--mibc", "-m" }, result => Helpers.UnquoteArray(result.Tokens, false), true, SR.MibcFiles);
         public Option<string> OutputFilePath { get; } =
-            new(new[] { "--out", "-o" }, SR.OutputFilePath);
+            new(new[] { "--out", "-o" }, result => Helpers.Unquote(result.Tokens), true, SR.OutputFilePath);
         public Option<string> CompositeRootPath { get; } =
-            new(new[] { "--compositerootpath", "--crp" }, SR.CompositeRootPath);
+            new(new[] { "--compositerootpath", "--crp" }, result => Helpers.Unquote(result.Tokens), true, SR.CompositeRootPath);
         public Option<bool> Optimize { get; } =
             new(new[] { "--optimize", "-O" }, SR.EnableOptimizationsOption);
         public Option<bool> OptimizeDisabled { get; } =
@@ -44,7 +44,7 @@ namespace ILCompiler
         public Option<bool> Composite { get; } =
             new(new[] { "--composite" }, SR.CompositeBuildMode);
         public Option<string> CompositeKeyFile { get; } =
-            new(new[] { "--compositekeyfile" }, SR.CompositeKeyFile);
+            new(new[] { "--compositekeyfile" }, result => Helpers.Unquote(result.Tokens), true, SR.CompositeKeyFile);
         public Option<bool> CompileNoMethods { get; } =
             new(new[] { "--compile-no-methods" }, SR.CompileNoMethodsOption);
         public Option<bool> OutNearInput { get; } =
@@ -58,7 +58,7 @@ namespace ILCompiler
         public Option<bool> EmbedPgoData { get; } =
             new(new[] { "--embed-pgo-data" }, SR.EmbedPgoDataOption);
         public Option<string> DgmlLogFileName { get; } =
-            new(new[] { "--dgmllog" }, SR.SaveDependencyLogOption);
+            new(new[] { "--dgmllog" }, result => Helpers.Unquote(result.Tokens), true, SR.SaveDependencyLogOption);
         public Option<bool> GenerateFullDgmlLog { get; } =
             new(new[] { "--fulllog" }, SR.SaveDetailedLogOption);
         public Option<bool> IsVerbose { get; } =
@@ -126,11 +126,11 @@ namespace ILCompiler
         public Option<bool> Pdb { get; } =
             new(new[] { "--pdb" }, SR.PdbFileOption);
         public Option<string> PdbPath { get; } =
-            new(new[] { "--pdb-path" }, SR.PdbFilePathOption);
+            new(new[] { "--pdb-path" }, result => Helpers.Unquote(result.Tokens), true, SR.PdbFilePathOption);
         public Option<bool> PerfMap { get; } =
             new(new[] { "--perfmap" }, SR.PerfMapFileOption);
         public Option<string> PerfMapPath { get; } =
-            new(new[] { "--perfmap-path" }, SR.PerfMapFilePathOption);
+            new(new[] { "--perfmap-path" }, result => Helpers.Unquote(result.Tokens), true, SR.PerfMapFilePathOption);
         public Option<int> PerfMapFormatVersion { get; } =
             new(new[] { "--perfmap-format-version" }, () => 0, SR.PerfMapFormatVersionOption);
         public Option<string[]> CrossModuleInlining { get; } =
@@ -173,9 +173,9 @@ namespace ILCompiler
         public Option<bool> VerifyTypeAndFieldLayout { get; } =
             new(new[] { "--verify-type-and-field-layout" }, SR.VerifyTypeAndFieldLayoutOption);
         public Option<string> CallChainProfileFile { get; } =
-            new(new[] { "--callchain-profile" }, SR.CallChainProfileFile);
+            new(new[] { "--callchain-profile" }, result => Helpers.Unquote(result.Tokens), true, SR.CallChainProfileFile);
         public Option<string> MakeReproPath { get; } =
-            new(new[] { "--make-repro-path" }, "Path where to place a repro package");
+            new(new[] { "--make-repro-path" }, result => Helpers.Unquote(result.Tokens), true, "Path where to place a repro package");
 
         public bool CompositeOrInputBubble { get; private set; }
         public OptimizationMode OptimizationMode { get; private set; }
