@@ -4201,15 +4201,18 @@ PhaseStatus Compiler::optUnrollLoops()
             // If there is no iteration (totalIter == 0), we will remove the loop body entirely.
             unrollLimitSz = INT_MAX;
         }
-        else if ((loopFlags & LPFLG_SIMD_LIMIT) == 0)
+        else if (totalIter <= opts.compJitUnrollMaxIterationCount)
         {
-            if (loop.lpConstLimit() > opts.compJitUnrollLoopIterationLimit)
-            {
-                // Otherwise unroll only if limit is constant and less than or equal to the limit
-                JITDUMP("Failed to unroll loop " FMT_LP ": constant limit is greater than %d (heuristic)\n", lnum,
-                        opts.compJitUnrollLoopIterationLimit);
-                continue;
-            }
+          // We can unroll this
+        }
+        else if ((loopFlags & LPFLG_SIMD_LIMIT) != 0)
+        {
+          // We can unroll this
+        }
+        else
+        {
+          JITDUMP("Failed to unroll loop " FMT_LP ": insufficiently simple loop (heuristic)\n", lnum);
+          continue;
         }
 
         GenTree* incr = incrStmt->GetRootNode();
