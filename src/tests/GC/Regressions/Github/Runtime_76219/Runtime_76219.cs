@@ -13,7 +13,7 @@ public class Runtime_76219
         {
             string alloc = i.ToString();
 
-            Test(i);
+            Test();
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
