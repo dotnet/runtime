@@ -20,6 +20,8 @@ services:
     image: httpstress
     volumes:
       - "${SERVER_DUMPS_SHARE}:${DUMPS_SHARE_MOUNT_ROOT}"
+    cap_add:
+      - SYS_PTRACE
     ports:
       - "5001:5001"
     environment:
