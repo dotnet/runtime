@@ -2678,16 +2678,16 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
 
         if (varTypeIsByte(op2->CastToType()))
         {
-            opt = isZeroExtending  ? INS_OPTS_UXTB : INS_OPTS_SXTB;
+            opt = isZeroExtending ? INS_OPTS_UXTB : INS_OPTS_SXTB;
         }
         else if (varTypeIsShort(op2->CastToType()))
         {
-            opt = isZeroExtending  ? INS_OPTS_UXTH : INS_OPTS_SXTH;
+            opt = isZeroExtending ? INS_OPTS_UXTH : INS_OPTS_SXTH;
         }
         else
         {
             assert(op2->TypeIs(TYP_LONG) && genActualTypeIsInt(b));
-            opt = isZeroExtending  ? INS_OPTS_UXTW : INS_OPTS_SXTW;
+            opt = isZeroExtending ? INS_OPTS_UXTW : INS_OPTS_SXTW;
         }
 
         emit->emitIns_R_R_R(ins, emitActualTypeSize(tree), targetReg, a->GetRegNum(), b->GetRegNum(), opt);
