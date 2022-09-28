@@ -4201,7 +4201,7 @@ PhaseStatus Compiler::optUnrollLoops()
             // If there is no iteration (totalIter == 0), we will remove the loop body entirely.
             unrollLimitSz = INT_MAX;
         }
-        else if (totalIter <= opts.compJitUnrollMaxIterationCount)
+        else if (totalIter <= opts.compJitUnrollLoopMaxIterationCount)
         {
           // We can unroll this
         }
