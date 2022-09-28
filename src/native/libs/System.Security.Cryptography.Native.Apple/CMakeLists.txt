@@ -42,10 +42,6 @@ endif()
 # As of CMake 3.20.2 support for Swift only works with the Ninja and XCode
 # generators so we cannot rely on it. Even with the Ninja generator it doesn't
 # work in combination with other languages within the same library.
-#
-# We need to compile the Swift file in a slightly special way to target
-# only the Swift-in-OS runtime and fallback to weak linking on downlevel
-# platforms where Swift runtime is not available.
 if (NOT SWIFT_COMPILER_TARGET AND CLR_CMAKE_TARGET_OSX)
     set(SWIFT_PLATFORM "macosx")
     set(SWIFT_PLATFORM_SUFFIX "")
