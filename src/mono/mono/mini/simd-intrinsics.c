@@ -1279,16 +1279,18 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return emit_vector_create_elementwise (cfg, fsig, fsig->ret, etype, args);
 		break;
 	}
-	case SN_CreateScalar:
+	case SN_CreateScalar: {
 		MonoType *etype = get_vector_t_elem_type (fsig->ret);
 		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 			return NULL;
 		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR, -1, arg0_type, fsig, args);
-	case SN_CreateScalarUnsafe:
+	}
+	case SN_CreateScalarUnsafe: {
 		MonoType *etype = get_vector_t_elem_type (fsig->ret);
 		if (!MONO_TYPE_IS_VECTOR_PRIMITIVE (etype))
 			return NULL;
 		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE, -1, arg0_type, fsig, args);
+	}
 	case SN_Dot: {
 #ifdef TARGET_ARM64
 		if (!is_element_type_primitive (fsig->params [0]))
