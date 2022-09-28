@@ -494,8 +494,8 @@ namespace System.Net.WebSockets
             string secKey = Convert.ToBase64String(bytes.Slice(0, 16 /*sizeof(Guid)*/));
 
             // Get the corresponding ASCII bytes for seckey+wsServerGuidBytes
-            for (int i = 0; i < secKey.Length; i++) bytes[i] = (byte)secKey[i];
-            wsServerGuidBytes.CopyTo(bytes.Slice(secKey.Length));
+            int encodedSecKeyLength = Encoding.ASCII.GetBytes(secKey, bytes);
+            wsServerGuidBytes.CopyTo(bytes.Slice(encodedSecKeyLength));
 
             // Hash the seckey+wsServerGuidBytes bytes
             SHA1.TryHashData(bytes, bytes, out int bytesWritten);

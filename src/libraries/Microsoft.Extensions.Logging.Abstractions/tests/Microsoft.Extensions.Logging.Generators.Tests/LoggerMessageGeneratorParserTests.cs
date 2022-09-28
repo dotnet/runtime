@@ -80,6 +80,23 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Equal(DiagnosticDescriptors.LoggingMethodHasBody.Id, diagnostics[0].Id);
         }
 
+        [Fact]
+        public async Task InvalidMethodExpressionBody()
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
+                partial class C
+                {
+                    static partial void M1(ILogger logger);
+
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
+                    static partial void M1(ILogger logger) => throw new Exception();
+                }
+            ");
+
+            Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticDescriptors.LoggingMethodHasBody.Id, diagnostics[0].Id);
+        }
+
         [Theory]
         [InlineData("EventId = 0, Level = null, Message = \"This is a message with {foo}\"")]
         [InlineData("eventId: 0, level: null, message: \"This is a message with {foo}\"")]

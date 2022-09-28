@@ -38,12 +38,10 @@ jobs:
     - name: officialBuildIdArg
       value: ''
     - name: crossDacArgs
-      value: ''
+      value: '/p:CrossDacArtifactsDir=$(crossDacArtifactPath)/$(buildCrossDacArtifactName)'
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - name: officialBuildIdArg
         value: '/p:OfficialBuildId=$(Build.BuildNumber)'
-      - name: crossDacArgs
-        value: '/p:CrossDacArtifactsDir=$(crossDacArtifactPath)/$(buildCrossDacArtifactName)'
     - name: SignType
       value: $[ coalesce(variables.OfficialSignType, 'real') ]
     - ${{ parameters.variables }}

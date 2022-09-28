@@ -146,25 +146,17 @@ namespace Microsoft.Interop.JavaScript
             return new SyntaxTokenList(strippedTokens);
         }
 
-        private static TypeDeclarationSyntax CreateTypeDeclarationWithoutTrivia(TypeDeclarationSyntax typeDeclaration)
-        {
-            return TypeDeclaration(
-                typeDeclaration.Kind(),
-                typeDeclaration.Identifier)
-                .WithTypeParameterList(typeDeclaration.TypeParameterList)
-                .WithModifiers(StripTriviaFromModifiers(typeDeclaration.Modifiers));
-        }
-
         private static MemberDeclarationSyntax PrintGeneratedSource(
             ContainingSyntax userDeclaredMethod,
             JSSignatureContext stub,
+            ContainingSyntaxContext containingSyntaxContext,
             BlockSyntax stubCode)
         {
             // Create stub function
-            MethodDeclarationSyntax stubMethod = MethodDeclaration(stub.StubReturnType, userDeclaredMethod.Identifier)
-                .AddAttributeLists(stub.AdditionalAttributes.ToArray())
+            MethodDeclarationSyntax stubMethod = MethodDeclaration(stub.SignatureContext.StubReturnType, userDeclaredMethod.Identifier)
+                .AddAttributeLists(stub.SignatureContext.AdditionalAttributes.ToArray())
                 .WithModifiers(StripTriviaFromModifiers(userDeclaredMethod.Modifiers))
-                .WithParameterList(ParameterList(SeparatedList(stub.StubParameters)))
+                .WithParameterList(ParameterList(SeparatedList(stub.SignatureContext.StubParameters)))
                 .WithBody(stubCode);
 
             FieldDeclarationSyntax sigField = FieldDeclaration(VariableDeclaration(IdentifierName(Constants.JSFunctionSignatureGlobal))
@@ -173,35 +165,7 @@ namespace Microsoft.Interop.JavaScript
                 .WithAttributeLists(SingletonList(AttributeList(SingletonSeparatedList(
                     Attribute(IdentifierName(Constants.ThreadStaticGlobal))))));
 
-            MemberDeclarationSyntax toPrint = WrapMethodInContainingScopes(stub, stubMethod, sigField);
-            return toPrint;
-        }
-
-        private static MemberDeclarationSyntax WrapMethodInContainingScopes(JSSignatureContext stub, MemberDeclarationSyntax stubMethod, MemberDeclarationSyntax sigField)
-        {
-            // Stub should have at least one containing type
-            Debug.Assert(stub.StubContainingTypes.Any());
-
-            // Add stub function and JSImport declaration to the first (innermost) containing
-            MemberDeclarationSyntax containingType = CreateTypeDeclarationWithoutTrivia(stub.StubContainingTypes.First())
-                .AddMembers(stubMethod, sigField);
-
-            // Add type to the remaining containing types (skipping the first which was handled above)
-            foreach (TypeDeclarationSyntax typeDecl in stub.StubContainingTypes.Skip(1))
-            {
-                containingType = CreateTypeDeclarationWithoutTrivia(typeDecl)
-                    .WithMembers(SingletonList(containingType));
-            }
-
-            MemberDeclarationSyntax toPrint = containingType;
-
-            // Add type to the containing namespace
-            if (stub.StubTypeNamespace is not null)
-            {
-                toPrint = NamespaceDeclaration(IdentifierName(stub.StubTypeNamespace))
-                    .AddMembers(toPrint);
-            }
-
+            MemberDeclarationSyntax toPrint = containingSyntaxContext.WrapMembersInContainingSyntaxWithUnsafeModifier(stubMethod, sigField);
             return toPrint;
         }
 
@@ -290,7 +254,7 @@ namespace Microsoft.Interop.JavaScript
             // Generate stub code
             var stubGenerator = new JSImportCodeGenerator(
             incrementalContext.Environment,
-            incrementalContext.SignatureContext.ElementTypeInformation,
+            incrementalContext.SignatureContext.SignatureContext.ElementTypeInformation,
             incrementalContext.JSImportData,
             incrementalContext.SignatureContext,
             (elementInfo, ex) =>
@@ -301,7 +265,7 @@ namespace Microsoft.Interop.JavaScript
 
             BlockSyntax code = stubGenerator.GenerateJSImportBody();
 
-            return (PrintGeneratedSource(incrementalContext.StubMethodSyntaxTemplate, incrementalContext.SignatureContext, code), incrementalContext.Diagnostics.AddRange(diagnostics.Diagnostics));
+            return (PrintGeneratedSource(incrementalContext.StubMethodSyntaxTemplate, incrementalContext.SignatureContext, incrementalContext.ContainingSyntaxContext, code), incrementalContext.Diagnostics.AddRange(diagnostics.Diagnostics));
         }
 
         private static bool ShouldVisitNode(SyntaxNode syntaxNode)

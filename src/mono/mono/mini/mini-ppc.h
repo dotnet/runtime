@@ -35,6 +35,7 @@
 #ifdef TARGET_POWERPC64
 #if !defined(PPC_USES_FUNCTION_DESCRIPTOR)
 #define THUNK_SIZE 8
+#define THUNK_ADDR_ALIGNMENT 8
 #define GET_MEMORY_SLOT_THUNK_ADDRESS(c) \
 						((guint64)(((c)) [0] & 0x0000ffff) << 48) \
 						+ ((guint64)(((c)) [1] & 0x0000ffff) << 32) \

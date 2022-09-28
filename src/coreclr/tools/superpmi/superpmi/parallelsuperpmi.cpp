@@ -294,12 +294,16 @@ Cleanup:
     }
 }
 
-static bool ProcessChildMetrics(const char* baseMetricsSummaryPath, const char* diffMetricsSummaryPath, MetricsSummary* baseMetrics, MetricsSummary* diffMetrics)
+static bool ProcessChildMetrics(
+    const char* baseMetricsSummaryPath,
+    MetricsSummaries* baseMetrics,
+    const char* diffMetricsSummaryPath,
+    MetricsSummaries* diffMetrics)
 {
     if (baseMetricsSummaryPath != nullptr)
     {
-        MetricsSummary childBaseMetrics;
-        if (!MetricsSummary::LoadFromFile(baseMetricsSummaryPath, &childBaseMetrics))
+        MetricsSummaries childBaseMetrics;
+        if (!MetricsSummaries::LoadFromFile(baseMetricsSummaryPath, &childBaseMetrics))
         {
             LogError("Couldn't load base metrics summary created by child process");
             return false;
@@ -310,8 +314,8 @@ static bool ProcessChildMetrics(const char* baseMetricsSummaryPath, const char* 
 
     if (diffMetricsSummaryPath != nullptr)
     {
-        MetricsSummary childDiffMetrics;
-        if (!MetricsSummary::LoadFromFile(diffMetricsSummaryPath, &childDiffMetrics))
+        MetricsSummaries childDiffMetrics;
+        if (!MetricsSummaries::LoadFromFile(diffMetricsSummaryPath, &childDiffMetrics))
         {
             LogError("Couldn't load diff metrics summary created by child process");
             return false;
@@ -556,13 +560,13 @@ int doParallelSuperPMI(CommandLine::Options& o)
         if (o.baseMetricsSummaryFile != nullptr)
         {
             wd.baseMetricsSummaryPath = new char[MAX_PATH];
-            sprintf_s(wd.baseMetricsSummaryPath, MAX_PATH, "%sParallelSuperPMI-BaseMetricsSummary-%u-%d.txt", tempPath, randNumber, i);
+            sprintf_s(wd.baseMetricsSummaryPath, MAX_PATH, "%sParallelSuperPMI-BaseMetricsSummary-%u-%d.csv", tempPath, randNumber, i);
         }
 
         if (o.diffMetricsSummaryFile != nullptr)
         {
             wd.diffMetricsSummaryPath = new char[MAX_PATH];
-            sprintf_s(wd.diffMetricsSummaryPath, MAX_PATH, "%sParallelSuperPMI-DiffMetricsSummary-%u-%d.txt", tempPath, randNumber, i);
+            sprintf_s(wd.diffMetricsSummaryPath, MAX_PATH, "%sParallelSuperPMI-DiffMetricsSummary-%u-%d.csv", tempPath, randNumber, i);
         }
 
         wd.stdOutputPath = new char[MAX_PATH];
@@ -693,8 +697,8 @@ int doParallelSuperPMI(CommandLine::Options& o)
         bool usageError = false; // variable to flag if we hit a usage error in SuperPMI
 
         int loaded = 0, jitted = 0, failed = 0, excluded = 0, missing = 0, diffs = 0;
-        MetricsSummary baseMetrics;
-        MetricsSummary diffMetrics;
+        MetricsSummaries baseMetrics;
+        MetricsSummaries diffMetrics;
 
         // Read the stderr files and log them as errors
         // Read the stdout files and parse them for counts and log any MISSING or ISSUE errors
@@ -703,7 +707,7 @@ int doParallelSuperPMI(CommandLine::Options& o)
             PerWorkerData& wd = perWorkerData[i];
             ProcessChildStdErr(wd.stdErrorPath);
             ProcessChildStdOut(o, wd.stdOutputPath, &loaded, &jitted, &failed, &excluded, &missing, &diffs, &usageError);
-            ProcessChildMetrics(wd.baseMetricsSummaryPath, wd.diffMetricsSummaryPath, &baseMetrics, &diffMetrics);
+            ProcessChildMetrics(wd.baseMetricsSummaryPath, &baseMetrics, wd.diffMetricsSummaryPath, &diffMetrics);
 
             if (usageError)
                 break;

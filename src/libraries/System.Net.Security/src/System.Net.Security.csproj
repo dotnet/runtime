@@ -366,8 +366,6 @@
              Link="Common\Microsoft\Win32\SafeHandles\SafeHandleCache.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteSslContext.cs"
              Link="Common\System\Net\Security\Unix\SafeDeleteSslContext.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeCertContext.cs"
-             Link="Common\System\Net\Security\Unix\SafeFreeCertContext.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(UseAndroidCrypto)' == 'true'">
     <Compile Include="$(CommonPath)Interop\Android\Interop.Libraries.cs"
