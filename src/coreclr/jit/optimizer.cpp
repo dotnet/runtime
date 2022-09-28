@@ -4203,11 +4203,11 @@ PhaseStatus Compiler::optUnrollLoops()
         }
         else if (totalIter <= opts.compJitUnrollLoopMaxIterationCount)
         {
-          // We can unroll this
+            // We can unroll this
         }
         else if ((loopFlags & LPFLG_SIMD_LIMIT) != 0)
         {
-          // We can unroll this
+            // We can unroll this
         }
         else
         {
