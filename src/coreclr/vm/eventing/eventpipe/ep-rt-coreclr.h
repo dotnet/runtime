@@ -2050,6 +2050,14 @@ ep_rt_thread_create (
 static
 inline
 void
+ep_rt_set_server_name()
+{
+	::SetThreadName(GetCurrentThread(), W(".NET EventPipe"));
+}
+
+static
+inline
+void
 ep_rt_thread_sleep (uint64_t ns)
 {
 	STATIC_CONTRACT_NOTHROW;

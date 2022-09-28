@@ -6925,8 +6925,6 @@ namespace System.Data
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This is unsafe only when columns have associated expression. All ways to add such expression are marked unsafe.")]
         internal void EvaluateExpressions(DataRow row, DataRowAction action, List<DataRow>? cachedRows)
         {
             // evaluate all expressions for specified row

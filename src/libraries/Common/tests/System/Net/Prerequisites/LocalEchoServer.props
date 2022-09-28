@@ -19,7 +19,7 @@
   <!-- Tests use self-signed certificates that are refused by NodeJS -->
   <Target Name="AcceptUnauthorizedOnNodeJS" BeforeTargets="GenerateRunScript">
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
-      <SetScriptCommands Include="if [[ &quot;$SCENARIO&quot; == &quot;WasmTestOnNodeJs&quot; || &quot;$SCENARIO&quot; == &quot;wasmtestonnodejs&quot; ]]; then export NODE_TLS_REJECT_UNAUTHORIZED=0; fi" />
+      <SetScriptCommands Include="if [[ &quot;$SCENARIO&quot; == &quot;WasmTestOnNodeJS&quot; || &quot;$SCENARIO&quot; == &quot;wasmtestonnodejs&quot; ]]; then export NODE_TLS_REJECT_UNAUTHORIZED=0; fi" />
     </ItemGroup>
     <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
       <SetScriptCommands Include="if /I [%SCENARIO%]==[WasmTestOnNodeJS] ( set &quot;NODE_TLS_REJECT_UNAUTHORIZED=0&quot; )" />

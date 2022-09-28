@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Text;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
-
-using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler
 {
@@ -42,24 +41,31 @@ namespace ILCompiler
 #if !READYTORUN
             else if (method.GetPropertyForAccessor() is PropertyPseudoDesc property)
             {
+                MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
                 sb.Append(property.Name);
                 sb.Append('.');
-                sb.Append(property.GetMethod == method ? "get" : "set");
+                sb.Append(property.GetMethod == typicalMethod ? "get" : "set");
                 return sb.ToString();
             }
             else if (method.GetEventForAccessor() is EventPseudoDesc @event)
             {
+                MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
                 sb.Append(@event.Name);
                 sb.Append('.');
                 string accessor;
-                if (method.Name == @event.AddMethod.Name)
+                if (typicalMethod == @event.AddMethod)
+                {
                     accessor = "add";
-                else if (method.Name == @event.RemoveMethod.Name)
+                }
+                else if (typicalMethod == @event.RemoveMethod)
+                {
                     accessor = "remove";
-                else if (method.Name == @event.RaiseMethod.Name)
-                    accessor = "raise";
+                }
                 else
-                    throw new NotSupportedException();
+                {
+                    Debug.Assert(typicalMethod == @event.RaiseMethod);
+                    accessor = "raise";
+                }
                 sb.Append(accessor);
             }
 #endif
@@ -140,9 +146,9 @@ namespace ILCompiler
             return Formatter.Instance.FormatName(type, FormatOptions.None);
         }
 
-        private class Formatter : TypeNameFormatter<Formatter.Unit, FormatOptions>
+        private sealed class Formatter : TypeNameFormatter<Formatter.Unit, FormatOptions>
         {
-            public readonly static Formatter Instance = new Formatter();
+            public static readonly Formatter Instance = new Formatter();
 
             public override Unit AppendName(StringBuilder sb, ArrayType type, FormatOptions options)
             {
@@ -243,7 +249,7 @@ namespace ILCompiler
                 return default;
             }
 
-            private void NamespaceQualify(StringBuilder sb, DefType type, FormatOptions options)
+            private static void NamespaceQualify(StringBuilder sb, DefType type, FormatOptions options)
             {
                 if ((options & FormatOptions.NamespaceQualify) != 0)
                 {

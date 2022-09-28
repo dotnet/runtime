@@ -1,7 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputPath>$(RuntimeBinDir)ilc/</OutputPath>
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
+    <RunAnalyzers>true</RunAnalyzers>
   </PropertyGroup>
 
   <Import Project="ILCompiler.props" />

@@ -1,8 +1,10 @@
 <Project>
   <PropertyGroup>
     <ChromeDir>$(ArtifactsBinDir)chrome\</ChromeDir>
+    <ChromeDriverDir>$(ArtifactsBinDir)chromedriver\</ChromeDriverDir>
     <BrowserStampDir>$(ArtifactsBinDir)\</BrowserStampDir>
     <ChromeStampFile>$(BrowserStampDir).install-chrome-$(ChromiumRevision).stamp</ChromeStampFile>
+    <ChromeDriverStampFile>$(BrowserStampDir).install-chromedriver-$(ChromiumRevision).stamp</ChromeDriverStampFile>
     <FirefoxDir>$(ArtifactsBinDir)firefox\</FirefoxDir>
     <FirefoxStampFile>$(BrowserStampDir).install-firefox-$(FirefoxRevision).stamp</FirefoxStampFile>
   </PropertyGroup>
@@ -35,6 +37,34 @@
     <Exec Command="chmod +x $(_ChromeBinaryPath)" Condition="!$([MSBuild]::IsOSPlatform('windows'))" />
 
     <Touch Files="$(ChromeStampFile)" AlwaysCreate="true" />
+  </Target>
+
+  <Target Name="DownloadAndInstallChromeDriver"
+          AfterTargets="Build"
+          Condition="!Exists($(ChromeDriverStampFile)) and '$(InstallChromeForTests)' == 'true'">
+
+    <ItemGroup>
+      <_StampFile Include="$(BrowserStampDir).install-chromedriver*.stamp" />
+    </ItemGroup>
+
+    <Delete Files="@(_StampFile)" />
+    <RemoveDir Directories="$(ChromeDriverDir)" />
+
+    <DownloadFile SourceUrl="$(ChromeDriverUrl)" DestinationFolder="$(ChromeDriverDir)" SkipUnchangedFiles="true">
+      <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
+    </DownloadFile>
+    <Unzip SourceFiles="$(_DownloadedFile)" DestinationFolder="$(ChromeDriverDir)" />
+
+    <PropertyGroup>
+      <_ChromeDriverBinaryPath>$([MSBuild]::NormalizePath($(ChromeDriverDir), $(ChromeDriverDirName), 'chromedriver'))</_ChromeDriverBinaryPath>
+    </PropertyGroup>
+
+    <Error Text="Cannot find chromedriver at $(_ChromeDriverBinaryPath) in the downloaded copy"
+           Condition="!Exists($(_ChromeDriverBinaryPath))" />
+
+    <Exec Command="chmod +x $(_ChromeDriverBinaryPath)" Condition="!$([MSBuild]::IsOSPlatform('windows'))" />
+
+    <Touch Files="$(ChromeDriverStampFile)" AlwaysCreate="true" />
   </Target>
 
   <Target Name="DownloadAndInstallFirefox"

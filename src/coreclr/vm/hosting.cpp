@@ -380,3 +380,51 @@ DEBUG_NOINLINE void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie)
 
     pCrst->Leave();
 }
+
+#ifndef DACCESS_COMPILE
+
+NOINLINE static void FailFastOnApiErrorWithHandle(const WCHAR *apiName, HANDLE handle)
+{
+    WRAPPER_NO_CONTRACT;
+
+    DWORD errorCode = GetLastError();
+    WCHAR message[128] = W("\0");
+    swprintf_s(
+        message,
+        sizeof(message) / sizeof(message[0]),
+        W("%s failed with error %u. Handle: 0x%Ix"),
+        apiName,
+        errorCode,
+        (SIZE_T)handle);
+    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, message);
+}
+
+#ifdef TARGET_WINDOWS
+DWORD ClrSuspendThread(HANDLE hThread)
+{
+    WRAPPER_NO_CONTRACT;
+
+    DWORD result = SuspendThread(hThread);
+    if (result == (DWORD)-1)
+    {
+        FailFastOnApiErrorWithHandle(W("SuspendThread"), hThread);
+    }
+
+    return result;
+}
+#endif // TARGET_WINDOWS
+
+DWORD ClrResumeThread(HANDLE hThread)
+{
+    WRAPPER_NO_CONTRACT;
+
+    DWORD result = ResumeThread(hThread);
+    if (result == (DWORD)-1)
+    {
+        FailFastOnApiErrorWithHandle(W("ResumeThread"), hThread);
+    }
+
+    return result;
+}
+
+#endif // !DACCESS_COMPILE

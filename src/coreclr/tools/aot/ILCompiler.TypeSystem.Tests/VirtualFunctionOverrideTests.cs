@@ -12,10 +12,10 @@ namespace TypeSystemTests
 {
     public class VirtualFunctionOverrideTests
     {
-        TestTypeSystemContext _context;
-        ModuleDesc _testModule;
-        DefType _stringType;
-        DefType _voidType;
+        private TestTypeSystemContext _context;
+        private ModuleDesc _testModule;
+        private DefType _stringType;
+        private DefType _voidType;
 
         public VirtualFunctionOverrideTests()
         {
@@ -77,7 +77,7 @@ namespace TypeSystemTests
             MethodDesc targetOnInstance = testInstance.GetMethod("ToString", toStringSig);
 
             MethodDesc targetMethod = testInstance.FindVirtualFunctionTargetMethodOnObjectType(objectToString);
-            Assert.Equal(targetOnInstance, targetMethod);        
+            Assert.Equal(targetOnInstance, targetMethod);
         }
 
         [Fact]
@@ -103,7 +103,7 @@ namespace TypeSystemTests
         {
             MetadataType classWithFinalizer = _testModule.GetType("VirtualFunctionOverride", "ClassWithFinalizer");
             DefType objectType = _testModule.Context.GetWellKnownType(WellKnownType.Object);
-            MethodDesc finalizeMethod = objectType.GetMethod("Finalize", new MethodSignature(MethodSignatureFlags.None, 0, _voidType, new TypeDesc[] { }));
+            MethodDesc finalizeMethod = objectType.GetMethod("Finalize", new MethodSignature(MethodSignatureFlags.None, 0, _voidType, Array.Empty<TypeDesc>()));
 
             MethodDesc actualFinalizer = classWithFinalizer.FindVirtualFunctionTargetMethodOnObjectType(finalizeMethod);
             Assert.NotNull(actualFinalizer);
@@ -192,7 +192,6 @@ namespace TypeSystemTests
             var bang0Type = _context.GetSignatureVariable(0, false);
             var bang1Type = _context.GetSignatureVariable(1, false);
             var bang2Type = _context.GetSignatureVariable(2, false);
-            var bang3Type = _context.GetSignatureVariable(3, false);
 
             MethodSignature sigBang0Bang1 = new MethodSignature(0, 0, stringType, new TypeDesc[] { bang0Type, bang1Type });
             MethodDesc baseMethod0_1 = baseType.GetMethod("Method", sigBang0Bang1);
@@ -200,7 +199,6 @@ namespace TypeSystemTests
             MethodDesc virtualMethodBang0Bang1 = algo.FindVirtualFunctionTargetMethodOnObjectType(baseMethod0_1, myDerivedType);
             Assert.Equal(virtualMethodBang0Bang1.OwningType, baseType);
 
-            MethodSignature sigBang2Bang3 = new MethodSignature(0, 0, stringType, new TypeDesc[] { bang2Type, bang3Type });
             MethodDesc baseMethod2_3 = null;
             // BaseMethod(!2,!3) has custom modifiers in its signature, and thus the sig is difficult to write up by hand. Just search for
             // it in an ad hoc manner

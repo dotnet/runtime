@@ -26,6 +26,7 @@ namespace System.Threading.RateLimiting
 
         private readonly Timer? _renewTimer;
         private readonly SlidingWindowRateLimiterOptions _options;
+        private readonly TimeSpan _replenishmentPeriod;
         private readonly Deque<RequestRegistration> _queue = new Deque<RequestRegistration>();
 
         // Use the queue as the lock field so we don't need to allocate another object for a lock and have another field in the object
@@ -42,7 +43,7 @@ namespace System.Threading.RateLimiting
         public override bool IsAutoReplenishing => _options.AutoReplenishment;
 
         /// <inheritdoc />
-        public override TimeSpan ReplenishmentPeriod => new TimeSpan(_options.Window.Ticks / _options.SegmentsPerWindow);
+        public override TimeSpan ReplenishmentPeriod => _replenishmentPeriod;
 
         /// <summary>
         /// Initializes the <see cref="SlidingWindowRateLimiter"/>.
@@ -54,17 +55,21 @@ namespace System.Threading.RateLimiting
             {
                 throw new ArgumentNullException(nameof(options));
             }
-            if (options.PermitLimit <= 0 || options.SegmentsPerWindow <= 0)
+            if (options.PermitLimit <= 0)
             {
-                throw new ArgumentException($"Both {nameof(options.PermitLimit)} and {nameof(options.SegmentsPerWindow)} must be set to values greater than 0.", nameof(options));
+                throw new ArgumentException(SR.Format(SR.ShouldBeGreaterThan0, nameof(options.PermitLimit)), nameof(options));
+            }
+            if (options.SegmentsPerWindow <= 0)
+            {
+                throw new ArgumentException(SR.Format(SR.ShouldBeGreaterThan0, nameof(options.SegmentsPerWindow)), nameof(options));
             }
             if (options.QueueLimit < 0)
             {
-                throw new ArgumentException($"{nameof(options.QueueLimit)} must be set to a value greater than or equal to 0.", nameof(options));
+                throw new ArgumentException(SR.Format(SR.ShouldBeGreaterThanOrEqual0, nameof(options.QueueLimit)), nameof(options));
             }
-            if (options.Window < TimeSpan.Zero)
+            if (options.Window <= TimeSpan.Zero)
             {
-                throw new ArgumentException($"{nameof(options.Window)} must be set to a value greater than or equal to TimeSpan.Zero.", nameof(options));
+                throw new ArgumentException(SR.Format(SR.ShouldBeGreaterThanTimeSpan0, nameof(options.Window)), nameof(options));
             }
 
             _options = new SlidingWindowRateLimiterOptions
@@ -78,6 +83,7 @@ namespace System.Threading.RateLimiting
             };
 
             _requestCount = options.PermitLimit;
+            _replenishmentPeriod = new TimeSpan(_options.Window.Ticks / _options.SegmentsPerWindow);
 
             // _requestsPerSegment holds the no. of acquired requests in each window segment
             _requestsPerSegment = new int[options.SegmentsPerWindow];
@@ -287,7 +293,7 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                if ((long)((nowTicks - _lastReplenishmentTick) * TickFrequency) < ReplenishmentPeriod.Ticks)
+                if (((nowTicks - _lastReplenishmentTick) * TickFrequency) < ReplenishmentPeriod.Ticks && !_options.AutoReplenishment)
                 {
                     return;
                 }

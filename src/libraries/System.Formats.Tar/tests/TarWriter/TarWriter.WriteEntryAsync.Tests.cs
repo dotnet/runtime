@@ -125,7 +125,7 @@ namespace System.Formats.Tar.Tests
                     TarEntryFormat.Ustar => new UstarTarEntry(TarEntryType.RegularFile, InitialEntryName),
                     TarEntryFormat.Pax => new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName),
                     TarEntryFormat.Gnu => new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName),
-                    _ => throw new FormatException($"Unexpected format: {entryFormat}")
+                    _ => throw new InvalidDataException($"Unexpected format: {entryFormat}")
                 };
 
                 // Should be written in the format of the entry

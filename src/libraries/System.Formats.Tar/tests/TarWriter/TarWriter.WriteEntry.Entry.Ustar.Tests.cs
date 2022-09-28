@@ -152,5 +152,15 @@ namespace System.Formats.Tar.Tests
                 VerifyFifo(fifo);
             }
         }
+
+        [Theory]
+        [InlineData(TarEntryType.HardLink)]
+        [InlineData(TarEntryType.SymbolicLink)]
+        public void Write_LinkEntry_EmptyLinkName_Throws(TarEntryType entryType)
+        {
+            using MemoryStream archiveStream = new MemoryStream();
+            using TarWriter writer = new TarWriter(archiveStream, leaveOpen: false);
+            Assert.Throws<ArgumentException>("entry", () => writer.WriteEntry(new UstarTarEntry(entryType, "link")));
+        }
     }
 }

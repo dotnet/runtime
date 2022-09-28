@@ -101,7 +101,7 @@ namespace System.Formats.Tar.Tests
                     TarEntryFormat.Ustar => new UstarTarEntry(TarEntryType.RegularFile, InitialEntryName),
                     TarEntryFormat.Pax => new PaxTarEntry(TarEntryType.RegularFile, InitialEntryName),
                     TarEntryFormat.Gnu => new GnuTarEntry(TarEntryType.RegularFile, InitialEntryName),
-                    _ => throw new FormatException($"Unexpected format: {entryFormat}")
+                    _ => throw new InvalidDataException($"Unexpected format: {entryFormat}")
                 };
 
                 // Should be written in the format of the entry
@@ -297,6 +297,62 @@ namespace System.Formats.Tar.Tests
                     Assert.NotEqual(overLimitTimestamp, gnuReadEntry.AccessTime);
                     Assert.NotEqual(overLimitTimestamp, gnuReadEntry.ChangeTime);
                 }
+            }
+        }
+
+        [Theory]
+        [InlineData(TarEntryFormat.V7)]
+        // [InlineData(TarEntryFormat.Ustar)] https://github.com/dotnet/runtime/issues/75360
+        [InlineData(TarEntryFormat.Pax)]
+        [InlineData(TarEntryFormat.Gnu)]
+        public void WriteLongName(TarEntryFormat format)
+        {
+            string maxPathComponent = new string('a', 255);
+            WriteLongNameCore(format, maxPathComponent);
+
+            maxPathComponent = new string('a', 90) + new string('b', 165);
+            WriteLongNameCore(format, maxPathComponent);
+
+            maxPathComponent = new string('a', 165) + new string('b', 90);
+            WriteLongNameCore(format, maxPathComponent);
+        }
+
+        private void WriteLongNameCore(TarEntryFormat format, string maxPathComponent)
+        {
+            Assert.Equal(255, maxPathComponent.Length);
+
+            TarEntry entry;
+            MemoryStream ms = new();
+            using (TarWriter writer = new(ms, true))
+            {
+                TarEntryType entryType = format == TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
+                entry = InvokeTarEntryCreationConstructor(format, entryType, maxPathComponent);
+                writer.WriteEntry(entry);
+
+                entry = InvokeTarEntryCreationConstructor(format, entryType, Path.Join(maxPathComponent, maxPathComponent));
+                writer.WriteEntry(entry);
+            }
+
+            ms.Position = 0;
+            using TarReader reader = new(ms);
+
+            entry = reader.GetNextEntry();
+            string expectedName = GetExpectedNameForFormat(format, maxPathComponent);
+            Assert.Equal(expectedName, entry.Name);
+
+            entry = reader.GetNextEntry();
+            expectedName = GetExpectedNameForFormat(format, Path.Join(maxPathComponent, maxPathComponent));
+            Assert.Equal(expectedName, entry.Name);
+
+            Assert.Null(reader.GetNextEntry());
+
+            string GetExpectedNameForFormat(TarEntryFormat format, string expectedName)
+            {
+                if (format is TarEntryFormat.V7) // V7 truncates names at 100 characters.
+                {
+                    return expectedName.Substring(0, 100);
+                }
+                return expectedName;
             }
         }
     }

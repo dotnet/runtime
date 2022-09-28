@@ -75,17 +75,18 @@ jobs:
       - name: _osParameter
         value: -os ${{ parameters.osGroup }}
 
-      - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_musl')) }}:
-        - name: _osParameter
-          value: /p:RuntimeOS=linux-musl /p:OutputRid=linux-musl-${{ parameters.archType }}
-
       - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_bionic')) }}:
         - name: _osParameter
-          value: /p:RuntimeOS=linux-bionic /p:OutputRid=linux-bionic-${{ parameters.archType }}
+          value: /p:RuntimeOS=linux-bionic
 
       # Do not rename as it clashes with MSBuild property in libraries/build-native.proj
       - name: _crossBuildPropertyArg
         value: /p:CrossBuild=${{ parameters.crossBuild }}
+
+      - ${{ if ne(parameters.jobParameters.crossrootfsDir, '') }}:
+        # This is only required for cross builds.
+        - name: ROOTFS_DIR
+          value: ${{ parameters.jobParameters.crossrootfsDir }}
 
       - name: _cxx11Parameter
         ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.archType, 'arm64')) }}:

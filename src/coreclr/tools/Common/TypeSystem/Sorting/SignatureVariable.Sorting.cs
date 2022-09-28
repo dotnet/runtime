@@ -1,12 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 namespace Internal.TypeSystem
 {
     // Functionality related to deterministic ordering of types
-    partial class SignatureVariable
+    public partial class SignatureVariable
     {
         protected internal sealed override int CompareToImpl(TypeDesc other, TypeSystemComparer comparer)
         {
@@ -14,7 +12,7 @@ namespace Internal.TypeSystem
         }
     }
 
-    partial class SignatureTypeVariable
+    public partial class SignatureTypeVariable
     {
         protected internal override int ClassCode
         {
@@ -25,7 +23,7 @@ namespace Internal.TypeSystem
         }
     }
 
-    partial class SignatureMethodVariable
+    public partial class SignatureMethodVariable
     {
         protected internal override int ClassCode
         {

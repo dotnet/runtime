@@ -247,7 +247,6 @@ namespace Microsoft.Extensions.Hosting.Tests
 
             var expected = "MY_TEST_ENVIRONMENT";
 
-
             using (var host = new HostBuilder()
                 .ConfigureHostConfiguration(configBuilder => configBuilder.AddConfiguration(config))
                 .UseEnvironment(expected)
@@ -663,6 +662,28 @@ namespace Microsoft.Extensions.Hosting.Tests
 
             var expectedContentRootPath = Directory.GetCurrentDirectory();
             Assert.Equal(expectedContentRootPath, env.ContentRootPath);
+        }
+
+        [Fact]
+        public void HostBuilderConfigureDefaultsDoesntThrowInDevelopment()
+        {
+            using (var host = new HostBuilder()
+                .ConfigureDefaults(args: null)
+                .ConfigureHostConfiguration(config =>
+                {
+                    config.AddInMemoryCollection(new[]
+                    {
+                        new KeyValuePair<string, string>(HostDefaults.ApplicationKey, "MyProjectReference"),
+                        new KeyValuePair<string, string>(HostDefaults.EnvironmentKey, Environments.Development)
+                    });
+                })
+                .Build())
+            {
+                var env = host.Services.GetRequiredService<IHostEnvironment>();
+
+                Assert.Equal("MyProjectReference", env.ApplicationName);
+                Assert.Equal(Environments.Development, env.EnvironmentName);
+            }
         }
 
         [Theory]

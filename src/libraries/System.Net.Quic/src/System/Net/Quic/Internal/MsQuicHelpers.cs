@@ -61,8 +61,8 @@ internal static class MsQuicHelpers
         T value;
         uint length = (uint)sizeof(T);
 
-        int status = MsQuicApi.Api.ApiTable->GetParam(
-            handle.QuicHandle,
+        int status = MsQuicApi.Api.GetParam(
+            handle,
             parameter,
             &length,
             (byte*)&value);
@@ -78,8 +78,8 @@ internal static class MsQuicHelpers
     internal static unsafe void SetMsQuicParameter<T>(MsQuicSafeHandle handle, uint parameter, T value)
         where T : unmanaged
     {
-        int status = MsQuicApi.Api.ApiTable->SetParam(
-            handle.QuicHandle,
+        int status = MsQuicApi.Api.SetParam(
+            handle,
             parameter,
             (uint)sizeof(T),
             (byte*)&value);
