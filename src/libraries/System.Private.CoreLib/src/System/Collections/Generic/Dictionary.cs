@@ -1504,7 +1504,7 @@ namespace System.Collections.Generic
             void ICollection<TKey>.Clear() =>
                 ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_KeyCollectionSet);
 
-            bool ICollection<TKey>.Contains(TKey item) =>
+            public bool Contains(TKey item) =>
                 _dictionary.ContainsKey(item);
 
             bool ICollection<TKey>.Remove(TKey item)
