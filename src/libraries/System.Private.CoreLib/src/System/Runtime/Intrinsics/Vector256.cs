@@ -1528,7 +1528,11 @@ namespace System.Runtime.Intrinsics
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<T> GetLower<T>(this Vector256<T> vector)
-            where T : struct => vector._lower;
+            where T : struct
+        {
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
+            return vector._lower;
+        }
 
         /// <summary>Gets the value of the upper 128-bits as a new <see cref="Vector128{T}" />.</summary>
         /// <typeparam name="T">The type of the input vector.</typeparam>
