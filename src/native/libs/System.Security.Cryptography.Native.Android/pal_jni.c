@@ -88,6 +88,9 @@ jclass    g_sslCtxClass;
 jmethodID g_sslCtxGetDefaultMethod;
 jmethodID g_sslCtxGetDefaultSslParamsMethod;
 
+// javax/crypto/spec/AEADBadTagException
+jclass    g_AEADBadTagExceptionClass;
+
 // javax/crypto/spec/GCMParameterSpec
 jclass    g_GCMParameterSpecClass;
 jmethodID g_GCMParameterSpecCtor;
@@ -703,6 +706,8 @@ JNI_OnLoad(JavaVM *vm, void *reserved)
 
     g_ivPsClass =               GetClassGRef(env, "javax/crypto/spec/IvParameterSpec");
     g_ivPsCtor =                GetMethod(env, false, g_ivPsClass, "<init>", "([B)V");
+
+    g_AEADBadTagExceptionClass = GetClassGRef(env, "javax/crypto/spec/AEADBadTagException");
 
     g_GCMParameterSpecClass =   GetClassGRef(env, "javax/crypto/spec/GCMParameterSpec");
     g_GCMParameterSpecCtor =    GetMethod(env, false, g_GCMParameterSpecClass, "<init>", "(I[B)V");

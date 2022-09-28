@@ -324,21 +324,12 @@ int32_t AndroidCryptoNative_AeadCipherFinalEx(CipherCtx* ctx, uint8_t* outm, int
             return FAIL;
         }
 
-        jclass aeadException = (*env)->FindClass(env, "javax/crypto/spec/AEADBadTagException");
-
-        if (aeadException == NULL)
-        {
-            (*env)->DeleteLocalRef(env, ex);
-             return FAIL;
-        }
-
-        if ((*env)->IsInstanceOf(env, ex, aeadException))
+        if ((*env)->IsInstanceOf(env, ex, g_AEADBadTagExceptionClass))
         {
             *authTagMismatch = 1;
         }
 
         (*env)->DeleteLocalRef(env, ex);
-        (*env)->DeleteLocalRef(env, aeadException);
         return FAIL;
     }
 
