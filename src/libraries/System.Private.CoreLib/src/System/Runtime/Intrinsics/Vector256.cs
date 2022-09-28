@@ -271,7 +271,9 @@ namespace System.Runtime.Intrinsics
         {
             Debug.Assert(Vector256<T>.Count >= Vector<T>.Count);
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector256BaseType<T>();
-            return Unsafe.As<Vector256<T>, Vector<T>>(ref value);
+
+            ref byte address = ref Unsafe.As<Vector256<T>, byte>(ref value);
+            return Unsafe.ReadUnaligned<Vector<T>>(ref address);
         }
 
         /// <summary>Computes the bitwise-and of two vectors.</summary>
