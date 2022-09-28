@@ -9303,6 +9303,9 @@ public:
 // likely complicated enough that loop alignment will not impact performance.
 #define DEFAULT_MAX_LOOPSIZE_FOR_ALIGN DEFAULT_ALIGN_LOOP_BOUNDARY * 3
 
+// By default only single iteration loops will be unrolled
+#define DEFAULT_UNROLL_LOOP_LIMIT 1
+
 #ifdef DEBUG
         // Loop alignment variables
 
@@ -9330,6 +9333,9 @@ public:
 
         // If set, tracks the hidden return buffer for struct arg.
         bool compJitOptimizeStructHiddenBuffer;
+
+        // Iteration limit to unroll a loop.
+        unsigned short compJitUnrollLoopIterationLimit;
 
 #ifdef LATE_DISASM
         bool doLateDisasm; // Run the late disassembler

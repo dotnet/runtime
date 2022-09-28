@@ -76,6 +76,8 @@ CONFIG_INTEGER(JitHideAlignBehindJmp,
 CONFIG_INTEGER(JitOptimizeStructHiddenBuffer, W("JitOptimizeStructHiddenBuffer"), 1) // Track assignments to locals done
                                                                                      // through return buffers.
 
+CONFIG_INTEGER(JitUnrollLoopLimit, W("JitUnrollLoopLimit"), DEFAULT_UNROLL_LOOP_LIMIT)
+
 // Print the alignment boundaries in disassembly.
 CONFIG_INTEGER(JitDasmWithAlignmentBoundaries, W("JitDasmWithAlignmentBoundaries"), 0)
 

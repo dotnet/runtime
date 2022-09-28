@@ -2427,6 +2427,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitAlignLoopMaxCodeSize       = (unsigned short)JitConfig.JitAlignLoopMaxCodeSize();
     opts.compJitHideAlignBehindJmp         = JitConfig.JitHideAlignBehindJmp() == 1;
     opts.compJitOptimizeStructHiddenBuffer = JitConfig.JitOptimizeStructHiddenBuffer() == 1;
+    opts.compJitUnrollLoopIterationLimit   = (unsigned short)JitConfig.JitUnrollLoopLimit();
 #else
     opts.compJitAlignLoopAdaptive          = true;
     opts.compJitAlignLoopBoundary          = DEFAULT_ALIGN_LOOP_BOUNDARY;
@@ -2434,6 +2435,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitAlignLoopMaxCodeSize       = DEFAULT_MAX_LOOPSIZE_FOR_ALIGN;
     opts.compJitHideAlignBehindJmp         = true;
     opts.compJitOptimizeStructHiddenBuffer = true;
+    opts.compJitUnrollLoopIterationLimit   = DEFAULT_UNROLL_LOOP_LIMIT;
 #endif
 
 #ifdef TARGET_XARCH
