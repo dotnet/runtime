@@ -20,7 +20,7 @@ namespace ILCompiler
         public Option<Dictionary<string, string>> ReferenceFiles { get; } =
             new(new[] { "--reference", "-r" }, result => Helpers.BuildPathDictionay(result.Tokens, false), true, "Reference file(s) for compilation");
         public Option<string> OutputFilePath { get; } =
-            new(new[] { "--out", "-o" }, result => Helpers.Unquote(result.Tokens), true, "Output file path");
+            new(new[] { "--out", "-o" }, "Output file path");
         public Option<bool> Optimize { get; } =
             new(new[] { "--optimize", "-O" }, "Enable optimizations");
         public Option<bool> OptimizeSpace { get; } =
@@ -28,7 +28,7 @@ namespace ILCompiler
         public Option<bool> OptimizeTime { get; } =
             new(new[] { "--optimize-time", "-Ot" }, "Enable optimizations, favor code speed");
         public Option<string[]> MibcFilePaths { get; } =
-            new(new[] { "--mibc", "-m" }, result => Helpers.UnquoteArray(result.Tokens, true), true, "Mibc file(s) for profile guided optimization");
+            new(new[] { "--mibc", "-m" }, Array.Empty<string>, "Mibc file(s) for profile guided optimization");
         public Option<bool> EnableDebugInfo { get; } =
             new(new[] { "--debug", "-g" }, "Emit debugging information");
         public Option<bool> UseDwarf5 { get; } =
@@ -36,13 +36,13 @@ namespace ILCompiler
         public Option<bool> NativeLib { get; } =
             new(new[] { "--nativelib" }, "Compile as static or shared library");
         public Option<string> ExportsFile { get; } =
-            new(new[] { "--exportsfile" }, result => Helpers.Unquote(result.Tokens), true, "File to write exported method definitions");
+            new(new[] { "--exportsfile" }, "File to write exported method definitions");
         public Option<string> DgmlLogFileName { get; } =
-            new(new[] { "--dgmllog" }, result => Helpers.Unquote(result.Tokens), true, "Save result of dependency analysis as DGML");
+            new(new[] { "--dgmllog" }, "Save result of dependency analysis as DGML");
         public Option<bool> GenerateFullDgmlLog { get; } =
             new(new[] { "--fulllog" }, "Save detailed log of dependency analysis");
         public Option<string> ScanDgmlLogFileName { get; } =
-            new(new[] { "--scandgmllog" }, result => Helpers.Unquote(result.Tokens), true, "Save result of scanner dependency analysis as DGML");
+            new(new[] { "--scandgmllog" }, "Save result of scanner dependency analysis as DGML");
         public Option<bool> GenerateFullScanDgmlLog { get; } =
             new(new[] { "--scanfulllog" }, "Save detailed log of scanner dependency analysis");
         public Option<bool> IsVerbose { get; } =
@@ -58,9 +58,9 @@ namespace ILCompiler
         public Option<string[]> CodegenOptions { get; } =
             new(new[] { "--codegenopt" }, Array.Empty<string>, "Define a codegen option");
         public Option<string[]> RdXmlFilePaths { get; } =
-            new(new[] { "--rdxml" }, result => Helpers.UnquoteArray(result.Tokens, true), true, "RD.XML file(s) for compilation");
+            new(new[] { "--rdxml" }, Array.Empty<string>, "RD.XML file(s) for compilation");
         public Option<string[]> LinkTrimFilePaths { get; } =
-            new(new[] { "--descriptor" }, result => Helpers.UnquoteArray(result.Tokens, true), true, "ILLinkTrim.Descriptor file(s) for compilation");
+            new(new[] { "--descriptor" }, Array.Empty<string>, "ILLinkTrim.Descriptor file(s) for compilation");
         public Option<string> MapFileName { get; } =
             new(new[] { "--map" }, "Generate a map file");
         public Option<string> MstatFileName { get; } =
@@ -86,7 +86,7 @@ namespace ILCompiler
         public Option<bool> MethodBodyFolding { get; } =
             new(new[] { "--methodbodyfolding" }, "Fold identical method bodies");
         public Option<string[]> InitAssemblies { get; } =
-            new(new[] { "--initassembly" }, result => Helpers.UnquoteArray(result.Tokens, true), true, "Assembly(ies) with a library initializer");
+            new(new[] { "--initassembly" }, Array.Empty<string>, "Assembly(ies) with a library initializer");
         public Option<string[]> AppContextSwitches { get; } =
             new(new[] { "--appcontextswitch" }, Array.Empty<string>, "System.AppContext switches to set (format: 'Key=Value')");
         public Option<string[]> FeatureSwitches { get; } =
@@ -126,13 +126,13 @@ namespace ILCompiler
         public Option<bool> NoAotWarn { get; } =
             new(new[] { "--noaotwarn" }, "Disable warnings related to AOT");
         public Option<string[]> SingleWarnEnabledAssemblies { get; } =
-            new(new[] { "--singlewarnassembly" }, result => Helpers.UnquoteArray(result.Tokens, true), true, "Generate single AOT/trimming warning for given assembly");
+            new(new[] { "--singlewarnassembly" }, Array.Empty<string>, "Generate single AOT/trimming warning for given assembly");
         public Option<string[]> SingleWarnDisabledAssemblies { get; } =
-            new(new[] { "--nosinglewarnassembly" }, result => Helpers.UnquoteArray(result.Tokens, true), true, "Expand AOT/trimming warnings for given assembly");
+            new(new[] { "--nosinglewarnassembly" }, Array.Empty<string>, "Expand AOT/trimming warnings for given assembly");
         public Option<string[]> DirectPInvokes { get; } =
             new(new[] { "--directpinvoke" }, Array.Empty<string>, "PInvoke to call directly");
         public Option<string[]> DirectPInvokeLists { get; } =
-            new(new[] { "--directpinvokelist" }, result => Helpers.UnquoteArray(result.Tokens, true), true, "Files with list of PInvokes to call directly");
+            new(new[] { "--directpinvokelist" }, Array.Empty<string>, "File with list of PInvokes to call directly");
         public Option<int> MaxGenericCycle { get; } =
             new(new[] { "--maxgenericcycle" }, () => CompilerTypeSystemContext.DefaultGenericCycleCutoffPoint, "Max depth of generic cycle");
         public Option<string[]> RootedAssemblies { get; } =
@@ -148,7 +148,7 @@ namespace ILCompiler
         public Option<TargetOS> TargetOS { get; } =
             new(new[] { "--targetos" }, result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), true, "Target OS for cross compilation");
         public Option<string> JitPath { get; } =
-            new(new[] { "--jitpath" }, result => Helpers.Unquote(result.Tokens), true, "Path to JIT compiler library");
+            new(new[] { "--jitpath" }, "Path to JIT compiler library");
         public Option<string> SingleMethodTypeName { get; } =
             new(new[] { "--singlemethodtypename" }, "Single method compilation: assembly-qualified name of the owning type");
         public Option<string> SingleMethodName { get; } =
@@ -156,7 +156,7 @@ namespace ILCompiler
         public Option<string[]> SingleMethodGenericArgs { get; } =
             new(new[] { "--singlemethodgenericarg" }, "Single method compilation: generic arguments to the method");
         public Option<string> MakeReproPath { get; } =
-            new(new[] { "--make-repro-path" }, result => Helpers.Unquote(result.Tokens), true, "Path where to place a repro package");
+            new(new[] { "--make-repro-path" }, "Path where to place a repro package");
 
         public OptimizationMode OptimizationMode { get; private set; }
         public ParseResult Result;
