@@ -330,7 +330,7 @@ namespace System.Formats.Tar.Tests
         [MemberData(nameof(WriteEntry_TooLongName_Throws_Async_TheoryData))]
         public async Task WriteEntry_TooLongName_Throws_Async(TarEntryFormat entryFormat, TarEntryType entryType, string name)
         {
-            using TarWriter writer = new(new MemoryStream());
+            await using TarWriter writer = new(new MemoryStream());
 
             TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, entryType, name);
             await Assert.ThrowsAsync<ArgumentException>("entry", () => writer.WriteEntryAsync(entry));
@@ -343,7 +343,7 @@ namespace System.Formats.Tar.Tests
         [MemberData(nameof(WriteEntry_TooLongLinkName_Throws_Async_TheoryData))]
         public async Task WriteEntry_TooLongLinkName_Throws_Async(TarEntryFormat entryFormat, TarEntryType entryType, string linkName)
         {
-            using TarWriter writer = new(new MemoryStream());
+            await using TarWriter writer = new(new MemoryStream());
 
             TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, entryType, "foo");
             entry.LinkName = linkName;
@@ -356,9 +356,9 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         [MemberData(nameof(WriteEntry_TooLongUserGroupName_Throws_Async_TheoryData))]
-        public async Task WriteEntry_TooLongUserName_Throws(TarEntryFormat entryFormat, string userName)
+        public async Task WriteEntry_TooLongUserName_Throws_Async(TarEntryFormat entryFormat, string userName)
         {
-            using TarWriter writer = new(new MemoryStream());
+            await using TarWriter writer = new(new MemoryStream());
 
             TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, TarEntryType.RegularFile, "foo");
             PosixTarEntry posixEntry = Assert.IsAssignableFrom<PosixTarEntry>(entry);
@@ -369,9 +369,9 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         [MemberData(nameof(WriteEntry_TooLongUserGroupName_Throws_Async_TheoryData))]
-        public async Task WriteEntry_TooLongGroupName_Throws(TarEntryFormat entryFormat, string groupName)
+        public async Task WriteEntry_TooLongGroupName_Throws_Async(TarEntryFormat entryFormat, string groupName)
         {
-            using TarWriter writer = new(new MemoryStream());
+            await using TarWriter writer = new(new MemoryStream());
 
             TarEntry entry = InvokeTarEntryCreationConstructor(entryFormat, TarEntryType.RegularFile, "foo");
             PosixTarEntry posixEntry = Assert.IsAssignableFrom<PosixTarEntry>(entry);
