@@ -76,6 +76,14 @@
         },
         {
           "labels": [
+            "area-System.Transactions"
+          ],
+          "mentionees": [
+            "roji"
+          ]
+        },
+        {
+          "labels": [
             "area-GC-mono"
           ],
           "mentionees": [
@@ -1506,8 +1514,8 @@
               {
                 "name": "isInProject",
                 "parameters": {
-                  "projectName": "WCF Owned Areas",
-                  "isOrgProject": false
+                  "projectName": "Tellurium (WCF, Serialization, Etc.)",
+                  "isOrgProject": true
                 }
               }
             ]
@@ -1528,6 +1536,12 @@
                     "name": "labelAdded",
                     "parameters": {
                       "label": "area-System.Runtime.Caching"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.ServiceModel"
                     }
                   },
                   {
@@ -1571,6 +1585,12 @@
                       {
                         "name": "hasLabel",
                         "parameters": {
+                          "label": "area-System.ServiceModel"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
                           "label": "area-System.ServiceModel.Syndication"
                         }
                       },
@@ -1598,9 +1618,8 @@
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "WCF Owned Areas",
-            "isOrgProject": false,
-            "columnName": "Needs Triage"
+            "projectName": "Tellurium (WCF, Serialization, Etc.)",
+            "isOrgProject": true
           }
         }
       ]
@@ -1625,7 +1644,8 @@
               {
                 "name": "isInProject",
                 "parameters": {
-                  "projectName": "WCF Owned Areas"
+                  "projectName": "Tellurium (WCF, Serialization, Etc.)",
+                  "isOrgProject": true
                 }
               }
             ]
@@ -1646,6 +1666,12 @@
                     "name": "labelAdded",
                     "parameters": {
                       "label": "area-System.Runtime.Caching"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.ServiceModel"
                     }
                   },
                   {
@@ -1678,6 +1704,12 @@
                         "name": "hasLabel",
                         "parameters": {
                           "label": "area-System.Runtime.Caching"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.ServiceModel"
                         }
                       },
                       {
@@ -1717,8 +1749,8 @@
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "WCF Owned Areas",
-            "columnName": "Open PRs"
+            "projectName": "Tellurium (WCF, Serialization, Etc.)",
+            "isOrgProject": true
           }
         }
       ]
@@ -1743,8 +1775,8 @@
               {
                 "name": "isInProject",
                 "parameters": {
-                  "projectName": "WCF Owned Areas",
-                  "isOrgProject": false
+                  "projectName": "Tellurium (WCF, Serialization, Etc.)",
+                  "isOrgProject": true
                 }
               }
             ]
@@ -1765,6 +1797,12 @@
                     "name": "labelAdded",
                     "parameters": {
                       "label": "area-System.Runtime.Caching"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.ServiceModel"
                     }
                   },
                   {
@@ -1808,6 +1846,12 @@
                       {
                         "name": "hasLabel",
                         "parameters": {
+                          "label": "area-System.ServiceModel"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
                           "label": "area-System.ServiceModel.Syndication"
                         }
                       },
@@ -1835,9 +1879,8 @@
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "WCF Owned Areas",
-            "isOrgProject": false,
-            "columnName": "Needs Triage"
+            "projectName": "Tellurium (WCF, Serialization, Etc.)",
+            "isOrgProject": true
           }
         }
       ]
@@ -1862,7 +1905,8 @@
               {
                 "name": "isInProject",
                 "parameters": {
-                  "projectName": "WCF Owned Areas"
+                  "projectName": "Tellurium (WCF, Serialization, Etc.)",
+                  "isOrgProject": true
                 }
               }
             ]
@@ -1883,6 +1927,12 @@
                     "name": "labelAdded",
                     "parameters": {
                       "label": "area-System.Runtime.Caching"
+                    }
+                  },
+                  {
+                    "name": "labelAdded",
+                    "parameters": {
+                      "label": "area-System.ServiceModel"
                     }
                   },
                   {
@@ -1915,6 +1965,12 @@
                         "name": "hasLabel",
                         "parameters": {
                           "label": "area-System.Runtime.Caching"
+                        }
+                      },
+                      {
+                        "name": "hasLabel",
+                        "parameters": {
+                          "label": "area-System.ServiceModel"
                         }
                       },
                       {
@@ -1954,8 +2010,8 @@
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "WCF Owned Areas",
-            "columnName": "Open PRs"
+            "projectName": "Tellurium (WCF, Serialization, Etc.)",
+            "isOrgProject": true
           }
         }
       ]

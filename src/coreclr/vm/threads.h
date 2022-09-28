@@ -4260,7 +4260,7 @@ public:
 
     // GC calls this when creating special threads that also happen to have an EE Thread
     // object associated with them (e.g., the bgc thread).
-    void SetGCSpecial(bool fGCSpecial);
+    void SetGCSpecial();
 
 private:
 

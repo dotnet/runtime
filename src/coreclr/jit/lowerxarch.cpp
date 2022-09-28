@@ -41,55 +41,20 @@ void Lowering::LowerRotate(GenTree* tree)
 // Notes:
 //    This involves:
 //    - Handling of contained immediates.
-//    - Widening operations of unsigneds.
-
+//    - Widening some small stores.
+//
 void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 {
-    // Try to widen the ops if they are going into a local var.
-    if ((storeLoc->gtOper == GT_STORE_LCL_VAR) && (storeLoc->gtOp1->gtOper == GT_CNS_INT))
+    // Most small locals (the exception is dependently promoted fields) have 4 byte wide stack slots, so
+    // we can widen the store, if profitable. The widening is only (largely) profitable for 2 byte stores.
+    // We could widen bytes too but that would only be better when the constant is zero and reused, which
+    // we presume is not common enough.
+    //
+    if (storeLoc->OperIs(GT_STORE_LCL_VAR) && (genTypeSize(storeLoc) == 2) && storeLoc->Data()->IsCnsIntOrI())
     {
-        GenTreeIntCon* con  = storeLoc->gtOp1->AsIntCon();
-        ssize_t        ival = con->gtIconVal;
-
-        LclVarDsc* varDsc = comp->lvaGetDesc(storeLoc);
-
-        if (varDsc->lvIsSIMDType())
+        if (!comp->lvaGetDesc(storeLoc)->lvIsStructField)
         {
-            noway_assert(storeLoc->gtType != TYP_STRUCT);
-        }
-        unsigned size = genTypeSize(storeLoc);
-        // If we are storing a constant into a local variable
-        // we extend the size of the store here
-        if ((size < 4) && !varTypeIsStruct(varDsc))
-        {
-            if (!varTypeIsUnsigned(varDsc))
-            {
-                if (genTypeSize(storeLoc) == 1)
-                {
-                    if ((ival & 0x7f) != ival)
-                    {
-                        ival = ival | 0xffffff00;
-                    }
-                }
-                else
-                {
-                    assert(genTypeSize(storeLoc) == 2);
-                    if ((ival & 0x7fff) != ival)
-                    {
-                        ival = ival | 0xffff0000;
-                    }
-                }
-            }
-
-            // A local stack slot is at least 4 bytes in size, regardless of
-            // what the local var is typed as, so auto-promote it here
-            // unless it is a field of a promoted struct
-            // TODO-XArch-CQ: if the field is promoted shouldn't we also be able to do this?
-            if (!varDsc->lvIsStructField)
-            {
-                storeLoc->gtType = TYP_INT;
-                con->SetIconValue(ival);
-            }
+            storeLoc->gtType = TYP_INT;
         }
     }
     if (storeLoc->OperIs(GT_STORE_LCL_FLD))
@@ -97,6 +62,7 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
         // We should only encounter this for lclVars that are lvDoNotEnregister.
         verifyLclFldDoNotEnregister(storeLoc->GetLclNum());
     }
+
     ContainCheckStoreLoc(storeLoc);
 }
 
@@ -1648,7 +1614,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             BlockRange().Remove(arg);
         }
 
-        GenTreeVecCon* vecCon = comp->gtNewVconNode(simdType, simdBaseJitType);
+        GenTreeVecCon* vecCon = comp->gtNewVconNode(simdType);
 
         vecCon->gtSimd32Val = simd32Val;
         BlockRange().InsertBefore(node, vecCon);
@@ -1794,7 +1760,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                     //   var tmp2 = Vector128<byte>.Zero;
                     //   return Ssse3.Shuffle(tmp1, tmp2);
 
-                    tmp2 = comp->gtNewZeroConNode(simdType, simdBaseJitType);
+                    tmp2 = comp->gtNewZeroConNode(simdType);
                     BlockRange().InsertAfter(tmp1, tmp2);
                     LowerNode(tmp2);
 
@@ -3427,7 +3393,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
             //   op1  = Sse.And(op1, tmp1);
             //   ...
 
-            GenTreeVecCon* vecCon1 = comp->gtNewVconNode(simdType, simdBaseJitType);
+            GenTreeVecCon* vecCon1 = comp->gtNewVconNode(simdType);
             vecCon1->gtSimd16Val   = simd16Val;
 
             BlockRange().InsertAfter(op1, vecCon1);
@@ -3456,7 +3422,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
             //   op2  = Sse.And(op2, tmp2);
             //   ...
 
-            GenTreeVecCon* vecCon2 = comp->gtNewVconNode(simdType, simdBaseJitType);
+            GenTreeVecCon* vecCon2 = comp->gtNewVconNode(simdType);
             vecCon2->gtSimd16Val   = simd16Val;
 
             BlockRange().InsertAfter(op2, vecCon2);
@@ -4818,23 +4784,82 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
     // an int-size or larger store of zero to memory, because we can generate smaller code
     // by zeroing a register and then storing it.
     GenTree* src = node->Data();
+
     if (IsContainableImmed(node, src) && (!src->IsIntegralConst(0) || varTypeIsSmall(node)))
     {
         MakeSrcContained(node, src);
     }
 
     // If the source is a BSWAP, contain it on supported hardware to generate a MOVBE.
-    if (comp->opts.OptimizationEnabled() && src->OperIs(GT_BSWAP, GT_BSWAP16) &&
-        comp->compOpportunisticallyDependsOn(InstructionSet_MOVBE))
+    if (comp->opts.OptimizationEnabled())
     {
-        unsigned swapSize = src->OperIs(GT_BSWAP16) ? 2 : genTypeSize(src);
-        if ((swapSize == genTypeSize(node)) && IsSafeToContainMem(node, src))
+        if (src->OperIs(GT_BSWAP, GT_BSWAP16) && comp->compOpportunisticallyDependsOn(InstructionSet_MOVBE))
         {
-            // Prefer containing in the store in case the load has been contained.
-            src->gtGetOp1()->ClearContained();
+            unsigned swapSize = src->OperIs(GT_BSWAP16) ? 2 : genTypeSize(src);
 
-            MakeSrcContained(node, src);
+            if ((swapSize == genTypeSize(node)) && IsSafeToContainMem(node, src))
+            {
+                // Prefer containing in the store in case the load has been contained.
+                src->gtGetOp1()->ClearContained();
+
+                MakeSrcContained(node, src);
+            }
         }
+#if defined(FEATURE_HW_INTRINSICS)
+        else if (src->OperIsHWIntrinsic())
+        {
+            GenTreeHWIntrinsic* hwintrinsic   = src->AsHWIntrinsic();
+            NamedIntrinsic      intrinsicId   = hwintrinsic->GetHWIntrinsicId();
+            var_types           simdBaseType  = hwintrinsic->GetSimdBaseType();
+            bool                isContainable = false;
+
+            switch (intrinsicId)
+            {
+                case NI_SSE2_ConvertToInt32:
+                case NI_SSE2_ConvertToUInt32:
+                case NI_SSE2_X64_ConvertToInt64:
+                case NI_SSE2_X64_ConvertToUInt64:
+                case NI_AVX2_ConvertToInt32:
+                case NI_AVX2_ConvertToUInt32:
+                {
+                    // These intrinsics are "ins reg/mem, xmm"
+                    isContainable = varTypeIsIntegral(simdBaseType);
+                    break;
+                }
+
+                case NI_SSE2_Extract:
+                case NI_SSE41_Extract:
+                case NI_SSE41_X64_Extract:
+                case NI_AVX_ExtractVector128:
+                case NI_AVX2_ExtractVector128:
+                {
+                    // These intrinsics are "ins reg/mem, xmm, imm8"
+
+                    size_t   numArgs = hwintrinsic->GetOperandCount();
+                    GenTree* lastOp  = hwintrinsic->Op(numArgs);
+
+                    isContainable = HWIntrinsicInfo::isImmOp(intrinsicId, lastOp) && lastOp->IsCnsIntOrI();
+
+                    if (isContainable && (intrinsicId == NI_SSE2_Extract))
+                    {
+                        // The encoding that supports containment is SSE4.1 only
+                        isContainable = comp->compOpportunisticallyDependsOn(InstructionSet_SSE41);
+                    }
+                    break;
+                }
+
+                default:
+                {
+                    break;
+                }
+            }
+
+            if (isContainable && IsSafeToContainMem(node, src))
+            {
+                MakeSrcContained(node, src);
+            }
+        }
+#endif // FEATURE_HW_INTRINSICS
     }
 
     ContainCheckIndir(node);
@@ -6364,8 +6389,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         if (varTypeIsIntegral(simdBaseType))
                         {
-                            // TODO-XARCH-CQ: These intrinsics are "ins reg/mem, xmm" and don't
-                            // currently support containment.
+                            // These intrinsics are "ins reg/mem, xmm" and get
+                            // contained by the relevant store operation instead.
                             return;
                         }
 
@@ -6500,8 +6525,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX_ExtractVector128:
                         case NI_AVX2_ExtractVector128:
                         {
-                            // TODO-XARCH-CQ: These intrinsics are "ins reg/mem, xmm, imm8" and don't
-                            // currently support containment.
+                            // These intrinsics are "ins reg/mem, xmm, imm8" and get
+                            // contained by the relevant store operation instead.
                             break;
                         }
 
@@ -6552,9 +6577,10 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_SSE41_Extract:
                         case NI_SSE41_X64_Extract:
                         {
+                            // These intrinsics are "ins reg/mem, xmm" and get
+                            // contained by the relevant store operation instead.
+
                             assert(!varTypeIsFloating(simdBaseType));
-                            // TODO-XARCH-CQ: These intrinsics are "ins reg/mem, xmm, imm8" and don't
-                            // currently support containment.
                             break;
                         }
 

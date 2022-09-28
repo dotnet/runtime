@@ -2,6 +2,7 @@
   "$schema": "http://json.schemastore.org/template",
   "author": "Microsoft",
   "classifications": [ "Web", "WebAssembly", "Browser" ],
+  "generatorVersions": "[1.0.0.0-*)",
   "identity": "WebAssembly.Browser",
   "name": "WebAssembly Browser App",
   "shortName": "wasmbrowser",
@@ -10,5 +11,25 @@
   "tags": {
     "language": "C#",
     "type": "project"
+  },
+  "symbols": {
+    "kestrelHttpPortGenerated": {
+      "type": "generated",
+      "generator": "port",
+      "parameters": {
+        "low": 5000,
+        "high": 5300
+      },
+	    "replaces": "5000"
+    },
+    "kestrelHttpsPortGenerated": {
+      "type": "generated",
+      "generator": "port",
+      "parameters": {
+        "low": 7000,
+        "high": 7300
+      },
+	    "replaces": "5001"
+    }
   }
 }

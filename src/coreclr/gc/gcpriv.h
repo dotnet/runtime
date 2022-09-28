@@ -648,8 +648,6 @@ struct etw_bucket_info
     uint32_t count;
     size_t size;
 
-    etw_bucket_info() = default;
-
     void set (uint16_t _index, uint32_t _count, size_t _size)
     {
         index = _index;
@@ -3919,7 +3917,7 @@ public:
 #else //MULTIPLE_HEAPS
 
     PER_HEAP
-    size_t allocation_running_time;
+    uint64_t allocation_running_time;
 
     PER_HEAP
     size_t allocation_running_amount;

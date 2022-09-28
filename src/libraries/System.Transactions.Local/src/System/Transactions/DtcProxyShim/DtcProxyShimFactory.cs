@@ -63,10 +63,6 @@ internal sealed class DtcProxyShimFactory
         {
             case Architecture.X86:
                 throw new PlatformNotSupportedException(SR.DistributedNotSupportedOn32Bits);
-
-            case Architecture.Armv6: // #74170
-            case Architecture.Arm64:
-                throw new PlatformNotSupportedException(SR.DistributedNotSupportedOnArm);
         }
 
         ConnectToProxyCore(nodeName, resourceManagerIdentifier, managedIdentifier, out nodeNameMatches, out whereabouts, out resourceManagerShim);
