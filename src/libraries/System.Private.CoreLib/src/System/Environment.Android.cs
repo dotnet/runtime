@@ -86,7 +86,7 @@ namespace System
                     return Path.Combine(home, ".fonts");
 
                 case SpecialFolder.UserProfile:
-                    return GetEnvironmentVariable("HOME");
+                    return home;
 
                 case SpecialFolder.CommonApplicationData:
                     return "/usr/share";
