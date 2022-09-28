@@ -3172,7 +3172,8 @@ gc_heap::dt_high_frag_p (gc_tuning_point tp,
 #ifndef MULTIPLE_HEAPS
                 if (gen_number == max_generation)
                 {
-                    float frag_ratio = (float)(dd_fragmentation (dynamic_data_of (max_generation))) / (float)generation_size (max_generation);
+                    size_t maxgen_size = generation_size (max_generation);
+                    float frag_ratio = (maxgen_size ? ((float)dd_fragmentation (dynamic_data_of (max_generation)) / (float)maxgen_size) : 0.0f);
                     if (frag_ratio > 0.65)
                     {
                         dprintf (GTC_LOG, ("g2 FR: %d%%", (int)(frag_ratio*100)));
@@ -3184,7 +3185,8 @@ gc_heap::dt_high_frag_p (gc_tuning_point tp,
                 ret = (fr > dd_fragmentation_limit(dd));
                 if (ret)
                 {
-                    fragmentation_burden = (float)fr / generation_size (gen_number);
+                    size_t gen_size = generation_size (gen_number);
+                    fragmentation_burden = (gen_size ? ((float)fr / (float)gen_size) : 0.0f);
                     ret = (fragmentation_burden > dd_v_fragmentation_burden_limit (dd));
                 }
                 dprintf (GTC_LOG, ("h%d: gen%d, frag is %Id, alloc effi: %d%%, unusable frag is %Id, ratio is %d",
