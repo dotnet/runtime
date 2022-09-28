@@ -61,7 +61,7 @@ namespace System.Security.Cryptography
 
             int keySize = Interop.BCrypt.BCryptGetDWordProperty(
                 newKey,
-                Interop.BCrypt.BCryptPropertyStrings.BCRYPT_KEY_LENGTH);
+                Interop.BCrypt.BCryptPropertyStrings.BCRYPT_KEY_STRENGTH);
 
             SafeBCryptKeyHandle? oldKey = Interlocked.Exchange(ref _key, newKey);
             ForceSetKeySize(keySize);
