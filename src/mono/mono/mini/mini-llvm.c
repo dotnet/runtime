@@ -12416,7 +12416,7 @@ after_codegen_1:
 		 * NATIVE_TO_MANAGED methods might be called on a thread not attached to the runtime, so they are initialized when loaded
 		 * in load_method ().
 		 */
-		gboolean needs_init = ctx->cfg->got_access_count > 0;
+		gboolean needs_init = ctx->cfg->got_access_count > 0 || ctx->cfg->class_inits;
 		MonoMethod *cctor = NULL;
 		if (!needs_init && (cctor = mono_class_get_cctor (cfg->method->klass))) {
 			/* Needs init to run the cctor */

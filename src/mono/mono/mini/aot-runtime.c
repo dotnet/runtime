@@ -4591,6 +4591,17 @@ init_method (MonoAotModule *amodule, gpointer info, guint32 method_index, MonoMe
 		context = &ctx;
 	}
 
+	GSList *class_inits = NULL;
+	if (flags & MONO_AOT_METHOD_FLAG_HAS_CLASS_INITS) {
+		int len = decode_value (p, &p);
+		for (int i = 0; i < len; ++i) {
+			MonoClass *k = decode_klass_ref (amodule, p, &p, error);
+			if (!is_ok (error))
+				return FALSE;
+			class_inits = g_slist_prepend (class_inits, k);
+		}
+	}
+
 	if (flags & MONO_AOT_METHOD_FLAG_HAS_PATCHES)
 		n_patches = decode_value (p, &p);
 	else
@@ -4697,6 +4708,19 @@ init_method (MonoAotModule *amodule, gpointer info, guint32 method_index, MonoMe
 	}
 	if (!inited_ok)
 		return FALSE;
+
+	if (class_inits) {
+		for (GSList *l = class_inits; l; l = l->next) {
+			MonoClass *k = l->data;
+
+			MonoVTable *vt = mono_class_vtable_checked (k, error);
+			if (!is_ok (error))
+				return FALSE;
+			if (!mono_runtime_class_init_full (vt, error))
+				return FALSE;
+		}
+		g_slist_free (class_inits);
+	}
 
 	return TRUE;
 

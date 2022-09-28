@@ -1610,6 +1610,7 @@ typedef struct {
 
 	GSList *signatures;
 	GSList *interp_in_signatures;
+	GSList *class_inits;
 
 	/* GC Maps */
 

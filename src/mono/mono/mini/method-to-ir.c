@@ -2978,6 +2978,19 @@ mini_emit_get_gsharedvt_info_klass (MonoCompile *cfg, MonoClass *klass, MonoRgct
 	return emit_get_gsharedvt_info (cfg, m_class_get_byval_arg (klass), rgctx_type);
 }
 
+static gboolean
+can_eagerly_init (MonoClass *klass, int context_used)
+{
+	if (!mono_class_is_before_field_init (klass))
+		return FALSE;
+	if (context_used)
+		return FALSE;
+	if (m_class_is_ginst (klass))
+		return FALSE;
+	/* Some beforeinit classes might actually need lazy semantics, corlib classes should be safe */
+	return mono_is_corlib_image (m_class_get_image (klass));
+}
+
 /*
  * On return the caller must check @klass for load errors.
  */
@@ -2988,6 +3001,17 @@ emit_class_init (MonoCompile *cfg, MonoClass *klass)
 	int context_used;
 
 	context_used = mini_class_check_context_used (cfg, klass);
+
+	if (cfg->compile_aot && can_eagerly_init (klass, context_used)) {
+		/* These will be initialized when the method is loaded */
+		GSList *l;
+		for (l = cfg->class_inits; l; l = l->next)
+			if (l->data == klass)
+				break;
+		if (!l)
+			cfg->class_inits = g_slist_prepend_mempool (cfg->mempool, cfg->class_inits, klass);
+		return;
+	}
 
 	if (context_used) {
 		vtable_arg = mini_emit_get_rgctx_klass (cfg, context_used,
@@ -6855,9 +6879,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		 * Methods with AggressiveInline flag could be inlined even if the class has a cctor.
 		 * This might create a branch so emit it in the first code bblock instead of into initlocals_bb.
 		 */
-		if (ip - header->code == 0 && cfg->method != method && cfg->compile_aot && (method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING) && mono_class_needs_cctor_run (method->klass, method)) {
+		if (ip - header->code == 0 && cfg->method != method && cfg->compile_aot && (method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING) && mono_class_needs_cctor_run (method->klass, method))
 			emit_class_init (cfg, method->klass);
-		}
 
 		if (skip_dead_blocks) {
 			int ip_offset = GPTRDIFF_TO_INT (ip - header->code);

@@ -7157,6 +7157,8 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		flags |= MONO_AOT_METHOD_FLAG_HAS_CTX;
 	if (cfg->interp_entry_only)
 		flags |= MONO_AOT_METHOD_FLAG_INTERP_ENTRY_ONLY;
+	if (cfg->class_inits)
+		flags |= MONO_AOT_METHOD_FLAG_HAS_CLASS_INITS;
 	/* Saved into another table so it can be accessed without having access to this data */
 	cfg->aot_method_flags = flags;
 
@@ -7165,6 +7167,11 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		encode_klass_ref (acfg, method->klass, p, &p);
 	if (needs_ctx && ctx)
 		encode_generic_context (acfg, ctx, p, &p);
+	if (cfg->class_inits) {
+		encode_value (g_slist_length (cfg->class_inits), p, &p);
+		for (GSList *l = cfg->class_inits; l; l = l->next)
+			encode_klass_ref (acfg, (MonoClass*)(l->data), p, &p);
+	}
 
 	if (n_patches) {
 		encode_value (n_patches, p, &p);
@@ -9413,6 +9420,10 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		mono_metadata_free_mh (header);
 		cfg->locals = locals;
 	}
+	GSList *class_inits = NULL;
+	for (GSList *l = cfg->class_inits; l; l = l->next)
+		class_inits = g_slist_prepend_mempool (acfg->mempool, class_inits, l->data);
+	cfg->class_inits = class_inits;
 
 	/* Free some fields used by cfg to conserve memory */
 	mono_empty_compile (cfg);
