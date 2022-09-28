@@ -19,26 +19,26 @@ public func AppleCryptoNative_ChaCha20Poly1305Encrypt(
     aadPtr: UnsafeMutableRawPointer,
     aadLength: Int32
  ) -> Int32 {
-        let nonceData = Data(bytesNoCopy: noncePtr, count: Int(nonceLength), deallocator: Data.Deallocator.none)
-        let key = Data(bytesNoCopy: keyPtr, count: Int(keyLength), deallocator: Data.Deallocator.none)
-        let plaintext = Data(bytesNoCopy: plaintextPtr, count: Int(plaintextLength), deallocator: Data.Deallocator.none)
-        let aad = Data(bytesNoCopy: aadPtr, count: Int(aadLength), deallocator: Data.Deallocator.none)
-        let symmetricKey = SymmetricKey(data: key)
+    let nonceData = Data(bytesNoCopy: noncePtr, count: Int(nonceLength), deallocator: Data.Deallocator.none)
+    let key = Data(bytesNoCopy: keyPtr, count: Int(keyLength), deallocator: Data.Deallocator.none)
+    let plaintext = Data(bytesNoCopy: plaintextPtr, count: Int(plaintextLength), deallocator: Data.Deallocator.none)
+    let aad = Data(bytesNoCopy: aadPtr, count: Int(aadLength), deallocator: Data.Deallocator.none)
+    let symmetricKey = SymmetricKey(data: key)
 
-        guard let nonce = try? ChaChaPoly.Nonce(data: nonceData) else {
-            return 0
-        }
+    guard let nonce = try? ChaChaPoly.Nonce(data: nonceData) else {
+        return 0
+    }
 
-        guard let result = try? ChaChaPoly.seal(plaintext, using: symmetricKey, nonce: nonce, authenticating: aad) else {
-            return 0
-        }
+    guard let result = try? ChaChaPoly.seal(plaintext, using: symmetricKey, nonce: nonce, authenticating: aad) else {
+        return 0
+    }
 
-        assert(ciphertextBufferLength >= result.ciphertext.count)
-        assert(tagBufferLength >= result.tag.count)
+    assert(ciphertextBufferLength >= result.ciphertext.count)
+    assert(tagBufferLength >= result.tag.count)
 
-        result.ciphertext.copyBytes(to: ciphertextBuffer, count: result.ciphertext.count)
-        result.tag.copyBytes(to: tagBuffer, count: result.tag.count)
-        return 1
+    result.ciphertext.copyBytes(to: ciphertextBuffer, count: result.ciphertext.count)
+    result.tag.copyBytes(to: tagBuffer, count: result.tag.count)
+    return 1
  }
 
 @_cdecl("AppleCryptoNative_ChaCha20Poly1305Decrypt")
