@@ -1208,7 +1208,7 @@ namespace System.Net.Quic.Tests
         public async Task ReturnWSAENETUNREACH_WhenIpv6Disabled()
         {
             Process cmd = new Process();
-            cmd.StartInfo.FileName = "pwsh.exe";
+            cmd.StartInfo.FileName = "powershell.exe";
             cmd.StartInfo.RedirectStandardInput = true;
             cmd.StartInfo.RedirectStandardOutput = true;
             cmd.StartInfo.CreateNoWindow = true;
