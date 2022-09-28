@@ -2427,7 +2427,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.compJitAlignLoopMaxCodeSize        = (unsigned short)JitConfig.JitAlignLoopMaxCodeSize();
     opts.compJitHideAlignBehindJmp          = JitConfig.JitHideAlignBehindJmp() == 1;
     opts.compJitOptimizeStructHiddenBuffer  = JitConfig.JitOptimizeStructHiddenBuffer() == 1;
-    opts.compJitUnrollLoopMaxIterationCount = (unsigned short)JitConfig.JitUnrollLoopLimit();
+    opts.compJitUnrollLoopMaxIterationCount = (unsigned short)JitConfig.JitUnrollLoopMaxIterationCount();
 #else
     opts.compJitAlignLoopAdaptive           = true;
     opts.compJitAlignLoopBoundary           = DEFAULT_ALIGN_LOOP_BOUNDARY;

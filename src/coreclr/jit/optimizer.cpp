@@ -4211,8 +4211,8 @@ PhaseStatus Compiler::optUnrollLoops()
         }
         else
         {
-          JITDUMP("Failed to unroll loop " FMT_LP ": insufficiently simple loop (heuristic)\n", lnum);
-          continue;
+            JITDUMP("Failed to unroll loop " FMT_LP ": insufficiently simple loop (heuristic)\n", lnum);
+            continue;
         }
 
         GenTree* incr = incrStmt->GetRootNode();
