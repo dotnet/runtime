@@ -346,6 +346,11 @@ namespace HttpStress
 
             public void PrintCurrentResults(TimeSpan runtime)
             {
+                if (runtime.TotalMinutes > 2.0)
+                {
+                    System.Environment.Exit(1);
+                }
+
                 Console.ForegroundColor = ConsoleColor.Cyan;
                 Console.Write("[" + DateTime.Now + "]");
                 Console.ResetColor();
