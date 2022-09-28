@@ -11018,10 +11018,21 @@ void gc_heap::seg_mark_array_bits_soh (heap_segment* seg)
 {
     uint8_t* range_beg = 0;
     uint8_t* range_end = 0;
-    if (bgc_mark_array_range (seg, FALSE, &range_beg, &range_end))
+    if (gc_can_use_concurrent && bgc_mark_array_range (seg, FALSE, &range_beg, &range_end))
     {
-        // TODO:
-        // mark_array_set_marked (range_beg)
+        assert(range_beg == align_on_mark_word(range_beg));
+        if ((range_beg <= background_saved_highest_address) && (range_beg >= background_saved_lowest_address))
+        {
+            size_t beg_word = mark_word_of (align_on_mark_word (range_beg));
+            size_t end_word = mark_word_of (align_on_mark_word (range_beg));
+
+            uint8_t* op = range_beg;
+            while (op < mark_word_address (beg_word))
+            {
+                mark_array_set_marked (op);
+                op += mark_bit_pitch;
+            }
+        }
     }
 }
 
