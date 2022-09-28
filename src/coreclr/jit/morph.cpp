@@ -1297,256 +1297,256 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
         sortedArgs[argCount++] = &arg;
     }
 
-    //// Set the beginning and end for the new argument table
-    // unsigned curInx;
-    // int      regCount      = 0;
-    // unsigned begTab        = 0;
-    // unsigned endTab        = argCount - 1;
-    // unsigned argsRemaining = argCount;
+    // Set the beginning and end for the new argument table
+    unsigned curInx;
+    int      regCount      = 0;
+    unsigned begTab        = 0;
+    unsigned endTab        = argCount - 1;
+    unsigned argsRemaining = argCount;
 
-    //// First take care of arguments that are constants.
-    //// [We use a backward iterator pattern]
-    ////
-    // curInx = argCount;
-    // do
-    //{
-    //    curInx--;
+    // First take care of arguments that are constants.
+    // [We use a backward iterator pattern]
+    //
+    curInx = argCount;
+    do
+    {
+        curInx--;
 
-    //    CallArg* arg = sortedArgs[curInx];
+        CallArg* arg = sortedArgs[curInx];
 
-    //    if (arg->AbiInfo.GetRegNum() != REG_STK)
-    //    {
-    //        regCount++;
-    //    }
+        if (arg->AbiInfo.GetRegNum() != REG_STK)
+        {
+            regCount++;
+        }
 
-    //    assert(arg->GetLateNode() == nullptr);
+        assert(arg->GetLateNode() == nullptr);
 
-    //    // Skip any already processed args
-    //    //
-    //    if (!arg->m_processed)
-    //    {
-    //        GenTree* argx = arg->GetEarlyNode();
+        // Skip any already processed args
+        //
+        if (!arg->m_processed)
+        {
+            GenTree* argx = arg->GetEarlyNode();
 
-    //        assert(argx != nullptr);
-    //        // put constants at the end of the table
-    //        //
-    //        if (argx->gtOper == GT_CNS_INT)
-    //        {
-    //            noway_assert(curInx <= endTab);
+            assert(argx != nullptr);
+            // put constants at the end of the table
+            //
+            if (argx->gtOper == GT_CNS_INT)
+            {
+                noway_assert(curInx <= endTab);
 
-    //            arg->m_processed = true;
+                arg->m_processed = true;
 
-    //            // place curArgTabEntry at the endTab position by performing a swap
-    //            //
-    //            if (curInx != endTab)
-    //            {
-    //                sortedArgs[curInx] = sortedArgs[endTab];
-    //                sortedArgs[endTab] = arg;
-    //            }
+                // place curArgTabEntry at the endTab position by performing a swap
+                //
+                if (curInx != endTab)
+                {
+                    sortedArgs[curInx] = sortedArgs[endTab];
+                    sortedArgs[endTab] = arg;
+                }
 
-    //            endTab--;
-    //            argsRemaining--;
-    //        }
-    //    }
-    //} while (curInx > 0);
+                endTab--;
+                argsRemaining--;
+            }
+        }
+    } while (curInx > 0);
 
-    // if (argsRemaining > 0)
-    //{
-    //    // Next take care of arguments that are calls.
-    //    // [We use a forward iterator pattern]
-    //    //
-    //    for (curInx = begTab; curInx <= endTab; curInx++)
-    //    {
-    //        CallArg* arg = sortedArgs[curInx];
+    if (argsRemaining > 0)
+    {
+        // Next take care of arguments that are calls.
+        // [We use a forward iterator pattern]
+        //
+        for (curInx = begTab; curInx <= endTab; curInx++)
+        {
+            CallArg* arg = sortedArgs[curInx];
 
-    //        // Skip any already processed args
-    //        //
-    //        if (!arg->m_processed)
-    //        {
-    //            GenTree* argx = arg->GetEarlyNode();
-    //            assert(argx != nullptr);
+            // Skip any already processed args
+            //
+            if (!arg->m_processed)
+            {
+                GenTree* argx = arg->GetEarlyNode();
+                assert(argx != nullptr);
 
-    //            // put calls at the beginning of the table
-    //            //
-    //            if (argx->gtFlags & GTF_CALL)
-    //            {
-    //                arg->m_processed = true;
+                // put calls at the beginning of the table
+                //
+                if (argx->gtFlags & GTF_CALL)
+                {
+                    arg->m_processed = true;
 
-    //                // place curArgTabEntry at the begTab position by performing a swap
-    //                //
-    //                if (curInx != begTab)
-    //                {
-    //                    sortedArgs[curInx] = sortedArgs[begTab];
-    //                    sortedArgs[begTab] = arg;
-    //                }
+                    // place curArgTabEntry at the begTab position by performing a swap
+                    //
+                    if (curInx != begTab)
+                    {
+                        sortedArgs[curInx] = sortedArgs[begTab];
+                        sortedArgs[begTab] = arg;
+                    }
 
-    //                begTab++;
-    //                argsRemaining--;
-    //            }
-    //        }
-    //    }
-    //}
+                    begTab++;
+                    argsRemaining--;
+                }
+            }
+        }
+    }
 
-    // if (argsRemaining > 0)
-    //{
-    //    // Next take care arguments that are temps.
-    //    // These temps come before the arguments that are
-    //    // ordinary local vars or local fields
-    //    // since this will give them a better chance to become
-    //    // enregistered into their actual argument register.
-    //    // [We use a forward iterator pattern]
-    //    //
-    //    for (curInx = begTab; curInx <= endTab; curInx++)
-    //    {
-    //        CallArg* arg = sortedArgs[curInx];
+    if (argsRemaining > 0)
+    {
+        // Next take care arguments that are temps.
+        // These temps come before the arguments that are
+        // ordinary local vars or local fields
+        // since this will give them a better chance to become
+        // enregistered into their actual argument register.
+        // [We use a forward iterator pattern]
+        //
+        for (curInx = begTab; curInx <= endTab; curInx++)
+        {
+            CallArg* arg = sortedArgs[curInx];
 
-    //        // Skip any already processed args
-    //        //
-    //        if (!arg->m_processed)
-    //        {
-    //            if (arg->m_needTmp)
-    //            {
-    //                arg->m_processed = true;
+            // Skip any already processed args
+            //
+            if (!arg->m_processed)
+            {
+                if (arg->m_needTmp)
+                {
+                    arg->m_processed = true;
 
-    //                // place curArgTabEntry at the begTab position by performing a swap
-    //                //
-    //                if (curInx != begTab)
-    //                {
-    //                    sortedArgs[curInx] = sortedArgs[begTab];
-    //                    sortedArgs[begTab] = arg;
-    //                }
+                    // place curArgTabEntry at the begTab position by performing a swap
+                    //
+                    if (curInx != begTab)
+                    {
+                        sortedArgs[curInx] = sortedArgs[begTab];
+                        sortedArgs[begTab] = arg;
+                    }
 
-    //                begTab++;
-    //                argsRemaining--;
-    //            }
-    //        }
-    //    }
-    //}
+                    begTab++;
+                    argsRemaining--;
+                }
+            }
+        }
+    }
 
-    // if (argsRemaining > 0)
-    //{
-    //    // Next take care of local var and local field arguments.
-    //    // These are moved towards the end of the argument evaluation.
-    //    // [We use a backward iterator pattern]
-    //    //
-    //    curInx = endTab + 1;
-    //    do
-    //    {
-    //        curInx--;
+    if (argsRemaining > 0)
+    {
+        // Next take care of local var and local field arguments.
+        // These are moved towards the end of the argument evaluation.
+        // [We use a backward iterator pattern]
+        //
+        curInx = endTab + 1;
+        do
+        {
+            curInx--;
 
-    //        CallArg* arg = sortedArgs[curInx];
+            CallArg* arg = sortedArgs[curInx];
 
-    //        // Skip any already processed args
-    //        //
-    //        if (!arg->m_processed)
-    //        {
-    //            GenTree* argx = arg->GetEarlyNode();
-    //            assert(argx != nullptr);
+            // Skip any already processed args
+            //
+            if (!arg->m_processed)
+            {
+                GenTree* argx = arg->GetEarlyNode();
+                assert(argx != nullptr);
 
-    //            // As a CQ heuristic, sort TYP_STRUCT args using the cost estimation below.
-    //            if (!argx->TypeIs(TYP_STRUCT) && argx->OperIs(GT_LCL_VAR, GT_LCL_FLD))
-    //            {
-    //                noway_assert(curInx <= endTab);
+                // As a CQ heuristic, sort TYP_STRUCT args using the cost estimation below.
+                if (!argx->TypeIs(TYP_STRUCT) && argx->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+                {
+                    noway_assert(curInx <= endTab);
 
-    //                arg->m_processed = true;
+                    arg->m_processed = true;
 
-    //                // place curArgTabEntry at the endTab position by performing a swap
-    //                //
-    //                if (curInx != endTab)
-    //                {
-    //                    sortedArgs[curInx] = sortedArgs[endTab];
-    //                    sortedArgs[endTab] = arg;
-    //                }
+                    // place curArgTabEntry at the endTab position by performing a swap
+                    //
+                    if (curInx != endTab)
+                    {
+                        sortedArgs[curInx] = sortedArgs[endTab];
+                        sortedArgs[endTab] = arg;
+                    }
 
-    //                endTab--;
-    //                argsRemaining--;
-    //            }
-    //        }
-    //    } while (curInx > begTab);
-    //}
+                    endTab--;
+                    argsRemaining--;
+                }
+            }
+        } while (curInx > begTab);
+    }
 
-    //// Finally, take care of all the remaining arguments.
-    //// Note that we fill in one arg at a time using a while loop.
-    // bool costsPrepared = false; // Only prepare tree costs once, the first time through this loop
-    // while (argsRemaining > 0)
-    //{
-    //    /* Find the most expensive arg remaining and evaluate it next */
+    // Finally, take care of all the remaining arguments.
+    // Note that we fill in one arg at a time using a while loop.
+    bool costsPrepared = false; // Only prepare tree costs once, the first time through this loop
+    while (argsRemaining > 0)
+    {
+        /* Find the most expensive arg remaining and evaluate it next */
 
-    //    CallArg* expensiveArg      = nullptr;
-    //    unsigned expensiveArgIndex = UINT_MAX;
-    //    unsigned expensiveArgCost  = 0;
+        CallArg* expensiveArg      = nullptr;
+        unsigned expensiveArgIndex = UINT_MAX;
+        unsigned expensiveArgCost  = 0;
 
-    //    // [We use a forward iterator pattern]
-    //    //
-    //    for (curInx = begTab; curInx <= endTab; curInx++)
-    //    {
-    //        CallArg* arg = sortedArgs[curInx];
+        // [We use a forward iterator pattern]
+        //
+        for (curInx = begTab; curInx <= endTab; curInx++)
+        {
+            CallArg* arg = sortedArgs[curInx];
 
-    //        // Skip any already processed args
-    //        //
-    //        if (!arg->m_processed)
-    //        {
-    //            GenTree* argx = arg->GetEarlyNode();
-    //            assert(argx != nullptr);
+            // Skip any already processed args
+            //
+            if (!arg->m_processed)
+            {
+                GenTree* argx = arg->GetEarlyNode();
+                assert(argx != nullptr);
 
-    //            // We should have already handled these kinds of args
-    //            assert((!argx->OperIs(GT_LCL_VAR, GT_LCL_FLD) || argx->TypeIs(TYP_STRUCT)) &&
-    //                   !argx->OperIs(GT_CNS_INT));
+                // We should have already handled these kinds of args
+                assert((!argx->OperIs(GT_LCL_VAR, GT_LCL_FLD) || argx->TypeIs(TYP_STRUCT)) &&
+                       !argx->OperIs(GT_CNS_INT));
 
-    //            // This arg should either have no persistent side effects or be the last one in our table
-    //            // assert(((argx->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0) || (curInx == (argCount-1)));
+                // This arg should either have no persistent side effects or be the last one in our table
+                // assert(((argx->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0) || (curInx == (argCount-1)));
 
-    //            if (argsRemaining == 1)
-    //            {
-    //                // This is the last arg to place
-    //                expensiveArgIndex = curInx;
-    //                expensiveArg      = arg;
-    //                assert(begTab == endTab);
-    //                break;
-    //            }
-    //            else
-    //            {
-    //                if (!costsPrepared)
-    //                {
-    //                    /* We call gtPrepareCost to measure the cost of evaluating this tree */
-    //                    comp->gtPrepareCost(argx);
-    //                }
+                if (argsRemaining == 1)
+                {
+                    // This is the last arg to place
+                    expensiveArgIndex = curInx;
+                    expensiveArg      = arg;
+                    assert(begTab == endTab);
+                    break;
+                }
+                else
+                {
+                    if (!costsPrepared)
+                    {
+                        /* We call gtPrepareCost to measure the cost of evaluating this tree */
+                        comp->gtPrepareCost(argx);
+                    }
 
-    //                if (argx->GetCostEx() > expensiveArgCost)
-    //                {
-    //                    // Remember this arg as the most expensive one that we have yet seen
-    //                    expensiveArgCost  = argx->GetCostEx();
-    //                    expensiveArgIndex = curInx;
-    //                    expensiveArg      = arg;
-    //                }
-    //            }
-    //        }
-    //    }
+                    if (argx->GetCostEx() > expensiveArgCost)
+                    {
+                        // Remember this arg as the most expensive one that we have yet seen
+                        expensiveArgCost  = argx->GetCostEx();
+                        expensiveArgIndex = curInx;
+                        expensiveArg      = arg;
+                    }
+                }
+            }
+        }
 
-    //    noway_assert(expensiveArgIndex != UINT_MAX);
+        noway_assert(expensiveArgIndex != UINT_MAX);
 
-    //    // put the most expensive arg towards the beginning of the table
+        // put the most expensive arg towards the beginning of the table
 
-    //    expensiveArg->m_processed = true;
+        expensiveArg->m_processed = true;
 
-    //    // place expensiveArgTabEntry at the begTab position by performing a swap
-    //    //
-    //    if (expensiveArgIndex != begTab)
-    //    {
-    //        sortedArgs[expensiveArgIndex] = sortedArgs[begTab];
-    //        sortedArgs[begTab]            = expensiveArg;
-    //    }
+        // place expensiveArgTabEntry at the begTab position by performing a swap
+        //
+        if (expensiveArgIndex != begTab)
+        {
+            sortedArgs[expensiveArgIndex] = sortedArgs[begTab];
+            sortedArgs[begTab]            = expensiveArg;
+        }
 
-    //    begTab++;
-    //    argsRemaining--;
+        begTab++;
+        argsRemaining--;
 
-    //    costsPrepared = true; // If we have more expensive arguments, don't re-evaluate the tree cost on the next loop
-    //}
+        costsPrepared = true; // If we have more expensive arguments, don't re-evaluate the tree cost on the next loop
+    }
 
-    //// The table should now be completely filled and thus begTab should now be adjacent to endTab
-    //// and regArgsRemaining should be zero
-    // assert(begTab == (endTab + 1));
-    // assert(argsRemaining == 0);
+    // The table should now be completely filled and thus begTab should now be adjacent to endTab
+    // and regArgsRemaining should be zero
+    assert(begTab == (endTab + 1));
+    assert(argsRemaining == 0);
 }
 
 //------------------------------------------------------------------------------
