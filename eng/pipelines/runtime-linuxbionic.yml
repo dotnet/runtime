@@ -9,7 +9,7 @@ variables:
 
 jobs:
 
-- template: /eng/pipelines/runtime-extra-platforms-linuxbionic.yml
+- template: /eng/pipelines/extra-platforms/runtime-extra-platforms-linuxbionic.yml
   parameters:
     isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
     isLinuxBionicOnlyBuild: ${{ variables.isLinuxBionicOnlyBuild }}

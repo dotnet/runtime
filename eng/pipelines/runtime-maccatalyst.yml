@@ -9,7 +9,7 @@ variables:
 
 jobs:
 
-- template: /eng/pipelines/runtime-extra-platforms-maccatalyst.yml
+- template: /eng/pipelines/extra-platforms/runtime-extra-platforms-maccatalyst.yml
   parameters:
     isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
     isMacCatalystOnlyBuild: ${{ variables.isMacCatalystOnlyBuild }}

@@ -36,7 +36,7 @@ jobs:
 
 # Add wasm jobs only for rolling builds
 - ${{ if eq(variables.isRollingBuild, true) }}:
-  - template: /eng/pipelines/runtime-extra-platforms-wasm.yml
+  - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-wasm.yml
     parameters:
       isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ variables.isWasmOnlyBuild }}
@@ -44,7 +44,7 @@ jobs:
 
 # Add iOS/tvOS jobs only for rolling builds
 - ${{ if eq(variables.isRollingBuild, true) }}:
-  - template: /eng/pipelines/runtime-extra-platforms-ioslike.yml
+  - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml
     parameters:
       isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
       isiOSLikeOnlyBuild: ${{ variables.isiOSLikeOnlyBuild }}
@@ -52,7 +52,7 @@ jobs:
 
 # Add iOS/tvOS simulator jobs only for rolling builds
 - ${{ if eq(variables.isRollingBuild, true) }}:
-  - template: /eng/pipelines/runtime-extra-platforms-ioslikesimulator.yml
+  - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslikesimulator.yml
     parameters:
       isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
       isiOSLikeSimulatorOnlyBuild: ${{ variables.isiOSLikeSimulatorOnlyBuild }}
@@ -60,7 +60,7 @@ jobs:
 
 # Add Android jobs only for rolling builds
 - ${{ if eq(variables.isRollingBuild, true) }}:
-  - template: /eng/pipelines/runtime-extra-platforms-android.yml
+  - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-android.yml
     parameters:
       isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
       isAndroidOnlyBuild: ${{ variables.isAndroidOnlyBuild }}
@@ -68,7 +68,7 @@ jobs:
 
 # Add Android emulator jobs only for rolling builds
 - ${{ if eq(variables.isRollingBuild, true) }}:
-  - template: /eng/pipelines/runtime-extra-platforms-androidemulator.yml
+  - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-androidemulator.yml
     parameters:
       isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
       isAndroidEmulatorOnlyBuild: ${{ variables.isAndroidEmulatorOnlyBuild }}
@@ -76,7 +76,7 @@ jobs:
 
 # Add Mac Catalyst jobs only for rolling builds
 - ${{ if eq(variables.isRollingBuild, true) }}:
-  - template: /eng/pipelines/runtime-extra-platforms-maccatalyst.yml
+  - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-maccatalyst.yml
     parameters:
       isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
       isMacCatalystOnlyBuild: ${{ variables.isMacCatalystOnlyBuild }}
@@ -84,7 +84,7 @@ jobs:
 
 # Add Linux Bionic jobs only for rolling builds
 - ${{ if eq(variables.isRollingBuild, true) }}:
-  - template: /eng/pipelines/runtime-extra-platforms-linuxbionic.yml
+  - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-linuxbionic.yml
     parameters:
       isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
       isLinuxBionicOnlyBuild: ${{ variables.isLinuxBionicOnlyBuild }}
@@ -92,6 +92,6 @@ jobs:
 
 # Any jobs that are not specific to any platform
 - ${{ if eq(variables.isNotSpecificPlatformOnlyBuild, true) }}:
-  - template: /eng/pipelines/runtime-extra-platforms-other.yml
+  - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-other.yml
     parameters:
       isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}

@@ -10,7 +10,7 @@ variables:
 
 jobs:
 
-- template: /eng/pipelines/runtime-extra-platforms-ioslikesimulator.yml
+- template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslikesimulator.yml
   parameters:
     isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
     isiOSLikeSimulatorOnlyBuild: ${{ variables.isiOSLikeSimulatorOnlyBuild }}

@@ -9,7 +9,7 @@ variables:
 
 jobs:
 
-- template: /eng/pipelines/runtime-extra-platforms-ioslike.yml
+- template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml
   parameters:
     isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ variables.isiOSLikeOnlyBuild }}
