@@ -328,7 +328,7 @@ fi
 
 if [[ "$use_local_commit_time" == true ]]; then
     local_commit_time=$(git show -s --format=%ci $commit_sha)
-    setup_arguments="$setup_arguments --commit-time '$local_commit_time'"
+    setup_arguments="$setup_arguments --commit-time \"$local_commit_time\""
 fi
 
 if [[ "$run_from_perf_repo" == true ]]; then

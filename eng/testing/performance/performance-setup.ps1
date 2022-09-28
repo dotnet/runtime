@@ -124,7 +124,7 @@ elseif($FullPGO)
 if($UseLocalCommitTime)
 {
     $LocalCommitTime = (git show -s --format=%ci $CommitSha)
-    $SetupArguments = "$SetupArguments --commit-time '$LocalCommitTime'"
+    $SetupArguments = "$SetupArguments --commit-time `"$LocalCommitTime`""
 }
 
 if ($RunFromPerformanceRepo) {
