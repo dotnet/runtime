@@ -1213,10 +1213,11 @@ namespace System.Net.Quic.Tests
             cmd.StartInfo.RedirectStandardOutput = true;
             cmd.StartInfo.CreateNoWindow = true;
             cmd.StartInfo.UseShellExecute = false;
+            string siteWebUrl = "www.bing.com";
 
             // read ipv6 address of bing
             cmd.Start();
-            cmd.StandardInput.WriteLine("nslookup -query=AAAA www.bing.com");
+            cmd.StandardInput.WriteLine($"nslookup -query=AAAA {siteWebUrl}");
             cmd.StandardInput.Flush();
             cmd.StandardInput.Close();
             cmd.WaitForExit();
@@ -1244,7 +1245,19 @@ namespace System.Net.Quic.Tests
             var client = new HttpClient(handler);
             client.DefaultRequestVersion = HttpVersion.Version30;
             client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
-            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync($"https://[{ipAddress}]:443"));
+            Exception ex = null;
+
+            try
+            {
+                await client.GetAsync($"https://[{ipAddress}]:443");
+            }
+            catch (Exception genEx)
+            {
+                ex = genEx;
+            }
+
+            Assert.NotNull(ex);
+            Assert.True(ex.GetType() == typeof(HttpRequestException), $"could not send get request to {siteWebUrl} through ipv6 address {ipAddress}. {siteWebUrl} IPv6 resolution is :{Environment.NewLine}{ipLookupResult}");
             Assert.NotNull(ex.InnerException);
             Assert.IsType<QuicException>(ex.InnerException);
             Assert.Equal(10051, ex.HResult & 0xFFFF);
