@@ -1935,16 +1935,6 @@ interp_emit_metadata_update_ldflda (TransformData *td, MonoClassField *field, Mo
 	field_type = m_class_get_byval_arg (field_klass);
 	guint32 field_token = mono_metadata_make_token (MONO_TABLE_FIELD, mono_metadata_update_get_field_idx (field));
 
-#if 0
-	// FIXME: this should go in interp.c
-	static MonoMethod *get_instance_store = NULL;
-	if (G_UNLIKELY (get_instance_store == NULL)) {
-		MonoClass *table_class = mono_class_get_hot_reload_instance_field_table_class ();
-		get_instance_store = mono_class_get_method_from_name_checked (table_class, "GetInstanceFieldStore", 3, 0, error);
-		mono_error_assert_ok (error);
-	}
-	g_assert (get_instance_store);
-#endif
 	interp_add_ins (td, MINT_METADATA_UPDATE_LDFLDA);
 	td->sp--;
 	interp_ins_set_sreg (td->last_ins, td->sp [0].local);

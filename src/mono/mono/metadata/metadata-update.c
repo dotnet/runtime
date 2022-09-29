@@ -236,3 +236,9 @@ mono_metadata_update_get_method_params (MonoImage *image, uint32_t methoddef_tok
 {
 	return mono_component_hot_reload()->get_method_params (image, methoddef_token, out_param_count_opt);
 }
+
+gpointer
+mono_metadata_update_added_field_ldflda (MonoObject *instance, MonoType *field_type, uint32_t fielddef_token, MonoError *error)
+{
+	return mono_component_hot_reload()->added_field_ldflda (instance, field_type, fielddef_token, error);
+}

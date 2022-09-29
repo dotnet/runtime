@@ -98,6 +98,6 @@ uint32_t
 mono_metadata_update_get_method_params (MonoImage *image, uint32_t methoddef_token, uint32_t *out_param_count_opt);
 
 gpointer
-mono_metadata_update_ldflda (MonoObject *instance, MonoType *field_type, guint32 fielddef_token, MonoError *error);
+mono_metadata_update_added_field_ldflda (MonoObject *instance, MonoType *field_type, uint32_t fielddef_token, MonoError *error);
 
 #endif /*__MONO_METADATA_UPDATE_H__*/

@@ -147,6 +147,9 @@ hot_reload_get_capabilities (void);
 static uint32_t
 hot_reload_get_method_params (MonoImage *base_image, uint32_t methoddef_token, uint32_t *out_param_count_opt);
 
+static gpointer
+hot_reload_added_field_ldflda (MonoObject *instance, MonoType *field_type, uint32_t fielddef_token, MonoError *error);
+
 static MonoClassMetadataUpdateField *
 metadata_update_field_setup_basic_info (MonoImage *image_base, BaselineInfo *base_info, uint32_t generation, DeltaInfo *delta_info, MonoClass *parent_klass, uint32_t fielddef_token, uint32_t field_flags);
 
@@ -184,6 +187,7 @@ static MonoComponentHotReload fn_table = {
 	&hot_reload_get_num_methods_added,
 	&hot_reload_get_capabilities,
 	&hot_reload_get_method_params,
+        &hot_reload_added_field_ldflda,
 };
 
 MonoComponentHotReload *
@@ -3235,4 +3239,32 @@ static const char *
 hot_reload_get_capabilities (void)
 {
 	return "Baseline AddMethodToExistingType AddStaticFieldToExistingType NewTypeDefinition ChangeCustomAttributes";
+}
+
+static GENERATE_GET_CLASS_WITH_CACHE_DECL (hot_reload_instance_field_table);
+
+static GENERATE_GET_CLASS_WITH_CACHE(hot_reload_instance_field_table, "Mono.HotReload", "InstanceFieldTable");
+
+
+static gpointer
+hot_reload_added_field_ldflda (MonoObject *instance, MonoType *field_type, uint32_t fielddef_token, MonoError *error)
+{
+	// FIXME: this should go in interp.c
+	static MonoMethod *get_instance_store = NULL;
+	if (G_UNLIKELY (get_instance_store == NULL)) {
+		MonoClass *table_class = mono_class_get_hot_reload_instance_field_table_class ();
+		get_instance_store = mono_class_get_method_from_name_checked (table_class, "GetInstanceFieldStore", 3, 0, error);
+		mono_error_assert_ok (error);
+	}
+	g_assert (get_instance_store);
+
+        gpointer args[3];
+
+        args[0] = instance;
+        args[1] = &field_type;
+        args[2] = &fielddef_token;
+
+        gpointer result;
+        result = mono_runtime_invoke_checked (get_instance_store, NULL, args, error);
+        return result;
 }
