@@ -358,12 +358,11 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
     // we do not get any AP_PACKET addresses and so count == ip4count + ip6count.
     // We need to make sure that the memoryBlock is large enough to hold all interfaces
     // and all addresses without any overlap between interfaceList and addressList.
-    int interfaceCountUpperLimit = count;
+    int entriesCount = count + ip4count + ip6count;
 #else
-    int interfaceCountUpperLimit = count - ip4count - ip6count;
+    int entriesCount = count;
 #endif
-    size_t entriesCount = (size_t)(interfaceCountUpperLimit + ip4count + ip6count);
-    void * memoryBlock = calloc(entriesCount, sizeof(NetworkInterfaceInfo));
+    void * memoryBlock = calloc((size_t)entriesCount, sizeof(NetworkInterfaceInfo));
     if (memoryBlock == NULL)
     {
         errno = ENOMEM;
@@ -374,7 +373,7 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
     ifaddrsEntry = head;
     *interfaceList = nii = (NetworkInterfaceInfo*)memoryBlock;
     // address of first IpAddressInfo after all NetworkInterfaceInfo entries.
-    *addressList = ai = (IpAddressInfo*)(nii + interfaceCountUpperLimit);
+    *addressList = ai = (IpAddressInfo*)(nii + (entriesCount - ip4count - ip6count));
 
     while (ifaddrsEntry != NULL)
     {
