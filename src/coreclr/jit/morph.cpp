@@ -1283,8 +1283,8 @@ class ArgInterferenceGraph
     ArrayStack<int>                      m_stack;
     ArrayStack<int>                      m_sccs;
     // Registers that are used by an argument that does not also clobber that register.
-    regMaskTP                            m_regDependencies;
-    regMaskTP                            m_allClobbers;
+    regMaskTP m_regDependencies;
+    regMaskTP m_allClobbers;
 
 public:
     ArgInterferenceGraph(Compiler* comp, unsigned argCount)
@@ -1345,7 +1345,10 @@ public:
         }
     }
 
-    bool HasInterference() { return (m_allClobbers & m_regDependencies) != RBM_NONE; }
+    bool HasInterference()
+    {
+        return (m_allClobbers & m_regDependencies) != RBM_NONE;
+    }
 
 private:
     // Implementation of Tarjan's algorithm
