@@ -39,7 +39,7 @@ public:
     bool SaveToFile(const char* path);
     static bool LoadFromFile(const char* path, MetricsSummaries* metrics);
 private:
-    static bool WriteRow(HANDLE hFile, const char* name, const MetricsSummary& summary);
+    static bool WriteRow(class FileWriter& fw, const char* name, const MetricsSummary& summary);
 };
 
 #endif
