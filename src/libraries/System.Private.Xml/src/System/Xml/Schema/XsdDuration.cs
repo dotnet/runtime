@@ -23,6 +23,7 @@ namespace System.Xml.Schema
         private uint _nanoseconds;       // High bit is used to indicate whether duration is negative
 
         private const uint NegativeBit = 0x80000000;
+        private const int CharStackBufferSize = 20;
 
         private enum Parts
         {
@@ -334,13 +335,28 @@ namespace System.Xml.Schema
             return ToString(DurationType.Duration);
         }
 
+        public bool TryFormat(Span<char> destination, out int charsWritten, DurationType durationType = DurationType.Duration)
+        {
+            var sb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
+            Format(ref sb, durationType);
+
+            return sb.TryCopyTo(destination, out charsWritten);
+        }
+
         /// <summary>
         /// Return the string representation according to xsd:duration rules, xdt:dayTimeDuration rules, or
         /// xdt:yearMonthDuration rules.
         /// </summary>
         internal string ToString(DurationType durationType)
         {
-            var vsb = new ValueStringBuilder(stackalloc char[20]);
+            var vsb = new ValueStringBuilder(stackalloc char[CharStackBufferSize]);
+            Format(ref vsb, durationType);
+
+            return vsb.ToString();
+        }
+
+        private void Format(ref ValueStringBuilder vsb, DurationType durationType)
+        {
             int nanoseconds, digit, zeroIdx, len;
 
             if (IsNegative)
@@ -410,7 +426,8 @@ namespace System.Xml.Schema
                             }
 
                             vsb.EnsureCapacity(zeroIdx + 1);
-                            vsb.Append(tmpSpan.Slice(0, zeroIdx - len + 1));
+                            var nanoSpanLength = zeroIdx - len + 1;
+                            tmpSpan[..nanoSpanLength].TryCopyTo(vsb.AppendSpan(nanoSpanLength));
                         }
                         vsb.Append('S');
                     }
@@ -426,8 +443,6 @@ namespace System.Xml.Schema
                 if (vsb[vsb.Length - 1] == 'P')
                     vsb.Append("0M");
             }
-
-            return vsb.ToString();
         }
 
         internal static Exception? TryParse(string s, out XsdDuration result)
