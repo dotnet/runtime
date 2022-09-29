@@ -157,28 +157,16 @@ namespace System.Reflection
             ParameterInfo[] parameters = attr.Constructor.GetParameters();
             System.Collections.Generic.IList<CustomAttributeTypedArgument> args = attr.ConstructorArguments;
 
-            if (parameters[2].ParameterType == typeof(uint))
-            {
-                // DecimalConstantAttribute(byte scale, byte sign, uint hi, uint mid, uint low)
-                int low = (int)(uint)args[4].Value!;
-                int mid = (int)(uint)args[3].Value!;
-                int hi = (int)(uint)args[2].Value!;
-                byte sign = (byte)args[1].Value!;
-                byte scale = (byte)args[0].Value!;
+            // constructor DecimalConstantAttribute(byte scale, byte sign, uint hi, uint mid, uint low) is not CLS-compliant
+            bool isClsCompliant = parameters[2].ParameterType == typeof(int);
 
-                return new decimal(low, mid, hi, sign != 0, scale);
-            }
-            else
-            {
-                // DecimalConstantAttribute(byte scale, byte sign, int hi, int mid, int low)
-                int low = (int)args[4].Value!;
-                int mid = (int)args[3].Value!;
-                int hi = (int)args[2].Value!;
-                byte sign = (byte)args[1].Value!;
-                byte scale = (byte)args[0].Value!;
+            int low = isClsCompliant ? (int)args[4].Value! : (int)(uint)args[4].Value!;
+            int mid = isClsCompliant ? (int)args[3].Value! : (int)(uint)args[3].Value!;
+            int hi = isClsCompliant ? (int)args[2].Value! : (int)(uint)args[2].Value!;
+            byte sign = (byte)args[1].Value!;
+            byte scale = (byte)args[0].Value!;
 
-                return new decimal(low, mid, hi, sign != 0, scale);
-            }
+            return new decimal(low, mid, hi, sign != 0, scale);
         }
 
         private static DateTime GetRawDateTimeConstant(CustomAttributeData attr)
