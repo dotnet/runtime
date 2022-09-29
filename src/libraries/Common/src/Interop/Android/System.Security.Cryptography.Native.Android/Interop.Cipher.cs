@@ -152,6 +152,7 @@ internal static partial class Interop
         {
             scoped Span<byte> notNullOutput = output;
 
+            // We can't pass null down to the native shim, so create a valid pointer if we have an empty span.
             if (notNullOutput.IsEmpty)
             {
                 notNullOutput = (stackalloc byte[1]).Slice(1);
