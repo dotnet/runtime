@@ -2038,14 +2038,17 @@ ep_rt_thread_create (
 
 				if (thread_params->thread_params.thread->CreateNewThread (0, ep_rt_thread_coreclr_start_func, thread_params))
 				{
-					thread_params->thread_params.thread->SetBackground (TRUE);
-					thread_params->thread_params.thread->StartThread ();
-
 					if (id)
 					{
 						*reinterpret_cast<DWORD *>(id) = thread_params->thread_params.thread->GetThreadId ();
 					}
+					thread_params->thread_params.thread->SetBackground (TRUE);
+					thread_params->thread_params.thread->StartThread ();
 					result = true;
+				}
+				else
+				{
+					delete thread_params;
 				}
 			}
 		}
