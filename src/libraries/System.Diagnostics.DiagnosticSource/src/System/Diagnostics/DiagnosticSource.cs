@@ -37,6 +37,12 @@ namespace System.Diagnostics
         [RequiresUnreferencedCode(WriteRequiresUnreferencedCode)]
         public abstract void Write(string name, object? value);
 
+        /// <inheritdoc cref="Write"/>
+        /// <typeparam name="T">The type of the value being passed as a payload for the event.</typeparam>
+        [RequiresUnreferencedCode(WriteRequiresUnreferencedCode)]
+        public void Write<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(string name, T? value) =>
+            Write(name, (object?)value);
+
         /// <summary>
         /// Optional: if there is expensive setup for the notification, you can call IsEnabled
         /// before doing this setup.   Consumers should not be assuming that they only get notifications
