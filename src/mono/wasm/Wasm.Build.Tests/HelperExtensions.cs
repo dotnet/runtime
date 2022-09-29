@@ -120,5 +120,18 @@ namespace Wasm.Build.Tests
                 dict[filename] = (oldValue.fullPath, unchanged);
             }
         }
+
+        public static ProcessStartInfo RemoveEnvironmentVariables(this ProcessStartInfo psi, params string[] names)
+        {
+            var env = psi.Environment;
+            foreach (string name in names)
+            {
+                string? key = env.Keys.FirstOrDefault(k => string.Compare(k, name, StringComparison.OrdinalIgnoreCase) == 0);
+                if (key is not null)
+                    env.Remove("MSBuildSDKsPath");
+            }
+
+            return psi;
+        }
     }
 }
