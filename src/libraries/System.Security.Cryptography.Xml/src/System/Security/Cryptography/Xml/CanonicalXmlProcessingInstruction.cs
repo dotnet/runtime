@@ -44,7 +44,7 @@ namespace System.Security.Cryptography.Xml
             if (!IsInNodeSet)
                 return;
 
-            UTF8Encoding utf8 = new UTF8Encoding(false);
+            Encoding utf8 = Utils.DefaultEncoding;
             byte[] rgbData;
             if (docPos == DocPosition.AfterRootElement)
             {

@@ -23,6 +23,8 @@ namespace System.Security.Cryptography.Xml
         // Keeping this number low will preserve some stack space
         internal const int XmlDsigSearchDepth = 20;
 
+        internal static readonly Encoding DefaultEncoding = new UTF8Encoding(false);
+
         private static bool HasNamespace(XmlElement element, string prefix, string value)
         {
             if (IsCommittedNamespace(element, prefix, value)) return true;

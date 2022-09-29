@@ -32,7 +32,7 @@ namespace System.Security.Cryptography.Xml
 
         public void WriteHash(HashAlgorithm hash, DocPosition docPos, AncestralNamespaceContextManager anc)
         {
-            UTF8Encoding utf8 = new UTF8Encoding(false);
+            Encoding utf8 = Utils.DefaultEncoding;
             byte[] rgbData = utf8.GetBytes(" " + Name + "=\"");
             hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
             rgbData = utf8.GetBytes(Utils.EscapeAttributeValue(Value));

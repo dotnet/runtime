@@ -61,8 +61,7 @@ namespace System.Security.Cryptography.Xml
         {
             StringBuilder sb = new StringBuilder();
             _c14nDoc.Write(sb, DocPosition.BeforeRootElement, _ancMgr);
-            UTF8Encoding utf8 = new UTF8Encoding(false);
-            return utf8.GetBytes(sb.ToString());
+            return Utils.DefaultEncoding.GetBytes(sb.ToString());
         }
 
         internal byte[] GetDigestedBytes(HashAlgorithm hash)

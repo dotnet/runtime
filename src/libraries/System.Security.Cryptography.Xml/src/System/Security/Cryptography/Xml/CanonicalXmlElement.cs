@@ -100,7 +100,7 @@ namespace System.Security.Cryptography.Xml
             Hashtable nsLocallyDeclared = new Hashtable();
             SortedList nsListToRender = new SortedList(new NamespaceSortOrder());
             SortedList attrListToRender = new SortedList(new AttributeSortOrder());
-            UTF8Encoding utf8 = new UTF8Encoding(false);
+            Encoding encoding = Utils.DefaultEncoding;
             byte[] rgbData;
 
             XmlAttributeCollection attrList = Attributes;
@@ -137,7 +137,7 @@ namespace System.Security.Cryptography.Xml
             if (IsInNodeSet)
             {
                 anc.GetNamespacesToRender(this, attrListToRender, nsListToRender, nsLocallyDeclared);
-                rgbData = utf8.GetBytes("<" + Name);
+                rgbData = encoding.GetBytes("<" + Name);
                 hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
                 foreach (object attr in nsListToRender.GetKeyList())
                 {
@@ -147,7 +147,7 @@ namespace System.Security.Cryptography.Xml
                 {
                     (attr as CanonicalXmlAttribute)!.WriteHash(hash, docPos, anc);
                 }
-                rgbData = utf8.GetBytes(">");
+                rgbData = encoding.GetBytes(">");
                 hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
             }
 
@@ -165,7 +165,7 @@ namespace System.Security.Cryptography.Xml
 
             if (IsInNodeSet)
             {
-                rgbData = utf8.GetBytes("</" + Name + ">");
+                rgbData = encoding.GetBytes("</" + Name + ">");
                 hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
             }
         }
