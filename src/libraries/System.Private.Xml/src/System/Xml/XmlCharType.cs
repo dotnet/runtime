@@ -90,9 +90,6 @@ namespace System.Xml
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNameCharXml4e(char ch) => IsNCNameCharXml4e(ch) || ch == ':';
 
-        // Digit methods
-        public static bool IsDigit(char ch) => InRange(ch, 0x30, 0x39);
-
         // Surrogate methods
         internal static bool IsHighSurrogate(int ch) => InRange(ch, SurHighStart, SurHighEnd);
 
@@ -163,7 +160,7 @@ namespace System.Xml
 
             for (int i = startPos; i < startPos + len; i++)
             {
-                if (!IsDigit(str[i]))
+                if (!char.IsAsciiDigit(str[i]))
                 {
                     return false;
                 }

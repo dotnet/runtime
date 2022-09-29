@@ -1708,13 +1708,8 @@ void* interceptor_ICJI::getFieldAddress(CORINFO_FIELD_HANDLE field, void** ppInd
 CORINFO_CLASS_HANDLE interceptor_ICJI::getStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field, bool* pIsSpeculative)
 {
     mc->cr->AddCall("getStaticFieldCurrentClass");
-    bool                 localIsSpeculative = false;
-    CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getStaticFieldCurrentClass(field, &localIsSpeculative);
-    mc->recGetStaticFieldCurrentClass(field, localIsSpeculative, result);
-    if (pIsSpeculative != nullptr)
-    {
-        *pIsSpeculative = localIsSpeculative;
-    }
+    CORINFO_CLASS_HANDLE result = original_ICorJitInfo->getStaticFieldCurrentClass(field, pIsSpeculative);
+    mc->recGetStaticFieldCurrentClass(field, (pIsSpeculative == nullptr) ? false : *pIsSpeculative, result);
     return result;
 }
 

@@ -12,8 +12,8 @@ namespace System.Security.Cryptography.Xml
     {
         private bool _isInNodeSet;
 
-        public CanonicalXmlElement(string prefix, string localName, string namespaceURI, XmlDocument doc, bool defaultNodeSetInclusionState)
-            : base(prefix, localName, namespaceURI, doc)
+        public CanonicalXmlElement(string? prefix, string localName, string? namespaceURI, XmlDocument doc, bool defaultNodeSetInclusionState)
+            : base(prefix!, localName, namespaceURI, doc)
         {
             _isInNodeSet = defaultNodeSetInclusionState;
         }
@@ -30,7 +30,7 @@ namespace System.Security.Cryptography.Xml
             SortedList nsListToRender = new SortedList(new NamespaceSortOrder());
             SortedList attrListToRender = new SortedList(new AttributeSortOrder());
 
-            XmlAttributeCollection attrList = Attributes;
+            XmlAttributeCollection? attrList = Attributes;
             if (attrList != null)
             {
                 foreach (XmlAttribute attr in attrList)
@@ -68,11 +68,11 @@ namespace System.Security.Cryptography.Xml
                 strBuilder.Append('<').Append(Name);
                 foreach (object attr in nsListToRender.GetKeyList())
                 {
-                    (attr as CanonicalXmlAttribute).Write(strBuilder, docPos, anc);
+                    (attr as CanonicalXmlAttribute)!.Write(strBuilder, docPos, anc);
                 }
                 foreach (object attr in attrListToRender.GetKeyList())
                 {
-                    (attr as CanonicalXmlAttribute).Write(strBuilder, docPos, anc);
+                    (attr as CanonicalXmlAttribute)!.Write(strBuilder, docPos, anc);
                 }
                 strBuilder.Append('>');
             }
@@ -141,11 +141,11 @@ namespace System.Security.Cryptography.Xml
                 hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
                 foreach (object attr in nsListToRender.GetKeyList())
                 {
-                    (attr as CanonicalXmlAttribute).WriteHash(hash, docPos, anc);
+                    (attr as CanonicalXmlAttribute)!.WriteHash(hash, docPos, anc);
                 }
                 foreach (object attr in attrListToRender.GetKeyList())
                 {
-                    (attr as CanonicalXmlAttribute).WriteHash(hash, docPos, anc);
+                    (attr as CanonicalXmlAttribute)!.WriteHash(hash, docPos, anc);
                 }
                 rgbData = utf8.GetBytes(">");
                 hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);

@@ -252,7 +252,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <HelixCorrelationPayload Include="openssl" Uri="https://netcorenativeassets.blob.core.windows.net/resource-packages/external/android/openssl-1.1.1l-beta-1.zip" Destination="openssl" />
+      <HelixCorrelationPayload Condition="$(TargetRuntimeIdentifier.ToLowerInvariant().StartsWith('linux-bionic'))" Include="openssl" Uri="https://netcorenativeassets.blob.core.windows.net/resource-packages/external/android/openssl-1.1.1l-beta-1.zip" Destination="openssl" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(EnableDefaultBuildHelixWorkItems)' == 'true'">

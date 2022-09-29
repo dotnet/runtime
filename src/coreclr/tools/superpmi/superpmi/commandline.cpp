@@ -83,10 +83,6 @@ void CommandLine::DumpHelp(const char* program)
     printf("\n");
     printf(" -metricsSummary <file name>, -baseMetricsSummary <file name.csv>\n");
     printf("     Emit a summary of metrics to the specified file\n");
-    printf("     Currently includes:\n");
-    printf("       Total number of successful SPMI compiles\n");
-    printf("       Total number of failing SPMI compiles\n");
-    printf("       Total amount of ASM code in bytes\n");
     printf("\n");
     printf(" -diffMetricsSummary <file name>\n");
     printf("     Same as above, but emit for the diff/second JIT");
@@ -322,7 +318,7 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
 
                 o->mclFilename = argv[i];
             }
-            else if ((_strnicmp(&argv[i][1], "diffMCList", 10) == 0))
+            else if ((_strnicmp(&argv[i][1], "diffsInfo", 9) == 0))
             {
                 if (++i >= argc)
                 {
@@ -330,7 +326,7 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                     return false;
                 }
 
-                o->diffMCLFilename = argv[i];
+                o->diffsInfo = argv[i];
             }
             else if ((_strnicmp(&argv[i][1], "target", 6) == 0))
             {
@@ -645,9 +641,9 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
         DumpHelp(argv[0]);
         return false;
     }
-    if (o->diffMCLFilename != nullptr && !o->applyDiff)
+    if (o->diffsInfo != nullptr && !o->applyDiff)
     {
-        LogError("-diffMCList specified without -applyDiff.");
+        LogError("-diffsInfo specified without -applyDiff.");
         DumpHelp(argv[0]);
         return false;
     }

@@ -22,7 +22,7 @@ class StringLiteralEntry;
 // Allocate 16 entries (approx size sizeof(StringLiteralEntry)*16)
 #define MAX_ENTRIES_PER_CHUNK 16
 
-STRINGREF AllocateStringObject(EEStringData *pStringData);
+STRINGREF AllocateStringObject(EEStringData *pStringData, bool preferFrozenObjHeap, bool* pIsFrozen);
 
 // Loader allocator specific string literal map.
 class StringLiteralMap
@@ -42,10 +42,10 @@ public:
     }
 
     // Method to retrieve a string from the map.
-    STRINGREF *GetStringLiteral(EEStringData *pStringData, BOOL bAddIfNotFound, BOOL bAppDomainWontUnload);
+    STRINGREF *GetStringLiteral(EEStringData *pStringData, BOOL bAddIfNotFound, BOOL bIsCollectible, void** ppPinnedString = nullptr);
 
     // Method to explicitly intern a string object.
-    STRINGREF *GetInternedString(STRINGREF *pString, BOOL bAddIfNotFound, BOOL bAppDomainWontUnload);
+    STRINGREF *GetInternedString(STRINGREF *pString, BOOL bAddIfNotFound, BOOL bIsCollectible);
 
 private:
     // Hash tables that maps a Unicode string to a COM+ string handle.
@@ -71,10 +71,10 @@ public:
     void Init();
 
     // Method to retrieve a string from the map. Takes a precomputed hash (for perf).
-    StringLiteralEntry *GetStringLiteral(EEStringData *pStringData, DWORD dwHash, BOOL bAddIfNotFound);
+    StringLiteralEntry *GetStringLiteral(EEStringData *pStringData, DWORD dwHash, BOOL bAddIfNotFound, BOOL bPreferFrozenObjectHeap);
 
     // Method to explicitly intern a string object. Takes a precomputed hash (for perf).
-    StringLiteralEntry *GetInternedString(STRINGREF *pString, DWORD dwHash, BOOL bAddIfNotFound);
+    StringLiteralEntry *GetInternedString(STRINGREF *pString, DWORD dwHash, BOOL bAddIfNotFound, BOOL bPreferFrozenObjectHeap);
 
     // Method to calculate the hash
     DWORD GetHash(EEStringData* pData)
@@ -92,10 +92,10 @@ public:
 
 private:
     // Helper method to add a string to the global string literal map.
-    StringLiteralEntry *AddStringLiteral(EEStringData *pStringData);
+    StringLiteralEntry *AddStringLiteral(EEStringData *pStringData, bool preferFrozenObjHeap);
 
     // Helper method to add an interned string.
-    StringLiteralEntry *AddInternedString(STRINGREF *pString);
+    StringLiteralEntry *AddInternedString(STRINGREF *pString, bool preferFrozenObjHeap);
 
     // Called by StringLiteralEntry when its RefCount falls to 0.
     void RemoveStringLiteralEntry(StringLiteralEntry *pEntry);
@@ -123,6 +123,10 @@ class StringLiteralEntryArray;
 // Ref counted entry representing a string literal.
 class StringLiteralEntry
 {
+    #define SLE_IS_FROZEN      (1u << 31)
+    #define SLE_IS_OVERFLOWED  (1u << 30)
+    #define SLE_REFCOUNT_MASK  (SLE_IS_FROZEN | SLE_IS_OVERFLOWED)
+
 private:
     StringLiteralEntry(EEStringData *pStringData, STRINGREF *pStringObj)
     : m_pStringObj(pStringObj), m_dwRefCount(1)
@@ -132,6 +136,16 @@ private:
     {
         LIMITED_METHOD_CONTRACT;
     }
+
+    StringLiteralEntry(EEStringData *pStringData, STRINGREF frozenStringObj)
+    : m_FrozenStringObj(frozenStringObj), m_dwRefCount(1 | SLE_IS_FROZEN)
+#ifdef _DEBUG
+      , m_bDeleted(FALSE)
+#endif
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
+
 protected:
     ~StringLiteralEntry()
     {
@@ -152,18 +166,24 @@ public:
             NOTHROW;
             GC_NOTRIGGER;
             PRECONDITION(CheckPointer<void>(this));
-            PRECONDITION((LONG)VolatileLoad(&m_dwRefCount) > 0);
+            PRECONDITION(GetRefCount() != 0);
             PRECONDITION(SystemDomain::GetGlobalStringLiteralMapNoCreate()->m_HashTableCrstGlobal.OwnedByCurrentThread());
         }
         CONTRACTL_END;
 
         _ASSERTE (!m_bDeleted);
 
-        // We will keep the item alive forever if the refcount overflowed
-        if ((LONG)VolatileLoad(&m_dwRefCount) < 0)
+        if (IsAlwaysAlive())
             return;
 
-        VolatileStore(&m_dwRefCount, VolatileLoad(&m_dwRefCount) + 1);
+        if ((GetRefCount() + 1) & SLE_IS_OVERFLOWED)
+        {
+            VolatileStore(&m_dwRefCount, VolatileLoad(&m_dwRefCount) | SLE_IS_OVERFLOWED);
+        }
+        else
+        {
+            VolatileStore(&m_dwRefCount, VolatileLoad(&m_dwRefCount) + 1);
+        }
     }
 #ifndef DACCESS_COMPILE
     FORCEINLINE static void StaticRelease(StringLiteralEntry* pEntry)
@@ -192,17 +212,16 @@ public:
             NOTHROW;
             GC_NOTRIGGER;
             PRECONDITION(CheckPointer<void>(this));
-            PRECONDITION(VolatileLoad(&m_dwRefCount) > 0);
+            PRECONDITION(GetRefCount() > 0);
             PRECONDITION(SystemDomain::GetGlobalStringLiteralMapNoCreate()->m_HashTableCrstGlobal.OwnedByCurrentThread());
         }
         CONTRACTL_END;
 
-        // We will keep the item alive forever if the refcount overflowed
-        if ((LONG)VolatileLoad(&m_dwRefCount) < 0)
+        if (IsAlwaysAlive())
             return;
 
         VolatileStore(&m_dwRefCount, VolatileLoad(&m_dwRefCount) - 1);
-        if (VolatileLoad(&m_dwRefCount) == 0)
+        if (GetRefCount() == 0)
         {
             _ASSERTE(SystemDomain::GetGlobalStringLiteralMapNoCreate());
             SystemDomain::GetGlobalStringLiteralMapNoCreate()->RemoveStringLiteralEntry(this);
@@ -212,7 +231,7 @@ public:
     }
 #endif // DACCESS_COMPILE
 
-    LONG GetRefCount()
+    DWORD GetRefCount()
     {
         CONTRACTL
         {
@@ -224,7 +243,7 @@ public:
 
         _ASSERTE (!m_bDeleted);
 
-        return (VolatileLoad(&m_dwRefCount));
+        return VolatileLoad(&m_dwRefCount) & ~SLE_REFCOUNT_MASK;
     }
 
     STRINGREF* GetStringObject()
@@ -236,7 +255,7 @@ public:
             PRECONDITION(CheckPointer(this));
         }
         CONTRACTL_END;
-        return m_pStringObj;
+        return IsStringFrozen() ? &m_FrozenStringObj : m_pStringObj;
     }
 
     void GetStringData(EEStringData *pStringData)
@@ -254,20 +273,41 @@ public:
         WCHAR *thisChars;
         int thisLength;
 
-        ObjectToSTRINGREF(*(StringObject**)m_pStringObj)->RefInterpretGetStringValuesDangerousForGC(&thisChars, &thisLength);
+        ObjectToSTRINGREF(*GetStringObject())->RefInterpretGetStringValuesDangerousForGC(&thisChars, &thisLength);
         pStringData->SetCharCount (thisLength); // thisLength is in WCHARs and that's what EEStringData's char count wants
         pStringData->SetStringBuffer (thisChars);
     }
 
-    static StringLiteralEntry *AllocateEntry(EEStringData *pStringData, STRINGREF *pStringObj);
+private:
+    static void* AllocateEntryInternal();
+
+public:
+    static StringLiteralEntry *AllocateEntry(EEStringData *pStringData, STRINGREF* pStringObj);
+    static StringLiteralEntry* AllocateFrozenEntry(EEStringData* pStringData, STRINGREF pFrozenStringObj);
     static void DeleteEntry (StringLiteralEntry *pEntry);
 
+    bool IsStringFrozen()
+    {
+        return VolatileLoad(&m_dwRefCount) & SLE_IS_FROZEN;
+    }
+
+    bool IsAlwaysAlive()
+    {
+        // If string literal is either frozen or its counter overflowed
+        // we'll keep it always alive
+        return VolatileLoad(&m_dwRefCount) & (SLE_IS_OVERFLOWED | SLE_IS_FROZEN);
+    }
+
 private:
-    STRINGREF*                  m_pStringObj;
     union
     {
-        DWORD                       m_dwRefCount;
-        StringLiteralEntry         *m_pNext;
+        STRINGREF*              m_pStringObj;
+        STRINGREF               m_FrozenStringObj;
+    };
+    union
+    {
+        DWORD                   m_dwRefCount;
+        StringLiteralEntry      *m_pNext;
     };
 
 #ifdef _DEBUG

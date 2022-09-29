@@ -85,6 +85,7 @@ class SpanningTreeVisitor;   // defined in fgprofile.cpp
 class CSE_DataFlow;          // defined in OptCSE.cpp
 class OptBoolsDsc;           // defined in optimizer.cpp
 struct RelopImplicationInfo; // defined in redundantbranchopts.cpp
+struct JumpThreadInfo;       // defined in redundantbranchopts.cpp
 #ifdef DEBUG
 struct IndentStack;
 #endif
@@ -1830,6 +1831,7 @@ class Compiler
 
 #ifdef FEATURE_HW_INTRINSICS
     friend struct HWIntrinsicInfo;
+    friend struct SimdAsHWIntrinsicInfo;
 #endif // FEATURE_HW_INTRINSICS
 
 #ifndef TARGET_64BIT
@@ -2248,7 +2250,7 @@ public:
     Statement* gtNewStmt(GenTree* expr, const DebugInfo& di);
 
     // For unary opers.
-    GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, bool doSimplifications = TRUE);
+    GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1);
 
     // For binary opers.
     GenTree* gtNewOperNode(genTreeOps oper, var_types type, GenTree* op1, GenTree* op2);
@@ -2293,13 +2295,11 @@ public:
 
     GenTree* gtNewSconNode(int CPX, CORINFO_MODULE_HANDLE scpHandle);
 
-    GenTreeVecCon* gtNewVconNode(var_types type, CorInfoType simdBaseJitType);
+    GenTreeVecCon* gtNewVconNode(var_types type);
 
     GenTree* gtNewAllBitsSetConNode(var_types type);
-    GenTree* gtNewAllBitsSetConNode(var_types type, CorInfoType simdBaseJitType);
 
     GenTree* gtNewZeroConNode(var_types type);
-    GenTree* gtNewZeroConNode(var_types type, CorInfoType simdBaseJitType);
 
     GenTree* gtNewOneConNode(var_types type);
 
@@ -3808,7 +3808,7 @@ public:
     void impInsertTreeBefore(GenTree* tree, const DebugInfo& di, Statement* stmtBefore);
     void impAssignTempGen(unsigned         tmp,
                           GenTree*         val,
-                          unsigned         curLevel   = (unsigned)CHECK_SPILL_NONE,
+                          unsigned         curLevel   = CHECK_SPILL_NONE,
                           Statement**      pAfterStmt = nullptr,
                           const DebugInfo& di         = DebugInfo(),
                           BasicBlock*      block      = nullptr);
@@ -3928,13 +3928,6 @@ private:
     unsigned impInitBlockLineInfo();
 
     bool impIsThis(GenTree* obj);
-    bool impIsLDFTN_TOKEN(const BYTE* delegateCreateStart, const BYTE* newobjCodeAddr);
-    bool impIsDUP_LDVIRTFTN_TOKEN(const BYTE* delegateCreateStart, const BYTE* newobjCodeAddr);
-    bool impIsAnySTLOC(OPCODE opcode)
-    {
-        return ((opcode == CEE_STLOC) || (opcode == CEE_STLOC_S) ||
-                ((opcode >= CEE_STLOC_0) && (opcode <= CEE_STLOC_3)));
-    }
 
     void impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call);
 
@@ -3953,10 +3946,9 @@ private:
 
     struct PendingDsc
     {
-        PendingDsc*   pdNext;
-        BasicBlock*   pdBB;
-        SavedStack    pdSavedStack;
-        ThisInitState pdThisPtrInit;
+        PendingDsc* pdNext;
+        BasicBlock* pdBB;
+        SavedStack  pdSavedStack;
     };
 
     PendingDsc* impPendingList; // list of BBs currently waiting to be imported.
@@ -4127,7 +4119,6 @@ private:
 
     void FreeBlockListNode(BlockListNode* node);
 
-    bool impIsValueType(typeInfo* pTypeInfo);
     var_types mangleVarArgsType(var_types type);
 
     regNumber getCallArgIntRegister(regNumber floatReg);
@@ -5749,6 +5740,7 @@ private:
     GenTree* fgMorphStoreDynBlock(GenTreeStoreDynBlk* tree);
     GenTree* fgMorphForRegisterFP(GenTree* tree);
     GenTree* fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optAssertionPropDone = nullptr);
+    void fgTryReplaceStructLocalWithField(GenTree* tree);
     GenTree* fgOptimizeCast(GenTreeCast* cast);
     GenTree* fgOptimizeCastOnAssignment(GenTreeOp* asg);
     GenTree* fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp);
@@ -5906,8 +5898,6 @@ private:
     // a "lclField", to make it masquerade as an integral type in the ABI.  Make sure that
     // the variable is not enregistered, and is therefore not promoted independently.
     void fgLclFldAssign(unsigned lclNum);
-
-    static fgWalkPreFn gtHasLocalsWithAddrOpCB;
 
     enum TypeProducerKind
     {
@@ -6213,6 +6203,12 @@ public:
             {
                 return false;
             }
+        }
+
+        // Returns "true" iff this is removed loop.
+        bool lpIsRemoved() const
+        {
+            return (lpFlags & LPFLG_REMOVED) != 0;
         }
 
         // Returns "true" iff "*this" contains the blk.
@@ -6970,8 +6966,13 @@ public:
     PhaseStatus optRedundantBranches();
     bool optRedundantRelop(BasicBlock* const block);
     bool optRedundantBranch(BasicBlock* const block);
-    bool optJumpThread(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
+    bool optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
+    bool optJumpThreadPhi(BasicBlock* const block, GenTree* tree, ValueNum treeNormVN);
+    bool optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock);
+    bool optJumpThreadCore(JumpThreadInfo& jti);
     bool optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock, BasicBlock* const excludedBlock);
+    BitVecTraits* optReachableBitVecTraits;
+    BitVec        optReachableBitVec;
     void optRelopImpliesRelop(RelopImplicationInfo* rii);
 
     /**************************************************************************
@@ -8311,6 +8312,10 @@ private:
 #endif // defined(TARGET_XARCH)
 #endif // FEATURE_HW_INTRINSICS
 
+        CORINFO_CLASS_HANDLE CanonicalSimd8Handle;
+        CORINFO_CLASS_HANDLE CanonicalSimd16Handle;
+        CORINFO_CLASS_HANDLE CanonicalSimd32Handle;
+
         SIMDHandlesCache()
         {
             memset(this, 0, sizeof(*this));
@@ -8402,6 +8407,44 @@ private:
         return clsHnd;
     }
 #endif // FEATURE_HW_INTRINSICS
+
+    //------------------------------------------------------------------------
+    // gtGetCanonicalStructHandleForSIMD: Get the "canonical" SIMD type handle.
+    //
+    // Some SIMD-typed trees do not carry struct handles with them (and in
+    // some cases, they cannot, due to being created by the compiler itself).
+    // To enable CSEing of these trees, we use "canonical" handles. These are
+    // captured during importation, and can represent any type normalized to
+    // be TYP_SIMD.
+    //
+    // Arguments:
+    //    simdType - The SIMD type
+    //
+    // Return Value:
+    //    The "canonical" type handle for "simdType", if one was available.
+    //    "NO_CLASS_HANDLE" otherwise.
+    //
+    CORINFO_CLASS_HANDLE gtGetCanonicalStructHandleForSIMD(var_types simdType)
+    {
+        if (m_simdHandleCache == nullptr)
+        {
+            return NO_CLASS_HANDLE;
+        }
+
+        switch (simdType)
+        {
+            case TYP_SIMD8:
+                return m_simdHandleCache->CanonicalSimd8Handle;
+            case TYP_SIMD12:
+                return m_simdHandleCache->SIMDVector3Handle;
+            case TYP_SIMD16:
+                return m_simdHandleCache->CanonicalSimd16Handle;
+            case TYP_SIMD32:
+                return m_simdHandleCache->CanonicalSimd32Handle;
+            default:
+                unreached();
+        }
+    }
 
     // Returns true if this is a SIMD type that should be considered an opaque
     // vector type (i.e. do not analyze or promote its fields).
@@ -9246,8 +9289,6 @@ public:
         bool dspGCtbls;                // Display the GC tables
 #endif
 
-        bool compExpandCallsEarly; // True if we should expand virtual call targets early for this method
-
 // Default numbers used to perform loop alignment. All the numbers are chosen
 // based on experimenting with various benchmarks.
 
@@ -9262,6 +9303,9 @@ public:
 // at most 3 times the alignment block size. If the loop is bigger than that, it is most
 // likely complicated enough that loop alignment will not impact performance.
 #define DEFAULT_MAX_LOOPSIZE_FOR_ALIGN DEFAULT_ALIGN_LOOP_BOUNDARY * 3
+
+// By default only single iteration loops will be unrolled
+#define DEFAULT_UNROLL_LOOP_MAX_ITERATION_COUNT 1
 
 #ifdef DEBUG
         // Loop alignment variables
@@ -9290,6 +9334,9 @@ public:
 
         // If set, tracks the hidden return buffer for struct arg.
         bool compJitOptimizeStructHiddenBuffer;
+
+        // Iteration limit to unroll a loop.
+        unsigned short compJitUnrollLoopMaxIterationCount;
 
 #ifdef LATE_DISASM
         bool doLateDisasm; // Run the late disassembler
@@ -10233,37 +10280,6 @@ public:
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     XX                                                                           XX
-    XX                           typeInfo                                        XX
-    XX                                                                           XX
-    XX   Checks for type compatibility and merges types                          XX
-    XX                                                                           XX
-    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    */
-
-public:
-    // Returns true if child is equal to or a subtype of parent for merge purposes
-    // This support is necessary to support attributes that are not described in
-    // for example, signatures. For example, the permanent home byref (byref that
-    // points to the gc heap), isn't a property of method signatures, therefore,
-    // it is safe to have mismatches here (that tiCompatibleWith will not flag),
-    // but when deciding if we need to reimport a block, we need to take these
-    // in account
-    bool tiMergeCompatibleWith(const typeInfo& pChild, const typeInfo& pParent, bool normalisedForStack) const;
-
-    // Returns true if child is equal to or a subtype of parent.
-    // normalisedForStack indicates that both types are normalised for the stack
-    bool tiCompatibleWith(const typeInfo& pChild, const typeInfo& pParent, bool normalisedForStack) const;
-
-    // Merges pDest and pSrc. Returns false if merge is undefined.
-    // *pDest is modified to represent the merged type.  Sets "*changed" to true
-    // if this changes "*pDest".
-    bool tiMergeToCommonParent(typeInfo* pDest, const typeInfo* pSrc, bool* changed) const;
-
-    /*
-    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    XX                                                                           XX
     XX                           IL verification stuff                           XX
     XX                                                                           XX
     XX                                                                           XX
@@ -10272,45 +10288,22 @@ public:
     */
 
 public:
-    // The following is used to track liveness of local variables, initialization
-    // of valueclass constructors, and type safe use of IL instructions.
-
-    // dynamic state info needed for verification
     EntryState verCurrentState;
-
-    // this ptr of object type .ctors are considered intited only after
-    // the base class ctor is called, or an alternate ctor is called.
-    // An uninited this ptr can be used to access fields, but cannot
-    // be used to call a member function.
-    bool verTrackObjCtorInitState;
 
     void verInitBBEntryState(BasicBlock* block, EntryState* currentState);
 
-    // Requires that "tis" is not TIS_Bottom -- it's a definite init/uninit state.
-    void verSetThisInit(BasicBlock* block, ThisInitState tis);
     void verInitCurrentState();
     void verResetCurrentState(BasicBlock* block, EntryState* currentState);
-
-    // Merges the current verification state into the entry state of "block", return false if that merge fails,
-    // TRUE if it succeeds.  Further sets "*changed" to true if this changes the entry state of "block".
-    bool verMergeEntryStates(BasicBlock* block, bool* changed);
 
     void verConvertBBToThrowVerificationException(BasicBlock* block DEBUGARG(bool logMsg));
     void verHandleVerificationFailure(BasicBlock* block DEBUGARG(bool logMsg));
     typeInfo verMakeTypeInfoForLocal(unsigned lclNum);
-    typeInfo verMakeTypeInfo(CORINFO_CLASS_HANDLE clsHnd,
-                             bool bashStructToRef = false); // converts from jit type representation to typeInfo
+    typeInfo verMakeTypeInfo(CORINFO_CLASS_HANDLE clsHnd); // converts from jit type representation to typeInfo
     typeInfo verMakeTypeInfo(CorInfoType          ciType,
                              CORINFO_CLASS_HANDLE clsHnd); // converts from jit type representation to typeInfo
-    bool verIsSDArray(const typeInfo& ti);
-    typeInfo verGetArrayElemType(const typeInfo& ti);
 
     typeInfo verParseArgSigToTypeInfo(CORINFO_SIG_INFO* sig, CORINFO_ARG_LIST_HANDLE args);
     bool verIsByRefLike(const typeInfo& ti);
-    bool verIsSafeToReturnByRef(const typeInfo& ti);
-
-    // generic type variables range over types that satisfy IsBoxable
-    bool verIsBoxable(const typeInfo& ti);
 
     void DECLSPEC_NORETURN verRaiseVerifyException(INDEBUG(const char* reason) DEBUGARG(const char* file)
                                                        DEBUGARG(unsigned line));
@@ -10318,35 +10311,7 @@ public:
                                              DEBUGARG(unsigned line));
     bool verCheckTailCallConstraint(OPCODE                  opcode,
                                     CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                    CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, // Is this a "constrained." call
-                                                                                       // on a type parameter?
-                                    bool speculative // If true, won't throw if verificatoin fails. Instead it will
-                                                     // return false to the caller.
-                                                     // If false, it will throw.
-                                    );
-    bool verIsBoxedValueType(const typeInfo& ti);
-
-    void verVerifyCall(OPCODE                  opcode,
-                       CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                       CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken,
-                       bool                    tailCall,
-                       bool                    readonlyCall, // is this a "readonly." call?
-                       const BYTE*             delegateCreateStart,
-                       const BYTE*             codeAddr,
-                       CORINFO_CALL_INFO* callInfo DEBUGARG(const char* methodName));
-
-    bool verCheckDelegateCreation(const BYTE* delegateCreateStart, const BYTE* codeAddr, mdMemberRef& targetMemberRef);
-
-    typeInfo verVerifySTIND(const typeInfo& ptr, const typeInfo& value, const typeInfo& instrType);
-    typeInfo verVerifyLDIND(const typeInfo& ptr, const typeInfo& instrType);
-    void verVerifyField(CORINFO_RESOLVED_TOKEN*   pResolvedToken,
-                        const CORINFO_FIELD_INFO& fieldInfo,
-                        const typeInfo*           tiThis,
-                        bool                      mutator,
-                        bool                      allowPlainStructAsThis = false);
-    void verVerifyCond(const typeInfo& tiOp1, const typeInfo& tiOp2, unsigned opcode);
-    void verVerifyThisPtrInitialised();
-    bool verIsCallToInitThisPtr(CORINFO_CLASS_HANDLE context, CORINFO_CLASS_HANDLE target);
+                                    CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken);
 
 #ifdef DEBUG
 

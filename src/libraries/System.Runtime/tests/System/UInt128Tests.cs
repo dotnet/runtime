@@ -441,5 +441,15 @@ namespace System.Tests
                 Assert.Equal(expected.ToLowerInvariant(), new string(actual));
             }
         }
+
+        [Fact]
+        public static void Runtime75416()
+        {
+            UInt128 a = (UInt128Tests_GenericMath.Int128MaxValue - 10u) * +100u;
+            Assert.Equal(a, (UInt128)(Int128)(-1100));
+
+            UInt128 b = (UInt128Tests_GenericMath.Int128MaxValue - 10u) * (UInt128)(Int128)(-100);
+            Assert.Equal(b, 1100u);
+        }
     }
 }

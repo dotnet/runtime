@@ -164,8 +164,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60558", TestPlatforms.Android)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/64675", typeof(PlatformDetection), nameof(PlatformDetection.IsArmv6Process))]
         public void GetField()
         {
             FieldInfo testInt = TestModule.GetField("TestInt", BindingFlags.Public | BindingFlags.Static);

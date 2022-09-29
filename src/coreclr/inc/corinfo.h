@@ -1931,6 +1931,7 @@ struct CORINFO_VarArgInfo
 #define SIZEOF__CORINFO_Object                            TARGET_POINTER_SIZE /* methTable */
 
 #define CORINFO_Array_MaxLength                           0x7FFFFFC7
+#define CORINFO_String_MaxLength                          0x3FFFFFDF
 
 #define OFFSETOF__CORINFO_Array__length                   SIZEOF__CORINFO_Object
 #ifdef TARGET_64BIT
