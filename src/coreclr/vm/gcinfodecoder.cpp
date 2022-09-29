@@ -111,6 +111,8 @@ GcInfoDecoder::GcInfoDecoder(
 
     GcInfoHeaderFlags headerFlags;
     bool slimHeader = (m_Reader.ReadOneFast() == 0);
+    // Use flag mask to bail out early if we already decoded all the pieces tha caller requested
+    int remainingFlags = flags == DECODE_EVERYTHING ? ~0 : flags;
 
     if (slimHeader)
     {
@@ -142,14 +144,21 @@ GcInfoDecoder::GcInfoDecoder(
     m_ReturnKind =
         (ReturnKind)((UINT32)m_Reader.Read(returnKindBits));
 
-    if (flags == DECODE_RETURN_KIND) {
+    remainingFlags &= ~(DECODE_RETURN_KIND | DECODE_VARARG);
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+    remainingFlags &= ~DECODE_HAS_TAILCALLS;
+#endif
+    if (remainingFlags == 0)
+    {
         // Bail, if we've decoded enough,
         return;
     }
 
     m_CodeLength = (UINT32) DENORMALIZE_CODE_LENGTH((UINT32) m_Reader.DecodeVarLengthUnsigned(CODE_LENGTH_ENCBASE));
 
-    if (flags == DECODE_CODE_LENGTH) {
+    remainingFlags &= ~DECODE_CODE_LENGTH;
+    if (remainingFlags == 0)
+    {
         // Bail, if we've decoded enough,
         return;
     }
@@ -181,7 +190,9 @@ GcInfoDecoder::GcInfoDecoder(
         m_ValidRangeStart = m_ValidRangeEnd = 0;
     }
 
-    if (flags == DECODE_PROLOG_LENGTH) {
+    remainingFlags &= ~DECODE_PROLOG_LENGTH;
+    if (remainingFlags == 0)
+    {
         // Bail, if we've decoded enough,
         return;
     }
@@ -196,7 +207,9 @@ GcInfoDecoder::GcInfoDecoder(
         m_SecurityObjectStackSlot = NO_SECURITY_OBJECT;
     }
 
-    if (flags == DECODE_SECURITY_OBJECT) {
+    remainingFlags &= ~DECODE_SECURITY_OBJECT;
+    if (remainingFlags == 0)
+    {
         // Bail, if we've decoded enough,
         return;
     }
@@ -211,7 +224,9 @@ GcInfoDecoder::GcInfoDecoder(
         m_GSCookieStackSlot        = NO_GS_COOKIE;
     }
 
-    if (flags == DECODE_GS_COOKIE) {
+    remainingFlags &= ~DECODE_GS_COOKIE;
+    if (remainingFlags == 0)
+    {
         // Bail, if we've decoded enough,
         return;
     }
@@ -227,7 +242,9 @@ GcInfoDecoder::GcInfoDecoder(
         m_PSPSymStackSlot              = NO_PSP_SYM;
     }
 
-    if (flags == DECODE_PSP_SYM) {
+    remainingFlags &= ~DECODE_PSP_SYM;
+    if (remainingFlags == 0)
+    {
         // Bail, if we've decoded enough,
         return;
     }
@@ -242,7 +259,9 @@ GcInfoDecoder::GcInfoDecoder(
         m_GenericsInstContextStackSlot = NO_GENERICS_INST_CONTEXT;
     }
 
-    if (flags == DECODE_GENERICS_INST_CONTEXT) {
+    remainingFlags &= ~DECODE_GENERICS_INST_CONTEXT;
+    if (remainingFlags == 0)
+    {
         // Bail, if we've decoded enough,
         return;
     }
@@ -278,6 +297,13 @@ GcInfoDecoder::GcInfoDecoder(
 #endif
     }
 
+    remainingFlags &= ~DECODE_EDIT_AND_CONTINUE;
+    if (remainingFlags == 0)
+    {
+        // Bail, if we've decoded enough,
+        return;
+    }
+
     if (hasReversePInvokeFrame)
     {
         m_ReversePInvokeFrameStackSlot = (INT32)DENORMALIZE_STACK_SLOT(m_Reader.DecodeVarLengthSigned(REVERSE_PINVOKE_FRAME_ENCBASE));
@@ -287,6 +313,12 @@ GcInfoDecoder::GcInfoDecoder(
         m_ReversePInvokeFrameStackSlot = NO_REVERSE_PINVOKE_FRAME;
     }
 
+    remainingFlags &= ~DECODE_REVERSE_PINVOKE_VAR;
+    if (remainingFlags == 0)
+    {
+        // Bail, if we've decoded enough,
+        return;
+    }
 
 #ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
     if (slimHeader)
