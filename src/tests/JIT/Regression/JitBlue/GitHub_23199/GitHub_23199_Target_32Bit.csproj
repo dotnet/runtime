@@ -7,16 +7,10 @@
     <CLRTestTargetUnsupported Condition="'$(TargetBits)' != '32'">true</CLRTestTargetUnsupported>
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-set COMPlus_GcStressOnDirectCalls=1
-]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
-export COMPlus_GcStressOnDirectCalls=1
-]]></BashCLRTestPreCommands>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GitHub_23199.cs" />
+
+    <CLRTestEnvironmentVariable Include="COMPlus_GcStressOnDirectCalls" Value="1" />
   </ItemGroup>
 </Project>
