@@ -94,7 +94,7 @@ namespace Wasm.Build.Tests
 
             var expectedFileType = nativeRelink ? NativeFilesType.Relinked : NativeFilesType.AOT;
 
-            AssertDotNetNativeFiles(expectedFileType, config, forPublish: true);
+            AssertDotNetNativeFiles(expectedFileType, config, forPublish: true, targetFramework: DefaultTargetFrameworkForBlazor);
             AssertBlazorBundle(config, isPublish: true, dotnetWasmFromRuntimePack: false);
 
             if (expectedFileType == NativeFilesType.AOT)
