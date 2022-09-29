@@ -19,27 +19,17 @@ namespace Microsoft.Interop
     [Generator]
     public sealed class VtableIndexStubGenerator : IIncrementalGenerator
     {
-        internal readonly record struct CallingConventions(ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> Syntax)
-        {
-            public bool Equals(CallingConventions other)
-            {
-                return Syntax.SequenceEqual(other.Syntax, (IEqualityComparer<FunctionPointerUnmanagedCallingConventionSyntax>)SyntaxEquivalentComparer.Instance);
-            }
-
-            public override int GetHashCode() => throw new UnreachableException();
-        }
-
         internal sealed record IncrementalStubGenerationContext(
             SignatureContext SignatureContext,
             ContainingSyntaxContext ContainingSyntaxContext,
             ContainingSyntax StubMethodSyntaxTemplate,
             MethodSignatureDiagnosticLocations DiagnosticLocation,
-            ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> CallingConvention,
+            SequenceEqualImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> CallingConvention,
             VirtualMethodIndexData VtableIndexData,
             MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion)> GeneratorFactory,
             ManagedTypeInfo TypeKeyType,
             ManagedTypeInfo TypeKeyOwner,
-            ImmutableArray<Diagnostic> Diagnostics);
+            SequenceEqualImmutableArray<Diagnostic> Diagnostics);
 
         public static class StepNames
         {
@@ -316,12 +306,12 @@ namespace Microsoft.Interop
                 containingSyntaxContext,
                 methodSyntaxTemplate,
                 new MethodSignatureDiagnosticLocations(syntax),
-                callConv,
+                new SequenceEqualImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax>(callConv, SyntaxEquivalentComparer.Instance),
                 virtualMethodIndexData,
                 ComInterfaceGeneratorHelpers.CreateGeneratorFactory(environment),
                 typeKeyType,
                 typeKeyOwner,
-                generatorDiagnostics.Diagnostics.ToImmutableArray());
+                new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray()));
         }
 
         private static IMarshallingGeneratorFactory GetMarshallingGeneratorFactory(StubEnvironment env)
@@ -367,7 +357,7 @@ namespace Microsoft.Interop
 
             BlockSyntax code = stubGenerator.GenerateStubBody(
                 methodStub.VtableIndexData.Index,
-                methodStub.CallingConvention,
+                methodStub.CallingConvention.Array,
                 methodStub.TypeKeyOwner.Syntax,
                 methodStub.TypeKeyType);
 
@@ -384,7 +374,7 @@ namespace Microsoft.Interop
                         methodStub.ContainingSyntaxContext.ContainingSyntax[0],
                         methodStub.SignatureContext,
                         code)),
-                methodStub.Diagnostics.AddRange(diagnostics.Diagnostics));
+                methodStub.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
         }
 
         private static bool ShouldVisitNode(SyntaxNode syntaxNode)

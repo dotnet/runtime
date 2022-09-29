@@ -25,7 +25,7 @@ namespace Microsoft.Interop.JavaScript
             MethodSignatureDiagnosticLocations DiagnosticLocation,
             JSImportData JSImportData,
             MarshallingGeneratorFactoryKey<(TargetFramework TargetFramework, Version TargetFrameworkVersion, JSGeneratorOptions)> GeneratorFactoryKey,
-            ImmutableArray<Diagnostic> Diagnostics);
+            SequenceEqualImmutableArray<Diagnostic> Diagnostics);
 
         public static class StepNames
         {
@@ -211,7 +211,7 @@ namespace Microsoft.Interop.JavaScript
                 new MethodSignatureDiagnosticLocations(originalSyntax),
                 jsImportData,
                 CreateGeneratorFactory(environment, options),
-                generatorDiagnostics.Diagnostics.ToImmutableArray());
+                new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray()));
         }
 
         private static MarshallingGeneratorFactoryKey<(TargetFramework, Version, JSGeneratorOptions)> CreateGeneratorFactory(StubEnvironment env, JSGeneratorOptions options)
@@ -242,7 +242,7 @@ namespace Microsoft.Interop.JavaScript
 
             BlockSyntax code = stubGenerator.GenerateJSImportBody();
 
-            return (PrintGeneratedSource(incrementalContext.StubMethodSyntaxTemplate, incrementalContext.SignatureContext, incrementalContext.ContainingSyntaxContext, code), incrementalContext.Diagnostics.AddRange(diagnostics.Diagnostics));
+            return (PrintGeneratedSource(incrementalContext.StubMethodSyntaxTemplate, incrementalContext.SignatureContext, incrementalContext.ContainingSyntaxContext, code), incrementalContext.Diagnostics.Array.AddRange(diagnostics.Diagnostics));
         }
 
         private static bool ShouldVisitNode(SyntaxNode syntaxNode)
