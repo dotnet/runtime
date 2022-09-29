@@ -16,6 +16,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "allocacheck.h" // for alloca
+#include "algorithm.h"
 
 //-------------------------------------------------------------
 // fgMorphInit: prepare for running the morph phases
@@ -1256,49 +1257,202 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
     m_argsComplete = true;
 }
 
-// Estimate registers used by a tree.
-static regMaskTP EstimateRegisterUses(Compiler* comp, GenTree* tree)
+struct ArgInterferenceGraphNode
 {
-    struct RegisterUsesVisitor : GenTreeVisitor<RegisterUsesVisitor>
+    CallArg* Arg;
+    // Registers clobbered by placing this argument.
+    regMaskTP Clobbers;
+    // Registers that may be used by the argument (guess).
+    regMaskTP Uses;
+    // Bit mask of edges. There is an edge (i, j) if argument i clobbers a register used by argument j.
+    uint32_t Edges;
+
+    int  Index;
+    int  LowLink;
+    bool OnStack;
+
+    // Index of next node in the SCC.
+    int SccNext;
+};
+
+class ArgInterferenceGraph
+{
+    Compiler* m_comp;
+    int       m_index = 0;
+
+    ArrayStack<ArgInterferenceGraphNode> m_nodes;
+    ArrayStack<int>                      m_stack;
+    ArrayStack<int>                      m_sccs;
+
+public:
+    ArgInterferenceGraph(Compiler* comp, unsigned argCount)
+        : m_comp(comp)
+        , m_nodes(comp->getAllocator(CMK_CallArgs), static_cast<int>(argCount))
+        , m_stack(comp->getAllocator(CMK_CallArgs))
+        , m_sccs(comp->getAllocator(CMK_CallArgs))
+
     {
-        enum
-        {
-            DoPreOrder    = true,
-            DoLclVarsOnly = true,
-        };
+    }
 
-        regMaskTP Registers = RBM_NONE;
+    int NumSccs()
+    {
+        return m_sccs.Height();
+    }
 
-        RegisterUsesVisitor(Compiler* comp) : GenTreeVisitor(comp)
+    int FirstSccNode(int sccIndex)
+    {
+        return m_sccs.Bottom(sccIndex);
+    }
+    ArgInterferenceGraphNode& GetNode(int index)
+    {
+        return m_nodes.BottomRef(index);
+    }
+
+    void AddNode(CallArg* arg)
+    {
+        regMaskTP clobbers = RBM_NONE;
+        for (unsigned i = 0; i < arg->AbiInfo.NumRegs; i++)
         {
+            clobbers |= genRegMask(arg->AbiInfo.GetRegNum(i));
         }
 
-        fgWalkResult PreOrderVisit(GenTree** use, GenTree* parent)
+        arg->Tag = m_nodes.Height();
+        ArgInterferenceGraphNode node;
+        node.Arg      = arg;
+        node.Clobbers = clobbers;
+        node.Uses     = EstimateRegisterUses(arg->GetNode());
+        node.Edges    = 0;
+        node.Index    = -1;
+        node.LowLink  = -1;
+        node.OnStack  = false;
+        node.SccNext  = UINT_MAX;
+        m_nodes.Push(node);
+    }
+
+    void FindSccs()
+    {
+        // Create edges
+        for (int i = 0; i < m_nodes.Height(); i++)
         {
-            GenTreeLclVarCommon* node = (*use)->AsLclVarCommon();
-            LclVarDsc*           desc = m_compiler->lvaGetDesc(node);
-            if (!desc->lvDoNotEnregister && desc->lvIsRegArg)
+            for (int j = 0; j < m_nodes.Height(); j++)
             {
-                if ((desc->GetArgReg() != REG_NA) && (desc->GetArgReg() != REG_STK))
+                if (i == j)
                 {
-                    Registers |= genRegMask(desc->GetArgReg());
+                    continue;
                 }
-#if FEATURE_MULTIREG_ARGS
-                if ((desc->GetOtherArgReg() != REG_NA) && (desc->GetOtherArgReg() != REG_STK))
-                {
-                    Registers |= genRegMask(desc->GetOtherArgReg());
-                }
-#endif
+
+                ArgInterferenceGraphNode& ni = m_nodes.BottomRef(i);
+                ArgInterferenceGraphNode& nj = m_nodes.BottomRef(j);
+
+                if ((ni.Clobbers & nj.Uses) != 0)
+                    ni.Edges |= 1 << j;
+            }
+        }
+
+        for (int i = 0; i < m_nodes.Height(); i++)
+        {
+            if (m_nodes.BottomRef(i).Index == -1)
+            {
+                FindScc(i);
+            }
+        }
+    }
+
+private:
+    // Implementation of Tarjan's algorithm
+    void FindScc(int index)
+    {
+        ArgInterferenceGraphNode& node = m_nodes.BottomRef(index);
+        node.Index                     = m_index;
+        node.LowLink                   = m_index;
+        m_index++;
+
+        uint32_t nodeStackIndex = m_stack.Height();
+        m_stack.Push(index);
+        node.OnStack = true;
+
+        uint32_t neighbors = node.Edges;
+        while (neighbors != 0)
+        {
+            uint32_t neighborIndexMask = genFindLowestBit(neighbors);
+            neighbors &= ~neighborIndexMask;
+            int neighborIndex = static_cast<int>(genLog2(neighborIndexMask));
+
+            assert(neighborIndex < m_nodes.Height());
+            ArgInterferenceGraphNode& neighbor = m_nodes.BottomRef(neighborIndex);
+
+            if (neighbor.Index == -1)
+            {
+                FindScc(neighborIndex);
+                node.LowLink = min(node.LowLink, neighbor.LowLink);
+            }
+            else if (neighbor.OnStack)
+            {
+                node.LowLink = min(node.LowLink, neighbor.Index);
+            }
+        }
+
+        if (node.LowLink == node.Index)
+        {
+            // Pop and link SCC.
+            for (int j = m_stack.Height() - 1, i = nodeStackIndex; i < m_stack.Height(); j = i++)
+            {
+                int                       ni   = m_stack.Bottom(i);
+                int                       nj   = m_stack.Bottom(j);
+                ArgInterferenceGraphNode& node = m_nodes.BottomRef(ni);
+                node.SccNext                   = nj;
+                node.OnStack                   = false;
             }
 
-            return fgWalkResult::WALK_CONTINUE;
+            m_stack.Pop(m_stack.Height() - nodeStackIndex);
+            m_sccs.Push(index);
         }
-    };
+    }
 
-    RegisterUsesVisitor visitor(comp);
-    visitor.WalkTree(&tree, nullptr);
-    return visitor.Registers;
-}
+    // Estimate registers used by a tree.
+    regMaskTP EstimateRegisterUses(GenTree* tree)
+    {
+        struct RegisterUsesVisitor : GenTreeVisitor<RegisterUsesVisitor>
+        {
+            enum
+            {
+                DoPreOrder    = true,
+                DoLclVarsOnly = true,
+            };
+
+            regMaskTP Registers = RBM_NONE;
+
+            RegisterUsesVisitor(Compiler* comp) : GenTreeVisitor(comp)
+            {
+            }
+
+            fgWalkResult PreOrderVisit(GenTree** use, GenTree* parent)
+            {
+                GenTreeLclVarCommon* node = (*use)->AsLclVarCommon();
+                LclVarDsc*           desc = m_compiler->lvaGetDesc(node);
+                if (!desc->lvDoNotEnregister && desc->lvIsRegArg)
+                {
+                    if ((desc->GetArgReg() != REG_NA) && (desc->GetArgReg() != REG_STK))
+                    {
+                        Registers |= genRegMask(desc->GetArgReg());
+                    }
+#if FEATURE_MULTIREG_ARGS
+                    if ((desc->GetOtherArgReg() != REG_NA) && (desc->GetOtherArgReg() != REG_STK))
+                    {
+                        Registers |= genRegMask(desc->GetOtherArgReg());
+                    }
+#endif
+                }
+
+                return fgWalkResult::WALK_CONTINUE;
+            }
+        };
+
+        RegisterUsesVisitor visitor(m_comp);
+        visitor.WalkTree(&tree, nullptr);
+        return visitor.Registers;
+    }
+};
 
 //------------------------------------------------------------------------
 // SortArgs: Sort arguments into a better passing order.
@@ -1309,497 +1463,137 @@ static regMaskTP EstimateRegisterUses(Compiler* comp, GenTree* tree)
 //   sortedArgs - A table of at least `CountArgs()` entries where the sorted
 //                arguments are written into.
 //
+// Remarks:
+//   It is expected that arguments that interfere (in terms of side effects)
+//   have been marked as being evaluated into temps and that this function is
+//   thus free to reorder arguments freely. For arguments evaluated into temp,
+//   the result affects when the temp is placed.
+//
 void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
 {
     assert(m_argsComplete);
 
     JITDUMP("\nSorting the arguments:\n");
 
-    // Shuffle the arguments around before we build the late args list. The
-    // idea is to move all "simple" arguments like constants and local vars to
-    // the end, and move the complex arguments towards the beginning. This will
-    // help prevent registers from being spilled by allowing us to evaluate the
-    // more complex arguments before the simpler arguments. The ordering ends
-    // up looking like:
-    //     +------------------------------------+  <--- end of sortedArgs
-    //     |          constants                 |
-    //     +------------------------------------+
-    //     |    local var / local field         |
-    //     +------------------------------------+
-    //     | remaining arguments sorted by cost |
-    //     +------------------------------------+
-    //     | temps (CallArg::m_needTmp == true) |
-    //     +------------------------------------+
-    //     |  args with calls (GTF_CALL)        |
-    //     +------------------------------------+  <--- start of sortedArgs
-    //
-
     unsigned argCount = 0;
     for (CallArg& arg : Args())
     {
-        sortedArgs[argCount++] = &arg;
+        sortedArgs[argCount] = &arg;
+        arg.Tag              = static_cast<int>(argCount);
+        argCount++;
     }
 
-    if (argCount <= 1)
+    if ((argCount <= 1) || (argCount >= 64))
     {
         return;
     }
 
-    // Set the beginning and end for the new argument table
-    unsigned curInx;
-    int      regCount      = 0;
-    unsigned begTab        = 0;
-    unsigned endTab        = argCount - 1;
-    unsigned argsRemaining = argCount;
+    // First sort the arguments according to two heuristics:
+    // 1. Put constants at the end of the table. They cannot conflict with other arguments, so placing them last is
+    // always beneficial.
+    // 2. Put calls at the beginning of the table.
+    jitstd::sort(sortedArgs, sortedArgs + argCount, [](CallArg* l, CallArg* r) {
+        GenTree* lNode = l->GetNode();
+        GenTree* rNode = r->GetNode();
+        // Put constants at the end, they do not conflict with anything.
+        if (lNode->OperIsConst() != rNode->OperIsConst())
+        {
+            return rNode->OperIsConst();
+        }
 
-    // First take care of arguments that are constants.
-    // [We use a backward iterator pattern]
-    //
-    curInx = argCount;
-    do
+        // Put calls at the beginning.
+        if (lNode->IsCall() != rNode->IsCall())
+        {
+            return lNode->IsCall();
+        }
+
+        return l->Tag < r->Tag;
+    });
+
+    if (comp->opts.OptimizationEnabled())
     {
-        curInx--;
+        // When optimizing, also resolve conflicts due to arguments using
+        // parameters that may be enregistered. For example: if an argument
+        // uses a register 'rcx', try to ensure that 'rcx' is placed _after_
+        // that argument. We create an interference graph and use Tarjan's
+        // algorithm, which will both find the SCCs (cycles) and reverse
+        // topologically sort the arguments, ensuring the above. Tarjan's
+        // algorithm here is also implemented in a stable manner such that
+        // arguments are not needlessly reordered when there are no conflicts.
+        ArgInterferenceGraph graph(comp, argCount);
 
-        CallArg* arg = sortedArgs[curInx];
-
-        if (arg->AbiInfo.GetRegNum() != REG_STK)
-        {
-            regCount++;
-        }
-
-        assert(arg->GetLateNode() == nullptr);
-
-        // Skip any already processed args
-        //
-        if (!arg->m_processed)
-        {
-            GenTree* argx = arg->GetEarlyNode();
-
-            assert(argx != nullptr);
-            // put constants at the end of the table
-            //
-            if (argx->gtOper == GT_CNS_INT)
-            {
-                noway_assert(curInx <= endTab);
-
-                arg->m_processed = true;
-
-                // place curArgTabEntry at the endTab position by performing a swap
-                //
-                JITDUMP("  [%06u] -> #%d (is constant)\n", argx->gtTreeID, endTab);
-                if (curInx != endTab)
-                {
-                    sortedArgs[curInx] = sortedArgs[endTab];
-                    sortedArgs[endTab] = arg;
-                }
-
-                endTab--;
-                argsRemaining--;
-                JITDUMP("   ");
-                for (unsigned i = 0; i < argCount; i++)
-                    JITDUMP(" [%06u]", sortedArgs[i]->GetNode()->gtTreeID);
-                JITDUMP("\n");
-            }
-        }
-    } while (curInx > 0);
-
-    unsigned beforeFirstConstArgIndex = endTab;
-
-    unsigned firstCallArgIndex = begTab;
-
-    if (argsRemaining > 0)
-    {
-        // Next take care of arguments that are calls.
-        // [We use a forward iterator pattern]
-        //
-        for (curInx = begTab; curInx <= endTab; curInx++)
-        {
-            CallArg* arg = sortedArgs[curInx];
-
-            // Skip any already processed args
-            //
-            if (!arg->m_processed)
-            {
-                GenTree* argx = arg->GetEarlyNode();
-                assert(argx != nullptr);
-
-                // put calls at the beginning of the table
-                //
-                if (argx->gtFlags & GTF_CALL)
-                {
-                    arg->m_processed = true;
-
-                    // place curArgTabEntry at the begTab position by performing a swap
-                    //
-                    JITDUMP("  [%06u] -> #%d (is call)\n", argx->gtTreeID, begTab);
-                    if (curInx != begTab)
-                    {
-                        sortedArgs[curInx] = sortedArgs[begTab];
-                        sortedArgs[begTab] = arg;
-                    }
-
-                    begTab++;
-                    argsRemaining--;
-                    JITDUMP("   ");
-                    for (unsigned i = 0; i < argCount; i++)
-                        JITDUMP(" [%06u]", sortedArgs[i]->GetNode()->gtTreeID);
-                    JITDUMP("\n");
-                }
-            }
-        }
-    }
-
-    unsigned afterCallIndex = begTab;
-
-    //// Finally place arguments such that arguments nodes that use parameters
-    //// are placed before arguments that would clobber the registers those
-    //// parameters may be in.
-    // while (argsRemaining > 0)
-    //{
-    //    // Find arg that clobbers least amount of registers used by other args.
-    //    unsigned bestNumClobbered = UINT_MAX;
-    //    unsigned bestIndex = 0;
-    //    for (unsigned i = begTab; i <= endTab; i++)
-    //    {
-    //        assert(!sortedArgs[i]->m_processed);
-    //        regMaskTP clobbered = 0;
-    //        for (unsigned j = 0; j < sortedArgs[i]->AbiInfo.NumRegs; j++)
-    //        {
-    //            clobbered |= genRegMask(sortedArgs[i]->AbiInfo.GetRegNum(j));
-    //        }
-
-    //        assert(clobbered != 0);
-    //        unsigned clobberedLaterArgs = 0;
-    //        for (unsigned j = begTab; j <= endTab; j++)
-    //        {
-    //            if (i == j)
-    //                continue;
-
-    //            regMaskTP uses = EstimateRegisterUses(comp, sortedArgs[j]->GetNode());
-    //            if ((uses & clobbered) != 0)
-    //                clobberedLaterArgs++;
-    //        }
-
-    //        if (clobberedLaterArgs < bestNumClobbered)
-    //        {
-    //            bestNumClobbered = clobberedLaterArgs;
-    //            bestIndex = i;
-    //        }
-    //    }
-
-    //    sortedArgs[bestIndex]->m_processed = true;
-    //    std::swap(sortedArgs[begTab], sortedArgs[bestIndex]);
-    //    begTab++;
-    //    argsRemaining--;
-    //}
-
-    if (argsRemaining > 0)
-    {
-        // Next take care arguments that are temps.
-        // These temps come before the arguments that are
-        // ordinary local vars or local fields
-        // since this will give them a better chance to become
-        // enregistered into their actual argument register.
-        // [We use a forward iterator pattern]
-        //
-        for (curInx = begTab; curInx <= endTab; curInx++)
-        {
-            CallArg* arg = sortedArgs[curInx];
-
-            // Skip any already processed args
-            //
-            if (!arg->m_processed)
-            {
-                if (arg->m_needTmp)
-                {
-                    arg->m_processed = true;
-
-                    // place curArgTabEntry at the begTab position by performing a swap
-                    //
-                    JITDUMP("  [%06u] -> #%d (is temp)\n", arg->GetNode()->gtTreeID, begTab);
-                    if (curInx != begTab)
-                    {
-                        sortedArgs[curInx] = sortedArgs[begTab];
-                        sortedArgs[begTab] = arg;
-                    }
-
-                    begTab++;
-                    argsRemaining--;
-                    JITDUMP("   ");
-                    for (unsigned i = 0; i < argCount; i++)
-                        JITDUMP(" [%06u]", sortedArgs[i]->GetNode()->gtTreeID);
-                    JITDUMP("\n");
-                }
-            }
-        }
-    }
-
-    if (argsRemaining > 0)
-    {
-        // Next take care of local var and local field arguments.
-        // These are moved towards the end of the argument evaluation.
-        // [We use a backward iterator pattern]
-        //
-        curInx = endTab + 1;
-        do
-        {
-            curInx--;
-
-            CallArg* arg = sortedArgs[curInx];
-
-            // Skip any already processed args
-            //
-            if (!arg->m_processed)
-            {
-                GenTree* argx = arg->GetEarlyNode();
-                assert(argx != nullptr);
-
-                // As a CQ heuristic, sort TYP_STRUCT args using the cost estimation below.
-                if (!argx->TypeIs(TYP_STRUCT) && argx->OperIs(GT_LCL_VAR, GT_LCL_FLD))
-                {
-                    noway_assert(curInx <= endTab);
-
-                    arg->m_processed = true;
-
-                    // place curArgTabEntry at the endTab position by performing a swap
-                    //
-                    JITDUMP("  [%06u] -> #%d (non-struct local)\n", arg->GetNode()->gtTreeID, endTab);
-                    if (curInx != endTab)
-                    {
-                        sortedArgs[curInx] = sortedArgs[endTab];
-                        sortedArgs[endTab] = arg;
-                    }
-
-                    endTab--;
-                    argsRemaining--;
-                    JITDUMP("   ");
-                    for (unsigned i = 0; i < argCount; i++)
-                        JITDUMP(" [%06u]", sortedArgs[i]->GetNode()->gtTreeID);
-                    JITDUMP("\n");
-                }
-            }
-        } while (curInx > begTab);
-    }
-
-    // Finally, take care of all the remaining arguments.
-    // Note that we fill in one arg at a time using a while loop.
-    bool costsPrepared = false; // Only prepare tree costs once, the first time through this loop
-    while (argsRemaining > 0)
-    {
-        /* Find the most expensive arg remaining and evaluate it next */
-
-        CallArg* expensiveArg      = nullptr;
-        unsigned expensiveArgIndex = UINT_MAX;
-        unsigned expensiveArgCost  = 0;
-        unsigned expensiveArgNum   = 0;
-
-        // [We use a forward iterator pattern]
-        //
-        for (curInx = begTab; curInx <= endTab; curInx++)
-        {
-            CallArg* arg = sortedArgs[curInx];
-
-            // Skip any already processed args
-            //
-            if (!arg->m_processed)
-            {
-                GenTree* argx = arg->GetEarlyNode();
-                assert(argx != nullptr);
-
-                // We should have already handled these kinds of args
-                assert((!argx->OperIs(GT_LCL_VAR, GT_LCL_FLD) || argx->TypeIs(TYP_STRUCT)) &&
-                       !argx->OperIs(GT_CNS_INT));
-
-                // This arg should either have no persistent side effects or be the last one in our table
-
-                // assert(((argx->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) == 0) || (curInx == (argCount-1)));
-
-                if (argsRemaining == 1)
-                {
-                    // This is the last arg to place
-                    expensiveArgIndex = curInx;
-                    expensiveArg      = arg;
-                    expensiveArgNum   = 1;
-                    assert(begTab == endTab);
-                    break;
-                }
-                else
-                {
-                    if (!costsPrepared)
-                    {
-                        /* We call gtPrepareCost to measure the cost of evaluating this tree */
-                        comp->gtPrepareCost(argx);
-                    }
-
-                    if (argx->GetCostEx() > expensiveArgCost)
-                    {
-                        // Remember this arg as the most expensive one that we have yet seen
-                        expensiveArgCost  = argx->GetCostEx();
-                        expensiveArgIndex = curInx;
-                        expensiveArg      = arg;
-                        expensiveArgNum   = 1;
-                    }
-                    else if (argx->GetCostEx() == expensiveArgCost)
-                    {
-                        expensiveArgNum++;
-                    }
-                }
-            }
-        }
-
-        noway_assert(expensiveArgIndex != UINT_MAX);
-
-        // if (expensiveArgNum > 1)
-        //{
-        //    // If there are multiple args with the same cost then place arg
-        //    // that clobbers least amount of registers used by other args.
-        //    // Find arg that clobbers least amount of registers used by other args.
-        //    unsigned bestNumClobbered = UINT_MAX;
-        //    unsigned bestIndex        = 0;
-        //    for (unsigned i = begTab; i <= endTab; i++)
-        //    {
-        //        if (sortedArgs[i]->m_processed)
-        //            continue;
-
-        //        if (sortedArgs[i]->GetNode()->GetCostEx() != expensiveArgCost)
-        //            continue;
-
-        //        regMaskTP clobbered = 0;
-        //        for (unsigned j = 0; j < sortedArgs[i]->AbiInfo.NumRegs; j++)
-        //        {
-        //            clobbered |= genRegMask(sortedArgs[i]->AbiInfo.GetRegNum(j));
-        //        }
-
-        //        assert(clobbered != 0);
-        //        unsigned clobberedLaterArgs = 0;
-        //        for (unsigned j = begTab; j <= endTab; j++)
-        //        {
-        //            if (i == j || sortedArgs[i]->m_processed ||
-        //                sortedArgs[i]->GetNode()->GetCostEx() != expensiveArgCost)
-        //                continue;
-
-        //            regMaskTP uses = EstimateRegisterUses(comp, sortedArgs[j]->GetNode());
-        //            if ((uses & clobbered) != 0)
-        //                clobberedLaterArgs++;
-        //        }
-
-        //        if (clobberedLaterArgs < bestNumClobbered)
-        //        {
-        //            bestNumClobbered = clobberedLaterArgs;
-        //            bestIndex        = i;
-        //        }
-        //    }
-
-        //    expensiveArg      = sortedArgs[bestIndex];
-        //    expensiveArgIndex = bestIndex;
-        //}
-
-        // put the most expensive arg towards the beginning of the table
-
-        expensiveArg->m_processed = true;
-
-        // place expensiveArgTabEntry at the begTab position by performing a swap
-        //
-        JITDUMP("  [%06u] -> #%d", expensiveArg->GetNode()->gtTreeID, begTab);
-        if (argsRemaining == 1)
-        {
-            JITDUMP(" (last arg)\n");
-        }
-        else
-        {
-            JITDUMP(" (cost %u)\n", expensiveArgCost);
-        }
-
-        if (expensiveArgIndex != begTab)
-        {
-            sortedArgs[expensiveArgIndex] = sortedArgs[begTab];
-            sortedArgs[begTab]            = expensiveArg;
-        }
-
-        begTab++;
-        argsRemaining--;
-
-        costsPrepared = true; // If we have more expensive arguments, don't re-evaluate the tree cost on the next loop
-        JITDUMP("   ");
         for (unsigned i = 0; i < argCount; i++)
-            JITDUMP(" [%06u]", sortedArgs[i]->GetNode()->gtTreeID);
-        JITDUMP("\n");
-    }
-
-    unsigned insertionIndex = afterCallIndex;
-    // Move all arguments that do not clobber registers back to happen right after GTF_CALL args.
-    for (unsigned i = afterCallIndex; i != endTab + 1; i++)
-    {
-        CallArg* arg = sortedArgs[i];
-        if (arg->AbiInfo.NumRegs <= 0)
         {
-            memmove(&sortedArgs[insertionIndex + 1], &sortedArgs[insertionIndex],
-                    (i - insertionIndex) * sizeof(CallArg*));
-            JITDUMP("  [%06u] -> #%d (stack arg)\n", arg->GetNode()->gtTreeID, insertionIndex);
-            sortedArgs[insertionIndex] = arg;
-            JITDUMP("   ");
-            for (unsigned i = 0; i < argCount; i++)
-                JITDUMP(" [%06u]", sortedArgs[i]->GetNode()->gtTreeID);
-            JITDUMP("\n");
-
-            insertionIndex++;
-        }
-    }
-
-    // Now move args whose placement will potentially clobber a later arg to after that arg.
-    unsigned max      = beforeFirstConstArgIndex - firstCallArgIndex + 1;
-    unsigned curIndex = firstCallArgIndex;
-    for (unsigned count = 0; count < max; count++)
-    {
-        CallArg* arg = sortedArgs[curIndex];
-        if (arg->AbiInfo.NumRegs <= 0)
-        {
-            curIndex++;
-            continue;
+            graph.AddNode(sortedArgs[i]);
         }
 
-        regMaskTP clobbered = 0;
-        for (unsigned j = 0; j < arg->AbiInfo.NumRegs; j++)
-        {
-            clobbered |= genRegMask(arg->AbiInfo.GetRegNum(j));
-        }
+        graph.FindSccs();
 
-        unsigned lastClobbered = UINT_MAX;
-        regMaskTP lastClobberedRegs = RBM_NONE;
+        JITDUMP("Argument SCCs and order:\n");
 
-        for (unsigned i = curIndex + 1; i != beforeFirstConstArgIndex + 1; i++)
+        unsigned curIndex = 0;
+        for (int scc = 0; scc < graph.NumSccs(); scc++)
         {
-            regMaskTP usedRegs = EstimateRegisterUses(comp, sortedArgs[i]->GetNode());
-            if ((clobbered & usedRegs) != 0)
+            int firstNodeIndex = graph.FirstSccNode(scc);
+
+            unsigned sccSize   = 0;
+            int      nodeIndex = firstNodeIndex;
+
+            int lclVarIndex = -1;
+            do
             {
-                lastClobbered = i;
-                lastClobberedRegs = clobbered & usedRegs;
+                ArgInterferenceGraphNode& node = graph.GetNode(nodeIndex);
+                if (node.Arg->GetNode()->OperIs(GT_LCL_VAR))
+                {
+                    lclVarIndex = nodeIndex;
+                }
+
+                assert(curIndex < argCount);
+                sortedArgs[curIndex + sccSize] = node.Arg;
+
+                nodeIndex = node.SccNext;
+
+                sccSize++;
+
+            } while (nodeIndex != firstNodeIndex);
+
+            // LSRA is able to break cycles by rehoming LCL_VAR parameters into
+            // another register, if it sees the LCL_VAR last. If we notice that
+            // the last arg we placed is not a LCL_VAR, and we had a LCL_VAR,
+            // then repeat the loop but ensure that we place a LCL_VAR node
+            // last.
+            if ((lclVarIndex != -1) && !sortedArgs[curIndex + sccSize - 1]->GetNode()->OperIs(GT_LCL_VAR))
+            {
+                // Refill the sorted args, this time placing a LCL_VAR last.
+                firstNodeIndex = graph.GetNode(lclVarIndex).SccNext;
+
+                sccSize   = 0;
+                nodeIndex = firstNodeIndex;
+
+                do
+                {
+                    ArgInterferenceGraphNode& node = graph.GetNode(nodeIndex);
+                    sortedArgs[curIndex + sccSize] = node.Arg;
+                    nodeIndex                      = node.SccNext;
+                    sccSize++;
+                } while (nodeIndex != firstNodeIndex);
             }
+
+#ifdef DEBUG
+            if (comp->verbose)
+            {
+                printf("  [");
+                for (unsigned j = 0; j < sccSize; j++)
+                    printf(" [%06u]", sortedArgs[curIndex + j]->GetNode()->gtTreeID);
+                printf(" ]\n");
+            }
+#endif
+
+            curIndex += sccSize;
         }
 
-        if (lastClobbered != UINT_MAX)
-        {
-            JITDUMP("  [%06u] -> #%u (clobbers %s used by [%06u])\n", arg->GetNode()->gtTreeID, lastClobbered, getRegName(genRegNumFromMask(genFindLowestReg(lastClobberedRegs))), sortedArgs[lastClobbered]->GetNode()->gtTreeID);
-            memmove(&sortedArgs[curIndex], &sortedArgs[curIndex + 1],
-                (lastClobbered - curIndex) * sizeof(CallArg*));
-            assert(sortedArgs[lastClobbered - 1] == sortedArgs[lastClobbered]);
-            sortedArgs[lastClobbered] = arg;
-
-            JITDUMP("   ");
-            for (unsigned i = 0; i < argCount; i++)
-                JITDUMP(" [%06u]", sortedArgs[i]->GetNode()->gtTreeID);
-            JITDUMP("\n");
-        }
-        else
-        {
-            curIndex++;
-        }
+        assert(curIndex == argCount);
     }
-
-    // The table should now be completely filled and thus begTab should now be adjacent to endTab
-    // and regArgsRemaining should be zero
-    assert(begTab == (endTab + 1));
-    assert(argsRemaining == 0);
 }
 
 //------------------------------------------------------------------------------

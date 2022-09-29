@@ -4603,11 +4603,14 @@ private:
         , m_needPlace(false)
         , m_isTmp(false)
         , m_processed(false)
+        , Tag(0)
     {
     }
 
 public:
     CallArgABIInformation AbiInfo;
+    // Tag that can be used for any purpose during transformations.
+    int Tag;
 
     CallArg(const NewCallArg& arg) : CallArg()
     {
