@@ -66,11 +66,10 @@ namespace LibraryImportGenerator.UnitTests
             GeneratorDriver driver2 = driver.RunGenerators(comp2);
             GeneratorRunResult runResult = driver2.GetRunResult().Results[0];
 
-            Assert.Collection(runResult.TrackedSteps[StepNames.CalculateStubInformation],
+            Assert.Collection(runResult.TrackedSteps[StepNames.GenerateSingleStub],
                 step =>
                 {
-                    // The input contains symbols and Compilation objects, so it will always be different.
-                    // However, we validate that the calculated stub information is identical.
+                    // The calculated stub information will differ since we have a new syntax tree for where to report diagnostics.
                     Assert.Collection(step.Outputs,
                         output => Assert.Equal(IncrementalStepRunReason.Unchanged, output.Reason));
                 });
