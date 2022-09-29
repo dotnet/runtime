@@ -241,6 +241,7 @@ namespace Wasm.Build.Tests
             Directory.CreateDirectory(wasmProjectDir);
             new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                     .WithWorkingDirectory(wasmProjectDir)
+                    .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
                     .ExecuteWithCapturedOutput("new blazorwasm")
                     .EnsureSuccessful();
 
@@ -249,6 +250,7 @@ namespace Wasm.Build.Tests
             Directory.CreateDirectory(razorProjectDir);
             new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                     .WithWorkingDirectory(razorProjectDir)
+                    .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
                     .ExecuteWithCapturedOutput("new razorclasslib")
                     .EnsureSuccessful();
 
