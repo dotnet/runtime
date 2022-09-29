@@ -2645,9 +2645,7 @@ namespace System
 
         public static void ReplaceValueType<T>(ref T src, ref T dst, T oldValue, T newValue, nuint length) where T : struct
         {
-            Debug.Assert(Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported);
-
-            if (length < (uint)Vector128<T>.Count)
+            if (!Vector128.IsHardwareAccelerated || length < (uint)Vector128<T>.Count)
             {
                 for (nuint idx = 0; idx < length; ++idx)
                 {
@@ -2657,7 +2655,7 @@ namespace System
             }
             else
             {
-                Debug.Assert(Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported);
+                Debug.Assert(Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported, "Vector128 is not HW-accelerated or not supported");
 
                 nuint idx = 0;
 
@@ -2690,7 +2688,7 @@ namespace System
                 }
                 else
                 {
-                    Debug.Assert(Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported);
+                    Debug.Assert(Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported, "Vector256 is not HW-accelerated or not supported");
 
                     nuint lastVectorIndex = length - (uint)Vector256<T>.Count;
                     Vector256<T> oldValues = Vector256.Create(oldValue);
