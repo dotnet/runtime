@@ -445,10 +445,12 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
                 failureType = EventReporter::ERT_ManagedFailFast;
             else if (exitCode == (UINT)COR_E_CODECONTRACTFAILED)
                 failureType = EventReporter::ERT_CodeContractFailed;
+            else if (exitCode == EXCEPTION_ACCESS_VIOLATION)
+                failureType = EventReporter::ERT_UnhandledException;
             EventReporter reporter(failureType);
             StackSString s(argExceptionString);
 
-            if ((exitCode == (UINT)COR_E_FAILFAST) || (exitCode == (UINT)COR_E_CODECONTRACTFAILED) || (exitCode == (UINT)CLR_E_GC_OOM))
+            if ((exitCode == (UINT)COR_E_FAILFAST) || (exitCode == (UINT)COR_E_CODECONTRACTFAILED) || (exitCode == (UINT)CLR_E_GC_OOM) || (exitCode == EXCEPTION_ACCESS_VIOLATION))
             {
                 if (pszMessage)
                 {

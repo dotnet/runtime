@@ -12,6 +12,8 @@ struct MetricsSummary
     int FailingCompiles = 0;
     // Number of methods that failed jitting due to missing SPMI data.
     int MissingCompiles = 0;
+    // Number of contexts that had any diff.
+    int NumContextsWithDiffs = 0;
     // Number of code bytes produced by the JIT for the successful compiles.
     long long NumCodeBytes = 0;
     // Number of code bytes that were diffed with the other compiler in diff mode.

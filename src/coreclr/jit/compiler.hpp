@@ -3775,30 +3775,6 @@ inline bool Compiler::impIsThis(GenTree* obj)
 
 /*****************************************************************************
  *
- *  Check to see if the delegate is created using "LDFTN <TOK>" or not.
- */
-
-inline bool Compiler::impIsLDFTN_TOKEN(const BYTE* delegateCreateStart, const BYTE* newobjCodeAddr)
-{
-    assert(newobjCodeAddr[0] == CEE_NEWOBJ);
-    return (newobjCodeAddr - delegateCreateStart == 6 && // LDFTN <TOK> takes 6 bytes
-            delegateCreateStart[0] == CEE_PREFIX1 && delegateCreateStart[1] == (CEE_LDFTN & 0xFF));
-}
-
-/*****************************************************************************
- *
- *  Check to see if the delegate is created using "DUP LDVIRTFTN <TOK>" or not.
- */
-
-inline bool Compiler::impIsDUP_LDVIRTFTN_TOKEN(const BYTE* delegateCreateStart, const BYTE* newobjCodeAddr)
-{
-    assert(newobjCodeAddr[0] == CEE_NEWOBJ);
-    return (newobjCodeAddr - delegateCreateStart == 7 && // DUP LDVIRTFTN <TOK> takes 6 bytes
-            delegateCreateStart[0] == CEE_DUP && delegateCreateStart[1] == CEE_PREFIX1 &&
-            delegateCreateStart[2] == (CEE_LDVIRTFTN & 0xFF));
-}
-/*****************************************************************************
- *
  * Returns true if the compiler instance is created for import only (verification).
  */
 

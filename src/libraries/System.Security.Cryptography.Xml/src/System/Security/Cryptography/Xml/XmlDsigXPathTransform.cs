@@ -13,9 +13,9 @@ namespace System.Security.Cryptography.Xml
     {
         private readonly Type[] _inputTypes = { typeof(Stream), typeof(XmlNodeList), typeof(XmlDocument) };
         private readonly Type[] _outputTypes = { typeof(XmlNodeList) };
-        private string _xpathexpr;
-        private XmlDocument _document;
-        private XmlNamespaceManager _nsm;
+        private string? _xpathexpr;
+        private XmlDocument? _document;
+        private XmlNamespaceManager? _nsm;
 
         public XmlDsigXPathTransform()
         {
@@ -40,9 +40,9 @@ namespace System.Security.Cryptography.Xml
 
             foreach (XmlNode node in nodeList)
             {
-                string prefix = null;
-                string namespaceURI = null;
-                XmlElement elem = node as XmlElement;
+                string? prefix = null;
+                string? namespaceURI = null;
+                XmlElement? elem = node as XmlElement;
                 if (elem != null)
                 {
                     if (elem.LocalName == "XPath")
@@ -51,7 +51,7 @@ namespace System.Security.Cryptography.Xml
                         XmlNodeReader nr = new XmlNodeReader(elem);
                         XmlNameTable nt = nr.NameTable;
                         _nsm = new XmlNamespaceManager(nt);
-                        if (!Utils.VerifyAttributes(elem, (string)null))
+                        if (!Utils.VerifyAttributes(elem, (string?)null))
                         {
                             throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
                         }
@@ -83,7 +83,7 @@ namespace System.Security.Cryptography.Xml
                 throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
         }
 
-        protected override XmlNodeList GetInnerXml()
+        protected override XmlNodeList? GetInnerXml()
         {
             XmlDocument document = new XmlDocument();
             XmlElement element = document.CreateElement(null, "XPath", SignedXml.XmlDsigNamespaceUrl);
@@ -110,7 +110,7 @@ namespace System.Security.Cryptography.Xml
                 }
             }
             // Add the XPath as the inner xml of the element
-            element.InnerXml = _xpathexpr;
+            element.InnerXml = _xpathexpr!;
             document.AppendChild(element);
             return document.ChildNodes;
         }
@@ -134,7 +134,7 @@ namespace System.Security.Cryptography.Xml
         private void LoadStreamInput(Stream stream)
         {
             XmlResolver resolver = (ResolverSet ? _xmlResolver : XmlResolverHelper.GetThrowingResolver());
-            XmlReader valReader = Utils.PreProcessStreamInput(stream, resolver, BaseURI);
+            XmlReader valReader = Utils.PreProcessStreamInput(stream, resolver, BaseURI!);
             _document = new XmlDocument();
             _document.PreserveWhitespace = true;
             _document.Load(valReader);
@@ -161,15 +161,15 @@ namespace System.Security.Cryptography.Xml
             CanonicalXmlNodeList resultNodeList = new CanonicalXmlNodeList();
             if (!string.IsNullOrEmpty(_xpathexpr))
             {
-                XPathNavigator navigator = _document.CreateNavigator();
+                XPathNavigator navigator = _document!.CreateNavigator()!;
                 XPathNodeIterator it = navigator.Select("//. | //@*");
 
                 XPathExpression xpathExpr = navigator.Compile("boolean(" + _xpathexpr + ")");
-                xpathExpr.SetContext(_nsm);
+                xpathExpr.SetContext(_nsm!);
 
                 while (it.MoveNext())
                 {
-                    XmlNode node = ((IHasXmlNode)it.Current).GetNode();
+                    XmlNode node = ((IHasXmlNode)it.Current!).GetNode();
 
                     bool include = (bool)it.Current.Evaluate(xpathExpr);
                     if (include)
@@ -180,7 +180,7 @@ namespace System.Security.Cryptography.Xml
                 it = navigator.Select("//namespace::*");
                 while (it.MoveNext())
                 {
-                    XmlNode node = ((IHasXmlNode)it.Current).GetNode();
+                    XmlNode node = ((IHasXmlNode)it.Current!).GetNode();
                     resultNodeList.Add(node);
                 }
             }

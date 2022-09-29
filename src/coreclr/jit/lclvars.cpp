@@ -4452,7 +4452,7 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
                     // TODO-CQ: If the varType needs partial callee save, conservatively do not enregister
-                    // such variable. In future, need to enable enregisteration for such variables.
+                    // such variable. In future, we should enable enregisteration for such variables.
                     if (!varTypeNeedsPartialCalleeSave(varDsc->GetRegisterType()))
 #endif
                     {
@@ -4463,48 +4463,11 @@ void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt,
             }
         }
 
-        bool allowStructs = false;
-#ifdef UNIX_AMD64_ABI
-        // On System V the type of the var could be a struct type.
-        allowStructs = varTypeIsStruct(varDsc);
-#endif // UNIX_AMD64_ABI
-
-        /* Variables must be used as the same type throughout the method */
-        noway_assert(varDsc->lvType == TYP_UNDEF || tree->gtType == TYP_UNKNOWN || allowStructs ||
-                     genActualType(varDsc->TypeGet()) == genActualType(tree->gtType) ||
-                     (tree->gtType == TYP_BYREF && varDsc->TypeGet() == TYP_I_IMPL) ||
-                     (tree->gtType == TYP_I_IMPL && varDsc->TypeGet() == TYP_BYREF) || (tree->gtFlags & GTF_VAR_CAST) ||
-                     (varTypeIsFloating(varDsc) && varTypeIsFloating(tree)) ||
-                     (varTypeIsStruct(varDsc) == varTypeIsStruct(tree)));
-
-        /* Remember the type of the reference */
-
-        if (tree->gtType == TYP_UNKNOWN || varDsc->lvType == TYP_UNDEF)
-        {
-            varDsc->lvType = tree->gtType;
-            noway_assert(genActualType(varDsc->TypeGet()) == tree->gtType); // no truncation
-        }
-
-#ifdef DEBUG
-        if (tree->gtFlags & GTF_VAR_CAST)
-        {
-            // it should never be bigger than the variable slot
-
-            // Trees don't store the full information about structs
-            // so we can't check them.
-            if (tree->TypeGet() != TYP_STRUCT)
-            {
-                unsigned treeSize = genTypeSize(tree->TypeGet());
-                unsigned varSize  = genTypeSize(varDsc->TypeGet());
-                if (varDsc->TypeGet() == TYP_STRUCT)
-                {
-                    varSize = varDsc->lvSize();
-                }
-
-                assert(treeSize <= varSize);
-            }
-        }
-#endif
+        // Check that the LCL_VAR node has the same type as the underlying variable, save a few mismatches we allow.
+        assert(tree->TypeIs(varDsc->TypeGet(), genActualType(varDsc)) ||
+               (tree->TypeIs(TYP_I_IMPL) && (varDsc->TypeGet() == TYP_BYREF)) || // Created for spill clique import.
+               (tree->TypeIs(TYP_BYREF) && (varDsc->TypeGet() == TYP_I_IMPL)) || // Created by inliner substitution.
+               (tree->TypeIs(TYP_INT) && (varDsc->TypeGet() == TYP_LONG)));      // Created by "optNarrowTree".
     }
 }
 
