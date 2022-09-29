@@ -40,6 +40,19 @@ public unsafe class Runtime_76194
         public int Int;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)] static Data1 Read1(byte* location) => Unsafe.ReadUnaligned<Data1>(location);
+    [MethodImpl(MethodImplOptions.NoInlining)] static Data2 Read2(byte* location) => Unsafe.ReadUnaligned<Data2>(location);
+    [MethodImpl(MethodImplOptions.NoInlining)] static Data3 Read3(byte* location) => Unsafe.ReadUnaligned<Data3>(location);
+    [MethodImpl(MethodImplOptions.NoInlining)] static Data4 Read4(byte* location) => Unsafe.ReadUnaligned<Data4>(location);
+    [MethodImpl(MethodImplOptions.NoInlining)] static Data5 Read5(byte* location) => Unsafe.ReadUnaligned<Data5>(location);
+
+    [MethodImpl(MethodImplOptions.NoInlining)] static void Write1(byte* location, Data1 d) => Unsafe.WriteUnaligned(location, d);
+    [MethodImpl(MethodImplOptions.NoInlining)] static void Write2(byte* location, Data2 d) => Unsafe.WriteUnaligned(location, d);
+    [MethodImpl(MethodImplOptions.NoInlining)] static void Write3(byte* location, Data3 d) => Unsafe.WriteUnaligned(location, d);
+    [MethodImpl(MethodImplOptions.NoInlining)] static void Write4(byte* location, Data4 d) => Unsafe.WriteUnaligned(location, d);
+    [MethodImpl(MethodImplOptions.NoInlining)] static void Write5(byte* location, Data5 d) => Unsafe.WriteUnaligned(location, d);
+
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int Main()
     {
@@ -51,21 +64,16 @@ public unsafe class Runtime_76194
                 Console.WriteLine("VirtualAlloc/mmap/mprotect failed, giving up on test.");
                 break;
             }
-
-            Read<Data1>(alloc.GetPointerNearPageEndFor<Data1>());
-            Write<Data1>(alloc.GetPointerNearPageEndFor<Data1>(), default);
-
-            Read<Data2>(alloc.GetPointerNearPageEndFor<Data2>());
-            Write<Data2>(alloc.GetPointerNearPageEndFor<Data2>(), default);
-
-            Read<Data3>(alloc.GetPointerNearPageEndFor<Data3>());
-            Write<Data3>(alloc.GetPointerNearPageEndFor<Data3>(), default);
-
-            Read<Data4>(alloc.GetPointerNearPageEndFor<Data4>());
-            Write<Data4>(alloc.GetPointerNearPageEndFor<Data4>(), default);
-
-            Read<Data5>(alloc.GetPointerNearPageEndFor<Data5>());
-            Write<Data5>(alloc.GetPointerNearPageEndFor<Data5>(), default);
+            Read1(alloc.GetPointerNearPageEndFor<Data1>());
+            Write1(alloc.GetPointerNearPageEndFor<Data1>(), default);
+            Read2(alloc.GetPointerNearPageEndFor<Data2>());
+            Write2(alloc.GetPointerNearPageEndFor<Data2>(), default);
+            Read3(alloc.GetPointerNearPageEndFor<Data3>());
+            Write3(alloc.GetPointerNearPageEndFor<Data3>(), default);
+            Read4(alloc.GetPointerNearPageEndFor<Data4>());
+            Write4(alloc.GetPointerNearPageEndFor<Data4>(), default);
+            Read5(alloc.GetPointerNearPageEndFor<Data5>());
+            Write5(alloc.GetPointerNearPageEndFor<Data5>(), default);
         }
         return 100;
     }
