@@ -1849,6 +1849,11 @@ namespace System.Xml
             return new XsdDuration(value).TryFormat(destination, out charsWritten);
         }
 
+        internal static bool TryFormat(DateTime value, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format, Span<char> destination, out int charsWritten)
+        {
+            return value.TryFormat(destination, out charsWritten, format, DateTimeFormatInfo.InvariantInfo);
+        }
+
         internal static bool TryFormat(DateTime value, Span<char> destination, out int charsWritten)
         {
             return TryFormat(value, XmlDateTimeSerializationMode.RoundtripKind, destination, out charsWritten);
