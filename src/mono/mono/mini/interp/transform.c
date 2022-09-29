@@ -6150,8 +6150,20 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						push_type (td, stack_type [mt], field_klass);
 					interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				} else {
-					/* TODO: metadata-update: implement me */
-					g_assert (!m_field_is_from_update (field));
+					if (G_UNLIKELY (m_field_is_from_update (field))) {
+						g_assert (!m_type_is_byref (field->type));
+						MonoClass *field_class = mono_class_from_mono_type_internal (field->type);
+						MonoType *local_type = m_class_get_byval_arg (field_class);
+						interp_emit_metadata_update_ldflda (td, field, error);
+						goto_if_nok (error, exit);
+						interp_add_ins (td, interp_get_ldind_for_mt (mt));
+						interp_ins_set_sreg (td->last_ins, td->sp [-1].local);
+						td->sp--;
+						push_type (td, stack_type [mt], field_class);
+						interp_ins_set_dreg (td->last_ins, td->sp[-1].local);
+						td->ip += 5;
+						break;
+					}
 					int opcode = MINT_LDFLD_I1 + mt - MINT_TYPE_I1;
 #ifdef NO_UNALIGNED_ACCESS
 					if ((mt == MINT_TYPE_I8 || mt == MINT_TYPE_R8) && field->offset % SIZEOF_VOID_P != 0)

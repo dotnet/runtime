@@ -3253,7 +3253,7 @@ hot_reload_added_field_ldflda (MonoObject *instance, MonoType *field_type, uint3
 	static MonoMethod *get_instance_store = NULL;
 	if (G_UNLIKELY (get_instance_store == NULL)) {
 		MonoClass *table_class = mono_class_get_hot_reload_instance_field_table_class ();
-		get_instance_store = mono_class_get_method_from_name_checked (table_class, "GetInstanceFieldStore", 3, 0, error);
+		get_instance_store = mono_class_get_method_from_name_checked (table_class, "GetInstanceFieldFieldStore", 3, 0, error);
 		mono_error_assert_ok (error);
 	}
 	g_assert (get_instance_store);

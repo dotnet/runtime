@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -35,8 +36,8 @@ internal sealed class InstanceFieldTable
     //   we want to create some storage space that has the same lifetime as the instance object.
 
     // // TODO: should the linker keep this if Hot Reload stuff is enabled?  Hot Reload is predicated on the linker not rewriting user modules, but maybe trimming SPC is ok?
-    internal static FieldStore GetInstanceFieldFieldStore(object inst, IntPtr type, uint fielddef_token)
-        => _singleton.GetOrCreateInstanceFields(inst).LookupOrAdd(new RuntimeTypeHandle (type), fielddef_token);
+    internal static ref object? GetInstanceFieldFieldStore(object inst, IntPtr type, uint fielddef_token)
+        => ref _singleton.GetOrCreateInstanceFields(inst).LookupOrAdd(new RuntimeTypeHandle (type), fielddef_token);
 
     private static InstanceFieldTable _singleton = new();
 
@@ -61,18 +62,20 @@ internal sealed class InstanceFieldTable
             _lock = new();
         }
 
-        public FieldStore LookupOrAdd(RuntimeTypeHandle type, uint key)
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "Hot reload required untrimmed apps")]
+        public ref object? LookupOrAdd(RuntimeTypeHandle type, uint key)
         {
             if (_fields.TryGetValue(key, out FieldStore? v))
-                return v;
+                return ref v.Location;
             lock (_lock)
             {
                 if (_fields.TryGetValue (key, out FieldStore? v2))
-                    return v2;
+                    return ref v2.Location;
 
                 FieldStore s = FieldStore.Create(type);
                 _fields.Add(key, s);
-                return s;
+                return ref s.Location;
             }
         }
     }
@@ -96,8 +99,9 @@ internal sealed class FieldStore
         _loc = loc;
     }
 
-    public object? Location => _loc;
+    public ref object? Location => ref _loc;
 
+    [RequiresUnreferencedCode("Hot reload required untrimmed apps")]
     public static FieldStore Create (RuntimeTypeHandle type)
     {
         Type t = Type.GetTypeFromHandle(type) ?? throw new ArgumentException(nameof(type), "Type handle was null");
