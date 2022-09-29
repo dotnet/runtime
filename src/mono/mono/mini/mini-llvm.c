@@ -11300,7 +11300,6 @@ MONO_RESTORE_WARNING
 			values [ins->dreg] = result;
 			break;
 		}
-
 #endif
 		case OP_DUMMY_USE:
 			break;
