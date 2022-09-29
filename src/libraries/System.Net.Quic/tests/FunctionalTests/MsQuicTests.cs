@@ -1222,19 +1222,25 @@ namespace System.Net.Quic.Tests
             cmd.StandardInput.Close();
             cmd.WaitForExit();
             string ipLookupResult = cmd.StandardOutput.ReadToEnd();
-            string ipKey = "Addresses:";
-            int ipKeyIndex = ipLookupResult.IndexOf(ipKey);
-
-            if (ipKeyIndex == -1)
+            string ipAddressString = string.Empty;
+            int ipAddressEnd = 0;
+            do
             {
-                // fallback
-                ipKey = "Address:";
-                ipKeyIndex = ipLookupResult.IndexOf(ipKey);
-            }
+                string ipKey = "Addresses:";
+                int ipKeyIndex = ipLookupResult.IndexOf(ipKey, ipAddressEnd);
 
-            int ipAddressStart = ipKeyIndex + 1 + ipKey.Length;
-            int ipAddressEnd = ipLookupResult.IndexOf(Environment.NewLine, ipAddressStart);
-            string ipAddress = ipLookupResult[ipAddressStart..ipAddressEnd].Trim();
+                if (ipKeyIndex == -1)
+                {
+                    // fallback
+                    ipKey = "Address:";
+                    ipKeyIndex = ipLookupResult.IndexOf(ipKey, ipAddressEnd);
+                }
+
+                int ipAddressStart = ipKeyIndex + 1 + ipKey.Length;
+                ipAddressEnd = ipLookupResult.IndexOf(Environment.NewLine, ipAddressStart);
+                ipAddressString = ipLookupResult[ipAddressStart..ipAddressEnd].Trim();
+            }
+            while (IPAddress.TryParse(ipAddressString, out IPAddress ipAddress) && !ipAddress.AddressFamily.HasFlag(AddressFamily.InterNetworkV6));
 
             // disable ipv6 on all network interfaces
             cmd.Start();
@@ -1258,7 +1264,7 @@ namespace System.Net.Quic.Tests
 
             try
             {
-                await client.GetAsync($"https://[{ipAddress}]:443");
+                await client.GetAsync($"https://[{ipAddressString}]:443");
             }
             catch (Exception genEx)
             {
@@ -1266,7 +1272,7 @@ namespace System.Net.Quic.Tests
             }
 
             Assert.NotNull(ex);
-            Assert.True(ex.GetType() == typeof(HttpRequestException), $"could not send get request to {siteWebUrl} through ipv6 address {ipAddress}. {siteWebUrl} IPv6 resolution is :{Environment.NewLine}{ipLookupResult}");
+            Assert.True(ex.GetType() == typeof(HttpRequestException), $"could not send get request to {siteWebUrl} through ipv6 address {ipAddressString}. {siteWebUrl} IPv6 resolution is :{Environment.NewLine}{ipLookupResult}");
             Assert.NotNull(ex.InnerException);
             Assert.IsType<QuicException>(ex.InnerException);
             Assert.Equal(10051, ex.HResult & 0xFFFF);
