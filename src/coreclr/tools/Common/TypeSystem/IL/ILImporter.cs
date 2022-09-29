@@ -576,7 +576,7 @@ namespace Internal.IL
                         ImportConvert(WellKnownType.Double, false, false);
                         break;
                     case ILOpcode.conv_u4:
-                        ImportConvert(WellKnownType.UInt32, false, false);
+                        ImportConvert(WellKnownType.UInt32, false, true);
                         break;
                     case ILOpcode.conv_u8:
                         ImportConvert(WellKnownType.UInt64, false, true);
