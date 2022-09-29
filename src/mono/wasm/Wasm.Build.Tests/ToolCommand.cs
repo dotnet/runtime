@@ -161,6 +161,8 @@ namespace Wasm.Build.Tests
             psi.Environment["DOTNET_MULTILEVEL_LOOKUP"] = "0";
             psi.Environment["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
 
+            // runtime repo sets this, which interferes with the tests
+            psi.RemoveEnvironmentVariables("MSBuildSDKsPath");
             AddEnvironmentVariablesTo(psi);
             AddWorkingDirectoryTo(psi);
             var process = new Process
@@ -201,6 +203,7 @@ namespace Wasm.Build.Tests
         {
             foreach (var item in Environment)
             {
+                _testOutput.WriteLine($"\t[{item.Key}] = {item.Value}");
                 psi.Environment[item.Key] = item.Value;
             }
         }

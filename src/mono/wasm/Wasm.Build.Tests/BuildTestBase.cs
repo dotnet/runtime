@@ -840,6 +840,9 @@ namespace Wasm.Build.Tests
                     processStartInfo.EnvironmentVariables[envVar.Key] = envVar.Value;
                     _testOutput.WriteLine($"\t{envVar.Key} = {envVar.Value}");
                 }
+
+                // runtime repo sets this, which interferes with the tests
+                processStartInfo.RemoveEnvironmentVariables("MSBuildSDKsPath");
             }
 
             Process process = new ();
