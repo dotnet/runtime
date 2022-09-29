@@ -1,16 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 
 /// <summary>
-/// Tests that writing to a DiagnosticSource writes the correct payloads
-/// to the DiagnosticSourceEventSource.
+/// Tests that writing an anonymous type to a DiagnosticSource preserves the anonymous type's properties
+/// correctly, so they are written to the EventSource correctly.
 /// </summary>
 internal class Program
 {
@@ -24,7 +21,7 @@ internal class Program
             {
                 EnableEvents(eventSource, EventLevel.Verbose, EventKeywords.All, new Dictionary<string, string>
                 {
-                    { "FilterAndPayloadSpecs", "TestDiagnosticListener/Test.Start@Activity2Start:-Id;Ints.*Enumerate"}
+                    { "FilterAndPayloadSpecs", "TestDiagnosticListener/Test.Start@Activity2Start:-Id;Name"}
                 });
             }
 
@@ -47,12 +44,13 @@ internal class Program
         DiagnosticSource diagnosticSource = new DiagnosticListener("TestDiagnosticListener");
         using (var listener = new TestEventListener())
         {
-            var data = new EventData()
+            var data = new 
             {
                 Id = Guid.NewGuid(),
+                Name = "EventName"
             };
 
-            Write(diagnosticSource, "Test.Start", data);
+            diagnosticSource.Write("Test.Start", data);
 
             if (!(listener.LogDataPayload?.Count == 3 &&
                 (string)listener.LogDataPayload[0] == "TestDiagnosticListener" &&
@@ -74,37 +72,12 @@ internal class Program
             }
 
             arg = (IDictionary<string, object>)args[1];
-            if (!((string)arg["Key"] == "*Enumerate" && (string)arg["Value"] == "1,2,3"))
+            if (!((string)arg["Key"] == "Name" && (string)arg["Value"] == "EventName"))
             {
                 return -4;
             }
 
             return 100;
-        }
-    }
-
-    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-        Justification = "The value being passed into Write has the necessary properties being preserved with DynamicallyAccessedMembers.")]
-    private static void Write<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(
-        DiagnosticSource diagnosticSource,
-        string name,
-        T value)
-    {
-        diagnosticSource.Write(name, value);
-    }
-
-    public class EventData
-    {
-        public Guid Id { get; set; }
-
-        public IEnumerable<int> Ints
-        {
-            get
-            {
-                yield return 1;
-                yield return 2;
-                yield return 3;
-            }
         }
     }
 }
