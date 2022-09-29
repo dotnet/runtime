@@ -124,8 +124,7 @@ namespace System
                 string[] names = enumInfo.Names;
                 if (ulValue < (ulong)names.Length)
                 {
-                    // TODO https://github.com/dotnet/runtime/issues/76198: Remove use of Unsafe.
-                    return Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(names), (nuint)ulValue);
+                    return names[(uint)ulValue];
                 }
             }
             else
@@ -431,8 +430,8 @@ namespace System
         {
             RuntimeType enumType = (RuntimeType)typeof(TEnum);
             EnumInfo info = GetEnumInfo(enumType, getNames: false);
-            ulong[] ulValues = info.Values;
             ulong ulValue = ToUInt64(value);
+            ulong[] ulValues = info.Values;
 
             // If the enum's values are all sequentially numbered starting from 0, then we can
             // just return if the requested index is in range. Otherwise, search for the value.

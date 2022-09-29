@@ -75,7 +75,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static EnumInfo GetEnumInfo(RuntimeType enumType, bool getNames = true)
         {
-            return enumType.GenericCache is EnumInfo info && (info.Names is not null || !getNames) ?
+            return enumType.GenericCache is EnumInfo info && (!getNames || info.Names is not null) ?
                 info :
                 InitializeEnumInfo(enumType, getNames);
 
