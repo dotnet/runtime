@@ -500,45 +500,45 @@ namespace DebuggerTests
             "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate.run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
             wait_for_event_fn: async (pause_location) =>
-           {
-               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-               var (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethodWrong()", expect_ok: false );
-               Assert.Equal(
-                    $"Method 'MyMethodWrong' not found in type 'DebuggerTests.EvaluateMethodTestsClass.ParmToTest'",
+                var (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethodWrong()", expect_ok: false);
+                Assert.Equal(
+                     $"Method 'MyMethodWrong' not found in type 'DebuggerTests.EvaluateMethodTestsClass.ParmToTest'",
+                     res.Error["result"]?["description"]?.Value<string>());
+
+                (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethod(1)", expect_ok: false);
+                Assert.Equal(
+                    "Unable to evaluate method 'MyMethod'. Too many arguments passed.",
                     res.Error["result"]?["description"]?.Value<string>());
 
-               (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethod(1)", expect_ok: false);
-               Assert.Equal(
-                   "Unable to evaluate method 'MyMethod'. Too many arguments passed.",
-                   res.Error["result"]?["description"]?.Value<string>());
+                (_, res) = await EvaluateOnCallFrame(id, "this.CallMethodWithParm(\"1\")", expect_ok: false);
+                Assert.Contains("No implementation of method 'CallMethodWithParm' matching 'this.CallMethodWithParm(\"1\")' found in type DebuggerTests.EvaluateMethodTestsClass.TestEvaluate.", res.Error["result"]?["description"]?.Value<string>());
 
-               (_, res) = await EvaluateOnCallFrame(id, "this.CallMethodWithParm(\"1\")", expect_ok: false );
-               Assert.Contains("No implementation of method 'CallMethodWithParm' matching 'this.CallMethodWithParm(\"1\")' found in type DebuggerTests.EvaluateMethodTestsClass.TestEvaluate.", res.Error["result"]?["description"]?.Value<string>());
+                (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjNull.MyMethod()", expect_ok: false);
+                Assert.Equal("Expression 'this.ParmToTestObjNull.MyMethod' evaluated to null", res.Error["message"]?.Value<string>());
 
-               (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjNull.MyMethod()", expect_ok: false );
-               Assert.Equal("Expression 'this.ParmToTestObjNull.MyMethod' evaluated to null", res.Error["message"]?.Value<string>());
-
-               (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjException.MyMethod()", expect_ok: false );
-               Assert.Equal("Method 'MyMethod' not found in type 'string'", res.Error["result"]?["description"]?.Value<string>());
-           });
+                (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjException.MyMethod()", expect_ok: false);
+                Assert.Equal("Method 'MyMethod' not found in type 'string'", res.Error["result"]?["description"]?.Value<string>());
+            });
 
         [Fact]
         public async Task EvaluateSimpleMethodCallsWithoutParms() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate.run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
             wait_for_event_fn: async (pause_location) =>
-           {
-               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-               await EvaluateOnCallFrameAndCheck(id,
+                await EvaluateOnCallFrameAndCheck(id,
                     ("this.CallMethod()", TNumber(1)),
                     ("this.CallMethod()", TNumber(1)),
                     ("this.CallMethodReturningChar()", TChar('A')),
                     ("this.ParmToTestObj.MyMethod()", TString("methodOK")),
                     ("this.ParmToTestObj.ToString()", TString("DebuggerTests.EvaluateMethodTestsClass+ParmToTest")),
                     ("this.objToTest.MyMethod()", TString("methodOK")));
-           });
+            });
 
 
         [Fact]
@@ -546,42 +546,131 @@ namespace DebuggerTests
             "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate.run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
             wait_for_event_fn: async (pause_location) =>
-           {
-               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-               await EvaluateOnCallFrameAndCheck(id,
-                    ("this.CallMethodWithParm(10)", TNumber(11)),
-                    ("this.CallMethodWithMultipleParms(10, 10)", TNumber(21)),
-                    ("this.CallMethodWithParmBool(true)", TString("TRUE")),
-                    ("this.CallMethodWithParmBool(false)", TString("FALSE")),
-                    ("this.CallMethodWithParmString(\"concat\")", TString("str_const_concat")),
-                    ("this.CallMethodWithParmString(\"\\\"\\\"\")", TString("str_const_\"\"")),
-                    ("this.CallMethodWithParmString(\"🛶\")", TString("str_const_🛶")),
-                    ("this.CallMethodWithParmString(\"\\uD83D\\uDEF6\")", TString("str_const_🛶")),
-                    ("this.CallMethodWithParmString(\"🚀\")", TString("str_const_🚀")),
-                    ("this.CallMethodWithParmString_λ(\"🚀\")", TString("λ_🚀")),
-                    ("this.CallMethodWithParm(10) + this.a", TNumber(12)),
-                    ("this.CallMethodWithObj(null)", TNumber(-1)),
-                    ("this.CallMethodWithChar('a')", TString("str_const_a")));
-           });
+                await EvaluateOnCallFrameAndCheck(id,
+                     ("this.CallMethodWithParm(10)", TNumber(11)),
+                     ("this.CallMethodWithMultipleParms(10, 10)", TNumber(21)),
+                     ("this.CallMethodWithParmBool(true)", TString("TRUE")),
+                     ("this.CallMethodWithParmBool(false)", TString("FALSE")),
+                     ("this.CallMethodWithParmString(\"concat\")", TString("str_const_concat")),
+                     ("this.CallMethodWithParmString(\"\\\"\\\"\")", TString("str_const_\"\"")),
+                     ("this.CallMethodWithParmString(\"🛶\")", TString("str_const_🛶")),
+                     ("this.CallMethodWithParmString(\"\\uD83D\\uDEF6\")", TString("str_const_🛶")),
+                     ("this.CallMethodWithParmString(\"🚀\")", TString("str_const_🚀")),
+                     ("this.CallMethodWithParmString_λ(\"🚀\")", TString("λ_🚀")),
+                     ("this.CallMethodWithParm(10) + this.a", TNumber(12)),
+                     ("this.CallMethodWithObj(null)", TNumber(-1)),
+                     ("this.CallMethodWithChar('a')", TString("str_const_a")));
+            });
 
         [Fact]
         public async Task EvaluateSimpleMethodCallsWithVariableParms() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate", "run", 9, "DebuggerTests.EvaluateMethodTestsClass.TestEvaluate.run",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateMethodTestsClass:EvaluateMethods'); })",
             wait_for_event_fn: async (pause_location) =>
-           {
-               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-               await EvaluateOnCallFrameAndCheck(id,
-                    ("this.CallMethodWithParm(this.a)", TNumber(2)),
-                    ("this.CallMethodWithMultipleParms(this.a, 10)", TNumber(12)),
-                    ("this.CallMethodWithParmString(this.str)", TString("str_const_str_const_")),
-                    ("this.CallMethodWithParmBool(this.t)", TString("TRUE")),
-                    ("this.CallMethodWithParmBool(this.f)", TString("FALSE")),
-                    ("this.CallMethodWithParm(this.a) + this.a", TNumber(3)),
-                    ("this.CallMethodWithObj(this.objToTest)", TNumber(10)));
-           });
+                await EvaluateOnCallFrameAndCheck(id,
+                     ("this.CallMethodWithParm(this.a)", TNumber(2)),
+                     ("this.CallMethodWithMultipleParms(this.a, 10)", TNumber(12)),
+                     ("this.CallMethodWithParmString(this.str)", TString("str_const_str_const_")),
+                     ("this.CallMethodWithParmBool(this.t)", TString("TRUE")),
+                     ("this.CallMethodWithParmBool(this.f)", TString("FALSE")),
+                     ("this.CallMethodWithParm(this.a) + this.a", TNumber(3)),
+                     ("this.CallMethodWithObj(this.objToTest)", TNumber(10)));
+            });
+
+        [Fact]
+        public async Task EvaluateIndexing() => await CheckInspectLocalsAtBreakpointSiteParallel(
+            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
+            $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); 1 }})",
+            wait_for_event_fn: new List<Func<JObject, Task>>()
+            {
+                // ByConstant
+                async (pause_location) =>
+                {
+                    var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+                    await EvaluateOnCallFrameAndCheck(id,
+                        ("f.numList[0]", TNumber(1)),
+                        ("f.textList[1]", TString("2")),
+                        ("f.numArray[1]", TNumber(2)),
+                        ("f.textArray[0]", TString("1")));
+                },
+                // ByLocalVariable
+                async (pause_location) =>
+                {
+                    var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+                    await EvaluateOnCallFrameAndCheck(id,
+                    ("f.numList[i]", TNumber(1)),
+                    ("f.textList[j]", TString("2")),
+                    ("f.numArray[j]", TNumber(2)),
+                    ("f.textArray[i]", TString("1")));
+                },
+                // ByExpression
+                async (pause_location) =>
+                {
+                    var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                    await EvaluateOnCallFrameAndCheck(id,
+                        ("f.numList[i + 1]", TNumber(2)),
+                        ("f.textList[(2 * j) - 1]", TString("2")),
+                        ("f.textList[j - 1]", TString("1")),
+                        //("f[\"longstring\"]", TBool(true)), FIXME: Broken case
+                        ("f.numArray[f.numList[j - 1]]", TNumber(2))
+                    );
+                },
+                // ByMemberVariables
+                async (pause_location) =>
+                {
+                    var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+                    await EvaluateOnCallFrameAndCheck(id,
+                        ("f.idx0", TNumber(0)),
+                        ("f.idx1", TNumber(1)),
+                        ("f.numList[f.idx0]", TNumber(1)),
+                        ("f.textList[f.idx1]", TString("2")),
+                        ("f.numArray[f.idx1]", TNumber(2)),
+                        ("f.textArray[f.idx0]", TString("1")));
+                },
+                // Nested
+                async (pause_location) =>
+                {
+                    var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+                    await EvaluateOnCallFrameAndCheck(id,
+                        ("f.idx0", TNumber(0)),
+                        ("f.numList[f.numList[f.idx0]]", TNumber(2)),
+                        ("f.textList[f.numList[f.idx0]]", TString("2")),
+                        ("f.numArray[f.numArray[f.idx0]]", TNumber(2)),
+                        ("f.textArray[f.numArray[f.idx0]]", TString("2")));
+                },
+                // Jagged
+                async (pause_location) =>
+                {
+                    var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+
+                    await EvaluateOnCallFrameAndCheck(id,
+                        ("j", TNumber(1)),
+                        ("f.idx1", TNumber(1)),
+                        ("f.numArrayOfArrays[1][1]", TNumber(2)),
+                        ("f.numArrayOfArrays[j][j]", TNumber(2)),
+                        ("f.numArrayOfArrays[f.idx1][f.idx1]", TNumber(2)),
+                        ("f.numListOfLists[1][1]", TNumber(2)),
+                        ("f.numListOfLists[j][j]", TNumber(2)),
+                        ("f.numListOfLists[f.idx1][f.idx1]", TNumber(2)),
+                        ("f.textArrayOfArrays[1][1]", TString("2")),
+                        ("f.textArrayOfArrays[j][j]", TString("2")),
+                        ("f.textArrayOfArrays[f.idx1][f.idx1]", TString("2")),
+                        ("f.textListOfLists[1][1]", TString("2")),
+                        ("f.textListOfLists[j][j]", TString("2")),
+                        ("f.textListOfLists[f.idx1][f.idx1]", TString("2")));
+                }
+            });
+
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateIndexingNegative() => await CheckInspectLocalsAtBreakpointSite(
@@ -590,61 +679,14 @@ namespace DebuggerTests
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                var (_, res) = await EvaluateOnCallFrame(id, "f.idx0[2]", expect_ok: false );
+                var (_, res) = await EvaluateOnCallFrame(id, "f.idx0[2]", expect_ok: false);
                 Assert.Equal("Unable to evaluate element access 'f.idx0[2]': Cannot apply indexing with [] to a primitive object of type 'number'", res.Error["message"]?.Value<string>());
-                (_, res) = await EvaluateOnCallFrame(id, "f[1]", expect_ok: false );
-                Assert.Equal( "Unable to evaluate element access 'f[1]': Type 'DebuggerTests.EvaluateLocalsWithIndexingTests.TestEvaluate' cannot be indexed.", res.Error["message"]?.Value<string>());
-           });
-
-        [Fact]
-        public async Task EvaluateIndexingsByConstant() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
-            wait_for_event_fn: async (pause_location) =>
-           {
-               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-
-               await EvaluateOnCallFrameAndCheck(id,
-                   ("f.numList[0]", TNumber(1)),
-                   ("f.textList[1]", TString("2")),
-                   ("f.numArray[1]", TNumber(2)),
-                   ("f.textArray[0]", TString("1")));
-           });
-
-        [Fact]
-        public async Task EvaluateIndexingByLocalVariable() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
-            wait_for_event_fn: async (pause_location) =>
-           {
-               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-
-               await EvaluateOnCallFrameAndCheck(id,
-                   ("f.numList[i]", TNumber(1)),
-                   ("f.textList[j]", TString("2")),
-                   ("f.numArray[j]", TNumber(2)),
-                   ("f.textArray[i]", TString("1")));
-
-           });
-
-        [Fact]
-        public async Task EvaluateIndexingByExpression() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
-            wait_for_event_fn: async (pause_location) =>
-            {
-                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                await EvaluateOnCallFrameAndCheck(id,
-                    ("f.numList[i + 1]", TNumber(2)),
-                    ("f.textList[(2 * j) - 1]", TString("2")),
-                    ("f.textList[j - 1]", TString("1")),
-                    //("f[\"longstring\"]", TBool(true)), FIXME: Broken case
-                    ("f.numArray[f.numList[j - 1]]", TNumber(2))
-                );
+                (_, res) = await EvaluateOnCallFrame(id, "f[1]", expect_ok: false);
+                Assert.Equal("Unable to evaluate element access 'f[1]': Type 'DebuggerTests.EvaluateLocalsWithIndexingTests.TestEvaluate' cannot be indexed.", res.Error["message"]?.Value<string>());
             });
 
         [Fact]
-        public async Task EvaluateIndexingByExpressionMultidimensional() => await CheckInspectLocalsAtBreakpointSite(
+        public async Task EvaluateMultidimensionalIndexingByExpression() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateLocalsWithMultidimensionalIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithMultidimensionalIndexingTests.EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithMultidimensionalIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
@@ -666,7 +708,7 @@ namespace DebuggerTests
             {
                 // indexing with expression of a wrong type
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                var (_, res) = await EvaluateOnCallFrame(id, "f.numList[\"a\" + 1]", expect_ok: false );
+                var (_, res) = await EvaluateOnCallFrame(id, "f.numList[\"a\" + 1]", expect_ok: false);
                 Assert.Equal("Unable to evaluate element access 'f.numList[\"a\" + 1]': Cannot index with an object of type 'string'", res.Error["message"]?.Value<string>());
             });
 
@@ -682,49 +724,15 @@ namespace DebuggerTests
                 Assert.Equal("The name x does not exist in the current context", res.Error["result"]?["description"]?.Value<string>());
             });
 
-        [Fact]
-        public async Task EvaluateIndexingByMemberVariables() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
-            wait_for_event_fn: async (pause_location) =>
-           {
-               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-
-               await EvaluateOnCallFrameAndCheck(id,
-                   ("f.idx0", TNumber(0)),
-                   ("f.idx1", TNumber(1)),
-                   ("f.numList[f.idx0]", TNumber(1)),
-                   ("f.textList[f.idx1]", TString("2")),
-                   ("f.numArray[f.idx1]", TNumber(2)),
-                   ("f.textArray[f.idx0]", TString("1")));
-           });
-
-        [Fact]
-        public async Task EvaluateIndexingNested() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
-            wait_for_event_fn: async (pause_location) =>
-           {
-               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-
-               await EvaluateOnCallFrameAndCheck(id,
-                   ("f.idx0", TNumber(0)),
-                   ("f.numList[f.numList[f.idx0]]", TNumber(2)),
-                   ("f.textList[f.numList[f.idx0]]", TString("2")),
-                   ("f.numArray[f.numArray[f.idx0]]", TNumber(2)),
-                   ("f.textArray[f.numArray[f.idx0]]", TString("2")));
-
-           });
-
         [ConditionalFact(nameof(RunningOnChrome))]
-        public async Task EvaluateIndexingMultidimensional() => await CheckInspectLocalsAtBreakpointSite(
+        public async Task EvaluateMultidimensionalIndexing() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.EvaluateLocalsWithMultidimensionalIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithMultidimensionalIndexingTests.EvaluateLocals",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithMultidimensionalIndexingTests:EvaluateLocals'); })",
             wait_for_event_fn: async (pause_location) =>
-           {
-               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
-               await EvaluateOnCallFrameAndCheck(id,
+                await EvaluateOnCallFrameAndCheck(id,
                    ("j", TNumber(1)),
                    ("f.idx1", TNumber(1)),
                    ("f.numArray2D[0, 0]", TNumber(1)),
@@ -779,33 +787,7 @@ namespace DebuggerTests
                    ("f.textArray2D[f.idx0,f.idx1]", TString("two")),
                    ("f.textArray2D[f.idx1,f.idx0]", TString("three")),
                    ("f.textArray2D[f.idx1,f.idx1]", TString("four")));
-           });
-
-        [ConditionalFact(nameof(RunningOnChrome))]
-        public async Task EvaluateIndexingJagged() => await CheckInspectLocalsAtBreakpointSite(
-            "DebuggerTests.EvaluateLocalsWithIndexingTests", "EvaluateLocals", 5, "DebuggerTests.EvaluateLocalsWithIndexingTests.EvaluateLocals",
-            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.EvaluateLocalsWithIndexingTests:EvaluateLocals'); })",
-            wait_for_event_fn: async (pause_location) =>
-           {
-               var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-
-               await EvaluateOnCallFrameAndCheck(id,
-                   ("j", TNumber(1)),
-                   ("f.idx1", TNumber(1)),
-                   ("f.numArrayOfArrays[1][1]", TNumber(2)),
-                   ("f.numArrayOfArrays[j][j]", TNumber(2)),
-                   ("f.numArrayOfArrays[f.idx1][f.idx1]", TNumber(2)),
-                   ("f.numListOfLists[1][1]", TNumber(2)),
-                   ("f.numListOfLists[j][j]", TNumber(2)),
-                   ("f.numListOfLists[f.idx1][f.idx1]", TNumber(2)),
-                   ("f.textArrayOfArrays[1][1]", TString("2")),
-                   ("f.textArrayOfArrays[j][j]", TString("2")),
-                   ("f.textArrayOfArrays[f.idx1][f.idx1]", TString("2")),
-                   ("f.textListOfLists[1][1]", TString("2")),
-                   ("f.textListOfLists[j][j]", TString("2")),
-                   ("f.textListOfLists[f.idx1][f.idx1]", TString("2")));
-
-           });
+            });
 
         [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateSimpleMethodCallsCheckChangedValue() => await CheckInspectLocalsAtBreakpointSite(

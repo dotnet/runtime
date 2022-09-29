@@ -271,9 +271,8 @@ namespace DebuggerTests
             await tcs.Task;
         }
 
-        // sets breakpoint by method name and line offset
-        internal async Task CheckInspectLocalsAtBreakpointSite(string type, string method, int line_offset, string bp_function_name, string eval_expression,
-            Func<JToken, Task> locals_fn = null, Func<JObject, Task> wait_for_event_fn = null, bool use_cfo = false, string assembly = "debugger-test.dll", int col = 0)
+        private async Task<JObject> SetAndCheckBreakpoint(string type, string method, int line_offset, string bp_function_name, string eval_expression,
+            bool use_cfo = false, string assembly = "debugger-test.dll", int col = 0)
         {
             UseCallFunctionOnBeforeGetProperties = use_cfo;
 
@@ -290,10 +289,14 @@ namespace DebuggerTests
                 Assert.Equal(bp_function_name, pause_location["callFrames"]?[0]?["functionName"]?.Value<string>());
 
             Assert.Equal(bp.Value["breakpointId"]?.ToString(), pause_location["hitBreakpoints"]?[0]?.Value<string>());
+            return pause_location;
+        }
 
-            var top_frame = pause_location!["callFrames"]?[0];
-
-            var scope = top_frame?["scopeChain"]?[0];
+        // sets breakpoint by method name and line offset
+        internal async Task CheckInspectLocalsAtBreakpointSite(string type, string method, int line_offset, string bp_function_name, string eval_expression,
+            Func<JToken, Task> locals_fn = null, Func<JObject, Task> wait_for_event_fn = null, bool use_cfo = false, string assembly = "debugger-test.dll", int col = 0)
+        {
+            JObject pause_location = await SetAndCheckBreakpoint(type, method, line_offset, bp_function_name, eval_expression, use_cfo, assembly, col);
 
             if (wait_for_event_fn != null)
                 await wait_for_event_fn(pause_location);
@@ -303,6 +306,27 @@ namespace DebuggerTests
                 var locals = await GetProperties(pause_location?["callFrames"]?[0]?["callFrameId"]?.Value<string>());
                 await locals_fn(locals);
             }
+        }
+
+        internal async Task CheckInspectLocalsAtBreakpointSiteParallel(string type, string method, int line_offset, string bp_function_name, string eval_expression,
+            IEnumerable<Func<JToken, Task>> locals_fn = null, IEnumerable<Func<JObject, Task>> wait_for_event_fn = null, bool use_cfo = false, string assembly = "debugger-test.dll", int col = 0)
+        {
+            JObject pause_location = await SetAndCheckBreakpoint(type, method, line_offset, bp_function_name, eval_expression, use_cfo, assembly, col);
+
+            List<Task> allTasks = new List<Task>();
+            if (wait_for_event_fn != null)
+            {
+                foreach (var f in wait_for_event_fn)
+                    allTasks.Add(f(pause_location));
+            }
+
+            if (locals_fn != null)
+            {
+                var locals = await GetProperties(pause_location?["callFrames"]?[0]?["callFrameId"]?.Value<string>());
+                foreach (var f in locals_fn)
+                    allTasks.Add(f(locals));
+            }
+            await Task.WhenAll(allTasks);
         }
 
         internal virtual void CheckLocation(string script_loc, int line, int column, Dictionary<string, string> scripts, JToken location)
