@@ -6533,24 +6533,6 @@ AdjustContextForJITHelpers(
 
 #if defined(USE_FEF) && !defined(TARGET_UNIX)
 
-static void FixContextForFaultingExceptionFrame(
-    EXCEPTION_POINTERS* ep,
-    EXCEPTION_RECORD* pOriginalExceptionRecord,
-    CONTEXT* pOriginalExceptionContext)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // don't copy param args as have already supplied them on the throw
-    memcpy((void*) ep->ExceptionRecord,
-           (void*) pOriginalExceptionRecord,
-           offsetof(EXCEPTION_RECORD, ExceptionInformation)
-          );
-
-    ReplaceExceptionContextRecord(ep->ContextRecord, pOriginalExceptionContext);
-
-    GetThread()->ResetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
-}
-
 struct HandleManagedFaultFilterParam
 {
     // It's possible for our filter to be called more than once if some other first-pass
@@ -6558,7 +6540,6 @@ struct HandleManagedFaultFilterParam
     // the first exception we see.  This flag takes care of that.
     BOOL fFilterExecuted;
     EXCEPTION_RECORD *pOriginalExceptionRecord;
-    CONTEXT *pOriginalExceptionContext;
 };
 
 static LONG HandleManagedFaultFilter(EXCEPTION_POINTERS* ep, LPVOID pv)
@@ -6569,7 +6550,8 @@ static LONG HandleManagedFaultFilter(EXCEPTION_POINTERS* ep, LPVOID pv)
 
     if (!pParam->fFilterExecuted)
     {
-        FixContextForFaultingExceptionFrame(ep, pParam->pOriginalExceptionRecord, pParam->pOriginalExceptionContext);
+        ep->ExceptionRecord->ExceptionAddress = pParam->pOriginalExceptionRecord->ExceptionAddress;
+        GetThread()->ResetThreadStateNC(Thread::TSNC_DebuggerIsManagedException);
         pParam->fFilterExecuted = TRUE;
     }
 
@@ -6591,7 +6573,6 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
     HandleManagedFaultFilterParam param;
     param.fFilterExecuted = FALSE;
     param.pOriginalExceptionRecord = pExceptionRecord;
-    param.pOriginalExceptionContext = pContext;
 
     PAL_TRY(HandleManagedFaultFilterParam *, pParam, &param)
     {
@@ -6599,7 +6580,7 @@ void HandleManagedFault(EXCEPTION_RECORD* pExceptionRecord, CONTEXT* pContext)
 
         EXCEPTION_RECORD *pRecord = pParam->pOriginalExceptionRecord;
 
-        RaiseException(pRecord->ExceptionCode, pRecord->ExceptionFlags,
+        RaiseException(pRecord->ExceptionCode, 0,
             pRecord->NumberParameters, pRecord->ExceptionInformation);
     }
     PAL_EXCEPT_FILTER(HandleManagedFaultFilter)
