@@ -720,37 +720,30 @@ namespace System.Formats.Tar
         // extended attributes. They get collected and saved in that dictionary, with no restrictions.
         private void CollectExtendedAttributesFromStandardFieldsIfNeeded()
         {
-            ExtendedAttributes.Add(PaxEaName, _name);
+            ExtendedAttributes[PaxEaName] = _name;
 
             if (!ExtendedAttributes.ContainsKey(PaxEaMTime))
             {
                 ExtendedAttributes.Add(PaxEaMTime, TarHelpers.GetTimestampStringFromDateTimeOffset(_mTime));
             }
 
-            if (!string.IsNullOrEmpty(_gName))
-            {
-                TryAddStringField(ExtendedAttributes, PaxEaGName, _gName, FieldLengths.GName);
-            }
-
-            if (!string.IsNullOrEmpty(_uName))
-            {
-                TryAddStringField(ExtendedAttributes, PaxEaUName, _uName, FieldLengths.UName);
-            }
+            TryAddStringField(ExtendedAttributes, PaxEaGName, _gName, FieldLengths.GName);
+            TryAddStringField(ExtendedAttributes, PaxEaUName, _uName, FieldLengths.UName);
 
             if (!string.IsNullOrEmpty(_linkName))
             {
-                ExtendedAttributes.Add(PaxEaLinkName, _linkName);
+                ExtendedAttributes[PaxEaLinkName] = _linkName;
             }
 
             if (_size > 99_999_999)
             {
-                ExtendedAttributes.Add(PaxEaSize, _size.ToString());
+                ExtendedAttributes[PaxEaSize] = _size.ToString();
             }
 
             // Adds the specified string to the dictionary if it's longer than the specified max byte length.
-            static void TryAddStringField(Dictionary<string, string> extendedAttributes, string key, string value, int maxLength)
+            static void TryAddStringField(Dictionary<string, string> extendedAttributes, string key, string? value, int maxLength)
             {
-                if (Encoding.UTF8.GetByteCount(value) > maxLength)
+                if (!string.IsNullOrEmpty(value) && GetUtf8TextLength(value) > maxLength)
                 {
                     extendedAttributes.Add(key, value);
                 }
