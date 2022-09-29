@@ -103,4 +103,28 @@
     <Left>lib/netstandard2.0/System.Drawing.Common.dll</Left>
     <Right>lib/net462/System.Drawing.Common.dll</Right>
   </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0019</DiagnosticId>
+    <Target>M:System.Drawing.Printing.PrintDocument.OnBeginPrint(System.Drawing.Printing.PrintEventArgs)</Target>
+    <Left>lib/netstandard2.0/System.Drawing.Common.dll</Left>
+    <Right>lib/net462/System.Drawing.Common.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0019</DiagnosticId>
+    <Target>M:System.Drawing.Printing.PrintDocument.OnEndPrint(System.Drawing.Printing.PrintEventArgs)</Target>
+    <Left>lib/netstandard2.0/System.Drawing.Common.dll</Left>
+    <Right>lib/net462/System.Drawing.Common.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0019</DiagnosticId>
+    <Target>M:System.Drawing.Printing.PrintDocument.OnPrintPage(System.Drawing.Printing.PrintPageEventArgs)</Target>
+    <Left>lib/netstandard2.0/System.Drawing.Common.dll</Left>
+    <Right>lib/net462/System.Drawing.Common.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0019</DiagnosticId>
+    <Target>M:System.Drawing.Printing.PrintDocument.OnQueryPageSettings(System.Drawing.Printing.QueryPageSettingsEventArgs)</Target>
+    <Left>lib/netstandard2.0/System.Drawing.Common.dll</Left>
+    <Right>lib/net462/System.Drawing.Common.dll</Right>
+  </Suppression>
 </Suppressions>

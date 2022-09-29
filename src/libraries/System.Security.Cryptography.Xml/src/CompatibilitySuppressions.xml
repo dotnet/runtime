@@ -2,10 +2,6 @@
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
-    <Target>T:System.Security.Cryptography.Xml.CryptoSignedXmlRecursionException</Target>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Security.Cryptography.Xml.CipherData</Target>
     <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
     <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
@@ -13,6 +9,12 @@
   <Suppression>
     <DiagnosticId>CP0001</DiagnosticId>
     <Target>T:System.Security.Cryptography.Xml.CipherReference</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.CryptoSignedXmlRecursionException</Target>
     <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
     <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
   </Suppression>
@@ -243,5 +245,23 @@
     <Target>T:System.Security.Cryptography.Xml.XmlLicenseTransform</Target>
     <Left>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
     <Right>lib/net462/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.CryptoSignedXmlRecursionException</Target>
+    <Left>ref/net6.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net6.0/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.CryptoSignedXmlRecursionException</Target>
+    <Left>ref/net7.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/net7.0/System.Security.Cryptography.Xml.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:System.Security.Cryptography.Xml.CryptoSignedXmlRecursionException</Target>
+    <Left>ref/netstandard2.0/System.Security.Cryptography.Xml.dll</Left>
+    <Right>lib/netstandard2.0/System.Security.Cryptography.Xml.dll</Right>
   </Suppression>
 </Suppressions>

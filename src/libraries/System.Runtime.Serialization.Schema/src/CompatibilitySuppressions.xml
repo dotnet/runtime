@@ -1,9 +1,0 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <Suppression>
-    <DiagnosticId>CP0003</DiagnosticId>
-    <Target>System.Runtime.Serialization.Schema, Version=7.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</Target>
-    <Left>ref/net7.0/System.Runtime.Serialization.Schema.dll</Left>
-    <Right>lib/net7.0/System.Runtime.Serialization.Schema.dll</Right>
-  </Suppression>
-</Suppressions>

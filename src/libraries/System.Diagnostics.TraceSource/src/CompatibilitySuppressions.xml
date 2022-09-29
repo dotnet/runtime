@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP0020</DiagnosticId>
+    <Target>M:System.Diagnostics.Switch.GetSupportedAttributes</Target>
+    <Left>ref/net7.0/System.Diagnostics.TraceSource.dll</Left>
+    <Right>lib/net7.0/System.Diagnostics.TraceSource.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0020</DiagnosticId>
+    <Target>M:System.Diagnostics.TraceListener.GetSupportedAttributes</Target>
+    <Left>ref/net7.0/System.Diagnostics.TraceSource.dll</Left>
+    <Right>lib/net7.0/System.Diagnostics.TraceSource.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0020</DiagnosticId>
+    <Target>M:System.Diagnostics.TraceSource.GetSupportedAttributes</Target>
+    <Left>ref/net7.0/System.Diagnostics.TraceSource.dll</Left>
+    <Right>lib/net7.0/System.Diagnostics.TraceSource.dll</Right>
+  </Suppression>
+</Suppressions>
