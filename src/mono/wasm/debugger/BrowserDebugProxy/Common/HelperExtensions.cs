@@ -7,6 +7,7 @@ using System;
 using Newtonsoft.Json.Linq;
 using BrowserDebugProxy;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Microsoft.WebAssembly.Diagnostics;
 
@@ -24,6 +25,7 @@ internal static class HelperExtensions
         { ProxyInternalUseProperty.IsBackingField, "__isBackingField" },
         { ProxyInternalUseProperty.ParentTypeId, "__parentTypeId" }
     };
+    private static Dictionary<string, ProxyInternalUseProperty> proxyInternalUsePropNamesInverse = proxyInternalUsePropNames.ToDictionary((i) => i.Value, (i) => i.Key);
 
     public static string Truncate(this string message, int maxLen, string suffix = "")
 
@@ -41,7 +43,8 @@ internal static class HelperExtensions
             arr.Add(item);
     }
 
-    public static string ToUnderscoredString(this ProxyInternalUseProperty val) => proxyInternalUsePropNames[val];
+    public static string ToUnderscoredString(this ProxyInternalUseProperty key) => proxyInternalUsePropNames[key];
+    public static bool TryConvertToProxyInternalUseProperty(this string key) => proxyInternalUsePropNamesInverse.TryGetValue(key, out _);
 
     public static bool IsNullValuedObject(this JObject obj)
         => obj != null && obj["type"]?.Value<string>() == "object" && obj["subtype"]?.Value<string>() == "null";

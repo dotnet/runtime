@@ -692,6 +692,23 @@ namespace BrowserDebugProxy
             PrivateMembers = t.PrivateMembers;
         }
 
+        public void CleanUp()
+        {
+            CleanUpJArray(Result);
+            CleanUpJArray(PrivateMembers);
+            static void CleanUpJArray(JArray arr)
+            {
+                foreach(var item in arr)
+                {
+                    item.Children().Where(x =>
+                        x is JProperty p &&
+                        p.Name.TryConvertToProxyInternalUseProperty())
+                    .ToList()
+                    .ForEach(x => x.Remove());
+                }
+            }
+        }
+
         public static GetMembersResult FromValues(IEnumerable<JToken> values, bool splitMembersByAccessLevel = false) =>
             FromValues(new JArray(values), splitMembersByAccessLevel);
 
