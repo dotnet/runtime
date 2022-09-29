@@ -1207,7 +1207,7 @@ namespace System.Net.Quic.Tests
         [ConditionalFact(nameof(IsProcessElevated), nameof(IsWindows))]
         public async Task ReturnWSAENETUNREACH_WhenIpv6Disabled()
         {
-            Process cmd = new Process();
+            using Process cmd = new Process();
             cmd.StartInfo.FileName = "powershell.exe";
             cmd.StartInfo.RedirectStandardInput = true;
             cmd.StartInfo.RedirectStandardOutput = true;
@@ -1215,7 +1215,7 @@ namespace System.Net.Quic.Tests
             cmd.StartInfo.UseShellExecute = false;
             string siteWebUrl = "www.bing.com";
 
-            // read ipv6 address of bing
+            // extract ipv6 address of bing
             cmd.Start();
             cmd.StandardInput.WriteLine($"nslookup -query=AAAA {siteWebUrl}");
             cmd.StandardInput.Flush();
@@ -1227,11 +1227,12 @@ namespace System.Net.Quic.Tests
 
             if (ipKeyIndex == -1)
             {
+                // fallback for spanish build VM
                 ipKey = "Address:";
                 ipKeyIndex = ipLookupResult.IndexOf(ipKey);
             }
 
-            int ipAddressStart = ipLookupResult.IndexOf(ipKey) + 1 + ipKey.Length;
+            int ipAddressStart = ipKeyIndex + 1 + ipKey.Length;
             int ipAddressEnd = ipLookupResult.IndexOf(Environment.NewLine, ipAddressStart);
             string ipAddress = ipLookupResult[ipAddressStart..ipAddressEnd].Trim();
 
@@ -1243,14 +1244,14 @@ namespace System.Net.Quic.Tests
             cmd.WaitForExit();
 
             // make http call with quic
-            var handler = new HttpClientHandler();
+            using var handler = new HttpClientHandler();
             handler.ClientCertificateOptions = ClientCertificateOption.Manual;
             handler.ServerCertificateCustomValidationCallback =
                 (httpRequestMessage, cert, cetChain, policyErrors) =>
                 {
                     return true;
                 };
-            var client = new HttpClient(handler);
+            using var client = new HttpClient(handler);
             client.DefaultRequestVersion = HttpVersion.Version30;
             client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
             HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync($"https://[{ipAddress}]:443"));
@@ -1264,11 +1265,6 @@ namespace System.Net.Quic.Tests
             cmd.StandardInput.Flush();
             cmd.StandardInput.Close();
             cmd.WaitForExit();
-
-            // dispose resources
-            cmd.Dispose();
-            client.Dispose();
-            handler.Dispose();
         }
     }
 }
