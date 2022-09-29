@@ -6359,7 +6359,6 @@ mono_do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, gu
 				args [i] = arg_buf [i];
 			}
 		} else {
-			MonoClass *arg_class = mono_class_from_mono_type_internal (sig->params [i]);
 			arg_buf [i] = (guint8 *)g_alloca (mono_class_instance_size (arg_class));
 			GET_EXTRA_SPACE_FOR_REF_FIELDS (arg_class);
 			err = decode_value (sig->params [i], domain, arg_buf [i], p, &p, end, TRUE, &extra_space, FALSE);
