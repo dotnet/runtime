@@ -2618,15 +2618,27 @@ namespace System
             return -1;
         }
 
-        public static void Replace<T>(Span<T> span, T oldValue, T newValue)
+        public static void Replace<T>(Span<T> span, T oldValue, T newValue) where T : IEquatable<T>?
         {
-            for (int i = 0; i < span.Length; ++i)
+            if (default(T) is not null || oldValue is not null)
             {
-                ref T val = ref span[i];
+                Debug.Assert(oldValue is not null);
 
-                if (EqualityComparer<T>.Default.Equals(oldValue, val))
+                for (int i = 0; i < span.Length; ++i)
                 {
-                    val = newValue;
+                    ref T val = ref span[i];
+                    if (oldValue.Equals(val))
+                    {
+                        val = newValue;
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < span.Length; ++i)
+                {
+                    ref T val = ref span[i];
+                    val ??= newValue;
                 }
             }
         }
