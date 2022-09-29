@@ -6,22 +6,14 @@
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-set COMPlus_TieredCompilation=0
-set COMPlus_JITMinOpts=0
-set COMPlus_EnableHWIntrinsic=1
-]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
-export COMPlus_TieredCompilation=0
-export COMPlus_JITMinOpts=0
-export COMPlus_EnableHWIntrinsic=1
-]]></BashCLRTestPreCommands>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs">
       <HasDisasmCheck>true</HasDisasmCheck>
     </Compile>
+
+    <CLRTestEnvironmentVariable Include="COMPlus_TieredCompilation" Value="0" />
+    <CLRTestEnvironmentVariable Include="COMPlus_JITMinOpts" Value="0" />
+    <CLRTestEnvironmentVariable Include="COMPlus_EnableHWIntrinsic" Value="1" />
   </ItemGroup>
 </Project>
