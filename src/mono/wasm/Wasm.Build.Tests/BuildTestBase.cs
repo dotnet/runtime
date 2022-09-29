@@ -281,7 +281,7 @@ namespace Wasm.Build.Tests
         protected void InitPaths(string id)
         {
             if (_projectDir == null)
-                _projectDir = Path.Combine(BuildEnvironment.TmpPath, id);
+                _projectDir = Path.Combine(AppContext.BaseDirectory, id);
             _logPath = Path.Combine(s_buildEnv.LogRootPath, id);
             _nugetPackagesDir = Path.Combine(BuildEnvironment.TmpPath, "nuget", id);
 
@@ -466,7 +466,7 @@ namespace Wasm.Build.Tests
         public string CreateWasmTemplateProject(string id, string template = "wasmbrowser", string extraArgs = "")
         {
             InitPaths(id);
-            InitProjectDir(_projectDir, addNuGetSourceForLocalPackages: true);
+            InitProjectDir(id, addNuGetSourceForLocalPackages: true);
 
             File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.props"), "<Project />");
             File.WriteAllText(Path.Combine(_projectDir, "Directory.Build.targets"),

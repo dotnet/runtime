@@ -27,7 +27,7 @@ namespace Wasm.Build.Tests
         public static readonly string           RelativeTestAssetsPath = @"..\testassets\";
         public static readonly string           TestAssetsPath = Path.Combine(AppContext.BaseDirectory, "testassets");
         public static readonly string           TestDataPath = Path.Combine(AppContext.BaseDirectory, "data");
-        public static readonly string           TmpPath = Path.Combine(AppContext.BaseDirectory, "wbt");
+        public static readonly string           TmpPath = Path.Combine(Path.GetTempPath(), "wasmbuildtests");
 
         private static readonly Dictionary<string, string> s_runtimePackVersions = new();
 
