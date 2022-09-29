@@ -56,6 +56,11 @@ public unsafe class Runtime_76194
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int Main()
     {
+        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsLinux())
+        {
+            return 100;
+        }
+        
         for (int i = 0; i < 100; i++)
         {
             using CrossVirtualAlloc alloc = new();
