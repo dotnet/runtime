@@ -462,21 +462,9 @@ namespace Wasm.Build.Tests
 
             """;
 
-            string tasksDir = Path.Combine(s_buildEnv.WorkloadPacksDir,
-                                                              "Microsoft.NET.Runtime.WebAssembly.Sdk",
-                                                              s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework),
-                                                              "tasks");
-            if (!Directory.Exists(tasksDir))
-                throw new DirectoryNotFoundException($"Could not find tasks directory {tasksDir}");
-
-            string? taskPath = Directory.EnumerateFiles(tasksDir, "WasmAppBuilder.dll", SearchOption.AllDirectories)
-                                            .FirstOrDefault();
-            if (string.IsNullOrEmpty(taskPath))
-                throw new FileNotFoundException($"Could not find WasmAppBuilder.dll in {tasksDir}");
-
             projectCode = projectCode
                 .Replace("###WasmPInvokeModule###", AddAssembly("System.Private.CoreLib") + AddAssembly("System.Runtime") + AddAssembly(libraryBuildArgs.ProjectName))
-                .Replace("###WasmAppBuilder###", taskPath);
+                .Replace("###WasmAppBuilder###", Path.Combine(s_buildEnv.WorkloadPacksDir, "Microsoft.NET.Runtime.WebAssembly.Sdk", s_buildEnv.GetRuntimePackVersion(), "tasks", DefaultTargetFramework, "WasmAppBuilder.dll"));
 
             buildArgs = buildArgs with { ProjectName = $"icall_enum_{buildArgs.Config}_{id}", ProjectFileContents = projectCode };
 
