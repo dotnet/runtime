@@ -1222,10 +1222,18 @@ namespace System.Net.Quic.Tests
             cmd.StandardInput.Close();
             cmd.WaitForExit();
             string ipLookupResult = cmd.StandardOutput.ReadToEnd();
-            string ipKey = "Addresses: ";
+            string ipKey = "Addresses:";
+            int ipKeyIndex = ipLookupResult.IndexOf(ipKey);
+
+            if (ipKeyIndex == -1)
+            {
+                ipKey = "Address:";
+                ipKeyIndex = ipLookupResult.IndexOf(ipKey);
+            }
+
             int ipAddressStart = ipLookupResult.IndexOf(ipKey) + 1 + ipKey.Length;
             int ipAddressEnd = ipLookupResult.IndexOf(Environment.NewLine, ipAddressStart);
-            string ipAddress = ipLookupResult[ipAddressStart..ipAddressEnd];
+            string ipAddress = ipLookupResult[ipAddressStart..ipAddressEnd].Trim();
 
             // disable ipv6 on all network interfaces
             cmd.Start();
