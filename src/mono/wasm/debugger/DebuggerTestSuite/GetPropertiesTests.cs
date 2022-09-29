@@ -549,9 +549,6 @@ namespace DebuggerTests
                 {"S_BaseBase_FieldForHidingWithAutoProperty (BaseBaseClass2)",       TString("BaseBase#BaseBase_FieldForHidingWithAutoProperty")},
                 {"S_BaseBase_PropertyForHidingWithAutoProperty (BaseBaseClass2)",    TGetter("S_BaseBase_PropertyForHidingWithAutoProperty (BaseBaseClass2)", TString("BaseBase#BaseBase_PropertyForHidingWithAutoProperty"))},
                 {"S_BaseBase_AutoPropertyForHidingWithAutoProperty (BaseBaseClass2)",TString(null)},
-            };
-
-            var internal_protected_props = new Dictionary<string, JObject>(){
 
                 // ---- internal / protected ----:
                 // own:
