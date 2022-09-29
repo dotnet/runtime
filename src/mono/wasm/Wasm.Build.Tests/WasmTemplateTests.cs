@@ -55,8 +55,7 @@ namespace Wasm.Build.Tests
             string mainJsContent = File.ReadAllText(mainJsPath);
 
             mainJsContent = mainJsContent
-                .Replace(".create()", ".withConsoleForwarding().create()")
-                .Replace("[\"dotnet\", \"is\", \"great!\"]", "(await import(/* webpackIgnore: true */\"process\")).argv.slice(2)");
+                .Replace(".create()", ".withConsoleForwarding().create()");
 
             File.WriteAllText(mainJsPath, mainJsContent);
         }
@@ -185,10 +184,19 @@ namespace Wasm.Build.Tests
         [InlineData("Debug", true)]
         [InlineData("Release", false)]
         [InlineData("Release", true)]
-        public void ConsoleBuildAndRun(string config, bool relinking)
+        public void ConsoleBuildAndRunDefault(string config, bool relinking)
+            => ConsoleBuildAndRun(config, relinking, string.Empty);
+
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [InlineData("Debug", "-f net7.0")]
+        [InlineData("Debug", "-f net8.0")]
+        public void ConsoleBuildAndRunForSpecificTFM(string config, string extraNewArgs)
+            => ConsoleBuildAndRun(config, false, extraNewArgs);
+
+        private void ConsoleBuildAndRun(string config, bool relinking, string extraNewArgs)
         {
             string id = $"{config}_{Path.GetRandomFileName()}";
-            string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
+            string projectFile = CreateWasmTemplateProject(id, "wasmconsole", extraNewArgs);
             string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
             UpdateProgramCS();
@@ -234,9 +242,9 @@ namespace Wasm.Build.Tests
                 //data.Add(runOutsideProjectDirectory, forConsole, string.Empty);
 
                 data.Add(runOutsideProjectDirectory, forConsole,
-                                $"<OutputPath>{Path.Combine(Path.GetTempPath(), Path.GetRandomFileName())}</OutputPath>");
+                                $"<OutputPath>{Path.Combine(BuildEnvironment.TmpPath, Path.GetRandomFileName())}</OutputPath>");
                 data.Add(runOutsideProjectDirectory, forConsole,
-                                $"<WasmAppDir>{Path.Combine(Path.GetTempPath(), Path.GetRandomFileName())}</WasmAppDir>");
+                                $"<WasmAppDir>{Path.Combine(BuildEnvironment.TmpPath, Path.GetRandomFileName())}</WasmAppDir>");
             }
 
             return data;
@@ -259,13 +267,13 @@ namespace Wasm.Build.Tests
             if (!string.IsNullOrEmpty(extraProperties))
                 AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
 
-            string workingDir = runOutsideProjectDirectory ? Path.GetTempPath() : _projectDir!;
+            string workingDir = runOutsideProjectDirectory ? BuildEnvironment.TmpPath : _projectDir!;
 
             {
                 using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                             .WithWorkingDirectory(workingDir);
 
-                await using var runner = new BrowserRunner();
+                await using var runner = new BrowserRunner(_testOutput);
                 var page = await runner.RunAsync(runCommand, $"run -c {config} --project {projectFile} --forward-console");
                 await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
                 Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
@@ -275,7 +283,7 @@ namespace Wasm.Build.Tests
                 using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                             .WithWorkingDirectory(workingDir);
 
-                await using var runner = new BrowserRunner();
+                await using var runner = new BrowserRunner(_testOutput);
                 var page = await runner.RunAsync(runCommand, $"run -c {config} --no-build --project {projectFile} --forward-console");
                 await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
                 Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));
@@ -293,7 +301,7 @@ namespace Wasm.Build.Tests
             if (!string.IsNullOrEmpty(extraProperties))
                 AddItemsPropertiesToProject(projectFile, extraProperties: extraProperties);
 
-            string workingDir = runOutsideProjectDirectory ? Path.GetTempPath() : _projectDir!;
+            string workingDir = runOutsideProjectDirectory ? BuildEnvironment.TmpPath : _projectDir!;
 
             {
                 string runArgs = $"run -c {config} --project {projectFile}";
@@ -420,7 +428,7 @@ namespace Wasm.Build.Tests
             using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                         .WithWorkingDirectory(_projectDir!);
 
-            await using var runner = new BrowserRunner();
+            await using var runner = new BrowserRunner(_testOutput);
             var page = await runner.RunAsync(runCommand, $"run -c {config} --no-build");
 
             await page.Locator("text=Counter").ClickAsync();
@@ -432,12 +440,15 @@ namespace Wasm.Build.Tests
             Assert.Equal("Current count: 1", txt);
         }
 
-        [ConditionalFact(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        public async Task BrowserTest()
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [InlineData("")]
+        [InlineData("-f net7.0")]
+        [InlineData("-f net8.0")]
+        public async Task BrowserBuildAndRun(string extraNewArgs)
         {
             string config = "Debug";
             string id = $"browser_{config}_{Path.GetRandomFileName()}";
-            CreateWasmTemplateProject(id, "wasmbrowser");
+            CreateWasmTemplateProject(id, "wasmbrowser", extraNewArgs);
 
             UpdateBrowserMainJs(DefaultTargetFramework);
 
@@ -449,7 +460,7 @@ namespace Wasm.Build.Tests
             using var runCommand = new RunCommand(s_buildEnv, _testOutput)
                                         .WithWorkingDirectory(_projectDir!);
 
-            await using var runner = new BrowserRunner();
+            await using var runner = new BrowserRunner(_testOutput);
             var page = await runner.RunAsync(runCommand, $"run -c {config} --no-build -r browser-wasm --forward-console");
             await runner.WaitForExitMessageAsync(TimeSpan.FromMinutes(2));
             Assert.Contains("Hello, Browser!", string.Join(Environment.NewLine, runner.OutputLines));

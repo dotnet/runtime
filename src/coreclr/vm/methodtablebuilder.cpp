@@ -575,13 +575,6 @@ MethodTableBuilder::LoadApproxInterfaceMap()
         // Use the same injection status as typical instantiation
         bmtInterface->dbg_fShouldInjectInterfaceDuplicates =
             bmtGenerics->Debug_GetTypicalMethodTable()->Debug_HasInjectedInterfaceDuplicates();
-
-        if (GetModule() == g_pObjectClass->GetModule())
-        {   // CoreLib has some weird hardcoded information about interfaces (e.g.
-            // code:CEEPreloader::ApplyTypeDependencyForSZArrayHelper), so we don't inject duplicates into
-            // CoreLib types
-            bmtInterface->dbg_fShouldInjectInterfaceDuplicates = FALSE;
-        }
     }
 #endif //_DEBUG
 
@@ -2666,14 +2659,6 @@ MethodTableBuilder::EnumerateClassMethods()
         METHOD_IMPL_TYPE implType;
         LPSTR strMethodName;
 
-#ifdef FEATURE_TYPEEQUIVALENCE
-        // TypeEquivalent structs must not have methods
-        if (bmtProp->fIsTypeEquivalent && fIsClassValueType)
-        {
-            BuildMethodTableThrowException(IDS_CLASSLOAD_EQUIVALENTSTRUCTMETHODS);
-        }
-#endif
-
         //
         // Go to the next method and retrieve its attributes.
         //
@@ -2692,6 +2677,14 @@ MethodTableBuilder::EnumerateClassMethods()
         {
             BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
         }
+
+#ifdef FEATURE_TYPEEQUIVALENCE
+        // TypeEquivalent structs must not have non-static methods
+        if (!IsMdStatic(dwMemberAttrs) && bmtProp->fIsTypeEquivalent && fIsClassValueType)
+        {
+            BuildMethodTableThrowException(IDS_CLASSLOAD_EQUIVALENTSTRUCTMETHODS);
+        }
+#endif
 
         bool isVtblGap = false;
         if (IsMdRTSpecialName(dwMemberAttrs) || IsMdVirtual(dwMemberAttrs) || IsDelegate())

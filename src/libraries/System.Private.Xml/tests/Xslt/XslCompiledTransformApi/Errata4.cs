@@ -13,6 +13,7 @@ using Xunit.Abstractions;
 namespace System.Xml.XslCompiledTransformApiTests
 {
     //[TestCase(Name = "Xml 4th Errata tests for XslCompiledTransform", Params = new object[] { 300 })]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class Errata4 : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;

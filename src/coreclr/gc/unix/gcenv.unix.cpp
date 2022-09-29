@@ -968,10 +968,11 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         int64_t cacheSizeFromSysctl = 0;
         size_t sz = sizeof(cacheSizeFromSysctl);
         const bool success = false
-            // macOS-arm64: Since macOS 12.0, Apple added ".perflevelX." to determinate cache sizes for efficiency
+            // macOS: Since macOS 12.0, Apple added ".perflevelX." to determinate cache sizes for efficiency
             // and performance cores separately. "perflevel0" stands for "performance"
+            || sysctlbyname("hw.perflevel0.l3cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
             || sysctlbyname("hw.perflevel0.l2cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
-            // macOS-arm64: these report cache sizes for efficiency cores only:
+            // macOS: these report cache sizes for efficiency cores only:
             || sysctlbyname("hw.l3cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
             || sysctlbyname("hw.l2cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
             || sysctlbyname("hw.l1dcachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0;
@@ -1440,10 +1441,32 @@ int64_t GCToOSInterface::QueryPerformanceFrequency()
 // Get a time stamp with a low precision
 // Return:
 //  Time stamp in milliseconds
-uint32_t GCToOSInterface::GetLowPrecisionTimeStamp()
+uint64_t GCToOSInterface::GetLowPrecisionTimeStamp()
 {
-    // TODO(segilles) this is pretty naive, we can do better
     uint64_t retval = 0;
+
+#if HAVE_CLOCK_GETTIME_NSEC_NP
+    retval = clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / tccMilliSecondsToNanoSeconds;
+#elif HAVE_CLOCK_MONOTONIC
+    struct timespec ts;
+
+#if HAVE_CLOCK_MONOTONIC_COARSE
+    clockid_t clockType = CLOCK_MONOTONIC_COARSE; // good enough resolution, fastest speed
+#else
+    clockid_t clockType = CLOCK_MONOTONIC;
+#endif
+
+    if (clock_gettime(clockType, &ts) != 0)
+    {
+#if HAVE_CLOCK_MONOTONIC_COARSE
+        assert(!"clock_gettime(HAVE_CLOCK_MONOTONIC_COARSE) failed\n");
+#else
+        assert(!"clock_gettime(CLOCK_MONOTONIC) failed\n");
+#endif
+    }
+
+    retval = (ts.tv_sec * tccSecondsToMilliSeconds) + (ts.tv_nsec / tccMilliSecondsToNanoSeconds);
+#else
     struct timeval tv;
     if (gettimeofday(&tv, NULL) == 0)
     {
@@ -1453,6 +1476,7 @@ uint32_t GCToOSInterface::GetLowPrecisionTimeStamp()
     {
         assert(!"gettimeofday() failed\n");
     }
+#endif
 
     return retval;
 }

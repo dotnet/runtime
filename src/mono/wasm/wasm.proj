@@ -332,6 +332,9 @@
     <!-- npm install is faster on dev machine as it doesn't wipe node_modules folder -->
     <RunWithEmSdkEnv Condition="'$(ContinuousIntegrationBuild)' != 'true'" Command="npm install" EmSdkPath="$(EMSDK_PATH)" IgnoreStandardErrorWarningFormat="true" WorkingDirectory="$(MonoProjectRoot)wasm/runtime/"/>
 
+    <!-- Delete malformed package.json used for tests, it confuses Component Governance tooling -->
+    <Delete Files="$(MonoProjectRoot)wasm/runtime/node_modules/resolve/test/resolver/malformed_package_json/package.json" ContinueOnError="true" />
+
     <Touch Files="$(MonoProjectRoot)wasm/runtime/node_modules/.npm-stamp" AlwaysCreate="true" />
   </Target>
 

@@ -37,6 +37,7 @@
 
 import argparse
 import os
+import shutil
 import stat
 
 from coreclr_arguments import *
@@ -167,6 +168,9 @@ native_binaries_to_ignore = [
     "vcruntime140_1.dll",
     "R2RDump.exe",
     "R2RTest.exe",
+    "FileCheck.exe",
+    "SuperFileCheck.exe",
+    "llvm-mca.exe",
     "superpmi.exe",
     "superpmi-shim-collector.dll",
     "superpmi-shim-counter.dll",
@@ -376,6 +380,11 @@ def setup_microbenchmark(workitem_directory, arch):
     run_command(
         ["git", "clone", "--quiet", "--depth", "1", "https://github.com/dotnet/performance", performance_directory])
 
+    try:
+        shutil.rmtree(os.path.join(performance_directory, ".git"))
+    except Exception as ex:
+        print("Warning: failed to remove directory \"%s\": %s", os.path.join(performance_directory, ".git"), ex)
+
     with ChangeDir(performance_directory):
         dotnet_directory = os.path.join(performance_directory, "tools", "dotnet", arch)
         dotnet_install_script = os.path.join(performance_directory, "scripts", "dotnet.py")
@@ -384,8 +393,11 @@ def setup_microbenchmark(workitem_directory, arch):
             print("Missing " + dotnet_install_script)
             return
 
+        # Sometimes the dotnet version installed by the script is latest and expect certain versions of SDK that
+        # have not published yet. As a result, we hit errors of "dotnet restore". As a workaround, hard code the
+        # working version until we move to ".NET 8" in the script.
         run_command(
-            get_python_name() + [dotnet_install_script, "install", "--architecture", arch, "--install-dir",
+            get_python_name() + [dotnet_install_script, "install", "--dotnet-versions", "7.0.100-rc.2.22458.3", "--architecture", arch, "--install-dir",
                                  dotnet_directory, "--verbose"])
 
 

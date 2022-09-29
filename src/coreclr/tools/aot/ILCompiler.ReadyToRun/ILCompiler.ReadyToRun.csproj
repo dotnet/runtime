@@ -280,6 +280,9 @@
     <Compile Include="..\..\Common\JitInterface\CorInfoInstructionSet.cs">
       <Link>JitInterface\CorInfoInstructionSet.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\JitInterface\IJitHashableOnly.cs">
+      <Link>JitInterface\IJitHashableOnly.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\JitInterface\JitConfigProvider.cs">
       <Link>JitInterface\JitConfigProvider.cs</Link>
     </Compile>
