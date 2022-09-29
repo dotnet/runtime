@@ -6967,6 +6967,7 @@ public:
     bool optRedundantRelop(BasicBlock* const block);
     bool optRedundantBranch(BasicBlock* const block);
     bool optJumpThread(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
+    bool optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock);
     bool optJumpThreadCore(JumpThreadInfo& jti);
     bool optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock, BasicBlock* const excludedBlock);
     BitVecTraits* optReachableBitVecTraits;
@@ -9302,6 +9303,9 @@ public:
 // likely complicated enough that loop alignment will not impact performance.
 #define DEFAULT_MAX_LOOPSIZE_FOR_ALIGN DEFAULT_ALIGN_LOOP_BOUNDARY * 3
 
+// By default only single iteration loops will be unrolled
+#define DEFAULT_UNROLL_LOOP_MAX_ITERATION_COUNT 1
+
 #ifdef DEBUG
         // Loop alignment variables
 
@@ -9329,6 +9333,9 @@ public:
 
         // If set, tracks the hidden return buffer for struct arg.
         bool compJitOptimizeStructHiddenBuffer;
+
+        // Iteration limit to unroll a loop.
+        unsigned short compJitUnrollLoopMaxIterationCount;
 
 #ifdef LATE_DISASM
         bool doLateDisasm; // Run the late disassembler

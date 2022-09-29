@@ -4131,7 +4131,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		 */
 		this_alloc = mono_llvm_build_alloca (builder, ThisType (), const_int32 (1), 0, "");
 		/* This volatile store will keep the alloca alive */
-		emit_store (builder, ctx->values [cfg->args [0]->dreg], this_alloc, TRUE);
+		emit_store (builder, convert (ctx, ctx->values [cfg->args [0]->dreg], ThisType ()), this_alloc, TRUE);
 
 		set_metadata_flag (this_alloc, "mono.this");
 	}

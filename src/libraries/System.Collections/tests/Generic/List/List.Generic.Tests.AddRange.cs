@@ -37,6 +37,35 @@ namespace System.Collections.Tests
         }
 
         [Theory]
+        [MemberData(nameof(ListTestData))]
+        public void AddRange_Span(EnumerableType enumerableType, int listLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
+        {
+            List<T> list = GenericListFactory(listLength);
+            List<T> listBeforeAdd = list.ToList();
+            Span<T> span = CreateEnumerable(enumerableType, list, enumerableLength, numberOfMatchingElements, numberOfDuplicateElements).ToArray();
+            list.AddRange(span);
+
+            // Check that the first section of the List is unchanged
+            Assert.All(Enumerable.Range(0, listLength), index =>
+            {
+                Assert.Equal(listBeforeAdd[index], list[index]);
+            });
+
+            // Check that the added elements are correct
+            for (int i = 0; i < enumerableLength; i++)
+            {
+                Assert.Equal(span[i], list[i + listLength]);
+            };
+        }
+
+        [Fact]
+        public void AddRange_NullList_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("list", () => CollectionExtensions.AddRange<int>(null, default));
+            AssertExtensions.Throws<ArgumentNullException>("list", () => CollectionExtensions.AddRange<int>(null, new int[1]));
+        }
+
+        [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
         public void AddRange_NullEnumerable_ThrowsArgumentNullException(int count)
         {

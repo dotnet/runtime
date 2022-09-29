@@ -19,6 +19,19 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
+        public async Task MultipleImportAsync()
+        {
+            var first = await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs");
+            var second = await JSHost.ImportAsync("JavaScriptTestHelper", "./JavaScriptTestHelper.mjs");
+            Assert.NotNull(first);
+            Assert.NotNull(second);
+            Assert.Equal("object", first.GetTypeOfProperty("instance"));
+            var instance1 = first.GetPropertyAsJSObject("instance");
+            var instance2 = second.GetPropertyAsJSObject("instance");
+            Assert.Same(instance1, instance2);
+        }
+
+        [Fact]
         public unsafe void GlobalThis()
         {
             Assert.Null(JSHost.GlobalThis.GetPropertyAsString("dummy"));

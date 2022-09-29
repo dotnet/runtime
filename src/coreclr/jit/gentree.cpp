@@ -17060,12 +17060,13 @@ bool GenTreeVecCon::IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd32
     switch (node->GetHWIntrinsicId())
     {
         case NI_Vector128_Create:
-#if defined(TARGET_XARCH)
         case NI_Vector128_CreateScalarUnsafe:
+#if defined(TARGET_XARCH)
         case NI_Vector256_Create:
         case NI_Vector256_CreateScalarUnsafe:
 #elif defined(TARGET_ARM64)
         case NI_Vector64_Create:
+        case NI_Vector64_CreateScalarUnsafe:
 #endif
         {
             // These intrinsics are meant to set the same value to every element.
@@ -18643,9 +18644,24 @@ bool GenTree::isContainableHWIntrinsic() const
         case NI_SSE2_LoadVector128:
         case NI_AVX_LoadAlignedVector256:
         case NI_AVX_LoadVector256:
+        {
+            // These loads are contained as part of a HWIntrinsic operation
+            return true;
+        }
+
+        case NI_SSE2_ConvertToInt32:
+        case NI_SSE2_ConvertToUInt32:
+        case NI_SSE2_X64_ConvertToInt64:
+        case NI_SSE2_X64_ConvertToUInt64:
+        case NI_SSE2_Extract:
+        case NI_SSE41_Extract:
+        case NI_SSE41_X64_Extract:
         case NI_AVX_ExtractVector128:
+        case NI_AVX2_ConvertToInt32:
+        case NI_AVX2_ConvertToUInt32:
         case NI_AVX2_ExtractVector128:
         {
+            // These HWIntrinsic operations are contained as part of a store
             return true;
         }
 

@@ -4784,23 +4784,82 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
     // an int-size or larger store of zero to memory, because we can generate smaller code
     // by zeroing a register and then storing it.
     GenTree* src = node->Data();
+
     if (IsContainableImmed(node, src) && (!src->IsIntegralConst(0) || varTypeIsSmall(node)))
     {
         MakeSrcContained(node, src);
     }
 
     // If the source is a BSWAP, contain it on supported hardware to generate a MOVBE.
-    if (comp->opts.OptimizationEnabled() && src->OperIs(GT_BSWAP, GT_BSWAP16) &&
-        comp->compOpportunisticallyDependsOn(InstructionSet_MOVBE))
+    if (comp->opts.OptimizationEnabled())
     {
-        unsigned swapSize = src->OperIs(GT_BSWAP16) ? 2 : genTypeSize(src);
-        if ((swapSize == genTypeSize(node)) && IsSafeToContainMem(node, src))
+        if (src->OperIs(GT_BSWAP, GT_BSWAP16) && comp->compOpportunisticallyDependsOn(InstructionSet_MOVBE))
         {
-            // Prefer containing in the store in case the load has been contained.
-            src->gtGetOp1()->ClearContained();
+            unsigned swapSize = src->OperIs(GT_BSWAP16) ? 2 : genTypeSize(src);
 
-            MakeSrcContained(node, src);
+            if ((swapSize == genTypeSize(node)) && IsSafeToContainMem(node, src))
+            {
+                // Prefer containing in the store in case the load has been contained.
+                src->gtGetOp1()->ClearContained();
+
+                MakeSrcContained(node, src);
+            }
         }
+#if defined(FEATURE_HW_INTRINSICS)
+        else if (src->OperIsHWIntrinsic())
+        {
+            GenTreeHWIntrinsic* hwintrinsic   = src->AsHWIntrinsic();
+            NamedIntrinsic      intrinsicId   = hwintrinsic->GetHWIntrinsicId();
+            var_types           simdBaseType  = hwintrinsic->GetSimdBaseType();
+            bool                isContainable = false;
+
+            switch (intrinsicId)
+            {
+                case NI_SSE2_ConvertToInt32:
+                case NI_SSE2_ConvertToUInt32:
+                case NI_SSE2_X64_ConvertToInt64:
+                case NI_SSE2_X64_ConvertToUInt64:
+                case NI_AVX2_ConvertToInt32:
+                case NI_AVX2_ConvertToUInt32:
+                {
+                    // These intrinsics are "ins reg/mem, xmm"
+                    isContainable = varTypeIsIntegral(simdBaseType);
+                    break;
+                }
+
+                case NI_SSE2_Extract:
+                case NI_SSE41_Extract:
+                case NI_SSE41_X64_Extract:
+                case NI_AVX_ExtractVector128:
+                case NI_AVX2_ExtractVector128:
+                {
+                    // These intrinsics are "ins reg/mem, xmm, imm8"
+
+                    size_t   numArgs = hwintrinsic->GetOperandCount();
+                    GenTree* lastOp  = hwintrinsic->Op(numArgs);
+
+                    isContainable = HWIntrinsicInfo::isImmOp(intrinsicId, lastOp) && lastOp->IsCnsIntOrI();
+
+                    if (isContainable && (intrinsicId == NI_SSE2_Extract))
+                    {
+                        // The encoding that supports containment is SSE4.1 only
+                        isContainable = comp->compOpportunisticallyDependsOn(InstructionSet_SSE41);
+                    }
+                    break;
+                }
+
+                default:
+                {
+                    break;
+                }
+            }
+
+            if (isContainable && IsSafeToContainMem(node, src))
+            {
+                MakeSrcContained(node, src);
+            }
+        }
+#endif // FEATURE_HW_INTRINSICS
     }
 
     ContainCheckIndir(node);
@@ -6330,8 +6389,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         if (varTypeIsIntegral(simdBaseType))
                         {
-                            // TODO-XARCH-CQ: These intrinsics are "ins reg/mem, xmm" and don't
-                            // currently support containment.
+                            // These intrinsics are "ins reg/mem, xmm" and get
+                            // contained by the relevant store operation instead.
                             return;
                         }
 
@@ -6466,8 +6525,8 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_AVX_ExtractVector128:
                         case NI_AVX2_ExtractVector128:
                         {
-                            // TODO-XARCH-CQ: These intrinsics are "ins reg/mem, xmm, imm8" and don't
-                            // currently support containment.
+                            // These intrinsics are "ins reg/mem, xmm, imm8" and get
+                            // contained by the relevant store operation instead.
                             break;
                         }
 
@@ -6518,9 +6577,10 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_SSE41_Extract:
                         case NI_SSE41_X64_Extract:
                         {
+                            // These intrinsics are "ins reg/mem, xmm" and get
+                            // contained by the relevant store operation instead.
+
                             assert(!varTypeIsFloating(simdBaseType));
-                            // TODO-XARCH-CQ: These intrinsics are "ins reg/mem, xmm, imm8" and don't
-                            // currently support containment.
                             break;
                         }
 
