@@ -6747,7 +6747,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* FIXME: Is there a better way to do this?
 			   We need the variable live for the duration
 			   of the whole method. */
-			if (!cfg->llvm_only)
+			if (!COMPILE_LLVM (cfg))
 				cfg->args [0]->flags |= MONO_INST_VOLATILE;
 		}
 	}
