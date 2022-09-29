@@ -1139,18 +1139,18 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
             continue;
         }
 
-        // Which local?
+        // The PhiDef args tell us which local and which SSA def of that local.
         //
-        const unsigned lclNum = unsigned(phiDefFuncApp.m_args[i]);
-        JITDUMP("... JT-PHI [interestingVN] in " FMT_BB " relop %s operand VN is PhiDef for V%02u\n", block->bbNum,
-                i == 0 ? "first" : "second", lclNum);
+        assert(phiDefFuncApp.m_arity == 3);
+        const unsigned lclNum    = unsigned(phiDefFuncApp.m_args[0]);
+        const unsigned ssaDefNum = unsigned(phiDefFuncApp.m_args[1]);
+        const ValueNum phiVN     = ValueNum(phiDefFuncApp.m_args[2]);
+        JITDUMP("... JT-PHI [interestingVN] in " FMT_BB " relop %s operand VN is PhiDef for V%02u:%u " FMT_VN "\n",
+                block->bbNum, i == 0 ? "first" : "second", lclNum, ssaDefNum, phiVN);
         if (!foundPhiDef)
         {
             DISPTREE(tree);
         }
-
-        foundPhiDef             = true;
-        funcArgToPhiLocalMap[i] = lclNum;
 
         // Find the PHI for lclNum local in the current block.
         //
@@ -1168,24 +1168,28 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
             GenTreeLclVarCommon* const phiDefLclNode = phiDefNode->AsOp()->gtOp1->AsLclVarCommon();
             if (phiDefLclNode->GetLclNum() == lclNum)
             {
-                funcArgToPhiDefNodeMap[i] = phiDefNode;
-                break;
+                if (phiDefLclNode->GetSsaNum() == ssaDefNum)
+                {
+                    funcArgToPhiLocalMap[i]   = lclNum;
+                    funcArgToPhiDefNodeMap[i] = phiDefNode;
+                    foundPhiDef               = true;
+                    JITDUMP("Found local PHI [%06u] for V%02u\n", dspTreeID(phiDefNode), lclNum);
+                }
+                else
+                {
+                    // Relop input is phi def from some other block.
+                    //
+                    break;
+                }
             }
-        }
-
-        if (funcArgToPhiDefNodeMap[i] == nullptr)
-        {
-            // This is unexpected
-            //
-            JITDUMP("Could not find phi def for V%02u in " FMT_BB "\n", lclNum, block->bbNum);
-            return false;
         }
     }
 
     if (!foundPhiDef)
     {
-        // No phis in the relop's VN.
+        // No usable PhiDef VNs in the relop's VN.
         //
+        JITDUMP("No usable PhiDef VNs\n");
         return false;
     }
 
