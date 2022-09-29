@@ -9,7 +9,7 @@
     <DnneGenRollForward>Major</DnneGenRollForward>
     <!-- To integrate with DNNE's architecture calculation, we need to set the RID for this project. -->
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
-    <AppHostRuntimeIdentifier>$(OutputRid)</AppHostRuntimeIdentifier>
+    <AppHostRuntimeIdentifier>$(PackageRID)</AppHostRuntimeIdentifier>
     <_TargetsAppleOS Condition="'$(TargetOS)' == 'OSX' or '$(TargetOS)' == 'MacCatalyst' or
       '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'iOSSimulator' or
       '$(TargetOS)' == 'tvOSSimulator'">true</_TargetsAppleOS>

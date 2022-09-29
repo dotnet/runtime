@@ -1140,14 +1140,28 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
-	case SN_AndNot:
-#ifdef TARGET_ARM64
-		if (!is_element_type_primitive (fsig->params [0]))
+	case SN_AndNot: {
+		if (!is_element_type_primitive (fsig->params [0])) 
 			return NULL;
+#ifdef TARGET_ARM64
 		return emit_simd_ins_for_sig (cfg, klass, OP_ARM64_BIC, -1, arg0_type, fsig, args);
+#elif defined(TARGET_AMD64)
+		MonoClass* arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
+		int size = mono_class_value_size (arg_class, NULL);
+		if (size != 16) 		// Works only with Vector128
+			return NULL;
+
+		/* Swap lhs and rhs because Vector128 needs lhs & !rhs
+		   whereas SSE2 does !lhs & rhs */
+		MonoInst *tmp = args[0];
+		args[0] = args[1];
+		args[1] = tmp;
+
+		return emit_simd_ins_for_sig (cfg, klass, OP_SSE_ANDN, -1, arg0_type, fsig, args);
 #else
 		return NULL;
 #endif
+	}
 	case SN_As:
 	case SN_AsByte:
 	case SN_AsDouble:
@@ -1170,10 +1184,13 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #ifdef TARGET_ARM64
 		int ceil_or_floor = id == SN_Ceiling ? INTRINS_AARCH64_ADV_SIMD_FRINTP : INTRINS_AARCH64_ADV_SIMD_FRINTM;
 		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, ceil_or_floor, arg0_type, fsig, args);
-#elif TARGET_AMD64
+#elif defined(TARGET_AMD64)
 		MonoClass* arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		int size = mono_class_value_size (arg_class, NULL);
 		if (size != 16) 	// Supported only on Vector128
+			return NULL;
+
+		if (!is_SIMD_feature_supported (cfg, MONO_CPU_X86_SSE41))
 			return NULL;
 
 		int ceil_or_floor = id == SN_Ceiling ? 10 : 9;
@@ -1183,10 +1200,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 #endif
 	}
 	case SN_ConditionalSelect: {
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
-		return emit_simd_ins_for_sig (cfg, klass, OP_ARM64_BSL, -1, arg0_type, fsig, args);
+		return emit_simd_ins_for_sig (cfg, klass, OP_BSL, -1, arg0_type, fsig, args);
 #else
 		return NULL;
 #endif
@@ -1508,10 +1525,10 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 #ifdef TARGET_ARM64
 		return emit_simd_ins_for_sig (cfg, klass, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FSQRT, arg0_type, fsig, args);
-#elif TARGET_AMD64
+#elif defined(TARGET_AMD64)
 		MonoClass *arg_class = mono_class_from_mono_type_internal (fsig->params [0]);
 		int size = mono_class_value_size (arg_class, NULL);
-		if ( size != 16 ) 		// Only works with Vector128
+		if (size != 16) 		// Only works with Vector128
 			return NULL;
 
 		int instc0 = arg0_type == MONO_TYPE_R4 ? INTRINS_SSE_SQRT_PS : INTRINS_SSE_SQRT_PD;
@@ -2415,7 +2432,7 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_AddWideningUpper, OP_ARM64_SADD2, None, OP_ARM64_UADD2},
 	{SN_And, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_AND},
 	{SN_BitwiseClear, OP_ARM64_BIC},
-	{SN_BitwiseSelect, OP_ARM64_BSL},
+	{SN_BitwiseSelect, OP_BSL},
 	{SN_Ceiling, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTP},
 	{SN_CeilingScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTP},
 	{SN_CompareEqual, OP_XCOMPARE, CMP_EQ, OP_XCOMPARE, CMP_EQ, OP_XCOMPARE_FP, CMP_EQ},
@@ -4243,7 +4260,7 @@ arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCom
 
 	return NULL;
 }
-#elif TARGET_AMD64
+#elif defined(TARGET_AMD64)
 // TODO: test and enable for x86 too
 static
 MonoInst*
@@ -4270,7 +4287,7 @@ arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCom
 		cfg->uses_simd_intrinsics |= MONO_CFG_USES_SIMD_INTRINSICS;
 	return simd_inst;
 }
-#elif TARGET_WASM
+#elif defined(TARGET_WASM)
 static
 MonoInst*
 arch_emit_simd_intrinsics (const char *class_ns, const char *class_name, MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)

@@ -287,5 +287,58 @@ namespace System.CommandLine
                 }
             }
         }
+
+        /// <summary>
+        /// Read the response file line by line and treat each line as a single token.
+        /// Skip the comment lines that start with `#`.
+        /// A return value indicates whether the operation succeeded.
+        /// </summary>
+        /// <remarks>
+        /// This method does not support:
+        ///   * referencing another response file.
+        ///   * inline `#` comments.
+        /// </remarks>
+        public static bool TryReadResponseFile(string filePath, out IReadOnlyList<string> newTokens, out string error)
+        {
+            try
+            {
+                var tokens = new List<string>();
+                foreach (string line in File.ReadAllLines(filePath))
+                {
+                    string token = line.Trim();
+                    if (token.Length > 0 && token[0] != '#')
+                    {
+                        if (token.EndsWith('"'))
+                        {
+                            int firstQuotePosition = token.IndexOf('"');
+
+                            // strip leading and trailing quotes from value.
+                            if (firstQuotePosition >= 0 && firstQuotePosition < token.Length - 1 &&
+                                (firstQuotePosition == 0 || token[firstQuotePosition - 1] != '\\'))
+                            {
+                                token = token[..firstQuotePosition] + token[(firstQuotePosition + 1)..^1];
+                            }
+                        }
+
+                        tokens.Add(token);
+                    }
+                }
+
+                newTokens = tokens;
+                error = null;
+                return true;
+            }
+            catch (FileNotFoundException)
+            {
+                error = $"Response file not found: '{filePath}'";
+            }
+            catch (IOException e)
+            {
+                error = $"Error reading response file '{filePath}': {e}";
+            }
+
+            newTokens = null;
+            return false;
+        }
     }
 }
