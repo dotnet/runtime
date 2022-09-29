@@ -21387,7 +21387,14 @@ void gc_heap::gc1()
                     dynamic_data* dd = hp->dynamic_data_of (gen);
                     dd_desired_allocation (dd) = desired_per_heap;
                     dd_gc_new_allocation (dd) = desired_per_heap;
+#ifdef USE_REGIONS
+                    // we may have had some incoming objects during this GC -
+                    // adjust the consumed budget for these
                     dd_new_allocation (dd) = desired_per_heap - already_consumed_per_heap;
+#else //USE_REGIONS
+                    // for segments, we want to keep the .NET 6.0 behavior where we did not adjust
+                    dd_new_allocation (dd) = desired_per_heap;
+#endif //USE_REGIONS
 
                     if (gen == 0)
                     {
@@ -40425,9 +40432,14 @@ void gc_heap::compute_new_dynamic_data (int gen_number)
         }
         dd_gc_new_allocation (dd) = dd_desired_allocation (dd);
 
+#ifdef USE_REGIONS
         // we may have had some incoming objects during this GC -
         // adjust the consumed budget for these
         dd_new_allocation (dd) = dd_gc_new_allocation (dd) - in;
+#else //USE_REGIONS
+        // for segments, we want to keep the .NET 6.0 behavior where we did not adjust
+        dd_new_allocation (dd) = dd_gc_new_allocation (dd);
+#endif //USE_REGIONS
     }
 
     gen_data->pinned_surv = dd_pinned_survived_size (dd);
