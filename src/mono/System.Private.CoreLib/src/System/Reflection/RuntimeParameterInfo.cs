@@ -244,8 +244,8 @@ namespace System.Reflection
             get
             {
                 object? defaultValue = GetDefaultValue(true);
-                if (defaultValue != null && defaultValue.GetType().IsEnum)
-                    return ((Enum)defaultValue).GetValue();
+                if (defaultValue is Enum en)
+                    return en.GetValue();
                 return defaultValue;
             }
         }
