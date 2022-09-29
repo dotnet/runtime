@@ -1919,6 +1919,42 @@ interp_emit_ldelema (TransformData *td, MonoClass *array_class, MonoClass *check
 	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 }
 
+static GENERATE_GET_CLASS_WITH_CACHE_DECL (hot_reload_instance_field_table);
+
+static GENERATE_GET_CLASS_WITH_CACHE(hot_reload_instance_field_table, "Mono.HotReload", "InstanceFieldTable");
+
+
+static void
+interp_emit_metadata_update_ldflda (TransformData *td, MonoClassField *field, MonoError *error)
+{
+	g_assert (m_field_is_from_update (field));
+	MonoType *field_type = field->type;
+	g_assert (!m_type_is_byref (field_type));
+	MonoClass *field_klass = mono_class_from_mono_type_internal (field_type);
+	/* get a heap-allocated version of the field type */
+	field_type = m_class_get_byval_arg (field_klass);
+	guint32 field_token = mono_metadata_make_token (MONO_TABLE_FIELD, mono_metadata_update_get_field_idx (field));
+
+#if 0
+	// FIXME: this should go in interp.c
+	static MonoMethod *get_instance_store = NULL;
+	if (G_UNLIKELY (get_instance_store == NULL)) {
+		MonoClass *table_class = mono_class_get_hot_reload_instance_field_table_class ();
+		get_instance_store = mono_class_get_method_from_name_checked (table_class, "GetInstanceFieldStore", 3, 0, error);
+		mono_error_assert_ok (error);
+	}
+	g_assert (get_instance_store);
+#endif
+	interp_add_ins (td, MINT_METADATA_UPDATE_LDFLDA);
+	td->sp--;
+	interp_ins_set_sreg (td->last_ins, td->sp [0].local);
+	push_simple_type (td, STACK_TYPE_MP);
+	interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+	td->last_ins->data [0] = get_data_item_index (td, field_type);
+	td->last_ins->data [1] = get_data_item_index (td, GUINT_TO_POINTER (field_token));
+}
+
+
 /* Return TRUE if call transformation is finished */
 static gboolean
 interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClass *constrained_class, MonoMethodSignature *csignature, gboolean readonly, int *op)
@@ -6177,8 +6213,21 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					mono_class_vtable_checked (field_klass, error);
 					goto_if_nok (error, exit);
 				} else {
-					/* TODO: metadata-update: implement me */
-					g_assert (!m_field_is_from_update (field));
+					if (G_UNLIKELY (m_field_is_from_update (field))) {
+						// FIXME: if field is byref, we probably just want mono_defaults.int_class
+						g_assert (!m_type_is_byref (field->type));
+						MonoClass *field_class = mono_class_from_mono_type_internal (field->type);
+						MonoType *local_type = m_class_get_byval_arg (field_class);
+						int local = create_interp_local (td, local_type);
+						store_local (td, local);
+						interp_emit_metadata_update_ldflda (td, field, error);
+						goto_if_nok (error, exit);
+						load_local (td, local);
+						interp_emit_stobj (td, field_class);
+						td->ip += 5;
+						break;
+					}
+						
 					int opcode = MINT_STFLD_I1 + mt - MINT_TYPE_I1;
 #ifdef NO_UNALIGNED_ACCESS
 					if ((mt == MINT_TYPE_I8 || mt == MINT_TYPE_R8) && field->offset % SIZEOF_VOID_P != 0)

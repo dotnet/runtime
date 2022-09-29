@@ -7504,7 +7504,17 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 3;
 			MINT_IN_BREAK;
 		}
-
+		MINT_IN_CASE(MINT_METADATA_UPDATE_LDFLDA) {
+			gpointer *dest = LOCAL_VAR (ip [1], gpointer);
+			MonoObject *inst = LOCAL_VAR (ip [2], MonoObject*);
+			MonoType *field_type = frame->imethod->data_items [ip [3]]; // correct offset?
+			MonoType *fielddef_token = frame->imethod->data_items [ip [4]]; // offset?
+			// FIXME: can we emit a call directly instead of a runtime-invoke?
+			*dest = mono_metadata_update_ldflda (inst, field_type, fielddef_token, error); // FIXME write barrier
+			mono_interp_error_cleanup (error);
+			ip += 5;
+			MINT_IN_BREAK;
+		}
 #ifdef HOST_BROWSER
 		MINT_IN_CASE(MINT_TIER_NOP_JITERPRETER) {
 			ip += 3;
@@ -7611,7 +7621,6 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		}
 #endif
-
 #if !USE_COMPUTED_GOTO
 		default:
 			interp_error_xsx ("Unimplemented opcode: %04x %s at 0x%x\n", *ip, mono_interp_opname (*ip), GPTRDIFF_TO_INT (ip - frame->imethod->code));
