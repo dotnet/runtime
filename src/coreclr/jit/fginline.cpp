@@ -340,11 +340,6 @@ private:
                 asg->gtOp2 = AssignStructInlineeToVar(inlinee, retClsHnd);
             }
         }
-        else if (dst->IsMultiRegLclVar())
-        {
-            // This is no longer a multi-reg assignment -- clear the flag.
-            dst->AsLclVar()->ClearMultiReg();
-        }
     }
 
     //------------------------------------------------------------------------
