@@ -313,6 +313,8 @@
 
     <ProjectToBuild Condition="'$(NativeAotSupported)' == 'true' and '$(TargetArchitecture)' != '$(BuildArchitecture)'" Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler_crossarch.csproj" Category="clr" />
     <ProjectToBuild Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)'" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_crossarch.csproj" Category="clr" />
+
+    <ProjectToBuild Condition="'$(TargetOS)' == 'windows' or ('$(TargetOS)' == 'Linux' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')) or '$(TargetOS)' == 'OSX'" Include="$(CoreClrProjectRoot)tools\SuperFileCheck\SuperFileCheck.csproj" Category="clr" />
   </ItemGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+clr.toolstests+'))">

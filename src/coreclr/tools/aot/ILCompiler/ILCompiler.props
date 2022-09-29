@@ -82,28 +82,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\Common\CommandLine\Argument.cs" />
-    <Compile Include="..\..\Common\CommandLine\Argument_1.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentCommand.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentCommand_1.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentLexer.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentList_1.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentParser.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentSyntax.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentSyntax_Definers.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentSyntaxException.cs" />
-    <Compile Include="..\..\Common\CommandLine\ArgumentToken.cs" />
-    <Compile Include="..\..\Common\CommandLine\CommandLineException.cs" />
-    <Compile Include="..\..\Common\CommandLine\CommandLineHelpers.cs" />
-    <Compile Include="..\..\Common\CommandLine\Enumerable.cs" />
-    <Compile Include="..\..\Common\CommandLine\HelpTextGenerator.cs" />
+    <Compile Include="..\..\Common\CommandLineHelpers.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="..\..\Common\CommandLine\Resources\Strings.resx">
-      <GenerateSource>true</GenerateSource>
-      <ClassName>Internal.CommandLine.Strings</ClassName>
-    </EmbeddedResource>
+    <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
   </ItemGroup>
 
   <ItemGroup>

@@ -85,6 +85,7 @@ class SpanningTreeVisitor;   // defined in fgprofile.cpp
 class CSE_DataFlow;          // defined in OptCSE.cpp
 class OptBoolsDsc;           // defined in optimizer.cpp
 struct RelopImplicationInfo; // defined in redundantbranchopts.cpp
+struct JumpThreadInfo;       // defined in redundantbranchopts.cpp
 #ifdef DEBUG
 struct IndentStack;
 #endif
@@ -2294,13 +2295,11 @@ public:
 
     GenTree* gtNewSconNode(int CPX, CORINFO_MODULE_HANDLE scpHandle);
 
-    GenTreeVecCon* gtNewVconNode(var_types type, CorInfoType simdBaseJitType);
+    GenTreeVecCon* gtNewVconNode(var_types type);
 
     GenTree* gtNewAllBitsSetConNode(var_types type);
-    GenTree* gtNewAllBitsSetConNode(var_types type, CorInfoType simdBaseJitType);
 
     GenTree* gtNewZeroConNode(var_types type);
-    GenTree* gtNewZeroConNode(var_types type, CorInfoType simdBaseJitType);
 
     GenTree* gtNewOneConNode(var_types type);
 
@@ -6804,7 +6803,7 @@ public:
 #define OMF_HAS_EXPRUNTIMELOOKUP               0x00000080 // Method contains a runtime lookup to an expandable dictionary.
 #define OMF_HAS_PATCHPOINT                     0x00000100 // Method contains patchpoints
 #define OMF_NEEDS_GCPOLLS                      0x00000200 // Method needs GC polls
-#define OMF_HAS_FROZEN_OBJECTS                 0x00000400 // Method has frozen objects (REF constant int)
+#define OMF_HAS_FROZEN_STRING                  0x00000400 // Method has a frozen string (REF constant int), currently only on NativeAOT.
 #define OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT 0x00000800 // Method contains partial compilation patchpoints
 #define OMF_HAS_TAILCALL_SUCCESSOR             0x00001000 // Method has potential tail call in a non BBJ_RETURN block
 #define OMF_HAS_MDNEWARRAY                     0x00002000 // Method contains 'new' of an MD array
@@ -6829,14 +6828,14 @@ public:
 
     void addFatPointerCandidate(GenTreeCall* call);
 
-    bool doesMethodHaveFrozenObjects() const
+    bool doesMethodHaveFrozenString() const
     {
-        return (optMethodFlags & OMF_HAS_FROZEN_OBJECTS) != 0;
+        return (optMethodFlags & OMF_HAS_FROZEN_STRING) != 0;
     }
 
-    void setMethodHasFrozenObjects()
+    void setMethodHasFrozenString()
     {
-        optMethodFlags |= OMF_HAS_FROZEN_OBJECTS;
+        optMethodFlags |= OMF_HAS_FROZEN_STRING;
     }
 
     bool doesMethodHaveGuardedDevirtualization() const
@@ -6967,7 +6966,10 @@ public:
     PhaseStatus optRedundantBranches();
     bool optRedundantRelop(BasicBlock* const block);
     bool optRedundantBranch(BasicBlock* const block);
-    bool optJumpThread(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
+    bool optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
+    bool optJumpThreadPhi(BasicBlock* const block, GenTree* tree, ValueNum treeNormVN);
+    bool optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock);
+    bool optJumpThreadCore(JumpThreadInfo& jti);
     bool optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock, BasicBlock* const excludedBlock);
     BitVecTraits* optReachableBitVecTraits;
     BitVec        optReachableBitVec;
@@ -7798,7 +7800,7 @@ public:
     const char* eeGetFieldName(CORINFO_FIELD_HANDLE fieldHnd, const char** classNamePtr = nullptr);
 
 #if defined(DEBUG)
-    void eePrintFrozenObjectDescription(const char* prefix, size_t handle);
+    const WCHAR* eeGetCPString(size_t stringHandle);
     unsigned eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd);
     const char16_t* eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd);
 #endif
@@ -8310,6 +8312,10 @@ private:
 #endif // defined(TARGET_XARCH)
 #endif // FEATURE_HW_INTRINSICS
 
+        CORINFO_CLASS_HANDLE CanonicalSimd8Handle;
+        CORINFO_CLASS_HANDLE CanonicalSimd16Handle;
+        CORINFO_CLASS_HANDLE CanonicalSimd32Handle;
+
         SIMDHandlesCache()
         {
             memset(this, 0, sizeof(*this));
@@ -8401,6 +8407,44 @@ private:
         return clsHnd;
     }
 #endif // FEATURE_HW_INTRINSICS
+
+    //------------------------------------------------------------------------
+    // gtGetCanonicalStructHandleForSIMD: Get the "canonical" SIMD type handle.
+    //
+    // Some SIMD-typed trees do not carry struct handles with them (and in
+    // some cases, they cannot, due to being created by the compiler itself).
+    // To enable CSEing of these trees, we use "canonical" handles. These are
+    // captured during importation, and can represent any type normalized to
+    // be TYP_SIMD.
+    //
+    // Arguments:
+    //    simdType - The SIMD type
+    //
+    // Return Value:
+    //    The "canonical" type handle for "simdType", if one was available.
+    //    "NO_CLASS_HANDLE" otherwise.
+    //
+    CORINFO_CLASS_HANDLE gtGetCanonicalStructHandleForSIMD(var_types simdType)
+    {
+        if (m_simdHandleCache == nullptr)
+        {
+            return NO_CLASS_HANDLE;
+        }
+
+        switch (simdType)
+        {
+            case TYP_SIMD8:
+                return m_simdHandleCache->CanonicalSimd8Handle;
+            case TYP_SIMD12:
+                return m_simdHandleCache->SIMDVector3Handle;
+            case TYP_SIMD16:
+                return m_simdHandleCache->CanonicalSimd16Handle;
+            case TYP_SIMD32:
+                return m_simdHandleCache->CanonicalSimd32Handle;
+            default:
+                unreached();
+        }
+    }
 
     // Returns true if this is a SIMD type that should be considered an opaque
     // vector type (i.e. do not analyze or promote its fields).
@@ -9260,6 +9304,9 @@ public:
 // likely complicated enough that loop alignment will not impact performance.
 #define DEFAULT_MAX_LOOPSIZE_FOR_ALIGN DEFAULT_ALIGN_LOOP_BOUNDARY * 3
 
+// By default only single iteration loops will be unrolled
+#define DEFAULT_UNROLL_LOOP_MAX_ITERATION_COUNT 1
+
 #ifdef DEBUG
         // Loop alignment variables
 
@@ -9287,6 +9334,9 @@ public:
 
         // If set, tracks the hidden return buffer for struct arg.
         bool compJitOptimizeStructHiddenBuffer;
+
+        // Iteration limit to unroll a loop.
+        unsigned short compJitUnrollLoopMaxIterationCount;
 
 #ifdef LATE_DISASM
         bool doLateDisasm; // Run the late disassembler

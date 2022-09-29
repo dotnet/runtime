@@ -430,8 +430,13 @@ echo /usr/bin/env bash $(InputAssemblyName) %24(printf "'%s' " "${CLRTestExecuti
 CLRTestExitCode=$?
 CLRTestExpectedExitCode=0
       ]]></BashCLRTestLaunchCmds>
-    </PropertyGroup>
 
+      <BashCLRTestPostCommands><![CDATA[
+$(BashDisasmCheckPostCommands)
+$(CLRTestBashPostCommands)
+      ]]></BashCLRTestPostCommands>
+
+    </PropertyGroup>
     <PropertyGroup>
       <BashEnvironmentVariables>
 @(CLRTestBashEnvironmentVariable -> '%(Identity)', '%0a')
