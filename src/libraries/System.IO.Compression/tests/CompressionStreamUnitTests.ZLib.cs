@@ -21,7 +21,7 @@ namespace System.IO.Compression
         public override Stream BaseStream(Stream stream) => ((ZLibStream)stream).BaseStream;
         protected override string CompressedTestFile(string uncompressedPath) => Path.Combine("ZLibTestData", Path.GetFileName(uncompressedPath) + ".z");
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void StreamCorruption_IsDetected()
         {
             RemoteExecutor.Invoke(() =>
