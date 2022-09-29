@@ -79,7 +79,7 @@ namespace Wasm.Build.Tests
         {
             var resolvedCommand = _command;
             string fullArgs = GetFullArgs(args);
-            _testOutput.WriteLine($"[{_label}] Executing - {resolvedCommand} {fullArgs} {WorkingDirectoryInfo()}");
+            _testOutput.WriteLine($"[{_label}] Executing - {resolvedCommand} {fullArgs} - {WorkingDirectoryInfo()}");
             return await ExecuteAsyncInternal(resolvedCommand, fullArgs);
         }
 

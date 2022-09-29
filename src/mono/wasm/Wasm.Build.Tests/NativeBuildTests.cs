@@ -123,7 +123,6 @@ namespace Wasm.Build.Tests
             string publishLogPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}.binlog");
             CommandResult res = new DotNetCommand(s_buildEnv, _testOutput)
                                         .WithWorkingDirectory(_projectDir!)
-                                        .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
                                         .ExecuteWithCapturedOutput("publish",
                                                                    $"-bl:{publishLogPath}",
                                                                    "-p:RunAOTCompilation=true",

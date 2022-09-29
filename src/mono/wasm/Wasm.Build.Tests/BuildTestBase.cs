@@ -36,7 +36,6 @@ namespace Wasm.Build.Tests
         protected string _logPath;
         protected bool _enablePerTestCleanup = false;
         protected SharedBuildPerTestClassFixture _buildContext;
-        protected string _nugetPackagesDir = string.Empty;
 
         // FIXME: use an envvar to override this
         protected static int s_defaultPerTestTimeoutMs = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 30*60*1000 : 15*60*1000;
@@ -63,6 +62,13 @@ namespace Wasm.Build.Tests
                     s_xharnessRunnerCommand = "xharness";
                 else
                     s_xharnessRunnerCommand = EnvironmentVariables.XHarnessCliPath;
+
+                string? nugetPackagesPath = Environment.GetEnvironmentVariable("NUGET_PACKAGES");
+                if (!string.IsNullOrEmpty(nugetPackagesPath))
+                {
+                    if (!Directory.Exists(nugetPackagesPath))
+                        Directory.CreateDirectory(nugetPackagesPath);
+                }
 
                 Console.WriteLine ("");
                 Console.WriteLine ($"==============================================================================================");
@@ -280,12 +286,7 @@ namespace Wasm.Build.Tests
             if (_projectDir == null)
                 _projectDir = Path.Combine(AppContext.BaseDirectory, id);
             _logPath = Path.Combine(s_buildEnv.LogRootPath, id);
-            _nugetPackagesDir = Path.Combine(BuildEnvironment.TmpPath, "nuget", id);
 
-            if (Directory.Exists(_nugetPackagesDir))
-                Directory.Delete(_nugetPackagesDir, recursive: true);
-
-            Directory.CreateDirectory(_nugetPackagesDir!);
             Directory.CreateDirectory(_logPath);
         }
 
@@ -404,7 +405,6 @@ namespace Wasm.Build.Tests
                     foreach (var kvp in options.ExtraBuildEnvironmentVariables!)
                         envVars[kvp.Key] = kvp.Value;
                 }
-                envVars["NUGET_PACKAGES"] = _nugetPackagesDir;
                 result = AssertBuild(sb.ToString(), id, expectSuccess: options.ExpectSuccess, envVars: envVars);
 
                 // check that we are using the correct runtime pack!
@@ -487,7 +487,6 @@ namespace Wasm.Build.Tests
             InitBlazorWasmProjectDir(id);
             new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                     .WithWorkingDirectory(_projectDir!)
-                    .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
                     .ExecuteWithCapturedOutput("new blazorwasm")
                     .EnsureSuccessful();
 
