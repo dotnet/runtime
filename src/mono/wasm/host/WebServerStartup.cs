@@ -158,7 +158,6 @@ internal sealed class WebServerStartup
 
         applicationLifetime.ApplicationStarted.Register(() =>
         {
-            TaskCompletionSource<ServerURLs> tcs = realUrlsAvailableTcs;
             try
             {
                 ICollection<string>? addresses = app.ServerFeatures
@@ -174,14 +173,14 @@ internal sealed class WebServerStartup
                 }
 
                 if (ipAddress == null)
-                    tcs.SetException(new InvalidOperationException("Failed to determine web server's IP address or port"));
+                    realUrlsAvailableTcs.SetException(new InvalidOperationException("Failed to determine web server's IP address or port"));
                 else
-                    tcs.SetResult(new ServerURLs(ipAddress, ipAddressSecure));
+                    realUrlsAvailableTcs.SetResult(new ServerURLs(ipAddress, ipAddressSecure));
             }
             catch (Exception ex)
             {
                 _logger?.LogError($"Failed to get urls for the webserver: {ex}");
-                tcs.TrySetException(ex);
+                realUrlsAvailableTcs.TrySetException(ex);
                 throw;
             }
 
