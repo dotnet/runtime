@@ -394,7 +394,7 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
             memcpy(nii->Name, ifaddrsEntry->ifa_name, sizeof(nii->Name));
             nii->InterfaceIndex = if_nametoindex(ifaddrsEntry->ifa_name);
             nii->Speed = -1;
-            nii->HardwareType = NetworkInterfaceType_Unknown;
+            nii->HardwareType = ((ifaddrsEntry->ifa_flags & IFF_LOOPBACK) == IFF_LOOPBACK) ? NetworkInterfaceType_Loopback : NetworkInterfaceType_Unknown;
 
             // Get operational state and multicast support.
             if ((ifaddrsEntry->ifa_flags & (IFF_MULTICAST|IFF_ALLMULTI)) != 0)
