@@ -102,7 +102,7 @@ namespace Wasm.Build.Tests
                             TargetFramework: BuildTestBase.DefaultTargetFramework
                         ));
 
-            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true, targetFramework: DefaultTargetFramework);
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true);
 
             if (!_buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
                 throw new XunitException($"Test bug: could not get the build product in the cache");
@@ -123,7 +123,7 @@ namespace Wasm.Build.Tests
                             TargetFramework: BuildTestBase.DefaultTargetFramework,
                             UseCache: false));
 
-            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking, targetFramework: DefaultTargetFramework);
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
         }
 
         [Theory]
@@ -151,7 +151,7 @@ namespace Wasm.Build.Tests
                         TargetFramework: BuildTestBase.DefaultTargetFramework
                         ));
 
-            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true, targetFramework: DefaultTargetFramework);
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: true);
 
             (int exitCode, string output) = RunProcess(s_buildEnv.DotNet, _testOutput, args: $"run --no-build -c {config}", workingDir: _projectDir);
             Assert.Equal(0, exitCode);
@@ -176,7 +176,7 @@ namespace Wasm.Build.Tests
                             TargetFramework: BuildTestBase.DefaultTargetFramework,
                             UseCache: false));
 
-            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking, targetFramework: DefaultTargetFramework);
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
@@ -218,7 +218,7 @@ namespace Wasm.Build.Tests
                             TargetFramework: BuildTestBase.DefaultTargetFramework
                             ));
 
-            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !relinking, targetFramework: DefaultTargetFramework);
+            AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !relinking);
 
             (int exitCode, string output) = RunProcess(s_buildEnv.DotNet, _testOutput, args: $"run --no-build -c {config} x y z", workingDir: _projectDir);
             Assert.Equal(42, exitCode);
@@ -392,7 +392,7 @@ namespace Wasm.Build.Tests
             if (!aot)
             {
                 // These are disabled for AOT explicitly
-                AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking, targetFramework: DefaultTargetFramework);
+                AssertDotNetJsSymbols(Path.Combine(GetBinDir(config), "AppBundle"), fromRuntimePack: !expectRelinking);
             }
             else
             {
