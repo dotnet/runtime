@@ -1264,8 +1264,6 @@ struct ArgInterferenceGraphNode
     regMaskTP Clobbers;
     // Registers that may be used by the argument (guess).
     regMaskTP Uses;
-    // Bit mask of edges. There is an edge (i, j) if argument i clobbers a register used by argument j.
-    uint32_t Edges;
 
     int  Index;
     int  LowLink;
@@ -1281,16 +1279,22 @@ class ArgInterferenceGraph
     int       m_index = 0;
 
     ArrayStack<ArgInterferenceGraphNode> m_nodes;
+    ArrayStack<int>                      m_edges;
     ArrayStack<int>                      m_stack;
     ArrayStack<int>                      m_sccs;
+    // Registers that are used by an argument that does not also clobber that register.
+    regMaskTP                            m_regDependencies;
+    regMaskTP                            m_allClobbers;
 
 public:
     ArgInterferenceGraph(Compiler* comp, unsigned argCount)
         : m_comp(comp)
         , m_nodes(comp->getAllocator(CMK_CallArgs), static_cast<int>(argCount))
+        , m_edges(comp->getAllocator(CMK_CallArgs))
         , m_stack(comp->getAllocator(CMK_CallArgs))
-        , m_sccs(comp->getAllocator(CMK_CallArgs))
-
+        , m_sccs(comp->getAllocator(CMK_CallArgs), static_cast<int>(argCount))
+        , m_regDependencies(RBM_NONE)
+        , m_allClobbers(RBM_NONE)
     {
     }
 
@@ -1316,39 +1320,22 @@ public:
             clobbers |= genRegMask(arg->AbiInfo.GetRegNum(i));
         }
 
-        arg->Tag = m_nodes.Height();
         ArgInterferenceGraphNode node;
         node.Arg      = arg;
         node.Clobbers = clobbers;
         node.Uses     = EstimateRegisterUses(arg->GetNode());
-        node.Edges    = 0;
         node.Index    = -1;
         node.LowLink  = -1;
         node.OnStack  = false;
         node.SccNext  = UINT_MAX;
         m_nodes.Push(node);
+
+        m_regDependencies |= node.Uses & ~clobbers;
+        m_allClobbers |= clobbers;
     }
 
     void FindSccs()
     {
-        // Create edges
-        for (int i = 0; i < m_nodes.Height(); i++)
-        {
-            for (int j = 0; j < m_nodes.Height(); j++)
-            {
-                if (i == j)
-                {
-                    continue;
-                }
-
-                ArgInterferenceGraphNode& ni = m_nodes.BottomRef(i);
-                ArgInterferenceGraphNode& nj = m_nodes.BottomRef(j);
-
-                if ((ni.Clobbers & nj.Uses) != 0)
-                    ni.Edges |= 1 << j;
-            }
-        }
-
         for (int i = 0; i < m_nodes.Height(); i++)
         {
             if (m_nodes.BottomRef(i).Index == -1)
@@ -1357,6 +1344,8 @@ public:
             }
         }
     }
+
+    bool HasInterference() { return (m_allClobbers & m_regDependencies) != RBM_NONE; }
 
 private:
     // Implementation of Tarjan's algorithm
@@ -1367,23 +1356,34 @@ private:
         node.LowLink                   = m_index;
         m_index++;
 
+        // Early exit for args that do not clobber any other argument.
+        if ((m_regDependencies & node.Clobbers) == RBM_NONE)
+        {
+            node.SccNext = index;
+            m_sccs.Push(index);
+            return;
+        }
+
         uint32_t nodeStackIndex = m_stack.Height();
         m_stack.Push(index);
         node.OnStack = true;
 
-        uint32_t neighbors = node.Edges;
-        while (neighbors != 0)
+        for (int i = 0; i < m_nodes.Height(); i++)
         {
-            uint32_t neighborIndexMask = genFindLowestBit(neighbors);
-            neighbors &= ~neighborIndexMask;
-            int neighborIndex = static_cast<int>(genLog2(neighborIndexMask));
+            if (i == index)
+            {
+                continue;
+            }
 
-            assert(neighborIndex < m_nodes.Height());
-            ArgInterferenceGraphNode& neighbor = m_nodes.BottomRef(neighborIndex);
+            ArgInterferenceGraphNode& neighbor = m_nodes.BottomRef(i);
+            if ((neighbor.Uses & node.Clobbers) == 0)
+            {
+                continue;
+            }
 
             if (neighbor.Index == -1)
             {
-                FindScc(neighborIndex);
+                FindScc(i);
                 node.LowLink = min(node.LowLink, neighbor.LowLink);
             }
             else if (neighbor.OnStack)
@@ -1485,6 +1485,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
 
     if ((argCount <= 1) || (argCount >= 64))
     {
+        JITDUMP("  Placed arguments in order (%u arguments).\n", argCount);
         return;
     }
 
@@ -1510,90 +1511,98 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
         return l->Tag < r->Tag;
     });
 
-    if (comp->opts.OptimizationEnabled())
+    if (comp->opts.OptimizationDisabled())
     {
-        // When optimizing, also resolve conflicts due to arguments using
-        // parameters that may be enregistered. For example: if an argument
-        // uses a register 'rcx', try to ensure that 'rcx' is placed _after_
-        // that argument. We create an interference graph and use Tarjan's
-        // algorithm, which will both find the SCCs (cycles) and reverse
-        // topologically sort the arguments, ensuring the above. Tarjan's
-        // algorithm here is also implemented in a stable manner such that
-        // arguments are not needlessly reordered when there are no conflicts.
-        ArgInterferenceGraph graph(comp, argCount);
+        return;
+    }
 
-        for (unsigned i = 0; i < argCount; i++)
+    // When optimizing also resolve conflicts due to arguments using parameters
+    // that may be enregistered. For example: if an argument uses a register
+    // 'rcx', try to ensure that 'rcx' is placed _after_ that argument. We
+    // create an interference graph and use Tarjan's algorithm, which will both
+    // find the SCCs (cycles) and reverse topologically sort the arguments,
+    // ensuring the above. The implementation of Tarjan's here also iterates
+    // neighbors in order such that arguments are not needlessly reordered when
+    // there are no conflicts.
+    ArgInterferenceGraph graph(comp, argCount);
+
+    for (unsigned i = 0; i < argCount; i++)
+    {
+        graph.AddNode(sortedArgs[i]);
+    }
+
+    if (!graph.HasInterference())
+    {
+        JITDUMP("  No interference found between arguments.\n");
+        return;
+    }
+
+    graph.FindSccs();
+
+    JITDUMP("  Arguments have register interference. Argument order and SCCs:\n");
+
+    unsigned curIndex = 0;
+    for (int scc = 0; scc < graph.NumSccs(); scc++)
+    {
+        int firstNodeIndex = graph.FirstSccNode(scc);
+
+        unsigned sccSize   = 0;
+        int      nodeIndex = firstNodeIndex;
+
+        int lclVarIndex = -1;
+        do
         {
-            graph.AddNode(sortedArgs[i]);
-        }
+            ArgInterferenceGraphNode& node = graph.GetNode(nodeIndex);
+            if (node.Arg->GetNode()->OperIs(GT_LCL_VAR))
+            {
+                lclVarIndex = nodeIndex;
+            }
 
-        graph.FindSccs();
+            assert(curIndex < argCount);
+            sortedArgs[curIndex + sccSize] = node.Arg;
 
-        JITDUMP("Argument SCCs and order:\n");
+            nodeIndex = node.SccNext;
 
-        unsigned curIndex = 0;
-        for (int scc = 0; scc < graph.NumSccs(); scc++)
+            sccSize++;
+
+        } while (nodeIndex != firstNodeIndex);
+
+        // LSRA is able to break cycles by rehoming LCL_VAR parameters into
+        // another register. It does this better when it sees the LCL_VAR
+        // last. If we notice that the last arg we placed is not a LCL_VAR,
+        // and we had a LCL_VAR, then repeat the loop but ensure that we
+        // place a LCL_VAR node last.
+        if ((lclVarIndex != -1) && !sortedArgs[curIndex + sccSize - 1]->GetNode()->OperIs(GT_LCL_VAR))
         {
-            int firstNodeIndex = graph.FirstSccNode(scc);
+            // Refill the sorted args, this time placing a LCL_VAR last.
+            firstNodeIndex = graph.GetNode(lclVarIndex).SccNext;
 
-            unsigned sccSize   = 0;
-            int      nodeIndex = firstNodeIndex;
+            sccSize   = 0;
+            nodeIndex = firstNodeIndex;
 
-            int lclVarIndex = -1;
             do
             {
                 ArgInterferenceGraphNode& node = graph.GetNode(nodeIndex);
-                if (node.Arg->GetNode()->OperIs(GT_LCL_VAR))
-                {
-                    lclVarIndex = nodeIndex;
-                }
-
-                assert(curIndex < argCount);
                 sortedArgs[curIndex + sccSize] = node.Arg;
-
-                nodeIndex = node.SccNext;
-
+                nodeIndex                      = node.SccNext;
                 sccSize++;
-
             } while (nodeIndex != firstNodeIndex);
-
-            // LSRA is able to break cycles by rehoming LCL_VAR parameters into
-            // another register. It does this better when it sees the LCL_VAR
-            // last. If we notice that the last arg we placed is not a LCL_VAR,
-            // and we had a LCL_VAR, then repeat the loop but ensure that we
-            // place a LCL_VAR node last.
-            if ((lclVarIndex != -1) && !sortedArgs[curIndex + sccSize - 1]->GetNode()->OperIs(GT_LCL_VAR))
-            {
-                // Refill the sorted args, this time placing a LCL_VAR last.
-                firstNodeIndex = graph.GetNode(lclVarIndex).SccNext;
-
-                sccSize   = 0;
-                nodeIndex = firstNodeIndex;
-
-                do
-                {
-                    ArgInterferenceGraphNode& node = graph.GetNode(nodeIndex);
-                    sortedArgs[curIndex + sccSize] = node.Arg;
-                    nodeIndex                      = node.SccNext;
-                    sccSize++;
-                } while (nodeIndex != firstNodeIndex);
-            }
-
-#ifdef DEBUG
-            if (comp->verbose)
-            {
-                printf("  [");
-                for (unsigned j = 0; j < sccSize; j++)
-                    printf(" [%06u]", sortedArgs[curIndex + j]->GetNode()->gtTreeID);
-                printf(" ]\n");
-            }
-#endif
-
-            curIndex += sccSize;
         }
 
-        assert(curIndex == argCount);
+#ifdef DEBUG
+        if (comp->verbose)
+        {
+            printf("  [");
+            for (unsigned j = 0; j < sccSize; j++)
+                printf(" [%06u]", sortedArgs[curIndex + j]->GetNode()->gtTreeID);
+            printf(" ]\n");
+        }
+#endif
+
+        curIndex += sccSize;
     }
+
+    assert(curIndex == argCount);
 }
 
 //------------------------------------------------------------------------------
