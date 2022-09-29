@@ -150,7 +150,14 @@ internal static partial class Interop
             out int bytesWritten,
             out bool authTagMismatch)
         {
-            fixed (byte* pOutput = output)
+            scoped Span<byte> notNullOutput = output;
+
+            if (notNullOutput.IsEmpty)
+            {
+                notNullOutput = (stackalloc byte[1]).Slice(1);
+            }
+
+            fixed (byte* pOutput = &MemoryMarshal.GetReference(notNullOutput))
             {
                 return EvpAeadCipherFinalEx(ctx, pOutput, out bytesWritten, out authTagMismatch);
             }
