@@ -2673,29 +2673,27 @@ namespace System
                 nuint lastVectorIndex = length - (uint)Vector128<T>.Count;
                 Vector128<T> oldValues = Vector128.Create(oldValue);
                 Vector128<T> newValues = Vector128.Create(newValue);
+                Vector128<T> original, mask, result;
 
                 do
                 {
-                    Vector128<T> original = Vector128.LoadUnsafe(ref src, idx);
-                    Vector128<T> mask = Vector128.Equals(oldValues, original);
-                    Vector128<T> result = Vector128.ConditionalSelect(mask, newValues, original);
+                    original = Vector128.LoadUnsafe(ref src, idx);
+                    mask = Vector128.Equals(oldValues, original);
+                    result = Vector128.ConditionalSelect(mask, newValues, original);
                     result.StoreUnsafe(ref dst, idx);
 
                     idx += (uint)Vector128<T>.Count;
                 } while (idx <= lastVectorIndex);
 
-                if (idx < length)
-                {
-                    // There are [0, Vector128<T>.Count) elements remaining now.
-                    // As the operation is idempotent, and we know that in total there are at least Vector128<T>.Count
-                    // elements available, we read a vector from the very end, perform the replace and write to the
-                    // the resulting vector at the very end.
-                    // Thus we can eliminate the scalar processing of the remaining elements.
-                    Vector128<T> original = Vector128.LoadUnsafe(ref src, lastVectorIndex);
-                    Vector128<T> mask = Vector128.Equals(oldValues, original);
-                    Vector128<T> result = Vector128.ConditionalSelect(mask, newValues, original);
-                    result.StoreUnsafe(ref dst, lastVectorIndex);
-                }
+                // There are [0, Vector128<T>.Count) elements remaining now.
+                // As the operation is idempotent, and we know that in total there are at least Vector128<T>.Count
+                // elements available, we read a vector from the very end, perform the replace and write to the
+                // the resulting vector at the very end.
+                // Thus we can eliminate the scalar processing of the remaining elements.
+                original = Vector128.LoadUnsafe(ref src, lastVectorIndex);
+                mask = Vector128.Equals(oldValues, original);
+                result = Vector128.ConditionalSelect(mask, newValues, original);
+                result.StoreUnsafe(ref dst, lastVectorIndex);
             }
             else
             {
@@ -2704,24 +2702,22 @@ namespace System
                 nuint lastVectorIndex = length - (uint)Vector256<T>.Count;
                 Vector256<T> oldValues = Vector256.Create(oldValue);
                 Vector256<T> newValues = Vector256.Create(newValue);
+                Vector256<T> original, mask, result;
 
                 do
                 {
-                    Vector256<T> original = Vector256.LoadUnsafe(ref src, idx);
-                    Vector256<T> mask = Vector256.Equals(oldValues, original);
-                    Vector256<T> result = Vector256.ConditionalSelect(mask, newValues, original);
+                    original = Vector256.LoadUnsafe(ref src, idx);
+                    mask = Vector256.Equals(oldValues, original);
+                    result = Vector256.ConditionalSelect(mask, newValues, original);
                     result.StoreUnsafe(ref dst, idx);
 
                     idx += (uint)Vector256<T>.Count;
                 } while (idx <= lastVectorIndex);
 
-                if (idx < length)
-                {
-                    Vector256<T> original = Vector256.LoadUnsafe(ref src, lastVectorIndex);
-                    Vector256<T> mask = Vector256.Equals(oldValues, original);
-                    Vector256<T> result = Vector256.ConditionalSelect(mask, newValues, original);
-                    result.StoreUnsafe(ref dst, lastVectorIndex);
-                }
+                original = Vector256.LoadUnsafe(ref src, lastVectorIndex);
+                mask = Vector256.Equals(oldValues, original);
+                result = Vector256.ConditionalSelect(mask, newValues, original);
+                result.StoreUnsafe(ref dst, lastVectorIndex);
             }
         }
 
