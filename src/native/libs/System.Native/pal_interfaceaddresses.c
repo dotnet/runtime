@@ -354,12 +354,16 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
     // where we first write out NetworkInterfaceInfo entries immediately followed by
     // IpAddressInfo list.
 #if TARGET_ANDROID
-    int interfacesCount = count;
+    // Since Android API 30, getifaddrs returns only AP_INET and AF_INET6 addresses and
+    // we do not get any AP_PACKET addresses and so count == ip4count + ip6count.
+    // We need to make sure that the memoryBlock is large enough to hold all interfaces
+    // and all addresses without any overlap between interfaceList and addressList.
+    int interfaceCountUpperLimit = count;
 #else
-    int interfacesCount = count - ip4count - ip6count;
+    int interfaceCountUpperLimit = count - ip4count - ip6count;
 #endif
-    size_t interfacesAndAddressesCount = (size_t)(interfacesCount + ip4count + ip6count);
-    void * memoryBlock = calloc(interfacesAndAddressesCount, sizeof(NetworkInterfaceInfo));
+    size_t entriesCount = (size_t)(interfaceCountUpperLimit + ip4count + ip6count);
+    void * memoryBlock = calloc(entriesCount, sizeof(NetworkInterfaceInfo));
     if (memoryBlock == NULL)
     {
         errno = ENOMEM;
@@ -370,7 +374,7 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
     ifaddrsEntry = head;
     *interfaceList = nii = (NetworkInterfaceInfo*)memoryBlock;
     // address of first IpAddressInfo after all NetworkInterfaceInfo entries.
-    *addressList = ai = (IpAddressInfo*)(nii + interfacesCount);
+    *addressList = ai = (IpAddressInfo*)(nii + interfaceCountUpperLimit);
 
     while (ifaddrsEntry != NULL)
     {
