@@ -1558,10 +1558,10 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
             } while (nodeIndex != firstNodeIndex);
 
             // LSRA is able to break cycles by rehoming LCL_VAR parameters into
-            // another register, if it sees the LCL_VAR last. If we notice that
-            // the last arg we placed is not a LCL_VAR, and we had a LCL_VAR,
-            // then repeat the loop but ensure that we place a LCL_VAR node
-            // last.
+            // another register. It does this better when it sees the LCL_VAR
+            // last. If we notice that the last arg we placed is not a LCL_VAR,
+            // and we had a LCL_VAR, then repeat the loop but ensure that we
+            // place a LCL_VAR node last.
             if ((lclVarIndex != -1) && !sortedArgs[curIndex + sccSize - 1]->GetNode()->OperIs(GT_LCL_VAR))
             {
                 // Refill the sorted args, this time placing a LCL_VAR last.
