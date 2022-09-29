@@ -336,7 +336,7 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode(TrimSerializationWarning)]
         public void Serialize(TextWriter textWriter, object? o, XmlSerializerNamespaces? namespaces)
         {
-            XmlWriter xmlWriter = XmlWriter.Create(textWriter, s_writerSettings);
+            XmlWriter xmlWriter = LocalAppContextSwitches.SerializationUseDefaultXmlWriterSettings ? XmlWriter.Create(textWriter) : XmlWriter.Create(textWriter, s_writerSettings);
             Serialize(xmlWriter, o, namespaces);
         }
 
