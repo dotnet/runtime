@@ -357,7 +357,8 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
     // Since Android API 30, getifaddrs returns only AF_INET and AF_INET6 addresses and
     // we do not get any AF_PACKET addresses and so count == ip4count + ip6count.
     // We need to make sure that the memoryBlock is large enough to hold all interfaces
-    // and all addresses without any overlap between interfaceList and addressList.
+    // and (up to `count` entries) all addresses (ip4count + ip6count) without any overlap
+    // between interfaceList and addressList.
     int entriesCount = count + ip4count + ip6count;
 #else
     int entriesCount = count;
