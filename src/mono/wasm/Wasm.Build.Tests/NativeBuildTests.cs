@@ -106,7 +106,7 @@ namespace Wasm.Build.Tests
         [InlineData("Release")]
         public void BlazorWasm_CanRunMonoAOTCross_WithNoTrimming(string config)
         {
-            string id = $"blazorwasm_{config}_aot_{Path.GetRandomFileName()}";
+            string id = $"blazorwasm_{config}_aot";
             CreateBlazorWasmTemplateProject(id);
 
             // We don't want to emcc compile, and link ~180 assemblies!

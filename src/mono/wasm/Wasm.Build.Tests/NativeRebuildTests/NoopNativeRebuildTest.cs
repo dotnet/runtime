@@ -40,7 +40,7 @@ namespace Wasm.Build.NativeRebuild.Tests
         [InlineData("Release")]
         public void BlazorNoopRebuild(string config)
         {
-            string id = $"blz_rebuild_{config}_{Path.GetRandomFileName()}";
+            string id = $"blz_rebuild_{config}";
             string projectFile = CreateBlazorWasmTemplateProject(id);
             AddItemsPropertiesToProject(projectFile, extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
 
@@ -67,7 +67,7 @@ namespace Wasm.Build.NativeRebuild.Tests
         [InlineData("Release")]
         public void BlazorOnlyLinkRebuild(string config)
         {
-            string id = $"blz_relink_{config}_{Path.GetRandomFileName()}";
+            string id = $"blz_relink_{config}";
             string projectFile = CreateBlazorWasmTemplateProject(id);
             AddItemsPropertiesToProject(projectFile, extraProperties: "<WasmBuildNative>true</WasmBuildNative>");
 
