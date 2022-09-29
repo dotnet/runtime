@@ -19,7 +19,7 @@ public class Program
     public static IRuntime s_rt = new Runtime();
     public static ulong s_3;
 
-    public static void Main()
+    public static int Main()
     {
         CollectibleALC alc = new CollectibleALC();
 
@@ -28,6 +28,8 @@ public class Program
         System.Type runtimeTy = asm.GetType(typeof(Runtime).FullName);
 
         mi.Invoke(null, new object[]{System.Activator.CreateInstance(runtimeTy)});
+
+        return 100;
     }
 
     public static void MainInner(IRuntime rt)
