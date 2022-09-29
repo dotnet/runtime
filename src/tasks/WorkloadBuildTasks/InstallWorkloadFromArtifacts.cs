@@ -41,6 +41,14 @@ namespace Microsoft.Workload.Build.Tasks
 
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
         private string AllManifestsStampPath => Path.Combine(SdkWithNoWorkloadInstalledPath, ".all-manifests.stamp");
+        private static readonly string[] s_manifestIds = new[]
+        {
+            "microsoft.net.workload.mono.toolchain",
+            "microsoft.net.workload.emscripten.net6",
+            "microsoft.net.workload.emscripten.net7",
+            "microsoft.net.workload.mono.toolchain.net6",
+            "microsoft.net.workload.mono.toolchain.net7"
+        };
 
         public override bool Execute()
         {
@@ -146,6 +154,8 @@ namespace Microsoft.Workload.Build.Tasks
                 return true;
             }
 
+            ExecuteHackForInstallerMismatch();
+
             string nugetConfigContents = GetNuGetConfig();
             HashSet<string> manifestsInstalled = new();
             foreach (ITaskItem workload in WorkloadIds)
@@ -175,6 +185,43 @@ namespace Microsoft.Workload.Build.Tasks
             File.WriteAllText(AllManifestsStampPath, string.Empty);
 
             return true;
+
+            void ExecuteHackForInstallerMismatch()
+            {
+                // HACK - because sdk doesn't yet have the version-less manifest names in the known
+                // workloads list
+                string? txtPath = Directory.EnumerateFiles(Path.Combine(SdkWithNoWorkloadInstalledPath, "sdk"), "IncludedWorkloadManifests.txt",
+                                                new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 2})
+                                    .FirstOrDefault();
+                if (txtPath is null)
+                    throw new LogAsErrorException($"Could not find IncludedWorkloadManifests.txt in {SdkWithNoWorkloadInstalledPath}");
+
+                string stampPath = Path.Combine(Path.GetDirectoryName(txtPath)!, ".stamp");
+                if (File.Exists(stampPath))
+                    return;
+
+                List<string> lines = File.ReadAllLines(txtPath).ToList();
+                int originalCount = lines.Count;
+
+                // we want to insert the manifests in a fixed order
+                // so first remove all of them
+                foreach (string manifestId in s_manifestIds)
+                    lines.Remove(manifestId);
+                // .. and then insert
+                lines.AddRange(s_manifestIds);
+
+                // currently using emscripten.net7 instead of this,
+                // so remove it from the list
+                lines.Remove("microsoft.net.workload.emscripten");
+
+                if (lines.Count != originalCount)
+                {
+                    // Update the file only if we are making any changes
+                    File.WriteAllText(txtPath, string.Join(Environment.NewLine, lines));
+                }
+
+                File.WriteAllText(stampPath, "");
+            }
         }
 
         private bool InstallPacks(InstallWorkloadRequest req, string nugetConfigContents)
