@@ -118,7 +118,7 @@ public static partial class DataContractSerializerTests
         DateTime dateTime = DateTime.Parse("2021-01-01");
         MemoryStream ms = new();
         DataContractSerializer dcs = new(dateTime.GetType());
-        using (XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(ms, null, null, ownsStream: true))
+        using (XmlDictionaryWriter writer = XmlDictionaryWriter.CreateBinaryWriter(ms, null, null))
             dcs.WriteObject(writer, dateTime);
         var serializedBytes = ms.ToArray();
         Assert.Equal(72, serializedBytes.Length);
