@@ -111,7 +111,7 @@ GcInfoDecoder::GcInfoDecoder(
 
     GcInfoHeaderFlags headerFlags;
     bool slimHeader = (m_Reader.ReadOneFast() == 0);
-    // Use flag mask to bail out early if we already decoded all the pieces tha caller requested
+    // Use flag mask to bail out early if we already decoded all the pieces that caller requested
     int remainingFlags = flags == DECODE_EVERYTHING ? ~0 : flags;
 
     if (slimHeader)
