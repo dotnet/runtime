@@ -3657,8 +3657,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
         case GT_IND:
             // Spill to a local if sizes don't match so we can avoid the "load more than requested"
             // problem, e.g. struct size is 5 and we emit "ldr x0, [x1]"
-            if (genTypeSize(nativeReturnType) != retVal->OperIs(GT_OBJ) ? retVal->AsObj()->Size()
-                                                                        : retVal->AsIndir()->Size())
+            if (retVal->OperIs(GT_OBJ) && genTypeSize(nativeReturnType) != retVal->AsObj()->Size())
             {
                 LIR::Use retValUse(BlockRange(), &ret->gtOp1, ret);
                 ReplaceWithLclVar(retValUse);
