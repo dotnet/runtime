@@ -3655,24 +3655,24 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 
         case GT_OBJ:
         case GT_IND:
+        {
+            // Spill to a local if sizes don't match so we can avoid the "load more than requested"
+            // problem, e.g. struct size is 5 and we emit "ldr x0, [x1]"
+            unsigned realSize = retVal->OperIs(GT_OBJ) ? retVal->AsObj()->Size() : retVal->AsIndir()->Size();
+            if (genTypeSize(nativeReturnType) != realSize && realSize != 0)
             {
-                // Spill to a local if sizes don't match so we can avoid the "load more than requested"
-                // problem, e.g. struct size is 5 and we emit "ldr x0, [x1]"
-                unsigned realSize = retVal->OperIs(GT_OBJ) ? retVal->AsObj()->Size() : retVal->AsIndir()->Size();
-                if (genTypeSize(nativeReturnType) != realSize && realSize != 0)
-                {
-                    LIR::Use retValUse(BlockRange(), &ret->gtOp1, ret);
-                    ReplaceWithLclVar(retValUse);
-                    LowerRetSingleRegStructLclVar(ret);
-                    break;
-                }
+                LIR::Use retValUse(BlockRange(), &ret->gtOp1, ret);
+                ReplaceWithLclVar(retValUse);
+                LowerRetSingleRegStructLclVar(ret);
+                break;
+            }
 
-                if (retVal->OperIs(GT_OBJ))
-                {
-                    retVal->ChangeOper(GT_IND);
-                }
-                retVal->ChangeType(nativeReturnType);
-                LowerIndir(retVal->AsIndir());
+            if (retVal->OperIs(GT_OBJ))
+            {
+                retVal->ChangeOper(GT_IND);
+            }
+            retVal->ChangeType(nativeReturnType);
+            LowerIndir(retVal->AsIndir());
             break;
         }
 
