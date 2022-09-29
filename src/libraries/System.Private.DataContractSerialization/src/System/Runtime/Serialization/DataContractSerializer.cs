@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization.DataContracts;
+using System.Text;
 using System.Xml;
 
 using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContracts.DataContract>;
@@ -32,6 +32,18 @@ namespace System.Runtime.Serialization
 
         private static SerializationOption s_option = IsReflectionBackupAllowed() ? SerializationOption.ReflectionAsBackup : SerializationOption.CodeGenOnly;
         private static bool s_optionAlreadySet;
+
+        internal static readonly UTF8Encoding SafeUTF8 = new UTF8Encoding(false, false);
+        internal static readonly UTF8Encoding ValidatingUTF8 = new UTF8Encoding(false, true);
+
+        internal static readonly UnicodeEncoding SafeUTF16 = new UnicodeEncoding(false, false, false);
+        internal static readonly UnicodeEncoding SafeBEUTF16 = new UnicodeEncoding(true, false, false);
+        internal static readonly UnicodeEncoding ValidatingUTF16 = new UnicodeEncoding(false, false, true);
+        internal static readonly UnicodeEncoding ValidatingBEUTF16 = new UnicodeEncoding(true, false, true);
+
+        internal static readonly Base64Encoding Base64Encoding = new Base64Encoding();
+        internal static readonly BinHexEncoding BinHexEncoding = new BinHexEncoding();
+
         internal static SerializationOption Option
         {
             get { return RuntimeFeature.IsDynamicCodeSupported ? s_option : SerializationOption.ReflectionOnly; }
