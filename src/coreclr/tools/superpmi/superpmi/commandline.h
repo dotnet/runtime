@@ -39,7 +39,7 @@ public:
             , baseMetricsSummaryFile(nullptr)
             , diffMetricsSummaryFile(nullptr)
             , mclFilename(nullptr)
-            , diffsInfo(nullptr)
+            , diffMCLFilename(nullptr)
             , targetArchitecture(nullptr)
             , compileList(nullptr)
             , offset(-1)
@@ -72,7 +72,7 @@ public:
         char* baseMetricsSummaryFile;
         char* diffMetricsSummaryFile;
         char* mclFilename;
-        char* diffsInfo;
+        char* diffMCLFilename;
         char* targetArchitecture;
         char* compileList;
         int   offset;

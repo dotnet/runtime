@@ -26,7 +26,6 @@ set(SUPERPMI_SOURCES
     neardiffer.cpp
     parallelsuperpmi.cpp
     superpmi.cpp
-    fileio.cpp
     jithost.cpp
     ../superpmi-shared/callutils.cpp
     ../superpmi-shared/compileresult.cpp

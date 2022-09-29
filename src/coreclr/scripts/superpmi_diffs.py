@@ -216,7 +216,8 @@ def main(main_args):
         "-spmi_location", spmi_location,
         "-error_limit", "100",
         "-log_level", "debug",
-        "-log_file", log_file])
+        "-log_file", log_file,
+        "-retainOnlyTopFiles"])
 
     print("Running superpmi.py tpdiff")
 

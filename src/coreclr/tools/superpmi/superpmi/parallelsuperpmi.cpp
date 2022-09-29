@@ -9,7 +9,6 @@
 #include "commandline.h"
 #include "errorhandling.h"
 #include "metricssummary.h"
-#include "fileio.h"
 
 #define MAX_LOG_LINE_SIZE 0x1000 // 4 KB
 
@@ -350,7 +349,7 @@ struct PerWorkerData
     HANDLE hStdError;
 
     char* failingMCListPath;
-    char* diffsInfoPath;
+    char* diffMCListPath;
     char* stdOutputPath;
     char* stdErrorPath;
     char* baseMetricsSummaryPath;
@@ -360,7 +359,7 @@ struct PerWorkerData
         : hStdOutput(INVALID_HANDLE_VALUE)
         , hStdError(INVALID_HANDLE_VALUE)
         , failingMCListPath(nullptr)
-        , diffsInfoPath(nullptr)
+        , diffMCListPath(nullptr)
         , stdOutputPath(nullptr)
         , stdErrorPath(nullptr)
         , baseMetricsSummaryPath(nullptr)
@@ -369,7 +368,7 @@ struct PerWorkerData
     }
 };
 
-static void MergeWorkerMCLs(char* mclFilename, PerWorkerData* workerData, int workerCount, char* PerWorkerData::*mclPath)
+void MergeWorkerMCLs(char* mclFilename, PerWorkerData* workerData, int workerCount, char* PerWorkerData::*mclPath)
 {
     int **MCL = new int *[workerCount], *MCLCount = new int[workerCount], totalCount = 0;
 
@@ -395,39 +394,6 @@ static void MergeWorkerMCLs(char* mclFilename, PerWorkerData* workerData, int wo
     // Write the merged MCL array back to disk
     if (!WriteArrayToMCL(mclFilename, mergedMCL, totalCount))
         LogError("Unable to write to MCL file %s.", mclFilename);
-}
-
-static void MergeWorkerCsvs(char* csvFilename, PerWorkerData* workerData, int workerCount, char* PerWorkerData::* csvPath)
-{
-    FileWriter fw;
-    if (!FileWriter::CreateNew(csvFilename, &fw))
-    {
-        LogError("Could not create file %s", csvFilename);
-        return;
-    }
-
-    bool hasHeader = false;
-    for (int i = 0; i < workerCount; i++)
-    {
-        FileLineReader reader;
-        if (!FileLineReader::Open(workerData[i].*csvPath, &reader))
-        {
-            LogError("Could not open child CSV file %s", workerData[i].*csvPath);
-            continue;
-        }
-
-        if (hasHeader && !reader.AdvanceLine())
-        {
-            continue;
-        }
-
-        while (reader.AdvanceLine())
-        {
-             fw.Printf("%s\n", reader.GetCurrentLine());
-        }
-
-        hasHeader = true;
-    }
 }
 
 #define MAX_CMDLINE_SIZE 0x1000 // 4 KB
@@ -562,8 +528,8 @@ int doParallelSuperPMI(CommandLine::Options& o)
     LogVerbose("Using child (%s) with args (%s)", spmiFilename, spmiArgs);
     if (o.mclFilename != nullptr)
         LogVerbose(" failingMCList=%s", o.mclFilename);
-    if (o.diffsInfo != nullptr)
-        LogVerbose(" diffsInfo=%s", o.diffsInfo);
+    if (o.diffMCLFilename != nullptr)
+        LogVerbose(" diffMCLFilename=%s", o.diffMCLFilename);
     LogVerbose(" workerCount=%d, skipCleanup=%d.", o.workerCount, o.skipCleanup);
 
     PerWorkerData* perWorkerData = new PerWorkerData[o.workerCount];
@@ -585,10 +551,10 @@ int doParallelSuperPMI(CommandLine::Options& o)
             sprintf_s(wd.failingMCListPath, MAX_PATH, "%sParallelSuperPMI-%u-%d.mcl", tempPath, randNumber, i);
         }
 
-        if (o.diffsInfo != nullptr)
+        if (o.diffMCLFilename != nullptr)
         {
-            wd.diffsInfoPath = new char[MAX_PATH];
-            sprintf_s(wd.diffsInfoPath, MAX_PATH, "%sParallelSuperPMI-Diff-%u-%d.mcl", tempPath, randNumber, i);
+            wd.diffMCListPath = new char[MAX_PATH];
+            sprintf_s(wd.diffMCListPath, MAX_PATH, "%sParallelSuperPMI-Diff-%u-%d.mcl", tempPath, randNumber, i);
         }
 
         if (o.baseMetricsSummaryFile != nullptr)
@@ -627,10 +593,10 @@ int doParallelSuperPMI(CommandLine::Options& o)
                                       wd.failingMCListPath);
         }
 
-        if (wd.diffsInfoPath != nullptr)
+        if (wd.diffMCListPath != nullptr)
         {
-            bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -diffsInfo %s",
-                                      wd.diffsInfoPath);
+            bytesWritten += sprintf_s(cmdLine + bytesWritten, MAX_CMDLINE_SIZE - bytesWritten, " -diffMCList %s",
+                                      wd.diffMCListPath);
         }
 
         if (wd.baseMetricsSummaryPath != nullptr)
@@ -753,10 +719,10 @@ int doParallelSuperPMI(CommandLine::Options& o)
             MergeWorkerMCLs(o.mclFilename, perWorkerData, o.workerCount, &PerWorkerData::failingMCListPath);
         }
 
-        if (o.diffsInfo != nullptr && !usageError)
+        if (o.diffMCLFilename != nullptr && !usageError)
         {
             // Concat the resulting diff .mcl files
-            MergeWorkerCsvs(o.diffsInfo, perWorkerData, o.workerCount, &PerWorkerData::diffsInfoPath);
+            MergeWorkerMCLs(o.diffMCLFilename, perWorkerData, o.workerCount, &PerWorkerData::diffMCListPath);
         }
 
         if (o.baseMetricsSummaryFile != nullptr && !usageError)
@@ -795,9 +761,9 @@ int doParallelSuperPMI(CommandLine::Options& o)
             {
                 DeleteFile(wd.failingMCListPath);
             }
-            if (wd.diffsInfoPath != nullptr)
+            if (wd.diffMCListPath != nullptr)
             {
-                DeleteFile(wd.diffsInfoPath);
+                DeleteFile(wd.diffMCListPath);
             }
             if (wd.baseMetricsSummaryPath != nullptr)
             {

@@ -318,7 +318,7 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
 
                 o->mclFilename = argv[i];
             }
-            else if ((_strnicmp(&argv[i][1], "diffsInfo", 9) == 0))
+            else if ((_strnicmp(&argv[i][1], "diffMCList", 10) == 0))
             {
                 if (++i >= argc)
                 {
@@ -326,7 +326,7 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
                     return false;
                 }
 
-                o->diffsInfo = argv[i];
+                o->diffMCLFilename = argv[i];
             }
             else if ((_strnicmp(&argv[i][1], "target", 6) == 0))
             {
@@ -641,9 +641,9 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
         DumpHelp(argv[0]);
         return false;
     }
-    if (o->diffsInfo != nullptr && !o->applyDiff)
+    if (o->diffMCLFilename != nullptr && !o->applyDiff)
     {
-        LogError("-diffsInfo specified without -applyDiff.");
+        LogError("-diffMCList specified without -applyDiff.");
         DumpHelp(argv[0]);
         return false;
     }
