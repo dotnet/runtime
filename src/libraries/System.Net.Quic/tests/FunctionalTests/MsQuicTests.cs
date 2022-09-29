@@ -1264,25 +1264,30 @@ namespace System.Net.Quic.Tests
 
             try
             {
-                await client.GetAsync($"https://[{ipAddressString}]:443");
+                try
+                {
+                    await client.GetAsync($"https://[{ipAddressString}]:443");
+                }
+                catch (Exception genEx)
+                {
+                    ex = genEx;
+                }
+
+                Assert.NotNull(ex);
+                Assert.True(ex.GetType() == typeof(HttpRequestException), $"could not send get request to {siteWebUrl} through ipv6 address {ipAddressString}. {siteWebUrl} IPv6 resolution is :{Environment.NewLine}{ipLookupResult}");
+                Assert.NotNull(ex.InnerException);
+                Assert.IsType<QuicException>(ex.InnerException);
+                Assert.Equal(10051, ex.HResult & 0xFFFF);
             }
-            catch (Exception genEx)
+            finally
             {
-                ex = genEx;
+                // re-enable ipv6 on all network interfaces
+                cmd.Start();
+                cmd.StandardInput.WriteLine("Enable-NetAdapterBinding -Name \"*\" -ComponentID ms_tcpip6");
+                cmd.StandardInput.Flush();
+                cmd.StandardInput.Close();
+                cmd.WaitForExit();
             }
-
-            Assert.NotNull(ex);
-            Assert.True(ex.GetType() == typeof(HttpRequestException), $"could not send get request to {siteWebUrl} through ipv6 address {ipAddressString}. {siteWebUrl} IPv6 resolution is :{Environment.NewLine}{ipLookupResult}");
-            Assert.NotNull(ex.InnerException);
-            Assert.IsType<QuicException>(ex.InnerException);
-            Assert.Equal(10051, ex.HResult & 0xFFFF);
-
-            // re-enable ipv6 on all network interfaces
-            cmd.Start();
-            cmd.StandardInput.WriteLine("Enable-NetAdapterBinding -Name \"*\" -ComponentID ms_tcpip6");
-            cmd.StandardInput.Flush();
-            cmd.StandardInput.Close();
-            cmd.WaitForExit();
         }
     }
 }
