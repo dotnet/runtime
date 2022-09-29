@@ -491,6 +491,15 @@ namespace System.Net.Mail.Tests
             Assert.Equal(GetClientDomain(), server.ClientDomain);
         }
 
+        [Fact]
+        public async Task SendMailAsync_CanBeCanceled_CancellationToken_Loop()
+        {
+            for (int i = 0; i < 1000; ++i)
+            {
+                await SendMailAsync_CanBeCanceled_CancellationToken();
+            }
+        }
+
         private static string GetClientDomain() => IPGlobalProperties.GetIPGlobalProperties().HostName.Trim().ToLower();
 
         [Theory]
