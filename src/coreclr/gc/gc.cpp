@@ -44895,10 +44895,13 @@ HRESULT GCHeap::Initialize()
     {
         if (gc_heap::heap_hard_limit)
         {
-            gc_heap::regions_range = 2 * gc_heap::heap_hard_limit;
+            // Keep the reservation size for regions similar to that for segments. 
+            // We will initially reserve 6x the configured hard limit
+            gc_heap::regions_range = 6 * gc_heap::heap_hard_limit;
         }
         else
         {
+            // If no hard_limit is configured the reservation size is max of 256gb or 2x physical limit
             gc_heap::regions_range = max(((size_t)256 * 1024 * 1024 * 1024), (size_t)(2 * gc_heap::total_physical_mem));
         }
         gc_heap::regions_range = align_on_page(gc_heap::regions_range);
