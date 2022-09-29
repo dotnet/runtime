@@ -1253,19 +1253,7 @@ namespace System.Net.Quic.Tests
             var client = new HttpClient(handler);
             client.DefaultRequestVersion = HttpVersion.Version30;
             client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact;
-            Exception ex = null;
-
-            try
-            {
-                await client.GetAsync($"https://[{ipAddress}]:443");
-            }
-            catch (Exception genEx)
-            {
-                ex = genEx;
-            }
-
-            Assert.NotNull(ex);
-            Assert.True(ex.GetType() == typeof(HttpRequestException), $"could not send get request to {siteWebUrl} through ipv6 address {ipAddress}. {siteWebUrl} IPv6 resolution is :{Environment.NewLine}{ipLookupResult}");
+            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync($"https://[{ipAddress}]:443"));
             Assert.NotNull(ex.InnerException);
             Assert.IsType<QuicException>(ex.InnerException);
             Assert.Equal(10051, ex.HResult & 0xFFFF);
