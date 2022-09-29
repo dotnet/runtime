@@ -369,17 +369,6 @@ namespace System.Reflection
         {
             Debug.Assert(attr.Constructor.DeclaringType == typeof(DecimalConstantAttribute));
 
-            // FIXME: Is this even possible?
-            foreach (CustomAttributeNamedArgument namedArgument in attr.NamedArguments)
-            {
-                if (namedArgument.MemberInfo.Name.Equals("Value"))
-                {
-                    // This is not possible because Decimal cannot be represented directly in the metadata.
-                    Debug.Fail("Decimal cannot be represented directly in the metadata.");
-                    return (decimal)namedArgument.TypedValue.Value!;
-                }
-            }
-
             ParameterInfo[] parameters = attr.Constructor.GetParameters();
             Debug.Assert(parameters.Length == 5);
 
@@ -415,23 +404,12 @@ namespace System.Reflection
             Debug.Assert(attr.Constructor.DeclaringType == typeof(DateTimeConstantAttribute));
             Debug.Assert(attr.ConstructorArguments.Count == 1);
 
-            // FIXME: Is this even possible?
-            foreach (CustomAttributeNamedArgument namedArgument in attr.NamedArguments)
-            {
-                if (namedArgument.MemberInfo.Name.Equals("Value"))
-                {
-                    return new DateTime((long)namedArgument.TypedValue.Value!);
-                }
-            }
-
-            // Look at the ctor argument if the "Value" property was not explicitly defined.
             return new DateTime((long)attr.ConstructorArguments[0].Value!);
         }
 
         private static object? GetRawConstant(CustomAttributeData attr)
         {
-            // FIXME: Why are we relying only on named arguments, constructor arguments
-            // should work just fine
+            // We are relying only on named arguments for historical reasons
             foreach (CustomAttributeNamedArgument namedArgument in attr.NamedArguments)
             {
                 if (namedArgument.MemberInfo.Name.Equals("Value"))
