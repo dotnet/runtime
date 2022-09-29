@@ -103,7 +103,7 @@ static inline uint8_t mask2prefix(uint8_t* mask, int length)
 
 #if !HAVE_IFADDRS && TARGET_ANDROID
 // This structure is exactly the same as struct ifaddrs defined in ifaddrs.h but since the header
-// might not be available (e.g., in bionics used in Android before API 24) we need to mirror it here
+// might not be available (e.g., in bionic used in Android before API 24) we need to mirror it here
 // so that we can dynamically load the getifaddrs function and use it.
 struct ifaddrs
 {
@@ -354,8 +354,8 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
     // where we first write out NetworkInterfaceInfo entries immediately followed by
     // IpAddressInfo list.
 #ifdef TARGET_ANDROID
-    // Since Android API 30, getifaddrs returns only AP_INET and AF_INET6 addresses and
-    // we do not get any AP_PACKET addresses and so count == ip4count + ip6count.
+    // Since Android API 30, getifaddrs returns only AF_INET and AF_INET6 addresses and
+    // we do not get any AF_PACKET addresses and so count == ip4count + ip6count.
     // We need to make sure that the memoryBlock is large enough to hold all interfaces
     // and all addresses without any overlap between interfaceList and addressList.
     int entriesCount = count + ip4count + ip6count;
