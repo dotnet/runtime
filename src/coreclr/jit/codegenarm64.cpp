@@ -2527,7 +2527,9 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
     {
         // In the future, we might consider enabling this for floating-point "unsafe" math.
         assert(varTypeIsIntegral(tree));
-        assert(!(tree->gtFlags & GTF_SET_FLAGS));
+
+        // These operations cannot set flags
+        assert((tree->gtFlags & GTF_SET_FLAGS) == 0);
 
         GenTree* a = op1;
         GenTree* b = op2->gtGetOp1();
@@ -2557,6 +2559,83 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
         }
 
         emit->emitIns_R_R_R_R(ins, emitActualTypeSize(tree), targetReg, b->GetRegNum(), c->GetRegNum(), a->GetRegNum());
+        genProduceReg(tree);
+        return;
+    }
+    else if (op2->OperIs(GT_LSH, GT_RSH, GT_RSZ) && op2->isContained())
+    {
+        assert(varTypeIsIntegral(tree));
+
+        GenTree* a = op1;
+        GenTree* b = op2->gtGetOp1();
+        GenTree* c = op2->gtGetOp2();
+
+        // The shift amount needs to be contained as well
+        assert(c->isContained() && c->IsCnsIntOrI());
+
+        instruction ins = genGetInsForOper(tree->OperGet(), targetType);
+        insOpts     opt = INS_OPTS_NONE;
+
+        if ((tree->gtFlags & GTF_SET_FLAGS) != 0)
+        {
+            // A subset of operations can still set flags
+
+            switch (oper)
+            {
+                case GT_ADD:
+                {
+                    ins = INS_adds;
+                    break;
+                }
+
+                case GT_SUB:
+                {
+                    ins = INS_subs;
+                    break;
+                }
+
+                case GT_AND:
+                {
+                    ins = INS_ands;
+                    break;
+                }
+
+                default:
+                {
+                    noway_assert(!"Unexpected BinaryOp with GTF_SET_FLAGS set");
+                }
+            }
+        }
+
+        switch (op2->gtOper)
+        {
+            case GT_LSH:
+            {
+                opt = INS_OPTS_LSL;
+                break;
+            }
+
+            case GT_RSH:
+            {
+                opt = INS_OPTS_ASR;
+                break;
+            }
+
+            case GT_RSZ:
+            {
+                opt = INS_OPTS_LSR;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+
+        emit->emitIns_R_R_R_I(ins, emitActualTypeSize(tree), targetReg, a->GetRegNum(), b->GetRegNum(),
+                              c->AsIntConCommon()->IconValue(), opt);
+
         genProduceReg(tree);
         return;
     }
