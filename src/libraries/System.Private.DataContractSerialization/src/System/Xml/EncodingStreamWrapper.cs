@@ -126,9 +126,9 @@ namespace System.Xml
         private static Encoding GetSafeEncoding(SupportedEncoding e) =>
             e switch
             {
-                SupportedEncoding.UTF8 => DataContractSerializer.SafeUTF8,
-                SupportedEncoding.UTF16LE => DataContractSerializer.SafeUTF16,
-                SupportedEncoding.UTF16BE => DataContractSerializer.SafeBEUTF16,
+                SupportedEncoding.UTF8 => DataContractSerializer.UTF8NoBom,
+                SupportedEncoding.UTF16LE => DataContractSerializer.UTF16NoBom,
+                SupportedEncoding.UTF16BE => DataContractSerializer.BEUTF16NoBom,
                 _ => throw new XmlException(SR.XmlEncodingNotSupported),
             };
 
@@ -394,15 +394,15 @@ namespace System.Xml
             else if (encCount == s_encodingUnicode.Length && CompareCaseInsensitive(s_encodingUnicode, buffer, encStart))
             {
                 if (e == SupportedEncoding.UTF8)
-                    ThrowEncodingMismatch(DataContractSerializer.SafeUTF8.GetString(buffer, encStart, encCount), DataContractSerializer.SafeUTF8.GetString(s_encodingUTF8, 0, s_encodingUTF8.Length));
+                    ThrowEncodingMismatch(DataContractSerializer.UTF8NoBom.GetString(buffer, encStart, encCount), DataContractSerializer.UTF8NoBom.GetString(s_encodingUTF8, 0, s_encodingUTF8.Length));
             }
             else
             {
-                ThrowEncodingMismatch(DataContractSerializer.SafeUTF8.GetString(buffer, encStart, encCount), e);
+                ThrowEncodingMismatch(DataContractSerializer.UTF8NoBom.GetString(buffer, encStart, encCount), e);
             }
 
             if (e != declEnc)
-                ThrowEncodingMismatch(DataContractSerializer.SafeUTF8.GetString(buffer, encStart, encCount), e);
+                ThrowEncodingMismatch(DataContractSerializer.UTF8NoBom.GetString(buffer, encStart, encCount), e);
         }
 
         private static bool CompareCaseInsensitive(byte[] key, byte[] buffer, int offset)

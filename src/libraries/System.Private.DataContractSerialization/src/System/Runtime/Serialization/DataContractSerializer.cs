@@ -33,16 +33,16 @@ namespace System.Runtime.Serialization
         private static SerializationOption s_option = IsReflectionBackupAllowed() ? SerializationOption.ReflectionAsBackup : SerializationOption.CodeGenOnly;
         private static bool s_optionAlreadySet;
 
-        internal static readonly UTF8Encoding SafeUTF8 = new UTF8Encoding(false, false);
-        internal static readonly UTF8Encoding ValidatingUTF8 = new UTF8Encoding(false, true);
+        internal static UTF8Encoding UTF8NoBom { get; } = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false);
+        internal static UTF8Encoding ValidatingUTF8 { get; } = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
-        internal static readonly UnicodeEncoding SafeUTF16 = new UnicodeEncoding(false, false, false);
-        internal static readonly UnicodeEncoding SafeBEUTF16 = new UnicodeEncoding(true, false, false);
-        internal static readonly UnicodeEncoding ValidatingUTF16 = new UnicodeEncoding(false, false, true);
-        internal static readonly UnicodeEncoding ValidatingBEUTF16 = new UnicodeEncoding(true, false, true);
+        internal static UnicodeEncoding UTF16NoBom { get; } = new UnicodeEncoding(bigEndian: false, byteOrderMark: false, throwOnInvalidBytes: false);
+        internal static UnicodeEncoding BEUTF16NoBom { get; } = new UnicodeEncoding(bigEndian: true, byteOrderMark: false, throwOnInvalidBytes: false);
+        internal static UnicodeEncoding ValidatingUTF16 { get; } = new UnicodeEncoding(bigEndian: false, byteOrderMark: false, throwOnInvalidBytes: true);
+        internal static UnicodeEncoding ValidatingBEUTF16 { get; } = new UnicodeEncoding(bigEndian: true, byteOrderMark: false, throwOnInvalidBytes: true);
 
-        internal static readonly Base64Encoding Base64Encoding = new Base64Encoding();
-        internal static readonly BinHexEncoding BinHexEncoding = new BinHexEncoding();
+        internal static Base64Encoding Base64Encoding { get; } = new Base64Encoding();
+        internal static BinHexEncoding BinHexEncoding { get; } = new BinHexEncoding();
 
         internal static SerializationOption Option
         {

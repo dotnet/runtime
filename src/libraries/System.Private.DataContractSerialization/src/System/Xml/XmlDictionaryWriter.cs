@@ -41,7 +41,7 @@ namespace System.Xml
 
         public static XmlDictionaryWriter CreateTextWriter(Stream stream)
         {
-            return CreateTextWriter(stream, DataContractSerializer.SafeUTF8, true);
+            return CreateTextWriter(stream, DataContractSerializer.UTF8NoBom, true);
         }
 
         public static XmlDictionaryWriter CreateTextWriter(Stream stream, Encoding encoding)

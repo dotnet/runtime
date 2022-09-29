@@ -1768,7 +1768,7 @@ namespace System.Runtime.Serialization.DataContracts
 
         private static string GetNamespacesDigest(string namespaces)
         {
-            byte[] namespaceBytes = DataContractSerializer.SafeUTF8.GetBytes(namespaces);
+            byte[] namespaceBytes = Encoding.UTF8.GetBytes(namespaces);
             byte[] digestBytes = ComputeHash(namespaceBytes);
             char[] digestChars = new char[24];
             const int digestLen = 6;
