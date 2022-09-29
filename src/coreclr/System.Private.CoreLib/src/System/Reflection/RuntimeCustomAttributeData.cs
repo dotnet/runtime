@@ -278,9 +278,16 @@ namespace System.Reflection
             }
 
             ParameterInfo[] parameters = m_ctor.GetParametersNoCopy();
-            m_ctorParams = new CustomAttributeCtorParameter[parameters.Length];
-            for (int i = 0; i < parameters.Length; i++)
-                m_ctorParams[i] = new CustomAttributeCtorParameter(InitCustomAttributeType((RuntimeType)parameters[i].ParameterType));
+            if (parameters.Length != 0)
+            {
+                m_ctorParams = new CustomAttributeCtorParameter[parameters.Length];
+                for (int i = 0; i < parameters.Length; i++)
+                    m_ctorParams[i] = new CustomAttributeCtorParameter(InitCustomAttributeType((RuntimeType)parameters[i].ParameterType));
+            }
+            else
+            {
+                m_ctorParams = Array.Empty<CustomAttributeCtorParameter>();
+            }
 
             FieldInfo[] fields = m_ctor.DeclaringType!.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             PropertyInfo[] properties = m_ctor.DeclaringType.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -341,7 +348,7 @@ namespace System.Reflection
             m_typedCtorArgs = Array.AsReadOnly(new CustomAttributeTypedArgument[] {
                 new CustomAttributeTypedArgument(fieldOffset.Value)
             });
-            m_namedArgs = Array.AsReadOnly(Array.Empty<CustomAttributeNamedArgument>());
+            m_namedArgs = Array.Empty<CustomAttributeNamedArgument>();
         }
         private void Init(MarshalAsAttribute marshalAs)
         {
@@ -391,8 +398,7 @@ namespace System.Reflection
             typedArgs[0] = new CustomAttributeTypedArgument(typeof(Type), forwardedTo.Destination);
             m_typedCtorArgs = Array.AsReadOnly(typedArgs);
 
-            CustomAttributeNamedArgument[] namedArgs = Array.Empty<CustomAttributeNamedArgument>();
-            m_namedArgs = Array.AsReadOnly(namedArgs);
+            m_namedArgs = Array.Empty<CustomAttributeNamedArgument>();
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
@@ -409,8 +415,8 @@ namespace System.Reflection
 #endif
 
             m_ctor = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance)[0];
-            m_typedCtorArgs = Array.AsReadOnly(Array.Empty<CustomAttributeTypedArgument>());
-            m_namedArgs = Array.AsReadOnly(Array.Empty<CustomAttributeNamedArgument>());
+            m_typedCtorArgs = Array.Empty<CustomAttributeTypedArgument>();
+            m_namedArgs = Array.Empty<CustomAttributeNamedArgument>();
         }
         #endregion
 
@@ -423,16 +429,23 @@ namespace System.Reflection
             {
                 if (m_typedCtorArgs is null)
                 {
-                    CustomAttributeTypedArgument[] typedCtorArgs = new CustomAttributeTypedArgument[m_ctorParams.Length];
-
-                    for (int i = 0; i < typedCtorArgs.Length; i++)
+                    if (m_ctorParams.Length != 0)
                     {
-                        CustomAttributeEncodedArgument encodedArg = m_ctorParams[i].CustomAttributeEncodedArgument;
+                        CustomAttributeTypedArgument[] typedCtorArgs = new CustomAttributeTypedArgument[m_ctorParams.Length];
 
-                        typedCtorArgs[i] = new CustomAttributeTypedArgument(m_scope, encodedArg);
+                        for (int i = 0; i < typedCtorArgs.Length; i++)
+                        {
+                            CustomAttributeEncodedArgument encodedArg = m_ctorParams[i].CustomAttributeEncodedArgument;
+
+                            typedCtorArgs[i] = new CustomAttributeTypedArgument(m_scope, encodedArg);
+                        }
+
+                        m_typedCtorArgs = Array.AsReadOnly(typedCtorArgs);
                     }
-
-                    m_typedCtorArgs = Array.AsReadOnly(typedCtorArgs);
+                    else
+                    {
+                        m_typedCtorArgs = Array.Empty<CustomAttributeTypedArgument>();
+                    }
                 }
 
                 return m_typedCtorArgs;
@@ -445,26 +458,33 @@ namespace System.Reflection
             {
                 if (m_namedArgs is null)
                 {
-                    if (m_namedParams is null)
-                        return null!;
-
                     int cNamedArgs = 0;
-                    for (int i = 0; i < m_namedParams.Length; i++)
+                    if (m_namedParams is not null)
                     {
-                        if (m_namedParams[i].EncodedArgument.CustomAttributeType.EncodedType != CustomAttributeEncoding.Undefined)
-                            cNamedArgs++;
+                        for (int i = 0; i < m_namedParams.Length; i++)
+                        {
+                            if (m_namedParams[i].EncodedArgument.CustomAttributeType.EncodedType != CustomAttributeEncoding.Undefined)
+                                cNamedArgs++;
+                        }
                     }
 
-                    CustomAttributeNamedArgument[] namedArgs = new CustomAttributeNamedArgument[cNamedArgs];
-
-                    for (int i = 0, j = 0; i < m_namedParams.Length; i++)
+                    if (cNamedArgs != 0)
                     {
-                        if (m_namedParams[i].EncodedArgument.CustomAttributeType.EncodedType != CustomAttributeEncoding.Undefined)
-                            namedArgs[j++] = new CustomAttributeNamedArgument(
-                                m_members[i], new CustomAttributeTypedArgument(m_scope, m_namedParams[i].EncodedArgument));
-                    }
+                        CustomAttributeNamedArgument[] namedArgs = new CustomAttributeNamedArgument[cNamedArgs];
 
-                    m_namedArgs = Array.AsReadOnly(namedArgs);
+                        for (int i = 0, j = 0; i < m_namedParams!.Length; i++)
+                        {
+                            if (m_namedParams[i].EncodedArgument.CustomAttributeType.EncodedType != CustomAttributeEncoding.Undefined)
+                                namedArgs[j++] = new CustomAttributeNamedArgument(
+                                    m_members[i], new CustomAttributeTypedArgument(m_scope, m_namedParams[i].EncodedArgument));
+                        }
+
+                        m_namedArgs = Array.AsReadOnly(namedArgs);
+                    }
+                    else
+                    {
+                        m_namedArgs = Array.Empty<CustomAttributeNamedArgument>();
+                    }
                 }
 
                 return m_namedArgs;
