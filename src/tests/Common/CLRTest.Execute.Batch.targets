@@ -301,6 +301,7 @@ $(BatchIlrtTestLaunchCmds)
 if defined RunCrossGen2 (
   call :TakeLock
 )
+
 ECHO %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
 %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
 set CLRTestExitCode=!ERRORLEVEL!
@@ -338,6 +339,12 @@ cmd /c $(InputAssemblyName)
 set CLRTestExitCode=!ERRORLEVEL!
 set CLRTestExpectedExitCode=0
       ]]></BatchCLRTestLaunchCmds>
+
+      <BatchCLRTestPostCommands><![CDATA[
+$(BatchDisasmCheckPostCommands)
+$(CLRTestBatchPostCommands)
+      ]]></BatchCLRTestPostCommands>
+
     </PropertyGroup>
     <PropertyGroup>
       <BatchEnvironmentVariables>
@@ -445,7 +452,7 @@ $(CLRTestBatchPreCommands)
 REM Launch
 $(BatchCLRTestLaunchCmds)
 REM PostCommands
-$(CLRTestBatchPostCommands)
+$(BatchCLRTestPostCommands)
 $(BatchCLRTestExitCodeCheck)
       ]]></_CLRTestExecutionScriptText>
     </PropertyGroup>

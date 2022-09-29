@@ -951,11 +951,6 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
                 int paramCount = parameters.Length;
                 Debug.Assert(paramCount != 0);
 
-                if (paramCount > JsonConstants.MaxParameterCount)
-                {
-                    return "null";
-                }
-
                 const string ArgsVarName = "args";
                 int lastIndex = paramCount - 1;
 

@@ -158,40 +158,134 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 //
 bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) const
 {
+    // The node we're checking should be one of the two child nodes
+    assert((parentNode->gtGetOp1() == childNode) || (parentNode->gtGetOp2() == childNode));
+
+    // We cannot contain if the parent node
+    // * is contained
+    // * is not operating on an integer
+    // * is already marking a child node as contained
+    // * is required to throw on overflow
+
     if (parentNode->isContained())
         return false;
 
     if (!varTypeIsIntegral(parentNode))
         return false;
 
-    if (parentNode->gtFlags & GTF_SET_FLAGS)
+    if (parentNode->gtGetOp1()->isContained() || parentNode->gtGetOp2()->isContained())
         return false;
 
-    GenTree* op1 = parentNode->gtGetOp1();
-    GenTree* op2 = parentNode->gtGetOp2();
-
-    if (op2 != childNode)
+    if (parentNode->OperMayOverflow() && parentNode->gtOverflow())
         return false;
 
-    if (op1->isContained() || op2->isContained())
+    // We cannot contain if the child node:
+    // * is not operating on an integer
+    // * is required to set a flag
+    // * is required to throw on overflow
+
+    if (!varTypeIsIntegral(childNode))
         return false;
 
-    if (!varTypeIsIntegral(op2))
+    if ((childNode->gtFlags & GTF_SET_FLAGS) != 0)
         return false;
 
-    if (op2->gtFlags & GTF_SET_FLAGS)
+    if (childNode->OperMayOverflow() && childNode->gtOverflow())
         return false;
 
-    // Find "a + b * c" or "a - b * c".
-    if (parentNode->OperIs(GT_ADD, GT_SUB) && op2->OperIs(GT_MUL))
+    GenTree* matchedOp = nullptr;
+
+    if (childNode->OperIs(GT_MUL))
     {
-        if (parentNode->gtOverflow())
+        if (childNode->gtGetOp1()->isContained() || childNode->gtGetOp2()->isContained())
+        {
+            // Cannot contain if either of the childs operands is already contained
             return false;
+        }
 
-        if (op2->gtOverflow())
+        if ((parentNode->gtFlags & GTF_SET_FLAGS) != 0)
+        {
+            // Cannot contain if the parent operation needs to set flags
             return false;
+        }
 
-        return !op2->gtGetOp1()->isContained() && !op2->gtGetOp2()->isContained();
+        if (parentNode->OperIs(GT_ADD))
+        {
+            // Find "c + (a * b)" or "(a * b) + c"
+            return IsSafeToContainMem(parentNode, childNode);
+        }
+
+        if (parentNode->OperIs(GT_SUB))
+        {
+            // Find "c - (a * b)"
+            assert(childNode == parentNode->gtGetOp2());
+            return IsSafeToContainMem(parentNode, childNode);
+        }
+
+        // TODO: Handle mneg
+        return false;
+    }
+
+    if (childNode->OperIs(GT_LSH, GT_RSH, GT_RSZ))
+    {
+        // Find "a op (b shift cns)"
+
+        if (childNode->gtGetOp1()->isContained())
+        {
+            // Cannot contain if the childs op1 is already contained
+            return false;
+        }
+
+        GenTree* shiftAmountNode = childNode->gtGetOp2();
+
+        if (!shiftAmountNode->IsCnsIntOrI())
+        {
+            // Cannot contain if the childs op2 is not a constant
+            return false;
+        }
+
+        ssize_t shiftAmount = shiftAmountNode->AsIntCon()->IconValue();
+
+        if ((shiftAmount < 0x01) || (shiftAmount > 0x3F))
+        {
+            // Cannot contain if the shift amount is less than 1 or greater than 63
+            return false;
+        }
+
+        if (!varTypeIsLong(childNode) && (shiftAmount > 0x1F))
+        {
+            // Cannot contain if the shift amount is greater than 31
+            return false;
+        }
+
+        if (parentNode->OperIs(GT_ADD, GT_SUB, GT_AND))
+        {
+            // These operations can still report flags
+
+            if (IsSafeToContainMem(parentNode, childNode))
+            {
+                assert(shiftAmountNode->isContained());
+                return true;
+            }
+        }
+
+        if ((parentNode->gtFlags & GTF_SET_FLAGS) != 0)
+        {
+            // Cannot contain if the parent operation needs to set flags
+            return false;
+        }
+
+        if (parentNode->OperIs(GT_CMP, GT_AND, GT_OR, GT_XOR))
+        {
+            if (IsSafeToContainMem(parentNode, childNode))
+            {
+                assert(shiftAmountNode->isContained());
+                return true;
+            }
+        }
+
+        // TODO: Handle CMN, NEG/NEGS, BIC/BICS, EON, MVN, ORN, TST
+        return false;
     }
 
     return false;
@@ -1088,13 +1182,13 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
     GenTree* op1 = node->Op(1);
     GenTree* op2 = node->Op(2);
 
-    // Optimize comparison against Vector64/128<>.Zero via UMAX:
+    // Optimize comparison against Vector64/128<>.Zero via UMAXV:
     //
     //   bool eq = v == Vector128<integer>.Zero
     //
     // to:
     //
-    //   bool eq = AdvSimd.Arm64.MaxAcross(v.AsUInt16()).ToScalar() == 0;
+    //   bool eq = AdvSimd.Arm64.MaxPairwise(v.AsUInt16(), v.AsUInt16()).GetElement(0) == 0;
     //
     GenTree* op     = nullptr;
     GenTree* opZero = nullptr;
@@ -1109,20 +1203,36 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
         opZero = op2;
     }
 
-    if (!varTypeIsFloating(simdBaseType) && (op != nullptr))
+    // Special case: "vec ==/!= zero_vector"
+    if (!varTypeIsFloating(simdBaseType) && (op != nullptr) && (simdSize != 12))
     {
-        // Use USHORT for V64 and UINT for V128 due to better latency/TP on some CPUs
-        CorInfoType maxType = (simdSize == 8) ? CORINFO_TYPE_USHORT : CORINFO_TYPE_UINT;
-        GenTree*    cmp = comp->gtNewSimdHWIntrinsicNode(simdType, op, NI_AdvSimd_Arm64_MaxAcross, maxType, simdSize);
-        BlockRange().InsertBefore(node, cmp);
-        LowerNode(cmp);
+        GenTree* cmp = op;
+        if (simdSize != 8) // we don't need compression for Vector64
+        {
+            node->Op(1) = op;
+            LIR::Use tmp1Use(BlockRange(), &node->Op(1), node);
+            ReplaceWithLclVar(tmp1Use);
+            op               = node->Op(1);
+            GenTree* opClone = comp->gtClone(op);
+            BlockRange().InsertAfter(op, opClone);
+
+            cmp = comp->gtNewSimdHWIntrinsicNode(simdType, op, opClone, NI_AdvSimd_Arm64_MaxPairwise, CORINFO_TYPE_UINT,
+                                                 simdSize);
+            BlockRange().InsertBefore(node, cmp);
+            LowerNode(cmp);
+        }
+
         BlockRange().Remove(opZero);
 
-        GenTree* val = comp->gtNewSimdHWIntrinsicNode(TYP_INT, cmp, NI_Vector128_ToScalar, CORINFO_TYPE_UINT, simdSize);
-        BlockRange().InsertAfter(cmp, val);
+        GenTree* zroCns = comp->gtNewIconNode(0, TYP_INT);
+        BlockRange().InsertAfter(cmp, zroCns);
+
+        GenTree* val =
+            comp->gtNewSimdHWIntrinsicNode(TYP_LONG, cmp, zroCns, NI_AdvSimd_Extract, CORINFO_TYPE_ULONG, simdSize);
+        BlockRange().InsertAfter(zroCns, val);
         LowerNode(val);
 
-        GenTree* cmpZeroCns = comp->gtNewIconNode(0, TYP_INT);
+        GenTree* cmpZeroCns = comp->gtNewIconNode(0, TYP_LONG);
         BlockRange().InsertAfter(val, cmpZeroCns);
 
         node->ChangeOper(cmpOp);
@@ -1296,7 +1406,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             BlockRange().Remove(arg);
         }
 
-        GenTreeVecCon* vecCon = comp->gtNewVconNode(simdType, simdBaseJitType);
+        GenTreeVecCon* vecCon = comp->gtNewVconNode(simdType);
 
         vecCon->gtSimd32Val = simd32Val;
         BlockRange().InsertBefore(node, vecCon);
@@ -1830,13 +1940,33 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
     GenTree* op1 = node->gtGetOp1();
     GenTree* op2 = node->gtGetOp2();
 
-    // Check and make op2 contained (if it is a containable immediate)
-    CheckImmedAndMakeContained(node, op2);
+    if (CheckImmedAndMakeContained(node, op2))
+    {
+        return;
+    }
+
+    if (node->OperIsCommutative() && CheckImmedAndMakeContained(node, op1))
+    {
+        MakeSrcContained(node, op1);
+        std::swap(node->gtOp1, node->gtOp2);
+        return;
+    }
 
 #ifdef TARGET_ARM64
-    if (comp->opts.OptimizationEnabled() && IsContainableBinaryOp(node, op2))
+    if (comp->opts.OptimizationEnabled())
     {
-        MakeSrcContained(node, op2);
+        if (IsContainableBinaryOp(node, op2))
+        {
+            MakeSrcContained(node, op2);
+            return;
+        }
+
+        if (node->OperIsCommutative() && IsContainableBinaryOp(node, op1))
+        {
+            MakeSrcContained(node, op1);
+            std::swap(node->gtOp1, node->gtOp2);
+            return;
+        }
     }
 
     // Change ADD TO ADDEX for ADD(X, CAST(Y)) or ADD(CAST(X), Y) where CAST is int->long

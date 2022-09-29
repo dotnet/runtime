@@ -10,6 +10,7 @@ void MetricsSummary::AggregateFrom(const MetricsSummary& other)
     SuccessfulCompiles += other.SuccessfulCompiles;
     FailingCompiles += other.FailingCompiles;
     MissingCompiles += other.MissingCompiles;
+    NumContextsWithDiffs += other.NumContextsWithDiffs;
     NumCodeBytes += other.NumCodeBytes;
     NumDiffedCodeBytes += other.NumDiffedCodeBytes;
     NumExecutedInstructions += other.NumExecutedInstructions;
@@ -67,7 +68,7 @@ bool MetricsSummaries::SaveToFile(const char* path)
 
     if (!FilePrintf(
         file.get(),
-        "Successful compiles,Failing compiles,Missing compiles,"
+        "Successful compiles,Failing compiles,Missing compiles,Contexts with diffs,"
         "Code bytes,Diffed code bytes,Executed instructions,Diff executed instructions,Name\n"))
     {
         return false;
@@ -84,10 +85,11 @@ bool MetricsSummaries::WriteRow(HANDLE hFile, const char* name, const MetricsSum
     return
         FilePrintf(
             hFile,
-            "%d,%d,%d,%lld,%lld,%lld,%lld,%s\n",
+            "%d,%d,%d,%d,%lld,%lld,%lld,%lld,%s\n",
             summary.SuccessfulCompiles,
             summary.FailingCompiles,
             summary.MissingCompiles,
+            summary.NumContextsWithDiffs,
             summary.NumCodeBytes,
             summary.NumDiffedCodeBytes,
             summary.NumExecutedInstructions,
@@ -150,17 +152,18 @@ bool MetricsSummaries::LoadFromFile(const char* path, MetricsSummaries* metrics)
         int scanResult =
             sscanf_s(
                 line.data(),
-                "%d,%d,%d,%lld,%lld,%lld,%lld,%s",
+                "%d,%d,%d,%d,%lld,%lld,%lld,%lld,%s",
                 &summary.SuccessfulCompiles,
                 &summary.FailingCompiles,
                 &summary.MissingCompiles,
+                &summary.NumContextsWithDiffs,
                 &summary.NumCodeBytes,
                 &summary.NumDiffedCodeBytes,
                 &summary.NumExecutedInstructions,
                 &summary.NumDiffExecutedInstructions,
                 name, (unsigned)sizeof(name));
 
-        if (scanResult == 8)
+        if (scanResult == 9)
         {
             MetricsSummary* tarSummary = nullptr;
             if (strcmp(name, "Overall") == 0)

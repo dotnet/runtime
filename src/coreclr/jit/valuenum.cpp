@@ -8512,7 +8512,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                             }
                             else
                             {
-                                assert((varDsc->TypeGet() == TYP_I_IMPL) && lcl->TypeIs(TYP_BYREF));
+                                assert(((varDsc->TypeGet() == TYP_I_IMPL) && lcl->TypeIs(TYP_BYREF)) ||
+                                       ((varDsc->TypeGet() == TYP_BYREF) && lcl->TypeIs(TYP_I_IMPL)));
                                 lcl->gtVNPair = wholeLclVarVNP;
                             }
                         }
