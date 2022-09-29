@@ -1279,6 +1279,10 @@ namespace System.Net.Quic.Tests
                 Assert.IsType<QuicException>(ex.InnerException);
                 Assert.Equal(10051, ex.HResult & 0xFFFF);
             }
+            catch
+            {
+                throw;
+            }
             finally
             {
                 // re-enable ipv6 on all network interfaces
