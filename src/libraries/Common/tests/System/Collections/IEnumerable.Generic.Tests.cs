@@ -70,7 +70,7 @@ namespace System.Collections.Tests
         ///   - Returning an undefined value.
         ///
         /// If this property is set to true, the tests ensure that the exception is thrown. The default value is
-        /// false.
+        /// <see cref="Enumerator_Current_UndefinedOperation_Throws"/>.
         /// </summary>
         protected virtual bool Enumerator_Empty_Current_UndefinedOperation_Throws => Enumerator_Current_UndefinedOperation_Throws;
 
