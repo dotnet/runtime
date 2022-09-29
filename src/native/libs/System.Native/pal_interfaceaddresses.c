@@ -353,7 +353,7 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
     // To save allocation need for separate free() we will allocate one memory chunk
     // where we first write out NetworkInterfaceInfo entries immediately followed by
     // IpAddressInfo list.
-#if TARGET_ANDROID
+#ifdef TARGET_ANDROID
     // Since Android API 30, getifaddrs returns only AP_INET and AF_INET6 addresses and
     // we do not get any AP_PACKET addresses and so count == ip4count + ip6count.
     // We need to make sure that the memoryBlock is large enough to hold all interfaces
