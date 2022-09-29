@@ -779,6 +779,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     case "object":
                         var resObj = await MemberObjectsExplorer.GetObjectMemberValues(
                             context.SdbAgent, objectId.Value, getObjectOptions, token, sortByAccessLevel, includeStatic: true);
+                        // cleanUp underscores
                         return ValueOrError<GetMembersResult>.WithValue(resObj);
                     case "pointer":
                         var resPointer = new JArray { await context.SdbAgent.GetPointerContent(objectId.Value, token) };

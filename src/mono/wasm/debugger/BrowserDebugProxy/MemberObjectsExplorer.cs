@@ -63,9 +63,9 @@ namespace BrowserDebugProxy
                 // for backing fields, we are getting it from the properties
                 typePropertiesBrowsableInfo.TryGetValue(field.Name, out state);
             }
-            fieldValue["__state"] = state?.ToString();
+            fieldValue[ProxyInternalUseProperty.State.ToUnderscoredString()] = state?.ToString();
 
-            fieldValue["__section"] = field.Attributes switch
+            fieldValue[ProxyInternalUseProperty.Section.ToUnderscoredString()] = field.Attributes switch
             {
                 FieldAttributes.Private => "private",
                 _ => "result"
@@ -73,11 +73,11 @@ namespace BrowserDebugProxy
 
             if (field.IsBackingField)
             {
-                fieldValue["__isBackingField"] = true;
-                fieldValue["__parentTypeId"] = parentTypeId;
+                fieldValue[ProxyInternalUseProperty.IsBackingField.ToUnderscoredString()] = true;
+                fieldValue[ProxyInternalUseProperty.ParentTypeId.ToUnderscoredString()] = parentTypeId;
             }
             if (field.Attributes.HasFlag(FieldAttributes.Static))
-                fieldValue["__isStatic"] = true;
+                fieldValue[ProxyInternalUseProperty.IsStatic.ToUnderscoredString()] = true;
 
             if (getObjectOptions.HasFlag(GetObjectCommandOptions.WithSetter))
             {
@@ -365,14 +365,14 @@ namespace BrowserDebugProxy
                     continue;
                 }
 
-                bool isExistingMemberABackingField = existingMember["__isBackingField"]?.Value<bool>() == true;
+                bool isExistingMemberABackingField = existingMember[ProxyInternalUseProperty.IsBackingField.ToUnderscoredString()]?.Value<bool>() == true;
                 if (isOwn && !isExistingMemberABackingField)
                 {
                     // repeated propname on the same type! cannot happen
                     throw new Exception($"Internal Error: should not happen. propName: {propName}. Existing all members: {string.Join(",", allMembers.Keys)}");
                 }
 
-                bool isExistingMemberABackingFieldOwnedByThisType = isExistingMemberABackingField && existingMember["__owner"]?.Value<string>() == typeName;
+                bool isExistingMemberABackingFieldOwnedByThisType = isExistingMemberABackingField && existingMember[ProxyInternalUseProperty.Owner.ToUnderscoredString()]?.Value<string>() == typeName;
                 if (isExistingMemberABackingField && (isOwn || isExistingMemberABackingFieldOwnedByThisType))
                 {
                     // this is the property corresponding to the backing field in *this* type
@@ -386,8 +386,8 @@ namespace BrowserDebugProxy
                 {
                     // this has `new` keyword if it is newSlot but direct child was not a newSlot:
                     var child = allMembers.FirstOrDefault(
-                        kvp => (kvp.Key == propName || kvp.Key.StartsWith($"{propName} (")) && kvp.Value["__parentTypeId"]?.Value<int>() == typeId).Value;
-                    bool wasOverriddenByDerivedType = child != null && child["__isNewSlot"]?.Value<bool>() != true;
+                        kvp => (kvp.Key == propName || kvp.Key.StartsWith($"{propName} (")) && kvp.Value[ProxyInternalUseProperty.ParentTypeId.ToUnderscoredString()]?.Value<int>() == typeId).Value;
+                    bool wasOverriddenByDerivedType = child != null && child[ProxyInternalUseProperty.IsNewSlot.ToUnderscoredString()]?.Value<bool>() != true;
                     if (wasOverriddenByDerivedType)
                     {
                         /*
@@ -413,7 +413,7 @@ namespace BrowserDebugProxy
                  */
 
                 JObject backingFieldForHiddenProp = allMembers.GetValueOrDefault(overriddenOrHiddenPropName);
-                if (backingFieldForHiddenProp is null || backingFieldForHiddenProp["__isBackingField"]?.Value<bool>() != true)
+                if (backingFieldForHiddenProp is null || backingFieldForHiddenProp[ProxyInternalUseProperty.IsBackingField.ToUnderscoredString()]?.Value<bool>() != true)
                 {
                     // hiding with a non-auto property, so nothing to adjust
                     // add the new property
@@ -433,7 +433,7 @@ namespace BrowserDebugProxy
                     MethodAttributes.Private => "private",
                     _ => "result"
                 };
-                backingField["__state"] = state?.ToString();
+                backingField[ProxyInternalUseProperty.State.ToUnderscoredString()] = state?.ToString();
 
                 if (state is null)
                     return;
@@ -476,16 +476,16 @@ namespace BrowserDebugProxy
                 }
 
                 propRet["isOwn"] = isOwn;
-                propRet["__section"] = getterAttrs switch
+                propRet[ProxyInternalUseProperty.Section.ToUnderscoredString()] = getterAttrs switch
                 {
                     MethodAttributes.Private => "private",
                     _ => "result"
                 };
-                propRet["__state"] = state?.ToString();
+                propRet[ProxyInternalUseProperty.State.ToUnderscoredString()] = state?.ToString();
                 if (parentTypeId != -1)
                 {
-                    propRet["__parentTypeId"] = parentTypeId;
-                    propRet["__isNewSlot"] = isNewSlot;
+                    propRet[ProxyInternalUseProperty.ParentTypeId.ToUnderscoredString()] = parentTypeId;
+                    propRet[ProxyInternalUseProperty.IsNewSlot.ToUnderscoredString()] = isNewSlot;
                 }
 
                 string namePrefix = GetNamePrefixForValues(propNameWithSufix, typeName, isOwn, state);
@@ -590,7 +590,7 @@ namespace BrowserDebugProxy
                     if (getCommandType.HasFlag(GetObjectCommandOptions.AccessorPropertiesOnly))
                     {
                         foreach (var f in allFields)
-                            f["__hidden"] = true;
+                            f[ProxyInternalUseProperty.Hidden.ToUnderscoredString()] = true;
                     }
                     AddOnlyNewFieldValuesByNameTo(allFields, allMembers, typeName, isOwn);
                 }
@@ -636,8 +636,8 @@ namespace BrowserDebugProxy
                     if (valuesDict.TryAdd(name, item as JObject))
                     {
                         // new member
-                        if (item["__isBackingField"]?.Value<bool>() == true)
-                            item["__owner"] = typeName;
+                        if (item[ProxyInternalUseProperty.IsBackingField.ToUnderscoredString()]?.Value<bool>() == true)
+                            item[ProxyInternalUseProperty.Owner.ToUnderscoredString()] = typeName;
                         continue;
                     }
 
@@ -652,6 +652,18 @@ namespace BrowserDebugProxy
             }
         }
 
+    }
+
+    public enum ProxyInternalUseProperty
+    {
+        Hidden,
+        State,
+        Section,
+        Owner,
+        IsStatic,
+        IsNewSlot,
+        IsBackingField,
+        ParentTypeId
     }
 
     internal sealed class GetMembersResult
@@ -698,10 +710,10 @@ namespace BrowserDebugProxy
 
         private void Split(JToken member)
         {
-            if (member["__hidden"]?.Value<bool>() == true)
+            if (member[ProxyInternalUseProperty.Hidden.ToUnderscoredString()]?.Value<bool>() == true)
                 return;
 
-            if (member["__section"]?.Value<string>() is not string section)
+            if (member[ProxyInternalUseProperty.Section.ToUnderscoredString()]?.Value<string>() is not string section)
             {
                 Result.Add(member);
                 return;

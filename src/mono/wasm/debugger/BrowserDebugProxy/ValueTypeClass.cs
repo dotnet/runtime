@@ -98,15 +98,15 @@ namespace BrowserDebugProxy
                 if (isStatic)
                     fieldValue["name"] = field.Name;
                 FieldAttributes attr = field.Attributes & FieldAttributes.FieldAccessMask;
-                fieldValue["__section"] = attr == FieldAttributes.Private ? "private" : "result";
+                fieldValue[ProxyInternalUseProperty.Section.ToUnderscoredString()] = attr == FieldAttributes.Private ? "private" : "result";
 
                 if (field.IsBackingField)
                 {
-                    fieldValue["__isBackingField"] = true;
+                    fieldValue[ProxyInternalUseProperty.IsBackingField.ToUnderscoredString()] = true;
                     return fieldValue;
                 }
                 typeFieldsBrowsableInfo.TryGetValue(field.Name, out DebuggerBrowsableState? state);
-                fieldValue["__state"] = state?.ToString();
+                fieldValue[ProxyInternalUseProperty.State.ToUnderscoredString()] = state?.ToString();
                 return fieldValue;
             }
         }
