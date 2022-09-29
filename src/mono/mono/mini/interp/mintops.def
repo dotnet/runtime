@@ -24,6 +24,11 @@ OPDEF(MINT_RET_LOCALLOC, "ret.localloc", 2, 0, 1, MintOpNoArgs)
 OPDEF(MINT_RET_VOID_LOCALLOC, "ret.void.localloc", 1, 0, 0, MintOpNoArgs)
 OPDEF(MINT_RET_VT_LOCALLOC, "ret.vt.localloc", 3, 0, 1, MintOpShortInt)
 
+OPDEF(MINT_RET_I1, "ret.i1", 2, 0, 1, MintOpNoArgs)
+OPDEF(MINT_RET_U1, "ret.u1", 2, 0, 1, MintOpNoArgs)
+OPDEF(MINT_RET_I2, "ret.i2", 2, 0, 1, MintOpNoArgs)
+OPDEF(MINT_RET_U2, "ret.u2", 2, 0, 1, MintOpNoArgs)
+
 OPDEF(MINT_LDC_I4_M1, "ldc.i4.m1", 2, 1, 0, MintOpNoArgs)
 OPDEF(MINT_LDC_I4_0, "ldc.i4.0", 2, 1, 0, MintOpNoArgs)
 OPDEF(MINT_LDC_I4_1, "ldc.i4.1", 2, 1, 0, MintOpNoArgs)

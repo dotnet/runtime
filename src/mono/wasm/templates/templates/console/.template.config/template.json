@@ -2,13 +2,33 @@
   "$schema": "http://json.schemastore.org/template",
   "author": "Microsoft",
   "classifications": [ "Web", "WebAssembly", "Console" ],
-  "identity": "WebAssembly.Console",
+  "groupIdentity": "WebAssembly.Console",
+  "precedence": 8000,
+  "identity": "WebAssembly.Console.8.0",
+  "description": "WebAssembly Console App",
   "name": "WebAssembly Console App",
+  "description": "A project template for creating a .NET app that runs on WebAssembly on Node JS or V8",
   "shortName": "wasmconsole",
   "sourceName": "console.0",
   "preferNameDirectory": true,
   "tags": {
     "language": "C#",
     "type": "project"
+  },
+  "symbols": {
+    "framework": {
+      "type": "parameter",
+      "description": "The target framework for the project.",
+      "datatype": "choice",
+      "choices": [
+        {
+          "choice": "net8.0",
+          "description": "Target net8.0",
+          "displayName": ".NET 8.0"
+        }
+      ],
+      "defaultValue": "net8.0",
+      "displayName": "framework"
+    }
   }
 }
