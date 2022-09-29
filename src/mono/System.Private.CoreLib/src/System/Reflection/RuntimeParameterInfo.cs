@@ -246,7 +246,6 @@ namespace System.Reflection
                 object? defaultValue = GetDefaultValue(true);
                 if (defaultValue != null && defaultValue.GetType().IsEnum)
                     return ((Enum)defaultValue).GetValue();
-                /*FIXME right now defaultValue doesn't throw for reflection-only assemblies. Change this once the former is fixed.*/
                 return defaultValue;
             }
         }
