@@ -5078,6 +5078,8 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 			/* This can happen with compiler generated locals */
 			//PRINT_MSG ("%s\n", mono_type_full_name (t));
 			buffer_add_byte (buf, VALUE_TYPE_ID_NULL);
+			if (CHECK_PROTOCOL_VERSION (2, 59))
+				buffer_add_info_for_null_value (buf, t, domain);
 			return;
 		}
 		g_assert (*(void**)addr);
@@ -5231,6 +5233,8 @@ buffer_add_value_full (Buffer *buf, MonoType *t, void *addr, MonoDomain *domain,
 				} else {
 					/* The client can't handle PARENT_VTYPE */
 					buffer_add_byte (buf, VALUE_TYPE_ID_NULL);
+					if (CHECK_PROTOCOL_VERSION (2, 59))
+						buffer_add_info_for_null_value (buf, t, domain);
 				}
 				break;
 			} else {
@@ -5612,6 +5616,11 @@ decode_value (MonoType *t, MonoDomain *domain, gpointer void_addr, gpointer void
 	ERROR_DECL (error);
 	ErrorCode err;
 	int type = decode_byte (buf, &buf, limit);
+
+	if (m_type_is_byref (t)) {
+		*(guint8**)addr = (guint8 *)g_malloc (sizeof (void*)); //when the object will be deleted it will delete this memory allocated here together?
+		addr = *(guint8**)addr;
+	}
 
 	if (t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t))) {
 		MonoType *targ = t->data.generic_class->context.class_inst->type_argv [0];
@@ -6082,7 +6091,7 @@ mono_do_invoke_method (DebuggerTlsData *tls, Buffer *buf, InvokeData *invoke, gu
 			}
 	} else {
 		if (!(m->flags & METHOD_ATTRIBUTE_STATIC) || (m->flags & METHOD_ATTRIBUTE_STATIC && !CHECK_PROTOCOL_VERSION (2, 59))) { //on icordbg I couldn't find an object when invoking a static method maybe I can change this later
-			err = decode_value(m_class_get_byval_arg(m->klass), domain, this_buf, p, &p, end, FALSE);
+			err = decode_value (m_class_get_byval_arg (m->klass), domain, this_buf, p, &p, end, FALSE);
 			if (err != ERR_NONE)
 				return err;
 		}

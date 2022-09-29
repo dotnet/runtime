@@ -65,6 +65,16 @@ namespace System.Reflection
             Array.Copy(rawValues, ValuesAsUnderlyingType, numValues);
 
             HasFlagsAttribute = isFlags;
+
+            ValuesAreSequentialFromZero = true;
+            for (int i = 0; i < values.Length; i++)
+            {
+                if (values[i] != (ulong)i)
+                {
+                    ValuesAreSequentialFromZero = false;
+                    break;
+                }
+            }
         }
 
         internal Type UnderlyingType { get; }
@@ -72,5 +82,6 @@ namespace System.Reflection
         internal ulong[] Values { get; }
         internal Array ValuesAsUnderlyingType { get; }
         internal bool HasFlagsAttribute { get; }
+        internal bool ValuesAreSequentialFromZero { get; }
     }
 }

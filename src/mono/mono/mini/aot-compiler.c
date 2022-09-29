@@ -396,6 +396,10 @@ typedef struct MonoAotCompile {
 	GList *profile_data;
 	GHashTable *profile_methods;
 	GHashTable *blob_hash;
+	/* Maps MonoMethod*->GPtrArray* */
+	GHashTable *gshared_instances;
+	/* Hash of gshared methods where specific instances are preferred */
+	GHashTable *prefer_instances;
 #ifdef EMIT_WIN32_UNWIND_INFO
 	GList *unwind_info_section_cache;
 #endif
@@ -4302,8 +4306,23 @@ mono_dedup_cache_method (MonoAotCompile *acfg, MonoMethod *method)
 	g_hash_table_insert (acfg->dedup_stats, stats_name, GUINT_TO_POINTER (count));
 }
 
+static gboolean
+is_open_method (MonoMethod *method)
+{
+	MonoGenericContext *context;
+
+	if (!method->is_inflated)
+		return FALSE;
+	context = mono_method_get_context (method);
+	if (context->class_inst && context->class_inst->is_open)
+		return TRUE;
+	if (context->method_inst && context->method_inst->is_open)
+		return TRUE;
+	return FALSE;
+}
+
 static void
-add_extra_method_with_depth (MonoAotCompile *acfg, MonoMethod *method, int depth)
+add_extra_method_full (MonoAotCompile *acfg, MonoMethod *method, gboolean prefer_gshared, int depth)
 {
 	ERROR_DECL (error);
 
@@ -4315,7 +4334,7 @@ add_extra_method_with_depth (MonoAotCompile *acfg, MonoMethod *method, int depth
 		return;
 	}
 
-	if (mono_method_is_generic_sharable_full (method, TRUE, TRUE, FALSE)) {
+	if (prefer_gshared && mono_method_is_generic_sharable_full (method, TRUE, TRUE, FALSE)) {
 		MonoMethod *orig = method;
 
 		method = mini_get_shared_method_full (method, SHARE_MODE_NONE, error);
@@ -4325,10 +4344,23 @@ add_extra_method_with_depth (MonoAotCompile *acfg, MonoMethod *method, int depth
 			return;
 		}
 
+		if (g_hash_table_lookup (acfg->prefer_instances, method))
+			/* Compile an instance as well */
+			add_extra_method_full (acfg, orig, FALSE, depth);
+
 		/* Add it to profile_methods so its not skipped later */
 		if (acfg->aot_opts.profile_only && g_hash_table_lookup (acfg->profile_methods, orig))
 			g_hash_table_insert (acfg->profile_methods, method, method);
-	} else if ((acfg->jit_opts & MONO_OPT_GSHAREDVT) && prefer_gsharedvt_method (acfg, method) && mono_method_is_generic_sharable_full (method, FALSE, FALSE, TRUE)) {
+
+		if (!is_open_method (orig) && !mono_method_is_generic_sharable_full (orig, TRUE, FALSE, FALSE)) {
+			GPtrArray *instances = g_hash_table_lookup (acfg->gshared_instances, method);
+			if (!instances) {
+				instances = g_ptr_array_new ();
+				g_hash_table_insert (acfg->gshared_instances, method, instances);
+			}
+			g_ptr_array_add (instances, orig);
+		}
+	} else if ((acfg->jit_opts & MONO_OPT_GSHAREDVT) && prefer_gshared && prefer_gsharedvt_method (acfg, method) && mono_method_is_generic_sharable_full (method, FALSE, FALSE, TRUE)) {
 		/* Use the gsharedvt version */
 		method = mini_get_shared_method_full (method, SHARE_MODE_GSHAREDVT, error);
 		mono_error_assert_ok (error);
@@ -4345,6 +4377,12 @@ add_extra_method_with_depth (MonoAotCompile *acfg, MonoMethod *method, int depth
 		aot_printf (acfg, "%*sAdding method %s.\n", depth, "", mono_method_get_full_name (method));
 
 	add_method_full (acfg, method, TRUE, depth);
+}
+
+static void
+add_extra_method_with_depth (MonoAotCompile *acfg, MonoMethod *method, int depth)
+{
+	add_extra_method_full (acfg, method, TRUE, depth);
 }
 
 static void
@@ -9051,6 +9089,14 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 				case WRAPPER_SUBTYPE_PTR_TO_STRUCTURE:
 				case WRAPPER_SUBTYPE_STRUCTURE_TO_PTR:
 					break;
+				case WRAPPER_SUBTYPE_ICALL_WRAPPER: {
+					MonoJumpInfo *tmp_ji = mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
+					tmp_ji->type = MONO_PATCH_INFO_METHOD;
+					tmp_ji->data.method = method;
+					get_got_offset (acfg, TRUE, tmp_ji);
+					keep = TRUE;
+					break;
+				}
 				default:
 					keep = TRUE;
 					break;
@@ -9207,6 +9253,22 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 			fprintf (acfg->instances_logfile, "%s ### %d\n", mono_method_get_full_name (method), cfg->code_size);
 		else
 			printf ("%s ### %d\n", mono_method_get_full_name (method), cfg->code_size);
+	}
+
+	if (cfg->prefer_instances) {
+		/*
+		 * Compile the original specific instances in addition to the gshared method
+		 * for performance reasons, since gshared methods cannot implement some
+		 * features like static virtual methods efficiently.
+		 */
+		g_hash_table_insert (acfg->prefer_instances, method, method);
+		GPtrArray *instances = g_hash_table_lookup (acfg->gshared_instances, method);
+		if (instances) {
+			for (guint i = 0; i < instances->len; ++i) {
+				MonoMethod *instance = (MonoMethod*)g_ptr_array_index (instances, i);
+				add_extra_method_full (acfg, instance, FALSE, 0);
+			}
+		}
 	}
 
 	/* Adds generic instances referenced by this method */
@@ -13631,6 +13693,8 @@ acfg_create (MonoAssembly *ass, guint32 jit_opts)
 	acfg->gsharedvt_in_signatures = g_hash_table_new ((GHashFunc)mono_signature_hash, (GEqualFunc)mono_metadata_signature_equal);
 	acfg->gsharedvt_out_signatures = g_hash_table_new ((GHashFunc)mono_signature_hash, (GEqualFunc)mono_metadata_signature_equal);
 	acfg->profile_methods = g_hash_table_new (NULL, NULL);
+	acfg->gshared_instances = g_hash_table_new (NULL, NULL);
+	acfg->prefer_instances = g_hash_table_new (NULL, NULL);
 	mono_os_mutex_init_recursive (&acfg->mutex);
 
 	init_got_info (&acfg->got_info);

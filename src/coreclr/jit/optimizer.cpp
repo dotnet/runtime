@@ -4201,11 +4201,17 @@ PhaseStatus Compiler::optUnrollLoops()
             // If there is no iteration (totalIter == 0), we will remove the loop body entirely.
             unrollLimitSz = INT_MAX;
         }
-        else if (!(loopFlags & LPFLG_SIMD_LIMIT))
+        else if (totalIter <= opts.compJitUnrollLoopMaxIterationCount)
         {
-            // Otherwise unroll only if limit is Vector_.Length
-            // (as a heuristic, not for correctness/structural reasons)
-            JITDUMP("Failed to unroll loop " FMT_LP ": constant limit isn't Vector<T>.Length (heuristic)\n", lnum);
+            // We can unroll this
+        }
+        else if ((loopFlags & LPFLG_SIMD_LIMIT) != 0)
+        {
+            // We can unroll this
+        }
+        else
+        {
+            JITDUMP("Failed to unroll loop " FMT_LP ": insufficiently simple loop (heuristic)\n", lnum);
             continue;
         }
 
@@ -9419,6 +9425,9 @@ void OptBoolsDsc::optOptimizeBoolsUpdateTrees()
     {
         m_comp->fgUpdateLoopsAfterCompacting(m_b1, m_b3);
     }
+
+    // Update IL range of first block
+    m_b1->bbCodeOffsEnd = optReturnBlock ? m_b3->bbCodeOffsEnd : m_b2->bbCodeOffsEnd;
 }
 
 //-----------------------------------------------------------------------------
