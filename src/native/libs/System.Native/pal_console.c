@@ -44,8 +44,7 @@ int32_t SystemNative_SetWindowSize(WinSize* windowSize)
     assert(windowSize != NULL);
 
 #if HAVE_IOCTL && HAVE_TIOCSWINSZ
-    int error = ioctl(STDOUT_FILENO, TIOCSWINSZ, windowSize);
-    return error;
+    return ioctl(STDOUT_FILENO, TIOCSWINSZ, windowSize);
 #else
     errno = ENOTSUP;
     return -1;

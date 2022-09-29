@@ -346,10 +346,7 @@ namespace System
                 GetWindowSize(out int width, out _);
                 return width;
             }
-            set
-            {
-                 SetWindowSize(value, WindowHeight);
-            }
+            set => SetWindowSize(value, WindowHeight);
         }
 
         public static int WindowHeight
@@ -359,10 +356,7 @@ namespace System
                 GetWindowSize(out _, out int height);
                 return height;
             }
-            set
-            {
-                SetWindowSize(WindowWidth, value);
-            }
+            set => SetWindowSize(WindowWidth, value);
         }
 
         private static void GetWindowSize(out int width, out int height)
