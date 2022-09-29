@@ -595,7 +595,7 @@ static unsigned int         gc_count_during_log;
  // In ms. This is how often we print out stats.
 static const unsigned int   log_interval = 5000;
 // Time (in ms) when we start a new log interval.
-static unsigned int         log_start_tick;
+static uint64_t             log_start_tick;
 static unsigned int         gc_lock_contended;
 static int64_t              log_start_hires;
 // Cycles accumulated in SuspendEE during log_interval.
@@ -629,7 +629,7 @@ process_sync_log_stats()
 {
 #ifdef SYNCHRONIZATION_STATS
 
-    unsigned int log_elapsed = GCToOSInterface::GetLowPrecisionTimeStamp() - log_start_tick;
+    uint64_t log_elapsed = GCToOSInterface::GetLowPrecisionTimeStamp() - log_start_tick;
 
     if (log_elapsed > log_interval)
     {
@@ -766,7 +766,7 @@ class t_join
     // remember join id and last thread to arrive so restart can use these
     int thd;
     // we want to print statistics every 10 seconds - this is to remember the start of the 10 sec interval
-    uint32_t start_tick;
+    uint64_t start_tick;
     // counters for joins, in 1000's of clock cycles
     uint64_t elapsed_total[gc_join_max], wake_total[gc_join_max], seq_loss_total[gc_join_max], par_loss_total[gc_join_max], in_join_total[gc_join_max];
 #endif //JOIN_STATS
@@ -2485,7 +2485,7 @@ uint64_t    gc_heap::total_alloc_bytes_uoh = 0;
 
 int         gc_heap::gc_policy = 0;
 
-size_t      gc_heap::allocation_running_time;
+uint64_t    gc_heap::allocation_running_time;
 
 size_t      gc_heap::allocation_running_amount;
 
@@ -3172,7 +3172,8 @@ gc_heap::dt_high_frag_p (gc_tuning_point tp,
 #ifndef MULTIPLE_HEAPS
                 if (gen_number == max_generation)
                 {
-                    float frag_ratio = (float)(dd_fragmentation (dynamic_data_of (max_generation))) / (float)generation_size (max_generation);
+                    size_t maxgen_size = generation_size (max_generation);
+                    float frag_ratio = (maxgen_size ? ((float)dd_fragmentation (dynamic_data_of (max_generation)) / (float)maxgen_size) : 0.0f);
                     if (frag_ratio > 0.65)
                     {
                         dprintf (GTC_LOG, ("g2 FR: %d%%", (int)(frag_ratio*100)));
@@ -3184,7 +3185,8 @@ gc_heap::dt_high_frag_p (gc_tuning_point tp,
                 ret = (fr > dd_fragmentation_limit(dd));
                 if (ret)
                 {
-                    fragmentation_burden = (float)fr / generation_size (gen_number);
+                    size_t gen_size = generation_size (gen_number);
+                    fragmentation_burden = (gen_size ? ((float)fr / (float)gen_size) : 0.0f);
                     ret = (fragmentation_burden > dd_v_fragmentation_burden_limit (dd));
                 }
                 dprintf (GTC_LOG, ("h%d: gen%d, frag is %Id, alloc effi: %d%%, unusable frag is %Id, ratio is %d",
@@ -6757,7 +6759,7 @@ void gc_heap::gc_thread_function ()
             uint32_t wait_result = gc_heap::ee_suspend_event.Wait(gradual_decommit_in_progress_p ? DECOMMIT_TIME_STEP_MILLISECONDS : INFINITE, FALSE);
             if (wait_result == WAIT_TIMEOUT)
             {
-                gradual_decommit_in_progress_p = decommit_step ();
+                gradual_decommit_in_progress_p = decommit_step (DECOMMIT_TIME_STEP_MILLISECONDS);
                 continue;
             }
 
@@ -6850,7 +6852,7 @@ void gc_heap::gc_thread_function ()
             // check if we should do some decommitting
             if (gradual_decommit_in_progress_p)
             {
-                gradual_decommit_in_progress_p = decommit_step ();
+                gradual_decommit_in_progress_p = decommit_step (DECOMMIT_TIME_STEP_MILLISECONDS);
             }
         }
         else
@@ -6933,7 +6935,7 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
         if (!exceeded_p)
         {
 #if defined(_DEBUG) && defined(MULTIPLE_HEAPS)
-            if (bucket < total_oh_count)
+            if ((h_number != -1) && (bucket < total_oh_count))
             {
                 g_heaps[h_number]->committed_by_oh_per_heap[bucket] += size;
             }
@@ -6967,7 +6969,7 @@ bool gc_heap::virtual_commit (void* address, size_t size, int bucket, int h_numb
         check_commit_cs.Enter();
         committed_by_oh[bucket] -= size;
 #if defined(_DEBUG) && defined(MULTIPLE_HEAPS)
-        if (bucket < total_oh_count)
+        if ((h_number != -1) && (bucket < total_oh_count))
         {
             assert (g_heaps[h_number]->committed_by_oh_per_heap[bucket] >= size);
             g_heaps[h_number]->committed_by_oh_per_heap[bucket] -= size;
@@ -7003,7 +7005,7 @@ bool gc_heap::virtual_decommit (void* address, size_t size, int bucket, int h_nu
         assert (committed_by_oh[bucket] >= size);
         committed_by_oh[bucket] -= size;
 #if defined(_DEBUG) && defined(MULTIPLE_HEAPS)
-        if (bucket < total_oh_count)
+        if ((h_number != -1) && (bucket < total_oh_count))
         {
             assert (g_heaps[h_number]->committed_by_oh_per_heap[bucket] >= size);
             g_heaps[h_number]->committed_by_oh_per_heap[bucket] -= size;
@@ -7598,7 +7600,7 @@ bool gc_heap::new_allocation_allowed (int gen_number)
         if ((allocation_running_amount - dd_new_allocation (dd0)) >
             dd_min_size (dd0))
         {
-            uint32_t ctime = GCToOSInterface::GetLowPrecisionTimeStamp();
+            uint64_t ctime = GCToOSInterface::GetLowPrecisionTimeStamp();
             if ((ctime - allocation_running_time) > 1000)
             {
                 dprintf (2, (">1s since last gen0 gc"));
@@ -12598,7 +12600,7 @@ void gc_heap::distribute_free_regions()
                 global_regions_to_decommit[kind].transfer_regions (&hp->free_regions[kind]);
             }
         }
-        while (decommit_step())
+        while (decommit_step(DECOMMIT_TIME_STEP_MILLISECONDS))
         {
         }
 #ifdef MULTIPLE_HEAPS
@@ -12850,8 +12852,29 @@ void gc_heap::distribute_free_regions()
         }
     }
 #else //MULTIPLE_HEAPS
-    while (decommit_step())
+    // we want to limit the amount of decommit we do per time to indirectly
+    // limit the amount of time spent in recommit and page faults
+    // we use the elapsed time since the last GC to arrive at the desired
+    // decommit size
+    // we limit the elapsed time to 10 seconds to avoid spending too much time decommitting
+    // if less than DECOMMIT_TIME_STEP_MILLISECONDS elapsed, we don't decommit -
+    // we don't want to decommit fractions of regions here
+    dynamic_data* dd0 = dynamic_data_of (0);
+    size_t ephemeral_elapsed = (size_t)((dd_time_clock (dd0) - gc_last_ephemeral_decommit_time) / 1000);
+    if (ephemeral_elapsed >= DECOMMIT_TIME_STEP_MILLISECONDS)
     {
+        gc_last_ephemeral_decommit_time = dd_time_clock (dd0);
+        size_t decommit_step_milliseconds = min (ephemeral_elapsed, (10*1000));
+
+        decommit_step (decommit_step_milliseconds);
+    }
+    // transfer any remaining regions on the decommit list back to the free list
+    for (int kind = basic_free_region; kind < count_free_region_kinds; kind++)
+    {
+        if (global_regions_to_decommit[kind].get_num_free_regions() != 0)
+        {
+            free_regions[kind].transfer_regions (&global_regions_to_decommit[kind]);
+        }
     }
 #endif //MULTIPLE_HEAPS
 #endif //USE_REGIONS
@@ -13484,10 +13507,20 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
     if (!reserve_initial_memory (soh_segment_size, loh_segment_size, poh_segment_size, number_of_heaps,
                                  use_large_pages_p, separated_poh_p, heap_no_to_numa_node))
         return E_OUTOFMEMORY;
-    if (separated_poh_p)
+    if (use_large_pages_p)
     {
-        heap_hard_limit_oh[poh] = min_segment_size_hard_limit * number_of_heaps;
-        heap_hard_limit += heap_hard_limit_oh[poh];
+        if (heap_hard_limit_oh[soh])
+        {
+            heap_hard_limit_oh[soh] = soh_segment_size * number_of_heaps;
+            heap_hard_limit_oh[loh] = loh_segment_size * number_of_heaps;
+            heap_hard_limit_oh[poh] = poh_segment_size * number_of_heaps;
+            heap_hard_limit = heap_hard_limit_oh[soh] + heap_hard_limit_oh[loh] + heap_hard_limit_oh[poh];
+        }
+        else
+        {
+            assert (heap_hard_limit);
+            heap_hard_limit = (soh_segment_size + loh_segment_size + poh_segment_size) * number_of_heaps;
+        }
     }
 #endif //USE_REGIONS
 
@@ -13666,12 +13699,6 @@ gc_heap::init_semi_shared()
     full_gc_approach_event_set = false;
 
     memset (full_gc_counts, 0, sizeof (full_gc_counts));
-
-    last_ephemeral_gc_info = {};
-    last_full_blocking_gc_info = {};
-#ifdef BACKGROUND_GC
-    memset (&last_bgc_info, 0, sizeof (last_bgc_info));
-#endif //BACKGROUND_GC
 
     should_expand_in_full_gc = FALSE;
 
@@ -22745,7 +22772,7 @@ void gc_heap::garbage_collect (int n)
         gc1();
     }
 #ifndef MULTIPLE_HEAPS
-    allocation_running_time = (size_t)GCToOSInterface::GetLowPrecisionTimeStamp();
+    allocation_running_time = GCToOSInterface::GetLowPrecisionTimeStamp();
     allocation_running_amount = dd_new_allocation (dynamic_data_of (0));
     fgn_last_alloc = dd_new_allocation (dynamic_data_of (0));
 #endif //MULTIPLE_HEAPS
@@ -24243,7 +24270,7 @@ gc_heap::mark_steal()
 
 #ifdef SNOOP_STATS
         dprintf (SNOOP_LOG, ("(GC%d)heap%d: start snooping %d", settings.gc_index, heap_number, (heap_number+1)%n_heaps));
-        uint32_t begin_tick = GCToOSInterface::GetLowPrecisionTimeStamp();
+        uint64_t begin_tick = GCToOSInterface::GetLowPrecisionTimeStamp();
 #endif //SNOOP_STATS
 
     int idle_loop_count = 0;
@@ -24346,7 +24373,7 @@ gc_heap::mark_steal()
                     dprintf (SNOOP_LOG, ("heap%d: marking %Ix from %d [%d] tl:%dms",
                             heap_number, (size_t)o, (heap_number+1)%n_heaps, level,
                             (GCToOSInterface::GetLowPrecisionTimeStamp()-begin_tick)));
-                    uint32_t start_tick = GCToOSInterface::GetLowPrecisionTimeStamp();
+                    uint64_t start_tick = GCToOSInterface::GetLowPrecisionTimeStamp();
 #endif //SNOOP_STATS
 
                     mark_object_simple1 (o, start, heap_number);
@@ -28765,7 +28792,7 @@ uint8_t* gc_heap::find_next_marked (uint8_t* x, uint8_t* end,
 #ifdef FEATURE_EVENT_TRACE
 void gc_heap::init_bucket_info()
 {
-    *bucket_info = {};
+    memset (bucket_info, 0, sizeof (bucket_info));
 }
 
 void gc_heap::add_plug_in_condemned_info (generation* gen, size_t plug_size)
@@ -30488,7 +30515,10 @@ void gc_heap::plan_phase (int condemned_gen_number)
                             heap_segment* region = generation_start_segment (hp->generation_of (i));
                             while (region)
                             {
-                                committed += heap_segment_committed (region) - get_region_start (region);
+                                if (!heap_segment_read_only_p (region))
+                                {
+                                    committed += heap_segment_committed (region) - get_region_start (region);
+                                }
                                 region = heap_segment_next (region);
                             }
 
@@ -40566,7 +40596,7 @@ void gc_heap::decommit_ephemeral_segment_pages()
             (heap_segment_committed (tail_region) - heap_segment_mem (tail_region))/1024,
             (decommit_target                      - heap_segment_mem (tail_region))/1024));
     }
-#else //MULTIPLE_HEAPS && USE_REGIONS
+#elif !defined(USE_REGIONS)
 
     dynamic_data* dd0 = dynamic_data_of (0);
 
@@ -40633,12 +40663,12 @@ void gc_heap::decommit_ephemeral_segment_pages()
 }
 
 // return true if we actually decommitted anything
-bool gc_heap::decommit_step ()
+bool gc_heap::decommit_step (uint64_t step_milliseconds)
 {
     size_t decommit_size = 0;
 
 #ifdef USE_REGIONS
-    const size_t max_decommit_step_size = DECOMMIT_SIZE_PER_MILLISECOND * DECOMMIT_TIME_STEP_MILLISECONDS;
+    const size_t max_decommit_step_size = DECOMMIT_SIZE_PER_MILLISECOND * step_milliseconds;
     for (int kind = basic_free_region; kind < count_free_region_kinds; kind++)
     {
         dprintf (REGIONS_LOG, ("decommit_step %d, regions_to_decommit = %Id",
@@ -43917,7 +43947,10 @@ void gc_heap::verify_regions (int gen_number, bool can_verify_gen_num, bool can_
     {
         if (p_total_committed)
         {
-            *p_total_committed += (heap_segment_committed (seg_in_gen) - get_region_start (seg_in_gen));
+            if (!heap_segment_read_only_p (seg_in_gen))
+            {
+                *p_total_committed += (heap_segment_committed (seg_in_gen) - get_region_start (seg_in_gen));
+            }
         }
         if (can_verify_gen_num)
         {
@@ -44796,10 +44829,6 @@ HRESULT GCHeap::Initialize()
 
 #endif //HOST_64BIT
     GCConfig::SetGCLargePages(gc_heap::use_large_pages_p);
-    GCConfig::SetGCHeapHardLimit(static_cast<int64_t>(gc_heap::heap_hard_limit));
-    GCConfig::SetGCHeapHardLimitSOH(static_cast<int64_t>(gc_heap::heap_hard_limit_oh[soh]));
-    GCConfig::SetGCHeapHardLimitLOH(static_cast<int64_t>(gc_heap::heap_hard_limit_oh[loh]));
-    GCConfig::SetGCHeapHardLimitPOH(static_cast<int64_t>(gc_heap::heap_hard_limit_oh[poh]));
 
     uint32_t nhp = 1;
     uint32_t nhp_from_config = 0;
@@ -44953,6 +44982,11 @@ HRESULT GCHeap::Initialize()
 #else
     hr = gc_heap::initialize_gc (seg_size, large_seg_size, pin_seg_size);
 #endif //MULTIPLE_HEAPS
+
+    GCConfig::SetGCHeapHardLimit(static_cast<int64_t>(gc_heap::heap_hard_limit));
+    GCConfig::SetGCHeapHardLimitSOH(static_cast<int64_t>(gc_heap::heap_hard_limit_oh[soh]));
+    GCConfig::SetGCHeapHardLimitLOH(static_cast<int64_t>(gc_heap::heap_hard_limit_oh[loh]));
+    GCConfig::SetGCHeapHardLimitPOH(static_cast<int64_t>(gc_heap::heap_hard_limit_oh[poh]));
 
     if (hr != S_OK)
         return hr;

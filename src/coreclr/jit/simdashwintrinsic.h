@@ -68,7 +68,8 @@ struct SimdAsHWIntrinsicInfo
 
     static const SimdAsHWIntrinsicInfo& lookup(NamedIntrinsic id);
 
-    static NamedIntrinsic lookupId(CORINFO_SIG_INFO* sig,
+    static NamedIntrinsic lookupId(Compiler*         comp,
+                                   CORINFO_SIG_INFO* sig,
                                    const char*       className,
                                    const char*       methodName,
                                    const char*       enclosingClassName,

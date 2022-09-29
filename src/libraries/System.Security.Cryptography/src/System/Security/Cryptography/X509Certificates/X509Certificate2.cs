@@ -1433,16 +1433,18 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     if (label.SequenceEqual(eligibleLabel))
                     {
-                        TAlg key = factory();
-                        key.ImportFromPem(contents[fields.Location]);
+                        using (TAlg key = factory())
+                        {
+                            key.ImportFromPem(contents[fields.Location]);
 
-                        try
-                        {
-                            return import(key);
-                        }
-                        catch (ArgumentException ae)
-                        {
-                            throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ae);
+                            try
+                            {
+                                return import(key);
+                            }
+                            catch (ArgumentException ae)
+                            {
+                                throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey, ae);
+                            }
                         }
                     }
                 }

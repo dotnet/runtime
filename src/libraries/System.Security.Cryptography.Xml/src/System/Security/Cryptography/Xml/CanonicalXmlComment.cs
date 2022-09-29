@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.Xml
         private bool _isInNodeSet;
         private readonly bool _includeComments;
 
-        public CanonicalXmlComment(string comment, XmlDocument doc, bool defaultNodeSetInclusionState, bool includeComments)
+        public CanonicalXmlComment(string? comment, XmlDocument doc, bool defaultNodeSetInclusionState, bool includeComments)
             : base(comment, doc)
         {
             _isInNodeSet = defaultNodeSetInclusionState;
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.Xml
                 hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
             rgbData = utf8.GetBytes("<!--");
             hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
-            rgbData = utf8.GetBytes(Value);
+            rgbData = utf8.GetBytes(Value!);
             hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
             rgbData = utf8.GetBytes("-->");
             hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);

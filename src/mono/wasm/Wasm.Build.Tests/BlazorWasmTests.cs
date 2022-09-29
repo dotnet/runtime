@@ -80,6 +80,7 @@ namespace Wasm.Build.Tests
             { "Release", /*aot*/ false, /*expectError*/ false }
         };
 
+        // FIXME: test for WasmBuildNative=true?
         [Theory]
         [MemberData(nameof(Net50TestData))]
         public void Net50Projects_AOT(string config, bool aot, bool expectError)

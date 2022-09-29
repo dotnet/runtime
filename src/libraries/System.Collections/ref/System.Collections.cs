@@ -42,15 +42,6 @@ namespace System.Collections
 }
 namespace System.Collections.Generic
 {
-    public static partial class CollectionExtensions
-    {
-        public static TValue? GetValueOrDefault<TKey, TValue>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dictionary, TKey key) { throw null; }
-        public static TValue GetValueOrDefault<TKey, TValue>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue) { throw null; }
-        public static bool Remove<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
-        public static bool TryAdd<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, TValue value) { throw null; }
-        public static System.Collections.ObjectModel.ReadOnlyCollection<T> AsReadOnly<T>(this IList<T> list) { throw null; }
-        public static System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue> AsReadOnly<TKey, TValue>(this IDictionary<TKey, TValue> dictionary) where TKey : notnull { throw null; }
-    }
     public sealed partial class LinkedListNode<T>
     {
         public LinkedListNode(T value) { }
@@ -411,6 +402,18 @@ namespace System.Collections.Generic
 #endif // !BUILDING_CORELIB_REFERENCE
 namespace System.Collections.Generic
 {
+    public static partial class CollectionExtensions
+    {
+        public static void AddRange<T>(this System.Collections.Generic.List<T> list, System.ReadOnlySpan<T> source) { }
+        public static void CopyTo<T>(this System.Collections.Generic.List<T> list, System.Span<T> destination) { }
+        public static TValue? GetValueOrDefault<TKey, TValue>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dictionary, TKey key) { throw null; }
+        public static TValue GetValueOrDefault<TKey, TValue>(this System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue) { throw null; }
+        public static void InsertRange<T>(this System.Collections.Generic.List<T> list, int index, System.ReadOnlySpan<T> source) { }
+        public static bool Remove<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
+        public static bool TryAdd<TKey, TValue>(this System.Collections.Generic.IDictionary<TKey, TValue> dictionary, TKey key, TValue value) { throw null; }
+        public static System.Collections.ObjectModel.ReadOnlyCollection<T> AsReadOnly<T>(this IList<T> list) { throw null; }
+        public static System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue> AsReadOnly<TKey, TValue>(this IDictionary<TKey, TValue> dictionary) where TKey : notnull { throw null; }
+    }
     public abstract partial class Comparer<T> : System.Collections.Generic.IComparer<T>, System.Collections.IComparer
     {
         protected Comparer() { }
@@ -545,6 +548,7 @@ namespace System.Collections.Generic
     public abstract partial class EqualityComparer<T> : System.Collections.Generic.IEqualityComparer<T>, System.Collections.IEqualityComparer
     {
         protected EqualityComparer() { }
+        public static System.Collections.Generic.EqualityComparer<T> Create(System.Func<T?, T?, bool> equals, System.Func<T, int>? getHashCode = null) { throw null; }
         public static System.Collections.Generic.EqualityComparer<T> Default { get { throw null; } }
         public abstract bool Equals(T? x, T? y);
         public abstract int GetHashCode([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T obj);
@@ -657,6 +661,7 @@ namespace System.Collections.Generic
         public void RemoveRange(int index, int count) { }
         public void Reverse() { }
         public void Reverse(int index, int count) { }
+        public System.Collections.Generic.List<T> Slice(int start, int length) { throw null; }
         public void Sort() { }
         public void Sort(System.Collections.Generic.IComparer<T>? comparer) { }
         public void Sort(System.Comparison<T> comparison) { }

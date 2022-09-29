@@ -12,12 +12,6 @@ namespace System.Linq.Tests
 {
     public class ToDictionaryTests : EnumerableTests
     {
-        private class CustomComparer<T> : IEqualityComparer<T>
-        {
-            public bool Equals(T x, T y) { return EqualityComparer<T>.Default.Equals(x, y); }
-            public int GetHashCode(T obj) { return EqualityComparer<T>.Default.GetHashCode(obj); }
-        }
-
         [Fact]
         public void ToDictionary_AlwaysCreateACopy()
         {
@@ -89,7 +83,7 @@ namespace System.Linq.Tests
         [Fact]
         public void ToDictionary_PassCustomComparer()
         {
-            CustomComparer<int> comparer = new CustomComparer<int>();
+            EqualityComparer<int> comparer = EqualityComparer<int>.Create((x, y) => x == y, x => x);
             TestCollection<int> collection = new TestCollection<int>(new int[] { 1, 2, 3, 4, 5, 6 });
 
             Dictionary<int, int> result1 = collection.ToDictionary(key => key, comparer);
@@ -102,13 +96,12 @@ namespace System.Linq.Tests
         [Fact]
         public void ToDictionary_UseDefaultComparerOnNull()
         {
-            CustomComparer<int> comparer = null;
             TestCollection<int> collection = new TestCollection<int>(new int[] { 1, 2, 3, 4, 5, 6 });
 
-            Dictionary<int, int> result1 = collection.ToDictionary(key => key, comparer);
+            Dictionary<int, int> result1 = collection.ToDictionary(key => key, comparer: null);
             Assert.Same(EqualityComparer<int>.Default, result1.Comparer);
 
-            Dictionary<int, int> result2 = collection.ToDictionary(key => key, val => val, comparer);
+            Dictionary<int, int> result2 = collection.ToDictionary(key => key, val => val, comparer: null);
             Assert.Same(EqualityComparer<int>.Default, result2.Comparer);
         }
 
