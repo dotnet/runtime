@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem;
 using Internal.JitInterface;
+using System.Reflection.Metadata;
 
 namespace ILCompiler
 {
@@ -93,7 +94,7 @@ namespace ILCompiler
 
         private void RootMethods(MetadataType type, string reason, IRootingServiceProvider rootProvider, bool anyInternalsVisibleTo)
         {
-            MethodImplRecord[] methodImplRecords = ((EcmaType)type.GetTypeDefinition()).AllMethodImplsForType;
+            MethodImplRecord[] methodImplRecords = GetAllMethodImplRecordsForType((EcmaType)type.GetTypeDefinition());
             foreach (MethodDesc method in type.GetAllMethods())
             {
                 // Skip methods with no IL
@@ -111,11 +112,16 @@ namespace ILCompiler
                 {
                     // If a method itself is not visible outside the assembly, but it implements a method that is,
                     // we want to root it as it could be called from outside the assembly.
+                    // Since instance method overriding does not always require a MethodImpl record (it can be omitted when both the name and signature match)
+                    // we will also root any methods that are virtual and do not have any MethodImpl records as it is difficult to determine all methods a method
+                    // overrides or implements and we don't need to be perfect here.
+                    bool anyMethodImplRecordsForMethod = false;
                     bool implementsOrOverridesVisibleMethod = false;
                     foreach (var record in methodImplRecords)
                     {
                         if (record.Body == ecma)
                         {
+                            anyMethodImplRecordsForMethod = true;
                             implementsOrOverridesVisibleMethod = record.Decl.GetTypicalMethodDefinition() is EcmaMethod decl
                                 && decl.GetEffectiveVisibility().IsExposedOutsideOfThisAssembly(anyInternalsVisibleTo);
                             if (implementsOrOverridesVisibleMethod)
@@ -124,7 +130,11 @@ namespace ILCompiler
                             }
                         }
                     }
-                    if (!implementsOrOverridesVisibleMethod)
+                    if (anyMethodImplRecordsForMethod && !implementsOrOverridesVisibleMethod)
+                    {
+                        continue;
+                    }
+                    if (!anyMethodImplRecordsForMethod && !method.IsVirtual)
                     {
                         continue;
                     }
@@ -154,6 +164,24 @@ namespace ILCompiler
                     continue;
                 }
             }
+        }
+
+        private MethodImplRecord[] GetAllMethodImplRecordsForType(EcmaType type)
+        {
+            ArrayBuilder<MethodImplRecord> records = default;
+            MetadataReader metadataReader = type.MetadataReader;
+            TypeDefinition definition = metadataReader.GetTypeDefinition(type.Handle);
+
+            foreach (var methodImplHandle in definition.GetMethodImplementations())
+            {
+                MethodImplementation methodImpl = metadataReader.GetMethodImplementation(methodImplHandle);
+
+                records.Add(new MethodImplRecord(
+                    _module.GetMethod(methodImpl.MethodDeclaration),
+                   _module.GetMethod(methodImpl.MethodBody)
+                ));
+            }
+            return records.ToArray();
         }
 
         /// <summary>
