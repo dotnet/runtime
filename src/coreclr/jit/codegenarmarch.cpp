@@ -1246,9 +1246,9 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
                 allocatedValueReg = treeNode->ExtractTempReg();
             }
 
-            // Pick a register to store intermediate values in for to-stack
+            // Pick a register to store intermediate values in for the to-stack
             // copy. It must not conflict with addrReg. We try to prefer an
-            // argument register since those acn always use thumb encoding.
+            // argument register since those can always use thumb encoding.
             valueReg = treeNode->GetRegNumByIdx(0);
             if (valueReg == addrReg)
             {
