@@ -11,7 +11,4 @@
 
     <CLRTestEnvironmentVariable Include="COMPlus_JitStressModeNames" Value="STRESS_RANDOM_INLINE STRESS_DBL_ALN" />
   </ItemGroup>
-  <PropertyGroup>
-    <!-- Set JitStreess variables, Linux requires them to be properly capitalized. -->
-  </PropertyGroup>
 </Project>

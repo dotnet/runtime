@@ -11,7 +11,4 @@
 
     <CLRTestEnvironmentVariable Include="COMPlus_JitStressModeNames" Value="STRESS_NULL_OBJECT_CHECK, STRESS_MAKE_CSE" />
   </ItemGroup>
-  <PropertyGroup>
-    <!-- Set JitStreess variables, Linux requires them to be properly capitalized. -->
-  </PropertyGroup>
 </Project>
