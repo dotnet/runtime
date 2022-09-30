@@ -439,8 +439,8 @@ $(CLRTestBashPostCommands)
     </PropertyGroup>
     <PropertyGroup>
       <BashEnvironmentVariables>
-@(CLRTestBashEnvironmentVariable -> export %(Identity)=%(Value)', '%0a')
-@(CLRTestEnvironmentVariable -> export %(Identity)=%(Value)', '%0a')
+@(CLRTestBashEnvironmentVariable -> 'export %(Identity)=%(Value)', '%0a')
+@(CLRTestEnvironmentVariable -> 'export %(Identity)=%(Value)', '%0a')
       </BashEnvironmentVariables>
     </PropertyGroup>
 
