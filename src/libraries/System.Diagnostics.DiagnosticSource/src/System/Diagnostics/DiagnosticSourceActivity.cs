@@ -35,7 +35,7 @@ namespace System.Diagnostics
 
         /// <inheritdoc cref="StartActivity"/>
         /// <typeparam name="T">The type of the value being passed as a payload for the event.</typeparam>
-        [RequiresUnreferencedCode(WriteRequiresUnreferencedCode)]
+        [RequiresUnreferencedCode(WriteOfTRequiresUnreferencedCode)]
         public Activity StartActivity<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(Activity activity, T args)
             => StartActivity(activity, (object?)args);
 
@@ -62,7 +62,7 @@ namespace System.Diagnostics
 
         /// <inheritdoc cref="StartActivity"/>
         /// <typeparam name="T">The type of the value being passed as a payload for the event.</typeparam>
-        [RequiresUnreferencedCode(WriteRequiresUnreferencedCode)]
+        [RequiresUnreferencedCode(WriteOfTRequiresUnreferencedCode)]
         public void StopActivity<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(Activity activity, T args)
             => StopActivity(activity, (object?)args);
 

@@ -17,6 +17,7 @@ namespace System.Diagnostics
     public abstract partial class DiagnosticSource
     {
         internal const string WriteRequiresUnreferencedCode = "The type of object being written to DiagnosticSource cannot be discovered statically.";
+        internal const string WriteOfTRequiresUnreferencedCode = "Only the properties of the T type will be preserved. Properties of referenced types and properties of derived types may be trimmed.";
 
         /// <summary>
         /// Write is a generic way of logging complex payloads.  Each notification
@@ -39,7 +40,7 @@ namespace System.Diagnostics
 
         /// <inheritdoc cref="Write"/>
         /// <typeparam name="T">The type of the value being passed as a payload for the event.</typeparam>
-        [RequiresUnreferencedCode(WriteRequiresUnreferencedCode)]
+        [RequiresUnreferencedCode(WriteOfTRequiresUnreferencedCode)]
         public void Write<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(string name, T value) =>
             Write(name, (object?)value);
 
