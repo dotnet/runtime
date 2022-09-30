@@ -244,17 +244,12 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
             return false;
         }
 
-        ssize_t shiftAmount = shiftAmountNode->AsIntCon()->IconValue();
+        const ssize_t shiftAmount = shiftAmountNode->AsIntCon()->IconValue();
+        const ssize_t maxShift    = (static_cast<ssize_t>(genTypeSize(parentNode)) * BITS_IN_BYTE) - 1;
 
-        if ((shiftAmount < 0x01) || (shiftAmount > 0x3F))
+        if ((shiftAmount < 0x01) || (shiftAmount > maxShift))
         {
-            // Cannot contain if the shift amount is less than 1 or greater than 63
-            return false;
-        }
-
-        if (!varTypeIsLong(childNode) && (shiftAmount > 0x1F))
-        {
-            // Cannot contain if the shift amount is greater than 31
+            // Cannot contain if the shift amount is less than 1 or greater than maxShift
             return false;
         }
 
@@ -275,7 +270,7 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
             return false;
         }
 
-        if (parentNode->OperIs(GT_CMP, GT_AND, GT_OR, GT_XOR))
+        if (parentNode->OperIs(GT_CMP, GT_OR, GT_XOR))
         {
             if (IsSafeToContainMem(parentNode, childNode))
             {
@@ -285,6 +280,64 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
         }
 
         // TODO: Handle CMN, NEG/NEGS, BIC/BICS, EON, MVN, ORN, TST
+        return false;
+    }
+
+    if (childNode->OperIs(GT_CAST))
+    {
+        // Find "a op cast(b)"
+        GenTree* castOp = childNode->AsCast()->CastOp();
+
+        // We want to prefer the combined op here over containment of the cast op
+        castOp->ClearContained();
+
+        bool isSupportedCast = false;
+
+        if (varTypeIsSmall(childNode->CastToType()))
+        {
+            // The JIT doesn't track upcasts from small types, instead most types
+            // are tracked as TYP_INT and then we get explicit downcasts to the
+            // desired small type instead.
+
+            assert(!varTypeIsFloating(castOp));
+            isSupportedCast = true;
+        }
+        else if (childNode->TypeIs(TYP_LONG) && genActualTypeIsInt(castOp))
+        {
+            // We can handle "INT -> LONG", "INT -> ULONG", "UINT -> LONG", and "UINT -> ULONG"
+            isSupportedCast = true;
+        }
+
+        if (!isSupportedCast)
+        {
+            return false;
+        }
+
+        if (parentNode->OperIs(GT_ADD, GT_SUB))
+        {
+            // These operations can still report flags
+
+            if (IsSafeToContainMem(parentNode, childNode))
+            {
+                return true;
+            }
+        }
+
+        if ((parentNode->gtFlags & GTF_SET_FLAGS) != 0)
+        {
+            // Cannot contain if the parent operation needs to set flags
+            return false;
+        }
+
+        if (parentNode->OperIs(GT_CMP))
+        {
+            if (IsSafeToContainMem(parentNode, childNode))
+            {
+                return true;
+            }
+        }
+
+        // TODO: Handle CMN
         return false;
     }
 
@@ -1966,44 +2019,6 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
             MakeSrcContained(node, op1);
             std::swap(node->gtOp1, node->gtOp2);
             return;
-        }
-    }
-
-    // Change ADD TO ADDEX for ADD(X, CAST(Y)) or ADD(CAST(X), Y) where CAST is int->long
-    // or for ADD(LSH(X, CNS), X) or ADD(X, LSH(X, CNS)) where CNS is in the (0..typeWidth) range
-    if (node->OperIs(GT_ADD) && !op1->isContained() && !op2->isContained() && varTypeIsIntegral(node) &&
-        !node->gtOverflow())
-    {
-        assert(!node->isContained());
-
-        if (op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST))
-        {
-            GenTree* cast = op1->OperIs(GT_CAST) ? op1 : op2;
-            if (cast->gtGetOp1()->TypeIs(TYP_INT) && cast->TypeIs(TYP_LONG) && !cast->gtOverflow())
-            {
-                node->ChangeOper(GT_ADDEX);
-                cast->AsCast()->CastOp()->ClearContained(); // Uncontain any memory operands.
-                MakeSrcContained(node, cast);
-            }
-        }
-        else if (op1->OperIs(GT_LSH) || op2->OperIs(GT_LSH))
-        {
-            GenTree* lsh     = op1->OperIs(GT_LSH) ? op1 : op2;
-            GenTree* shiftBy = lsh->gtGetOp2();
-
-            if (shiftBy->IsCnsIntOrI())
-            {
-                const ssize_t shiftByCns = shiftBy->AsIntCon()->IconValue();
-                const ssize_t maxShift   = (ssize_t)genTypeSize(node) * BITS_IN_BYTE;
-
-                if ((shiftByCns > 0) && (shiftByCns < maxShift))
-                {
-                    // shiftBy is small so it has to be contained at this point.
-                    assert(shiftBy->isContained());
-                    node->ChangeOper(GT_ADDEX);
-                    MakeSrcContained(node, lsh);
-                }
-            }
         }
     }
 #endif
