@@ -39,6 +39,11 @@ namespace ILCompiler
         {
             return (typeAttributes & MethodAttributes.MemberAccessMask) switch
             {
+                // PrivateScope == Compiler-Controlled in the ECMA spec. A member with this accessibility
+                // is only accessible through a MemberDef, not a MemberRef.
+                // As a result, it's only accessible within the current assembly, which is effectively the same rules as
+                // Family for our case.
+                MethodAttributes.PrivateScope => EffectiveVisibility.Assembly,
                 MethodAttributes.Public => EffectiveVisibility.Public,
                 MethodAttributes.Private => EffectiveVisibility.Private,
                 MethodAttributes.Assembly => EffectiveVisibility.Assembly,
