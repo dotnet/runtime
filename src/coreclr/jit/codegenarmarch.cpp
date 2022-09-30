@@ -1211,7 +1211,7 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
         // in a register and that register is the unique target register we are
         // placing. LSRA will always allocate an internal register when there
         // is just one target register to handle this situation.
-
+        //
         int          firstRegToPlace;
         regNumber    valueReg     = REG_NA;
         unsigned     srcLclNum    = BAD_VAR_NUM;
@@ -1265,6 +1265,13 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
 
             // Find first register to place. If we are placing addrReg, then
             // make sure we place it last to avoid clobbering its value.
+            //
+            // The loop below will start at firstRegToPlace and place
+            // treeNode->gtNumRegs registers in order, with wraparound. For
+            // example, if the registers to place are r0, r1, r2=addrReg, r3
+            // then we will set firstRegToPlace = 3 (r3) and the loop below
+            // will place r3, r0, r1, r2. The last placement will clobber
+            // addrReg.
             firstRegToPlace = 0;
             for (unsigned i = 0; i < treeNode->gtNumRegs; i++)
             {
