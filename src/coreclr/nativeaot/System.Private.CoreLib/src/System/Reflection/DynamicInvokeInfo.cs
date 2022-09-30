@@ -404,10 +404,10 @@ namespace System.Reflection
 
                 Unsafe.Add(ref copyOfParameters, i) = arg!;
 
-#pragma warning disable 8500
+#pragma warning disable 8500, 9094
                 ((ByReference*)byrefParameters)[i] = new ByReference(ref (argumentInfo.Transform & Transform.Reference) != 0 ?
                     ref Unsafe.As<object, byte>(ref Unsafe.Add(ref copyOfParameters, i)) : ref arg.GetRawData());
-#pragma warning restore 8500
+#pragma warning restore 8500, 9094
             }
         }
 
