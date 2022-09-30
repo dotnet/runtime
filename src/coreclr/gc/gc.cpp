@@ -44897,7 +44897,7 @@ HRESULT GCHeap::Initialize()
         {
             // Keep the reservation size for regions similar to that for segments. 
             // We will initially reserve 6x the configured hard limit
-            gc_heap::regions_range = 6 * gc_heap::heap_hard_limit;
+            gc_heap::regions_range = 2 * gc_heap::heap_hard_limit;
         }
         else
         {
@@ -45052,6 +45052,19 @@ HRESULT GCHeap::Initialize()
 #ifdef USE_REGIONS
     gc_heap::enable_special_regions_p = (bool)GCConfig::GetGCEnableSpecialRegions();
     size_t gc_region_size = (size_t)GCConfig::GetGCRegionSize();
+
+    // Adjust GCRegionSize based on how large each heap would be, for smaller heaps we would 
+    // like to keep Region sizes small. We choose between 1 (< 64mb), 2 (<128mb) and 4mb (>128mb) 
+    // by default (unless its configured explictly). 
+    if (gc_region_size == 0){
+        if (gc_heap::regions_range / nhp >= (128 * 1024 * 1024)){
+            gc_region_size = 4 * 1024 * 1024;
+        } else if (gc_heap::regions_range / nhp >= (64 * 1024 * 1024)){
+            gc_region_size = 2 * 1024 * 1024;
+        } else 
+            gc_region_size = 1 * 1024 * 1024;          
+    }
+
     if (!power_of_two_p(gc_region_size) || ((gc_region_size * nhp * 19) > gc_heap::regions_range))
     {
         return E_OUTOFMEMORY;
