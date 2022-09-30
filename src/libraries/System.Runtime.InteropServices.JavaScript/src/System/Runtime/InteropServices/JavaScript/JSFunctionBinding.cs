@@ -6,7 +6,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
-
 namespace System.Runtime.InteropServices.JavaScript
 {
     /// <summary>
@@ -19,7 +18,7 @@ namespace System.Runtime.InteropServices.JavaScript
     public sealed class JSFunctionBinding
     {
         /// <summary>
-        /// Internal
+        /// This API supports JSImport infrastructure and is not intended to be used directly from your code.
         /// </summary>
         internal JSFunctionBinding() { }
 
@@ -124,8 +123,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// Invokes a previously bound JavaScript function using the provided span to transport argument and return values.
         /// This API supports JSImport infrastructure and is not intended to be used directly from your code.
         /// </summary>
-        /// <param name="signature">Generated metadata about method signature used for marshaling.</param>
-        /// <param name="arguments">Intermediate buffer with marshaled arguments.</param>
+        /// <param name="signature">Generated metadata about the method signature used for marshaling.</param>
+        /// <param name="arguments">The intermediate buffer with marshalled arguments.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void InvokeJS(JSFunctionBinding signature, Span<JSMarshalerArgument> arguments)
         {

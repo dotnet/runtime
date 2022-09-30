@@ -10,28 +10,28 @@ namespace System.Runtime.InteropServices.JavaScript
     public partial struct JSMarshalerArgument
     {
         /// <summary>
-        /// Helps with marshaling of the Task result or Function arguments.
-        /// It's used by JSImport code generator and should not be used by developers in source code.
+        /// Assists in marshalling of Task results and Function arguments.
+        /// This API is used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <typeparam name="T">Type of the marshaled value.</typeparam>
-        /// <param name="arg">Low level argument representation.</param>
+        /// <param name="arg">The low-level argument representation.</param>
         /// <param name="value">The value to be marshaled.</param>
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public delegate void ArgumentToManagedCallback<T>(ref JSMarshalerArgument arg, out T value);
 
         /// <summary>
-        /// Helps with marshaling of the Task result or Function arguments.
-        /// It's used by JSImport code generator and should not be used by developers in source code.
+        /// Assists in marshalling of Task results and Function arguments.
+        /// This API is used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <typeparam name="T">Type of the marshaled value.</typeparam>
-        /// <param name="arg">Low level argument representation.</param>
+        /// <param name="arg">The low-level argument representation.</param>
         /// <param name="value">The value to be marshaled.</param>
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public delegate void ArgumentToJSCallback<T>(ref JSMarshalerArgument arg, T value);
 
         /// <summary>
         /// Implementation of the argument marshaling.
-        /// It's used by JSImport code generator and should not be used by developers in source code.
+        /// This API is used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
         public unsafe void ToManaged(out Task? value)

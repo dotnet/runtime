@@ -17,7 +17,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         ///   Invoke a named method of the object, or throws a JSException on error.
         /// </summary>
-        /// <param name="self">thisArg.</param>
+        /// <param name="self">thisArg</param>
         /// <param name="method">The name of the method to invoke.</param>
         /// <param name="args">The argument list to pass to the invoke command.</param>
         /// <returns>
@@ -50,7 +50,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <summary>
         ///   Returns the named property from the object, or throws a JSException on error.
         /// </summary>
-        /// <param name="self">thisArg.</param>
+        /// <param name="self">thisArg</param>
         /// <param name="name">The name of the property to lookup.</param>
         /// <remarks>
         ///   This method can raise a JSException if fetching the property in Javascript raises an exception.
@@ -89,7 +89,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         /// <remarks>
         /// </remarks>
-        /// <param name="self">thisArg.</param>
+        /// <param name="self">thisArg</param>
         /// <param name="name">The name of the property to lookup.</param>
         /// <param name="value">The value can be a primitive type (int, double, string, bool), an
         /// array that will be surfaced as a typed ArrayBuffer (byte[], sbyte[], short[], ushort[],

@@ -73,7 +73,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         /// <returns>A signed 32-bit float number.</returns>
         /// <param name="byteOffset">Byte offset.</param>
-        /// <param name="littleEndian">Indicates whether the 32-bit float is stored in little- or big-endian format. If <c>false.</c>, a big-endian value is read.</param>
+        /// <param name="littleEndian">Indicates whether the 32-bit float is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         public float GetFloat32(int byteOffset, bool littleEndian = false) => UnBoxValue<float>(this.Invoke("getFloat32", byteOffset, littleEndian));
 
         /// <summary>
@@ -81,7 +81,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         /// <returns>A signed 64-bit coulbe number.</returns>
         /// <param name="byteOffset">Byte offset.</param>
-        /// <param name="littleEndian">Indicates whether the 64-bit float is stored in little- or big-endian format. If <c>false.</c>, a big-endian value is read.</param>
+        /// <param name="littleEndian">Indicates whether the 64-bit float is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         public double GetFloat64(int byteOffset, bool littleEndian = false) => UnBoxValue<double>(this.Invoke("getFloat64", byteOffset, littleEndian));
 
         /// <summary>
@@ -89,7 +89,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         /// <returns>A signed 16-bit ineger (short) number.</returns>
         /// <param name="byteOffset">Byte offset.</param>
-        /// <param name="littleEndian">Indicates whether the 16-bit integer (short) is stored in little- or big-endian format. If <c>false.</c>, a big-endian value is read.</param>
+        /// <param name="littleEndian">Indicates whether the 16-bit integer (short) is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         public short GetInt16(int byteOffset, bool littleEndian = false) => UnBoxValue<short>(this.Invoke("getInt16", byteOffset, littleEndian));
 
         /// <summary>
@@ -97,7 +97,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         /// <returns>A signed 32-bit ineger (int) number.</returns>
         /// <param name="byteOffset">Byte offset.</param>
-        /// <param name="littleEndian">Indicates whether the 32-bit integer (int) is stored in little- or big-endian format. If <c>false.</c>, a big-endian value is read.</param>
+        /// <param name="littleEndian">Indicates whether the 32-bit integer (int) is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         public int GetInt32(int byteOffset, bool littleEndian = false) => UnBoxValue<int>(this.Invoke("getInt32", byteOffset, littleEndian));
 
         /// <summary>
@@ -105,7 +105,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         /// <returns>A signed 8-bit byte (sbyte) number.</returns>
         /// <param name="byteOffset">Byte offset.</param>
-        /// <param name="littleEndian">Indicates whether the 8-bit byte is stored in little- or big-endian format. If <c>false.</c>, a big-endian value is read.</param>
+        /// <param name="littleEndian">Indicates whether the 8-bit byte is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         [CLSCompliant(false)]
         public sbyte GetInt8(int byteOffset, bool littleEndian = false) => UnBoxValue<sbyte>(this.Invoke("getInt8", byteOffset, littleEndian));
 
@@ -114,7 +114,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         /// <returns>A unsigned 16-bit integer (ushort) number.</returns>
         /// <param name="byteOffset">Byte offset.</param>
-        /// <param name="littleEndian">Indicates whether the unsigned 16-bit float is stored in little- or big-endian format. If <c>false.</c>, a big-endian value is read.</param>
+        /// <param name="littleEndian">Indicates whether the unsigned 16-bit float is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         [CLSCompliant(false)]
         public ushort GetUint16(int byteOffset, bool littleEndian = false) => UnBoxValue<ushort>(this.Invoke("getUint16", byteOffset, littleEndian));
 
@@ -123,7 +123,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         /// <returns>A usigned 32-bit ineger (uint) number.</returns>
         /// <param name="byteOffset">Byte offset.</param>
-        /// <param name="littleEndian">Indicates whether the 32-bit float is stored in little- or big-endian format. If <c>false.</c>, a big-endian value is read.</param>
+        /// <param name="littleEndian">Indicates whether the 32-bit float is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         [CLSCompliant(false)]
         public uint GetUint32(int byteOffset, bool littleEndian = false) => UnBoxValue<uint>(this.Invoke("getUint32", byteOffset, littleEndian));
 
@@ -132,7 +132,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         /// <returns>A unsigned 8-bit byte (byte) number.</returns>
         /// <param name="byteOffset">Byte offset.</param>
-        /// <param name="littleEndian">Indicates whether the 32-bit float is stored in little- or big-endian format. If <c>false.</c>, a big-endian value is read.</param>
+        /// <param name="littleEndian">Indicates whether the 32-bit float is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         public byte GetUint8(int byteOffset, bool littleEndian = false) => UnBoxValue<byte>(this.Invoke("getUint8", byteOffset, littleEndian));
 
         /// <summary>
@@ -140,7 +140,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         /// <param name="byteOffset">Byte offset.</param>
         /// <param name="value">float value.</param>
-        /// <param name="littleEndian">Indicates whether the 32-bit float is stored in little- or big-endian format. If <c>false.</c>, a big-endian value is read.</param>
+        /// <param name="littleEndian">Indicates whether the 32-bit float is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         public void SetFloat32(int byteOffset, float value, bool littleEndian = false) => this.Invoke("setFloat32", byteOffset, value, littleEndian);
 
         /// <summary>
@@ -148,7 +148,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         /// <param name="byteOffset">Byte offset.</param>
         /// <param name="value">double value.</param>
-        /// <param name="littleEndian">Indicates whether the 64-bit float is stored in little- or big-endian format. If <c>false.</c>, a big-endian value is read.</param>
+        /// <param name="littleEndian">Indicates whether the 64-bit float is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         public void SetFloat64(int byteOffset, double value, bool littleEndian = false) => this.Invoke("setFloat64", byteOffset, value, littleEndian);
 
         /// <summary>
@@ -156,7 +156,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         /// <param name="byteOffset">Byte offset.</param>
         /// <param name="value">short value.</param>
-        /// <param name="littleEndian">Indicates whether the 16-bit integer (short) is stored in little- or big-endian format. If <c>false.</c>, a big-endian value is read.</param>
+        /// <param name="littleEndian">Indicates whether the 16-bit integer (short) is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         public void SetInt16(int byteOffset, short value, bool littleEndian = false) => this.Invoke("setInt16", byteOffset, value, littleEndian);
 
         /// <summary>
@@ -164,7 +164,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         /// <param name="byteOffset">Byte offset.</param>
         /// <param name="value">int value.</param>
-        /// <param name="littleEndian">Indicates whether the 32-bit integer (int) is stored in little- or big-endian format. If <c>false.</c>, a big-endian value is read.</param>
+        /// <param name="littleEndian">Indicates whether the 32-bit integer (int) is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         public void SetInt32(int byteOffset, int value, bool littleEndian = false) => this.Invoke("setInt32", byteOffset, value, littleEndian);
 
         /// <summary>
@@ -172,7 +172,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         /// <param name="byteOffset">Byte offset.</param>
         /// <param name="value">sbyte value.</param>
-        /// <param name="littleEndian">Indicates whether the 8-bit byte is stored in little- or big-endian format. If <c>false.</c>, a big-endian value is read.</param>
+        /// <param name="littleEndian">Indicates whether the 8-bit byte is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         [CLSCompliant(false)]
         public void SetInt8(int byteOffset, sbyte value, bool littleEndian = false) => this.Invoke("setInt8", byteOffset, value, littleEndian);
 
@@ -181,7 +181,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         /// <param name="byteOffset">Byte offset.</param>
         /// <param name="value">ushort value.</param>
-        /// <param name="littleEndian">Indicates whether the unsigned 16-bit float is stored in little- or big-endian format. If <c>false.</c>, a big-endian value is read.</param>
+        /// <param name="littleEndian">Indicates whether the unsigned 16-bit float is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         [CLSCompliant(false)]
         public void SetUint16(int byteOffset, ushort value, bool littleEndian = false) => this.Invoke("setUint16", byteOffset, value, littleEndian);
 
@@ -190,7 +190,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         /// <param name="byteOffset">Byte offset.</param>
         /// <param name="value">uint value.</param>
-        /// <param name="littleEndian">Indicates whether the 32-bit float is stored in little- or big-endian format. If <c>false.</c>, a big-endian value is read.</param>
+        /// <param name="littleEndian">Indicates whether the 32-bit float is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         [CLSCompliant(false)]
         public void SetUint32(int byteOffset, uint value, bool littleEndian = false) => this.Invoke("setUint32", byteOffset, value, littleEndian);
 
@@ -199,7 +199,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// </summary>
         /// <param name="byteOffset">Byte offset.</param>
         /// <param name="value">byte value.</param>
-        /// <param name="littleEndian">Indicates whether the 32-bit float is stored in little- or big-endian format. If <c>false.</c>, a big-endian value is read.</param>
+        /// <param name="littleEndian">Indicates whether the 32-bit float is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         public void SetUint8(int byteOffset, byte value, bool littleEndian = false) => this.Invoke("setUint8", byteOffset, value, littleEndian);
 
         private static U UnBoxValue<U>(object jsValue) where U : struct
