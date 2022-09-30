@@ -462,8 +462,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             string file2 = paths[1];
 
             // Look for the shortest unique names for the input files.
-            string name1 = paths[0];
-            string name2 = paths[1];
+            string name1 = Path.GetFileName(paths[0]);
+            string name2 = Path.GetFileName(paths[1]);
             string path1 = Path.GetDirectoryName(file1);
             string path2 = Path.GetDirectoryName(file2);
             while (name1 == name2)
