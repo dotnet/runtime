@@ -401,11 +401,12 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             }
 
             var paths = Get(_command.InputFilesToMerge);
-            PEReader[] mibcReaders = new PEReader[paths.Length];
+            PEReader[] mibcReaders = new PEReader[paths.Count];
             for (int i = 0; i < mibcReaders.Length; i++)
             {
-                PrintMessage($"Opening {paths[i]}");
-                mibcReaders[i] = MIbcProfileParser.OpenMibcAsPEReader(paths[i]);
+                string path = paths.ElementAt(i).Value;
+                PrintMessage($"Opening {path}");
+                mibcReaders[i] = MIbcProfileParser.OpenMibcAsPEReader(path);
             }
 
             HashSet<string> assemblyNamesInBubble = null;
@@ -428,7 +429,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 for (int i = 0; i < mibcReaders.Length; i++)
                 {
                     var peReader = mibcReaders[i];
-                    PrintDetailedMessage($"Merging {paths[i]}");
+                    PrintDetailedMessage($"Merging {paths.ElementAt(i).Value}");
                     ProfileData.MergeProfileData(ref partialNgen, mergedProfileData, MIbcProfileParser.ParseMIbcFile(tsc, peReader, assemblyNamesInBubble, onlyDefinedInAssembly: null));
                 }
 
@@ -437,8 +438,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 int result = MibcEmitter.GenerateMibcFile(mergedConfig, tsc, outputFileInfo, mergedProfileData.Values, _command.ValidateOutputFile, !Get(_command.Compressed));
                 if (result == 0 && Get(_command.InheritTimestamp))
                 {
-                    outputFileInfo.CreationTimeUtc = paths.Max(f => new FileInfo(f).CreationTimeUtc);
-                    outputFileInfo.LastWriteTimeUtc = paths.Max(f => new FileInfo(f).LastWriteTimeUtc);
+                    outputFileInfo.CreationTimeUtc = paths.Values.Max(f => new FileInfo(f).CreationTimeUtc);
+                    outputFileInfo.LastWriteTimeUtc = paths.Values.Max(f => new FileInfo(f).LastWriteTimeUtc);
                 }
 
                 return result;
@@ -457,13 +458,13 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             var paths = Get(_command.InputFilesToCompare);
 
             // Command line parser should require exactly 2 files
-            Trace.Assert(paths.Length == 2);
-            string file1 = paths[0];
-            string file2 = paths[1];
+            Trace.Assert(paths.Count == 2);
+            string file1 = paths.ElementAt(0).Value;
+            string file2 = paths.ElementAt(1).Value;
 
             // Look for the shortest unique names for the input files.
-            string name1 = Path.GetFileName(paths[0]);
-            string name2 = Path.GetFileName(paths[1]);
+            string name1 = Path.GetFileName(file1);
+            string name2 = Path.GetFileName(file2);
             string path1 = Path.GetDirectoryName(file1);
             string path2 = Path.GetDirectoryName(file2);
             while (name1 == name2)
