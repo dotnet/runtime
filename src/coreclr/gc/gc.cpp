@@ -44894,9 +44894,8 @@ HRESULT GCHeap::Initialize()
     if (gc_heap::regions_range == 0)
     {
         if (gc_heap::heap_hard_limit)
-        {
-            // Keep the reservation size for regions similar to that for segments. 
-            // We will initially reserve 6x the configured hard limit
+        { 
+            // We will initially reserve 2x the configured hard limit
             gc_heap::regions_range = 2 * gc_heap::heap_hard_limit;
         }
         else
