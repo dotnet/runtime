@@ -1172,7 +1172,6 @@ Dispatch_GetIDsOfNames(IDispatch* pDisp, REFIID riid, _In_reads_(cNames) OLECHAR
         if (pCMT->HasInvisibleParent())
             return E_NOTIMPL;
 
-    ComCallWrapperTemplate *pTemplate = MapIUnknownToWrapper(pDisp)->GetComCallWrapperTemplate();
     return InternalDispatchImpl_GetIDsOfNames(pDisp, riid, rgszNames, cNames, lcid, rgdispid);
 }
 
@@ -1207,7 +1206,6 @@ Dispatch_Invoke
         if (pCMT->HasInvisibleParent())
             return E_NOTIMPL;
 
-    ComCallWrapperTemplate *pTemplate = MapIUnknownToWrapper(pDisp)->GetComCallWrapperTemplate();
     return InternalDispatchImpl_Invoke(pDisp, dispidMember, riid, lcid, wFlags, pdispparams, pvarResult, pexcepinfo, puArgErr);
 }
 
