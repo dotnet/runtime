@@ -44894,8 +44894,10 @@ HRESULT GCHeap::Initialize()
     {
         if (gc_heap::heap_hard_limit)
         { 
-            // We will initially reserve 2x the configured hard limit
-            gc_heap::regions_range = 2 * gc_heap::heap_hard_limit;
+            // We will initially reserve 5x the configured hard limit and 2x if
+            // large pages are enabled
+            gc_heap::regions_range = (gc_heap::use_large_pages_p) ? 2 * gc_heap::heap_hard_limit  // large pages
+                                                                  : 5 * gc_heap::heap_hard_limit; 
         }
         else
         {
@@ -45048,12 +45050,12 @@ HRESULT GCHeap::Initialize()
     size_t gc_region_size = (size_t)GCConfig::GetGCRegionSize();
 
     // Adjust GCRegionSize based on how large each heap would be, for smaller heaps we would 
-    // like to keep Region sizes small. We choose between 1 (< 64mb), 2 (<128mb) and 4mb (>128mb) 
-    // by default (unless its configured explictly). 
+    // like to keep Region sizes small. We choose between 4, 2 and 4mb based on the calculations 
+    // below (unless its configured explictly). 
     if (gc_region_size == 0){
-        if (gc_heap::regions_range / nhp >= (128 * 1024 * 1024)){
+        if (gc_heap::regions_range / nhp  / 19 >= (4 * 1024 * 1024)){
             gc_region_size = 4 * 1024 * 1024;
-        } else if (gc_heap::regions_range / nhp >= (64 * 1024 * 1024)){
+        } else if (gc_heap::regions_range / nhp / 19 >= (2 * 1024 * 1024)){
             gc_region_size = 2 * 1024 * 1024;
         } else 
             gc_region_size = 1 * 1024 * 1024;          
