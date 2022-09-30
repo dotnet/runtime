@@ -154,19 +154,21 @@ namespace System.Reflection
 
         private static decimal GetRawDecimalConstant(CustomAttributeData attr)
         {
-            ParameterInfo[] parameters = attr.Constructor.GetParameters();
             System.Collections.Generic.IList<CustomAttributeTypedArgument> args = attr.ConstructorArguments;
 
-            // constructor DecimalConstantAttribute(byte scale, byte sign, uint hi, uint mid, uint low) is not CLS-compliant
-            bool isClsCompliant = parameters[2].ParameterType == typeof(int);
+            return new decimal(
+                lo: GetConstructorArgument(args, 4),
+                mid: GetConstructorArgument(args, 3),
+                hi: GetConstructorArgument(args, 2),
+                isNegative: ((byte)args[1].Value!) != 0,
+                scale: (byte)args[0].Value!);
 
-            int low = isClsCompliant ? (int)args[4].Value! : (int)(uint)args[4].Value!;
-            int mid = isClsCompliant ? (int)args[3].Value! : (int)(uint)args[3].Value!;
-            int hi = isClsCompliant ? (int)args[2].Value! : (int)(uint)args[2].Value!;
-            byte sign = (byte)args[1].Value!;
-            byte scale = (byte)args[0].Value!;
-
-            return new decimal(low, mid, hi, sign != 0, scale);
+            static int GetConstructorArgument(IList<CustomAttributeTypedArgument> args, int index)
+            {
+                // The constructor is overloaded to accept both signed and unsigned arguments
+                object obj = args[index].Value!;
+                return (obj is int value) ? value : (int)(uint)obj;
+            }
         }
 
         private static DateTime GetRawDateTimeConstant(CustomAttributeData attr)
