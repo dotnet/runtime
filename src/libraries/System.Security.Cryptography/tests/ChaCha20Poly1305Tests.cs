@@ -457,8 +457,12 @@ namespace System.Security.Cryptography.Tests
                 // OpenSSL is present, and a high enough version,
                 // but the distro build options turned off ChaCha/Poly.
             }
-            else if (PlatformDetection.OpenSslPresentOnSystem &&
-                (PlatformDetection.IsOSX || PlatformDetection.IsOpenSslSupported))
+            else if (PlatformDetection.IsOSX)
+            {
+                // CryptoKit is supported on macOS 10.15+, which is our minimum target.
+                expectedIsSupported = true;
+            }
+            else if (PlatformDetection.OpenSslPresentOnSystem && PlatformDetection.IsOpenSslSupported)
             {
                 const int OpenSslChaChaMinimumVersion = 0x1_01_00_00_F; //major_minor_fix_patch_status
                 expectedIsSupported = SafeEvpPKeyHandle.OpenSslVersion >= OpenSslChaChaMinimumVersion;

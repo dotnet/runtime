@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
@@ -36,6 +37,7 @@ internal static partial class Interop
 
                 if (result != Success)
                 {
+                    Debug.Assert(result == 0);
                     CryptographicOperations.ZeroMemory(ciphertext);
                     CryptographicOperations.ZeroMemory(tag);
                     throw new CryptographicException();
@@ -59,6 +61,7 @@ internal static partial class Interop
             fixed (byte* aadPtr = aad)
             {
                 const int Success = 1;
+                const int AuthTagMismatch = -1;
                 int result = AppleCryptoNative_ChaCha20Poly1305Decrypt(
                     keyPtr, key.Length,
                     noncePtr, nonce.Length,
@@ -67,12 +70,19 @@ internal static partial class Interop
                     plaintextPtr, plaintext.Length,
                     aadPtr, aad.Length);
 
-                // TODO: Need to throw the AuthenticationTagMismatchException when it gets merged.
-                // When there is an auth tag mismatch, -2 is returned.
                 if (result != Success)
                 {
                     CryptographicOperations.ZeroMemory(plaintext);
-                    throw new CryptographicException();
+
+                    if (result == AuthTagMismatch)
+                    {
+                        throw new AuthenticationTagMismatchException();
+                    }
+                    else
+                    {
+                        Debug.Assert(result == 0);
+                        throw new CryptographicException();
+                    }
                 }
             }
         }
