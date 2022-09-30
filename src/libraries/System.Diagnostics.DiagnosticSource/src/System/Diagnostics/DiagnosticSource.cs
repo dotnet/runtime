@@ -40,7 +40,7 @@ namespace System.Diagnostics
         /// <inheritdoc cref="Write"/>
         /// <typeparam name="T">The type of the value being passed as a payload for the event.</typeparam>
         [RequiresUnreferencedCode(WriteRequiresUnreferencedCode)]
-        public void Write<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(string name, T? value) =>
+        public void Write<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(string name, T value) =>
             Write(name, (object?)value);
 
         /// <summary>

@@ -30,6 +30,6 @@ namespace System.Diagnostics
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of object being written to DiagnosticSource cannot be discovered statically.")]
         public abstract void Write(string name, object? value);
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The type of object being written to DiagnosticSource cannot be discovered statically.")]
-        public void Write<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] T>(string name, T? value) { }
+        public void Write<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] T>(string name, T value) { }
     }
 }
