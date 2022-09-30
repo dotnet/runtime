@@ -568,11 +568,11 @@ def main(main_args):
 
         input_artifacts = os.path.join(workitem_payload_directory, "collectAssembliesDirectory", coreclr_args.collection_name)
 
-        exclude_directories = directories_to_ignore
+        exclude_directories = list(directories_to_ignore)
         if coreclr_args.collection_name == "coreclr_tests":
             exclude_directories += ['Core_Root']
 
-        exclude_files = native_binaries_to_ignore
+        exclude_files = list(native_binaries_to_ignore)
         if coreclr_args.collection_type == "crossgen2":
             print('Adding exclusions for crossgen2')
             # Currently, trying to crossgen2 R2RTest\Microsoft.Build.dll causes a pop-up failure, so exclude it.
