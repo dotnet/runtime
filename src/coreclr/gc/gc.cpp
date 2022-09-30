@@ -45050,12 +45050,13 @@ HRESULT GCHeap::Initialize()
     size_t gc_region_size = (size_t)GCConfig::GetGCRegionSize();
 
     // Adjust GCRegionSize based on how large each heap would be, for smaller heaps we would 
-    // like to keep Region sizes small. We choose between 4, 2 and 4mb based on the calculations 
-    // below (unless its configured explictly). 
+    // like to keep Region sizes small. We choose between 4, 2 and 1mb based on the calculations 
+    // below (unless its configured explictly) such that there are at least 2 regions available
+    // except for the smallest case. Now the lowest limit possible is 4mb. 
     if (gc_region_size == 0){
-        if (gc_heap::regions_range / nhp  / 19 >= (4 * 1024 * 1024)){
+        if ((gc_heap::regions_range / nhp / 19) / 2 >= (4 * 1024 * 1024)){
             gc_region_size = 4 * 1024 * 1024;
-        } else if (gc_heap::regions_range / nhp / 19 >= (2 * 1024 * 1024)){
+        } else if ((gc_heap::regions_range / nhp / 19) / 2 >= (2 * 1024 * 1024)){
             gc_region_size = 2 * 1024 * 1024;
         } else 
             gc_region_size = 1 * 1024 * 1024;          
