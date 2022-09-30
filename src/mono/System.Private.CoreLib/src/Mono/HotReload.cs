@@ -35,9 +35,10 @@ internal sealed class InstanceFieldTable
     // This should behave somewhat like EditAndContinueModule::ResolveOrAddField (and EnCAddedField::Allocate)
     //   we want to create some storage space that has the same lifetime as the instance object.
 
-    // // TODO: should the linker keep this if Hot Reload stuff is enabled?  Hot Reload is predicated on the linker not rewriting user modules, but maybe trimming SPC is ok?
-    internal static ref object? GetInstanceFieldFieldStore(object inst, IntPtr type, uint fielddef_token)
-        => ref _singleton.GetOrCreateInstanceFields(inst).LookupOrAdd(new RuntimeTypeHandle (type), fielddef_token);
+    internal static FieldStore GetInstanceFieldFieldStore(object inst, IntPtr type, uint fielddef_token)
+    {
+        return _singleton.GetOrCreateInstanceFields(inst).LookupOrAdd(new RuntimeTypeHandle (type), fielddef_token);
+    }
 
     private static InstanceFieldTable _singleton = new();
 
@@ -64,18 +65,18 @@ internal sealed class InstanceFieldTable
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Hot reload required untrimmed apps")]
-        public ref object? LookupOrAdd(RuntimeTypeHandle type, uint key)
+        public FieldStore LookupOrAdd(RuntimeTypeHandle type, uint key)
         {
             if (_fields.TryGetValue(key, out FieldStore? v))
-                return ref v.Location;
+                return v;
             lock (_lock)
             {
                 if (_fields.TryGetValue (key, out FieldStore? v2))
-                    return ref v2.Location;
+                    return v2;
 
                 FieldStore s = FieldStore.Create(type);
                 _fields.Add(key, s);
-                return ref s.Location;
+                return s;
             }
         }
     }
@@ -98,8 +99,6 @@ internal sealed class FieldStore
     {
         _loc = loc;
     }
-
-    public ref object? Location => ref _loc;
 
     [RequiresUnreferencedCode("Hot reload required untrimmed apps")]
     public static FieldStore Create (RuntimeTypeHandle type)

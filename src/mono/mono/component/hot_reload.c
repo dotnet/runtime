@@ -3249,7 +3249,6 @@ static GENERATE_GET_CLASS_WITH_CACHE(hot_reload_instance_field_table, "Mono.HotR
 static gpointer
 hot_reload_added_field_ldflda (MonoObject *instance, MonoType *field_type, uint32_t fielddef_token, MonoError *error)
 {
-	// FIXME: this should go in interp.c
 	static MonoMethod *get_instance_store = NULL;
 	if (G_UNLIKELY (get_instance_store == NULL)) {
 		MonoClass *table_class = mono_class_get_hot_reload_instance_field_table_class ();
@@ -3264,7 +3263,15 @@ hot_reload_added_field_ldflda (MonoObject *instance, MonoType *field_type, uint3
         args[1] = &field_type;
         args[2] = &fielddef_token;
 
-        gpointer result;
-        result = mono_runtime_invoke_checked (get_instance_store, NULL, args, error);
+        MonoHotReloadFieldStoreObject *field_store;
+        field_store = (MonoHotReloadFieldStoreObject*) mono_runtime_invoke_checked (get_instance_store, NULL, args, error);
+        gpointer result = NULL;
+        /* If it's a value type, return a ptr to the beginning of the
+         * boxed data in FieldStore:_loc. If it's a reference type,
+         * return the address of FieldStore:_loc itself. */
+        if (!mono_type_is_reference (field_type))
+                result = mono_object_unbox_internal (field_store->_loc);
+        else
+                result = (gpointer)&field_store->_loc;
         return result;
 }

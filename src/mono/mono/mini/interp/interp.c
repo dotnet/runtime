@@ -7505,15 +7505,15 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_METADATA_UPDATE_LDFLDA) {
-			gpointer *dest = LOCAL_VAR (ip [1], gpointer);
+			gpointer *dest = (gpointer*)(locals + ip [1]);
 			MonoObject *inst = LOCAL_VAR (ip [2], MonoObject*);
 			MonoType *field_type = frame->imethod->data_items [ip [3]];
 			uint32_t fielddef_token = GPOINTER_TO_UINT32 (frame->imethod->data_items [ip [4]]);
 			// FIXME: can we emit a call directly instead of a runtime-invoke?
 			gpointer field_addr = mono_metadata_update_added_field_ldflda (inst, field_type, fielddef_token, error);
-			mono_gc_wbarrier_generic_store_internal (dest, field_addr);
 			/* FIXME: think about pinning the FieldStore and adding a second opcode to
 			 * unpin it */
+			mono_gc_wbarrier_generic_store_internal (dest, field_addr);
 			mono_interp_error_cleanup (error);
 			ip += 5;
 			MINT_IN_BREAK;
