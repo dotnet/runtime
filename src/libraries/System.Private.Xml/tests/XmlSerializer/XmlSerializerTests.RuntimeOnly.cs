@@ -397,18 +397,49 @@ public static partial class XmlSerializerTests
     [Fact]
     public static void Xml_CollectionRoot()
     {
-        MyCollection x = new MyCollection('a', 45);
+        DateTime now = new DateTime(2022, 9, 30, 9, 4, 15, DateTimeKind.Utc);
+        DateTimeOffset dtoNow = now.AddDays(1);
+        TimeSpan ts = new TimeSpan(1, 2, 3, 4, 5);
+        MyCollection x = new MyCollection('a', 45,
+            123.45m, now, ts, dtoNow, (short)55, 2345324L, (sbyte)11, (ushort)34, (uint)4564, (ulong)456734767,
+            new byte[]{ 33, 44, 55});
         MyCollection y = SerializeAndDeserialize<MyCollection>(x,
-@"<?xml version=""1.0""?>
+@"<?xml version=""1.0"" encoding=""utf-8""?>
 <ArrayOfAnyType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
-  <anyType xmlns:q1=""http://microsoft.com/wsdl/types/"" xsi:type=""q1:char"">97</anyType>
-  <anyType xsi:type=""xsd:int"">45</anyType>
+ <anyType xmlns:q1=""http://microsoft.com/wsdl/types/"" xsi:type=""q1:char"">97</anyType>
+ <anyType xsi:type=""xsd:int"">45</anyType>
+ <anyType xsi:type=""xsd:decimal"">123.45</anyType>
+ <anyType xsi:type=""xsd:dateTime"">2022-09-30T09:04:15Z</anyType>
+ <anyType xmlns:q2=""http://microsoft.com/wsdl/types/"" xsi:type=""q2:TimeSpan"">P1DT2H3M4.005S</anyType>
+ <anyType xmlns:q3=""http://microsoft.com/wsdl/types/"" xsi:type=""q3:dateTimeOffset"">2022-10-01T09:04:15Z</anyType>
+ <anyType xsi:type=""xsd:short"">55</anyType>
+ <anyType xsi:type=""xsd:long"">2345324</anyType>
+ <anyType xsi:type=""xsd:byte"">11</anyType>
+ <anyType xsi:type=""xsd:unsignedShort"">34</anyType>
+ <anyType xsi:type=""xsd:unsignedInt"">4564</anyType>
+ <anyType xsi:type=""xsd:unsignedLong"">456734767</anyType>
+ <anyType xsi:type=""xsd:base64Binary"">ISw3</anyType>
 </ArrayOfAnyType>");
 
         Assert.NotNull(y);
-        Assert.True(y.Count == 2);
+        Assert.True(y.Count == 13);
         Assert.True((char)y[0] == 'a');
         Assert.True((int)y[1] == 45);
+        Assert.True((decimal)y[2] == 123.45m);
+        Assert.True((DateTime)y[3] == now);
+        Assert.True((TimeSpan)y[4] == ts);
+        Assert.True((DateTimeOffset)y[5] == dtoNow);
+        Assert.True((short)y[6] == 55);
+        Assert.True((long)y[7] == 2345324L);
+        Assert.True((sbyte)y[8] == 11);
+        Assert.True((ushort)y[9] == 34);
+        Assert.True((uint)y[10] == 4564);
+        Assert.True((ulong)y[11] == 456734767);
+        Assert.True(y[12] is byte[]);
+        Assert.Equal(3, ((byte[])y[12]).Length);
+        Assert.Equal(33, ((byte[])y[12])[0]);
+        Assert.Equal(44, ((byte[])y[12])[1]);
+        Assert.Equal(55, ((byte[])y[12])[2]);
     }
 
     [Fact]
