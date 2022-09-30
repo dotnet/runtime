@@ -4,7 +4,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq
 {
@@ -340,9 +339,10 @@ namespace System.Linq
 
         internal override int CompareAnyKeys(int index1, int index2)
         {
-            Debug.Assert(_keys != null);
+            TKey[]? keys = _keys;
+            Debug.Assert(keys != null);
 
-            int c = _comparer.Compare(_keys[index1], _keys[index2]);
+            int c = _comparer.Compare(keys[index1], keys[index2]);
             if (c == 0)
             {
                 if (_next == null)
@@ -359,10 +359,43 @@ namespace System.Linq
             return (_descending != (c > 0)) ? 1 : -1;
         }
 
+        private int CompareAnyKeys_DefaultComparer_NoNext_Ascending(int index1, int index2)
+        {
+            Debug.Assert(_comparer == Comparer<TKey>.Default);
+            Debug.Assert(_next is null);
+            Debug.Assert(!_descending);
+
+            TKey[]? keys = _keys;
+            Debug.Assert(keys != null);
+
+            int c = Comparer<TKey>.Default.Compare(keys[index1], keys[index2]);
+            return
+                c == 0 ? index1 - index2 : // ensure stability of sort
+                c;
+        }
+
+        private int CompareAnyKeys_DefaultComparer_NoNext_Descending(int index1, int index2)
+        {
+            Debug.Assert(_comparer == Comparer<TKey>.Default);
+            Debug.Assert(_next is null);
+            Debug.Assert(_descending);
+
+            TKey[]? keys = _keys;
+            Debug.Assert(keys != null);
+
+            int c = Comparer<TKey>.Default.Compare(keys[index2], keys[index1]);
+            return
+                c == 0 ? index1 - index2 : // ensure stability of sort
+                c;
+        }
+
         private int CompareKeys(int index1, int index2) => index1 == index2 ? 0 : CompareAnyKeys(index1, index2);
 
         protected override void QuickSort(int[] keys, int lo, int hi) =>
-            new Span<int>(keys, lo, hi - lo + 1).Sort(CompareAnyKeys);
+            new Span<int>(keys, lo, hi - lo + 1).Sort(
+                !typeof(TKey).IsValueType || _next is not null || _comparer != Comparer<TKey>.Default ? new Comparison<int>(CompareAnyKeys) :
+                _descending ? new Comparison<int>(CompareAnyKeys_DefaultComparer_NoNext_Descending) :
+                new Comparison<int>(CompareAnyKeys_DefaultComparer_NoNext_Ascending));
 
         // Sorts the k elements between minIdx and maxIdx without sorting all elements
         // Time complexity: O(n + k log k) best and average case. O(n^2) worse case.
