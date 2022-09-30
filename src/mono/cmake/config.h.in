@@ -719,6 +719,9 @@
 /* Define to 1 if `kp_proc' is a member of `struct kinfo_proc'. */
 #cmakedefine HAVE_STRUCT_KINFO_PROC_KP_PROC 1
 
+/* Define to 1 if `super_class' is a member of `struct objc_super'. */
+#cmakedefine HAVE_OBJC_SUPER_SUPER_CLASS 1
+
 /* Define to 1 if you have the <sys/time.h> header file. */
 #cmakedefine HAVE_SYS_TIME_H 1
 
