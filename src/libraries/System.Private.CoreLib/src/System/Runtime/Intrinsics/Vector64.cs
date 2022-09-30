@@ -49,6 +49,10 @@ namespace System.Runtime.Intrinsics
             {
                 return vector;
             }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return vector;
+            }
             else
             {
                 return SoftwareFallback(vector);
@@ -510,6 +514,10 @@ namespace System.Runtime.Intrinsics
             {
                 return Create((long)(object)value).As<long, T>();
             }
+            else if (typeof(T) == typeof(nint))
+            {
+                return Create((nint)(object)value).As<nint, T>();
+            }
             else if (typeof(T) == typeof(sbyte))
             {
                 return Create((sbyte)(object)value).As<sbyte, T>();
@@ -529,6 +537,10 @@ namespace System.Runtime.Intrinsics
             else if (typeof(T) == typeof(ulong))
             {
                 return Create((ulong)(object)value).As<ulong, T>();
+            }
+            else if (typeof(T) == typeof(nuint))
+            {
+                return Create((nuint)(object)value).As<nuint, T>();
             }
             else
             {
@@ -914,6 +926,20 @@ namespace System.Runtime.Intrinsics
             return Unsafe.AsRef<Vector64<uint>>(pResult);
         }
 
+        /// <summary>Creates a new <see cref="Vector64{T}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="value">The value that element 0 will be initialized to.</param>
+        /// <returns>A new <see cref="Vector64{T}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements initialized to zero.</returns>
+        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe Vector64<T> CreateScalar<T>(T value)
+            where T : struct
+        {
+            Vector64<T> result = Vector64<T>.Zero;
+            result.SetElementUnsafe(0, value);
+            return result;
+        }
+
         /// <summary>Creates a new <see cref="Vector64{Byte}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Byte}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements initialized to zero.</returns>
@@ -925,14 +951,7 @@ namespace System.Runtime.Intrinsics
                 return AdvSimd.Insert(Vector64<byte>.Zero, 0, value);
             }
 
-            return SoftwareFallback(value);
-
-            static Vector64<byte> SoftwareFallback(byte value)
-            {
-                Vector64<byte> result = Vector64<byte>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<byte>, byte>(ref result), value);
-                return result;
-            }
+            return CreateScalar<byte>(value);
         }
 
         /// <summary>Creates a new <see cref="Vector64{Double}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
@@ -946,12 +965,7 @@ namespace System.Runtime.Intrinsics
                 return Create(value);
             }
 
-            return SoftwareFallback(value);
-
-            static Vector64<double> SoftwareFallback(double value)
-            {
-                return Unsafe.As<double, Vector64<double>>(ref value);
-            }
+            return CreateScalar<double>(value);
         }
 
         /// <summary>Creates a new <see cref="Vector64{Int16}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
@@ -965,14 +979,7 @@ namespace System.Runtime.Intrinsics
                 return AdvSimd.Insert(Vector64<short>.Zero, 0, value);
             }
 
-            return SoftwareFallback(value);
-
-            static Vector64<short> SoftwareFallback(short value)
-            {
-                Vector64<short> result = Vector64<short>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<short>, byte>(ref result), value);
-                return result;
-            }
+            return CreateScalar<short>(value);
         }
 
         /// <summary>Creates a new <see cref="Vector64{Int32}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
@@ -986,14 +993,7 @@ namespace System.Runtime.Intrinsics
                 return AdvSimd.Insert(Vector64<int>.Zero, 0, value);
             }
 
-            return SoftwareFallback(value);
-
-            static Vector64<int> SoftwareFallback(int value)
-            {
-                Vector64<int> result = Vector64<int>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<int>, byte>(ref result), value);
-                return result;
-            }
+            return CreateScalar<int>(value);
         }
 
         /// <summary>Creates a new <see cref="Vector64{Int64}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
@@ -1007,12 +1007,7 @@ namespace System.Runtime.Intrinsics
                 return Create(value);
             }
 
-            return SoftwareFallback(value);
-
-            static Vector64<long> SoftwareFallback(long value)
-            {
-                return Unsafe.As<long, Vector64<long>>(ref value);
-            }
+            return CreateScalar<long>(value);
         }
 
         /// <summary>Creates a new <see cref="Vector64{IntPtr}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
@@ -1022,9 +1017,9 @@ namespace System.Runtime.Intrinsics
         public static unsafe Vector64<nint> CreateScalar(nint value)
         {
 #if TARGET_64BIT
-            return CreateScalar((long)value).AsNInt();
+            return CreateScalar((long)(value)).AsNInt();
 #else
-            return CreateScalar((int)value).AsNInt();
+            return CreateScalar((int)(value)).AsNInt();
 #endif
         }
 
@@ -1036,9 +1031,9 @@ namespace System.Runtime.Intrinsics
         public static unsafe Vector64<nuint> CreateScalar(nuint value)
         {
 #if TARGET_64BIT
-            return CreateScalar((ulong)value).AsNUInt();
+            return CreateScalar((ulong)(value)).AsNUInt();
 #else
-            return CreateScalar((uint)value).AsNUInt();
+            return CreateScalar((uint)(value)).AsNUInt();
 #endif
         }
 
@@ -1054,14 +1049,7 @@ namespace System.Runtime.Intrinsics
                 return AdvSimd.Insert(Vector64<sbyte>.Zero, 0, value);
             }
 
-            return SoftwareFallback(value);
-
-            static Vector64<sbyte> SoftwareFallback(sbyte value)
-            {
-                Vector64<sbyte> result = Vector64<sbyte>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<sbyte>, byte>(ref result), value);
-                return result;
-            }
+            return CreateScalar<sbyte>(value);
         }
 
         /// <summary>Creates a new <see cref="Vector64{Single}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
@@ -1075,14 +1063,7 @@ namespace System.Runtime.Intrinsics
                 return AdvSimd.Insert(Vector64<float>.Zero, 0, value);
             }
 
-            return SoftwareFallback(value);
-
-            static Vector64<float> SoftwareFallback(float value)
-            {
-                Vector64<float> result = Vector64<float>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<float>, byte>(ref result), value);
-                return result;
-            }
+            return CreateScalar<float>(value);
         }
 
         /// <summary>Creates a new <see cref="Vector64{UInt16}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
@@ -1097,14 +1078,7 @@ namespace System.Runtime.Intrinsics
                 return AdvSimd.Insert(Vector64<ushort>.Zero, 0, value);
             }
 
-            return SoftwareFallback(value);
-
-            static Vector64<ushort> SoftwareFallback(ushort value)
-            {
-                Vector64<ushort> result = Vector64<ushort>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<ushort>, byte>(ref result), value);
-                return result;
-            }
+            return CreateScalar<ushort>(value);
         }
 
         /// <summary>Creates a new <see cref="Vector64{UInt32}" /> instance with the first element initialized to the specified value and the remaining elements initialized to zero.</summary>
@@ -1119,14 +1093,7 @@ namespace System.Runtime.Intrinsics
                 return AdvSimd.Insert(Vector64<uint>.Zero, 0, value);
             }
 
-            return SoftwareFallback(value);
-
-            static Vector64<uint> SoftwareFallback(uint value)
-            {
-                Vector64<uint> result = Vector64<uint>.Zero;
-                Unsafe.WriteUnaligned(ref Unsafe.As<Vector64<uint>, byte>(ref result), value);
-                return result;
-            }
+            return CreateScalar<uint>(value);
         }
 
 
@@ -1142,55 +1109,45 @@ namespace System.Runtime.Intrinsics
                 return Create(value);
             }
 
-            return SoftwareFallback(value);
+            return CreateScalar<ulong>(value);
+        }
 
-            static Vector64<ulong> SoftwareFallback(ulong value)
-            {
-                return Unsafe.As<ulong, Vector64<ulong>>(ref value);
-            }
+        /// <summary>Creates a new <see cref="Vector64{T}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
+        /// <typeparam name="T">The type of the elements in the vector.</typeparam>
+        /// <param name="value">The value that element 0 will be initialized to.</param>
+        /// <returns>A new <see cref="Vector64{T}" /> instance with the first element initialized to <paramref name="value" /> and the remaining elements left uninitialized.</returns>
+        /// <exception cref="NotSupportedException">The type of the elements in the vector (<typeparamref name="T" />) is not supported.</exception>
+        [Intrinsic]
+        internal static unsafe Vector64<T> CreateScalarUnsafe<T>(T value)
+            where T : struct
+        {
+            // This relies on us stripping the "init" flag from the ".locals"
+            // declaration to let the upper bits be uninitialized.
+
+            ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
+            Unsafe.SkipInit(out Vector64<T> result);
+
+            result.SetElementUnsafe(0, value);
+            return result;
         }
 
         /// <summary>Creates a new <see cref="Vector64{Byte}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Byte}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
-        public static unsafe Vector64<byte> CreateScalarUnsafe(byte value)
-        {
-            // This relies on us stripping the "init" flag from the ".locals"
-            // declaration to let the upper bits be uninitialized.
-
-            byte* pResult = stackalloc byte[8];
-            pResult[0] = value;
-            return Unsafe.AsRef<Vector64<byte>>(pResult);
-        }
+        public static unsafe Vector64<byte> CreateScalarUnsafe(byte value) => CreateScalarUnsafe<byte>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Int16}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Int16}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
-        public static unsafe Vector64<short> CreateScalarUnsafe(short value)
-        {
-            // This relies on us stripping the "init" flag from the ".locals"
-            // declaration to let the upper bits be uninitialized.
-
-            short* pResult = stackalloc short[4];
-            pResult[0] = value;
-            return Unsafe.AsRef<Vector64<short>>(pResult);
-        }
+        public static unsafe Vector64<short> CreateScalarUnsafe(short value) => CreateScalarUnsafe<short>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Int32}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Int32}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
-        public static unsafe Vector64<int> CreateScalarUnsafe(int value)
-        {
-            // This relies on us stripping the "init" flag from the ".locals"
-            // declaration to let the upper bits be uninitialized.
-
-            int* pResult = stackalloc int[2];
-            pResult[0] = value;
-            return Unsafe.AsRef<Vector64<int>>(pResult);
-        }
+        public static unsafe Vector64<int> CreateScalarUnsafe(int value) => CreateScalarUnsafe<int>(value);
 
         /// <summary>Creates a new <see cref="Vector64{IntPtr}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
@@ -1199,9 +1156,9 @@ namespace System.Runtime.Intrinsics
         public static unsafe Vector64<nint> CreateScalarUnsafe(nint value)
         {
 #if TARGET_64BIT
-            return Create((long)value).AsNInt();
+            return Create((long)(value)).AsNInt();
 #else
-            return CreateScalarUnsafe((int)value).AsNInt();
+            return CreateScalarUnsafe((int)(value)).AsNInt();
 #endif
         }
 
@@ -1213,9 +1170,9 @@ namespace System.Runtime.Intrinsics
         public static unsafe Vector64<nuint> CreateScalarUnsafe(nuint value)
         {
 #if TARGET_64BIT
-            return Create((ulong)value).AsNUInt();
+            return Create((ulong)(value)).AsNUInt();
 #else
-            return CreateScalarUnsafe((uint)value).AsNUInt();
+            return CreateScalarUnsafe((uint)(value)).AsNUInt();
 #endif
         }
 
@@ -1224,59 +1181,27 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new <see cref="Vector64{SByte}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static unsafe Vector64<sbyte> CreateScalarUnsafe(sbyte value)
-        {
-            // This relies on us stripping the "init" flag from the ".locals"
-            // declaration to let the upper bits be uninitialized.
-
-            sbyte* pResult = stackalloc sbyte[8];
-            pResult[0] = value;
-            return Unsafe.AsRef<Vector64<sbyte>>(pResult);
-        }
+        public static unsafe Vector64<sbyte> CreateScalarUnsafe(sbyte value) => CreateScalarUnsafe<sbyte>(value);
 
         /// <summary>Creates a new <see cref="Vector64{Single}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{Single}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
         [Intrinsic]
-        public static unsafe Vector64<float> CreateScalarUnsafe(float value)
-        {
-            // This relies on us stripping the "init" flag from the ".locals"
-            // declaration to let the upper bits be uninitialized.
-
-            float* pResult = stackalloc float[2];
-            pResult[0] = value;
-            return Unsafe.AsRef<Vector64<float>>(pResult);
-        }
+        public static unsafe Vector64<float> CreateScalarUnsafe(float value) => CreateScalarUnsafe<float>(value);
 
         /// <summary>Creates a new <see cref="Vector64{UInt16}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UInt16}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static unsafe Vector64<ushort> CreateScalarUnsafe(ushort value)
-        {
-            // This relies on us stripping the "init" flag from the ".locals"
-            // declaration to let the upper bits be uninitialized.
-
-            ushort* pResult = stackalloc ushort[4];
-            pResult[0] = value;
-            return Unsafe.AsRef<Vector64<ushort>>(pResult);
-        }
+        public static unsafe Vector64<ushort> CreateScalarUnsafe(ushort value) => CreateScalarUnsafe<ushort>(value);
 
         /// <summary>Creates a new <see cref="Vector64{UInt32}" /> instance with the first element initialized to the specified value and the remaining elements left uninitialized.</summary>
         /// <param name="value">The value that element 0 will be initialized to.</param>
         /// <returns>A new <see cref="Vector64{UInt32}" /> instance with the first element initialized to <paramref name="value"/> and the remaining elements left uninitialized.</returns>
         [CLSCompliant(false)]
         [Intrinsic]
-        public static unsafe Vector64<uint> CreateScalarUnsafe(uint value)
-        {
-            // This relies on us stripping the "init" flag from the ".locals"
-            // declaration to let the upper bits be uninitialized.
-
-            uint* pResult = stackalloc uint[2];
-            pResult[0] = value;
-            return Unsafe.AsRef<Vector64<uint>>(pResult);
-        }
+        public static unsafe Vector64<uint> CreateScalarUnsafe(uint value) => CreateScalarUnsafe<uint>(value);
 
         /// <summary>Divides two vectors to compute their quotient.</summary>
         /// <param name="left">The vector that will be divided by <paramref name="right" />.</param>

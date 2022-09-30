@@ -27,7 +27,7 @@ namespace System.Runtime.Intrinsics
     [DebuggerDisplay("{DisplayString,nq}")]
     [DebuggerTypeProxy(typeof(Vector256DebugView<>))]
     [StructLayout(LayoutKind.Sequential, Size = Vector256.Size)]
-    public readonly struct Vector256<T> : IEquatable<Vector256<T>>
+    public readonly struct Vector256<T> : ISimdVector<Vector256<T>, T>
         where T : struct
     {
         // These fields exist to ensure the alignment is 8, rather than 1.
@@ -91,6 +91,9 @@ namespace System.Runtime.Intrinsics
                 return default;
             }
         }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.IsHardwareAccelerated" />
+        static bool ISimdVector<Vector256<T>, T>.IsHardwareAccelerated => Vector256.IsHardwareAccelerated;
 
         internal unsafe string DisplayString
         {
@@ -396,5 +399,92 @@ namespace System.Runtime.Intrinsics
 
             return sb.ToString();
         }
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Abs(TSelf)" />
+        static Vector256<T> ISimdVector<Vector256<T>, T>.Abs(Vector256<T> vector) => Vector256.Abs(vector);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.ConditionalSelect(TSelf, TSelf, TSelf)" />
+        static Vector256<T> ISimdVector<Vector256<T>, T>.ConditionalSelect(Vector256<T> condition, Vector256<T> left, Vector256<T> right) => Vector256.ConditionalSelect(condition, left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Create(T)" />
+        static Vector256<T> ISimdVector<Vector256<T>, T>.Create(T value) => Vector256.Create(value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.CreateScalar(T)" />
+        static Vector256<T> ISimdVector<Vector256<T>, T>.CreateScalar(T value) => Vector256.CreateScalar(value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.CreateScalarUnsafe(T)" />
+        static Vector256<T> ISimdVector<Vector256<T>, T>.CreateScalarUnsafe(T value) => Vector256.CreateScalarUnsafe(value);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Equals(TSelf, TSelf)" />
+        static Vector256<T> ISimdVector<Vector256<T>, T>.Equals(Vector256<T> left, Vector256<T> right) => Vector256.Equals(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.EqualsAll(TSelf, TSelf)" />
+        static bool ISimdVector<Vector256<T>, T>.EqualsAll(Vector256<T> left, Vector256<T> right) => Vector256.EqualsAll(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.EqualsAny(TSelf, TSelf)" />
+        static bool ISimdVector<Vector256<T>, T>.EqualsAny(Vector256<T> left, Vector256<T> right) => Vector256.EqualsAny(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.GetElement(TSelf, int)" />
+        static T ISimdVector<Vector256<T>, T>.GetElement(Vector256<T> vector, int index) => vector.GetElement(index);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThan(TSelf, TSelf)" />
+        static Vector256<T> ISimdVector<Vector256<T>, T>.GreaterThan(Vector256<T> left, Vector256<T> right) => Vector256.GreaterThan(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThanAll(TSelf, TSelf)" />
+        static bool ISimdVector<Vector256<T>, T>.GreaterThanAll(Vector256<T> left, Vector256<T> right) => Vector256.GreaterThanAll(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThanAny(TSelf, TSelf)" />
+        static bool ISimdVector<Vector256<T>, T>.GreaterThanAny(Vector256<T> left, Vector256<T> right) => Vector256.GreaterThanAny(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThanOrEqual(TSelf, TSelf)" />
+        static Vector256<T> ISimdVector<Vector256<T>, T>.GreaterThanOrEqual(Vector256<T> left, Vector256<T> right) => Vector256.GreaterThanOrEqual(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThanOrEqualAll(TSelf, TSelf)" />
+        static bool ISimdVector<Vector256<T>, T>.GreaterThanOrEqualAll(Vector256<T> left, Vector256<T> right) => Vector256.GreaterThanOrEqualAll(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.GreaterThanOrEqualAny(TSelf, TSelf)" />
+        static bool ISimdVector<Vector256<T>, T>.GreaterThanOrEqualAny(Vector256<T> left, Vector256<T> right) => Vector256.GreaterThanOrEqualAny(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThan(TSelf, TSelf)" />
+        static Vector256<T> ISimdVector<Vector256<T>, T>.LessThan(Vector256<T> left, Vector256<T> right) => Vector256.LessThan(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThanAll(TSelf, TSelf)" />
+        static bool ISimdVector<Vector256<T>, T>.LessThanAll(Vector256<T> left, Vector256<T> right) => Vector256.LessThanAll(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThanAny(TSelf, TSelf)" />
+        static bool ISimdVector<Vector256<T>, T>.LessThanAny(Vector256<T> left, Vector256<T> right) => Vector256.LessThanAny(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThanOrEqual(TSelf, TSelf)" />
+        static Vector256<T> ISimdVector<Vector256<T>, T>.LessThanOrEqual(Vector256<T> left, Vector256<T> right) => Vector256.LessThanOrEqual(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThanOrEqualAll(TSelf, TSelf)" />
+        static bool ISimdVector<Vector256<T>, T>.LessThanOrEqualAll(Vector256<T> left, Vector256<T> right) => Vector256.LessThanOrEqualAll(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.LessThanOrEqualAny(TSelf, TSelf)" />
+        static bool ISimdVector<Vector256<T>, T>.LessThanOrEqualAny(Vector256<T> left, Vector256<T> right) => Vector256.LessThanOrEqualAny(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadUnsafe(ref T)" />
+        static Vector256<T> ISimdVector<Vector256<T>, T>.LoadUnsafe(ref T source) => Vector256.LoadUnsafe(ref source);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.LoadUnsafe(ref T, nuint)" />
+        static Vector256<T> ISimdVector<Vector256<T>, T>.LoadUnsafe(ref T source, nuint elementOffset) => Vector256.LoadUnsafe(ref source, elementOffset);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Max(TSelf, TSelf)" />
+        static Vector256<T> ISimdVector<Vector256<T>, T>.Max(Vector256<T> left, Vector256<T> right) => Vector256.Max(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.Min(TSelf, TSelf)" />
+        static Vector256<T> ISimdVector<Vector256<T>, T>.Min(Vector256<T> left, Vector256<T> right) => Vector256.Min(left, right);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreUnsafe(TSelf, ref T)" />
+        static void ISimdVector<Vector256<T>, T>.StoreUnsafe(Vector256<T> vector, ref T destination) => vector.StoreUnsafe(ref destination);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.StoreUnsafe(TSelf, ref T, nuint)" />
+        static void ISimdVector<Vector256<T>, T>.StoreUnsafe(Vector256<T> vector, ref T destination, nuint elementOffset) => vector.StoreUnsafe(ref destination, elementOffset);
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.ToScalar(TSelf)" />
+        static T ISimdVector<Vector256<T>, T>.ToScalar(Vector256<T> vector) => vector.ToScalar();
+
+        /// <inheritdoc cref="ISimdVector{TSelf, T}.WithElement(TSelf, int, T)" />
+        static Vector256<T> ISimdVector<Vector256<T>, T>.WithElement(Vector256<T> vector, int index, T value) => vector.WithElement(index, value);
     }
 }
