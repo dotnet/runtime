@@ -401,6 +401,8 @@ namespace System
             get { return ConsolePal.WindowWidth; }
             [SupportedOSPlatform("windows")]
             [SupportedOSPlatform("linux")]
+            [SupportedOSPlatform("freebsd")]
+            [SupportedOSPlatform("osx")]
             set
             {
                 if (Console.IsOutputRedirected)
@@ -424,6 +426,8 @@ namespace System
             get { return ConsolePal.WindowHeight; }
             [SupportedOSPlatform("windows")]
             [SupportedOSPlatform("linux")]
+            [SupportedOSPlatform("freebsd")]
+            [SupportedOSPlatform("osx")]
             set
             {
                 if (Console.IsOutputRedirected)
@@ -446,6 +450,8 @@ namespace System
 
         [SupportedOSPlatform("windows")]
         [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("freebsd")]
+        [SupportedOSPlatform("osx")]
         public static void SetWindowSize(int width, int height)
         {
             if (Console.IsOutputRedirected)
