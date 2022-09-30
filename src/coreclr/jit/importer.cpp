@@ -10716,11 +10716,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 ClassLayout* layout = typGetObjLayout(resolvedToken.hClass);
                 op1                 = gtNewStructVal(layout, op1);
                 op2                 = gtNewStructVal(layout, op2);
-                if (op1->OperIs(GT_OBJ))
-                {
-                    gtSetObjGcInfo(op1->AsObj());
-                }
-                op1 = gtNewBlkOpNode(op1, op2, ((prefixFlags & PREFIX_VOLATILE) != 0));
+                op1                 = gtNewBlkOpNode(op1, op2, ((prefixFlags & PREFIX_VOLATILE) != 0));
                 goto SPILL_APPEND;
             }
 
