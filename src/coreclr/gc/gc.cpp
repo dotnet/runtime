@@ -45157,7 +45157,7 @@ HRESULT GCHeap::Initialize()
     gc_heap* hp = gc_heap::g_heaps[0];
 
     dynamic_data* gen0_dd = hp->dynamic_data_of (0);
-    gc_heap::min_gen0_balance_delta = (dd_min_size (gen0_dd) >> 6);
+    gc_heap::min_gen0_balance_delta = (dd_min_size (gen0_dd) >> 3);
 
     bool can_use_cpu_groups = GCToOSInterface::CanEnableGCCPUGroups();
     GCConfig::SetGCCpuGroup(can_use_cpu_groups);
