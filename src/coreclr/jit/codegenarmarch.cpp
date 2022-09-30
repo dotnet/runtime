@@ -1329,7 +1329,8 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             structOffset += moveSize;
         }
 
-        // Place registers, ensuring we place 'valueRegIndex' last.
+        // Place registers starting from firstRegToPlace. It should ensure we
+        // place addrReg last (if we place it at all).
         structOffset         = static_cast<unsigned>(firstRegToPlace) * TARGET_POINTER_SIZE;
         unsigned curRegIndex = firstRegToPlace;
 
