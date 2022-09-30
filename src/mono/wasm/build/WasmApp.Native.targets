@@ -401,6 +401,10 @@
       <_EmccLinkStepArgs Include="-o &quot;$(_WasmIntermediateOutputPath)dotnet.js&quot;" />
       <_WasmLinkDependencies Include="$(_EmccLinkRsp)" />
 
+      <!-- sync EXPORTED_RUNTIME_METHODS with src\mono\wasm\wasm.proj -->
+      <_EmccLinkStepArgs Condition="'$(EmccExtraExportedRuntimeMethods)' != ''" 
+                         Include="-s EXPORTED_RUNTIME_METHODS=&quot;[$(EmccExtraExportedRuntimeMethods),'FS','print','ccall','cwrap','setValue','getValue','UTF8ToString','UTF8ArrayToString','FS_createPath','FS_createDataFile','removeRunDependency','addRunDependency', 'FS_readFile']&quot;"  />
+
       <_EmccLinkStepArgs Include="$(EmccExtraLDFlags)" />
     </ItemGroup>
 

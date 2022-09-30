@@ -51,6 +51,7 @@
       - $(EmccFlags)                        - Emcc flags used for both compiling native files, and linking
       - $(EmccExtraLDFlags)                 - Extra emcc flags for linking
       - $(EmccExtraCFlags)                  - Extra emcc flags for compiling native files
+      - $(EmccExtraExportedRuntimeMethods)  - Extra methods for emcc flag EXPORTED_RUNTIME_METHODS
       - $(EmccInitialHeapSize)              - Initial heap size specified with `emcc`. Default value: 536870912
                                               Corresponds to `INITIAL_MEMORY` arg for emcc.
                                               (previously named EmccTotalMemory, which is still kept as an alias)
