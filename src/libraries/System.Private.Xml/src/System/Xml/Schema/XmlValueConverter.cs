@@ -6,6 +6,7 @@ using System.Xml;
 using System.Xml.XPath;
 using System.Globalization;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Collections;
 using System.Collections.Generic;
 using System.Xml.Schema;
@@ -268,6 +269,9 @@ namespace System.Xml.Schema
             _typeCode = typeCode;
         }
 
+
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
+            Justification = "All types that are instantiated with this method are used elsewhere throughout System.Private.Xml.")]
         protected XmlBaseConverter(XmlBaseConverter converterAtomic)
         {
             _schemaType = converterAtomic._schemaType;
