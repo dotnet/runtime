@@ -304,7 +304,7 @@ namespace System.Xml.Serialization
                     type = "dateTime";
                     break;
                 case TypeCode.Char:
-                    tryFormatResult = XmlConvert.TryFormat((ushort)o, _primitivesBuffer, out charsWritten);
+                    tryFormatResult = XmlConvert.TryFormat((ushort)(char)o, _primitivesBuffer, out charsWritten);
                     type = "char";
                     typeNs = UrtTypes.Namespace;
                     break;
