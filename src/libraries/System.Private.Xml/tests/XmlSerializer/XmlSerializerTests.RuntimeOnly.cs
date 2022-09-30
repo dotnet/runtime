@@ -402,7 +402,7 @@ public static partial class XmlSerializerTests
         TimeSpan ts = new TimeSpan(1, 2, 3, 4, 5);
         MyCollection x = new MyCollection('a', 45,
             123.45m, now, ts, dtoNow, (short)55, 2345324L, (sbyte)11, (ushort)34, (uint)4564, (ulong)456734767,
-            new byte[]{ 33, 44, 55});
+            new byte[]{ 33, 44, 55}, (byte)67);
         MyCollection y = SerializeAndDeserialize<MyCollection>(x,
 @"<?xml version=""1.0"" encoding=""utf-8""?>
 <ArrayOfAnyType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
@@ -419,10 +419,11 @@ public static partial class XmlSerializerTests
  <anyType xsi:type=""xsd:unsignedInt"">4564</anyType>
  <anyType xsi:type=""xsd:unsignedLong"">456734767</anyType>
  <anyType xsi:type=""xsd:base64Binary"">ISw3</anyType>
+ <anyType xsi:type=""xsd:unsignedByte"">67</anyType>
 </ArrayOfAnyType>");
 
         Assert.NotNull(y);
-        Assert.True(y.Count == 13);
+        Assert.True(y.Count == 14);
         Assert.True((char)y[0] == 'a');
         Assert.True((int)y[1] == 45);
         Assert.True((decimal)y[2] == 123.45m);
@@ -440,6 +441,7 @@ public static partial class XmlSerializerTests
         Assert.Equal(33, ((byte[])y[12])[0]);
         Assert.Equal(44, ((byte[])y[12])[1]);
         Assert.Equal(55, ((byte[])y[12])[2]);
+        Assert.True((byte)y[13] == 67);
     }
 
     [Fact]
