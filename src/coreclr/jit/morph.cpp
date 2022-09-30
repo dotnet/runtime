@@ -1283,8 +1283,9 @@ class ArgInterferenceGraph
     ArrayStack<int>                      m_stack;
     ArrayStack<int>                      m_sccs;
     // Registers that are used by an argument that does not also clobber that register.
-    regMaskTP m_regDependencies;
-    regMaskTP m_allClobbers;
+    regMaskTP m_regDependencies = RBM_NONE;
+    // Mask of registers clobbered by placing arguments.
+    regMaskTP m_allClobbers = RBM_NONE;
 
 public:
     ArgInterferenceGraph(Compiler* comp, unsigned argCount)
@@ -1293,8 +1294,6 @@ public:
         , m_edges(comp->getAllocator(CMK_CallArgs))
         , m_stack(comp->getAllocator(CMK_CallArgs))
         , m_sccs(comp->getAllocator(CMK_CallArgs), static_cast<int>(argCount))
-        , m_regDependencies(RBM_NONE)
-        , m_allClobbers(RBM_NONE)
     {
     }
 
@@ -1561,7 +1560,7 @@ void CallArgs::SortArgs(Compiler* comp, GenTreeCall* call, CallArg** sortedArgs)
                 lclVarIndex = nodeIndex;
             }
 
-            assert(curIndex < argCount);
+            assert(curIndex + sccSize < argCount);
             sortedArgs[curIndex + sccSize] = node.Arg;
 
             nodeIndex = node.SccNext;
