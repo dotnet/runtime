@@ -26,6 +26,10 @@ static
 void
 session_create_streaming_thread (EventPipeSession *session);
 
+static
+void
+ep_session_remove_dangling_session_states (EventPipeSession *session);
+
 /*
  * EventPipeSession.
  */
