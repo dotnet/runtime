@@ -507,7 +507,6 @@ namespace System.Reflection.Emit
 #pragma warning disable CS8500
                     IntPtr* pByRefStorage = (IntPtr*)&byrefStorage;
 #pragma warning restore CS8500
-                    IntPtr* pByRefStorage = (IntPtr*)&byrefStorage;
 
                     CheckArguments(
                         copyOfParameters,
