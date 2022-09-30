@@ -403,20 +403,6 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
 
     genTreeOps locationOp = location->OperGet();
 
-    if (varTypeIsSIMD(location) && assignment->OperIsInitBlkOp())
-    {
-        var_types simdType = location->TypeGet();
-        GenTree*  initVal  = assignment->AsOp()->gtOp2;
-        GenTree*  zeroCon  = comp->gtNewZeroConNode(simdType);
-        noway_assert(initVal->IsIntegralConst(0)); // All SIMD InitBlks are zero inits.
-
-        assignment->gtOp2 = zeroCon;
-        value             = zeroCon;
-
-        BlockRange().InsertAfter(initVal, zeroCon);
-        BlockRange().Remove(initVal);
-    }
-
     switch (locationOp)
     {
         case GT_LCL_VAR:
