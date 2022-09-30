@@ -146,6 +146,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
             AddCommand(createMbicCommand);
 
+            JitTraceOptions = JitTraceOptions.none;
 #if DEBUG
             Command createJitTraceCommand = new("create-jittrace","Transform a trace file into a jittrace runtime file")
             {
