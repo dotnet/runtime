@@ -6,8 +6,6 @@
     <NoWarn>$(NoWarn);SA1205;CA1845</NoWarn>
     <EnableTrimAnalyzer Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">false</EnableTrimAnalyzer>
     <IsPackable>true</IsPackable>
-    <!-- Lifetime rules introduced in C# 11 impact scenarios in net6 framework -->
-    <LangVersion Condition="'$(TargetFramework)' == 'net6.0'">10</LangVersion>
     <EnableAOTAnalyzer>true</EnableAOTAnalyzer>
     <PackageDescription>Provides Classes that allow you to decouple code logging rich (unserializable) diagnostics/telemetry (e.g. framework) from code that consumes it (e.g. tools)
 
@@ -87,6 +85,8 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="System\Diagnostics\System.Diagnostics.DiagnosticSource.Typeforwards.netcoreapp.cs" />
     <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
              Link="Common\System\LocalAppContextSwitches.Common.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

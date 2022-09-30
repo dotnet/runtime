@@ -33,6 +33,7 @@ usage()
   echo "  --os                            Target operating system: windows, Linux, FreeBSD, OSX, MacCatalyst, tvOS,"
   echo "                                  tvOSSimulator, iOS, iOSSimulator, Android, Browser, NetBSD, illumos or Solaris."
   echo "                                  [Default: Your machine's OS.]"
+  echo "  --outputrid <rid>               Optional argument that overrides the target rid name."
   echo "  --projects <value>              Project or solution file(s) to build."
   echo "  --runtimeConfiguration (-rc)    Runtime build configuration: Debug, Release or Checked."
   echo "                                  Checked is exclusive to the CLR runtime. It is the same as Debug, except code is"
@@ -428,6 +429,15 @@ while [[ $# > 0 ]]; do
       compiler="${opt/#-/}" # -gcc-9 => gcc-9 or gcc-9 => (unchanged)
       arguments="$arguments /p:Compiler=$compiler /p:CppCompilerAndLinker=$compiler"
       shift 1
+      ;;
+
+     -outputrid)
+      if [ -z ${2+x} ]; then
+        echo "No value for outputrid is supplied. See help (--help) for supported values." 1>&2
+        exit 1
+      fi
+      arguments="$arguments /p:OutputRid=$(echo "$2" | tr "[:upper:]" "[:lower:]")"
+      shift 2
       ;;
 
      -portablebuild)

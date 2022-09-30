@@ -32,8 +32,9 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            // T[] implements IList<T>.
-            return new ReadOnlyCollection<T>(array);
+            return array.Length == 0 ?
+                ReadOnlyCollection<T>.Empty :
+                new ReadOnlyCollection<T>(array);
         }
 
         public static void Resize<T>([NotNull] ref T[]? array, int newSize)
@@ -1344,28 +1345,18 @@ namespace System
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(int))
                 {
-                    int result = typeof(T).IsValueType
-                        ? SpanHelpers.IndexOfValueType(
-                            ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<int[]>(array)), startIndex),
-                            Unsafe.As<T, int>(ref value),
-                            count)
-                        : SpanHelpers.IndexOf(
-                            ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<int[]>(array)), startIndex),
-                            Unsafe.As<T, int>(ref value),
-                            count);
+                    int result = SpanHelpers.IndexOfValueType(
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<int[]>(array)), startIndex),
+                        Unsafe.As<T, int>(ref value),
+                        count);
                     return (result >= 0 ? startIndex : 0) + result;
                 }
                 else if (Unsafe.SizeOf<T>() == sizeof(long))
                 {
-                    int result = typeof(T).IsValueType
-                        ? SpanHelpers.IndexOfValueType(
-                            ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<long[]>(array)), startIndex),
-                            Unsafe.As<T, long>(ref value),
-                            count)
-                        : SpanHelpers.IndexOf(
-                            ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<long[]>(array)), startIndex),
-                            Unsafe.As<T, long>(ref value),
-                            count);
+                    int result = SpanHelpers.IndexOfValueType(
+                        ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(Unsafe.As<long[]>(array)), startIndex),
+                        Unsafe.As<T, long>(ref value),
+                        count);
                     return (result >= 0 ? startIndex : 0) + result;
                 }
             }

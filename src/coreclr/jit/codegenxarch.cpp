@@ -5328,6 +5328,17 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                                 // The encoding that supports containment is SSE4.1 only
                                 ins = INS_pextrw_sse41;
                             }
+
+                            // The hardware intrinsics take unsigned bytes between [0, 255].
+                            // However, the emitter expects "fits in byte" to always be signed
+                            // and therefore we need [128, 255] to be sign extended up to fill
+                            // the entire constant value.
+
+                            GenTreeIntCon* op2  = hwintrinsic->Op(2)->AsIntCon();
+                            ssize_t        ival = op2->IconValue();
+
+                            assert((ival >= 0) && (ival <= 255));
+                            op2->gtIconVal = static_cast<int8_t>(ival);
                             break;
                         }
 
