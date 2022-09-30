@@ -3661,6 +3661,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
             unsigned realSize = retVal->OperIs(GT_OBJ) ? retVal->AsObj()->Size() : retVal->AsIndir()->Size();
             if (genTypeSize(nativeReturnType) != realSize && realSize != 0)
             {
+                // TODO-ADDR: delete "realSize != 0" part once "IND<struct>" nodes are no more
                 LIR::Use retValUse(BlockRange(), &ret->gtOp1, ret);
                 ReplaceWithLclVar(retValUse);
                 LowerRetSingleRegStructLclVar(ret);
