@@ -526,7 +526,7 @@ GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVar*   data,
         GenTreeColon* lenCheckColon = gtNewColonNode(TYP_INT, indirCmp, gtNewFalse());
 
         // For StartsWith we use GT_GE, e.g.: `x.Length >= 10`
-        lenCheckNode = gtNewQmarkNode(TYP_INT, gtNewOperNode(cmpOp, TYP_INT, lengthFld, elementsCount), lenCheckColon);
+        lenCheckNode = gtNewQmarkNode(TYP_BOOL, gtNewOperNode(cmpOp, TYP_INT, lengthFld, elementsCount), lenCheckColon);
     }
 
     GenTree* rootQmark;
@@ -534,7 +534,7 @@ GenTree* Compiler::impExpandHalfConstEquals(GenTreeLclVar*   data,
     {
         // varData == nullptr
         GenTreeColon* nullCheckColon = gtNewColonNode(TYP_INT, lenCheckNode, gtNewFalse());
-        rootQmark = gtNewQmarkNode(TYP_INT, gtNewOperNode(GT_NE, TYP_INT, data, gtNewNull()), nullCheckColon);
+        rootQmark = gtNewQmarkNode(TYP_BOOL, gtNewOperNode(GT_NE, TYP_INT, data, gtNewNull()), nullCheckColon);
     }
     else
     {
@@ -722,11 +722,9 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
         if (unrolled->OperIs(GT_QMARK))
         {
             // QMARK nodes cannot reside on the evaluation stack
-            unrolled->ChangeType(TYP_BOOL);
             unsigned rootTmp = lvaGrabTemp(true DEBUGARG("spilling unroll qmark"));
             impAssignTempGen(rootTmp, unrolled);
             unrolled = gtNewLclvNode(rootTmp, TYP_INT);
-            lvaTable[rootTmp].lvType = TYP_BOOL;
         }
 
         JITDUMP("\n... Successfully unrolled to:\n")
@@ -874,11 +872,9 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
         if (unrolled->OperIs(GT_QMARK))
         {
             // QMARK can't be a root node, spill it to a temp
-            unrolled->ChangeType(TYP_BOOL);
             unsigned rootTmp = lvaGrabTemp(true DEBUGARG("spilling unroll qmark"));
             impAssignTempGen(rootTmp, unrolled);
             unrolled = gtNewLclvNode(rootTmp, TYP_INT);
-            lvaTable[rootTmp].lvType = TYP_BOOL;
         }
 
         JITDUMP("... Successfully unrolled to:\n")
