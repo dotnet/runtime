@@ -1181,9 +1181,11 @@ namespace DebuggerTests
                 var (refList, _) = await EvaluateOnCallFrame(id, "testPropertiesNone.list");
                 var refListProp = await GetProperties(refList["objectId"]?.Value<string>());
                 var list = refListProp
-                    .Where(v => v["name"]?.Value<string>() == "Items" || v["name"]?.Value<string>() == "_items")
-                    .FirstOrDefault();
+                    .FirstOrDefault(v => v["name"]?.Value<string>() == "Items" || v["name"]?.Value<string>() == "_items");
                 var refListElementsProp = await GetProperties(list["value"]["objectId"]?.Value<string>());
+                int? listMaxSize = refListProp.FirstOrDefault(m => m["name"]?.Value<string>() == "_size")?["value"]?["value"]?.Value<int>();
+                if (listMaxSize is not null)
+                    refListElementsProp = new JArray(refListElementsProp.Take(listMaxSize.Value));
 
                 var (refArray, _) = await EvaluateOnCallFrame(id, "testPropertiesNone.array");
                 var refArrayProp = await GetProperties(refArray["objectId"]?.Value<string>());

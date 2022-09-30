@@ -129,6 +129,8 @@ namespace BrowserDebugProxy
             if (rootValue?["type"]?.Value<string>() != "object")
                 return new JArray();
 
+            int? maxSize = null;
+
             // unpack object/valuetype
             if (rootObjectId.Scheme is "object" or "valuetype")
             {
@@ -154,8 +156,9 @@ namespace BrowserDebugProxy
                 {
                     // a collection - expose elements to be of array scheme
                     var memberNamedItems = members
-                        .Where(m => m["name"]?.Value<string>() == "Items" || m["name"]?.Value<string>() == "_items")
-                        .FirstOrDefault();
+                        .FirstOrDefault(m => m["name"]?.Value<string>() == "Items" || m["name"]?.Value<string>() == "_items");
+                    // sometimes items have dummy empty elements added after real items
+                    maxSize = members.FirstOrDefault(m => m["name"]?.Value<string>() == "_size")?["value"]?["value"]?.Value<int>();
                     if (memberNamedItems is not null &&
                         (DotnetObjectId.TryParse(memberNamedItems["value"]?["objectId"]?.Value<string>(), out DotnetObjectId itemsObjectId)) &&
                         itemsObjectId.Scheme == "array")
@@ -168,6 +171,8 @@ namespace BrowserDebugProxy
             if (rootObjectId.Scheme == "array")
             {
                 JArray resultValue = await sdbHelper.GetArrayValues(rootObjectId.Value, token);
+                if (maxSize is not null)
+                    resultValue = new JArray(resultValue.Take(maxSize.Value));
 
                 // root hidden item name has to be unique, so we concatenate the root's name to it
                 foreach (var item in resultValue)
@@ -286,6 +291,8 @@ namespace BrowserDebugProxy
         {
             if (state is DebuggerBrowsableState.RootHidden)
             {
+                if (namePrefix == "valueTypeEnumRootHidden")
+                    Console.WriteLine($"namePrefix = {namePrefix}; typeName = {typeName}");
                 if (MonoSDBHelper.IsPrimitiveType(typeName))
                     return GetHiddenElement();
 
@@ -428,7 +435,7 @@ namespace BrowserDebugProxy
 
             async Task UpdateBackingFieldWithPropertyAttributes(JObject backingField, string autoPropName, MethodAttributes getterMemberAccessAttrs, DebuggerBrowsableState? state)
             {
-                backingField["__section"] = getterMemberAccessAttrs switch
+                backingField[ProxyInternalUseProperty.Section.ToUnderscoredString()] = getterMemberAccessAttrs switch
                 {
                     MethodAttributes.Private => "private",
                     _ => "result"
