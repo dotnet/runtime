@@ -721,17 +721,14 @@ namespace System.Formats.Tar
         private void CollectExtendedAttributesFromStandardFieldsIfNeeded()
         {
             ExtendedAttributes[PaxEaName] = _name;
-
-            if (!ExtendedAttributes.ContainsKey(PaxEaMTime))
-            {
-                ExtendedAttributes.Add(PaxEaMTime, TarHelpers.GetTimestampStringFromDateTimeOffset(_mTime));
-            }
+            ExtendedAttributes[PaxEaMTime] = TarHelpers.GetTimestampStringFromDateTimeOffset(_mTime);
 
             TryAddStringField(ExtendedAttributes, PaxEaGName, _gName, FieldLengths.GName);
             TryAddStringField(ExtendedAttributes, PaxEaUName, _uName, FieldLengths.UName);
 
             if (!string.IsNullOrEmpty(_linkName))
             {
+                Debug.Assert(_typeFlag is TarEntryType.SymbolicLink or TarEntryType.HardLink);
                 ExtendedAttributes[PaxEaLinkName] = _linkName;
             }
 
@@ -740,12 +737,16 @@ namespace System.Formats.Tar
                 ExtendedAttributes[PaxEaSize] = _size.ToString();
             }
 
-            // Adds the specified string to the dictionary if it's longer than the specified max byte length.
+            // Sets the specified string to the dictionary if it's longer than the specified max byte length; otherwise, remove it.
             static void TryAddStringField(Dictionary<string, string> extendedAttributes, string key, string? value, int maxLength)
             {
-                if (!string.IsNullOrEmpty(value) && GetUtf8TextLength(value) > maxLength)
+                if (string.IsNullOrEmpty(value) || GetUtf8TextLength(value) <= maxLength)
                 {
-                    extendedAttributes.Add(key, value);
+                    extendedAttributes.Remove(key);
+                }
+                else
+                {
+                    extendedAttributes[key] = value;
                 }
             }
         }
