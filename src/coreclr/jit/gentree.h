@@ -5712,6 +5712,16 @@ struct GenTreeQmark : public GenTreeOp
         assert((colon != nullptr) && colon->OperIs(GT_COLON));
     }
 
+    GenTree* ThenNode()
+    {
+        return gtOp2->AsColon()->ThenNode();
+    }
+
+    GenTree* ElseNode()
+    {
+        return gtOp2->AsColon()->ElseNode();
+    }
+
 #if DEBUGGABLE_GENTREE
     GenTreeQmark() : GenTreeOp()
     {
