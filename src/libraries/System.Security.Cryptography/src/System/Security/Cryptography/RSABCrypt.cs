@@ -80,6 +80,10 @@ namespace System.Security.Cryptography
 
             RSAParameters ret = default;
             ret.FromBCryptBlob(keyBlob, includePrivateParameters);
+
+            // FromBCryptBlob isn't expected to have any failures since it's reading
+            // data directly from BCryptExportKey, so we don't need to bother with
+            // a try/finally.
             CryptoPool.Return(keyBlob);
 
             return ret;
@@ -103,6 +107,8 @@ namespace System.Security.Cryptography
             }
             finally
             {
+                // Return (and clear) the BCryptBlob array even if the parameters
+                // are invalid and the import fails/throws (e.g. P*Q != Modulus).
                 CryptoPool.Return(keyBlob);
             }
 

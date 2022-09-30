@@ -5,7 +5,6 @@ using System;
 using System.Runtime.InteropServices;
 
 using Microsoft.Win32.SafeHandles;
-using Internal.Cryptography;
 
 internal static partial class Interop
 {
@@ -44,7 +43,7 @@ internal static partial class Interop
             if (status != NTSTATUS.STATUS_SUCCESS)
             {
                 key.Dispose();
-                throw CryptoThrowHelper.ToCryptographicException((int)status);
+                throw CreateCryptographicException(status);
             }
 
             return key;
