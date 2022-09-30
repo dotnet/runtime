@@ -10,6 +10,7 @@ parameters:
         eng/testing/scenarios/BuildWasmAppsJobsList.txt
         eng/testing/tests.wasm.targets
         src/libraries/sendtohelix-wasm.targets
+        src/mono/mono/**/*wasm*
         src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
         src/mono/nuget/Microsoft.NET.Runtime.wasm.Sample.Mono/*
         src/mono/wasi/*
@@ -20,10 +21,7 @@ parameters:
         src/tests/Common/wasm-test-runner/*
     ]
     _wasm_pipelines: [
-        eng/pipelines/*wasm*
-        eng/pipelines/common/templates/*wasm*
-        eng/pipelines/common/templates/runtime/wasm*
-        eng/pipelines/coreclr/*wasm*
+        eng/pipelines/**/*wasm*yml
     ]
 
     # src/workloads is only used in runtime-official builds
