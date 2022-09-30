@@ -448,7 +448,7 @@ static void InitializeVariableMaxAndTopPointers(char* symbolVersion)
 // This method get called from the managed side during the globalization initialization.
 // This method shouldn't get called at all if we are running in globalization invariant mode
 // return 0 if failed to load ICU and 1 otherwise
-int32_t GlobalizationNative_LoadICU()
+int32_t GlobalizationNative_LoadICU(void)
 {
     char symbolName[SYMBOL_NAME_SIZE];
     char symbolVersion[MaxICUVersionStringLength + 1]="";
@@ -545,7 +545,7 @@ void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* 
 
 // GlobalizationNative_GetICUVersion
 // return the current loaded ICU version
-int32_t GlobalizationNative_GetICUVersion()
+int32_t GlobalizationNative_GetICUVersion(void)
 {
     if (u_getVersion_ptr == NULL)
         return 0;
