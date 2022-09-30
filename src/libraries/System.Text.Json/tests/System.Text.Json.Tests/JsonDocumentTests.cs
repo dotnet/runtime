@@ -14,6 +14,7 @@ using System.IO.Tests;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using System.Threading;
 
 namespace System.Text.Json.Tests
 {
@@ -3604,6 +3605,65 @@ namespace System.Text.Json.Tests
                 AssertExtensions.Throws<InvalidOperationException>(() => jElement.ValueEquals(ThrowsAnyway), ErrorMessage);
                 AssertExtensions.Throws<InvalidOperationException>(() => jElement.ValueEquals(ThrowsAnyway.AsSpan()), ErrorMessage);
                 AssertExtensions.Throws<InvalidOperationException>(() => jElement.ValueEquals(Encoding.UTF8.GetBytes(ThrowsAnyway)), ErrorMessage);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public static void GetString_LastStringCached()
+        {
+            using (JsonDocument doc = JsonDocument.Parse(SR.SimpleObjectJson))
+            {
+                JsonElement first = doc.RootElement.GetProperty("first");
+                string firstString = first.GetString();
+                for (int i = 0; i < 3; i++)
+                {
+                    Assert.Same(firstString, first.GetString());
+                }
+
+                JsonElement last = doc.RootElement.GetProperty("last");
+                string lastString = last.GetString();
+                for (int i = 0; i < 3; i++)
+                {
+                    Assert.Same(lastString, last.GetString());
+                }
+
+                Assert.NotSame(firstString, first.GetString());
+                Assert.NotSame(lastString, last.GetString());
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [OuterLoop] // thread-safety / stress test
+        public static async Task GetString_ConcurrentUse_ThreadSafe()
+        {
+            using (JsonDocument doc = JsonDocument.Parse(SR.SimpleObjectJson))
+            {
+                JsonElement first = doc.RootElement.GetProperty("first");
+                JsonElement last = doc.RootElement.GetProperty("last");
+
+                const int Iters = 10_000;
+                using (var gate = new Barrier(2))
+                {
+                    await Task.WhenAll(
+                        Task.Factory.StartNew(() =>
+                        {
+                            gate.SignalAndWait();
+                            for (int i = 0; i < Iters; i++)
+                            {
+                                Assert.Equal("John", first.GetString());
+                                Assert.True(first.ValueEquals("John"));
+                            }
+                        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default),
+                        Task.Factory.StartNew(() =>
+                        {
+                            gate.SignalAndWait();
+                            for (int i = 0; i < Iters; i++)
+                            {
+                                Assert.Equal("Smith", last.GetString());
+                                Assert.True(last.ValueEquals("Smith"));
+                            }
+                        }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default));
+                }
             }
         }
 

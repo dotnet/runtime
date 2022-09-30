@@ -27,7 +27,19 @@ namespace System.Text.Json
         private byte[]? _extraRentedArrayPoolBytes;
         private PooledByteBufferWriter? _extraPooledByteBufferWriter;
 
-        private (int, string?) _lastIndexAndString = (-1, null);
+        /// <summary>Value used with <see cref="_lastIndex"/> indicating whether the "lock" is held.</summary>
+        /// <remarks>
+        /// JsonDocument is documented to be thread-safe. In order for GetString/TextEquals to cache the last
+        /// string that was read and the associated index, the reads/writes to get/set those need to be atomic.
+        /// To achieve that, _lastIndex is used as a gate. In order to read or write <see cref="_lastString"/>,
+        /// code must own the right to do so via having used Interlocked.CompareExchange to set <see cref="_lastIndex"/>
+        /// to <see cref="LastIndexLockHeld"/>. An actual lock isn't used to avoid blocking mutual exclusion;
+        /// if there's any contention, code simply avoids the cache.
+        /// </remarks>
+        private const int LastIndexLockHeld = -2;
+
+        private int _lastIndex = -1;
+        private string? _lastString;
 
         internal bool IsDisposable { get; }
 
@@ -266,12 +278,17 @@ namespace System.Text.Json
         {
             CheckNotDisposed();
 
-            (int lastIdx, string? lastString) = _lastIndexAndString;
-
-            if (lastIdx == index)
+            // If the cached last index is the same one we're trying to read, try to acquire the right to
+            // read the cached string.  If we're successful in doing so, we know the cached string and index
+            // are consistent, and we can use and return the string. If the cached index doesn't match ours
+            // or we're unable to acquire the right, simply skip using the cache.
+            string? result;
+            if (index == _lastIndex && Interlocked.CompareExchange(ref _lastIndex, LastIndexLockHeld, index) == index)
             {
-                Debug.Assert(lastString != null);
-                return lastString;
+                result = _lastString;
+                Debug.Assert(result is not null);
+                Volatile.Write(ref _lastIndex, index);
+                return result;
             }
 
             DbRow row = _parsedData.Get(index);
@@ -288,18 +305,21 @@ namespace System.Text.Json
             ReadOnlySpan<byte> data = _utf8Json.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            if (row.HasComplexChildren)
+            result = row.HasComplexChildren ?
+                JsonReaderHelper.GetUnescapedString(segment) :
+                JsonReaderHelper.TranscodeHelper(segment);
+            Debug.Assert(result != null);
+
+            // Try to store the read string and associated index back into the cache.  If there's any contention,
+            // simply avoid doing so.
+            int lastIndex = _lastIndex;
+            if (lastIndex != LastIndexLockHeld && Interlocked.CompareExchange(ref _lastIndex, LastIndexLockHeld, lastIndex) == lastIndex)
             {
-                lastString = JsonReaderHelper.GetUnescapedString(segment);
-            }
-            else
-            {
-                lastString = JsonReaderHelper.TranscodeHelper(segment);
+                _lastString = result;
+                Volatile.Write(ref _lastIndex, index);
             }
 
-            Debug.Assert(lastString != null);
-            _lastIndexAndString = (index, lastString);
-            return lastString;
+            return result;
         }
 
         internal bool TextEquals(int index, ReadOnlySpan<char> otherText, bool isPropertyName)
@@ -308,11 +328,17 @@ namespace System.Text.Json
 
             int matchIndex = isPropertyName ? index - DbRow.Size : index;
 
-            (int lastIdx, string? lastString) = _lastIndexAndString;
-
-            if (lastIdx == matchIndex)
+            // If the cached last index is the same one we're trying to compare, try to acquire the right to
+            // read the cached string.  If we're successful in doing so, we know the cached string and index
+            // are consistent, and we can use and compare the string. If the cached index doesn't match ours
+            // or we're unable to acquire the right, simply skip using the cache.
+            if (index == _lastIndex && Interlocked.CompareExchange(ref _lastIndex, LastIndexLockHeld, index) == index)
             {
-                return otherText.SequenceEqual(lastString.AsSpan());
+                string? lastString = _lastString;
+                Debug.Assert(lastString is not null);
+                bool equals = otherText.SequenceEqual(lastString.AsSpan());
+                Volatile.Write(ref _lastIndex, index);
+                return equals;
             }
 
             byte[]? otherUtf8TextArray = null;
