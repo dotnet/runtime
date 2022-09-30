@@ -1,0 +1,50 @@
+parameters:
+  variants: ['wasm-interpreter', 'wasm-aot']
+  perfForkToUse: {} #repo
+
+jobs:
+
+# FIXME: only wasm right now
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms:
+    - Browser_wasm
+    jobParameters:
+      buildArgs: -s mono+libs+host+packs -c $(_BuildConfig)
+      nameSuffix: wasm
+      isOfficialBuild: false
+      extraStepsTemplate: /eng/pipelines/coreclr/perf-wasm-prepare-artifacts-steps.yml
+      extraStepsParameters:
+        configForBuild: Release
+
+- ${{ each variant in parameters.variants }}:
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/perf-job.yml # NOTE: should we move this file out of coreclr tempelates because it contains mono jobs?
+      buildConfig: release
+      runtimeFlavor: wasm
+      platforms:
+      - Linux_x64
+      jobParameters:
+        testGroup: perf
+        liveLibrariesBuildConfig: Release
+        skipLiveLibrariesDownload: true
+        runtimeType: wasm
+        - ${{ if eq(variant, 'wasm-interpreter') }}:
+          codeGenType: 'wasm'
+        - ${{ if eq(variant, 'wasm-aot') }}:
+          codeGenType: 'aot'
+        projectFile: microbenchmarks.proj
+        runKind: micro
+        runJobTemplate: /eng/pipelines/coreclr/templates/run-performance-job.yml
+        logicalmachine: 'perftiger'
+        javascriptEngine: 'v8'
+        additionalSetupParameters: '--dotnet-versions 8.0.0' # passed to ci_setup.py
+        collectHelixLogsScript: ${{ parameters.collectHelixLogsScript }}
+        compare: ${{ parameters.compare }}
+        onlySanityCheck: ${{ parameters.onlySanityCheck }}
+        downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
+        perfForkToUse: ${{ parameters.perfForkToUse }}

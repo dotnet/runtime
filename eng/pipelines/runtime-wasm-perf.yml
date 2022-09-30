@@ -15,11 +15,11 @@ jobs:
 #- ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
   #- template: /eng/pipelines/common/evaluate-default-paths.yml
 
-- template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
-  parameters:
-    runProfile: 'v8'
-    collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
-    onlySanityCheck: true
+#- template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
+  #parameters:
+    #runProfile: 'v8'
+    #collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
+    #onlySanityCheck: true
     #perfForkToUse:
       #url: https://github.com/radical/performance
       #branch: fix-build
@@ -27,3 +27,5 @@ jobs:
       #buildId: '1878694'
       #pipeline: 'perf-wasm'
       #branchName: 'refs/pull/72119/head'
+
+- template: /eng/pipelines/runtime-perf-manual-jobs.yml

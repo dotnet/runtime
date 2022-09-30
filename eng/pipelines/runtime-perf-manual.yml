@@ -1,0 +1,18 @@
+trigger: none
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+jobs:
+
+
+# 1. baseline commit/branch, fork
+# 2. compare against - 
+#
+# one template for these
+#
+#
+#
+#
+
+- template: /eng/pipelines/runtime-perf-manual-jobs.yml

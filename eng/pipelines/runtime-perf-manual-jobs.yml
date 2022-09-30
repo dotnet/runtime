@@ -1,0 +1,24 @@
+parameters:
+- name: baseline
+  type: object
+  default:
+    repoUrl: 'https://github.com/dotnet/runtime'
+    branchOrCommit: 'main'
+
+- name: candidate
+  type: object
+  default:
+    repoUrl: 'https://github.com/dotnet/runtime'
+    branchOrCommit: 'main'
+
+- name: filter
+  type: string
+  default: ''
+
+jobs:
+
+- template: /eng/pipelines/runtime-perf-manual-job.yml
+  parameters:
+    perfForkToUse:
+      url: ${{ parameters.baseline.repoUrl }}
+      branch: ${{ parameters.baseline.branchOrCommit }}
