@@ -64,12 +64,8 @@ namespace BrowserDebugProxy
                 typePropertiesBrowsableInfo.TryGetValue(field.Name, out state);
             }
             fieldValue[ProxyInternalUseProperty.State.ToUnderscoredString()] = state?.ToString();
-
-            fieldValue[ProxyInternalUseProperty.Section.ToUnderscoredString()] = field.Attributes switch
-            {
-                FieldAttributes.Private => "private",
-                _ => "result"
-            };
+            fieldValue[ProxyInternalUseProperty.Section.ToUnderscoredString()] = field.Attributes.HasFlag(FieldAttributes.Private)
+                ? "private" : "result";
 
             if (field.IsBackingField)
             {
