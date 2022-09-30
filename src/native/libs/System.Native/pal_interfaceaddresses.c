@@ -11,8 +11,10 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <assert.h>
+#if HAVE_GETIFADDRS || defined(ANDROID_GETIFADDRS_WORKAROUND)
 #include <ifaddrs.h>
-#if !HAVE_GETIFADDRS && TARGET_ANDROID
+#endif
+#ifdef ANDROID_GETIFADDRS_WORKAROUND
 #include <dlfcn.h>
 #include <pthread.h>
 #endif
@@ -99,7 +101,7 @@ static inline uint8_t mask2prefix(uint8_t* mask, int length)
     return len;
 }
 
-#if !HAVE_GETIFADDRS && TARGET_ANDROID
+#ifdef ANDROID_GETIFADDRS_WORKAROUND
 // Try to load the getifaddrs and freeifaddrs functions manually.
 // This workaround is necessary on Android prior to API 24 and it can be removed once
 // we drop support for earlier Android versions.
@@ -129,7 +131,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
                                                IPv6AddressFound onIpv6Found,
                                                LinkLayerAddressFound onLinkLayerFound)
 {
-#if !HAVE_GETIFADDRS && TARGET_ANDROID
+#ifdef ANDROID_GETIFADDRS_WORKAROUND
     if (!ensure_getifaddrs_is_loaded())
     {
         errno = ENOTSUP;
@@ -137,7 +139,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
     }
 #endif
 
-#if HAVE_GETIFADDRS || TARGET_ANDROID
+#if HAVE_GETIFADDRS || defined(ANDROID_GETIFADDRS_WORKAROUND)
     struct ifaddrs* headAddr;
     if (getifaddrs(&headAddr) == -1)
     {
@@ -282,7 +284,7 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
 
 int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInterfaceInfo **interfaceList, int32_t * addressCount, IpAddressInfo **addressList )
 {
-#if !HAVE_GETIFADDRS && TARGET_ANDROID
+#ifdef ANDROID_GETIFADDRS_WORKAROUND
     if (!ensure_getifaddrs_is_loaded())
     {
         errno = ENOTSUP;
@@ -290,7 +292,7 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
     }
 #endif
 
-#if HAVE_GETIFADDRS || TARGET_ANDROID
+#if HAVE_GETIFADDRS || defined(ANDROID_GETIFADDRS_WORKAROUND)
     struct ifaddrs* head;   // Pointer to block allocated by getifaddrs().
     struct ifaddrs* ifaddrsEntry;
     IpAddressInfo *ai;

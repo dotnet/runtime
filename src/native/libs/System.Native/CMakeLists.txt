@@ -83,6 +83,10 @@ include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
 set(NATIVE_LIBS_EXTRA)
 append_extra_system_libs(NATIVE_LIBS_EXTRA)
 
+if (CLR_CMAKE_TARGET_ANDROID AND NOT HAVE_GETIFADDRS)
+    add_definitions(-DANDROID_GETIFADDRS_WORKAROUND)
+endif ()
+
 if (GEN_SHARED_LIB)
     add_library(System.Native
         SHARED
