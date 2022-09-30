@@ -1498,14 +1498,14 @@ static int32_t EnsureOpenSslInitializedCore(void)
     return ret;
 }
 
-static void EnsureOpenSslInitializedOnce()
+static void EnsureOpenSslInitializedOnce(void)
 {
     g_initStatus = EnsureOpenSslInitializedCore();
 }
 
 static pthread_once_t g_initializeShim = PTHREAD_ONCE_INIT;
 
-int32_t CryptoNative_EnsureOpenSslInitialized()
+int32_t CryptoNative_EnsureOpenSslInitialized(void)
 {
     pthread_once(&g_initializeShim, EnsureOpenSslInitializedOnce);
     return g_initStatus;
