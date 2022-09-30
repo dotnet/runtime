@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsSehInteropSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMarshalGetExceptionPointersSupported))]
     public class GetExceptionCodeTests
     {
         [Fact]
