@@ -722,9 +722,11 @@ GenTree* Compiler::impStringEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO
         if (unrolled->OperIs(GT_QMARK))
         {
             // QMARK nodes cannot reside on the evaluation stack
+            unrolled->ChangeType(TYP_BOOL);
             unsigned rootTmp = lvaGrabTemp(true DEBUGARG("spilling unroll qmark"));
             impAssignTempGen(rootTmp, unrolled);
             unrolled = gtNewLclvNode(rootTmp, TYP_INT);
+            lvaTable[rootTmp].lvType = TYP_BOOL;
         }
 
         JITDUMP("\n... Successfully unrolled to:\n")
@@ -872,9 +874,11 @@ GenTree* Compiler::impSpanEqualsOrStartsWith(bool startsWith, CORINFO_SIG_INFO* 
         if (unrolled->OperIs(GT_QMARK))
         {
             // QMARK can't be a root node, spill it to a temp
+            unrolled->ChangeType(TYP_BOOL);
             unsigned rootTmp = lvaGrabTemp(true DEBUGARG("spilling unroll qmark"));
             impAssignTempGen(rootTmp, unrolled);
             unrolled = gtNewLclvNode(rootTmp, TYP_INT);
+            lvaTable[rootTmp].lvType = TYP_BOOL;
         }
 
         JITDUMP("... Successfully unrolled to:\n")
