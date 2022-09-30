@@ -45,7 +45,7 @@ namespace System.Runtime.InteropServices.JavaScript
         });
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean.</see> type.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Boolean">Boolean</see> type.
         /// </summary>
         /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType Boolean { get; } = new JSMarshalerType(new JSFunctionBinding.JSBindingType
@@ -63,7 +63,7 @@ namespace System.Runtime.InteropServices.JavaScript
         });
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String.</see> one character long.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String">String</see> one character long.
         /// </summary>
         /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType Char { get; } = new JSMarshalerType(new JSFunctionBinding.JSBindingType
@@ -136,7 +136,7 @@ namespace System.Runtime.InteropServices.JavaScript
         });
 
         /// <summary>
-        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object.</see> or it's JSObject proxy on managed side.
+        /// Marshal as JavaScript <see href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object">Object</see> or its JSObject proxy on managed side.
         /// </summary>
         /// <returns>The marshaler metadata.</returns>
         public static JSMarshalerType JSObject { get; } = new JSMarshalerType(new JSFunctionBinding.JSBindingType
