@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.Xml
         {
             if (IsInNodeSet)
             {
-                byte[] rgbData = Utils.DefaultEncoding.GetBytes(Utils.EscapeCData(Data));
+                byte[] rgbData = Encoding.UTF8.GetBytes(Utils.EscapeCData(Data));
                 hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
             }
         }

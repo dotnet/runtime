@@ -113,7 +113,7 @@ namespace System.Security.Cryptography.Xml
         {
             StringBuilder sb = new StringBuilder();
             _c14nDoc.Write(sb, DocPosition.BeforeRootElement, _ancMgr);
-            return Utils.DefaultEncoding.GetBytes(sb.ToString());
+            return Encoding.UTF8.GetBytes(sb.ToString());
         }
 
         internal byte[] GetDigestedBytes(HashAlgorithm hash)

@@ -98,7 +98,7 @@ namespace System.Security.Cryptography.Xml
                     sb.Append(result.OuterXml);
             }
 
-            byte[] buffer = Utils.DefaultEncoding.GetBytes(sb.ToString());
+            byte[] buffer = Encoding.UTF8.GetBytes(sb.ToString());
             int i;
             int j = 0;
             while ((j < buffer.Length) && (!char.IsWhiteSpace((char)buffer[j]))) j++;

@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.Xml
         {
             if (IsInNodeSet && docPos == DocPosition.InRootElement)
             {
-                byte[] rgbData = Utils.DefaultEncoding.GetBytes(Utils.EscapeWhitespaceData(Value));
+                byte[] rgbData = Encoding.UTF8.GetBytes(Utils.EscapeWhitespaceData(Value));
                 hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
             }
         }

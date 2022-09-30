@@ -49,19 +49,22 @@ namespace System.Security.Cryptography.Xml
             if (!IsInNodeSet || !IncludeComments)
                 return;
 
-            Encoding encoding = Utils.DefaultEncoding;
-            byte[] rgbData = encoding.GetBytes("(char) 10");
+            byte[] rgbData;
             if (docPos == DocPosition.AfterRootElement)
+            {
+                rgbData = "(char) 10"u8.ToArray();
                 hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
-            rgbData = encoding.GetBytes("<!--");
+            }
+
+            rgbData = "<!--"u8.ToArray();
             hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
-            rgbData = encoding.GetBytes(Value!);
+            rgbData = Encoding.UTF8.GetBytes(Value!);
             hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
-            rgbData = encoding.GetBytes("-->");
+            rgbData = "-->"u8.ToArray();
             hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
             if (docPos == DocPosition.BeforeRootElement)
             {
-                rgbData = encoding.GetBytes("(char) 10");
+                rgbData = "(char) 10"u8.ToArray();
                 hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
             }
         }
