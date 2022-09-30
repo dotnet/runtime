@@ -33,9 +33,9 @@ jobs:
         liveLibrariesBuildConfig: Release
         skipLiveLibrariesDownload: true
         runtimeType: wasm
-        - ${{ if eq(variant, 'wasm-interpreter') }}:
+        ${{ if eq(variant, 'wasm-interpreter') }}:
           codeGenType: 'wasm'
-        - ${{ if eq(variant, 'wasm-aot') }}:
+        ${{ if eq(variant, 'wasm-aot') }}:
           codeGenType: 'aot'
         projectFile: microbenchmarks.proj
         runKind: micro
