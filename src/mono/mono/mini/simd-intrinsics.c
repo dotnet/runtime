@@ -550,11 +550,12 @@ emit_sum_vector (MonoCompile *cfg, MonoType *vector_type, MonoTypeEnum element_t
 	return ins;
 }
 #endif
+#ifdef TARGET_WASM
+static MonoInst* emit_sum_vector (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, MonoTypeEnum element_type, MonoInst **args);
+#endif
 
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_WASM)
 static int type_to_extract_op (MonoTypeEnum type);
-static const int fast_log2 [] = { -1, -1, 1, -1, 2, -1, -1, -1, 3 };
-
 static MonoInst*
 extract_first_element (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum element_type, int sreg)
 {
@@ -565,6 +566,10 @@ extract_first_element (MonoCompile *cfg, MonoClass *klass, MonoTypeEnum element_
 
 	return ins;
 }
+#endif
+
+#ifdef TARGET_AMD64
+static const int fast_log2 [] = { -1, -1, 1, -1, 2, -1, -1, -1, 3 };
 
 static MonoInst*
 emit_sum_vector (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, MonoTypeEnum element_type, MonoInst **args)
@@ -1276,14 +1281,17 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_CreateScalarUnsafe:
 		return emit_simd_ins_for_sig (cfg, klass, OP_CREATE_SCALAR_UNSAFE, -1, arg0_type, fsig, args);
 	case SN_Dot: {
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_WASM)
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
 
 		int instc0 = type_enum_is_float (arg0_type) ? OP_FMUL : OP_IMUL;
 		MonoInst *pairwise_multiply = emit_simd_ins_for_sig (cfg, klass, OP_XBINOP, instc0, arg0_type, fsig, args);
-
+#if defined(TARGET_ARM64)
 		return emit_sum_vector (cfg, fsig->params [0], arg0_type, pairwise_multiply);
+#else
+		return emit_sum_vector (cfg, klass, fsig, arg0_type, &pairwise_multiply);
+#endif
 #else
 		return NULL;
 #endif
@@ -1509,7 +1517,7 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 			return NULL;
 #ifdef TARGET_ARM64
 		return emit_sum_vector (cfg, fsig->params [0], arg0_type, args [0]);		
-#elif defined(TARGET_AMD64)
+#elif defined(TARGET_AMD64) || defined(TARGET_WASM)
 		return emit_sum_vector(cfg, klass, fsig, arg0_type, args);
 #else
 		return NULL;
@@ -4155,6 +4163,14 @@ emit_amd64_intrinsics (const char *class_ns, const char *class_name, MonoCompile
 #endif // !TARGET_ARM64
 
 #ifdef TARGET_WASM
+
+static MonoInst*
+emit_sum_vector (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, MonoTypeEnum element_type, MonoInst **args)
+{
+	MonoInst* vsum = emit_simd_ins (cfg, klass, OP_WASM_SIMD_SUM, args[0]->dreg, -1);
+
+	return extract_first_element (cfg, klass, element_type, vsum->dreg);
+}
 
 static SimdIntrinsic packedsimd_methods [] = {
 	{SN_And},
