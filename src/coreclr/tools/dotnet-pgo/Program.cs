@@ -458,9 +458,9 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             var paths = Get(_command.InputFilesToCompare);
 
             // Command line parser should require exactly 2 files
-            Trace.Assert(paths.Count == 2);
-            string file1 = paths.ElementAt(0).Value;
-            string file2 = paths.ElementAt(1).Value;
+            Trace.Assert(paths.Length == 2);
+            string file1 = paths[0];
+            string file2 = paths[1];
 
             // Look for the shortest unique names for the input files.
             string name1 = Path.GetFileName(file1);

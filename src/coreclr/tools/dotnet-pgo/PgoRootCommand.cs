@@ -17,8 +17,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
     {
         public Option<Dictionary<string, string>> InputFilesToMerge { get; } =
             new(new[] { "--input", "-i" }, result => Helpers.BuildPathDictionay(result.Tokens, false), false, "Input .mibc files to be merged. Multiple input arguments are specified as --input file1.mibc --input file2.mibc") { IsRequired = true, Arity = ArgumentArity.OneOrMore };
-        public Option<Dictionary<string, string>> InputFilesToCompare { get; } =
-            new(new[] { "--input", "-i" }, result => Helpers.BuildPathDictionay(result.Tokens, false), false, "The input .mibc files to be compared. Specify as --input file1.mibc --input file2.mibc") { IsRequired = true, Arity = new ArgumentArity(2, 2) /* exactly two */ };
+        public Option<string[]> InputFilesToCompare { get; } =
+            new(new[] { "--input", "-i" }, "The input .mibc files to be compared. Specify as --input file1.mibc --input file2.mibc") { IsRequired = true, Arity = new ArgumentArity(2, 2) /* exactly two */ };
         public Option<string> InputFileToDump { get; } =
             new(new[] { "--input", "-i" }, "Name of the input mibc file to dump") { IsRequired = true, Arity = ArgumentArity.ExactlyOne };
         public Option<string> TraceFilePath { get; } =
