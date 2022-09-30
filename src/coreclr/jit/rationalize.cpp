@@ -320,6 +320,12 @@ void Rationalizer::SanityCheck()
                     {
                         assert(!(tree->gtGetOp2()->gtFlags & GTF_VAR_DEF));
                     }
+
+                    if (tree->OperIsInitBlkOp())
+                    {
+                        // No SIMD types are allowed for InitBlks (including zero-inits).
+                        assert(tree->TypeIs(TYP_STRUCT) && tree->gtGetOp1()->TypeIs(TYP_STRUCT));
+                    }
                 }
             }
         }
