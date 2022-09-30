@@ -171,7 +171,7 @@ namespace System.CommandLine
                                 Dictionary<string, string> dictionary = new();
                                 foreach (string optInList in values)
                                 {
-                                    Helpers.AppendExpandedPaths(dictionary, optInList, false);
+                                    AppendExpandedPaths(dictionary, optInList, false);
                                 }
                                 foreach (string inputFile in dictionary.Values)
                                 {
