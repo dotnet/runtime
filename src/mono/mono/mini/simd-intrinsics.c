@@ -383,16 +383,16 @@ emit_simd_ins_for_binary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSigna
 static MonoInst*
 emit_simd_ins_for_unary_op (MonoCompile *cfg, MonoClass *klass, MonoMethodSignature *fsig, MonoInst **args, MonoTypeEnum arg_type, int id)
 {
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_AMD64)
 	int op = -1;
 	switch (id){
 	case SN_Negate:
 	case SN_op_UnaryNegation:
-		op = OP_ARM64_XNEG;
+		op = OP_NEGATION;
 		break;
 	case SN_OnesComplement:
 	case SN_op_OnesComplement:
-		op = OP_ARM64_MVN;
+		op = OP_ONES_COMPLEMENT;
 		break;
 	default:
 		g_assert_not_reached ();
@@ -2628,11 +2628,11 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_MultiplyWideningUpper, OP_ARM64_SMULL2, None, OP_ARM64_UMULL2},
 	{SN_MultiplyWideningUpperAndAdd, OP_ARM64_SMLAL2, None, OP_ARM64_UMLAL2},
 	{SN_MultiplyWideningUpperAndSubtract, OP_ARM64_SMLSL2, None, OP_ARM64_UMLSL2},
-	{SN_Negate, OP_ARM64_XNEG},
+	{SN_Negate, OP_NEGATION},
 	{SN_NegateSaturate, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_SQNEG},
 	{SN_NegateSaturateScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_SQNEG},
-	{SN_NegateScalar, OP_ARM64_XNEG_SCALAR},
-	{SN_Not, OP_ARM64_MVN},
+	{SN_NegateScalar, OP_NEGATION_SCALAR},
+	{SN_Not, OP_ONES_COMPLEMENT},
 	{SN_Or, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_OR},
 	{SN_OrNot, OP_XBINOP_FORCEINT, XBINOP_FORCEINT_ORNOT},
 	{SN_PolynomialMultiply, OP_XOP_OVR_X_X_X, INTRINS_AARCH64_ADV_SIMD_PMUL},
