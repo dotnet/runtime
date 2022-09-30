@@ -6124,7 +6124,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					interp_emit_sfld_access (td, field, field_klass, mt, TRUE, error);
 					goto_if_nok (error, exit);
 				} else if (td->sp [-1].type == STACK_TYPE_VT) {
-					/* TODO: metadata-update: implement me */
+					/* metadata-update: can't add fields to structs */
 					g_assert (!m_field_is_from_update (field));
 					int size = 0;
 					/* First we pop the vt object from the stack. Then we push the field */
@@ -6153,7 +6153,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					if (G_UNLIKELY (m_field_is_from_update (field))) {
 						g_assert (!m_type_is_byref (field->type));
 						MonoClass *field_class = mono_class_from_mono_type_internal (field->type);
-						MonoType *local_type = m_class_get_byval_arg (field_class);
 						interp_emit_metadata_update_ldflda (td, field, error);
 						goto_if_nok (error, exit);
 						interp_add_ins (td, interp_get_ldind_for_mt (mt));
