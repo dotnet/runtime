@@ -703,7 +703,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             assert(HWIntrinsicInfo::BaseTypeFromFirstArg(intrinsic));
 
-            varTypes op1SimdBaseJitType =
+            CorInfoType op1SimdBaseJitType =
                 getBaseJitTypeAndSizeOfSIMDType(info.compCompHnd->getArgClass(sig, sig->args), &simdSize);
 
             assert(simdBaseJitType == op1SimdBaseJitType);
