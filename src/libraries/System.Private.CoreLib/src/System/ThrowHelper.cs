@@ -57,6 +57,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowUnreachableException()
+        {
+            throw new UnreachableException();
+        }
+
+        [DoesNotReturn]
         internal static void ThrowInvalidTypeWithPointersNotSupported(Type targetType)
         {
             throw new ArgumentException(SR.Format(SR.Argument_InvalidTypeWithPointersNotSupported, targetType));

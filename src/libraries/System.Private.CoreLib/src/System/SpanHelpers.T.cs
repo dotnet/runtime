@@ -2159,66 +2159,54 @@ namespace System
 
                     offset -= 1;
                 }
+
+                return -1;
             }
             else if (Vector256.IsHardwareAccelerated && length >= Vector256<TValue>.Count)
             {
-                Vector256<TValue> equals, values = Vector256.Create(value);
-                nint offset = length - Vector256<TValue>.Count;
-
-                // Loop until either we've finished all elements -or- there's one or less than a vector's-worth remaining.
-                while (offset > 0)
-                {
-                    equals = TNegator.NegateIfNeeded(Vector256.Equals(values, Vector256.LoadUnsafe(ref searchSpace, (nuint)(offset))));
-
-                    if (equals == Vector256<TValue>.Zero)
-                    {
-                        offset -= Vector256<TValue>.Count;
-                        continue;
-                    }
-
-                    return ComputeLastIndex(offset, equals);
-                }
-
-                // Process the first vector in the search space.
-
-                equals = TNegator.NegateIfNeeded(Vector256.Equals(values, Vector256.LoadUnsafe(ref searchSpace)));
-
-                if (equals != Vector256<TValue>.Zero)
-                {
-                    return ComputeLastIndex(offset: 0, equals);
-                }
+                return SimdImpl<Vector256<TValue>>(ref searchSpace, value, length);
             }
             else
             {
-                Vector128<TValue> equals, values = Vector128.Create(value);
-                nint offset = length - Vector128<TValue>.Count;
+                return SimdImpl<Vector128<TValue>>(ref searchSpace, value, length);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+            static int SimdImpl<TVector>(ref TValue searchSpace, TValue value, int length)
+                where TVector : unmanaged, ISimdVector<TVector, TValue>
+            {
+                Debug.Assert(TVector.IsHardwareAccelerated && TVector.IsSupported);
+
+                TVector equals;
+                TVector values = TVector.Create(value);
+                nint offset = length - TVector.Count;
 
                 // Loop until either we've finished all elements -or- there's one or less than a vector's-worth remaining.
                 while (offset > 0)
                 {
-                    equals = TNegator.NegateIfNeeded(Vector128.Equals(values, Vector128.LoadUnsafe(ref searchSpace, (nuint)(offset))));
+                    equals = TNegator.NegateIfNeeded(TVector.Equals(values, TVector.LoadUnsafe(ref searchSpace, (nuint)(offset))));
 
-                    if (equals == Vector128<TValue>.Zero)
+                    if (equals == TVector.Zero)
                     {
-                        offset -= Vector128<TValue>.Count;
+                        offset -= TVector.Count;
                         continue;
                     }
 
-                    return ComputeLastIndex(offset, equals);
+                    return ComputeLastIndex<TVector, TValue>(offset, equals);
                 }
 
 
                 // Process the first vector in the search space.
 
-                equals = TNegator.NegateIfNeeded(Vector128.Equals(values, Vector128.LoadUnsafe(ref searchSpace)));
+                equals = TNegator.NegateIfNeeded(TVector.Equals(values, TVector.LoadUnsafe(ref searchSpace)));
 
-                if (equals != Vector128<TValue>.Zero)
+                if (equals != TVector.Zero)
                 {
-                    return ComputeLastIndex(offset: 0, equals);
+                    return ComputeLastIndex<TVector, TValue>(offset: 0, equals);
                 }
-            }
 
-            return -1;
+                return -1;
+            }
         }
 
 #if !MONO
@@ -2298,68 +2286,58 @@ namespace System
 
                     offset -= 1;
                 }
+
+                return -1;
             }
             else if (Vector256.IsHardwareAccelerated && length >= Vector256<TValue>.Count)
             {
-                Vector256<TValue> equals, current, values0 = Vector256.Create(value0), values1 = Vector256.Create(value1);
-                nint offset = length - Vector256<TValue>.Count;
-
-                // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
-                while (offset > 0)
-                {
-                    current = Vector256.LoadUnsafe(ref searchSpace, (nuint)(offset));
-                    equals = TNegator.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1));
-
-                    if (equals == Vector256<TValue>.Zero)
-                    {
-                        offset -= Vector256<TValue>.Count;
-                        continue;
-                    }
-
-                    return ComputeLastIndex(offset, equals);
-                }
-
-                // Process the first vector in the search space.
-
-                current = Vector256.LoadUnsafe(ref searchSpace);
-                equals = TNegator.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1));
-
-                if (equals != Vector256<TValue>.Zero)
-                {
-                    return ComputeLastIndex(offset: 0, equals);
-                }
+                return SimdImpl<Vector256<TValue>>(ref searchSpace, value0, value1, length);
             }
             else
             {
-                Vector128<TValue> equals, current, values0 = Vector128.Create(value0), values1 = Vector128.Create(value1);
-                nint offset = length - Vector128<TValue>.Count;
+                return SimdImpl<Vector128<TValue>>(ref searchSpace, value0, value1, length);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+            static int SimdImpl<TVector>(ref TValue searchSpace, TValue value0, TValue value1, int length)
+                where TVector : unmanaged, ISimdVector<TVector, TValue>
+            {
+                Debug.Assert(TVector.IsHardwareAccelerated && TVector.IsSupported);
+
+                TVector equals;
+                TVector current;
+
+                TVector values0 = TVector.Create(value0);
+                TVector values1 = TVector.Create(value1);
+
+                nint offset = length - TVector.Count;
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 while (offset > 0)
                 {
-                    current = Vector128.LoadUnsafe(ref searchSpace, (nuint)(offset));
-                    equals = TNegator.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1));
-                    if (equals == Vector128<TValue>.Zero)
+                    current = TVector.LoadUnsafe(ref searchSpace, (nuint)(offset));
+                    equals = TNegator.NegateIfNeeded(TVector.Equals(current, values0) | TVector.Equals(current, values1));
+                    if (equals == TVector.Zero)
                     {
-                        offset -= Vector128<TValue>.Count;
+                        offset -= TVector.Count;
                         continue;
                     }
 
-                    return ComputeLastIndex(offset, equals);
+                    return ComputeLastIndex<TVector, TValue>(offset, equals);
                 }
 
                 // Process the first vector in the search space.
 
-                current = Vector128.LoadUnsafe(ref searchSpace);
-                equals = TNegator.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1));
+                current = TVector.LoadUnsafe(ref searchSpace);
+                equals = TNegator.NegateIfNeeded(TVector.Equals(current, values0) | TVector.Equals(current, values1));
 
-                if (equals != Vector128<TValue>.Zero)
+                if (equals != TVector.Zero)
                 {
-                    return ComputeLastIndex(offset: 0, equals);
+                    return ComputeLastIndex<TVector, TValue>(offset: 0, equals);
                 }
-            }
 
-            return -1;
+                return -1;
+            }
         }
 
 #if !MONO
@@ -2439,69 +2417,60 @@ namespace System
 
                     offset -= 1;
                 }
+
+                return -1;
             }
             else if (Vector256.IsHardwareAccelerated && length >= Vector256<TValue>.Count)
             {
-                Vector256<TValue> equals, current, values0 = Vector256.Create(value0), values1 = Vector256.Create(value1), values2 = Vector256.Create(value2);
-                nint offset = length - Vector256<TValue>.Count;
-
-                // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
-                while (offset > 0)
-                {
-                    current = Vector256.LoadUnsafe(ref searchSpace, (nuint)(offset));
-                    equals = TNegator.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1) | Vector256.Equals(current, values2));
-
-                    if (equals == Vector256<TValue>.Zero)
-                    {
-                        offset -= Vector256<TValue>.Count;
-                        continue;
-                    }
-
-                    return ComputeLastIndex(offset, equals);
-                }
-
-                // Process the first vector in the search space.
-
-                current = Vector256.LoadUnsafe(ref searchSpace);
-                equals = TNegator.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1) | Vector256.Equals(current, values2));
-
-                if (equals != Vector256<TValue>.Zero)
-                {
-                    return ComputeLastIndex(offset: 0, equals);
-                }
+                return SimdImpl<Vector256<TValue>>(ref searchSpace, value0, value1, value2, length);
             }
             else
             {
-                Vector128<TValue> equals, current, values0 = Vector128.Create(value0), values1 = Vector128.Create(value1), values2 = Vector128.Create(value2);
-                nint offset = length - Vector128<TValue>.Count;
+                return SimdImpl<Vector128<TValue>>(ref searchSpace, value0, value1, value2, length);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+            static int SimdImpl<TVector>(ref TValue searchSpace, TValue value0, TValue value1, TValue value2, int length)
+                where TVector : unmanaged, ISimdVector<TVector, TValue>
+            {
+                Debug.Assert(TVector.IsHardwareAccelerated && TVector.IsSupported);
+
+                TVector equals;
+                TVector current;
+
+                TVector values0 = TVector.Create(value0);
+                TVector values1 = TVector.Create(value1);
+                TVector values2 = TVector.Create(value2);
+
+                nint offset = length - TVector.Count;
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 while (offset > 0)
                 {
-                    current = Vector128.LoadUnsafe(ref searchSpace, (nuint)(offset));
-                    equals = TNegator.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1) | Vector128.Equals(current, values2));
+                    current = TVector.LoadUnsafe(ref searchSpace, (nuint)(offset));
+                    equals = TNegator.NegateIfNeeded(TVector.Equals(current, values0) | TVector.Equals(current, values1) | TVector.Equals(current, values2));
 
-                    if (equals == Vector128<TValue>.Zero)
+                    if (equals == TVector.Zero)
                     {
-                        offset -= Vector128<TValue>.Count;
+                        offset -= TVector.Count;
                         continue;
                     }
 
-                    return ComputeLastIndex(offset, equals);
+                    return ComputeLastIndex<TVector, TValue>(offset, equals);
                 }
 
                 // Process the first vector in the search space.
 
-                current = Vector128.LoadUnsafe(ref searchSpace);
-                equals = TNegator.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1) | Vector128.Equals(current, values2));
+                current = TVector.LoadUnsafe(ref searchSpace);
+                equals = TNegator.NegateIfNeeded(TVector.Equals(current, values0) | TVector.Equals(current, values1) | TVector.Equals(current, values2));
 
-                if (equals != Vector128<TValue>.Zero)
+                if (equals != TVector.Zero)
                 {
-                    return ComputeLastIndex(offset: 0, equals);
+                    return ComputeLastIndex<TVector, TValue>(offset: 0, equals);
                 }
-            }
 
-            return -1;
+                return -1;
+            }
         }
 
 #if !MONO
@@ -2553,69 +2522,61 @@ namespace System
 
                     offset -= 1;
                 }
+
+                return -1;
             }
             else if (Vector256.IsHardwareAccelerated && length >= Vector256<TValue>.Count)
             {
-                Vector256<TValue> equals, current, values0 = Vector256.Create(value0), values1 = Vector256.Create(value1), values2 = Vector256.Create(value2), values3 = Vector256.Create(value3);
-                nint offset = length - Vector256<TValue>.Count;
-
-                // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
-                while (offset > 0)
-                {
-                    current = Vector256.LoadUnsafe(ref searchSpace, (nuint)(offset));
-                    equals = TNegator.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1)
-                                            | Vector256.Equals(current, values2) | Vector256.Equals(current, values3));
-                    if (equals == Vector256<TValue>.Zero)
-                    {
-                        offset -= Vector256<TValue>.Count;
-                        continue;
-                    }
-
-                    return ComputeLastIndex(offset, equals);
-                }
-
-                // Process the first vector in the search space.
-
-                current = Vector256.LoadUnsafe(ref searchSpace);
-                equals = TNegator.NegateIfNeeded(Vector256.Equals(current, values0) | Vector256.Equals(current, values1) | Vector256.Equals(current, values2) | Vector256.Equals(current, values3));
-
-                if (equals != Vector256<TValue>.Zero)
-                {
-                    return ComputeLastIndex(offset: 0, equals);
-                }
+                return SimdImpl<Vector256<TValue>>(ref searchSpace, value0, value1, value2, value3, length);
             }
             else
             {
-                Vector128<TValue> equals, current, values0 = Vector128.Create(value0), values1 = Vector128.Create(value1), values2 = Vector128.Create(value2), values3 = Vector128.Create(value3);
-                nint offset = length - Vector128<TValue>.Count;
+                return SimdImpl<Vector128<TValue>>(ref searchSpace, value0, value1, value2, value3, length);
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+            static int SimdImpl<TVector>(ref TValue searchSpace, TValue value0, TValue value1, TValue value2, TValue value3, int length)
+                where TVector : unmanaged, ISimdVector<TVector, TValue>
+            {
+                Debug.Assert(TVector.IsHardwareAccelerated && TVector.IsSupported);
+
+                TVector equals;
+                TVector current;
+
+                TVector values0 = TVector.Create(value0);
+                TVector values1 = TVector.Create(value1);
+                TVector values2 = TVector.Create(value2);
+                TVector values3 = TVector.Create(value3);
+
+                nint offset = length - TVector.Count;
 
                 // Loop until either we've finished all elements or there's less than a vector's-worth remaining.
                 while (offset > 0)
                 {
-                    current = Vector128.LoadUnsafe(ref searchSpace, (nuint)(offset));
-                    equals = TNegator.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1) | Vector128.Equals(current, values2) | Vector128.Equals(current, values3));
+                    current = TVector.LoadUnsafe(ref searchSpace, (nuint)(offset));
+                    equals = TNegator.NegateIfNeeded(TVector.Equals(current, values0) | TVector.Equals(current, values1) | TVector.Equals(current, values2) | TVector.Equals(current, values3));
 
-                    if (equals == Vector128<TValue>.Zero)
+                    if (equals == TVector.Zero)
                     {
-                        offset -= Vector128<TValue>.Count;
+                        offset -= TVector.Count;
                         continue;
                     }
 
-                    return ComputeLastIndex(offset, equals);
+                    return ComputeLastIndex<TVector, TValue>(offset, equals);
                 }
 
                 // Process the first vector in the search space.
 
-                current = Vector128.LoadUnsafe(ref searchSpace);
-                equals = TNegator.NegateIfNeeded(Vector128.Equals(current, values0) | Vector128.Equals(current, values1) | Vector128.Equals(current, values2) | Vector128.Equals(current, values3));
+                current = TVector.LoadUnsafe(ref searchSpace);
+                equals = TNegator.NegateIfNeeded(TVector.Equals(current, values0) | TVector.Equals(current, values1) | TVector.Equals(current, values2) | TVector.Equals(current, values3));
 
-                if (equals != Vector128<TValue>.Zero)
+                if (equals != TVector.Zero)
                 {
-                    return ComputeLastIndex(offset: 0, equals);
+                    return ComputeLastIndex<TVector, TValue>(offset: 0, equals);
                 }
-            }
 
-            return -1;
+                return -1;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2635,40 +2596,51 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int ComputeLastIndex<T>(nint offset, Vector128<T> equals) where T : struct
+        private static int ComputeLastIndex<TVector, T>(nint offset, TVector equals)
+            where TVector : unmanaged, ISimdVector<TVector, T>
+            where T : struct
         {
-            uint notEqualsElements = equals.ExtractMostSignificantBits();
-            int index = 31 - BitOperations.LeadingZeroCount(notEqualsElements); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
-            return (int)offset + index;
+            if (typeof(T) == typeof(Vector128<T>))
+            {
+                uint notEqualsElements = ((Vector128<T>)(object)(equals)).ExtractMostSignificantBits();
+                int index = 31 - BitOperations.LeadingZeroCount(notEqualsElements); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
+                return (int)offset + index;
+            }
+            else if (typeof(T) == typeof(Vector256<T>))
+            {
+                uint notEqualsElements = ((Vector256<T>)(object)(equals)).ExtractMostSignificantBits();
+                int index = 31 - BitOperations.LeadingZeroCount(notEqualsElements); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
+                return (int)offset + index;
+            }
+            else
+            {
+                ThrowHelper.ThrowUnreachableException();
+                return default;
+            }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int ComputeLastIndex<T>(nint offset, Vector256<T> equals) where T : struct
-        {
-            uint notEqualsElements = equals.ExtractMostSignificantBits();
-            int index = 31 - BitOperations.LeadingZeroCount(notEqualsElements); // 31 = 32 (bits in Int32) - 1 (indexing from zero)
-            return (int)offset + index;
-        }
-
-        private interface INegator<T> where T : struct
+        private interface INegator<T>
+            where T : struct
         {
             static abstract bool NegateIfNeeded(bool equals);
-            static abstract Vector128<T> NegateIfNeeded(Vector128<T> equals);
-            static abstract Vector256<T> NegateIfNeeded(Vector256<T> equals);
+            static abstract TVector NegateIfNeeded<TVector>(TVector equals)
+                where TVector : unmanaged, ISimdVector<TVector, T>;
         }
 
-        private readonly struct DontNegate<T> : INegator<T> where T : struct
+        private readonly struct DontNegate<T> : INegator<T>
+            where T : struct
         {
             public static bool NegateIfNeeded(bool equals) => equals;
-            public static Vector128<T> NegateIfNeeded(Vector128<T> equals) => equals;
-            public static Vector256<T> NegateIfNeeded(Vector256<T> equals) => equals;
+            public static TVector NegateIfNeeded<TVector>(TVector equals)
+                where TVector : unmanaged, ISimdVector<TVector, T> => equals;
         }
 
-        private readonly struct Negate<T> : INegator<T> where T : struct
+        private readonly struct Negate<T> : INegator<T>
+            where T : struct
         {
             public static bool NegateIfNeeded(bool equals) => !equals;
-            public static Vector128<T> NegateIfNeeded(Vector128<T> equals) => ~equals;
-            public static Vector256<T> NegateIfNeeded(Vector256<T> equals) => ~equals;
+            public static TVector NegateIfNeeded<TVector>(TVector equals)
+                where TVector : unmanaged, ISimdVector<TVector, T> => ~equals;
         }
     }
 }
