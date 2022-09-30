@@ -220,7 +220,6 @@ GTNODE(MUL_LONG         , GenTreeOp          ,1,GTK_BINOP|DBK_NOTHIR)
 GTNODE(AND_NOT          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 
 #ifdef TARGET_ARM64
-GTNODE(ADDEX,             GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Add with sign/zero extension.
 GTNODE(BFIZ             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Bitfield Insert in Zero.
 GTNODE(CSNEG_MI         , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Conditional select, negate, minus result
 GTNODE(CNEG_LT          , GenTreeOp          ,0,GTK_UNOP|DBK_NOTHIR)  // Conditional, negate, signed less than result
