@@ -8,15 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).il" />
+
+    <CLRTestEnvironmentVariable Include="COMPlus_JitStressModeNamesNot" Value="STRESS_UNSAFE_BUFFER_CHECKS" />
   </ItemGroup>
-  <PropertyGroup>
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-set COMPlus_JitStressModeNamesNot=STRESS_UNSAFE_BUFFER_CHECKS
-]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
-export COMPlus_JitStressModeNamesNot=STRESS_UNSAFE_BUFFER_CHECKS
-]]></BashCLRTestPreCommands>
-  </PropertyGroup>
 </Project>
