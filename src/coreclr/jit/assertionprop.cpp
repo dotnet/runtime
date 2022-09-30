@@ -176,13 +176,9 @@ bool IntegralRange::Contains(int64_t value) const
             break;
 
         case GT_CNS_INT:
-            if (node->IsIntegralConst(0))
+            if (node->IsIntegralConst(0) || node->IsIntegralConst(1))
             {
-                return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::Zero};
-            }
-            if (node->IsIntegralConst(1))
-            {
-                return {SymbolicIntegerValue::One, SymbolicIntegerValue::One};
+                return {SymbolicIntegerValue::Zero, SymbolicIntegerValue::One};
             }
             break;
 
