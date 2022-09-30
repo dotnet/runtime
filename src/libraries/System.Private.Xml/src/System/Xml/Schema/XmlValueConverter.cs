@@ -269,9 +269,8 @@ namespace System.Xml.Schema
             _typeCode = typeCode;
         }
 
-
         [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
-            Justification = "All types that are instantiated with this method are used elsewhere throughout System.Private.Xml.")]
+                Justification = "All types that are instantiated by XmlValueConverters are used elsewhere in the implementations of the DatatypeImplementation abstract class.")]
         protected XmlBaseConverter(XmlBaseConverter converterAtomic)
         {
             _schemaType = converterAtomic._schemaType;
