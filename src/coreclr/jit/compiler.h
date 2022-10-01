@@ -1390,14 +1390,14 @@ LinearScanInterface* getLinearScanAllocator(Compiler* comp);
 // partition a compilation.
 enum Phases
 {
-#define CompPhaseNameMacro(enum_nm, string_nm, short_nm, hasChildren, parent, measureIR) enum_nm,
+#define CompPhaseNameMacro(enum_nm, string_nm, hasChildren, parent, measureIR) enum_nm,
 #include "compphases.h"
     PHASE_NUMBER_OF
 };
 
 extern const char*   PhaseNames[];
 extern const char*   PhaseEnums[];
-extern const LPCWSTR PhaseShortNames[];
+extern const LPCWSTR PhaseEnumsW[];
 
 // Specify which checks should be run after each phase
 //
@@ -6966,7 +6966,8 @@ public:
     PhaseStatus optRedundantBranches();
     bool optRedundantRelop(BasicBlock* const block);
     bool optRedundantBranch(BasicBlock* const block);
-    bool optJumpThread(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
+    bool optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
+    bool optJumpThreadPhi(BasicBlock* const block, GenTree* tree, ValueNum treeNormVN);
     bool optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock);
     bool optJumpThreadCore(JumpThreadInfo& jti);
     bool optReachable(BasicBlock* const fromBlock, BasicBlock* const toBlock, BasicBlock* const excludedBlock);

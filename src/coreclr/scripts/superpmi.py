@@ -1608,6 +1608,13 @@ class SuperPMIReplayAsmDiffs:
                 if self.coreclr_args.error_limit is not None:
                     flags += ["-failureLimit", self.coreclr_args.error_limit]
 
+                if self.coreclr_args.diff_with_release:
+                    # If one of the JITs is Release, ignore all the stored configuration variables.
+                    # This isn't necessary if both are Release builds (and, in fact, it can clear variables
+                    # that both Release compilers can interpret). However, we rarely or never compare
+                    # two Release compilers, so this is safest.
+                    flags += [ "-ignoreStoredConfig" ]
+
                 # Change the working directory to the Core_Root we will call SuperPMI from.
                 # This is done to allow libcoredistools to be loaded correctly on unix
                 # as the loadlibrary path will be relative to the current directory.
