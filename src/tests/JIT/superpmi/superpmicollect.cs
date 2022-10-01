@@ -161,6 +161,11 @@ namespace SuperPMICollection
 
         private static int RunProgram(string program, string arguments)
         {
+            if (!File.Exists(program))
+            {
+                throw new SpmiException("program " + program + " not found");
+            }
+
             // If the program is a script, move the program name into the arguments, and run it
             // under the appropriate shell.
             if (Global.IsWindows)
@@ -238,7 +243,11 @@ namespace SuperPMICollection
 
             try
             {
-                RunProgram(testName, "");
+                int retval = RunProgram(testName, "");
+                if (retval != 0)
+                {
+                    throw new SpmiException("Test " + testName + " failed");
+                }
             }
             finally
             {
@@ -269,22 +278,9 @@ namespace SuperPMICollection
         // Run all the programs from the CoreCLR test binary drop we wish to run while collecting MC files.
         private static void RunTestProgramsWhileCollecting()
         {
-
-            // Run the tests
             foreach (string spmiTestPath in GetSpmiTestFullPaths())
             {
-                try
-                {
-                    RunTest(spmiTestPath);
-                }
-                catch (SpmiException ex)
-                {
-                    // Ignore failures running the test. We don't really care if they pass or not
-                    // as long as they generate some .MC files. Plus, I'm not sure how confident
-                    // we can be in getting a correct error code.
-
-                    Console.Error.WriteLine("WARNING: test failed (ignoring): " + ex.Message);
-                }
+                RunTest(spmiTestPath);
             }
         }
 
