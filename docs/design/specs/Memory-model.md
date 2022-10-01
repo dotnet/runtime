@@ -40,15 +40,15 @@ These facilities ensure fault-free access to potentially unaligned locations, bu
 
 As of this writing there is no specific support for operating with incoherent memory, device memory or similar. Passing non-ordinary memory to the runtime by the means of pointer operations or native interop results in Undefined Behavior.
 
-## Sideeffects and optimizations of memory accesses
-.NET runtime assumes that the sideeffects of memory reads and writes include only changing and observing values at specified memory locations. This applies to all reads and writes - volatile or not. **This is different from ECMA model.**
+## Side-effects and optimizations of memory accesses
+.NET runtime assumes that the side-effects of memory reads and writes include only changing and observing values at specified memory locations. This applies to all reads and writes - volatile or not. **This is different from ECMA model.**
 
 As a consequence:
 * Speculative writes are not allowed.
 * Reads cannot be introduced.
 * Unused reads can be elided.
-* Adjacent nonvolatile reads from the same location can be coalesced.
-* Adjacent nonvolatile writes to the same location can be coalesced.
+* Adjacent non-volatile reads from the same location can be coalesced.
+* Adjacent non-volatile writes to the same location can be coalesced.
 
 ## Thread-local memory accesses
 It may be possible for an optimizing compiler to prove that some data is accessible only by a single thread. In such case it is permitted to perform further optimizations such as duplicating or removal of memory accesses.
@@ -111,10 +111,10 @@ Memory ordering honors data dependency. When performing indirect reads from a lo
 
 ## Object assignment
 Object assignment to a location potentially accessible by other threads is a release with respect to write operations to the instance’s fields and metadata.
-The motivation is to ensure that storing an object reference to shared memory acts as a "committing point" to all modifications that are reachable through the instance reference. It also guarantees that a freshly allocated instance is valid (i.e. method table and necessary flags are set) when other threads, including background GC threads are able to access the instance.
+The motivation is to ensure that storing an object reference to shared memory acts as a "committing point" to all modifications that are reachable through the instance reference. It also guarantees that a freshly allocated instance is valid (for example, method table and necessary flags are set) when other threads, including background GC threads are able to access the instance.
 The reading thread does not need to perform an acquiring read before accessing the content of an instance since runtime guarantees ordering of data-dependent reads.
 
-However, the ordering sideeffects of reference assignment should not be used for general ordering purposes because:
+However, the ordering side-effects of reference assignment should not be used for general ordering purposes because:
 -	ordinary reference assignments are still treated as ordinary assignments and could be reordered by the compiler.
 -	an optimizing compiler can omit the release semantics if it can prove that the instance is not shared with other threads.
 
@@ -124,24 +124,24 @@ There was a lot of ambiguity around the guarantees provided by object assignment
 .NET runtime does not specify any ordering effects to the instance constructors.
 
 ## Static constructors
-All side effects of static constructor execution will become observable not later than effects of accessing any member of the type. Other member methods of the type, when invoked, will observe complete results of the type's static constructor execution.
+All side-effects of static constructor execution will become observable no later than effects of accessing any member of the type. Other member methods of the type, when invoked, will observe complete results of the type's static constructor execution.
 
 ## Hardware considerations
 Currently supported implementations of .NET runtime and system libraries make a few expectations about the hardware memory model. These conditions are present on all supported platforms and transparently passed to the user of the runtime. The future supported platforms will likely support these as well because the large body of preexisting software will make it burdensome to break common assumptions.
 
 * Naturally aligned reads and writes with sizes up to the platform pointer size are atomic.
 That applies even for locations targeted by overlapping aligned reads and writes of different sizes.
-**Example:** a read of a 4-byte aligned int32 variable will yield a value that existed prior some write or after some write. It will never be a mix of before/after bytes.
+**Example:** a read of a 4-byte aligned int32 variable will yield a value that existed prior to some write or after some write. It will never be a mix of before/after bytes.
 
 *	The memory is cache-coherent and writes to a single location will be seen by all cores in the same order (multicopy atomic).
-**Example:** when the same location is updated with values in ascending order (like 1,2,3,4,...), no observer will see a descending sequence.
+**Example:** when the same location is updated with values in ascending order (for example, 1,2,3,4,...), no observer will see a descending sequence.
 
 *	It may be possible for a thread to see its own writes before they appear to other cores (store buffer forwarding), as long as the single-thread consistency is not violated.
 
-*	The memory managed by the runtime is ordinary memory (not device register file or the like) and the only sideeffects of memory operations are storing and reading of values.
+*	The memory managed by the runtime is ordinary memory (not device register file or the like) and the only side-effects of memory operations are storing and reading of values.
 
 *	It is possible to implement release consistency memory model.
-Either the platform defaults to release consistency or stronger (i.e. x64 is TSO, which is stronger), or provides means to implement release consistency via fencing operations.
+Either the platform defaults to release consistency or stronger (that is, x64 is TSO, which is stronger), or provides means to implement release consistency via fencing operations.
 
 *	It is possible to guarantee ordering of data-dependent reads.
 Either the platform honors data dependedncy by default (all currently supported platforms), or provides means to order data-dependent reads via fencing operations.
