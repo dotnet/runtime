@@ -226,8 +226,8 @@ IF NOT DEFINED DoLink (
 
       <BashDisasmOutputFile Condition="'$(HasBashDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm.out</BashDisasmOutputFile>
       <BashDisasmListOutputFile Condition="'$(HasBashDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm_list.out</BashDisasmListOutputFile>
-      <BashCLRTestPreCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
-$(BashCLRTestPreCommands)
+      <CLRTestBashPreCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
+$(CLRTestBashPreCommands)
 if [[ ( -z "$COMPlus_JitStress" ) && ( -z "$COMPlus_JitStressRegs" ) && ( -z "$COMPlus_TailcallStress" ) && ( "$COMPlus_TieredPGO" != "1" ) && ( -z "$RunCrossGen2" ) ]]; then
   @(DisasmCheckFiles -> '  dotnet $CORE_ROOT/SuperFileCheck/SuperFileCheck.dll --csharp-list-method-names "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) > "$(BashDisasmListOutputFile)"
     ERRORLEVEL=$?
@@ -241,7 +241,7 @@ if [[ ( -z "$COMPlus_JitStress" ) && ( -z "$COMPlus_JitStressRegs" ) && ( -z "$C
     fi', '%0a')
 fi
 ]]>
-      </BashCLRTestPreCommands>
+      </CLRTestBashPreCommands>
 
       <CLRTestBashPostCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
 $(CLRTestBashPostCommands)
