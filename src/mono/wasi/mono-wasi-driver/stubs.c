@@ -14,7 +14,7 @@ int sem_timedwait (int *sem, void *abs_timeout) { assert(0); return 0; }
 
 int __errno_location() { return 0; }
 
-void mono_log_close_syslog () { assert(0); }
+void mono_log_close_syslog (void) { assert(0); }
 void mono_log_open_syslog (const char *a, void *b) { assert(0); }
 void mono_log_write_syslog (const char *a, int b, int c, const char *d) { assert(0); }
 
