@@ -66,4 +66,8 @@ cd "$currentDirectory" || exit 1
 if [ -e "${currentTest}.deps.json" ]; then
 	depsFileArg="--depsfile ${currentTest}.deps.json"
 fi
+
+# Make sure LinuxBionic does not support RemoteExecutor in tests
+DOTNET_REMOTEEXECUTOR_SUPPORTED="0"
+
 $runtimeExe exec --runtimeconfig "${currentTest}".runtimeconfig.json ${depsFileArg} xunit.console.dll "${currentTest}".dll -xml testResults.xml -nologo -nocolor -notrait category=IgnoreForCI -notrait category=OuterLoop -notrait category=failing
