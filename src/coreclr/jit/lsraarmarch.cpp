@@ -554,17 +554,11 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     {
         assert(src->TypeIs(TYP_STRUCT) && src->isContained());
 
+        // We can use a ldr/str sequence so we need an internal register
+        buildInternalIntRegisterDefForNode(argNode, allRegs(TYP_INT) & ~argMask);
+
         if (src->OperIs(GT_OBJ))
         {
-            // If the PUTARG_SPLIT clobbers only one register we may need an
-            // extra internal register in case there is a conflict between the
-            // source address register and target register.
-            if (argNode->gtNumRegs == 1)
-            {
-                // We can use a ldr/str sequence so we need an internal register
-                buildInternalIntRegisterDefForNode(argNode, allRegs(TYP_INT) & ~argMask);
-            }
-
             // We will generate code that loads from the OBJ's address, which must be in a register.
             srcCount = BuildOperandUses(src->AsObj()->Addr());
         }
