@@ -24,7 +24,7 @@ namespace System.CommandLine
     {
         public const string DefaultSystemModule = "System.Private.CoreLib";
 
-        public static Dictionary<string, string> BuildPathDictionay(IReadOnlyList<Token> tokens, bool strict)
+        public static Dictionary<string, string> BuildPathDictionary(IReadOnlyList<Token> tokens, bool strict)
         {
             Dictionary<string, string> dictionary = new(StringComparer.OrdinalIgnoreCase);
 
