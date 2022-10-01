@@ -360,20 +360,9 @@ set COMPlus_JitPath=%CORE_ROOT%\superpmi-shim-collector.dll
   ***********************************************************************************************
   -->
 
-  <PropertyGroup Condition="$(RunWithGcStress) != ''" >
-    <CLRTestBatchPreCommands>
-<![CDATA[
-      $(CLRTestBatchPreCommands)
-set COMPlus_GCStress=$(RunWithGcStress)
-    ]]>
-    </CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands>
-<![CDATA[
-      $(BashCLRTestPreCommands)
-export COMPlus_GCStress=$(RunWithGcStress)
-    ]]>
-    </BashCLRTestPreCommands>
-  </PropertyGroup>
-
+  <ItemGroup>
+    <CLRTestEnvironmentVariable Condition="'$(RunWithGcStress)' != ''"
+      Include="COMPlus_GCStress" Value="$(RunWithGcStress)" />
+  </ItemGroup>
 
 </Project> 
