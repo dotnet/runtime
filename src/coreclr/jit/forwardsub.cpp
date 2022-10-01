@@ -434,15 +434,13 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     GenTree* const rhsNode    = rootNode->gtGetOp2();
     GenTree*       fwdSubNode = rhsNode;
 
-    // Can't substitute a qmark (unless the use is RHS of an assign... could check for this)
     // Can't substitute GT_CATCH_ARG.
     // Can't substitute GT_LCLHEAP.
     //
     // Don't substitute a no return call (trips up morph in some cases).
-    //
-    if (fwdSubNode->OperIs(GT_QMARK, GT_CATCH_ARG, GT_LCLHEAP))
+    if (fwdSubNode->OperIs(GT_CATCH_ARG, GT_LCLHEAP))
     {
-        JITDUMP(" tree to sub is qmark, catch arg, or lcl heap\n");
+        JITDUMP(" tree to sub is catch arg, or lcl heap\n");
         return false;
     }
 
@@ -511,6 +509,40 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
     JITDUMP(" [%06u] is only use of [%06u] (V%02u) ", dspTreeID(fsv.GetNode()), dspTreeID(lhsNode), lclNum);
 
+    // Qmarks must replace top-level uses. Also, restrict to GT_ASG.
+    // And also to where neither local is normalize on store, otherwise
+    // something downstream may add a cast over the qmark.
+    //
+    GenTree* const nextRootNode = nextStmt->GetRootNode();
+    if (fwdSubNode->OperIs(GT_QMARK))
+    {
+        if ((fsv.GetParentNode() != nextRootNode) || !nextRootNode->OperIs(GT_ASG))
+        {
+            JITDUMP(" can't fwd sub qmark as use is not top level ASG\n");
+            return false;
+        }
+
+        if (varDsc->lvNormalizeOnStore())
+        {
+            JITDUMP(" can't fwd sub qmark as V%02u is normalize on store\n", lclNum);
+            return false;
+        }
+
+        GenTree* const nextRootNodeLHS = nextRootNode->gtGetOp1();
+
+        if (nextRootNodeLHS->OperIs(GT_LCL_VAR))
+        {
+            const unsigned   lhsLclNum = nextRootNodeLHS->AsLclVarCommon()->GetLclNum();
+            LclVarDsc* const lhsVarDsc = lvaGetDesc(lhsLclNum);
+
+            if (lhsVarDsc->lvNormalizeOnStore())
+            {
+                JITDUMP(" can't fwd sub qmark as V%02u is normalize on store\n", lhsLclNum);
+                return false;
+            }
+        }
+    }
+
     // If next statement already has a large tree, hold off
     // on making it even larger.
     //
@@ -527,8 +559,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // Next statement seems suitable.
     // See if we can forward sub without changing semantics.
     //
-    GenTree* const nextRootNode = nextStmt->GetRootNode();
-
     // Bail if types disagree.
     // Might be able to tolerate these by retyping.
     //
