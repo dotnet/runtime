@@ -251,9 +251,7 @@ STRINGREF *StringLiteralMap::GetInternedString(STRINGREF *pString, BOOL bAddIfNo
 
         // Retrieve the string literal from the global string literal map.
 
-        // Don't use FOH for collectible modules to avoid potential memory leaks
-        const bool preferFrozenObjectHeap = !bIsCollectible;
-        StringLiteralEntryHolder pEntry(SystemDomain::GetGlobalStringLiteralMap()->GetInternedString(pString, dwHash, bAddIfNotFound, preferFrozenObjectHeap));
+        StringLiteralEntryHolder pEntry(SystemDomain::GetGlobalStringLiteralMap()->GetInternedString(pString, dwHash, bAddIfNotFound));
 
         _ASSERTE(pEntry || !bAddIfNotFound);
 
@@ -402,7 +400,7 @@ StringLiteralEntry *GlobalStringLiteralMap::GetStringLiteral(EEStringData *pStri
     return pEntry;
 }
 
-StringLiteralEntry *GlobalStringLiteralMap::GetInternedString(STRINGREF *pString, DWORD dwHash, BOOL bAddIfNotFound, BOOL bPreferFrozenObjectHeap)
+StringLiteralEntry *GlobalStringLiteralMap::GetInternedString(STRINGREF *pString, DWORD dwHash, BOOL bAddIfNotFound)
 {
     CONTRACTL
     {
@@ -430,7 +428,7 @@ StringLiteralEntry *GlobalStringLiteralMap::GetInternedString(STRINGREF *pString
     else
     {
         if (bAddIfNotFound)
-            pEntry = AddInternedString(pString, bPreferFrozenObjectHeap);
+            pEntry = AddInternedString(pString);
     }
 
     return pEntry;
@@ -534,7 +532,7 @@ StringLiteralEntry *GlobalStringLiteralMap::AddStringLiteral(EEStringData *pStri
     return pRet;
 }
 
-StringLiteralEntry *GlobalStringLiteralMap::AddInternedString(STRINGREF *pString, bool preferFrozenObjHeap)
+StringLiteralEntry *GlobalStringLiteralMap::AddInternedString(STRINGREF *pString)
 {
 
     CONTRACTL
@@ -557,8 +555,7 @@ StringLiteralEntry *GlobalStringLiteralMap::AddInternedString(STRINGREF *pString
         PinnedHeapHandleBlockHolder pStrObj(&m_PinnedHeapHandleTable, 1);
         SetObjectReference(pStrObj[0], (OBJECTREF)*pString);
 
-        // Since the allocation might have caused a GC we need to re-get the
-        // string data.
+        // Since the allocation might have caused a GC we need to get the string data after it
         EEStringData StringData = EEStringData((*pString)->GetStringLength(), (*pString)->GetBuffer());
 
         StringLiteralEntryHolder pEntry(StringLiteralEntry::AllocateEntry(&StringData, (STRINGREF*)pStrObj[0]));
