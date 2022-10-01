@@ -22,6 +22,6 @@
       mkdir Subdirectory
       ]]></PathEnvSetupCommands>
     <BashCLRTestPreCommands>$(BashCLRTestPreCommands);$(PathEnvSetupCommands)</BashCLRTestPreCommands>
-    <CLRTestBatchPreCommands>$(BatchCLRTestPreCommands);$(PathEnvSetupCommands)</CLRTestBatchPreCommands>
+    <CLRTestBatchPreCommands>$(CLRTestBatchPreCommands);$(PathEnvSetupCommands)</CLRTestBatchPreCommands>
   </PropertyGroup>
 </Project>

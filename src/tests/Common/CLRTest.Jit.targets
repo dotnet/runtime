@@ -55,8 +55,7 @@ export RunningIlasmRoundTrip=
 ]]>
       </IlasmRoundTripBashScript>
 
-      <IlasmRoundTripBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun'">
-  <![CDATA[
+      <IlasmRoundTripBashScript Condition="'$(CLRTestKind)' == 'BuildAndRun'"><![CDATA[
 # IlasmRoundTrip Script
 # Disable Ilasm round-tripping for Linker tests.
 # Todo: Ilasm round-trip on linked binaries.
@@ -192,14 +191,13 @@ IF NOT DEFINED DoLink (
     </PropertyGroup>
   </Target>
 
-  <Target Name="GetDisasmCheckData"
-          Returns="$(HasDisasmCheck);@(DisasmCheckFiles)">
+  <Target Name="GetDisasmCheckData">
     <ItemGroup>
       <DisasmCheckFiles Include="%(Compile.Identity)" Condition="'%(Compile.HasDisasmCheck)' == 'true'" />
     </ItemGroup>
     <PropertyGroup>
       <HasDisasmCheck>false</HasDisasmCheck>
-      <HasDisasmCheck Condition="@(DisasmCheckFiles->Count()) &gt; 0 And '$(CLRTestKind)' == 'BuildAndRun' and '$(RunCrossGen2)' != '1'">true</HasDisasmCheck>
+      <HasDisasmCheck Condition="@(DisasmCheckFiles->Count()) &gt; 0 And '$(CLRTestKind)' == 'BuildAndRun'>true</HasDisasmCheck>
 
       <GCStressIncompatible Condition="'$(HasDisasmCheck)' == 'true'">true</GCStressIncompatible>
       <HeapVerifyIncompatible Condition="'$(HasDisasmCheck)' == 'true'">true</HeapVerifyIncompatible>
@@ -221,18 +219,13 @@ IF NOT DEFINED DoLink (
   </Target>
 
   <Target Name="GetDisasmCheckBashScript"
-          Returns="$(HasBashDisasmCheck);$(BashDisasmOutputFile);$(BashDisasmCheckPostCommands)"
           DependsOnTargets="GetDisasmCheckData">
     <PropertyGroup>
       <HasBashDisasmCheck>false</HasBashDisasmCheck>
       <HasBashDisasmCheck Condition="'$(HasDisasmCheck)' == 'true' and '$(RuntimeFlavor)' == 'coreclr' and ('$(TargetOS)' == 'Linux' or '$(TargetOS)' == 'OSX') and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')">true</HasBashDisasmCheck>
 
-      <BashDisasmOutputFile>/dev/null</BashDisasmOutputFile>
       <BashDisasmOutputFile Condition="'$(HasBashDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm.out</BashDisasmOutputFile>
-
-      <BashDisasmListOutputFile>/dev/null</BashDisasmListOutputFile>
       <BashDisasmListOutputFile Condition="'$(HasBashDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm_list.out</BashDisasmListOutputFile>
-
       <BashCLRTestPreCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
 $(BashCLRTestPreCommands)
 if [[ ( -z "$COMPlus_JitStress" ) && ( -z "$COMPlus_JitStressRegs" ) && ( -z "$COMPlus_TailcallStress" ) && ( "$COMPlus_TieredPGO" != "1" ) && ( -z "$RunCrossGen2" ) ]]; then
@@ -250,8 +243,8 @@ fi
 ]]>
       </BashCLRTestPreCommands>
 
-      <BashDisasmCheckPostCommands></BashDisasmCheckPostCommands>
-      <BashDisasmCheckPostCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
+      <CLRTestBashPostCommands Condition="'$(HasBashDisasmCheck)' == 'true'"><![CDATA[
+$(CLRTestBashPostCommands)
 if [[ -n $COMPlus_JitDisasm ]]; then
   @(DisasmCheckFiles -> '  dotnet $CORE_ROOT/SuperFileCheck/SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) --dump-input-context 40 --input-file "$(BashDisasmOutputFile)"
     ERRORLEVEL=$?
@@ -262,26 +255,20 @@ if [[ -n $COMPlus_JitDisasm ]]; then
     fi', '%0a')
 fi
 ]]>
-      </BashDisasmCheckPostCommands>
+      </CLRTestBashPostCommands>
     </PropertyGroup>
   </Target>
 
   <Target Name="GetDisasmCheckBatchScript"
-          Returns="$(HasBatchDisasmCheck);$(BatchDisasmOutputFile);$(BatchDisasmCheckPostCommands)"
           DependsOnTargets="GetDisasmCheckData">
     <PropertyGroup>
       <HasBatchDisasmCheck>false</HasBatchDisasmCheck>
       <HasBatchDisasmCheck Condition="'$(HasDisasmCheck)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">true</HasBatchDisasmCheck>
 
-      <BatchDisasmOutputFile>NUL</BatchDisasmOutputFile>
       <BatchDisasmOutputFile Condition="'$(HasBatchDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm.out</BatchDisasmOutputFile>
-
-      <BatchDisasmListOutputFile>NUL</BatchDisasmListOutputFile>
       <BatchDisasmListOutputFile Condition="'$(HasBatchDisasmCheck)' == 'true'">$(scriptPath)__jit_disasm_list.out</BatchDisasmListOutputFile>
-
-      <CLRTestBatchPreCommands Condition="'$(HasBatchDisasmCheck)' == 'true'">
-<![CDATA[
-      $(CLRTestBatchPreCommands)
+      <CLRTestBatchPreCommands Condition="'$(HasBatchDisasmCheck)' == 'true'"><![CDATA[
+$(CLRTestBatchPreCommands)
 IF "%COMPlus_JitStress%"=="" IF "%COMPlus_JitStressRegs%"=="" IF "%COMPlus_TailcallStress%"=="" IF NOT "%COMPlus_TieredPGO%" == "1" IF NOT "%RunCrossGen2%" == "1" (
   @(DisasmCheckFiles -> '  dotnet %CORE_ROOT%\SuperFileCheck\SuperFileCheck.dll --csharp-list-method-names "%(Identity)" --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) > "$(BatchDisasmListOutputFile)"
     IF NOT "!ERRORLEVEL!" == "0" (
@@ -295,8 +282,8 @@ IF "%COMPlus_JitStress%"=="" IF "%COMPlus_JitStressRegs%"=="" IF "%COMPlus_Tailc
 ]]>
       </CLRTestBatchPreCommands>
 
-      <BatchDisasmCheckPostCommands></BatchDisasmCheckPostCommands>
-      <BatchDisasmCheckPostCommands Condition="'$(HasBatchDisasmCheck)' == 'true'"><![CDATA[
+      <CLRTestBatchPostCommands Condition="'$(HasBatchDisasmCheck)' == 'true'"><![CDATA[
+$(CLRTestBatchPostCommands)
 IF NOT "%COMPlus_JitDisasm%" == "" (
   @(DisasmCheckFiles -> '  dotnet %CORE_ROOT%\SuperFileCheck\SuperFileCheck.dll --csharp "%(Identity)" --allow-unused-prefixes --check-prefixes=CHECK,$(TargetArchitecture.ToUpperInvariant()),$(TargetArchitecture.ToUpperInvariant())-$(TargetOS.ToUpperInvariant()) --dump-input-context 40 --input-file "$(BatchDisasmOutputFile)"
     IF NOT "!ERRORLEVEL!" == "0" (
@@ -305,7 +292,7 @@ IF NOT "%COMPlus_JitDisasm%" == "" (
     )', '%0d%0a')
 )
 ]]>
-      </BatchDisasmCheckPostCommands>
+      </CLRTestBatchPostCommands>
     </PropertyGroup>
   </Target>
 
