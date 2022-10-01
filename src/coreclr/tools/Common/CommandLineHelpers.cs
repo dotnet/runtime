@@ -241,7 +241,7 @@ namespace System.CommandLine
         }
 
         // Helper to create a collection of paths unique in their simple names.
-        private static void AppendExpandedPaths(Dictionary<string, string> dictionary, string pattern, bool strict)
+        internal static void AppendExpandedPaths(Dictionary<string, string> dictionary, string pattern, bool strict)
         {
             bool empty = true;
             string directoryName = Path.GetDirectoryName(pattern);
