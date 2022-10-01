@@ -700,7 +700,7 @@ void UninstallTTOUHandlerForConsole(void)
 
 #ifndef HAS_CONSOLE_SIGNALS
 
-int32_t SystemNative_InitializeTerminalAndSignalHandling()
+int32_t SystemNative_InitializeTerminalAndSignalHandling(void)
 {
     static int32_t initialized = 0;
 

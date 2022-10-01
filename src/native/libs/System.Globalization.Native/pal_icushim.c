@@ -95,7 +95,7 @@ static int FindSymbolVersion(int majorVer, int minorVer, int subVer, char* symbo
     fn##_ptr = (TYPEOF(fn)*)GetProcAddress((HMODULE)lib, symbolName); \
     if (fn##_ptr == NULL && required) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %u\n", symbolName, GetLastError()); abort(); }
 
-static int FindICULibs()
+static int FindICULibs(void)
 {
     libicuuc = LoadLibraryExW(L"icu.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
     if (libicuuc == NULL)
@@ -157,7 +157,7 @@ static int FindSymbolVersion(int majorVer, int minorVer, int subVer, char* symbo
 
 #elif defined(TARGET_OSX)
 
-static int FindICULibs()
+static int FindICULibs(void)
 {
 #ifndef OSX_ICU_LIBRARY_PATH
     c_static_assert_msg(false, "The ICU Library path is not defined");

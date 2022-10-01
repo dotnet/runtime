@@ -616,12 +616,12 @@ static pthread_key_t threadLocalEnvKey;
 static pthread_once_t threadLocalEnvInitKey = PTHREAD_ONCE_INIT;
 
 static void
-make_key()
+make_key(void)
 {
     (void) pthread_key_create(&threadLocalEnvKey, &DetachThreadFromJNI);
 }
 
-JNIEnv* GetJNIEnv()
+JNIEnv* GetJNIEnv(void)
 {
     JNIEnv *env = NULL;
     (*gJvm)->GetEnv(gJvm, (void**)&env, JNI_VERSION_1_6);

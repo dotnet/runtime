@@ -43,7 +43,7 @@ int64_t SystemNative_GetSystemTimeAsTicks(void)
 }
 
 #if defined(TARGET_ANDROID)
-char* SystemNative_GetDefaultTimeZone()
+char* SystemNative_GetDefaultTimeZone(void)
 {
     char defaulttimezone[PROP_VALUE_MAX];
     if (__system_property_get("persist.sys.timezone", defaulttimezone))
