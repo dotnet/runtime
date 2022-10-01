@@ -112,7 +112,7 @@ namespace Microsoft.Quic
         public const int QUIC_STATUS_CERT_NO_CERT = unchecked((int)(0x8009030E));
 
         [NativeTypeName("#define QUIC_STATUS_ADDRESS_NOT_AVAILABLE QUIC_STATUS_HRESULT_FROM_WIN32(WSAENETUNREACH)")]
-        public const int QUIC_STATUS_ADDRESS_NOT_AVAILABLE = unchecked((int)(10051) <= 0 ? ((int)(10051)) : ((int)(((10051) & 0x0000FFFF) | (7 << 16) | 0x80000000)));
+        public const int QUIC_STATUS_ADDRESS_NOT_AVAILABLE = unchecked((int)(((10051) & 0x0000FFFF) | (7 << 16) | 0x80000000));
 
         public const int QUIC_ADDRESS_FAMILY_UNSPEC = 0;
         public const int QUIC_ADDRESS_FAMILY_INET = 2;
