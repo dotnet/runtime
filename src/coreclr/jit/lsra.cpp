@@ -9538,15 +9538,16 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
         if (mode == LSRA_DUMP_REFPOS)
         {
             bool printedBlockHeader = false;
-            bool continueLoop       = true;
             // We should find the boundary RefPositions in the order of exposed uses, dummy defs, and the blocks
-            for (; currentRefPosition != refPositions.end() && continueLoop; ++currentRefPosition)
+            for (; currentRefPosition != refPositions.end(); ++currentRefPosition)
             {
                 Interval* interval = nullptr;
                 if (currentRefPosition->isIntervalRef())
                 {
                     interval = currentRefPosition->getInterval();
                 }
+
+                bool continueLoop = true;
                 switch (currentRefPosition->refType)
                 {
                     case RefTypeExpUse:
@@ -9572,6 +9573,11 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                     default:
                         continueLoop = false;
                         break;
+                }
+                if (!continueLoop)
+                {
+                    // Avoid loop iteration that will update currentRefPosition
+                    break;
                 }
             }
         }
@@ -9625,8 +9631,7 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                 // and combining the fixed regs with their associated def or use
                 bool         killPrinted        = false;
                 RefPosition* lastFixedRegRefPos = nullptr;
-                bool         continueLoop       = true;
-                for (; currentRefPosition != refPositions.end() && continueLoop; ++currentRefPosition)
+                for (; currentRefPosition != refPositions.end(); ++currentRefPosition)
                 {
                     if (!(currentRefPosition->nodeLocation == tree->gtSeqNum ||
                           currentRefPosition->nodeLocation == tree->gtSeqNum + 1))
@@ -9639,6 +9644,8 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                     {
                         interval = currentRefPosition->getInterval();
                     }
+
+                    bool continueLoop       = true;
                     switch (currentRefPosition->refType)
                     {
                         case RefTypeUse:
@@ -9713,6 +9720,11 @@ void LinearScan::TupleStyleDump(LsraTupleDumpMode mode)
                         default:
                             continueLoop = false;
                             break;
+                    }
+                    if (!continueLoop)
+                    {
+                        // Avoid loop iteration that will update currentRefPosition
+                        break;
                     }
                 }
             }
