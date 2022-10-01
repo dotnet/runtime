@@ -2634,7 +2634,7 @@ void Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
 
     NamedIntrinsic resIntrinsic = NI_Illegal;
 
-    if (imm8 == 0 && (genTypeSize(simdBaseType) >= 4))
+    if ((imm8 == 0) && (genTypeSize(simdBaseType) >= 4))
     {
         switch (simdBaseType)
         {
@@ -2712,9 +2712,8 @@ void Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
 
     node->SetSimdSize(16);
 
-    if (!varTypeIsFloating(simdBaseType))
+    if (resIntrinsic != intrinsicId)
     {
-        assert(node->GetHWIntrinsicId() != intrinsicId);
         LowerNode(node);
     }
 
