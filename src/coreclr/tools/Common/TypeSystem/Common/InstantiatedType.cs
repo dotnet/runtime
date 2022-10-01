@@ -368,5 +368,16 @@ namespace Internal.TypeSystem
             // Return the result from the typical type definition.
             return _typeDef.GetNestedTypes();
         }
+
+        public override TypeDesc UnderlyingType
+        {
+            get
+            {
+                if (!IsEnum)
+                    return this;
+                else
+                    return _typeDef.UnderlyingType;
+            }
+        }
     }
 }

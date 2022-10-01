@@ -2078,7 +2078,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     // they are not your every day method descriptors, for example
     // they don't have an IL or code.
     */
-    if (IsComPlusCall() || IsGenericComPlusCall())
+    if (IsComPlusCall())
     {
         pCode = GetStubForInteropMethod(this);
 

@@ -60,7 +60,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         ForDebuggerProxyAttribute = 8,
         ForDebuggerDisplayAttribute = 16,
         WithProperties = 32,
-        JustMyCode = 64
+        JustMyCode = 64,
+        AutoExpandable = 128
     }
 
     internal enum CommandSet {
@@ -1607,6 +1608,14 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (dispAttrStr.Contains(",nq"))
                 {
                     dispAttrStr = dispAttrStr.Replace(",nq", "");
+                }
+                if (dispAttrStr.Contains(", raw"))
+                {
+                    dispAttrStr = dispAttrStr.Replace(", raw", "");
+                }
+                if (dispAttrStr.Contains(",raw"))
+                {
+                    dispAttrStr = dispAttrStr.Replace(",raw", "");
                 }
                 expr = "$\"" + dispAttrStr + "\"";
                 JObject retValue = await resolver.Resolve(expr, token);

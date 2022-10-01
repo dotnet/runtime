@@ -434,15 +434,13 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     GenTree* const rhsNode    = rootNode->gtGetOp2();
     GenTree*       fwdSubNode = rhsNode;
 
-    // Can't substitute a qmark (unless the use is RHS of an assign... could check for this)
     // Can't substitute GT_CATCH_ARG.
     // Can't substitute GT_LCLHEAP.
     //
     // Don't substitute a no return call (trips up morph in some cases).
-    //
-    if (fwdSubNode->OperIs(GT_QMARK, GT_CATCH_ARG, GT_LCLHEAP))
+    if (fwdSubNode->OperIs(GT_CATCH_ARG, GT_LCLHEAP))
     {
-        JITDUMP(" tree to sub is qmark, catch arg, or lcl heap\n");
+        JITDUMP(" tree to sub is catch arg, or lcl heap\n");
         return false;
     }
 
@@ -466,14 +464,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     if (lhsNode->TypeGet() != fwdSubNode->TypeGet())
     {
         JITDUMP(" mismatched types (assignment)\n");
-        return false;
-    }
-
-    // If lhs is mulit-reg, rhs must be too.
-    //
-    if (lhsNode->IsMultiRegNode() && !fwdSubNode->IsMultiRegNode())
-    {
-        JITDUMP(" would change multi-reg (assignment)\n");
         return false;
     }
 
@@ -519,6 +509,40 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
     JITDUMP(" [%06u] is only use of [%06u] (V%02u) ", dspTreeID(fsv.GetNode()), dspTreeID(lhsNode), lclNum);
 
+    // Qmarks must replace top-level uses. Also, restrict to GT_ASG.
+    // And also to where neither local is normalize on store, otherwise
+    // something downstream may add a cast over the qmark.
+    //
+    GenTree* const nextRootNode = nextStmt->GetRootNode();
+    if (fwdSubNode->OperIs(GT_QMARK))
+    {
+        if ((fsv.GetParentNode() != nextRootNode) || !nextRootNode->OperIs(GT_ASG))
+        {
+            JITDUMP(" can't fwd sub qmark as use is not top level ASG\n");
+            return false;
+        }
+
+        if (varDsc->lvNormalizeOnStore())
+        {
+            JITDUMP(" can't fwd sub qmark as V%02u is normalize on store\n", lclNum);
+            return false;
+        }
+
+        GenTree* const nextRootNodeLHS = nextRootNode->gtGetOp1();
+
+        if (nextRootNodeLHS->OperIs(GT_LCL_VAR))
+        {
+            const unsigned   lhsLclNum = nextRootNodeLHS->AsLclVarCommon()->GetLclNum();
+            LclVarDsc* const lhsVarDsc = lvaGetDesc(lhsLclNum);
+
+            if (lhsVarDsc->lvNormalizeOnStore())
+            {
+                JITDUMP(" can't fwd sub qmark as V%02u is normalize on store\n", lhsLclNum);
+                return false;
+            }
+        }
+    }
+
     // If next statement already has a large tree, hold off
     // on making it even larger.
     //
@@ -535,8 +559,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // Next statement seems suitable.
     // See if we can forward sub without changing semantics.
     //
-    GenTree* const nextRootNode = nextStmt->GetRootNode();
-
     // Bail if types disagree.
     // Might be able to tolerate these by retyping.
     //
@@ -663,16 +685,16 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // There are implicit assumptions downstream on where/how multi-reg ops
     // can appear.
     //
-    // Eg if fwdSubNode is a multi-reg call, parent node must be GT_ASG and the
-    // local being defined must be specially marked up.
+    // Eg if fwdSubNode is a multi-reg call, parent node must be GT_ASG and
+    // the local being defined must be specially marked up.
     //
-    if (varTypeIsStruct(fwdSubNode) && fwdSubNode->IsMultiRegCall())
+    if (varTypeIsStruct(fwdSubNode) && fwdSubNode->IsMultiRegNode())
     {
         GenTree* const parentNode = fsv.GetParentNode();
 
         if (!parentNode->OperIs(GT_ASG))
         {
-            JITDUMP(" multi-reg struct call, parent not asg\n");
+            JITDUMP(" multi-reg struct node, parent not asg\n");
             return false;
         }
 
@@ -680,7 +702,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
         if (!parentNodeLHS->OperIs(GT_LCL_VAR))
         {
-            JITDUMP(" multi-reg struct call, parent not asg(lcl, ...)\n");
+            JITDUMP(" multi-reg struct node, parent not asg(lcl, ...)\n");
             return false;
         }
 
@@ -691,7 +713,6 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
         JITDUMP(" [marking V%02u as multi-reg-ret]", lhsLclNum);
         lhsVarDsc->lvIsMultiRegRet = true;
-        parentNodeLHSLocal->SetMultiReg();
     }
 
     // If a method returns a multi-reg type, only forward sub locals,
@@ -731,16 +752,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
         JITDUMP(" [marking V%02u as multi-reg-ret]", fwdLclNum);
         fwdVarDsc->lvIsMultiRegRet = true;
-        fwdSubNodeLocal->SetMultiReg();
         fwdSubNodeLocal->gtFlags |= GTF_DONT_CSE;
-    }
-
-    // If the use is a multi-reg arg, don't forward sub non-locals.
-    //
-    if (fsv.GetNode()->IsMultiRegNode() && !fwdSubNode->IsMultiRegNode())
-    {
-        JITDUMP(" would change multi-reg (substitution)\n");
-        return false;
     }
 
     // If the initial has truncate on store semantics, we need to replicate

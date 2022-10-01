@@ -38,7 +38,8 @@ namespace ILCompiler.DependencyAnalysis
 
             if (MightHaveInterfaceDispatchMap(factory))
             {
-                dependencyList.Add(factory.InterfaceDispatchMap(_type), "Interface dispatch map");
+                TypeDesc canonType = _type.ConvertToCanonForm(CanonicalFormKind.Specific);
+                dependencyList.Add(factory.InterfaceDispatchMap(canonType), "Interface dispatch map");
             }
 
             if (_type.IsArray)

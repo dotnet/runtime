@@ -51,7 +51,6 @@
 #include "typeequivalencehash.hpp"
 
 #include "appdomain.inl"
-#include "typeparse.h"
 
 #ifndef TARGET_UNIX
 #include "dwreport.h"

@@ -1300,11 +1300,11 @@ public class ClassNonUserCodeToInherit
     private int d;
     public int e;
     protected int f;
-    public int G
+    private int G
     {
         get {return f + 1;}
     }
-    public int H => f;
+    private int H => f;
 
     public ClassNonUserCodeToInherit()
     {
@@ -1354,4 +1354,21 @@ public class ClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass : Debu
     }
 
     public int myField;
+}
+public class ReadOnlySpanTest
+{
+    public static void Run()
+    {
+        Invoke(new string[] {"TEST"});
+        ReadOnlySpan<object> var1 = new ReadOnlySpan<object>();
+        System.Diagnostics.Debugger.Break();
+    }
+    public static void Invoke(object[] parameters)
+    {
+        CheckArguments(parameters);
+    }
+    public static void CheckArguments(ReadOnlySpan<object> parameters)
+    {
+        System.Diagnostics.Debugger.Break();
+    }
 }
