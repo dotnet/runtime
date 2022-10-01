@@ -55,12 +55,11 @@ internal sealed class WebServerStartup
 
         static int GetNextRandomExcept(Range range, params int[] except)
         {
-            int current = Random.Shared.Next(range.Start.Value, range.End.Value);
-
-            while (Array.IndexOf(except, current) > -1)
+            int current;
+            do
             {
                 current = Random.Shared.Next(range.Start.Value, range.End.Value);
-            }
+            } while (Array.IndexOf(except, current) > -1);
 
             return current;
         }
