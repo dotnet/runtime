@@ -24,7 +24,7 @@ namespace System.Collections.Generic
 
         internal T[] _items; // Do not rename (binary serialization)
         internal int _size; // Do not rename (binary serialization)
-        internal int _version; // Do not rename (binary serialization)
+        internal long _version; // Do not rename (binary serialization)
 
 #pragma warning disable CA1825 // avoid the extra generic instantiation for Array.Empty<T>()
         private static readonly T[] s_emptyArray = new T[0];
@@ -606,7 +606,7 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.action);
             }
 
-            int version = _version;
+            long version = _version;
 
             for (int i = 0; i < _size; i++)
             {
@@ -1148,7 +1148,7 @@ namespace System.Collections.Generic
         {
             private readonly List<T> _list;
             private int _index;
-            private readonly int _version;
+            private readonly long _version;
             private T? _current;
 
             internal Enumerator(List<T> list)
