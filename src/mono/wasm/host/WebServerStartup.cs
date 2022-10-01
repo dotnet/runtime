@@ -38,7 +38,7 @@ internal sealed class WebServerStartup
         //on managed code will freeze because it will not be able to continue executing the BrowserDebugProxy to get the locals value
         var executablePath = Path.Combine(System.AppContext.BaseDirectory, "BrowserDebugHost.dll");
         var ownerPid = Environment.ProcessId;
-        var generateRandomPort = new Random().Next(5000, 5300);
+        var generateRandomPort = GetNextRandomExcept(5000..5300, 5060, 5061);
         var processStartInfo = new ProcessStartInfo
         {
             FileName = "dotnet" + (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : ""),
@@ -52,6 +52,18 @@ internal sealed class WebServerStartup
             throw new InvalidOperationException("Unable to start debug proxy process.");
         }
         return generateRandomPort;
+
+        static int GetNextRandomExcept(Range range, params int[] except)
+        {
+            int current = Random.Shared.Next(range.Start.Value, range.End.Value);
+
+            while (Array.IndexOf(except, current) > -1)
+            {
+                current = Random.Shared.Next(range.Start.Value, range.End.Value);
+            }
+
+            return current;
+        }
     }
 
     public void Configure(IApplicationBuilder app,
