@@ -133,55 +133,84 @@ private:
 };
 
 
+// Indx256 implements a trie (or prefix tree) on null-terminated sequences of BYTEs.
+//
+// It is very memory intensive because it allocates a full 256 entry array for every
+// node once the node has any child nodes.  The Indx256 type serves as the overall
+// trie as well as the nodes.  I.e., the root node is the overall trie.
+//
+// Example (with the input strings reduced to 0..3 rather than 0..255);
+//
+// Contents: { 1 -> "A", 11 -> "B", 22 -> "C" }
+//
+// Trie:
+//
+//   NULL, [ NULL, ptr_1, ptr_2, NULL ]   // no empty key, keys start with 1 and 2
+//                   |      |
+//                   |      \--> NULL, [ NULL, NULL, ptr_2, NULL ]     // no 2 key, keys start with 22
+//                   |                                 |
+//                   |                                 \--> "C", NULL  // 22 is "C", no keys extend 22
+//                   |
+//                   \--> "A", [ NULL, ptr_1, NULL, NULL ]             // 1 is "A", keys start with 11
+//                                       |
+//                                       \--> "B", NULL                // 11 is "B", no keys extend 11
 template <class T> struct Indx256
 {
-    T* item;
-    Indx256* table; // [256];
+    T* item; // The value corresponding to the sequence ending at this node
+    Indx256* table; // Child nodes: either NULL or points to 256 elements.
+                    // Element 0 is not used because 0 is the terminator.  This makes indexing simpler.
     Indx256() { item=nullptr; table=nullptr; };
     ~Indx256()
     {
         ClearAll(true);
-        delete[] table;
     };
+
     T** IndexString(BYTE* psz, T* pObj)
     {
         if(*psz == 0)
         {
+            // Found NULL terminator.  Install value and return pointer to it.
             item = pObj;
             return &item;
         }
-        else
+
+        // Ensure that child table exists.
+        if(table == NULL)
         {
-            if(table == NULL)
+            table = new Indx256[256] {};
+            if (table == NULL)
             {
-                table = new Indx256[256];
-                if (table == NULL)
-                {
-                    _ASSERTE(!"Out of memory in Indx256::IndexString!");
-                    fprintf(stderr,"\nOut of memory in Indx256::IndexString!\n");
-                    return NULL;
-                }
-                memset(table,0,sizeof(Indx256[256]));
+                _ASSERTE(!"Out of memory in Indx256::IndexString!");
+                fprintf(stderr,"\nOut of memory in Indx256::IndexString!\n");
+                return NULL;
             }
-            return table[*psz].IndexString(psz+1,pObj);
         }
+
+        // Continue in child node for the current BYTE at the next BYTE.
+        return table[*psz].IndexString(psz+1,pObj);
     };
-    T*  FindString(BYTE* psz)
+
+    T* FindString(BYTE* psz)
     {
         if(*psz > 0)
         {
             if(table == NULL)
             {
+                // If there are no child nodes, then there is nowhere to
+                // look for this key.
                 return NULL;
             }
+            // Continue in child node for the current BYTE at the next BYTE.
             return table[*psz].FindString(psz+1);
         }
+
+        // Found NULL terminator.  Return value.
         return item; // if i==0
     };
 
     void ClearAll(bool DeleteObj)
     {
-        if(DeleteObj) delete (T*)item;
+        if(DeleteObj) delete item;
         item = NULL;
         if (table)
         {
