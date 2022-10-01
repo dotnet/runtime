@@ -528,7 +528,6 @@ public:
     // Miscellaneous method information
     //------------------------------------------------------------------------
 
-    INT32   GetSecurityObjectStackSlot();
     INT32   GetGSCookieStackSlot();
     UINT32  GetGSCookieValidRangeStart();
     UINT32  GetGSCookieValidRangeEnd();
@@ -571,7 +570,6 @@ private:
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     bool    m_HasTailCalls;
 #endif // TARGET_AMD64
-    INT32   m_SecurityObjectStackSlot;
     INT32   m_GSCookieStackSlot;
     INT32   m_ReversePInvokeFrameStackSlot;
     UINT32  m_ValidRangeStart;
