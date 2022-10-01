@@ -801,6 +801,9 @@
   <data name="PersistedFiles_NoHomeDirectory" xml:space="preserve">
     <value>The home directory of the current user could not be determined.</value>
   </data>
+  <data name="PlatformNotSupported_AesGcmTagSize" xml:space="preserve">
+    <value>The current platform only supports 128-bit AES-GCM tags.</value>
+  </data>
   <data name="PlatformNotSupported_CryptographyCng" xml:space="preserve">
     <value>Windows Cryptography Next Generation (CNG) is not supported on this platform.</value>
   </data>

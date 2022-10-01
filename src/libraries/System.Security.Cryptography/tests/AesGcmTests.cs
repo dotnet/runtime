@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 
@@ -11,7 +12,9 @@ namespace System.Security.Cryptography.Tests
     [ConditionalClass(typeof(AesGcm), nameof(AesGcm.IsSupported))]
     public class AesGcmTests : CommonAEADTests
     {
-        [Theory]
+        private const int CryptoKitSupportedTagSizeInBytes = 16;
+
+        [ConditionalTheory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         [MemberData(nameof(EncryptTamperAADDecryptTestInputs))]
         public static void EncryptTamperAADDecrypt(int dataLength, int additionalDataLength)
@@ -23,7 +26,7 @@ namespace System.Security.Cryptography.Tests
             byte[] ciphertext = new byte[dataLength];
             byte[] key = new byte[16];
             byte[] nonce = new byte[AesGcm.NonceByteSizes.MinSize];
-            byte[] tag = new byte[AesGcm.TagByteSizes.MinSize];
+            byte[] tag = new byte[AesGcm.TagByteSizes.MaxSize];
             RandomNumberGenerator.Fill(key);
             RandomNumberGenerator.Fill(nonce);
 
@@ -82,7 +85,7 @@ namespace System.Security.Cryptography.Tests
             byte[] ciphertext = new byte[dataLength];
             byte[] key = new byte[16];
             byte[] nonce = new byte[nonceSize];
-            byte[] tag = new byte[AesGcm.TagByteSizes.MinSize];
+            byte[] tag = new byte[AesGcm.TagByteSizes.MaxSize];
             RandomNumberGenerator.Fill(key);
             RandomNumberGenerator.Fill(nonce);
 
@@ -132,11 +135,22 @@ namespace System.Security.Cryptography.Tests
 
             using (var aesGcm = new AesGcm(key))
             {
-                aesGcm.Encrypt(nonce, plaintext, ciphertext, tag);
+                if (PlatformDetection.IsOSX &&
+                    tagSize != CryptoKitSupportedTagSizeInBytes &&
+                    !PlatformDetection.OpenSslPresentOnSystem)
+                {
+                    byte[] decrypted = new byte[dataLength];
+                    Assert.Throws<PlatformNotSupportedException>(() => aesGcm.Encrypt(nonce, plaintext, ciphertext, tag));
+                    Assert.Throws<PlatformNotSupportedException>(() => aesGcm.Decrypt(nonce, ciphertext, tag, decrypted));
+                }
+                else
+                {
+                    aesGcm.Encrypt(nonce, plaintext, ciphertext, tag);
 
-                byte[] decrypted = new byte[dataLength];
-                aesGcm.Decrypt(nonce, ciphertext, tag, decrypted);
-                Assert.Equal(plaintext, decrypted);
+                    byte[] decrypted = new byte[dataLength];
+                    aesGcm.Decrypt(nonce, ciphertext, tag, decrypted);
+                    Assert.Equal(plaintext, decrypted);
+                }
             }
         }
 
@@ -152,7 +166,9 @@ namespace System.Security.Cryptography.Tests
             byte[] nonce2 = "8ba10892e8b87d031196bf99".HexToByteArray();
 
             byte[] expectedCiphertext1 = "f1af1fb2d4485cc536d618475d52ff".HexToByteArray();
-            byte[] expectedTag1 = "5ab65624c46b8160f34e81f5".HexToByteArray();
+            byte[] expectedTag1 = PlatformDetection.IsOSX ?
+                "5ab65624c46b8160f34e81f51fee6cd9".HexToByteArray() :
+                "5ab65624c46b8160f34e81f5".HexToByteArray();
 
             byte[] expectedCiphertext2 = (
                 "217bed01446d731a372a2b30ac7fcd73aed7c946d9171ae9c00b1c589ca73ba2" +
@@ -318,11 +334,18 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(GetNistGcmTestCases))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void AesGcmNistTests(AEADTest testCase)
         {
+            if (PlatformDetection.IsOSX &&
+                testCase.Tag.Length != CryptoKitSupportedTagSizeInBytes &&
+                !PlatformDetection.OpenSslPresentOnSystem)
+            {
+                throw new SkipTestException("Platform does not support tag sizes other than 128-bit");
+            }
+
             using (var aesGcm = new AesGcm(testCase.Key))
             {
                 byte[] ciphertext = new byte[testCase.Plaintext.Length];
@@ -337,11 +360,18 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(GetNistGcmTestCases))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void AesGcmNistTestsTamperTag(AEADTest testCase)
         {
+            if (PlatformDetection.IsOSX &&
+                testCase.Tag.Length != CryptoKitSupportedTagSizeInBytes &&
+                !PlatformDetection.OpenSslPresentOnSystem)
+            {
+                throw new SkipTestException("Platform does not support tag sizes other than 128-bit");
+            }
+
             using (var aesGcm = new AesGcm(testCase.Key))
             {
                 byte[] ciphertext = new byte[testCase.Plaintext.Length];
@@ -360,11 +390,18 @@ namespace System.Security.Cryptography.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(GetNistGcmTestCasesWithNonEmptyPT))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51332", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public static void AesGcmNistTestsTamperCiphertext(AEADTest testCase)
         {
+            if (PlatformDetection.IsOSX &&
+                testCase.Tag.Length != CryptoKitSupportedTagSizeInBytes &&
+                !PlatformDetection.OpenSslPresentOnSystem)
+            {
+                throw new SkipTestException("Platform does not support tag sizes other than 128-bit");
+            }
+
             using (var aesGcm = new AesGcm(testCase.Key))
             {
                 byte[] ciphertext = new byte[testCase.Plaintext.Length];
@@ -873,7 +910,7 @@ namespace System.Security.Cryptography.Tests
 
             if (PlatformDetection.IsOSX)
             {
-                expectedIsSupported = PlatformDetection.OpenSslPresentOnSystem;
+                expectedIsSupported = true;
             }
             else if (PlatformDetection.UsesMobileAppleCrypto)
             {

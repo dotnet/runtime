@@ -16,7 +16,7 @@ namespace System.Security.Cryptography
         [MemberNotNull(nameof(_ctxHandle))]
         private void ImportKey(ReadOnlySpan<byte> key)
         {
-            _ctxHandle = Interop.Crypto.EvpCipherCreatePartial(GetCipher(key.Length * 8));
+            _ctxHandle = Interop.Crypto.EvpCipherCreatePartial(AesGcmOpenSslCommon.GetCipher(key.Length * 8));
 
             Interop.Crypto.CheckValidOpenSslHandle(_ctxHandle);
             Interop.Crypto.EvpCipherSetKeyAndIV(
@@ -32,44 +32,9 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> plaintext,
             Span<byte> ciphertext,
             Span<byte> tag,
-            ReadOnlySpan<byte> associatedData = default)
+            ReadOnlySpan<byte> associatedData)
         {
-            Interop.Crypto.EvpCipherSetKeyAndIV(
-                _ctxHandle,
-                Span<byte>.Empty,
-                nonce,
-                Interop.Crypto.EvpCipherDirection.Encrypt);
-
-            if (associatedData.Length != 0)
-            {
-                if (!Interop.Crypto.EvpCipherUpdate(_ctxHandle, Span<byte>.Empty, out _, associatedData))
-                {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
-            }
-
-            if (!Interop.Crypto.EvpCipherUpdate(_ctxHandle, ciphertext, out int ciphertextBytesWritten, plaintext))
-            {
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
-            }
-
-            if (!Interop.Crypto.EvpCipherFinalEx(
-                _ctxHandle,
-                ciphertext.Slice(ciphertextBytesWritten),
-                out int bytesWritten))
-            {
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
-            }
-
-            ciphertextBytesWritten += bytesWritten;
-
-            if (ciphertextBytesWritten != ciphertext.Length)
-            {
-                Debug.Fail($"GCM encrypt wrote {ciphertextBytesWritten} of {ciphertext.Length} bytes.");
-                throw new CryptographicException();
-            }
-
-            Interop.Crypto.EvpCipherGetGcmTag(_ctxHandle, tag);
+            AesGcmOpenSslCommon.Encrypt(_ctxHandle, nonce, plaintext, ciphertext, tag, associatedData);
         }
 
         private void DecryptCore(
@@ -79,56 +44,7 @@ namespace System.Security.Cryptography
             Span<byte> plaintext,
             ReadOnlySpan<byte> associatedData)
         {
-            Interop.Crypto.EvpCipherSetKeyAndIV(
-                _ctxHandle,
-                ReadOnlySpan<byte>.Empty,
-                nonce,
-                Interop.Crypto.EvpCipherDirection.Decrypt);
-
-            if (associatedData.Length != 0)
-            {
-                if (!Interop.Crypto.EvpCipherUpdate(_ctxHandle, Span<byte>.Empty, out _, associatedData))
-                {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
-            }
-
-            if (!Interop.Crypto.EvpCipherUpdate(_ctxHandle, plaintext, out int plaintextBytesWritten, ciphertext))
-            {
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
-            }
-
-            Interop.Crypto.EvpCipherSetGcmTag(_ctxHandle, tag);
-
-            if (!Interop.Crypto.EvpCipherFinalEx(
-                _ctxHandle,
-                plaintext.Slice(plaintextBytesWritten),
-                out int bytesWritten))
-            {
-                CryptographicOperations.ZeroMemory(plaintext);
-                throw new AuthenticationTagMismatchException();
-            }
-
-            plaintextBytesWritten += bytesWritten;
-
-            if (plaintextBytesWritten != plaintext.Length)
-            {
-                Debug.Fail($"GCM decrypt wrote {plaintextBytesWritten} of {plaintext.Length} bytes.");
-                throw new CryptographicException();
-            }
-        }
-
-        private static IntPtr GetCipher(int keySizeInBits)
-        {
-            switch (keySizeInBits)
-            {
-                case 128: return Interop.Crypto.EvpAes128Gcm();
-                case 192: return Interop.Crypto.EvpAes192Gcm();
-                case 256: return Interop.Crypto.EvpAes256Gcm();
-                default:
-                    Debug.Fail("Key size should already be validated");
-                    return IntPtr.Zero;
-            }
+            AesGcmOpenSslCommon.Decrypt(_ctxHandle, nonce, ciphertext, tag, plaintext, associatedData);
         }
 
         public void Dispose()
