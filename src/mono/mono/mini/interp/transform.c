@@ -194,6 +194,8 @@ static int stack_type [] = {
 	STACK_TYPE_VT
 };
 
+static GENERATE_TRY_GET_CLASS_WITH_CACHE (intrinsic_klass, "System.Runtime.CompilerServices", "IntrinsicAttribute")
+
 static gboolean generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, MonoGenericContext *generic_context, MonoError *error);
 
 #define interp_ins_set_dreg(ins,dr) do { \
@@ -214,6 +216,21 @@ static gboolean generate_code (TransformData *td, MonoMethod *method, MonoMethod
 	ins->sregs [1] = s2; \
 	ins->sregs [2] = s3; \
 } while (0)
+
+static gboolean
+has_intrinsic_attribute (MonoMethod *method)
+{
+	gboolean result = FALSE;
+	ERROR_DECL (aerror);
+	MonoClass *intrinsic_klass = mono_class_try_get_intrinsic_klass_class ();
+	MonoCustomAttrInfo *ainfo = mono_custom_attrs_from_method_checked (method, aerror);
+	mono_error_cleanup (aerror); /* FIXME don't swallow the error? */
+	if (ainfo) {
+		result = intrinsic_klass && mono_custom_attrs_has_attr (ainfo, intrinsic_klass);
+		mono_custom_attrs_free (ainfo);
+	}
+	return result;
+}
 
 static InterpInst*
 interp_new_ins (TransformData *td, guint16 opcode, int len)
@@ -2733,8 +2750,13 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method, MonoMethodS
 	if (td->inline_depth > INLINE_DEPTH_LIMIT)
 		return FALSE;
 
-	if (header.code_size >= INLINE_LENGTH_LIMIT && !(method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING))
-		return FALSE;
+	if (header.code_size >= INLINE_LENGTH_LIMIT) {
+		gboolean aggressive_inlining = (method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING);
+		if (!aggressive_inlining)
+			aggressive_inlining = has_intrinsic_attribute(method);
+		if (!aggressive_inlining)
+			return FALSE;
+	}
 
 	if (mono_class_needs_cctor_run (method->klass, NULL)) {
 		MonoVTable *vtable;
@@ -2826,6 +2848,10 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 	int const prev_code_size = td->code_size;
 	td->code_size = header->code_size;
 	td->aggressive_inlining = !!(target_method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING);
+	if (!td->aggressive_inlining) {
+		if (has_intrinsic_attribute(target_method))
+			td->aggressive_inlining = TRUE;
+	}
 	if (td->verbose_level)
 		g_print ("Inline start method %s.%s\n", m_class_get_name (target_method->klass), target_method->name);
 
