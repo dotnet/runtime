@@ -547,8 +547,30 @@ StringLiteralEntry *GlobalStringLiteralMap::AddInternedString(STRINGREF *pString
     }
     CONTRACTL_END;
 
-    EEStringData StringData = EEStringData((*pString)->GetStringLength(), (*pString)->GetBuffer());
-    return AddStringLiteral(&StringData, preferFrozenObjHeap);
+    StringLiteralEntry* pRet;
+
+    {
+        // All frozen strings are expected to be registered in m_StringToEntryHashTable, we might relax this assert
+        // in future if we start allocating frozen strings for non-literals
+        _ASSERT(!GCHeapUtilities::GetGCHeap()->IsInFrozenSegment(STRINGREFToObject(*pString)));
+
+        PinnedHeapHandleBlockHolder pStrObj(&m_PinnedHeapHandleTable, 1);
+        SetObjectReference(pStrObj[0], (OBJECTREF)*pString);
+
+        // Since the allocation might have caused a GC we need to re-get the
+        // string data.
+        EEStringData StringData = EEStringData((*pString)->GetStringLength(), (*pString)->GetBuffer());
+
+        StringLiteralEntryHolder pEntry(StringLiteralEntry::AllocateEntry(&StringData, (STRINGREF*)pStrObj[0]));
+        pStrObj.SuppressRelease();
+
+        // Insert the handle to the string into the hash table.
+        m_StringToEntryHashTable->InsertValue(&StringData, (LPVOID)pEntry, FALSE);
+        pEntry.SuppressRelease();
+        pRet = pEntry;
+    }
+
+    return pRet;
 }
 
 void GlobalStringLiteralMap::RemoveStringLiteralEntry(StringLiteralEntry *pEntry)
