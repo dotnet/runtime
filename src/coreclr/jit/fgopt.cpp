@@ -4989,7 +4989,8 @@ bool Compiler::fgReorderBlocks(bool useProfile)
                             ((double)edgeToBlock->edgeWeightMin() + (double)edgeToBlock->edgeWeightMax()) / 2.0;
                         double totalCount = takenCount + notTakenCount;
 
-                        // If the takenRatio (takenCount / totalCount) is greater or equal to 51% then we will reverse the branch
+                        // If the takenRatio (takenCount / totalCount) is greater or equal to 51% then we will reverse
+                        // the branch
                         if (takenCount < (0.51 * totalCount))
                         {
                             reorderBlock = false;
