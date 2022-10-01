@@ -81,8 +81,8 @@ if not exist mainv1.map (
 
 endlocal
 ]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
+    <CLRTestBashPreCommands><![CDATA[
+$(CLRTestBashPreCommands)
 
 # Suppress some COMPlus variables for the duration of Crossgen2 execution
 export -n COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun
@@ -152,6 +152,6 @@ then
 fi
 
 export COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun
-]]></BashCLRTestPreCommands>
+]]></CLRTestBashPreCommands>
   </PropertyGroup>
 </Project>

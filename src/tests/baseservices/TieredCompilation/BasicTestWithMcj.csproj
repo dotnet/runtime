@@ -34,8 +34,8 @@ set "COMPlus_ReadyToRun="
 endlocal
 set CLRCustomTestLauncher=RunBasicTestWithMcj.cmd --runCustomTest
 ]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
+    <CLRTestBashPreCommands><![CDATA[
+$(CLRTestBashPreCommands)
 mkdir r2r
 
 # Suppress some COMPlus variables for the duration of Crossgen2 execution
@@ -46,6 +46,6 @@ export -n COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun
 export COMPlus_GCName COMPlus_GCStress COMPlus_HeapVerify COMPlus_ReadyToRun
 chmod +x ./RunBasicTestWithMcj.sh
 export CLRCustomTestLauncher="./RunBasicTestWithMcj.sh --runCustomTest"
-]]></BashCLRTestPreCommands>
+]]></CLRTestBashPreCommands>
   </PropertyGroup>
 </Project>
