@@ -189,7 +189,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameNull(this);
             }
 
-            Name = name;
+            SetNameInternal(name);
             MemberName = propertyInfo.PropertyName;
             MemberType = propertyInfo.IsProperty ? MemberTypes.Property : MemberTypes.Field;
             SrcGen_IsPublic = propertyInfo.IsPublic;

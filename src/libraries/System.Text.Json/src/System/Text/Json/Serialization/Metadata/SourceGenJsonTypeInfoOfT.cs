@@ -177,6 +177,7 @@ namespace System.Text.Json.Serialization.Metadata
                     continue;
                 }
 
+                jsonPropertyInfo.EnsureChildOf(this);
                 CacheMember(jsonPropertyInfo, propertyCache, ref ignoredMembers);
             }
 

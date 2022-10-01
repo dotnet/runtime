@@ -254,7 +254,7 @@ namespace System.Text.Json.Serialization.Metadata
             Debug.Assert(!info.CanSerialize);
             Debug.Assert(!info.CanDeserialize);
 
-            info.Name = string.Empty;
+            info.SetNameInternal(string.Empty);
 
             return info;
         }
@@ -363,7 +363,7 @@ namespace System.Text.Json.Serialization.Metadata
                 ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameNull(this);
             }
 
-            Name = name;
+            SetNameInternal(name);
         }
 
         private void CacheNameAsUtf8BytesAndEscapedNameSection()
@@ -654,10 +654,24 @@ namespace System.Text.Json.Serialization.Metadata
                 }
 
                 _name = value;
+
+                // This setter should only be called by end users.
+                // Disable fast-path if a user modifies a property name.
+                if (ParentTypeInfo != null)
+                {
+                    ParentTypeInfo.CanUseSerializeHandler = false;
+                }
             }
         }
 
         private string? _name;
+
+        internal void SetNameInternal(string name)
+        {
+            Debug.Assert(name is not null);
+            VerifyMutable();
+            _name = name;
+        }
 
         /// <summary>
         /// Utf8 version of Name.

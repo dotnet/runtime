@@ -310,6 +310,170 @@ namespace System.Text.Json.SourceGeneration.Tests
             static object[] WrapArgs<T>(T value, string expectedJson) => new object[] { value, expectedJson };
         }
 
+        [Fact]
+        [ActiveIssue("Should src-gen'd JsonSerializerContext.GetTypeInfo(Options) implementations be sealed?")]
+        public static void SourceGeneratedContextsCanBeModified_JsonSerializerOptionsOverload()
+        {
+            Test(new EditedSourceGenContext());
+            Test(new EditedSourceGenContext_Metadata());
+            Test(new EditedSourceGenContext_Serialization(), isFastPath: true);
+
+            static void Test(IJsonTypeInfoResolver resolver, bool isFastPath = false)
+            {
+                JsonSerializerOptions options = new() { TypeInfoResolver = resolver };
+
+                Person person = new(FirstName: "Jane", LastName: "Doe");
+                string json = JsonSerializer.Serialize(person, options);
+
+                if (isFastPath)
+                {
+                    JsonTestHelper.AssertJsonEqual(@"{""FirstName"":""Jane"",""LastName"":""Doe""}", json);
+                    Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<Person>(json, options));
+                }
+                else
+                {
+                    person = JsonSerializer.Deserialize<Person>(json, options);
+                    VerifySourceGenContextModification(json, person);
+                }
+            }
+        }
+
+        [Fact]
+        public static void SourceGeneratedContextsCanBeModified_JsonTypeInfoOverload()
+        {
+            Person person = new(FirstName: "Jane", LastName: "Doe");
+
+            Test(SourceGenContext.Default.Person);
+            Test(SourceGenContext_Metadata.Default.Person);
+            Test(SourceGenContext_Serialization.Default.Person, isFastPath: true);
+
+            void Test(JsonTypeInfo<Person> typeInfo, bool isFastPath = false)
+            {
+                foreach (JsonPropertyInfo property in typeInfo.Properties)
+                {
+                    Assert.False(isFastPath);
+                    property.Name = property.Name.ToUpperInvariant();
+                }
+
+                string json = JsonSerializer.Serialize(person, typeInfo);
+
+                if (isFastPath)
+                {
+                    JsonTestHelper.AssertJsonEqual(@"{""FirstName"":""Jane"",""LastName"":""Doe""}", json);
+                    Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize(json, typeInfo));
+                }
+                else
+                {
+                    person = JsonSerializer.Deserialize(json, typeInfo);
+                    VerifySourceGenContextModification(json, person);
+                }
+            }
+        }
+
+        [Fact]
+        public static void SourceGeneratedContextsCanBeModified_JsonSerializerContextOverload()
+        {
+            Test(new EditedSourceGenContext_WithCheck());
+            Test(new EditedSourceGenContext_WithCheck_Metadata());
+            Test(new EditedSourceGenContext_WithCheck_Serialization(), isFastPath: true);
+
+            void Test(JsonSerializerContext context, bool isFastPath = false)
+            {
+                Person person = new(FirstName: "Jane", LastName: "Doe");
+
+                string json = JsonSerializer.Serialize(person, typeof(Person), context);
+
+                if (isFastPath)
+                {
+                    JsonTestHelper.AssertJsonEqual(@"{""FirstName"":""Jane"",""LastName"":""Doe""}", json);
+                    Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize(json, typeof(Person), context));
+                }
+                else
+                {
+                    person = (Person)JsonSerializer.Deserialize(json, typeof(Person), context);
+                    VerifySourceGenContextModification(json, person);
+                }
+            }
+        }
+
+        private static void VerifySourceGenContextModification(string json, Person person)
+        {
+            JsonTestHelper.AssertJsonEqual(@"{""FIRSTNAME"":""Jane"",""LASTNAME"":""Doe""}", json);
+            Assert.Equal("Jane", person.FirstName);
+            Assert.Equal("Doe", person.LastName);
+        }
+
+        internal class EditedSourceGenContext : SourceGenContext
+        {
+            public override JsonTypeInfo GetTypeInfo(Type type)
+                => EditTypeInfo(base.GetTypeInfo(type));
+        }
+
+        internal class EditedSourceGenContext_Metadata : SourceGenContext_Metadata
+        {
+            public override JsonTypeInfo GetTypeInfo(Type type)
+                => EditTypeInfo(base.GetTypeInfo(type));
+        }
+
+        internal class EditedSourceGenContext_Serialization : SourceGenContext_Serialization
+        {
+            public override JsonTypeInfo GetTypeInfo(Type type)
+                => EditTypeInfo(base.GetTypeInfo(type));
+        }
+
+        internal class EditedSourceGenContext_WithCheck : SourceGenContext
+        {
+            public override JsonTypeInfo GetTypeInfo(Type type)
+                => EditTypeInfo(base.GetTypeInfo(type), checkIfPropsConfigured: true);
+        }
+
+        internal class EditedSourceGenContext_WithCheck_Metadata : SourceGenContext_Metadata
+        {
+            public override JsonTypeInfo GetTypeInfo(Type type)
+                => EditTypeInfo(base.GetTypeInfo(type), checkIfPropsConfigured: true);
+        }
+
+        internal class EditedSourceGenContext_WithCheck_Serialization : SourceGenContext_Serialization
+        {
+            public override JsonTypeInfo GetTypeInfo(Type type)
+                => EditTypeInfo(base.GetTypeInfo(type), checkIfPropsConfigured: true);
+        }
+
+        internal static JsonTypeInfo EditTypeInfo(JsonTypeInfo typeInfo, bool checkIfPropsConfigured = false)
+        {
+            if (typeInfo.Kind == JsonTypeInfoKind.Object)
+            {
+                foreach (JsonPropertyInfo property in typeInfo.Properties)
+                {
+                    if (checkIfPropsConfigured &&
+                        (bool)
+                        typeof(JsonPropertyInfo)
+                            .GetProperty(
+                                "IsConfigured",
+                                BindingFlags.NonPublic | BindingFlags.Instance)
+                            .GetValue(property))
+                    {
+                        break;
+                    }
+
+                    property.Name = property.Name.ToUpperInvariant();
+                }
+            }
+
+            return typeInfo;
+        }
+
+        [JsonSerializable(typeof(Person))]
+        internal partial class SourceGenContext : JsonSerializerContext { }
+
+        [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata)]
+        [JsonSerializable(typeof(Person))]
+        internal partial class SourceGenContext_Metadata : JsonSerializerContext { }
+
+        [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Serialization)]
+        [JsonSerializable(typeof(Person))]
+        internal partial class SourceGenContext_Serialization : JsonSerializerContext { }
+
         [JsonSerializable(typeof(JsonMessage))]
         internal partial class NestedContext : JsonSerializerContext { }
 

@@ -199,6 +199,9 @@ namespace System.Text.Json.Serialization.Metadata
         ///
         /// It is required that added <see cref="JsonPropertyInfo"/> entries are unique up to <see cref="JsonPropertyInfo.Name"/>,
         /// however this will only be validated on serialization, once the metadata instance gets locked for further modification.
+        ///
+        /// If the <see cref="JsonTypeInfo"/> instance was created with source generation mode
+        /// <see cref="JsonSourceGenerationMode.Serialization"/>, an empty, read-only list will be returned.
         /// </remarks>
         public IList<JsonPropertyInfo> Properties
         {
@@ -271,7 +274,7 @@ namespace System.Text.Json.Serialization.Metadata
         private JsonTypeInfo? _elementTypeInfo;
 
         // Flag indicating that JsonTypeInfo<T>.SerializeHandler is populated and is compatible with the associated Options instance.
-        internal bool CanUseSerializeHandler { get; private protected set; }
+        internal bool CanUseSerializeHandler { get; set; }
 
         // Configure would normally have thrown why initializing properties for source gen but type had SerializeHandler
         // so it is allowed to be used for fast-path serialization but it will throw if used for metadata-based serialization
@@ -713,7 +716,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             JsonPropertyInfo propertyInfo = CreatePropertyUsingReflection(propertyType);
-            propertyInfo.Name = name;
+            propertyInfo.SetNameInternal(name);
 
             return propertyInfo;
         }
