@@ -2712,7 +2712,7 @@ void Lowering::LowerHWIntrinsicGetElement(GenTreeHWIntrinsic* node)
 
     node->SetSimdSize(16);
 
-    if (resIntrinsic != intrinsicId)
+    if (node->GetHWIntrinsicId() != intrinsicId)
     {
         LowerNode(node);
     }
