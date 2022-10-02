@@ -52,8 +52,8 @@ inline void FATAL_GC_ERROR()
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
 // For now disable regions for StandAlone GC, NativeAOT and MacOS builds
-#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__) && !defined(FEATURE_NATIVEAOT)
-#define USE_REGIONS
+#if defined (HOST_64BIT) && defined (BUILD_AS_STANDALONE) && !defined(__APPLE__) && !defined(FEATURE_NATIVEAOT)
+//#define USE_REGIONS
 #endif //HOST_64BIT && BUILD_AS_STANDALONE
 
 #ifdef USE_REGIONS
@@ -2200,16 +2200,16 @@ protected:
     BOOL mark_array_bit_set (size_t mark_bit);
     PER_HEAP
     void mark_array_clear_marked (uint8_t* add);
-    PER_HEAP
-    void clear_mark_array (uint8_t* from, uint8_t* end, BOOL check_only=TRUE
+
 #ifdef FEATURE_BASICFREEZE
-        , BOOL read_only=FALSE
-#endif // FEATURE_BASICFREEZE
-        );
+    PER_HEAP
+    void seg_set_mark_array_bits_soh (heap_segment* seg);
+    PER_HEAP
+    void clear_mark_array (uint8_t* from, uint8_t* end, BOOL read_only=FALSE);
     PER_HEAP
     void seg_clear_mark_array_bits_soh (heap_segment* seg);
-    PER_HEAP
-    void seg_mark_array_bits_soh (heap_segment* seg);
+#endif // FEATURE_BASICFREEZE
+
     PER_HEAP
     void bgc_clear_batch_mark_array_bits (uint8_t* start, uint8_t* end);
 #ifdef VERIFY_HEAP
@@ -2862,14 +2862,17 @@ protected:
                                       BOOL& allocate_in_condemned);
 #endif //!USE_REGIONS
 
-    PER_HEAP
-    void seg_clear_mark_bits (heap_segment* seg);
+#ifdef FEATURE_BASICFREEZE
     PER_HEAP
     void seg_set_mark_bits (heap_segment* seg);
+    PER_HEAP
+    void seg_clear_mark_bits (heap_segment* seg);
     PER_HEAP
     void mark_ro_segments (heap_segment* start_seg);
     PER_HEAP
     void sweep_ro_segments (heap_segment* start_seg);
+#endif // FEATURE_BASICFREEZE
+
     PER_HEAP
     void convert_to_pinned_plug (BOOL& last_npinned_plug_p,
                                  BOOL& last_pinned_plug_p,

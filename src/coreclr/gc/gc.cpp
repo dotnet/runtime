@@ -8458,12 +8458,9 @@ uint32_t* translate_mark_array (uint32_t* ma)
     return (uint32_t*)((uint8_t*)ma - size_mark_array_of (0, g_gc_lowest_address));
 }
 
-// from and end must be page aligned addresses.
-void gc_heap::clear_mark_array (uint8_t* from, uint8_t* end, BOOL check_only/*=TRUE*/
 #ifdef FEATURE_BASICFREEZE
-                                , BOOL read_only/*=FALSE*/
-#endif // FEATURE_BASICFREEZE
-                                )
+// from and end must be page aligned addresses.
+void gc_heap::clear_mark_array (uint8_t* from, uint8_t* end, BOOL read_only/*=FALSE*/)
 {
     if(!gc_can_use_concurrent)
         return;
@@ -8487,22 +8484,20 @@ void gc_heap::clear_mark_array (uint8_t* from, uint8_t* end, BOOL check_only/*=T
         size_t beg_word = mark_word_of (align_on_mark_word (from));
         //align end word to make sure to cover the address
         size_t end_word = mark_word_of (align_on_mark_word (end));
-        dprintf (3, ("Calling clearing mark array [%Ix, %Ix[ for addresses [%Ix, %Ix[(%s)",
+        dprintf (3, ("Calling clearing mark array [%Ix, %Ix[ for addresses [%Ix, %Ix[",
                      (size_t)mark_word_address (beg_word),
                      (size_t)mark_word_address (end_word),
-                     (size_t)from, (size_t)end,
-                     (check_only ? "check_only" : "clear")));
-        if (!check_only)
-        {
-            uint8_t* op = from;
-            while (op < mark_word_address (beg_word))
-            {
-                mark_array_clear_marked (op);
-                op += mark_bit_pitch;
-            }
+                     (size_t)from, (size_t)end));
 
-            memset (&mark_array[beg_word], 0, (end_word - beg_word)*sizeof (uint32_t));
+        uint8_t* op = from;
+        while (op < mark_word_address (beg_word))
+        {
+            mark_array_clear_marked (op);
+            op += mark_bit_pitch;
         }
+
+        memset (&mark_array[beg_word], 0, (end_word - beg_word)*sizeof (uint32_t));
+
 #ifdef _DEBUG
         else
         {
@@ -8526,6 +8521,7 @@ void gc_heap::clear_mark_array (uint8_t* from, uint8_t* end, BOOL check_only/*=T
 #endif //_DEBUG
     }
 }
+#endif // FEATURE_BASICFREEZE
 #endif //BACKGROUND_GC
 
 //These work on untranslated card tables
@@ -9475,7 +9471,7 @@ BOOL gc_heap::insert_ro_segment (heap_segment* seg)
         return FALSE;
     }
 
-    //insert at the head of the segment list
+    //insert at the head of the max_generation segment list
     generation* gen2 = generation_of (max_generation);
     heap_segment* oldhead = generation_start_segment (gen2);
     heap_segment_next (seg) = oldhead;
@@ -9513,13 +9509,12 @@ BOOL gc_heap::insert_ro_segment (heap_segment* seg)
 // which portion of the mark array was committed and only decommit that.
 void gc_heap::remove_ro_segment (heap_segment* seg)
 {
-//clear the mark bits so a new segment allocated in its place will have a clear mark bits
+    //clear the mark bits so a new segment allocated in its place will have a clear mark bits
 #ifdef BACKGROUND_GC
     if (gc_can_use_concurrent)
     {
         clear_mark_array (align_lower_mark_word (max (heap_segment_mem (seg), lowest_address)),
-                      align_on_card_word (min (heap_segment_allocated (seg), highest_address)),
-                      false); // read_only segments need the mark clear
+                      align_on_card_word (min (heap_segment_allocated (seg), highest_address)));
     }
 #endif //BACKGROUND_GC
 
@@ -10998,6 +10993,7 @@ inline size_t my_get_size (Object* ob)
 #endif //COLLECTIBLE_CLASS
 
 #ifdef BACKGROUND_GC
+#ifdef FEATURE_BASICFREEZE
 inline
 void gc_heap::seg_clear_mark_array_bits_soh (heap_segment* seg)
 {
@@ -11005,16 +11001,12 @@ void gc_heap::seg_clear_mark_array_bits_soh (heap_segment* seg)
     uint8_t* range_end = 0;
     if (bgc_mark_array_range (seg, FALSE, &range_beg, &range_end))
     {
-        clear_mark_array (range_beg, align_on_mark_word (range_end), FALSE
-#ifdef FEATURE_BASICFREEZE
-            , TRUE
-#endif // FEATURE_BASICFREEZE
-            );
+        clear_mark_array (range_beg, align_on_mark_word (range_end), TRUE);
     }
 }
 
 inline
-void gc_heap::seg_mark_array_bits_soh (heap_segment* seg)
+void gc_heap::seg_set_mark_array_bits_soh (heap_segment* seg)
 {
     uint8_t* range_beg = 0;
     uint8_t* range_end = 0;
@@ -11035,6 +11027,7 @@ void gc_heap::seg_mark_array_bits_soh (heap_segment* seg)
         }
     }
 }
+#endif //FEATURE_BASICFREEZE
 
 void gc_heap::bgc_clear_batch_mark_array_bits (uint8_t* start, uint8_t* end)
 {
@@ -27495,28 +27488,31 @@ void gc_heap::seg_clear_mark_bits (heap_segment* seg)
 }
 
 #ifdef FEATURE_BASICFREEZE
+// We have to do this for in range ro segments because these objects' life time isn't accurately
+// expressed. The expectation is all objects on ro segs are live. So we just artifically mark 
+// all of them on the in range ro segs.
 void gc_heap::mark_ro_segments (heap_segment* start_seg)
 {
-    //go through all of the segment in range and set the mark bit
+    //go through all of the ro segment in range and set the mark bit
     heap_segment* seg = start_seg;
 
     while (seg)
     {
-        if (heap_segment_read_only_p (seg) &&
-            heap_segment_in_range_p (seg))
+        if (!heap_segment_read_only_p (seg))
+            break;
+
+        if (heap_segment_in_range_p (seg))
         {
 #ifdef BACKGROUND_GC
             if (settings.concurrent)
             {
-                seg_mark_array_bits_soh (seg);
+                seg_set_mark_array_bits_soh (seg);
             }
             else
+#endif //BACKGROUND_GC
             {
                 seg_set_mark_bits (seg);
             }
-#else //BACKGROUND_GC
-            seg_set_mark_bits (seg);
-#endif //BACKGROUND_GC
         }
         seg = heap_segment_next (seg);
     }
@@ -27524,13 +27520,15 @@ void gc_heap::mark_ro_segments (heap_segment* start_seg)
 
 void gc_heap::sweep_ro_segments (heap_segment* start_seg)
 {
-    //go through all of the segment in range and reset the mark bit
+    //go through all of the ro segment in range and reset the mark bit
     heap_segment* seg = start_seg;
 
     while (seg)
     {
-        if (heap_segment_read_only_p (seg) &&
-            heap_segment_in_range_p (seg))
+        if (!heap_segment_read_only_p (seg))
+            break;
+
+        if (heap_segment_in_range_p (seg))
         {
 #ifdef BACKGROUND_GC
             if (settings.concurrent)
@@ -27538,12 +27536,10 @@ void gc_heap::sweep_ro_segments (heap_segment* start_seg)
                 seg_clear_mark_array_bits_soh (seg);
             }
             else
+#endif //BACKGROUND_GC
             {
                 seg_clear_mark_bits (seg);
             }
-#else //BACKGROUND_GC
-            seg_clear_mark_bits (seg);
-#endif //BACKGROUND_GC
         }
         seg = heap_segment_next (seg);
     }
