@@ -472,11 +472,6 @@ enum GenTreeFlags : unsigned int
     GTF_VAR_ITERATOR    = 0x01000000, // GT_LCL_VAR -- this is a iterator reference in the loop condition
     GTF_VAR_CLONED      = 0x00800000, // GT_LCL_VAR -- this node has been cloned or is a clone
     GTF_VAR_CONTEXT     = 0x00400000, // GT_LCL_VAR -- this node is part of a runtime lookup
-    GTF_VAR_FOLDED_IND  = 0x00200000, // GT_LCL_VAR -- this node was folded from *(typ*)&lclVar expression tree in fgMorphSmpOp()
-                                      // where 'typ' is a small type and 'lclVar' corresponds to a normalized-on-store local variable.
-                                      // This flag identifies such nodes in order to make sure that fgDoNormalizeOnStore() is called
-                                      // on their parents in post-order morph.
-                                      // Relevant for inlining optimizations (see fgInlinePrependStatements)
 
     // For additional flags for GT_CALL node see GTF_CALL_M_*
 
