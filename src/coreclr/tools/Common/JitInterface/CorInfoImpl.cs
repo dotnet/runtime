@@ -1868,29 +1868,27 @@ namespace Internal.JitInterface
         }
 
 
-        private int appendClassName(char** ppBuf, ref int pnBufLen, CORINFO_CLASS_STRUCT_* cls, bool fNamespace, bool fFullInst, bool fAssembly)
+        private int appendClassName(byte** ppBuf, ref int pnBufLen, CORINFO_CLASS_STRUCT_* cls)
         {
-            // We support enough of this to make SIMD work, but not much else.
-
-            Debug.Assert(fNamespace && !fFullInst && !fAssembly);
-
             var type = HandleToObject(cls);
             string name = TypeString.Instance.FormatName(type);
 
             int length = name.Length;
             if (pnBufLen > 0)
             {
-                char* buffer = *ppBuf;
-                int lengthToCopy = Math.Min(name.Length, pnBufLen);
+                byte* buffer = *ppBuf;
+                byte[] utf8 = Encoding.UTF8.GetBytes(name);
+                int lengthToCopy = Math.Min(utf8.Length, pnBufLen);
                 for (int i = 0; i < lengthToCopy; i++)
-                    buffer[i] = name[i];
-                if (name.Length < pnBufLen)
+                    buffer[i] = utf8[i];
+
+                if (utf8.Length < pnBufLen)
                 {
-                    buffer[name.Length] = (char)0;
+                    buffer[utf8.Length] = 0;
                 }
                 else
                 {
-                    buffer[pnBufLen - 1] = (char)0;
+                    buffer[pnBufLen - 1] = 0;
                     lengthToCopy -= 1;
                 }
 

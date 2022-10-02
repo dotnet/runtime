@@ -190,12 +190,9 @@ CORINFO_CLASS_HANDLE getTypeInstantiationArgument(
           unsigned index) override;
 
 int appendClassName(
-          char16_t** ppBuf,
+          char** ppBuf,
           int* pnBufLen,
-          CORINFO_CLASS_HANDLE cls,
-          bool fNamespace,
-          bool fFullInst,
-          bool fAssembly) override;
+          CORINFO_CLASS_HANDLE cls) override;
 
 bool isValueClass(
           CORINFO_CLASS_HANDLE cls) override;

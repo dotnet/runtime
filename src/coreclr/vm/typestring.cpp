@@ -789,7 +789,7 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
         }
 
         // Append the instantiation
-        if ((format & (FormatNamespace|FormatAssembly)) && ty.HasInstantiation() && (!ty.IsGenericTypeDefinition() || bToString))
+        if ((format & (FormatNamespace|FormatAssembly)) && !(format & FormatNoInst) && ty.HasInstantiation() && (!ty.IsGenericTypeDefinition() || bToString))
         {
             if (typeInstantiation.IsEmpty())
                 AppendInst(tnb, ty.GetInstantiation(), format);

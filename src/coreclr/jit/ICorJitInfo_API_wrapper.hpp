@@ -413,15 +413,12 @@ CORINFO_CLASS_HANDLE WrapICorJitInfo::getTypeInstantiationArgument(
 }
 
 int WrapICorJitInfo::appendClassName(
-          char16_t** ppBuf,
+          char** ppBuf,
           int* pnBufLen,
-          CORINFO_CLASS_HANDLE cls,
-          bool fNamespace,
-          bool fFullInst,
-          bool fAssembly)
+          CORINFO_CLASS_HANDLE cls)
 {
     API_ENTER(appendClassName);
-    int temp = wrapHnd->appendClassName(ppBuf, pnBufLen, cls, fNamespace, fFullInst, fAssembly);
+    int temp = wrapHnd->appendClassName(ppBuf, pnBufLen, cls);
     API_LEAVE(appendClassName);
     return temp;
 }

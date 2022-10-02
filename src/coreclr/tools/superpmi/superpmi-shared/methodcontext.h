@@ -803,18 +803,12 @@ public:
 
     void recAppendClassName(int                  nBufLenIn,
                             CORINFO_CLASS_HANDLE cls,
-                            bool                 fNamespace,
-                            bool                 fFullInst,
-                            bool                 fAssembly,
                             int                  nLenOut,
-                            const char16_t*      result);
+                            const char*          result);
     void dmpAppendClassName(const Agnostic_AppendClassNameIn& key, const Agnostic_AppendClassNameOut& value);
-    int repAppendClassName(char16_t**           ppBuf,
+    int repAppendClassName(char**               ppBuf,
                            int*                 pnBufLen,
-                           CORINFO_CLASS_HANDLE cls,
-                           bool                 fNamespace,
-                           bool                 fFullInst,
-                           bool                 fAssembly);
+                           CORINFO_CLASS_HANDLE cls);
 
     void recGetTailCallHelpers(
         CORINFO_RESOLVED_TOKEN* callToken,

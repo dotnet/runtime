@@ -7540,17 +7540,14 @@ public:
     void eePrintJitType(class StringPrinter* printer, var_types jitType);
     void eePrintType(class StringPrinter* printer,
                      CORINFO_CLASS_HANDLE clsHnd,
-                     bool                 includeNamespaces,
                      bool                 includeInstantiation);
     void eePrintTypeOrJitAlias(class StringPrinter* printer,
                                CORINFO_CLASS_HANDLE clsHnd,
-                               bool                 includeNamespaces,
                                bool                 includeInstantiation);
     void eePrintMethod(class StringPrinter*  printer,
                        CORINFO_CLASS_HANDLE  clsHnd,
                        CORINFO_METHOD_HANDLE methodHnd,
                        CORINFO_SIG_INFO*     sig,
-                       bool                  includeNamespaces,
                        bool                  includeClassInstantiation,
                        bool                  includeMethodInstantiation,
                        bool                  includeSignature,
@@ -7802,7 +7799,7 @@ public:
 #if defined(DEBUG)
     const WCHAR* eeGetCPString(size_t stringHandle);
     unsigned eeTryGetClassSize(CORINFO_CLASS_HANDLE clsHnd);
-    const char16_t* eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd);
+    const char* eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd);
 #endif
 
     const char* eeGetClassName(CORINFO_CLASS_HANDLE clsHnd);
@@ -8492,13 +8489,18 @@ private:
         return CORINFO_TYPE_UNDEF;
     }
 
+    bool isNumericsNamespace(const char* ns)
+    {
+        return strcmp(ns, "System.Numerics") == 0;
+    }
+
     bool isSIMDClass(CORINFO_CLASS_HANDLE clsHnd)
     {
         if (isIntrinsicType(clsHnd))
         {
             const char* namespaceName = nullptr;
             (void)getClassNameFromMetadata(clsHnd, &namespaceName);
-            return strcmp(namespaceName, "System.Numerics") == 0;
+            return isNumericsNamespace(namespaceName);
         }
         return false;
     }
@@ -11288,6 +11290,7 @@ class StringPrinter
     size_t        m_bufferMax;
     size_t        m_bufferIndex = 0;
 
+    void Grow(size_t newSize);
 public:
     StringPrinter(CompAllocator alloc, char* buffer = nullptr, size_t bufferMax = 0)
         : m_alloc(alloc), m_buffer(buffer), m_bufferMax(bufferMax)
@@ -11317,6 +11320,12 @@ public:
         m_bufferIndex           = newLength;
         m_buffer[m_bufferIndex] = '\0';
     }
+
+    // Allocate a chunk of 'size' bytes at the current location to be printed.
+    // Will increment the index by the size specified. Assumes the user will
+    // copy 'size' characters directly into the buffer returned.
+    // returned[size] will be null terminated.
+    char* AllocToPrint(size_t size);
 
     void Printf(const char* format, ...);
 };

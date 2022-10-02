@@ -158,6 +158,7 @@ public:
       FormatAngleBrackets = 0x00000040, // Whether generic types are C<T> or C[T]
       FormatStubInfo      = 0x00000080, // Include stub info like {unbox-stub}
       FormatGenericParam  = 0x00000100, // Use !name and !!name for generic type and method parameters
+      FormatNoInst        = 0x00000200, // Do not include instantiation
   }
   FormatFlags;
 

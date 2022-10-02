@@ -20,6 +20,55 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 //------------------------------------------------------------------------
+// StringPrinter::Grow:
+//   Grow the internal buffer to a new specified size.
+//
+// Arguments:
+//    newSize - the new size.
+//
+void StringPrinter::Grow(size_t newSize)
+{
+    assert(newSize > m_bufferMax);
+    char*  newBuffer = m_alloc.allocate<char>(newSize);
+    memcpy(newBuffer, m_buffer, m_bufferIndex + 1); // copy null terminator too
+
+    m_buffer    = newBuffer;
+    m_bufferMax = newSize;
+}
+
+//------------------------------------------------------------------------
+// StringPrinter::AllocToPrint:
+//   Allocate a chunk of characters to be filled in by the caller.
+//
+// Arguments:
+//    size - the number of characters.
+//
+// Returns:
+//   Pointer to the location to start filling in the characters.
+//
+// Remarks:
+//   This function will ensure that returned[size] == '\0'. It is expected that
+//   the caller fills in the characters returned[0..size - 1].
+//
+char* StringPrinter::AllocToPrint(size_t size)
+{
+    size_t newMax = m_bufferMax;
+    while (newMax - m_bufferIndex <= size) // <= to fit null terminator
+    {
+        newMax *= 2;
+    }
+
+    if (newMax != m_bufferMax)
+    {
+        Grow(newMax);
+    }
+
+    m_bufferIndex += size;
+    m_buffer[m_bufferIndex] = '\0';
+    return m_buffer + (m_bufferIndex - size);
+}
+
+//------------------------------------------------------------------------
 // StringPrinter::Printf:
 //   Print a formatted string.
 //
@@ -44,12 +93,7 @@ void StringPrinter::Printf(const char* format, ...)
         if (printed < 0)
         {
             // buffer too small
-            size_t newSize   = m_bufferMax * 2;
-            char*  newBuffer = m_alloc.allocate<char>(newSize);
-            memcpy(newBuffer, m_buffer, m_bufferIndex + 1); // copy null terminator too
-
-            m_buffer    = newBuffer;
-            m_bufferMax = newSize;
+            Grow(m_bufferMax * 2);
         }
         else
         {
@@ -88,46 +132,43 @@ void Compiler::eePrintJitType(StringPrinter* printer, var_types jitType)
 //
 void Compiler::eePrintType(StringPrinter*       printer,
                            CORINFO_CLASS_HANDLE clsHnd,
-                           bool                 includeNamespace,
                            bool                 includeInstantiation)
 {
-    const char* namespaceName;
-    const char* className = info.compCompHnd->getClassNameFromMetadata(clsHnd, &namespaceName);
-    if (className == nullptr)
+    unsigned arrayRank = info.compCompHnd->getArrayRank(clsHnd);
+    if (arrayRank > 0)
     {
-        unsigned arrayRank = info.compCompHnd->getArrayRank(clsHnd);
-        if (arrayRank > 0)
+        CORINFO_CLASS_HANDLE childClsHnd;
+        CorInfoType          childType = info.compCompHnd->getChildType(clsHnd, &childClsHnd);
+        if ((childType == CORINFO_TYPE_CLASS) || (childType == CORINFO_TYPE_VALUECLASS))
         {
-            CORINFO_CLASS_HANDLE childClsHnd;
-            CorInfoType          childType = info.compCompHnd->getChildType(clsHnd, &childClsHnd);
-            if ((childType == CORINFO_TYPE_CLASS) || (childType == CORINFO_TYPE_VALUECLASS))
-            {
-                eePrintType(printer, childClsHnd, includeNamespace, includeInstantiation);
-            }
-            else
-            {
-                eePrintJitType(printer, JitType2PreciseVarType(childType));
-            }
-
-            printer->Printf("[");
-            for (unsigned i = 1; i < arrayRank; i++)
-            {
-                printer->Printf(",");
-            }
-            printer->Printf("]");
-            return;
+            eePrintType(printer, childClsHnd, includeInstantiation);
+        }
+        else
+        {
+            eePrintJitType(printer, JitType2PreciseVarType(childType));
         }
 
-        namespaceName = nullptr;
-        className     = "<unnamed>";
+        printer->Printf("[");
+        for (unsigned i = 1; i < arrayRank; i++)
+        {
+            printer->Printf(",");
+        }
+        printer->Printf("]");
+        return;
     }
 
-    if (includeNamespace && (namespaceName != nullptr) && (namespaceName[0] != '\0'))
+    int size = 0;
+    int actualLen = info.compCompHnd->appendClassName(nullptr, &size, clsHnd);
+    if (actualLen <= 0)
     {
-        printer->Printf("%s.", namespaceName);
+        printer->Printf("<unnamed>");
     }
-
-    printer->Printf("%s", className);
+    else
+    {
+        char* name = printer->AllocToPrint(static_cast<size_t>(actualLen));
+        actualLen++; // null-terminator
+        info.compCompHnd->appendClassName(&name, &actualLen, clsHnd);
+    }
 
     if (!includeInstantiation)
     {
@@ -146,7 +187,7 @@ void Compiler::eePrintType(StringPrinter*       printer,
 
         printer->Printf("%c", pref);
         pref = ',';
-        eePrintTypeOrJitAlias(printer, typeArg, includeNamespace, true);
+        eePrintTypeOrJitAlias(printer, typeArg, true);
     }
 
     if (pref != '[')
@@ -163,18 +204,16 @@ void Compiler::eePrintType(StringPrinter*       printer,
 // Arguments:
 //    printer              - the printer
 //    clsHnd               - Handle for the class
-//    includeNamespace     - Whether to print namespaces before type names
 //    includeInstantiation - Whether to print the instantiation of the class
 //
 void Compiler::eePrintTypeOrJitAlias(StringPrinter*       printer,
                                      CORINFO_CLASS_HANDLE clsHnd,
-                                     bool                 includeNamespace,
                                      bool                 includeInstantiation)
 {
     CorInfoType typ = info.compCompHnd->asCorInfoType(clsHnd);
     if ((typ == CORINFO_TYPE_CLASS) || (typ == CORINFO_TYPE_VALUECLASS))
     {
-        eePrintType(printer, clsHnd, includeNamespace, includeInstantiation);
+        eePrintType(printer, clsHnd, includeInstantiation);
     }
     else
     {
@@ -191,7 +230,6 @@ void Compiler::eePrintTypeOrJitAlias(StringPrinter*       printer,
 //    printer                    - the printer
 //    clsHnd                     - Handle for the owning class, or NO_CLASS_HANDLE to not print the class.
 //    sig                        - The signature of the method.
-//    includeNamespaces          - Whether to print namespaces before type names.
 //    includeClassInstantiation  - Whether to print the class instantiation. Only valid when clsHnd is passed.
 //    includeMethodInstantiation - Whether to print the method instantiation. Requires the signature to be passed.
 //    includeSignature           - Whether to print the signature.
@@ -203,7 +241,6 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
                              CORINFO_CLASS_HANDLE  clsHnd,
                              CORINFO_METHOD_HANDLE methHnd,
                              CORINFO_SIG_INFO*     sig,
-                             bool                  includeNamespaces,
                              bool                  includeClassInstantiation,
                              bool                  includeMethodInstantiation,
                              bool                  includeSignature,
@@ -212,7 +249,7 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
 {
     if (clsHnd != NO_CLASS_HANDLE)
     {
-        eePrintType(printer, clsHnd, includeNamespaces, includeClassInstantiation);
+        eePrintType(printer, clsHnd, includeClassInstantiation);
         printer->Printf(":");
     }
 
@@ -229,7 +266,7 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
                 printer->Printf(",");
             }
 
-            eePrintTypeOrJitAlias(printer, sig->sigInst.methInst[i], includeNamespaces, true);
+            eePrintTypeOrJitAlias(printer, sig->sigInst.methInst[i], true);
         }
         printer->Printf("]");
     }
@@ -255,7 +292,7 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
                     // For some SIMD struct types we can get a nullptr back from eeGetArgClass on Linux/X64
                     if (clsHnd != NO_CLASS_HANDLE)
                     {
-                        eePrintType(printer, clsHnd, includeNamespaces, true);
+                        eePrintType(printer, clsHnd, true);
                         break;
                     }
                 }
@@ -285,7 +322,7 @@ void Compiler::eePrintMethod(StringPrinter*        printer,
                         CORINFO_CLASS_HANDLE clsHnd = sig->retTypeClass;
                         if (clsHnd != NO_CLASS_HANDLE)
                         {
-                            eePrintType(printer, clsHnd, includeNamespaces, true);
+                            eePrintType(printer, clsHnd, true);
                             break;
                         }
                     }
@@ -334,7 +371,6 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd, bool includ
         CORINFO_SIG_INFO sig;
         eeGetMethodSig(hnd, &sig);
         eePrintMethod(&p, clsHnd, hnd, &sig,
-                      /* includeNamespaces */ true,
                       /* includeClassInstantiation */ true,
                       /* includeMethodInstantiation */ true,
                       /* includeSignature */ true, includeReturnType, includeThisSpecifier);
@@ -352,7 +388,6 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd, bool includ
     success = eeRunFunctorWithSPMIErrorTrap([&]() {
         eePrintMethod(&p, clsHnd, hnd,
                       /* sig */ nullptr,
-                      /* includeNamespaces */ true,
                       /* includeClassInstantiation */ false,
                       /* includeMethodInstantiation */ false,
                       /* includeSignature */ false,
@@ -371,7 +406,6 @@ const char* Compiler::eeGetMethodFullName(CORINFO_METHOD_HANDLE hnd, bool includ
     success = eeRunFunctorWithSPMIErrorTrap([&]() {
         eePrintMethod(&p, nullptr, hnd,
                       /* sig */ nullptr,
-                      /* includeNamespaces */ true,
                       /* includeClassInstantiation */ false,
                       /* includeMethodInstantiation */ false,
                       /* includeSignature */ false,

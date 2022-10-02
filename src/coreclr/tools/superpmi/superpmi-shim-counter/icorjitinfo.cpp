@@ -345,15 +345,12 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getTypeInstantiationArgument(
 }
 
 int interceptor_ICJI::appendClassName(
-          char16_t** ppBuf,
+          char** ppBuf,
           int* pnBufLen,
-          CORINFO_CLASS_HANDLE cls,
-          bool fNamespace,
-          bool fFullInst,
-          bool fAssembly)
+          CORINFO_CLASS_HANDLE cls)
 {
     mcs->AddCall("appendClassName");
-    return original_ICorJitInfo->appendClassName(ppBuf, pnBufLen, cls, fNamespace, fFullInst, fAssembly);
+    return original_ICorJitInfo->appendClassName(ppBuf, pnBufLen, cls);
 }
 
 bool interceptor_ICJI::isValueClass(

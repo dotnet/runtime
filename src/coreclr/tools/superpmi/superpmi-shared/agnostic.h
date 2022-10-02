@@ -388,9 +388,6 @@ struct Agnostic_AppendClassNameIn
 {
     DWORD     nBufLenIsZero;
     DWORDLONG classHandle;
-    DWORD     fNamespace;
-    DWORD     fFullInst;
-    DWORD     fAssembly;
 };
 
 struct Agnostic_AppendClassNameOut

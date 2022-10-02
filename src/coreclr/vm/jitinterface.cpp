@@ -3341,13 +3341,9 @@ const char* CEEInfo::getHelperName (CorInfoHelpFunc ftnNum)
 
 
 /*********************************************************************/
-int CEEInfo::appendClassName(_Outptr_opt_result_buffer_(*pnBufLen) char16_t**   ppBuf,
-                             int*                                               pnBufLen,
-                             CORINFO_CLASS_HANDLE                               clsHnd,
-                             bool                                               fNamespace,
-                             bool                                               fFullInst,
-                             bool                                               fAssembly)
-{
+int CEEInfo::appendClassName(_Outptr_opt_result_buffer_(*pnBufLen) char**   ppBuf,
+                             int*                                           pnBufLen,
+                             CORINFO_CLASS_HANDLE                           clsHnd) {
     CONTRACTL {
         MODE_PREEMPTIVE;
         THROWS;
@@ -3360,16 +3356,13 @@ int CEEInfo::appendClassName(_Outptr_opt_result_buffer_(*pnBufLen) char16_t**   
 
     TypeHandle th(clsHnd);
     StackSString ss;
-    TypeString::AppendType(ss,th,
-                           (fNamespace ? TypeString::FormatNamespace : 0) |
-                           (fFullInst ? TypeString::FormatFullInst : 0) |
-                           (fAssembly ? TypeString::FormatAssembly : 0));
-    const WCHAR* szString = ss.GetUnicode();
-    nLen = (int)wcslen(szString);
+    TypeString::AppendType(ss, th, TypeString::FormatNamespace | TypeString::FormatNoInst);
+    const char* szString = ss.GetUTF8();
+    nLen = (int)strlen(szString);
     if (*pnBufLen > 0)
     {
         // Copy as much as will fit.
-        WCHAR* pBuf = (WCHAR*)*ppBuf;
+        char* pBuf = *ppBuf;
         int nLenToCopy = min(*pnBufLen, nLen + /* null terminator */ 1);
         for (int i = 0; i < nLenToCopy - 1; i++)
         {

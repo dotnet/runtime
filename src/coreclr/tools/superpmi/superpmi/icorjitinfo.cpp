@@ -425,13 +425,11 @@ CORINFO_CLASS_HANDLE MyICJI::getTypeInstantiationArgument(CORINFO_CLASS_HANDLE c
 }
 
 // Append a (possibly truncated) textual representation of the type `cls` to a preallocated buffer.
+// Includes enclosing classes and namespaces.
 //
 // Arguments:
 //    ppBuf      - Pointer to buffer pointer. See below for details.
 //    pnBufLen   - Pointer to buffer length. Must not be nullptr. See below for details.
-//    fNamespace - If true, include the namespace/enclosing classes.
-//    fFullInst  - If true (regardless of fNamespace and fAssembly), include namespace and assembly for any type parameters.
-//    fAssembly  - If true, suffix with a comma and the full assembly qualification.
 //
 // Returns the length of the representation, as a count of characters (but not including a terminating null character).
 // Note that this will always be the actual number of characters required by the representation, even if the string
@@ -451,15 +449,12 @@ CORINFO_CLASS_HANDLE MyICJI::getTypeInstantiationArgument(CORINFO_CLASS_HANDLE c
 //    number of characters that were actually copied to the buffer. Also, `*ppBuf` is updated to point at the null
 //    character that was added to the end of the name.
 //
-int MyICJI::appendClassName(_Outptr_opt_result_buffer_(*pnBufLen) char16_t** ppBuf,
-                            int*                                             pnBufLen,
-                            CORINFO_CLASS_HANDLE                             cls,
-                            bool                                             fNamespace,
-                            bool                                             fFullInst,
-                            bool                                             fAssembly)
+int MyICJI::appendClassName(_Outptr_opt_result_buffer_(*pnBufLen) char** ppBuf,
+                            int*                                         pnBufLen,
+                            CORINFO_CLASS_HANDLE                         cls)
 {
     jitInstance->mc->cr->AddCall("appendClassName");
-    return jitInstance->mc->repAppendClassName(ppBuf, pnBufLen, cls, fNamespace, fFullInst, fAssembly);
+    return jitInstance->mc->repAppendClassName(ppBuf, pnBufLen, cls);
 }
 
 // Quick check whether the type is a value class. Returns the same value as getClassAttribs(cls) &

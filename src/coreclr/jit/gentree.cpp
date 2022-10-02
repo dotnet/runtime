@@ -10616,7 +10616,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
 
                 if (varTypeIsStruct(elemType) && (elemClsHnd != NO_CLASS_HANDLE))
                 {
-                    printf("%S[]", eeGetShortClassName(elemClsHnd));
+                    printf("%s[]", eeGetShortClassName(elemClsHnd));
                 }
                 else
                 {
@@ -11057,11 +11057,11 @@ void Compiler::gtDispClassLayout(ClassLayout* layout, var_types type)
     }
     else if (varTypeIsSIMD(type))
     {
-        printf("<%S>", layout->GetShortClassName());
+        printf("<%s>", layout->GetShortClassName());
     }
     else
     {
-        printf("<%S, %u>", layout->GetShortClassName(), layout->GetSize());
+        printf("<%s, %u>", layout->GetShortClassName(), layout->GetSize());
     }
 }
 

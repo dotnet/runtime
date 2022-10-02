@@ -166,7 +166,6 @@ bool JitConfigValues::MethodSet::contains(CORINFO_METHOD_HANDLE methodHnd,
             bool success = comp->eeRunFunctorWithSPMIErrorTrap([&]() {
                 comp->eePrintMethod(&printer, name->m_containsClassName ? classHnd : NO_CLASS_HANDLE, methodHnd,
                                     sigInfo,
-                                    /* includeNamespaces */ true,
                                     /* includeClassInstantiation */ name->m_classNameContainsInstantiation,
                                     /* includeMethodInstantiation */ name->m_methodNameContainsInstantiation,
                                     /* includeSignature */ name->m_containsSignature,

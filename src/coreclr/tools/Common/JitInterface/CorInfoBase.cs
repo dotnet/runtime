@@ -614,12 +614,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static int _appendClassName(IntPtr thisHandle, IntPtr* ppException, char** ppBuf, int* pnBufLen, CORINFO_CLASS_STRUCT_* cls, byte fNamespace, byte fFullInst, byte fAssembly)
+        private static int _appendClassName(IntPtr thisHandle, IntPtr* ppException, byte** ppBuf, int* pnBufLen, CORINFO_CLASS_STRUCT_* cls)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.appendClassName(ppBuf, ref *pnBufLen, cls, fNamespace != 0, fFullInst != 0, fAssembly != 0);
+                return _this.appendClassName(ppBuf, ref *pnBufLen, cls);
             }
             catch (Exception ex)
             {
@@ -2592,6 +2592,7 @@ namespace Internal.JitInterface
             }
         }
 
+
         private static IntPtr GetUnmanagedCallbacks()
         {
             void** callbacks = (void**)Marshal.AllocCoTaskMem(sizeof(IntPtr) * 175);
@@ -2637,7 +2638,7 @@ namespace Internal.JitInterface
             callbacks[38] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte*>)&_getClassName;
             callbacks[39] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte**, byte*>)&_getClassNameFromMetadata;
             callbacks[40] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint, CORINFO_CLASS_STRUCT_*>)&_getTypeInstantiationArgument;
-            callbacks[41] = (delegate* unmanaged<IntPtr, IntPtr*, char**, int*, CORINFO_CLASS_STRUCT_*, byte, byte, byte, int>)&_appendClassName;
+            callbacks[41] = (delegate* unmanaged<IntPtr, IntPtr*, byte**, int*, CORINFO_CLASS_STRUCT_*, int>)&_appendClassName;
             callbacks[42] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, byte>)&_isValueClass;
             callbacks[43] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CorInfoInlineTypeCheckSource, CorInfoInlineTypeCheck>)&_canInlineTypeCheck;
             callbacks[44] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, uint>)&_getClassAttribs;

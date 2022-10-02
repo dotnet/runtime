@@ -6507,11 +6507,8 @@ CORINFO_CLASS_HANDLE MethodContext::repGetTypeInstantiationArgument(CORINFO_CLAS
 void MethodContext::recAppendClassName(
     int nBufLenIn,
     CORINFO_CLASS_HANDLE cls,
-    bool fNamespace,
-    bool fFullInst,
-    bool fAssembly,
     int nLenOut,
-    const char16_t* result)
+    const char* result)
 {
     if (AppendClassName == nullptr)
         AppendClassName = new LightWeightMap<Agnostic_AppendClassNameIn, Agnostic_AppendClassNameOut>();
@@ -6530,9 +6527,6 @@ void MethodContext::recAppendClassName(
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.nBufLenIsZero = (nBufLenIn == 0) ? 1 : 0;
     key.classHandle   = CastHandle(cls);
-    key.fNamespace    = fNamespace;
-    key.fFullInst     = fFullInst;
-    key.fAssembly     = fAssembly;
 
     Agnostic_AppendClassNameOut value;
     value.nLen       = nLenOut;
@@ -6544,7 +6538,7 @@ void MethodContext::recAppendClassName(
     {
         value.name_index = (DWORD)AppendClassName->AddBuffer(
             (unsigned char*)result,
-            (unsigned int)((wcslen((LPCWSTR)result) + 1) * sizeof(char16_t)));
+            (unsigned int)((strlen(result) + 1) * sizeof(char)));
     }
 
     AppendClassName->Add(key, value);
@@ -6553,26 +6547,21 @@ void MethodContext::recAppendClassName(
 
 void MethodContext::dmpAppendClassName(const Agnostic_AppendClassNameIn& key, const Agnostic_AppendClassNameOut& value)
 {
-    const char16_t* name = (const char16_t*)AppendClassName->GetBuffer(value.name_index);
-    printf("AppendClassName key lenzero-%s cls-%016llX ns-%u fi-%u as-%u, value len-%u ni-%u name-%S",
-        key.nBufLenIsZero ? "true" : "false", key.classHandle, key.fNamespace, key.fFullInst, key.fAssembly,
-        value.nLen, value.name_index, (const WCHAR*)name);
+    const char* name = (const char*)AppendClassName->GetBuffer(value.name_index);
+    printf("AppendClassName key lenzero-%s cls-%016llX value len-%u ni-%u name-%s",
+        key.nBufLenIsZero ? "true" : "false", key.classHandle, value.nLen, value.name_index, name);
     AppendClassName->Unlock();
 }
 
-int MethodContext::repAppendClassName(char16_t**           ppBuf,
+int MethodContext::repAppendClassName(char**               ppBuf,
                                       int*                 pnBufLen,
-                                      CORINFO_CLASS_HANDLE cls,
-                                      bool                 fNamespace,
-                                      bool                 fFullInst,
-                                      bool                 fAssembly)
-{
-    static const char16_t unknownClass[]     = u"hackishClassName";
-    static const int      unknownClassLength = (int)(ArrLen(unknownClass) - 1); // Don't include null terminator in length.
+                                      CORINFO_CLASS_HANDLE cls) {
+    static const char unknownClass[]     = "hackishClassName";
+    static const int  unknownClassLength = (int)(ArrLen(unknownClass) - 1); // Don't include null terminator in length.
 
     // By default, at least return something.
-    const char16_t* name = unknownClass;
-    int             nLen = unknownClassLength;
+    const char* name = unknownClass;
+    int         nLen = unknownClassLength;
 
     if (AppendClassName != nullptr)
     {
@@ -6580,9 +6569,6 @@ int MethodContext::repAppendClassName(char16_t**           ppBuf,
         ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
         key.nBufLenIsZero = (*pnBufLen == 0) ? 1 : 0;
         key.classHandle   = CastHandle(cls);
-        key.fNamespace    = fNamespace;
-        key.fFullInst     = fFullInst;
-        key.fAssembly     = fAssembly;
 
         // First, see if we have an entry for this query.
         int index = AppendClassName->GetIndex(key);
@@ -6593,14 +6579,14 @@ int MethodContext::repAppendClassName(char16_t**           ppBuf,
             DEBUG_REP(dmpAppendClassName(key, value));
 
             nLen = value.nLen;
-            name = (const char16_t*)AppendClassName->GetBuffer(value.name_index);
+            name = (const char*)AppendClassName->GetBuffer(value.name_index);
         }
     }
 
     if ((ppBuf != nullptr) && (*ppBuf != nullptr) && (*pnBufLen > 0) && (name != nullptr))
     {
         // Copy as much as will fit.
-        char16_t* pBuf = *ppBuf;
+        char* pBuf = *ppBuf;
         int nLenToCopy = min(*pnBufLen, nLen + /* null terminator */ 1);
         for (int i = 0; i < nLenToCopy - 1; i++)
         {
