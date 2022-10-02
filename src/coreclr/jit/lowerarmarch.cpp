@@ -288,9 +288,6 @@ bool Lowering::IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) co
         // Find "a op cast(b)"
         GenTree* castOp = childNode->AsCast()->CastOp();
 
-        // We want to prefer the combined op here over containment of the cast op
-        castOp->ClearContained();
-
         bool isSupportedCast = false;
 
         if (varTypeIsSmall(childNode->CastToType()))
@@ -2010,13 +2007,25 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
     {
         if (IsContainableBinaryOp(node, op2))
         {
+            if (op2->OperIs(GT_CAST))
+            {
+                // We want to prefer the combined op here over containment of the cast op
+                op2->AsCast()->CastOp()->ClearContained();
+            }
             MakeSrcContained(node, op2);
+
             return;
         }
 
         if (node->OperIsCommutative() && IsContainableBinaryOp(node, op1))
         {
+            if (op1->OperIs(GT_CAST))
+            {
+                // We want to prefer the combined op here over containment of the cast op
+                op1->AsCast()->CastOp()->ClearContained();
+            }
             MakeSrcContained(node, op1);
+
             std::swap(node->gtOp1, node->gtOp2);
             return;
         }
