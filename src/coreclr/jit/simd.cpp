@@ -297,7 +297,7 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
             if (strcmp(className, "Vector`1") == 0)
             {
                 CORINFO_CLASS_HANDLE typeArgHnd = info.compCompHnd->getTypeInstantiationArgument(typeHnd, 0);
-                simdBaseJitType                 = info.compCompHnd->asCorInfoType(typeArgHnd);
+                simdBaseJitType                 = info.compCompHnd->getTypeForPrimitiveNumericClass(typeArgHnd);
 
                 switch (simdBaseJitType)
                 {
