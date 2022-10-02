@@ -296,6 +296,8 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
 
             if (strcmp(className, "Vector`1") == 0)
             {
+                size = getSIMDVectorRegisterByteLength();
+
                 CORINFO_CLASS_HANDLE typeArgHnd = info.compCompHnd->getTypeInstantiationArgument(typeHnd, 0);
                 simdBaseJitType                 = info.compCompHnd->getTypeForPrimitiveNumericClass(typeArgHnd);
 
@@ -345,7 +347,6 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                 if (simdBaseJitType != CORINFO_TYPE_UNDEF)
                 {
                     JITDUMP("  Found type SIMD Vector<%s>\n", varTypeName(JitType2PreciseVarType(simdBaseJitType)));
-                    size = getSIMDVectorRegisterByteLength();
                 }
                 else
                 {
