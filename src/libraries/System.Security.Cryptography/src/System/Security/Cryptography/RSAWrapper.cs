@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 
@@ -94,10 +95,12 @@ namespace System.Security.Cryptography
             RSASignaturePadding padding) =>
             _wrapped.VerifyHash(hash, signature, hashAlgorithm, padding);
 
-        [Obsolete]
+        [Obsolete("RSA.EncryptValue and DecryptValue are not supported and throw NotSupportedException. Use RSA.Encrypt and RSA.Decrypt instead.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override byte[] DecryptValue(byte[] rgb) => _wrapped.DecryptValue(rgb);
 
-        [Obsolete]
+        [Obsolete("RSA.EncryptValue and DecryptValue are not supported and throw NotSupportedException. Use RSA.Encrypt and RSA.Decrypt instead.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override byte[] EncryptValue(byte[] rgb) => _wrapped.EncryptValue(rgb);
 
         public override byte[] SignData(
