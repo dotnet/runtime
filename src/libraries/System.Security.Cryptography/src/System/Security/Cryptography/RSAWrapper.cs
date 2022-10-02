@@ -95,11 +95,11 @@ namespace System.Security.Cryptography
             RSASignaturePadding padding) =>
             _wrapped.VerifyHash(hash, signature, hashAlgorithm, padding);
 
-        [Obsolete("RSA.EncryptValue and DecryptValue are not supported and throw NotSupportedException. Use RSA.Encrypt and RSA.Decrypt instead.")]
+        [Obsolete(Obsoletions.RsaEncryptDecryptValueMessage, DiagnosticId = Obsoletions.RsaEncryptDecryptDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override byte[] DecryptValue(byte[] rgb) => _wrapped.DecryptValue(rgb);
 
-        [Obsolete("RSA.EncryptValue and DecryptValue are not supported and throw NotSupportedException. Use RSA.Encrypt and RSA.Decrypt instead.")]
+        [Obsolete(Obsoletions.RsaEncryptDecryptValueMessage, DiagnosticId = Obsoletions.RsaEncryptDecryptDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override byte[] EncryptValue(byte[] rgb) => _wrapped.EncryptValue(rgb);
 

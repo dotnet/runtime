@@ -283,7 +283,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// This method is not supported. Use Decrypt(byte[], RSAEncryptionPadding) instead.
         /// </summary>
-        [Obsolete("RSA.EncryptValue and DecryptValue are not supported and throw NotSupportedException. Use RSA.Encrypt and RSA.Decrypt instead.")]
+        [Obsolete(Obsoletions.RsaEncryptDecryptValueMessage, DiagnosticId = Obsoletions.RsaEncryptDecryptDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override byte[] DecryptValue(byte[] rgb) => base.DecryptValue(rgb);
 
@@ -344,7 +344,7 @@ namespace System.Security.Cryptography
         /// <summary>
         /// This method is not supported. Use Encrypt(byte[], RSAEncryptionPadding) instead.
         /// </summary>
-        [Obsolete("RSA.EncryptValue and DecryptValue are not supported and throw NotSupportedException. Use RSA.Encrypt and RSA.Decrypt instead.")]
+        [Obsolete(Obsoletions.RsaEncryptDecryptValueMessage, DiagnosticId = Obsoletions.RsaEncryptDecryptDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override byte[] EncryptValue(byte[] rgb) => base.EncryptValue(rgb);
 
