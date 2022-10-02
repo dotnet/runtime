@@ -1417,7 +1417,7 @@ struct FilterSuperPMIExceptionsParam_ee_il
     CORINFO_CLASS_HANDLE  clazz;
     const char**          classNamePtr;
     const char*           fieldOrMethodOrClassNamePtr;
-    char*                 classNameWidePtr;
+    char*                 className;
     unsigned              classSize;
     EXCEPTION_POINTERS    exceptionPointers;
 };
@@ -1586,14 +1586,14 @@ const char* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
             // and call the API again to get the full string.
             int cchStrLen = pParam->pJitInfo->compCompHnd->appendClassName(nullptr, &len, pParam->clazz);
 
-            size_t cchBufLen         = (size_t)cchStrLen + /* null terminator */ 1;
-            pParam->classNameWidePtr = pParam->pThis->getAllocator(CMK_DebugOnly).allocate<char>(cchBufLen);
-            char* pbuf               = pParam->classNameWidePtr;
-            len                      = (int)cchBufLen;
+            size_t cchBufLen  = (size_t)cchStrLen + /* null terminator */ 1;
+            pParam->className = pParam->pThis->getAllocator(CMK_DebugOnly).allocate<char>(cchBufLen);
+            char* pbuf        = pParam->className;
+            len               = (int)cchBufLen;
 
             int cchResultStrLen = pParam->pJitInfo->compCompHnd->appendClassName(&pbuf, &len, pParam->clazz);
             noway_assert(cchStrLen == cchResultStrLen);
-            noway_assert(pParam->classNameWidePtr[cchResultStrLen] == 0);
+            noway_assert(pParam->className[cchResultStrLen] == 0);
         },
         &param);
 
@@ -1601,11 +1601,11 @@ const char* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
     {
         const char substituteClassName[] = "hackishClassName";
         size_t     cchLen                = ArrLen(substituteClassName);
-        param.classNameWidePtr           = getAllocator(CMK_DebugOnly).allocate<char>(cchLen);
-        memcpy(param.classNameWidePtr, substituteClassName, cchLen * sizeof(char));
+        param.className                  = getAllocator(CMK_DebugOnly).allocate<char>(cchLen);
+        memcpy(param.className, substituteClassName, cchLen * sizeof(char));
     }
 
-    return param.classNameWidePtr;
+    return param.className;
 }
 
 const WCHAR* Compiler::eeGetCPString(size_t strHandle)
