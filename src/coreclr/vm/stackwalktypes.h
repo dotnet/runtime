@@ -86,7 +86,6 @@ struct StackwalkCacheUnwindInfo
     ULONG RBPOffset;
     ULONG RSPOffsetFromUnwindInfo;
 #else  // !TARGET_AMD64
-    size_t securityObjectOffset;    // offset of SecurityObject. 0 if there is no security object
     BOOL fUseEbp;                   // Is EBP modified by the method - either for a frame-pointer or for a scratch-register?
     BOOL fUseEbpAsFrameReg;         // use EBP as the frame pointer?
 #endif // !TARGET_AMD64
@@ -114,10 +113,9 @@ StackwalkCacheEntry
     UINT_PTR IP;
 #if !defined(TARGET_AMD64)
     WORD ESPOffset:15;          // stack offset (frame size + pending arguments + etc)
-    WORD securityObjectOffset:3;// offset of SecurityObject. 0 if there is no security object
     WORD fUseEbp:1;             // For ESP methods, is EBP touched at all?
     WORD fUseEbpAsFrameReg:1;   // use EBP as the frame register?
-    WORD argSize:11;            // size of args pushed on stack
+    WORD argSize:15;            // size of args pushed on stack
 #else  // TARGET_AMD64
     DWORD RSPOffset;
     DWORD RBPOffset;
@@ -135,9 +133,6 @@ StackwalkCacheEntry
 #if defined(TARGET_X86)
         this->ESPOffset         = SPOffset;
         this->argSize           = argSize;
-
-        this->securityObjectOffset = (WORD)pUnwindInfo->securityObjectOffset;
-        _ASSERTE(this->securityObjectOffset == pUnwindInfo->securityObjectOffset);
 
         this->fUseEbp           = pUnwindInfo->fUseEbp;
         this->fUseEbpAsFrameReg = pUnwindInfo->fUseEbpAsFrameReg;
@@ -160,20 +155,6 @@ StackwalkCacheEntry
 #else  // !TARGET_X86 && !TARGET_AMD64
         return FALSE;
 #endif // !TARGET_X86 && !TARGET_AMD64
-    }
-
-    inline BOOL HasSecurityObject()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-#if defined(TARGET_X86)
-        return securityObjectOffset != 0;
-#else  // !TARGET_X86
-        // On AMD64 we don't save anything by grabbing the security object before it is needed.  This is because
-        // we need to crack the GC info in order to find the security object, and to unwind we only need to
-        // crack the unwind info.
-        return FALSE;
-#endif // !TARGET_X86
     }
 
     inline BOOL IsSafeToUseCache()
@@ -236,7 +217,6 @@ inline StackwalkCacheUnwindInfo::StackwalkCacheUnwindInfo(StackwalkCacheEntry * 
 #if defined(TARGET_AMD64)
     RBPOffset = pCacheEntry->RBPOffset;
 #else  // !TARGET_AMD64
-    securityObjectOffset = pCacheEntry->securityObjectOffset;
     fUseEbp = pCacheEntry->fUseEbp;
     fUseEbpAsFrameReg = pCacheEntry->fUseEbpAsFrameReg;
 #endif // !TARGET_AMD64

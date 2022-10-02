@@ -3793,15 +3793,6 @@ public:
         }
     }
 
-    void SetSecurityObjectStackSlot(INT32 spOffset)
-    {
-        m_gcInfoEncoder->SetSecurityObjectStackSlot(spOffset);
-        if (m_doLogging)
-        {
-            printf("Set security object stack slot to %d.\n", spOffset);
-        }
-    }
-
     void SetIsVarArg()
     {
         m_gcInfoEncoder->SetIsVarArg();
