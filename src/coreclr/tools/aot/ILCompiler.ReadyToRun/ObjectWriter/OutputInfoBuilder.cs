@@ -182,7 +182,7 @@ namespace ILCompiler.PEWriter
         public IEnumerable<MethodInfo> EnumerateMethods()
         {
             DebugNameFormatter nameFormatter = new DebugNameFormatter();
-            TypeNameFormatter typeNameFormatter = new JitTypeNameFormatter();
+            TypeNameFormatter typeNameFormatter = new TypeString();
             foreach (KeyValuePair<ISymbolDefinitionNode, MethodWithGCInfo> symbolMethodPair in _methodSymbolMap)
             {
                 MethodInfo methodInfo = new MethodInfo();
