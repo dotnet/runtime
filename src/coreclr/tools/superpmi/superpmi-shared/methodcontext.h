@@ -77,9 +77,6 @@ public:
     MethodContext();
 
 private:
-    MethodContext(HANDLE hFile);
-    MethodContext(unsigned char* buff, unsigned int totalLen);
-
     void MethodInitHelper(unsigned char* buff, unsigned int totalLen);
     void MethodInitHelperFile(HANDLE hFile);
 
@@ -93,6 +90,11 @@ public:
     static bool Initialize(int mcIndex, HANDLE hFile, /* OUT */ MethodContext** ppmc);
     ~MethodContext();
     void Destroy();
+
+    void setIgnoreStoredConfig()
+    {
+        ignoreStoredConfig = true;
+    }
 
     bool Equal(MethodContext* other);
     unsigned int saveToFile(HANDLE hFile);
@@ -113,8 +115,6 @@ public:
     bool hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasMethodProfile, bool& hasLikelyClass, bool& hasLikelyMethod, ICorJitInfo::PgoSource& pgoSource);
 
     void recGlobalContext(const MethodContext& other);
-
-    void dmpEnvironment(DWORD key, const Agnostic_Environment& value);
 
     void recCompileMethod(CORINFO_METHOD_INFO* info, unsigned flags, CORINFO_OS os);
     void dmpCompileMethod(DWORD key, const Agnostic_CompileMethod& value);
@@ -879,6 +879,7 @@ public:
     CompileResult* cr;
     CompileResult* originalCR;
     int            index;
+    bool           ignoreStoredConfig;
 
 private:
     bool IsEnvironmentHeaderEqual(const Environment& prevEnv);

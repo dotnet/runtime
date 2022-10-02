@@ -12,6 +12,7 @@ parameters:
         src/libraries/sendtohelix-wasm.targets
         src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
         src/mono/nuget/Microsoft.NET.Runtime.wasm.Sample.Mono/*
+        src/mono/sample/wasm/*
         src/mono/wasi/*
         src/mono/wasm/*
         src/tasks/WasmAppBuilder/*

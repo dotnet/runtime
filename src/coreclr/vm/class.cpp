@@ -591,7 +591,6 @@ HRESULT EEClass::AddMethod(MethodTable * pMT, mdMethodDef methodDef, RVA newRVA,
                                                            mcInstantiated,
                                                            TRUE /* fNonVtableSlot */,
                                                            TRUE /* fNativeCodeSlot */,
-                                                           FALSE /* fComPlusCallInfo */,
                                                            pMT,
                                                            &dummyAmTracker);
 

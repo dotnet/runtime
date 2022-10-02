@@ -2148,7 +2148,7 @@ mono_gc_set_gc_callbacks (MonoGCCallbacks *callbacks)
 }
 
 MonoGCCallbacks *
-mono_gc_get_gc_callbacks ()
+mono_gc_get_gc_callbacks (void)
 {
 	return &gc_callbacks;
 }

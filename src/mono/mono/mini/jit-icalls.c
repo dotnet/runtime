@@ -1626,7 +1626,7 @@ mono_throw_method_access (MonoMethod *caller, MonoMethod *callee)
 }
 
 void
-mono_throw_bad_image ()
+mono_throw_bad_image (void)
 {
 	ERROR_DECL (error);
 	mono_error_set_generic_error (error, "System", "BadImageFormatException", "Bad IL format.");
@@ -1634,7 +1634,7 @@ mono_throw_bad_image ()
 }
 
 void
-mono_throw_not_supported ()
+mono_throw_not_supported (void)
 {
 	ERROR_DECL (error);
 	mono_error_set_generic_error (error, "System", "NotSupportedException", "");
@@ -1642,7 +1642,7 @@ mono_throw_not_supported ()
 }
 
 void
-mono_throw_platform_not_supported ()
+mono_throw_platform_not_supported (void)
 {
 	ERROR_DECL (error);
 	mono_error_set_generic_error (error, "System", "PlatformNotSupportedException", "");

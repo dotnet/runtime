@@ -480,7 +480,7 @@ FILE* Compiler::fgOpenFlowGraphFile(bool* wbDontClose, Phases phase, PhasePositi
         return nullptr;
     }
 
-    LPCWSTR phaseName = PhaseShortNames[phase];
+    LPCWSTR phaseName = PhaseEnumsW[phase] + strlen("PHASE_");
 
     if (pos == PhasePosition::PrePhase)
     {

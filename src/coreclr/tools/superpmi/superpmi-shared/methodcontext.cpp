@@ -30,6 +30,7 @@ MethodContext::MethodContext()
 
     cr    = new CompileResult();
     index = -1;
+    ignoreStoredConfig = false;
     isReadyToRunCompilation = ReadyToRunCompilation::Uninitialized;
 }
 
@@ -6903,6 +6904,9 @@ void MethodContext::dmpGetIntConfigValue(const Agnostic_ConfigIntInfo& key, int 
 
 int MethodContext::repGetIntConfigValue(const WCHAR* name, int defaultValue)
 {
+    if (ignoreStoredConfig)
+        return defaultValue;
+
     if (GetIntConfigValue == nullptr)
         return defaultValue;
 
@@ -6955,6 +6959,9 @@ void MethodContext::dmpGetStringConfigValue(DWORD nameIndex, DWORD resultIndex)
 
 const WCHAR* MethodContext::repGetStringConfigValue(const WCHAR* name)
 {
+    if (ignoreStoredConfig)
+        return nullptr;
+
     if (GetStringConfigValue == nullptr)
         return nullptr;
 
