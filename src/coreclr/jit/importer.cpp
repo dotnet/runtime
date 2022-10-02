@@ -15254,7 +15254,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             }
                             if (objType == nullptr)
                             {
-                                BADCODE3("top of stack must be a value type");
+                                BADCODE("top of stack must be a value type");
                             }
                             obj = impGetStructAddr(obj, objType, CHECK_SPILL_ALL, true);
                         }
