@@ -31,7 +31,7 @@ struct MachState
     MachState()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        INDEBUG(memset(this, 0xCC, sizeof(MachState));)
+        INDEBUG(memset((void*)this, 0xCC, sizeof(MachState));)
     }
 
     bool   isValid()    { LIMITED_METHOD_DAC_CONTRACT; _ASSERTE(dac_cast<TADDR>(_pRetAddr) != INVALID_POINTER_CC); return(_pRetAddr != 0); }

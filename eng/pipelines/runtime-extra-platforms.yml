@@ -34,11 +34,13 @@ jobs:
 - ${{ if eq(variables.dependOnEvaluatePaths, true) }}:
   - template: /eng/pipelines/common/evaluate-default-paths.yml
 
-# include this unconditionally, because it has per job conditions
-- template: /eng/pipelines/runtime-extra-platforms-wasm.yml
-  parameters:
-    isWasmOnlyBuild: ${{ variables.isWasmOnlyBuild }}
-    isRollingBuild: ${{ variables.isRollingBuild }}
+# Add wasm jobs only for rolling builds
+- ${{ if eq(variables.isRollingBuild, true) }}:
+  - template: /eng/pipelines/runtime-extra-platforms-wasm.yml
+    parameters:
+      isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ variables.isWasmOnlyBuild }}
+      isRollingBuild: ${{ variables.isRollingBuild }}
 
 # Any jobs that are not specific to any platform
 - ${{ if eq(variables.isNotSpecificPlatformOnlyBuild, true) }}:

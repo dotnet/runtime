@@ -116,6 +116,12 @@ namespace System.Tests
                     yield return new object[] { (Int128)(-4567), defaultSpecifier, defaultFormat, "-4567" };
                     yield return new object[] { (Int128)0, defaultSpecifier, defaultFormat, "0" };
                     yield return new object[] { (Int128)4567, defaultSpecifier, defaultFormat, "4567" };
+                    yield return new object[] { new Int128(0x0000_0000_0000_0001, 0x0000_0000_0000_0003), defaultSpecifier, defaultFormat, "18446744073709551619" };
+                    yield return new object[] { new Int128(0x0000_0000_0000_0001, 0x0000_0000_0000_000A), defaultSpecifier, defaultFormat, "18446744073709551626" };
+                    yield return new object[] { new Int128(0x0000_0000_0000_0005, 0x0000_0000_0000_0001), defaultSpecifier, defaultFormat, "92233720368547758081" };
+                    yield return new object[] { new Int128(0x0000_0000_0000_0005, 0x6BC7_5E2D_6310_0000), defaultSpecifier, defaultFormat, "100000000000000000000" };
+                    yield return new object[] { new Int128(0x0000_0000_0000_0036, 0x35C9_ADC5_DEA0_0000), defaultSpecifier, defaultFormat, "1000000000000000000000" };
+                    yield return new object[] { new Int128(0x0013_4261_72C7_4D82, 0x2B87_8FE8_0000_0000), defaultSpecifier, defaultFormat, "100000000000000000000000000000000000" };
                     yield return new object[] { Int128.MaxValue, defaultSpecifier, defaultFormat, "170141183460469231731687303715884105727" };
                 }
 
@@ -451,6 +457,16 @@ namespace System.Tests
             // CLDR data for Swedish culture has negative sign U+2212. This test ensure parsing with the hyphen with such cultures will succeed.
             CultureInfo ci = CultureInfo.GetCultureInfo("sv-SE");
             Assert.Equal(-15868, Int128.Parse("-15868", NumberStyles.Number, ci));
+        }
+
+        [Fact]
+        public static void Runtime75416()
+        {
+            Int128 a = (Int128.MaxValue - 10) * +100;
+            Assert.Equal(a, -1100);
+
+            Int128 b = (Int128.MaxValue - 10) * -100;
+            Assert.Equal(b, +1100);
         }
     }
 }

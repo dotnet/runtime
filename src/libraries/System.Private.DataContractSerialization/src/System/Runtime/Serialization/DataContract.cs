@@ -355,11 +355,7 @@ namespace System.Runtime.Serialization.DataContracts
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
             internal static DataContract GetGetOnlyCollectionDataContractSkipValidation(int id, RuntimeTypeHandle typeHandle, Type? type)
             {
-                DataContract dataContract = s_dataContractCache[id];
-                if (dataContract == null)
-                {
-                    dataContract = CreateGetOnlyCollectionDataContract(id, typeHandle, type);
-                }
+                DataContract dataContract = s_dataContractCache[id] ?? CreateGetOnlyCollectionDataContract(id, typeHandle, type);
                 return dataContract;
             }
 
@@ -2438,8 +2434,7 @@ namespace System.Runtime.Serialization.DataContracts
 
         internal void Add(GenericInfo actualParamInfo)
         {
-            if (_paramGenericInfos == null)
-                _paramGenericInfos = new List<GenericInfo>();
+            _paramGenericInfos ??= new List<GenericInfo>();
             _paramGenericInfos.Add(actualParamInfo);
         }
 

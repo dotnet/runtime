@@ -56,7 +56,7 @@ dotnet build -c $StressConfiguration
 $Runscript=".\run-stress-$LibrariesConfiguration-$StressConfiguration.ps1"
 if (-not (Test-Path $Runscript)) {
     Write-Host "Generating Runscript."
-    Add-Content -Path $Runscript -Value "& '$TestHostRoot/dotnet' exec ./bin/$StressConfiguration/net$Version/HttpStress.dll `$args"
+    Add-Content -Path $Runscript -Value "& '$TestHostRoot/dotnet' exec --roll-forward Major ./bin/$StressConfiguration/net$Version/HttpStress.dll `$args"
 }
 
 Write-Host "To run tests type:"

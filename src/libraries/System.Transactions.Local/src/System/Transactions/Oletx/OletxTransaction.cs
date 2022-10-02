@@ -864,12 +864,9 @@ namespace System.Transactions.Oletx
 
                 if ((enlistmentOptions & EnlistmentOptions.EnlistDuringPrepareRequired) != 0)
                 {
-                    if (Phase0EnlistVolatilementContainerList == null)
-                    {
-                        // Not using a MemoryBarrier because all access to this member variable is done when holding
-                        // a lock on the object.
-                        Phase0EnlistVolatilementContainerList = new ArrayList(1);
-                    }
+                    // Not using a MemoryBarrier because all access to this member variable is done when holding
+                    // a lock on the object.
+                    Phase0EnlistVolatilementContainerList ??= new ArrayList(1);
                     // We may have failed the proxy enlistment for the first container, but we would have
                     // allocated the list.  That is why we have this check here.
                     if (Phase0EnlistVolatilementContainerList.Count == 0)
@@ -1047,10 +1044,7 @@ namespace System.Transactions.Oletx
                         phase0VolatileContainer.RollbackFromTransaction();
                     }
                 }
-                if (Phase1EnlistVolatilementContainer != null)
-                {
-                    Phase1EnlistVolatilementContainer.RollbackFromTransaction();
-                }
+                Phase1EnlistVolatilementContainer?.RollbackFromTransaction();
             }
 
             try
@@ -1133,12 +1127,13 @@ namespace System.Transactions.Oletx
                 }
             }
 
+#pragma warning disable IDE0031 // Null check can be simplified
             // Let the InternalTransaciton know about the outcome.
             if (InternalTransaction != null)
             {
                 InternalTransaction.DistributedTransactionOutcome(InternalTransaction, Status);
             }
-
+#pragma warning restore IDE0031
         }
 
         internal TransactionTraceIdentifier TransactionTraceId

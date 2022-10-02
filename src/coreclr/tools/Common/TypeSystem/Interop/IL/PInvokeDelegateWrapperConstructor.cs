@@ -1,12 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
 using Internal.IL;
 using Internal.IL.Stubs;
-using Debug = System.Diagnostics.Debug;
-using System.Threading;
 
 namespace Internal.TypeSystem.Interop
 {
@@ -46,15 +42,12 @@ namespace Internal.TypeSystem.Interop
         {
             get
             {
-                if (_signature == null)
-                {
-                    _signature = new MethodSignature(MethodSignatureFlags.None, 
+                _signature ??= new MethodSignature(MethodSignatureFlags.None,
                         genericParameterCount: 0,
                         returnType: Context.GetWellKnownType(WellKnownType.Void),
                         parameters: new TypeDesc[] {
                         Context.GetWellKnownType(WellKnownType.IntPtr)
                         });
-                }
                 return _signature;
             }
         }

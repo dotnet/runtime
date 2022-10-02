@@ -1,15 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using Internal.TypeSystem;
 
 namespace ILCompiler
 {
     // Contains functionality related to name mangling
-    partial class CompilerTypeSystemContext
+    public partial class CompilerTypeSystemContext
     {
-        partial class BoxedValueType : IPrefixMangledType
+        private partial class BoxedValueType : IPrefixMangledType
         {
             TypeDesc IPrefixMangledType.BaseType
             {
@@ -28,7 +27,7 @@ namespace ILCompiler
             }
         }
 
-        partial class GenericUnboxingThunk : IPrefixMangledMethod
+        private partial class GenericUnboxingThunk : IPrefixMangledMethod
         {
             MethodDesc IPrefixMangledMethod.BaseMethod
             {
@@ -47,7 +46,7 @@ namespace ILCompiler
             }
         }
 
-        partial class UnboxingThunk : IPrefixMangledMethod
+        private partial class UnboxingThunk : IPrefixMangledMethod
         {
             MethodDesc IPrefixMangledMethod.BaseMethod
             {

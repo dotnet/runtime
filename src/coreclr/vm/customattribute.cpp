@@ -136,7 +136,8 @@ CustomAttributeManagedValues Attribute::GetManagedCaValue(CaValue* pCaVal)
     WRAPPER_NO_CONTRACT;
 
     CustomAttributeManagedValues gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.string = NULL;
+    gc.array = NULL;
     GCPROTECT_BEGIN(gc)
     {
         CorSerializationType type = pCaVal->type.tag;

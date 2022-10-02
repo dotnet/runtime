@@ -1272,8 +1272,8 @@ void ConfigString::init(const CLRConfig::ConfigStringInfo & info)
 //=============================================================================
 // The string should be of the form
 // MyAssembly
-// MyAssembly;mscorlib;System
-// MyAssembly;mscorlib System
+// MyAssembly;System.Private.CoreLib;System
+// MyAssembly;System.Private.CoreLib System
 
 AssemblyNamesList::AssemblyNamesList(_In_ LPWSTR list)
 {

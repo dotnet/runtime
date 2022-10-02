@@ -59,7 +59,6 @@
 #define CoreLibNameLen 22
 #define CoreLibSatelliteName_A "System.Private.CoreLib.resources"
 #define CoreLibSatelliteNameLen 32
-#define LegacyCoreLibName_A "mscorlib"
 
 class StringArrayList;
 

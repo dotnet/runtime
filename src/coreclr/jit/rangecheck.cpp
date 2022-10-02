@@ -6,6 +6,19 @@
 #include "jitpch.h"
 #include "rangecheck.h"
 
+//------------------------------------------------------------------------
+// rangeCheckPhase: optimize bounds checks via range analysis
+//
+// Returns:
+//    Suitable phase status
+//
+PhaseStatus Compiler::rangeCheckPhase()
+{
+    RangeCheck rc(this);
+    const bool madeChanges = rc.OptimizeRangeChecks();
+    return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
+}
+
 // Max stack depth (path length) in walking the UD chain.
 static const int MAX_SEARCH_DEPTH = 100;
 
@@ -1563,20 +1576,14 @@ void RangeCheck::MapMethodDefs()
 #endif
 
 // Entry point to range check optimizations.
-void RangeCheck::OptimizeRangeChecks()
+bool RangeCheck::OptimizeRangeChecks()
 {
     if (m_pCompiler->fgSsaPassesCompleted == 0)
     {
-        return;
+        return false;
     }
-#ifdef DEBUG
-    if (m_pCompiler->verbose)
-    {
-        JITDUMP("*************** In OptimizeRangeChecks()\n");
-        JITDUMP("Blocks/trees before phase\n");
-        m_pCompiler->fgDispBasicBlocks(true);
-    }
-#endif
+
+    bool madeChanges = false;
 
     // Walk through trees looking for arrBndsChk node and check if it can be optimized.
     for (BasicBlock* const block : m_pCompiler->Blocks())
@@ -1589,7 +1596,7 @@ void RangeCheck::OptimizeRangeChecks()
             {
                 if (IsOverBudget() && !m_updateStmt)
                 {
-                    return;
+                    return madeChanges;
                 }
 
                 OptimizeRangeCheck(block, stmt, tree);
@@ -1599,7 +1606,10 @@ void RangeCheck::OptimizeRangeChecks()
             {
                 m_pCompiler->gtSetStmtInfo(stmt);
                 m_pCompiler->fgSetStmtSeq(stmt);
+                madeChanges = true;
             }
         }
     }
+
+    return madeChanges;
 }

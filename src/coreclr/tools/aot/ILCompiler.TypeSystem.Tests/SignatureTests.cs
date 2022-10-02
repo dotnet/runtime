@@ -6,9 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
-
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -253,7 +250,7 @@ namespace TypeSystemTests
                         {
                             successes++;
                         }
-                        _output.WriteLine($"call {tokenReferenceResult.ToString()}");
+                        _output.WriteLine($"call {tokenReferenceResult}");
                         break;
                 }
             }

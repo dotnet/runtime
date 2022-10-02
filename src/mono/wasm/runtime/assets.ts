@@ -28,7 +28,6 @@ let throttlingPromise: PromiseAndController<void> | undefined;
 const skipDownloadsByAssetTypes: {
     [k: string]: boolean
 } = {
-    "js-module-crypto": true,
     "js-module-threads": true,
 };
 
@@ -43,7 +42,6 @@ const skipBufferByAssetTypes: {
 const skipInstantiateByAssetTypes: {
     [k: string]: boolean
 } = {
-    "js-module-crypto": true,
     "js-module-threads": true,
     "dotnetwasm": true,
 };
@@ -356,7 +354,6 @@ function _instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Array) {
 
     switch (asset.behavior) {
         case "dotnetwasm":
-        case "js-module-crypto":
         case "js-module-threads":
             // do nothing
             break;

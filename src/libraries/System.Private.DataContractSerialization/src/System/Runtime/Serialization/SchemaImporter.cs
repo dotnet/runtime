@@ -154,9 +154,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (_schemaObjects == null)
-                    _schemaObjects = CreateSchemaObjects();
-                return _schemaObjects;
+                return _schemaObjects ??= CreateSchemaObjects();
             }
         }
 
@@ -164,9 +162,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (_redefineList == null)
-                    _redefineList = CreateRedefineList();
-                return _redefineList;
+                return _redefineList ??= CreateRedefineList();
             }
         }
 
@@ -279,10 +275,7 @@ namespace System.Runtime.Serialization
                                 SchemaObjectInfo? baseTypeInfo;
                                 if (schemaObjects.TryGetValue(baseTypeName, out baseTypeInfo))
                                 {
-                                    if (baseTypeInfo._knownTypes == null)
-                                    {
-                                        baseTypeInfo._knownTypes = new List<XmlSchemaType>();
-                                    }
+                                    baseTypeInfo._knownTypes ??= new List<XmlSchemaType>();
                                 }
                                 else
                                 {
@@ -542,8 +535,7 @@ namespace System.Runtime.Serialization
                     ancestorDataContract.KnownDataContracts?.Remove(typeName);
                     ancestorDataContract = ancestorDataContract.BaseClassContract;
                 }
-                if (_dataContractSet.KnownTypesForObject != null)
-                    _dataContractSet.KnownTypesForObject.Remove(typeName);
+                _dataContractSet.KnownTypesForObject?.Remove(typeName);
             }
         }
 

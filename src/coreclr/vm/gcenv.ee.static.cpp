@@ -5,7 +5,6 @@
 #include "gcenv.h"
 #include "../gc/env/gcenv.ee.h"
 #include "threadsuspend.h"
-#include "nativeoverlapped.h"
 #include "interoplibinterface.h"
 
 #ifdef FEATURE_COMINTEROP

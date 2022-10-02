@@ -61,6 +61,14 @@ namespace System
     public struct RuntimeFieldHandle { }
 
     public class Attribute { }
+    public class AttributeUsageAttribute : Attribute
+    {
+        public AttributeUsageAttribute(AttributeTargets targets) { }
+        public bool AllowMultiple { get; set; }
+        public bool Inherited { get; set; }
+    }
+
+    public enum AttributeTargets { }
 
     public class ThreadStaticAttribute : Attribute { }
 
@@ -72,6 +80,24 @@ namespace System
     {
         private readonly ref byte _value;
         private readonly RuntimeTypeHandle _typeHandle;
+    }
+
+    [Intrinsic]
+    [StructLayout(LayoutKind.Sequential)]
+    public readonly struct Int128
+    {
+
+        private readonly ulong _lower;
+        private readonly ulong _upper;
+    }
+
+    [Intrinsic]
+    [StructLayout(LayoutKind.Sequential)]
+    public readonly struct UInt128
+    {
+
+        private readonly ulong _lower;
+        private readonly ulong _upper;
     }
 }
 

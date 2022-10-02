@@ -6246,24 +6246,15 @@ bool ClrDataAccess::ReportMem(TADDR addr, TSIZE_T size, bool fExpectSuccess /*= 
     {
         if (!IsFullyReadable(addr, size))
         {
-            if (!fExpectSuccess)
+            if (fExpectSuccess)
             {
-                // We know the read might fail (eg. we're trying to find mapped pages in
-                // a module image), so just skip this block silently.
-                // Note that the EnumMemoryRegion callback won't necessarily do anything if any part of
-                // the region is unreadable, and so there is no point in calling it.  For cases where we expect
-                // the read might fail, but we want to report any partial blocks, we have to break up the region
-                // into pages and try reporting each page anyway
-                return true;
+                // We're reporting bogus memory, so the target must be corrupt (or there is a issue). We should abort
+                // reporting and continue with the next data structure (where the exception is caught),
+                // just like we would for a DAC read error (otherwise we might do something stupid
+                // like get into an infinite loop, or otherwise waste time with corrupt data).
+                TARGET_CONSISTENCY_CHECK(false, "Found unreadable memory while reporting memory regions for dump gathering");
+                return false;
             }
-
-            // We're reporting bogus memory, so the target must be corrupt (or there is a issue). We should abort
-            // reporting and continue with the next data structure (where the exception is caught),
-            // just like we would for a DAC read error (otherwise we might do something stupid
-            // like get into an infinite loop, or otherwise waste time with corrupt data).
-
-            TARGET_CONSISTENCY_CHECK(false, "Found unreadable memory while reporting memory regions for dump gathering");
-            return false;
         }
     }
 
@@ -6275,9 +6266,7 @@ bool ClrDataAccess::ReportMem(TADDR addr, TSIZE_T size, bool fExpectSuccess /*= 
     // data structure at all.  Hopefully experience will help guide this going forward.
     // @dbgtodo : Extend dump-gathering API to allow a dump-log to be included.
     const TSIZE_T kMaxMiniDumpRegion = 4*1024*1024 - 3;    // 4MB-3
-    if( size > kMaxMiniDumpRegion
-        && (m_enumMemFlags == CLRDATA_ENUM_MEM_MINI
-          || m_enumMemFlags == CLRDATA_ENUM_MEM_TRIAGE))
+    if (size > kMaxMiniDumpRegion && (m_enumMemFlags == CLRDATA_ENUM_MEM_MINI || m_enumMemFlags == CLRDATA_ENUM_MEM_TRIAGE))
     {
         TARGET_CONSISTENCY_CHECK( false, "Dump target consistency failure - truncating minidump data structure");
         size = kMaxMiniDumpRegion;

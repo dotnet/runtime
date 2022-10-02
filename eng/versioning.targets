@@ -178,7 +178,7 @@
   </Target>
 
   <Target Name="GenerateNativeSourcelinkFile"
-          Condition="'$(DisableSourceLink)' != 'true'"
+          Condition="'$(EnableSourceLink)' == 'true'"
           DependsOnTargets="_CopyGeneratedSourcelinkFile;_VerifyNativeSourceLinkFileExists" />
 
   <Target Name="_CopyGeneratedSourcelinkFile"

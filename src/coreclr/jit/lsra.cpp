@@ -1221,10 +1221,9 @@ BasicBlock* LinearScan::getNextBlock()
 //    None
 //
 // Return Value:
-//    None.
+//    Suitable phase status
 //
-
-void LinearScan::doLinearScan()
+PhaseStatus LinearScan::doLinearScan()
 {
     // Check to see whether we have any local variables to enregister.
     // We initialize this in the constructor based on opt settings,
@@ -1278,6 +1277,8 @@ void LinearScan::doLinearScan()
 #endif
 
     compiler->compLSRADone = true;
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
 }
 
 //------------------------------------------------------------------------
@@ -2721,7 +2722,11 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
 
         case GT_CNS_VEC:
         {
-            return GenTreeVecCon::Equals(refPosition->treeNode->AsVecCon(), otherTreeNode->AsVecCon());
+            return
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+                !Compiler::varTypeNeedsPartialCalleeSave(physRegRecord->assignedInterval->registerType) &&
+#endif
+                GenTreeVecCon::Equals(refPosition->treeNode->AsVecCon(), otherTreeNode->AsVecCon());
         }
 
         default:
@@ -4661,7 +4666,11 @@ void LinearScan::allocateRegisters()
         {
             assert(lastAllocatedRefPosition->registerAssignment != RBM_NONE);
             RegRecord* regRecord = lastAllocatedRefPosition->getInterval()->assignedReg;
+
+            INDEBUG(activeRefPosition = lastAllocatedRefPosition);
             unassignPhysReg(regRecord, lastAllocatedRefPosition);
+            INDEBUG(activeRefPosition = nullptr);
+
             // Now set lastAllocatedRefPosition to null, so that we don't try to spill it again
             lastAllocatedRefPosition = nullptr;
         }
@@ -4789,6 +4798,7 @@ void LinearScan::allocateRegisters()
                     }
                     else
                     {
+                        // Available registers should not hold constants
                         assert(isRegAvailable(reg, physRegRecord->registerType));
                         assert(!isRegConstant(reg, physRegRecord->registerType));
                         assert(nextIntervalRef[reg] == MaxLocation);
@@ -5038,7 +5048,13 @@ void LinearScan::allocateRegisters()
             // enough that it may not warrant the additional complexity.
             if (assignedRegister != REG_NA)
             {
-                unassignPhysReg(getRegisterRecord(assignedRegister), currentInterval->firstRefPosition);
+                RegRecord* regRecord        = getRegisterRecord(assignedRegister);
+                Interval*  assignedInterval = regRecord->assignedInterval;
+                unassignPhysReg(regRecord, currentInterval->firstRefPosition);
+                if (assignedInterval->isConstant)
+                {
+                    clearConstantReg(assignedRegister, assignedInterval->registerType);
+                }
                 INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_NO_REG_ALLOCATED, currentInterval));
             }
             currentRefPosition->registerAssignment = RBM_NONE;
@@ -6946,25 +6962,10 @@ void LinearScan::resolveRegisters()
                             // register specified by multi-reg index of current RefPosition.
                             // Note that the spill flag on treeNode indicates that one or
                             // more its allocated registers are in that state.
-                            if (treeNode->IsMultiRegCall())
+                            if (treeNode->IsMultiRegNode())
                             {
-                                GenTreeCall* call = treeNode->AsCall();
-                                call->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
+                                treeNode->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
                             }
-#if FEATURE_ARG_SPLIT
-                            else if (treeNode->OperIsPutArgSplit())
-                            {
-                                GenTreePutArgSplit* splitArg = treeNode->AsPutArgSplit();
-                                splitArg->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
-                            }
-#ifdef TARGET_ARM
-                            else if (compFeatureArgSplit() && treeNode->OperIsMultiRegOp())
-                            {
-                                GenTreeMultiRegOp* multiReg = treeNode->AsMultiRegOp();
-                                multiReg->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
-                            }
-#endif // TARGET_ARM
-#endif // FEATURE_ARG_SPLIT
                         }
 
                         // If the value is reloaded or moved to a different register, we need to insert

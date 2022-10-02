@@ -23,16 +23,18 @@ namespace Microsoft.VisualBasic.Tests
             base.Dispose(disposing);
         }
 
-        // On OSX/MacCatalyst, the temp directory /tmp/ is a symlink to /private/tmp, so setting the current
-        // directory to a symlinked path will result in GetCurrentDirectory returning the absolute
-        // path that followed the symlink.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotOSX), nameof(PlatformDetection.IsNotMacCatalyst))]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50572", TestPlatforms.Android)]
         public void ChDir()
         {
             var savedDirectory = System.IO.Directory.GetCurrentDirectory();
             FileSystem.ChDir(TestDirectory);
-            Assert.Equal(TestDirectory, System.IO.Directory.GetCurrentDirectory());
+
+            // If the test directory has symlinks, setting the current directory to a symlinked path will result
+            // in GetCurrentDirectory returning the absolute path that followed the symlink. We can only verify
+            // the test directory name in that case.
+            Assert.Equal(System.IO.Path.GetFileName(TestDirectory), System.IO.Path.GetFileName(System.IO.Directory.GetCurrentDirectory()));
+
             FileSystem.ChDir(savedDirectory);
             Assert.Equal(savedDirectory, System.IO.Directory.GetCurrentDirectory());
         }
@@ -82,8 +84,7 @@ namespace Microsoft.VisualBasic.Tests
             }
         }
 
-        // Can't get current directory on OSX before setting it.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotOSX))]
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50572", TestPlatforms.Android)]
         public void CurDir()
         {

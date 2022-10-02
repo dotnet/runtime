@@ -1302,7 +1302,7 @@ CorInfoHelpFunc CEEInfo::getSharedStaticsHelper(FieldDesc * pField, MethodTable 
         helper += delta;
     }
     else
-    if (!pFieldMT->HasClassConstructor() && !pFieldMT->HasBoxedRegularStatics())
+    if ((!pFieldMT->HasClassConstructor() && !pFieldMT->HasBoxedRegularStatics()) || pFieldMT->IsClassInited())
     {
         const int delta = CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR - CORINFO_HELP_GETSHARED_GCSTATIC_BASE;
 
@@ -4882,7 +4882,7 @@ void CEEInfo::getCallInfo(
     MethodDesc * pTargetMD = pMDAfterConstraintResolution;
     DWORD dwTargetMethodAttrs = pTargetMD->GetAttrs();
 
-    pResult->exactContextNeedsRuntimeLookup = (!constrainedType.IsNull() && constrainedType.IsCanonicalSubtype());
+    pResult->exactContextNeedsRuntimeLookup = (fIsStaticVirtualMethod && !fResolvedConstraint && !constrainedType.IsNull() && constrainedType.IsCanonicalSubtype());
 
     if (pTargetMD->HasMethodInstantiation())
     {
@@ -7142,6 +7142,25 @@ bool getILIntrinsicImplementationForInterlocked(MethodDesc * ftn,
     return true;
 }
 
+bool IsBitwiseEquatable(TypeHandle typeHandle, MethodTable * methodTable)
+{
+    if (!methodTable->IsValueType() ||
+        !CanCompareBitsOrUseFastGetHashCode(methodTable))
+    {
+        return false;
+    }
+
+    // CanCompareBitsOrUseFastGetHashCode checks for an object.Equals override.
+    // We also need to check for an IEquatable<T> implementation.
+    Instantiation inst(&typeHandle, 1);
+    if (typeHandle.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(inst)))
+    {
+        return false;
+    }
+
+    return true;
+}
+
 bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
     CORINFO_METHOD_INFO * methInfo)
 {
@@ -7192,8 +7211,9 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
         static const BYTE returnFalse[] = { CEE_LDC_I4_0, CEE_RET };
 
         // Ideally we could detect automatically whether a type is trivially equatable
-        // (i.e., its operator == could be implemented via memcmp). But for now we'll
-        // do the simple thing and hardcode the list of types we know fulfill this contract.
+        // (i.e., its operator == could be implemented via memcmp). The best we can do
+        // for now is hardcode a list of known supported types and then also include anything
+        // that doesn't provide its own object.Equals override / IEquatable<T> implementation.
         // n.b. This doesn't imply that the type's CompareTo method can be memcmp-implemented,
         // as a method like CompareTo may need to take a type's signedness into account.
 
@@ -7210,7 +7230,8 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
             || methodTable == CoreLibBinder::GetClass(CLASS__INTPTR)
             || methodTable == CoreLibBinder::GetClass(CLASS__UINTPTR)
             || methodTable == CoreLibBinder::GetClass(CLASS__RUNE)
-            || methodTable->IsEnum())
+            || methodTable->IsEnum()
+            || IsBitwiseEquatable(typeHandle, methodTable))
         {
             methInfo->ILCode = const_cast<BYTE*>(returnTrue);
         }
@@ -11620,7 +11641,19 @@ InfoAccessType CEEJitInfo::constructStringLiteral(CORINFO_MODULE_HANDLE scopeHnd
     }
     else
     {
-        *ppValue = (LPVOID)ConstructStringLiteral(scopeHnd, metaTok); // throws
+        // If ConstructStringLiteral returns a pinned reference we can return it by value (IAT_VALUE)
+        void* ppPinnedString = nullptr;
+        void** ptr = (void**)ConstructStringLiteral(scopeHnd, metaTok, &ppPinnedString);
+
+        if (ppPinnedString != nullptr)
+        {
+            *ppValue = ppPinnedString;
+            result = IAT_VALUE;
+        }
+        else
+        {
+            *ppValue = (void*)ptr;
+        }
     }
 
     EE_TO_JIT_TRANSITION();
@@ -11640,7 +11673,19 @@ InfoAccessType CEEJitInfo::emptyStringLiteral(void ** ppValue)
     InfoAccessType result = IAT_PVALUE;
 
     JIT_TO_EE_TRANSITION();
-    *ppValue = StringObject::GetEmptyStringRefPtr();
+    void* pinnedStr = nullptr;
+    void* pinnedStrHandlePtr = StringObject::GetEmptyStringRefPtr(&pinnedStr);
+
+    if (pinnedStr != nullptr)
+    {
+        *ppValue = pinnedStr;
+        result = IAT_VALUE;
+    }
+    else
+    {
+        *ppValue = pinnedStr;
+    }
+
     EE_TO_JIT_TRANSITION();
 
     return result;
@@ -13326,7 +13371,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             if (rid == 0)
             {
                 // Empty string
-                result = (size_t)StringObject::GetEmptyStringRefPtr();
+                result = (size_t)StringObject::GetEmptyStringRefPtr(nullptr);
             }
             else
             {

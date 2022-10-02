@@ -78,7 +78,7 @@ static void MvidMismatchFatalError(GUID mvidActual, GUID mvidExpected, LPCUTF8 s
 void AssemblyBinder::DeclareDependencyOnMvid(LPCUTF8 simpleName, GUID mvid, bool compositeComponent, LPCUTF8 imageName)
 {
     _ASSERTE(imageName != NULL);
-    
+
     // If the table is empty, then we didn't fill it with all the loaded assemblies as they were loaded. Record this detail, and fix after adding the dependency
     bool addAllLoadedModules = false;
     if (m_assemblySimpleNameMvidCheckHash.GetCount() == 0)
@@ -180,10 +180,10 @@ void AssemblyBinder::GetNameForDiagnosticsFromManagedALC(INT_PTR managedALC, /* 
     OBJECTREF* alc = reinterpret_cast<OBJECTREF*>(managedALC);
 
     GCX_COOP();
-    struct _gc {
+    struct {
         STRINGREF alcName;
     } gc;
-    ZeroMemory(&gc, sizeof(gc));
+    gc.alcName = NULL;
 
     GCPROTECT_BEGIN(gc);
 

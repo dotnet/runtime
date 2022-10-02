@@ -72,9 +72,7 @@ namespace System.Runtime.Serialization
                 foreach (KeyValuePair<string, string> pair in _options.Namespaces)
                 {
                     string dataContractNamespace = pair.Key;
-                    string clrNamespace = pair.Value;
-                    if (clrNamespace == null)
-                        clrNamespace = string.Empty;
+                    string clrNamespace = pair.Value ?? string.Empty;
 
                     string? currentDataContractNamespace;
                     if (_clrNamespaces.TryGetValue(clrNamespace, out currentDataContractNamespace))

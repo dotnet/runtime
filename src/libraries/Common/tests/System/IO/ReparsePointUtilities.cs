@@ -21,16 +21,13 @@ using Xunit;
 
 public static partial class MountHelper
 {
-    [LibraryImport("kernel32.dll", EntryPoint = "GetVolumeNameForVolumeMountPointW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
-    [return:MarshalAs(UnmanagedType.Bool)]
-    private static partial bool GetVolumeNameForVolumeMountPoint(string volumeName, char[] uniqueVolumeName, int uniqueNameBufferCapacity);
+    [DllImport("kernel32.dll", EntryPoint = "GetVolumeNameForVolumeMountPointW", CharSet = CharSet.Unicode, BestFitMapping = false, SetLastError = true)]
+    private static extern bool GetVolumeNameForVolumeMountPoint(string volumeName, StringBuilder uniqueVolumeName, int uniqueNameBufferCapacity);
     // unique volume name must be "\\?\Volume{GUID}\"
-    [LibraryImport("kernel32.dll", EntryPoint = "SetVolumeMountPointW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
-    [return:MarshalAs(UnmanagedType.Bool)]
-    private static partial bool SetVolumeMountPoint(string mountPoint, string uniqueVolumeName);
-    [LibraryImport("kernel32.dll", EntryPoint = "DeleteVolumeMountPointW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
-    [return:MarshalAs(UnmanagedType.Bool)]
-    private static partial bool DeleteVolumeMountPoint(string mountPoint);
+    [DllImport("kernel32.dll", EntryPoint = "SetVolumeMountPointW", CharSet = CharSet.Unicode, BestFitMapping = false, SetLastError = true)]
+    private static extern bool SetVolumeMountPoint(string mountPoint, string uniqueVolumeName);
+    [DllImport("kernel32.dll", EntryPoint = "DeleteVolumeMountPointW", CharSet = CharSet.Unicode, BestFitMapping = false, SetLastError = true)]
+    private static extern bool DeleteVolumeMountPoint(string mountPoint);
 
     // Helper for ConditionalClass attributes
     internal static bool IsSubstAvailable => PlatformDetection.IsSubstAvailable;
@@ -110,7 +107,7 @@ public static partial class MountHelper
     /// <summary>On Windows, creates a junction using command line tools.</summary>
     public static bool CreateJunction(string junctionPath, string targetPath)
     {
-        if (!OperatingSystem.IsWindows())
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             throw new PlatformNotSupportedException();
         }
@@ -127,16 +124,16 @@ public static partial class MountHelper
 
         Console.WriteLine(string.Format("Mounting volume {0} at {1}", volumeName, mountPoint));
         bool r;
-        char[] sb = new char[1024];
-        r = GetVolumeNameForVolumeMountPoint(volumeName, sb, sb.Length);
+        StringBuilder sb = new StringBuilder(1024);
+        r = GetVolumeNameForVolumeMountPoint(volumeName, sb, sb.Capacity);
         if (!r)
-            throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastPInvokeError()));
+            throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastWin32Error()));
 
-        string uniqueName = new string(sb);
+        string uniqueName = sb.ToString();
         Console.WriteLine(string.Format("uniqueName: <{0}>", uniqueName));
         r = SetVolumeMountPoint(mountPoint, uniqueName);
         if (!r)
-            throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastPInvokeError()));
+            throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastWin32Error()));
         Task.Delay(100).Wait(); // adding sleep for the file system to settle down so that reparse point mounting works
     }
 
@@ -148,7 +145,7 @@ public static partial class MountHelper
 
         bool r = DeleteVolumeMountPoint(mountPoint);
         if (!r)
-            throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastPInvokeError()));
+            throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastWin32Error()));
     }
 
     private static ProcessStartInfo CreateProcessStartInfo(string fileName, params string[] arguments)
@@ -160,10 +157,14 @@ public static partial class MountHelper
             RedirectStandardOutput = true
         };
 
+#if NETFRAMEWORK
+        info.Arguments = String.Join(" ", arguments);
+#else
         foreach (var argument in arguments)
         {
             info.ArgumentList.Add(argument);
         }
+#endif
 
         return info;
     }

@@ -249,7 +249,7 @@ __SECTIONREL_tls_CurrentThread SETS "$__SECTIONREL_tls_CurrentThread":CC:"_"
 ;;
 
     MACRO
-        ArmInterlockedOperationBarrier
+        InterlockedOperationBarrier
 
         dmb         ish
     MEND

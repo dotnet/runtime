@@ -10,6 +10,13 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
     public sealed class Vector128Tests
     {
         [Fact]
+        public unsafe void Vector128IsHardwareAcceleratedTest()
+        {
+            MethodInfo methodInfo = typeof(Vector128).GetMethod("get_IsHardwareAccelerated");
+            Assert.Equal(Vector128.IsHardwareAccelerated, methodInfo.Invoke(null, null));
+        }
+
+        [Fact]
         public unsafe void Vector128ByteExtractMostSignificantBitsTest()
         {
             Vector128<byte> vector = Vector128.Create(
@@ -4456,6 +4463,54 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         {
             Vector128<float> nan = Vector128.Create(float.NaN);
             Assert.True(nan.Equals(nan));
+        }
+
+        [Fact]
+        public void Vector128DoubleEqualsNonCanonicalNaNTest()
+        {
+            // max 8 bit exponent, just under half max mantissa
+            var snan = BitConverter.UInt64BitsToDouble(0x7FF7_FFFF_FFFF_FFFF);
+            var nans = new double[]
+            {
+                double.CopySign(double.NaN, -0.0), // -qnan same as double.NaN
+                double.CopySign(double.NaN, +0.0), // +qnan
+                double.CopySign(snan, -0.0),       // -snan
+                double.CopySign(snan, +0.0),       // +snan
+            };
+
+            // all Vector<double> NaNs .Equals compare the same, but == compare as different
+            foreach(var i in nans)
+            {
+                foreach(var j in nans)
+                {
+                    Assert.True(Vector128.Create(i).Equals(Vector128.Create(j)));
+                    Assert.False(Vector128.Create(i) == Vector128.Create(j));
+                }
+            }
+        }
+
+        [Fact]
+        public void Vector128SingleEqualsNonCanonicalNaNTest()
+        {
+            // max 11 bit exponent, just under half max mantissa
+            var snan = BitConverter.UInt32BitsToSingle(0x7FBF_FFFF);
+            var nans = new float[]
+            {
+                float.CopySign(float.NaN, -0.0f), // -qnan same as float.NaN
+                float.CopySign(float.NaN, +0.0f), // +qnan
+                float.CopySign(snan, -0.0f),      // -snan
+                float.CopySign(snan, +0.0f),      // +snan
+            };
+
+            // all Vector<float> NaNs .Equals compare the same, but == compare as different
+            foreach(var i in nans)
+            {
+                foreach(var j in nans)
+                {
+                    Assert.True(Vector128.Create(i).Equals(Vector128.Create(j)));
+                    Assert.False(Vector128.Create(i) == Vector128.Create(j));
+                }
+            }
         }
 
         [Fact]

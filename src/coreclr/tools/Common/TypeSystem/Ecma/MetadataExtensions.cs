@@ -122,7 +122,7 @@ namespace Internal.TypeSystem.Ecma
             return default(CustomAttributeHandle);
         }
 
-        private static bool IsEqualCustomAttributeName(CustomAttributeHandle attributeHandle, MetadataReader metadataReader, 
+        private static bool IsEqualCustomAttributeName(CustomAttributeHandle attributeHandle, MetadataReader metadataReader,
             string attributeNamespace, string attributeName)
         {
             StringHandle namespaceHandle, nameHandle;
@@ -136,8 +136,8 @@ namespace Internal.TypeSystem.Ecma
         public static bool GetAttributeNamespaceAndName(this MetadataReader metadataReader, CustomAttributeHandle attributeHandle,
             out StringHandle namespaceHandle, out StringHandle nameHandle)
         {
-            EntityHandle attributeType, attributeCtor;
-            if (!GetAttributeTypeAndConstructor(metadataReader, attributeHandle, out attributeType, out attributeCtor))
+            EntityHandle attributeType;
+            if (!GetAttributeTypeAndConstructor(metadataReader, attributeHandle, out attributeType, out _))
             {
                 namespaceHandle = default(StringHandle);
                 nameHandle = default(StringHandle);
@@ -211,7 +211,7 @@ namespace Internal.TypeSystem.Ecma
         public static PInvokeFlags GetDelegatePInvokeFlags(this EcmaType type)
         {
             PInvokeFlags flags = new PInvokeFlags(PInvokeAttributes.PreserveSig);
-            
+
             if (!type.IsDelegate)
             {
                 return flags;

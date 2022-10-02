@@ -1,8 +1,10 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -16,6 +18,9 @@ namespace System.Formats.Tar.Tests
         // Default values are what a TarEntry created with its constructor will set
         protected const UnixFileMode DefaultFileMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead; // 644 in octal, internally used as default
         protected const UnixFileMode DefaultDirectoryMode = DefaultFileMode | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute; // 755 in octal, internally used as default
+
+        protected readonly UnixFileMode CreateDirectoryDefaultMode; // Mode of directories created using Directory.CreateDirectory(string).
+        protected readonly UnixFileMode UMask;
 
         // Mode assumed for files and directories on Windows.
         protected const UnixFileMode DefaultWindowsMode = DefaultFileMode | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute; // 755 in octal, internally used as default
@@ -84,6 +89,99 @@ namespace System.Formats.Tar.Tests
         protected const string PaxEaSize = "size";
         protected const string PaxEaDevMajor = "devmajor";
         protected const string PaxEaDevMinor = "devminor";
+        internal const char OneByteCharacter = 'a';
+        internal const char TwoBytesCharacter = '\u00F6';
+        internal const string FourBytesCharacter = "\uD83D\uDE12";
+        internal const char Separator = '/';
+        internal const int MaxPathComponent = 255;
+
+        private static readonly string[] V7TestCaseNames = new[]
+        {
+            "file",
+            "file_hardlink",
+            "file_symlink",
+            "folder_file",
+            "folder_file_utf8",
+            "folder_subfolder_file",
+            "foldersymlink_folder_subfolder_file",
+            "many_small_files"
+        };
+
+        private static readonly string[] UstarTestCaseNames = new[]
+        {
+            "longpath_splitable_under255",
+            "specialfiles" };
+
+        private static readonly string[] PaxAndGnuTestCaseNames = new[]
+        {
+            "file_longsymlink",
+            "longfilename_over100_under255",
+            "longpath_over255"
+        };
+
+        private static readonly string[] GoLangTestCaseNames = new[]
+        {
+            "empty",
+            "file-and-dir",
+            "gnu-long-nul",
+            "gnu-not-utf8",
+            "gnu-utf8",
+            "gnu",
+            "hardlink",
+            "nil-uid",
+            "pax-bad-hdr-file",
+            "pax-bad-mtime-file",
+            "pax-global-records",
+            "pax-nul-path",
+            "pax-nul-xattrs",
+            "pax-pos-size-file",
+            "pax-records",
+            "pax",
+            "star",
+            "trailing-slash",
+            "ustar-file-devs",
+            "ustar-file-reg",
+            "ustar",
+            "writer",
+            "xattrs"
+        };
+
+        private static readonly string[] NodeTarTestCaseNames = new[]
+        {
+            "bad-cksum",
+            "body-byte-counts",
+            "dir",
+            "emptypax",
+            "file",
+            "global-header",
+            "links-invalid",
+            "links-strip",
+            "links",
+            "long-paths",
+            "long-pax",
+            "next-file-has-long",
+            "null-byte",
+            "path-missing",
+            "trailing-slash-corner-case",
+            "utf8"
+        };
+
+        private static readonly string[] RsTarTestCaseNames = new[]
+        {
+            "7z_long_path",
+            "directory",
+            "duplicate_dirs",
+            "empty_filename",
+            "file_times",
+            "link",
+            "pax_size",
+            "pax",
+            "pax2",
+            "reading_files",
+            "simple_missing_last_header",
+            "simple",
+            "xattrs"
+        };
 
         protected enum CompressionMethod
         {
@@ -115,27 +213,44 @@ namespace System.Formats.Tar.Tests
 
         protected static bool IsNotLinuxBionic => !PlatformDetection.IsLinuxBionic;
 
+        protected TarTestsBase()
+        {
+            CreateDirectoryDefaultMode = Directory.CreateDirectory(GetRandomDirPath()).UnixFileMode; // '0777 & ~umask'
+            UMask = ~CreateDirectoryDefaultMode & (UnixFileMode)Convert.ToInt32("777",
+            8);
+        }
+
         protected static string GetTestCaseUnarchivedFolderPath(string testCaseName) =>
-            Path.Join(Directory.GetCurrentDirectory(), "unarchived", testCaseName);
+            Path.Join(Directory.GetCurrentDirectory(), "unarchived",
+            testCaseName);
 
         protected static string GetTarFilePath(CompressionMethod compressionMethod, TestTarFormat format, string testCaseName)
+            => GetTarFilePath(compressionMethod, format.ToString(), testCaseName);
+
+        protected static string GetTarFilePath(CompressionMethod compressionMethod, string testFolderName, string testCaseName)
         {
             (string compressionMethodFolder, string fileExtension) = compressionMethod switch
             {
-                CompressionMethod.Uncompressed => ("tar", ".tar"),
-                CompressionMethod.GZip => ("targz", ".tar.gz"),
+                CompressionMethod.Uncompressed => ("tar",
+            ".tar"),
+                CompressionMethod.GZip => ("targz",
+            ".tar.gz"),
                 _ => throw new InvalidOperationException($"Unexpected compression method: {compressionMethod}"),
             };
 
-            return Path.Join(Directory.GetCurrentDirectory(), compressionMethodFolder, format.ToString(), testCaseName + fileExtension);
+            return Path.Join(Directory.GetCurrentDirectory(), compressionMethodFolder, testFolderName, testCaseName + fileExtension);
         }
 
         // MemoryStream containing the copied contents of the specified file. Meant for reading and writing.
         protected static MemoryStream GetTarMemoryStream(CompressionMethod compressionMethod, TestTarFormat format, string testCaseName) =>
-            GetMemoryStream(GetTarFilePath(compressionMethod, format, testCaseName));
+            GetTarMemoryStream(compressionMethod, format.ToString(), testCaseName);
+
+        protected static MemoryStream GetTarMemoryStream(CompressionMethod compressionMethod, string testFolderName, string testCaseName) =>
+            GetMemoryStream(GetTarFilePath(compressionMethod, testFolderName, testCaseName));
 
         protected static string GetStrangeTarFilePath(string testCaseName) =>
-            Path.Join(Directory.GetCurrentDirectory(), "strange", testCaseName + ".tar");
+            Path.Join(Directory.GetCurrentDirectory(), "strange",
+            testCaseName + ".tar");
 
         protected static MemoryStream GetStrangeTarMemoryStream(string testCaseName) =>
             GetMemoryStream(GetStrangeTarFilePath(testCaseName));
@@ -178,6 +293,8 @@ namespace System.Formats.Tar.Tests
 
             // LinkName
             Assert.Equal(DefaultLinkName, hardLink.LinkName);
+            Assert.Throws<ArgumentNullException>(() => hardLink.LinkName = null);
+            Assert.Throws<ArgumentException>(() => hardLink.LinkName = string.Empty);
             hardLink.LinkName = TestLinkName;
         }
 
@@ -189,6 +306,8 @@ namespace System.Formats.Tar.Tests
 
             // LinkName
             Assert.Equal(DefaultLinkName, symbolicLink.LinkName);
+            Assert.Throws<ArgumentNullException>(() => symbolicLink.LinkName = null);
+            Assert.Throws<ArgumentException>(() => symbolicLink.LinkName = string.Empty);
             symbolicLink.LinkName = TestLinkName;
         }
 
@@ -291,6 +410,13 @@ namespace System.Formats.Tar.Tests
             if (isFromWriter)
             {
                 Assert.Null(entry.DataStream);
+
+                using (MemoryStream ms = new MemoryStream())
+                using (WrappedStream ws = new WrappedStream(ms, canRead: false, canWrite: true, canSeek: true))
+                {
+                    Assert.Throws<ArgumentException>(() => entry.DataStream = ws);
+                }
+
                 entry.DataStream = new MemoryStream();
                 // Verify it is not modified or wrapped in any way
                 Assert.True(entry.DataStream.CanRead);
@@ -326,7 +452,7 @@ namespace System.Formats.Tar.Tests
                 TarEntryFormat.Ustar => typeof(UstarTarEntry),
                 TarEntryFormat.Pax => typeof(PaxTarEntry),
                 TarEntryFormat.Gnu => typeof(GnuTarEntry),
-                _ => throw new FormatException($"Unrecognized format: {expectedFormat}"),
+                _ => throw new InvalidDataException($"Unrecognized format: {expectedFormat}"),
             };
         }
 
@@ -362,7 +488,7 @@ namespace System.Formats.Tar.Tests
                 TarEntryFormat.Ustar => new UstarTarEntry(entryType, entryName),
                 TarEntryFormat.Pax => new PaxTarEntry(entryType, entryName),
                 TarEntryFormat.Gnu => new GnuTarEntry(entryType, entryName),
-                _ => throw new FormatException($"Unexpected format: {targetFormat}")
+                _ => throw new InvalidDataException($"Unexpected format: {targetFormat}")
             };
 
         public static IEnumerable<object[]> GetFormatsAndLinks()
@@ -407,11 +533,20 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(fileMode, entry.Mode);
         }
 
-        protected static void AssertFileModeEquals(string path, UnixFileMode mode)
+        protected void AssertFileModeEquals(string path, UnixFileMode archiveMode)
         {
             if (!PlatformDetection.IsWindows)
             {
-                Assert.Equal(mode, File.GetUnixFileMode(path));
+                UnixFileMode expectedMode = archiveMode & ~UMask;
+
+                UnixFileMode actualMode = File.GetUnixFileMode(path);
+                // Ignore SetGroup: it may have been added to preserve group ownership.
+                if ((expectedMode & UnixFileMode.SetGroup) == 0)
+                {
+                    actualMode &= ~UnixFileMode.SetGroup;
+                }
+
+                Assert.Equal(expectedMode, actualMode);
             }
         }
 
@@ -443,6 +578,223 @@ namespace System.Formats.Tar.Tests
             }
 
             AssertFileModeEquals(destination, TestPermission1);
+        }
+
+        public static IEnumerable<object[]> GetNodeTarTestCaseNames()
+        {
+            foreach (string name in NodeTarTestCaseNames)
+            {
+                yield return new object[] { name };
+            }
+        }
+
+        public static IEnumerable<object[]> GetGoLangTarTestCaseNames()
+        {
+            foreach (string name in GoLangTestCaseNames)
+            {
+                yield return new object[] { name };
+            }
+        }
+
+        public static IEnumerable<object[]> GetRsTarTestCaseNames()
+        {
+            foreach (string name in RsTarTestCaseNames)
+            {
+                yield return new object[] { name };
+            }
+        }
+
+        public static IEnumerable<object[]> GetV7TestCaseNames()
+        {
+            foreach (string name in V7TestCaseNames)
+            {
+                yield return new object[] { name };
+            }
+        }
+
+        public static IEnumerable<object[]> GetUstarTestCaseNames()
+        {
+            foreach (string name in UstarTestCaseNames.Concat(V7TestCaseNames))
+            {
+                yield return new object[] { name };
+            }
+        }
+
+        public static IEnumerable<object[]> GetPaxAndGnuTestCaseNames()
+        {
+            foreach (string name in UstarTestCaseNames.Concat(V7TestCaseNames).Concat(PaxAndGnuTestCaseNames))
+            {
+                yield return new object[] { name };
+            }
+        }
+
+        private static List<string> GetPrefixes()
+        {
+            List<string> prefixes = new() { "", "/a/", "./", "../" };
+
+            if (OperatingSystem.IsWindows())
+                prefixes.Add("C:/");
+
+            return prefixes;
+        }
+
+        internal static IEnumerable<string> GetNamesPrefixedTestData(NameCapabilities max)
+        {
+            Assert.True(Enum.IsDefined(max));
+            List<string> prefixes = GetPrefixes();
+
+            foreach (string prefix in prefixes)
+            {
+                // prefix + name of length 100
+                int nameLength = 100 - prefix.Length;
+                yield return prefix + Repeat(OneByteCharacter, nameLength);
+                yield return prefix + Repeat(OneByteCharacter, nameLength - 2) + TwoBytesCharacter;
+                yield return prefix + Repeat(OneByteCharacter, nameLength - 4) + FourBytesCharacter;
+
+                // prefix alone
+                if (prefix != string.Empty)
+                    yield return prefix;
+            }
+
+            if (max == NameCapabilities.Name)
+                yield break;
+
+            // maxed out name.
+            foreach (string prefix in prefixes)
+            {
+                yield return prefix + Repeat(OneByteCharacter, 100);
+                yield return prefix + Repeat(OneByteCharacter, 100 - 2) + TwoBytesCharacter;
+                yield return prefix + Repeat(OneByteCharacter, 100 - 4) + FourBytesCharacter;
+            }
+
+            // maxed out prefix and name.
+            foreach (string prefix in prefixes)
+            {
+                int directoryLength = 155 - prefix.Length;
+                yield return prefix + Repeat(OneByteCharacter, directoryLength) + Separator + Repeat(OneByteCharacter, 100);
+                yield return prefix + Repeat(OneByteCharacter, directoryLength - 2) + TwoBytesCharacter + Separator + Repeat(OneByteCharacter, 100);
+                yield return prefix + Repeat(OneByteCharacter, directoryLength - 4) + FourBytesCharacter + Separator + Repeat(OneByteCharacter, 100);
+            }
+
+            if (max == NameCapabilities.NameAndPrefix)
+                yield break;
+
+            foreach (string prefix in prefixes)
+            {
+                int directoryLength = MaxPathComponent - prefix.Length;
+                yield return prefix + Repeat(OneByteCharacter, directoryLength) + Separator + Repeat(OneByteCharacter, MaxPathComponent);
+                yield return prefix + Repeat(OneByteCharacter, directoryLength - 2) + TwoBytesCharacter + Separator + Repeat(OneByteCharacter, MaxPathComponent);
+                yield return prefix + Repeat(OneByteCharacter, directoryLength - 4) + FourBytesCharacter + Separator + Repeat(OneByteCharacter, MaxPathComponent);
+            }
+        }
+
+        internal static IEnumerable<string> GetNamesNonAsciiTestData(NameCapabilities max)
+        {
+            Assert.True(Enum.IsDefined(max));
+
+            yield return Repeat(OneByteCharacter, 100);
+            yield return Repeat(TwoBytesCharacter, 100 / 2);
+            yield return Repeat(OneByteCharacter, 2) + Repeat(TwoBytesCharacter, 49);
+
+            yield return Repeat(FourBytesCharacter, 100 / 4);
+            yield return Repeat(OneByteCharacter, 4) + Repeat(FourBytesCharacter, 24);
+
+            if (max == NameCapabilities.Name)
+                yield break;
+
+            // prefix + name
+            // this is 256 but is supported because prefix is not required to end in separator.
+            yield return Repeat(OneByteCharacter, 155) + Separator + Repeat(OneByteCharacter, 100);
+
+            // non-ascii prefix + name 
+            yield return Repeat(TwoBytesCharacter, 155 / 2) + Separator + Repeat(OneByteCharacter, 100);
+            yield return Repeat(FourBytesCharacter, 155 / 4) + Separator + Repeat(OneByteCharacter, 100);
+
+            // prefix + non-ascii name
+            yield return Repeat(OneByteCharacter, 155) + Separator + Repeat(TwoBytesCharacter, 100 / 2);
+            yield return Repeat(OneByteCharacter, 155) + Separator + Repeat(FourBytesCharacter, 100 / 4);
+
+            // non-ascii prefix + non-ascii name
+            yield return Repeat(TwoBytesCharacter, 155 / 2) + Separator + Repeat(TwoBytesCharacter, 100 / 2);
+            yield return Repeat(FourBytesCharacter, 155 / 4) + Separator + Repeat(FourBytesCharacter, 100 / 4);
+
+            if (max == NameCapabilities.NameAndPrefix)
+                yield break;
+
+            // Pax and Gnu support unlimited paths.
+            yield return Repeat(OneByteCharacter, MaxPathComponent);
+            yield return Repeat(TwoBytesCharacter, MaxPathComponent / 2);
+            yield return Repeat(FourBytesCharacter, MaxPathComponent / 4);
+
+            yield return Repeat(OneByteCharacter, MaxPathComponent) + Separator + Repeat(OneByteCharacter, MaxPathComponent);
+            yield return Repeat(TwoBytesCharacter, MaxPathComponent / 2) + Separator + Repeat(TwoBytesCharacter, MaxPathComponent / 2);
+            yield return Repeat(FourBytesCharacter, MaxPathComponent / 4) + Separator + Repeat(FourBytesCharacter, MaxPathComponent / 4);
+        }
+
+        internal static IEnumerable<string> GetTooLongNamesTestData(NameCapabilities max)
+        {
+            Assert.True(max is NameCapabilities.Name or NameCapabilities.NameAndPrefix);
+
+            // root directory can't be saved as prefix
+            yield return "/" + Repeat(OneByteCharacter, 100);
+
+            List<string> prefixes = GetPrefixes();
+
+            // 1. non-ascii last character doesn't fit in name.
+            foreach (string prefix in prefixes)
+            {
+                // 1.1. last character doesn't fit fully.
+                yield return prefix + Repeat(OneByteCharacter, 100 + 1);
+                yield return prefix + Repeat(OneByteCharacter, 100 - 2) + Repeat(TwoBytesCharacter, 2);
+                yield return prefix + Repeat(OneByteCharacter, 100 - 4) + Repeat(FourBytesCharacter, 2);
+
+                // 1.2. last character doesn't fit by one byte.
+                yield return prefix + Repeat(OneByteCharacter, 100 - 2 + 1) + Repeat(TwoBytesCharacter, 1);
+                yield return prefix + Repeat(OneByteCharacter, 100 - 4 + 1) + Repeat(FourBytesCharacter, 1);
+            }
+
+            // 2. non-ascii last character doesn't fit in prefix.
+            string maxedOutName = Repeat(OneByteCharacter, 100);
+
+            // 2.1. last char doesn't fit fully.
+            yield return Repeat(OneByteCharacter, 155 + 1) + Separator + maxedOutName;
+            yield return Repeat(OneByteCharacter, 155 - 2) + Repeat(TwoBytesCharacter, 2) + Separator + maxedOutName;
+            yield return Repeat(OneByteCharacter, 155 - 4) + Repeat(FourBytesCharacter, 2) + Separator + maxedOutName;
+
+            // 2.2 last char doesn't fit by one byte.
+            yield return Repeat(OneByteCharacter, 155 - 2 + 1) + TwoBytesCharacter + Separator + maxedOutName;
+            yield return Repeat(OneByteCharacter, 155 - 4 + 1) + FourBytesCharacter + Separator + maxedOutName;
+
+            if (max is NameCapabilities.NameAndPrefix)
+                yield break;
+
+            // Next cases only apply for V7 which only allows 100 length names.
+            foreach (string prefix in prefixes)
+            {
+                if (prefix.Length == 0)
+                    continue;
+
+                yield return prefix + Repeat(OneByteCharacter, 100);
+                yield return prefix + Repeat(TwoBytesCharacter, 100 / 2);
+                yield return prefix + Repeat(FourBytesCharacter, 100 / 4);
+            }
+        }
+
+        internal static string Repeat(char c, int count)
+        {
+            return new string(c, count);
+        }
+
+        internal static string Repeat(string c, int count)
+        {
+            return string.Concat(Enumerable.Repeat(c, count));
+        }
+
+        internal enum NameCapabilities
+        {
+            Name,
+            NameAndPrefix,
+            Unlimited
         }
     }
 }

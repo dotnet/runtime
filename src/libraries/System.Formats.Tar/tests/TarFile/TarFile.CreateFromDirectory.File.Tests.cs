@@ -193,5 +193,65 @@ namespace System.Formats.Tar.Tests
 
             Assert.Null(reader.GetNextEntry());
         }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void SkipRecursionIntoDirectorySymlinks()
+        {
+            using TempDirectory root = new TempDirectory();
+
+            string destinationArchive = Path.Join(root.Path, "destination.tar");
+
+            string externalDirectory = Path.Join(root.Path, "externalDirectory");
+            Directory.CreateDirectory(externalDirectory);
+
+            File.Create(Path.Join(externalDirectory, "file.txt")).Dispose();
+
+            string sourceDirectoryName = Path.Join(root.Path, "baseDirectory");
+            Directory.CreateDirectory(sourceDirectoryName);
+
+            string subDirectory = Path.Join(sourceDirectoryName, "subDirectory");
+            Directory.CreateSymbolicLink(subDirectory, externalDirectory); // Should not recurse here
+
+            TarFile.CreateFromDirectory(sourceDirectoryName, destinationArchive, includeBaseDirectory: false);
+
+            using FileStream archiveStream = File.OpenRead(destinationArchive);
+            using TarReader reader = new(archiveStream, leaveOpen: false);
+
+            TarEntry entry = reader.GetNextEntry();
+            Assert.NotNull(entry);
+            Assert.Equal("subDirectory/", entry.Name);
+            Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
+
+            Assert.Null(reader.GetNextEntry()); // file.txt should not be found
+        }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void SkipRecursionIntoBaseDirectorySymlink()
+        {
+            using TempDirectory root = new TempDirectory();
+
+            string destinationArchive = Path.Join(root.Path, "destination.tar");
+
+            string externalDirectory = Path.Join(root.Path, "externalDirectory");
+            Directory.CreateDirectory(externalDirectory);
+
+            string subDirectory = Path.Join(externalDirectory, "subDirectory");
+            Directory.CreateDirectory(subDirectory);
+
+            string sourceDirectoryName = Path.Join(root.Path, "baseDirectory");
+            Directory.CreateSymbolicLink(sourceDirectoryName, externalDirectory);
+
+            TarFile.CreateFromDirectory(sourceDirectoryName, destinationArchive, includeBaseDirectory: true); // Base directory is a symlink, do not recurse
+
+            using FileStream archiveStream = File.OpenRead(destinationArchive);
+            using TarReader reader = new(archiveStream, leaveOpen: false);
+
+            TarEntry entry = reader.GetNextEntry();
+            Assert.NotNull(entry);
+            Assert.Equal("baseDirectory/", entry.Name);
+            Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
+
+            Assert.Null(reader.GetNextEntry());
+        }
     }
 }

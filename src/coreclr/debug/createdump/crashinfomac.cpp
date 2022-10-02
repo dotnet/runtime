@@ -487,7 +487,7 @@ ModuleInfo::LoadModule()
         }
         else
         {
-            TRACE("LoadModule: dlopen(%s) FAILED %d %s\n", m_moduleName.c_str(), errno, strerror(errno));
+            TRACE("LoadModule: dlopen(%s) FAILED %s\n", m_moduleName.c_str(), dlerror());
         }
     }
 }

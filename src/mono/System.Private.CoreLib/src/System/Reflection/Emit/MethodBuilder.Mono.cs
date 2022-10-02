@@ -366,8 +366,7 @@ namespace System.Reflection.Emit
                                          string.Format("Method '{0}.{1}' does not have a method body.",
                                                 DeclaringType!.FullName, Name));
             }
-            if (ilgen != null)
-                ilgen.label_fixup(this);
+            ilgen?.label_fixup(this);
         }
 
         internal void ResolveUserTypes()

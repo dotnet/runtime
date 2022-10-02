@@ -16,13 +16,12 @@ namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public class AssemblyChecker
 	{
-		readonly AssemblyDefinition originalAssembly, linkedAssembly;
-
-		HashSet<string> linkedMembers;
-		readonly HashSet<string> verifiedGeneratedFields = new HashSet<string> ();
-		readonly HashSet<string> verifiedEventMethods = new HashSet<string> ();
-		readonly HashSet<string> verifiedGeneratedTypes = new HashSet<string> ();
-		bool checkNames;
+		private readonly AssemblyDefinition originalAssembly, linkedAssembly;
+		private HashSet<string> linkedMembers;
+		private readonly HashSet<string> verifiedGeneratedFields = new HashSet<string> ();
+		private readonly HashSet<string> verifiedEventMethods = new HashSet<string> ();
+		private readonly HashSet<string> verifiedGeneratedTypes = new HashSet<string> ();
+		private bool checkNames;
 
 		public AssemblyChecker (AssemblyDefinition original, AssemblyDefinition linked)
 		{
@@ -188,7 +187,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		void VerifyBaseType (TypeDefinition src, TypeDefinition linked)
+		private void VerifyBaseType (TypeDefinition src, TypeDefinition linked)
 		{
 			string expectedBaseName;
 			var expectedBaseGenericAttr = src.CustomAttributes.FirstOrDefault (w => w.AttributeType.Name == nameof (KeptBaseTypeAttribute) && w.ConstructorArguments.Count > 1);
@@ -204,7 +203,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		void VerifyInterfaces (TypeDefinition src, TypeDefinition linked)
+		private void VerifyInterfaces (TypeDefinition src, TypeDefinition linked)
 		{
 			var expectedInterfaces = new HashSet<string> (src.CustomAttributes
 				.Where (w => w.AttributeType.Name == nameof (KeptInterfaceAttribute))
@@ -223,18 +222,18 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		static string FormatBaseOrInterfaceAttributeValue (CustomAttribute attr)
+		private static string FormatBaseOrInterfaceAttributeValue (CustomAttribute attr)
 		{
 			if (attr.ConstructorArguments.Count == 1)
 				return attr.ConstructorArguments[0].Value.ToString ()!;
 
 			StringBuilder builder = new StringBuilder ();
 			builder.Append (attr.ConstructorArguments[0].Value);
-			builder.Append ("<");
+			builder.Append ('<');
 			bool separator = false;
 			foreach (var caa in (CustomAttributeArgument[]) attr.ConstructorArguments[1].Value) {
 				if (separator)
-					builder.Append (",");
+					builder.Append (',');
 				else
 					separator = true;
 
@@ -242,11 +241,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				builder.Append (arg.Value);
 			}
 
-			builder.Append (">");
+			builder.Append ('>');
 			return builder.ToString ();
 		}
 
-		void VerifyField (FieldDefinition src, FieldDefinition? linked)
+		private void VerifyField (FieldDefinition src, FieldDefinition? linked)
 		{
 			bool expectedKept = ShouldBeKept (src);
 
@@ -260,14 +259,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			VerifyFieldKept (src, linked);
 		}
 
-		void VerifyFieldKept (FieldDefinition src, FieldDefinition? linked)
+		private void VerifyFieldKept (FieldDefinition src, FieldDefinition? linked)
 		{
 			if (linked == null) {
 				Assert.True (false, $"Field `{src}' should have been kept");
 				return;
 			}
 
-			if (!object.Equals (src.Constant, linked.Constant)) {
+			if (!Equals (src.Constant, linked.Constant)) {
 				Assert.True (false, $"Field '{src}' value doesn's match. Expected {src.Constant}, actual {linked.Constant}");
 			}
 
@@ -275,7 +274,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			VerifyCustomAttributes (src, linked);
 		}
 
-		void VerifyProperty (PropertyDefinition src, PropertyDefinition? linked, TypeDefinition linkedType)
+		private void VerifyProperty (PropertyDefinition src, PropertyDefinition? linked, TypeDefinition linkedType)
 		{
 			VerifyMemberBackingField (src, linkedType);
 
@@ -301,7 +300,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			VerifyCustomAttributes (src, linked);
 		}
 
-		void VerifyEvent (EventDefinition src, EventDefinition? linked, TypeDefinition linkedType)
+		private void VerifyEvent (EventDefinition src, EventDefinition? linked, TypeDefinition linkedType)
 		{
 			VerifyMemberBackingField (src, linkedType);
 
@@ -335,14 +334,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			VerifyCustomAttributes (src, linked);
 		}
 
-		void VerifyMethod (MethodDefinition src, MethodDefinition? linked)
+		private void VerifyMethod (MethodDefinition src, MethodDefinition? linked)
 		{
 			bool expectedKept = ShouldMethodBeKept (src);
 			VerifyMethodInternal (src, linked, expectedKept);
 		}
 
-
-		void VerifyMethodInternal (MethodDefinition src, MethodDefinition? linked, bool expectedKept)
+		private void VerifyMethodInternal (MethodDefinition src, MethodDefinition? linked, bool expectedKept)
 		{
 			if (!expectedKept) {
 				if (linked != null)
@@ -354,7 +352,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			VerifyMethodKept (src, linked);
 		}
 
-		void VerifyMemberBackingField (IMemberDefinition src, TypeDefinition linkedType)
+		private void VerifyMemberBackingField (IMemberDefinition src, TypeDefinition linkedType)
 		{
 			var keptBackingFieldAttribute = src.CustomAttributes.FirstOrDefault (attr => attr.AttributeType.Name == nameof (KeptBackingFieldAttribute));
 			if (keptBackingFieldAttribute == null)
@@ -460,13 +458,13 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				result.Add ((null, text));
 		}
 
-		static string FormatInstruction (Instruction instr)
+		private static string FormatInstruction (Instruction instr)
 		{
 			switch (instr.OpCode.FlowControl) {
 			case FlowControl.Branch:
 			case FlowControl.Cond_Branch:
 				if (instr.Operand is Instruction target)
-					return $"{instr.OpCode.ToString ()} il_{target.Offset.ToString ("x")}";
+					return $"{instr.OpCode} il_{target.Offset:x}";
 
 				break;
 			}
@@ -474,35 +472,35 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			switch (instr.OpCode.Code) {
 			case Code.Ldc_I4:
 				if (instr.Operand is int ivalue)
-					return $"{instr.OpCode.ToString ()} 0x{ivalue.ToString ("x")}";
+					return $"{instr.OpCode} 0x{ivalue:x}";
 
 				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
 			case Code.Ldc_I4_S:
 				if (instr.Operand is sbyte bvalue)
-					return $"{instr.OpCode.ToString ()} 0x{bvalue.ToString ("x")}";
+					return $"{instr.OpCode} 0x{bvalue:x}";
 
 				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
 			case Code.Ldc_I8:
 				if (instr.Operand is long lvalue)
-					return $"{instr.OpCode.ToString ()} 0x{lvalue.ToString ("x")}";
+					return $"{instr.OpCode} 0x{lvalue:x}";
 
 				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
 
 			case Code.Ldc_R4:
 				if (instr.Operand is float fvalue)
-					return $"{instr.OpCode.ToString ()} {fvalue.ToString ()}";
+					return $"{instr.OpCode} {fvalue}";
 
 				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
 
 			case Code.Ldc_R8:
 				if (instr.Operand is double dvalue)
-					return $"{instr.OpCode.ToString ()} {dvalue.ToString ()}";
+					return $"{instr.OpCode} {dvalue}";
 
 				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
 
 			case Code.Ldstr:
 				if (instr.Operand is string svalue)
-					return $"{instr.OpCode.ToString ()} '{svalue}'";
+					return $"{instr.OpCode} '{svalue}'";
 
 				throw new NotImplementedException (instr.Operand.GetType ().ToString ());
 
@@ -523,13 +521,14 @@ namespace Mono.Linker.Tests.TestCasesRunner
 					}
 
 					if (operandString != null)
-						return $"{instr.OpCode.ToString ()} {operandString}";
+						return $"{instr.OpCode} {operandString}";
 					else
 						return instr.OpCode.ToString ();
 				}
 			}
 		}
-		static void VerifyLocals (MethodDefinition src, MethodDefinition linked)
+
+		private static void VerifyLocals (MethodDefinition src, MethodDefinition linked)
 		{
 			VerifyBodyProperties (
 				src,
@@ -560,7 +559,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		void VerifyReferences (AssemblyDefinition original, AssemblyDefinition linked)
+		private void VerifyReferences (AssemblyDefinition original, AssemblyDefinition linked)
 		{
 			var expected = original.MainModule.AllDefinedTypes ()
 				.SelectMany (t => GetCustomAttributeCtorValues<string> (t, nameof (KeptReferenceAttribute)))
@@ -586,7 +585,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			actual.Should ().BeEquivalentTo (expected);
 		}
 
-		string? ReduceAssemblyFileNameOrNameToNameOnly (string? fileNameOrAssemblyName)
+		private string? ReduceAssemblyFileNameOrNameToNameOnly (string? fileNameOrAssemblyName)
 		{
 			if (fileNameOrAssemblyName == null)
 				return null;
@@ -598,7 +597,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return fileNameOrAssemblyName;
 		}
 
-		void VerifyResources (AssemblyDefinition original, AssemblyDefinition linked)
+		private void VerifyResources (AssemblyDefinition original, AssemblyDefinition linked)
 		{
 			var expectedResourceNames = original.MainModule.AllDefinedTypes ()
 				.SelectMany (t => GetCustomAttributeCtorValues<string> (t, nameof (KeptResourceAttribute)))
@@ -620,7 +619,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		void VerifyExportedTypes (AssemblyDefinition original, AssemblyDefinition linked)
+		private void VerifyExportedTypes (AssemblyDefinition original, AssemblyDefinition linked)
 		{
 			var expectedTypes = original.MainModule.AllDefinedTypes ()
 				.SelectMany (t => GetCustomAttributeCtorValues<TypeReference> (t, nameof (KeptExportedTypeAttribute)).Select (l => l?.FullName ?? "<null>")).ToArray ();
@@ -731,7 +730,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		void VerifyInitializerField (FieldDefinition src, FieldDefinition? linked)
+		private void VerifyInitializerField (FieldDefinition src, FieldDefinition? linked)
 		{
 			VerifyFieldKept (src, linked);
 			verifiedGeneratedFields.Add (linked!.FullName);
@@ -742,7 +741,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			verifiedGeneratedTypes.Add (linked.DeclaringType.FullName);
 		}
 
-		static bool IsLdtokenOnPrivateImplementationDetails (TypeDefinition privateImplementationDetails, Instruction instruction)
+		private static bool IsLdtokenOnPrivateImplementationDetails (TypeDefinition privateImplementationDetails, Instruction instruction)
 		{
 			if (instruction.OpCode.Code == Code.Ldtoken && instruction.Operand is FieldReference field) {
 				return field.DeclaringType.Resolve () == privateImplementationDetails;
@@ -809,7 +808,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				.Select (attr => attr.AttributeType.ToString ());
 		}
 
-		void VerifyFixedBufferFields (TypeDefinition src, TypeDefinition linked)
+		private void VerifyFixedBufferFields (TypeDefinition src, TypeDefinition linked)
 		{
 			var fields = src.Fields.Where (f => f.CustomAttributes.Any (attr => attr.AttributeType.Name == nameof (KeptFixedBufferAttribute)));
 
@@ -846,7 +845,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		void VerifyDelegateBackingFields (TypeDefinition src, TypeDefinition linked)
+		private void VerifyDelegateBackingFields (TypeDefinition src, TypeDefinition linked)
 		{
 			var expectedFieldNames = GetCustomAttributeCtorValues<string> (src, nameof (KeptDelegateCacheFieldAttribute))
 				.Select (unique => $"<>f__mg$cache{unique}")
@@ -866,7 +865,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		void VerifyGenericParameters (IGenericParameterProvider src, IGenericParameterProvider linked)
+		private void VerifyGenericParameters (IGenericParameterProvider src, IGenericParameterProvider linked)
 		{
 			Assert.Equal (src.HasGenericParameters, linked.HasGenericParameters);
 			if (src.HasGenericParameters) {
@@ -888,7 +887,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 		}
 
-		void VerifyParameters (IMethodSignature src, IMethodSignature linked)
+		private void VerifyParameters (IMethodSignature src, IMethodSignature linked)
 		{
 			Assert.Equal (src.HasParameters, linked.HasParameters);
 			if (src.HasParameters) {

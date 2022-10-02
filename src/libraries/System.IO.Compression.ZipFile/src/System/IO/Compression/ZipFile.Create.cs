@@ -375,49 +375,32 @@ namespace System.IO.Compression
                 if (includeBaseDirectory && di.Parent != null)
                     basePath = di.Parent.FullName;
 
-                // Windows' MaxPath (260) is used as an arbitrary default capacity, as it is likely
-                // to be greater than the length of typical entry names from the file system, even
-                // on non-Windows platforms. The capacity will be increased, if needed.
-                const int DefaultCapacity = 260;
-                char[] entryNameBuffer = ArrayPool<char>.Shared.Rent(DefaultCapacity);
-
-                try
+                foreach (FileSystemInfo file in di.EnumerateFileSystemInfos("*", SearchOption.AllDirectories))
                 {
-                    foreach (FileSystemInfo file in di.EnumerateFileSystemInfos("*", SearchOption.AllDirectories))
+                    directoryIsEmpty = false;
+
+                    if (file is FileInfo)
                     {
-                        directoryIsEmpty = false;
-
-                        int entryNameLength = file.FullName.Length - basePath.Length;
-                        Debug.Assert(entryNameLength > 0);
-
-                        if (file is FileInfo)
+                        // Create entry for file:
+                        string entryName = ArchivingUtils.EntryFromPath(file.FullName.AsSpan(basePath.Length));
+                        ZipFileExtensions.DoCreateEntryFromFile(archive, file.FullName, entryName, compressionLevel);
+                    }
+                    else
+                    {
+                        // Entry marking an empty dir:
+                        if (file is DirectoryInfo possiblyEmpty && ArchivingUtils.IsDirEmpty(possiblyEmpty))
                         {
-                            // Create entry for file:
-                            string entryName = ArchivingUtils.EntryFromPath(file.FullName, basePath.Length, entryNameLength, ref entryNameBuffer);
-                            ZipFileExtensions.DoCreateEntryFromFile(archive, file.FullName, entryName, compressionLevel);
+                            // FullName never returns a directory separator character on the end,
+                            // but Zip archives require it to specify an explicit directory:
+                            string entryName = ArchivingUtils.EntryFromPath(file.FullName.AsSpan(basePath.Length), appendPathSeparator: true);
+                            archive.CreateEntry(entryName);
                         }
-                        else
-                        {
-                            // Entry marking an empty dir:
-                            if (file is DirectoryInfo possiblyEmpty && ArchivingUtils.IsDirEmpty(possiblyEmpty))
-                            {
-                                // FullName never returns a directory separator character on the end,
-                                // but Zip archives require it to specify an explicit directory:
-                                string entryName = ArchivingUtils.EntryFromPath(file.FullName, basePath.Length, entryNameLength, ref entryNameBuffer, appendPathSeparator: true);
-                                archive.CreateEntry(entryName);
-                            }
-                        }
-                    }  // foreach
-
-                    // If no entries create an empty root directory entry:
-                    if (includeBaseDirectory && directoryIsEmpty)
-                        archive.CreateEntry(ArchivingUtils.EntryFromPath(di.Name, 0, di.Name.Length, ref entryNameBuffer, appendPathSeparator: true));
-                }
-                finally
-                {
-                    ArrayPool<char>.Shared.Return(entryNameBuffer);
+                    }
                 }
 
+                // If no entries create an empty root directory entry:
+                if (includeBaseDirectory && directoryIsEmpty)
+                    archive.CreateEntry(ArchivingUtils.EntryFromPath(di.Name, appendPathSeparator: true));
             }
         }
     }

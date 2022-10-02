@@ -31,7 +31,7 @@ namespace System.Net.Sockets
 
         public static SocketError GetLastSocketError()
         {
-            int win32Error = Marshal.GetLastWin32Error();
+            int win32Error = Marshal.GetLastPInvokeError();
             Debug.Assert(win32Error != 0, "Expected non-0 error");
             return (SocketError)win32Error;
         }

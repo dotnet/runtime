@@ -222,7 +222,7 @@ uintptr_t UnixNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
 
     UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
 
-    PTR_UInt8 p = pNativeMethodInfo->pMainLSDA;
+    PTR_UInt8 p = pNativeMethodInfo->pLSDA;
 
     uint8_t unwindBlockFlags = *p++;
 
@@ -283,7 +283,7 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 {
     UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
 
-    PTR_UInt8 p = pNativeMethodInfo->pMainLSDA;
+    PTR_UInt8 p = pNativeMethodInfo->pLSDA;
 
     uint8_t unwindBlockFlags = *p++;
 
@@ -868,7 +868,7 @@ PTR_VOID UnixNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
     if (!FindMethodInfo(ControlPC, (MethodInfo*)&methodInfo))
         return NULL;
 
-    PTR_UInt8 p = methodInfo.pMainLSDA;
+    PTR_UInt8 p = methodInfo.pLSDA;
 
     uint8_t unwindBlockFlags = *p++;
     if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) == 0)

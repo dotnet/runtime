@@ -234,7 +234,6 @@ protected:
     void genJumpToThrowHlpBlk(emitJumpKind jumpKind, SpecialCodeKind codeKind, BasicBlock* failBlk = nullptr);
 
 #ifdef TARGET_LOONGARCH64
-    void genSetRegToIcon(regNumber reg, ssize_t val, var_types type);
     void genJumpToThrowHlpBlk_la(SpecialCodeKind codeKind,
                                  instruction     ins,
                                  regNumber       reg1,
@@ -993,6 +992,13 @@ protected:
             ZERO_EXTEND_INT,
             SIGN_EXTEND_INT,
 #endif
+            LOAD_ZERO_EXTEND_SMALL_INT,
+            LOAD_SIGN_EXTEND_SMALL_INT,
+#ifdef TARGET_64BIT
+            LOAD_ZERO_EXTEND_INT,
+            LOAD_SIGN_EXTEND_INT,
+#endif
+            LOAD_SOURCE
         };
 
     private:
@@ -1391,7 +1397,6 @@ protected:
 #if defined(TARGET_ARM64)
     void genCodeForJumpCompare(GenTreeOp* tree);
     void genCodeForBfiz(GenTreeOp* tree);
-    void genCodeForAddEx(GenTreeOp* tree);
     void genCodeForCond(GenTreeOp* tree);
 #endif // TARGET_ARM64
 
@@ -1454,7 +1459,10 @@ protected:
 #endif // !FEATURE_PUT_STRUCT_ARG_STK
 
 #if defined(DEBUG) && defined(TARGET_XARCH)
-    void genStackPointerCheck(bool doStackPointerCheck, unsigned lvaStackPointerVar);
+    void genStackPointerCheck(bool      doStackPointerCheck,
+                              unsigned  lvaStackPointerVar,
+                              ssize_t   offset = 0,
+                              regNumber regTmp = REG_NA);
 #endif // defined(DEBUG) && defined(TARGET_XARCH)
 
 #ifdef DEBUG

@@ -7904,7 +7904,7 @@ MethodTable::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         pWriteableData.EnumMem();
     }
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE)
+    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
     {
         DispatchMap * pMap = GetDispatchMap();
         if (pMap != NULL)

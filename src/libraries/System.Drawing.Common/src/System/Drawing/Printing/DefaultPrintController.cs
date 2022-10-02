@@ -42,7 +42,7 @@ namespace System.Drawing.Printing
             int result = Interop.Gdi32.StartDoc(new HandleRef(_dc, _dc.Hdc), info);
             if (result <= 0)
             {
-                int error = Marshal.GetLastWin32Error();
+                int error = Marshal.GetLastPInvokeError();
                 if (error == SafeNativeMethods.ERROR_CANCELLED)
                 {
                     e.Cancel = true;

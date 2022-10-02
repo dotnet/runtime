@@ -12,10 +12,10 @@ namespace ILCompiler.Dataflow
 {
     public readonly struct TrimAnalysisPatternStore
     {
-        readonly Dictionary<(MessageOrigin, bool), TrimAnalysisAssignmentPattern> AssignmentPatterns;
-        readonly Dictionary<MessageOrigin, TrimAnalysisMethodCallPattern> MethodCallPatterns;
-        readonly ValueSetLattice<SingleValue> Lattice;
-        readonly Logger _logger;
+        private readonly Dictionary<(MessageOrigin, bool), TrimAnalysisAssignmentPattern> AssignmentPatterns;
+        private readonly Dictionary<MessageOrigin, TrimAnalysisMethodCallPattern> MethodCallPatterns;
+        private readonly ValueSetLattice<SingleValue> Lattice;
+        private readonly Logger _logger;
 
         public TrimAnalysisPatternStore(ValueSetLattice<SingleValue> lattice, Logger logger)
         {

@@ -180,10 +180,7 @@ internal sealed class OletxPhase0VolatileEnlistmentContainer : OletxVolatileEnli
                 AlreadyVoted = true;
                 // All we are going to do is release the Phase0Enlistment interface because there
                 // is no negative vote to Phase0Request.
-                if (Phase0EnlistmentShim != null)
-                {
-                    Phase0EnlistmentShim.Phase0Done(false);
-                }
+                Phase0EnlistmentShim?.Phase0Done(false);
             }
         }
 
@@ -257,10 +254,7 @@ internal sealed class OletxPhase0VolatileEnlistmentContainer : OletxVolatileEnli
         {
             if (respondToProxy)
             {
-                if (localPhase0Shim != null)
-                {
-                    localPhase0Shim.Phase0Done(CollectedVoteYes && !RealOletxTransaction.Doomed);
-                }
+                localPhase0Shim?.Phase0Done(CollectedVoteYes && !RealOletxTransaction.Doomed);
             }
         }
         catch (COMException ex)
@@ -1350,12 +1344,9 @@ internal sealed class OletxVolatileEnlistment : OletxBaseEnlistment, IPromotedEn
         // just stay in the Done state and when we get the Prepare, we will vote appropriately.
         if (localState == OletxVolatileEnlistmentState.Preparing)
         {
-            if (localContainer != null)
-            {
-                // Specify true.  If aborting, it is okay because the transaction is already
-                // aborting.
-                localContainer.DecrementOutstandingNotifications(true);
-            }
+            // Specify true.  If aborting, it is okay because the transaction is already
+            // aborting.
+            localContainer?.DecrementOutstandingNotifications(true);
         }
 
         if (etwLog.IsEnabled())

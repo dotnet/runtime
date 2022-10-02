@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection.Metadata;
 using System.Text;
 using Internal.IL;
 using Internal.TypeSystem;
@@ -82,11 +81,11 @@ namespace ILCompiler.Logging
             StringBuilder sb = new StringBuilder(FileName);
             if (SourceLine.HasValue)
             {
-                sb.Append("(").Append(SourceLine);
+                sb.Append('(').Append(SourceLine);
                 if (SourceColumn.HasValue)
-                    sb.Append(",").Append(SourceColumn);
+                    sb.Append(',').Append(SourceColumn);
 
-                sb.Append(")");
+                sb.Append(')');
             }
 
             return sb.ToString();

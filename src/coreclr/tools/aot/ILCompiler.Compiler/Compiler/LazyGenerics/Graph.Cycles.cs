@@ -14,12 +14,12 @@ namespace ILCompiler
 
         private sealed partial class Graph<P>
         {
-            class TarjanWorkerClass
+            private sealed class TarjanWorkerClass
             {
-                Stack<Vertex> _inProgress = new Stack<Vertex>();
-                int _currentComponentIndex = 0;
-                Vertex[] _vertices;
-                List<List<Vertex>> _result = new List<List<Vertex>>();
+                private Stack<Vertex> _inProgress = new Stack<Vertex>();
+                private int _currentComponentIndex;
+                private Vertex[] _vertices;
+                private List<List<Vertex>> _result = new List<List<Vertex>>();
 
                 public TarjanWorkerClass(Vertex[] vertices, bool iterative)
                 {
@@ -48,7 +48,7 @@ namespace ILCompiler
                     }
                 }
 
-                void StrongConnectRecursive(Vertex vertex)
+                private void StrongConnectRecursive(Vertex vertex)
                 {
                     vertex.Index = _currentComponentIndex;
                     vertex.LowLink = _currentComponentIndex;
@@ -89,7 +89,7 @@ namespace ILCompiler
                     }
                 }
 
-                struct StrongConnectStackElement
+                private struct StrongConnectStackElement
                 {
                     public Vertex Vertex;
                     public IEnumerator<Edge> EdgeEnumeratorPosition;
@@ -97,11 +97,13 @@ namespace ILCompiler
 
                 private Stack<StrongConnectStackElement> IterativeStrongConnectStack = new Stack<StrongConnectStackElement>();
 
-                void StrongConnectIterative(Vertex vertex)
+                private void StrongConnectIterative(Vertex vertex)
                 {
+#pragma warning disable IDE0059 // Unnecessary assignment of a value
                     IEnumerator<Edge> currentEdgeEnumerator = null;
+#pragma warning restore IDE0059 // Unnecessary assignment of a value
 
-StartOfFunctionWithLogicalRecursion:
+                StartOfFunctionWithLogicalRecursion:
                     vertex.Index = _currentComponentIndex;
                     vertex.LowLink = _currentComponentIndex;
 
@@ -130,13 +132,15 @@ ReturnFromEndOfRecursiveFunction:
                         if (edge.Destination.Index == -1)
                         {
                             // Recurse if the destination has not begun processing yet
-                            StrongConnectStackElement iterativeStackElement = new StrongConnectStackElement();
+                            StrongConnectStackElement iterativeStackElement = default(StrongConnectStackElement);
                             iterativeStackElement.Vertex = vertex;
                             iterativeStackElement.EdgeEnumeratorPosition = currentEdgeEnumerator;
 
                             IterativeStrongConnectStack.Push(iterativeStackElement);
 
+#pragma warning disable IDE0059 // Unnecessary assignment of a value
                             currentEdgeEnumerator = null;
+#pragma warning restore IDE0059 // Unnecessary assignment of a value
                             vertex = edge.Destination;
                             goto StartOfFunctionWithLogicalRecursion;
                         }
@@ -204,7 +208,7 @@ ReturnFromEndOfRecursiveFunction:
                 foreach (List<Vertex> stronglyConnectedComponent in stronglyConnectedComponents)
                 {
                     HashSet<Vertex> strongConnectedComponentVertexContainsChecker = new HashSet<Vertex>(stronglyConnectedComponent);
-                    // Detect flags between elements of cycle. 
+                    // Detect flags between elements of cycle.
                     // Walk all edges of the strongly connected component.
                     //  - If an edge is not flagged, it can't affect behavior
                     //  - If an edge is flagged, if it refers to another Vertex in the strongly connected component, then the cycle should be flagged.
@@ -335,7 +339,7 @@ ReturnFromEndOfRecursiveFunction:
 
                 // If this a vertex we've visited already on this path?
                 bool flagged = edge.Flagged || vertex.ProvedToBeInvolvedInAFlaggedCycle;
-                
+
                 int idx = alreadySeen.Count - 1;
                 while (idx != -1 && !(alreadySeen[idx].Destination == vertex))
                 {
@@ -348,10 +352,10 @@ ReturnFromEndOfRecursiveFunction:
                 {
                     Debug.Assert(alreadySeen[idx].Destination == vertex);
 
-                    // We've seen this vertex already in our path. We now know that this vertex is involved in a simple cycle. 
+                    // We've seen this vertex already in our path. We now know that this vertex is involved in a simple cycle.
                     //
-                    // At minimum, we need to mark the root vertex (alreadySeen[0].Destination) if the cycle includes the root and 
-                    // includes a flagged edge or a vertex that is itself known to be part of a flagged cycle. 
+                    // At minimum, we need to mark the root vertex (alreadySeen[0].Destination) if the cycle includes the root and
+                    // includes a flagged edge or a vertex that is itself known to be part of a flagged cycle.
                     // That's the primary answer our caller seeks.
                     //
                     // At minimum, we also need to stop recursing so that our caller gets an answer at all.
@@ -387,4 +391,3 @@ ReturnFromEndOfRecursiveFunction:
         }
     }
 }
-

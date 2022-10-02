@@ -133,9 +133,6 @@ namespace System.Net.Http
             int headerCount = request.Headers.Count + request.Content?.Headers.Count ?? 0;
             List<string> headerNames = new List<string>(headerCount);
             List<string> headerValues = new List<string>(headerCount);
-            List<string> optionNames = new List<string>();
-            List<object?> optionValues = new List<object?>();
-
             JSObject abortController = BrowserHttpInterop.CreateAbortController();
             CancellationTokenRegistration? abortRegistration = cancellationToken.Register(() =>
             {
@@ -147,12 +144,27 @@ namespace System.Net.Http
             });
             try
             {
-                optionNames.Add("method");
-                optionValues.Add(request.Method.Method);
+                if (request.RequestUri == null)
+                {
+                    throw new ArgumentNullException(nameof(request.RequestUri));
+                }
+
+                string uri = request.RequestUri.IsAbsoluteUri ? request.RequestUri.AbsoluteUri : request.RequestUri.ToString();
+
+                bool hasFetchOptions = request.Options.TryGetValue(FetchOptions, out IDictionary<string, object>? fetchOptions);
+                int optionCount = 1 + (allowAutoRedirect.HasValue ? 1 : 0) + (hasFetchOptions && fetchOptions != null ? fetchOptions.Count : 0);
+                int optionIndex = 0;
+                string[] optionNames = new string[optionCount];
+                object?[] optionValues = new object?[optionCount];
+
+                optionNames[optionIndex] = "method";
+                optionValues[optionIndex] = request.Method.Method;
+                optionIndex++;
                 if (allowAutoRedirect.HasValue)
                 {
-                    optionNames.Add("redirect");
-                    optionValues.Add(allowAutoRedirect.Value ? "follow" : "manual");
+                    optionNames[optionIndex] = "redirect";
+                    optionValues[optionIndex] = allowAutoRedirect.Value ? "follow" : "manual";
+                    optionIndex++;
                 }
 
                 foreach (KeyValuePair<string, IEnumerable<string>> header in request.Headers)
@@ -176,21 +188,16 @@ namespace System.Net.Http
                     }
                 }
 
-                if (request.Options.TryGetValue(FetchOptions, out IDictionary<string, object>? fetchOptions))
+                if (hasFetchOptions && fetchOptions != null)
                 {
                     foreach (KeyValuePair<string, object> item in fetchOptions)
                     {
-                        optionNames.Add(item.Key);
-                        optionValues.Add(item.Value);
+                        optionNames[optionIndex] = item.Key;
+                        optionValues[optionIndex] = item.Value;
+                        optionIndex++;
                     }
                 }
 
-                if (request.RequestUri == null)
-                {
-                    throw new ArgumentNullException(nameof(request.RequestUri));
-                }
-
-                string uri = request.RequestUri.IsAbsoluteUri ? request.RequestUri.AbsoluteUri : request.RequestUri.ToString();
                 Task<JSObject>? promise;
                 cancellationToken.ThrowIfCancellationRequested();
                 if (request.Content != null)
@@ -201,7 +208,7 @@ namespace System.Net.Http
                             .ConfigureAwait(true);
                         cancellationToken.ThrowIfCancellationRequested();
 
-                        promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames.ToArray(), optionValues.ToArray(), abortController, body);
+                        promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, body);
                     }
                     else
                     {
@@ -209,13 +216,14 @@ namespace System.Net.Http
                             .ConfigureAwait(true);
                         cancellationToken.ThrowIfCancellationRequested();
 
-                        promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames.ToArray(), optionValues.ToArray(), abortController, buffer);
+                        promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController, buffer);
                     }
                 }
                 else
                 {
-                    promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames.ToArray(), optionValues.ToArray(), abortController);
+                    promise = BrowserHttpInterop.Fetch(uri, headerNames.ToArray(), headerValues.ToArray(), optionNames, optionValues, abortController);
                 }
+
                 cancellationToken.ThrowIfCancellationRequested();
                 ValueTask<JSObject> wrappedTask = BrowserHttpInterop.CancelationHelper(promise, cancellationToken, abortController);
                 JSObject fetchResponse = await wrappedTask.ConfigureAwait(true);

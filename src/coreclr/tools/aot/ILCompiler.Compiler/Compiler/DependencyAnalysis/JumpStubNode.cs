@@ -14,7 +14,7 @@ namespace ILCompiler.DependencyAnalysis
                 return _target;
             }
         }
-        
+
         public JumpStubNode(ISymbolNode target)
         {
             _target = target;

@@ -5,6 +5,7 @@
     <RootNamespace>Microsoft.Interop</RootNamespace>
     <DefineConstants>$(DefineConstants);MICROSOFT_INTEROP_SOURCEGENERATION</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AnalyzerLanguage>cs</AnalyzerLanguage>
   </PropertyGroup>
 
   <!-- Code included from System.Runtime.InteropServices -->
@@ -14,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="$(MicrosoftCodeAnalysisVersion_4_X)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis" Version="$(MicrosoftCodeAnalysisVersion_4_4)" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="$(MicrosoftCodeAnalysisAnalyzersVersion)" PrivateAssets="all" />
   </ItemGroup>
 

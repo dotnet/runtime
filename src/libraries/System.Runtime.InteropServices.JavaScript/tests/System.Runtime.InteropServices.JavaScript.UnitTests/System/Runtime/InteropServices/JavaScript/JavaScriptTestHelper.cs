@@ -32,8 +32,14 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Console.WriteLine(message);
         }
 
+        [JSImport("catch1toString", "JavaScriptTestHelper")]
+        public static partial string catch1toString(string message, string functionName);
+
+        [JSImport("catch1stack", "JavaScriptTestHelper")]
+        public static partial string catch1stack(string message, string functionName);
+
         [JSExport]
-        public static void Throw(string message)
+        public static void ThrowFromJSExport(string message)
         {
             throw new ArgumentException(message);
         }
@@ -44,6 +50,48 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         {
             return DateTime.Now;
         }
+
+        // the methods in the region have signature for which we have optimized path in the call marshaler
+        // it's the combination of number of arguments and void vs result
+        // see mono_wasm_bind_js_function and mono_wasm_bind_cs_function
+        #region Optimized
+
+        public static int optimizedReached = 0;
+        [JSExport]
+        public static void Optimized0V()
+        {
+            optimizedReached++;
+        }
+        [JSImport("invoke0V", "JavaScriptTestHelper")]
+        public static partial void invoke0V();
+
+        [JSExport]
+        public static void Optimized1V(int a1)
+        {
+            optimizedReached+= a1;
+        }
+        [JSImport("invoke1V", "JavaScriptTestHelper")]
+        public static partial void invoke1V(int a1);
+
+        [JSExport]
+        public static int Optimized1R(int a1)
+        {
+            optimizedReached += a1;
+            return a1 + 1;
+        }
+        [JSImport("invoke1R", "JavaScriptTestHelper")]
+        public static partial int invoke1R(int a1);
+
+        [JSExport]
+        public static int Optimized2R(int a1, int a2)
+        {
+            optimizedReached += a1+ a2;
+            return a1 + a2 +1;
+        }
+        [JSImport("invoke2R", "JavaScriptTestHelper")]
+        public static partial int invoke2R(int a1, int a2);
+
+        #endregion
 
         [JSImport("create_function", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Function<JSType.Number, JSType.Number, JSType.Number>>]
@@ -57,7 +105,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [return: JSMarshalAs<JSType.String>]
         internal static partial string getClass1();
 
-        [JSImport("throw0", "JavaScriptTestHelper")]
+        [JSImport("throw0fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Discard>]
         internal static partial void throw0();
 
@@ -215,7 +263,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_Int32([JSMarshalAs<JSType.Number>] int value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal static partial int throw1_Int32([JSMarshalAs<JSType.Number>] int value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -241,7 +289,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_String([JSMarshalAs<JSType.String>] string value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.String>]
         internal static partial string throw1_String([JSMarshalAs<JSType.String>] string value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -250,6 +298,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("invoke2", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.String>]
         internal static partial string invoke2_String([JSMarshalAs<JSType.String>] string value, [JSMarshalAs<JSType.String>] string name);
+        [JSImport("invokeStructClassRecords", "JavaScriptTestHelper")]
+        [return: JSMarshalAs<JSType.Array<JSType.String>>]
+        internal static partial string[] invokeStructClassRecords([JSMarshalAs<JSType.String>] string value);
         [JSExport]
         [return: JSMarshalAs<JSType.String>]
         public static string EchoString([JSMarshalAs<JSType.String>] string arg1)
@@ -270,7 +321,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_Object([JSMarshalAs<JSType.Any>] object value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Any>]
         internal static partial object throw1_Object([JSMarshalAs<JSType.Any>] object value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -296,7 +347,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_Exception([JSMarshalAs<JSType.Error>] Exception value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Error>]
         internal static partial Exception throw1_Exception([JSMarshalAs<JSType.Error>] Exception value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -428,7 +479,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_Boolean([JSMarshalAs<JSType.Boolean>] bool value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool throw1_Boolean([JSMarshalAs<JSType.Boolean>] bool value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -455,7 +506,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_Char([JSMarshalAs<JSType.String>] char value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.String>]
         internal static partial char throw1_Char([JSMarshalAs<JSType.String>] char value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -481,7 +532,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_Byte([JSMarshalAs<JSType.Number>] byte value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal static partial byte throw1_Byte([JSMarshalAs<JSType.Number>] byte value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -507,7 +558,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_Int16([JSMarshalAs<JSType.Number>] short value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal static partial short throw1_Int16([JSMarshalAs<JSType.Number>] short value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -533,7 +584,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_Int52([JSMarshalAs<JSType.Number>] long value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal static partial long throw1_Int52([JSMarshalAs<JSType.Number>] long value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -559,7 +610,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_BigInt64([JSMarshalAs<JSType.BigInt>] long value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.BigInt>]
         internal static partial long throw1_BigInt64([JSMarshalAs<JSType.BigInt>] long value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -585,7 +636,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_Double([JSMarshalAs<JSType.Number>] double value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal static partial double throw1_Double([JSMarshalAs<JSType.Number>] double value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -611,7 +662,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_Single([JSMarshalAs<JSType.Number>] float value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal static partial float throw1_Single([JSMarshalAs<JSType.Number>] float value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -637,7 +688,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_IntPtr([JSMarshalAs<JSType.Number>] IntPtr value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal static partial IntPtr throw1_IntPtr([JSMarshalAs<JSType.Number>] IntPtr value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -664,7 +715,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal unsafe static partial bool identity1_VoidPtr([JSMarshalAs<JSType.Number>] void* value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal unsafe static partial void* throw1_VoidPtr([JSMarshalAs<JSType.Number>] void* value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -690,7 +741,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_DateTime([JSMarshalAs<JSType.Date>] DateTime value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Date>]
         internal static partial DateTime throw1_DateTime([JSMarshalAs<JSType.Date>] DateTime value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -716,7 +767,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_DateTimeOffset([JSMarshalAs<JSType.Date>] DateTimeOffset value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Date>]
         internal static partial DateTimeOffset throw1_DateTimeOffset([JSMarshalAs<JSType.Date>] DateTimeOffset value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -743,7 +794,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_NullableBoolean([JSMarshalAs<JSType.Boolean>] bool? value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool? throw1_NullableBoolean([JSMarshalAs<JSType.Boolean>] bool? value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -770,7 +821,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_NullableInt32([JSMarshalAs<JSType.Number>] int? value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal static partial int? throw1_NullableInt32([JSMarshalAs<JSType.Number>] int? value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -797,7 +848,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_NullableBigInt64([JSMarshalAs<JSType.BigInt>] long? value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.BigInt>]
         internal static partial long? throw1_NullableBigInt64([JSMarshalAs<JSType.BigInt>] long? value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -824,7 +875,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_NullableIntPtr([JSMarshalAs<JSType.Number>] IntPtr? value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal static partial IntPtr? throw1_NullableIntPtr([JSMarshalAs<JSType.Number>] IntPtr? value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -851,7 +902,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_NullableDouble([JSMarshalAs<JSType.Number>] double? value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Number>]
         internal static partial double? throw1_NullableDouble([JSMarshalAs<JSType.Number>] double? value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -878,7 +929,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_NullableDateTime([JSMarshalAs<JSType.Date>] DateTime? value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Date>]
         internal static partial DateTime? throw1_NullableDateTime([JSMarshalAs<JSType.Date>] DateTime? value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -904,7 +955,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("identity1", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Boolean>]
         internal static partial bool identity1_JSObject([JSMarshalAs<JSType.Object>] JSObject value);
-        [JSImport("throw1", "JavaScriptTestHelper")]
+        [JSImport("throw1fn", "JavaScriptTestHelper")]
         [return: JSMarshalAs<JSType.Object>]
         internal static partial JSObject throw1_JSObject([JSMarshalAs<JSType.Object>] JSObject value);
         [JSImport("invoke1", "JavaScriptTestHelper")]
@@ -935,11 +986,302 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     }
 }
 
+namespace JavaScriptTestHelperNamespace
+{
+    public partial class JavaScriptTestHelper
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message) 
+        {
+            return message + "11";
+        }
+
+        public partial class NestedClass
+        {
+            [System.Runtime.InteropServices.JavaScript.JSExport]
+            public static string EchoString(string message) => message + "12";
+        
+            public partial class DoubleNestedClass
+            {
+                [System.Runtime.InteropServices.JavaScript.JSExport]
+                public static string EchoString(string message) => message + "13";
+            }
+        }
+
+        public partial record class NestedRecordClass
+        {
+            [System.Runtime.InteropServices.JavaScript.JSExport]
+            public static string EchoString(string message) => message + "14";
+
+            public partial record class DoubleNestedRecordClass
+            {
+                [System.Runtime.InteropServices.JavaScript.JSExport]
+                public static string EchoString(string message) => message + "15";
+            }
+        }
+
+        public partial struct NestedStruct
+        {
+            [System.Runtime.InteropServices.JavaScript.JSExport]
+            public static string EchoString(string message) => message + "16";
+
+            public partial struct DoubleNestedStruct
+            {
+                [System.Runtime.InteropServices.JavaScript.JSExport]
+                public static string EchoString(string message) => message + "17";
+            }
+        }
+
+        public partial record struct NestedRecordStruct
+        {
+            [System.Runtime.InteropServices.JavaScript.JSExport]
+            public static string EchoString(string message) => message + "18";
+
+            public partial record struct DoubleNestedRecordStruct
+            {
+                [System.Runtime.InteropServices.JavaScript.JSExport]
+                public static string EchoString(string message) => message + "19";
+            }
+        }
+    }
+
+    public partial class JavaScriptTestHelperStruct
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message) => message + "21";
+
+        public partial class NestedClass
+        {
+            [System.Runtime.InteropServices.JavaScript.JSExport]
+            public static string EchoString(string message) => message + "22";
+        }
+
+        public partial record class NestedRecordClass
+        {
+            [System.Runtime.InteropServices.JavaScript.JSExport]
+            public static string EchoString(string message) => message + "23";
+        }
+
+        public partial struct NestedStruct
+        {
+            [System.Runtime.InteropServices.JavaScript.JSExport]
+            public static string EchoString(string message)
+            {
+                return message + "24";
+            }
+        }
+
+        public partial record struct NestedRecordStruct
+        {
+            [System.Runtime.InteropServices.JavaScript.JSExport]
+            public static string EchoString(string message) => message + "25";
+        }
+    }
+
+    public partial record class JavaScriptTestHelperRecordClass
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message) => message + "31";
+
+        public partial class NestedClass
+        {
+            [System.Runtime.InteropServices.JavaScript.JSExport]
+            public static string EchoString(string message) => message + "32";
+        }
+
+        public partial record class NestedRecordClass
+        {
+            [System.Runtime.InteropServices.JavaScript.JSExport]
+            public static string EchoString(string message) => message + "33";
+        }
+
+        public partial struct NestedStruct
+        {
+            [System.Runtime.InteropServices.JavaScript.JSExport]
+            public static string EchoString(string message) => message + "34";
+        }
+
+        public partial record struct NestedRecordStruct
+        {
+            [System.Runtime.InteropServices.JavaScript.JSExport]
+            public static string EchoString(string message) => message + "35";
+        }
+    }
+
+    public partial record struct JavaScriptTestHelperRecordStruct
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message) => message + "41";
+
+        public partial class NestedClass
+        {
+            [System.Runtime.InteropServices.JavaScript.JSExport]
+            public static string EchoString(string message) => message + "42";
+        }
+
+        public partial record class NestedRecordClass
+        {
+            [System.Runtime.InteropServices.JavaScript.JSExport]
+            public static string EchoString(string message) => message + "43";
+        }
+
+        public partial struct NestedStruct
+        {
+            [System.Runtime.InteropServices.JavaScript.JSExport]
+            public static string EchoString(string message) => message + "44";
+        }
+
+        public partial record struct NestedRecordStruct
+        {
+            [System.Runtime.InteropServices.JavaScript.JSExport]
+            public static string EchoString(string message)
+            {
+                return message + "45";
+            }
+        }
+    }
+}
+
 public partial class JavaScriptTestHelperNoNamespace
 {
     [System.Runtime.InteropServices.JavaScript.JSExport]
-    public static string EchoString(string message)
+    public static string EchoString(string message) => message + "51";
+
+    public partial class NestedClass
     {
-        return message + "!";
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message) => message + "52";
+
+        public partial class DoubleNestedClass
+        {
+            [System.Runtime.InteropServices.JavaScript.JSExport]
+            public static string EchoString(string message) => message + "53";
+        }
+    }
+
+    public partial record class NestedRecordClass
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message) => message + "54";
+
+        public partial record class DoubleNestedRecordClass
+        {
+            [System.Runtime.InteropServices.JavaScript.JSExport]
+            public static string EchoString(string message) => message + "55";
+        }
+    }
+
+    public partial struct NestedStruct
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message) => message + "56";
+
+        public partial struct DoubleNestedStruct
+        {
+            [System.Runtime.InteropServices.JavaScript.JSExport]
+            public static string EchoString(string message) => message + "57";
+        }
+    }
+
+    public partial record struct NestedRecordStruct
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message) => message + "58";
+
+        public partial record struct DoubleNestedRecordStruct
+        {
+            [System.Runtime.InteropServices.JavaScript.JSExport]
+            public static string EchoString(string message) => message + "59";
+        }
+    }
+}
+
+public partial class JavaScriptTestHelperStructNoNamespace
+{
+    [System.Runtime.InteropServices.JavaScript.JSExport]
+    public static string EchoString(string message) => message + "61";
+
+    public partial class NestedClass
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message) => message + "62";
+    }
+
+    public partial record class NestedRecordClass
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message) => message + "63";
+    }
+
+    public partial struct NestedStruct
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message) => message + "64";
+    }
+
+    public partial record struct NestedRecordStruct
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message) => message + "65";
+    }
+}
+
+public partial record class JavaScriptTestHelperRecordClassNoNamespace
+{
+    [System.Runtime.InteropServices.JavaScript.JSExport]
+    public static string EchoString(string message) => message + "71";
+
+    public partial class NestedClass
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message) => message + "72";
+    }
+
+    public partial record class NestedRecordClass
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message) => message + "73";
+    }
+
+    public partial struct NestedStruct
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message) => message + "74";
+    }
+
+    public partial record struct NestedRecordStruct
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message) => message + "75";
+    }
+}
+
+public partial record struct JavaScriptTestHelperRecordStructNoNamespace
+{
+    [System.Runtime.InteropServices.JavaScript.JSExport]
+    public static string EchoString(string message) => message + "81";
+
+    public partial class NestedClass
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message) => message + "82";
+    }
+
+    public partial record class NestedRecordClass
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message) => message + "83";
+    }
+
+    public partial struct NestedStruct
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message) => message + "84";
+    }
+
+    public partial record struct NestedRecordStruct
+    {
+        [System.Runtime.InteropServices.JavaScript.JSExport]
+        public static string EchoString(string message) => message + "85";
     }
 }

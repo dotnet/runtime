@@ -160,6 +160,9 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
+        [ThreadStatic]
+        private static Stack<MetadataType> s_typesBeingLookedAt;
+
         public NativeStructType(ModuleDesc owningModule, MetadataType managedStructType, InteropStateManager interopStateManager)
         {
             Debug.Assert(!managedStructType.IsGenericDefinition);
@@ -168,12 +171,25 @@ namespace Internal.TypeSystem.Interop
             ManagedStructType = managedStructType;
             _interopStateManager = interopStateManager;
             _hasInvalidLayout = false;
-            CalculateFields();
+
+            Stack<MetadataType> typesBeingLookedAt = (s_typesBeingLookedAt ??= new Stack<MetadataType>());
+            if (typesBeingLookedAt.Contains(managedStructType))
+                ThrowHelper.ThrowTypeLoadException(managedStructType);
+
+            typesBeingLookedAt.Push(managedStructType);
+            try
+            {
+                CalculateFields();
+            }
+            finally
+            {
+                MetadataType popped = typesBeingLookedAt.Pop();
+                Debug.Assert(popped == managedStructType);
+            }
         }
 
         private void CalculateFields()
         {
-            bool isSequential = ManagedStructType.IsSequentialLayout;
             bool isAnsi = ManagedStructType.PInvokeStringFormat == PInvokeStringFormat.AnsiClass;
 
             int numFields = 0;

@@ -42,6 +42,7 @@ extern bool g_debugRep;
 const char* toString(CorInfoType cit);
 
 #define METHOD_IDENTITY_INFO_SIZE 0x10000 // We assume that the METHOD_IDENTITY_INFO_SIZE will not exceed 64KB
+#define METHOD_IDENTITY_INFO_NON_NAME_RESERVE 0x400 // Reserve 1KB of METHOD_IDENTITY_INFO_SIZE for everything except for the method name.
 
 // Special "jit flags" for noting some method context features
 
@@ -76,9 +77,6 @@ public:
     MethodContext();
 
 private:
-    MethodContext(HANDLE hFile);
-    MethodContext(unsigned char* buff, unsigned int totalLen);
-
     void MethodInitHelper(unsigned char* buff, unsigned int totalLen);
     void MethodInitHelperFile(HANDLE hFile);
 
@@ -92,6 +90,11 @@ public:
     static bool Initialize(int mcIndex, HANDLE hFile, /* OUT */ MethodContext** ppmc);
     ~MethodContext();
     void Destroy();
+
+    void setIgnoreStoredConfig()
+    {
+        ignoreStoredConfig = true;
+    }
 
     bool Equal(MethodContext* other);
     unsigned int saveToFile(HANDLE hFile);
@@ -112,8 +115,6 @@ public:
     bool hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasMethodProfile, bool& hasLikelyClass, bool& hasLikelyMethod, ICorJitInfo::PgoSource& pgoSource);
 
     void recGlobalContext(const MethodContext& other);
-
-    void dmpEnvironment(DWORD key, const Agnostic_Environment& value);
 
     void recCompileMethod(CORINFO_METHOD_INFO* info, unsigned flags, CORINFO_OS os);
     void dmpCompileMethod(DWORD key, const Agnostic_CompileMethod& value);
@@ -796,8 +797,8 @@ public:
     void dmpGetClassNameFromMetadata(DLD key, DD value);
     const char* repGetClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char** namespaceName);
 
-    void recGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, CORINFO_CLASS_HANDLE result, unsigned index);
-    void dmpGetTypeInstantiationArgument(DWORDLONG key, DWORDLONG value);
+    void recGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index, CORINFO_CLASS_HANDLE result);
+    void dmpGetTypeInstantiationArgument(DLD key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index);
 
     void recAppendClassName(int                  nBufLenIn,
@@ -878,6 +879,7 @@ public:
     CompileResult* cr;
     CompileResult* originalCR;
     int            index;
+    bool           ignoreStoredConfig;
 
 private:
     bool IsEnvironmentHeaderEqual(const Environment& prevEnv);
