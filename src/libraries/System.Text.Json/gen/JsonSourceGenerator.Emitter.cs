@@ -1169,11 +1169,11 @@ public {contextTypeName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableNam
 
                 string? namingPolicyName = options.PropertyNamingPolicy switch
                 {
-                    JsonKnownNamingPolicy.CamelCase => "CamelCase",
-                    JsonKnownNamingPolicy.SnakeLowerCase => "SnakeLowerCase",
-                    JsonKnownNamingPolicy.SnakeUpperCase => "SnakeUpperCase",
-                    JsonKnownNamingPolicy.KebabLowerCase => "KebabLowerCase",
-                    JsonKnownNamingPolicy.KebabUpperCase => "KebabUpperCase",
+                    JsonKnownNamingPolicy.CamelCase => nameof(JsonNamingPolicy.CamelCase),
+                    JsonKnownNamingPolicy.SnakeLowerCase => nameof(JsonNamingPolicy.SnakeLowerCase),
+                    JsonKnownNamingPolicy.SnakeUpperCase => nameof(JsonNamingPolicy.SnakeUpperCase),
+                    JsonKnownNamingPolicy.KebabLowerCase => nameof(JsonNamingPolicy.KebabLowerCase),
+                    JsonKnownNamingPolicy.KebabUpperCase => nameof(JsonNamingPolicy.KebabUpperCase),
                     _ => null,
                 };
 
