@@ -389,7 +389,7 @@ namespace System.Reflection.Metadata.Ecma335
             return GetBranchBuilder().AddLabel();
         }
 
-        private void LabelOperand(ILOpCode code, LabelHandle label, int instructionEndDisplacement, int ilOffset)
+        internal void LabelOperand(ILOpCode code, LabelHandle label, int instructionEndDisplacement, int ilOffset)
         {
             GetBranchBuilder().AddBranch(Offset, label, instructionEndDisplacement, ilOffset, code);
 
@@ -424,6 +424,41 @@ namespace System.Reflection.Metadata.Ecma335
 
             OpCode(code);
             LabelOperand(code, label, operandSize, ilOffset);
+        }
+
+        /// <summary>
+        /// Starts encoding a switch instruction.
+        /// </summary>
+        /// <param name="branchCount">The number of branches the instruction will have.</param>
+        /// <returns>A <see cref="SwitchInstructionEncoder"/> that will
+        /// be used to emit the labels for the branches.</returns>
+        /// <remarks>
+        /// Before using this <see cref="InstructionEncoder"/> in any other way,
+        /// the method <see cref="SwitchInstructionEncoder.Branch(LabelHandle)"/>
+        /// must be called on the returned value exactly <paramref name="branchCount"/>
+        /// times. Failure to do so will result in silent bad IL code generation.
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="branchCount"/>
+        /// less than or equal to zero.</exception>
+        public SwitchInstructionEncoder Switch(int branchCount)
+        {
+            if (branchCount <= 0)
+            {
+                Throw.ArgumentOutOfRange(nameof(branchCount));
+            }
+
+            // We want the offset before we add the opcode.
+            int ilOffset = Offset;
+
+            OpCode(ILOpCode.Switch);
+            CodeBuilder.WriteUInt32((uint)branchCount);
+
+            // We calculate the offset where the instruction will end.
+            // The Offset property now accounts for the opcode byte and
+            // the four bits of the count, and we also add four bytes for
+            // each branch we are expecting from the user to emit.
+            int instructionEnd = Offset + 4 * branchCount;
+            return new SwitchInstructionEncoder(this, ilOffset, instructionEnd);
         }
 
         /// <summary>

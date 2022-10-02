@@ -2689,6 +2689,7 @@ namespace System.Reflection.Metadata.Ecma335
         public void OpCode(System.Reflection.Metadata.ILOpCode code) { }
         public void StoreArgument(int argumentIndex) { }
         public void StoreLocal(int slotIndex) { }
+        public System.Reflection.Metadata.Ecma335.SwitchInstructionEncoder Switch(int branchCount) { throw null; }
         public void Token(int token) { }
         public void Token(System.Reflection.Metadata.EntityHandle handle) { }
     }
@@ -3068,6 +3069,10 @@ namespace System.Reflection.Metadata.Ecma335
         public void UInt64() { }
         public void UIntPtr() { }
         public void VoidPointer() { }
+    }
+    public readonly struct SwitchInstructionEncoder
+    {
+        public void Branch(System.Reflection.Metadata.Ecma335.LabelHandle label) { }
     }
     public enum TableIndex : byte
     {

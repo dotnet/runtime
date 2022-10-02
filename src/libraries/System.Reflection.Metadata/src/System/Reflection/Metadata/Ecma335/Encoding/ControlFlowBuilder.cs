@@ -124,10 +124,10 @@ namespace System.Reflection.Metadata.Ecma335
                     Debug.Assert(opCode.GetBranchOperandSize() == 1);
                     break;
                 case 4:
-                    Debug.Assert(opCode.GetBranchOperandSize() == 4);
+                    Debug.Assert(opCode == ILOpCode.Switch || opCode.GetBranchOperandSize() == 4);
                     break;
                 default:
-                    Debug.Assert(instructionEndDisplacement > 4 && opCode == ILOpCode.Switch);
+                    Debug.Assert(instructionEndDisplacement > 4 && instructionEndDisplacement % 4 == 0 && opCode == ILOpCode.Switch);
                     break;
             }
 #endif
