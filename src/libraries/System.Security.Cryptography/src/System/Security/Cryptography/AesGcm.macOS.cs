@@ -17,7 +17,7 @@ namespace System.Security.Cryptography
 
         private byte[]? _key;
 
-        // CryptoKit added ChaCha20Poly1305 in macOS 10.15, which is our minimum target for macOS. We still may end
+        // CryptoKit added AES.GCM in macOS 10.15, which is our minimum target for macOS. We still may end
         // up throwing a platform not supported if a caller uses a short authentication tag and OpenSSL is not
         // available. But recommended use of AES-GCM with a 16-byte tag is supported.
         public static bool IsSupported => true;
