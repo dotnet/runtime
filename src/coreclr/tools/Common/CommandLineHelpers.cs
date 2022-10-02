@@ -36,6 +36,22 @@ namespace System.CommandLine
             return dictionary;
         }
 
+        public static List<string> BuildPathList(IReadOnlyList<Token> tokens)
+        {
+            List<string> paths = new();
+            foreach (Token token in tokens)
+            {
+                Dictionary<string, string> dictionary = new(StringComparer.OrdinalIgnoreCase);
+                AppendExpandedPaths(dictionary, token.Value, false);
+                foreach (string file in dictionary.Values)
+                {
+                    paths.Add(file);
+                }
+            }
+
+            return paths;
+        }
+
         public static TargetOS GetTargetOS(string token)
         {
             if(string.IsNullOrEmpty(token))

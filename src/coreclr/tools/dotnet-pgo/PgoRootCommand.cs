@@ -15,8 +15,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 {
     internal sealed class PgoRootCommand : RootCommand
     {
-        public Option<Dictionary<string, string>> InputFilesToMerge { get; } =
-            new(new[] { "--input", "-i" }, result => Helpers.BuildPathDictionary(result.Tokens, false), false, "Input .mibc files to be merged. Multiple input arguments are specified as --input file1.mibc --input file2.mibc") { IsRequired = true, Arity = ArgumentArity.OneOrMore };
+        public Option<List<string>> InputFilesToMerge { get; } =
+            new(new[] { "--input", "-i" }, result => Helpers.BuildPathList(result.Tokens), false, "Input .mibc files to be merged. Multiple input arguments are specified as --input file1.mibc --input file2.mibc") { IsRequired = true, Arity = ArgumentArity.OneOrMore };
         public Option<string[]> InputFilesToCompare { get; } =
             new(new[] { "--input", "-i" }, "The input .mibc files to be compared. Specify as --input file1.mibc --input file2.mibc") { IsRequired = true, Arity = new ArgumentArity(2, 2) /* exactly two */ };
         public Option<string> InputFileToDump { get; } =
@@ -31,8 +31,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             new(new[] { "--pid" }, "The pid within the trace of the process to examine. If this is a multi-process trace, at least one of --pid or --process-name must be specified");
         public Option<string> ProcessName { get; } =
             new(new[] { "--process-name" }, "The process name within the trace of the process to examine. If this is a multi-process trace, at least one of --pid or --process-name must be specified");
-        public Option<Dictionary<string, string>> Reference =
-            new(new[] { "--reference", "-r" }, result => Helpers.BuildPathDictionary(result.Tokens, false), true, "If a reference is not located on disk at the same location as used in the process, it may be specified with a --reference parameter. Multiple --reference parameters may be specified. The wild cards * and ? are supported by this option");
+        public Option<List<string>> Reference =
+            new(new[] { "--reference", "-r" }, result => Helpers.BuildPathList(result.Tokens), true, "If a reference is not located on disk at the same location as used in the process, it may be specified with a --reference parameter. Multiple --reference parameters may be specified. The wild cards * and ? are supported by this option");
         public Option<int> ClrInstanceId { get; } =
             new("--clr-instance-id", "If the process contains multiple .NET runtimes, the instance ID must be specified");
         public Option<bool> Spgo { get; } =

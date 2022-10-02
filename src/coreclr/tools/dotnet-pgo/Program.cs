@@ -139,15 +139,20 @@ namespace Microsoft.Diagnostics.Tools.Pgo
         }
     }
 
-    class Program
+    internal sealed class Program
     {
         private static Logger s_logger = new Logger();
 
         private readonly PgoRootCommand _command;
+        private List<string> _inputFilesToMerge;
+        private string[] _inputFilesToCompare;
 
         public Program(PgoRootCommand command)
         {
             _command = command;
+
+            _inputFilesToMerge = Get(command.InputFilesToMerge);
+            _inputFilesToCompare = Get(command.InputFilesToCompare);
         }
 
         private T Get<T>(Option<T> option) => _command.Result.GetValueForOption(option);
@@ -251,11 +256,11 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             {
                 return InnerDumpMain();
             }
-            if (Get(_command.InputFilesToMerge) != null)
+            if (_inputFilesToMerge != null)
             {
                 return InnerMergeMain();
             }
-            if (Get(_command.InputFilesToCompare) != null)
+            if (_inputFilesToCompare != null)
             {
                 return InnerCompareMibcMain();
             }
@@ -400,13 +405,12 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 return -8;
             }
 
-            var paths = Get(_command.InputFilesToMerge);
+            var paths = _inputFilesToMerge;
             PEReader[] mibcReaders = new PEReader[paths.Count];
             for (int i = 0; i < mibcReaders.Length; i++)
             {
-                string path = paths.ElementAt(i).Value;
-                PrintMessage($"Opening {path}");
-                mibcReaders[i] = MIbcProfileParser.OpenMibcAsPEReader(path);
+                PrintMessage($"Opening {paths[i]}");
+                mibcReaders[i] = MIbcProfileParser.OpenMibcAsPEReader(paths[i]);
             }
 
             HashSet<string> assemblyNamesInBubble = null;
@@ -429,7 +433,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 for (int i = 0; i < mibcReaders.Length; i++)
                 {
                     var peReader = mibcReaders[i];
-                    PrintDetailedMessage($"Merging {paths.ElementAt(i).Value}");
+                    PrintDetailedMessage($"Merging {paths[i]}");
                     ProfileData.MergeProfileData(ref partialNgen, mergedProfileData, MIbcProfileParser.ParseMIbcFile(tsc, peReader, assemblyNamesInBubble, onlyDefinedInAssembly: null));
                 }
 
@@ -438,8 +442,8 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                 int result = MibcEmitter.GenerateMibcFile(mergedConfig, tsc, outputFileInfo, mergedProfileData.Values, _command.ValidateOutputFile, !Get(_command.Compressed));
                 if (result == 0 && Get(_command.InheritTimestamp))
                 {
-                    outputFileInfo.CreationTimeUtc = paths.Values.Max(f => new FileInfo(f).CreationTimeUtc);
-                    outputFileInfo.LastWriteTimeUtc = paths.Values.Max(f => new FileInfo(f).LastWriteTimeUtc);
+                    outputFileInfo.CreationTimeUtc = paths.Max(f => new FileInfo(f).CreationTimeUtc);
+                    outputFileInfo.LastWriteTimeUtc = paths.Max(f => new FileInfo(f).LastWriteTimeUtc);
                 }
 
                 return result;
@@ -455,12 +459,10 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
         private int InnerCompareMibcMain()
         {
-            var paths = Get(_command.InputFilesToCompare);
-
             // Command line parser should require exactly 2 files
-            Trace.Assert(paths.Length == 2);
-            string file1 = paths[0];
-            string file2 = paths[1];
+            Trace.Assert(_inputFilesToCompare.Length == 2);
+            string file1 = _inputFilesToCompare[0];
+            string file2 = _inputFilesToCompare[1];
 
             // Look for the shortest unique names for the input files.
             string name1 = Path.GetFileName(file1);
@@ -1183,7 +1185,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                 bool filePathError = false;
                 HashSet<ModuleDesc> modulesLoadedViaReference = new HashSet<ModuleDesc>();
-                foreach (string file in Get(_command.Reference).Values)
+                foreach (string file in Get(_command.Reference))
                 {
                     try
                     {
