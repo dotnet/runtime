@@ -4050,7 +4050,7 @@ mono_cfg_set_exception_invalid_program (MonoCompile *cfg, const char *msg)
 
 #endif /* DISABLE_JIT */
 
-gint64 mono_time_track_start ()
+gint64 mono_time_track_start (void)
 {
 	return mono_100ns_ticks ();
 }

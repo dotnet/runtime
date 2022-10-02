@@ -660,7 +660,7 @@ PALEXPORT int32_t AppleCryptoNative_SslSetCertificateAuthorities(SSLContextRef s
 #pragma clang diagnostic pop
 }
 
-__attribute__((constructor)) static void InitializeAppleCryptoSslShim()
+__attribute__((constructor)) static void InitializeAppleCryptoSslShim(void)
 {
     SSLSetCertificateAuthoritiesPtr = (OSStatus(*)(SSLContextRef, CFArrayRef, int32_t))dlsym(RTLD_DEFAULT, "SSLSetCertificateAuthorities");
     SSLSetALPNProtocolsPtr = (OSStatus(*)(SSLContextRef, CFArrayRef))dlsym(RTLD_DEFAULT, "SSLSetALPNProtocols");
