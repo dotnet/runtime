@@ -65,11 +65,17 @@ void DumpPrimToConsoleBare(MethodContext* mc, CorInfoType prim, DWORDLONG classH
             printf("byref");
             return;
         case CORINFO_TYPE_VALUECLASS:
-            printf("valueclass %s", mc->repGetClassName((CORINFO_CLASS_HANDLE)classHandle));
-            return;
         case CORINFO_TYPE_CLASS:
-            printf("class %s", mc->repGetClassName((CORINFO_CLASS_HANDLE)classHandle));
+        {
+            char className[256];
+            PrintClassName(mc, className, (CORINFO_CLASS_HANDLE)classHandle);
+
+            printf(
+                "%s %s",
+                prim == CORINFO_TYPE_VALUECLASS ? "valueclass" : "class",
+                className);
             return;
+        }
         case CORINFO_TYPE_REFANY:
             printf("refany");
             return;
@@ -933,7 +939,9 @@ void DumpIL(MethodContext* mc)
 
     const char* moduleName = nullptr;
     const char* methodName = mc->repGetMethodName(cmi.ftn, &moduleName);
-    const char* className  = mc->repGetClassName(mc->repGetMethodClass(cmi.ftn));
+
+    char className[256];
+    PrintClassName(mc, className, mc->repGetMethodClass(cmi.ftn));
 
     printf("// ProcessName - '%s'\n", mc->cr->repProcessName());
     printf(".assembly extern mscorlib{}\n");

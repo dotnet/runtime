@@ -6358,41 +6358,6 @@ bool MethodContext::repIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaT
     return value != 0;
 }
 
-void MethodContext::recGetClassName(CORINFO_CLASS_HANDLE cls, const char* result)
-{
-    if (GetClassName == nullptr)
-        GetClassName = new LightWeightMap<DWORDLONG, DWORD>();
-
-    DWORD value = (DWORD)-1;
-    if (result != nullptr)
-        value = (DWORD)GetClassName->AddBuffer((unsigned char*)result, (unsigned int)strlen(result) + 1);
-
-    DWORDLONG key = CastHandle(cls);
-    GetClassName->Add(key, value);
-    DEBUG_REC(dmpGetClassName(key, value));
-}
-void MethodContext::dmpGetClassName(DWORDLONG key, DWORD value)
-{
-    printf("GetClassName key %016llX, value %s", key, GetClassName->GetBuffer(value));
-    GetClassName->Unlock();
-}
-const char* MethodContext::repGetClassName(CORINFO_CLASS_HANDLE cls)
-{
-    DWORDLONG key = CastHandle(cls);
-
-    if (GetClassName == nullptr)
-        return "hackishClassName";
-    int index = GetClassName->GetIndex(key);
-    if (index == -1)
-        return "hackishClassName";
-
-    int offset = GetClassName->Get(key);
-    DEBUG_REP(dmpGetClassName(key, (DWORD)offset));
-
-    const char* name = (const char*)GetClassName->GetBuffer(offset);
-    return name;
-}
-
 void MethodContext::recGetClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, char* className, const char** namespaceName)
 {
     if (GetClassNameFromMetadata == nullptr)

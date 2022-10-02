@@ -72,7 +72,6 @@ CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,  
     // to build up a fat mc
     CORINFO_CLASS_HANDLE ourClass = our_ICorJitInfo.getMethodClass(info->ftn);
     our_ICorJitInfo.getClassAttribs(ourClass);
-    our_ICorJitInfo.getClassName(ourClass);
     our_ICorJitInfo.isValueClass(ourClass);
     our_ICorJitInfo.asCorInfoType(ourClass);
 

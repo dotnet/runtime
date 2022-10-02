@@ -194,7 +194,6 @@ FUNCTIONS
     bool isValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK)
     int getStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize)
     CorInfoType asCorInfoType(CORINFO_CLASS_HANDLE cls)
-    const char* getClassName(CORINFO_CLASS_HANDLE cls)
     const char* getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char **namespaceName)
     CORINFO_CLASS_HANDLE getTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index)
     int appendClassName(char** ppBuf, int* pnBufLen, CORINFO_CLASS_HANDLE cls)

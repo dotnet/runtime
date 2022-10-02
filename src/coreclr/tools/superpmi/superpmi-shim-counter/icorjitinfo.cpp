@@ -321,13 +321,6 @@ CorInfoType interceptor_ICJI::asCorInfoType(
     return original_ICorJitInfo->asCorInfoType(cls);
 }
 
-const char* interceptor_ICJI::getClassName(
-          CORINFO_CLASS_HANDLE cls)
-{
-    mcs->AddCall("getClassName");
-    return original_ICorJitInfo->getClassName(cls);
-}
-
 const char* interceptor_ICJI::getClassNameFromMetadata(
           CORINFO_CLASS_HANDLE cls,
           const char** namespaceName)

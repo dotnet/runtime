@@ -469,15 +469,6 @@ CorInfoType interceptor_ICJI::asCorInfoType(CORINFO_CLASS_HANDLE cls)
     return temp;
 }
 
-// for completeness
-const char* interceptor_ICJI::getClassName(CORINFO_CLASS_HANDLE cls)
-{
-    mc->cr->AddCall("getClassName");
-    const char* result = original_ICorJitInfo->getClassName(cls);
-    mc->recGetClassName(cls, result);
-    return result;
-}
-
 const char* interceptor_ICJI::getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char** namespaceName)
 {
     mc->cr->AddCall("getClassNameFromMetadata");
@@ -1268,9 +1259,6 @@ CORINFO_CLASS_HANDLE interceptor_ICJI::getArgClass(CORINFO_SIG_INFO*       sig, 
     [&](DWORD exceptionCode)
     {
         this->mc->recGetArgClass(sig, args, temp, exceptionCode);
-
-        // to build up a fat mc
-        getClassName(temp);
     });
 
     return temp;

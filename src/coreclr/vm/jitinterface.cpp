@@ -3275,45 +3275,6 @@ NoSpecialCase:
     }
 }
 
-
-
-/*********************************************************************/
-const char* CEEInfo::getClassName (CORINFO_CLASS_HANDLE clsHnd)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    const char* result = NULL;
-
-    JIT_TO_EE_TRANSITION();
-
-    TypeHandle VMClsHnd(clsHnd);
-    MethodTable* pMT = VMClsHnd.GetMethodTable();
-    if (pMT == NULL)
-    {
-        result = "";
-    }
-    else
-    {
-#ifdef _DEBUG
-        result = pMT->GetDebugClassName();
-#else // !_DEBUG
-        // since this is for diagnostic purposes only,
-        // give up on the namespace, as we don't have a buffer to concat it
-        // also note this won't show array class names.
-        LPCUTF8 nameSpace;
-        result = pMT->GetFullyQualifiedNameInfo(&nameSpace);
-#endif
-    }
-
-    EE_TO_JIT_TRANSITION();
-
-    return result;
-}
-
 /***********************************************************************/
 const char* CEEInfo::getHelperName (CorInfoHelpFunc ftnNum)
 {

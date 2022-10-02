@@ -789,10 +789,6 @@ public:
     void dmpIsValidToken(DLD key, DWORD value);
     bool repIsValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK);
 
-    void recGetClassName(CORINFO_CLASS_HANDLE cls, const char* result);
-    void dmpGetClassName(DWORDLONG key, DWORD value);
-    const char* repGetClassName(CORINFO_CLASS_HANDLE cls);
-
     void recGetClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, char* className, const char** namespaceName);
     void dmpGetClassNameFromMetadata(DLD key, DD value);
     const char* repGetClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char** namespaceName);

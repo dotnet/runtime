@@ -31,7 +31,8 @@ void DumpMap(int index, MethodContext* mc)
 
     const char* moduleName = nullptr;
     const char* methodName = mc->repGetMethodName(cmi.ftn, &moduleName);
-    const char* className  = mc->repGetClassName(mc->repGetMethodClass(cmi.ftn));
+    char className[256];
+    PrintClassName(mc, className, mc->repGetMethodClass(cmi.ftn));
 
     printf("%d,", index);
     // printf("\"%s\",", mc->cr->repProcessName());
@@ -53,7 +54,7 @@ void DumpMap(int index, MethodContext* mc)
         for (unsigned i = 0; i < classInst; i++)
         {
             CORINFO_CLASS_HANDLE ci = sig.sigInst.classInst[i];
-            className = mc->repGetClassName(ci);
+            PrintClassName(mc, className, ci);
 
             printf("%s%s%s%s",
                 i == 0 ? "[" : "",
@@ -69,7 +70,7 @@ void DumpMap(int index, MethodContext* mc)
         for (unsigned i = 0; i < methodInst; i++)
         {
             CORINFO_CLASS_HANDLE ci = sig.sigInst.methInst[i];
-            className = mc->repGetClassName(ci);
+            PrintClassName(mc, className, ci);
 
             printf("%s%s%s%s",
                 i == 0 ? "[" : "",

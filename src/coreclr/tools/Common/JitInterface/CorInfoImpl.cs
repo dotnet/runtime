@@ -1836,14 +1836,6 @@ namespace Internal.JitInterface
             return asCorInfoType(type);
         }
 
-        private byte* getClassName(CORINFO_CLASS_STRUCT_* cls)
-        {
-            var type = HandleToObject(cls);
-            StringBuilder nameBuilder = new StringBuilder();
-            TypeString.Instance.AppendName(nameBuilder, type);
-            return (byte*)GetPin(StringToUTF8(nameBuilder.ToString()));
-        }
-
         private byte* getClassNameFromMetadata(CORINFO_CLASS_STRUCT_* cls, byte** namespaceName)
         {
             var type = HandleToObject(cls) as MetadataType;
@@ -1871,13 +1863,13 @@ namespace Internal.JitInterface
         private int appendClassName(byte** ppBuf, ref int pnBufLen, CORINFO_CLASS_STRUCT_* cls)
         {
             var type = HandleToObject(cls);
-            string name = TypeString.Instance.FormatName(type);
+            string name = JitTypeNameFormatter.Instance.FormatName(type);
 
-            int length = name.Length;
+            byte[] utf8 = Encoding.UTF8.GetBytes(name);
+            int length = utf8.Length;
             if (pnBufLen > 0)
             {
                 byte* buffer = *ppBuf;
-                byte[] utf8 = Encoding.UTF8.GetBytes(name);
                 int lengthToCopy = Math.Min(utf8.Length, pnBufLen);
                 for (int i = 0; i < lengthToCopy; i++)
                     buffer[i] = utf8[i];

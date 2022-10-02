@@ -49,7 +49,6 @@ struct JitInterfaceCallbacks
     bool (* isValidStringRef)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK);
     int (* getStringLiteral)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize);
     CorInfoType (* asCorInfoType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
-    const char* (* getClassName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls);
     const char* (* getClassNameFromMetadata)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, const char** namespaceName);
     CORINFO_CLASS_HANDLE (* getTypeInstantiationArgument)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, unsigned index);
     int (* appendClassName)(void * thisHandle, CorInfoExceptionClass** ppException, char** ppBuf, int* pnBufLen, CORINFO_CLASS_HANDLE cls);
@@ -568,15 +567,6 @@ public:
 {
     CorInfoExceptionClass* pException = nullptr;
     CorInfoType temp = _callbacks->asCorInfoType(_thisHandle, &pException, cls);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
-    virtual const char* getClassName(
-          CORINFO_CLASS_HANDLE cls)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    const char* temp = _callbacks->getClassName(_thisHandle, &pException, cls);
     if (pException != nullptr) throw pException;
     return temp;
 }

@@ -2277,11 +2277,6 @@ public:
             CORINFO_CLASS_HANDLE    cls
             ) = 0;
 
-    // for completeness
-    virtual const char* getClassName (
-            CORINFO_CLASS_HANDLE    cls
-            ) = 0;
-
     // Return class name as in metadata, or nullptr if there is none.
     // Suitable for non-debugging use.
     virtual const char* getClassNameFromMetadata (

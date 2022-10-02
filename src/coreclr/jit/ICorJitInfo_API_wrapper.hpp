@@ -383,15 +383,6 @@ CorInfoType WrapICorJitInfo::asCorInfoType(
     return temp;
 }
 
-const char* WrapICorJitInfo::getClassName(
-          CORINFO_CLASS_HANDLE cls)
-{
-    API_ENTER(getClassName);
-    const char* temp = wrapHnd->getClassName(cls);
-    API_LEAVE(getClassName);
-    return temp;
-}
-
 const char* WrapICorJitInfo::getClassNameFromMetadata(
           CORINFO_CLASS_HANDLE cls,
           const char** namespaceName)

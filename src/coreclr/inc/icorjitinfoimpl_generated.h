@@ -178,9 +178,6 @@ int getStringLiteral(
 CorInfoType asCorInfoType(
           CORINFO_CLASS_HANDLE cls) override;
 
-const char* getClassName(
-          CORINFO_CLASS_HANDLE cls) override;
-
 const char* getClassNameFromMetadata(
           CORINFO_CLASS_HANDLE cls,
           const char** namespaceName) override;

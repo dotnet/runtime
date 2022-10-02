@@ -402,14 +402,6 @@ CorInfoType MyICJI::asCorInfoType(CORINFO_CLASS_HANDLE cls)
     return jitInstance->mc->repAsCorInfoType(cls);
 }
 
-// for completeness
-const char* MyICJI::getClassName(CORINFO_CLASS_HANDLE cls)
-{
-    jitInstance->mc->cr->AddCall("getClassName");
-    const char* result = jitInstance->mc->repGetClassName(cls);
-    return result;
-}
-
 const char* MyICJI::getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char** namespaceName)
 {
     jitInstance->mc->cr->AddCall("getClassNameFromMetadata");
