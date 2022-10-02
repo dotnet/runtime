@@ -1208,7 +1208,6 @@ jobs:
     - windows_x64
     - OSX_x64
     - Linux_x64
-    - Linux_arm
     - Linux_musl_x64
     helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
     jobParameters:
