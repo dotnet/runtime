@@ -80,7 +80,15 @@ namespace ILCompiler
             // The runtime expects certain baselines that the codegen can assume as well.
             if ((targetArchitecture == TargetArchitecture.X86) || (targetArchitecture == TargetArchitecture.X64))
             {
-                instructionSetSupportBuilder.AddSupportedInstructionSet("sse2"); // Lower baselines included by implication
+                if (targetOS == TargetOS.OSX)
+                {
+                    // The oldest hardware that is still supported by Apple as of macOS 10.15 is Intel Core i5-3330S.
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("avx");
+                }
+                else
+                {
+                    instructionSetSupportBuilder.AddSupportedInstructionSet("sse2"); // Lower baselines included by implication
+                }
             }
             else if (targetArchitecture == TargetArchitecture.ARM64)
             {
