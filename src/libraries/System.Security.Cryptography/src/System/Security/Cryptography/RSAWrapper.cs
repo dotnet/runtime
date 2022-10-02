@@ -94,8 +94,10 @@ namespace System.Security.Cryptography
             RSASignaturePadding padding) =>
             _wrapped.VerifyHash(hash, signature, hashAlgorithm, padding);
 
+        [Obsolete]
         public override byte[] DecryptValue(byte[] rgb) => _wrapped.DecryptValue(rgb);
 
+        [Obsolete]
         public override byte[] EncryptValue(byte[] rgb) => _wrapped.EncryptValue(rgb);
 
         public override byte[] SignData(

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.Versioning;
@@ -282,6 +283,8 @@ namespace System.Security.Cryptography
         /// <summary>
         /// This method is not supported. Use Decrypt(byte[], RSAEncryptionPadding) instead.
         /// </summary>
+        [Obsolete("RSA.EncryptValue and DecryptValue are not supported and throw NotSupportedException. Use RSA.Encrypt and RSA.Decrypt instead.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override byte[] DecryptValue(byte[] rgb) => base.DecryptValue(rgb);
 
         /// <summary>
@@ -341,6 +344,8 @@ namespace System.Security.Cryptography
         /// <summary>
         /// This method is not supported. Use Encrypt(byte[], RSAEncryptionPadding) instead.
         /// </summary>
+        [Obsolete("RSA.EncryptValue and DecryptValue are not supported and throw NotSupportedException. Use RSA.Encrypt and RSA.Decrypt instead.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override byte[] EncryptValue(byte[] rgb) => base.EncryptValue(rgb);
 
         /// <summary>
