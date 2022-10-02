@@ -361,6 +361,7 @@ namespace System.Linq
 
         private int CompareAnyKeys_DefaultComparer_NoNext_Ascending(int index1, int index2)
         {
+            Debug.Assert(typeof(TKey).IsValueType);
             Debug.Assert(_comparer == Comparer<TKey>.Default);
             Debug.Assert(_next is null);
             Debug.Assert(!_descending);
@@ -376,6 +377,7 @@ namespace System.Linq
 
         private int CompareAnyKeys_DefaultComparer_NoNext_Descending(int index1, int index2)
         {
+            Debug.Assert(typeof(TKey).IsValueType);
             Debug.Assert(_comparer == Comparer<TKey>.Default);
             Debug.Assert(_next is null);
             Debug.Assert(_descending);
@@ -391,11 +393,30 @@ namespace System.Linq
 
         private int CompareKeys(int index1, int index2) => index1 == index2 ? 0 : CompareAnyKeys(index1, index2);
 
-        protected override void QuickSort(int[] keys, int lo, int hi) =>
-            new Span<int>(keys, lo, hi - lo + 1).Sort(
-                !typeof(TKey).IsValueType || _next is not null || _comparer != Comparer<TKey>.Default ? new Comparison<int>(CompareAnyKeys) :
-                _descending ? new Comparison<int>(CompareAnyKeys_DefaultComparer_NoNext_Descending) :
-                new Comparison<int>(CompareAnyKeys_DefaultComparer_NoNext_Ascending));
+        protected override void QuickSort(int[] keys, int lo, int hi)
+        {
+            Comparison<int> comparison;
+
+            if (typeof(TKey).IsValueType && _next is null && _comparer == Comparer<TKey>.Default)
+            {
+                // We can use Comparer<TKey>.Default.Compare and benefit from devirtualization and inlining.
+                // We can also avoid extra steps to check whether we need to deal with a subsequent tie breaker (_next).
+                if (!_descending)
+                {
+                    comparison = CompareAnyKeys_DefaultComparer_NoNext_Ascending;
+                }
+                else
+                {
+                    comparison = CompareAnyKeys_DefaultComparer_NoNext_Descending;
+                }
+            }
+            else
+            {
+                comparison = CompareAnyKeys;
+            }
+
+            new Span<int>(keys, lo, hi - lo + 1).Sort(comparison);
+        }
 
         // Sorts the k elements between minIdx and maxIdx without sorting all elements
         // Time complexity: O(n + k log k) best and average case. O(n^2) worse case.
