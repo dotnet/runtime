@@ -297,49 +297,49 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
             if (strcmp(className, "Vector`1") == 0)
             {
                 CORINFO_CLASS_HANDLE typeArgHnd = info.compCompHnd->getTypeInstantiationArgument(typeHnd, 0);
-                simdBaseJitType = info.compCompHnd->asCorInfoType(typeArgHnd);
+                simdBaseJitType                 = info.compCompHnd->asCorInfoType(typeArgHnd);
 
                 switch (simdBaseJitType)
                 {
-                case CORINFO_TYPE_FLOAT:
-                    m_simdHandleCache->SIMDFloatHandle = typeHnd;
-                    break;
-                case CORINFO_TYPE_INT:
-                    m_simdHandleCache->SIMDIntHandle = typeHnd;
-                    break;
-                case CORINFO_TYPE_USHORT:
-                    m_simdHandleCache->SIMDUShortHandle = typeHnd;
-                    break;
-                case CORINFO_TYPE_UBYTE:
-                    m_simdHandleCache->SIMDUByteHandle = typeHnd;
-                    break;
-                case CORINFO_TYPE_DOUBLE:
-                    m_simdHandleCache->SIMDDoubleHandle = typeHnd;
-                    break;
-                case CORINFO_TYPE_LONG:
-                    m_simdHandleCache->SIMDLongHandle = typeHnd;
-                    break;
-                case CORINFO_TYPE_SHORT:
-                    m_simdHandleCache->SIMDShortHandle = typeHnd;
-                    break;
-                case CORINFO_TYPE_BYTE:
-                    m_simdHandleCache->SIMDByteHandle = typeHnd;
-                    break;
-                case CORINFO_TYPE_UINT:
-                    m_simdHandleCache->SIMDUIntHandle = typeHnd;
-                    break;
-                case CORINFO_TYPE_ULONG:
-                    m_simdHandleCache->SIMDULongHandle = typeHnd;
-                    break;
-                case CORINFO_TYPE_NATIVEINT:
-                    m_simdHandleCache->SIMDNIntHandle = typeHnd;
-                    break;
-                case CORINFO_TYPE_NATIVEUINT:
-                    m_simdHandleCache->SIMDNUIntHandle = typeHnd;
-                    break;
-                default:
-                    simdBaseJitType = CORINFO_TYPE_UNDEF;
-                    break;
+                    case CORINFO_TYPE_FLOAT:
+                        m_simdHandleCache->SIMDFloatHandle = typeHnd;
+                        break;
+                    case CORINFO_TYPE_INT:
+                        m_simdHandleCache->SIMDIntHandle = typeHnd;
+                        break;
+                    case CORINFO_TYPE_USHORT:
+                        m_simdHandleCache->SIMDUShortHandle = typeHnd;
+                        break;
+                    case CORINFO_TYPE_UBYTE:
+                        m_simdHandleCache->SIMDUByteHandle = typeHnd;
+                        break;
+                    case CORINFO_TYPE_DOUBLE:
+                        m_simdHandleCache->SIMDDoubleHandle = typeHnd;
+                        break;
+                    case CORINFO_TYPE_LONG:
+                        m_simdHandleCache->SIMDLongHandle = typeHnd;
+                        break;
+                    case CORINFO_TYPE_SHORT:
+                        m_simdHandleCache->SIMDShortHandle = typeHnd;
+                        break;
+                    case CORINFO_TYPE_BYTE:
+                        m_simdHandleCache->SIMDByteHandle = typeHnd;
+                        break;
+                    case CORINFO_TYPE_UINT:
+                        m_simdHandleCache->SIMDUIntHandle = typeHnd;
+                        break;
+                    case CORINFO_TYPE_ULONG:
+                        m_simdHandleCache->SIMDULongHandle = typeHnd;
+                        break;
+                    case CORINFO_TYPE_NATIVEINT:
+                        m_simdHandleCache->SIMDNIntHandle = typeHnd;
+                        break;
+                    case CORINFO_TYPE_NATIVEUINT:
+                        m_simdHandleCache->SIMDNUIntHandle = typeHnd;
+                        break;
+                    default:
+                        simdBaseJitType = CORINFO_TYPE_UNDEF;
+                        break;
                 }
 
                 if (simdBaseJitType != CORINFO_TYPE_UNDEF)

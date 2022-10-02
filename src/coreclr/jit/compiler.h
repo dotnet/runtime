@@ -7538,12 +7538,8 @@ public:
     var_types eeGetFieldType(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE* pStructHnd = nullptr);
 
     void eePrintJitType(class StringPrinter* printer, var_types jitType);
-    void eePrintType(class StringPrinter* printer,
-                     CORINFO_CLASS_HANDLE clsHnd,
-                     bool                 includeInstantiation);
-    void eePrintTypeOrJitAlias(class StringPrinter* printer,
-                               CORINFO_CLASS_HANDLE clsHnd,
-                               bool                 includeInstantiation);
+    void eePrintType(class StringPrinter* printer, CORINFO_CLASS_HANDLE clsHnd, bool includeInstantiation);
+    void eePrintTypeOrJitAlias(class StringPrinter* printer, CORINFO_CLASS_HANDLE clsHnd, bool includeInstantiation);
     void eePrintMethod(class StringPrinter*  printer,
                        CORINFO_CLASS_HANDLE  clsHnd,
                        CORINFO_METHOD_HANDLE methodHnd,
@@ -11291,6 +11287,7 @@ class StringPrinter
     size_t        m_bufferIndex = 0;
 
     void Grow(size_t newSize);
+
 public:
     StringPrinter(CompAllocator alloc, char* buffer = nullptr, size_t bufferMax = 0)
         : m_alloc(alloc), m_buffer(buffer), m_bufferMax(bufferMax)

@@ -29,7 +29,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 void StringPrinter::Grow(size_t newSize)
 {
     assert(newSize > m_bufferMax);
-    char*  newBuffer = m_alloc.allocate<char>(newSize);
+    char* newBuffer = m_alloc.allocate<char>(newSize);
     memcpy(newBuffer, m_buffer, m_bufferIndex + 1); // copy null terminator too
 
     m_buffer    = newBuffer;
@@ -130,9 +130,7 @@ void Compiler::eePrintJitType(StringPrinter* printer, var_types jitType)
 //    includeNamespace     - Whether to print namespaces before type names
 //    includeInstantiation - Whether to print the instantiation of the class
 //
-void Compiler::eePrintType(StringPrinter*       printer,
-                           CORINFO_CLASS_HANDLE clsHnd,
-                           bool                 includeInstantiation)
+void Compiler::eePrintType(StringPrinter* printer, CORINFO_CLASS_HANDLE clsHnd, bool includeInstantiation)
 {
     unsigned arrayRank = info.compCompHnd->getArrayRank(clsHnd);
     if (arrayRank > 0)
@@ -157,7 +155,7 @@ void Compiler::eePrintType(StringPrinter*       printer,
         return;
     }
 
-    int size = 0;
+    int size      = 0;
     int actualLen = info.compCompHnd->appendClassName(nullptr, &size, clsHnd);
     if (actualLen <= 0)
     {
@@ -206,9 +204,7 @@ void Compiler::eePrintType(StringPrinter*       printer,
 //    clsHnd               - Handle for the class
 //    includeInstantiation - Whether to print the instantiation of the class
 //
-void Compiler::eePrintTypeOrJitAlias(StringPrinter*       printer,
-                                     CORINFO_CLASS_HANDLE clsHnd,
-                                     bool                 includeInstantiation)
+void Compiler::eePrintTypeOrJitAlias(StringPrinter* printer, CORINFO_CLASS_HANDLE clsHnd, bool includeInstantiation)
 {
     CorInfoType typ = info.compCompHnd->asCorInfoType(clsHnd);
     if ((typ == CORINFO_TYPE_CLASS) || (typ == CORINFO_TYPE_VALUECLASS))

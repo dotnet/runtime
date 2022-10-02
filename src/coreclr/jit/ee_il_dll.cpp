@@ -1417,7 +1417,7 @@ struct FilterSuperPMIExceptionsParam_ee_il
     CORINFO_CLASS_HANDLE  clazz;
     const char**          classNamePtr;
     const char*           fieldOrMethodOrClassNamePtr;
-    char*             classNameWidePtr;
+    char*                 classNameWidePtr;
     unsigned              classSize;
     EXCEPTION_POINTERS    exceptionPointers;
 };
@@ -1580,7 +1580,7 @@ const char* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
 
     bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
         [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
-            int            len        = 0;
+            int len = 0;
             // Warning: crossgen2 doesn't fully implement the `appendClassName` API.
             // We need to pass size zero, get back the actual buffer size required, allocate that space,
             // and call the API again to get the full string.
@@ -1588,7 +1588,7 @@ const char* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
 
             size_t cchBufLen         = (size_t)cchStrLen + /* null terminator */ 1;
             pParam->classNameWidePtr = pParam->pThis->getAllocator(CMK_DebugOnly).allocate<char>(cchBufLen);
-            char* pbuf           = pParam->classNameWidePtr;
+            char* pbuf               = pParam->classNameWidePtr;
             len                      = (int)cchBufLen;
 
             int cchResultStrLen = pParam->pJitInfo->compCompHnd->appendClassName(&pbuf, &len, pParam->clazz);
@@ -1600,8 +1600,8 @@ const char* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
     if (!success)
     {
         const char substituteClassName[] = "hackishClassName";
-        size_t         cchLen                = ArrLen(substituteClassName);
-        param.classNameWidePtr               = getAllocator(CMK_DebugOnly).allocate<char>(cchLen);
+        size_t     cchLen                = ArrLen(substituteClassName);
+        param.classNameWidePtr           = getAllocator(CMK_DebugOnly).allocate<char>(cchLen);
         memcpy(param.classNameWidePtr, substituteClassName, cchLen * sizeof(char));
     }
 
