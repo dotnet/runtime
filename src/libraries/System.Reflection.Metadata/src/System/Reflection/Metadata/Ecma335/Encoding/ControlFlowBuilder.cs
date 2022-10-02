@@ -13,37 +13,37 @@ namespace System.Reflection.Metadata.Ecma335
         {
             // The offset to the label operand inside the instruction.
             internal readonly int OperandOffset;
-            private readonly LabelHandle _label;
+            internal readonly LabelHandle Label;
             // Label offsets are calculated from the end of the instruction that contains them.
             // This value contains the displacement from the start of the label operand
             // to the end of the instruction. It is equal to one on short branches,
             // four on long branches and bigger on the switch instruction.
             private readonly int _instructionEndDisplacement;
 
-            // The following two fields are used for error reporting only.
+            // The following two fields are used for error reporting and tests.
 
             // The offset to the start of the instruction.
-            private readonly int _instructionStartOffset;
-            private readonly ILOpCode _opCode;
+            internal readonly int ILOffset;
+            internal readonly ILOpCode OpCode;
 
             internal bool IsShortBranch => _instructionEndDisplacement == 1;
             internal int OperandSize => Math.Min(_instructionEndDisplacement, 4);
 
-            internal BranchInfo(int operandOffset, LabelHandle label, int instructionEndDisplacement, int instructionStartOffset, ILOpCode opCode)
+            internal BranchInfo(int operandOffset, LabelHandle label, int instructionEndDisplacement, int ilOffset, ILOpCode opCode)
             {
                 OperandOffset = operandOffset;
-                _label = label;
+                Label = label;
                 _instructionEndDisplacement = instructionEndDisplacement;
-                _instructionStartOffset = instructionStartOffset;
-                _opCode = opCode;
+                ILOffset = ilOffset;
+                OpCode = opCode;
             }
 
             internal int GetBranchDistance(List<int> labels)
             {
-                int labelTargetOffset = labels[_label.Id - 1];
+                int labelTargetOffset = labels[Label.Id - 1];
                 if (labelTargetOffset < 0)
                 {
-                    Throw.InvalidOperation_LabelNotMarked(_label.Id);
+                    Throw.InvalidOperation_LabelNotMarked(Label.Id);
                 }
 
                 int distance = labelTargetOffset - (OperandOffset + _instructionEndDisplacement);
@@ -54,7 +54,7 @@ namespace System.Reflection.Metadata.Ecma335
                     // however an optimal algorithm would be rather complex (something like: calculate topological ordering of crossing branch instructions
                     // and then use fixed point to eliminate cycles). If the caller doesn't care about optimal IL size they can use long branches whenever the
                     // distance is unknown upfront. If they do they probably implement more sophisticated algorithm for IL layout optimization already.
-                    throw new InvalidOperationException(SR.Format(SR.DistanceBetweenInstructionAndLabelTooBig, _opCode, _instructionStartOffset, distance));
+                    throw new InvalidOperationException(SR.Format(SR.DistanceBetweenInstructionAndLabelTooBig, OpCode, ILOffset, distance));
                 }
 
                 return distance;
@@ -112,7 +112,7 @@ namespace System.Reflection.Metadata.Ecma335
             return new LabelHandle(_labels.Count);
         }
 
-        internal void AddBranch(int operandOffset, LabelHandle label, int instructionEndDisplacement, int instructionStartOffset, ILOpCode opCode)
+        internal void AddBranch(int operandOffset, LabelHandle label, int instructionEndDisplacement, int ilOffset, ILOpCode opCode)
         {
             Debug.Assert(operandOffset >= 0);
             Debug.Assert(_branches.Count == 0 || operandOffset > _branches[_branches.Count - 1].OperandOffset);
@@ -131,7 +131,7 @@ namespace System.Reflection.Metadata.Ecma335
                     break;
             }
 #endif
-            _branches.Add(new BranchInfo(operandOffset, label, instructionEndDisplacement, instructionStartOffset, opCode));
+            _branches.Add(new BranchInfo(operandOffset, label, instructionEndDisplacement, ilOffset, opCode));
         }
 
         internal void MarkLabel(int ilOffset, LabelHandle label)

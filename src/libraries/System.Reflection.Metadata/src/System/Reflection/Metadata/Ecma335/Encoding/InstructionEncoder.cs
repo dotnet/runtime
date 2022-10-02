@@ -389,9 +389,9 @@ namespace System.Reflection.Metadata.Ecma335
             return GetBranchBuilder().AddLabel();
         }
 
-        private void LabelOperand(ILOpCode code, LabelHandle label, int instructionEndDisplacement, int instructionStartOffset)
+        private void LabelOperand(ILOpCode code, LabelHandle label, int instructionEndDisplacement, int ilOffset)
         {
-            GetBranchBuilder().AddBranch(Offset, label, instructionEndDisplacement, instructionStartOffset, code);
+            GetBranchBuilder().AddBranch(Offset, label, instructionEndDisplacement, ilOffset, code);
 
             // -1 points in the middle of the branch instruction and is thus invalid.
             // We want to produce invalid IL so that if the caller doesn't patch the branches
@@ -420,10 +420,10 @@ namespace System.Reflection.Metadata.Ecma335
             // throws if code is not a branch:
             int operandSize = code.GetBranchOperandSize();
             // We want the offset before we add the opcode.
-            int instructionStartOffset = Offset;
+            int ilOffset = Offset;
 
             OpCode(code);
-            LabelOperand(code, label, operandSize, instructionStartOffset);
+            LabelOperand(code, label, operandSize, ilOffset);
         }
 
         /// <summary>
