@@ -530,7 +530,12 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
 
         GenTree* const nextRootNodeLHS = nextRootNode->gtGetOp1();
 
-        if (nextRootNodeLHS->OperIs(GT_LCL_VAR))
+        if (!nextRootNodeLHS->OperIs(GT_LCL_VAR))
+        {
+            JITDUMP(" can't fwd sub qmark for LCL_FLD assign\n");
+            return false;
+        }
+        else
         {
             const unsigned   lhsLclNum = nextRootNodeLHS->AsLclVarCommon()->GetLclNum();
             LclVarDsc* const lhsVarDsc = lvaGetDesc(lhsLclNum);
