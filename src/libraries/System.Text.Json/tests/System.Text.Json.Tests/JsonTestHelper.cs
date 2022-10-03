@@ -369,7 +369,7 @@ namespace System.Text.Json
 
             for (int i = 0; i < totalReads; i++)
             {
-                var newtonsoft = new JsonTextReader(new StringReader(jsonString)) { MaxDepth = null };
+                newtonsoft = new JsonTextReader(new StringReader(jsonString)) { MaxDepth = null };
                 for (int j = 0; j < i; j++)
                 {
                     Assert.True(newtonsoft.Read());
