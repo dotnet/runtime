@@ -30,7 +30,7 @@ jobs:
   displayName: Docker Linux
   timeoutInMinutes: 120
   pool:
-    name: NetCore-Public
+    name: NetCore-Svc-Public
     demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
 
   steps:
@@ -55,7 +55,7 @@ jobs:
   displayName: Docker NanoServer
   timeoutInMinutes: 120
   pool:
-    name: NetCore-Public
+    name: NetCore-Svc-Public
     demands: ImageOverride -equals 1es-windows-2022-open
 
   steps:
@@ -67,12 +67,12 @@ jobs:
   - powershell: |
       $(dockerfilesFolder)/build-docker-sdk.ps1 -w -t $(sdkBaseImage) -c $(BUILD_CONFIGURATION)
     displayName: Build CLR and Libraries
-  
+
   - powershell: |
       $(sslStressProject)/run-docker-compose.ps1 -w -o -c $(BUILD_CONFIGURATION) -t $(sdkBaseImage)
     displayName: Build SslStress
-  
+
   - powershell: |
       cd '$(sslStressProject)'
       docker-compose up --abort-on-container-exit --no-color
-    displayName: Run SslStress 
+    displayName: Run SslStress

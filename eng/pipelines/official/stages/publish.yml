@@ -20,7 +20,7 @@ stages:
       publishAssetsImmediately: true
       dependsOn: PrepareSignedArtifacts
       pool:
-        name: NetCore1ESPool-Internal
+        name: NetCore1ESPool-Svc-Internal
         demands: ImageOverride -equals 1es-windows-2022
 
 # Stages-based publishing entry point
