@@ -522,8 +522,6 @@ namespace System.Xml.Schema
 
         protected DatatypeImplementation? Base { get { return _baseType; } }
 
-        internal abstract Type ListValueType { get; }
-
         internal abstract RestrictionFlags ValidRestrictionFlags { get; }
 
         internal override XmlSchemaWhiteSpace BuiltInWhitespaceFacet { get { return XmlSchemaWhiteSpace.Preserve; } }
@@ -1089,8 +1087,6 @@ namespace System.Xml.Schema
             return exception;
         }
 
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
-            Justification = "All types that are instantiated with this method are used elsewhere in this file in the implementations of the DatatypeImplementation abstract class.")]
         internal override Exception? TryParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
             Exception? exception;
@@ -1129,8 +1125,8 @@ namespace System.Xml.Schema
 
                     values.Add(typedValue);
                 }
-                array = values.ToArray(_itemType.ValueType);
-                Debug.Assert(array.GetType() == ListValueType);
+                array = ToArray(values, _itemType.ListValueType);
+                Debug.Assert(array.GetType() == _itemType.ValueType.MakeArrayType());
             }
             if (values.Count < _minListSize)
             {
@@ -1146,6 +1142,13 @@ namespace System.Xml.Schema
 
         Error:
             return exception;
+
+            [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
+                Justification = "Array type is alwasys present as it is passed in as a parameter.")]
+            static Array ToArray(ArrayList values, Type arrayType)
+            {
+                return values.ToArray(arrayType.GetElementType()!);
+            }
         }
     }
 
