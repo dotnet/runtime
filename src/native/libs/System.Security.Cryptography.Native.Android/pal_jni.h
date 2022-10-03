@@ -71,6 +71,9 @@ extern jmethodID g_cipherInitMethod;
 extern jmethodID g_cipherInit2Method;
 extern jmethodID g_getBlockSizeMethod;
 
+// javax/crypto/spec/AEADBadTagException
+extern jclass    g_AEADBadTagExceptionClass;
+
 // javax/crypto/spec/IvParameterSpec
 extern jclass    g_ivPsClass;
 extern jmethodID g_ivPsCtor;

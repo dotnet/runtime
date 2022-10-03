@@ -37,7 +37,7 @@ namespace System.Threading.RateLimiting.Test
         [Fact]
         public override void InvalidOptionsThrows()
         {
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>("options",
                 () => new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
                 {
                     PermitLimit = -1,
@@ -47,7 +47,7 @@ namespace System.Threading.RateLimiting.Test
                     SegmentsPerWindow = 1,
                     AutoReplenishment = false
                 }));
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>("options",
                 () => new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
                 {
                     PermitLimit = 1,
@@ -57,7 +57,7 @@ namespace System.Threading.RateLimiting.Test
                     SegmentsPerWindow = 1,
                     AutoReplenishment = false
                 }));
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>("options",
                 () => new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
                 {
                     PermitLimit = 1,
@@ -67,7 +67,7 @@ namespace System.Threading.RateLimiting.Test
                     SegmentsPerWindow = -1,
                     AutoReplenishment = false
                 }));
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>("options",
                 () => new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
                 {
                     PermitLimit = 1,
@@ -77,13 +77,23 @@ namespace System.Threading.RateLimiting.Test
                     SegmentsPerWindow = 1,
                     AutoReplenishment = false
                 }));
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>("options",
                 () => new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
                 {
                     PermitLimit = 1,
                     QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
                     QueueLimit = 1,
                     Window = TimeSpan.FromMinutes(-2),
+                    SegmentsPerWindow = 1,
+                    AutoReplenishment = false
+                }));
+            AssertExtensions.Throws<ArgumentException>("options",
+                () => new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
+                {
+                    PermitLimit = 1,
+                    QueueProcessingOrder = QueueProcessingOrder.NewestFirst,
+                    QueueLimit = 1,
+                    Window = TimeSpan.Zero,
                     SegmentsPerWindow = 1,
                     AutoReplenishment = false
                 }));

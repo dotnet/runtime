@@ -67,7 +67,6 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
                                     MethodDesc *pTemplateMD,
                                     DWORD classification,
                                     BOOL fNativeCodeSlot,
-                                    BOOL fComPlusCallInfo,
                                     AllocMemTracker *pamTracker)
 {
     CONTRACTL
@@ -92,7 +91,6 @@ static MethodDesc* CreateMethodDesc(LoaderAllocator *pAllocator,
                                      classification,
                                      TRUE /* fNonVtableSlot*/,
                                      fNativeCodeSlot,
-                                     fComPlusCallInfo,
                                      pMT,
                                      pamTracker);
 
@@ -407,8 +405,6 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
             }
         }
 
-        BOOL forComInterop = FALSE;
-
         // Create a new singleton chunk for the new instantiated method descriptor
         // Notice that we've passed in the method table pointer; this gets
         // used in some of the subsequent setup methods for method descs.
@@ -418,7 +414,6 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                                                              pGenericMDescInRepMT,
                                                              mcInstantiated,
                                                              !pWrappedMD, // This is pesimistic estimate for fNativeCodeSlot
-                                                             forComInterop,
                                                              &amt));
 
         // Initialize the MD the way it needs to be
@@ -899,7 +894,6 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                  pMDescInCanonMT,
                                                  mcInstantiated,
                                                  FALSE /* fNativeCodeSlot */,
-                                                 FALSE /* fComPlusCallInfo */,
                                                  &amt);
 
                     // Indicate that this is a stub method which takes a BOXed this pointer.
@@ -981,7 +975,6 @@ MethodDesc::FindOrCreateAssociatedMethodDesc(MethodDesc* pDefMD,
                                                  pNonUnboxingStub,
                                                  mcInstantiated,
                                                  FALSE /* fNativeCodeSlot */,
-                                                 FALSE /* fComPlusCallInfo */,
                                                  &amt);
 
                     pResultMD->SetIsUnboxingStub();

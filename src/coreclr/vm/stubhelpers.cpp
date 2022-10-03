@@ -294,7 +294,7 @@ FCIMPL4(IUnknown*, StubHelpers::GetCOMIPFromRCW, Object* pSrcUNSAFE, MethodDesc*
     CONTRACTL
     {
         FCALL_CHECK;
-        PRECONDITION(pMD->IsComPlusCall() || pMD->IsGenericComPlusCall() || pMD->IsEEImpl());
+        PRECONDITION(pMD->IsComPlusCall() || pMD->IsEEImpl());
     }
     CONTRACTL_END;
 

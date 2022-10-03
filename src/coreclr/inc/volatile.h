@@ -344,10 +344,7 @@ public:
     //
     // Default constructor.
     //
-    inline Volatile() : m_val {}
-    {
-        STATIC_CONTRACT_SUPPORTS_DAC;
-    }
+    inline Volatile() = default;
 
     //
     // Allow initialization of Volatile<T> from a T

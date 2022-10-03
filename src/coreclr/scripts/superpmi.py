@@ -342,7 +342,6 @@ asm_diff_parser.add_argument("--gcinfo", action="store_true", help="Include GC i
 asm_diff_parser.add_argument("--debuginfo", action="store_true", help="Include debug info after disassembly (sets COMPlus_JitDebugDump).")
 asm_diff_parser.add_argument("-tag", help="Specify a word to add to the directory name where the asm diffs will be placed")
 asm_diff_parser.add_argument("-metrics", action="append", help="Metrics option to pass to jit-analyze. Can be specified multiple times, or pass comma-separated values.")
-asm_diff_parser.add_argument("-retainOnlyTopFiles", action="store_true", help="Retain only top .dasm files with largest improvements or regressions and delete remaining files.")
 asm_diff_parser.add_argument("--diff_with_release", action="store_true", help="Specify if this is asmdiff using release binaries.")
 asm_diff_parser.add_argument("--git_diff", action="store_true", help="Produce a '.diff' file from 'base' and 'diff' folders if there were any differences.")
 
@@ -500,6 +499,11 @@ def read_csv_metrics(path):
             dict[row["Name"]] = row
 
     return dict
+
+def read_csv_diffs(path):
+    with open(path) as csv_file:
+        reader = csv.DictReader(csv_file)
+        return list(reader)
 
 def determine_clrjit_compiler_version(clrjit_path):
     """ Obtain the version of the compiler that was used to compile the clrjit at the specified path.
@@ -1568,7 +1572,7 @@ class SuperPMIReplayAsmDiffs:
                 logging.info("Running asm diffs of %s", mch_file)
 
                 fail_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_fail.mcl")
-                diff_mcl_file = os.path.join(temp_location, os.path.basename(mch_file) + "_diff.mcl")
+                diffs_info = os.path.join(temp_location, os.path.basename(mch_file) + "_diffs.csv")
 
                 base_metrics_summary_file = os.path.join(temp_location, os.path.basename(mch_file) + "_base_metrics.csv")
                 diff_metrics_summary_file = os.path.join(temp_location, os.path.basename(mch_file) + "_diff_metrics.csv")
@@ -1577,7 +1581,7 @@ class SuperPMIReplayAsmDiffs:
                     "-a",  # Asm diffs
                     "-v", "ewmi",  # display errors, warnings, missing, jit info
                     "-f", fail_mcl_file,  # Failing mc List
-                    "-diffMCList", diff_mcl_file,  # Create all of the diffs in an mcl file
+                    "-diffsInfo", diffs_info,  # Information about diffs
                     "-r", os.path.join(temp_location, "repro"),  # Repro name, create .mc repro files
                     "-baseMetricsSummary", base_metrics_summary_file, # Create summary of metrics we can use to get total code size impact
                     "-diffMetricsSummary", diff_metrics_summary_file,
@@ -1603,6 +1607,13 @@ class SuperPMIReplayAsmDiffs:
 
                 if self.coreclr_args.error_limit is not None:
                     flags += ["-failureLimit", self.coreclr_args.error_limit]
+
+                if self.coreclr_args.diff_with_release:
+                    # If one of the JITs is Release, ignore all the stored configuration variables.
+                    # This isn't necessary if both are Release builds (and, in fact, it can clear variables
+                    # that both Release compilers can interpret). However, we rarely or never compare
+                    # two Release compilers, so this is safest.
+                    flags += [ "-ignoreStoredConfig" ]
 
                 # Change the working directory to the Core_Root we will call SuperPMI from.
                 # This is done to allow libcoredistools to be loaded correctly on unix
@@ -1633,8 +1644,10 @@ class SuperPMIReplayAsmDiffs:
                             repro_base_command_line = "{} {} {}".format(self.superpmi_path, " ".join(altjit_asm_diffs_flags), self.diff_jit_path)
                             save_repro_mc_files(temp_location, self.coreclr_args, artifacts_base_name, repro_base_command_line)
 
+                diffs = read_csv_diffs(diffs_info)
+
                 # This file had asm diffs; keep track of that.
-                has_diffs = is_nonzero_length_file(diff_mcl_file)
+                has_diffs = len(diffs) > 0
                 if has_diffs:
                     files_with_asm_diffs.append(mch_file)
 
@@ -1648,12 +1661,6 @@ class SuperPMIReplayAsmDiffs:
 
                     if return_code == 0:
                         logging.warning("Warning: SuperPMI returned a zero exit code, but generated a non-zero-sized mcl file")
-
-                    self.diff_mcl_contents = None
-                    with open(diff_mcl_file) as file_handle:
-                        mcl_lines = file_handle.readlines()
-                        mcl_lines = [item.strip() for item in mcl_lines]
-                        self.diff_mcl_contents = mcl_lines
 
                     asm_root_dir = create_unique_directory_name(self.coreclr_args.spmi_location, "asm.{}".format(artifacts_base_name))
                     base_asm_location = os.path.join(asm_root_dir, "base")
@@ -1672,13 +1679,13 @@ class SuperPMIReplayAsmDiffs:
                     text_differences = queue.Queue()
                     jit_dump_differences = queue.Queue()
 
-                    async def create_replay_artifacts(print_prefix, item, self, mch_file, env, jit_differences_queue, base_location, diff_location, extension):
+                    async def create_replay_artifacts(print_prefix, context_index, self, mch_file, env, jit_differences_queue, base_location, diff_location, extension):
                         """ Run superpmi over an MC to create JIT asm or JIT dumps for the method.
                         """
                         # Setup flags to call SuperPMI for both the diff jit and the base jit
 
                         flags = [
-                            "-c", item,
+                            "-c", str(context_index),
                             "-v", "q"  # only log from the jit.
                         ]
                         flags += altjit_replay_flags
@@ -1690,7 +1697,7 @@ class SuperPMIReplayAsmDiffs:
 
                             async def create_one_artifact(jit_path: str, location: str, flags) -> str:
                                 command = [self.superpmi_path] + flags + [jit_path, mch_file]
-                                item_path = os.path.join(location, "{}{}".format(item, extension))
+                                item_path = os.path.join(location, "{}{}".format(context_index, extension))
                                 modified_env = env.copy()
                                 modified_env['COMPlus_JitStdOutFile'] = item_path
                                 logging.debug("%sGenerating %s", print_prefix, item_path)
@@ -1706,22 +1713,20 @@ class SuperPMIReplayAsmDiffs:
                             diff_txt = await create_one_artifact(self.diff_jit_path, diff_location, flags + diff_option_flags_for_diff_artifact)
 
                             if base_txt != diff_txt:
-                                jit_differences_queue.put_nowait(item)
+                                jit_differences_queue.put_nowait(context_index)
                     ################################################################################################ end of create_replay_artifacts()
 
-                    diff_items = []
-                    for item in self.diff_mcl_contents:
-                        diff_items.append(item)
-
                     logging.info("Creating dasm files: %s %s", base_asm_location, diff_asm_location)
-                    subproc_helper = AsyncSubprocessHelper(diff_items, verbose=True)
+                    dasm_contexts = self.pick_contexts_to_disassemble(diffs)
+                    subproc_helper = AsyncSubprocessHelper(dasm_contexts, verbose=True)
                     subproc_helper.run_to_completion(create_replay_artifacts, self, mch_file, asm_complus_vars_full_env, text_differences, base_asm_location, diff_asm_location, ".dasm")
 
                     if self.coreclr_args.diff_jit_dump:
                         logging.info("Creating JitDump files: %s %s", base_dump_location, diff_dump_location)
                         subproc_helper.run_to_completion(create_replay_artifacts, self, mch_file, jit_dump_complus_vars_full_env, jit_dump_differences, base_dump_location, diff_dump_location, ".txt")
 
-                    logging.info("Differences found. To replay SuperPMI use:")
+                    logging.info("Differences found. To replay SuperPMI use:".format(len(diffs)))
+
                     logging.info("")
                     for var, value in asm_complus_vars.items():
                         print_platform_specific_environment_vars(logging.INFO, self.coreclr_args, var, value)
@@ -1736,9 +1741,10 @@ class SuperPMIReplayAsmDiffs:
                         logging.info("%s %s -c ### %s %s", self.superpmi_path, " ".join(altjit_replay_flags), self.diff_jit_path, mch_file)
                         logging.info("")
 
-                    logging.debug("Method numbers with binary differences:")
-                    for item in self.diff_mcl_contents:
-                        logging.debug(item)
+                    smallest = sorted(diffs, key=lambda r: int(r["Context size"]))[:20]
+                    logging.debug("Smallest {} contexts with binary differences:".format(len(smallest)))
+                    for diff in smallest:
+                        logging.debug(diff["Context"])
                     logging.debug("")
 
                     if base_metrics is not None and diff_metrics is not None:
@@ -1769,12 +1775,21 @@ class SuperPMIReplayAsmDiffs:
                                 # It appears we have a built jit-analyze on the path, so try to run it.
                                 jit_analyze_summary_file = os.path.join(asm_root_dir, "summary.md")
                                 command = [ jit_analyze_path, "--md", jit_analyze_summary_file, "-r", "--base", base_asm_location, "--diff", diff_asm_location ]
-                                if self.coreclr_args.retainOnlyTopFiles:
-                                    command += [ "--retainOnlyTopFiles" ]
                                 if self.coreclr_args.metrics:
                                     command += [ "--metrics", ",".join(self.coreclr_args.metrics) ]
                                 elif base_bytes is not None and diff_bytes is not None:
                                     command += [ "--override-total-base-metric", str(base_bytes), "--override-total-diff-metric", str(diff_bytes) ]
+
+                                if len(dasm_contexts) < len(diffs):
+                                    # Avoid producing analysis output that assumes these are all contexts
+                                    # with diffs. When no custom metrics are specified we pick only a subset
+                                    # of interesting contexts to disassemble, to avoid spending too long.
+                                    # See pick_contexts_to_disassemble.
+                                    command += [ "--is-subset-of-diffs" ]
+                                else:
+                                    # Ask jit-analyze to avoid producing analysis output that assumes these are
+                                    # all contexts (we never produce .dasm files for contexts without diffs).
+                                    command += [ "--is-diffs-only" ]
 
                                 run_and_log(command, logging.INFO)
                                 ran_jit_analyze = True
@@ -1799,6 +1814,14 @@ class SuperPMIReplayAsmDiffs:
 
                     else:
                         logging.warning("No textual differences. Is this an issue with coredistools?")
+
+                    # If we are not specifying custom metrics then print a summary here, otherwise leave the summarization up to jit-analyze.
+                    if self.coreclr_args.metrics is None:
+                        num_improvements = sum(1 for r in diffs if int(r["Diff size"]) < int(r["Base size"]))
+                        num_regressions = sum(1 for r in diffs if int(r["Diff size"]) > int(r["Base size"]))
+                        logging.info("{} contexts with differences found ({} improvements, {} regressions)".format(len(diffs), num_improvements, num_regressions))
+                        logging.info("")
+                        logging.info("")
 
                     if self.coreclr_args.diff_jit_dump:
                         try:
@@ -1893,8 +1916,16 @@ class SuperPMIReplayAsmDiffs:
                         html_color(base_color, "{:,d}".format(missing_base_contexts)),
                         html_color(diff_color, "{:,d}".format(missing_diff_contexts))))
 
-                if any(has_diff for (_, _, _, has_diff, _) in asm_diffs):
+                def has_diffs(row):
+                    return int(row["Contexts with diffs"]) > 0
+
+                # Exclude entire diffs section?
+                if any(has_diffs(diff_metrics["Overall"]) for (_, _, diff_metrics, _, _) in asm_diffs):
                     def write_pivot_section(row):
+                        # Exclude this particular Overall/MinOpts/FullOpts table?
+                        if not any(has_diffs(diff_metrics[row]) for (_, _, diff_metrics, _, _) in asm_diffs):
+                            return
+
                         write_fh.write("\n<details>\n")
                         sum_base = sum(int(base_metrics[row]["Diffed code bytes"]) for (_, base_metrics, _, _, _) in asm_diffs)
                         sum_diff = sum(int(diff_metrics[row]["Diffed code bytes"]) for (_, _, diff_metrics, _, _) in asm_diffs)
@@ -1902,8 +1933,9 @@ class SuperPMIReplayAsmDiffs:
                         write_fh.write("<summary>{} ({} bytes)</summary>\n\n".format(row, format_delta(sum_base, sum_diff)))
                         write_fh.write("|Collection|Base size (bytes)|Diff size (bytes)|\n")
                         write_fh.write("|---|--:|--:|\n")
-                        for (mch_file, base_metrics, diff_metrics, has_diffs, _) in asm_diffs:
-                            if not has_diffs:
+                        for (mch_file, base_metrics, diff_metrics, _, _) in asm_diffs:
+                            # Exclude this particular row?
+                            if not has_diffs(diff_metrics[row]):
                                 continue
 
                             write_fh.write("|{}|{:,d}|{}|\n".format(
@@ -1925,14 +1957,15 @@ class SuperPMIReplayAsmDiffs:
                 write_fh.write("\n<details>\n")
                 write_fh.write("<summary>Details</summary>\n\n")
 
-                write_fh.write("|Collection|Diffed contexts|MinOpts|FullOpts|Missed, base|Missed, diff|\n")
-                write_fh.write("|---|--:|--:|--:|--:|--:|\n")
+                write_fh.write("|Collection|Diffed contexts|MinOpts|FullOpts|Contexts with diffs|Missed, base|Missed, diff|\n")
+                write_fh.write("|---|--:|--:|--:|--:|--:|--:|\n")
                 for (mch_file, base_metrics, diff_metrics, has_diffs, jit_analyze_summary_file) in asm_diffs:
-                    write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d}|{:,d}|\n".format(
+                    write_fh.write("|{}|{:,d}|{:,d}|{:,d}|{:,d}|{:,d}|{:,d}|\n".format(
                         mch_file,
                         int(diff_metrics["Overall"]["Successful compiles"]),
                         int(diff_metrics["MinOpts"]["Successful compiles"]),
                         int(diff_metrics["FullOpts"]["Successful compiles"]),
+                        int(diff_metrics["Overall"]["Contexts with diffs"]),
                         int(base_metrics["Overall"]["Missing compiles"]),
                         int(diff_metrics["Overall"]["Missing compiles"])))
 
@@ -1983,6 +2016,49 @@ superpmi.py asmdiffs -target_os {2} -target_arch {3} -arch {1}
 
         return result
         ################################################################################################ end of replay_with_asm_diffs()
+
+    def pick_contexts_to_disassemble(self, diffs):
+        """ Given information about diffs, pick the context numbers to create .dasm files for
+
+        Returns:
+            List of method context numbers to create disassembly for.
+        """
+
+        # If there are non-default metrics then we need to disassemble
+        # everything so that jit-analyze can handle those.
+        if self.coreclr_args.metrics is not None:
+            contexts = diffs
+        else:
+            # In the default case we have size improvements/regressions
+            # available without needing to disassemble all, so pick a subset of
+            # interesting diffs to pass to jit-analyze.
+
+            # 20 smallest method contexts with diffs
+            smallest_contexts = sorted(diffs, key=lambda r: int(r["Context size"]))[:20]
+            # Order by byte-wise improvement, largest improvements first
+            by_diff_size = sorted(diffs, key=lambda r: int(r["Diff size"]) - int(r["Base size"]))
+            # 20 top improvements, byte-wise
+            top_improvements_bytes = by_diff_size[:20]
+            # 20 top regressions, byte-wise
+            top_regressions_bytes = by_diff_size[-20:]
+
+            # Order by percentage-wise size improvement, largest improvements first
+            def diff_pct(r):
+                base = int(r["Base size"])
+                if base == 0:
+                    return 0
+                diff = int(r["Diff size"])
+                return (diff - base) / base
+
+            by_diff_size_pct = sorted(diffs, key=diff_pct)
+            top_improvements_pct = by_diff_size_pct[:20]
+            top_regressions_pct = by_diff_size_pct[-20:]
+
+            contexts = smallest_contexts + top_improvements_bytes + top_regressions_bytes + top_improvements_pct + top_regressions_pct
+
+        final_contexts_indices = list(set(int(r["Context"]) for r in contexts))
+        final_contexts_indices.sort()
+        return final_contexts_indices
 
 ################################################################################
 # SuperPMI Replay/TP diff
@@ -2159,11 +2235,8 @@ class SuperPMIReplayThroughputDiff:
                 # instruction count and all collections.
                 def is_significant_pct(base, diff):
                     return round((diff - base) / base * 100, 2) != 0
-                def is_significant(base, diff):
-                    def check(col):
-                        return is_significant_pct(int(base[col]["Diff executed instructions"]), int(diff[col]["Diff executed instructions"]))
-
-                    return check("Overall") or check("MinOpts") or check("FullOpts")
+                def is_significant(row, base, diff):
+                    return is_significant_pct(int(base[row]["Diff executed instructions"]), int(diff[row]["Diff executed instructions"]))
                 def format_pct(base_instructions, diff_instructions):
                     plus_if_positive = "+" if diff_instructions > base_instructions else ""
                     text = "{}{:.2f}%".format(plus_if_positive, (diff_instructions - base_instructions) / base_instructions * 100)
@@ -2173,24 +2246,23 @@ class SuperPMIReplayThroughputDiff:
 
                     return text
 
-                significant_diffs = {}
-                for mch_file, base, diff in tp_diffs:
-                    significant_diffs[mch_file] = is_significant(base, diff)
+                if any(is_significant(row, base, diff) for row in ["Overall", "MinOpts", "FullOpts"] for (_, base, diff) in tp_diffs):
+                    def write_pivot_section(row):
+                        if not any(is_significant(row, base, diff) for (_, base, diff) in tp_diffs):
+                            return
 
-                if any(significant_diffs[mch_file] for (mch_file, _, _) in tp_diffs):
-                    def write_pivot_section(col):
                         write_fh.write("\n<details>\n")
-                        sum_base = sum(int(base_metrics[col]["Diff executed instructions"]) for (_, base_metrics, _) in tp_diffs)
-                        sum_diff = sum(int(diff_metrics[col]["Diff executed instructions"]) for (_, _, diff_metrics) in tp_diffs)
+                        sum_base = sum(int(base_metrics[row]["Diff executed instructions"]) for (_, base_metrics, _) in tp_diffs)
+                        sum_diff = sum(int(diff_metrics[row]["Diff executed instructions"]) for (_, _, diff_metrics) in tp_diffs)
 
-                        write_fh.write("<summary>{} ({})</summary>\n\n".format(col, format_pct(sum_base, sum_diff)))
+                        write_fh.write("<summary>{} ({})</summary>\n\n".format(row, format_pct(sum_base, sum_diff)))
                         write_fh.write("|Collection|PDIFF|\n")
                         write_fh.write("|---|--:|\n")
                         for mch_file, base, diff in tp_diffs:
-                            base_instructions = int(base[col]["Diff executed instructions"])
-                            diff_instructions = int(diff[col]["Diff executed instructions"])
+                            base_instructions = int(base[row]["Diff executed instructions"])
+                            diff_instructions = int(diff[row]["Diff executed instructions"])
 
-                            if significant_diffs[mch_file]:
+                            if is_significant(row, base, diff):
                                 write_fh.write("|{}|{}|\n".format(
                                     mch_file,
                                     format_pct(base_instructions, diff_instructions)))
@@ -2206,13 +2278,13 @@ class SuperPMIReplayThroughputDiff:
 
                 write_fh.write("\n<details>\n")
                 write_fh.write("<summary>Details</summary>\n\n")
-                for (disp, col) in [("All", "Overall"), ("MinOpts", "MinOpts"), ("FullOpts", "FullOpts")]:
+                for (disp, row) in [("All", "Overall"), ("MinOpts", "MinOpts"), ("FullOpts", "FullOpts")]:
                     write_fh.write("{} contexts:\n\n".format(disp))
                     write_fh.write("|Collection|Base # instructions|Diff # instructions|PDIFF|\n")
                     write_fh.write("|---|--:|--:|--:|\n")
                     for mch_file, base, diff in tp_diffs:
-                        base_instructions = int(base[col]["Diff executed instructions"])
-                        diff_instructions = int(diff[col]["Diff executed instructions"])
+                        base_instructions = int(base[row]["Diff executed instructions"])
+                        diff_instructions = int(diff[row]["Diff executed instructions"])
                         write_fh.write("|{}|{:,d}|{:,d}|{}|\n".format(
                             mch_file, base_instructions, diff_instructions,
                             format_pct(base_instructions, diff_instructions)))
@@ -3901,11 +3973,6 @@ def setup_args(args):
                             "metrics",
                             lambda unused: True,
                             "Unable to set metrics.")
-
-        coreclr_args.verify(args,
-                            "retainOnlyTopFiles",
-                            lambda unused: True,
-                            "Unable to set retainOnlyTopFiles.")
 
         coreclr_args.verify(args,
                             "diff_with_release",

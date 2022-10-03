@@ -7,6 +7,7 @@
     <RunScriptInputName Condition="'$(TargetOS)' == 'Browser' and '$(OS)' == 'Windows_NT'">WasmRunnerTemplate.cmd</RunScriptInputName>
 
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(WasmAppDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
+    <WasmXHarnessArgs Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'perftrace' or '$(MonoWasmBuildVariant)' == 'multithread'">$(WasmXHarnessArgs) --web-server-use-cop</WasmXHarnessArgs>
   </PropertyGroup>
 
   <Target Name="BuildSampleInTree"
