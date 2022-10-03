@@ -224,6 +224,7 @@
     <Compile Include="Compiler\ReadyToRunCodegenCompilationBuilder.cs" />
     <Compile Include="Compiler\ReadyToRunFileLayoutOptimizer.cs" />
     <Compile Include="Compiler\ReadyToRunMetadataFieldLayoutAlgorithm.cs" />
+    <Compile Include="Compiler\ReadyToRunMainMethodRootProvider.cs" />
     <Compile Include="Compiler\ReadyToRunSingleAssemblyCompilationModuleGroup.cs" />
     <Compile Include="Compiler\ReadyToRunStandaloneMethodMetadata.cs" />
     <Compile Include="Compiler\ReadyToRunTableManager.cs" />
