@@ -991,13 +991,6 @@ private:
 
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(val.LclNum());
 
-        if (varTypeIsSIMD(varDsc))
-        {
-            // TODO-ADDR: skip SIMD variables for now, fgMorphFieldAssignToSimdSetElement and
-            // others need to be updated to recognize LCL_FLDs.
-            return IndirTransform::None;
-        }
-
         if (indir->TypeGet() != TYP_STRUCT)
         {
             if (varDsc->lvPromoted)
@@ -1010,6 +1003,14 @@ private:
             if (indir->TypeGet() == varDsc->TypeGet())
             {
                 return IndirTransform::LclVar;
+            }
+
+            if (varTypeIsSIMD(varDsc))
+            {
+                // TODO-ADDR: skip SIMD variables for now, fgMorphFieldAssignToSimdSetElement and
+                // fgMorphFieldToSimdGetElement need to be updated to recognize LCL_FLDs or moved
+                // here.
+                return IndirTransform::None;
             }
 
             // Bool and ubyte are the same type.
