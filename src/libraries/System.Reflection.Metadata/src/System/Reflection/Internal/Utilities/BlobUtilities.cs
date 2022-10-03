@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
+using System.Buffers.Binary;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection.Internal;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace System.Reflection
 {
@@ -14,44 +13,37 @@ namespace System.Reflection
     {
         public static byte[] ReadBytes(byte* buffer, int byteCount)
         {
-            if (byteCount == 0)
-            {
-                return Array.Empty<byte>();
-            }
-
-            byte[] result = new byte[byteCount];
-            Marshal.Copy((IntPtr)buffer, result, 0, byteCount);
-            return result;
+            return new ReadOnlySpan<byte>(buffer, byteCount).ToArray();
         }
 
         public static ImmutableArray<byte> ReadImmutableBytes(byte* buffer, int byteCount)
         {
-            byte[]? bytes = ReadBytes(buffer, byteCount);
-            return ImmutableByteArrayInterop.DangerousCreateFromUnderlyingArray(ref bytes);
+            return ImmutableArray.Create(new ReadOnlySpan<byte>(buffer, byteCount));
         }
 
         public static void WriteBytes(this byte[] buffer, int start, byte value, int byteCount)
         {
             Debug.Assert(buffer.Length > 0);
 
-            fixed (byte* bufferPtr = &buffer[0])
-            {
-                byte* startPtr = bufferPtr + start;
-                for (int i = 0; i < byteCount; i++)
-                {
-                    startPtr[i] = value;
-                }
-            }
+            new Span<byte>(buffer, start, byteCount).Fill(value);
         }
 
         public static void WriteDouble(this byte[] buffer, int start, double value)
         {
+#if NETCOREAPP
+            BinaryPrimitives.WriteDoubleLittleEndian(buffer.AsSpan(start), value);
+#else
             WriteUInt64(buffer, start, *(ulong*)&value);
+#endif
         }
 
         public static void WriteSingle(this byte[] buffer, int start, float value)
         {
+#if NETCOREAPP
+            BinaryPrimitives.WriteSingleLittleEndian(buffer.AsSpan(start), value);
+#else
             WriteUInt32(buffer, start, *(uint*)&value);
+#endif
         }
 
         public static void WriteByte(this byte[] buffer, int start, byte value)
@@ -62,60 +54,27 @@ namespace System.Reflection
 
         public static void WriteUInt16(this byte[] buffer, int start, ushort value)
         {
-            fixed (byte* ptr = &buffer[start])
-            {
-                unchecked
-                {
-                    ptr[0] = (byte)value;
-                    ptr[1] = (byte)(value >> 8);
-                }
-            }
+            BinaryPrimitives.WriteUInt16LittleEndian(buffer.AsSpan(start), value);
         }
 
         public static void WriteUInt16BE(this byte[] buffer, int start, ushort value)
         {
-            fixed (byte* ptr = &buffer[start])
-            {
-                unchecked
-                {
-                    ptr[0] = (byte)(value >> 8);
-                    ptr[1] = (byte)value;
-                }
-            }
+            BinaryPrimitives.WriteUInt16BigEndian(buffer.AsSpan(start), value);
         }
 
         public static void WriteUInt32BE(this byte[] buffer, int start, uint value)
         {
-            fixed (byte* ptr = &buffer[start])
-            {
-                unchecked
-                {
-                    ptr[0] = (byte)(value >> 24);
-                    ptr[1] = (byte)(value >> 16);
-                    ptr[2] = (byte)(value >> 8);
-                    ptr[3] = (byte)value;
-                }
-            }
+            BinaryPrimitives.WriteUInt32BigEndian(buffer.AsSpan(start), value);
         }
 
         public static void WriteUInt32(this byte[] buffer, int start, uint value)
         {
-            fixed (byte* ptr = &buffer[start])
-            {
-                unchecked
-                {
-                    ptr[0] = (byte)value;
-                    ptr[1] = (byte)(value >> 8);
-                    ptr[2] = (byte)(value >> 16);
-                    ptr[3] = (byte)(value >> 24);
-                }
-            }
+            BinaryPrimitives.WriteUInt32LittleEndian(buffer.AsSpan(start), value);
         }
 
         public static void WriteUInt64(this byte[] buffer, int start, ulong value)
         {
-            WriteUInt32(buffer, start, unchecked((uint)value));
-            WriteUInt32(buffer, start + 4, unchecked((uint)(value >> 32)));
+            BinaryPrimitives.WriteUInt64LittleEndian(buffer.AsSpan(start), value);
         }
 
         public const int SizeOfSerializedDecimal = sizeof(byte) + 3 * sizeof(uint);
@@ -137,6 +96,11 @@ namespace System.Reflection
 
         public static void WriteGuid(this byte[] buffer, int start, Guid value)
         {
+#if NETCOREAPP
+            bool written = value.TryWriteBytes(buffer.AsSpan(start));
+            // This function is not public, callers have to ensure that enough space is available.
+            Debug.Assert(written);
+#else
             fixed (byte* dst = &buffer[start])
             {
                 byte* src = (byte*)&value;
@@ -167,6 +131,7 @@ namespace System.Reflection
                 dst[14] = src[14];
                 dst[15] = src[15];
             }
+#endif
         }
 
         public static void WriteUTF8(this byte[] buffer, int start, char* charPtr, int charCount, int byteCount, bool allowUnpairedSurrogates)
