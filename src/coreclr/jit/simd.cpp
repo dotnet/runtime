@@ -174,6 +174,11 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
         }
     }
 
+    if (sizeBytes != nullptr)
+    {
+        *sizeBytes = 0;
+    }
+
     if ((typeHnd == nullptr) || !isIntrinsicType(typeHnd))
     {
         return CORINFO_TYPE_UNDEF;
