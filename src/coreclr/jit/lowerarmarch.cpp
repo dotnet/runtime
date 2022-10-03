@@ -688,12 +688,12 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     {
         return;
     }
-#else
+#else // !TARGET_ARM
     if ((ClrSafeInt<int>(offset) + ClrSafeInt<int>(size)).IsOverflow())
     {
         return;
     }
-#endif // TARGET_ARM
+#endif // !TARGET_ARM
 
     if (!IsSafeToContainMem(blkNode, addr))
     {
