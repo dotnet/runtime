@@ -30,6 +30,7 @@ MethodContext::MethodContext()
 
     cr    = new CompileResult();
     index = -1;
+    ignoreStoredConfig = false;
     isReadyToRunCompilation = ReadyToRunCompilation::Uninitialized;
 }
 
@@ -2185,29 +2186,6 @@ CorInfoHelpFunc MethodContext::repGetUnBoxHelper(CORINFO_CLASS_HANDLE cls)
     DEBUG_REP(dmpGetUnBoxHelper(key, value));
     CorInfoHelpFunc result = (CorInfoHelpFunc)value;
     return result;
-}
-
-void MethodContext::recGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls, void* result)
-{
-    if (GetRuntimeTypePointer == nullptr)
-        GetRuntimeTypePointer = new LightWeightMap<DWORDLONG, DWORDLONG>();
-
-    DWORDLONG key = CastHandle(cls);
-    DWORDLONG value = (DWORDLONG)result;
-    GetRuntimeTypePointer->Add(key, value);
-    DEBUG_REC(dmpGetRuntimeTypePointer(key, value));
-}
-void MethodContext::dmpGetRuntimeTypePointer(DWORDLONG key, DWORDLONG value)
-{
-    printf("GetRuntimeTypePointer key cls-%016llX, value res-%016llX", key, value);
-}
-void* MethodContext::repGetRuntimeTypePointer(CORINFO_CLASS_HANDLE cls)
-{
-    DWORDLONG key = CastHandle(cls);
-    AssertMapAndKeyExist(GetRuntimeTypePointer, key, ": key %016llX", key);
-    DWORDLONG value = GetRuntimeTypePointer->Get(key);
-    DEBUG_REP(dmpGetRuntimeTypePointer(key, value));
-    return (void*)value;
 }
 
 void MethodContext::recGetReadyToRunHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
@@ -4897,67 +4875,6 @@ int MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned me
     }
 }
 
-void MethodContext::recObjectToString(void* handle, char* buffer, int bufferSize, int length)
-{
-    if (ObjectToString == nullptr)
-        ObjectToString = new LightWeightMap<DLD, DD>();
-
-    DLD key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.A = CastHandle(handle);
-    key.B = (DWORD)bufferSize;
-
-    DWORD strBuf = (DWORD)-1;
-    if (buffer != nullptr && length != -1)
-    {
-        int bufferRealSize = min(length, bufferSize);
-        strBuf = (DWORD)ObjectToString->AddBuffer((unsigned char*)buffer, (unsigned int)bufferRealSize);
-    }
-
-    DD value;
-    value.A = (DWORD)length;
-    value.B = (DWORD)strBuf;
-
-    ObjectToString->Add(key, value);
-    DEBUG_REC(dmpObjectToString(key, value));
-}
-void MethodContext::dmpObjectToString(DLD key, DD value)
-{
-    printf("ObjectToString key hnd-%016llX bufSize-%u, len-%u", key.A, key.B, value.A);
-    ObjectToString->Unlock();
-}
-int MethodContext::repObjectToString(void* handle, char* buffer, int bufferSize)
-{
-    if (ObjectToString == nullptr)
-    {
-        return -1;
-    }
-
-    DLD key;
-    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
-    key.A = CastHandle(handle);
-    key.B = (DWORD)bufferSize;
-
-    int itemIndex = ObjectToString->GetIndex(key);
-    if (itemIndex < 0)
-    {
-        return -1;
-    }
-    else
-    {
-        DD value = ObjectToString->Get(key);
-        DEBUG_REP(dmpObjectToString(key, value));
-        int srcBufferLength = (int)value.A;
-        if (buffer != nullptr && srcBufferLength > 0)
-        {
-            char* srcBuffer = (char*)ObjectToString->GetBuffer(value.B);
-            Assert(srcBuffer != nullptr);
-            memcpy(buffer, srcBuffer, min(srcBufferLength, bufferSize));
-        }
-        return srcBufferLength;
-    }
-}
-
 void MethodContext::recGetHelperName(CorInfoHelpFunc funcNum, const char* result)
 {
     if (GetHelperName == nullptr)
@@ -6987,6 +6904,9 @@ void MethodContext::dmpGetIntConfigValue(const Agnostic_ConfigIntInfo& key, int 
 
 int MethodContext::repGetIntConfigValue(const WCHAR* name, int defaultValue)
 {
+    if (ignoreStoredConfig)
+        return defaultValue;
+
     if (GetIntConfigValue == nullptr)
         return defaultValue;
 
@@ -7039,6 +6959,9 @@ void MethodContext::dmpGetStringConfigValue(DWORD nameIndex, DWORD resultIndex)
 
 const WCHAR* MethodContext::repGetStringConfigValue(const WCHAR* name)
 {
+    if (ignoreStoredConfig)
+        return nullptr;
+
     if (GetStringConfigValue == nullptr)
         return nullptr;
 

@@ -37,6 +37,7 @@ namespace System.Xml.XslCompiledTransformApiTests
     // Base class for test cases
     //
     ////////////////////////////////////////////////////////////////
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
     public class XsltApiTestCaseBase2
     {
         // Generic data for all derived test cases

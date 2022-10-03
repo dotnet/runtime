@@ -79,7 +79,7 @@ static gint32 methods_size;
 static gint32 signatures_size;
 
 void
-mono_loader_init ()
+mono_loader_init (void)
 {
 	static gboolean inited;
 

@@ -23,6 +23,8 @@
     <OSHostArch Condition="$([MSBuild]::IsOSPlatform('Windows')) and
         $([System.Environment]::GetEnvironmentVariable('PROCESSOR_ARCHITECTURE', EnvironmentVariableTarget.Machine)) == 'ARM64'">arm64</OSHostArch>
 
+    <OSHostArch Condition="$([MSBuild]::IsOSPlatform('osx')) and '$(CrossBuild)' == 'true'">x64</OSHostArch>
+
     <IlcHostArch Condition="'$(IlcHostArch)' == ''">$(OSHostArch)</IlcHostArch>
     <IlcHostPackageName>runtime.$(OSIdentifier)-$(IlcHostArch).Microsoft.DotNet.ILCompiler</IlcHostPackageName>
     

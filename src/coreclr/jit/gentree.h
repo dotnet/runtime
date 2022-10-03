@@ -472,11 +472,6 @@ enum GenTreeFlags : unsigned int
     GTF_VAR_ITERATOR    = 0x01000000, // GT_LCL_VAR -- this is a iterator reference in the loop condition
     GTF_VAR_CLONED      = 0x00800000, // GT_LCL_VAR -- this node has been cloned or is a clone
     GTF_VAR_CONTEXT     = 0x00400000, // GT_LCL_VAR -- this node is part of a runtime lookup
-    GTF_VAR_FOLDED_IND  = 0x00200000, // GT_LCL_VAR -- this node was folded from *(typ*)&lclVar expression tree in fgMorphSmpOp()
-                                      // where 'typ' is a small type and 'lclVar' corresponds to a normalized-on-store local variable.
-                                      // This flag identifies such nodes in order to make sure that fgDoNormalizeOnStore() is called
-                                      // on their parents in post-order morph.
-                                      // Relevant for inlining optimizations (see fgInlinePrependStatements)
 
     // For additional flags for GT_CALL node see GTF_CALL_M_*
 
@@ -554,8 +549,7 @@ enum GenTreeFlags : unsigned int
     GTF_ICON_METHOD_HDL         = 0x03000000, // GT_CNS_INT -- constant is a method handle
     GTF_ICON_FIELD_HDL          = 0x04000000, // GT_CNS_INT -- constant is a field handle
     GTF_ICON_STATIC_HDL         = 0x05000000, // GT_CNS_INT -- constant is a handle to static data
-    GTF_ICON_STR_HDL            = 0x06000000, // GT_CNS_INT -- constant is a pinned handle pointing to a string object
-    GTF_ICON_OBJ_HDL            = 0x12000000, // GT_CNS_INT -- constant is an object handle (e.g. frozen string or Type object)
+    GTF_ICON_STR_HDL            = 0x06000000, // GT_CNS_INT -- constant is a string handle
     GTF_ICON_CONST_PTR          = 0x07000000, // GT_CNS_INT -- constant is a pointer to immutable data, (e.g. IAT_PPVALUE)
     GTF_ICON_GLOBAL_PTR         = 0x08000000, // GT_CNS_INT -- constant is a pointer to mutable data (e.g. from the VM state)
     GTF_ICON_VARG_HDL           = 0x09000000, // GT_CNS_INT -- constant is a var arg cookie handle
@@ -1860,6 +1854,9 @@ public:
 
     // Returns the GTF flag equivalent for the regIndex'th register of a multi-reg node.
     GenTreeFlags GetRegSpillFlagByIdx(int regIndex) const;
+
+    // Sets the GTF flag equivalent for the regIndex'th register of a multi-reg node.
+    void SetRegSpillFlagByIdx(GenTreeFlags flags, int regIndex);
 
     // Last-use information for either GenTreeLclVar or GenTreeCopyOrReload nodes.
 private:
@@ -3377,26 +3374,6 @@ struct GenTreeVecCon : public GenTree
         simd32_t gtSimd32Val;
     };
 
-private:
-    // TODO-1stClassStructs: Tracking the size and base type should be unnecessary since the
-    // size should be `gtType` and the handle should be looked up at callsites where required
-
-    unsigned char gtSimdBaseJitType; // SIMD vector base JIT type
-
-public:
-    CorInfoType GetSimdBaseJitType() const
-    {
-        return (CorInfoType)gtSimdBaseJitType;
-    }
-
-    void SetSimdBaseJitType(CorInfoType simdBaseJitType)
-    {
-        gtSimdBaseJitType = (unsigned char)simdBaseJitType;
-        assert(gtSimdBaseJitType == simdBaseJitType);
-    }
-
-    var_types GetSimdBaseType() const;
-
 #if defined(FEATURE_HW_INTRINSICS)
     static bool IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd32_t& simd32Val);
 
@@ -3519,11 +3496,9 @@ public:
         }
     }
 
-    GenTreeVecCon(var_types type, CorInfoType simdBaseJitType)
-        : GenTree(GT_CNS_VEC, type), gtSimdBaseJitType((unsigned char)simdBaseJitType)
+    GenTreeVecCon(var_types type) : GenTree(GT_CNS_VEC, type)
     {
         assert(varTypeIsSIMD(type));
-        assert(gtSimdBaseJitType == simdBaseJitType);
     }
 
 #if DEBUGGABLE_GENTREE
@@ -5732,6 +5707,16 @@ struct GenTreeQmark : public GenTreeOp
         assert((colon != nullptr) && colon->OperIs(GT_COLON));
     }
 
+    GenTree* ThenNode()
+    {
+        return gtOp2->AsColon()->ThenNode();
+    }
+
+    GenTree* ElseNode()
+    {
+        return gtOp2->AsColon()->ElseNode();
+    }
+
 #if DEBUGGABLE_GENTREE
     GenTreeQmark() : GenTreeOp()
     {
@@ -6001,12 +5986,12 @@ private:
 struct GenTreeJitIntrinsic : public GenTreeMultiOp
 {
 protected:
-    GenTree*       gtInlineOperands[2];
-    uint16_t       gtLayoutNum;
-    unsigned char  gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
-    regNumberSmall gtOtherReg;         // For intrinsics that return 2 registers
-    unsigned char  gtSimdBaseJitType;  // SIMD vector base JIT type
-    unsigned char  gtSimdSize;         // SIMD vector size in bytes, use 0 for scalar intrinsics
+    GenTree*           gtInlineOperands[2];
+    regNumberSmall     gtOtherReg;    // The second register for multi-reg intrinsics.
+    MultiRegSpillFlags gtSpillFlags;  // Spill flags for multi-reg intrinsics.
+    unsigned char gtAuxiliaryJitType; // For intrinsics than need another type (e.g. Avx2.Gather* or SIMD (by element))
+    unsigned char gtSimdBaseJitType;  // SIMD vector base JIT type
+    unsigned char gtSimdSize;         // SIMD vector size in bytes, use 0 for scalar intrinsics
 
 #if defined(FEATURE_SIMD)
     union {
@@ -6018,17 +6003,6 @@ protected:
 #endif
 
 public:
-    unsigned GetLayoutNum() const
-    {
-        return gtLayoutNum;
-    }
-
-    void SetLayoutNum(unsigned layoutNum)
-    {
-        assert(FitsIn<uint16_t>(layoutNum));
-        gtLayoutNum = static_cast<uint16_t>(layoutNum);
-    }
-
     regNumber GetOtherReg() const
     {
         return (regNumber)gtOtherReg;
@@ -6038,6 +6012,16 @@ public:
     {
         gtOtherReg = (regNumberSmall)reg;
         assert(gtOtherReg == reg);
+    }
+
+    GenTreeFlags GetRegSpillFlagByIdx(unsigned idx) const
+    {
+        return GetMultiRegSpillFlagsByIdx(gtSpillFlags, idx);
+    }
+
+    void SetRegSpillFlagByIdx(GenTreeFlags flags, unsigned idx)
+    {
+        gtSpillFlags = SetMultiRegSpillFlagsByIdx(gtSpillFlags, flags, idx);
     }
 
     CorInfoType GetAuxiliaryJitType() const
@@ -6113,9 +6097,9 @@ public:
                         unsigned      simdSize,
                         Operands... operands)
         : GenTreeMultiOp(oper, type, allocator, gtInlineOperands DEBUGARG(false), operands...)
-        , gtLayoutNum(0)
-        , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
         , gtOtherReg(REG_NA)
+        , gtSpillFlags(0)
+        , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
         , gtSimdBaseJitType((unsigned char)simdBaseJitType)
         , gtSimdSize((unsigned char)simdSize)
         , gtHWIntrinsicId(NI_Illegal)
@@ -6141,9 +6125,9 @@ protected:
                          nodeBuilder.GetBuiltOperands(),
                          nodeBuilder.GetOperandCount(),
                          gtInlineOperands DEBUGARG(false))
-        , gtLayoutNum(0)
-        , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
         , gtOtherReg(REG_NA)
+        , gtSpillFlags(0)
+        , gtAuxiliaryJitType(CORINFO_TYPE_UNDEF)
         , gtSimdBaseJitType((unsigned char)simdBaseJitType)
         , gtSimdSize((unsigned char)simdSize)
         , gtHWIntrinsicId(NI_Illegal)
@@ -9095,6 +9079,13 @@ inline GenTreeFlags GenTree::GetRegSpillFlagByIdx(int regIndex) const
 #endif // !defined(TARGET_64BIT)
 #endif // FEATURE_MULTIREG_RET
 
+#ifdef FEATURE_HW_INTRINSICS
+    if (OperIsHWIntrinsic())
+    {
+        return AsHWIntrinsic()->GetRegSpillFlagByIdx(regIndex);
+    }
+#endif // FEATURE_HW_INTRINSICS
+
     if (OperIsScalarLocal())
     {
         return AsLclVar()->GetRegSpillFlagByIdx(regIndex);
@@ -9102,6 +9093,63 @@ inline GenTreeFlags GenTree::GetRegSpillFlagByIdx(int regIndex) const
 
     assert(!"Invalid node type for GetRegSpillFlagByIdx");
     return GTF_EMPTY;
+}
+
+//-----------------------------------------------------------------------------------
+// SetRegSpillFlagByIdx: Set a specific register's spill flags, based on regIndex,
+//                       for this multi-reg node.
+//
+// Arguments:
+//     flags    - the flags to set
+//     regIndex - which register's spill flags to set
+//
+// Notes:
+//     This must be a multireg node and 'regIndex' must be a valid index for this node.
+//     This method takes the GTF "equivalent" flags and sets the packed flags on the
+//     multireg node.
+//
+inline void GenTree::SetRegSpillFlagByIdx(GenTreeFlags flags, int regIndex)
+{
+#if FEATURE_MULTIREG_RET
+    if (IsMultiRegCall())
+    {
+        AsCall()->SetRegSpillFlagByIdx(flags, regIndex);
+        return;
+    }
+
+#if FEATURE_ARG_SPLIT
+    if (OperIsPutArgSplit())
+    {
+        AsPutArgSplit()->SetRegSpillFlagByIdx(flags, regIndex);
+        return;
+    }
+#endif // FEATURE_ARG_SPLIT
+
+#if !defined(TARGET_64BIT)
+    if (OperIsMultiRegOp())
+    {
+        AsMultiRegOp()->SetRegSpillFlagByIdx(flags, regIndex);
+        return;
+    }
+#endif // !defined(TARGET_64BIT)
+
+#endif // FEATURE_MULTIREG_RET
+
+#ifdef FEATURE_HW_INTRINSICS
+    if (OperIsHWIntrinsic())
+    {
+        AsHWIntrinsic()->SetRegSpillFlagByIdx(flags, regIndex);
+        return;
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+    if (OperIsScalarLocal())
+    {
+        AsLclVar()->SetRegSpillFlagByIdx(flags, regIndex);
+        return;
+    }
+
+    assert(!"Invalid node type for SetRegSpillFlagByIdx");
 }
 
 //-----------------------------------------------------------------------------------

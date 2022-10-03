@@ -3490,7 +3490,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
 #ifdef FEATURE_SIMD
             if (varTypeIsSIMD(lclRegType))
             {
-                GenTree* zeroCon = comp->gtNewZeroConNode(lclRegType, CORINFO_TYPE_FLOAT);
+                GenTree* zeroCon = comp->gtNewZeroConNode(lclRegType);
 
                 BlockRange().InsertAfter(src, zeroCon);
                 BlockRange().Remove(src);
@@ -5213,14 +5213,7 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
 {
     if (!addr->OperIs(GT_ADD) || addr->gtOverflow())
     {
-#ifdef TARGET_ARM64
-        if (!addr->OperIs(GT_ADDEX))
-        {
-            return false;
-        }
-#else
         return false;
-#endif
     }
 
 #ifdef TARGET_ARM64

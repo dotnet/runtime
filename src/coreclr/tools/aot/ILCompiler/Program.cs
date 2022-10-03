@@ -32,7 +32,7 @@ namespace ILCompiler
         {
             _command = command;
 
-            if (command.Result.GetValueForOption(command.WaitForDebugger))
+            if (Get(command.WaitForDebugger))
             {
                 Console.WriteLine("Waiting for debugger to attach. Press ENTER to continue");
                 Console.ReadLine();
@@ -761,6 +761,7 @@ namespace ILCompiler
 
         private static int Main(string[] args) =>
             new CommandLineBuilder(new ILCompilerRootCommand(args))
+                .UseTokenReplacer(Helpers.TryReadResponseFile)
                 .UseVersionOption("-v")
                 .UseHelp(context => context.HelpBuilder.CustomizeLayout(ILCompilerRootCommand.GetExtendedHelp))
                 .UseParseErrorReporting()

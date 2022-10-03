@@ -4807,7 +4807,7 @@ GenTree* Compiler::fgMorphExpandStackArgForVarArgs(GenTreeLclVarCommon* lclNode)
     }
 
     GenTree* argNode;
-    if (varTypeIsStruct(lclNode))
+    if (lclNode->TypeIs(TYP_STRUCT))
     {
         argNode = gtNewObjNode(lclNode->GetLayout(this), argAddr);
     }
@@ -4887,7 +4887,7 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
     unsigned     offset        = lclNode->GetLclOffs() + fieldOffset;
     var_types    argNodeType   = lclNode->TypeGet();
     ClassLayout* argNodeLayout = nullptr;
-    if (varTypeIsStruct(argNodeType))
+    if (argNodeType == TYP_STRUCT)
     {
         argNodeLayout = lclNode->GetLayout(this);
     }
@@ -4909,7 +4909,7 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
     GenTree* newArgNode;
     if (!isAddress)
     {
-        if (varTypeIsStruct(argNodeType))
+        if (argNodeType == TYP_STRUCT)
         {
             newArgNode = gtNewObjNode(argNodeLayout, addrNode);
         }
@@ -8312,26 +8312,6 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     call = fgMorphArgs(call);
     noway_assert(call->gtOper == GT_CALL);
 
-    // Try to replace CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE with a constant gc handle
-    // pointing to a frozen segment
-    if (!gtIsActiveCSE_Candidate(call) && gtIsTypeHandleToRuntimeTypeHelper(call))
-    {
-        GenTree*             argNode = call->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
-        CORINFO_CLASS_HANDLE hClass  = gtGetHelperArgClassHandle(argNode);
-        if ((hClass != NO_CLASS_HANDLE) && !gtIsActiveCSE_Candidate(argNode))
-        {
-            void* ptr = info.compCompHnd->getRuntimeTypePointer(hClass);
-            if (ptr != nullptr)
-            {
-                setMethodHasFrozenObjects();
-                GenTree* retNode = gtNewIconEmbHndNode(ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
-                retNode->gtType  = TYP_REF;
-                INDEBUG(retNode->AsIntCon()->gtTargetHandle = (size_t)ptr);
-                return fgMorphTree(retNode);
-            }
-        }
-    }
-
     // Assign DEF flags if it produces a definition from "return buffer".
     fgAssignSetVarDef(call);
     if (call->OperRequiresAsgFlag())
@@ -9158,7 +9138,7 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
                 noway_assert(src->IsIntegralConst(0));
                 noway_assert(destVarDsc != nullptr);
 
-                src = gtNewZeroConNode(asgType, CORINFO_TYPE_FLOAT);
+                src = gtNewZeroConNode(asgType);
             }
             else
 #endif
@@ -10807,13 +10787,6 @@ DONE_MORPHING_CHILDREN:
     {
         case GT_ASG:
 
-            if (op1->OperIs(GT_LCL_VAR) && ((op1->gtFlags & GTF_VAR_FOLDED_IND) != 0))
-            {
-                op1->gtFlags &= ~GTF_VAR_FOLDED_IND;
-                tree = fgDoNormalizeOnStore(tree);
-                op2  = tree->gtGetOp2();
-            }
-
             lclVarTree = fgIsIndirOfAddrOfLocal(op1);
             if (lclVarTree != nullptr)
             {
@@ -11181,7 +11154,7 @@ DONE_MORPHING_CHILDREN:
             //
             if (!tree->AsIndir()->IsVolatile())
             {
-                if (op1->IsIconHandle(GTF_ICON_OBJ_HDL))
+                if (op1->IsIconHandle(GTF_ICON_STR_HDL))
                 {
                     tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
                 }
@@ -11230,46 +11203,8 @@ DONE_MORPHING_CHILDREN:
                                 }
                             }
                         }
-                        // If the type of the IND (typ) is a "small int", and the type of the local has the
-                        // same width, then we can reduce to just the local variable -- it will be
-                        // correctly normalized.
-                        //
-                        // The below transformation cannot be applied if the local var needs to be normalized on load.
-                        else if (varTypeIsSmall(typ) && (genTypeSize(varDsc) == genTypeSize(typ)) &&
-                                 !lvaTable[lclNum].lvNormalizeOnLoad())
-                        {
-                            const bool definitelyLoad = (tree->gtFlags & GTF_DONT_CSE) == 0;
-                            const bool possiblyStore  = !definitelyLoad;
-
-                            if (possiblyStore || (varTypeIsUnsigned(varDsc) == varTypeIsUnsigned(typ)))
-                            {
-                                typ               = temp->TypeGet();
-                                tree->gtType      = typ;
-                                foldAndReturnTemp = true;
-
-                                if (possiblyStore)
-                                {
-                                    // This node can be on the left-hand-side of an assignment node.
-                                    // Mark this node with GTF_VAR_FOLDED_IND to make sure that fgDoNormalizeOnStore()
-                                    // is called on its parent in post-order morph.
-                                    temp->gtFlags |= GTF_VAR_FOLDED_IND;
-                                }
-                            }
-                        }
-                        // For matching types we can fold
-                        else if (!varTypeIsStruct(typ) && (lvaTable[lclNum].lvType == typ) &&
-                                 !lvaTable[lclNum].lvNormalizeOnLoad())
-                        {
-                            tree->gtType = typ = temp->TypeGet();
-                            foldAndReturnTemp  = true;
-                        }
                         // Otherwise will will fold this into a GT_LCL_FLD below
                         //   where we check (temp != nullptr)
-                    }
-                    else // !temp->OperIsLocal()
-                    {
-                        // We don't try to fold away the GT_IND/GT_ADDR for this case
-                        temp = nullptr;
                     }
                 }
                 else
@@ -12361,7 +12296,7 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 
     if (GenTreeVecCon::IsHWIntrinsicCreateConstant(node, simd32Val))
     {
-        GenTreeVecCon* vecCon = gtNewVconNode(node->TypeGet(), node->GetSimdBaseJitType());
+        GenTreeVecCon* vecCon = gtNewVconNode(node->TypeGet());
 
         for (GenTree* arg : node->Operands())
         {

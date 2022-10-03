@@ -107,6 +107,7 @@ jobs:
         - AdditionalHelixPreCommands: $(HelixPreCommandOSX)
         - AdditionalHelixPostCommands: $(HelixPostCommandOSX)
 
+    - ExtraSetupArguments: ''
     - name: ExtraSetupArguments
       ${{ if ne(parameters.runtimeType, 'wasm') }}:
         value: --install-dir $(PayloadDirectory)/dotnet
@@ -125,11 +126,11 @@ jobs:
     steps:
     - ${{ parameters.steps }}
     # run performance-setup
-    - powershell: $(Build.SourcesDirectory)\eng\testing\performance\performance-setup.ps1 $(IsInternal) -Framework $(_Framework) -Kind ${{ parameters.runKind }} -LogicalMachine ${{ parameters.logicalMachine }} ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
+    - powershell: $(Build.SourcesDirectory)\eng\testing\performance\performance-setup.ps1 $(IsInternal) -Framework $(_Framework) -Kind ${{ parameters.runKind }} -LogicalMachine ${{ parameters.logicalMachine }} -UseLocalCommitTime ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
       displayName: Performance Setup (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}
-    - script: $(Build.SourcesDirectory)/eng/testing/performance/performance-setup.sh $(IsInternal) --framework $(_Framework) --kind ${{ parameters.runKind }} --logicalmachine ${{ parameters.logicalMachine }} ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
+    - script: $(Build.SourcesDirectory)/eng/testing/performance/performance-setup.sh $(IsInternal) --framework $(_Framework) --kind ${{ parameters.runKind }} --logicalmachine ${{ parameters.logicalMachine }} --uselocalcommittime ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
       displayName: Performance Setup (Linux/MAC)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
       continueOnError: ${{ parameters.continueOnError }}

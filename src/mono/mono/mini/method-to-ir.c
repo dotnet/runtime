@@ -2982,12 +2982,16 @@ mini_emit_get_gsharedvt_info_klass (MonoCompile *cfg, MonoClass *klass, MonoRgct
  * On return the caller must check @klass for load errors.
  */
 static void
-emit_class_init (MonoCompile *cfg, MonoClass *klass)
+emit_class_init (MonoCompile *cfg, MonoClass *klass, gboolean for_field_access)
 {
 	MonoInst *vtable_arg;
 	int context_used;
 
 	context_used = mini_class_check_context_used (cfg, klass);
+
+	if (cfg->compile_aot && !for_field_access && mono_class_is_before_field_init (klass))
+		/* Only field accesses trigger initialization */
+		return;
 
 	if (context_used) {
 		vtable_arg = mini_emit_get_rgctx_klass (cfg, context_used,
@@ -6747,7 +6751,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			/* FIXME: Is there a better way to do this?
 			   We need the variable live for the duration
 			   of the whole method. */
-			if (!cfg->llvm_only)
+			if (!COMPILE_LLVM (cfg))
 				cfg->args [0]->flags |= MONO_INST_VOLATILE;
 		}
 	}
@@ -6855,9 +6859,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		 * Methods with AggressiveInline flag could be inlined even if the class has a cctor.
 		 * This might create a branch so emit it in the first code bblock instead of into initlocals_bb.
 		 */
-		if (ip - header->code == 0 && cfg->method != method && cfg->compile_aot && (method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING) && mono_class_needs_cctor_run (method->klass, method)) {
-			emit_class_init (cfg, method->klass);
-		}
+		if (ip - header->code == 0 && cfg->method != method && cfg->compile_aot && (method->iflags & METHOD_IMPL_ATTRIBUTE_AGGRESSIVE_INLINING) && mono_class_needs_cctor_run (method->klass, method))
+			emit_class_init (cfg, method->klass, FALSE);
 
 		if (skip_dead_blocks) {
 			int ip_offset = GPTRDIFF_TO_INT (ip - header->code);
@@ -7493,10 +7496,14 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (constrained_class) {
 				if (m_method_is_static (cil_method) && mini_class_check_context_used (cfg, constrained_class)) {
 					/* get_constrained_method () doesn't work on the gparams used by generic sharing */
-					// FIXME: Other configurations
-					//if (!cfg->gsharedvt)
-					//	GENERIC_SHARING_FAILURE (CEE_CALL);
 					gshared_static_virtual = TRUE;
+					if (!cfg->gsharedvt)
+						/*
+						 * We can't resolve these calls at compile time, and they are used in
+						 * perf-sensitive code in the BCL, so ask the AOT compiler to try to use specific instances
+						 * instead of this gshared method.
+						 */
+						cfg->prefer_instances = TRUE;
 				} else {
 					cmethod = get_constrained_method (cfg, image, token, cil_method, constrained_class, generic_context);
 					CHECK_CFG_ERROR;
@@ -7719,7 +7726,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			 * might not get called after the call was patched.
 			 */
 			if (cfg->gshared && cmethod->klass != method->klass && mono_class_is_ginst (cmethod->klass) && mono_method_is_generic_sharable (cmethod, TRUE) && mono_class_needs_cctor_run (cmethod->klass, method)) {
-				emit_class_init (cfg, cmethod->klass);
+				emit_class_init (cfg, cmethod->klass, FALSE);
 				CHECK_TYPELOAD (cmethod->klass);
 			}
 
@@ -9050,7 +9057,7 @@ calli_end:
 			}
 
 			if (cfg->gshared && cmethod && cmethod->klass != method->klass && mono_class_is_ginst (cmethod->klass) && mono_method_is_generic_sharable (cmethod, TRUE) && mono_class_needs_cctor_run (cmethod->klass, method)) {
-				emit_class_init (cfg, cmethod->klass);
+				emit_class_init (cfg, cmethod->klass, FALSE);
 				CHECK_TYPELOAD (cmethod->klass);
 			}
 
@@ -9217,7 +9224,7 @@ calli_end:
 					 * As a workaround, we call class cctors before allocating objects.
 					 */
 					if (mini_field_access_needs_cctor_run (cfg, method, cmethod->klass, vtable) && !(g_slist_find (class_inits, cmethod->klass))) {
-						emit_class_init (cfg, cmethod->klass);
+						emit_class_init (cfg, cmethod->klass, TRUE);
 						if (cfg->verbose_level > 2)
 							printf ("class %s.%s needs init call for ctor\n", m_class_get_name_space (cmethod->klass), m_class_get_name (cmethod->klass));
 						class_inits = g_slist_prepend (class_inits, cmethod->klass);
@@ -10048,7 +10055,7 @@ calli_end:
 				*/
 
 				if (mono_class_needs_cctor_run (klass, method))
-					emit_class_init (cfg, klass);
+					emit_class_init (cfg, klass, TRUE);
 
 				/*
 				 * The pointer we're computing here is
@@ -10089,7 +10096,7 @@ calli_end:
 				if (!addr) {
 					if (mini_field_access_needs_cctor_run (cfg, method, klass, vtable)) {
 						if (!(g_slist_find (class_inits, klass))) {
-							emit_class_init (cfg, klass);
+							emit_class_init (cfg, klass, TRUE);
 							if (cfg->verbose_level > 2)
 								printf ("class %s.%s needs init call for %s\n", m_class_get_name_space (klass), m_class_get_name (klass), mono_field_get_name (field));
 							class_inits = g_slist_prepend (class_inits, klass);
