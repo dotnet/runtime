@@ -42,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis
         private Dictionary<int, List<ISymbolDefinitionNode>> _offsetToDefName = new Dictionary<int, List<ISymbolDefinitionNode>>();
 
         // Code offset to Cfi blobs
-        private Dictionary<int, List<byte[]>> _offsetToCfis = new Dictionary<int, List<byte[]>>();
+        private Dictionary<int, ArraySegment<byte>> _offsetToCfis = new Dictionary<int, ArraySegment<byte>>();
         // Code offset to Lsda label index
         private Dictionary<int, byte[]> _offsetToCfiLsdaBlobName = new Dictionary<int, byte[]>();
         // Code offsets that starts a frame
@@ -237,11 +237,23 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         [DllImport(NativeObjectWriterFileName)]
-        private static extern void EmitCFICode(IntPtr objWriter, int nativeOffset, byte[] blob);
-        public void EmitCFICode(int nativeOffset, byte[] blob)
+        private static extern unsafe void EmitCFICode(IntPtr objWriter, int nativeOffset, byte *blob);
+        public unsafe void EmitCFICode(int nativeOffset, ReadOnlySpan<byte> blob)
         {
             Debug.Assert(_frameOpened);
-            EmitCFICode(_nativeObjectWriter, nativeOffset, blob);
+            fixed (byte *blobPtr = &MemoryMarshal.GetReference(blob))
+            {
+                EmitCFICode(_nativeObjectWriter, nativeOffset, blobPtr);
+            }
+        }
+
+        [DllImport(NativeObjectWriterFileName)]
+        private static extern unsafe void EmitCFICompactUnwindEncoding(IntPtr objWriter, uint encoding);
+
+        public unsafe void EmitCFICompactUnwindEncoding(uint encoding)
+        {
+            Debug.Assert(_frameOpened);
+            EmitCFICompactUnwindEncoding(_nativeObjectWriter, encoding);
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -296,11 +308,14 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         [DllImport(NativeObjectWriterFileName)]
-        private static extern void EmitARMExIdxCode(IntPtr objWriter, int nativeOffset, byte[] blob);
-        public void EmitARMExIdxCode(int nativeOffset, byte[] blob)
+        private static extern unsafe void EmitARMExIdxCode(IntPtr objWriter, int nativeOffset, byte *blob);
+        public unsafe void EmitARMExIdxCode(int nativeOffset, ReadOnlySpan<byte> blob)
         {
             Debug.Assert(_frameOpened);
-            EmitARMExIdxCode(_nativeObjectWriter, nativeOffset, blob);
+            fixed (byte *blobPtr = &MemoryMarshal.GetReference(blob))
+            {
+                EmitARMExIdxCode(_nativeObjectWriter, nativeOffset, blobPtr);
+            }
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -660,21 +675,28 @@ namespace ILCompiler.DependencyAnalysis
                 _byteInterruptionOffsets[start] = true;
                 _byteInterruptionOffsets[end] = true;
                 _offsetToCfiLsdaBlobName.Add(start, blobSymbolName);
-                for (int j = 0; j < len; j += CfiCodeSize)
+                if (len > 0)
                 {
-                    // The first byte of CFI_CODE is offset from the range the frame covers.
-                    // Compute code offset from the root method.
-                    int codeOffset = blob[j] + start;
-                    List<byte[]> cfis;
-                    if (!_offsetToCfis.TryGetValue(codeOffset, out cfis))
+                    int lastCfiStart = 0;
+                    int lastCodeOffset = blob[0] + start;
+
+                    for (int j = CfiCodeSize; j < len; j += CfiCodeSize)
                     {
-                        cfis = new List<byte[]>();
-                        _offsetToCfis.Add(codeOffset, cfis);
-                        _byteInterruptionOffsets[codeOffset] = true;
+                        // The first byte of CFI_CODE is offset from the range the frame covers.
+                        // Compute code offset from the root method.
+                        int codeOffset = blob[j] + start;
+
+                        if (lastCodeOffset != codeOffset)
+                        {
+                            _offsetToCfis.Add(lastCodeOffset, new ArraySegment<byte>(blob, lastCfiStart, j - lastCfiStart));
+                            _byteInterruptionOffsets[lastCodeOffset] = true;
+                            lastCfiStart = j;
+                            lastCodeOffset = codeOffset;
+                        }
                     }
-                    byte[] cfi = new byte[CfiCodeSize];
-                    Array.Copy(blob, j, cfi, 0, CfiCodeSize);
-                    cfis.Add(cfi);
+
+                    _offsetToCfis.Add(lastCodeOffset, new ArraySegment<byte>(blob, lastCfiStart, len - lastCfiStart));
+                    _byteInterruptionOffsets[lastCodeOffset] = true;
                 }
             }
 
@@ -706,7 +728,6 @@ namespace ILCompiler.DependencyAnalysis
                         EmitARMExIdxLsda(blobSymbolName);
                     else
                         EmitCFILsda(blobSymbolName);
-
                 }
                 else
                 {
@@ -728,18 +749,22 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             // Emit individual cfi blob for the given offset
-            List<byte[]> cfis;
-            if (_offsetToCfis.TryGetValue(offset, out cfis))
+            ArraySegment<byte> cfi;
+            if (_offsetToCfis.TryGetValue(offset, out cfi))
             {
-                foreach (byte[] cfi in cfis)
+                if (cfi.Count > 0)
                 {
-                    if (_targetPlatform.Architecture == TargetArchitecture.ARM)
+                    ReadOnlySpan<byte> cfiSpan = cfi;
+                    for (int i = 0; i < cfi.Count; i += CfiCodeSize)
                     {
-                        EmitARMExIdxCode(offset, cfi);
-                    }
-                    else
-                    {
-                        EmitCFICode(offset, cfi);
+                        if (_targetPlatform.Architecture == TargetArchitecture.ARM)
+                        {
+                            EmitARMExIdxCode(offset, cfiSpan.Slice(i, CfiCodeSize));
+                        }
+                        else
+                        {
+                            EmitCFICode(offset, cfiSpan.Slice(i, CfiCodeSize));
+                        }
                     }
                 }
             }
