@@ -43,14 +43,6 @@
 #include "appdomain.inl"
 #include "typestring.h"
 
-// The enum that describes the value of the IDispatchImplAttribute custom attribute.
-enum IDispatchImplType
-{
-    SystemDefinedImpl   = 0,
-    InternalImpl        = 1,
-    CompatibleImpl      = 2
-};
-
 // The enum that describe the value of System.Runtime.InteropServices.CustomQueryInterfaceResult
 // It is the return value of the method System.Runtime.InteropServices.ICustomQueryInterface.GetInterface
 enum CustomQueryInterfaceResult
@@ -316,68 +308,6 @@ ComCallMethodDesc* ComMethodTable::ComCallMethodDescFromSlot(unsigned i)
     pCMD = (ComCallMethodDesc*)(((BYTE *)rgVtable[i]) + COMMETHOD_CALL_PRESTUB_SIZE ARM_ONLY(-THUMB_CODE));
 
     RETURN pCMD;
-}
-
-//--------------------------------------------------------------------------
-// Determines if the Compatible IDispatch implementation is required for
-// the specified class.
-//--------------------------------------------------------------------------
-bool IsOleAutDispImplRequiredForClass(MethodTable *pClass)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(pClass));
-    }
-    CONTRACTL_END;
-
-    HRESULT             hr;
-    const BYTE *        pVal;
-    ULONG               cbVal;
-    Assembly *          pAssembly = pClass->GetAssembly();
-    IDispatchImplType   DispImplType = SystemDefinedImpl;
-
-    // First check for the IDispatchImplType custom attribute first.
-    hr = pClass->GetCustomAttribute(WellKnownAttribute::IDispatchImpl, (const void**)&pVal, &cbVal);
-    if (hr == S_OK)
-    {
-        CustomAttributeParser cap(pVal, cbVal);
-        IfFailThrow(cap.SkipProlog());
-        UINT8 u1;
-        IfFailThrow(cap.GetU1(&u1));
-
-        DispImplType = (IDispatchImplType)u1;
-        if ((DispImplType > 2) || (DispImplType < 0))
-            DispImplType = SystemDefinedImpl;
-    }
-
-    // If the custom attribute was set to something other than system defined then we will use that.
-    if (DispImplType != SystemDefinedImpl)
-        return (bool) (DispImplType == CompatibleImpl);
-
-    // Check to see if the assembly has the IDispatchImplType attribute set.
-    hr = pAssembly->GetCustomAttribute(pAssembly->GetManifestToken(), WellKnownAttribute::IDispatchImpl, (const void**)&pVal, &cbVal);
-    if (hr == S_OK)
-    {
-        CustomAttributeParser cap(pVal, cbVal);
-        IfFailThrow(cap.SkipProlog());
-        UINT8 u1;
-        IfFailThrow(cap.GetU1(&u1));
-
-        DispImplType = (IDispatchImplType)u1;
-        if ((DispImplType > 2) || (DispImplType < 0))
-            DispImplType = SystemDefinedImpl;
-    }
-
-    // If the custom attribute was set to something other than system defined then we will use that.
-    if (DispImplType != SystemDefinedImpl)
-        return (bool) (DispImplType == CompatibleImpl);
-
-    // Removed registry key check per reg cleanup bug 45978
-    // Effect: Will return false so code cleanup
-    return false;
 }
 
 //--------------------------------------------------------------------------
@@ -4731,12 +4661,6 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
         {
             // we will allow building IClassX for the class
             pTemplate->m_flags |= enum_SupportsIClassX;
-        }
-
-        if (IsOleAutDispImplRequiredForClass(pMT))
-        {
-            // Determine what IDispatch implementation this class should use
-            pTemplate->m_flags |= enum_UseOleAutDispatchImpl;
         }
 
         // Eagerly create the interface CMTs.
