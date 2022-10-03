@@ -44900,9 +44900,8 @@ HRESULT GCHeap::Initialize()
             }
             else
             {
-                // We will initially reserve 5x the configured hard limit and 2x if
-                // large pages are enabled as this is closer to segments
-                gc_heap::regions_range = ((gc_heap::use_large_pages_p) ? (2 * gc_heap::heap_hard_limit)  // large pages
+                // We use this calculation because it's close to what we used for segments.
+                gc_heap::regions_range = ((gc_heap::use_large_pages_p) ? (2 * gc_heap::heap_hard_limit)
                                                                        : (5 * gc_heap::heap_hard_limit));
             }
         }
@@ -45062,6 +45061,8 @@ HRESULT GCHeap::Initialize()
     // except for the smallest case. Now the lowest limit possible is 4mb. 
     if (gc_region_size == 0)
     {
+        // We have a minimum amount of basic regions we have to fit per heap, and we'd like to have the initial
+        // regions only take up half of the space.
         if ((gc_heap::regions_range / nhp / min_regions_per_heap) / 2 >= (4 * 1024 * 1024))
         {
             gc_region_size = 4 * 1024 * 1024;
