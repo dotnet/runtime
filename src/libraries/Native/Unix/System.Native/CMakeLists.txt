@@ -79,7 +79,9 @@ include(${CMAKE_CURRENT_LIST_DIR}/extra_libs.cmake)
 set(NATIVE_LIBS_EXTRA)
 append_extra_system_libs(NATIVE_LIBS_EXTRA)
 
-if (CLR_CMAKE_TARGET_ANDROID)
+if (CLR_CMAKE_TARGET_ANDROID AND NOT HAVE_GETIFADDRS)
+    add_definitions(-DANDROID_GETIFADDRS_WORKAROUND)
+
     add_compile_options(-Wno-gnu-zero-variadic-macro-arguments)
 
     list (APPEND NATIVE_LIBS_EXTRA -llog)
