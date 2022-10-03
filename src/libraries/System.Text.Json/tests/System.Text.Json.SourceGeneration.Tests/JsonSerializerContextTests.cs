@@ -21,20 +21,25 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.NotNull(NestedPublicContext.NestedProtectedInternalClass.Default);
         }
 
-        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void ContextMetadataIsImmutable()
         {
-            JsonTypeInfo<Person> typeInfo = PersonJsonContext.Default.Person;
+            RemoteExecutor.Invoke(
+                static () =>
+                {
+                    JsonTypeInfo<Person> typeInfo = PersonJsonContext.Default.Person;
 
-            Assert.Throws<InvalidOperationException>(() => typeInfo.CreateObject = null);
-            Assert.Throws<InvalidOperationException>(() => typeInfo.OnDeserializing = obj => { });
-            Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Clear());
+                    Assert.Throws<InvalidOperationException>(() => typeInfo.CreateObject = null);
+                    Assert.Throws<InvalidOperationException>(() => typeInfo.OnDeserializing = obj => { });
+                    Assert.Throws<InvalidOperationException>(() => typeInfo.Properties.Clear());
 
-            JsonPropertyInfo propertyInfo = typeInfo.Properties[0];
-            Assert.Throws<InvalidOperationException>(() => propertyInfo.Name = "differentName");
-            Assert.Throws<InvalidOperationException>(() => propertyInfo.IsExtensionData = true);
-            Assert.Throws<InvalidOperationException>(() => propertyInfo.IsRequired = true);
-            Assert.Throws<InvalidOperationException>(() => propertyInfo.Order = -1);
+                    JsonPropertyInfo propertyInfo = typeInfo.Properties[0];
+                    Assert.Throws<InvalidOperationException>(() => propertyInfo.Name = "differentName");
+                    Assert.Throws<InvalidOperationException>(() => propertyInfo.IsExtensionData = true);
+                    Assert.Throws<InvalidOperationException>(() => propertyInfo.IsRequired = true);
+                    Assert.Throws<InvalidOperationException>(() => propertyInfo.Order = -1);
+                }).Dispose();
         }
 
         [Fact]
