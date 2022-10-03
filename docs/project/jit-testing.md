@@ -131,7 +131,7 @@ Suggestions for best practices or effective techniques are welcome.
 
 ### Bring up quantitative measurements.
 
-For Jit testing we'll need various quantitatve assessments of Jit behavior:
+For Jit testing we'll need various quantitative assessments of Jit behavior:
 
 1. Time spent jitting
 2. Speed of jitted code

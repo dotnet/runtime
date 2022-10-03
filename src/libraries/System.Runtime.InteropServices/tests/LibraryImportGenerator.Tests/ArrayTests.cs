@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 
 using Xunit;
@@ -71,71 +72,108 @@ namespace LibraryImportGenerator.IntegrationTests
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "double_values")]
             public static partial void DoubleValues([In, Out] IntStructWrapper[] array, int length);
 
-            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "and_all_members")]
-            [return:MarshalAs(UnmanagedType.U1)]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "and_bool_struct_array")]
+            [return: MarshalAs(UnmanagedType.U1)]
             public static partial bool AndAllMembers(BoolStruct[] pArray, int length);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "and_bool_struct_array_in")]
+            [return: MarshalAs(UnmanagedType.U1)]
+            public static partial bool AndAllMembersIn(in BoolStruct[] pArray, int length);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "negate_bool_struct_array_ref")]
+            public static partial void NegateBools(
+                [MarshalUsing(CountElementName = "numValues")] ref BoolStruct[] boolStruct,
+                int numValues);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "negate_bool_struct_array_out")]
+            public static partial void NegateBools(
+                BoolStruct[] boolStruct,
+                int numValues,
+                [MarshalUsing(CountElementName = "numValues")] out BoolStruct[] pBoolStructOut);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "negate_bool_struct_array_return")]
+            [return: MarshalUsing(CountElementName = "numValues")]
+            public static partial BoolStruct[] NegateBools(
+                BoolStruct[] boolStruct,
+                int numValues);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "transpose_matrix")]
             [return: MarshalUsing(CountElementName = "numColumns")]
-            [return: MarshalUsing(CountElementName = "numRows", ElementIndirectionLevel = 1)]
+            [return: MarshalUsing(CountElementName = "numRows", ElementIndirectionDepth = 1)]
             public static partial int[][] TransposeMatrix(int[][] matrix, int[] numRows, int numColumns);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_int_ptr_array")]
+            public static unsafe partial int Sum(int*[] values, int numValues);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_int_ptr_array_ref")]
+            public static unsafe partial int SumInArray(in int*[] values, int numValues);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "duplicate_int_ptr_array")]
+            public static unsafe partial void Duplicate([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref int*[] values, int numValues);
+
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = "return_duplicate_int_ptr_array")]
+            [return: MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)]
+            public static unsafe partial int*[] ReturnDuplicate(int*[] values, int numValues);
         }
     }
 
     public class ArrayTests
     {
+        private int[] GetIntArray() => new[] { 1, 5, 79, 165, 32, 3 };
+
         [Fact]
-        public void IntArrayMarshalledToNativeAsExpected()
+        public void IntArray_ByValue()
         {
-            var array = new[] { 1, 5, 79, 165, 32, 3 };
+            int[] array = GetIntArray();
             Assert.Equal(array.Sum(), NativeExportsNE.Arrays.Sum(array, array.Length));
         }
 
         [Fact]
-        public void IntArrayRefToFirstElementMarshalledToNativeAsExpected()
+        public void IntArray_RefToFirstElement()
         {
-            var array = new[] { 1, 5, 79, 165, 32, 3 };
+            int[] array = GetIntArray();
             Assert.Equal(array.Sum(), NativeExportsNE.Arrays.Sum(ref array[0], array.Length));
         }
 
         [Fact]
-        public void NullIntArrayMarshalledToNativeAsExpected()
+        public void NullIntArray_ByValue()
         {
-            Assert.Equal(-1, NativeExportsNE.Arrays.Sum(null, 0));
+            int[] array = null;
+            Assert.Equal(-1, NativeExportsNE.Arrays.Sum(array, 0));
         }
 
         [Fact]
-        public void ZeroLengthArrayMarshalledAsNonNull()
+        public void ZeroLengthArray_MarshalledAsNonNull()
         {
             var array = new int[0];
             Assert.Equal(0, NativeExportsNE.Arrays.Sum(array, array.Length));
         }
 
         [Fact]
-        public void IntArrayInParameter()
+        public void IntArray_In()
         {
-            var array = new[] { 1, 5, 79, 165, 32, 3 };
+            int[] array = GetIntArray();
             Assert.Equal(array.Sum(), NativeExportsNE.Arrays.SumInArray(array, array.Length));
         }
 
         [Fact]
-        public void IntArrayRefParameter()
+        public void IntArray_Ref()
         {
-            var array = new [] { 1, 5, 79, 165, 32, 3 };
+            int[] array = GetIntArray();
             var newArray = array;
             NativeExportsNE.Arrays.Duplicate(ref newArray, array.Length);
             Assert.Equal((IEnumerable<int>)array, newArray);
         }
 
         [Fact]
-        public void CharArrayMarshalledToNativeAsExpected()
+        public void CharArray_ByValue()
         {
             char[] array = CharacterTests.CharacterMappings().Select(o => (char)o[0]).ToArray();
             Assert.Equal(array.Sum(c => c), NativeExportsNE.Arrays.SumChars(array, array.Length));
         }
 
         [Fact]
-        public void CharArrayRefParameter()
+        public void CharArray_Ref()
         {
             char[] array = CharacterTests.CharacterMappings().Select(o => (char)o[0]).ToArray();
             var newArray = array;
@@ -144,7 +182,7 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
-        public void ArraysReturnedFromNative()
+        public void IntArray_Return()
         {
             int start = 5;
             int end = 20;
@@ -158,13 +196,91 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
-        public void NullArrayReturnedFromNative()
+        public void NullArray_Return()
         {
             Assert.Null(NativeExportsNE.Arrays.CreateRange(1, 0, out _));
 
             int[] res;
             NativeExportsNE.Arrays.CreateRange_Out(1, 0, out _, out res);
             Assert.Null(res);
+        }
+
+        [Fact]
+        public unsafe void PointerArray_ByValue()
+        {
+            int[] array = GetIntArray();
+            fixed (int* arrayPointer = array)
+            {
+                int*[] pointerArray = new int*[array.Length];
+                for (int i = 0; i < array.Length; i++)
+                {
+                    pointerArray[i] = &arrayPointer[i];
+                }
+
+                Assert.Equal(array.Sum(), NativeExportsNE.Arrays.Sum(pointerArray, pointerArray.Length));
+            }
+        }
+
+        [Fact]
+        public unsafe void PointerArray_In()
+        {
+            int[] array = GetIntArray();
+            fixed (int* arrayPointer = array)
+            {
+                int*[] pointerArray = new int*[array.Length];
+                for (int i = 0; i < array.Length; i++)
+                {
+                    pointerArray[i] = &arrayPointer[i];
+                }
+
+                Assert.Equal(array.Sum(), NativeExportsNE.Arrays.SumInArray(pointerArray, pointerArray.Length));
+            }
+        }
+
+        [Fact]
+        public unsafe void PointerArray_Ref()
+        {
+            int[] array = GetIntArray();
+            fixed (int* arrayPointer = array)
+            {
+                int*[] pointerArray = new int*[array.Length];
+                for (int i = 0; i < array.Length; i++)
+                {
+                    pointerArray[i] = &arrayPointer[i];
+                }
+
+                int*[] newArray = pointerArray;
+                NativeExportsNE.Arrays.Duplicate(ref newArray, newArray.Length);
+
+                Assert.Equal(pointerArray.Length, newArray.Length);
+                for (int i = 0; i < pointerArray.Length; i++)
+                {
+                    Assert.Equal((IntPtr)pointerArray[i], (IntPtr)newArray[i]);
+                    Assert.Equal(*pointerArray[i], *newArray[i]);
+                }
+            }
+        }
+
+        [Fact]
+        public unsafe void PointerArray_Return()
+        {
+            int[] array = GetIntArray();
+            fixed (int* arrayPointer = array)
+            {
+                int*[] pointerArray = new int*[array.Length];
+                for (int i = 0; i < array.Length; i++)
+                {
+                    pointerArray[i] = &arrayPointer[i];
+                }
+
+                int*[] res = NativeExportsNE.Arrays.ReturnDuplicate(pointerArray, pointerArray.Length);
+                Assert.Equal(pointerArray.Length, res.Length);
+                for (int i = 0; i < pointerArray.Length; i++)
+                {
+                    Assert.Equal((IntPtr)pointerArray[i], (IntPtr)res[i]);
+                    Assert.Equal(*pointerArray[i], *res[i]);
+                }
+            }
         }
 
         private static string[] GetStringArray()
@@ -181,20 +297,20 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
-        public void ByValueArrayWithElementMarshalling()
+        public void ArrayWithElementMarshalling_ByValue()
         {
             var strings = GetStringArray();
             Assert.Equal(strings.Sum(str => str?.Length ?? 0), NativeExportsNE.Arrays.SumStringLengths(strings));
         }
 
         [Fact]
-        public void ByValueNullArrayWithElementMarshalling()
+        public void NullArrayWithElementMarshalling_ByValue()
         {
             Assert.Equal(0, NativeExportsNE.Arrays.SumStringLengths(null));
         }
 
         [Fact]
-        public void ByRefArrayWithElementMarshalling()
+        public void ArrayWithElementMarshalling_Ref()
         {
             var strings = GetStringArray();
             var expectedStrings = strings.Select(s => ReverseChars(s)).ToArray();
@@ -204,7 +320,7 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
-        public void ReturnArrayWithElementMarshalling()
+        public void ArrayWithElementMarshalling_Return()
         {
             var strings = GetStringArray();
             var expectedStrings = strings.Select(s => ReverseChars(s)).ToArray();
@@ -216,7 +332,7 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
-        public void ByRefNullArrayWithElementMarshalling()
+        public void NullArrayWithElementMarshalling_Ref()
         {
             string[] strings = null;
             NativeExportsNE.Arrays.ReverseStrings_Ref(ref strings, out _);
@@ -225,7 +341,7 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
-        public void ReturnNullArrayWithElementMarshalling()
+        public void NullArrayWithElementMarshalling_Return()
         {
             string[] strings = null;
             Assert.Null(NativeExportsNE.Arrays.ReverseStrings_Return(strings, out _));
@@ -254,7 +370,7 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
-        public void ArrayByValueOutParameter()
+        public void Array_ByValueOut()
         {
             {
                 var testArray = new IntStructWrapper[10];
@@ -287,7 +403,7 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
-        public void ArrayByValueInOutParameter()
+        public void Array_ByValueInOut()
         {
             var testValues = Enumerable.Range(42, 15).Select(i => new IntStructWrapper { Value = i });
 
@@ -301,9 +417,53 @@ namespace LibraryImportGenerator.IntegrationTests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void ArrayWithSimpleNonBlittableTypeMarshalling(bool result)
+        public void NonBlittableElementArray_ByValue(bool result)
         {
-            var boolValues = new[]
+            BoolStruct[] array = GetBoolStructsToAnd(result);
+            Assert.Equal(result, NativeExportsNE.Arrays.AndAllMembers(array, array.Length));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void NonBlittableElementArray_In(bool result)
+        {
+            BoolStruct[] array = GetBoolStructsToAnd(result);
+            Assert.Equal(result, NativeExportsNE.Arrays.AndAllMembersIn(array, array.Length));
+        }
+
+        [Fact]
+        public void NonBlittableElementArray_Ref()
+        {
+            BoolStruct[] array = GetBoolStructsToNegate();
+            BoolStruct[] expected = GetNegatedBoolStructs(array);
+
+            NativeExportsNE.Arrays.NegateBools(ref array, array.Length);
+            Assert.Equal(expected, array);
+        }
+
+        [Fact]
+        public void NonBlittableElementArray_Out()
+        {
+            BoolStruct[] array = GetBoolStructsToNegate();
+            BoolStruct[] expected = GetNegatedBoolStructs(array);
+
+            BoolStruct[] result;
+            NativeExportsNE.Arrays.NegateBools(array, array.Length, out result);
+            Assert.Equal(expected, result);
+        }
+
+        [Fact]
+        public void NonBlittableElementArray_Return()
+        {
+            BoolStruct[] array = GetBoolStructsToNegate();
+            BoolStruct[] expected = GetNegatedBoolStructs(array);
+
+            BoolStruct[] result = NativeExportsNE.Arrays.NegateBools(array, array.Length);
+            Assert.Equal(expected, result);
+        }
+
+        private static BoolStruct[] GetBoolStructsToAnd(bool result) => new BoolStruct[]
             {
                 new BoolStruct
                 {
@@ -325,8 +485,36 @@ namespace LibraryImportGenerator.IntegrationTests
                 },
             };
 
-            Assert.Equal(result, NativeExportsNE.Arrays.AndAllMembers(boolValues, boolValues.Length));
-        }
+        private static BoolStruct[] GetBoolStructsToNegate() => new BoolStruct[]
+            {
+                new BoolStruct
+                {
+                    b1 = true,
+                    b2 = false,
+                    b3 = true
+                },
+                new BoolStruct
+                {
+                    b1 = false,
+                    b2 = true,
+                    b3 = false
+                },
+                new BoolStruct
+                {
+                    b1 = true,
+                    b2 = true,
+                    b3 = true
+                },
+                new BoolStruct
+                {
+                    b1 = false,
+                    b2 = false,
+                    b3 = false
+                }
+            };
+
+        private static BoolStruct[] GetNegatedBoolStructs(BoolStruct[] toNegate)
+            => toNegate.Select(b => new BoolStruct() { b1 = !b.b1, b2 = !b.b2, b3 = !b.b3 }).ToArray();
 
         [Fact]
         public void ArraysOfArrays()

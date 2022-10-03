@@ -225,7 +225,7 @@ ASN1_OCTET_STRING* CryptoNative_X509FindExtensionData(X509* x, int32_t nid)
     return X509_EXTENSION_get_data(ext);
 }
 
-void CryptoNative_X509StoreDestory(X509_STORE* v)
+void CryptoNative_X509StoreDestroy(X509_STORE* v)
 {
     if (v != NULL)
     {
@@ -871,27 +871,30 @@ static OCSP_CERTID* MakeCertId(X509* subject, X509* issuer)
     return OCSP_cert_to_id(EVP_sha1(), subject, issuer);
 }
 
-static X509VerifyStatusCode CheckOcsp(OCSP_REQUEST* req,
-                                      OCSP_RESPONSE* resp,
-                                      X509* subject,
-                                      X509* issuer,
-                                      X509_STORE_CTX* storeCtx,
-                                      ASN1_GENERALIZEDTIME** thisUpdate,
-                                      ASN1_GENERALIZEDTIME** nextUpdate)
+static time_t GetIssuanceWindowStart()
 {
-    if (thisUpdate != NULL)
-    {
-        *thisUpdate = NULL;
-    }
+    // time_t granularity is seconds, so subtract 4 days worth of seconds.
+    // The 4 day policy is based on the CA/Browser Forum Baseline Requirements
+    // (version 1.6.3) section 4.9.10 (On-Line Revocation Checking Requirements)
+    time_t t = time(NULL);
+    t -= 4 * 24 * 60 * 60;
+    return t;
+}
 
-    if (nextUpdate != NULL)
-    {
-        *nextUpdate = NULL;
-    }
-
+static X509VerifyStatusCode CheckOcspGetExpiry(OCSP_REQUEST* req,
+                                               OCSP_RESPONSE* resp,
+                                               X509* subject,
+                                               X509* issuer,
+                                               X509_STORE_CTX* storeCtx,
+                                               int* canCache,
+                                               time_t* expiry)
+{
     assert(resp != NULL);
     assert(subject != NULL);
     assert(issuer != NULL);
+    assert(canCache != NULL);
+
+    *canCache = 0;
 
     OCSP_CERTID* certId = MakeCertId(subject, issuer);
 
@@ -935,23 +938,66 @@ static X509VerifyStatusCode CheckOcsp(OCSP_REQUEST* req,
 
             if (OCSP_resp_find_status(basicResp, certId, &status, NULL, NULL, &thisupd, &nextupd))
             {
-                if (thisUpdate != NULL && thisupd != NULL)
-                {
-                    *thisUpdate = ASN1_STRING_dup(thisupd);
-                }
+                // X509_cmp_current_time uses 0 for error already, so we can use it when there's a null value.
+                // 1 means the nextupd value is in the future, -1 means it is now-or-in-the-past.
+                // Following with OpenSSL conventions, we'll accept "now" as "the past".
+                int nextUpdComparison = nextupd == NULL ? 0 : X509_cmp_current_time(nextupd);
 
-                if (nextUpdate != NULL && nextupd != NULL)
-                {
-                    *nextUpdate = ASN1_STRING_dup(nextupd);
-                }
-
-                if (status == V_OCSP_CERTSTATUS_GOOD)
-                {
-                    ret = PAL_X509_V_OK;
-                }
-                else if (status == V_OCSP_CERTSTATUS_REVOKED)
+                // Un-revoking is rare, so reporting revoked on an expired response has a low chance
+                // of a false-positive.
+                //
+                // For non-revoked responses, a next-update value in the past counts as expired.
+                if (status == V_OCSP_CERTSTATUS_REVOKED)
                 {
                     ret = PAL_X509_V_ERR_CERT_REVOKED;
+                }
+                else
+                {
+                    if (nextupd != NULL && nextUpdComparison <= 0)
+                    {
+                        ret = PAL_X509_V_ERR_CRL_HAS_EXPIRED;
+                    }
+                    else if (status == V_OCSP_CERTSTATUS_GOOD)
+                    {
+                        ret = PAL_X509_V_OK;
+                    }
+                }
+
+                // We can cache if (all of):
+                // * We have a definitive answer
+                // * We have a this-update value
+                // * The this-update value is not too old (see GetIssuanceWindowStart)
+                // * We have a next-update value
+                // * The next-update value is in the future
+                //
+                // It is up to the caller to decide what, if anything, to do with this information.
+                if (ret != PAL_X509_V_ERR_UNABLE_TO_GET_CRL &&
+                    thisupd != NULL &&
+                    nextUpdComparison > 0)
+                {
+                    time_t oldest = GetIssuanceWindowStart();
+
+                    if (X509_cmp_time(thisupd, &oldest) > 0)
+                    {
+                        *canCache = 1;
+
+                        if (expiry != NULL)
+                        {
+                            struct tm updTm = { 0 };
+
+                            if (nextupd != NULL && ASN1_TIME_to_tm(nextupd, &updTm) == 1)
+                            {
+                               *expiry = timegm(&updTm);
+                            }
+                            else if (ASN1_TIME_to_tm(thisupd, &updTm) == 1)
+                            {
+                                // If we're doing server side OCSP stapling and the response
+                                // has no nextUpd, treat it as a 24-hour expiration for refresh
+                                // purposes.
+                                *expiry = timegm(&updTm) + (24 * 60 * 60);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -965,6 +1011,16 @@ static X509VerifyStatusCode CheckOcsp(OCSP_REQUEST* req,
 
     OCSP_CERTID_free(certId);
     return ret;
+}
+
+static X509VerifyStatusCode CheckOcsp(OCSP_REQUEST* req,
+                                      OCSP_RESPONSE* resp,
+                                      X509* subject,
+                                      X509* issuer,
+                                      X509_STORE_CTX* storeCtx,
+                                      int* canCache)
+{
+    return CheckOcspGetExpiry(req, resp, subject, issuer, storeCtx, canCache, NULL);
 }
 
 static int Get0CertAndIssuer(X509_STORE_CTX* storeCtx, int chainDepth, X509** subject, X509** issuer)
@@ -987,14 +1043,17 @@ static int Get0CertAndIssuer(X509_STORE_CTX* storeCtx, int chainDepth, X509** su
     return 1;
 }
 
-static time_t GetIssuanceWindowStart()
+static X509VerifyStatusCode GetStapledOcspStatus(X509_STORE_CTX* storeCtx, X509* subject, X509* issuer)
 {
-    // time_t granularity is seconds, so subtract 4 days worth of seconds.
-    // The 4 day policy is based on the CA/Browser Forum Baseline Requirements
-    // (version 1.6.3) section 4.9.10 (On-Line Revocation Checking Requirements)
-    time_t t = time(NULL);
-    t -= 4 * 24 * 60 * 60;
-    return t;
+    OCSP_RESPONSE* ocspResp = (OCSP_RESPONSE*)X509_get_ex_data(subject, g_x509_ocsp_index);
+
+    if (ocspResp == NULL)
+    {
+        return PAL_X509_V_ERR_UNABLE_TO_GET_CRL;
+    }
+
+    int canCache = 0;
+    return CheckOcsp(NULL, ocspResp, subject, issuer, storeCtx, &canCache);
 }
 
 int32_t CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* storeCtx, char* cachePath, int chainDepth)
@@ -1012,6 +1071,16 @@ int32_t CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* storeCtx, char
     if (!Get0CertAndIssuer(storeCtx, chainDepth, &subject, &issuer))
     {
         return -2;
+    }
+
+    if (chainDepth == 0)
+    {
+        X509VerifyStatusCode stapledRet = GetStapledOcspStatus(storeCtx, subject, issuer);
+
+        if (stapledRet == PAL_X509_V_OK || stapledRet == PAL_X509_V_ERR_CERT_REVOKED)
+        {
+            return (int32_t)stapledRet;
+        }
     }
 
     X509VerifyStatusCode ret = PAL_X509_V_ERR_UNABLE_TO_GET_CRL;
@@ -1033,35 +1102,14 @@ int32_t CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* storeCtx, char
 
     if (resp != NULL)
     {
-        ASN1_GENERALIZEDTIME* thisUpdate = NULL;
-        ASN1_GENERALIZEDTIME* nextUpdate = NULL;
-        ret = CheckOcsp(NULL, resp, subject, issuer, storeCtx, &thisUpdate, &nextUpdate);
+        int canCache = 0;
+        ret = CheckOcsp(NULL, resp, subject, issuer, storeCtx, &canCache);
 
-        if (ret != PAL_X509_V_ERR_UNABLE_TO_GET_CRL)
+        if (!canCache)
         {
-            time_t oldest = GetIssuanceWindowStart();
-
-            // If either the thisUpdate or nextUpdate is missing we can't determine policy, so reject it.
-            // oldest = now - window;
-            //
-            // if thisUpdate < oldest || nextUpdate < now, reject.
-            //
-            // Since X509_cmp(_current)_time returns 0 on error, do a <= 0 check.
-            if (nextUpdate == NULL || thisUpdate == NULL || X509_cmp_current_time(nextUpdate) <= 0 ||
-                X509_cmp_time(thisUpdate, &oldest) <= 0)
-            {
-                ret = PAL_X509_V_ERR_UNABLE_TO_GET_CRL;
-            }
-        }
-
-        if (nextUpdate != NULL)
-        {
-            ASN1_GENERALIZEDTIME_free(nextUpdate);
-        }
-
-        if (thisUpdate != NULL)
-        {
-            ASN1_GENERALIZEDTIME_free(thisUpdate);
+            // If the response wasn't suitable for caching, treat it as PAL_X509_V_ERR_UNABLE_TO_GET_CRL,
+            // which will cause us to delete the cache entry and move on to a live request.
+            ret = PAL_X509_V_ERR_UNABLE_TO_GET_CRL;
         }
     }
 
@@ -1084,23 +1132,8 @@ int32_t CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* storeCtx, char
     return (int32_t)ret;
 }
 
-OCSP_REQUEST* CryptoNative_X509ChainBuildOcspRequest(X509_STORE_CTX* storeCtx, int chainDepth)
+static OCSP_REQUEST* BuildOcspRequest(X509* subject, X509* issuer)
 {
-    if (storeCtx == NULL)
-    {
-        return NULL;
-    }
-
-    ERR_clear_error();
-
-    X509* subject;
-    X509* issuer;
-
-    if (!Get0CertAndIssuer(storeCtx, chainDepth, &subject, &issuer))
-    {
-        return NULL;
-    }
-
     OCSP_CERTID* certId = MakeCertId(subject, issuer);
 
     if (certId == NULL)
@@ -1131,6 +1164,101 @@ OCSP_REQUEST* CryptoNative_X509ChainBuildOcspRequest(X509_STORE_CTX* storeCtx, i
     return req;
 }
 
+OCSP_REQUEST* CryptoNative_X509BuildOcspRequest(X509* subject, X509* issuer)
+{
+    assert(subject != NULL);
+    assert(issuer != NULL);
+
+    ERR_clear_error();
+    return BuildOcspRequest(subject, issuer);
+}
+
+OCSP_REQUEST* CryptoNative_X509ChainBuildOcspRequest(X509_STORE_CTX* storeCtx, int chainDepth)
+{
+    if (storeCtx == NULL)
+    {
+        return NULL;
+    }
+
+    ERR_clear_error();
+
+    X509* subject;
+    X509* issuer;
+
+    if (!Get0CertAndIssuer(storeCtx, chainDepth, &subject, &issuer))
+    {
+        return NULL;
+    }
+
+    return BuildOcspRequest(subject, issuer);
+}
+
+static int32_t X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, X509* subject, X509* issuer, OCSP_REQUEST* req, OCSP_RESPONSE* resp, char* cachePath)
+{
+    X509VerifyStatusCode ret = PAL_X509_V_ERR_UNABLE_TO_GET_CRL;
+    OCSP_CERTID* certId = MakeCertId(subject, issuer);
+
+    if (certId == NULL)
+    {
+        return -3;
+    }
+
+    int canCache = 0;
+    ret = CheckOcsp(req, resp, subject, issuer, storeCtx, &canCache);
+
+    if (canCache)
+    {
+        char* fullPath = BuildOcspCacheFilename(cachePath, subject);
+
+        if (fullPath != NULL)
+        {
+            int clearErr = 1;
+            BIO* bio = BIO_new_file(fullPath, "wb");
+
+            if (bio != NULL)
+            {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+                if (i2d_OCSP_RESPONSE_bio(bio, resp))
+#pragma clang diagnostic pop
+                {
+                    clearErr = 0;
+                }
+
+                BIO_free(bio);
+            }
+
+            if (clearErr)
+            {
+                ERR_clear_error();
+                unlink(fullPath);
+            }
+
+            free(fullPath);
+        }
+    }
+
+    return (int32_t)ret;
+}
+
+int32_t CryptoNative_X509ChainHasStapledOcsp(X509_STORE_CTX* storeCtx)
+{
+    assert(storeCtx != NULL);
+
+    ERR_clear_error();
+
+    X509* subject;
+    X509* issuer;
+
+    if (!Get0CertAndIssuer(storeCtx, 0, &subject, &issuer))
+    {
+        return -2;
+    }
+
+    X509VerifyStatusCode status = GetStapledOcspStatus(storeCtx, subject, issuer);
+    return status == PAL_X509_V_OK || status == PAL_X509_V_ERR_CERT_REVOKED;
+}
+
 int32_t
 CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, OCSP_REQUEST* req, OCSP_RESPONSE* resp, char* cachePath, int chainDepth)
 {
@@ -1149,77 +1277,82 @@ CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, OCSP_REQUEST* req, OC
         return -2;
     }
 
-    X509VerifyStatusCode ret = PAL_X509_V_ERR_UNABLE_TO_GET_CRL;
-    OCSP_CERTID* certId = MakeCertId(subject, issuer);
+    return X509ChainVerifyOcsp(storeCtx, subject, issuer, req, resp, cachePath);
+}
 
-    if (certId == NULL)
+int32_t CryptoNative_X509DecodeOcspToExpiration(const uint8_t* buf, int32_t len, OCSP_REQUEST* req, X509* subject, X509* issuer, int64_t* expiration)
+{
+    ERR_clear_error();
+
+    if (buf == NULL || len == 0)
     {
-        return -3;
+        return 0;
     }
 
-    ASN1_GENERALIZEDTIME* thisUpdate = NULL;
-    ASN1_GENERALIZEDTIME* nextUpdate = NULL;
-    ret = CheckOcsp(req, resp, subject, issuer, storeCtx, &thisUpdate, &nextUpdate);
+    OCSP_RESPONSE* resp = d2i_OCSP_RESPONSE(NULL, &buf, len);
 
-    if (ret == PAL_X509_V_OK || ret == PAL_X509_V_ERR_CERT_REVOKED)
+    if (resp == NULL)
     {
-        // If the nextUpdate time is in the past (or corrupt), report either REVOKED or CRL_EXPIRED
-        if (nextUpdate != NULL && X509_cmp_current_time(nextUpdate) <= 0)
+        return 0;
+    }
+
+    X509_STORE* store = X509_STORE_new();
+    X509_STORE_CTX* ctx = NULL;
+    X509Stack* bag = NULL;
+
+    if (store != NULL)
+    {
+        bag = sk_X509_new_null();
+    }
+
+    if (bag != NULL)
+    {
+        if (X509_STORE_add_cert(store, issuer) && sk_X509_push(bag, issuer))
         {
-            if (ret == PAL_X509_V_OK)
-            {
-                ret = PAL_X509_V_ERR_CRL_HAS_EXPIRED;
-            }
-        }
-        else
-        {
-            time_t oldest = GetIssuanceWindowStart();
-
-            // If the response is within our caching policy (which requires a nextUpdate value)
-            // then try to cache it.
-            if (nextUpdate != NULL && thisUpdate != NULL && X509_cmp_time(thisUpdate, &oldest) > 0)
-            {
-                char* fullPath = BuildOcspCacheFilename(cachePath, subject);
-
-                if (fullPath != NULL)
-                {
-                    int clearErr = 1;
-                    BIO* bio = BIO_new_file(fullPath, "wb");
-
-                    if (bio != NULL)
-                    {
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wcast-qual"
-                        if (i2d_OCSP_RESPONSE_bio(bio, resp))
-#pragma clang diagnostic pop
-                        {
-                            clearErr = 0;
-                        }
-
-                        BIO_free(bio);
-                    }
-
-                    if (clearErr)
-                    {
-                        ERR_clear_error();
-                        unlink(fullPath);
-                    }
-
-                    free(fullPath);
-                }
-            }
+            ctx = X509_STORE_CTX_new();
         }
     }
 
-    if (nextUpdate != NULL)
+    int ret = 0;
+
+    if (ctx != NULL)
     {
-        ASN1_GENERALIZEDTIME_free(nextUpdate);
+        if (X509_STORE_CTX_init(ctx, store, subject, bag) != 0)
+        {
+            int canCache = 0;
+            time_t expiration_t = 0;
+            X509VerifyStatusCode code = CheckOcspGetExpiry(req, resp, subject, issuer, ctx, &canCache, &expiration_t);
+
+            if (sizeof(time_t) == sizeof(int64_t))
+            {
+                *expiration = (int64_t)expiration_t;
+            }
+            else if (sizeof(time_t) == sizeof(int32_t))
+            {
+                *expiration = (int32_t)expiration_t;
+            }
+
+            if (code == PAL_X509_V_OK || code == PAL_X509_V_ERR_CERT_REVOKED)
+            {
+                ret = 1;
+            }
+        }
+
+        X509_STORE_CTX_free(ctx);
     }
 
-    if (thisUpdate != NULL)
+    if (bag != NULL)
     {
-        ASN1_GENERALIZEDTIME_free(thisUpdate);
+        // Just free, not pop_free.
+        // We don't want to downref the issuer cert.
+        sk_X509_free(bag);
     }
 
-    return (int32_t)ret;
+    if (store != NULL)
+    {
+        X509_STORE_free(store);
+    }
+
+    OCSP_RESPONSE_free(resp);
+    return ret;
 }

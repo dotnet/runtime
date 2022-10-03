@@ -33,7 +33,7 @@ namespace System.Net.Security
         CertificateVerify = 15,
         ClientKeyExchange = 16,
         Finished = 20,
-        KeyEpdate = 24,
+        KeyUpdate = 24,
         MessageHash = 254
     }
 
@@ -90,11 +90,6 @@ namespace System.Net.Security
         public int Length;
 
         public override string ToString() => $"{Version}:{Type}[{Length}]";
-
-        public int GetFrameSize()
-        {
-            return Length + TlsFrameHelper.HeaderSize;
-        }
     }
 
     internal static class TlsFrameHelper
@@ -154,11 +149,11 @@ namespace System.Net.Security
 
         public delegate bool HelloExtensionCallback(ref TlsFrameInfo info, ExtensionType type, ReadOnlySpan<byte> extensionsData);
 
-        private static byte[] s_protocolMismatch13 = new byte[] { (byte)TlsContentType.Alert, 3, 4, 0, 2, 2, 70 };
-        private static byte[] s_protocolMismatch12 = new byte[] { (byte)TlsContentType.Alert, 3, 3, 0, 2, 2, 70 };
-        private static byte[] s_protocolMismatch11 = new byte[] { (byte)TlsContentType.Alert, 3, 2, 0, 2, 2, 70 };
-        private static byte[] s_protocolMismatch10 = new byte[] { (byte)TlsContentType.Alert, 3, 1, 0, 2, 2, 70 };
-        private static byte[] s_protocolMismatch30 = new byte[] { (byte)TlsContentType.Alert, 3, 0, 0, 2, 2, 40 };
+        private static readonly byte[] s_protocolMismatch13 = new byte[] { (byte)TlsContentType.Alert, 3, 4, 0, 2, 2, 70 };
+        private static readonly byte[] s_protocolMismatch12 = new byte[] { (byte)TlsContentType.Alert, 3, 3, 0, 2, 2, 70 };
+        private static readonly byte[] s_protocolMismatch11 = new byte[] { (byte)TlsContentType.Alert, 3, 2, 0, 2, 2, 70 };
+        private static readonly byte[] s_protocolMismatch10 = new byte[] { (byte)TlsContentType.Alert, 3, 1, 0, 2, 2, 70 };
+        private static readonly byte[] s_protocolMismatch30 = new byte[] { (byte)TlsContentType.Alert, 3, 0, 0, 2, 2, 40 };
 
         private const int UInt24Size = 3;
         private const int RandomSize = 32;
@@ -173,44 +168,52 @@ namespace System.Net.Security
 
         public static bool TryGetFrameHeader(ReadOnlySpan<byte> frame, ref TlsFrameHeader header)
         {
-            bool result = frame.Length > 4;
-
-            if (frame.Length >= 1)
+            if (frame.Length < HeaderSize)
             {
-                header.Type = (TlsContentType)frame[0];
+                header.Length= -1;
+                return false;
+            }
 
-                if (frame.Length >= 3)
+            header.Type = (TlsContentType)frame[0];
+
+            // SSLv3, TLS or later
+            if (frame[1] == 3)
+            {
+                header.Length = ((frame[3] << 8) | frame[4]) + HeaderSize;
+                header.Version = TlsMinorVersionToProtocol(frame[2]);
+            }
+            else if (frame[2] == (byte)TlsHandshakeType.ClientHello &&
+                     frame[3] == 3) // SSL3 or above
+            {
+                int length;
+                if ((frame[0] & 0x80) != 0)
                 {
-                    // SSLv3, TLS or later
-                    if (frame[1] == 3)
-                    {
-                        if (frame.Length > 4)
-                        {
-                            header.Length = ((frame[3] << 8) | frame[4]);
-                        }
-
-                        header.Version = TlsMinorVersionToProtocol(frame[2]);
-                    }
-                    else
-                    {
-                        header.Length = -1;
-                        header.Version = SslProtocols.None;
-                    }
+                            // Two bytes
+                    length = (((frame[0] & 0x7f) << 8) | frame[1]) + 2;
                 }
+                else
+                {
+                            // Three bytes
+                    length = (((frame[0] & 0x3f) << 8) | frame[1]) + 3;
+                }
+
+
+                // max frame for SSLv2 is 32767.
+                // However, we expect something reasonable for initial HELLO
+                // We don't have enough logic to verify full validity,
+                // the limits bellow are queses.
+#pragma warning disable CS0618 // Ssl2 and Ssl3 are obsolete
+                header.Version = SslProtocols.Ssl2;
+#pragma warning restore CS0618
+                header.Length = length;
+                header.Type = TlsContentType.Handshake;
             }
-
-            return result;
-        }
-
-        // Returns frame size e.g. header + content
-        public static int GetFrameSize(ReadOnlySpan<byte> frame)
-        {
-            if (frame.Length < 5 || frame[1] < 3)
+            else
             {
-                return -1;
+                header.Length = -1;
             }
 
-            return ((frame[3] << 8) | frame[4]) + HeaderSize;
+            return true;
         }
 
         // This function will try to parse TLS hello frame and fill details in provided info structure.
@@ -252,9 +255,21 @@ namespace System.Net.Security
             }
 
             info.HandshakeType = (TlsHandshakeType)frame[HandshakeTypeOffset];
+#pragma warning disable CS0618 // Ssl2 and Ssl3 are obsolete
+            if (info.Header.Version == SslProtocols.Ssl2)
+            {
+                // This is safe. We would not get here if the length is too small.
+                info.SupportedVersions |= TlsMinorVersionToProtocol(frame[4]);
+                // We only recognize Unified ClientHello at the moment.
+                // This is needed to trigger certificate selection callback in SslStream.
+                info.HandshakeType = TlsHandshakeType.ClientHello;
+                // There is no more parsing for old protocols.
+                return true;
+            }
+#pragma warning restore CS0618
 
             // Check if we have full frame.
-            bool isComplete = frame.Length >= HeaderSize + info.Header.Length;
+            bool isComplete = frame.Length >= info.Header.Length;
 
 #pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
             if (((int)info.Header.Version >= (int)SslProtocols.Tls) &&
@@ -412,10 +427,10 @@ namespace System.Net.Security
             // Skip compression methods (max size 2^8-1 => size fits in 1 byte)
             p = SkipOpaqueType1(p);
 
-            // is invalid structure or no extensions?
+            // no extensions
             if (p.IsEmpty)
             {
-                return false;
+                return true;
             }
 
             // client_hello_extension_list (max size 2^16-1 => size fits in 2 bytes)

@@ -5,8 +5,11 @@ using static System.Security.Cryptography.Cose.Tests.CoseTestHelpers;
 
 namespace System.Security.Cryptography.Cose.Tests
 {
-    public partial class CoseSign1MessageTests
+    public abstract class CoseSign1MessageTests_Verify : CoseMessageTests_Verify
     {
+        internal override CoseMessage Decode(byte[] cborPayload)
+            => CoseMessage.DecodeSign1(cborPayload);
+
         [Theory]
         // https://github.com/cose-wg/Examples/blob/master/RFC8152/Appendix_C_2_1.json
         [InlineData((int)ECDsaAlgorithm.ES256, "D28443A10126A10442313154546869732069732074686520636F6E74656E742E58408EB33E4CA31D1C465AB05AAC34CC6B23D58FEF5C083106C4D25A91AEF0B0117E2AF9A291AA32E14AB834DC56ED2A223444547E01F11D3B0916E5A4C345CACB36")]
@@ -21,71 +24,87 @@ namespace System.Security.Cryptography.Cose.Tests
         [InlineData((int)RSAAlgorithm.PS512, "D28444A1013826A054546869732069732074686520636F6E74656E742E5901004B8B34077E4DB906C1A99A09E1569CCBB275A61AE077E5A62DD14DCDEB8F2D4071015CDFB5A6258F175CF3FAA6C11BF7667AAB6B69969A1B0A68E142C0E7B287E451CE4E889AB6EEF45CE9FF48DBEAEC246AD922D78C0811441C66FF31641F0E3D37852803C62832012F29933ADF4D3EFDB8D0C6397B4AA7AEA60D2E41E1DB68E2A0A28B28C01F39AD4ABA0F5FDD170E42F5CBD8A24695723C153A029DBB19C5D47FD9B77EC654CDE01353AA1049E80921EAF9968D56C7450CEBD0F4A8B847AF3DB8DD2A528CC9FDDC520C4797D42E8888800E0264838D21E5CF39CB912E0BADD24226F1A1C2BF0961D13EBE043375761B20CAA8E8A8B2449D2AAF7879426B9B")]
         // TODO: This test should be passing but is not https://github.com/cose-wg/Examples/blob/master/sign1-tests/sign-pass-01.json
         //[InlineData((int)ECDsaAlgorithm.ES256, "D28441A0A201260442313154546869732069732074686520636F6E74656E742E584087DB0D2E5571843B78AC33ECB2830DF7B6E0A4D5B7376DE336B23C591C90C425317E56127FBE04370097CE347087B233BF722B64072BEB4486BDA4031D27244F")]
-        // Verification fails - External data is not supported! https://github.com/cose-wg/Examples/blob/master/sign1-tests/sign-pass-02.json
-        //[InlineData((int)ECDsaAlgorithm.ES256, "D28443A10126A10442313154546869732069732074686520636F6E74656E742E584010729CD711CB3813D8D8E944A8DA7111E7B258C9BDCA6135F7AE1ADBEE9509891267837E1E33BD36C150326AE62755C6BD8E540C3E8F92D7D225E8DB72B8820B")]
         // https://github.com/cose-wg/Examples/blob/master/sign1-tests/sign-pass-03.json
         [InlineData((int)ECDsaAlgorithm.ES256, "8443A10126A10442313154546869732069732074686520636F6E74656E742E58408EB33E4CA31D1C465AB05AAC34CC6B23D58FEF5C083106C4D25A91AEF0B0117E2AF9A291AA32E14AB834DC56ED2A223444547E01F11D3B0916E5A4C345CACB36")]
-        public void Verify(int algorithm, string hexCborMessage)
+        public void TestVerify(int algorithm, string hexCborMessage)
         {
-            foreach (bool usePublicOnlyKey in new[] { false, true })
+            ReplaceContentInHexCborMessage(ref hexCborMessage);
+
+            foreach (bool useNonPrivateKey in new[] { false, true })
             {
                 CoseSign1Message msg = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray(hexCborMessage));
+                AsymmetricAlgorithm key = GetKeyHashPaddingTriplet<AsymmetricAlgorithm>((CoseAlgorithm)algorithm, useNonPrivateKey).Key;
 
-                bool verified;
-                if (Enum.IsDefined(typeof(ECDsaAlgorithm), algorithm))
+                Assert.True(Verify(msg, key, s_sampleContent), "Verification failed.");
+
+                if (UseDetachedContent)
                 {
-                    var ecdsaAlgorithm = (ECDsaAlgorithm)algorithm;
-                    ECDsa key = usePublicOnlyKey ? ECDsaKeysWithoutPrivateKey[ecdsaAlgorithm] : ECDsaKeys[ecdsaAlgorithm];
-                    verified = msg.Verify(key);
+                    Assert.Null(msg.Content);
                 }
                 else
                 {
-                    RSA key = usePublicOnlyKey ? RSAKeyWithoutPrivateKey : RSAKey;
-                    verified = msg.Verify(key);
+                    AssertExtensions.SequenceEqual(s_sampleContent, msg.Content.GetValueOrDefault().Span);
                 }
 
-                Assert.True(verified, "CoseSign1Message.Verify(key)");
-                AssertExtensions.SequenceEqual(s_sampleContent, msg.Content.GetValueOrDefault().Span);
-
-                Assert.True(msg.ProtectedHeaders.TryGetEncodedValue(CoseHeaderLabel.Algorithm, out ReadOnlyMemory<byte> encodedAlg),
+                Assert.True(msg.ProtectedHeaders.TryGetValue(CoseHeaderLabel.Algorithm, out CoseHeaderValue value),
                     "Algorithm header must be protected");
 
-                Assert.Equal(algorithm, new CborReader(encodedAlg).ReadInt32());
+                Assert.Equal(algorithm, new CborReader(value.EncodedValue).ReadInt32());
             }
+        }
+
+        public void TestVerifyWithAssociatedData()
+        {
+            // https://github.com/cose-wg/Examples/blob/master/sign1-tests/sign-pass-02.json
+            string hexCborMessage = "D28443A10126A10442313154546869732069732074686520636F6E74656E742E584010729CD711CB3813D8D8E944A8DA7111E7B258C9BDCA6135F7AE1ADBEE9509891267837E1E33BD36C150326AE62755C6BD8E540C3E8F92D7D225E8DB72B8820B";
+            ReplaceContentInHexCborMessage(ref hexCborMessage);
+
+            CoseSign1Message msg = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray(hexCborMessage));
+
+            Assert.False(Verify(msg, DefaultKey, s_sampleContent));
+
+            byte[] associatedData = ByteUtils.HexToByteArray("11aa22bb33cc44dd55006699");
+            Assert.True(Verify(msg, DefaultKey, s_sampleContent, associatedData));
         }
 
         [Theory]
         // https://github.com/cose-wg/Examples/blob/master/sign1-tests/sign-fail-02.json
-        [InlineData("D28443A10126A10442313154546869732069732074686520636F6E74656E742F58408EB33E4CA31D1C465AB05AAC34CC6B23D58FEF5C083106C4D25A91AEF0B0117E2AF9A291AA32E14AB834DC56ED2A223444547E01F11D3B0916E5A4C345CACB36")]
+        [InlineData("D28443A10126A10442313154546869732069732074686520636F6E74656E742F58408EB33E4CA31D1C465AB05AAC34CC6B23D58FEF5C083106C4D25A91AEF0B0117E2AF9A291AA32E14AB834DC56ED2A223444547E01F11D3B0916E5A4C345CACB36", true)]
         // https://github.com/cose-wg/Examples/blob/master/sign1-tests/sign-fail-06.json
-        [InlineData("D28445A201260300A10442313154546869732069732074686520636F6E74656E742E58408EB33E4CA31D1C465AB05AAC34CC6B23D58FEF5C083106C4D25A91AEF0B0117E2AF9A291AA32E14AB834DC56ED2A223444547E01F11D3B0916E5A4C345CACB36")]
+        [InlineData("D28445A201260300A10442313154546869732069732074686520636F6E74656E742E58408EB33E4CA31D1C465AB05AAC34CC6B23D58FEF5C083106C4D25A91AEF0B0117E2AF9A291AA32E14AB834DC56ED2A223444547E01F11D3B0916E5A4C345CACB36", false)]
         // https://github.com/cose-wg/Examples/blob/master/sign1-tests/sign-fail-07.json
-        [InlineData("D28443A10126A10442313154546869732069732074686520636F6E74656E742E58406520BBAF2081D7E0ED0F95F76EB0733D667005F7467CEC4B87B9381A6BA1EDE8E00DF29F32A37230F39A842A54821FDD223092819D7728EFB9D3A0080B75380B")]
-        public void VerifyReturnsFalseWithWrongSignature(string hexCborMessage)
+        [InlineData("D28443A10126A10442313154546869732069732074686520636F6E74656E742E58406520BBAF2081D7E0ED0F95F76EB0733D667005F7467CEC4B87B9381A6BA1EDE8E00DF29F32A37230F39A842A54821FDD223092819D7728EFB9D3A0080B75380B", false)]
+        public void VerifyReturnsFalseWithWrongSignature(string hexCborMessage, bool corruptContent)
         {
+            if (corruptContent && UseDetachedContent)
+            {
+                return;
+            }
+
+            ReplaceContentInHexCborMessage(ref hexCborMessage);
+
             CoseSign1Message msg = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray(hexCborMessage));
-            Assert.False(msg.Verify(DefaultKey));
+            Assert.False(Verify(msg, DefaultKey, s_sampleContent));
         }
 
         [Fact]
         public void VerifyReturnsFalseWithDataNotMatchingSignature()
         {
-            string encodedMsg = "D28445A201260300A10442313154546869732069732074686520636F6E74656E742E58406520BBAF2081D7E0ED0F95F76EB0733D667005F7467CEC4B87B9381A6BA1EDE8E00DF29F32A37230F39A842A54821FDD223092819D7728EFB9D3A0080B75380B";
-            CoseSign1Message msg = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray(encodedMsg));
-            Assert.True(msg.Verify(DefaultKey), "msg.Verify(ES256)");
+            string hexCborMessage = "D28445A201260300A10442313154546869732069732074686520636F6E74656E742E58406520BBAF2081D7E0ED0F95F76EB0733D667005F7467CEC4B87B9381A6BA1EDE8E00DF29F32A37230F39A842A54821FDD223092819D7728EFB9D3A0080B75380B";
+            ReplaceContentInHexCborMessage(ref hexCborMessage);
 
-            encodedMsg = ReplaceFirst(encodedMsg, "45A201260300", "45A201260301");
-            msg = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray(encodedMsg));
-            Assert.False(msg.Verify(DefaultKey), "msg.Verify(ES256) - Corrupt protected header");
+            CoseSign1Message msg = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray(hexCborMessage));
+            Assert.True(Verify(msg, DefaultKey, s_sampleContent), "Verification failed");
 
-            encodedMsg = ReplaceFirst(encodedMsg, "546869732069732074686520636F6E74656E742E", "546869732069732074686520636F6E74656E743E");
-            msg = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray(encodedMsg));
-            Assert.False(msg.Verify(DefaultKey), "msg.Verify(ES256) - Corrupt content");
+            string hexCborMessageCorrupt1 = ReplaceFirst(hexCborMessage, "45A201260300", "45A201260301");
+            msg = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray(hexCborMessageCorrupt1));
+            Assert.False(Verify(msg, DefaultKey, s_sampleContent), "Verification passed when should've failed - Corrupt protected header");
 
-            static string ReplaceFirst(string text, string search, string replace)
+            if (!UseDetachedContent)
             {
-                int pos = text.IndexOf(search);
-                return text.Substring(0, pos) + replace + text.Substring(pos + search.Length);
+                string hexCborMessageCorrupt2 = ReplaceFirst(hexCborMessage, "546869732069732074686520636F6E74656E742E", "546869732069732074686520636F6E74656E743E");
+                msg = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray(hexCborMessageCorrupt2));
+                Assert.False(Verify(msg, DefaultKey, s_sampleContent), "Verification passed when should've failed - Corrupt content");
             }
         }
 
@@ -96,69 +115,71 @@ namespace System.Security.Cryptography.Cose.Tests
         [InlineData("D2844AA10167756E6B6E6F776EA10442313154546869732069732074686520636F6E74656E742E58408EB33E4CA31D1C465AB05AAC34CC6B23D58FEF5C083106C4D25A91AEF0B0117E2AF9A291AA32E14AB834DC56ED2A223444547E01F11D3B0916E5A4C345CACB36")]
         public void VerifyThrowsWithUnknownAlgorithm(string hexCborMessage)
         {
+            ReplaceContentInHexCborMessage(ref hexCborMessage);
             CoseSign1Message msg = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray(hexCborMessage));
-            Assert.Throws<CryptographicException>(() => msg.Verify(DefaultKey));
-        }
-
-        [Fact]
-        public void VerifyDetached()
-        {
-            CoseSign1Message msg = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray("D28445A201260300A104423131F658406520BBAF2081D7E0ED0F95F76EB0733D667005F7467CEC4B87B9381A6BA1EDE8E00DF29F32A37230F39A842A54821FDD223092819D7728EFB9D3A0080B75380B"));
-            Assert.Null(msg.Content);
-            Assert.True(msg.Verify(DefaultKey, s_sampleContent));
+            Assert.Throws<CryptographicException>(() => Verify(msg, DefaultKey, s_sampleContent));
         }
 
         [Fact]
         public void VerifyThrowsIfMessageWasDetachedAndContentWasNotSupplied()
         {
+            if (UseDetachedContent)
+            {
+                return;
+            }
+
             CoseSign1Message msg = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray("D28445A201260300A104423131F658406520BBAF2081D7E0ED0F95F76EB0733D667005F7467CEC4B87B9381A6BA1EDE8E00DF29F32A37230F39A842A54821FDD223092819D7728EFB9D3A0080B75380B"));
             Assert.Null(msg.Content);
-            Assert.Throws<CryptographicException>(() => msg.Verify(DefaultKey));
+            Assert.Throws<InvalidOperationException>(() => Verify(msg, DefaultKey, s_sampleContent));
         }
 
         [Fact]
         public void VerifyThrowsIfMessageWasEmbeddedAndContentWasSupplied()
         {
+            if (!UseDetachedContent)
+            {
+                return;
+            }
+
             CoseSign1Message msg = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray("D28443A10126A10442313154546869732069732074686520636F6E74656E742E58408EB33E4CA31D1C465AB05AAC34CC6B23D58FEF5C083106C4D25A91AEF0B0117E2AF9A291AA32E14AB834DC56ED2A223444547E01F11D3B0916E5A4C345CACB36"));
             Assert.NotNull(msg.Content);
-            Assert.Throws<CryptographicException>(() => msg.Verify(DefaultKey, s_sampleContent));
+            Assert.Throws<InvalidOperationException>(() => Verify(msg, DefaultKey, s_sampleContent));
         }
 
-        [Fact]
-        public void VerifyThrowsIfCriticalHeaderWasIncluded()
+        private void ReplaceContentInHexCborMessage(ref string hexCborMessage)
         {
-            var protectedHeaders = GetHeaderMapWithAlgorithm();
-            protectedHeaders.SetValue(CoseHeaderLabel.Critical, ReadOnlySpan<byte>.Empty);
-            byte[] encodedMsg = CoseSign1Message.Sign(s_sampleContent, protectedHeaders, GetEmptyHeaderMap(), DefaultKey, DefaultHash);
-
-            CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
-            Assert.Throws<NotSupportedException>(() => msg.Verify(DefaultKey));
-
-            var unprotectedHeaders = GetEmptyHeaderMap();
-            unprotectedHeaders.SetValue(CoseHeaderLabel.Critical, ReadOnlySpan<byte>.Empty);
-            encodedMsg = CoseSign1Message.Sign(s_sampleContent, GetHeaderMapWithAlgorithm(), unprotectedHeaders, DefaultKey, DefaultHash);
-
-            msg = CoseMessage.DecodeSign1(encodedMsg);
-            Assert.Throws<NotSupportedException>(() => msg.Verify(DefaultKey));
+            if (UseDetachedContent)
+            {
+                hexCborMessage = hexCborMessage.Replace(SampleContentByteStringCborHex, NullCborHex);
+            }
         }
+    }
 
-        [Fact]
-        public void VerifyThrowsIfCounterSignatureHeaderWasIncluded()
+    public class CoseSign1MessageTests_VerifyEmbedded: CoseSign1MessageTests_Verify
+    {
+        internal override bool UseDetachedContent => false;
+
+        internal override bool Verify(CoseMessage msg, AsymmetricAlgorithm key, byte[] content, byte[]? associatedData = null)
         {
-            var protectedHeaders = GetHeaderMapWithAlgorithm();
-            protectedHeaders.SetValue(CoseHeaderLabel.CounterSignature, ReadOnlySpan<byte>.Empty);
-
-            byte[] encodedMsg = CoseSign1Message.Sign(s_sampleContent, protectedHeaders, GetEmptyHeaderMap(), DefaultKey, DefaultHash);
-            CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
-
-            Assert.Throws<NotSupportedException>(() => msg.Verify(DefaultKey));
-
-            var unprotectedHeaders = GetEmptyHeaderMap();
-            unprotectedHeaders.SetValue(CoseHeaderLabel.CounterSignature, ReadOnlySpan<byte>.Empty);
-            encodedMsg = CoseSign1Message.Sign(s_sampleContent, GetHeaderMapWithAlgorithm(), unprotectedHeaders, DefaultKey, DefaultHash);
-
-            msg = CoseMessage.DecodeSign1(encodedMsg);
-            Assert.Throws<NotSupportedException>(() => msg.Verify(DefaultKey));
+            CoseSign1Message sign1Msg = Assert.IsType<CoseSign1Message>(msg);
+            return sign1Msg.VerifyEmbedded(key, associatedData);
         }
+
+        internal override byte[] Sign(byte[] content, CoseSigner signer)
+            => CoseSign1Message.SignEmbedded(content, signer);
+    }
+
+    public class CoseSign1MessageTests_VerifyDetached : CoseSign1MessageTests_Verify
+    {
+        internal override bool UseDetachedContent => true;
+
+        internal override bool Verify(CoseMessage msg, AsymmetricAlgorithm key, byte[] content, byte[]? associatedData = null)
+        {
+            CoseSign1Message sign1Msg = Assert.IsType<CoseSign1Message>(msg);
+            return sign1Msg.VerifyDetached(key, content, associatedData);
+        }
+
+        internal override byte[] Sign(byte[] content, CoseSigner signer)
+            => CoseSign1Message.SignDetached(content, signer);
     }
 }

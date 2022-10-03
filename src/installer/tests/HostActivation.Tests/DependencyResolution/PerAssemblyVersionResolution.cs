@@ -57,15 +57,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         [InlineData(TestAssemblyWithFileVersion, null, "3.2.2.2", false)]
         public void AppWithSameAssemblyAsFramework(string testAssemblyName, string appAsmVersion, string appFileVersion, bool appWins)
         {
-            RunTest(b => b
-                .WithPackage(TestVersionsPackage, "1.0.0", lib => lib
-                    .WithAssemblyGroup(null, g => g
-                        .WithAsset(testAssemblyName + ".dll", rf => rf
-                            .WithVersion(appAsmVersion, appFileVersion)))),
-                testAssemblyName, appAsmVersion, appFileVersion, appWins);
+            RunTest(testAssemblyName, appAsmVersion, appFileVersion, appWins);
         }
 
-        protected abstract void RunTest(Action<NetCoreAppBuilder> customizer, string testAssemblyName, string appAsmVersion, string appFileVersion, bool appWins);
+        protected abstract void RunTest(string testAssemblyName, string appAsmVersion, string appFileVersion, bool appWins);
 
         public class SharedTestState : ComponentSharedTestStateBase
         {
@@ -105,7 +100,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         {
         }
 
-        protected override void RunTest(Action<NetCoreAppBuilder> customizer, string testAssemblyName, string appAsmVersion, string appFileVersion, bool appWins)
+        protected override void RunTest(string testAssemblyName, string appAsmVersion, string appFileVersion, bool appWins)
         {
             var app = SharedState.CreateTestFrameworkReferenceApp(b => b
                 .WithPackage(TestVersionsPackage, "1.0.0", lib => lib
@@ -133,7 +128,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         {
         }
 
-        protected override void RunTest(Action<NetCoreAppBuilder> customizer, string testAssemblyName, string appAsmVersion, string appFileVersion, bool appWins)
+        protected override void RunTest(string testAssemblyName, string appAsmVersion, string appFileVersion, bool appWins)
         {
             var component = SharedState.CreateComponentWithNoDependencies(b => b
                 .WithPackage(TestVersionsPackage, "1.0.0", lib => lib

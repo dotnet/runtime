@@ -125,7 +125,7 @@ check_thread_state (MonoThreadInfo* info)
 		g_assert (!no_safepoints);
 		/* fallthru */
 	case STATE_ASYNC_SUSPEND_REQUESTED:
-		g_assert (suspend_count > 0);
+		g_assertf (suspend_count > 0, "expected suspend_count > 0 in current state: %s, suspend_count == %d", state_name(cur_state), suspend_count);
 		break;
 	case STATE_BLOCKING:
 		g_assert (!no_safepoints);
@@ -286,7 +286,7 @@ retry_state_change:
 		if (no_safepoints)
 			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE");
 		if (!(suspend_count > 0 && suspend_count < THREAD_SUSPEND_COUNT_MAX))
-			mono_fatal_with_history ("suspend_count = %d, but should be > 0 and < THREAD_SUSPEND_COUNT_MAX", suspend_count);
+			mono_fatal_with_history ("suspend_count = %d, but should be > 0 and < THREAD_SUSPEND_COUNT_MAX, for thread %d", suspend_count, mono_thread_info_get_tid (info));
 		if (thread_state_cas (&info->thread_state, build_thread_state (cur_state, suspend_count + 1, no_safepoints), raw_state) != raw_state)
 			goto retry_state_change;
 		trace_state_change ("SUSPEND_INIT_REQUESTED", info, raw_state, cur_state, no_safepoints, 1);
@@ -319,7 +319,7 @@ retry_state_change:
 /*
 
 [1] It's questionable on what to do if we hit the beginning of a self suspend.
-The expected behavior is that the target should poll its state very soon so the the suspend latency should be minimal.
+The expected behavior is that the target should poll its state very soon so the suspend latency should be minimal.
 
 STATE_ASYNC_SUSPEND_REQUESTED: Since there can only be one async suspend in progress and it must finish, it should not be possible to witness this.
 */
@@ -433,7 +433,7 @@ STATE_BLOCKING_SELF_SUSPENDED: Poll is a local state transition. No VM activitie
 Try to resume a suspended thread.
 
 Returns one of the following values:
-- Sucess: The thread was resumed.
+- Success: The thread was resumed.
 - Error: The thread was not suspended in the first place. [2]
 - InitSelfResume: The thread is blocked on self suspend and should be resumed
 - InitAsyncResume: The thread is blocked on async suspend and should be resumed
@@ -640,7 +640,7 @@ retry_state_change:
 				goto retry_state_change;
 			trace_state_change ("ABORT_ASYNC_SUSPEND", info, raw_state, STATE_RUNNING, no_safepoints, -1);
 		}
-		return TRUE; //aborting thread suspend request succeded, thread is running.
+		return TRUE; //aborting thread suspend request succeeded, thread is running.
 
 /*
 STATE_RUNNING: A thread cannot escape suspension once requested.
@@ -716,7 +716,7 @@ That state only works as long as the only managed state touched is blitable and 
 
 It returns the action the caller must perform:
 
-- Continue: Entered blocking state sucessfully;
+- Continue: Entered blocking state successfully;
 - PollAndRetry: Async suspend raced and won, try to suspend and then retry;
 
 */

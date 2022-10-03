@@ -73,6 +73,7 @@ typedef void (*SIGFUNC)(int, siginfo_t *, void *);
 static void sigterm_handler(int code, siginfo_t *siginfo, void *context);
 #ifdef INJECT_ACTIVATION_SIGNAL
 static void inject_activation_handler(int code, siginfo_t *siginfo, void *context);
+extern void* g_InvokeActivationHandlerReturnAddress;
 #endif
 
 static void sigill_handler(int code, siginfo_t *siginfo, void *context);
@@ -485,7 +486,7 @@ static void sigfpe_handler(int code, siginfo_t *siginfo, void *context)
 Function :
     signal_handler_worker
 
-    Handles signal on the original stack where the signal occured.
+    Handles signal on the original stack where the signal occurred.
     Invoked via setcontext.
 
 Parameters :
@@ -532,7 +533,7 @@ Function :
 Parameters :
     POSIX signal handler parameter list ("man sigaction" for details)
     sp - stack pointer of the stack to execute the handler on.
-         If sp == 0, execute it on the original stack where the signal has occured.
+         If sp == 0, execute it on the original stack where the signal has occurred.
 Return :
     The return value from the signal handler
 --*/
@@ -757,6 +758,12 @@ static void sigterm_handler(int code, siginfo_t *siginfo, void *context)
 {
     if (PALIsInitialized())
     {
+        CLRConfigNoCache enableDumpOnSigTerm = CLRConfigNoCache::Get("EnableDumpOnSigTerm", /*noprefix*/ false, &getenv);
+        DWORD val = 0;
+        if (enableDumpOnSigTerm.IsSet() && enableDumpOnSigTerm.TryAsInteger(10, val) && val == 1)
+        {
+            PROCCreateCrashDumpIfEnabled(code);
+        }
         // g_pSynchronizationManager shouldn't be null if PAL is initialized.
         _ASSERTE(g_pSynchronizationManager != nullptr);
 
@@ -769,6 +776,29 @@ static void sigterm_handler(int code, siginfo_t *siginfo, void *context)
 }
 
 #ifdef INJECT_ACTIVATION_SIGNAL
+
+/*++
+Function :
+    InvokeActivationHandler
+
+    Invoke the registered activation handler.
+    It also saves the return address (inject_activation_handler) so that PAL_VirtualUnwind can detect that
+    it has reached that method and use the context stored in the winContext there to unwind to the code
+    where the activation was injected. This is necessary on Alpine Linux where the libunwind cannot correctly
+    unwind past the signal frame.
+
+Parameters :
+    Windows style context of the location where the activation was injected
+
+(no return value)
+--*/
+__attribute__((noinline))
+static void InvokeActivationHandler(CONTEXT *pWinContext)
+{
+    g_InvokeActivationHandlerReturnAddress = __builtin_return_address(0);
+    g_activationFunction(pWinContext);
+}
+
 /*++
 Function :
     inject_activation_handler
@@ -797,15 +827,26 @@ static void inject_activation_handler(int code, siginfo_t *siginfo, void *contex
         native_context_t *ucontext = (native_context_t *)context;
 
         CONTEXT winContext;
+        // Pre-populate context with data from current frame, because ucontext doesn't have some data (e.g. SS register)
+        // which is required for restoring context
+        RtlCaptureContext(&winContext);
+
+        ULONG contextFlags = CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT;
+
+#if defined(HOST_AMD64)
+        contextFlags |= CONTEXT_XSTATE;
+#endif
+
         CONTEXTFromNativeContext(
             ucontext,
             &winContext,
-            CONTEXT_CONTROL | CONTEXT_INTEGER);
+            contextFlags);
 
         if (g_safeActivationCheckFunction(CONTEXTGetPC(&winContext), /* checkingCurrentThread */ TRUE))
         {
+            g_inject_activation_context_locvar_offset = (int)((char*)&winContext - (char*)__builtin_frame_address(0));
             int savedErrNo = errno; // Make sure that errno is not modified
-            g_activationFunction(&winContext);
+            InvokeActivationHandler(&winContext);
             errno = savedErrNo;
 
             // Activation function may have modified the context, so update it.

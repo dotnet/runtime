@@ -143,7 +143,7 @@ namespace System.Net.Http.Headers
                     }
                     isWeak = true;
                     current++; // we have a weak-entity tag.
-                    current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+                    current += HttpRuleParser.GetWhitespaceLength(input, current);
                 }
 
                 int tagStartIndex = current;
@@ -165,9 +165,9 @@ namespace System.Net.Http.Headers
                     parsedValue = new EntityTagHeaderValue(input.Substring(tagStartIndex, tagLength), isWeak);
                 }
 
-                current = current + tagLength;
+                current += tagLength;
             }
-            current = current + HttpRuleParser.GetWhitespaceLength(input, current);
+            current += HttpRuleParser.GetWhitespaceLength(input, current);
 
             return current - startIndex;
         }

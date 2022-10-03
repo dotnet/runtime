@@ -253,7 +253,6 @@ m_method_is_wrapper (MonoMethod *method)
 	return method->wrapper_type != 0;
 }
 
-
 static inline void
 m_field_set_parent (MonoClassField *field, MonoClass *klass)
 {

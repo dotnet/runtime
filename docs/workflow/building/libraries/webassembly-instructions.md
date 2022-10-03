@@ -7,7 +7,7 @@ If you haven't already done so, please read [this document](../../README.md#Buil
 The **correct version** of Emscripten SDK (emsdk) needs to be installed.
 * Run `make -C src/mono/wasm provision-wasm` to install emsdk into `src/mono/wasm/emsdk`.
 * Alternatively follow the [installation guide](https://emscripten.org/docs/getting_started/downloads.html#sdk-download-and-install).
-Do not install `latest` but rather specific version e.g. `./emsdk install 2.0.23`. See [emscripten-version.txt](..\..\..\..\src\mono\wasm\emscripten-version.txt)
+Do not install `latest` but rather specific version e.g. `./emsdk install 2.0.23`. See [emscripten-version.txt](../../../../src/mono/wasm/emscripten-version.txt)
 
 Once installed the `EMSDK_PATH` environment variable needs to be set:
 

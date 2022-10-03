@@ -58,19 +58,32 @@ namespace OLEDB.Test.ModuleCore
         public object Expected;
 
         //Constructor
-        public CTestException(string message!!)
+        public CTestException(string message)
             : this(CTestBase.TEST_FAIL, message)
         {
+            if (message is null)
+            {
+                throw new ArgumentNullException(nameof(message));
+            }
         }
 
-        public CTestException(int result, string message!!)
+        public CTestException(int result, string message)
             : this(result, message, false, true, null)
         {
+            if (message is null)
+            {
+                throw new ArgumentNullException(nameof(message));
+            }
         }
 
-        public CTestException(int result, string message!!, object actual, object expected, Exception inner)
+        public CTestException(int result, string message, object actual, object expected, Exception inner)
             : base(message, inner)
         {
+            if (message is null)
+            {
+                throw new ArgumentNullException(nameof(message));
+            }
+
             //Note: iResult is the variation result (i.e.: TEST_PASS, TEST_FAIL, etc...)
             //Setup the exception
             Result = result;

@@ -53,7 +53,7 @@ namespace System.Net.WebSockets.Client.Tests
                 {
                     server = System.Net.Test.Common.Configuration.Http.RemoteEchoServer;
                     var ub = new UriBuilder("ws", server.Host, server.Port, server.PathAndQuery);
-                    exceptionMessage = ResourceHelper.GetExceptionMessage("net_WebSockets_Connect101Expected", (int) HttpStatusCode.OK);
+                    exceptionMessage = ResourceHelper.GetExceptionMessage("net_WebSockets_ConnectStatusExpected", (int) HttpStatusCode.OK, (int) HttpStatusCode.SwitchingProtocols);
 
                     yield return new object[] { ub.Uri, exceptionMessage, WebSocketError.NotAWebSocket };
                 }

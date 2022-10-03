@@ -67,7 +67,7 @@ namespace System.Net.Http
         // Don't expose CONNECT as static property, since it's used by the transport to connect to a proxy.
         // CONNECT is not used by users directly.
 
-        internal static HttpMethod Connect
+        public static HttpMethod Connect
         {
             get { return s_connectMethod; }
         }

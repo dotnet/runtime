@@ -44,7 +44,7 @@ Buffer size required to be passed to _gcvt, fcvt and other fp conversion routine
 #define _CVTBUFSIZE (309+40) /* # of digits in max. dp value + slop */
 
 //------------------------------------------------------------------------------
-// This code was taken from the 'ouput.c' file located in Visual Studio 8 (i.e. 2005)
+// This code was taken from the 'output.c' file located in Visual Studio 8 (i.e. 2005)
 // in the '\Microsoft Visual Studio 8\VC\crt\src' directory. It was moved into
 // this file to support only the '_output' function used by _vscprintf() in vsprintf.c
 // UNUSED / NON-RELEVANT PORTIONS OF THE CODE HAVE BEEN REMOVED - do not try and
@@ -664,7 +664,7 @@ int __cdecl _output (
             break;
 
         case ST_PRECIS:
-            /* update precison value */
+            /* update precision value */
             if (ch == _T('*')) {
                 /* get precision from arg list */
                 precision = get_int_arg(&argptr);

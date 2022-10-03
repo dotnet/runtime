@@ -549,28 +549,5 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 Assert.True(ecdsaOther.VerifyData(data, signature, hashAlgorithm));
             }
         }
-
-        private sealed class RSASha1Pkcs1SignatureGenerator : X509SignatureGenerator
-        {
-            private readonly X509SignatureGenerator _realRsaGenerator;
-
-            internal RSASha1Pkcs1SignatureGenerator(RSA rsa)
-            {
-                _realRsaGenerator = X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
-            }
-
-            protected override PublicKey BuildPublicKey() => _realRsaGenerator.PublicKey;
-
-            public override byte[] GetSignatureAlgorithmIdentifier(HashAlgorithmName hashAlgorithm)
-            {
-                if (hashAlgorithm == HashAlgorithmName.SHA1)
-                    return "300D06092A864886F70D0101050500".HexToByteArray();
-
-                throw new InvalidOperationException();
-            }
-
-            public override byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm) =>
-                _realRsaGenerator.SignData(data, hashAlgorithm);
-        }
     }
 }

@@ -177,4 +177,19 @@
       WriteOnlyWhenDifferent="true" />
   </Target>
 
+  <Target Name="GenerateNativeSourcelinkFile"
+          Condition="'$(DisableSourceLink)' != 'true'"
+          DependsOnTargets="_CopyGeneratedSourcelinkFile;_VerifyNativeSourceLinkFileExists" />
+
+  <Target Name="_CopyGeneratedSourcelinkFile"
+          DependsOnTargets="GenerateSourceLinkFile"
+          Inputs="$(SourceLink)" Outputs="$(NativeSourceLinkFile)">
+    <Error Condition="'$(NativeSourceLinkFile)' == ''" Text="Please set NativeSourceLinkFile to forward appropriate information for sourcelink."/>
+    <Copy SourceFiles="$(SourceLink)" DestinationFiles="$(NativeSourceLinkFile)" />
+  </Target>
+
+  <Target Name="_VerifyNativeSourceLinkFileExists"
+          Condition="'$(VerifySourceLinkFileExists)' == true">
+    <Error Condition="!Exists('$(NativeSourceLinkFile)')" Text="Native SourceLink file could not be made available to the native build. Ensure that $(MSBuildProjectName) ran the sourcelink targets."/>
+  </Target>
 </Project>

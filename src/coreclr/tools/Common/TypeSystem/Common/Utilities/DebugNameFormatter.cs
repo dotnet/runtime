@@ -182,7 +182,7 @@ namespace Internal.TypeSystem
             return Void.Value;
         }
 
-        private void AssemblyQualify(StringBuilder sb, DefType type, FormatOptions options)
+        private static void AssemblyQualify(StringBuilder sb, DefType type, FormatOptions options)
         {
             if (((options & FormatOptions.AssemblyQualify) != 0)
                 && type is MetadataType mdType
@@ -215,7 +215,7 @@ namespace Internal.TypeSystem
             }
         }
 
-        private void NamespaceQualify(StringBuilder sb, DefType type, FormatOptions options)
+        private static void NamespaceQualify(StringBuilder sb, DefType type, FormatOptions options)
         {
             if ((options & FormatOptions.NamespaceQualify) != 0)
             {

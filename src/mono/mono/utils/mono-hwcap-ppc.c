@@ -22,7 +22,7 @@
 
 #include "mono/utils/mono-hwcap.h"
 
-#if defined(__linux__) && defined(HAVE_SYS_AUXV_H)
+#if defined(__linux__) && HAVE_GETAUXVAL
 #include <string.h>
 #include <sys/auxv.h>
 #elif defined(_AIX)
@@ -46,7 +46,7 @@
 void
 mono_hwcap_arch_init (void)
 {
-#if defined(__linux__) && defined(HAVE_SYS_AUXV_H)
+#if defined(__linux__) && HAVE_GETAUXVAL
 	unsigned long hwcap;
 	unsigned long platform;
 

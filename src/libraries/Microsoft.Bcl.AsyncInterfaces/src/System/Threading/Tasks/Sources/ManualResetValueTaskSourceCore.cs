@@ -26,22 +26,22 @@ namespace System.Threading.Tasks.Sources
         /// or <see cref="ManualResetValueTaskSourceCoreShared.s_sentinel"/> if the operation completed before a callback was supplied,
         /// or null if a callback hasn't yet been provided and the operation hasn't yet completed.
         /// </summary>
-        private Action<object> _continuation;
+        private Action<object?>? _continuation;
         /// <summary>State to pass to <see cref="_continuation"/>.</summary>
-        private object _continuationState;
+        private object? _continuationState;
         /// <summary><see cref="ExecutionContext"/> to flow to the callback, or null if no flowing is required.</summary>
-        private ExecutionContext _executionContext;
+        private ExecutionContext? _executionContext;
         /// <summary>
         /// A "captured" <see cref="SynchronizationContext"/> or <see cref="TaskScheduler"/> with which to invoke the callback,
         /// or null if no special context is required.
         /// </summary>
-        private object _capturedContext;
+        private object? _capturedContext;
         /// <summary>Whether the current operation has completed.</summary>
         private bool _completed;
         /// <summary>The result with which the operation succeeded, or the default value if it hasn't yet completed or failed.</summary>
-        private TResult _result;
+        private TResult? _result;
         /// <summary>The exception with which the operation failed, or null if it hasn't yet completed or completed successfully.</summary>
-        private ExceptionDispatchInfo _error;
+        private ExceptionDispatchInfo? _error;
         /// <summary>The current version of this value, used to help prevent misuse.</summary>
         private short _version;
 
@@ -105,7 +105,7 @@ namespace System.Threading.Tasks.Sources
             }
 
             _error?.Throw();
-            return _result;
+            return _result!;
         }
 
         /// <summary>Schedules the continuation action for this operation.</summary>
@@ -113,8 +113,12 @@ namespace System.Threading.Tasks.Sources
         /// <param name="state">The state object to pass to <paramref name="continuation"/> when it's invoked.</param>
         /// <param name="token">Opaque value that was provided to the <see cref="ValueTask"/>'s constructor.</param>
         /// <param name="flags">The flags describing the behavior of the continuation.</param>
-        public void OnCompleted(Action<object> continuation!!, object state, short token, ValueTaskSourceOnCompletedFlags flags)
+        public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
         {
+            if (continuation is null)
+            {
+                throw new ArgumentNullException(nameof(continuation));
+            }
             ValidateToken(token);
 
             if ((flags & ValueTaskSourceOnCompletedFlags.FlowExecutionContext) != 0)
@@ -124,7 +128,7 @@ namespace System.Threading.Tasks.Sources
 
             if ((flags & ValueTaskSourceOnCompletedFlags.UseSchedulingContext) != 0)
             {
-                SynchronizationContext sc = SynchronizationContext.Current;
+                SynchronizationContext? sc = SynchronizationContext.Current;
                 if (sc != null && sc.GetType() != typeof(SynchronizationContext))
                 {
                     _capturedContext = sc;
@@ -147,7 +151,7 @@ namespace System.Threading.Tasks.Sources
             // To minimize the chances of that, we check preemptively whether _continuation
             // is already set to something other than the completion sentinel.
 
-            object oldContinuation = _continuation;
+            object? oldContinuation = _continuation;
             if (oldContinuation == null)
             {
                 _continuationState = state;
@@ -171,7 +175,7 @@ namespace System.Threading.Tasks.Sources
                     case SynchronizationContext sc:
                         sc.Post(s =>
                         {
-                            var tuple = (Tuple<Action<object>, object>)s;
+                            var tuple = (Tuple<Action<object?>, object?>)s!;
                             tuple.Item1(tuple.Item2);
                         }, Tuple.Create(continuation, state));
                         break;
@@ -208,7 +212,7 @@ namespace System.Threading.Tasks.Sources
                 {
                     ExecutionContext.Run(
                         _executionContext,
-                        s => ((ManualResetValueTaskSourceCore<TResult>)s).InvokeContinuation(),
+                        s => ((ManualResetValueTaskSourceCore<TResult>)s!).InvokeContinuation(),
                         this);
                 }
                 else
@@ -243,7 +247,7 @@ namespace System.Threading.Tasks.Sources
                 case SynchronizationContext sc:
                     sc.Post(s =>
                     {
-                        var state = (Tuple<Action<object>, object>)s;
+                        var state = (Tuple<Action<object?>, object?>)s!;
                         state.Item1(state.Item2);
                     }, Tuple.Create(_continuation, _continuationState));
                     break;
@@ -257,8 +261,8 @@ namespace System.Threading.Tasks.Sources
 
     internal static class ManualResetValueTaskSourceCoreShared // separated out of generic to avoid unnecessary duplication
     {
-        internal static readonly Action<object> s_sentinel = CompletionSentinel;
-        private static void CompletionSentinel(object _) // named method to aid debugging
+        internal static readonly Action<object?> s_sentinel = CompletionSentinel;
+        private static void CompletionSentinel(object? _) // named method to aid debugging
         {
             Debug.Fail("The sentinel delegate should never be invoked.");
             throw new InvalidOperationException();

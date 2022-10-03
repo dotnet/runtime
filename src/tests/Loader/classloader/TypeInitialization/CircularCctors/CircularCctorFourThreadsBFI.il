@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 2.0.50103.00
-//  Copyright (C) Microsoft Corporation. All rights reserved.
 .assembly extern System.Console { auto }
 .assembly extern xunit.core {}
 .assembly extern System.Threading.Thread { auto }

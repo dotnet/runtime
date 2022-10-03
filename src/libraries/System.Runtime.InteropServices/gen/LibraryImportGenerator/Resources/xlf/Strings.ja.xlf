@@ -1,0 +1,635 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="ja" original="../Strings.resx">
+    <body>
+      <trans-unit id="AddMissingCustomTypeMarshallerMembers">
+        <source>Add missing custom type marshaller members</source>
+        <target state="translated">不足しているカスタム型マーシャラー メンバーの追加</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeDescription">
+        <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
+        <target state="translated">マーシャラー型で 'Span&lt;T&gt;' を取る 'FromManaged' メソッドを指定して 'Managed to Unmanaged with Caller-Allocated Buffer' 図形を使用する場合、呼び出し元に割り当てられたバッファー内の要素の数を提供するには、静的な 'BufferSize' プロパティを型で指定する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeMessage">
+        <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
+        <target state="translated">マーシャラー型 '{0}' には、呼び出し元が割り当てた 'Span&lt;{1}&gt;' を受け取る FromManaged メソッドがあるため、呼び出し元が割り当てたバッファーのサイズを指定するには、静的な読み取り専用の 'int' 'BufferSize' プロパティが必要です</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CannotForwardToDllImportDescription">
+        <source>The generated 'DllImportAttribute' will not have a value corresponding to '{0}'.</source>
+        <target state="translated">生成された 'DllImportAttribute' には、'{0}' に対応する値がありません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CannotForwardToDllImportMessage">
+        <source>'{0}' has no equivalent in 'DllImportAttribute' and will not be forwarded</source>
+        <target state="translated">'{0}' には、'DllImportAtttribute' に相当するものがないため、転送されません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CannotForwardToDllImportTitle">
+        <source>Specified 'LibraryImportAttribute' arguments cannot be forwarded to 'DllImportAttribute'</source>
+        <target state="translated">指定された 'LibraryImportAttribute' 引数を 'DllImportAttribute' に転送することはできません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedDescription">
+        <source>Source-generated P/Invokes will ignore any configuration that is not supported.</source>
+        <target state="translated">ソース生成済みの P/Invoke は、サポートされていない構成を無視します。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessage">
+        <source>The '{0}' configuration is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
+        <target state="translated">'{0}' 構成は、ソース生成 P/Invokes ではサポートされていません。指定した構成が必要な場合は、代わりに通常の 'DllImport' を使用してください。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessageMarshallingInfo">
+        <source>The specified marshalling configuration is not supported by source-generated P/Invokes. {0}.</source>
+        <target state="translated">指定されたマーシャリング構成は、ソースで生成された P/Invoke ではサポートされていません。{0}。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessageParameter">
+        <source>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
+        <target state="translated">パラメーター '{1}' に指定された構成 '{0}' は、ソース生成 P/Invokes ではサポートされていません。指定した構成が必要な場合は、代わりに通常の 'DllImport' を使用してください。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessageReturn">
+        <source>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
+        <target state="translated">メソッド '{1}' の戻り値に指定された '{0}' 構成は、ソース生成 P/Invokes ではサポートされていません。指定した構成が必要な場合は、代わりに通常の 'DllImport' を使用してください。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessageValue">
+        <source>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular 'DllImport' instead.</source>
+        <target state="translated">'{1}' に指定された値 '{0}' は、ソース生成 P/Invokes ではサポートされていません。指定した値が必要な場合は、代わりに通常の 'DllImport' を使用してください。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedTitle">
+        <source>Specified configuration is not supported by source-generated P/Invokes.</source>
+        <target state="translated">指定された構成は、ソースで生成された P/Invoke ではサポートされていません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode">
+        <source>Automatically converting a P/Invoke with 'PreserveSig' set to 'false' to a source-generated P/Invoke may produce invalid code</source>
+        <target state="translated">'PreserveSig' が 'false' に設定された P/Invoke をソース生成済みの P/Invoke に自動的に変換すると、無効なコードが生成される場合があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImport">
+        <source>Convert to 'LibraryImport'</source>
+        <target state="translated">'LibraryImport' への変換</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportAddUnsafe">
+        <source>Convert to 'LibraryImport' and enable unsafe code</source>
+        <target state="translated">'LibraryImport' に変換し、アンセーフ コードを有効にする</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportDescription">
+        <source>Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</source>
+        <target state="translated">コンパイル時に P/Invoke マーシャリング コードを生成するには、'DllImportAttribute' の代わりに 'LibraryImportAttribute' を使用します</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportMayRequireCustomMarshalling">
+        <source>Converting this API to 'LibraryImport' will require additional code to provide custom marshallers for some parameters.</source>
+        <target state="translated">この API を 'LibraryImport' に変換するには、一部のパラメーターにカスタム マーシャラーを提供するために追加のコードが必要です。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportMessage">
+        <source>Mark the method '{0}' with 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</source>
+        <target state="translated">コンパイル時に P/Invoke マーシャリング コードを生成するには、'DllImportAttribute' の代わりに 'LibraryImportAttribute' を持つメソッド '{0}' をマークします</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportTitle">
+        <source>Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</source>
+        <target state="translated">コンパイル時に P/Invoke マーシャリング コードを生成するには、'DllImportAttribute' の代わりに 'LibraryImportAttribute' を使用します</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportWithSuffix">
+        <source>Convert to 'LibraryImport' with '{0}' suffix</source>
+        <target state="translated">'{0}' サフィックスを持つ 'LibraryImport' への変換</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportWithSuffixAddUnsafe">
+        <source>Convert to 'LibraryImport' with '{0}' suffix and enable unsafe code</source>
+        <target state="translated">'{0}' サフィックスを持つ 'LibraryImport' に変換し、アンセーフ コードを有効にする</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CustomMarshallerTypeMustHaveRequiredShapeTitle">
+        <source>Marshaller type does not have the required shape</source>
+        <target state="translated">マーシャラー型に必要な図形がありません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ElementMarshallerCannotBeStatefulDescription">
+        <source>A marshaller for an element scenario cannot be stateful.</source>
+        <target state="translated">要素シナリオのマーシャラーをステートフルにすることはできません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ElementMarshallerCannotBeStatefulMessage">
+        <source>The specified marshaller type '{0}' is a stateful marshaller, but stateful marshallers are not allowed in the provided marshal mode '{1}'</source>
+        <target state="translated">指定されたマーシャラー型 '{0}' はステートフル マーシャラーですが、指定されたマーシャリング モード '{1} ではステートフル マーシャラーを使用できません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ElementTypesOfReturnTypesMustMatchDescription">
+        <source>The element type of the span returned by the first method must be the same type as the element type of the span returned by the second method.</source>
+        <target state="translated">最初のメソッドによって返されるスパンの要素型は、2 番目のメソッドによって返されるスパンの要素型と同じ型である必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ElementTypesOfReturnTypesMustMatchMessage">
+        <source>The element type of the span returned by '{0}' must be the same type as the element type of the span returned by '{1}'.</source>
+        <target state="translated">'{0}' によって返されるスパンの要素型は、'{1}' によって返されるスパンの要素型と同じ型である必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="EntryPointTypeMustBeNonNullDescription">
+        <source>An entry-point type for marshalling a given type must not be 'null'.</source>
+        <target state="translated">特定の型をマーシャリングするためのエントリ ポイント型を 'null' にすることはできません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="EntryPointTypeMustBeNonNullMessage">
+        <source>The entry-point marshaller type for the type '{0}' must be not 'null'</source>
+        <target state="translated">型 '{0}' のエントリ ポイント マーシャラー型は 'null' 以外である必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FirstParameterMustMatchReturnTypeDescription">
+        <source>The first parameter of the first method must be the same type as the return types of the second method.</source>
+        <target state="translated">最初のメソッドの最初のパラメーターは、2 番目のメソッドの戻り値の型と同じ型である必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FirstParameterMustMatchReturnTypeMessage">
+        <source>The first parameter of '{0}' must be the same type as the return type of '{1}'</source>
+        <target state="translated">'{0}' の最初のパラメーターは、戻り値の型 '{1}' と同じ型である必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FirstParametersMustMatchDescription">
+        <source>The first parameters of the two methods must be the same type.</source>
+        <target state="translated">2 つのメソッドの最初のパラメーターは同じ型である必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FirstParametersMustMatchMessage">
+        <source>The first parameter of '{0}' and '{1}' must be the same type</source>
+        <target state="translated">'{0}' の最初のパラメーターと '{1}' は同じ型である必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FromUnmanagedOverloadsNotSupportedDescription">
+        <source>Overloading the 'FromUnmanaged' method is unuspported as some shapes are unable to distinguish between overloads.</source>
+        <target state="translated">いくつかの図形がオーバーロードを区別できないため、'FromUnmanaged' メソッドのオーバーロードはサポートされていません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FromUnmanagedOverloadsNotSupportedMessage">
+        <source>The type '{0}' overloads the 'FromUnmanaged' method, which is not supported in custom marshallers</source>
+        <target state="translated">型 '{0}' は、カスタム マーシャラーでサポートされていない 'FromUnmanaged' メソッドをオーバーロードします</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GetPinnableReferenceReturnTypeBlittableDescription">
+        <source>The return type of 'GetPinnableReference' (after accounting for 'ref') must be blittable.</source>
+        <target state="translated">'GetPinnableReference' の戻り値の型 ('ref' の会計後) は blittable である必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GetPinnableReferenceReturnTypeBlittableMessage">
+        <source>The dereferenced type of the return type of the 'GetPinnableReference' method must be blittable</source>
+        <target state="translated">'GetPinnableReference' メソッドの戻り値の逆参照型は blittable である必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessage">
+        <source>Method '{0}' is contained in a type '{1}' that is not marked 'partial'. P/Invoke source generation will ignore method '{0}'.</source>
+        <target state="translated">メソッド '{0}' は、'partial' とマークされていない型 '{1}' に含まれています。P/Invoke ソース生成はメソッド '{0}' を無視します。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidAttributedMethodDescription">
+        <source>Methods marked with 'LibraryImportAttribute' should be 'static', 'partial', and non-generic. P/Invoke source generation will ignore methods that are non-'static', non-'partial', or generic.</source>
+        <target state="translated">'LibraryImportAttribute' でマークされたメソッドは、'static'、'partial'、非ジェネリックである必要があります。P/Invoke ソース生成では、非 'static'、非 'partial'、ジェネリックであるメソッドは無視されます。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidAttributedMethodSignatureMessage">
+        <source>Method '{0}' should be 'static', 'partial', and non-generic when marked with 'LibraryImportAttribute'. P/Invoke source generation will ignore method '{0}'.</source>
+        <target state="translated">'LibraryImportAttribute' でマークされている場合、メソッド '{0}'は 'static'、'partial'、非ジェネリックである必要があります。P/Invoke ソース生成では、メソッド '{0}' は無視されます。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidCustomMarshallerAttributeUsageTitle">
+        <source>Invalid 'CustomMarshallerAttribute' usage</source>
+        <target state="translated">'CustomMarshallerAttribute' の使用状況が無効です</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLibraryImportAttributeUsageTitle">
+        <source>Invalid 'LibraryImportAttribute' usage</source>
+        <target state="translated">'LibraryImportAttribute' の使用状況が無効です</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidManagedTypeTitle">
+        <source>Specified managed type is invalid</source>
+        <target state="translated">指定されたマネージド型が無効です</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidMarshallerTypeTitle">
+        <source>Specified marshaller type is invalid</source>
+        <target state="translated">指定されたマーシャラー型が無効です</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidNativeMarshallingAttributeUsageTitle">
+        <source>Invalid 'NativeMarshallingAttribute' usage</source>
+        <target state="translated">'NativeMarshallingAttribute' の使用状況が無効です</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidSignaturesInMarshallerShapeTitle">
+        <source>Marshaller type has incompatible method signatures</source>
+        <target state="translated">マーシャラー型に互換性のないメソッド シグネチャがあります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidStringMarshallingConfigurationDescription">
+        <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' is invalid.</source>
+        <target state="translated">'StringMarshalling' と 'StringMarshallingCustomType' の構成が無効です。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidStringMarshallingConfigurationMessage">
+        <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on method '{0}' is invalid. {1}</source>
+        <target state="translated">メソッド '{0}' の 'StringMarshalling' と 'StringMarshallingCustomType' の構成が無効です。{1}</target>
+        <note>{1} is a message containing additional details about what is not valid</note>
+      </trans-unit>
+      <trans-unit id="InvalidStringMarshallingConfigurationMissingCustomType">
+        <source>'StringMarshallingCustomType' must be specified when 'StringMarshalling' is set to 'StringMarshalling.Custom'.</source>
+        <target state="translated">'StringMarshalling' が 'StringMarshalling.Custom' に設定されている場合は、'StringMarshallingCustomType' を指定する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidStringMarshallingConfigurationNotCustom">
+        <source>'StringMarshalling' should be set to 'StringMarshalling.Custom' when 'StringMarshallingCustomType' is specified.</source>
+        <target state="translated">'StringMarshallingCustomType' が指定されている場合、'StringMarshalling' を 'StringMarshalling.Custom' に設定する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionElementTypesMustMatchDescription">
+        <source>The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'.</source>
+        <target state="translated">'GetManagedValuesSource' によって返される 'ReadOnlySpan' の要素型は、'GetManagedValuesDestination' によって返される要素型と同じである必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionElementTypesMustMatchMessage">
+        <source>The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'</source>
+        <target state="translated">'GetManagedValuesSource' によって返される 'ReadOnlySpan' の要素型は、'GetManagedValuesDestination' によって返される要素型と同じである必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorDescription">
+        <source>A 'LinearCollection'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a three-parameter constructor taking the managed type as the first parameter, a 'Span&lt;byte&gt;' as the second parameter, and the native size of the element as the third parameter</source>
+        <target state="translated">'CallerAllocatedBuffer' 機能をサポートする 'LinearCollection' 型のネイティブ型は、マネージド型を最初のパラメーターとして、'Span&lt;byte&gt;' を 2 番目のパラメーターとして、要素のネイティブ サイズを 3 番目のパラメーターとして、3 つのパラメーター コンストラクターを指定する必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorMessage">
+        <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a three-parameter constructor that takes a '{1}' , a 'Span&lt;byte&gt;', and an 'int'</source>
+        <target state="translated">型 '{0}' は、'{1}' の 'CallerAllocatedBuffer' 機能を使用した 'In' マーシャリングをサポートすることを指定していますが、'{1}'、'Span&lt;byte&gt;'、'int' を受け取る 3 つのパラメーター コンストラクターを指定しません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionInRequiresCollectionMethodsDescription">
+        <source>A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'.</source>
+        <target state="translated">マネージドからアンマネージドへのマーシャリングをサポートする連続したコレクション マーシャラーは、'ReadOnlySpan&lt;&gt;' を返す 'GetManagedValuesSource' と 'Span&lt;&gt;' を返す 'GetUnmanagedValuesDestination' メソッドを提供する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionInRequiresCollectionMethodsMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'</source>
+        <target state="translated">型 '{0}' は、'{1}' マーシャリング モードをサポートすることを指定しますが、'ReadOnlySpan&lt;&gt;' を返す 'GetManagedValuesSource' と 'Span&lt;&gt;' を返す 'GetUnmanagedValuesDestination' メソッドを提供しません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionOutRequiresCollectionMethodsDescription">
+        <source>A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</source>
+        <target state="translated">アンマネージドからマネージドへのマーシャリングをサポートする連続したコレクション マーシャラーは、'int' を受け取り、'Span&lt;&gt;' を返す 'GetManagedValuesDestination' メソッドと、'int' を受け取って 'ReadOnlySpan&lt;&gt;' を返す 'GetUnmanagedValuesSource' メソッドを提供する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionOutRequiresCollectionMethodsMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</source>
+        <target state="translated">型 '{0}' は、マーシャリング モード '{1}' をサポートすることを指定しますが、'int' を受け取り、'Span&lt;&gt;' を返す 'GetManagedValuesDestination' メソッドと、'Int' を受け取って 'ReadOnlySpan&lt;&gt;' を返す 'GetUnmanagedValuesSource' メソッドを提供しません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedTypeMustBeClosedOrMatchArityDescription">
+        <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the generator can determine which methods are available on the specific marshaller types.</source>
+        <target state="translated">マーシャラー型は、クローズ ジェネリックであるか、マネージド型と同じ数のジェネリック パラメーターを持つ必要があります。これにより、ジェネレーターが特定のマーシャラー型で使用できるメソッドを特定できるようになります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedTypeMustBeClosedOrMatchArityMessage">
+        <source>The managed type '{0}' for entry-point marshaller type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</source>
+        <target state="translated">エントリ ポイント マーシャラー型 '{1}' のマネージド型 '{0}' は、クローズ ジェネリック型であるか、値マーシャラーの場合はマネージ型と同じアリティを持つ、またはコレクション マーシャラーの場合は追加のジェネリック パラメーターを 1 つ指定する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedTypeMustBeNonNullDescription">
+        <source>The managed type for a custom marshaller must be non-null.</source>
+        <target state="translated">カスタム マーシャラーのマネージド型は null 以外である必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedTypeMustBeNonNullMessage">
+        <source>The managed type for the entry-point marshaller type '{0}' must not be 'null'</source>
+        <target state="translated">エントリ ポイント マーシャラー型 '{0}' のマネージド型を 'null' にすることはできません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityDescription">
+        <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
+        <target state="translated">マーシャラー型は、クローズ ジェネリックであるか、マネージド型と同じ数のジェネリック パラメーターを持つ必要があります。これにより、生成されたコードが特定のインスタンス化を使用できるようになります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityMessage">
+        <source>The marshaller type '{0}' pointed to by the entry-point marshaller type '{1}' must be a closed generic type or have the same arity as the managed type</source>
+        <target state="translated">エントリ ポイント マーシャラー型 '{1}' が指すマーシャラー型 '{0}' は、クローズ ジェネリック型であるか、マネージド型と同じアリティを持つ必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeNonNullDescription">
+        <source>The 'marshallerType' parameter in the 'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' cannot be 'null'.</source>
+        <target state="translated">'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' の 'marshallerType' パラメーターを 'null' にすることはできません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeNonNullMessage">
+        <source>The 'marshallerType' parameter in the 'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' cannot be 'null'</source>
+        <target state="translated">'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' の 'marshallerType' パラメーターを 'null' にすることはできません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeStaticClassOrStructDescription">
+        <source>A marshaller type must either be a stateless static class or a stateful value type. A non-static class is not allowed.</source>
+        <target state="translated">マーシャラー型は、ステートレスな静的クラスまたはステートフルな値の型である必要があります。非静的クラスは使用できません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeStaticClassOrStructMessage">
+        <source>The type '{0}' must be a static class or a value type</source>
+        <target state="translated">型 '{0}' は静的クラスまたは値の型である必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustSpecifyManagedTypeDescription">
+        <source>A type with a 'System.Runtime.InteropServices.CustomMarshallerAttribute' must specify a non-'null' managed type</source>
+        <target state="translated">'System.Runtime.InteropServices.CustomMarshallerAttribute' を持つ型には、非 'null' のマネージド型を指定する必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustSpecifyManagedTypeMessage">
+        <source>The type '{0}' does not specify a managed type in the 'System.Runtime.InteropServices.CustomMarshallerAttribute' applied to the type</source>
+        <target state="translated">型 '{0}' は、型に適用される 'System.Runtime.InteropServices.CustomMarshallerAttribute' でマネージド型を指定しません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityDescription">
+        <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
+        <target state="translated">マーシャラー型は、クローズ ジェネリックであるか、マネージド型と同じ数のジェネリック パラメーターを持つ必要があります。これにより、生成されたコードが特定のインスタンス化を使用できるようになります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityMessage">
+        <source>The marshaller type '{0}' for managed type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</source>
+        <target state="translated">マネージド型 '{1}' のマーシャラー型 '{0}' は、クローズ ジェネリック型であるか、値マーシャラーの場合はマネージ型と同じアリティを持つ、またはコレクション マーシャラーの場合は追加のジェネリック パラメーターを 1 つ指定する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresAllowUnsafeBlocksDescription">
+        <source>LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</source>
+        <target state="translated">LibraryImportAttribute には安全でないコードが必要です。プロジェクトは '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;' で更新する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresAllowUnsafeBlocksMessage">
+        <source>LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</source>
+        <target state="translated">LibraryImportAttribute には安全でないコードが必要です。プロジェクトは '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;' で更新する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresAllowUnsafeBlocksTitle">
+        <source>LibraryImportAttribute requires unsafe code.</source>
+        <target state="translated">LibraryImportAttribute には安全でないコードが必要です。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ReturnTypeMustBeExpectedTypeDescription">
+        <source>The return type the two method must be the expected type.</source>
+        <target state="translated">戻り値の型は、2 つのメソッドが期待する型である必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ReturnTypeMustBeExpectedTypeMessage">
+        <source>The return type of '{0}' must be '{1}'</source>
+        <target state="translated">戻り値の型 '{0}' は '{1}' でなければなりません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ReturnTypesMustMatchDescription">
+        <source>The return types of the two methods must be the same type.</source>
+        <target state="translated">2 つのメソッドの戻り値の型は同じ型である必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ReturnTypesMustMatchMessage">
+        <source>The return type of '{0}' must be the same type as the return type of '{1}'</source>
+        <target state="translated">戻り値の型 '{0}' は、戻り値の型 '{1}' と同じである必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFreeDescription">
+        <source>A stateful marshaller must have a zero-parameter void-returning instance method named 'Free'.</source>
+        <target state="translated">ステートフル マーシャラーには、'Free' という名前で、パラメーターがなく、‘void’ を返すインスタンス メソッドが必要です。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFreeMessage">
+        <source>The type '{0}' is a stateful marshaller and does not have a zero-parameter void-returning instance method named 'Free'</source>
+        <target state="translated">型 '{0}' はステートフル マーシャラーであり、'Free' という名前で、パラメーターがなく、’void’ を返す 0 パラメーターのインスタンス メソッドがありません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFromManagedDescription">
+        <source>A stateful marshaller that supports marshalling from managed to unmanaged must provide a 'FromManaged' instance method that takes the managed value as a parameter and returns 'void'.</source>
+        <target state="translated">マネージドからアンマネージドへのマーシャリングをサポートするステートフル マーシャラーは、マネージド値をパラメーターとして受け取り 'void' を返す、'FromManaged' インスタンス メソッドを提供する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFromManagedMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a one-parameter instance method named 'FromManaged' that takes a '{2}' as a parameter and returns 'void'</source>
+        <target state="translated">型 '{0}' は、'{2}' の '{1}' マーシャリング モードをサポートすることを指定しますが、'FromManaged' という名前で、'{2}' をパラメーターとして受け取り 'void' を返す、パラメーターが 1 つのインスタンス メソッドは提供されません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFromUnmanagedDescription">
+        <source>A stateful marshaller that supports marshalling from unmanaged to managed must provide a 'FromUnmanaged' instance method that takes the unmanaged value as a parameter and returns 'void'.</source>
+        <target state="translated">アンマネージドからマネージドへのマーシャリングをサポートするステートフル マーシャラーは、アンマネージ値をパラメーターとして受け取り 'void' を返す 'FromUnmanaged' インスタンス メソッドを提供する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFromUnmanagedMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a one-parameter instance method named 'FromUnmanaged' that takes the 'unmanaged' value as a parameter and returns 'void'</source>
+        <target state="translated">型 '{0}' は、'{2}' の '{1}' マーシャリング モードをサポートすることを指定しますが、'FromUnmanaged' という名前で、’unmanaged’ 値をパラメーターとして受け取り 'void' を返す、パラメーターが 1 つのインスタンス メソッドは提供されません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresToManagedDescription">
+        <source>A stateful marshaller that supports marshalling from unmanaged to managed must provide a 'ToManaged' instance method that takes no parameters and returns the managed type.</source>
+        <target state="translated">アンマネージドからマネージドへのマーシャリングをサポートするステートフル マーシャラーは、パラメーターを受け取らずマネージド型を返す、'ToManaged' インスタンス メソッドを提供する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresToManagedMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a zero-parameter instance method named 'ToManaged' that returns '{2}'</source>
+        <target state="translated">型 '{0}' は、'{2}' の '{1}' マーシャリング モードをサポートすることを指定しますが、'ToManaged' という名前で、'{2}' を返す、パラメーター がないインスタンス メソッドは提供されていません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresToUnmanagedDescription">
+        <source>A stateful marshaller that supports marshalling from managed to unmanaged must provide a 'ToUnmanaged' instance method that takes no parameters and returns the 'unmanaged' type.</source>
+        <target state="translated">マネージドからアンマネージドへのマーシャリングをサポートするステートフル マーシャラーは、パラメーターを受け取らず 'unmanaged' 型を返す 'ToUnmanaged' インスタンス メソッドを提供する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresToUnmanagedMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a zero-parameter instance method named 'ToUnmanaged' that returns the 'unmanaged' type for the marshaller</source>
+        <target state="translated">型 '{0}' は、'{2}' の '{1}' マーシャリング モードをサポートすることを指定しますが、'ToUnmanaged' という名前で、マーシャラーの 'unmanaged' 型を返す、パラメーターがないインスタンス メソッドは提供されません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeDescription">
+        <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
+        <target state="translated">マーシャラー型の 'Span&lt;T&gt;' を受け取る 'AllocateContainerForUnmanagedElements' メソッドを指定して 'Managed to Unmanaged with Caller-Allocated Buffer' シェイプを使用する場合、型は静的な 'BufferSize' プロパティを提供して、発信元が割り当てたバッファー内の要素数を提供する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeMessage">
+        <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
+        <target state="translated">マーシャラー型 '{0}' には、発信元が割り当てたバッファーのサイズを指定するために、静的な読み取り専用の 'int' 'BufferSize' プロパティが必要です、なぜなら
+発信元が割り当てた 'Span&lt;{1}&gt;' を受け取る 'AllocateContainerForUnmanagedElements' メソッドがあるからです</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionInRequiresCollectionMethodsDescription">
+        <source>A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that takes the managed value as a parameter and returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that takes the unmanaged value as a parameter and returns a 'Span&lt;&gt;'</source>
+        <target state="translated">マネージドからアンマネージドへのマーシャリングをサポートする連続したコレクション マーシャラーは、マネージド値をパラメーターとして受け取り、'ReadOnlySpan&lt;&gt;' を返す 'GetManagedValuesSource' メソッドを提供する必要があり、またアンマネージド値をパラメーターとして受け取り、'Span&lt;&gt;' を返す 'GetUnmanagedValuesDestination' メソッドを提供する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionInRequiresCollectionMethodsMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesSource' that takes '{2}' as a parameter and returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that takes the unmanaged value as a parameter and returns a 'Span&lt;&gt;'</source>
+        <target state="translated">型 '{0}' は、マーシャリング モード '{1}' をサポートすることを指定しますが、パラメーターとして '{2}' を受け取り、'ReadOnlySpan&lt;&gt;' を返す 'GetManagedValuesSource' メソッドと、アンマネージド値をパラメーターとして受け取り、'Span&lt;&gt;' を返す 'GetUnmanagedValuesDestination' メソッドを提供しません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionOutRequiresCollectionMethodsDescription">
+        <source>A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes the managed value and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes the unmanaged value and an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</source>
+        <target state="translated">アンマネージドからマネージドへのマーシャリングをサポートする連続したコレクション マーシャラーは、マネージド値を受け取り、'Span&lt;&gt;' を返す 'GetUnmanagedValuesSource' メソッドと、アンマネージド値と 'int' を受け取り、'ReadOnlySpan&lt;&gt;' を返す 'GetManagedValuesDestination' メソッドを提供する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionOutRequiresCollectionMethodsMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes '{2}' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes the unmanaged value and an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</source>
+        <target state="translated">型 '{0}' は、マーシャリング モード '{1}' をサポートすることを指定しますが、'{2}' を受け取り、'Span&lt;&gt;' を返す 'GetManagedValuesDestination' メソッドと、アンマネージ値と 'int' を受け取って 'ReadOnlySpan&lt;&gt;' を返す 'GetUnmanagedValuesSource' メソッドを提供しません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsDescription">
+        <source>A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForManagedElements' method taking the unmanaged type as the first parameter and the number of elements as an 'int' parameter</source>
+        <target state="translated">マネージドからアンマネージドへのマーシャリングをサポートするステートレスな連続したコレクション マーシャラーは、アンマネージド型を最初のパラメーターとして受け取り、要素数を 'int' パラメーターとして受け取る 'AllocateContainerForManagedElements' メソッドを提供する必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForManagedElements' method that takes the unmanaged type as the first parameter and an 'int' as the second parameter</source>
+        <target state="translated">型 '{0}' は、'{2}' のためのマーシャリング モード '{1}' をサポートすることを指定しますが、アンマネージ型を最初のパラメーターとして受け取り、2 番目のパラメーターとして 'int' を受け取る 2 パラメーター の 'AllocateContainerForManagedElements' メソッドを提供しません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsDescription">
+        <source>A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForUnmanagedElements' method taking the managed type as the first parameter and providing the number of elements as an 'out int' parameter</source>
+        <target state="translated">マネージドからアンマネージドへのマーシャリングをサポートするステートレスな連続したコレクション マーシャラーは、マネージド型を最初のパラメーターとして受け取り、要素数を 'int' パラメーターとして受け取る 'AllocateContainerForManagedElements' メソッドを提供する必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForUnmanagedElements' method that takes a '{2}' as the first parameter and an 'out int' as the second parameter</source>
+        <target state="translated">型 '{0}' は '{2}' のためのマーシャリング モード '{1}' をサポートすることを指定しますが、最初のパラメーターとして '{2}' を受け取り、2 番目のパラメーターとして 'out int' を受け取る 2 パラメーターの 'AllocateContainerForUnmanagedElements' メソッドを提供しません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessRequiresConvertToManagedDescription">
+        <source>A stateless value marshaller that supports marshalling from unmanaged to managed must provide a 'ConvertToManaged' method that takes the unmanaged type as a parameter and returns the the managed type.</source>
+        <target state="translated">アンマネージドからマネージドへのマーシャリングをサポートするステートレスな値マーシャラーは、アンマネージ型をパラメーターとして受け取り、マネージド型を返す 'ConvertToManaged' メソッドを提供する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessRequiresConvertToManagedMessage">
+        <source>The type '{0}' specifies it supports the '{1}' marshal mode, but it does not provide a 'ConvertToManaged' method that takes the unmanaged type as a parameter and returns '{2}'</source>
+        <target state="translated">型 '{0}' は、マーシャリング モード '{1}' をサポートすることを指定しますが、アンマネージド型をパラメーターとして受け取り、'{2}' を返す 'ConvertToManaged' メソッドを提供しません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessValueInRequiresConvertToUnmanagedDescription">
+        <source>A stateless value marshaller that supports marshalling from managed to unmanaged must provide a one-parameter 'ConvertToUnmanaged' method that takes the managed value as the parameter and returns a value of the 'unmanaged' type.</source>
+        <target state="translated">マネージドからアンマネージドへのマーシャリングをサポートするステートレスなバリュー マーシャラーは、マネージド値をパラメーターとして受け取り、'unmanaged' 型の値を返す 1 パラメーター 'ConvertToUnmanaged' メソッドを提供する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessValueInRequiresConvertToUnmanagedMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a one-parameter 'ConvertToUnmanaged' method that takes a '{2}' as a parameter and returns a value of an 'unmanaged' type</source>
+        <target state="translated">型 '{0}' は、'{2}' のマーシャリング モード '{1}' をサポートすることを指定しますが、'{2}' をパラメーターとして受け取り、'unmanaged' 型の値を返す 1 つのパラメーター 'ConvertToUnmanaged' メソッドを提供しません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ToUnmanagedFromManagedTypesMustMatchDescription">
+        <source>The return type of 'ConvertToUnmanaged' and the parameter type of 'ConvertToManaged' must be the same.</source>
+        <target state="translated">'ConvertToUnmanaged' の戻り値の型と 'ConvertToManaged' のパラメーター型は同じである必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ToUnmanagedFromManagedTypesMustMatchMessage">
+        <source>The return type of 'ConvertToUnmanaged' and the parameter type of 'ConvertToManaged' must be the same</source>
+        <target state="translated">'ConvertToUnmanaged' の戻り値の型と 'ConvertToManaged' のパラメーター型は同じである必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeMustBeUnmanagedDescription">
+        <source>The unmanaged type for a custom marshaller must be a C# unmanaged type.</source>
+        <target state="translated">カスタム マーシャラーのアンマネージド型は、C# アンマネージド型である必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeMustBeUnmanagedMessage">
+        <source>The return type of '{0}' must be unmanaged</source>
+        <target state="translated">'{0}' の戻り値の型はアンマネージドである必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerDescription">
+        <source>'void*' must be castable to the type so the pinned result of the static 'GetPinnableReference' method can be passed to the native context after being pinned.</source>
+        <target state="translated">静的な 'GetPinnableReference' メソッドのピン留めされた結果をピン留め後にネイティブ コンテキストに渡すことができるように、'void*' は型にキャスト可能である必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerMessage">
+        <source>'void*' must be castable to the type '{0}' because the managed type '{1}' has a static 'GetPinnableReference' method</source>
+        <target state="translated">マネージド型 '{1}' に静的な 'GetPinnableReference' メソッドがあるため、'void*' は型 '{0}' にキャスト可能である必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeDescription">
+        <source>An entry-point type for marshalling a given type must have a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type.</source>
+        <target state="translated">指定された型をマーシャリングするためのエントリ ポイント型は、この型をマネージド型として指定する 'System.Runtime.InteropServices.CustomMarshallerAttribute' を持つ必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeMessage">
+        <source>The entry-point marshaller type '{0}' for the type '{1}' must be a type with at least one 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type</source>
+        <target state="translated">型 '{1}' 向けのエントリ ポイント マーシャラー型 '{0}' は、この型をマネージド型として指定する 'System.Runtime.InteropServices.CustomMarshallerAttribute' を 1 つ以上持つ型である必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OutRequiresToManagedDescription">
+        <source>A 'Value' or 'LinearCollection'-kind native type that supports marshalling in the 'Out' direction must provide a 'ToManaged' method that returns the managed type.</source>
+        <target state="translated">'Out' 方向のマーシャリングをサポートする 'Value' や 'LinearCollection' 型のネイティブ型では、マネージド型を返す 'ToManaged' メソッドを指定する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OutRequiresToManagedMessage">
+        <source>The type '{0}' specifies it supports marshalling in the 'Out' direction, but it does not provide a 'ToManaged' method that returns the managed type</source>
+        <target state="translated">型 '{0}' は、'Out' 方向のマーシャリングをサポートしますが、マネージド型を返す 'ToManaged' メソッドは指定されません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ToFromUnmanagedTypesMustMatchDescription">
+        <source>The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same.</source>
+        <target state="translated">'ToUnmanaged' の戻り値の型と 'FromUnmanaged' のパラメーター型は同じである必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ToFromUnmanagedTypesMustMatchMessage">
+        <source>The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same</source>
+        <target state="translated">'ToUnmanaged' の戻り値の型と 'FromUnmanaged' のパラメーター型は同じである必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedDescription">
+        <source>For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type.</source>
+        <target state="translated">ソース生成済みの P/Invoke でサポートされていない型である場合、生成された P/Invoke は、基礎となるなるランタイムに依存して、指定された型をマーシャリングします。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageParameter">
+        <source>The type '{0}' is not supported by source-generated P/Invokes. The generated source will not handle marshalling of parameter '{1}'.</source>
+        <target state="translated">型 '{0}' は、ソース生成済みの P/Invoke ではサポートされていません。生成されたソースは、パラメーター '{1}' のマーシャリングを処理しません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageParameterWithDetails">
+        <source>{0} The generated source will not handle marshalling of parameter '{1}'.</source>
+        <target state="translated">{0} 生成されたソースはパラメーター '{1}' のマーシャリングを処理しません。</target>
+        <note>{0} is a message containing additional details about what is not supported
+{1} is the name of the parameter</note>
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageReturn">
+        <source>The type '{0}' is not supported by source-generated P/Invokes. The generated source will not handle marshalling of the return value of method '{1}'.</source>
+        <target state="translated">型 '{0}' は、ソース生成済みの P/Invoke ではサポートされていません。生成されたソースは、メソッド '{1}' の戻り値のマーシャリングを処理しません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageReturnWithDetails">
+        <source>{0} The generated source will not handle marshalling of the return value of method '{1}'.</source>
+        <target state="translated">{0} 生成されたソースは、メソッド '{1}' の戻り値のマーシャリングを処理しません。</target>
+        <note>{0} is a message containing additional details about what is not supported
+{1} is the name of the method</note>
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedTitle">
+        <source>Specified type is not supported by source-generated P/Invokes</source>
+        <target state="translated">指定された型は、ソースで生成された P/Invoke ではサポートされていません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorDescription">
+        <source>A 'Value'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a two-parameter constructor taking the managed type and a 'Span' of an 'unmanaged' type as parameters</source>
+        <target state="translated">'CallerAllocatedBuffer' 機能をサポートする 'Value' のネイティブ型では、マネージド型と 'アンマネージド' 型の 'Span' をパラメーターとして受け取る 2 つのパラメーター コンストラクターを指定する必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage">
+        <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a two-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</source>
+        <target state="translated">型 '{0}' は、'{1}' の 'CallerAllocatedBuffer' 機能を使用した 'In' マーシャリングをサポートすることを指定していますが、'{1}' と 'アンマネージド' 型の 'Span' をパラメーターとして受け取る、2 つのパラメーター コンストラクターを指定しません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueInRequiresOneParameterConstructorDescription">
+        <source>A 'Value'-kind native type must provide a one-parameter constructor taking the managed type as a parameter</source>
+        <target state="translated">'Value' のネイティブ型は、マネージド型をパラメーターとして受け取る 1 つのパラメーター コンストラクターを指定する必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueInRequiresOneParameterConstructorMessage">
+        <source>The type '{0}' specifies that it supports 'In' marshalling of '{1}' but does not provide a one-parameter constructor that takes a '{1}' as a parameter</source>
+        <target state="translated">型 '{0}' では、'{1}' の 'In' マーシャリングをサポートするように指定されていますが、'{1}' をパラメーターとして受け取る 1 つのパラメーター コンストラクターは指定されません</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

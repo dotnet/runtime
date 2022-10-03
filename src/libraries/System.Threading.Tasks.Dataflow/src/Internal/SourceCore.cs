@@ -121,8 +121,17 @@ namespace System.Threading.Tasks.Dataflow.Internal
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Sources/Member[@name="LinkTo"]/*' />
-        internal IDisposable LinkTo(ITargetBlock<TOutput> target!!, DataflowLinkOptions linkOptions!!)
+        internal IDisposable LinkTo(ITargetBlock<TOutput> target, DataflowLinkOptions linkOptions)
         {
+            if (target is null)
+            {
+                throw new ArgumentNullException(nameof(target));
+            }
+            if (linkOptions is null)
+            {
+                throw new ArgumentNullException(nameof(linkOptions));
+            }
+
             // If the block is already completed, there is not much to do -
             // we have to propagate completion if that was requested, and
             // then bail without taking the lock.
@@ -358,11 +367,12 @@ namespace System.Threading.Tasks.Dataflow.Internal
                     int count = _itemCountingFunc != null ? _itemCountingFunc(_owningSource, default(TOutput)!, items) : countReceived;
                     _itemsRemovedAction(_owningSource, count);
                 }
-#pragma warning disable CS8762 // Parameter may not have a null value when exiting in some condition.
+
+                Debug.Assert(items != null);
                 return true;
-#pragma warning restore CS8762
             }
-            else return false;
+
+            return false;
         }
 
         /// <summary>Gets the number of items available to be received from this block.</summary>

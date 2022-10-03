@@ -102,8 +102,6 @@ inline bool MethodDesc::IsLCGMethod()
 inline bool MethodDesc::IsILStub()
 {
     WRAPPER_NO_CONTRACT;
-
-    g_IBCLogger.LogMethodDescAccess(this);
     return ((mcDynamic == GetClassification()) && dac_cast<PTR_DynamicMethodDesc>(this)->IsILStub());
 }
 

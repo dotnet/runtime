@@ -31,7 +31,7 @@
 #include "../binder/inc/bindertracing.h"
 #include "../binder/inc/defaultassemblybinder.h"
 
-extern "C" void QCALLTYPE AssemblyNative_InternalLoad(QCall::ObjectHandleOnStack assemblyName,
+extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* pAssemblyNameParts,
                                                       QCall::ObjectHandleOnStack requestingAssembly,
                                                       QCall::StackCrawlMarkHandle stackMark,
                                                       BOOL fThrowOnFileNotFound,
@@ -42,54 +42,57 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(QCall::ObjectHandleOnStack
 
     BEGIN_QCALL;
 
-    GCX_COOP();
-
-    if (assemblyName.Get() == NULL)
-    {
-        COMPlusThrow(kArgumentNullException, W("ArgumentNull_AssemblyName"));
-    }
-    ACQUIRE_STACKING_ALLOCATOR(pStackingAllocator);
-
     DomainAssembly * pParentAssembly = NULL;
     Assembly * pRefAssembly = NULL;
     AssemblyBinder *pBinder = NULL;
 
-    if (assemblyLoadContext.Get() != NULL)
     {
-        INT_PTR nativeAssemblyBinder = ((ASSEMBLYLOADCONTEXTREF)assemblyLoadContext.Get())->GetNativeAssemblyBinder();
-        pBinder = reinterpret_cast<AssemblyBinder*>(nativeAssemblyBinder);
+        GCX_COOP();
+
+        if (assemblyLoadContext.Get() != NULL)
+        {
+            INT_PTR nativeAssemblyBinder = ((ASSEMBLYLOADCONTEXTREF)assemblyLoadContext.Get())->GetNativeAssemblyBinder();
+            pBinder = reinterpret_cast<AssemblyBinder*>(nativeAssemblyBinder);
+        }
+
+        // Compute parent assembly
+        if (requestingAssembly.Get() != NULL)
+        {
+            pRefAssembly = ((ASSEMBLYREF)requestingAssembly.Get())->GetAssembly();
+        }
+        else if (pBinder == NULL)
+        {
+            pRefAssembly = SystemDomain::GetCallersAssembly(stackMark);
+        }
+        if (pRefAssembly)
+        {
+            pParentAssembly = pRefAssembly->GetDomainAssembly();
+        }
     }
 
     AssemblySpec spec;
-    ASSEMBLYNAMEREF assemblyNameRef = NULL;
 
-    GCPROTECT_BEGIN(assemblyNameRef);
-    assemblyNameRef = (ASSEMBLYNAMEREF)assemblyName.Get();
-    if (assemblyNameRef->GetSimpleName() == NULL)
-    {
+    if (pAssemblyNameParts->_pName == NULL)
         COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
-    }
 
-    // Compute parent assembly
-    if (requestingAssembly.Get() != NULL)
-    {
-        pRefAssembly = ((ASSEMBLYREF)requestingAssembly.Get())->GetAssembly();
-    }
-    else if (pBinder == NULL)
-    {
-        pRefAssembly = SystemDomain::GetCallersAssembly(stackMark);
-    }
-    if (pRefAssembly)
-    {
-        pParentAssembly = pRefAssembly->GetDomainAssembly();
-    }
+    StackSString ssName;
+    ssName.SetAndConvertToUTF8(pAssemblyNameParts->_pName);
+
+    AssemblyMetaDataInternal asmInfo;
+
+    asmInfo.usMajorVersion = pAssemblyNameParts->_major;
+    asmInfo.usMinorVersion = pAssemblyNameParts->_minor;
+    asmInfo.usBuildNumber = pAssemblyNameParts->_build;
+    asmInfo.usRevisionNumber = pAssemblyNameParts->_revision;
+
+    SmallStackSString ssLocale;
+    if (pAssemblyNameParts->_pCultureName != NULL)
+        ssLocale.SetAndConvertToUTF8(pAssemblyNameParts->_pCultureName);
+    asmInfo.szLocale = (pAssemblyNameParts->_pCultureName != NULL) ? ssLocale.GetUTF8() : NULL;
 
     // Initialize spec
-    spec.InitializeSpec(pStackingAllocator, &assemblyNameRef);
-
-    GCPROTECT_END();
-
-    spec.SetCodeBase(NULL);
+    spec.Init(ssName.GetUTF8(), &asmInfo,
+        pAssemblyNameParts->_pPublicKeyOrToken, pAssemblyNameParts->_cbPublicKeyOrToken, pAssemblyNameParts->_flags);
 
     if (pParentAssembly != NULL)
         spec.SetParentAssembly(pParentAssembly);
@@ -109,14 +112,11 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(QCall::ObjectHandleOnStack
         spec.SetFallbackBinderForRequestingAssembly(pRefAssemblyManifestFile->GetFallbackBinder());
     }
 
-    Assembly *pAssembly;
-    {
-        GCX_PREEMP();
-        pAssembly = spec.LoadAssembly(FILE_LOADED, fThrowOnFileNotFound);
-    }
+    Assembly *pAssembly = spec.LoadAssembly(FILE_LOADED, fThrowOnFileNotFound);
 
     if (pAssembly != NULL)
     {
+        GCX_COOP();
         retAssembly.Set(pAssembly->GetExposedObject());
     }
 
@@ -124,7 +124,7 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(QCall::ObjectHandleOnStack
 }
 
 /* static */
-Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pImage)
+Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pImage, bool excludeAppPaths)
 {
     CONTRACT(Assembly*)
     {
@@ -152,7 +152,7 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
 
     HRESULT hr = S_OK;
     PTR_AppDomain pCurDomain = GetAppDomain();
-    hr = pBinder->BindUsingPEImage(pImage, &pAssembly);
+    hr = pBinder->BindUsingPEImage(pImage, excludeAppPaths, &pAssembly);
 
     if (hr != S_OK)
     {
@@ -163,7 +163,7 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
         }
 
         StackSString name;
-        spec.GetFileOrDisplayName(0, name);
+        spec.GetDisplayName(0, name);
         COMPlusThrowHR(COR_E_FILELOAD, dwMessageID, name);
     }
 
@@ -355,9 +355,6 @@ extern "C" void QCALLTYPE AssemblyNative_GetType(QCall::AssemblyHandle pAssembly
 
     BEGIN_QCALL;
 
-    if (!wszName)
-        COMPlusThrowArgumentNull(W("name"), W("ArgumentNull_String"));
-
     BOOL prohibitAsmQualifiedName = TRUE;
 
     AssemblyBinder * pBinder = NULL;
@@ -541,10 +538,10 @@ extern "C" BYTE * QCALLTYPE AssemblyNative_GetResource(QCall::AssemblyHandle pAs
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_String"));
 
     // Get the name in UTF8
-    SString name(SString::Literal, wszName);
+    StackSString name;
+    name.SetAndConvertToUTF8(wszName);
 
-    StackScratchBuffer scratch;
-    LPCUTF8 pNameUTF8 = name.GetUTF8(scratch);
+    LPCUTF8 pNameUTF8 = name.GetUTF8();
 
     if (*pNameUTF8 == '\0')
         COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
@@ -571,10 +568,9 @@ extern "C" INT32 QCALLTYPE AssemblyNative_GetManifestResourceInfo(QCall::Assembl
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_String"));
 
     // Get the name in UTF8
-    SString name(SString::Literal, wszName);
-
-    StackScratchBuffer scratch;
-    LPCUTF8 pNameUTF8 = name.GetUTF8(scratch);
+    StackSString name;
+    name.SetAndConvertToUTF8(wszName);
+    LPCUTF8 pNameUTF8 = name.GetUTF8();
 
     if (*pNameUTF8 == '\0')
         COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
@@ -620,7 +616,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetModules(QCall::AssemblyHandle pAssem
     {
         if (fLoadIfNotFound)
         {
-            DomainAssembly* pModule = pAssembly->GetModule()->LoadModule(GetAppDomain(), mdFile);
+            DomainAssembly* pModule = pAssembly->GetModule()->LoadModule(mdFile);
             modules.Append(pModule);
         }
     }
@@ -999,7 +995,7 @@ FCIMPL1(Object*, AssemblyNative::GetReferencedAssemblies, AssemblyBaseObject * p
         spec.InitializeSpec(mdAssemblyRef, pImport);
 
         gc.pObj = (ASSEMBLYNAMEREF) AllocateObject(pAsmNameClass);
-        spec.AssemblyNameInit(&gc.pObj,NULL);
+        spec.AssemblyNameInit(&gc.pObj);
 
         gc.ItemArray->SetAt(i, (OBJECTREF) gc.pObj);
     }
@@ -1090,23 +1086,6 @@ extern "C" void QCALLTYPE AssemblyNative_GetEntryAssembly(QCall::ObjectHandleOnS
     return;
 }
 
-// return the in memory assembly module for reflection emit. This only works for dynamic assembly.
-FCIMPL1(ReflectModuleBaseObject *, AssemblyNative::GetInMemoryAssemblyModule, AssemblyBaseObject* pAssemblyUNSAFE)
-{
-    FCALL_CONTRACT;
-
-
-    ASSEMBLYREF refAssembly = (ASSEMBLYREF)ObjectToOBJECTREF(pAssemblyUNSAFE);
-
-    if (refAssembly == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    DomainAssembly *pAssembly = refAssembly->GetDomainAssembly();
-
-    FC_RETURN_MODULE_OBJECT(pAssembly->GetModule(), refAssembly);
-}
-FCIMPLEND
-
 extern "C" void QCALLTYPE AssemblyNative_GetImageRuntimeVersion(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString)
 {
     QCALL_CONTRACT;
@@ -1171,7 +1150,7 @@ extern "C" INT_PTR QCALLTYPE AssemblyNative_InitializeAssemblyLoadContext(INT_PT
 
                 // Setup the managed proxy now, but do not actually transfer ownership to it.
                 // Once everything is setup and nothing can fail anymore, the ownership will be
-                // atomically transfered by call to LoaderAllocator::ActivateManagedTracking().
+                // atomically transferred by call to LoaderAllocator::ActivateManagedTracking().
                 loaderAllocator->SetupManagedTracking(&pManagedLoaderAllocator);
             }
 

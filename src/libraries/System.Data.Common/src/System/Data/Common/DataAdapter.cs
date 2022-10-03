@@ -31,7 +31,7 @@ namespace System.Data.Common
         internal readonly int _objectID = System.Threading.Interlocked.Increment(ref s_objectTypeCount);
 
         [Conditional("DEBUG")]
-        private void AssertReaderHandleFieldCount(DataReaderContainer readerHandler)
+        private static void AssertReaderHandleFieldCount(DataReaderContainer readerHandler)
         {
 #if DEBUG
             Debug.Assert(readerHandler.FieldCount > 0, "Scenario expects non-empty results but no fields reported by reader");
@@ -435,13 +435,13 @@ namespace System.Data.Common
                 }
 
                 int result = 0;
-                bool enforceContraints = false;
+                bool enforceConstraints = false;
                 DataSet? commonDataSet = dataTables[0].DataSet;
                 try
                 {
                     if (null != commonDataSet)
                     {
-                        enforceContraints = commonDataSet.EnforceConstraints;
+                        enforceConstraints = commonDataSet.EnforceConstraints;
                         commonDataSet.EnforceConstraints = false;
                     }
                     for (int i = 0; i < dataTables.Length; ++i)
@@ -489,12 +489,12 @@ namespace System.Data.Common
                 }
                 catch (ConstraintException)
                 {
-                    enforceContraints = false;
+                    enforceConstraints = false;
                     throw;
                 }
                 finally
                 {
-                    if (enforceContraints)
+                    if (enforceConstraints)
                     {
                         commonDataSet!.EnforceConstraints = true;
                     }

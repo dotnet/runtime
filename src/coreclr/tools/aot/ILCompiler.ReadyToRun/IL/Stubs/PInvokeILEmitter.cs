@@ -41,22 +41,6 @@ namespace Internal.IL.Stubs
             TypeDesc nativeReturnType = _marshallers[0].NativeParameterType;
             TypeDesc[] nativeParameterTypes = new TypeDesc[_marshallers.Length - 1];
 
-            MetadataType stubHelpersType = InteropTypes.GetStubHelpers(context);
-
-            // if the SetLastError flag is set in DllImport, clear the error code before doing P/Invoke
-            if (_importMetadata.Flags.SetLastError)
-            {
-                if (!MarshalHelpers.IsRuntimeMarshallingEnabled(((MetadataType)_targetMethod.OwningType).Module))
-                {
-                    // When runtime marshalling is disabled, we don't support generating the stub IL
-                    // in Ready-to-Run so we can correctly throw an exception at runtime when the user tries to
-                    // use SetLastError=true when marshalling is disabled.
-                    throw new NotSupportedException();
-                }
-                callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
-                            stubHelpersType.GetKnownMethod("ClearLastError", null)));
-            }
-
             for (int i = 1; i < _marshallers.Length; i++)
             {
                 nativeParameterTypes[i - 1] = _marshallers[i].NativeParameterType;
@@ -69,14 +53,6 @@ namespace Internal.IL.Stubs
             var rawTargetMethod = new PInvokeTargetNativeMethod(_targetMethod, nativeSig);
 
             callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(rawTargetMethod));
-
-            // if the SetLastError flag is set in DllImport, call the PInvokeMarshal.SaveLastError
-            // so that last error can be used later by calling Marshal.GetLastPInvokeError
-            if (_importMetadata.Flags.SetLastError)
-            {
-                callsiteSetupCodeStream.Emit(ILOpcode.call, emitter.NewToken(
-                            stubHelpersType.GetKnownMethod("SetLastError", null)));
-            }
         }
 
         private MethodIL EmitIL()
@@ -91,6 +67,9 @@ namespace Internal.IL.Stubs
                 throw new NotSupportedException();
 
             if (_targetMethod.HasCustomAttribute("System.Runtime.InteropServices", "LCIDConversionAttribute"))
+                throw new NotSupportedException();
+
+            if (_importMetadata.Flags.SetLastError)
                 throw new NotSupportedException();
 
             PInvokeILCodeStreams pInvokeILCodeStreams = new PInvokeILCodeStreams();

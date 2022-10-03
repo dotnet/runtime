@@ -4031,7 +4031,7 @@ void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO
         return;
     }
 
-    // Load address of CLS_VAR into a register
+    // Load address into a register
     codeGen->instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, regTmp, addr);
 
     if ((ins != INS_add) || (offs != 0) || (reg != regTmp))
@@ -7120,11 +7120,17 @@ void emitter::emitDispInsHelp(
 
     emitDispInsOffs(offset, doffs);
 
-    /* Display the instruction hex code */
-    assert(((code >= emitCodeBlock) && (code < emitCodeBlock + emitTotalHotCodeSize)) ||
-           ((code >= emitColdCodeBlock) && (code < emitColdCodeBlock + emitTotalColdCodeSize)));
+    BYTE* codeRW = nullptr;
+    if (code != nullptr)
+    {
+        /* Display the instruction hex code */
+        assert(((code >= emitCodeBlock) && (code < emitCodeBlock + emitTotalHotCodeSize)) ||
+               ((code >= emitColdCodeBlock) && (code < emitColdCodeBlock + emitTotalColdCodeSize)));
 
-    emitDispInsHex(id, code + writeableOffset, sz);
+        codeRW = code + writeableOffset;
+    }
+
+    emitDispInsHex(id, codeRW, sz);
 
     printf("      ");
 
@@ -7672,6 +7678,62 @@ void emitter::emitDispInsHelp(
     printf("\n");
 }
 
+/*****************************************************************************
+ *
+ *  Handles printing of LARGEJMP pseudo-instruction.
+ */
+
+void emitter::emitDispLargeJmp(
+    instrDesc* id, bool isNew, bool doffs, bool asmfm, unsigned offset, BYTE* code, size_t sz, insGroup* ig)
+{
+    // Note: don't touch the actual instrDesc. If we accidentally messed it up, it would create a very
+    // difficult to find bug.
+
+    instrDescJmp  idJmp;
+    instrDescJmp* pidJmp = &idJmp;
+
+    memset(&idJmp, 0, sizeof(idJmp));
+
+    pidJmp->idIns(emitJumpKindToIns(emitReverseJumpKind(emitInsToJumpKind(id->idIns())))); // reverse the
+                                                                                           // conditional
+                                                                                           // instruction
+    pidJmp->idInsFmt(IF_T1_K);
+    pidJmp->idInsSize(emitInsSize(IF_T1_K));
+    pidJmp->idjShort = 1;
+    pidJmp->idAddr()->iiaSetInstrCount(1);
+    pidJmp->idDebugOnlyInfo(id->idDebugOnlyInfo()); // share the idDebugOnlyInfo() field
+
+    size_t bcondSizeOrZero = (code == NULL) ? 0 : 2; // branch is 2 bytes
+    emitDispInsHelp(pidJmp, false, doffs, asmfm, offset, code, bcondSizeOrZero,
+                    NULL /* force display of pc-relative branch */);
+
+    code += bcondSizeOrZero;
+    offset += 2;
+
+    // Next, display the unconditional branch
+
+    // Reset the local instrDesc
+    memset(&idJmp, 0, sizeof(idJmp));
+
+    pidJmp->idIns(INS_b);
+    pidJmp->idInsFmt(IF_T2_J2);
+    pidJmp->idInsSize(emitInsSize(IF_T2_J2));
+    pidJmp->idjShort = 0;
+    if (id->idIsBound())
+    {
+        pidJmp->idSetIsBound();
+        pidJmp->idAddr()->iiaIGlabel = id->idAddr()->iiaIGlabel;
+    }
+    else
+    {
+        pidJmp->idAddr()->iiaBBlabel = id->idAddr()->iiaBBlabel;
+    }
+    pidJmp->idDebugOnlyInfo(id->idDebugOnlyInfo()); // share the idDebugOnlyInfo() field
+
+    size_t brSizeOrZero = (code == NULL) ? 0 : 4; // unconditional branch is 4 bytes
+    emitDispInsHelp(pidJmp, isNew, doffs, asmfm, offset, code, brSizeOrZero, ig);
+}
+
 //--------------------------------------------------------------------
 // emitDispIns: Dump the given instruction to jitstdout.
 //
@@ -7708,53 +7770,7 @@ void emitter::emitDispIns(
         //
         // These instructions don't exist in the actual instruction stream, so we need to fake them
         // up to display them.
-        //
-        // Note: don't touch the actual instrDesc. If we accidentally messed it up, it would create a very
-        // difficult to find bug.
-
-        instrDescJmp  idJmp;
-        instrDescJmp* pidJmp = &idJmp;
-
-        memset(&idJmp, 0, sizeof(idJmp));
-
-        pidJmp->idIns(emitJumpKindToIns(emitReverseJumpKind(emitInsToJumpKind(id->idIns())))); // reverse the
-                                                                                               // conditional
-                                                                                               // instruction
-        pidJmp->idInsFmt(IF_T1_K);
-        pidJmp->idInsSize(emitInsSize(IF_T1_K));
-        pidJmp->idjShort = 1;
-        pidJmp->idAddr()->iiaSetInstrCount(1);
-        pidJmp->idDebugOnlyInfo(id->idDebugOnlyInfo()); // share the idDebugOnlyInfo() field
-
-        size_t bcondSizeOrZero = (code == NULL) ? 0 : 2; // branch is 2 bytes
-        emitDispInsHelp(pidJmp, false, doffs, asmfm, offset, code, bcondSizeOrZero,
-                        NULL /* force display of pc-relative branch */);
-
-        code += bcondSizeOrZero;
-        offset += 2;
-
-        // Next, display the unconditional branch
-
-        // Reset the local instrDesc
-        memset(&idJmp, 0, sizeof(idJmp));
-
-        pidJmp->idIns(INS_b);
-        pidJmp->idInsFmt(IF_T2_J2);
-        pidJmp->idInsSize(emitInsSize(IF_T2_J2));
-        pidJmp->idjShort = 0;
-        if (id->idIsBound())
-        {
-            pidJmp->idSetIsBound();
-            pidJmp->idAddr()->iiaIGlabel = id->idAddr()->iiaIGlabel;
-        }
-        else
-        {
-            pidJmp->idAddr()->iiaBBlabel = id->idAddr()->iiaBBlabel;
-        }
-        pidJmp->idDebugOnlyInfo(id->idDebugOnlyInfo()); // share the idDebugOnlyInfo() field
-
-        size_t brSizeOrZero = (code == NULL) ? 0 : 4; // unconditional branch is 4 bytes
-        emitDispInsHelp(pidJmp, isNew, doffs, asmfm, offset, code, brSizeOrZero, ig);
+        emitDispLargeJmp(id, isNew, doffs, asmfm, offset, code, sz, ig);
     }
     else
     {

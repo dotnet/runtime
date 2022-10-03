@@ -165,17 +165,14 @@ namespace Internal.TypeSystem.Interop
                 case MarshallerKind.LayoutClassPtr:
                 case MarshallerKind.AsAnyA:
                 case MarshallerKind.AsAnyW:
-                    return context.GetWellKnownType(WellKnownType.IntPtr);
-
                 case MarshallerKind.ComInterface:
+                case MarshallerKind.CustomMarshaler:
+                case MarshallerKind.BlittableValueClassByRefReturn:
                     return context.GetWellKnownType(WellKnownType.IntPtr);
 
 #if !READYTORUN
                 case MarshallerKind.Variant:
                     return InteropTypes.GetVariant(context);
-
-                case MarshallerKind.CustomMarshaler:
-                    return context.GetWellKnownType(WellKnownType.IntPtr);
 #endif
 
                 case MarshallerKind.OleCurrency:
@@ -228,29 +225,35 @@ namespace Internal.TypeSystem.Interop
         {
             elementMarshallerKind = MarshallerKind.Invalid;
 
-            bool isByRef = false;
-            if (type.IsByRef)
-            {
-                isByRef = true;
-
-                type = type.GetParameterType();
-
-                if (!type.IsPrimitive && type.IsValueType && marshallerType != MarshallerType.Field
-                    && HasCopyConstructorCustomModifier(parameterIndex, customModifierData))
-                {
-                    return MarshallerKind.BlittableValueClassWithCopyCtor;
-                }
-
-                // Compat note: CLR allows ref returning blittable structs for IJW
-                if (isReturn)
-                    return MarshallerKind.Invalid;
-            }
             TypeSystemContext context = type.Context;
             NativeTypeKind nativeType = NativeTypeKind.Default;
             bool isField = marshallerType == MarshallerType.Field;
 
             if (marshalAs != null)
                 nativeType = marshalAs.Type;
+
+            if (type.IsByRef)
+            {
+                type = type.GetParameterType();
+
+                if (type.IsValueType && !type.IsPrimitive && !type.IsEnum && !isField
+                    && HasCopyConstructorCustomModifier(parameterIndex, customModifierData))
+                {
+                    return MarshallerKind.BlittableValueClassWithCopyCtor;
+                }
+
+                if (isReturn)
+                {
+                    // Allow ref returning blittable structs for IJW
+                    if (type.IsValueType &&
+                        (nativeType == NativeTypeKind.Struct || nativeType == NativeTypeKind.Default) &&
+                        MarshalUtils.IsBlittableType(type))
+                    {
+                        return MarshallerKind.BlittableValueClassByRefReturn;
+                    }
+                    return MarshallerKind.Invalid;
+                }
+            }
 
             if (nativeType == NativeTypeKind.CustomMarshaler)
             {
@@ -411,7 +414,6 @@ namespace Internal.TypeSystem.Interop
                 bool isBlittable = MarshalUtils.IsBlittableType(type);
 
                 // Blittable generics are allowed to be marshalled with the following exceptions:
-                // * ByReference<T>: This represents an interior pointer and is not actually blittable
                 // * Nullable<T>: We don't want to be locked into the default behavior as we may want special handling later
                 // * Vector64<T>: Represents the __m64 ABI primitive which requires currently unimplemented handling
                 // * Vector128<T>: Represents the __m128 ABI primitive which requires currently unimplemented handling
@@ -420,7 +422,6 @@ namespace Internal.TypeSystem.Interop
                 // We can't block these types for field scenarios for back-compat reasons.
 
                 if (type.HasInstantiation && !isField && (!isBlittable
-                    || InteropTypes.IsSystemByReference(context, type)
                     || InteropTypes.IsSystemSpan(context, type)
                     || InteropTypes.IsSystemReadOnlySpan(context, type)
                     || InteropTypes.IsSystemNullable(context, type)
@@ -454,14 +455,6 @@ namespace Internal.TypeSystem.Interop
             }
             else if (type.IsSzArray)
             {
-#if READYTORUN
-                // We don't want the additional test/maintenance cost of this in R2R.
-                if (isByRef)
-                    return MarshallerKind.Invalid;
-#else
-                _ = isByRef;
-#endif
-
                 if (nativeType == NativeTypeKind.Default)
                     nativeType = NativeTypeKind.Array;
 
@@ -517,16 +510,16 @@ namespace Internal.TypeSystem.Interop
             }
             else if (type.IsPointer)
             {
-                if (nativeType == NativeTypeKind.Default)
+                type = type.GetParameterType();
+
+                if (type.IsValueType && !type.IsPrimitive && !type.IsEnum && !isField
+                    && HasCopyConstructorCustomModifier(parameterIndex, customModifierData))
                 {
-                    var pointedAtType = type.GetParameterType();
-                    if (!pointedAtType.IsPrimitive && !type.IsEnum && marshallerType != MarshallerType.Field
-                        && HasCopyConstructorCustomModifier(parameterIndex, customModifierData))
-                    {
-                        return MarshallerKind.BlittableValueClassWithCopyCtor;
-                    }
-                    return MarshallerKind.BlittableValue;
+                    return MarshallerKind.BlittableValueClassWithCopyCtor;
                 }
+
+                if (nativeType == NativeTypeKind.Default)
+                    return MarshallerKind.BlittableValue;
                 else
                     return MarshallerKind.Invalid;
             }

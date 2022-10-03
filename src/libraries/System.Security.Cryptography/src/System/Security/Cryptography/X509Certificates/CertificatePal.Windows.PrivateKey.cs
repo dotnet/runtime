@@ -27,7 +27,7 @@ namespace System.Security.Cryptography.X509Certificates
                 },
                 delegate (CngKey cngKey)
                 {
-                    return new RSACng(cngKey);
+                    return new RSACng(cngKey, transferOwnership: true);
                 }
             );
         }
@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.X509Certificates
                 },
                 delegate (CngKey cngKey)
                 {
-                    return new DSACng(cngKey);
+                    return new DSACng(cngKey, transferOwnership: true);
                 }
             );
         }
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.X509Certificates
                 },
                 delegate (CngKey cngKey)
                 {
-                    return new ECDsaCng(cngKey);
+                    return new ECDsaCng(cngKey, transferOwnership: true);
                 }
             );
         }
@@ -64,7 +64,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             return GetPrivateKey<ECDiffieHellman>(
                 csp => throw new NotSupportedException(SR.NotSupported_ECDiffieHellman_Csp),
-                cngKey => new ECDiffieHellmanCng(cngKey)
+                cngKey => new ECDiffieHellmanCng(cngKey, transferOwnership: true)
             );
         }
 
@@ -201,12 +201,14 @@ namespace System.Security.Cryptography.X509Certificates
 
         private T? GetPrivateKey<T>(Func<CspParameters, T> createCsp, Func<CngKey, T> createCng) where T : AsymmetricAlgorithm
         {
-            CngKeyHandleOpenOptions cngHandleOptions;
-            SafeNCryptKeyHandle? ncryptKey = TryAcquireCngPrivateKey(CertContext, out cngHandleOptions);
-            if (ncryptKey != null)
+            using (SafeCertContextHandle certContext = GetCertContext())
             {
-                CngKey cngKey = CngKey.Open(ncryptKey, cngHandleOptions);
-                return createCng(cngKey);
+                SafeNCryptKeyHandle? ncryptKey = TryAcquireCngPrivateKey(certContext, out CngKeyHandleOpenOptions cngHandleOptions);
+                if (ncryptKey != null)
+                {
+                    CngKey cngKey = CngKey.OpenNoDuplicate(ncryptKey, cngHandleOptions);
+                    return createCng(cngKey);
+                }
             }
 
             CspParameters? cspParameters = GetPrivateKeyCsp();
@@ -385,8 +387,9 @@ namespace System.Security.Cryptography.X509Certificates
                     Interop.Crypt32.CertSetPropertyFlags.None,
                     &keyProvInfo))
                 {
+                    Exception e = Marshal.GetLastWin32Error().ToCryptographicException();
                     pal.Dispose();
-                    throw Marshal.GetLastWin32Error().ToCryptographicException();
+                    throw e;
                 }
             }
 
@@ -573,8 +576,9 @@ namespace System.Security.Cryptography.X509Certificates
                     Interop.Crypt32.CertSetPropertyFlags.None,
                     &keyProvInfo))
                 {
+                    Exception e = Marshal.GetLastWin32Error().ToCryptographicException();
                     pal.Dispose();
-                    throw Marshal.GetLastWin32Error().ToCryptographicException();
+                    throw e;
                 }
             }
 
@@ -585,24 +589,35 @@ namespace System.Security.Cryptography.X509Certificates
         {
             Debug.Assert(string.IsNullOrEmpty(cngKey.KeyName));
 
-            SafeNCryptKeyHandle handle = cngKey.Handle;
-
-            // Make a new pal from bytes.
-            CertificatePal pal = (CertificatePal)FromBlob(RawData, SafePasswordHandle.InvalidHandle, X509KeyStorageFlags.PersistKeySet);
-
-            if (!Interop.Crypt32.CertSetCertificateContextProperty(
-                pal._certContext,
-                Interop.Crypt32.CertContextPropId.CERT_NCRYPT_KEY_HANDLE_PROP_ID,
-                Interop.Crypt32.CertSetPropertyFlags.CERT_SET_PROPERTY_INHIBIT_PERSIST_FLAG,
-                handle))
+            // Handle makes a copy of the handle.  This is required given that CertSetCertificateContextProperty accepts a SafeHandle
+            // and transfers ownership of the handle to the certificate.  We can't transfer that ownership out of the cngKey, as it's
+            // owned by the caller, so we make a copy (using Handle rather than HandleNoDuplicate).
+            using (SafeNCryptKeyHandle handle = cngKey.Handle)
             {
-                pal.Dispose();
-                throw Marshal.GetLastWin32Error().ToCryptographicException();
-            }
+                // Make a new pal from bytes.
+                CertificatePal pal = (CertificatePal)FromBlob(RawData, SafePasswordHandle.InvalidHandle, X509KeyStorageFlags.PersistKeySet);
+                try
+                {
+                    if (!Interop.Crypt32.CertSetCertificateContextProperty(
+                        pal._certContext,
+                        Interop.Crypt32.CertContextPropId.CERT_NCRYPT_KEY_HANDLE_PROP_ID,
+                        Interop.Crypt32.CertSetPropertyFlags.CERT_SET_PROPERTY_INHIBIT_PERSIST_FLAG,
+                        handle))
+                    {
+                        throw Marshal.GetLastWin32Error().ToCryptographicException();
+                    }
 
-            // The value was transferred to the certificate.
-            handle.SetHandleAsInvalid();
-            return pal;
+                    // The value was transferred to the certificate.
+                    handle.SetHandleAsInvalid();
+
+                    return pal;
+                }
+                catch
+                {
+                    pal.Dispose();
+                    throw;
+                }
+            }
         }
     }
 }

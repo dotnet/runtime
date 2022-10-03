@@ -12,7 +12,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl.XsltOld
 {
-    internal class NumberAction : ContainerAction
+    internal sealed class NumberAction : ContainerAction
     {
         internal sealed class FormatInfo
         {
@@ -365,7 +365,7 @@ namespace System.Xml.Xsl.XsltOld
         private static object SimplifyValue(object value)
         {
             // If result of xsl:number is not in correct range it should be returned as is.
-            // so we need intermidiate string value.
+            // so we need intermediate string value.
             // If it's already a double we would like to keep it as double.
             // So this function converts to string only if result is nodeset or RTF
             Debug.Assert(!(value is int));
@@ -471,7 +471,7 @@ namespace System.Xml.Xsl.XsltOld
             return false;
         }
 
-        private XPathNodeType BasicNodeType(XPathNodeType type)
+        private static XPathNodeType BasicNodeType(XPathNodeType type)
         {
             if (type == XPathNodeType.SignificantWhitespace || type == XPathNodeType.Whitespace)
             {
@@ -509,11 +509,6 @@ namespace System.Xml.Xsl.XsltOld
             }
             if (groupingSep != null)
             {
-                if (groupingSep.Length > 1)
-                {
-                    // It is a breaking change to throw an exception, SQLBUDT 324367
-                    //throw XsltException.Create(SR.Xslt_CharAttribute, "grouping-separator");
-                }
                 numberingFormat.setGroupingSeparator(groupingSep);
             }
             if (0 < cFormats)
@@ -685,7 +680,7 @@ namespace System.Xml.Xsl.XsltOld
             (non-alphanumeric).
 
         */
-        [return: NotNullIfNotNull("formatString")]
+        [return: NotNullIfNotNull(nameof(formatString))]
         private static List<FormatInfo?>? ParseFormat(string? formatString)
         {
             if (formatString == null || formatString.Length == 0)

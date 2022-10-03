@@ -53,8 +53,10 @@ namespace System
             return CustomAttribute.GetCustomAttributes(this, ObjectType, inherit);
         }
 
-        public override object[] GetCustomAttributes(Type attributeType!!, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
@@ -91,11 +93,13 @@ namespace System
 
         public override Type GetElementType() => RuntimeTypeHandle.GetElementType(this);
 
-        public override string? GetEnumName(object value!!)
+        public override string? GetEnumName(object value)
         {
-            Type valueType = value.GetType();
+            ArgumentNullException.ThrowIfNull(value);
 
-            if (!(valueType.IsEnum || IsIntegerType(valueType)))
+            RuntimeType valueType = (RuntimeType)value.GetType();
+
+            if (!(valueType.IsActualEnum || IsIntegerType(valueType)))
                 throw new ArgumentException(SR.Arg_MustBeEnumBaseTypeOrEnum, nameof(value));
 
             ulong ulValue = Enum.ToUInt64(value);
@@ -105,7 +109,7 @@ namespace System
 
         public override string[] GetEnumNames()
         {
-            if (!IsEnum)
+            if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
             string[] ret = Enum.InternalGetNames(this);
@@ -114,10 +118,10 @@ namespace System
             return new ReadOnlySpan<string>(ret).ToArray();
         }
 
-        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetValues<TEnum> overload instead.")]
+        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetEnumValues<TEnum> overload or the GetEnumValuesAsUnderlyingType method instead.")]
         public override Array GetEnumValues()
         {
-            if (!IsEnum)
+            if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
             // Get all of the values
@@ -135,9 +139,110 @@ namespace System
             return ret;
         }
 
+        /// <summary>
+        /// Retrieves an array of the values of the underlying type constants in a specified enumeration type.
+        /// </summary>
+        /// <remarks>
+        /// This method can be used to get enumeration values when creating an array of the enumeration type is challenging.
+        /// For example, <see cref="T:System.Reflection.MetadataLoadContext" /> or on a platform where runtime codegen is not available.
+        /// </remarks>
+        /// <returns>An array that contains the values of the underlying type constants in enumType.</returns>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the type is not Enum
+        /// </exception>
+        public override Array GetEnumValuesAsUnderlyingType()
+        {
+            if (!IsActualEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
+
+            // Get all of the values
+            ulong[] values = Enum.InternalGetValues(this);
+
+            switch (RuntimeTypeHandle.GetCorElementType(Enum.InternalGetUnderlyingType(this)))
+            {
+
+                case CorElementType.ELEMENT_TYPE_U1:
+                    {
+                        var ret = new byte[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (byte)values[i];
+                        }
+                        return ret;
+                    }
+
+                case CorElementType.ELEMENT_TYPE_U2:
+                    {
+                        var ret = new ushort[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (ushort)values[i];
+                        }
+                        return ret;
+                    }
+
+                case CorElementType.ELEMENT_TYPE_U4:
+                    {
+                        var ret = new uint[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (uint)values[i];
+                        }
+                        return ret;
+                    }
+
+                case CorElementType.ELEMENT_TYPE_U8:
+                    {
+                        return (Array)values.Clone();
+                    }
+
+                case CorElementType.ELEMENT_TYPE_I1:
+                    {
+                        var ret = new sbyte[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (sbyte)values[i];
+                        }
+                        return ret;
+                    }
+
+                case CorElementType.ELEMENT_TYPE_I2:
+                    {
+                        var ret = new short[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (short)values[i];
+                        }
+                        return ret;
+                    }
+
+                case CorElementType.ELEMENT_TYPE_I4:
+                    {
+                        var ret = new int[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (int)values[i];
+                        }
+                        return ret;
+                    }
+
+                case CorElementType.ELEMENT_TYPE_I8:
+                    {
+                        var ret = new long[values.Length];
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            ret[i] = (long)values[i];
+                        }
+                        return ret;
+                    }
+                default:
+                    throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
+            }
+        }
+
         public override Type GetEnumUnderlyingType()
         {
-            if (!IsEnum)
+            if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
             return Enum.InternalGetUnderlyingType(this);
@@ -198,7 +303,7 @@ namespace System
                         typeCode = TypeCode.Decimal;
                     else if (ReferenceEquals(this, typeof(DateTime)))
                         typeCode = TypeCode.DateTime;
-                    else if (IsEnum)
+                    else if (IsActualEnum)
                         typeCode = GetTypeCode(Enum.InternalGetUnderlyingType(this));
                     else
                         typeCode = TypeCode.Object;
@@ -233,24 +338,28 @@ namespace System
 
         protected override bool IsContextfulImpl() => false;
 
-        public override bool IsDefined(Type attributeType!!, bool inherit)
+        public override bool IsDefined(Type attributeType, bool inherit)
         {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.IsDefined(this, attributeRuntimeType, inherit);
         }
 
-        public override bool IsEnumDefined(object value!!)
+        public override bool IsEnumDefined(object value)
         {
-            if (!IsEnum)
+            ArgumentNullException.ThrowIfNull(value);
+
+            if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
             // Check if both of them are of the same type
             RuntimeType valueType = (RuntimeType)value.GetType();
 
             // If the value is an Enum then we need to extract the underlying value from it
-            if (valueType.IsEnum)
+            if (valueType.IsActualEnum)
             {
                 if (!valueType.IsEquivalentTo(this))
                     throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, valueType, this));
@@ -282,17 +391,6 @@ namespace System
             {
                 throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
             }
-        }
-
-        protected override bool IsValueTypeImpl()
-        {
-            // We need to return true for generic parameters with the ValueType constraint.
-            // So we cannot use the faster RuntimeTypeHandle.IsValueType because it returns
-            // false for all generic parameters.
-            if (this == typeof(ValueType) || this == typeof(Enum))
-                return false;
-
-            return IsSubclassOf(typeof(ValueType));
         }
 
         protected override bool IsByRefImpl() => RuntimeTypeHandle.IsByRef(this);
@@ -358,9 +456,11 @@ namespace System
         [DebuggerHidden]
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override object? InvokeMember(
-            string name!!, BindingFlags bindingFlags, Binder? binder, object? target,
+            string name, BindingFlags bindingFlags, Binder? binder, object? target,
             object?[]? providedArgs, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParams)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             const BindingFlags MemberBindingMask = (BindingFlags)0x000000FF;
             const BindingFlags InvocationMask = (BindingFlags)0x0000FF00;
             const BindingFlags BinderGetSetField = BindingFlags.GetField | BindingFlags.SetField;
@@ -772,8 +872,10 @@ namespace System
                     SR.Format(SR.Argument_NeverValidGenericArgument, type));
         }
 
-        internal static void SanityCheckGenericArguments(RuntimeType[] genericArguments!!, RuntimeType[] genericParameters)
+        internal static void SanityCheckGenericArguments(RuntimeType[] genericArguments, RuntimeType[] genericParameters)
         {
+            ArgumentNullException.ThrowIfNull(genericArguments);
+
             for (int i = 0; i < genericArguments.Length; i++)
             {
                 ArgumentNullException.ThrowIfNull(genericArguments[i], null);

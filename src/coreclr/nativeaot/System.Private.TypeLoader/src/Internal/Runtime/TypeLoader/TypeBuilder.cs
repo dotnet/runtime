@@ -30,7 +30,9 @@ namespace Internal.Runtime.TypeLoader
     using DefTypeBasedGenericTypeLookup = TypeLoaderEnvironment.DefTypeBasedGenericTypeLookup;
     using HandleBasedGenericMethodLookup = TypeLoaderEnvironment.HandleBasedGenericMethodLookup;
     using MethodDescBasedGenericMethodLookup = TypeLoaderEnvironment.MethodDescBasedGenericMethodLookup;
+#if FEATURE_UNIVERSAL_GENERICS
     using ThunkKind = CallConverterThunk.ThunkKind;
+#endif
     using VTableSlotMapper = TypeBuilderState.VTableSlotMapper;
 
     internal static class LowLevelListExtensions
@@ -86,7 +88,7 @@ namespace Internal.Runtime.TypeLoader
         /// The StaticClassConstructionContext for a type is encoded in the negative space
         /// of the NonGCStatic fields of a type.
         /// </summary>
-        public static unsafe readonly int ClassConstructorOffset = -sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext);
+        public static readonly unsafe int ClassConstructorOffset = -sizeof(System.Runtime.CompilerServices.StaticClassConstructionContext);
 
         private LowLevelList<TypeDesc> _typesThatNeedTypeHandles = new LowLevelList<TypeDesc>();
 
@@ -103,10 +105,14 @@ namespace Internal.Runtime.TypeLoader
         // Helper exception to abort type building if we do not find the generic type template
         internal class MissingTemplateException : Exception
         {
+            public MissingTemplateException()
+                // Cannot afford calling into resource manager from here, even to get the default message for System.Exception.
+                // This exception is always caught and rethrown as something more user friendly.
+                : base("Template is missing") { }
         }
 
 
-        private bool CheckAllHandlesValidForMethod(MethodDesc method)
+        private static bool CheckAllHandlesValidForMethod(MethodDesc method)
         {
             if (!method.OwningType.RetrieveRuntimeTypeHandleIfPossible())
                 return false;
@@ -118,7 +124,7 @@ namespace Internal.Runtime.TypeLoader
             return true;
         }
 
-        internal bool RetrieveExactFunctionPointerIfPossible(MethodDesc method, out IntPtr result)
+        internal static bool RetrieveExactFunctionPointerIfPossible(MethodDesc method, out IntPtr result)
         {
             result = IntPtr.Zero;
 
@@ -132,7 +138,7 @@ namespace Internal.Runtime.TypeLoader
             return TypeLoaderEnvironment.Instance.TryLookupExactMethodPointerForComponents(method.OwningType.RuntimeTypeHandle, method.NameAndSignature, genMethodArgs, out result);
         }
 
-        internal bool RetrieveMethodDictionaryIfPossible(InstantiatedMethod method)
+        internal static bool RetrieveMethodDictionaryIfPossible(InstantiatedMethod method)
         {
             if (method.RuntimeMethodDictionary != IntPtr.Zero)
                 return true;
@@ -156,7 +162,7 @@ namespace Internal.Runtime.TypeLoader
 
         /// <summary>
         /// Register the type for preparation. The preparation will be done once the current type is prepared.
-        /// This is the prefered way to get a dependent type prepared because of it avoids issues with cycles and recursion.
+        /// This is the preferred way to get a dependent type prepared because of it avoids issues with cycles and recursion.
         /// </summary>
         public void RegisterForPreparation(TypeDesc type)
         {
@@ -177,8 +183,7 @@ namespace Internal.Runtime.TypeLoader
             if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
                 return;
 
-            if (_typesThatNeedPreparation == null)
-                _typesThatNeedPreparation = new LowLevelList<TypeDesc>();
+            _typesThatNeedPreparation ??= new LowLevelList<TypeDesc>();
 
             _typesThatNeedPreparation.Add(type);
         }
@@ -241,8 +246,7 @@ namespace Internal.Runtime.TypeLoader
             if (hasTypeHandle)
                 return;
 
-            if (state == null)
-                state = type.GetOrCreateTypeBuilderState();
+            state ??= type.GetOrCreateTypeBuilderState();
 
             // If this type was already prepared, do nothing unless we are re-preparing it for the purpose of loading the field layout
             if (state.HasBeenPrepared)
@@ -260,10 +264,8 @@ namespace Internal.Runtime.TypeLoader
 
             bool noExtraPreparation = false; // Set this to true for types which don't need other types to be prepared. I.e GenericTypeDefinitions
 
-            if (type is DefType)
+            if (type is DefType typeAsDefType)
             {
-                DefType typeAsDefType = (DefType)type;
-
                 if (typeAsDefType.HasInstantiation)
                 {
                     if (typeAsDefType.IsTypeDefinition)
@@ -274,7 +276,7 @@ namespace Internal.Runtime.TypeLoader
                     {
                         // This call to ComputeTemplate will find the native layout info for the type, and the template
                         // For metadata loaded types, a template will not exist, but we may find the NativeLayout describing the generic dictionary
-                        typeAsDefType.ComputeTemplate(state, false);
+                        TypeDesc.ComputeTemplate(state, false);
 
                         Debug.Assert(state.TemplateType == null || (state.TemplateType is DefType && !state.TemplateType.RuntimeTypeHandle.IsNull()));
 
@@ -299,13 +301,11 @@ namespace Internal.Runtime.TypeLoader
             {
                 PrepareType(((ParameterizedType)type).ParameterType);
 
-                if (type is ArrayType)
+                if (type is ArrayType typeAsArrayType)
                 {
-                    ArrayType typeAsArrayType = (ArrayType)type;
-
                     if (typeAsArrayType.IsSzArray && !typeAsArrayType.ElementType.IsPointer)
                     {
-                        typeAsArrayType.ComputeTemplate(state);
+                        TypeDesc.ComputeTemplate(state);
                         Debug.Assert(state.TemplateType != null && state.TemplateType is ArrayType && !state.TemplateType.RuntimeTypeHandle.IsNull());
 
                         ParseNativeLayoutInfo(state, type);
@@ -384,7 +384,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private GenericDictionaryCell[] GetGenericMethodDictionaryCellsForMetadataBasedLoad(InstantiatedMethod method, InstantiatedMethod nonTemplateMethod)
+        private static GenericDictionaryCell[] GetGenericMethodDictionaryCellsForMetadataBasedLoad(InstantiatedMethod method, InstantiatedMethod nonTemplateMethod)
         {
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
             uint r2rNativeLayoutInfoToken;
@@ -433,7 +433,7 @@ namespace Internal.Runtime.TypeLoader
 
             uint nativeLayoutInfoToken;
             NativeFormatModuleInfo nativeLayoutModule;
-            MethodDesc templateMethod = (new TemplateLocator()).TryGetGenericMethodTemplate(nonTemplateMethod, out nativeLayoutModule, out nativeLayoutInfoToken);
+            MethodDesc templateMethod = TemplateLocator.TryGetGenericMethodTemplate(nonTemplateMethod, out nativeLayoutModule, out nativeLayoutInfoToken);
 
             // If the templateMethod found in the static image is missing or universal, see if the R2R layout
             // can provide something more specific.
@@ -465,7 +465,7 @@ namespace Internal.Runtime.TypeLoader
             // its template MUST be a universal canonical template method
             Debug.Assert(!method.IsNonSharableMethod || (method.IsNonSharableMethod && templateMethod.IsCanonicalMethod(CanonicalFormKind.Universal)));
 
-            NativeReader nativeLayoutInfoReader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(nativeLayoutModule.Handle);
+            NativeReader nativeLayoutInfoReader = TypeLoaderEnvironment.GetNativeLayoutInfoReader(nativeLayoutModule.Handle);
 
             var methodInfoParser = new NativeParser(nativeLayoutInfoReader, nativeLayoutInfoToken);
             var context = new NativeLayoutInfoLoadContext
@@ -975,18 +975,15 @@ namespace Internal.Runtime.TypeLoader
 
             Debug.Assert(type is DefType || type is ArrayType || type is PointerType || type is ByRefType);
 
-            if (state.ThreadDataSize != 0)
-                state.ThreadStaticOffset = TypeLoaderEnvironment.Instance.GetNextThreadStaticsOffsetValue();
-
             RuntimeTypeHandle rtt = EETypeCreator.CreateEEType(type, state);
 
             if (state.ThreadDataSize != 0)
-                TypeLoaderEnvironment.Instance.RegisterDynamicThreadStaticsInfo(state.HalfBakedRuntimeTypeHandle, state.ThreadStaticOffset, state.ThreadDataSize);
+                TypeLoaderEnvironment.Instance.RegisterDynamicThreadStaticsInfo(state.HalfBakedRuntimeTypeHandle, state.ThreadStaticOffset, state.ThreadStaticDesc);
 
             TypeLoaderLogger.WriteLine("Allocated new type " + type.ToString() + " with hashcode value = 0x" + type.GetHashCode().LowLevelToString() + " with MethodTable = " + rtt.ToIntPtr().LowLevelToString() + " of size " + rtt.ToEETypePtr()->BaseSize.LowLevelToString());
         }
 
-        private void AllocateRuntimeMethodDictionary(InstantiatedMethod method)
+        private static void AllocateRuntimeMethodDictionary(InstantiatedMethod method)
         {
             Debug.Assert(method.RuntimeMethodDictionary == IntPtr.Zero && method.Dictionary != null);
 
@@ -1084,6 +1081,7 @@ namespace Internal.Runtime.TypeLoader
         // Returns either the registered type handle or half-baked type handle. This method should be only called
         // during final phase of type building.
         //
+#pragma warning disable CA1822
         public RuntimeTypeHandle GetRuntimeTypeHandle(TypeDesc type)
         {
 #if DEBUG
@@ -1098,6 +1096,7 @@ namespace Internal.Runtime.TypeLoader
             Debug.Assert(!rtth.IsNull());
             return rtth;
         }
+#pragma warning restore CA1822
 
         public RuntimeTypeHandle[] GetRuntimeTypeHandles(Instantiation types)
         {
@@ -1148,8 +1147,10 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private unsafe void FinishTypeDictionary(TypeDesc type, TypeBuilderState state)
+        private unsafe void FinishTypeDictionary(TypeDesc type)
         {
+            TypeBuilderState state = type.GetTypeBuilderState();
+
             if (state.Dictionary != null)
             {
                 // First, update the dictionary slot in the type's vtable to point to the created dictionary when applicable
@@ -1318,10 +1319,8 @@ namespace Internal.Runtime.TypeLoader
 
             var state = type.GetTypeBuilderState();
 
-            if (type is DefType)
+            if (type is DefType typeAsDefType)
             {
-                DefType typeAsDefType = (DefType)type;
-
                 if (type.HasInstantiation)
                 {
                     // Type definitions don't need any further finishing once created by the EETypeCreator
@@ -1346,8 +1345,6 @@ namespace Internal.Runtime.TypeLoader
 
                 FinishInterfaces(type, state);
 
-                FinishTypeDictionary(type, state);
-
                 FinishClassConstructor(type, state);
 
 #if FEATURE_UNIVERSAL_GENERICS
@@ -1359,10 +1356,8 @@ namespace Internal.Runtime.TypeLoader
             }
             else if (type is ParameterizedType)
             {
-                if (type is ArrayType)
+                if (type is ArrayType typeAsSzArrayType)
                 {
-                    ArrayType typeAsSzArrayType = (ArrayType)type;
-
                     state.HalfBakedRuntimeTypeHandle.SetRelatedParameterType(GetRuntimeTypeHandle(typeAsSzArrayType.ElementType));
 
                     state.HalfBakedRuntimeTypeHandle.SetComponentSize(state.ComponentSize.Value);
@@ -1371,8 +1366,6 @@ namespace Internal.Runtime.TypeLoader
 
                     if (typeAsSzArrayType.IsSzArray && !typeAsSzArrayType.ElementType.IsPointer)
                     {
-                        FinishTypeDictionary(type, state);
-
 #if FEATURE_UNIVERSAL_GENERICS
                         // For types that were allocated from universal canonical templates, patch their vtables with
                         // pointers to calling convention conversion thunks
@@ -1522,6 +1515,11 @@ namespace Internal.Runtime.TypeLoader
                 FinishRuntimeType(_typesThatNeedTypeHandles[i]);
             }
 
+            for (int i = 0; i < _typesThatNeedTypeHandles.Count; i++)
+            {
+                FinishTypeDictionary(_typesThatNeedTypeHandles[i]);
+            }
+
             for (int i = 0; i < _methodsThatNeedDictionaries.Count; i++)
             {
                 FinishMethodDictionary(_methodsThatNeedDictionaries[i]);
@@ -1548,8 +1546,7 @@ namespace Internal.Runtime.TypeLoader
                     newByRefTypesCount++;
                 else if (typeAsParameterizedType.IsMdArray)
                 {
-                    if (mdArrayNewTypesCount == null)
-                        mdArrayNewTypesCount = new int[MDArray.MaxRank + 1];
+                    mdArrayNewTypesCount ??= new int[MDArray.MaxRank + 1];
                     mdArrayNewTypesCount[((ArrayType)typeAsParameterizedType).Rank]++;
                 }
             }
@@ -1634,7 +1631,7 @@ namespace Internal.Runtime.TypeLoader
             FinishTypeAndMethodBuilding();
         }
 
-        internal bool TryComputeFieldOffset(DefType declaringType, uint fieldOrdinal, out int fieldOffset)
+        internal static bool TryComputeFieldOffset(DefType declaringType, uint fieldOrdinal, out int fieldOffset)
         {
             TypeLoaderLogger.WriteLine("Computing offset of field #" + fieldOrdinal.LowLevelToString() + " on type " + declaringType.ToString());
 
@@ -1692,7 +1689,7 @@ namespace Internal.Runtime.TypeLoader
             IntPtr** lazySignature = (IntPtr**)signature.ToPointer();
             typeManager = new TypeManagerHandle(lazySignature[0][0]);
             offset = checked((uint)new IntPtr(lazySignature[1]).ToInt32());
-            reader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(typeManager);
+            reader = TypeLoaderEnvironment.GetNativeLayoutInfoReader(typeManager);
 
             NativeParser parser = new NativeParser(reader, offset);
 
@@ -1911,11 +1908,11 @@ namespace Internal.Runtime.TypeLoader
 
                 uint nativeLayoutInfoToken;
                 NativeFormatModuleInfo nativeLayoutModule;
-                MethodDesc templateMethod = (new TemplateLocator()).TryGetGenericMethodTemplate(methodContext, out nativeLayoutModule, out nativeLayoutInfoToken);
+                MethodDesc templateMethod = TemplateLocator.TryGetGenericMethodTemplate(methodContext, out nativeLayoutModule, out nativeLayoutInfoToken);
                 if (templateMethod == null)
                     throw new TypeBuilder.MissingTemplateException();
 
-                NativeReader nativeLayoutInfoReader = TypeLoaderEnvironment.Instance.GetNativeLayoutInfoReader(nativeLayoutModule.Handle);
+                NativeReader nativeLayoutInfoReader = TypeLoaderEnvironment.GetNativeLayoutInfoReader(nativeLayoutModule.Handle);
 
                 nativeLayoutParser = new NativeParser(nativeLayoutInfoReader, nativeLayoutInfoToken);
                 nlilContext = new NativeLayoutInfoLoadContext
@@ -1973,7 +1970,7 @@ namespace Internal.Runtime.TypeLoader
                 runtimeTypeHandle = typeBeingLoaded.RuntimeTypeHandle;
                 Debug.Assert(!runtimeTypeHandle.IsNull());
 
-                // Recycle the context only if we succesfully built the type. The state may be partially initialized otherwise.
+                // Recycle the context only if we successfully built the type. The state may be partially initialized otherwise.
                 TypeSystemContextFactory.Recycle(context);
 
                 return true;
@@ -1999,7 +1996,7 @@ namespace Internal.Runtime.TypeLoader
                 arrayTypeHandle = arrayType.RuntimeTypeHandle;
                 Debug.Assert(!arrayTypeHandle.IsNull());
 
-                // Recycle the context only if we succesfully built the type. The state may be partially initialized otherwise.
+                // Recycle the context only if we successfully built the type. The state may be partially initialized otherwise.
                 TypeSystemContextFactory.Recycle(context);
 
                 return true;
@@ -2024,7 +2021,7 @@ namespace Internal.Runtime.TypeLoader
                 }
                 TypeSystemContext.PointerTypesCache.AddOrGetExisting(pointerTypeHandle);
 
-                // Recycle the context only if we succesfully built the type. The state may be partially initialized otherwise.
+                // Recycle the context only if we successfully built the type. The state may be partially initialized otherwise.
                 TypeSystemContextFactory.Recycle(context);
             }
 
@@ -2044,7 +2041,7 @@ namespace Internal.Runtime.TypeLoader
                 }
                 TypeSystemContext.ByRefTypesCache.AddOrGetExisting(byRefTypeHandle);
 
-                // Recycle the context only if we succesfully built the type. The state may be partially initialized otherwise.
+                // Recycle the context only if we successfully built the type. The state may be partially initialized otherwise.
                 TypeSystemContextFactory.Recycle(context);
             }
 
@@ -2060,7 +2057,7 @@ namespace Internal.Runtime.TypeLoader
 
             bool success = TryBuildGenericMethod(methodBeingLoaded, out methodDictionary);
 
-            // Recycle the context only if we succesfully built the method. The state may be partially initialized otherwise.
+            // Recycle the context only if we successfully built the method. The state may be partially initialized otherwise.
             if (success)
                 TypeSystemContextFactory.Recycle(context);
 
@@ -2191,7 +2188,7 @@ namespace Internal.Runtime.TypeLoader
                 DefType declaringType = (DefType)context.ResolveRuntimeTypeHandle(declaringTypeHandle);
                 Debug.Assert(declaringType.HasInstantiation);
 
-                bool success = new TypeBuilder().TryComputeFieldOffset(declaringType, fieldOrdinal, out fieldOffset);
+                bool success = TypeBuilder.TryComputeFieldOffset(declaringType, fieldOrdinal, out fieldOffset);
 
                 TypeSystemContextFactory.Recycle(context);
 

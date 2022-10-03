@@ -1045,7 +1045,7 @@ class Program
                     s_NumErrors++;
             }
 
-            // Uncomment when we have the type loader to buld invoke stub dictionaries.
+            // Uncomment when we have the type loader to build invoke stub dictionaries.
             {
                 MethodInfo mi = typeof(Foo<string>).GetMethod("SetAndCheck").MakeGenericMethod(typeof(object));
                 if ((bool)mi.Invoke(o, new object[] { 123, new object() }))
@@ -1147,9 +1147,8 @@ class Program
                 Verify("DerivedClass2.GVMethod3", gvm3.Invoke(new DerivedClass2<string>(), new[] { "", "" }));
                 Verify("DerivedClass2.GVMethod4", gvm4.Invoke(new DerivedClass2<string>(), new[] { "", "" }));
 
-                // BaseClass<int>.Method1 has the same slot as BaseClass<float>.Method3 on CoreRT, because vtable entries
+                // BaseClass<int>.Method1 has the same slot as BaseClass<float>.Method3 on NativeAOT, because vtable entries
                 // get populated on demand (the first type won't get a Method3 entry, and the latter won't get a Method1 entry)
-                // On ProjectN, both types will get vtable entries for both methods.
                 new BaseClass<int>().Method1(1);
                 m1 = typeof(BaseClass<int>).GetMethod("Method1");
                 Verify("BaseClass.Method1", m1.Invoke(new BaseClass<int>(), new object[] { (int)1 }));
@@ -2991,7 +2990,7 @@ public class GenBase<T, U> : IFoo<T> where T : new()
         var f = new MyGenClass3<T>[5,13];
         return "NewTest - " + a + " - " + b + " - " + c + " - " + d + " - " + e + " - " + f;
     }
-    
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     public string BoxingAndNullableTest(MyGenClass1<KeyValuePair<T,U>> t, MyGenStruct1<Dictionary<T,U>> u, MyGenStruct1<Dictionary<T,U>>? u2)
     {

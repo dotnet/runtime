@@ -52,7 +52,9 @@ enum EXTRA_JIT_FLAGS
     HAS_CLASS_PROFILE = 61,
     HAS_LIKELY_CLASS = 60,
     HAS_STATIC_PROFILE = 59,
-    HAS_DYNAMIC_PROFILE = 58
+    HAS_DYNAMIC_PROFILE = 58,
+    HAS_METHOD_PROFILE = 57,
+    HAS_LIKELY_METHOD = 56,
 };
 
 // Asserts to catch changes in corjit flags definitions.
@@ -63,9 +65,13 @@ static_assert((int)EXTRA_JIT_FLAGS::HAS_CLASS_PROFILE == (int)CORJIT_FLAGS::CorJ
 static_assert((int)EXTRA_JIT_FLAGS::HAS_LIKELY_CLASS == (int)CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED33, "Jit Flags Mismatch");
 static_assert((int)EXTRA_JIT_FLAGS::HAS_STATIC_PROFILE == (int)CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED32, "Jit Flags Mismatch");
 static_assert((int)EXTRA_JIT_FLAGS::HAS_DYNAMIC_PROFILE == (int)CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED31, "Jit Flags Mismatch");
+static_assert((int)EXTRA_JIT_FLAGS::HAS_METHOD_PROFILE == (int)CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED30, "Jit Flags Mismatch");
+static_assert((int)EXTRA_JIT_FLAGS::HAS_LIKELY_METHOD == (int)CORJIT_FLAGS::CorJitFlag::CORJIT_FLAG_UNUSED29, "Jit Flags Mismatch");
 
 class MethodContext
 {
+    friend class CompileResult;
+
 public:
     MethodContext();
 
@@ -103,7 +109,7 @@ public:
     int dumpMethodIdentityInfoToBuffer(char* buff, int len, bool ignoreMethodName = false, CORINFO_METHOD_INFO* optInfo = nullptr, unsigned optFlags = 0);
     int dumpMethodMD5HashToBuffer(char* buff, int len, bool ignoreMethodName = false, CORINFO_METHOD_INFO* optInfo = nullptr, unsigned optFlags = 0);
 
-    bool hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasLikelyClass, ICorJitInfo::PgoSource& pgoSource);
+    bool hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasMethodProfile, bool& hasLikelyClass, bool& hasLikelyMethod, ICorJitInfo::PgoSource& pgoSource);
 
     void recGlobalContext(const MethodContext& other);
 
@@ -315,11 +321,13 @@ public:
                                 CORINFO_CONST_LOOKUP*   pLookup);
 
     void recGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod,
+                                            mdToken                 targetConstraint,
                                             CORINFO_CLASS_HANDLE    delegateType,
                                             CORINFO_LOOKUP*         pLookup);
     void dmpGetReadyToRunDelegateCtorHelper(GetReadyToRunDelegateCtorHelper_TOKENIn key,
                                             Agnostic_CORINFO_LOOKUP                 pLookup);
     void repGetReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN* pTargetMethod,
+                                            mdToken                 targetConstraint,
                                             CORINFO_CLASS_HANDLE    delegateType,
                                             CORINFO_LOOKUP*         pLookup);
 
@@ -596,9 +604,9 @@ public:
     void dmpIsValidStringRef(DLD key, DWORD value);
     bool repIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK);
 
-    void recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int length, const char16_t* result);
-    void dmpGetStringLiteral(DLD key, DD value);
-    const char16_t* repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length);
+    void recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize, int length);
+    void dmpGetStringLiteral(DLDD key, DD value);
+    int repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize);
 
     void recGetHelperName(CorInfoHelpFunc funcNum, const char* result);
     void dmpGetHelperName(DWORD key, DWORD value);
@@ -783,10 +791,20 @@ public:
     void dmpGetTypeInstantiationArgument(DWORDLONG key, DWORDLONG value);
     CORINFO_CLASS_HANDLE repGetTypeInstantiationArgument(CORINFO_CLASS_HANDLE cls, unsigned index);
 
-    void recAppendClassName(
-        CORINFO_CLASS_HANDLE cls, bool fNamespace, bool fFullInst, bool fAssembly, const char16_t* result);
-    void dmpAppendClassName(const Agnostic_AppendClassName& key, DWORD value);
-    const WCHAR* repAppendClassName(CORINFO_CLASS_HANDLE cls, bool fNamespace, bool fFullInst, bool fAssembly);
+    void recAppendClassName(int                  nBufLenIn,
+                            CORINFO_CLASS_HANDLE cls,
+                            bool                 fNamespace,
+                            bool                 fFullInst,
+                            bool                 fAssembly,
+                            int                  nLenOut,
+                            const char16_t*      result);
+    void dmpAppendClassName(const Agnostic_AppendClassNameIn& key, const Agnostic_AppendClassNameOut& value);
+    int repAppendClassName(char16_t**           ppBuf,
+                           int*                 pnBufLen,
+                           CORINFO_CLASS_HANDLE cls,
+                           bool                 fNamespace,
+                           bool                 fFullInst,
+                           bool                 fAssembly);
 
     void recGetTailCallHelpers(
         CORINFO_RESOLVED_TOKEN* callToken,

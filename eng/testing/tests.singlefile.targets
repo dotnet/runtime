@@ -16,8 +16,6 @@
     <PublishSingleFile>true</PublishSingleFile>
     <UseAppHost>true</UseAppHost>
     <SelfContained>true</SelfContained>
-    <SingleFileHostSourcePath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(Configuration)', 'corehost'))/singlefilehost</SingleFileHostSourcePath>
-    <SingleFileHostSourcePath Condition="'$(TargetOS)' == 'windows'">$(SingleFileHostSourcePath).exe</SingleFileHostSourcePath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TestNativeAot)' == 'true'">
@@ -28,7 +26,7 @@
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
     <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
     <IlcFrameworkPath>$(NetCoreAppCurrentTestHostSharedFrameworkPath)</IlcFrameworkPath>
-    <NoWarn>$(NoWarn);IL3050;IL3051;IL3052;IL3055;IL1005</NoWarn>
+    <NoWarn>$(NoWarn);IL3050;IL3051;IL3052;IL3054;IL3055;IL1005;IL3002</NoWarn>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
 

@@ -347,4 +347,22 @@
     <Right>lib/netstandard2.0/System.Data.Odbc.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.Odbc.OdbcInfoMessageEventHandler.#ctor(System.Object,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>lib/net7.0/System.Data.Odbc.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.Odbc.OdbcRowUpdatedEventHandler.#ctor(System.Object,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>lib/net7.0/System.Data.Odbc.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Data.Odbc.OdbcRowUpdatingEventHandler.#ctor(System.Object,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.Data.Odbc.dll</Left>
+    <Right>lib/net7.0/System.Data.Odbc.dll</Right>
+  </Suppression>
 </Suppressions>

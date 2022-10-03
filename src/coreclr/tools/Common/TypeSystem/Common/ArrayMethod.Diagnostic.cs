@@ -9,7 +9,7 @@ namespace Internal.TypeSystem
         {
             get
             {
-                // The ArrayMethod.Name property is gauranteed to not throw
+                // The ArrayMethod.Name property is guaranteed to not throw
                 return Name;
             }
         }

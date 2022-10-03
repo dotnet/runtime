@@ -1,20 +1,20 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.IO;
+using System.Globalization;
+using System.Collections;
+using System.Xml.XPath;
+using System.Xml.Xsl.Runtime;
+using MS.Internal.Xml.XPath;
+using System.Reflection;
+using System.Security;
+using System.Runtime.Versioning;
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System.Diagnostics;
-    using System.IO;
-    using System.Globalization;
-    using System.Collections;
-    using System.Xml.XPath;
-    using System.Xml.Xsl.Runtime;
-    using MS.Internal.Xml.XPath;
-    using System.Reflection;
-    using System.Security;
-    using System.Runtime.Versioning;
-    using System.Diagnostics.CodeAnalysis;
-
     internal sealed class XsltCompileContext : XsltContext
     {
         private InputScopeManager? _manager;
@@ -108,7 +108,7 @@ namespace System.Xml.Xsl.XsltOld
             return _processor!.Stylesheet.PreserveWhiteSpace(_processor, node);
         }
 
-        private MethodInfo? FindBestMethod(MethodInfo[] methods, bool ignoreCase, bool publicOnly, string name, XPathResultType[]? argTypes)
+        private static MethodInfo? FindBestMethod(MethodInfo[] methods, bool ignoreCase, bool publicOnly, string name, XPathResultType[]? argTypes)
         {
             int length = methods.Length;
             int free = 0;
@@ -184,7 +184,7 @@ namespace System.Xml.Xsl.XsltOld
         private const BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static;
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:RequiresUnreferencedCode",
             Justification = XsltArgumentList.ExtensionObjectSuppresion)]
-        private IXsltContextFunction? GetExtentionMethod(string ns, string name, XPathResultType[]? argTypes, out object? extension)
+        private IXsltContextFunction? GetExtensionMethod(string ns, string name, XPathResultType[]? argTypes, out object? extension)
         {
             FuncExtension? result = null;
             extension = _processor!.GetScriptObject(ns);
@@ -229,7 +229,7 @@ namespace System.Xml.Xsl.XsltOld
                 else
                 {
                     object? extension;
-                    func = GetExtentionMethod(ns, name, argTypes, out extension);
+                    func = GetExtensionMethod(ns, name, argTypes, out extension);
                     if (extension == null)
                     {
                         throw XsltException.Create(SR.Xslt_ScriptInvalidPrefix, prefix);  // BugBug: It's better to say that method 'name' not found
@@ -332,7 +332,7 @@ namespace System.Xml.Xsl.XsltOld
                 );
                 if (checkDuplicates)
                 {
-                    // it's posible that this value already was assosiated with current node
+                    // it's possible that this value already was associated with current node
                     // but if this happened the node is last in the list of values.
                     if (value.ComparePosition((XPathNavigator?)list[list.Count - 1]) == XmlNodeOrder.Same)
                     {
@@ -448,43 +448,46 @@ namespace System.Xml.Xsl.XsltOld
             }
             else if (ns.Length == 0)
             {
-                return (
-                    // It'll be better to get this information from XPath
-                    name == "last" ||
-                    name == "position" ||
-                    name == "name" ||
-                    name == "namespace-uri" ||
-                    name == "local-name" ||
-                    name == "count" ||
-                    name == "id" ||
-                    name == "string" ||
-                    name == "concat" ||
-                    name == "starts-with" ||
-                    name == "contains" ||
-                    name == "substring-before" ||
-                    name == "substring-after" ||
-                    name == "substring" ||
-                    name == "string-length" ||
-                    name == "normalize-space" ||
-                    name == "translate" ||
-                    name == "boolean" ||
-                    name == "not" ||
-                    name == "true" ||
-                    name == "false" ||
-                    name == "lang" ||
-                    name == "number" ||
-                    name == "sum" ||
-                    name == "floor" ||
-                    name == "ceiling" ||
-                    name == "round" ||
+                switch (name)
+                {
+                    case "last":
+                    case "position":
+                    case "name":
+                    case "namespace-uri":
+                    case "local-name":
+                    case "count":
+                    case "id":
+                    case "string":
+                    case "concat":
+                    case "starts-with":
+                    case "contains":
+                    case "substring-before":
+                    case "substring-after":
+                    case "substring":
+                    case "string-length":
+                    case "normalize-space":
+                    case "translate":
+                    case "boolean":
+                    case "not":
+                    case "true":
+                    case "false":
+                    case "lang":
+                    case "number":
+                    case "sum":
+                    case "floor":
+                    case "ceiling":
+                    case "round":
+                        return true;
+
                     // XSLT functions:
-                    (s_FunctionTable[name] != null && name != "unparsed-entity-uri")
-                );
+                    default:
+                        return s_FunctionTable[name] != null && name != "unparsed-entity-uri";
+                }
             }
             else
             {
-                // Is this script or extention function?
-                return GetExtentionMethod(ns, name, /*argTypes*/null, out _) != null;
+                // Is this script or extension function?
+                return GetExtensionMethod(ns, name, /*argTypes*/null, out _) != null;
             }
         }
 
@@ -555,7 +558,7 @@ namespace System.Xml.Xsl.XsltOld
                     {
                         return XPathResultType.NodeSet;
                     }
-                    // sdub: It be better to check that type is realy object and otherwise return XPathResultType.Error
+                    // sdub: It be better to check that type is really object and otherwise return XPathResultType.Error
                     return XPathResultType.Any;
                 case TypeCode.DateTime:
                     return XPathResultType.Error;
@@ -658,7 +661,7 @@ namespace System.Xml.Xsl.XsltOld
                 return string.Empty;
             }
 
-            [return: NotNullIfNotNull("argument")]
+            [return: NotNullIfNotNull(nameof(argument))]
             public static string? ToString(object argument)
             {
                 XPathNodeIterator? it = argument as XPathNodeIterator;
@@ -712,7 +715,7 @@ namespace System.Xml.Xsl.XsltOld
                 switch (xt)
                 {
                     case XPathResultType.String:
-                        // Unfortunetely XPathResultType.String == XPathResultType.Navigator (This is wrong but cant be changed in Everett)
+                        // Unfortunately XPathResultType.String == XPathResultType.Navigator (This is wrong but cant be changed in Everett)
                         // Fortunetely we have typeCode hare so let's discriminate by typeCode
                         if (type == typeof(string))
                         {
@@ -989,7 +992,7 @@ namespace System.Xml.Xsl.XsltOld
 
             public override object Invoke(XsltContext xsltContext, object[] args, XPathNavigator docContext)
             {
-                Debug.Assert(args.Length <= this.Minargs, "We cheking this on resolve time");
+                Debug.Assert(args.Length <= this.Minargs, "We are checking this on resolve time");
                 for (int i = args.Length - 1; 0 <= i; i--)
                 {
                     args[i] = ConvertToXPathType(args[i], this.ArgTypes[i], _types[i]);

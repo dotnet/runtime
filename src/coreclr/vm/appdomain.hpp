@@ -469,7 +469,7 @@ class PinnedHeapHandleBucket
 {
 public:
     // Constructor and desctructor.
-    PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, DWORD Size, BaseDomain *pDomain);
+    PinnedHeapHandleBucket(PinnedHeapHandleBucket *pNext, PTRARRAYREF pinnedHandleArrayObj, DWORD size, BaseDomain *pDomain);
     ~PinnedHeapHandleBucket();
 
     // This returns the next bucket.
@@ -536,43 +536,25 @@ public:
     void EnumStaticGCRefs(promote_func* fn, ScanContext* sc);
 
 private:
+    void ReleaseHandlesLocked(OBJECTREF *pObjRef, DWORD nReleased);
+
     // The buckets of object handles.
+    // synchronized by m_Crst
     PinnedHeapHandleBucket *m_pHead;
 
     // We need to know the containing domain so we know where to allocate handles
     BaseDomain *m_pDomain;
 
     // The size of the PinnedHeapHandleBucket.
+    // synchronized by m_Crst
     DWORD m_NextBucketSize;
 
     // for finding and re-using embedded free items in the list
+    // these fields are synchronized by m_Crst
     PinnedHeapHandleBucket *m_pFreeSearchHint;
     DWORD m_cEmbeddedFree;
 
-#ifdef _DEBUG
-
-    // these functions are present to enforce that there is a locking mechanism in place
-    // for each PinnedHeapHandleTable even though the code itself does not do the locking
-    // you must tell the table which lock you intend to use and it will verify that it has
-    // in fact been taken before performing any operations
-
-public:
-    void RegisterCrstDebug(CrstBase *pCrst)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        // this function must be called exactly once
-        _ASSERTE(pCrst != NULL);
-        _ASSERTE(m_pCrstDebug == NULL);
-        m_pCrstDebug = pCrst;
-    }
-
-private:
-    // we will assert that this Crst is held before using the object
-    CrstBase *m_pCrstDebug;
-
-#endif
-
+    CrstExplicitInit m_Crst;
 };
 
 class PinnedHeapHandleBlockHolder;
@@ -588,7 +570,14 @@ class PinnedHeapHandleBlockHolder:public Holder<PinnedHeapHandleBlockHolder*,DoN
 public:
     FORCEINLINE PinnedHeapHandleBlockHolder(PinnedHeapHandleTable* pOwner, DWORD nCount)
     {
-        WRAPPER_NO_CONTRACT;
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_COOPERATIVE;
+        }
+        CONTRACTL_END;
+
         m_Data = pOwner->AllocateHandles(nCount);
         m_Count=nCount;
         m_pTable=pOwner;
@@ -671,7 +660,7 @@ private:
 
 //--------------------------------------------------------------------------------------
 // Base class for domains. It provides an abstract way of finding the first assembly and
-// for creating assemblies in the the domain. The system domain only has one assembly, it
+// for creating assemblies in the domain. The system domain only has one assembly, it
 // contains the classes that are logically shared between domains. All other domains can
 // have multiple assemblies. Iteration is done be getting the first assembly and then
 // calling the Next() method on the assembly.
@@ -761,7 +750,7 @@ typedef PEFileListLock::Holder PEFileListLockHolder;
 // The PendingLoadQueue is a per thread data structure which serves two purposes.  First, it
 // holds a "load limit" which automatically restricts the level of recursive loads to be
 // one less than the current load which is preceding.  This, together with the AppDomain
-// LoadLock level behavior, will prevent any deadlocks from occuring due to circular
+// LoadLock level behavior, will prevent any deadlocks from occurring due to circular
 // dependencies.  (Note that it is important that the loading logic understands this restriction,
 // and any given level of loading must deal with the fact that any recursive loads will be partially
 // unfulfilled in a specific way.)
@@ -1134,9 +1123,6 @@ protected:
     // The pinned heap handle table.
     PinnedHeapHandleTable       *m_pPinnedHeapHandleTable;
 
-    // The pinned heap handle table critical section.
-    CrstExplicitInit             m_PinnedHeapHandleTableCrst;
-
 #ifdef FEATURE_COMINTEROP
     // Information regarding the managed standard interfaces.
     MngStdInterfacesInfo        *m_pMngStdInterfacesInfo;
@@ -1234,7 +1220,7 @@ public:
 #endif // DACCESS_COMPILE
 
 private:
-    // I have yet to figure out an efficent way to get the number of handles
+    // I have yet to figure out an efficient way to get the number of handles
     // of a particular type that's currently used by the process without
     // spending more time looking at the handle table code. We know that
     // our only customer (asp.net) in Dev10 is not going to create many of
@@ -1453,7 +1439,6 @@ public:
 //
 struct FailedAssembly {
     SString displayName;
-    SString location;
     HRESULT error;
 
     void Initialize(AssemblySpec *pSpec, Exception *ex)
@@ -1467,7 +1452,6 @@ struct FailedAssembly {
         CONTRACTL_END;
 
         displayName.SetASCII(pSpec->GetName());
-        location.Set(pSpec->GetCodeBase());
         error = ex->GetHR();
 
         //
@@ -2003,14 +1987,14 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(m_dwIterHolders);
-        FastInterlockDecrement(&m_dwIterHolders);
+        InterlockedDecrement(&m_dwIterHolders);
     }
 
 
     void IteratorAcquire()
     {
         LIMITED_METHOD_CONTRACT;
-        FastInterlockIncrement(&m_dwIterHolders);
+        InterlockedIncrement(&m_dwIterHolders);
     }
 
 #endif
@@ -2154,7 +2138,7 @@ private:
         STRESS_LOG1(LF_APPDOMAIN, LL_INFO100,"Updating AD stage, stage=%d\n",stage);
         Stage lastStage=m_Stage;
         while (lastStage !=stage)
-            lastStage = (Stage)FastInterlockCompareExchange((LONG*)&m_Stage,stage,lastStage);
+            lastStage = (Stage)InterlockedCompareExchange((LONG*)&m_Stage,stage,lastStage);
     };
 
     // List of unloaded LoaderAllocators, protected by code:GetLoaderAllocatorReferencesLock (for now)
@@ -2204,7 +2188,7 @@ private:
     // General purpose flags.
     DWORD           m_dwFlags;
 
-    // When an application domain is created the ref count is artifically incremented
+    // When an application domain is created the ref count is artificially incremented
     // by one. For it to hit zero an explicit close must have happened.
     LONG        m_cRef;                    // Ref count.
 
@@ -2491,8 +2475,6 @@ public:
     //****************************************************************************************
     // Methods used to get the callers module and hence assembly and app domain.
 
-    static MethodDesc* GetCallersMethod(StackCrawlMark* stackMark);
-    static MethodTable* GetCallersType(StackCrawlMark* stackMark);
     static Module* GetCallersModule(StackCrawlMark* stackMark);
     static Assembly* GetCallersAssembly(StackCrawlMark* stackMark);
 
@@ -2652,8 +2634,6 @@ private:
     static CrstStatic       m_SystemDomainCrst;
 
     static GlobalStringLiteralMap *m_pGlobalStringLiteralMap;
-
-    static DWORD        m_dwLowestFreeIndex;
 #endif // DACCESS_COMPILE
 
 public:

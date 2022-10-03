@@ -21,7 +21,7 @@
 static char *
 convert_name (const char *str)
 {
-	int i, j, len = strlen (str);
+	size_t i, j, len = strlen (str);
 	char *res = (char *)g_malloc (len * 2);
 
 	j = 0;
@@ -46,7 +46,7 @@ static void
 dtree_emit_one_loop_level (MonoCompile *cfg, FILE *fp, MonoBasicBlock *h)
 {
 	MonoBasicBlock *bb;
-	int i, level = 0;
+	gint8 level = 0;
 
 	if (h) {
 		level = h->nesting;
@@ -54,7 +54,7 @@ dtree_emit_one_loop_level (MonoCompile *cfg, FILE *fp, MonoBasicBlock *h)
 		fprintf (fp, "label=\"loop_%d\"\n", h->block_num);
 	}
 
-	for (i = 1; i < cfg->num_bblocks; ++i) {
+	for (guint i = 1; i < cfg->num_bblocks; ++i) {
 		bb = cfg->bblocks [i];
 
 		if (!h || (g_list_find (h->loop_blocks, bb) && bb != h)) {

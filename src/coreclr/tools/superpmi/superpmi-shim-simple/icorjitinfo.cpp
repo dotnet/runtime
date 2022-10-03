@@ -53,6 +53,13 @@ CorInfoInline interceptor_ICJI::canInline(
     return original_ICorJitInfo->canInline(callerHnd, calleeHnd);
 }
 
+void interceptor_ICJI::beginInlining(
+          CORINFO_METHOD_HANDLE inlinerHnd,
+          CORINFO_METHOD_HANDLE inlineeHnd)
+{
+    original_ICorJitInfo->beginInlining(inlinerHnd, inlineeHnd);
+}
+
 void interceptor_ICJI::reportInliningDecision(
           CORINFO_METHOD_HANDLE inlinerHnd,
           CORINFO_METHOD_HANDLE inlineeHnd,
@@ -261,12 +268,13 @@ bool interceptor_ICJI::isValidStringRef(
     return original_ICorJitInfo->isValidStringRef(module, metaTOK);
 }
 
-const char16_t* interceptor_ICJI::getStringLiteral(
+int interceptor_ICJI::getStringLiteral(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK,
-          int* length)
+          char16_t* buffer,
+          int bufferSize)
 {
-    return original_ICorJitInfo->getStringLiteral(module, metaTOK, length);
+    return original_ICorJitInfo->getStringLiteral(module, metaTOK, buffer, bufferSize);
 }
 
 CorInfoType interceptor_ICJI::asCorInfoType(
@@ -472,10 +480,11 @@ bool interceptor_ICJI::getReadyToRunHelper(
 
 void interceptor_ICJI::getReadyToRunDelegateCtorHelper(
           CORINFO_RESOLVED_TOKEN* pTargetMethod,
+          mdToken targetConstraint,
           CORINFO_CLASS_HANDLE delegateType,
           CORINFO_LOOKUP* pLookup)
 {
-    original_ICorJitInfo->getReadyToRunDelegateCtorHelper(pTargetMethod, delegateType, pLookup);
+    original_ICorJitInfo->getReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, pLookup);
 }
 
 const char* interceptor_ICJI::getHelperName(
@@ -684,6 +693,15 @@ void interceptor_ICJI::setVars(
           ICorDebugInfo::NativeVarInfo* vars)
 {
     original_ICorJitInfo->setVars(ftn, cVars, vars);
+}
+
+void interceptor_ICJI::reportRichMappings(
+          ICorDebugInfo::InlineTreeNode* inlineTreeNodes,
+          uint32_t numInlineTreeNodes,
+          ICorDebugInfo::RichOffsetMapping* mappings,
+          uint32_t numMappings)
+{
+    original_ICorJitInfo->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
 }
 
 void* interceptor_ICJI::allocateArray(
@@ -1213,12 +1231,5 @@ uint32_t interceptor_ICJI::getJitFlags(
           uint32_t sizeInBytes)
 {
     return original_ICorJitInfo->getJitFlags(flags, sizeInBytes);
-}
-
-bool interceptor_ICJI::doesFieldBelongToClass(
-          CORINFO_FIELD_HANDLE fldHnd,
-          CORINFO_CLASS_HANDLE cls)
-{
-    return original_ICorJitInfo->doesFieldBelongToClass(fldHnd, cls);
 }
 

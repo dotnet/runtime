@@ -320,8 +320,10 @@ namespace System
         /// This function will either return a valid TimeZoneInfo instance or
         /// it will throw 'InvalidTimeZoneException' / 'TimeZoneNotFoundException'.
         /// </summary>
-        public static TimeZoneInfo FindSystemTimeZoneById(string id!!)
+        public static TimeZoneInfo FindSystemTimeZoneById(string id)
         {
+            ArgumentNullException.ThrowIfNull(id);
+
             // Special case for Utc to avoid having TryGetTimeZone creating a new Utc object
             if (string.Equals(id, UtcId, StringComparison.OrdinalIgnoreCase))
             {
@@ -711,7 +713,7 @@ namespace System
 
                 result = dstDisabled || CheckDaylightSavingTimeNotSupported(timeZone) ||
                     //
-                    // since Daylight Saving Time is not "disabled", do a straight comparision between
+                    // since Daylight Saving Time is not "disabled", do a straight comparison between
                     // the Win32 API data and the registry data ...
                     //
                     (timeZone.DaylightBias == registryTimeZoneInfo.DaylightBias &&

@@ -20,9 +20,12 @@ namespace Microsoft.Extensions.Logging
         /// <param name="switchName">The name of the <see cref="SourceSwitch"/> to use.</param>
         /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
         public static ILoggingBuilder AddTraceSource(
-            this ILoggingBuilder builder!!,
-            string switchName!!)
+            this ILoggingBuilder builder,
+            string switchName)
         {
+            ThrowHelper.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(switchName);
+
             return builder.AddTraceSource(new SourceSwitch(switchName));
         }
 
@@ -34,10 +37,14 @@ namespace Microsoft.Extensions.Logging
         /// <param name="listener">The <see cref="TraceListener"/> to use.</param>
         /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
         public static ILoggingBuilder AddTraceSource(
-            this ILoggingBuilder builder!!,
-            string switchName!!,
-            TraceListener listener!!)
+            this ILoggingBuilder builder,
+            string switchName,
+            TraceListener listener)
         {
+            ThrowHelper.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(switchName);
+            ThrowHelper.ThrowIfNull(listener);
+
             return builder.AddTraceSource(new SourceSwitch(switchName), listener);
         }
 
@@ -48,9 +55,12 @@ namespace Microsoft.Extensions.Logging
         /// <param name="sourceSwitch">The <see cref="SourceSwitch"/> to use.</param>
         /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
         public static ILoggingBuilder AddTraceSource(
-            this ILoggingBuilder builder!!,
-            SourceSwitch sourceSwitch!!)
+            this ILoggingBuilder builder,
+            SourceSwitch sourceSwitch)
         {
+            ThrowHelper.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(sourceSwitch);
+
             builder.Services.AddSingleton<ILoggerProvider>(_ => new TraceSourceLoggerProvider(sourceSwitch));
 
             return builder;
@@ -64,10 +74,14 @@ namespace Microsoft.Extensions.Logging
         /// <param name="listener">The <see cref="TraceListener"/> to use.</param>
         /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
         public static ILoggingBuilder AddTraceSource(
-            this ILoggingBuilder builder!!,
-            SourceSwitch sourceSwitch!!,
-            TraceListener listener!!)
+            this ILoggingBuilder builder,
+            SourceSwitch sourceSwitch,
+            TraceListener listener)
         {
+            ThrowHelper.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(sourceSwitch);
+            ThrowHelper.ThrowIfNull(listener);
+
             builder.Services.AddSingleton<ILoggerProvider>(_ => new TraceSourceLoggerProvider(sourceSwitch, listener));
 
             return builder;

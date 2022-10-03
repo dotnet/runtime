@@ -180,17 +180,24 @@ private:
     int32_t GenerateRandomStartOffset();
 
 private:
+
     // There does not seem to be an easy way find the size of a library on Unix.
-    // So this constant represents an approximation of the libcoreclr size (on debug build)
+    // So this constant represents an approximation of the libcoreclr size
     // that can be used to calculate an approximate location of the memory that
     // is in 2GB range from the coreclr library. In addition, having precise size of libcoreclr
     // is not necessary for the calculations.
-    static const int32_t CoreClrLibrarySize = 100 * 1024 * 1024;
+    static const int32_t CoreClrLibrarySize = 16 * 1024 * 1024;
 
     // This constant represent the max size of the virtual memory that this allocator
     // will try to reserve during initialization. We want all JIT-ed code and the
-    // entire libcoreclr to be located in a 2GB range.
+    // entire libcoreclr to be located in a 2GB range on x86
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+    // It seems to be more difficult to reserve a 2Gb chunk on arm so we'll try smaller one
+    static const int32_t MaxExecutableMemorySize = 1024 * 1024 * 1024;
+#else
     static const int32_t MaxExecutableMemorySize = 0x7FFF0000;
+#endif
+
     static const int32_t MaxExecutableMemorySizeNearCoreClr = MaxExecutableMemorySize - CoreClrLibrarySize;
 
     // Start address of the reserved virtual address space
@@ -217,7 +224,7 @@ private:
 Function :
     ReserveMemoryFromExecutableAllocator
 
-    This function is used to reserve a region of virual memory (not commited)
+    This function is used to reserve a region of virual memory (not committed)
     that is located close to the coreclr library. The memory comes from the virtual
     address range that is managed by ExecutableMemoryAllocator.
 --*/

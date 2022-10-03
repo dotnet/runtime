@@ -7,6 +7,7 @@ using System.Linq;
 using System.IO;
 using System.Text;
 using System.Collections;
+using Xunit.Abstractions;
 
 #nullable enable
 
@@ -68,6 +69,12 @@ namespace Wasm.Build.Tests
             {
                 if (value == RunHost.None)
                     continue;
+
+                if (value == RunHost.V8 && OperatingSystem.IsWindows())
+                {
+                    // Don't run tests with V8 on windows
+                    continue;
+                }
 
                 // Ignore any combos like RunHost.All from Enum.GetValues
                 // by ignoring any @value that has more than 1 bit set

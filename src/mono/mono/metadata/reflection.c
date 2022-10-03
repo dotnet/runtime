@@ -281,9 +281,8 @@ module_object_construct (MonoClass *unused_klass, MonoImage *image, gpointer use
 	if (image->assembly->image == image) {
 		token  = mono_metadata_make_token (MONO_TABLE_MODULE, 1);
 	} else {
-		int i;
 		if (image->assembly->image->modules) {
-			for (i = 0; i < image->assembly->image->module_count; i++) {
+			for (guint32 i = 0; i < image->assembly->image->module_count; i++) {
 				if (image->assembly->image->modules [i] == image)
 					token = mono_metadata_make_token (MONO_TABLE_MODULEREF, i + 1);
 			}
@@ -326,7 +325,7 @@ mono_module_file_get_object_handle (MonoImage *image, int table_index, MonoError
 	MonoTableInfo *table;
 	guint32 cols [MONO_FILE_SIZE];
 	const char *name;
-	guint32 i, name_idx;
+	guint32 name_idx;
 	const char *val;
 
 	error_init (error);
@@ -335,7 +334,7 @@ mono_module_file_get_object_handle (MonoImage *image, int table_index, MonoError
 	goto_if_nok (error, fail);
 
 	table = &image->tables [MONO_TABLE_FILE];
-	g_assert (table_index < table_info_get_rows (table));
+	g_assert (GINT_TO_UINT32(table_index) < table_info_get_rows (table));
 	mono_metadata_decode_row (table, table_index, cols, MONO_FILE_SIZE);
 
 	MONO_HANDLE_SETVAL (res, image, MonoImage*, NULL);
@@ -347,8 +346,8 @@ mono_module_file_get_object_handle (MonoImage *image, int table_index, MonoError
 
 	/* Check whenever the row has a corresponding row in the moduleref table */
 	table = &image->tables [MONO_TABLE_MODULEREF];
-	int rows = table_info_get_rows (table);
-	for (i = 0; i < rows; ++i) {
+	guint32 rows = table_info_get_rows (table);
+	for (guint32 i = 0; i < rows; ++i) {
 		name_idx = mono_metadata_decode_row_col (table, i, MONO_MODULEREF_NAME);
 		val = mono_metadata_string_heap (image, name_idx);
 		if (strcmp (val, name) == 0)
@@ -372,7 +371,6 @@ fail:
 static MonoType*
 mono_type_normalize (MonoType *type)
 {
-	int i;
 	MonoGenericClass *gclass;
 	MonoGenericInst *ginst;
 	MonoClass *gtd;
@@ -392,7 +390,7 @@ mono_type_normalize (MonoType *type)
 	gcontainer = mono_class_get_generic_container (gtd);
 	argv = g_newa (MonoType*, ginst->type_argc);
 
-	for (i = 0; i < ginst->type_argc; ++i) {
+	for (guint i = 0; i < ginst->type_argc; ++i) {
 		MonoType *t = ginst->type_argv [i], *norm;
 		if (t->type != MONO_TYPE_VAR || t->data.generic_param->num != i || t->data.generic_param->owner != gcontainer)
 			is_denorm_gtd = FALSE;
@@ -491,7 +489,7 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 	 * The second Bar will be encoded a generic instance of Bar with <A> as parameter.
 	 * On all other places, Bar<A> will be encoded as the GTD itself. This is an implementation
 	 * artifact of how generics are encoded and should be transparent to managed code so we
-	 * need to weed out this diference when retrieving managed System.Type objects.
+	 * need to weed out this difference when retrieving managed System.Type objects.
 	 */
 	norm_type = mono_type_normalize (type);
 	if (norm_type != type) {
@@ -513,7 +511,7 @@ mono_type_get_object_checked (MonoType *type, MonoError *error)
 		/* This can happen if a TypeBuilder for a generic class K<T,U>
 		 * had reflection_create_generic_class) called on it, but not
 		 * ves_icall_TypeBuilder_create_runtime_class.  This can happen
-		 * if the K`2 is refernced from a generic instantiation
+		 * if the K`2 is referenced from a generic instantiation
 		 * (e.g. K<int,string>) that appears as type argument
 		 * (e.g. Dict<string,K<int,string>>), field (e.g. K<int,string>
 		 * Foo) or method signature, parent class or any of the above
@@ -1159,7 +1157,7 @@ mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 }
 
 static gboolean
-add_local_var_info_to_array (MonoMethodHeader *header, int idx, MonoArrayHandle dest, MonoError *error)
+add_local_var_info_to_array (MonoMethodHeader *header, guint16 idx, MonoArrayHandle dest, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
 	error_init (error);
@@ -1172,7 +1170,7 @@ add_local_var_info_to_array (MonoMethodHeader *header, int idx, MonoArrayHandle 
 
 	MONO_HANDLE_SET (info, local_type, rt);
 
-	MONO_HANDLE_SETVAL (info, is_pinned, MonoBoolean, header->locals [idx]->pinned);
+	MONO_HANDLE_SETVAL (info, is_pinned, MonoBoolean, !!header->locals [idx]->pinned);
 	MONO_HANDLE_SETVAL (info, local_index, guint16, idx);
 
 	MONO_HANDLE_ARRAY_SETREF (dest, idx, info);
@@ -1182,7 +1180,7 @@ leave:
 }
 
 static gboolean
-add_exception_handling_clause_to_array (MonoMethodHeader *header, int idx, MonoArrayHandle dest, MonoError *error)
+add_exception_handling_clause_to_array (MonoMethodHeader *header, unsigned int idx, MonoArrayHandle dest, MonoError *error)
 {
 	HANDLE_FUNCTION_ENTER ();
 	error_init (error);
@@ -1238,7 +1236,6 @@ method_body_object_construct (MonoClass *unused_class, MonoMethod *method, gpoin
 	guint32 method_rva, local_var_sig_token;
 	char *ptr;
 	unsigned char format, flags;
-	int i;
 	gpointer params [6];
 	MonoBoolean init_locals_param;
 	gint32 sig_token_param;
@@ -1312,7 +1309,7 @@ method_body_object_construct (MonoClass *unused_class, MonoMethod *method, gpoin
 	MonoArrayHandle locals_arr;
 	locals_arr = mono_array_new_handle (mono_class_get_local_variable_info_class (), header->num_locals, error);
 	goto_if_nok (error, fail);
-	for (i = 0; i < header->num_locals; ++i) {
+	for (guint16 i = 0; i < header->num_locals; ++i) {
 		if (!add_local_var_info_to_array (header, i, locals_arr, error))
 			goto fail;
 	}
@@ -1321,7 +1318,7 @@ method_body_object_construct (MonoClass *unused_class, MonoMethod *method, gpoin
 	MonoArrayHandle exn_clauses;
 	exn_clauses = mono_array_new_handle (mono_class_get_exception_handling_clause_class (), header->num_clauses, error);
 	goto_if_nok (error, fail);
-	for (i = 0; i < header->num_clauses; ++i) {
+	for (unsigned int i = 0; i < header->num_clauses; ++i) {
 		if (!add_exception_handling_clause_to_array (header, i, exn_clauses, error))
 			goto fail;
 	}
@@ -1330,7 +1327,7 @@ method_body_object_construct (MonoClass *unused_class, MonoMethod *method, gpoin
 	  MethodBody (ExceptionHandlingClause[] clauses, LocalVariableInfo[] locals,
 	              byte[] il, bool init_locals, int sig_token, int max_stack)
 	*/
-	init_locals_param = header->init_locals;
+	init_locals_param = !!header->init_locals;
 	sig_token_param = local_var_sig_token;
 	max_stack_param = header->max_stack;
 	mono_metadata_free_mh (header);
@@ -1591,7 +1588,7 @@ assembly_name_to_aname (MonoAssemblyName *assembly, char *p)
 				while (*p && *p != ',') {
 					p++;
 				}
-				len = (p - start + 1);
+				len = GPTRDIFF_TO_INT (p - start + 1);
 				if (len > MONO_PUBLIC_KEY_TOKEN_LENGTH)
 					len = MONO_PUBLIC_KEY_TOKEN_LENGTH;
 				char* pkt_lower = g_ascii_strdown (start, len);
@@ -2049,7 +2046,7 @@ mono_reflection_get_type_internal (MonoAssemblyLoadContext *alc, MonoImage *root
 				int nspace_len;
 
 				nested_name = g_strdup (lastp + 1);
-				nspace_len = lastp - (char*)mod->data;
+				nspace_len = GPTRDIFF_TO_INT (lastp - (char*)mod->data);
 				nested_nspace = (char *)g_malloc (nspace_len + 1);
 				memcpy (nested_nspace, mod->data, nspace_len);
 				nested_nspace [nspace_len] = '\0';
@@ -2097,9 +2094,8 @@ mono_reflection_get_type_internal (MonoAssemblyLoadContext *alc, MonoImage *root
 		MonoType **type_args = g_new0 (MonoType *, info->type_arguments->len);
 		MonoReflectionTypeHandle the_type;
 		MonoType *instance;
-		int i;
 
-		for (i = 0; i < info->type_arguments->len; i++) {
+		for (guint i = 0; i < info->type_arguments->len; i++) {
 			MonoTypeNameParse *subinfo = (MonoTypeNameParse *)g_ptr_array_index (info->type_arguments, i);
 
 			type_args [i] = _mono_reflection_get_type_from_info (alc, subinfo, rootimage, ignorecase, search_mscorlib, error);
@@ -2228,7 +2224,7 @@ mono_reflection_get_type_internal_dynamic (MonoAssemblyLoadContext *alc, MonoIma
 	modules = MONO_HANDLE_NEW (MonoArray, NULL);
 	MONO_HANDLE_GET (modules, abuilder, modules);
 	if (!MONO_HANDLE_IS_NULL (modules)) {
-		int n = mono_array_handle_length (modules);
+		int n = GUINTPTR_TO_INT (mono_array_handle_length (modules));
 		for (i = 0; i < n; ++i) {
 			type = module_builder_array_get_type (alc, modules, i, rootimage, info, ignorecase, search_mscorlib, error);
 			if (type)
@@ -2241,7 +2237,7 @@ mono_reflection_get_type_internal_dynamic (MonoAssemblyLoadContext *alc, MonoIma
 	loaded_modules = MONO_HANDLE_NEW (MonoArray, NULL);
 	MONO_HANDLE_GET (loaded_modules, abuilder, loaded_modules);
 	if (!type && !MONO_HANDLE_IS_NULL(loaded_modules)) {
-		int n = mono_array_handle_length (loaded_modules);
+		int n = GUINTPTR_TO_INT (mono_array_handle_length (loaded_modules));
 		for (i = 0; i < n; ++i) {
 			type = module_array_get_type (alc, loaded_modules, i, rootimage, info, ignorecase, search_mscorlib, error);
 			if (type)
@@ -2332,9 +2328,7 @@ mono_reflection_free_type_info (MonoTypeNameParse *info)
 	g_list_free (info->nested);
 
 	if (info->type_arguments) {
-		int i;
-
-		for (i = 0; i < info->type_arguments->len; i++) {
+		for (guint i = 0; i < info->type_arguments->len; i++) {
 			MonoTypeNameParse *subinfo = (MonoTypeNameParse *)g_ptr_array_index (info->type_arguments, i);
 
 			mono_reflection_free_type_info (subinfo);
@@ -2377,7 +2371,7 @@ mono_reflection_type_from_name (char *name, MonoImage *image)
  * \param name type name.
  * \param alc the AssemblyLoadContext to check/load into
  * \param image a metadata context (can be NULL).
- * \param error set on errror.
+ * \param error set on error.
  * Retrieves a MonoType from its \p name. If the name is not fully qualified,
  * it defaults to get the type from \p image or, if \p image is NULL or loading
  * from it fails, uses corlib.  On failure returns NULL and sets \p error.
@@ -2637,7 +2631,7 @@ generic_inst_from_type_array_handle (MonoArrayHandle types, MonoError *error)
 	HANDLE_FUNCTION_ENTER ();
 	error_init (error);
 	MonoGenericInst *ginst = NULL;
-	int count = mono_array_handle_length (types);
+	int count = GUINTPTR_TO_INT (mono_array_handle_length (types));
 	MonoType **type_argv = g_new0 (MonoType *, count);
 	MonoReflectionTypeHandle garg = MONO_HANDLE_NEW (MonoReflectionType, NULL);
 	for (int i = 0; i < count; i++) {
@@ -2753,15 +2747,14 @@ mono_declsec_get_flags (MonoImage *image, guint32 token)
 	MonoTableInfo *t = &image->tables [MONO_TABLE_DECLSECURITY];
 	guint32 result = 0;
 	guint32 action;
-	int i;
 
 	/* HasSecurity can be present for other, not specially encoded, attributes,
 	   e.g. SuppressUnmanagedCodeSecurityAttribute */
 	if (index < 0)
 		return 0;
 
-	int rows = table_info_get_rows (t);
-	for (i = index; i < rows; i++) {
+	guint32 rows = table_info_get_rows (t);
+	for (guint32 i = index; i < rows; i++) {
 		guint32 cols [MONO_DECL_SECURITY_SIZE];
 
 		mono_metadata_decode_row (t, i, cols, MONO_DECL_SECURITY_SIZE);
@@ -2856,12 +2849,11 @@ fill_actions_from_index (MonoImage *image, guint32 token, MonoDeclSecurityAction
 	MonoBoolean result = FALSE;
 	MonoTableInfo *t;
 	guint32 cols [MONO_DECL_SECURITY_SIZE];
-	int index = mono_metadata_declsec_from_index (image, token);
-	int i;
+	guint32 index = mono_metadata_declsec_from_index (image, token);
 
 	t  = &image->tables [MONO_TABLE_DECLSECURITY];
-	int rows = table_info_get_rows (t);
-	for (i = index; i < rows; i++) {
+	guint32 rows = table_info_get_rows (t);
+	for (guint32 i = index; i < rows; i++) {
 		mono_metadata_decode_row (t, i, cols, MONO_DECL_SECURITY_SIZE);
 
 		if (cols [MONO_DECL_SECURITY_PARENT] != token)
@@ -3081,15 +3073,13 @@ static MonoBoolean
 get_declsec_action (MonoImage *image, guint32 token, guint32 action, MonoDeclSecurityEntry *entry)
 {
 	guint32 cols [MONO_DECL_SECURITY_SIZE];
-	int i;
-
-	int index = mono_metadata_declsec_from_index (image, token);
+	guint32 index = mono_metadata_declsec_from_index (image, token);
 	if (index == -1)
 		return FALSE;
 
 	MonoTableInfo *t =  &image->tables [MONO_TABLE_DECLSECURITY];
-	int rows = table_info_get_rows (t);
-	for (i = index; i < rows; i++) {
+	guint32 rows = table_info_get_rows (t);
+	for (guint32 i = index; i < rows; i++) {
 		mono_metadata_decode_row (t, i, cols, MONO_DECL_SECURITY_SIZE);
 
 		/* shortcut - index are ordered */

@@ -63,10 +63,7 @@ namespace System.Net
 
                     // now that the value is valid, ensure that internalObjects exists since we have to
                     // add to it
-                    if (_internalObjects == null)
-                    {
-                        _internalObjects = new Dictionary<string, object>();
-                    }
+                    _internalObjects ??= new Dictionary<string, object>();
 
                     if (addValue)
                     {
@@ -136,10 +133,7 @@ namespace System.Net
         {
             // InternalSet is only used with objects that belong in internalObjects so we must always
             // initialize it here
-            if (_internalObjects == null)
-            {
-                _internalObjects = new Dictionary<string, object>();
-            }
+            _internalObjects ??= new Dictionary<string, object>();
 
             // always replace the existing value when we set internally
             _internalObjects[key] = value;
@@ -176,20 +170,14 @@ namespace System.Net
 
         public override void Clear()
         {
-            if (_internalObjects != null)
-            {
-                _internalObjects.Clear();
-            }
+            _internalObjects?.Clear();
             base.Clear();
             IsChanged = true;
         }
 
         public override void Remove(string key)
         {
-            if (_internalObjects != null)
-            {
-                _internalObjects.Remove(key);
-            }
+            _internalObjects?.Remove(key);
             base.Remove(key);
             IsChanged = true;
         }

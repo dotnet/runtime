@@ -280,7 +280,7 @@ DebuggerJitInfo::DebuggerJitInfo(DebuggerMethodInfo *minfo, NativeCodeVersion na
     _ASSERTE(minfo);
     m_encVersion = minfo->GetCurrentEnCVersion();
     _ASSERTE(m_encVersion >= CorDB_DEFAULT_ENC_FUNCTION_VERSION);
-    LOG((LF_CORDB,LL_EVERYTHING, "DJI::DJI : created at 0x%x\n", this));
+    LOG((LF_CORDB,LL_EVERYTHING, "DJI::DJI : created at 0x%p\n", this));
 
     // Debugger doesn't track LightWeight codegen methods.
     // We should never even be creating a DJI for one.
@@ -892,7 +892,7 @@ void DebuggerJitInfo::LazyInitBounds()
         PRECONDITION(!g_pDebugger->HasDebuggerDataLock());
     } CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_EVERYTHING, "DJI::LazyInitBounds: this=0x%x m_fAttemptInit %s\n", this, m_fAttemptInit == true ? "true": "false"));
+    LOG((LF_CORDB, LL_EVERYTHING, "DJI::LazyInitBounds: this=0x%p m_fAttemptInit %s\n", this, m_fAttemptInit == true ? "true": "false"));
 
     // Only attempt lazy-init once
     if (m_fAttemptInit)
@@ -902,7 +902,7 @@ void DebuggerJitInfo::LazyInitBounds()
 
     EX_TRY
     {
-        LOG((LF_CORDB, LL_EVERYTHING, "DJI::LazyInitBounds: this=0x%x Initing\n", this));
+        LOG((LF_CORDB, LL_EVERYTHING, "DJI::LazyInitBounds: this=0x%p Initing\n", this));
 
         // Should have already been jitted
         _ASSERTE(this->m_jitComplete);
@@ -927,7 +927,7 @@ void DebuggerJitInfo::LazyInitBounds()
             &cMap, &pMap,
             &cVars, &pVars);
 
-        LOG((LF_CORDB,LL_EVERYTHING, "DJI::LazyInitBounds: this=0x%x GetBoundariesAndVars success=0x%x\n", this, fSuccess));
+        LOG((LF_CORDB,LL_EVERYTHING, "DJI::LazyInitBounds: this=0x%p GetBoundariesAndVars success=0x%x\n", this, fSuccess));
 
         // SetBoundaries uses the CodeVersionManager, need to take it now for lock ordering reasons
         CodeVersionManager::LockHolder codeVersioningLockHolder;
@@ -952,7 +952,7 @@ void DebuggerJitInfo::LazyInitBounds()
     EX_CATCH
     {
         LOG((LF_CORDB,LL_WARNING, "DJI::LazyInitBounds: this=0x%x Exception was thrown and caught\n", this));
-        // Just catch the exception. The DJI maps may or may-not be intialized,
+        // Just catch the exception. The DJI maps may or may-not be initialized,
         // but they should still be in a consistent state, so we should be ok.
     }
     EX_END_CATCH(SwallowAllExceptions)
@@ -1230,7 +1230,7 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
 // Init a DJI after it's jitted.
 void DebuggerJitInfo::Init(TADDR newAddress)
 {
-    // Shouldn't initialize while holding the lock b/c intialzing may call functions that lock,
+    // Shouldn't initialize while holding the lock b/c initializing may call functions that lock,
     // and thus we'd have a locking violation.
     _ASSERTE(!g_pDebugger->HasDebuggerDataLock());
 
@@ -1518,6 +1518,9 @@ DebuggerJitInfo * DebuggerMethodInfo::FindJitInfo(MethodDesc * pMD,
     }
     CONTRACTL_END;
 
+#ifdef TARGET_ARM
+    addrNativeStartAddr = addrNativeStartAddr|THUMB_CODE;
+#endif
 
     DebuggerJitInfo * pCheck = m_latestJitInfo;
     while (pCheck != NULL)
@@ -2073,6 +2076,7 @@ void DebuggerMethodInfo::CreateDJIsForMethodDesc(MethodDesc * pMethodDesc)
     }
     CONTRACTL_END;
 
+   LOG((LF_CORDB, LL_INFO10000, "DMI::CDJIFMD pMethodDesc:0x%p\n", pMethodDesc));
 
     // The debugger doesn't track Lightweight-codegen methods b/c they have no metadata.
     if (pMethodDesc->IsDynamicMethod())
@@ -2087,19 +2091,25 @@ void DebuggerMethodInfo::CreateDJIsForMethodDesc(MethodDesc * pMethodDesc)
         CodeVersionManager::LockHolder codeVersioningLockHolder;
         NativeCodeVersionCollection nativeCodeVersions = pCodeVersionManager->GetNativeCodeVersions(pMethodDesc);
 
+#ifdef LOGGING
+        int count = 0;
+#endif // LOGGING
         for (NativeCodeVersionIterator itr = nativeCodeVersions.Begin(), end = nativeCodeVersions.End(); itr != end; itr++)
         {
             // Some versions may not be compiled yet - skip those for now
             // if they compile later the JitCompiled callback will add a DJI to our cache at that time
             PCODE codeAddr = itr->GetNativeCode();
+            LOG((LF_CORDB, LL_INFO10000, "DMI::CDJIFMD (%d) Native code for DJI - 0x%p\n", ++count, codeAddr));
             if (codeAddr)
             {
                 // The DJI may already be populated in the cache, if so CreateInitAndAdd is
                 // a no-op and that is fine.
                 BOOL unusedDjiWasCreated;
                 CreateInitAndAddJitInfo(*itr, codeAddr, &unusedDjiWasCreated);
+                LOG((LF_CORDB, LL_INFO10000, "DMI::CDJIFMD Was DJI created? 0x%d\n", unusedDjiWasCreated));
             }
         }
+        LOG((LF_CORDB, LL_INFO10000, "DMI::CDJIFMD NativeCodeVersion total %d for md=0x%p\n", count, pMethodDesc));
     }
 #else
     // We just ask for the DJI to ensure that it's lazily created.
@@ -2325,43 +2335,6 @@ void DebuggerMethodInfoTable::DeleteEntryDMI(DebuggerMethodInfoEntry *entry)
 }
 
 #endif // #ifndef DACCESS_COMPILE
-
-DebuggerJitInfo *DebuggerJitInfo::GetJitInfoByAddress(const BYTE *pbAddr )
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    DebuggerJitInfo *dji = this;
-
-#ifdef LOGGING
-    LOG((LF_CORDB,LL_INFO10000,"DJI:GJIBA finding DJI "
-            "corresponding to addr 0x%p, starting with 0x%p\n", pbAddr, dji));
-#endif //LOGGING
-
-    // If it's not NULL, but not in the range m_addrOfCode to end of function,
-    //  then get the previous one.
-    while( dji != NULL &&
-           !CodeRegionInfo::GetCodeRegionInfo(dji).IsMethodAddress(pbAddr))
-    {
-        LOG((LF_CORDB,LL_INFO10000,"DJI:GJIBA: pbAddr 0x%p is not in code "
-            "0x%p (size:0x%p)\n", pbAddr, dji->m_addrOfCode,
-            dji->m_sizeOfCode));
-        dji = dji->m_prevJitInfo;
-    }
-
-#ifdef LOGGING
-    if (dji == NULL)
-    {
-        LOG((LF_CORDB,LL_INFO10000,"DJI:GJIBA couldn't find a DJI "
-            "corresponding to addr 0x%p\n", pbAddr));
-    }
-#endif //LOGGING
-    return dji;
-}
 
 PTR_DebuggerJitInfo DebuggerMethodInfo::GetLatestJitInfo(MethodDesc *mdesc)
 {

@@ -17,7 +17,7 @@ namespace System.DirectoryServices.Protocols
     internal delegate DirectoryResponse GetLdapResponseCallback(int messageId, LdapOperation operation, ResultAll resultType, TimeSpan requestTimeout, bool exceptionOnTimeOut);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    internal delegate bool QUERYCLIENTCERT(IntPtr Connection, IntPtr trusted_CAs, ref IntPtr certificateHandle);
+    internal unsafe delegate Interop.BOOL QUERYCLIENTCERT(IntPtr Connection, IntPtr trusted_CAs, IntPtr* certificateHandle);
 
     public partial class LdapConnection : DirectoryConnection, IDisposable
     {
@@ -63,7 +63,7 @@ namespace System.DirectoryServices.Protocols
         {
         }
 
-        public LdapConnection(LdapDirectoryIdentifier identifier, NetworkCredential credential, AuthType authType)
+        public unsafe LdapConnection(LdapDirectoryIdentifier identifier, NetworkCredential credential, AuthType authType)
         {
             _directoryIdentifier = identifier;
             _directoryCredential = (credential != null) ? new NetworkCredential(credential.UserName, credential.Password, credential.Domain) : null;
@@ -86,7 +86,7 @@ namespace System.DirectoryServices.Protocols
             _clientCertificateRoutine = new QUERYCLIENTCERT(ProcessClientCertificate);
         }
 
-        internal LdapConnection(LdapDirectoryIdentifier identifier, NetworkCredential credential, AuthType authType, IntPtr handle)
+        internal unsafe LdapConnection(LdapDirectoryIdentifier identifier, NetworkCredential credential, AuthType authType, IntPtr handle)
         {
             _directoryIdentifier = identifier;
             _needDispose = false;
@@ -634,30 +634,39 @@ namespace System.DirectoryServices.Protocols
                     }
 
                     // Process the attribute.
-                    string stringValue = null;
-                    if (assertion[0] is byte[] byteArray)
+                    byte[] byteArray;
+                    if (assertion[0] is string str)
                     {
-                        if (byteArray != null && byteArray.Length != 0)
-                        {
-                            berValuePtr = new BerVal
-                            {
-                                bv_len = byteArray.Length,
-                                bv_val = Marshal.AllocHGlobal(byteArray.Length)
-                            };
-                            Marshal.Copy(byteArray, 0, berValuePtr.bv_val, byteArray.Length);
-                        }
+                        var encoder = new UTF8Encoding();
+                        byteArray = encoder.GetBytes(str);
+                    }
+                    else if (assertion[0] is Uri uri)
+                    {
+                        var encoder = new UTF8Encoding();
+                        byteArray = encoder.GetBytes(uri.ToString());
+                    }
+                    else if (assertion[0] is byte[] bytes)
+                    {
+                        byteArray = bytes;
                     }
                     else
                     {
-                        stringValue = assertion[0].ToString();
+                        throw new ArgumentException(SR.ValidValueType);
                     }
+
+                    berValuePtr = new BerVal
+                    {
+                        bv_len = byteArray.Length,
+                        bv_val = Marshal.AllocHGlobal(byteArray.Length)
+                    };
+                    Marshal.Copy(byteArray, 0, berValuePtr.bv_val, byteArray.Length);
 
                     // It is a compare request.
                     error = LdapPal.CompareDirectoryEntries(
                         _ldapHandle,
                         ((CompareRequest)request).DistinguishedName,
                         assertion.Name,
-                        stringValue,
+                        null,
                         berValuePtr,
                         serverControlArray, clientControlArray, ref messageID);
                 }
@@ -919,19 +928,19 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        private bool ProcessClientCertificate(IntPtr ldapHandle, IntPtr CAs, ref IntPtr certificate)
+        private unsafe Interop.BOOL ProcessClientCertificate(IntPtr ldapHandle, IntPtr CAs, IntPtr* certificate)
         {
             int count = ClientCertificates == null ? 0 : ClientCertificates.Count;
             if (count == 0 && SessionOptions._clientCertificateDelegate == null)
             {
-                return false;
+                return Interop.BOOL.FALSE;
             }
 
             // If the user specify certificate through property and not though option, we don't need to check the certificate authority.
             if (SessionOptions._clientCertificateDelegate == null)
             {
-                certificate = ClientCertificates[0].Handle;
-                return true;
+                *certificate = ClientCertificates[0].Handle;
+                return Interop.BOOL.TRUE;
             }
 
             // Processing the certificate authority.
@@ -965,12 +974,12 @@ namespace System.DirectoryServices.Protocols
             X509Certificate cert = SessionOptions._clientCertificateDelegate(this, certAuthorities);
             if (cert != null)
             {
-                certificate = cert.Handle;
-                return true;
+                *certificate = cert.Handle;
+                return Interop.BOOL.TRUE;
             }
 
-            certificate = IntPtr.Zero;
-            return false;
+            *certificate = IntPtr.Zero;
+            return Interop.BOOL.FALSE;
         }
 
         private void Connect()
@@ -1208,7 +1217,7 @@ namespace System.DirectoryServices.Protocols
             _disposed = true;
         }
 
-        internal LdapControl[] BuildControlArray(DirectoryControlCollection controls, bool serverControl)
+        internal static LdapControl[] BuildControlArray(DirectoryControlCollection controls, bool serverControl)
         {
             LdapControl[] managedControls = null;
 
@@ -1217,7 +1226,7 @@ namespace System.DirectoryServices.Protocols
                 var controlList = new ArrayList();
                 foreach (DirectoryControl col in controls)
                 {
-                    if (serverControl == true)
+                    if (serverControl)
                     {
                         if (col.ServerSide)
                         {
@@ -1274,7 +1283,7 @@ namespace System.DirectoryServices.Protocols
             return managedControls;
         }
 
-        internal LdapMod[] BuildAttributes(CollectionBase directoryAttributes, ArrayList ptrToFree)
+        internal static LdapMod[] BuildAttributes(CollectionBase directoryAttributes, ArrayList ptrToFree)
         {
             LdapMod[] attributes = null;
 
@@ -1958,7 +1967,7 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        private DirectoryControl ConstructControl(IntPtr controlPtr)
+        private static DirectoryControl ConstructControl(IntPtr controlPtr)
         {
             LdapControl control = new LdapControl();
             Marshal.PtrToStructure(controlPtr, control);
@@ -1974,7 +1983,7 @@ namespace System.DirectoryServices.Protocols
             return new DirectoryControl(controlType, bytes, criticality, true);
         }
 
-        private bool SameCredential(NetworkCredential oldCredential, NetworkCredential newCredential)
+        private static bool SameCredential(NetworkCredential oldCredential, NetworkCredential newCredential)
         {
             if (oldCredential == null && newCredential == null)
             {

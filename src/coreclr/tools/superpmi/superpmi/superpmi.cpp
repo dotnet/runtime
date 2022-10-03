@@ -53,6 +53,10 @@ void SetSuperPmiTargetArchitecture(const char* targetArchitecture)
         {
             SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_ARM64);
         }
+        else if (0 == _stricmp(targetArchitecture, "loongarch64"))
+        {
+            SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_LOONGARCH64);
+        }
         else
         {
             LogError("Illegal target architecture '%s'", targetArchitecture);
@@ -149,7 +153,7 @@ int __cdecl main(int argc, char* argv[])
     SimpleTimer st3;
     SimpleTimer st4;
     st2.Start();
-    JitInstance::Result res, res2;
+    JitInstance::Result res, res2 = JitInstance::RESULT_ERROR;
     HRESULT             hr  = E_FAIL;
     MethodContext*      mc  = nullptr;
     JitInstance *       jit = nullptr, *jit2 = nullptr;
@@ -351,13 +355,13 @@ int __cdecl main(int argc, char* argv[])
         {
             if (!jit->resetConfig(mc))
             {
-                LogError("JIT can't reset enviroment");
+                LogError("JIT can't reset environment");
             }
             if (o.nameOfJit2 != nullptr)
             {
                 if (!jit2->resetConfig(mc))
                 {
-                    LogError("JIT2 can't reset enviroment");
+                    LogError("JIT2 can't reset environment");
                 }
             }
         }
@@ -367,7 +371,8 @@ int __cdecl main(int argc, char* argv[])
         st3.Start();
         res = jit->CompileMethod(mc, reader->GetMethodContextIndex(), collectThroughput, &baseMetrics);
         st3.Stop();
-        LogDebug("Method %d compiled in %fms, result %d", reader->GetMethodContextIndex(), st3.GetMilliseconds(), res);
+        LogDebug("Method %d compiled%s in %fms, result %d",
+            reader->GetMethodContextIndex(), (o.nameOfJit2 == nullptr) ? "" : " by JIT1", st3.GetMilliseconds(), res);
 
         totalBaseMetrics.AggregateFrom(baseMetrics);
 
@@ -402,8 +407,8 @@ int __cdecl main(int argc, char* argv[])
             if (res2 == JitInstance::RESULT_ERROR)
             {
                 errorCount2++;
-                LogError("Method %d of size %d failed to load and compile correctly by JIT2.",
-                         reader->GetMethodContextIndex(), mc->methodSize);
+                LogError("Method %d of size %d failed to load and compile correctly by JIT2 (%s).",
+                         reader->GetMethodContextIndex(), mc->methodSize, o.nameOfJit2);
                 if (errorCount2 == o.failureLimit)
                 {
                     LogError("More than %d methods compilation failed by JIT2. Skip compiling remaining methods.", o.failureLimit);
@@ -539,6 +544,9 @@ int __cdecl main(int argc, char* argv[])
 
                     totalBaseMetrics.NumDiffedCodeBytes += baseMetrics.NumCodeBytes;
                     totalDiffMetrics.NumDiffedCodeBytes += diffMetrics.NumCodeBytes;
+
+                    totalBaseMetrics.NumDiffExecutedInstructions += baseMetrics.NumExecutedInstructions;
+                    totalDiffMetrics.NumDiffExecutedInstructions += diffMetrics.NumExecutedInstructions;
                 }
             }
         }
@@ -558,11 +566,13 @@ int __cdecl main(int argc, char* argv[])
             if (res == JitInstance::RESULT_ERROR)
             {
                 errorCount++;
-                LogError("main method %d of size %d failed to load and compile correctly.",
-                         reader->GetMethodContextIndex(), mc->methodSize);
+                LogError("Method %d of size %d failed to load and compile correctly%s (%s).",
+                         reader->GetMethodContextIndex(), mc->methodSize,
+                         (o.nameOfJit2 == nullptr) ? "" : " by JIT1", o.nameOfJit);
                 if (errorCount == o.failureLimit)
                 {
-                    LogError("More than %d methods failed. Skip compiling remaining methods.", o.failureLimit);
+                    LogError("More than %d methods failed%s. Skip compiling remaining methods.",
+                        o.failureLimit, (o.nameOfJit2 == nullptr) ? "" : " by JIT1");
                     break;
                 }
                 if ((o.reproName != nullptr) && (o.indexCount == -1))

@@ -21,13 +21,13 @@ C:\> set co
 ```
 
 ```
-Cor_Enable_Profiling=0x1
- COR_PROFILER={C5F90153-B93E-4138-9DB7-EB7156B07C4C}
+CORECLR_ENABLE_PROFILING=0x1
+CORECLR_PROFILER={C5F90153-B93E-4138-9DB7-EB7156B07C4C}
 ```
 
 If your scenario doesn't allow you to just run the process from a command prompt, like say an asp.net scenario, you may want to attach a debugger to the process that's supposed to be profiled, or use IFEO (HKEY\_LOCAL\_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options) to force a debugger to start when the worker process starts.  In the debugger, you can then use "!peb" to view the environment block, which will include the environment variables.
 
-Once you verify Cor\_Enable\_Profiling and COR\_PROFILER are ok, it's time to search the registry for the very same GUID set in your COR\_PROFILER environment variable.  You should find it at a path like this:
+Once you verify CORECLR\_ENABLE\_PROFILING and CORECLR\_PROFILER are ok, it's time to search the registry for the very same GUID set in your CORECLR\_PROFILER environment variable.  You should find it at a path like this:
 
 HKEY\_LOCAL\_MACHINE\SOFTWARE\Classes\CLSID\{C5F90153-B93E-4138-9DB7-EB7156B07C4C}
 

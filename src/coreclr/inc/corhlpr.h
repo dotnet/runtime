@@ -17,6 +17,7 @@
 #define CORHLPR_TURNED_FPO_ON 1
 #endif
 
+#include <assert.h>
 #include "cor.h"
 #include "corhdr.h"
 #include "corerror.h"
@@ -81,10 +82,6 @@ do { hr = (EXPR); if(FAILED(hr)) { goto LABEL; } } while (0)
 #define IfNullRet(EXPR) do { if ((EXPR) == NULL){ return (E_OUTOFMEMORY); } } while (0)
 #endif
 
-
-#ifndef _ASSERTE
-#define _ASSERTE(expr)
-#endif
 
 #if !BIGENDIAN
 #define VAL16(x) x
@@ -259,7 +256,7 @@ typedef struct tagCOR_ILMETHOD_SECT_EH_CLAUSE_SMALL : public IMAGE_COR_ILMETHOD_
         return VAL16(TryOffset);
     }
     void SetTryOffset(DWORD Offset) {
-        _ASSERTE((Offset & ~0xffff) == 0);
+        assert((Offset & ~0xffff) == 0);
         TryOffset = VAL16(Offset);
     }
 
@@ -267,7 +264,7 @@ typedef struct tagCOR_ILMETHOD_SECT_EH_CLAUSE_SMALL : public IMAGE_COR_ILMETHOD_
         return TryLength;
     }
     void SetTryLength(DWORD Length) {
-        _ASSERTE((Length & ~0xff) == 0);
+        assert((Length & ~0xff) == 0);
         TryLength = Length;
     }
 
@@ -275,7 +272,7 @@ typedef struct tagCOR_ILMETHOD_SECT_EH_CLAUSE_SMALL : public IMAGE_COR_ILMETHOD_
         return VAL16(HandlerOffset);
     }
     void SetHandlerOffset(DWORD Offset) {
-        _ASSERTE((Offset & ~0xffff) == 0);
+        assert((Offset & ~0xffff) == 0);
         HandlerOffset = VAL16(Offset);
     }
 
@@ -283,7 +280,7 @@ typedef struct tagCOR_ILMETHOD_SECT_EH_CLAUSE_SMALL : public IMAGE_COR_ILMETHOD_
         return HandlerLength;
     }
     void SetHandlerLength(DWORD Length) {
-        _ASSERTE((Length & ~0xff) == 0);
+        assert((Length & ~0xff) == 0);
         HandlerLength = Length;
     }
 
@@ -501,7 +498,7 @@ typedef struct tagCOR_ILMETHOD_TINY : IMAGE_COR_ILMETHOD_TINY
 
 
 /************************************/
-// This strucuture is the 'fat' layout, where no compression is attempted.
+// This structure is the 'fat' layout, where no compression is attempted.
 // Note that this structure can be added on at the end, thus making it extensible
 typedef struct tagCOR_ILMETHOD_FAT : IMAGE_COR_ILMETHOD_FAT
 {
@@ -619,7 +616,7 @@ struct COR_ILMETHOD
 extern "C" {
 /***************************************************************************/
 /* COR_ILMETHOD_DECODER is the only way functions internal to the EE should
-   fetch data from a COR_ILMETHOD.  This way any dependancy on the file format
+   fetch data from a COR_ILMETHOD.  This way any dependency on the file format
    (and the multiple ways of encoding the header) is centralized to the
    COR_ILMETHOD_DECODER constructor) */
     void __stdcall DecoderInit(void * pThis, COR_ILMETHOD* header);

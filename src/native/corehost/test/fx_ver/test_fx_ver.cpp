@@ -179,9 +179,9 @@ void checkInvalidVersions()
         _X("1.1.1-A|B"),
     };
 
-    const size_t cases = sizeof(invalidVersions)/sizeof(pal::string_t);
+    const size_t invalid_cases = sizeof(invalidVersions)/sizeof(pal::string_t);
 
-    for (size_t i = 0; i < cases; ++i)
+    for (size_t i = 0; i < invalid_cases; ++i)
     {
         fx_ver_t ver;
         bool valid = fx_ver_t::parse(invalidVersions[i], &ver);

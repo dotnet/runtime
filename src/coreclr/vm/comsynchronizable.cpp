@@ -295,7 +295,7 @@ void ThreadNative::Start(Thread* pNewThread, int threadStackSize, int priority, 
     pNewThread->SetThreadPriority(MapToNTPriority(priority));
     pNewThread->ChooseThreadCPUGroupAffinity();
 
-    FastInterlockOr((ULONG *) &pNewThread->m_State, Thread::TS_LegalToJoin);
+    pNewThread->SetThreadState(Thread::TS_LegalToJoin);
 
     DWORD ret = pNewThread->StartThread();
 
@@ -463,7 +463,6 @@ FCIMPL2(FC_BOOL_RET, ThreadNative::Join, ThreadBaseObject* pThisUNSAFE, INT32 Ti
 }
 FCIMPLEND
 
-#undef Sleep
 FCIMPL1(void, ThreadNative::Sleep, INT32 iTime)
 {
     FCALL_CONTRACT;
@@ -475,8 +474,6 @@ FCIMPL1(void, ThreadNative::Sleep, INT32 iTime)
     HELPER_METHOD_FRAME_END();
 }
 FCIMPLEND
-
-#define Sleep(dwMilliseconds) Dont_Use_Sleep(dwMilliseconds)
 
 extern "C" void QCALLTYPE ThreadNative_UninterruptibleSleep0()
 {
@@ -536,7 +533,7 @@ extern "C" UINT64 QCALLTYPE ThreadNative_GetCurrentOSThreadId()
     // We special case the API for non-Windows to get the 64-bit value and zero-extend
     // the Windows value to return a single data type on all platforms.
 
-    UINT64 threadId;
+    UINT64 threadId = 0;
 
     BEGIN_QCALL;
 #ifndef TARGET_UNIX
@@ -689,24 +686,10 @@ FCIMPL2(INT32, ThreadNative::SetApartmentState, ThreadBaseObject* pThisUNSAFE, I
     if (pThisUNSAFE==NULL)
         FCThrowRes(kNullReferenceException, W("NullReference_This"));
 
-    INT32           retVal  = ApartmentUnknown;
     BOOL    ok = TRUE;
     THREADBASEREF   pThis   = (THREADBASEREF) pThisUNSAFE;
 
     HELPER_METHOD_FRAME_BEGIN_RET_1(pThis);
-
-    // Translate state input. ApartmentUnknown is not an acceptable input state.
-    // Throw an exception here rather than pass it through to the internal
-    // routine, which asserts.
-    Thread::ApartmentState state = Thread::AS_Unknown;
-    if (iState == ApartmentSTA)
-        state = Thread::AS_InSTA;
-    else if (iState == ApartmentMTA)
-        state = Thread::AS_InMTA;
-    else if (iState == ApartmentUnknown)
-        state = Thread::AS_Unknown;
-    else
-        COMPlusThrow(kArgumentOutOfRangeException, W("ArgumentOutOfRange_Enum"));
 
     Thread  *thread = pThis->GetInternal();
     if (!thread)
@@ -725,7 +708,7 @@ FCIMPL2(INT32, ThreadNative::SetApartmentState, ThreadBaseObject* pThisUNSAFE, I
         {
             EX_TRY
             {
-                state = thread->SetApartment(state);
+                iState = thread->SetApartment((Thread::ApartmentState)iState);
             }
             EX_CATCH
             {
@@ -738,24 +721,13 @@ FCIMPL2(INT32, ThreadNative::SetApartmentState, ThreadBaseObject* pThisUNSAFE, I
         pThis->LeaveObjMonitor();
     }
 
-
     // Now it's safe to throw exceptions again.
     if (!ok)
         COMPlusThrow(kThreadStateException);
 
-    // Translate state back into external form
-    if (state == Thread::AS_InSTA)
-        retVal = ApartmentSTA;
-    else if (state == Thread::AS_InMTA)
-        retVal = ApartmentMTA;
-    else if (state == Thread::AS_Unknown)
-        retVal = ApartmentUnknown;
-    else
-        _ASSERTE(!"Invalid state returned from SetApartment");
-
     HELPER_METHOD_FRAME_END();
 
-    return retVal;
+    return iState;
 }
 FCIMPLEND
 
@@ -783,10 +755,10 @@ FCIMPL1(INT32, ThreadNative::GetApartmentState, ThreadBaseObject* pThisUNSAFE)
         COMPlusThrow(kThreadStateException, W("ThreadState_Dead_State"));
     }
 
-    Thread::ApartmentState state = thread->GetApartment();
+    retVal = thread->GetApartment();
 
 #ifdef FEATURE_COMINTEROP
-    if (state == Thread::AS_Unknown)
+    if (retVal == Thread::AS_Unknown)
     {
         // If the CLR hasn't started COM yet, start it up and attempt the call again.
         // We do this in order to minimize the number of situations under which we return
@@ -794,29 +766,10 @@ FCIMPL1(INT32, ThreadNative::GetApartmentState, ThreadBaseObject* pThisUNSAFE)
         if (!g_fComStarted)
         {
             EnsureComStarted();
-            state = thread->GetApartment();
+            retVal = thread->GetApartment();
         }
     }
 #endif // FEATURE_COMINTEROP
-
-    // Translate state into external form
-    retVal = ApartmentUnknown;
-    if (state == Thread::AS_InSTA)
-    {
-        retVal = ApartmentSTA;
-    }
-    else if (state == Thread::AS_InMTA)
-    {
-        retVal = ApartmentMTA;
-    }
-    else if (state == Thread::AS_Unknown)
-    {
-        retVal = ApartmentUnknown;
-    }
-    else
-    {
-        _ASSERTE(!"Invalid state returned from GetApartment");
-    }
 
     HELPER_METHOD_FRAME_END();
 
@@ -1143,13 +1096,36 @@ extern "C" BOOL QCALLTYPE ThreadNative_YieldThread()
 
     BOOL ret = FALSE;
 
-    BEGIN_QCALL
+    BEGIN_QCALL;
 
     ret = __SwitchToThread(0, CALLER_LIMITS_SPINNING);
 
-    END_QCALL
+    END_QCALL;
 
     return ret;
+}
+
+extern "C" void QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    thread->UserAbort(EEPolicy::TA_Safe, INFINITE);
+
+    END_QCALL;
+}
+
+// Unmark the current thread for a safe abort.
+extern "C" void QCALLTYPE ThreadNative_ResetAbort()
+{
+    QCALL_CONTRACT_NO_GC_TRANSITION;
+
+    Thread *pThread = GetThread();
+    if (pThread->IsAbortRequested())
+    {
+        pThread->UnmarkThreadForAbort(EEPolicy::TA_Safe);
+    }
 }
 
 FCIMPL0(INT32, ThreadNative::GetCurrentProcessorNumber)

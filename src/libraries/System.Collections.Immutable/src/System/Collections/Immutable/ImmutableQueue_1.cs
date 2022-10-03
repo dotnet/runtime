@@ -109,10 +109,7 @@ namespace System.Collections.Immutable
                 // Although this is a lazy-init pattern, no lock is required because
                 // this instance is immutable otherwise, and a double-assignment from multiple
                 // threads is harmless.
-                if (_backwardsReversed == null)
-                {
-                    _backwardsReversed = _backwards.Reverse();
-                }
+                _backwardsReversed ??= _backwards.Reverse();
 
                 Debug.Assert(_backwardsReversed != null);
                 return _backwardsReversed;

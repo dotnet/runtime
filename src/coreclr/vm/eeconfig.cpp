@@ -14,9 +14,7 @@
 #include "method.hpp"
 #include "eventtrace.h"
 #include "eehash.h"
-#include "eemessagebox.h"
 #include "corhost.h"
-#include "regex_util.h"
 #include "clr/fs/path.h"
 #include "configuration.h"
 
@@ -237,6 +235,14 @@ HRESULT EEConfig::Init()
     tieredCompilation_BackgroundWorkerTimeoutMs = 0;
     tieredCompilation_CallCountingDelayMs = 0;
     tieredCompilation_DeleteCallCountingStubsAfter = 0;
+#endif
+
+#if defined(FEATURE_PGO)
+    fTieredPGO = false;
+#endif
+
+#if defined(FEATURE_READYTORUN)
+    fReadyToRun = false;
 #endif
 
 #if defined(FEATURE_ON_STACK_REPLACEMENT)
@@ -474,8 +480,11 @@ HRESULT EEConfig::sync()
     }
 
     pReadyToRunExcludeList = NULL;
+
 #if defined(FEATURE_READYTORUN)
-    if (ReadyToRunInfo::IsReadyToRunEnabled())
+    fReadyToRun = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRun);
+
+    if (fReadyToRun)
     {
         NewArrayHolder<WCHAR> wszReadyToRunExcludeList;
         IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ReadyToRunExcludeList, &wszReadyToRunExcludeList));
@@ -504,11 +513,7 @@ HRESULT EEConfig::sync()
     if (szZapBBInstr != NULL)
     {
         IfFailRet(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ZapBBInstrDir, &szZapBBInstrDir));
-        g_IBCLogger.EnableAllInstr();
     }
-    else
-        g_IBCLogger.DisableAllInstr();
-
 
     dwDisableStackwalkCache = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_DisableStackwalkCache, dwDisableStackwalkCache);
 
@@ -693,6 +698,10 @@ HRESULT EEConfig::sync()
 #endif
 
     dwSleepOnExit = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_SleepOnExit);
+
+#if defined(FEATURE_PGO)
+    fTieredPGO = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredPGO"), CLRConfig::EXTERNAL_TieredPGO);
+#endif
 
 #if defined(FEATURE_TIERED_COMPILATION)
     fTieredCompilation = Configuration::GetKnobBooleanValue(W("System.Runtime.TieredCompilation"), CLRConfig::EXTERNAL_TieredCompilation);
@@ -948,6 +957,56 @@ TypeNamesList::TypeNamesList()
     LIMITED_METHOD_CONTRACT;
 }
 
+namespace
+{
+    //
+    // Slight modification of Rob Pike's minimal regex from The Practice of Programming.
+    // See https://www.cs.princeton.edu/~bwk/tpop.webpage/code.html - 'Grep program from Chapter 9'
+    //
+
+    /* Copyright (C) 1999 Lucent Technologies */
+    /* Excerpted from 'The Practice of Programming' */
+    /* by Brian W. Kernighan and Rob Pike */
+    bool matchhere(const char *regexp, const char* regexe, const char *text);
+    bool matchstar(char c, const char *regexp, const char* regexe, const char *text);
+
+    /* match: search for regexp anywhere in text */
+    bool match(const char *regexp, const char* regexe, const char *text)
+    {
+        if (regexp[0] == '^')
+            return matchhere(regexp+1, regexe, text);
+        do {    /* must look even if string is empty */
+            if (matchhere(regexp, regexe, text))
+                return true;
+        } while (*text++ != '\0');
+        return false;
+    }
+
+    /* matchhere: search for regexp at beginning of text */
+    bool matchhere(const char *regexp, const char* regexe, const char *text)
+    {
+        if (regexp[0] == '\0' || regexp == regexe)
+            return 1;
+        if (regexp[1] == '*')
+            return matchstar(regexp[0], regexp+2, regexe, text);
+        if (regexp[0] == '$' && (regexp[1] == '\0' ||  (regexp+1) == regexe))
+            return *text == '\0';
+        if (*text!='\0' && (regexp[0]=='.' || regexp[0]==*text))
+            return matchhere(regexp+1, regexe, text+1);
+        return false;
+    }
+
+    /* matchstar: search for c*regexp at beginning of text */
+    bool matchstar(char c, const char *regexp, const char* regexe, const char *text)
+    {
+        do {    /* a * matches zero or more instances */
+            if (matchhere(regexp, regexe, text))
+                return true;
+        } while (*text != '\0' && (*text++ == c || c == '.'));
+        return false;
+    }
+}
+
 bool EEConfig::RegexOrExactMatch(LPCUTF8 regex, LPCUTF8 input)
 {
     CONTRACTL
@@ -966,16 +1025,10 @@ bool EEConfig::RegexOrExactMatch(LPCUTF8 regex, LPCUTF8 input)
         // Debug only, so we can live with it.
         CONTRACT_VIOLATION(ThrowsViolation);
 
-        regex::STRRegEx::GroupingContainer groups;
-        if (regex::STRRegEx::Match("^/(.*)/(i?)$", regex, groups))
-        {
-            regex::STRRegEx::MatchFlags flags = regex::STRRegEx::DefaultMatchFlags;
-            if (groups[2].Length() != 0)
-                flags = (regex::STRRegEx::MatchFlags)(flags | regex::STRRegEx::MF_CASE_INSENSITIVE);
-
-            return regex::STRRegEx::Matches(groups[1].Begin(), groups[1].End(),
-                                            input, input + strlen(input), flags);
-        }
+        regex++;
+        const char* end = strchr(regex, '/');
+        if (end != NULL)
+            return match(regex, end, input);
     }
     return strcmp(regex, input) == 0;
 }

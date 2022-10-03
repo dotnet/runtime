@@ -3,14 +3,15 @@
 
 using System.Diagnostics;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class JsonObjectConverter : JsonConverter<JsonObject>
     {
-        internal override object CreateObject(JsonSerializerOptions options)
+        internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
         {
-            return new JsonObject(options.GetNodeOptions());
+            jsonTypeInfo.CreateObjectForExtensionDataProperty = () => new JsonObject(options.GetNodeOptions());
         }
 
         internal override void ReadElementAndSetProperty(
@@ -27,7 +28,7 @@ namespace System.Text.Json.Serialization.Converters
             JsonObject jObject = (JsonObject)obj;
 
             Debug.Assert(value == null || value is JsonNode);
-            JsonNode? jNodeValue = (JsonNode?)value;
+            JsonNode? jNodeValue = value;
 
             jObject[propertyName] = jNodeValue;
         }
@@ -50,7 +51,7 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        public JsonObject ReadObject(ref Utf8JsonReader reader, JsonNodeOptions? options)
+        public static JsonObject ReadObject(ref Utf8JsonReader reader, JsonNodeOptions? options)
         {
             JsonElement jElement = JsonElement.ParseValue(ref reader);
             JsonObject jObject = new JsonObject(jElement, options);

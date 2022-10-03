@@ -23,8 +23,11 @@ System.BadImageFormatException: [C:\tests\Dev10\640711\Lib1.dll] Bad string toke
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-static class Repro
+namespace Test_moduleHandleCache_cs
+{
+public static class Repro
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void Caller(bool b)
@@ -37,7 +40,8 @@ static class Repro
         }
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {
@@ -49,4 +53,5 @@ static class Repro
         }
         return 100;
     }
+}
 }

@@ -65,8 +65,10 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("windows")]
-        public RSAOpenSsl(SafeEvpPKeyHandle pkeyHandle!!)
+        public RSAOpenSsl(SafeEvpPKeyHandle pkeyHandle)
         {
+            ArgumentNullException.ThrowIfNull(pkeyHandle);
+
             if (pkeyHandle.IsInvalid)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
 

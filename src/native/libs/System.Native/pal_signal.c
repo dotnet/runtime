@@ -28,7 +28,7 @@ static volatile TerminalInvalidationCallback g_terminalInvalidationCallback = NU
 static volatile SigChldCallback g_sigChldCallback = NULL;
 static volatile bool g_sigChldConsoleConfigurationDelayed;
 static void (*g_sigChldConsoleConfigurationCallback)(void);
-// Callback invoked for for SIGTTOU while terminal settings are changed.
+// Callback invoked for SIGTTOU while terminal settings are changed.
 static volatile ConsoleSigTtouHandler g_consoleTtouHandler;
 
 // Callback invoked for PosixSignal handling.
@@ -228,7 +228,7 @@ static void SignalHandler(int sig, siginfo_t* siginfo, void* context)
                 assert(origHandler->sa_handler);
                 origHandler->sa_handler(sig);
             }
-            
+
         }
     }
 
@@ -662,7 +662,7 @@ void InstallTTOUHandlerForConsole(ConsoleSigTtouHandler handler)
         // will stop it (default SIGTTOU action).
         // We change SIGTTOU's disposition to get EINTR instead.
         // This thread may be used to run a signal handler, which may write to
-        // stdout. We set SA_RESETHAND to avoid that handler's write loops infinitly
+        // stdout. We set SA_RESETHAND to avoid that handler's write loops infinitely
         // on EINTR when the process is running in background and the terminal
         // configured with TOSTOP.
         RestoreSignalHandler(SIGTTOU);

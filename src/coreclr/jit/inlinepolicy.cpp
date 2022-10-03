@@ -977,7 +977,7 @@ int DefaultPolicy::CodeSizeEstimate()
     {
         // This is not something the DefaultPolicy explicitly computed,
         // since it uses a blended evaluation model (mixing size and time
-        // together for overall profitability). But it's effecitvely an
+        // together for overall profitability). But it's effectively an
         // estimate of the size impact.
         return (m_CalleeNativeSizeEstimate - m_CallsiteNativeSizeEstimate);
     }
@@ -1508,7 +1508,7 @@ double ExtendedDefaultPolicy::DetermineMultiplier()
         // TODO: handle 'if (SomeMethod(constArg))' patterns in fgFindJumpTargets
         // The previous version of inliner optimistically assumed this is "has const arg that feeds a conditional"
         multiplier += 3.0;
-        JITDUMP("\nCallsite passes a consant.  Multiplier increased to %g.", multiplier);
+        JITDUMP("\nCallsite passes a constant.  Multiplier increased to %g.", multiplier);
     }
 
     if ((m_FoldableBox > 0) && m_NonGenericCallsGeneric)
@@ -2292,7 +2292,7 @@ void DiscretionaryPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo
     // model for actual inlining.
     EstimateCodeSize();
 
-    // Estimate peformance impact. This is just for model
+    // Estimate performance impact. This is just for model
     // evaluation purposes -- we'll still use the legacy policy's
     // model for actual inlining.
     EstimatePerformanceImpact();
@@ -2409,7 +2409,7 @@ void DiscretionaryPolicy::MethodInfoObservations(CORINFO_METHOD_INFO* methodInfo
 // On the inlines in CoreCLR's CoreLib, release windows x64, this
 // yields scores of R=0.42, MSE=228, and MAE=7.25.
 //
-// This estimate can be improved slighly by refitting, resulting in
+// This estimate can be improved slightly by refitting, resulting in
 //
 //  -1.451 +
 //   0.095 * m_CalleeNativeSizeEstimate +
@@ -2456,7 +2456,7 @@ void DiscretionaryPolicy::EstimateCodeSize()
 }
 
 //------------------------------------------------------------------------
-// EstimatePeformanceImpact: produce performance estimates based on
+// EstimatePerformanceImpact: produce performance estimates based on
 // observations.
 //
 // Notes:
@@ -2928,7 +2928,7 @@ void ProfilePolicy::NoteInt(InlineObservation obs, int value)
             return;
         }
 
-        // If we're mimicing the default policy because there's no PGO
+        // If we're mimicking the default policy because there's no PGO
         // data for this call, also fail if thereare too many basic blocks.
         //
         if (!m_HasProfile && !m_IsForceInline && (value > MAX_BASIC_BLOCKS))
@@ -3644,7 +3644,7 @@ void ReplayPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
         m_IsForceInline = m_WasForceInline;
     }
 
-    // Try and find this candiate in the Xml.
+    // Try and find this candidate in the Xml.
     // If we fail to find it, then don't inline.
     bool accept = false;
 

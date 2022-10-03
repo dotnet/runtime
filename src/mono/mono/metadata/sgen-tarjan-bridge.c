@@ -443,7 +443,7 @@ static gboolean scc_precise_merge;
 static unsigned int
 mix_hash (uintptr_t source)
 {
-	unsigned int hash = source;
+	unsigned int hash = GUINTPTR_TO_UINT (source);
 
 	// The full hash determines whether two colors can be merged-- sometimes exclusively.
 	// This value changes every GC, so XORing it in before performing the hash will make the
@@ -453,9 +453,11 @@ mix_hash (uintptr_t source)
 	// Actual hash
 	hash = (((hash * 215497) >> 16) ^ ((hash * 1823231) + hash));
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	// Mix in highest bits on 64-bit systems only
 	if (sizeof (source) > 4)
-		hash = hash ^ ((source >> 31) >> 1);
+		hash = hash ^ GUINTPTR_TO_UINT ((source >> 31) >> 1);
+MONO_RESTORE_WARNING
 
 	return hash;
 }
@@ -1006,7 +1008,7 @@ processing_stw_step (void)
 	for (i = 0; i < bridge_count ; ++i)
 		register_bridge_object ((GCObject *)dyn_array_ptr_get (&registered_bridges, i));
 
-	setup_time = step_timer (&curtime);
+	setup_time = GINT64_TO_SIZE (step_timer (&curtime));
 
 	for (i = 0; i < bridge_count; ++i) {
 		ScanData *sd = find_data ((GCObject *)dyn_array_ptr_get (&registered_bridges, i));
@@ -1018,7 +1020,7 @@ processing_stw_step (void)
 		}
 	}
 
-	tarjan_time = step_timer (&curtime);
+	tarjan_time = GINT64_TO_SIZE (step_timer (&curtime));
 
 #if defined (DUMP_GRAPH)
 	printf ("----summary----\n");
@@ -1124,7 +1126,7 @@ processing_build_callback_data (int generation)
 		}
 	}
 
-	scc_setup_time = step_timer (&curtime);
+	scc_setup_time = GINT64_TO_SIZE (step_timer (&curtime));
 
 	// Eliminate non-visible SCCs from the SCC list and redistribute xrefs
 	for (cur = root_color_bucket; cur; cur = cur->next) {
@@ -1141,7 +1143,7 @@ processing_build_callback_data (int generation)
 		}
 	}
 
-	gather_xref_time = step_timer (&curtime);
+	gather_xref_time = GINT64_TO_SIZE (step_timer (&curtime));
 
 #if defined (DUMP_GRAPH)
 	printf ("TOTAL XREFS %d\n", xref_count);
@@ -1170,7 +1172,7 @@ processing_build_callback_data (int generation)
 	}
 
 	g_assertf (xref_count == xref_index, "xref_count is %d but we added %d xrefs", xref_count, xref_index);
-	xref_setup_time = step_timer (&curtime);
+	xref_setup_time = GINT64_TO_SIZE (step_timer (&curtime));
 
 #if defined (DUMP_GRAPH)
 	printf ("---xrefs:\n");
@@ -1199,7 +1201,7 @@ processing_after_callback (int generation)
 	/* cleanup */
 	cleanup ();
 
-	cleanup_time = step_timer (&curtime);
+	cleanup_time = GINT64_TO_SIZE (step_timer (&curtime));
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "GC_TAR_BRIDGE bridges %d objects %d opaque %d colors %d colors-bridged %d colors-visible %d xref %d cache-hit %d cache-%s %d cache-miss %d setup %.2fms tarjan %.2fms scc-setup %.2fms gather-xref %.2fms xref-setup %.2fms cleanup %.2fms",
 		bridge_count, object_count, ignored_objects,

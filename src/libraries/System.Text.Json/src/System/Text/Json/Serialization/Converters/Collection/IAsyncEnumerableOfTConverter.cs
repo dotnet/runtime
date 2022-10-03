@@ -27,6 +27,7 @@ namespace System.Text.Json.Serialization.Converters
             ((BufferedAsyncEnumerable)state.Current.ReturnValue!)._buffer.Add(value);
         }
 
+        internal override bool SupportsCreateObjectDelegate => false;
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
             state.Current.ReturnValue = new BufferedAsyncEnumerable();
@@ -34,7 +35,7 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override bool OnTryWrite(Utf8JsonWriter writer, TAsyncEnumerable value, JsonSerializerOptions options, ref WriteStack state)
         {
-            if (!state.SupportContinuation)
+            if (!state.SupportAsync)
             {
                 ThrowHelper.ThrowNotSupportedException_TypeRequiresAsyncSerialization(TypeToConvert);
             }
@@ -117,6 +118,7 @@ namespace System.Text.Json.Serialization.Converters
                     return false;
                 }
 
+                state.Current.EndCollectionElement();
                 moveNextTask = enumerator.MoveNextAsync();
             } while (moveNextTask.IsCompleted);
 

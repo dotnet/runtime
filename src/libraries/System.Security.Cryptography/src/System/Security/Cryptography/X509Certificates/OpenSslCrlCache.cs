@@ -48,6 +48,11 @@ namespace System.Security.Cryptography.X509Certificates
 
             string crlFileName = GetCrlFileName(cert, url);
 
+            if (OpenSslX509ChainEventSource.Log.IsEnabled())
+            {
+                OpenSslX509ChainEventSource.Log.CrlIdentifiersDetermined(cert, url, crlFileName);
+            }
+
             if (AddCachedCrl(crlFileName, store, verificationTime))
             {
                 return;
@@ -56,6 +61,11 @@ namespace System.Security.Cryptography.X509Certificates
             // Don't do any work if we're prohibited from fetching new CRLs
             if (revocationMode != X509RevocationMode.Online)
             {
+                if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                {
+                    OpenSslX509ChainEventSource.Log.CrlCheckOffline();
+                }
+
                 return;
             }
 
@@ -66,10 +76,35 @@ namespace System.Security.Cryptography.X509Certificates
         {
             string crlFile = GetCachedCrlPath(crlFileName);
 
+            if (OpenSslX509ChainEventSource.Log.IsEnabled())
+            {
+                OpenSslX509ChainEventSource.Log.CrlCacheCheckStart();
+            }
+
+            try
+            {
+                return AddCachedCrlCore(crlFile, store, verificationTime);
+            }
+            finally
+            {
+                if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                {
+                    OpenSslX509ChainEventSource.Log.CrlCacheCheckStop();
+                }
+            }
+        }
+
+        private static bool AddCachedCrlCore(string crlFile, SafeX509StoreHandle store, DateTime verificationTime)
+        {
             using (SafeBioHandle bio = Interop.Crypto.BioNewFile(crlFile, "rb"))
             {
                 if (bio.IsInvalid)
                 {
+                    if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                    {
+                        OpenSslX509ChainEventSource.Log.CrlCacheOpenError();
+                    }
+
                     Interop.Crypto.ErrClearError();
                     return false;
                 }
@@ -80,6 +115,11 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     if (crl.IsInvalid)
                     {
+                        if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                        {
+                            OpenSslX509ChainEventSource.Log.CrlCacheDecodeError();
+                        }
+
                         Interop.Crypto.ErrClearError();
                         return false;
                     }
@@ -97,6 +137,11 @@ namespace System.Security.Cryptography.X509Certificates
                     // We'll cache it for a few days to cover the case it was a mistake.
                     if (nextUpdatePtr == IntPtr.Zero)
                     {
+                        if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                        {
+                            OpenSslX509ChainEventSource.Log.CrlCacheFileBasedExpiry();
+                        }
+
                         try
                         {
                             nextUpdate = File.GetLastWriteTime(crlFile).AddDays(3);
@@ -124,6 +169,11 @@ namespace System.Security.Cryptography.X509Certificates
                     // to be already expired.
                     if (nextUpdate <= verificationTime)
                     {
+                        if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                        {
+                            OpenSslX509ChainEventSource.Log.CrlCacheExpired(nextUpdate, verificationTime);
+                        }
+
                         return false;
                     }
 
@@ -138,6 +188,11 @@ namespace System.Security.Cryptography.X509Certificates
                         {
                             throw Interop.Crypto.CreateOpenSslCryptographicException();
                         }
+                    }
+
+                    if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                    {
+                        OpenSslX509ChainEventSource.Log.CrlCacheAcceptedFile(nextUpdate);
                     }
 
                     return true;
@@ -183,12 +238,23 @@ namespace System.Security.Cryptography.X509Certificates
                             if (bio.IsInvalid || Interop.Crypto.PemWriteBioX509Crl(bio, crl) == 0)
                             {
                                 // No bio, or write failed
+
+                                if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                                {
+                                    OpenSslX509ChainEventSource.Log.CrlCacheWriteFailed(crlFile);
+                                }
+
                                 Interop.Crypto.ErrClearError();
                             }
                         }
                     }
                     catch (UnauthorizedAccessException) { }
                     catch (IOException) { }
+
+                    if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                    {
+                        OpenSslX509ChainEventSource.Log.CrlCacheWriteSucceeded();
+                    }
                 }
             }
         }
@@ -248,6 +314,11 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (crlDistributionPoints.Array == null)
             {
+                if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                {
+                    OpenSslX509ChainEventSource.Log.NoCdpFound(cert);
+                }
+
                 return null;
             }
 
@@ -268,12 +339,26 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         foreach (GeneralNameAsn name in distributionPoint.DistributionPoint.Value.FullName)
                         {
-                            if (name.Uri != null &&
-                                Uri.TryCreate(name.Uri, UriKind.Absolute, out Uri? uri) &&
-                                uri.Scheme == "http")
+                            if (name.Uri != null)
                             {
-                                return name.Uri;
+                                if (Uri.TryCreate(name.Uri, UriKind.Absolute, out Uri? uri) &&
+                                    uri.Scheme == "http")
+                                {
+                                    return name.Uri;
+                                }
+                                else
+                                {
+                                    if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                                    {
+                                        OpenSslX509ChainEventSource.Log.NonHttpCdpEntry(name.Uri);
+                                    }
+                                }
                             }
+                        }
+
+                        if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                        {
+                            OpenSslX509ChainEventSource.Log.NoMatchingCdpEntry();
                         }
                     }
                 }

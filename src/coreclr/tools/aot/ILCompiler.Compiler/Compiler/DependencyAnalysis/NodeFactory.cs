@@ -13,6 +13,7 @@ using Internal.IL;
 using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -236,6 +237,11 @@ namespace ILCompiler.DependencyAnalysis
                 return new BlobNode(key.Name, ObjectNodeSection.ReadOnlyDataSection, key.Data, key.Alignment);
             });
 
+            _fieldRvaDataBlobs = new NodeCache<Internal.TypeSystem.Ecma.EcmaField, FieldRvaDataNode>(key =>
+            {
+                return new FieldRvaDataNode(key);
+            });
+
             _uninitializedWritableDataBlobs = new NodeCache<UninitializedWritableDataBlobKey, BlobNode>(key =>
             {
                 return new BlobNode(key.Name, ObjectNodeSection.BssSection, new byte[key.Size], key.Alignment);
@@ -284,14 +290,14 @@ namespace ILCompiler.DependencyAnalysis
                 return new TypeGVMEntriesNode(type);
             });
 
-            _dynamicInvokeTemplates = new NodeCache<MethodDesc, DynamicInvokeTemplateNode>(method =>
-            {
-                return new DynamicInvokeTemplateNode(method);
-            });
-
             _reflectableMethods = new NodeCache<MethodDesc, ReflectableMethodNode>(method =>
             {
                 return new ReflectableMethodNode(method);
+            });
+
+            _reflectableFields = new NodeCache<FieldDesc, ReflectableFieldNode>(field =>
+            {
+                return new ReflectableFieldNode(field);
             });
 
             _objectGetTypeFlowDependencies = new NodeCache<MetadataType, ObjectGetTypeFlowDependenciesNode>(type =>
@@ -374,6 +380,11 @@ namespace ILCompiler.DependencyAnalysis
             _dataflowAnalyzedMethods = new NodeCache<MethodILKey, DataflowAnalyzedMethodNode>((MethodILKey il) =>
             {
                 return new DataflowAnalyzedMethodNode(il.MethodIL);
+            });
+
+            _embeddedTrimmingDescriptors = new NodeCache<EcmaModule, EmbeddedTrimmingDescriptorNode>((module) =>
+            {
+                return new EmbeddedTrimmingDescriptorNode(module);
             });
 
             _interfaceDispatchMapIndirectionNodes = new NodeCache<TypeDesc, EmbeddedObjectNode>((TypeDesc type) =>
@@ -683,6 +694,13 @@ namespace ILCompiler.DependencyAnalysis
             return _dataflowAnalyzedMethods.GetOrAdd(new MethodILKey(methodIL));
         }
 
+        private NodeCache<EcmaModule, EmbeddedTrimmingDescriptorNode> _embeddedTrimmingDescriptors;
+
+        public EmbeddedTrimmingDescriptorNode EmbeddedTrimmingDescriptor(EcmaModule module)
+        {
+            return _embeddedTrimmingDescriptors.GetOrAdd(module);
+        }
+
         private NodeCache<GCPointerMap, GCStaticEETypeNode> _GCStaticEETypes;
 
         public ISymbolNode GCStaticEEType(GCPointerMap gcMap)
@@ -703,6 +721,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             return _readOnlyDataBlobs.GetOrAdd(new ReadOnlyDataBlobKey(name, blobData, alignment));
         }
+
+        private NodeCache<Internal.TypeSystem.Ecma.EcmaField, FieldRvaDataNode> _fieldRvaDataBlobs;
+
+        public ISymbolNode FieldRvaData(Internal.TypeSystem.Ecma.EcmaField field)
+        {
+            return _fieldRvaDataBlobs.GetOrAdd(field);
+        }
+
         private NodeCache<TypeDesc, SealedVTableNode> _sealedVtableNodes;
 
         internal SealedVTableNode SealedVTable(TypeDesc type)
@@ -852,16 +878,16 @@ namespace ILCompiler.DependencyAnalysis
             return _reflectableMethods.GetOrAdd(method);
         }
 
+        private NodeCache<FieldDesc, ReflectableFieldNode> _reflectableFields;
+        public ReflectableFieldNode ReflectableField(FieldDesc field)
+        {
+            return _reflectableFields.GetOrAdd(field);
+        }
+
         private NodeCache<MetadataType, ObjectGetTypeFlowDependenciesNode> _objectGetTypeFlowDependencies;
         internal ObjectGetTypeFlowDependenciesNode ObjectGetTypeFlowDependencies(MetadataType type)
         {
             return _objectGetTypeFlowDependencies.GetOrAdd(type);
-        }
-
-        private NodeCache<MethodDesc, DynamicInvokeTemplateNode> _dynamicInvokeTemplates;
-        internal DynamicInvokeTemplateNode DynamicInvokeTemplate(MethodDesc method)
-        {
-            return _dynamicInvokeTemplates.GetOrAdd(method);
         }
 
         private NodeCache<MethodKey, IMethodNode> _shadowConcreteMethods;
@@ -1089,12 +1115,12 @@ namespace ILCompiler.DependencyAnalysis
         public ArrayOfEmbeddedPointersNode<GCStaticsNode> GCStaticsRegion = new ArrayOfEmbeddedPointersNode<GCStaticsNode>(
             "__GCStaticRegionStart", 
             "__GCStaticRegionEnd",
-            new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer()));
+            new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance));
 
         public ArrayOfEmbeddedDataNode<ThreadStaticsNode> ThreadStaticsRegion = new ArrayOfEmbeddedDataNode<ThreadStaticsNode>(
             "__ThreadStaticRegionStart",
             "__ThreadStaticRegionEnd",
-            new SortableDependencyNode.EmbeddedObjectNodeComparer(new CompilerComparer()));
+            new SortableDependencyNode.EmbeddedObjectNodeComparer(CompilerComparer.Instance));
 
         public ArrayOfEmbeddedPointersNode<IMethodNode> EagerCctorTable = new ArrayOfEmbeddedPointersNode<IMethodNode>(
             "__EagerCctorStart",
@@ -1104,12 +1130,12 @@ namespace ILCompiler.DependencyAnalysis
         public ArrayOfEmbeddedPointersNode<InterfaceDispatchMapNode> DispatchMapTable = new ArrayOfEmbeddedPointersNode<InterfaceDispatchMapNode>(
             "__DispatchMapTableStart",
             "__DispatchMapTableEnd",
-            new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer()));
+            new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance));
 
         public ArrayOfEmbeddedDataNode<EmbeddedObjectNode> FrozenSegmentRegion = new ArrayOfFrozenObjectsNode<EmbeddedObjectNode>(
             "__FrozenSegmentRegionStart",
             "__FrozenSegmentRegionEnd",
-            new SortableDependencyNode.EmbeddedObjectNodeComparer(new CompilerComparer()));
+            new SortableDependencyNode.EmbeddedObjectNodeComparer(CompilerComparer.Instance));
 
         internal ModuleInitializerListNode ModuleInitializerList = new ModuleInitializerListNode();
 

@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Xml.Schema;
@@ -12,7 +13,6 @@ using System.Xml.XPath;
 using System.Security;
 using System.Globalization;
 using System.Runtime.Versioning;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -255,8 +255,7 @@ namespace System.Xml
             //string.Empty) because in DTD, the namespace is not supported
             if (_htElementIDAttrDecl == null || _htElementIDAttrDecl[eleName] == null)
             {
-                if (_htElementIDAttrDecl == null)
-                    _htElementIDAttrDecl = new Hashtable();
+                _htElementIDAttrDecl ??= new Hashtable();
                 _htElementIDAttrDecl.Add(eleName, attrName);
                 return true;
             }
@@ -284,7 +283,7 @@ namespace System.Xml
                 return GetIDInfoByElement_(eleName);
         }
 
-        private WeakReference<XmlElement>? GetElement(ArrayList elementList, XmlElement elem)
+        private static WeakReference<XmlElement>? GetElement(ArrayList elementList, XmlElement elem)
         {
             ArrayList gcElemRefs = new ArrayList();
             foreach (WeakReference<XmlElement> elemRef in elementList)
@@ -312,8 +311,7 @@ namespace System.Xml
         {
             if (_htElementIdMap == null || !_htElementIdMap.Contains(id))
             {
-                if (_htElementIdMap == null)
-                    _htElementIdMap = new Hashtable();
+                _htElementIdMap ??= new Hashtable();
                 ArrayList elementList = new ArrayList();
                 elementList.Add(new WeakReference<XmlElement>(elem));
                 _htElementIdMap.Add(id, elementList);
@@ -427,19 +425,8 @@ namespace System.Xml
 
         public XmlSchemaSet Schemas
         {
-            get
-            {
-                if (_schemas == null)
-                {
-                    _schemas = new XmlSchemaSet(NameTable);
-                }
-                return _schemas;
-            }
-
-            set
-            {
-                _schemas = value;
-            }
+            get => _schemas ??= new XmlSchemaSet(NameTable);
+            set => _schemas = value;
         }
 
         internal bool CanReportValidity
@@ -503,7 +490,7 @@ namespace System.Xml
         }
         // the function examines all the siblings before the refNode
         //  if any of the nodes has type equals to "nt", return true; otherwise, return false;
-        private bool HasNodeTypeInPrevSiblings(XmlNodeType nt, XmlNode? refNode)
+        private static bool HasNodeTypeInPrevSiblings(XmlNodeType nt, XmlNode? refNode)
         {
             if (refNode == null)
                 return false;
@@ -524,7 +511,7 @@ namespace System.Xml
 
         // the function examines all the siblings after the refNode
         //  if any of the nodes has the type equals to "nt", return true; otherwise, return false;
-        private bool HasNodeTypeInNextSiblings(XmlNodeType nt, XmlNode? refNode)
+        private static bool HasNodeTypeInNextSiblings(XmlNodeType nt, XmlNode? refNode)
         {
             XmlNode? node = refNode;
             while (node != null)
@@ -538,8 +525,7 @@ namespace System.Xml
 
         internal override bool CanInsertBefore(XmlNode newChild, XmlNode? refChild)
         {
-            if (refChild == null)
-                refChild = FirstChild;
+            refChild ??= FirstChild;
 
             if (refChild == null)
                 return true;
@@ -581,8 +567,7 @@ namespace System.Xml
 
         internal override bool CanInsertAfter(XmlNode newChild, XmlNode? refChild)
         {
-            if (refChild == null)
-                refChild = LastChild;
+            refChild ??= LastChild;
 
             if (refChild == null)
                 return true;
@@ -730,10 +715,7 @@ namespace System.Xml
             defattr.InnerXml = attdef.DefaultValueRaw;
             //during the expansion of the tree, the flag could be set to true, we need to set it back.
             XmlUnspecifiedAttribute? unspAttr = defattr as XmlUnspecifiedAttribute;
-            if (unspAttr != null)
-            {
-                unspAttr.SetSpecified(false);
-            }
+            unspAttr?.SetSpecified(false);
             return defattr;
         }
 
@@ -858,7 +840,7 @@ namespace System.Xml
             }
         }
 
-        private XmlNode? NormalizeText(XmlNode node)
+        private static XmlNode? NormalizeText(XmlNode node)
         {
             XmlNode? retnode = null;
             XmlNode? n = node;
@@ -1107,13 +1089,8 @@ namespace System.Xml
 
         internal XmlNamedNodeMap Entities
         {
-            get
-            {
-                if (_entities == null)
-                    _entities = new XmlNamedNodeMap(this);
-                return _entities;
-            }
-            set { _entities = value; }
+            get => _entities ??= new XmlNamedNodeMap(this);
+            set => _entities = value;
         }
 
         internal bool IsLoading
@@ -1217,7 +1194,7 @@ namespace System.Xml
             return node;
         }
 
-        internal XmlNodeType ConvertToNodeType(string nodeTypeString)
+        internal static XmlNodeType ConvertToNodeType(string nodeTypeString)
         {
             if (nodeTypeString == "element")
             {
@@ -1355,7 +1332,7 @@ namespace System.Xml
         }
 
         // Loads the XML document from the specified string.
-        public virtual void LoadXml(string xml)
+        public virtual void LoadXml([StringSyntax(StringSyntaxAttribute.Xml)] string xml)
         {
             XmlTextReader reader = SetupReader(new XmlTextReader(new StringReader(xml), NameTable));
             try
@@ -1646,18 +1623,15 @@ namespace System.Xml
                 switch (args.Action)
                 {
                     case XmlNodeChangedAction.Insert:
-                        if (_onNodeInsertingDelegate != null)
-                            _onNodeInsertingDelegate(this, args);
+                        _onNodeInsertingDelegate?.Invoke(this, args);
                         break;
 
                     case XmlNodeChangedAction.Remove:
-                        if (_onNodeRemovingDelegate != null)
-                            _onNodeRemovingDelegate(this, args);
+                        _onNodeRemovingDelegate?.Invoke(this, args);
                         break;
 
                     case XmlNodeChangedAction.Change:
-                        if (_onNodeChangingDelegate != null)
-                            _onNodeChangingDelegate(this, args);
+                        _onNodeChangingDelegate?.Invoke(this, args);
                         break;
                 }
             }
@@ -1670,18 +1644,15 @@ namespace System.Xml
                 switch (args.Action)
                 {
                     case XmlNodeChangedAction.Insert:
-                        if (_onNodeInsertedDelegate != null)
-                            _onNodeInsertedDelegate(this, args);
+                        _onNodeInsertedDelegate?.Invoke(this, args);
                         break;
 
                     case XmlNodeChangedAction.Remove:
-                        if (_onNodeRemovedDelegate != null)
-                            _onNodeRemovedDelegate(this, args);
+                        _onNodeRemovedDelegate?.Invoke(this, args);
                         break;
 
                     case XmlNodeChangedAction.Change:
-                        if (_onNodeChangedDelegate != null)
-                            _onNodeChangedDelegate(this, args);
+                        _onNodeChangedDelegate?.Invoke(this, args);
                         break;
                 }
             }
@@ -1756,9 +1727,9 @@ namespace System.Xml
         {
             if (DocumentType != null)
             {
-                XmlNamedNodeMap entites = DocumentType.Entities;
-                if (entites != null)
-                    return (XmlEntity?)(entites.GetNamedItem(name));
+                XmlNamedNodeMap entities = DocumentType.Entities;
+                if (entities != null)
+                    return (XmlEntity?)(entities.GetNamedItem(name));
             }
             return null;
         }

@@ -16,12 +16,12 @@ namespace System
     public ref struct TypedReference
     {
         // Do not change the ordering of these fields. The JIT has a dependency on this layout.
-        private readonly ByReference<byte> _value;
+        private readonly ref byte _value;
         private readonly RuntimeTypeHandle _typeHandle;
 
         private TypedReference(object target, int offset, RuntimeTypeHandle typeHandle)
         {
-            _value = new ByReference<byte>(ref Unsafe.Add<byte>(ref target.GetRawData(), offset));
+            _value = ref Unsafe.Add<byte>(ref target.GetRawData(), offset);
             _typeHandle = typeHandle;
         }
 
@@ -81,7 +81,7 @@ namespace System
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return ref _value.Value;
+                return ref _value;
             }
         }
     }

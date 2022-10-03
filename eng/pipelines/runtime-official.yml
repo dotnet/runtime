@@ -10,18 +10,16 @@ trigger:
     - '*'
     - docs/manpages/*
     exclude:
+    - '**.md'
+    - .devcontainer/*
     - .github/*
     - docs/*
-    - CODE-OF-CONDUCT.md
-    - CONTRIBUTING.md
     - LICENSE.TXT
     - PATENTS.TXT
-    - README.md
-    - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
 
 # This is an official pipeline that should not be triggerable from a PR,
-# there is no public pipeline assosiated with it.
+# there is no public pipeline associated with it.
 pr: none
 
 variables:
@@ -133,6 +131,8 @@ stages:
       - Linux_arm64
       - Linux_musl_x64
       - Browser_wasm
+      - Linux_bionic_arm64
+      - Linux_bionic_x64
       # - Linux_musl_arm
       # - Linux_musl_arm64
       - windows_x64
@@ -143,6 +143,38 @@ stages:
         buildArgs: -s mono+libs+host+packs+mono.mscordbi -c $(_BuildConfig)
         nameSuffix: AllSubsets_Mono
         isOfficialBuild: ${{ variables.isOfficialBuild }}
+        extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+        extraStepsParameters:
+          name: MonoRuntimePacks
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - Browser_wasm
+      jobParameters:
+        buildArgs: -s mono+libs+host+packs+mono.mscordbi -c $(_BuildConfig) /p:MonoWasmBuildVariant=perftrace
+        nameSuffix: AllSubsets_Mono_perftrace
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        runtimeVariant: perftrace
+        extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+        extraStepsParameters:
+          name: MonoRuntimePacks
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: release
+      runtimeFlavor: mono
+      platforms:
+      - Browser_wasm
+      jobParameters:
+        buildArgs: -s mono+libs+host+packs+mono.mscordbi -c $(_BuildConfig) /p:MonoWasmBuildVariant=multithread
+        nameSuffix: AllSubsets_Mono_multithread
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        runtimeVariant: multithread
         extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
         extraStepsParameters:
           name: MonoRuntimePacks
@@ -381,6 +413,8 @@ stages:
       - windows_x64
       - windows_x86
       - Linux_x64
+      - windows_arm64
+      - Linux_arm64
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         signBinaries: false
@@ -402,6 +436,8 @@ stages:
       - windows_x64
       - windows_x86
       - Linux_x64
+      - windows_arm64
+      - Linux_arm64
 
   #
   # Build Workloads
@@ -432,6 +468,10 @@ stages:
         - Build_tvOSSimulator_arm64_release_AllSubsets_Mono
         - Build_tvOSSimulator_x64_release_AllSubsets_Mono
         - Build_Windows_x64_release_CrossAOT_Mono
+        - installer__coreclr__windows_x64_Release_
+        - installer__coreclr__windows_x86_Release_
+        - installer__coreclr__windows_arm_Release_
+        - installer__coreclr__windows_arm64_Release_
 
 - ${{ if eq(variables.isOfficialBuild, true) }}:
   - template: /eng/pipelines/official/stages/publish.yml

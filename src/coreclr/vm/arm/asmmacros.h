@@ -1,12 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-;; ==++==
-;;
-
-;;
-;; ==--==
-
 ;-----------------------------------------------------------------------------
 ; Macro used to assign an alternate name to a symbol containing characters normally disallowed in a symbol
 ; name (e.g. C++ decorated names).
@@ -28,6 +22,9 @@ __EndLabelName SETS "$FuncName":CC:"_End"
 $__EndLabelName
 
     LEAF_END $FuncName
+
+    ; Make sure this symbol gets its own address
+    nop
 
     MEND
 
@@ -182,7 +179,7 @@ __SECTIONREL_gCurrentThreadInfo SETS "SECTIONREL_gCurrentThreadInfo"
 ;-----------------------------------------------------------------------------
 ; INLINE_GETTHREAD_CONSTANT_POOL macro has to be used after the last function in the .asm file that used
 ; INLINE_GETTHREAD. Optionally, it can be also used after any function that used INLINE_GETTHREAD
-; to improve density, or to reduce distance betweeen the constant pool and its use.
+; to improve density, or to reduce distance between the constant pool and its use.
 ;
     SETALIAS gCurrentThreadInfo, ?gCurrentThreadInfo@@3UThreadLocalInfo@@A
 

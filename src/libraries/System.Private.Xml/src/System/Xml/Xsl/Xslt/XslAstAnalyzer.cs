@@ -9,13 +9,12 @@ using System.Xml.XPath;
 using System.Xml.Xsl.Qil;
 using System.Xml.Xsl.Runtime;
 using System.Xml.Xsl.XPath;
+using TypeFactory = System.Xml.Xsl.XmlQueryTypeFactory;
+using XPathFunctionInfo = System.Xml.Xsl.XPath.XPathBuilder.FunctionInfo<System.Xml.Xsl.XPath.XPathBuilder.FuncId>;
+using XsltFunctionInfo = System.Xml.Xsl.XPath.XPathBuilder.FunctionInfo<System.Xml.Xsl.Xslt.QilGenerator.FuncId>;
 
 namespace System.Xml.Xsl.Xslt
 {
-    using TypeFactory = XmlQueryTypeFactory;
-    using XPathFunctionInfo = XPathBuilder.FunctionInfo<XPathBuilder.FuncId>;
-    using XsltFunctionInfo = XPathBuilder.FunctionInfo<QilGenerator.FuncId>;
-
     // ------------------------------- XslAstAnalyzer -------------------------------
 
     internal sealed class XslAstAnalyzer : XslVisitor<XslFlags>
@@ -1055,7 +1054,7 @@ namespace System.Xml.Xsl.Xslt
             }
 
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Supressing warning about not having the RequiresUnreferencedCode attribute since xsl Scripts are " +
+                Justification = "Suppressing warning about not having the RequiresUnreferencedCode attribute since xsl Scripts are " +
                 "not supported in .NET Core")]
             public XslFlags Function(string prefix, string name, IList<XslFlags> args)
             {
@@ -1140,7 +1139,7 @@ namespace System.Xml.Xsl.Xslt
                             XmlExtensionFunction? scrFunc = _compiler.Scripts.ResolveFunction(name, ns, args.Count, default(NullErrorHelper));
                             if (scrFunc != null)
                             {
-                                XmlQueryType xt = scrFunc.XmlReturnType;
+                                XmlQueryType? xt = scrFunc.XmlReturnType;
                                 if (xt == TypeFactory.StringX)
                                 {
                                     funcFlags = XslFlags.String;
@@ -1435,7 +1434,7 @@ namespace System.Xml.Xsl.Xslt
                 {
                     // The scope record is either a namespace declaration or an exclusion namespace
                     Debug.Assert(scoperecord.IsNamespace || scoperecord.ncName == null);
-                    Debug.Assert(!_compiler.IsPhantomNamespace(scoperecord.nsUri!));
+                    Debug.Assert(!Compiler.IsPhantomNamespace(scoperecord.nsUri!));
                     newtemplate.Namespaces = new NsDecl(newtemplate.Namespaces, scoperecord.ncName, scoperecord.nsUri);
                 }
                 else
@@ -1444,7 +1443,7 @@ namespace System.Xml.Xsl.Xslt
                     var variable = scoperecord.value;
 
                     // Skip variables generated during errors
-                    if (_compiler.IsPhantomNamespace(variable.Name!.NamespaceUri))
+                    if (Compiler.IsPhantomNamespace(variable.Name!.NamespaceUri))
                     {
                         continue;
                     }

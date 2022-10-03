@@ -1,14 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
+using System;
+using System.Collections;
+using System.ComponentModel;
+using System.Xml;
+
 namespace System.Xml.Serialization
 {
-    using System.IO;
-    using System;
-    using System.Collections;
-    using System.ComponentModel;
-    using System.Xml;
-
     public delegate void XmlAttributeEventHandler(object? sender, XmlAttributeEventArgs e);
 
     public class XmlAttributeEventArgs : EventArgs
@@ -60,7 +60,7 @@ namespace System.Xml.Serialization
         /// </summary>
         public string ExpectedAttributes
         {
-            get { return _qnames == null ? string.Empty : _qnames; }
+            get { return _qnames ?? string.Empty; }
         }
     }
 
@@ -108,7 +108,7 @@ namespace System.Xml.Serialization
         /// </summary>
         public string ExpectedElements
         {
-            get { return _qnames == null ? string.Empty : _qnames; }
+            get { return _qnames ?? string.Empty; }
         }
     }
 

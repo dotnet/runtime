@@ -1,0 +1,634 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="tr" original="../Strings.resx">
+    <body>
+      <trans-unit id="AddMissingCustomTypeMarshallerMembers">
+        <source>Add missing custom type marshaller members</source>
+        <target state="translated">Eksik olan özel tür sıralayıcı üyelerini ekleyin</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeDescription">
+        <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing a 'FromManaged' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
+        <target state="translated">Hazırlayıcı türünde 'Span&lt;T&gt;' alan bir 'FromManaged' yöntemi sağlanarak 'Çağıran Tarafından Ayrılan Arabellek ile Yönetilenden Yönetilmeyene' şekli kullanıldığında tür, çağıran tarafından ayrılan arabellekteki öğe sayısını sağlamak için statik bir 'BufferSize' özelliği belirtmelidir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeMessage">
+        <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has a FromManaged method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
+        <target state="translated">Hazırlayıcı türü '{0}', çağıran tarafından ayrılan arabelleğin boyutunu belirtmek için statik bir salt okunur 'int' 'BufferSize' özelliğine sahip olmalıdır çünkü çağıran tarafından ayrılan 'Span&lt;{1}&gt;' alan bir 'FromManaged' yöntemine sahiptir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CannotForwardToDllImportDescription">
+        <source>The generated 'DllImportAttribute' will not have a value corresponding to '{0}'.</source>
+        <target state="translated">Oluşturulan 'DllImportAttribute' üzerinde '{0}' için karşılık gelen bir değer bulunmaz.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CannotForwardToDllImportMessage">
+        <source>'{0}' has no equivalent in 'DllImportAttribute' and will not be forwarded</source>
+        <target state="translated">'{0}' için 'DllImportAttribute' içinde herhangi bir eşdeğer yok ve iletilemiyor</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CannotForwardToDllImportTitle">
+        <source>Specified 'LibraryImportAttribute' arguments cannot be forwarded to 'DllImportAttribute'</source>
+        <target state="translated">Belirtilen 'LibraryImportAttribute' bağımsız değişkenleri 'DllImportAttribute' öğesine iletilemez</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedDescription">
+        <source>Source-generated P/Invokes will ignore any configuration that is not supported.</source>
+        <target state="translated">Kaynak tarafından oluşturulan P/Invokes desteklenmeyen yapılandırmaları yok sayar.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessage">
+        <source>The '{0}' configuration is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
+        <target state="translated">'{0}' yapılandırması, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor. Belirtilen yapılandırma gerekli ise, bunun yerine normal bir 'DllImport' kullanın.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessageMarshallingInfo">
+        <source>The specified marshalling configuration is not supported by source-generated P/Invokes. {0}.</source>
+        <target state="translated">Belirtilen sıralama yapılandırması, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor. {0}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessageParameter">
+        <source>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
+        <target state="translated">'{1}' parametresi için belirtilen '{0}' yapılandırması, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor. Belirtilen yapılandırma gerekli ise, bunun yerine normal bir 'DllImport' kullanın.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessageReturn">
+        <source>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
+        <target state="translated">'{0}' metodunun dönüş değeri için belirtilen '{1}' yapılandırması, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor. Belirtilen yapılandırma gerekli ise, bunun yerine normal bir 'DllImport' kullanın.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessageValue">
+        <source>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular 'DllImport' instead.</source>
+        <target state="translated">'{1}' için belirtilen '{0}' değeri, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor. Belirtilen değer gerekli ise, bunun yerine normal bir 'DllImport' kullanın.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedTitle">
+        <source>Specified configuration is not supported by source-generated P/Invokes.</source>
+        <target state="translated">Belirtilen yapılandırma, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode">
+        <source>Automatically converting a P/Invoke with 'PreserveSig' set to 'false' to a source-generated P/Invoke may produce invalid code</source>
+        <target state="translated">'PreserveSig' değeri 'false' olarak ayarlanmış bir P/Invoke öğesini kaynak tarafından oluşturulan bir P/Invoke'a otomatik olarak dönüştürülmesi sonucunda geçersiz kod üretilebilir</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImport">
+        <source>Convert to 'LibraryImport'</source>
+        <target state="translated">'LibraryImport' olarak dönüştür</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportAddUnsafe">
+        <source>Convert to 'LibraryImport' and enable unsafe code</source>
+        <target state="translated">'LibraryImport' türüne dönüştür ve güvenli olmayan kodu etkinleştir</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportDescription">
+        <source>Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</source>
+        <target state="translated">P/Invoke sıralama kodunu derleme zamanında oluşturmak için 'DllImportAttribute' yerine 'LibraryImportAttribute' kullanın</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportMayRequireCustomMarshalling">
+        <source>Converting this API to 'LibraryImport' will require additional code to provide custom marshallers for some parameters.</source>
+        <target state="translated">Bu API'yi 'LibraryImport' olarak dönüştürmek, bazı parametreler için özel hazırlayıcılar sağlamak amacıyla ek kod gerektirir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportMessage">
+        <source>Mark the method '{0}' with 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</source>
+        <target state="translated">P/Invoke sıralama kodunu derleme zamanında oluşturmak için '{0}' metodunu, 'DllImportAttribute' yerine 'LibraryImportAttribute' ile işaretleyin</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportTitle">
+        <source>Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</source>
+        <target state="translated">P/Invoke sıralama kodunu derleme zamanında oluşturmak için 'DllImportAttribute' yerine 'LibraryImportAttribute' kullanın</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportWithSuffix">
+        <source>Convert to 'LibraryImport' with '{0}' suffix</source>
+        <target state="translated">'{0}' soneki ile 'LibraryImport' olarak dönüştür</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportWithSuffixAddUnsafe">
+        <source>Convert to 'LibraryImport' with '{0}' suffix and enable unsafe code</source>
+        <target state="translated">'{0}' soneki ile 'LibraryImport' türüne dönüştür ve güvenli olmayan kodu etkinleştir</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CustomMarshallerTypeMustHaveRequiredShapeTitle">
+        <source>Marshaller type does not have the required shape</source>
+        <target state="translated">Sıralayıcı türü gerekli şekle sahip değil</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ElementMarshallerCannotBeStatefulDescription">
+        <source>A marshaller for an element scenario cannot be stateful.</source>
+        <target state="translated">Öğe senaryosu için bir hazırlayıcının durum bilgisi yoktur.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ElementMarshallerCannotBeStatefulMessage">
+        <source>The specified marshaller type '{0}' is a stateful marshaller, but stateful marshallers are not allowed in the provided marshal mode '{1}'</source>
+        <target state="translated">Belirtilen hazırlayıcı '{0}' türü durum bilgisi olan bir hazırlayıcıdır, ancak durum bilgisi olan hazırlayıcılara, sağlanan '{1}' hazırlama modunda izin verilmez</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ElementTypesOfReturnTypesMustMatchDescription">
+        <source>The element type of the span returned by the first method must be the same type as the element type of the span returned by the second method.</source>
+        <target state="translated">İlk yöntem tarafından döndürülen yayılım öğe türü, ikinci metot tarafından döndürülen yayılım öğe türüyle aynı olmalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ElementTypesOfReturnTypesMustMatchMessage">
+        <source>The element type of the span returned by '{0}' must be the same type as the element type of the span returned by '{1}'.</source>
+        <target state="translated">'{0}' tarafından döndürülen yayılım öğe türü, '{1}'tarafından döndürülen yayılım öğe türüyle aynı olmalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="EntryPointTypeMustBeNonNullDescription">
+        <source>An entry-point type for marshalling a given type must not be 'null'.</source>
+        <target state="translated">Belirli bir tür için bir giriş noktası türü, 'null' olmamalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="EntryPointTypeMustBeNonNullMessage">
+        <source>The entry-point marshaller type for the type '{0}' must be not 'null'</source>
+        <target state="translated">Tür '{0}' için giriş noktası hazırlayıcı türü 'null' olmamalıdır</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FirstParameterMustMatchReturnTypeDescription">
+        <source>The first parameter of the first method must be the same type as the return types of the second method.</source>
+        <target state="translated">İlk metodun ilk parametresi, ikinci metodun dönüş türleriyle aynı olmalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FirstParameterMustMatchReturnTypeMessage">
+        <source>The first parameter of '{0}' must be the same type as the return type of '{1}'</source>
+        <target state="translated">'{0}' öğesinin ilk parametresi, '{1}' dönüş türüyle aynı olmalıdır</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FirstParametersMustMatchDescription">
+        <source>The first parameters of the two methods must be the same type.</source>
+        <target state="translated">İki yöntemin ilk parametreleri aynı türde olmalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FirstParametersMustMatchMessage">
+        <source>The first parameter of '{0}' and '{1}' must be the same type</source>
+        <target state="translated">'{0}' ve '{1}' öğelerinin ilk parametresi aynı türde olmalıdır</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FromUnmanagedOverloadsNotSupportedDescription">
+        <source>Overloading the 'FromUnmanaged' method is unuspported as some shapes are unable to distinguish between overloads.</source>
+        <target state="translated">Bazı şekiller aşırı yüklemeler arasında ayrım yapamadığından, 'FromUnmanaged' yönteminin aşırı yüklemesi desteklenmez.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FromUnmanagedOverloadsNotSupportedMessage">
+        <source>The type '{0}' overloads the 'FromUnmanaged' method, which is not supported in custom marshallers</source>
+        <target state="translated">'{0}' türü, özel hazırlayıcılarda desteklenmeyen 'FromUnmanaged' metoduna aşırı yükleme yapıyor</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GetPinnableReferenceReturnTypeBlittableDescription">
+        <source>The return type of 'GetPinnableReference' (after accounting for 'ref') must be blittable.</source>
+        <target state="translated">'GetPinnableReference' dönüş türü ('ref' olarak belirtildikten sonra) blok halinde kopyalanabilir olmalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GetPinnableReferenceReturnTypeBlittableMessage">
+        <source>The dereferenced type of the return type of the 'GetPinnableReference' method must be blittable</source>
+        <target state="translated">'GetPinnableReference' metodunun dönüş türünün başvurulan türü blok halinde kopyalanabilir olmalıdır</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessage">
+        <source>Method '{0}' is contained in a type '{1}' that is not marked 'partial'. P/Invoke source generation will ignore method '{0}'.</source>
+        <target state="translated">'{0}'metodu, 'partial' olarak işaretlenmemiş olan bir '{1}' türünün içinde yer alıyor. P/Invoke kaynak oluşturma işlemi, '{0}' metodunu yok sayacak.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidAttributedMethodDescription">
+        <source>Methods marked with 'LibraryImportAttribute' should be 'static', 'partial', and non-generic. P/Invoke source generation will ignore methods that are non-'static', non-'partial', or generic.</source>
+        <target state="translated">'LibraryImportAttribute' ile işaretlenmiş metotlar 'static', 'partial' ve genel olmayan özellikte olmalıdır. P/Invoke kaynak oluşturma 'static', 'partial' ve genel olmayan özellikteki metotlar dışında kalan metotları yok sayar.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidAttributedMethodSignatureMessage">
+        <source>Method '{0}' should be 'static', 'partial', and non-generic when marked with 'LibraryImportAttribute'. P/Invoke source generation will ignore method '{0}'.</source>
+        <target state="translated">'LibraryImportAttribute' ile işaretlendiğinde '{0}' metodu 'static', 'partial' ve genel olmayan özellikte olmalıdır. P/Invoke kaynak oluşturma '{0}' metodunu yok sayar.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidCustomMarshallerAttributeUsageTitle">
+        <source>Invalid 'CustomMarshallerAttribute' usage</source>
+        <target state="translated">Geçersiz 'CustomMarshallerAttribute' kullanımı</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLibraryImportAttributeUsageTitle">
+        <source>Invalid 'LibraryImportAttribute' usage</source>
+        <target state="translated">Geçersiz 'LibraryImportAttribute' kullanımı</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidManagedTypeTitle">
+        <source>Specified managed type is invalid</source>
+        <target state="translated">Belirtilen yönetilen tür geçersiz</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidMarshallerTypeTitle">
+        <source>Specified marshaller type is invalid</source>
+        <target state="translated">Belirtilen hazırlayıcı türü geçersiz</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidNativeMarshallingAttributeUsageTitle">
+        <source>Invalid 'NativeMarshallingAttribute' usage</source>
+        <target state="translated">Geçersiz 'NativeMarshallingAttribute' kullanımı</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidSignaturesInMarshallerShapeTitle">
+        <source>Marshaller type has incompatible method signatures</source>
+        <target state="translated">Sıralayıcı türü uyumsuz metot imzaları içeriyor</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidStringMarshallingConfigurationDescription">
+        <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' is invalid.</source>
+        <target state="translated">'StringMarshalling' ve 'StringMarshallingCustomType' yapılandırması geçersiz.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidStringMarshallingConfigurationMessage">
+        <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on method '{0}' is invalid. {1}</source>
+        <target state="translated">'{0}' metodundaki 'StringMarshalling' ve 'StringMarshallingCustomType' yapılandırması geçersiz. {1}</target>
+        <note>{1} is a message containing additional details about what is not valid</note>
+      </trans-unit>
+      <trans-unit id="InvalidStringMarshallingConfigurationMissingCustomType">
+        <source>'StringMarshallingCustomType' must be specified when 'StringMarshalling' is set to 'StringMarshalling.Custom'.</source>
+        <target state="translated">'StringMarshalling' 'StringMarshalling.Custom' olarak ayarlandığında 'StringMarshallingCustomType' belirtilmelidir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidStringMarshallingConfigurationNotCustom">
+        <source>'StringMarshalling' should be set to 'StringMarshalling.Custom' when 'StringMarshallingCustomType' is specified.</source>
+        <target state="translated">'StringMarshallingCustomType' belirtilirken 'StringMarshalling', 'StringMarshalling.Custom' olarak ayarlanmalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionElementTypesMustMatchDescription">
+        <source>The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'.</source>
+        <target state="translated">'GetManagedValuesSource' tarafından döndürülen 'ReadOnlySpan' öğe türü, 'GetManagedValuesDestination' tarafından döndürülen öğe türüyle aynı olmalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionElementTypesMustMatchMessage">
+        <source>The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'</source>
+        <target state="translated">'GetManagedValuesSource' tarafından döndürülen 'ReadOnlySpan' öğe türü, 'GetManagedValuesDestination' tarafından döndürülen öğe türüyle aynı olmalıdır</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorDescription">
+        <source>A 'LinearCollection'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a three-parameter constructor taking the managed type as the first parameter, a 'Span&lt;byte&gt;' as the second parameter, and the native size of the element as the third parameter</source>
+        <target state="translated">'CallerAllocatedBuffer' özelliğini destekleyen 'LinearCollection' tipi bir yerel türde, yönetilen türü birinci parametre, 'Span&lt;byte&gt;' değerini ikinci parametre ve öğenin yerel boyutunu ise üçüncü parametre olarak alan üç parametreli bir oluşturucu belirtilmelidir</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorMessage">
+        <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a three-parameter constructor that takes a '{1}' , a 'Span&lt;byte&gt;', and an 'int'</source>
+        <target state="translated">'{0}' türünde '{1}' için 'CallerAllocatedBuffer' özelliğiyle 'In' sıralamasının desteklendiği belirtiliyor, ancak '{1}', 'Span&lt;byte&gt;' ve 'int' parametrelerini dahil eden üç parametreli bir oluşturucu sağlanmıyor</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionInRequiresCollectionMethodsDescription">
+        <source>A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'.</source>
+        <target state="translated">Yönetilenden yönetilmeyene sıralamayı destekleyen bitişik bir koleksiyon sıralayıcı, 'ReadOnlySpan&lt;&gt;' döndüren bir 'GetManagedValuesSource' ve 'Span&lt;&gt;' döndüren bir 'GetUnmanagedValuesDestination' metodu sağlamalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionInRequiresCollectionMethodsMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that returns a 'Span&lt;&gt;'</source>
+        <target state="translated">'{0}' türü, '{1}' sıralama modunu desteklediğini belirtiyor, ancak 'ReadOnlySpan&lt;&gt;' döndüren bir 'GetManagedValuesSource' ve 'Span&lt;&gt;' döndüren bir ''GetUnmanagedValuesDestination' metodu sağlamıyor.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionOutRequiresCollectionMethodsDescription">
+        <source>A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</source>
+        <target state="translated">Yönetilmeyenden yönetilene sıralamayı destekleyen bitişik bir koleksiyon sıralayıcı, 'int' alan ve 'Span&lt;&gt;' döndüren bir 'GetManagedValuesDestination' ile 'int' alan ve 'ReadOnlySpan&lt;&gt;' döndüren bir 'GetUnmanagedValuesSource' metodu sağlamalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionOutRequiresCollectionMethodsMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</source>
+        <target state="translated">'{0}' türü, '{1}' sıralama modunu desteklediğini belirtiyor, ancak 'int' alan ve 'Span&lt;&gt;' döndüren bir 'GetManagedValuesDestination' ile 'int' alan ve 'ReadOnlySpan&lt;&gt;' döndüren bir 'GetUnmanagedValuesSource' metodu sağlamıyor.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedTypeMustBeClosedOrMatchArityDescription">
+        <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the generator can determine which methods are available on the specific marshaller types.</source>
+        <target state="translated">Oluşturucunun belirli hazırlayıcı türlerde hangi yöntemlerin kullanılabilir olduğunu belirleyebilmesi için hazırlayıcı kapalı bir genel tür olmalıdır veya yönetilen türle aynı sayıda genel parametreye sahip olmalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedTypeMustBeClosedOrMatchArityMessage">
+        <source>The managed type '{0}' for entry-point marshaller type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</source>
+        <target state="translated">Giriş noktası hazırlayıcı türü '{1}' için yönetilen tür '{0}', kapalı bir genel tür olmalı, bir değer hazırlayıcı olması durumunda yönetilen türle aynı parametreye sahip olmalı, koleksiyon hazırlayıcı olması durumunda ise ek genel parametreye sahip olmalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedTypeMustBeNonNullDescription">
+        <source>The managed type for a custom marshaller must be non-null.</source>
+        <target state="translated">Özel hazırlayıcı için yönetilen tür, null olmayan bir değer olmalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedTypeMustBeNonNullMessage">
+        <source>The managed type for the entry-point marshaller type '{0}' must not be 'null'</source>
+        <target state="translated">Giriş noktası hazırlayıcı türü '{0}' için yönetilen tür 'null' olmamalıdır</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityDescription">
+        <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
+        <target state="translated">Hazırlayıcı türü kapalı bir genel tür olmalıdır veya gösterilen kodun belirli bir örnek oluşturma kullanabilmesi için yönetilen türle aynı sayıda genel parametreye sahip olmalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityMessage">
+        <source>The marshaller type '{0}' pointed to by the entry-point marshaller type '{1}' must be a closed generic type or have the same arity as the managed type</source>
+        <target state="translated">Giriş noktası hazırlayıcı türü '{1}' tarafından işaret edilen hazırlayıcı türü '{0}', kapalı bir genel tür olmalıdır veya yönetilen türle aynı parametreye sahip olmalıdır</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeNonNullDescription">
+        <source>The 'marshallerType' parameter in the 'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' cannot be 'null'.</source>
+        <target state="translated">'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' öğesindeki 'marshallerType' parametresi 'null' olamaz.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeNonNullMessage">
+        <source>The 'marshallerType' parameter in the 'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' cannot be 'null'</source>
+        <target state="translated">'System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute' öğesindeki 'marshallerType' parametresi 'null' olamaz</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeStaticClassOrStructDescription">
+        <source>A marshaller type must either be a stateless static class or a stateful value type. A non-static class is not allowed.</source>
+        <target state="translated">Sıralayıcı türü ya durum bilgisi olmayan bir statik sınıf ya da durum bilgisi olan bir değer türü olmalıdır. Statik olmayan sınıfa izin verilmez.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeStaticClassOrStructMessage">
+        <source>The type '{0}' must be a static class or a value type</source>
+        <target state="translated">'{0}' türü statik bir sınıf veya değer türü olmalıdır</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustSpecifyManagedTypeDescription">
+        <source>A type with a 'System.Runtime.InteropServices.CustomMarshallerAttribute' must specify a non-'null' managed type</source>
+        <target state="translated">'System.Runtime.InteropServices.CustomMarshallerAttribute' değerine sahip bir tür, 'null' olmayan bir yönetilen tür belirtmelidir</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustSpecifyManagedTypeMessage">
+        <source>The type '{0}' does not specify a managed type in the 'System.Runtime.InteropServices.CustomMarshallerAttribute' applied to the type</source>
+        <target state="translated">Tür '{0}', türe uygulanan 'System.Runtime.InteropServices.CustomMarshallerAttribute' içinde yönetilen bir tür belirtmiyor</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityDescription">
+        <source>The marshaller type must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
+        <target state="translated">Hazırlayıcı türü kapalı bir genel tür olmalıdır veya gösterilen kodun belirli bir örnek oluşturma kullanabilmesi için yönetilen türle aynı sayıda genel parametreye sahip olmalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GenericEntryPointMarshallerTypeMustBeClosedOrMatchArityMessage">
+        <source>The marshaller type '{0}' for managed type '{1}' must be a closed generic type, have the same arity as the managed type if it is a value marshaller, or have one additional generic parameter if it is a collection marshaller.</source>
+        <target state="translated">Yönetilen türü '{1}' için hazırlayıcı türü '{0}', kapalı bir genel tür olmalı, bir değer hazırlayıcı olması durumunda yönetilen türle aynı parametreye sahip olmalı, koleksiyon hazırlayıcı olması durumunda ise ek genel parametreye sahip olmalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresAllowUnsafeBlocksDescription">
+        <source>LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</source>
+        <target state="translated">LibraryImportAttribute, güvenli olmayan kod gerektiriyor. Projenin '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;' ile güncelleştirilmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresAllowUnsafeBlocksMessage">
+        <source>LibraryImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</source>
+        <target state="translated">LibraryImportAttribute, güvenli olmayan kod gerektiriyor. Projenin '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;' ile güncelleştirilmesi gerekir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresAllowUnsafeBlocksTitle">
+        <source>LibraryImportAttribute requires unsafe code.</source>
+        <target state="translated">LibraryImportAttribute, güvenli olmayan kod gerektiriyor.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ReturnTypeMustBeExpectedTypeDescription">
+        <source>The return type the two method must be the expected type.</source>
+        <target state="translated">İki metodun dönüş türü beklenen tür olmalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ReturnTypeMustBeExpectedTypeMessage">
+        <source>The return type of '{0}' must be '{1}'</source>
+        <target state="translated">'{0}' dönüş türü, '{1}' olmalıdır</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ReturnTypesMustMatchDescription">
+        <source>The return types of the two methods must be the same type.</source>
+        <target state="translated">İki yöntemin dönüş türleri aynı olmalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ReturnTypesMustMatchMessage">
+        <source>The return type of '{0}' must be the same type as the return type of '{1}'</source>
+        <target state="translated">'{0}' öğesinin dönüş türü, '{1}' öğesinin dönüş türüyle aynı olmalıdır</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFreeDescription">
+        <source>A stateful marshaller must have a zero-parameter void-returning instance method named 'Free'.</source>
+        <target state="translated">Durum bilgisi olan bir hazırlayıcının 'Free' adlı sıfır parametreli hükümsüz dönen bir örnek yöntemi olmalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFreeMessage">
+        <source>The type '{0}' is a stateful marshaller and does not have a zero-parameter void-returning instance method named 'Free'</source>
+        <target state="translated">'{0}' türü durum bilgisi olan bir hazırlayıcıdır ve 'Free' adlı sıfır parametreli hükümsüz dönen bir örnek yöntemine sahip değil</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFromManagedDescription">
+        <source>A stateful marshaller that supports marshalling from managed to unmanaged must provide a 'FromManaged' instance method that takes the managed value as a parameter and returns 'void'.</source>
+        <target state="translated">Yönetilenden yönetilmeyene hazırlamayı destekleyen durum bilgisi olan bir hazırlayıcı, yönetilen değeri parametre olarak alan ve 'void' döndüren bir 'FromManaged' örnek yöntemi sağlamalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFromManagedMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a one-parameter instance method named 'FromManaged' that takes a '{2}' as a parameter and returns 'void'</source>
+        <target state="translated">'{0}' türü, '{1}' hazırlama modunu '{2}' için desteklediğini belirtir ancak '{2}' değerini parametre olarak alan ve 'void' döndüren 'FromManaged' adlı tek parametreli bir örnek yöntemi sağlamaz</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFromUnmanagedDescription">
+        <source>A stateful marshaller that supports marshalling from unmanaged to managed must provide a 'FromUnmanaged' instance method that takes the unmanaged value as a parameter and returns 'void'.</source>
+        <target state="translated">Yönetimeyenden yönetilene hazırlamayı destekleyen durum bilgisi olan bir hazırlayıcı, yönetilmeyen değeri parametre olarak alan ve 'void' döndüren bir 'FromUnmanaged' örnek yöntemi sağlamalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresFromUnmanagedMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a one-parameter instance method named 'FromUnmanaged' that takes the 'unmanaged' value as a parameter and returns 'void'</source>
+        <target state="translated">'{0}' türü, '{1}' hazırlama modunu '{2}' için desteklediğini belirtir ancak 'unmanaged' değerini parametre olarak alan ve 'void' döndüren 'FromUnmanaged' adlı tek parametreli bir örnek yöntemi sağlamaz</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresToManagedDescription">
+        <source>A stateful marshaller that supports marshalling from unmanaged to managed must provide a 'ToManaged' instance method that takes no parameters and returns the managed type.</source>
+        <target state="translated">Yönetilmeyenden yönetilene hazırlamayı destekleyen durum bilgisi olan bir hazırlayıcı, parametre almayan ve yönetilen tür döndüren bir 'Tomanaged' örnek yöntemi sağlamalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresToManagedMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a zero-parameter instance method named 'ToManaged' that returns '{2}'</source>
+        <target state="translated">'{0}' türü, '{2}' için '{1}' öğesini desteklediğini belirtir ancak hazırlayıcı için '{2}' döndüren 'ToManaged' adlı sıfır parametreli bir örnek yöntemi sağlamaz</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresToUnmanagedDescription">
+        <source>A stateful marshaller that supports marshalling from managed to unmanaged must provide a 'ToUnmanaged' instance method that takes no parameters and returns the 'unmanaged' type.</source>
+        <target state="translated">Yönetilenden yönetilmeyene hazırlamayı destekleyen durum bilgisi olan bir hazırlayıcı, parametre almayan ve 'unmanaged' tür döndüren bir 'ToUnmanaged' örnek yöntemi sağlamalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatefulMarshallerRequiresToUnmanagedMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but it does not provide a zero-parameter instance method named 'ToUnmanaged' that returns the 'unmanaged' type for the marshaller</source>
+        <target state="translated">'{0}' türü, '{2}' için '{1}' öğesini desteklediğini belirtir ancak hazırlayıcı için 'unmanaged' türünü döndüren 'ToUnmanaged' adlı sıfır parametreli bir örnek yöntemi sağlamaz</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeDescription">
+        <source>When the 'Managed to Unmanaged with Caller-Allocated Buffer' shape is used by providing an 'AllocateContainerForUnmanagedElements' method that takes a 'Span&lt;T&gt;' on the marshaller type, the type must provide a static 'BufferSize' property to provide the number of elements in the caller-allocated buffer.</source>
+        <target state="translated">Sıralayıcı türünde 'Span&lt;T&gt;' alan bir 'AllocateContainerForUnmanagedElements' yöntemi sağlanarak 'Çağıran Tarafından Ayrılan Arabellek ile Yönetilenden Yönetilmeyene' şekli kullanıldığında tür, çağıran tarafından ayrılan arabellekteki öğe sayısını sağlamak için statik bir 'BufferSize' özelliği belirtmelidir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionCallerAllocFromManagedMustHaveBufferSizeMessage">
+        <source>The marshaller type '{0}' must have a static read-only 'int' 'BufferSize' property to specify the size of the caller-allocated buffer because it has an 'AllocateContainerForUnmanagedElements' method that takes a caller-allocated 'Span&lt;{1}&gt;'</source>
+        <target state="translated">'{0}' sıralayıcı türü, çağıran tarafından ayrılan arabelleğin boyutunu belirtmek için statik bir salt okunur 'int' 'BufferSize' özelliğine sahip olmalıdır çünkü çağıran tarafından ayrılan 'Span&lt;{1}&gt;' alan bir 'AllocateContainerForUnmanagedElements' yöntemine sahiptir.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionInRequiresCollectionMethodsDescription">
+        <source>A contiguous collection marshaller that supports marshalling from managed to unmanaged must provide a 'GetManagedValuesSource' that takes the managed value as a parameter and returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that takes the unmanaged value as a parameter and returns a 'Span&lt;&gt;'</source>
+        <target state="translated">Yönetilenden yönetilmeyene sıralamayı destekleyen bitişik bir koleksiyon sıralayıcı, yönetilen değeri parametre olarak alan ve 'ReadOnlySpan&lt;&gt;' döndüren bir 'GetManagedValuesSource'' ile yönetilmeyen değeri parametre olarak alan ve 'Span&lt;&gt;' döndüren bir 'GetUnmanagedValuesDestination' metodu sağlamalıdır</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionInRequiresCollectionMethodsMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesSource' that takes '{2}' as a parameter and returns a 'ReadOnlySpan&lt;&gt;' and a 'GetUnmanagedValuesDestination' method that takes the unmanaged value as a parameter and returns a 'Span&lt;&gt;'</source>
+        <target state="translated">'{0}' türü, '{1}' sıralama modunu desteklediğini belirtiyor, ancak '{2}' öğesini parametre olarak alan ve 'ReadOnlySpan&lt;&gt;' döndüren bir 'GetManagedValuesSource ile yönetilmeyen değeri parametre olarak' alan ve 'Span&lt;&gt;' döndüren bir 'GetUnmanagedValuesDestination' metodu sağlamıyor.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionOutRequiresCollectionMethodsDescription">
+        <source>A contiguous collection marshaller that supports marshalling from unmanaged to managed must provide a 'GetManagedValuesDestination' that takes the managed value and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes the unmanaged value and an 'int' and returns a 'ReadOnlySpan&lt;&gt;'.</source>
+        <target state="translated">Yönetilmeyenden yönetilene sıralamayı destekleyen bitişik bir koleksiyon sıralayıcı, yönetilen değeri alan ve 'Span&lt;&gt;' döndüren bir 'GetManagedValuesDestination' ile yönetilmeyen değeri ve 'int' alan ve 'ReadOnlySpan&lt;&gt;' döndüren bir 'GetUnmanagedValuesSource' metodu sağlamalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionOutRequiresCollectionMethodsMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode, but it does not provide a 'GetManagedValuesDestination' that takes '{2}' and returns a 'Span&lt;&gt;' and a 'GetUnmanagedValuesSource' method that takes the unmanaged value and an 'int' and returns a 'ReadOnlySpan&lt;&gt;'</source>
+        <target state="translated">'{0}' türü, '{1}' sıralama modunu desteklediğini belirtiyor, ancak '{2}' alan ve 'Span&lt;&gt;' döndüren bir 'GetManagedValuesDestination' ile yönetilmeyen değeri ve 'int' alan ve 'ReadOnlySpan&lt;&gt;' döndüren bir 'GetUnmanagedValuesSource' metodu sağlamıyor.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsDescription">
+        <source>A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForManagedElements' method taking the unmanaged type as the first parameter and the number of elements as an 'int' parameter</source>
+        <target state="translated">Yönetilenden yönetilmeyene sıralamayı destekleyen, durum bilgisi olmayan bitişik bir koleksiyon sıralayıcı, yönetilmeyen türü ilk parametre olarak ve öğe sayısını 'int' parametresi olarak alan bir 'AllocateContainerForManagedElements' yöntemi sağlamalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForManagedElementsMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForManagedElements' method that takes the unmanaged type as the first parameter and an 'int' as the second parameter</source>
+        <target state="translated">'{0}' türü, '{2}' için '{1}' sıralama modunu desteklediğini belirtiyor, ancak yönetilmeyen türü birinci parametre ve 'int' öğesini ikini parametre olarak alan iki parametreli bir 'AllocateContainerForManagedElements' metodu sağlamıyor</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsDescription">
+        <source>A stateless contiguous collection marshaller that supports marshalling from managed to unmanaged must provide an 'AllocateContainerForUnmanagedElements' method taking the managed type as the first parameter and providing the number of elements as an 'out int' parameter</source>
+        <target state="translated">Yönetilenden yönetilmeyene sıralamayı destekleyen, durum bilgisi olmayan bitişik bir koleksiyon sıralayıcı, yönetilen türü ilk parametre olarak ve öğe sayısını 'out int' parametresi olarak alan bir 'AllocateContainerForUnmanagedElements' yöntemi sağlamalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessLinearCollectionRequiresTwoParameterAllocateContainerForUnmanagedElementsMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a two-parameter 'AllocateContainerForUnmanagedElements' method that takes a '{2}' as the first parameter and an 'out int' as the second parameter</source>
+        <target state="translated">'{0}' türü, '{2}' için '{1}' sıralama modunu desteklediğini belirtiyor, ancak '{2}' öğesini birinci parametre ve 'out int' öğesini ikini parametre olarak alan iki parametreli bir 'AllocateContainerForUnmanagedElements' metodu sağlamıyor.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessRequiresConvertToManagedDescription">
+        <source>A stateless value marshaller that supports marshalling from unmanaged to managed must provide a 'ConvertToManaged' method that takes the unmanaged type as a parameter and returns the the managed type.</source>
+        <target state="translated">Yönetilmeyenden yönetilene sıralamayı destekleyen, durum bilgisi olmayan bir değer sıralayıcı, yönetilmeyen değeri parametre olarak alan ve yönetilen türünde bir değer döndüren 'ConvertToManaged' yöntemi sağlamalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessRequiresConvertToManagedMessage">
+        <source>The type '{0}' specifies it supports the '{1}' marshal mode, but it does not provide a 'ConvertToManaged' method that takes the unmanaged type as a parameter and returns '{2}'</source>
+        <target state="translated">'{0}' türü, '{1}' sıralama modunu desteklediğini belirtiyor, ancak yönetilmeyen türü parametre olarak alan ve '{2}' döndüren bir 'ConvertToManaged' metodu sağlamıyor.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessValueInRequiresConvertToUnmanagedDescription">
+        <source>A stateless value marshaller that supports marshalling from managed to unmanaged must provide a one-parameter 'ConvertToUnmanaged' method that takes the managed value as the parameter and returns a value of the 'unmanaged' type.</source>
+        <target state="translated">Yönetilenden yönetilmeyene sıralamayı destekleyen, durum bilgisi olmayan bir değer sıralayıcı, yönetilen değeri parametre olarak alan ve 'unmanaged' türünde bir değer döndüren tek parametreli bir 'ConvertToUnmanaged' yöntemi sağlamalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="StatelessValueInRequiresConvertToUnmanagedMessage">
+        <source>The type '{0}' specifies that it supports the '{1}' marshal mode for '{2}' but does not provide a one-parameter 'ConvertToUnmanaged' method that takes a '{2}' as a parameter and returns a value of an 'unmanaged' type</source>
+        <target state="translated">'{0}' türü, '{2}' için '{1}' sıralama modunu desteklediğini belirtiyor, ancak '{2}' öğesini parametre olarak alan ve 'unmanaged' türünde bir değer döndüren tek parametreli bir 'ConvertToUnmanaged' metodu sağlamıyor.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ToUnmanagedFromManagedTypesMustMatchDescription">
+        <source>The return type of 'ConvertToUnmanaged' and the parameter type of 'ConvertToManaged' must be the same.</source>
+        <target state="translated">'ConvertToUnmanaged' dönüş türü ve ''ConvertToManaged' parametre türü aynı olmalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ToUnmanagedFromManagedTypesMustMatchMessage">
+        <source>The return type of 'ConvertToUnmanaged' and the parameter type of 'ConvertToManaged' must be the same</source>
+        <target state="translated">'ConvertToUnmanaged' dönüş türü ve ''ConvertToManaged' parametre türü aynı olmalıdır</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeMustBeUnmanagedDescription">
+        <source>The unmanaged type for a custom marshaller must be a C# unmanaged type.</source>
+        <target state="translated">Özel sıralayıcının yönetilmeyen türü, C# yönetilmeyen bir tür olmalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeMustBeUnmanagedMessage">
+        <source>The return type of '{0}' must be unmanaged</source>
+        <target state="translated">'{0}' dönüş türü, yönetilmeyen olmalıdır</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerDescription">
+        <source>'void*' must be castable to the type so the pinned result of the static 'GetPinnableReference' method can be passed to the native context after being pinned.</source>
+        <target state="translated">Statik 'GetPinnableReference' yönteminin sabitlenmiş sonucunun sabitlendikten sonra yerel bağlama geçirilebilmesi için 'void*', türe atanabilir olmalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeMustHaveExplicitCastFromVoidPointerMessage">
+        <source>'void*' must be castable to the type '{0}' because the managed type '{1}' has a static 'GetPinnableReference' method</source>
+        <target state="translated">Yönetilen tür '{1}', statik 'GetPinnableReference' yöntemine sahip olduğundan 'void*', '{0}' türüne atanabilir olmalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeDescription">
+        <source>An entry-point type for marshalling a given type must have a 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type.</source>
+        <target state="translated">Belirli bir tür için bir giriş noktası türünün, bu türü yönetilen tür olarak belirten 'System.Runtime.InteropServices.CustomMarshallerAttribute' değerini taşımalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="EntryPointTypeMustHaveCustomMarshallerAttributeWithMatchingManagedTypeMessage">
+        <source>The entry-point marshaller type '{0}' for the type '{1}' must be a type with at least one 'System.Runtime.InteropServices.CustomMarshallerAttribute' that specifies this type as the managed type</source>
+        <target state="translated">Tür '{1}' için giriş noktası hazırlayıcı türü '{0}', bu türü yönetilen tür olarak belirten en az bir 'System.Runtime.InteropServices.CustomMarshallerAttribute' türü olmalıdır</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OutRequiresToManagedDescription">
+        <source>A 'Value' or 'LinearCollection'-kind native type that supports marshalling in the 'Out' direction must provide a 'ToManaged' method that returns the managed type.</source>
+        <target state="translated">'Out' yönünde sıralamayı destekleyen 'Value' veya 'LinearCollection' tipi yerel türde, yönetilen türü döndüren bir 'ToManaged' metodu sağlanmalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OutRequiresToManagedMessage">
+        <source>The type '{0}' specifies it supports marshalling in the 'Out' direction, but it does not provide a 'ToManaged' method that returns the managed type</source>
+        <target state="translated">'{0}' türü, 'Out' yönünde sıralamayı desteklediğini belirtiyor, ancak yönetilen türü döndüren bir 'ToManaged' metodu sağlamıyor</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ToFromUnmanagedTypesMustMatchDescription">
+        <source>The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same.</source>
+        <target state="translated">'ToUnmanaged' dönüş türü ve 'FromUnmanaged' parametre türü aynı olmalıdır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ToFromUnmanagedTypesMustMatchMessage">
+        <source>The return type of 'ToUnmanaged' and the parameter type of 'FromUnmanaged' must be the same</source>
+        <target state="translated">'ToUnmanaged' dönüş türü ve 'FromUnmanaged' parametre türü aynı olmalıdır</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedDescription">
+        <source>For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type.</source>
+        <target state="translated">Kaynak tarafından oluşturulan P/Invokes tarafından desteklenmeyen türler için, elde edilen P/Invoke, belirtilen türü sıralamak için temel alınan çalışma zamanını kullanır.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageParameter">
+        <source>The type '{0}' is not supported by source-generated P/Invokes. The generated source will not handle marshalling of parameter '{1}'.</source>
+        <target state="translated">'{0}' türü, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor. Oluşturulan kaynak, '{1}' parametresinin sıralamasını işlemez.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageParameterWithDetails">
+        <source>{0} The generated source will not handle marshalling of parameter '{1}'.</source>
+        <target state="translated">{0} Oluşturulan kaynak '{1}' parametresinin sıralamasını işlemez.</target>
+        <note>{0} is a message containing additional details about what is not supported
+{1} is the name of the parameter</note>
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageReturn">
+        <source>The type '{0}' is not supported by source-generated P/Invokes. The generated source will not handle marshalling of the return value of method '{1}'.</source>
+        <target state="translated">'{0}' türü, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor. Oluşturulan kaynak, '{1}' metodunun dönüş değerinin sıralamasını işlemez.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageReturnWithDetails">
+        <source>{0} The generated source will not handle marshalling of the return value of method '{1}'.</source>
+        <target state="translated">{0} Oluşturulan kaynak, '{1}' metodunun dönüş değerinin sıralamasını işlemez.</target>
+        <note>{0} is a message containing additional details about what is not supported
+{1} is the name of the method</note>
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedTitle">
+        <source>Specified type is not supported by source-generated P/Invokes</source>
+        <target state="translated">Belirtilen tür, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorDescription">
+        <source>A 'Value'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a two-parameter constructor taking the managed type and a 'Span' of an 'unmanaged' type as parameters</source>
+        <target state="translated">'CallerAllocatedBuffer' özelliğini destekleyen bir 'Value' tipi yerel türün, yönetilen türü ve 'unmanaged' türünün 'Span' değerini parametre olarak alan iki parametreli bir oluşturucu sağlaması gerekir</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage">
+        <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a two-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</source>
+        <target state="translated">'{0}' türünde '{1}' için 'CallerAllocatedBuffer' özelliğiyle 'In' sıralamasının desteklendiği belirtiliyor, ancak parametre olarak '{1}' ve 'unmanaged' türünün 'Span' değerlerini alan iki parametreli bir oluşturucu sağlanmıyor</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueInRequiresOneParameterConstructorDescription">
+        <source>A 'Value'-kind native type must provide a one-parameter constructor taking the managed type as a parameter</source>
+        <target state="translated">'Value' tipi yerel türün, yönetilen türü parametre olarak alan tek parametreli bir oluşturucu sağlaması gerekir</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueInRequiresOneParameterConstructorMessage">
+        <source>The type '{0}' specifies that it supports 'In' marshalling of '{1}' but does not provide a one-parameter constructor that takes a '{1}' as a parameter</source>
+        <target state="translated">'{0}' türü '{1}' için 'In' sıralamasını desteklediğini belirtiyor, ancak parametre olarak '{1}' değerini alan tek parametreli bir oluşturucu sağlamıyor</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

@@ -157,10 +157,8 @@ namespace System.Xml
             CreateValidator(partialValidationType, validationFlags);
             if (_psviAugmentation)
             {
-                if (_schemaInfo == null)
-                { //Might have created it during FindSchemaInfo
-                    _schemaInfo = new XmlSchemaInfo();
-                }
+                //Might have created it during FindSchemaInfo
+                _schemaInfo ??= new XmlSchemaInfo();
                 _attributeSchemaInfo = new XmlSchemaInfo();
             }
             ValidateNode(nodeToValidate);
@@ -221,27 +219,13 @@ namespace System.Xml
             return dictionary;
         }
 
-        public string? LookupNamespace(string prefix)
-        {
-            string? namespaceName = _nsManager.LookupNamespace(prefix);
-            if (namespaceName == null)
-            {
-                namespaceName = _startNode!.GetNamespaceOfPrefixStrict(prefix);
-            }
+        public string? LookupNamespace(string prefix) =>
+            _nsManager.LookupNamespace(prefix) ??
+            _startNode!.GetNamespaceOfPrefixStrict(prefix);
 
-            return namespaceName;
-        }
-
-        public string? LookupPrefix(string namespaceName)
-        {
-            string? prefix = _nsManager.LookupPrefix(namespaceName);
-            if (prefix == null)
-            {
-                prefix = _startNode!.GetPrefixOfNamespaceStrict(namespaceName);
-            }
-
-            return prefix;
-        }
+        public string? LookupPrefix(string namespaceName) =>
+            _nsManager.LookupPrefix(namespaceName) ??
+            _startNode!.GetPrefixOfNamespaceStrict(namespaceName);
 
         private IXmlNamespaceResolver NamespaceResolver
         {
@@ -442,10 +426,7 @@ namespace System.Xml
                     attr.AppendChild(_document.CreateTextNode(schemaAttribute.AttDef!.DefaultValueRaw));
                     attributes.Append(attr);
                     XmlUnspecifiedAttribute? defAttr = attr as XmlUnspecifiedAttribute;
-                    if (defAttr != null)
-                    {
-                        defAttr.SetSpecified(false);
-                    }
+                    defAttr?.SetSpecified(false);
                 }
             }
         }
@@ -525,7 +506,7 @@ namespace System.Xml
 
             if (parentNode == null)
             { //Did not find any type info all the way to the root, currentNode is Document || DocumentFragment
-                nodeIndex = nodeIndex - 1; //Subtract the one for document and set the node to null
+                nodeIndex--; //Subtract the one for document and set the node to null
                 _nodeSequenceToValidate![nodeIndex] = null;
                 return GetTypeFromAncestors(elementToValidate, null, nodeIndex);
             }
@@ -536,10 +517,7 @@ namespace System.Xml
                 CheckNodeSequenceCapacity(nodeIndex);
                 _nodeSequenceToValidate![nodeIndex++] = parentNode;
                 XmlSchemaObject? ancestorSchemaObject = parentSchemaInfo.SchemaElement;
-                if (ancestorSchemaObject == null)
-                {
-                    ancestorSchemaObject = parentSchemaInfo.SchemaType;
-                }
+                ancestorSchemaObject ??= parentSchemaInfo.SchemaType;
                 return GetTypeFromAncestors(elementToValidate, ancestorSchemaObject, nodeIndex);
             }
         }
@@ -658,7 +636,7 @@ namespace System.Xml
             return schemaInfoFound;
         }
 
-        private bool AncestorTypeHasWildcard(XmlSchemaObject? ancestorType)
+        private static bool AncestorTypeHasWildcard(XmlSchemaObject? ancestorType)
         {
             XmlSchemaComplexType? ancestorSchemaType = GetComplexType(ancestorType);
             if (ancestorType != null)
@@ -669,7 +647,7 @@ namespace System.Xml
             return false;
         }
 
-        private XmlSchemaComplexType? GetComplexType(XmlSchemaObject? schemaObject)
+        private static XmlSchemaComplexType? GetComplexType(XmlSchemaObject? schemaObject)
         {
             if (schemaObject == null)
             {

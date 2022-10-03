@@ -14,30 +14,30 @@
 {
 }
 .assembly extern xunit.core {}
-.namespace JitTest
+.namespace JitTest_shortsig_il
 {
   .class public auto ansi sealed PlatformID
          extends [mscorlib]System.Enum
   {
     .field public specialname rtspecialname int32 value__
-    .field public static literal valuetype JitTest.PlatformID MacOSX = int32(0x00000006)
-    .field public static literal valuetype JitTest.PlatformID Unix = int32(0x00000004)
-    .field public static literal valuetype JitTest.PlatformID Win32NT = int32(0x00000002)
-    .field public static literal valuetype JitTest.PlatformID Win32S = int32(0x00000000)
-    .field public static literal valuetype JitTest.PlatformID Win32Windows = int32(0x00000001)
-    .field public static literal valuetype JitTest.PlatformID WinCE = int32(0x00000003)
-    .field public static literal valuetype JitTest.PlatformID Xbox = int32(0x00000005)
-  } // end of class JitTest.PlatformID
+    .field public static literal valuetype JitTest_shortsig_il.PlatformID MacOSX = int32(0x00000006)
+    .field public static literal valuetype JitTest_shortsig_il.PlatformID Unix = int32(0x00000004)
+    .field public static literal valuetype JitTest_shortsig_il.PlatformID Win32NT = int32(0x00000002)
+    .field public static literal valuetype JitTest_shortsig_il.PlatformID Win32S = int32(0x00000000)
+    .field public static literal valuetype JitTest_shortsig_il.PlatformID Win32Windows = int32(0x00000001)
+    .field public static literal valuetype JitTest_shortsig_il.PlatformID WinCE = int32(0x00000003)
+    .field public static literal valuetype JitTest_shortsig_il.PlatformID Xbox = int32(0x00000005)
+  } // end of class JitTest_shortsig_il.PlatformID
   .class value private auto ansi serializable sealed Mood
          extends [mscorlib]System.Enum
   {
     .field public specialname rtspecialname int32 value__
-    .field public static literal value class JitTest.Mood good = int32(0x00000000)
-    .field public static literal value class JitTest.Mood bad = int32(0x00000001)
-    .field public static literal value class JitTest.Mood worse = int32(0x00000002)
+    .field public static literal value class JitTest_shortsig_il.Mood good = int32(0x00000000)
+    .field public static literal value class JitTest_shortsig_il.Mood bad = int32(0x00000001)
+    .field public static literal value class JitTest_shortsig_il.Mood worse = int32(0x00000002)
   } // end of class Mood
 
-  .class private auto ansi TestClass
+  .class public auto ansi TestClass
          extends [mscorlib]System.Object
   {
     .field private int32 m_d
@@ -48,8 +48,8 @@
     .field private float64 m_dbl
     .field private bool m_b
     .field private static value class [mscorlib]System.DateTime m_t
-    .field private value class JitTest.PlatformID m_pid
-    .field private value class JitTest.Mood m_mood
+    .field private value class JitTest_shortsig_il.PlatformID m_pid
+    .field private value class JitTest_shortsig_il.Mood m_mood
     .method private hidebysig static string 
             Format(typedref format,
                    typedref _ref) il managed
@@ -64,7 +64,7 @@
                [6] bool V_6,
                [7] typedref V_7,
                [8] wchar V_8,
-               [9] value class JitTest.Mood V_9)
+               [9] value class JitTest_shortsig_il.Mood V_9)
       IL_0000:  ldarg.0
       IL_0001:  refanyval  [mscorlib]System.String
       IL_0006:  ldind.ref
@@ -412,7 +412,7 @@
       IL_031d:  ldarg.1
       IL_031e:  refanytype
       IL_0320:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(value class [mscorlib]System.RuntimeTypeHandle)
-      IL_0325:  ldtoken    JitTest.PlatformID
+      IL_0325:  ldtoken    JitTest_shortsig_il.PlatformID
       IL_032a:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(value class [mscorlib]System.RuntimeTypeHandle)
       IL_032f:  beq.s      IL_0337
 
@@ -421,9 +421,9 @@
 
       IL_0337:  ldloc.2
       IL_0338:  ldarg.1
-      IL_0339:  refanyval  JitTest.PlatformID
-      		ldobj JitTest.PlatformID
-      IL_033e:  box        JitTest.PlatformID
+      IL_0339:  refanyval  JitTest_shortsig_il.PlatformID
+      		ldobj JitTest_shortsig_il.PlatformID
+      IL_033e:  box        JitTest_shortsig_il.PlatformID
       IL_0343:  call       instance string [mscorlib]System.Enum::ToString()
       IL_0348:  call       string [mscorlib]System.String::Concat(string,
                                                                                string)
@@ -441,7 +441,7 @@
       IL_0360:  ldarg.1
       IL_0361:  refanytype
       IL_0363:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(value class [mscorlib]System.RuntimeTypeHandle)
-      IL_0368:  ldtoken    JitTest.Mood
+      IL_0368:  ldtoken    JitTest_shortsig_il.Mood
       IL_036d:  call       class [mscorlib]System.Type [mscorlib]System.Type::GetTypeFromHandle(value class [mscorlib]System.RuntimeTypeHandle)
       IL_0372:  beq.s      IL_037a
 
@@ -449,7 +449,7 @@
       IL_0379:  throw
 
       IL_037a:  ldarg.1
-      IL_037b:  refanyval  JitTest.Mood
+      IL_037b:  refanyval  JitTest_shortsig_il.Mood
       IL_0380:  ldind.i4
       IL_0381:  stloc.s    V_9
       IL_0383:  ldloc.s    V_9
@@ -509,7 +509,7 @@
       IL_0000:  ldarga.s   format
       IL_0002:  mkrefany   [mscorlib]System.String
       IL_0007:  ldarg.1
-      IL_0008:  call       string JitTest.TestClass::Format(typedref,
+      IL_0008:  call       string JitTest_shortsig_il.TestClass::Format(typedref,
                                                                          typedref)
       IL_000d:  stloc.0
       IL_000e:  ldloc.0
@@ -562,8 +562,8 @@
                [5] float64 V_5,
                [6] bool V_6,
                [7] value class [mscorlib]System.DateTime V_7,
-               [8] value class JitTest.PlatformID V_8,
-               [9] value class JitTest.Mood V_9)
+               [8] value class JitTest_shortsig_il.PlatformID V_8,
+               [9] value class JitTest_shortsig_il.Mood V_9)
       IL_0000:  ldc.i4.s   10
       IL_0002:  stloc.0
       IL_0003:  ldc.i4.s   11
@@ -595,49 +595,49 @@
       IL_003a:  ldloca.s   V_0
       IL_003c:  mkrefany   [mscorlib]System.Int32
       IL_0041:  ldstr      "{10}"
-      IL_0046:  call       void JitTest.TestClass::Test(string,
+      IL_0046:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_004b:  ldstr      "{%u}"
       IL_0050:  ldloca.s   V_1
       IL_0052:  mkrefany   [mscorlib]System.UInt32
       IL_0057:  ldstr      "{11}"
-      IL_005c:  call       void JitTest.TestClass::Test(string,
+      IL_005c:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_0061:  ldstr      "{%ld}"
       IL_0066:  ldloca.s   V_2
       IL_0068:  mkrefany   [mscorlib]System.Int64
       IL_006d:  ldstr      "{12}"
-      IL_0072:  call       void JitTest.TestClass::Test(string,
+      IL_0072:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_0077:  ldstr      "{%lu}"
       IL_007c:  ldloca.s   V_3
       IL_007e:  mkrefany   [mscorlib]System.UInt64
       IL_0083:  ldstr      "{13}"
-      IL_0088:  call       void JitTest.TestClass::Test(string,
+      IL_0088:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_008d:  ldstr      "{%f}"
       IL_0092:  ldloca.s   V_4
       IL_0094:  mkrefany   [mscorlib]System.Single
       IL_0099:  ldstr      "{14}"
-      IL_009e:  call       void JitTest.TestClass::Test(string,
+      IL_009e:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_00a3:  ldstr      "{%lf}"
       IL_00a8:  ldloca.s   V_5
       IL_00aa:  mkrefany   [mscorlib]System.Double
       IL_00af:  ldstr      "{15}"
-      IL_00b4:  call       void JitTest.TestClass::Test(string,
+      IL_00b4:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_00b9:  ldstr      "{%b}"
       IL_00be:  ldloca.s   V_6
       IL_00c0:  mkrefany   [mscorlib]System.Boolean
       IL_00c5:  ldstr      "{true}"
-      IL_00ca:  call       void JitTest.TestClass::Test(string,
+      IL_00ca:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_00cf:  ldstr      "{%t}"
@@ -650,21 +650,21 @@
       IL_00ec:  call       string [mscorlib]System.String::Concat(string,
                                                                                string,
                                                                                string)
-      IL_00f1:  call       void JitTest.TestClass::Test(string,
+      IL_00f1:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_00f6:  ldstr      "{%p}"
       IL_00fb:  ldloca.s   V_8
-      IL_00fd:  mkrefany   JitTest.PlatformID
+      IL_00fd:  mkrefany   JitTest_shortsig_il.PlatformID
       IL_0102:  ldstr      "{Win32NT}"
-      IL_0107:  call       void JitTest.TestClass::Test(string,
+      IL_0107:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_010c:  ldstr      "{%e}"
       IL_0111:  ldloca.s   V_9
-      IL_0113:  mkrefany   JitTest.Mood
+      IL_0113:  mkrefany   JitTest_shortsig_il.Mood
       IL_0118:  ldstr      "{good}"
-      IL_011d:  call       void JitTest.TestClass::Test(string,
+      IL_011d:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_0122:  ret
@@ -676,85 +676,85 @@
       .maxstack  5
       IL_0000:  ldstr      "{%d}"
       IL_0005:  ldarg.0
-      IL_0006:  ldflda     int32 JitTest.TestClass::m_d
+      IL_0006:  ldflda     int32 JitTest_shortsig_il.TestClass::m_d
       IL_000b:  mkrefany   [mscorlib]System.Int32
       IL_0010:  ldstr      "{20}"
-      IL_0015:  call       void JitTest.TestClass::Test(string,
+      IL_0015:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_001a:  ldstr      "{%u}"
-      IL_001f:  ldsflda    unsigned int32 JitTest.TestClass::m_u
+      IL_001f:  ldsflda    unsigned int32 JitTest_shortsig_il.TestClass::m_u
       IL_0024:  mkrefany   [mscorlib]System.UInt32
       IL_0029:  ldstr      "{21}"
-      IL_002e:  call       void JitTest.TestClass::Test(string,
+      IL_002e:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_0033:  ldstr      "{%ld}"
       IL_0038:  ldarg.0
-      IL_0039:  ldflda     int64 JitTest.TestClass::m_l
+      IL_0039:  ldflda     int64 JitTest_shortsig_il.TestClass::m_l
       IL_003e:  mkrefany   [mscorlib]System.Int64
       IL_0043:  ldstr      "{22}"
-      IL_0048:  call       void JitTest.TestClass::Test(string,
+      IL_0048:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_004d:  ldstr      "{%lu}"
-      IL_0052:  ldsflda    unsigned int64 JitTest.TestClass::m_ul
+      IL_0052:  ldsflda    unsigned int64 JitTest_shortsig_il.TestClass::m_ul
       IL_0057:  mkrefany   [mscorlib]System.UInt64
       IL_005c:  ldstr      "{23}"
-      IL_0061:  call       void JitTest.TestClass::Test(string,
+      IL_0061:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_0066:  ldstr      "{%f}"
       IL_006b:  ldarg.0
-      IL_006c:  ldflda     float32 JitTest.TestClass::m_f
+      IL_006c:  ldflda     float32 JitTest_shortsig_il.TestClass::m_f
       IL_0071:  mkrefany   [mscorlib]System.Single
       IL_0076:  ldstr      "{24}"
-      IL_007b:  call       void JitTest.TestClass::Test(string,
+      IL_007b:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_0080:  ldstr      "{%lf}"
       IL_0085:  ldarg.0
-      IL_0086:  ldflda     float64 JitTest.TestClass::m_dbl
+      IL_0086:  ldflda     float64 JitTest_shortsig_il.TestClass::m_dbl
       IL_008b:  mkrefany   [mscorlib]System.Double
       IL_0090:  ldstr      "{25}"
-      IL_0095:  call       void JitTest.TestClass::Test(string,
+      IL_0095:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_009a:  ldstr      "{%b}"
       IL_009f:  ldarg.0
-      IL_00a0:  ldflda     bool JitTest.TestClass::m_b
+      IL_00a0:  ldflda     bool JitTest_shortsig_il.TestClass::m_b
       IL_00a5:  mkrefany   [mscorlib]System.Boolean
       IL_00aa:  ldstr      "{false}"
-      IL_00af:  call       void JitTest.TestClass::Test(string,
+      IL_00af:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_00b4:  ldstr      "{%t}"
-      IL_00b9:  ldsflda    value class [mscorlib]System.DateTime JitTest.TestClass::m_t
+      IL_00b9:  ldsflda    value class [mscorlib]System.DateTime JitTest_shortsig_il.TestClass::m_t
       IL_00be:  mkrefany   [mscorlib]System.DateTime
       IL_00c3:  ldstr      "{"
-      IL_00c8:  ldsflda    value class [mscorlib]System.DateTime JitTest.TestClass::m_t
+      IL_00c8:  ldsflda    value class [mscorlib]System.DateTime JitTest_shortsig_il.TestClass::m_t
       IL_00cd:  call       instance string [mscorlib]System.DateTime::ToString()
       IL_00d2:  ldstr      "}"
       IL_00d7:  call       string [mscorlib]System.String::Concat(string,
                                                                                string,
                                                                                string)
-      IL_00dc:  call       void JitTest.TestClass::Test(string,
+      IL_00dc:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_00e1:  ldstr      "{%p}"
       IL_00e6:  ldarg.0
-      IL_00e7:  ldflda     value class JitTest.PlatformID JitTest.TestClass::m_pid
-      IL_00ec:  mkrefany   JitTest.PlatformID
+      IL_00e7:  ldflda     value class JitTest_shortsig_il.PlatformID JitTest_shortsig_il.TestClass::m_pid
+      IL_00ec:  mkrefany   JitTest_shortsig_il.PlatformID
       IL_00f1:  ldstr      "{Win32NT}"
-      IL_00f6:  call       void JitTest.TestClass::Test(string,
+      IL_00f6:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_00fb:  ldstr      "{%e}"
       IL_0100:  ldarg.0
-      IL_0101:  ldflda     value class JitTest.Mood JitTest.TestClass::m_mood
-      IL_0106:  mkrefany   JitTest.Mood
+      IL_0101:  ldflda     value class JitTest_shortsig_il.Mood JitTest_shortsig_il.TestClass::m_mood
+      IL_0106:  mkrefany   JitTest_shortsig_il.Mood
       IL_010b:  ldstr      "{good}"
-      IL_0110:  call       void JitTest.TestClass::Test(string,
+      IL_0110:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_0115:  ret
@@ -769,56 +769,56 @@
                            float64& dbl,
                            bool& b,
                            value class [mscorlib]System.DateTime& t,
-                           value class JitTest.PlatformID& pid) il managed
+                           value class JitTest_shortsig_il.PlatformID& pid) il managed
     {
       .maxstack  5
       IL_0000:  ldstr      "{%d}"
       IL_0005:  ldarg.0
       IL_0006:  mkrefany   [mscorlib]System.Int32
       IL_000b:  ldstr      "{20}"
-      IL_0010:  call       void JitTest.TestClass::Test(string,
+      IL_0010:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_0015:  ldstr      "{%u}"
       IL_001a:  ldarg.1
       IL_001b:  mkrefany   [mscorlib]System.UInt32
       IL_0020:  ldstr      "{21}"
-      IL_0025:  call       void JitTest.TestClass::Test(string,
+      IL_0025:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_002a:  ldstr      "{%ld}"
       IL_002f:  ldarg.2
       IL_0030:  mkrefany   [mscorlib]System.Int64
       IL_0035:  ldstr      "{22}"
-      IL_003a:  call       void JitTest.TestClass::Test(string,
+      IL_003a:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_003f:  ldstr      "{%lu}"
       IL_0044:  ldarg.3
       IL_0045:  mkrefany   [mscorlib]System.UInt64
       IL_004a:  ldstr      "{23}"
-      IL_004f:  call       void JitTest.TestClass::Test(string,
+      IL_004f:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_0054:  ldstr      "{%f}"
       IL_0059:  ldarg.s    f
       IL_005b:  mkrefany   [mscorlib]System.Single
       IL_0060:  ldstr      "{24}"
-      IL_0065:  call       void JitTest.TestClass::Test(string,
+      IL_0065:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_006a:  ldstr      "{%lf}"
       IL_006f:  ldarg.s    dbl
       IL_0071:  mkrefany   [mscorlib]System.Double
       IL_0076:  ldstr      "{25}"
-      IL_007b:  call       void JitTest.TestClass::Test(string,
+      IL_007b:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_0080:  ldstr      "{%b}"
       IL_0085:  ldarg.s    b
       IL_0087:  mkrefany   [mscorlib]System.Boolean
       IL_008c:  ldstr      "{false}"
-      IL_0091:  call       void JitTest.TestClass::Test(string,
+      IL_0091:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_0096:  ldstr      "{%t}"
@@ -831,14 +831,14 @@
       IL_00b3:  call       string [mscorlib]System.String::Concat(string,
                                                                                string,
                                                                                string)
-      IL_00b8:  call       void JitTest.TestClass::Test(string,
+      IL_00b8:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_00bd:  ldstr      "{%p}"
       IL_00c2:  ldarg.s    pid
-      IL_00c4:  mkrefany   JitTest.PlatformID
+      IL_00c4:  mkrefany   JitTest_shortsig_il.PlatformID
       IL_00c9:  ldstr      "{Win32NT}"
-      IL_00ce:  call       void JitTest.TestClass::Test(string,
+      IL_00ce:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_00d3:  ret
@@ -856,7 +856,7 @@
                [5] float64 V_5,
                [6] bool V_6,
                [7] value class [mscorlib]System.DateTime V_7,
-               [8] value class JitTest.PlatformID V_8)
+               [8] value class JitTest_shortsig_il.PlatformID V_8)
       IL_0000:  ldc.i4.s   20
       IL_0002:  stloc.0
       IL_0003:  ldc.i4.s   21
@@ -891,7 +891,7 @@
       IL_003e:  ldloca.s   V_6
       IL_0040:  ldloca.s   V_7
       IL_0042:  ldloca.s   V_8
-      IL_0044:  call       void JitTest.TestClass::DoTestArgSlots(int32&,
+      IL_0044:  call       void JitTest_shortsig_il.TestClass::DoTestArgSlots(int32&,
                                                                   unsigned int32&,
                                                                   int64&,
                                                                   unsigned int64&,
@@ -899,7 +899,7 @@
                                                                   float64&,
                                                                   bool&,
                                                                   value class [mscorlib]System.DateTime&,
-                                                                  value class JitTest.PlatformID&)
+                                                                  value class JitTest_shortsig_il.PlatformID&)
       IL_0049:  ret
     } // end of method TestClass::TestArgSlots
 
@@ -915,8 +915,8 @@
                [5] float64[] V_5,
                [6] bool[] V_6,
                [7] value class [mscorlib]System.DateTime[] V_7,
-               [8] value class JitTest.PlatformID[] V_8,
-               [9] value class JitTest.Mood[] V_9,
+               [8] value class JitTest_shortsig_il.PlatformID[] V_8,
+               [9] value class JitTest_shortsig_il.Mood[] V_9,
                [10] int32[] V_10,
                [11] unsigned int32[] V_11,
                [12] int64[] V_12,
@@ -924,8 +924,8 @@
                [14] float32[] V_14,
                [15] float64[] V_15,
                [16] bool[] V_16,
-               [17] value class JitTest.PlatformID[] V_17,
-               [18] value class JitTest.Mood[] V_18)
+               [17] value class JitTest_shortsig_il.PlatformID[] V_17,
+               [18] value class JitTest_shortsig_il.Mood[] V_18)
       IL_0000:  ldc.i4.1
       IL_0001:  newarr     [mscorlib]System.Int32
       IL_0006:  stloc.s    V_10
@@ -1004,7 +1004,7 @@
                                                                           int32,
                                                                           int32)
       IL_00a3:  ldc.i4.1
-      IL_00a4:  newarr     JitTest.PlatformID
+      IL_00a4:  newarr     JitTest_shortsig_il.PlatformID
       IL_00a9:  stloc.s    V_17
       IL_00ab:  ldloc.s    V_17
       IL_00ad:  ldc.i4.0
@@ -1013,7 +1013,7 @@
       IL_00b0:  ldloc.s    V_17
       IL_00b2:  stloc.s    V_8
       IL_00b4:  ldc.i4.1
-      IL_00b5:  newarr     JitTest.Mood
+      IL_00b5:  newarr     JitTest_shortsig_il.Mood
       IL_00ba:  stloc.s    V_18
       IL_00bc:  ldloc.s    V_18
       IL_00be:  stloc.s    V_9
@@ -1023,7 +1023,7 @@
       IL_00c7:  ldelema    [mscorlib]System.Int32
       IL_00cc:  mkrefany   [mscorlib]System.Int32
       IL_00d1:  ldstr      "{10}"
-      IL_00d6:  call       void JitTest.TestClass::Test(string,
+      IL_00d6:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_00db:  ldstr      "{%u}"
@@ -1032,7 +1032,7 @@
       IL_00e2:  ldelema    [mscorlib]System.UInt32
       IL_00e7:  mkrefany   [mscorlib]System.UInt32
       IL_00ec:  ldstr      "{11}"
-      IL_00f1:  call       void JitTest.TestClass::Test(string,
+      IL_00f1:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_00f6:  ldstr      "{%ld}"
@@ -1041,7 +1041,7 @@
       IL_00fd:  ldelema    [mscorlib]System.Int64
       IL_0102:  mkrefany   [mscorlib]System.Int64
       IL_0107:  ldstr      "{12}"
-      IL_010c:  call       void JitTest.TestClass::Test(string,
+      IL_010c:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_0111:  ldstr      "{%lu}"
@@ -1050,7 +1050,7 @@
       IL_0118:  ldelema    [mscorlib]System.UInt64
       IL_011d:  mkrefany   [mscorlib]System.UInt64
       IL_0122:  ldstr      "{13}"
-      IL_0127:  call       void JitTest.TestClass::Test(string,
+      IL_0127:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_012c:  ldstr      "{%f}"
@@ -1059,7 +1059,7 @@
       IL_0134:  ldelema    [mscorlib]System.Single
       IL_0139:  mkrefany   [mscorlib]System.Single
       IL_013e:  ldstr      "{14}"
-      IL_0143:  call       void JitTest.TestClass::Test(string,
+      IL_0143:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_0148:  ldstr      "{%lf}"
@@ -1068,7 +1068,7 @@
       IL_0150:  ldelema    [mscorlib]System.Double
       IL_0155:  mkrefany   [mscorlib]System.Double
       IL_015a:  ldstr      "{15}"
-      IL_015f:  call       void JitTest.TestClass::Test(string,
+      IL_015f:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_0164:  ldstr      "{%b}"
@@ -1077,7 +1077,7 @@
       IL_016c:  ldelema    [mscorlib]System.Boolean
       IL_0171:  mkrefany   [mscorlib]System.Boolean
       IL_0176:  ldstr      "{true}"
-      IL_017b:  call       void JitTest.TestClass::Test(string,
+      IL_017b:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_0180:  ldstr      "{%t}"
@@ -1094,31 +1094,31 @@
       IL_01a9:  call       string [mscorlib]System.String::Concat(string,
                                                                                string,
                                                                                string)
-      IL_01ae:  call       void JitTest.TestClass::Test(string,
+      IL_01ae:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_01b3:  ldstr      "{%p}"
       IL_01b8:  ldloc.s    V_8
       IL_01ba:  ldc.i4.0
-      IL_01bb:  ldelema    JitTest.PlatformID
-      IL_01c0:  mkrefany   JitTest.PlatformID
+      IL_01bb:  ldelema    JitTest_shortsig_il.PlatformID
+      IL_01c0:  mkrefany   JitTest_shortsig_il.PlatformID
       IL_01c5:  ldstr      "{Win32NT}"
-      IL_01ca:  call       void JitTest.TestClass::Test(string,
+      IL_01ca:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_01cf:  ldstr      "{%e}"
       IL_01d4:  ldloc.s    V_9
       IL_01d6:  ldc.i4.0
-      IL_01d7:  ldelema    JitTest.Mood
-      IL_01dc:  mkrefany   JitTest.Mood
+      IL_01d7:  ldelema    JitTest_shortsig_il.Mood
+      IL_01dc:  mkrefany   JitTest_shortsig_il.Mood
       IL_01e1:  ldstr      "{good}"
-      IL_01e6:  call       void JitTest.TestClass::Test(string,
+      IL_01e6:  call       void JitTest_shortsig_il.TestClass::Test(string,
                                                         typedref,
                                                         string)
       IL_01eb:  ret
     } // end of method TestClass::TestArrayElem
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -1126,10 +1126,10 @@
       )
       .entrypoint
       .maxstack  8
-      IL_0000:  call       void JitTest.TestClass::TestLocals()
-      IL_0005:  newobj     instance void JitTest.TestClass::.ctor()
-      IL_000a:  call       instance void JitTest.TestClass::TestFields()
-      IL_000f:  call       void JitTest.TestClass::TestArrayElem()
+      IL_0000:  call       void JitTest_shortsig_il.TestClass::TestLocals()
+      IL_0005:  newobj     instance void JitTest_shortsig_il.TestClass::.ctor()
+      IL_000a:  call       instance void JitTest_shortsig_il.TestClass::TestFields()
+      IL_000f:  call       void JitTest_shortsig_il.TestClass::TestArrayElem()
       IL_0014:  ldstr      "*** passed ***"
       IL_0019:  call       void [System.Console]System.Console::WriteLine(string)
       IL_001e:  ldc.i4 100
@@ -1141,11 +1141,11 @@
     {
       .maxstack  8
       IL_0000:  ldc.i4.s   21
-      IL_0002:  stsfld     unsigned int32 JitTest.TestClass::m_u
+      IL_0002:  stsfld     unsigned int32 JitTest_shortsig_il.TestClass::m_u
       IL_0007:  ldc.i4.s   23
       IL_0009:  conv.i8
-      IL_000a:  stsfld     unsigned int64 JitTest.TestClass::m_ul
-      IL_000f:  ldsflda    value class [mscorlib]System.DateTime JitTest.TestClass::m_t
+      IL_000a:  stsfld     unsigned int64 JitTest_shortsig_il.TestClass::m_ul
+      IL_000f:  ldsflda    value class [mscorlib]System.DateTime JitTest_shortsig_il.TestClass::m_t
       IL_0014:  ldc.i4.s   100
       IL_0016:  ldc.i4.s   10
       IL_0018:  ldc.i4.1
@@ -1161,26 +1161,26 @@
       .maxstack  2
       IL_0000:  ldarg.0
       IL_0001:  ldc.i4.s   20
-      IL_0003:  stfld      int32 JitTest.TestClass::m_d
+      IL_0003:  stfld      int32 JitTest_shortsig_il.TestClass::m_d
       IL_0008:  ldarg.0
       IL_0009:  ldc.i4.s   22
       IL_000b:  conv.i8
-      IL_000c:  stfld      int64 JitTest.TestClass::m_l
+      IL_000c:  stfld      int64 JitTest_shortsig_il.TestClass::m_l
       IL_0011:  ldarg.0
       IL_0012:  ldc.r4     24.
-      IL_0017:  stfld      float32 JitTest.TestClass::m_f
+      IL_0017:  stfld      float32 JitTest_shortsig_il.TestClass::m_f
       IL_001c:  ldarg.0
       IL_001d:  ldc.r8     25.
-      IL_0026:  stfld      float64 JitTest.TestClass::m_dbl
+      IL_0026:  stfld      float64 JitTest_shortsig_il.TestClass::m_dbl
       IL_002b:  ldarg.0
       IL_002c:  ldc.i4.0
-      IL_002d:  stfld      bool JitTest.TestClass::m_b
+      IL_002d:  stfld      bool JitTest_shortsig_il.TestClass::m_b
       IL_0032:  ldarg.0
       IL_0033:  ldc.i4.2
-      IL_0034:  stfld      value class JitTest.PlatformID JitTest.TestClass::m_pid
+      IL_0034:  stfld      value class JitTest_shortsig_il.PlatformID JitTest_shortsig_il.TestClass::m_pid
       IL_0039:  ldarg.0
       IL_003a:  ldc.i4.0
-      IL_003b:  stfld      value class JitTest.Mood JitTest.TestClass::m_mood
+      IL_003b:  stfld      value class JitTest_shortsig_il.Mood JitTest_shortsig_il.TestClass::m_mood
       IL_0040:  ldarg.0
       IL_0041:  call       instance void [mscorlib]System.Object::.ctor()
       IL_0046:  ret
@@ -1188,5 +1188,5 @@
 
   } // end of class TestClass
 
-} // end of namespace JitTest
+} // end of namespace JitTest_shortsig_il
 

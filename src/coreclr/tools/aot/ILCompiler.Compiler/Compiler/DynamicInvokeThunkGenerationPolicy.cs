@@ -33,15 +33,6 @@ namespace ILCompiler
     /// </summary>
     public sealed class DefaultDynamicInvokeThunkGenerationPolicy : DynamicInvokeThunkGenerationPolicy
     {
-        public override bool HasStaticInvokeThunk(MethodDesc targetMethod)
-        {
-            // Place an upper limit on how many parameters a method can have to still get a static stub.
-            // From the past experience, methods taking 8000+ parameters get a stub that can hit various limitations
-            // in the codegen. On Project N, we were limited to 256 parameters because of MDIL limitations.
-            // We don't have such limitations here, but it's a nice round number.
-            // Reflection invoke will still work, but will go through the calling convention converter.
-
-            return targetMethod.Signature.Length <= 256;
-        }
+        public override bool HasStaticInvokeThunk(MethodDesc targetMethod) => true;
     }
 }

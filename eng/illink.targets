@@ -1,18 +1,19 @@
 <Project>
   <PropertyGroup>
     <IsTrimmable Condition="'$(IsTrimmable)' == ''">true</IsTrimmable>
-    <PrepareResourcesDependsOn>
-      _EmbedILLinkXmls;
-      $(PrepareResourcesDependsOn)
-    </PrepareResourcesDependsOn>
+    <PrepareResourcesDependsOn>_EmbedILLinkXmls;$(PrepareResourcesDependsOn)</PrepareResourcesDependsOn>
+    <TargetsTriggeredByCompilation Condition="'$(DesignTimeBuild)' != 'true'">$(TargetsTriggeredByCompilation);ILLinkTrimAssembly</TargetsTriggeredByCompilation>
+    <!-- ApiCompat should perform compatibility checks on the trimmed assemblies. -->
+    <ApiCompatDependsOn>$(ApiCompatDependsOn);ILLinkTrimAssembly</ApiCompatDependsOn>
   </PropertyGroup>
-
-  <PropertyGroup>
-    <TargetsTriggeredByCompilation Condition="'$(DesignTimeBuild)' != 'true'">
-      $(TargetsTriggeredByCompilation);
-      ILLinkTrimAssembly
-    </TargetsTriggeredByCompilation>
-  </PropertyGroup>
+  
+  <!-- Flow the IsTrimmable property down to consuming projects, in order for oob.proj
+       to exclude non trimmable assemblies. -->
+  <ItemDefinitionGroup>
+    <TargetPathWithTargetPlatformMoniker>
+      <IsTrimmable>$(IsTrimmable)</IsTrimmable>
+    </TargetPathWithTargetPlatformMoniker>
+  </ItemDefinitionGroup>
 
   <!-- Inputs and outputs of ILLinkTrimAssembly -->
   <PropertyGroup>

@@ -26,7 +26,7 @@ namespace System.Threading
     {
         internal static class WorkStealingQueueList
         {
-#pragma warning disable CA1825 // avoid the extra generic instantation for Array.Empty<T>(); this is the only place we'll ever create this array
+#pragma warning disable CA1825 // avoid the extra generic instantiation for Array.Empty<T>(); this is the only place we'll ever create this array
             private static volatile WorkStealingQueue[] _queues = new WorkStealingQueue[0];
 #pragma warning restore CA1825
 
@@ -387,6 +387,11 @@ namespace System.Threading
             }
         }
 
+        private const int ProcessorsPerAssignableWorkItemQueue = 16;
+        private static readonly int s_assignableWorkItemQueueCount =
+            Environment.ProcessorCount <= 32 ? 0 :
+                (Environment.ProcessorCount + (ProcessorsPerAssignableWorkItemQueue - 1)) / ProcessorsPerAssignableWorkItemQueue;
+
         private bool _loggingEnabled;
         private bool _dispatchNormalPriorityWorkFirst;
         private int _mayHaveHighPriorityWorkItems;
@@ -394,6 +399,16 @@ namespace System.Threading
         // SOS's ThreadPool command depends on the following names
         internal readonly ConcurrentQueue<object> workItems = new ConcurrentQueue<object>();
         internal readonly ConcurrentQueue<object> highPriorityWorkItems = new ConcurrentQueue<object>();
+
+        // SOS's ThreadPool command depends on the following name. The global queue doesn't scale well beyond a point of
+        // concurrency. Some additional queues may be added and assigned to a limited number of worker threads if necessary to
+        // help with limiting the concurrency level.
+        internal readonly ConcurrentQueue<object>[] _assignableWorkItemQueues =
+            new ConcurrentQueue<object>[s_assignableWorkItemQueueCount];
+
+        private readonly LowLevelLock _queueAssignmentLock = new();
+        private readonly int[] _assignedWorkItemQueueThreadCounts =
+            s_assignableWorkItemQueueCount > 0 ? new int[s_assignableWorkItemQueueCount] : Array.Empty<int>();
 
         [StructLayout(LayoutKind.Sequential)]
         private struct CacheLineSeparated
@@ -409,7 +424,124 @@ namespace System.Threading
 
         public ThreadPoolWorkQueue()
         {
+            for (int i = 0; i < s_assignableWorkItemQueueCount; i++)
+            {
+                _assignableWorkItemQueues[i] = new ConcurrentQueue<object>();
+            }
+
             RefreshLoggingEnabled();
+        }
+
+        private void AssignWorkItemQueue(ThreadPoolWorkQueueThreadLocals tl)
+        {
+            Debug.Assert(s_assignableWorkItemQueueCount > 0);
+
+            _queueAssignmentLock.Acquire();
+
+            // Determine the first queue that has not yet been assigned to the limit of worker threads
+            int queueIndex = -1;
+            int minCount = int.MaxValue;
+            int minCountQueueIndex = 0;
+            for (int i = 0; i < s_assignableWorkItemQueueCount; i++)
+            {
+                int count = _assignedWorkItemQueueThreadCounts[i];
+                Debug.Assert(count >= 0);
+                if (count < ProcessorsPerAssignableWorkItemQueue)
+                {
+                    queueIndex = i;
+                    _assignedWorkItemQueueThreadCounts[queueIndex] = count + 1;
+                    break;
+                }
+
+                if (count < minCount)
+                {
+                    minCount = count;
+                    minCountQueueIndex = i;
+                }
+            }
+
+            if (queueIndex < 0)
+            {
+                // All queues have been fully assigned. Choose the queue that has been assigned to the least number of worker
+                // threads.
+                queueIndex = minCountQueueIndex;
+                _assignedWorkItemQueueThreadCounts[queueIndex]++;
+            }
+
+            _queueAssignmentLock.Release();
+
+            tl.queueIndex = queueIndex;
+            tl.assignedGlobalWorkItemQueue = _assignableWorkItemQueues[queueIndex];
+        }
+
+        private void TryReassignWorkItemQueue(ThreadPoolWorkQueueThreadLocals tl)
+        {
+            Debug.Assert(s_assignableWorkItemQueueCount > 0);
+
+            int queueIndex = tl.queueIndex;
+            if (queueIndex == 0)
+            {
+                return;
+            }
+
+            if (!_queueAssignmentLock.TryAcquire())
+            {
+                return;
+            }
+
+            // If the currently assigned queue is assigned to other worker threads, try to reassign an earlier queue to this
+            // worker thread if the earlier queue is not assigned to the limit of worker threads
+            Debug.Assert(_assignedWorkItemQueueThreadCounts[queueIndex] >= 0);
+            if (_assignedWorkItemQueueThreadCounts[queueIndex] > 1)
+            {
+                for (int i = 0; i < queueIndex; i++)
+                {
+                    if (_assignedWorkItemQueueThreadCounts[i] < ProcessorsPerAssignableWorkItemQueue)
+                    {
+                        _assignedWorkItemQueueThreadCounts[queueIndex]--;
+                        queueIndex = i;
+                        _assignedWorkItemQueueThreadCounts[queueIndex]++;
+                        break;
+                    }
+                }
+            }
+
+            _queueAssignmentLock.Release();
+
+            tl.queueIndex = queueIndex;
+            tl.assignedGlobalWorkItemQueue = _assignableWorkItemQueues[queueIndex];
+        }
+
+        private void UnassignWorkItemQueue(ThreadPoolWorkQueueThreadLocals tl)
+        {
+            Debug.Assert(s_assignableWorkItemQueueCount > 0);
+
+            int queueIndex = tl.queueIndex;
+
+            _queueAssignmentLock.Acquire();
+            int newCount = --_assignedWorkItemQueueThreadCounts[queueIndex];
+            _queueAssignmentLock.Release();
+
+            Debug.Assert(newCount >= 0);
+            if (newCount > 0)
+            {
+                return;
+            }
+
+            // This queue is not assigned to any other worker threads. Move its work items to the global queue to prevent them
+            // from being starved for a long duration.
+            bool movedWorkItem = false;
+            ConcurrentQueue<object> queue = tl.assignedGlobalWorkItemQueue;
+            while (_assignedWorkItemQueueThreadCounts[queueIndex] <= 0 && queue.TryDequeue(out object? workItem))
+            {
+                workItems.Enqueue(workItem);
+                movedWorkItem = true;
+            }
+
+            if (movedWorkItem)
+            {
+                EnsureThreadRequested();
+            }
         }
 
         public ThreadPoolWorkQueueThreadLocals GetOrCreateThreadLocals() =>
@@ -476,11 +608,14 @@ namespace System.Threading
             if (!forceGlobal && (tl = ThreadPoolWorkQueueThreadLocals.threadLocals) != null)
             {
                 tl.workStealingQueue.LocalPush(callback);
-                tl.workState |= ThreadPoolWorkQueueThreadLocals.WorkState.MayHaveLocalWorkItems;
             }
             else
             {
-                workItems.Enqueue(callback);
+                ConcurrentQueue<object> queue =
+                    s_assignableWorkItemQueueCount > 0 && (tl = ThreadPoolWorkQueueThreadLocals.threadLocals) != null
+                        ? tl.assignedGlobalWorkItemQueue
+                        : workItems;
+                queue.Enqueue(callback);
             }
 
             EnsureThreadRequested();
@@ -510,30 +645,21 @@ namespace System.Threading
         public object? Dequeue(ThreadPoolWorkQueueThreadLocals tl, ref bool missedSteal)
         {
             // Check for local work items
-            object? workItem;
-            ThreadPoolWorkQueueThreadLocals.WorkState tlWorkState = tl.workState;
-            if ((tlWorkState & ThreadPoolWorkQueueThreadLocals.WorkState.MayHaveLocalWorkItems) != 0)
+            object? workItem = tl.workStealingQueue.LocalPop();
+            if (workItem != null)
             {
-                workItem = tl.workStealingQueue.LocalPop();
-                if (workItem != null)
-                {
-                    return workItem;
-                }
-
-                Debug.Assert(tlWorkState == tl.workState);
-                tl.workState = tlWorkState &= ~ThreadPoolWorkQueueThreadLocals.WorkState.MayHaveLocalWorkItems;
+                return workItem;
             }
 
             // Check for high-priority work items
-            if ((tlWorkState & ThreadPoolWorkQueueThreadLocals.WorkState.IsProcessingHighPriorityWorkItems) != 0)
+            if (tl.isProcessingHighPriorityWorkItems)
             {
                 if (highPriorityWorkItems.TryDequeue(out workItem))
                 {
                     return workItem;
                 }
 
-                Debug.Assert(tlWorkState == tl.workState);
-                tl.workState = tlWorkState &= ~ThreadPoolWorkQueueThreadLocals.WorkState.IsProcessingHighPriorityWorkItems;
+                tl.isProcessingHighPriorityWorkItems = false;
             }
             else if (
                 _mayHaveHighPriorityWorkItems != 0 &&
@@ -543,32 +669,53 @@ namespace System.Threading
                 return workItem;
             }
 
-            // Check for global work items
+            // Check for work items from the assigned global queue
+            if (s_assignableWorkItemQueueCount > 0 && tl.assignedGlobalWorkItemQueue.TryDequeue(out workItem))
+            {
+                return workItem;
+            }
+
+            // Check for work items from the global queue
             if (workItems.TryDequeue(out workItem))
             {
                 return workItem;
             }
 
-            // Try to steal from other threads' local work items
-            WorkStealingQueue localWsq = tl.workStealingQueue;
-            WorkStealingQueue[] queues = WorkStealingQueueList.Queues;
-            int c = queues.Length;
-            Debug.Assert(c > 0, "There must at least be a queue for this thread.");
-            int maxIndex = c - 1;
-            uint i = tl.random.NextUInt32() % (uint)c;
-            while (c > 0)
+            // Check for work items in other assignable global queues
+            uint randomValue = tl.random.NextUInt32();
+            if (s_assignableWorkItemQueueCount > 0)
             {
-                i = (i < maxIndex) ? i + 1 : 0;
-                WorkStealingQueue otherQueue = queues[i];
-                if (otherQueue != localWsq && otherQueue.CanSteal)
+                int queueIndex = tl.queueIndex;
+                int c = s_assignableWorkItemQueueCount;
+                int maxIndex = c - 1;
+                for (int i = (int)(randomValue % (uint)c); c > 0; i = i < maxIndex ? i + 1 : 0, c--)
                 {
-                    workItem = otherQueue.TrySteal(ref missedSteal);
-                    if (workItem != null)
+                    if (i != queueIndex && _assignableWorkItemQueues[i].TryDequeue(out workItem))
                     {
                         return workItem;
                     }
                 }
-                c--;
+            }
+
+            // Try to steal from other threads' local work items
+            {
+                WorkStealingQueue localWsq = tl.workStealingQueue;
+                WorkStealingQueue[] queues = WorkStealingQueueList.Queues;
+                int c = queues.Length;
+                Debug.Assert(c > 0, "There must at least be a queue for this thread.");
+                int maxIndex = c - 1;
+                for (int i = (int)(randomValue % (uint)c); c > 0; i = i < maxIndex ? i + 1 : 0, c--)
+                {
+                    WorkStealingQueue otherQueue = queues[i];
+                    if (otherQueue != localWsq && otherQueue.CanSteal)
+                    {
+                        workItem = otherQueue.TrySteal(ref missedSteal);
+                        if (workItem != null)
+                        {
+                            return workItem;
+                        }
+                    }
+                }
             }
 
             return null;
@@ -579,14 +726,14 @@ namespace System.Threading
             ThreadPoolWorkQueueThreadLocals tl,
             [MaybeNullWhen(false)] out object workItem)
         {
-            Debug.Assert((tl.workState & ThreadPoolWorkQueueThreadLocals.WorkState.IsProcessingHighPriorityWorkItems) == 0);
+            Debug.Assert(!tl.isProcessingHighPriorityWorkItems);
 
             if (!highPriorityWorkItems.TryDequeue(out workItem))
             {
                 return false;
             }
 
-            tl.workState |= ThreadPoolWorkQueueThreadLocals.WorkState.IsProcessingHighPriorityWorkItems;
+            tl.isProcessingHighPriorityWorkItems = true;
             _mayHaveHighPriorityWorkItems = 1;
             return true;
         }
@@ -604,7 +751,19 @@ namespace System.Threading
             }
         }
 
-        public long GlobalCount => (long)highPriorityWorkItems.Count + workItems.Count;
+        public long GlobalCount
+        {
+            get
+            {
+                long count = (long)highPriorityWorkItems.Count + workItems.Count;
+                for (int i = 0; i < s_assignableWorkItemQueueCount; i++)
+                {
+                    count += _assignableWorkItemQueues[i].Count;
+                }
+
+                return count;
+            }
+        }
 
         // Time in ms for which ThreadPoolWorkQueue.Dispatch keeps executing normal work items before either returning from
         // Dispatch (if YieldFromDispatchLoop is true), or performing periodic activities
@@ -622,6 +781,11 @@ namespace System.Threading
             ThreadPoolWorkQueue workQueue = ThreadPool.s_workQueue;
             ThreadPoolWorkQueueThreadLocals tl = workQueue.GetOrCreateThreadLocals();
 
+            if (s_assignableWorkItemQueueCount > 0)
+            {
+                workQueue.AssignWorkItemQueue(tl);
+            }
+
             // Before dequeuing the first work item, acknowledge that the thread request has been satisfied
             workQueue.MarkThreadRequestSatisfied();
 
@@ -632,11 +796,15 @@ namespace System.Threading
                 // take over the thread, sustaining starvation. For example, when worker threads are continually starved,
                 // high-priority work items may always be queued and normal-priority work items may not get a chance to run.
                 bool dispatchNormalPriorityWorkFirst = workQueue._dispatchNormalPriorityWorkFirst;
-                if (dispatchNormalPriorityWorkFirst &&
-                    (tl.workState & ThreadPoolWorkQueueThreadLocals.WorkState.MayHaveLocalWorkItems) == 0)
+                if (dispatchNormalPriorityWorkFirst && !tl.workStealingQueue.CanSteal)
                 {
                     workQueue._dispatchNormalPriorityWorkFirst = !dispatchNormalPriorityWorkFirst;
-                    workQueue.workItems.TryDequeue(out workItem);
+                    ConcurrentQueue<object> queue =
+                        s_assignableWorkItemQueueCount > 0 ? tl.assignedGlobalWorkItemQueue : workQueue.workItems;
+                    if (!queue.TryDequeue(out workItem) && s_assignableWorkItemQueueCount > 0)
+                    {
+                        workQueue.workItems.TryDequeue(out workItem);
+                    }
                 }
 
                 if (workItem == null)
@@ -646,6 +814,11 @@ namespace System.Threading
 
                     if (workItem == null)
                     {
+                        if (s_assignableWorkItemQueueCount > 0)
+                        {
+                            workQueue.UnassignWorkItemQueue(tl);
+                        }
+
                         //
                         // No work.
                         // If we missed a steal, though, there may be more work in the queue.
@@ -670,7 +843,7 @@ namespace System.Threading
                 // reason that may have a dependency on other queued work items.
                 workQueue.EnsureThreadRequested();
 
-                // After this point, this method is no longer responsible for ensuring thread requests
+                // After this point, this method is no longer responsible for ensuring thread requests except for missed steals
             }
 
             // Has the desire for logging changed since the last time we entered?
@@ -700,8 +873,23 @@ namespace System.Threading
 
                     if (workItem == null)
                     {
-                        // May have missed a steal, but this method is not responsible for ensuring thread requests anymore. See
-                        // the dequeue before the loop.
+                        if (s_assignableWorkItemQueueCount > 0)
+                        {
+                            workQueue.UnassignWorkItemQueue(tl);
+                        }
+
+                        //
+                        // No work.
+                        // If we missed a steal, though, there may be more work in the queue.
+                        // Instead of looping around and trying again, we'll just request another thread.  Hopefully the thread
+                        // that owns the contended work-stealing queue will pick up its own workitems in the meantime,
+                        // which will be more efficient than this thread doing it anyway.
+                        //
+                        if (missedSteal)
+                        {
+                            workQueue.EnsureThreadRequested();
+                        }
+
                         return true;
                     }
                 }
@@ -753,7 +941,11 @@ namespace System.Threading
                     // to ensure that they would not be heavily delayed. Tell the caller that this thread was requested to stop
                     // processing work items.
                     tl.TransferLocalWork();
-                    tl.ResetWorkItemProcessingState();
+                    tl.isProcessingHighPriorityWorkItems = false;
+                    if (s_assignableWorkItemQueueCount > 0)
+                    {
+                        workQueue.UnassignWorkItemQueue(tl);
+                    }
                     return false;
                 }
 
@@ -769,8 +961,19 @@ namespace System.Threading
                 {
                     // The runtime-specific thread pool implementation requires the Dispatch loop to return to the VM
                     // periodically to let it perform its own work
-                    tl.ResetWorkItemProcessingState();
+                    tl.isProcessingHighPriorityWorkItems = false;
+                    if (s_assignableWorkItemQueueCount > 0)
+                    {
+                        workQueue.UnassignWorkItemQueue(tl);
+                    }
                     return true;
+                }
+
+                if (s_assignableWorkItemQueueCount > 0)
+                {
+                    // Due to hill climbing, over time arbitrary worker threads may stop working and eventually unbalance the
+                    // queue assignments. Periodically try to reassign a queue to keep the assigned queues busy.
+                    workQueue.TryReassignWorkItemQueue(tl);
                 }
 
                 // This method will continue to dispatch work items. Refresh the start tick count for the next dispatch
@@ -823,7 +1026,9 @@ namespace System.Threading
         [ThreadStatic]
         public static ThreadPoolWorkQueueThreadLocals? threadLocals;
 
-        public WorkState workState;
+        public bool isProcessingHighPriorityWorkItems;
+        public int queueIndex;
+        public ConcurrentQueue<object> assignedGlobalWorkItemQueue;
         public readonly ThreadPoolWorkQueue workQueue;
         public readonly ThreadPoolWorkQueue.WorkStealingQueue workStealingQueue;
         public readonly Thread currentThread;
@@ -832,6 +1037,7 @@ namespace System.Threading
 
         public ThreadPoolWorkQueueThreadLocals(ThreadPoolWorkQueue tpq)
         {
+            assignedGlobalWorkItemQueue = tpq.workItems;
             workQueue = tpq;
             workStealingQueue = new ThreadPoolWorkQueue.WorkStealingQueue();
             ThreadPoolWorkQueue.WorkStealingQueueList.Add(workStealingQueue);
@@ -839,16 +1045,12 @@ namespace System.Threading
             threadLocalCompletionCountObject = ThreadPool.GetOrCreateThreadLocalCompletionCountObject();
         }
 
-        public void ResetWorkItemProcessingState() => workState &= ~WorkState.IsProcessingHighPriorityWorkItems;
-
         public void TransferLocalWork()
         {
             while (workStealingQueue.LocalPop() is object cb)
             {
                 workQueue.Enqueue(cb, forceGlobal: true);
             }
-
-            workState &= ~WorkState.MayHaveLocalWorkItems;
         }
 
         ~ThreadPoolWorkQueueThreadLocals()
@@ -860,31 +1062,22 @@ namespace System.Threading
                 ThreadPoolWorkQueue.WorkStealingQueueList.Remove(workStealingQueue);
             }
         }
-
-        [Flags]
-        public enum WorkState
-        {
-            MayHaveLocalWorkItems = 1 << 0,
-            IsProcessingHighPriorityWorkItems = 1 << 1
-        }
     }
 
     // A strongly typed callback for ThreadPoolTypedWorkItemQueue<T, TCallback>.
     // This way we avoid the indirection of a delegate call.
     internal interface IThreadPoolTypedWorkItemQueueCallback<T>
     {
-        // TODO: Make it static abstract when we can.
-        void Invoke(T item);
+        static abstract void Invoke(T item);
     }
 
-    internal sealed class ThreadPoolTypedWorkItemQueue<T, TCallback>
-        : IThreadPoolWorkItem where TCallback : struct, IThreadPoolTypedWorkItemQueueCallback<T>
+    internal sealed class ThreadPoolTypedWorkItemQueue<T, TCallback> : IThreadPoolWorkItem
+        // https://github.com/dotnet/runtime/pull/69278#discussion_r871927939
+        where T : struct
+        where TCallback : struct, IThreadPoolTypedWorkItemQueueCallback<T>
     {
         private int _isScheduledForProcessing;
         private readonly ConcurrentQueue<T> _workItems = new ConcurrentQueue<T>();
-        private readonly TCallback _callback;
-
-        public ThreadPoolTypedWorkItemQueue(TCallback callback) => _callback = callback;
 
         public int Count => _workItems.Count;
 
@@ -918,7 +1111,7 @@ namespace System.Threading
             // item queued by the enqueuer.
             _isScheduledForProcessing = 0;
             Interlocked.MemoryBarrier();
-            if (!_workItems.TryDequeue(out T? workItem))
+            if (!_workItems.TryDequeue(out T workItem))
             {
                 return;
             }
@@ -938,7 +1131,7 @@ namespace System.Threading
             int startTimeMs = Environment.TickCount;
             while (true)
             {
-                _callback.Invoke(workItem);
+                TCallback.Invoke(workItem);
 
                 // This work item processes queued work items until certain conditions are met, and tracks some things:
                 // - Keep track of the number of work items processed, it will be added to the counter later
@@ -948,7 +1141,7 @@ namespace System.Threading
                 //   yield to the thread pool after some time. The threshold used is half of the thread pool's dispatch quantum,
                 //   which the thread pool uses for doing periodic work.
                 if (++completedCount == uint.MaxValue ||
-                    (tl.workState & ThreadPoolWorkQueueThreadLocals.WorkState.MayHaveLocalWorkItems) != 0 ||
+                    tl.workStealingQueue.CanSteal ||
                     (uint)(Environment.TickCount - startTimeMs) >= ThreadPoolWorkQueue.DispatchQuantumMs / 2 ||
                     !_workItems.TryDequeue(out workItem))
                 {
@@ -1180,8 +1373,10 @@ namespace System.Threading
 
         internal static bool EnableWorkerTracking => IsWorkerTrackingEnabledInConfig && EventSource.IsSupported;
 
+#if !FEATURE_WASM_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         [CLSCompliant(false)]
-        [UnsupportedOSPlatform("browser")]
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
@@ -1195,8 +1390,10 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, true);
         }
 
+#if !FEATURE_WASM_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         [CLSCompliant(false)]
-        [UnsupportedOSPlatform("browser")]
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
@@ -1210,7 +1407,9 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
 
-        [UnsupportedOSPlatform("browser")]
+#if !FEATURE_WASM_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
@@ -1224,7 +1423,9 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, true);
         }
 
-        [UnsupportedOSPlatform("browser")]
+#if !FEATURE_WASM_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
@@ -1238,7 +1439,9 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
 
-        [UnsupportedOSPlatform("browser")]
+#if !FEATURE_WASM_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
             WaitHandle waitObject,
             WaitOrTimerCallback callBack,
@@ -1254,7 +1457,9 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, true);
         }
 
-        [UnsupportedOSPlatform("browser")]
+#if !FEATURE_WASM_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
             WaitHandle waitObject,
             WaitOrTimerCallback callBack,
@@ -1270,7 +1475,9 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)millisecondsTimeOutInterval, executeOnlyOnce, false);
         }
 
-        [UnsupportedOSPlatform("browser")]
+#if !FEATURE_WASM_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
                           WaitHandle waitObject,
                           WaitOrTimerCallback callBack,
@@ -1287,7 +1494,9 @@ namespace System.Threading
             return RegisterWaitForSingleObject(waitObject, callBack, state, (uint)tm, executeOnlyOnce, true);
         }
 
-        [UnsupportedOSPlatform("browser")]
+#if !FEATURE_WASM_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
                           WaitHandle waitObject,
                           WaitOrTimerCallback callBack,
@@ -1426,6 +1635,15 @@ namespace System.Threading
                 yield return workItem;
             }
 
+            // Enumerate assignable global queues
+            foreach (ConcurrentQueue<object> queue in s_workQueue._assignableWorkItemQueues)
+            {
+                foreach (object workItem in queue)
+                {
+                    yield return workItem;
+                }
+            }
+
             // Enumerate global queue
             foreach (object workItem in s_workQueue.workItems)
             {
@@ -1449,67 +1667,6 @@ namespace System.Threading
                 }
             }
         }
-
-        internal static IEnumerable<object> GetLocallyQueuedWorkItems()
-        {
-            ThreadPoolWorkQueue.WorkStealingQueue? wsq = ThreadPoolWorkQueueThreadLocals.threadLocals?.workStealingQueue;
-            if (wsq != null && wsq.m_array != null)
-            {
-                object?[] items = wsq.m_array;
-                for (int i = 0; i < items.Length; i++)
-                {
-                    object? item = items[i];
-                    if (item != null)
-                        yield return item;
-                }
-            }
-        }
-
-        internal static IEnumerable<object> GetGloballyQueuedWorkItems()
-        {
-            // Enumerate high-priority queue
-            foreach (object workItem in s_workQueue.highPriorityWorkItems)
-            {
-                yield return workItem;
-            }
-
-            // Enumerate global queue
-            foreach (object workItem in s_workQueue.workItems)
-            {
-                yield return workItem;
-            }
-        }
-
-        private static object[] ToObjectArray(IEnumerable<object> workitems)
-        {
-            int i = 0;
-            foreach (object item in workitems)
-            {
-                i++;
-            }
-
-            object[] result = new object[i];
-            i = 0;
-            foreach (object item in workitems)
-            {
-                if (i < result.Length) // just in case someone calls us while the queues are in motion
-                    result[i] = item;
-                i++;
-            }
-
-            return result;
-        }
-
-        // This is the method the debugger will actually call, if it ends up calling
-        // into ThreadPool directly.  Tests can use this to simulate a debugger, as well.
-        internal static object[] GetQueuedWorkItemsForDebugger() =>
-            ToObjectArray(GetQueuedWorkItems());
-
-        internal static object[] GetGloballyQueuedWorkItemsForDebugger() =>
-            ToObjectArray(GetGloballyQueuedWorkItems());
-
-        internal static object[] GetLocallyQueuedWorkItemsForDebugger() =>
-            ToObjectArray(GetLocallyQueuedWorkItems());
 
         /// <summary>
         /// Gets the number of work items that are currently queued to be processed.

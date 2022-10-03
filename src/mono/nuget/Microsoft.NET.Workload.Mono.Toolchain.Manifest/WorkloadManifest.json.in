@@ -8,11 +8,20 @@
       "description": ".NET WebAssembly build tools",
       "packs": [
         "Microsoft.NET.Runtime.WebAssembly.Sdk",
-        "Microsoft.NET.Runtime.WebAssembly.Templates",
         "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.browser-wasm"
       ],
       "extends": [ "microsoft-net-runtime-mono-tooling", "microsoft-net-sdk-emscripten" ],
+      "platforms": [ "win-x64", "linux-x64", "osx-x64", "osx-arm64" ]
+    },
+    "wasm-experimental": {
+      "description": ".NET WebAssembly experimental",
+      "packs": [
+        "Microsoft.NET.Runtime.WebAssembly.Templates",
+        "Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm",
+        "Microsoft.NETCore.App.Runtime.Mono.perftrace.browser-wasm"
+      ],
+      "extends": [ "wasm-tools" ],
       "platforms": [ "win-x64", "linux-x64", "osx-x64", "osx-arm64" ]
     },
     "microsoft-net-runtime-android": {
@@ -118,6 +127,15 @@
       ],
       "extends": [ "microsoft-net-runtime-mono-tooling" ],
       "platforms": [ "win-x64", "osx-arm64", "osx-x64" ]
+    },
+    "runtimes-windows": {
+      "description": "Windows Runtime Packs",
+      "packs": [
+        "Microsoft.NETCore.App.Runtime.win-x64",
+        "Microsoft.NETCore.App.Runtime.win-x86",
+        "Microsoft.NETCore.App.Runtime.win-arm",
+        "Microsoft.NETCore.App.Runtime.win-arm64"
+      ]
     },
     "microsoft-net-runtime-mono-tooling": {
       "abstract": true,
@@ -351,5 +369,29 @@
       "kind": "framework",
       "version": "${PackageVersion}"
     },
+    "Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm" : {
+      "kind": "framework",
+      "version": "${PackageVersion}"
+    },
+    "Microsoft.NETCore.App.Runtime.Mono.perftrace.browser-wasm" : {
+      "kind": "framework",
+      "version": "${PackageVersion}"
+    },
+    "Microsoft.NETCore.App.Runtime.win-x64" : {
+      "kind": "framework",
+      "version": "${PackageVersion}"
+    },
+    "Microsoft.NETCore.App.Runtime.win-x86" : {
+      "kind": "framework",
+      "version": "${PackageVersion}"
+    },
+    "Microsoft.NETCore.App.Runtime.win-arm" : {
+      "kind": "framework",
+      "version": "${PackageVersion}"
+    },
+    "Microsoft.NETCore.App.Runtime.win-arm64" : {
+      "kind": "framework",
+      "version": "${PackageVersion}"
+    }
   }
 }

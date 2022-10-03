@@ -27,7 +27,7 @@ namespace Internal.Reflection.Extensions.NonPortable
             if (isInterpreterEntrypoint)
             {
                 // This is a special kind of delegate where the invoke method is "ObjectArrayThunk". Typically,
-                // this will be a delegate that points the the LINQ Expression interpreter. We could manufacture
+                // this will be a delegate that points the LINQ Expression interpreter. We could manufacture
                 // a MethodInfo based on the delegate's Invoke signature, but let's just throw for now.
                 throw new PlatformNotSupportedException(SR.DelegateGetMethodInfo_ObjectArrayDelegate);
             }

@@ -118,7 +118,7 @@ namespace System.Formats.Cbor
             }
         }
 
-        private int GetIntegerEncodingLength(ulong value)
+        private static int GetIntegerEncodingLength(ulong value)
         {
             if (value < (byte)CborAdditionalInfo.Additional8BitData)
             {

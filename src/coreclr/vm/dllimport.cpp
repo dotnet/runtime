@@ -657,7 +657,7 @@ public:
         DWORD dwMethodDescLocalNum = (DWORD)-1;
 
         // Notify the profiler of call out of the runtime
-        if (!SF_IsReverseCOMStub(m_dwStubFlags) && !SF_IsStructMarshalStub(m_dwStubFlags) && CORProfilerTrackTransitions())
+        if (!SF_IsReverseCOMStub(m_dwStubFlags) && !SF_IsReverseDelegateStub(m_dwStubFlags) && !SF_IsStructMarshalStub(m_dwStubFlags) && CORProfilerTrackTransitions())
         {
             dwMethodDescLocalNum = m_slIL.EmitProfilerBeginTransitionCallback(pcsDispatch, m_dwStubFlags);
             _ASSERTE(dwMethodDescLocalNum != (DWORD)-1);
@@ -983,7 +983,7 @@ public:
         //
         // Native Signature
         //
-        SString strNativeSignature(SString::Utf8);
+        SString strNativeSignature;
         if (m_dwStubFlags & NDIRECTSTUB_FL_REVERSE_INTEROP)
         {
             // Reverse interop. Use StubSignature
@@ -991,7 +991,7 @@ public:
         }
         else
         {
-            // Forward interop. Use StubTarget siganture
+            // Forward interop. Use StubTarget signature
             PCCOR_SIGNATURE pCallTargetSig = GetStubTargetMethodSig();
             DWORD           cCallTargetSig = GetStubTargetMethodSigLength();
 
@@ -1008,18 +1008,16 @@ public:
         SString strILStubCode;
         strILStubCode.Preallocate(4096);    // Preallocate 4K bytes to avoid unnecessary growth
 
-        SString codeSizeFormat;
-        codeSizeFormat.LoadResource(CCompRC::Optional, IDS_EE_INTEROP_CODE_SIZE_COMMENT);
-        strILStubCode.AppendPrintf(W("// %s\t%d (0x%04x)\n"), codeSizeFormat.GetUnicode(), cbCode, cbCode);
-        strILStubCode.AppendPrintf(W(".maxstack %d \n"), maxStack);
-        strILStubCode.AppendPrintf(W(".locals %s\n"), strLocalSig.GetUnicode());
+        strILStubCode.AppendPrintf("// Code size\t%d (0x%04x)\n", cbCode, cbCode);
+        strILStubCode.AppendPrintf(".maxstack %d \n", maxStack);
+        strILStubCode.AppendPrintf(".locals %s\n", strLocalSig.GetUTF8());
 
         m_slIL.LogILStub(jitFlags, &strILStubCode);
 
         if (pConvertToHRTryCatchBounds->cbTryLength != 0 && pConvertToHRTryCatchBounds->cbHandlerLength != 0)
         {
             strILStubCode.AppendPrintf(
-                W(".try IL_%04x to IL_%04x catch handler IL_%04x to IL_%04x\n"),
+                ".try IL_%04x to IL_%04x catch handler IL_%04x to IL_%04x\n",
                 pConvertToHRTryCatchBounds->dwTryBeginOffset,
                 pConvertToHRTryCatchBounds->dwTryBeginOffset + pConvertToHRTryCatchBounds->cbTryLength,
                 pConvertToHRTryCatchBounds->dwHandlerBeginOffset,
@@ -1029,7 +1027,7 @@ public:
         if (pCleanupTryFinallyBounds->cbTryLength != 0 && pCleanupTryFinallyBounds->cbHandlerLength != 0)
         {
             strILStubCode.AppendPrintf(
-                W(".try IL_%04x to IL_%04x finally handler IL_%04x to IL_%04x\n"),
+                ".try IL_%04x to IL_%04x finally handler IL_%04x to IL_%04x\n",
                 pCleanupTryFinallyBounds->dwTryBeginOffset,
                 pCleanupTryFinallyBounds->dwTryBeginOffset + pCleanupTryFinallyBounds->cbTryLength,
                 pCleanupTryFinallyBounds->dwHandlerBeginOffset,
@@ -2251,18 +2249,8 @@ DWORD NDirectStubLinker::EmitProfilerBeginTransitionCallback(ILCodeStream* pcsEm
     // in StubHelpers::ProfilerEnterCallback().
     if (SF_IsDelegateStub(dwStubFlags))
     {
-        if (SF_IsForwardStub(dwStubFlags))
-        {
-            pcsEmit->EmitLoadThis();
-        }
-        else
-        {
-            EmitLoadStubContext(pcsEmit, dwStubFlags); // load UMEntryThunk*
-            pcsEmit->EmitLDC(offsetof(UMEntryThunk, m_pObjectHandle));
-            pcsEmit->EmitADD();
-            pcsEmit->EmitLDIND_I();      // get OBJECTHANDLE
-            pcsEmit->EmitLDIND_REF();    // get Delegate object
-        }
+        _ASSERTE(SF_IsForwardStub(dwStubFlags));
+        pcsEmit->EmitLoadThis();
     }
     else
     {
@@ -2282,15 +2270,8 @@ void NDirectStubLinker::EmitProfilerEndTransitionCallback(ILCodeStream* pcsEmit,
     STANDARD_VM_CONTRACT;
 
     pcsEmit->EmitLDLOC(dwMethodDescLocalNum);
-    if (SF_IsReverseStub(dwStubFlags))
-    {
-        // we use a null pThread to indicate reverse interop
-        pcsEmit->EmitLoadNullPtr();
-    }
-    else
-    {
-        pcsEmit->EmitLDLOC(GetThreadLocalNum());
-    }
+    _ASSERTE(SF_IsForwardStub(dwStubFlags));
+    pcsEmit->EmitLDLOC(GetThreadLocalNum());
     pcsEmit->EmitCALL(METHOD__STUBHELPERS__PROFILER_END_TRANSITION_CALLBACK, 2, 0);
 }
 #endif // PROFILING_SUPPPORTED
@@ -2983,7 +2964,7 @@ void PInvokeStaticSigInfo::InitCallConv(CorInfoCallConvExtension callConv, BOOL 
     _ASSERTE(m_callConv != CallConvWinApiSentinel);
 }
 
-void PInvokeStaticSigInfo::ThrowError(WORD errorResourceID)
+void PInvokeStaticSigInfo::ThrowError(UINT errorResourceID)
 {
     CONTRACTL
     {
@@ -3385,7 +3366,7 @@ BOOL NDirect::MarshalingRequired(
 
             default:
             {
-                if (CorTypeInfo::IsPrimitiveType(type) || type == ELEMENT_TYPE_FNPTR)
+                if (CorTypeInfo::IsPrimitiveType(type) || type == ELEMENT_TYPE_PTR || type == ELEMENT_TYPE_FNPTR)
                 {
 
                     if (i > 0)
@@ -4138,7 +4119,8 @@ namespace
         //
         for (int i = 0; i < pParams->m_nParamTokens; ++i)
         {
-            memcpy(pBlobParams, paramInfos[i].pvNativeType, paramInfos[i].cbNativeType);
+            if (paramInfos[i].cbNativeType > 0)
+                memcpy(pBlobParams, paramInfos[i].pvNativeType, paramInfos[i].cbNativeType);
             pBlobParams += paramInfos[i].cbNativeType;
         }
 
@@ -4647,8 +4629,9 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
         //
         // Find method using name + signature
         //
-        StackScratchBuffer buffer;
-        LPCUTF8 szMethodNameUTF8 = methodName.GetUTF8(buffer);
+        StackSString buffer;
+        buffer.SetAndConvertToUTF8(methodName);
+        LPCUTF8 szMethodNameUTF8 = buffer.GetUTF8();
         pStubMD = MemberLoader::FindMethod(stubClassType.GetMethodTable(),
             szMethodNameUTF8,
             pStubSig,
@@ -5449,8 +5432,6 @@ namespace
         }
         CONTRACT_END;
 
-        g_IBCLogger.LogNDirectCodeAccess(pMD);
-
         RETURN pMD->FindEntryPoint(hMod);
     }
 
@@ -5476,7 +5457,7 @@ namespace
             void* pvTarget = (void*)QCallResolveDllImport(pMD->GetEntrypointName());
 #ifdef _DEBUG
             CONSISTENCY_CHECK_MSGF(pvTarget != nullptr,
-                ("%s::%s is not registered using DllImportentry macro in qcallentrypoints.cpp",
+                ("%s::%s is not registered using DllImportEntry macro in qcallentrypoints.cpp",
                 pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 #endif
             pMD->SetNDirectTarget(pvTarget);
@@ -5776,7 +5757,6 @@ VOID NDirectMethodDesc::SetNDirectTarget(LPVOID pTarget)
     CONTRACTL_END;
 
     NDirectWriteableData* pWriteableData = GetWriteableData();
-    g_IBCLogger.LogNDirectCodeAccess(this);
     pWriteableData->m_pNDirectTarget = pTarget;
 }
 

@@ -1,30 +1,31 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)-Browser</TargetFramework>
     <TestRuntime>true</TestRuntime>
     <WasmXHarnessArgs>$(WasmXHarnessArgs) --engine-arg=--expose-gc --web-server-use-cop</WasmXHarnessArgs>
+    <NoWarn>0612</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\JavaScript\JavaScriptTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\DataViewTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\MemoryTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\TypedArrayTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\JavaScript\SharedArrayBufferTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\ArrayTests.cs" />
-    <!-- <Compile Include="System\Runtime\InteropServices\JavaScript\MapTests.cs" /> -->
     <Compile Include="System\Runtime\InteropServices\JavaScript\MarshalTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\DelegateTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\HelperMarshal.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Http\HttpRequestMessageTest.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\ParallelTests.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\TimerTests.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\tests\System.Runtime.InteropServices.JavaScript.UnitTests\System\Runtime\InteropServices\JavaScript\Utils.cs" Link="System\Runtime\InteropServices\JavaScript\Utils.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <WasmExtraFilesToDeploy Include="timers.js" />
-  </ItemGroup>
-  <ItemGroup>
-    <!-- Part of the shared framework but not exposed. -->
-    <ProjectReference Include="..\src\System.Private.Runtime.InteropServices.JavaScript.csproj" />
+    <WasmExtraFilesToDeploy Include="timers.mjs" />
+    <None Include="timers.mjs" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System.Runtime.InteropServices.JavaScript.csproj" SkipUseReferenceAssembly="true"/>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 </Project>

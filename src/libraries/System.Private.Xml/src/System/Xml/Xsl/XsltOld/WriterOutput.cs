@@ -11,8 +11,10 @@ namespace System.Xml.Xsl.XsltOld
         private XmlWriter _writer;
         private readonly Processor _processor;
 
-        internal WriterOutput(Processor processor, XmlWriter writer!!)
+        internal WriterOutput(Processor processor, XmlWriter writer)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             _writer = writer;
             _processor = processor;
         }

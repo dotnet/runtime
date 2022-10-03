@@ -289,7 +289,7 @@ namespace System.ComponentModel
         public virtual string? GetClassName() { throw null; }
         public virtual string? GetComponentName() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
-        public virtual System.ComponentModel.TypeConverter GetConverter() { throw null; }
+        public virtual System.ComponentModel.TypeConverter? GetConverter() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         public virtual System.ComponentModel.EventDescriptor? GetDefaultEvent() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
@@ -350,6 +350,14 @@ namespace System.ComponentModel
         Update = 2,
         Insert = 3,
         Delete = 4,
+    }
+    public partial class DateOnlyConverter : System.ComponentModel.TypeConverter
+    {
+        public DateOnlyConverter() { }
+        public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? destinationType) { throw null; }
+        public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
+        public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
     }
     public partial class DateTimeConverter : System.ComponentModel.TypeConverter
     {
@@ -510,6 +518,10 @@ namespace System.ComponentModel
         public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
         public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
     }
+    public partial class HalfConverter : System.ComponentModel.BaseNumberConverter
+    {
+        public HalfConverter() { }
+    }
     public partial class HandledEventArgs : System.EventArgs
     {
         public HandledEventArgs() { }
@@ -572,7 +584,7 @@ namespace System.ComponentModel
         string? GetClassName();
         string? GetComponentName();
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("Generic TypeConverters may require the generic types to be annotated. For example, NullableConverter requires the underlying type to be DynamicallyAccessedMembers All.")]
-        System.ComponentModel.TypeConverter GetConverter();
+        System.ComponentModel.TypeConverter? GetConverter();
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The built-in EventDescriptor implementation uses Reflection which requires unreferenced code.")]
         System.ComponentModel.EventDescriptor? GetDefaultEvent();
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("PropertyDescriptor's PropertyType cannot be statically discovered.")]
@@ -654,6 +666,10 @@ namespace System.ComponentModel
         protected InstanceCreationEditor() { }
         public virtual string Text { get { throw null; } }
         public abstract object? CreateInstance(System.ComponentModel.ITypeDescriptorContext context, System.Type instanceType);
+    }
+    public partial class Int128Converter : System.ComponentModel.BaseNumberConverter
+    {
+        public Int128Converter() { }
     }
     public partial class Int16Converter : System.ComponentModel.BaseNumberConverter
     {
@@ -1244,6 +1260,14 @@ namespace System.ComponentModel
         public static bool CheckPath(string value) { throw null; }
         public static bool CheckRootedPath(string value) { throw null; }
     }
+    public partial class TimeOnlyConverter : System.ComponentModel.TypeConverter
+    {
+        public TimeOnlyConverter() { }
+        public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Type sourceType) { throw null; }
+        public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext? context, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] System.Type? destinationType) { throw null; }
+        public override object? ConvertFrom(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object value) { throw null; }
+        public override object? ConvertTo(System.ComponentModel.ITypeDescriptorContext? context, System.Globalization.CultureInfo? culture, object? value, System.Type destinationType) { throw null; }
+    }
     public partial class TimeSpanConverter : System.ComponentModel.TypeConverter
     {
         public TimeSpanConverter() { }
@@ -1384,7 +1408,9 @@ namespace System.ComponentModel
         [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         [System.ObsoleteAttribute("TypeDescriptor.ComNativeDescriptorHandler has been deprecated. Use a type description provider to supply type information for COM types instead.")]
         public static System.ComponentModel.IComNativeDescriptorHandler? ComNativeDescriptorHandler { get { throw null; } set { } }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.Type ComObjectType { [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] get { throw null; } }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public static System.Type InterfaceType { [return: System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] get { throw null; } }
         public static event System.ComponentModel.RefreshEventHandler? Refreshed { add { } remove { } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
@@ -1538,6 +1564,10 @@ namespace System.ComponentModel
     public partial class UInt64Converter : System.ComponentModel.BaseNumberConverter
     {
         public UInt64Converter() { }
+    }
+    public partial class UInt128Converter : System.ComponentModel.BaseNumberConverter
+    {
+        public UInt128Converter() { }
     }
     public partial class VersionConverter : System.ComponentModel.TypeConverter
     {
@@ -2338,6 +2368,7 @@ namespace System.Timers
     {
         public Timer() { }
         public Timer(double interval) { }
+        public Timer(System.TimeSpan interval) { }
         [System.ComponentModel.DefaultValueAttribute(true)]
         public bool AutoReset { get { throw null; } set { } }
         [System.ComponentModel.DefaultValueAttribute(false)]

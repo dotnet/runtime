@@ -1,11 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.DotNet.Cli.Build;
-using Microsoft.DotNet.Cli.Build.Framework;
 using System;
 using System.IO;
 using System.Linq;
+using Microsoft.DotNet.Cli.Build;
+using Microsoft.DotNet.Cli.Build.Framework;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 {
@@ -24,18 +24,21 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             TestApp app,
             TestSettings settings,
             Action<CommandResult> resultAction = null,
-            bool multiLevelLookup = false)
+            bool? multiLevelLookup = false)
         {
             using (DotNetCliExtensions.DotNetCliCustomizer dotnetCustomizer = settings.DotnetCustomizer == null ? null : dotnet.Customize())
             {
                 settings.DotnetCustomizer?.Invoke(dotnetCustomizer);
 
-                if (settings.RuntimeConfigCustomizer != null)
+                if (app is not null)
                 {
-                    settings.RuntimeConfigCustomizer(RuntimeConfig.Path(app.RuntimeConfigJson)).Save();
-                }
+                    if (settings.RuntimeConfigCustomizer != null)
+                    {
+                        settings.RuntimeConfigCustomizer(RuntimeConfig.Path(app.RuntimeConfigJson)).Save();
+                    }
 
-                settings.WithCommandLine(app.AppDll);
+                    settings.WithCommandLine(app.AppDll);
+                }
 
                 Command command = dotnet.Exec(settings.CommandLine.First(), settings.CommandLine.Skip(1).ToArray());
 
@@ -87,6 +90,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             private readonly string _builtDotnet;
             private readonly RepoDirectoriesProvider _repoDirectories;
             private readonly string _baseDir;
+            private readonly TestArtifact _baseDirArtifact;
 
             public SharedTestStateBase()
             {
@@ -95,6 +99,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
                 string baseDir = Path.Combine(TestArtifact.TestArtifactsPath, "frameworkResolution");
                 _baseDir = SharedFramework.CalculateUniqueTestDirectory(baseDir);
+                _baseDirArtifact = new TestArtifact(_baseDir);
             }
 
             public DotNetBuilder DotNet(string name)
@@ -156,9 +161,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
             public void Dispose()
             {
-                if (!TestArtifact.PreserveTestRuns() && Directory.Exists(_baseDir))
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
+
+            protected virtual void Dispose(bool disposing)
+            {
+                if (disposing)
                 {
-                    Directory.Delete(_baseDir, true);
+                    _baseDirArtifact.Dispose();
                 }
             }
         }

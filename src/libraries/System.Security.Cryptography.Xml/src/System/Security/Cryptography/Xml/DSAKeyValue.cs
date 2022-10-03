@@ -138,8 +138,13 @@ namespace System.Security.Cryptography.Xml
         /// <exception cref="CryptographicException">
         /// The XML has the incorrect schema or the DSA parameters are invalid.
         /// </exception>
-        public override void LoadXml(XmlElement value!!)
+        public override void LoadXml(XmlElement value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             if (value.Name != KeyValueElementName
                 || value.NamespaceURI != SignedXml.XmlDsigNamespaceUrl)
             {

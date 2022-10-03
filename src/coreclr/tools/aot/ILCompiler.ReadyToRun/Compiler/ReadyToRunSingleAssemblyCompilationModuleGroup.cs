@@ -17,18 +17,8 @@ namespace ILCompiler
         private bool _profileGuidedCompileRestrictionSet;
 
         public ReadyToRunSingleAssemblyCompilationModuleGroup(
-            CompilerTypeSystemContext context,
-            bool isCompositeBuildMode,
-            bool isInputBubble,
-            IEnumerable<EcmaModule> compilationModuleSet,
-            IEnumerable<ModuleDesc> versionBubbleModuleSet,
-            bool compileGenericDependenciesFromVersionBubbleModuleSet) :
-                base(context,
-                     isCompositeBuildMode,
-                     isInputBubble,
-                     compilationModuleSet,
-                     versionBubbleModuleSet,
-                     compileGenericDependenciesFromVersionBubbleModuleSet)
+            ReadyToRunCompilationModuleGroupConfig config) :
+                base(config)
         {
         }
 
@@ -50,23 +40,26 @@ namespace ILCompiler
                 return false;
             }
 
-            return (ContainsType(method.OwningType) && VersionsWithMethodBody(method)) || CompileVersionBubbleGenericsIntoCurrentModule(method);
+            return (ContainsType(method.OwningType) && VersionsWithMethodBody(method)) || CompileVersionBubbleGenericsIntoCurrentModule(method) || this.CrossModuleCompileable(method);
         }
 
-        public sealed override void ApplyProfilerGuidedCompilationRestriction(ProfileDataManager profileGuidedCompileRestriction)
+        public sealed override void ApplyProfileGuidedOptimizationData(ProfileDataManager profileGuidedCompileRestriction, bool partial)
         {
             if (_profileGuidedCompileRestrictionSet)
-                throw new InternalCompilerErrorException("Called ApplyProfilerGuidedCompilationRestriction twice.");
+                throw new InternalCompilerErrorException("Called ApplyProfileGuidedOptimizationData twice.");
 
             _profileGuidedCompileRestrictionSet = true;
-            _profileGuidedCompileRestriction = profileGuidedCompileRestriction;
+            if (partial)
+                _profileGuidedCompileRestriction = profileGuidedCompileRestriction;
+
+            base.ApplyProfileGuidedOptimizationData(profileGuidedCompileRestriction, partial);
         }
 
         public override ReadyToRunFlags GetReadyToRunFlags()
         {
             Debug.Assert(_profileGuidedCompileRestrictionSet);
 
-            ReadyToRunFlags flags = 0;
+            ReadyToRunFlags flags = base.GetReadyToRunFlags();
             if (_profileGuidedCompileRestriction != null)
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_Partial;
 

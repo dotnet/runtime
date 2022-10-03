@@ -17,7 +17,7 @@ typedef struct _MonoClassRuntimeMetadataUpdateInfo {
 	gboolean inited;
 } MonoClassRuntimeMetadataUpdateInfo;
 
-/* Class-specific metadata update info.  See
+/* Class-specific metadata update info for an existing class.  See
  * mono_class_get_metadata_update_info() Note that this info is associated with
  * class _definitions_ that can be edited, so primitives, generic instances,
  * arrays, pointers, etc do not have this info.
@@ -27,10 +27,38 @@ struct _MonoClassMetadataUpdateInfo {
 	 * to the BaselineInfo for the image and cleanup from there. */
 	GSList *added_members; /* a set of Method or Field table tokens of any methods or fields added to this class, allocated from the MonoClass mempool */
 
-	GPtrArray *added_fields; /* a set of MonoClassMetadataUpdateField* values for every added field. */
+	GSList *added_fields; /* a set of MonoClassMetadataUpdateField* values for every added field. */
+	GSList *added_props; /* a set of MonoClassMetadataUpdateProperty* values */
+	GSList *added_events; /* a set of MonoClassMetadataUpdateEvent* values */
 
 	MonoClassRuntimeMetadataUpdateInfo runtime;
 };
+
+/*
+ * Added type skeleton.
+ *
+ * When a hot reload delta is adding brand new class, the runtime allows a lot more leeway than when
+ * new members are added to existing classes.  Anything that is possible to write in a baseline
+ * assembly is possible with an added class.  One complication is that the EnCLog first contains a
+ * row with a new TypeDef table token, but that table row has zeros for the field and method token
+ * ids.  Instead, each method and field is added by an EnCLog entry with a ENC_FUNC_ADD_METHOD or
+ * ENC_FUNC_ADD_FIELD function code.  We don't want to materialzie the MonoClass for the new type
+ * definition until we've see all the added methods and fields.  Instead when we process the log we
+ * collect a skeleton for the new class and then use it to create the MonoClass.
+ *
+ * We assume that the new methods and fields for a given class form a contiguous run (ie first and
+ * count are sufficient to identify all the rows belonging to the new class).
+ */
+typedef struct _MonoAddedDefSkeleton {
+	uint32_t typedef_token; /* which type is it */
+	uint32_t first_method_idx, first_field_idx;
+	uint32_t method_count;
+	uint32_t field_count;
+	uint32_t first_prop_idx;
+	uint32_t prop_count;
+	uint32_t first_event_idx;
+	uint32_t event_count;
+} MonoAddedDefSkeleton;
 
 
 /* Keep in sync with Mono.HotReload.FieldStore in managed */
@@ -44,10 +72,18 @@ typedef struct _MonoClassMetadataUpdateField {
 	uint32_t generation; /* when this field was added */
 	uint32_t token; /* the Field table token where this field was defined. (this won't make
 			 * sense for generic instances, once EnC is supported there) */
-	/* if non-zero the EnC update came before the parent class was initialized.  The field is
-	 * stored in the instance at this offset.  MonoClassField:offset is -1.  Not used for static
-	 * fields. */
-	int before_init_instance_offset;
 } MonoClassMetadataUpdateField;
+
+typedef struct _MonoClassMetadataUpdateProperty {
+	MonoProperty prop;
+	uint32_t generation; /* when this prop was added */
+	uint32_t token; /* the Property table token where this prop was defined. */
+} MonoClassMetadataUpdateProperty;
+
+typedef struct _MonoClassMetadataUpdateEvent {
+	MonoEvent evt;
+	uint32_t generatino; /* when this event was added */
+	uint32_t token; /* the Event table token where this event was defined. */
+} MonoClassMetadataUpdateEvent;
 
 #endif/*_MONO_COMPONENT_HOT_RELOAD_INTERNALS_H*/

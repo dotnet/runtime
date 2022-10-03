@@ -44,7 +44,7 @@ namespace System.Runtime.Serialization
         }
 
         internal ObjectHolderList SpecialFixupObjects =>
-            _specialFixupObjects ?? (_specialFixupObjects = new ObjectHolderList());
+            _specialFixupObjects ??= new ObjectHolderList();
 
         internal ObjectHolder? FindObjectHolder(long objectID)
         {
@@ -658,8 +658,10 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(ObjectManagerUnreferencedCodeMessage)]
-        public void RegisterObject(object obj!!, long objectID, SerializationInfo? info, long idOfContainingObj, MemberInfo? member, int[]? arrayIndex)
+        public void RegisterObject(object obj, long objectID, SerializationInfo? info, long idOfContainingObj, MemberInfo? member, int[]? arrayIndex)
         {
+            ArgumentNullException.ThrowIfNull(obj);
+
             if (objectID <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(objectID), SR.ArgumentOutOfRange_ObjectID);
@@ -767,8 +769,10 @@ namespace System.Runtime.Serialization
         /// <param name="info">The SerializationInfo containing all info for obj.</param>
         /// <param name="context">The streaming context in which the serialization is taking place.</param>
         [RequiresUnreferencedCode(ObjectManagerUnreferencedCodeMessage)]
-        internal void CompleteISerializableObject(object obj!!, SerializationInfo? info, StreamingContext context)
+        internal void CompleteISerializableObject(object obj, SerializationInfo? info, StreamingContext context)
         {
+            ArgumentNullException.ThrowIfNull(obj);
+
             if (!(obj is ISerializable))
             {
                 throw new ArgumentException(SR.Serialization_NotISer);
@@ -1134,10 +1138,7 @@ namespace System.Runtime.Serialization
         /// <param name="manager">The associated object manager.</param>
         internal void AddFixup(FixupHolder fixup, ObjectManager manager)
         {
-            if (_missingElements == null)
-            {
-                _missingElements = new FixupHolderList();
-            }
+            _missingElements ??= new FixupHolderList();
             _missingElements.Add(fixup);
             _missingElementsRemaining++;
 
@@ -1176,10 +1177,7 @@ namespace System.Runtime.Serialization
         /// <param name="dependentObject">the id of the object which is dependent on this object being provided.</param>
         internal void AddDependency(long dependentObject)
         {
-            if (_dependentObjects == null)
-            {
-                _dependentObjects = new LongList();
-            }
+            _dependentObjects ??= new LongList();
             _dependentObjects.Add(dependentObject);
         }
 

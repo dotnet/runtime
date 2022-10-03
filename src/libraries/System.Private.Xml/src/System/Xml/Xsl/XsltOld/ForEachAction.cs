@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
+using System.Collections;
+using System.Xml;
+using System.Xml.XPath;
+
 namespace System.Xml.Xsl.XsltOld
 {
-    using System;
-    using System.Diagnostics;
-    using System.Collections;
-    using System.Xml;
-    using System.Xml.XPath;
-
-    internal class ForEachAction : ContainerAction
+    internal sealed class ForEachAction : ContainerAction
     {
         private const int ProcessedSort = 2;
         private const int ProcessNextNode = 3;
@@ -100,7 +100,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        protected void CompileSortElements(Compiler compiler)
+        private void CompileSortElements(Compiler compiler)
         {
             NavigatorInput input = compiler.Input;
             do
@@ -111,10 +111,7 @@ namespace System.Xml.Xsl.XsltOld
                         if (Ref.Equal(input.NamespaceURI, input.Atoms.UriXsl) &&
                             Ref.Equal(input.LocalName, input.Atoms.Sort))
                         {
-                            if (_sortContainer == null)
-                            {
-                                _sortContainer = new ContainerAction();
-                            }
+                            _sortContainer ??= new ContainerAction();
                             _sortContainer.AddAction(compiler.CreateSortAction());
                             continue;
                         }

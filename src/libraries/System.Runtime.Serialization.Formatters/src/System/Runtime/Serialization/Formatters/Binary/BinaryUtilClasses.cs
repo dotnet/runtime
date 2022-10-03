@@ -485,7 +485,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         public string? NIname
         {
-            get { return _fullName ?? (_fullName = _type?.FullName); }
+            get { return _fullName ??= _type?.FullName; }
             set { _fullName = value; }
         }
     }

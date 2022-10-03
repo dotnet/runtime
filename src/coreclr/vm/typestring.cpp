@@ -183,32 +183,8 @@ HRESULT TypeNameBuilder::OpenGenericArgument()
 
 HRESULT TypeNameBuilder::AddName(LPCWSTR szName)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (!szName)
-        return Fail();
-
-    if (!CheckParseState(ParseStateSTART | ParseStateNAME))
-        return Fail();
-
-    HRESULT hr = S_OK;
-
-    m_parseState = ParseStateNAME;
-
-    if (m_bNestedName)
-        Append(W('+'));
-
-    m_bNestedName = TRUE;
-
-    EscapeName(szName);
-
-    return hr;
+    WRAPPER_NO_CONTRACT;
+    return AddName(szName, NULL);
 }
 
 HRESULT TypeNameBuilder::AddName(LPCWSTR szName, LPCWSTR szNamespace)
@@ -365,35 +341,28 @@ HRESULT TypeNameBuilder::AddArray(DWORD rank)
         return E_INVALIDARG;
 
     if (rank == 1)
+    {
         Append(W("[*]"));
+    }
     else if (rank > 64)
     {
         // Only taken in an error path, runtime will not load arrays of more than 32 dimensions
-        WCHAR wzDim[128];
-        _snwprintf_s(wzDim, 128, _TRUNCATE, W("[%d]"), rank);
-        Append(wzDim);
+        const UTF8 fmt[] = "[%d]";
+        UTF8 strTmp[ARRAY_SIZE(fmt) + MaxUnsigned32BitDecString];
+        _snprintf_s(strTmp, ARRAY_SIZE(strTmp), _TRUNCATE, fmt, rank);
+        Append(strTmp);
     }
     else
     {
-        WCHAR* wzDim = new (nothrow) WCHAR[rank+3];
+        WCHAR* wzDim = (WCHAR*)_alloca(sizeof(WCHAR) * (rank+3));
 
-        if(wzDim == NULL) // allocation failed, do it the long way (each Append -> memory realloc)
-        {
-            Append(W('['));
-            for(COUNT_T i = 1; i < rank; i ++)
-                Append(W(','));
-            Append(W(']'));
-        }
-        else             // allocation OK, do it the fast way
-        {
-            WCHAR* pwz = wzDim+1;
-            *wzDim = '[';
-            for(COUNT_T i = 1; i < rank; i++, pwz++) *pwz=',';
-            *pwz = ']';
-            *(++pwz) = 0;
-            Append(wzDim);
-            delete [] wzDim;
-        }
+        WCHAR* pwz = wzDim+1;
+        *wzDim = W('[');
+        for(COUNT_T i = 1; i < rank; i++, pwz++)
+            *pwz=',';
+        *pwz = W(']');
+        *(++pwz) = W('\0');
+        Append(wzDim);
     }
 
     return S_OK;
@@ -465,21 +434,6 @@ HRESULT TypeNameBuilder::AddAssemblySpec(LPCWSTR szAssemblySpec)
     }
 
     return hr;
-}
-
-HRESULT TypeNameBuilder::ToString(BSTR* pszStringRepresentation)
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (!CheckParseState(ParseStateNAME | ParseStateGENARGS | ParseStatePTRARR | ParseStateBYREF | ParseStateASSEMSPEC))
-        return Fail();
-
-    if (m_instNesting)
-        return Fail();
-
-    *pszStringRepresentation = SysAllocString(m_pStr->GetUnicode());
-
-    return S_OK;
 }
 
 HRESULT TypeNameBuilder::Clear()
@@ -746,12 +700,6 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
         tnb.AddName(W("(null)"));
     }
     else
-    // It's not restored yet!
-    if (ty.IsEncodedFixup())
-    {
-        tnb.AddName(W("(fixup)"));
-    }
-    else
 
     // It's an array, with format
     //   element_ty[] (1-d, SZARRAY)
@@ -831,9 +779,10 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
 #ifdef _DEBUG
             if (format & FormatDebug)
             {
-                WCHAR wzAddress[128];
-                _snwprintf_s(wzAddress, 128, _TRUNCATE, W("(%p)"), (VOID *)dac_cast<TADDR>(ty.AsPtr()));
-                tnb.AddName(wzAddress);
+                UTF8 buffer[128];
+                _snprintf_s(buffer, ARRAY_SIZE(buffer), _TRUNCATE, "(%p)", (VOID *)dac_cast<TADDR>(ty.AsPtr()));
+                MAKE_WIDEPTR_FROMUTF8(pointerName, buffer);
+                tnb.AddName(pointerName);
             }
 #endif
             AppendNestedTypeDef(tnb, pImport, td, format);

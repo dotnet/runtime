@@ -520,7 +520,7 @@ private:
     static HRESULT __stdcall ReleaseAllInterfacesCallBack(LPVOID pData);
 
     //---------------------------------------------------------------------
-    // Helper function called from ReleaseAllInterfaces_CallBack do do the
+    // Helper function called from ReleaseAllInterfaces_CallBack to do the
     // actual releases.
     void ReleaseAllInterfaces();
 

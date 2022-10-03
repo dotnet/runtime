@@ -43,7 +43,7 @@ namespace System.Linq.Expressions.Interpreter
 
             public DebugView(InstructionArray array)
             {
-                ContractUtils.RequiresNotNull(array, nameof(array));
+                ArgumentNullException.ThrowIfNull(array);
                 _array = array;
             }
 
@@ -88,7 +88,7 @@ namespace System.Linq.Expressions.Interpreter
 
             public DebugView(InstructionList list)
             {
-                ContractUtils.RequiresNotNull(list, nameof(list));
+                ArgumentNullException.ThrowIfNull(list);
                 _list = list;
             }
 
@@ -226,6 +226,7 @@ namespace System.Linq.Expressions.Interpreter
             _currentStackDepth += instruction.ConsumedStack;
         }
 
+#pragma warning disable CA1822
         /// <summary>
         /// Attaches a cookie to the last emitted instruction.
         /// </summary>
@@ -239,6 +240,7 @@ namespace System.Linq.Expressions.Interpreter
             _debugCookies.Add(new KeyValuePair<int, object?>(Count - 1, cookie));
 #endif
         }
+#pragma warning restore CA1822
 
         public int Count => _instructions.Count;
         public int CurrentStackDepth => _currentStackDepth;
@@ -331,11 +333,11 @@ namespace System.Linq.Expressions.Interpreter
         {
             if (value)
             {
-                Emit(s_true ?? (s_true = new LoadObjectInstruction(Utils.BoxedTrue)));
+                Emit(s_true ??= new LoadObjectInstruction(Utils.BoxedTrue));
             }
             else
             {
-                Emit(s_false ?? (s_false = new LoadObjectInstruction(Utils.BoxedFalse)));
+                Emit(s_false ??= new LoadObjectInstruction(Utils.BoxedFalse));
             }
         }
 
@@ -343,7 +345,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             if (value == null)
             {
-                Emit(s_null ?? (s_null = new LoadObjectInstruction(null)));
+                Emit(s_null ??= new LoadObjectInstruction(null));
                 return;
             }
 
@@ -355,17 +357,13 @@ namespace System.Linq.Expressions.Interpreter
                     return;
                 }
 
-                if (value is int)
+                if (value is int i)
                 {
-                    int i = (int)value;
                     if (i >= PushIntMinCachedValue && i <= PushIntMaxCachedValue)
                     {
-                        if (s_Ints == null)
-                        {
-                            s_Ints = new Instruction[PushIntMaxCachedValue - PushIntMinCachedValue + 1];
-                        }
+                        s_Ints ??= new Instruction[PushIntMaxCachedValue - PushIntMinCachedValue + 1];
                         i -= PushIntMinCachedValue;
-                        Emit(s_Ints[i] ?? (s_Ints[i] = new LoadObjectInstruction(value)));
+                        Emit(s_Ints[i] ??= new LoadObjectInstruction(value));
                         return;
                     }
                 }
@@ -374,17 +372,14 @@ namespace System.Linq.Expressions.Interpreter
             if (_objects == null)
             {
                 _objects = new List<object>();
-                if (s_loadObjectCached == null)
-                {
-                    s_loadObjectCached = new Instruction[CachedObjectCount];
-                }
+                s_loadObjectCached ??= new Instruction[CachedObjectCount];
             }
 
             if (_objects.Count < s_loadObjectCached!.Length)
             {
                 uint index = (uint)_objects.Count;
                 _objects.Add(value);
-                Emit(s_loadObjectCached[index] ?? (s_loadObjectCached[index] = new LoadCachedObjectInstruction(index)));
+                Emit(s_loadObjectCached[index] ??= new LoadCachedObjectInstruction(index));
             }
             else
             {
@@ -432,14 +427,11 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitLoadLocal(int index)
         {
-            if (s_loadLocal == null)
-            {
-                s_loadLocal = new Instruction[LocalInstrCacheSize];
-            }
+            s_loadLocal ??= new Instruction[LocalInstrCacheSize];
 
             if (index < s_loadLocal.Length)
             {
-                Emit(s_loadLocal[index] ?? (s_loadLocal[index] = new LoadLocalInstruction(index)));
+                Emit(s_loadLocal[index] ??= new LoadLocalInstruction(index));
             }
             else
             {
@@ -454,14 +446,11 @@ namespace System.Linq.Expressions.Interpreter
 
         internal static Instruction LoadLocalBoxed(int index)
         {
-            if (s_loadLocalBoxed == null)
-            {
-                s_loadLocalBoxed = new Instruction[LocalInstrCacheSize];
-            }
+            s_loadLocalBoxed ??= new Instruction[LocalInstrCacheSize];
 
             if (index < s_loadLocalBoxed.Length)
             {
-                return s_loadLocalBoxed[index] ?? (s_loadLocalBoxed[index] = new LoadLocalBoxedInstruction(index));
+                return s_loadLocalBoxed[index] ??= new LoadLocalBoxedInstruction(index);
             }
             else
             {
@@ -471,14 +460,11 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitLoadLocalFromClosure(int index)
         {
-            if (s_loadLocalFromClosure == null)
-            {
-                s_loadLocalFromClosure = new Instruction[LocalInstrCacheSize];
-            }
+            s_loadLocalFromClosure ??= new Instruction[LocalInstrCacheSize];
 
             if (index < s_loadLocalFromClosure.Length)
             {
-                Emit(s_loadLocalFromClosure[index] ?? (s_loadLocalFromClosure[index] = new LoadLocalFromClosureInstruction(index)));
+                Emit(s_loadLocalFromClosure[index] ??= new LoadLocalFromClosureInstruction(index));
             }
             else
             {
@@ -488,14 +474,11 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitLoadLocalFromClosureBoxed(int index)
         {
-            if (s_loadLocalFromClosureBoxed == null)
-            {
-                s_loadLocalFromClosureBoxed = new Instruction[LocalInstrCacheSize];
-            }
+            s_loadLocalFromClosureBoxed ??= new Instruction[LocalInstrCacheSize];
 
             if (index < s_loadLocalFromClosureBoxed.Length)
             {
-                Emit(s_loadLocalFromClosureBoxed[index] ?? (s_loadLocalFromClosureBoxed[index] = new LoadLocalFromClosureBoxedInstruction(index)));
+                Emit(s_loadLocalFromClosureBoxed[index] ??= new LoadLocalFromClosureBoxedInstruction(index));
             }
             else
             {
@@ -505,14 +488,11 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitAssignLocal(int index)
         {
-            if (s_assignLocal == null)
-            {
-                s_assignLocal = new Instruction[LocalInstrCacheSize];
-            }
+            s_assignLocal ??= new Instruction[LocalInstrCacheSize];
 
             if (index < s_assignLocal.Length)
             {
-                Emit(s_assignLocal[index] ?? (s_assignLocal[index] = new AssignLocalInstruction(index)));
+                Emit(s_assignLocal[index] ??= new AssignLocalInstruction(index));
             }
             else
             {
@@ -522,14 +502,11 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitStoreLocal(int index)
         {
-            if (s_storeLocal == null)
-            {
-                s_storeLocal = new Instruction[LocalInstrCacheSize];
-            }
+            s_storeLocal ??= new Instruction[LocalInstrCacheSize];
 
             if (index < s_storeLocal.Length)
             {
-                Emit(s_storeLocal[index] ?? (s_storeLocal[index] = new StoreLocalInstruction(index)));
+                Emit(s_storeLocal[index] ??= new StoreLocalInstruction(index));
             }
             else
             {
@@ -544,14 +521,11 @@ namespace System.Linq.Expressions.Interpreter
 
         internal static Instruction AssignLocalBoxed(int index)
         {
-            if (s_assignLocalBoxed == null)
-            {
-                s_assignLocalBoxed = new Instruction[LocalInstrCacheSize];
-            }
+            s_assignLocalBoxed ??= new Instruction[LocalInstrCacheSize];
 
             if (index < s_assignLocalBoxed.Length)
             {
-                return s_assignLocalBoxed[index] ?? (s_assignLocalBoxed[index] = new AssignLocalBoxedInstruction(index));
+                return s_assignLocalBoxed[index] ??= new AssignLocalBoxedInstruction(index);
             }
             else
             {
@@ -566,14 +540,11 @@ namespace System.Linq.Expressions.Interpreter
 
         internal static Instruction StoreLocalBoxed(int index)
         {
-            if (s_storeLocalBoxed == null)
-            {
-                s_storeLocalBoxed = new Instruction[LocalInstrCacheSize];
-            }
+            s_storeLocalBoxed ??= new Instruction[LocalInstrCacheSize];
 
             if (index < s_storeLocalBoxed.Length)
             {
-                return s_storeLocalBoxed[index] ?? (s_storeLocalBoxed[index] = new StoreLocalBoxedInstruction(index));
+                return s_storeLocalBoxed[index] ??= new StoreLocalBoxedInstruction(index);
             }
             else
             {
@@ -583,14 +554,11 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitAssignLocalToClosure(int index)
         {
-            if (s_assignLocalToClosure == null)
-            {
-                s_assignLocalToClosure = new Instruction[LocalInstrCacheSize];
-            }
+            s_assignLocalToClosure ??= new Instruction[LocalInstrCacheSize];
 
             if (index < s_assignLocalToClosure.Length)
             {
-                Emit(s_assignLocalToClosure[index] ?? (s_assignLocalToClosure[index] = new AssignLocalToClosureInstruction(index)));
+                Emit(s_assignLocalToClosure[index] ??= new AssignLocalToClosureInstruction(index));
             }
             else
             {
@@ -887,7 +855,7 @@ namespace System.Linq.Expressions.Interpreter
             Emit(GetLoadField(field));
         }
 
-        private Instruction GetLoadField(FieldInfo field)
+        private static Instruction GetLoadField(FieldInfo field)
         {
             lock (s_loadFields)
             {
@@ -967,10 +935,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public BranchLabel MakeLabel()
         {
-            if (_labels == null)
-            {
-                _labels = new List<BranchLabel>();
-            }
+            _labels ??= new List<BranchLabel>();
 
             var label = new BranchLabel();
             _labels.Add(label);

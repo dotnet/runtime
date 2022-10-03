@@ -55,6 +55,10 @@ namespace System.Reflection
         internal virtual Type[] GetParameterTypes()
         {
             ParameterInfo[] paramInfo = GetParametersNoCopy();
+            if (paramInfo.Length == 0)
+            {
+                return Type.EmptyTypes;
+            }
 
             Type[] parameterTypes = new Type[paramInfo.Length];
             for (int i = 0; i < paramInfo.Length; i++)

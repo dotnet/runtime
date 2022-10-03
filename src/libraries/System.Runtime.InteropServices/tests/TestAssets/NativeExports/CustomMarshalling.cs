@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 using SharedTypes;
+using static SharedTypes.BoolStructMarshaller;
+using static SharedTypes.StringContainerMarshaller;
 
 namespace NativeExports
 {
@@ -16,7 +19,7 @@ namespace NativeExports
             [DNNE.C99Type("struct string_container*")] StringContainerNative* pStringsOut)
         {
             // Round trip through the managed view to allocate a new native instance.
-            *pStringsOut = new StringContainerNative(strings.ToManaged());
+            *pStringsOut = StringContainerMarshaller.In.ConvertToUnmanaged(StringContainerMarshaller.Out.ConvertToManaged(strings));
         }
 
         [UnmanagedCallersOnly(EntryPoint = "stringcontainer_reverse_strings")]
@@ -31,6 +34,19 @@ namespace NativeExports
         public static double GetLongBytesAsDouble(long l)
         {
             return *(double*)&l;
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "get_bytes_as_double_big_endian")]
+        public static double GetBytesAsDoubleBigEndian(byte* b)
+        {
+            return BinaryPrimitives.ReadDoubleBigEndian(new ReadOnlySpan<byte>(b, 8));
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "return_zero")]
+        public static int ReturnZero(int* ret)
+        {
+            *ret = 0;
+            return 0;
         }
 
         [UnmanagedCallersOnly(EntryPoint = "negate_bools")]

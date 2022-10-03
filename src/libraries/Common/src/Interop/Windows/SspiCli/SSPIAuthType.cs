@@ -60,14 +60,14 @@ namespace System.Net
             return SafeDeleteContext.InitializeSecurityContext(ref credential, ref context, targetName, inFlags, endianness, inputBuffers, ref outputBuffer, ref outFlags);
         }
 
-        public int EncryptMessage(SafeDeleteContext context, ref Interop.SspiCli.SecBufferDesc inputOutput, uint sequenceNumber)
+        public int EncryptMessage(SafeDeleteContext context, ref Interop.SspiCli.SecBufferDesc inputOutput, uint qop)
         {
             try
             {
                 bool ignore = false;
 
                 context.DangerousAddRef(ref ignore);
-                return Interop.SspiCli.EncryptMessage(ref context._handle, 0, ref inputOutput, sequenceNumber);
+                return Interop.SspiCli.EncryptMessage(ref context._handle, qop, ref inputOutput, 0);
             }
             finally
             {
@@ -75,61 +75,24 @@ namespace System.Net
             }
         }
 
-        public unsafe int DecryptMessage(SafeDeleteContext context, ref Interop.SspiCli.SecBufferDesc inputOutput, uint sequenceNumber)
+        public unsafe int DecryptMessage(SafeDeleteContext context, ref Interop.SspiCli.SecBufferDesc inputOutput, out uint qop)
         {
             int status = (int)Interop.SECURITY_STATUS.InvalidHandle;
-            uint qop = 0;
+            uint qopTemp = 0;
 
             try
             {
                 bool ignore = false;
                 context.DangerousAddRef(ref ignore);
-                status = Interop.SspiCli.DecryptMessage(ref context._handle, ref inputOutput, sequenceNumber, &qop);
+                status = Interop.SspiCli.DecryptMessage(ref context._handle, ref inputOutput, 0, &qopTemp);
             }
             finally
             {
                 context.DangerousRelease();
             }
 
-            if (status == 0 && qop == Interop.SspiCli.SECQOP_WRAP_NO_ENCRYPT)
-            {
-                Debug.Fail($"Expected qop = 0, returned value = {qop}");
-                throw new InvalidOperationException(SR.net_auth_message_not_encrypted);
-            }
-
+            qop = qopTemp;
             return status;
-        }
-
-        public int MakeSignature(SafeDeleteContext context, ref Interop.SspiCli.SecBufferDesc inputOutput, uint sequenceNumber)
-        {
-            try
-            {
-                bool ignore = false;
-
-                context.DangerousAddRef(ref ignore);
-
-                return Interop.SspiCli.EncryptMessage(ref context._handle, Interop.SspiCli.SECQOP_WRAP_NO_ENCRYPT, ref inputOutput, sequenceNumber);
-            }
-            finally
-            {
-                context.DangerousRelease();
-            }
-        }
-
-        public unsafe int VerifySignature(SafeDeleteContext context, ref Interop.SspiCli.SecBufferDesc inputOutput, uint sequenceNumber)
-        {
-            try
-            {
-                bool ignore = false;
-                uint qop = 0;
-
-                context.DangerousAddRef(ref ignore);
-                return Interop.SspiCli.DecryptMessage(ref context._handle, ref inputOutput, sequenceNumber, &qop);
-            }
-            finally
-            {
-                context.DangerousRelease();
-            }
         }
 
         public int QueryContextChannelBinding(SafeDeleteContext context, Interop.SspiCli.ContextAttribute attribute, out SafeFreeContextBufferChannelBinding binding)
@@ -168,7 +131,7 @@ namespace System.Net
             return GetSecurityContextToken(phContext, out phToken);
         }
 
-        public int CompleteAuthToken(ref SafeDeleteSslContext? refContext, in SecurityBuffer inputBuffer)
+        public int CompleteAuthToken(ref SafeDeleteSslContext? refContext, in InputSecurityBuffer inputBuffer)
         {
             return SafeDeleteContext.CompleteAuthToken(ref refContext, in inputBuffer);
         }

@@ -22,7 +22,7 @@ namespace System.Net.Http.Headers
 
         public CacheControlHeaderValue? CacheControl
         {
-            get { return (CacheControlHeaderValue?)_parent.GetParsedValues(KnownHeaders.CacheControl.Descriptor); }
+            get { return (CacheControlHeaderValue?)_parent.GetSingleParsedValue(KnownHeaders.CacheControl.Descriptor); }
             set { _parent.SetOrRemoveParsedValue(KnownHeaders.CacheControl.Descriptor, value); }
         }
 

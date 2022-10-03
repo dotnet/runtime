@@ -159,7 +159,7 @@ namespace System.Text.RegularExpressions.Tests
             )$"
             , "255", RegexOptions.IgnorePatternWhitespace, new string[] { "255", "255", "2", "5", "5", "", "255", "2", "5" } };
 
-                // Character Class Substraction
+                // Character Class Subtraction
                 yield return new object[] { engine, null, @"[abcd\-d-[bc]]+", "bbbaaa---dddccc", RegexOptions.None, new string[] { "aaa---ddd" } };
                 yield return new object[] { engine, null, @"[^a-f-[\x00-\x60\u007B-\uFFFF]]+", "aaafffgggzzz{{{", RegexOptions.None, new string[] { "gggzzz" } };
                 yield return new object[] { engine, null, @"[\[\]a-f-[[]]+", "gggaaafff]]][[[", RegexOptions.None, new string[] { "aaafff]]]" } };
@@ -181,7 +181,7 @@ namespace System.Text.RegularExpressions.Tests
 
                 yield return new object[] { engine, null, @"[a-d\--[bc]]+", "cccaaa--dddbbb", RegexOptions.None, new string[] { "aaa--ddd" } };
 
-                // Not Character class substraction
+                // Not Character class subtraction
                 yield return new object[] { engine, null, @"[\0- [bc]+", "!!!\0\0\t\t  [[[[bbbcccaaa", RegexOptions.None, new string[] { "\0\0\t\t  [[[[bbbccc" } };
                 yield return new object[] { engine, null, "[[abcd]-[bc]]+", "a-b]", RegexOptions.None, new string[] { "a-b]" } };
                 yield return new object[] { engine, null, "[-[e-g]+", "ddd[[[---eeefffggghhh", RegexOptions.None, new string[] { "[[[---eeefffggg" } };
@@ -955,28 +955,32 @@ namespace System.Text.RegularExpressions.Tests
             {
                 regex = await RegexHelpers.GetRegexAsync(engine, pattern, options);
             }
-            catch (NotSupportedException) when (RegexHelpers.IsNonBacktracking(engine))
+            catch (Exception e) when (e is NotSupportedException or ArgumentOutOfRangeException && RegexHelpers.IsNonBacktracking(engine))
             {
                 // Some constructs are not supported in NonBacktracking mode, such as: if-then-else, lookaround, and backreferences
                 return;
             }
 
-            Match match = regex.Match(input);
-
-            Assert.True(match.Success);
-            Assert.Equal(expectedGroups[0], match.Value);
-
-            Assert.Equal(expectedGroups.Length, match.Groups.Count);
-
-            int[] groupNumbers = regex.GetGroupNumbers();
-            string[] groupNames = regex.GetGroupNames();
-            for (int i = 0; i < expectedGroups.Length; i++)
+            foreach (string prefix in new[] { "", "IGNORETHIS" })
             {
-                Assert.Equal(expectedGroups[i], match.Groups[groupNumbers[i]].Value);
-                Assert.Equal(match.Groups[groupNumbers[i]], match.Groups[groupNames[i]]);
+                Match match = prefix.Length == 0 ?
+                    regex.Match(input) : // validate the original input
+                    regex.Match(prefix + input, prefix.Length, input.Length); // validate we handle groups and beginning/length correctly
 
-                Assert.Equal(groupNumbers[i], regex.GroupNumberFromName(groupNames[i]));
-                Assert.Equal(groupNames[i], regex.GroupNameFromNumber(groupNumbers[i]));
+                Assert.True(match.Success);
+                Assert.Equal(expectedGroups[0], match.Value);
+                Assert.Equal(expectedGroups.Length, match.Groups.Count);
+
+                int[] groupNumbers = regex.GetGroupNumbers();
+                string[] groupNames = regex.GetGroupNames();
+                for (int i = 0; i < expectedGroups.Length; i++)
+                {
+                    Assert.Equal(expectedGroups[i], match.Groups[groupNumbers[i]].Value);
+                    Assert.Equal(match.Groups[groupNumbers[i]], match.Groups[groupNames[i]]);
+
+                    Assert.Equal(groupNumbers[i], regex.GroupNumberFromName(groupNames[i]));
+                    Assert.Equal(groupNames[i], regex.GroupNameFromNumber(groupNumbers[i]));
+                }
             }
         }
 

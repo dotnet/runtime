@@ -4,7 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 #if NET7_0_OR_GREATER
-using System.Runtime.InteropServices.GeneratedMarshalling;
+using System.Runtime.InteropServices.Marshalling;
 #endif
 
 internal static partial class Interop
@@ -176,7 +176,7 @@ internal static partial class Interop
         }
 
 #if NET7_0_OR_GREATER
-        [NativeMarshalling(typeof(Native))]
+        [NativeMarshalling(typeof(Marshaller))]
 #endif
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
         internal sealed class DOCINFO
@@ -188,35 +188,42 @@ internal static partial class Interop
             internal int fwType;
 
 #if NET7_0_OR_GREATER
-            internal struct Native
+            [CustomMarshaller(typeof(DOCINFO), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller))]
+            public static class Marshaller
             {
-                internal int cbSize;
-                internal IntPtr lpszDocName;
-                internal IntPtr lpszOutput;
-                internal IntPtr lpszDatatype;
-                internal int fwType;
+                public static Native ConvertToUnmanaged(DOCINFO managed) => new(managed);
+                public static void Free(Native native) => native.FreeNative();
 
-                public Native(DOCINFO docInfo)
+                internal struct Native
                 {
-                    cbSize = docInfo.cbSize;
-                    lpszDocName = Marshal.StringToCoTaskMemAuto(docInfo.lpszDocName);
-                    lpszOutput = Marshal.StringToCoTaskMemAuto(docInfo.lpszOutput);
-                    lpszDatatype = Marshal.StringToCoTaskMemAuto(docInfo.lpszDatatype);
-                    fwType = docInfo.fwType;
-                }
+                    internal int cbSize;
+                    internal IntPtr lpszDocName;
+                    internal IntPtr lpszOutput;
+                    internal IntPtr lpszDatatype;
+                    internal int fwType;
 
-                public void FreeNative()
-                {
-                    Marshal.FreeCoTaskMem(lpszDocName);
-                    Marshal.FreeCoTaskMem(lpszOutput);
-                    Marshal.FreeCoTaskMem(lpszDatatype);
+                    public Native(DOCINFO docInfo)
+                    {
+                        cbSize = docInfo.cbSize;
+                        lpszDocName = Marshal.StringToCoTaskMemAuto(docInfo.lpszDocName);
+                        lpszOutput = Marshal.StringToCoTaskMemAuto(docInfo.lpszOutput);
+                        lpszDatatype = Marshal.StringToCoTaskMemAuto(docInfo.lpszDatatype);
+                        fwType = docInfo.fwType;
+                    }
+
+                    public void FreeNative()
+                    {
+                        Marshal.FreeCoTaskMem(lpszDocName);
+                        Marshal.FreeCoTaskMem(lpszOutput);
+                        Marshal.FreeCoTaskMem(lpszDatatype);
+                    }
                 }
             }
 #endif
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-        public class DEVMODE
+        public sealed class DEVMODE
         {
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
             public string? dmDeviceName;

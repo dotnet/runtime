@@ -396,7 +396,7 @@ BOOL EEClassFactoryInfoHashTableHelper::CompareKeys(EEHashEntry_t *pEntry, Class
     if (((ClassFactoryInfo*)pEntry->Key)->m_clsid != pKey->m_clsid)
         return FALSE;
 
-    // Next do a trivial comparition on the server name pointer values.
+    // Next do a trivial comparison on the server name pointer values.
     if (((ClassFactoryInfo*)pEntry->Key)->m_strServerName == pKey->m_strServerName)
         return TRUE;
 
@@ -404,7 +404,7 @@ BOOL EEClassFactoryInfoHashTableHelper::CompareKeys(EEHashEntry_t *pEntry, Class
     if (!((ClassFactoryInfo*)pEntry->Key)->m_strServerName || !pKey->m_strServerName)
         return FALSE;
 
-    // Finally do a string comparition of the server names.
+    // Finally do a string comparison of the server names.
     return wcscmp(((ClassFactoryInfo*)pEntry->Key)->m_strServerName, pKey->m_strServerName) == 0;
 }
 

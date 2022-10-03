@@ -35,35 +35,11 @@ namespace System.Xml
 
         private static Base64Encoding? s_base64Encoding;
 
-        public static Base64Encoding Base64Encoding
-        {
-            get
-            {
-                if (s_base64Encoding == null)
-                    s_base64Encoding = new Base64Encoding();
-                return s_base64Encoding;
-            }
-        }
+        public static Base64Encoding Base64Encoding => s_base64Encoding ??= new Base64Encoding();
 
-        private static UTF8Encoding UTF8Encoding
-        {
-            get
-            {
-                if (s_utf8Encoding == null)
-                    s_utf8Encoding = new UTF8Encoding(false, true);
-                return s_utf8Encoding;
-            }
-        }
+        private static UTF8Encoding UTF8Encoding => s_utf8Encoding ??= new UTF8Encoding(false, true);
 
-        private static UnicodeEncoding UnicodeEncoding
-        {
-            get
-            {
-                if (s_unicodeEncoding == null)
-                    s_unicodeEncoding = new UnicodeEncoding(false, false, true);
-                return s_unicodeEncoding;
-            }
-        }
+        private static UnicodeEncoding UnicodeEncoding => s_unicodeEncoding ??= new UnicodeEncoding(false, false, true);
 
         public static bool ToBoolean(string value)
         {

@@ -169,6 +169,7 @@ namespace System.IO.MemoryMappedFiles
             // finished retrying but couldn't create or open
             if (handle == null || handle.IsInvalid)
             {
+                handle?.Dispose();
                 throw new InvalidOperationException(SR.InvalidOperation_CantCreateFileMapping);
             }
 

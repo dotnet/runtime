@@ -80,17 +80,7 @@ namespace System.Diagnostics
             }
         }
 
-        internal static string AppName
-        {
-            get
-            {
-                if (s_appName == null)
-                {
-                    s_appName = Assembly.GetEntryAssembly()?.GetName().Name ?? string.Empty;
-                }
-                return s_appName;
-            }
-        }
+        internal static string AppName => s_appName ??= Assembly.GetEntryAssembly()?.GetName().Name ?? string.Empty;
 
         public static bool AutoFlush
         {
@@ -321,7 +311,7 @@ namespace System.Diagnostics
             InitializeSettings();
         }
 
-        public static void TraceEvent(TraceEventType eventType, int id, string? format, params object?[]? args)
+        public static void TraceEvent(TraceEventType eventType, int id, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string? format, params object?[]? args)
         {
             TraceEventCache EventCache = new TraceEventCache();
 

@@ -21,4 +21,10 @@
     <Right>runtimes/win/lib/netstandard2.0/System.ServiceProcess.ServiceController.dll</Right>
     <IsBaselineSuppression>true</IsBaselineSuppression>
   </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.ServiceProcess.ServiceBase.ServiceMainCallback(System.Int32,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.ServiceProcess.ServiceController.dll</Left>
+    <Right>lib/net7.0/System.ServiceProcess.ServiceController.dll</Right>
+  </Suppression>
 </Suppressions>

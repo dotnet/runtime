@@ -190,6 +190,9 @@ dotnet_diagnostic.CA1309.severity = none
 # CA1310: Specify StringComparison for correctness
 dotnet_diagnostic.CA1310.severity = suggestion
 
+# CA1311: Specify a culture or use an invariant version
+dotnet_diagnostic.CA1311.severity = warning
+
 # CA1401: P/Invokes should not be visible
 dotnet_diagnostic.CA1401.severity = warning
 
@@ -204,6 +207,12 @@ dotnet_diagnostic.CA1418.severity = warning
 
 # CA1419: Provide a parameterless constructor that is as visible as the containing type for concrete types derived from 'System.Runtime.InteropServices.SafeHandle'
 dotnet_diagnostic.CA1419.severity = warning
+
+# CA1420: Property, type, or attribute requires runtime marshalling
+dotnet_diagnostic.CA1420.severity = warning
+
+# CA1421: This method uses runtime marshalling even when the 'DisableRuntimeMarshallingAttribute' is applied
+dotnet_diagnostic.CA1421.severity = suggestion
 
 # CA1501: Avoid excessive inheritance
 dotnet_diagnostic.CA1501.severity = none
@@ -266,7 +275,7 @@ dotnet_diagnostic.CA1724.severity = none
 dotnet_diagnostic.CA1725.severity = suggestion
 
 # CA1727: Use PascalCase for named placeholders
-dotnet_diagnostic.CA1727.severity = suggestion
+dotnet_diagnostic.CA1727.severity = warning
 
 # CA1802: Use literals where appropriate
 dotnet_diagnostic.CA1802.severity = warning
@@ -306,7 +315,8 @@ dotnet_diagnostic.CA1820.severity = none
 dotnet_diagnostic.CA1821.severity = warning
 
 # CA1822: Mark members as static
-dotnet_diagnostic.CA1822.severity = none
+dotnet_diagnostic.CA1822.severity = warning
+dotnet_code_quality.CA1822.api_surface = private, internal
 
 # CA1823: Avoid unused private fields
 dotnet_diagnostic.CA1823.severity = warning
@@ -392,6 +402,18 @@ dotnet_diagnostic.CA1849.severity = suggestion
 # CA1850: Prefer static 'HashData' method over 'ComputeHash'
 dotnet_diagnostic.CA1850.severity = warning
 
+# CA1851: Possible multiple enumerations of 'IEnumerable' collection
+dotnet_diagnostic.CA1851.severity = suggestion
+
+# CA1852: Seal internal types
+dotnet_diagnostic.CA1852.severity = warning
+
+# CA1853: Unnecessary call to 'Dictionary.ContainsKey(key)'
+dotnet_diagnostic.CA1853.severity = warning
+
+# CA1854: Prefer the 'IDictionary.TryGetValue(TKey, out TValue)' method
+dotnet_diagnostic.CA1854.severity = warning
+
 # CA2000: Dispose objects before losing scope
 dotnet_diagnostic.CA2000.severity = none
 
@@ -430,6 +452,9 @@ dotnet_diagnostic.CA2017.severity = warning
 
 # CA2018: 'Buffer.BlockCopy' expects the number of bytes to be copied for the 'count' argument
 dotnet_diagnostic.CA2018.severity = warning
+
+# CA2019: Improper 'ThreadStatic' field initialization
+dotnet_diagnostic.CA2019.severity = warning
 
 # CA2100: Review SQL queries for security vulnerabilities
 dotnet_diagnostic.CA2100.severity = none
@@ -547,7 +572,7 @@ dotnet_diagnostic.CA2251.severity = warning
 dotnet_diagnostic.CA2252.severity = error
 
 # CA2253: Named placeholders should not be numeric values
-dotnet_diagnostic.CA2253.severity = none
+dotnet_diagnostic.CA2253.severity = warning
 
 # CA2254: Template should be a static expression
 dotnet_diagnostic.CA2254.severity = none
@@ -563,6 +588,9 @@ dotnet_diagnostic.CA2257.severity = warning
 
 # CA2258: Providing a 'DynamicInterfaceCastableImplementation' interface in Visual Basic is unsupported
 dotnet_diagnostic.CA2258.severity = warning
+
+# CA2259: 'ThreadStatic' only affects static fields
+dotnet_diagnostic.CA2259.severity = warning
 
 # CA2300: Do not use insecure deserializer BinaryFormatter
 dotnet_diagnostic.CA2300.severity = none
@@ -825,7 +853,7 @@ dotnet_diagnostic.CA5400.severity = none
 # CA5401: Do not use CreateEncryptor with non-default IV
 dotnet_diagnostic.CA5401.severity = none
 
-# CA5402: Use CreateEncryptor with the default IV 
+# CA5402: Use CreateEncryptor with the default IV
 dotnet_diagnostic.CA5402.severity = none
 
 # CA5403: Do not hard-code certificate
@@ -850,7 +878,8 @@ dotnet_diagnostic.IL3002.severity = warning
 dotnet_diagnostic.SA0001.severity = none
 
 # SA1000: Spacing around keywords
-dotnet_diagnostic.SA1000.severity = warning
+# suggestion until https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3478 is resolved
+dotnet_diagnostic.SA1000.severity = suggestion
 
 # SA1001: Commas should not be preceded by whitespace
 dotnet_diagnostic.SA1001.severity = warning
@@ -1044,8 +1073,8 @@ dotnet_diagnostic.SA1204.severity = none
 # SA1205: Partial elements should declare an access modifier
 dotnet_diagnostic.SA1205.severity = warning
 
-# SA1206: Keyword ordering
-dotnet_diagnostic.SA1206.severity = warning
+# SA1206: Keyword ordering - TODO Re-enable as warning after https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3527
+dotnet_diagnostic.SA1206.severity = suggestion
 
 # SA1208: Using directive ordering
 dotnet_diagnostic.SA1208.severity = none
@@ -1110,7 +1139,7 @@ dotnet_diagnostic.SA1314.severity = none
 # SA1316: Tuple element names should use correct casing
 dotnet_diagnostic.SA1316.severity = none
 
-# SA1400: Member should declare an access modifer
+# SA1400: Member should declare an access modifier
 dotnet_diagnostic.SA1400.severity = warning
 
 # SA1401: Fields should be private
@@ -1327,7 +1356,7 @@ dotnet_diagnostic.IDE0018.severity = suggestion
 dotnet_diagnostic.IDE0019.severity = suggestion
 
 # IDE0020: Use pattern matching to avoid is check followed by a cast (with variable)
-dotnet_diagnostic.IDE0020.severity = suggestion
+dotnet_diagnostic.IDE0020.severity = warning
 
 # IDE0021: Use expression body for constructors
 dotnet_diagnostic.IDE0021.severity = silent
@@ -1354,13 +1383,13 @@ dotnet_diagnostic.IDE0027.severity = silent
 dotnet_diagnostic.IDE0028.severity = suggestion
 
 # IDE0029: Use coalesce expression
-dotnet_diagnostic.IDE0029.severity = suggestion
+dotnet_diagnostic.IDE0029.severity = warning
 
 # IDE0030: Use coalesce expression
-dotnet_diagnostic.IDE0030.severity = suggestion
+dotnet_diagnostic.IDE0030.severity = warning
 
 # IDE0031: Use null propagation
-dotnet_diagnostic.IDE0031.severity = silent
+dotnet_diagnostic.IDE0031.severity = warning
 
 # IDE0032: Use auto property
 dotnet_diagnostic.IDE0032.severity = silent
@@ -1375,7 +1404,7 @@ dotnet_diagnostic.IDE0034.severity = suggestion
 dotnet_diagnostic.IDE0035.severity = suggestion
 
 # IDE0036: Order modifiers
-dotnet_diagnostic.IDE0036.severity = suggestion
+dotnet_diagnostic.IDE0036.severity = warning
 
 # IDE0037: Use inferred member name
 dotnet_diagnostic.IDE0037.severity = silent
@@ -1416,9 +1445,6 @@ dotnet_diagnostic.IDE0048.severity = silent
 # IDE0049: Use language keywords instead of framework type names for type references
 dotnet_diagnostic.IDE0049.severity = warning
 
-# IDE0050: Convert anonymous type to tuple
-dotnet_diagnostic.IDE0050.severity = suggestion
-
 # IDE0051: Remove unused private members
 dotnet_diagnostic.IDE0051.severity = suggestion
 
@@ -1429,7 +1455,7 @@ dotnet_diagnostic.IDE0052.severity = suggestion
 dotnet_diagnostic.IDE0053.severity = silent
 
 # IDE0054: Use compound assignment
-dotnet_diagnostic.IDE0054.severity = suggestion
+dotnet_diagnostic.IDE0054.severity = warning
 
 # IDE0055: Fix formatting
 dotnet_diagnostic.IDE0055.severity = suggestion
@@ -1463,7 +1489,7 @@ dotnet_diagnostic.IDE0063.severity = silent
 dotnet_diagnostic.IDE0064.severity = silent
 
 # IDE0065: Misplaced using directive
-dotnet_diagnostic.IDE0065.severity = suggestion
+dotnet_diagnostic.IDE0065.severity = warning
 
 # IDE0066: Convert switch statement to expression
 dotnet_diagnostic.IDE0066.severity = suggestion
@@ -1472,7 +1498,7 @@ dotnet_diagnostic.IDE0066.severity = suggestion
 dotnet_diagnostic.IDE0070.severity = suggestion
 
 # IDE0071: Simplify interpolation
-dotnet_diagnostic.IDE0071.severity = suggestion
+dotnet_diagnostic.IDE0071.severity = warning
 
 # IDE0072: Add missing cases
 dotnet_diagnostic.IDE0072.severity = silent
@@ -1481,7 +1507,7 @@ dotnet_diagnostic.IDE0072.severity = silent
 dotnet_diagnostic.IDE0073.severity = warning
 
 # IDE0074: Use compound assignment
-dotnet_diagnostic.IDE0074.severity = suggestion
+dotnet_diagnostic.IDE0074.severity = warning
 
 # IDE0075: Simplify conditional expression
 dotnet_diagnostic.IDE0075.severity = silent
@@ -1517,10 +1543,10 @@ dotnet_diagnostic.IDE0084.severity = none
 dotnet_diagnostic.IDE0090.severity = silent
 
 # IDE0100: Remove redundant equality
-dotnet_diagnostic.IDE0100.severity = suggestion
+dotnet_diagnostic.IDE0100.severity = warning
 
 # IDE0110: Remove unnecessary discard
-dotnet_diagnostic.IDE0110.severity = suggestion
+dotnet_diagnostic.IDE0110.severity = warning
 
 # IDE0120: Simplify LINQ expression
 dotnet_diagnostic.IDE0120.severity = none
@@ -1540,11 +1566,29 @@ dotnet_diagnostic.IDE0160.severity = silent
 # IDE0161: Convert to file-scoped namespace
 dotnet_diagnostic.IDE0161.severity = silent
 
-# IDE0190: Null check can be simplified
-dotnet_diagnostic.IDE0190.severity = suggestion
+# IDE0170: Simplify property pattern
+dotnet_diagnostic.IDE0170.severity = warning
+
+# IDE0180: Use tuple swap
+dotnet_diagnostic.IDE0180.severity = suggestion
+
+# IDE0200: Remove unnecessary lambda expression
+dotnet_diagnostic.IDE0200.severity = warning
+
+# IDE0210: Use top-level statements
+dotnet_diagnostic.IDE0210.severity = silent
+
+# IDE0211: Use program main
+dotnet_diagnostic.IDE0211.severity = silent
+
+# IDE0220: foreach cast
+dotnet_diagnostic.IDE0220.severity = silent
+
+# IDE0230: Use UTF8 string literal
+dotnet_diagnostic.IDE0230.severity = suggestion
 
 # IDE1005: Delegate invocation can be simplified.
-dotnet_diagnostic.IDE1005.severity = suggestion
+dotnet_diagnostic.IDE1005.severity = warning
 
 # IDE1006: Naming styles
 dotnet_diagnostic.IDE1006.severity = silent

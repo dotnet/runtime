@@ -34,7 +34,7 @@ namespace System.Linq
 
             public TSource[] ToArray()
             {
-                var builder = new LargeArrayBuilder<TSource>(initialize: true);
+                LargeArrayBuilder<TSource> builder = new();
 
                 foreach (TSource item in _source)
                 {
@@ -332,7 +332,7 @@ namespace System.Linq
 
             public TResult[] ToArray()
             {
-                var builder = new LargeArrayBuilder<TResult>(initialize: true);
+                LargeArrayBuilder<TResult> builder = new();
 
                 foreach (TSource item in _source)
                 {

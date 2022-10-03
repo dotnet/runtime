@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// This file contains the defintions of all DAC variables that the G
+// This file contains the definitions of all DAC variables that the G
 // exports and that the DAC uses to interface with the GC.
 //
 // This interface has a strict semantic versioning. The following changes require

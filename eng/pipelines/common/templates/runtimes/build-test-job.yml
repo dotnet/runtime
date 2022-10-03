@@ -11,14 +11,13 @@ parameters:
   variables: {}
   pool: ''
   runtimeFlavor: 'coreclr'
-  runtimeFlavorDisplayName: 'CoreCLR'
   runtimeVariant: ''
   dependsOn: []
   dependOnEvaluatePaths: false
   pgoType: ''
 
 ### Build managed test components (native components are getting built as part
-### of the the product build job).
+### of the product build job).
 
 ### TODO: As of today, build of managed test components requires the product build
 ### as a prerequisite due to dependency on System.Private.Corelib. After switching
@@ -52,10 +51,10 @@ jobs:
     # Compute job name from template parameters
     ${{ if in(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
       name: '${{ parameters.runtimeFlavor }}_common_test_build_p0_AnyOS_AnyCPU_${{ parameters.buildConfig }}'
-      displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri0 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }}'
+      displayName: '${{ parameters.runtimeFlavor }} Common Pri0 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }}'
     ${{ if notIn(parameters.testGroup, 'innerloop', 'clrinterpreter') }}:
       name: '${{ parameters.runtimeFlavor }}_common_test_build_p1_AnyOS_AnyCPU_${{ parameters.buildConfig }}'
-      displayName: '${{ parameters.runtimeFlavorDisplayName }} Common Pri1 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }}'
+      displayName: '${{ parameters.runtimeFlavor }} Common Pri1 Test Build AnyOS AnyCPU ${{ parameters.buildConfig }}'
 
     # Since the condition is being altered, merge the default with the additional conditions.
     # See https://docs.microsoft.com/azure/devops/pipelines/process/conditions
@@ -74,7 +73,7 @@ jobs:
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
       - name: liveRuntimeBuildParams
-        value: 'libs.sfx+libs.oob /p:RefOnly=true -c Release -ci'
+        value: 'libs.sfx+libs.oob+clr.iltools /p:RefOnly=true -c Release -ci'
       - name: compilerArg
         value: ''
       - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.compilerName, 'gcc')) }}:
@@ -84,7 +83,7 @@ jobs:
       - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubgroup, '_musl'), eq(parameters.archType, 'x64')) }}:
         - name: compilerArg
           value: ''
-      # AppleClang has different version scheme, so we let complier introspection pick up the available clang from PATH
+      # AppleClang has different version scheme, so we let compiler introspection pick up the available clang from PATH
       - ${{ if eq(parameters.osGroup, 'OSX') }}:
         - name: compilerArg
           value: ''
@@ -95,6 +94,18 @@ jobs:
       - ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
         - name: runtimeFlavorArgs
           value: '-mono'
+
+      - name: testTreeFilterArg
+        value: ''
+
+      # Only build GCSimulator tests when the gc-simulator group is specified.
+      - ${{ if eq(parameters.testGroup, 'gc-simulator') }}:
+        - ${{ if eq(parameters.osGroup, 'windows') }}:
+          - name: testTreeFilterArg
+            value: 'tree GC/Scenarios/GCSimulator'
+        - ${{ if ne(parameters.osGroup, 'windows') }}:
+          - name: testTreeFilterArg
+            value: '-tree:GC/Scenarios/GCSimulator'
 
     steps:
 
@@ -114,7 +125,7 @@ jobs:
         displayName: Disk Usage before Build
 
     # Build managed test components
-    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)Managed allTargets skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(runtimeFlavorArgs) $(crossArg) $(priorityArg) ci /p:TargetOS=AnyOS
+    - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) $(logRootNameArg)Managed allTargets skipnative skipgeneratelayout skiptestwrappers $(buildConfig) $(archType) $(runtimeFlavorArgs) $(crossArg) $(priorityArg) $(testTreeFilterArg) ci /p:TargetOS=AnyOS
       displayName: Build managed test components
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:

@@ -253,13 +253,20 @@ namespace ILCompiler.DependencyAnalysis
         {
             var dependencies = (DependencyList)base.GetStaticDependencies(factory);
 
-            dependencies.Add(factory.GVMDependencies(_method.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Potential generic virtual method call");
+            MethodDesc canonMethod = _method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+            dependencies.Add(factory.GVMDependencies(canonMethod), "Potential generic virtual method call");
 
             // Variant generic virtual method calls at runtime might need to build the concrete version of the
             // type we could be dispatching on to find the appropriate GVM entry.
             if (_method.OwningType.HasVariance)
             {
                 GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, _method.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific));
+            }
+
+            foreach (TypeDesc instArg in canonMethod.Instantiation)
+            {
+                dependencies.Add(factory.MaximallyConstructableType(instArg), "Type we need to look up for GVM dispatch");
             }
 
             return dependencies;
@@ -855,6 +862,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             _method = method;
             Debug.Assert(method.HasInstantiation);
+            Debug.Assert(!method.IsGenericMethodDefinition);
             Debug.Assert(method.IsCanonicalMethod(CanonicalFormKind.Any));
             Debug.Assert(method.GetCanonMethodTarget(CanonicalFormKind.Specific) == method, "Assert that the canonical method passed in is in standard canonical form");
         }
@@ -946,7 +954,7 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode GetStaticsNode(NodeFactory context, out BagElementKind staticsBagKind)
         {
             ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromStaticLayout(_type.GetClosestDefType()));
-            staticsBagKind = BagElementKind.GcStaticEEType;
+            staticsBagKind = BagElementKind.GcStaticDesc;
 
             return symbol;
         }
@@ -954,7 +962,7 @@ namespace ILCompiler.DependencyAnalysis
         private ISymbolNode GetThreadStaticsNode(NodeFactory context, out BagElementKind staticsBagKind)
         {
             ISymbolNode symbol = context.GCStaticEEType(GCPointerMap.FromThreadStaticLayout(_type.GetClosestDefType()));
-            staticsBagKind = BagElementKind.End; // GC static EETypes not yet implemented in type loader
+            staticsBagKind = BagElementKind.ThreadStaticDesc;
 
             return symbol;
         }
@@ -2006,8 +2014,28 @@ namespace ILCompiler.DependencyAnalysis
             + ","
             + factory.NameMangler.GetMangledTypeName(_constraintType);
 
-        protected sealed override FixupSignatureKind SignatureKind => _constrainedMethod.HasInstantiation ? FixupSignatureKind.GenericConstrainedMethod :
-            (_directCall ? FixupSignatureKind.NonGenericDirectConstrainedMethod : FixupSignatureKind.NonGenericConstrainedMethod);
+        protected sealed override FixupSignatureKind SignatureKind
+        {
+            get
+            {
+                if (_constrainedMethod.Signature.IsStatic)
+                {
+                    if (_constrainedMethod.HasInstantiation)
+                        return FixupSignatureKind.GenericStaticConstrainedMethod;
+                    else
+                        return FixupSignatureKind.NonGenericStaticConstrainedMethod;
+                }
+                else
+                {
+                    if (_constrainedMethod.HasInstantiation)
+                        return FixupSignatureKind.GenericConstrainedMethod;
+                    else if (_directCall)
+                        return FixupSignatureKind.NonGenericDirectConstrainedMethod;
+                    else
+                        return FixupSignatureKind.NonGenericConstrainedMethod;
+                }
+            }
+        }
 
         public sealed override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
@@ -2045,14 +2073,14 @@ namespace ILCompiler.DependencyAnalysis
             Vertex constraintType = factory.NativeLayout.TypeSignatureVertex(_constraintType).WriteVertex(factory);
             if (_constrainedMethod.HasInstantiation)
             {
-                Debug.Assert(SignatureKind == FixupSignatureKind.GenericConstrainedMethod);
+                Debug.Assert(SignatureKind is FixupSignatureKind.GenericConstrainedMethod or FixupSignatureKind.GenericStaticConstrainedMethod);
                 Vertex constrainedMethodVertex = factory.NativeLayout.MethodLdTokenVertex(_constrainedMethod).WriteVertex(factory);
                 Vertex relativeOffsetVertex = GetNativeWriter(factory).GetRelativeOffsetSignature(constrainedMethodVertex);
                 return writer.GetTuple(constraintType, relativeOffsetVertex);
             }
             else
             {
-                Debug.Assert((SignatureKind == FixupSignatureKind.NonGenericConstrainedMethod) || (SignatureKind == FixupSignatureKind.NonGenericDirectConstrainedMethod));
+                Debug.Assert(SignatureKind is FixupSignatureKind.NonGenericConstrainedMethod or FixupSignatureKind.NonGenericDirectConstrainedMethod or FixupSignatureKind.NonGenericStaticConstrainedMethod);
                 Vertex methodType = factory.NativeLayout.TypeSignatureVertex(_constrainedMethod.OwningType).WriteVertex(factory);
                 var canonConstrainedMethod = _constrainedMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 int interfaceSlot = VirtualMethodSlotHelper.GetVirtualMethodSlot(factory, canonConstrainedMethod, canonConstrainedMethod.OwningType);

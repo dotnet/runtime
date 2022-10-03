@@ -5,8 +5,10 @@ namespace System.Reflection
 {
     public static class IntrospectionExtensions
     {
-        public static TypeInfo GetTypeInfo(this Type type!!)
+        public static TypeInfo GetTypeInfo(this Type type)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             if (type is IReflectableType reflectableType)
                 return reflectableType.GetTypeInfo();
 

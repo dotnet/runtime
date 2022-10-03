@@ -50,7 +50,7 @@ There are 3 sets of files to pass to crossgen2:
 ### Principles
 
 1. Ahead of time generated code exists to improve startup, and for some scenarios will be retained for the lifetime of the process.
-2. Our default scenario relies on on tiered compilation rejit for best performance.
+2. Our default scenario relies on tiered compilation rejit for best performance.
 3. Too much pregenerated code will negatively affect applications. Startup is the critical detail for most pregeneration scenarios, and for those, there is a blend of time to pull the file to the CPU (from disk, over the network, etc.) and to compile functions. Striking the right blend has been discovered to be critical.
 
 ### Proposed approach

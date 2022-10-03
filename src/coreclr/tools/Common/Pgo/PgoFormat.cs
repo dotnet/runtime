@@ -21,6 +21,7 @@ namespace Internal.Pgo
         FourByte = 1,
         EightByte = 2,
         TypeHandle = 3,
+        MethodHandle = 4,
 
         // Mask of all schema data types
         MarshalMask = 0xF,
@@ -39,24 +40,28 @@ namespace Internal.Pgo
         Done = None, // All instrumentation schemas must end with a record which is "Done"
         BasicBlockIntCount = (DescriptorMin * 1) | FourByte, // basic block counter using unsigned 4 byte int
         BasicBlockLongCount = (DescriptorMin * 1) | EightByte, // basic block counter using unsigned 8 byte int
-        TypeHandleHistogramIntCount = (DescriptorMin * 2) | FourByte | AlignPointer, // 4 byte counter that is part of a type histogram. Aligned to match ClassProfile32's alignment.
-        TypeHandleHistogramLongCount = (DescriptorMin * 2) | EightByte, // 8 byte counter that is part of a type histogram
-        TypeHandleHistogramTypeHandle = (DescriptorMin * 3) | TypeHandle, // TypeHandle that is part of a type histogram
+        HandleHistogramIntCount = (DescriptorMin * 2) | FourByte | AlignPointer, // 4 byte counter that is part of a type histogram. Aligned to match ClassProfile32's alignment.
+        HandleHistogramLongCount = (DescriptorMin * 2) | EightByte, // 8 byte counter that is part of a type histogram
+        HandleHistogramTypes = (DescriptorMin * 3) | TypeHandle, // TypeHandle that is part of a type histogram
+        HandleHistogramMethods = (DescriptorMin * 3) | MethodHandle, // TypeHandle that is part of a type histogram
         Version = (DescriptorMin * 4) | None, // Version is encoded in the Other field of the schema
         NumRuns = (DescriptorMin * 5) | None, // Number of runs is encoded in the Other field of the schema
         EdgeIntCount = (DescriptorMin * 6) | FourByte, // edge counter using unsigned 4 byte int
         EdgeLongCount = (DescriptorMin * 6) | EightByte, // edge counter using unsigned 8 byte int
         GetLikelyClass = (DescriptorMin * 7) | TypeHandle, // Compressed get likely class data
+        GetLikelyMethod = (DescriptorMin * 7) | MethodHandle, // Compressed get likely method data
     }
 
-    public interface IPgoSchemaDataLoader<TType>
+    public interface IPgoSchemaDataLoader<TType, TMethod>
     {
         TType TypeFromLong(long input);
+        TMethod MethodFromLong(long input);
     }
 
-    public interface IPgoEncodedValueEmitter<TType>
+    public interface IPgoEncodedValueEmitter<TType, TMethod>
     {
         void EmitType(TType type, TType previousValue);
+        void EmitMethod(TMethod method, TMethod previousValue);
         void EmitLong(long value, long previousValue);
         bool EmitDone();
     }
@@ -77,6 +82,8 @@ namespace Internal.Pgo
         public bool DataHeldInDataLong => (Count == 1 &&
                             (((InstrumentationKind & PgoInstrumentationKind.MarshalMask) == PgoInstrumentationKind.FourByte) ||
                             ((InstrumentationKind & PgoInstrumentationKind.MarshalMask) == PgoInstrumentationKind.EightByte)));
+
+        public override string ToString() => $"{InstrumentationKind} @ {ILOffset} Count = {Count} DataLong = {DataLong}";
     }
 
     // Flags stored in 'Other' field of TypeHandleHistogram*Count entries.
@@ -230,13 +237,14 @@ namespace Internal.Pgo
             }
         }
 
-        public static IEnumerable<PgoSchemaElem> ParsePgoData<TType>(IPgoSchemaDataLoader<TType> dataProvider, IEnumerable<long> inputDataStream, bool longsAreCompressed)
+        public static IEnumerable<PgoSchemaElem> ParsePgoData<TType, TMethod>(IPgoSchemaDataLoader<TType, TMethod> dataProvider, IEnumerable<long> inputDataStream, bool longsAreCompressed)
         {
             int dataCountToRead = 0;
             PgoSchemaElem curSchema = default(PgoSchemaElem);
             InstrumentationDataProcessingState processingState = InstrumentationDataProcessingState.UpdateProcessMaskFlag;
             long lastDataValue = 0;
             long lastTypeValue = 0;
+            long lastMethodValue = 0;
 
             foreach (long value in inputDataStream)
             {
@@ -277,6 +285,14 @@ namespace Internal.Pgo
                                 else
                                     lastTypeValue = value;
                                 ((TType[])curSchema.DataObject)[dataIndex] = dataProvider.TypeFromLong(lastTypeValue);
+                                break;
+
+                            case PgoInstrumentationKind.MethodHandle:
+                                if (longsAreCompressed)
+                                    lastMethodValue += value;
+                                else
+                                    lastMethodValue = value;
+                                ((TMethod[])curSchema.DataObject)[dataIndex] = dataProvider.MethodFromLong(lastMethodValue);
                                 break;
                         }
                     }
@@ -364,6 +380,10 @@ namespace Internal.Pgo
                             curSchema.DataObject = new TType[curSchema.Count];
                             dataCountToRead = curSchema.Count;
                             break;
+                        case PgoInstrumentationKind.MethodHandle:
+                            curSchema.DataObject = new TMethod[curSchema.Count];
+                            dataCountToRead = curSchema.Count;
+                            break;
                         default:
                             throw new Exception("Unknown Type");
                     }
@@ -373,10 +393,11 @@ namespace Internal.Pgo
             throw new Exception("Partial Instrumentation Data");
         }
 
-        public static void EncodePgoData<TType>(IEnumerable<PgoSchemaElem> schemas, IPgoEncodedValueEmitter<TType> valueEmitter, bool emitAllElementsUnconditionally)
+        public static void EncodePgoData<TType, TMethod>(IEnumerable<PgoSchemaElem> schemas, IPgoEncodedValueEmitter<TType, TMethod> valueEmitter, bool emitAllElementsUnconditionally)
         {
             PgoSchemaElem prevSchema = default(PgoSchemaElem);
             TType prevEmittedType = default(TType);
+            TMethod prevEmittedMethod = default(TMethod);
             long prevEmittedIntData = 0;
 
             foreach (PgoSchemaElem schema in schemas)
@@ -422,7 +443,8 @@ namespace Internal.Pgo
 
                 for (int i = 0; i < schema.Count; i++)
                 {
-                    switch (schema.InstrumentationKind & PgoInstrumentationKind.MarshalMask)
+                    PgoInstrumentationKind marshal = schema.InstrumentationKind & PgoInstrumentationKind.MarshalMask;
+                    switch (marshal)
                     {
                         case PgoInstrumentationKind.None:
                             break;
@@ -463,6 +485,15 @@ namespace Internal.Pgo
                                 prevEmittedType = typeToEmit;
                                 break;
                             }
+                        case PgoInstrumentationKind.MethodHandle:
+                            {
+                                TMethod methodToEmit = ((TMethod[])schema.DataObject)[i];
+                                valueEmitter.EmitMethod(methodToEmit, prevEmittedMethod);
+                                prevEmittedMethod = methodToEmit;
+                                break;
+                            }
+                        default:
+                            throw new ArgumentException("Unknown schema marshal " + marshal);
                     }
                 }
 
@@ -512,7 +543,7 @@ namespace Internal.Pgo
             int IEqualityComparer<PgoSchemaElem>.GetHashCode(PgoSchemaElem obj) => obj.ILOffset ^ ((int)(obj.InstrumentationKind & PgoInstrumentationKind.DescriptorMask) << 20);
         }
 
-        public static PgoSchemaElem[] Merge<TType>(ReadOnlySpan<PgoSchemaElem[]> schemasToMerge)
+        public static PgoSchemaElem[] Merge<TType, TMethod>(ReadOnlySpan<PgoSchemaElem[]> schemasToMerge)
         {
             {
                 // The merging algorithm will sort the schema data by iloffset, then by InstrumentationKind
@@ -560,8 +591,8 @@ namespace Internal.Pgo
                         case PgoInstrumentationKind.BasicBlockLongCount:
                         case PgoInstrumentationKind.EdgeIntCount:
                         case PgoInstrumentationKind.EdgeLongCount:
-                        case PgoInstrumentationKind.TypeHandleHistogramIntCount:
-                        case PgoInstrumentationKind.TypeHandleHistogramLongCount:
+                        case PgoInstrumentationKind.HandleHistogramIntCount:
+                        case PgoInstrumentationKind.HandleHistogramLongCount:
                             if ((existingSchemaItem.Count != 1) || (schema.Count != 1))
                             {
                                 throw new Exception("Unable to merge pgo data. Invalid format");
@@ -569,7 +600,7 @@ namespace Internal.Pgo
                             mergedElem.DataLong = existingSchemaItem.DataLong + schema.DataLong;
                             break;
 
-                        case PgoInstrumentationKind.TypeHandleHistogramTypeHandle:
+                        case PgoInstrumentationKind.HandleHistogramTypes:
                             {
                                 mergedElem.Count = existingSchemaItem.Count + schema.Count;
                                 TType[] newMergedTypeArray = new TType[mergedElem.Count];
@@ -582,6 +613,23 @@ namespace Internal.Pgo
                                 foreach (TType type in (TType[])schema.DataObject)
                                 {
                                     newMergedTypeArray[i++] = type;
+                                }
+                                break;
+                            }
+
+                        case PgoInstrumentationKind.HandleHistogramMethods:
+                            {
+                                mergedElem.Count = existingSchemaItem.Count + schema.Count;
+                                TMethod[] newMergedMethodArray = new TMethod[mergedElem.Count];
+                                mergedElem.DataObject = newMergedMethodArray;
+                                int i = 0;
+                                foreach (TMethod meth in (TMethod[])existingSchemaItem.DataObject)
+                                {
+                                    newMergedMethodArray[i++] = meth;
+                                }
+                                foreach (TMethod meth in (TMethod[])schema.DataObject)
+                                {
+                                    newMergedMethodArray[i++] = meth;
                                 }
                                 break;
                             }

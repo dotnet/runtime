@@ -38,41 +38,36 @@ namespace System.Text.RegularExpressions
         internal GroupCollection? _groupcoll;
 
         // input to the match
-        internal Regex? _regex;
-        internal int _textbeg;
-        internal int _textpos;
-        internal int _textend;
-        internal int _textstart;
+        internal readonly Regex? _regex;
+        internal int _textbeg; // 0 while the match is being generated, then bumped in Tidy to the actual beginning
+        internal int _textpos; // position offset from beginning
+        internal int _textend; // input length while the match is being generated, them bumped in Tidy to be the end
 
         // output from the match
-        internal int[][] _matches;
-        internal int[] _matchcount;
+        internal readonly int[][] _matches;
+        internal readonly int[] _matchcount;
         internal bool _balancing;        // whether we've done any balancing with this match.  If we
                                          // have done balancing, we'll need to do extra work in Tidy().
 
-        internal Match(Regex? regex, int capcount, string? text, int begpos, int len, int startpos) :
+        internal Match(Regex? regex, int capcount, string? text, int textLength) :
             base(text, new int[2], 0, "0")
         {
             _regex = regex;
             _matchcount = new int[capcount];
             _matches = new int[capcount][];
             _matches[0] = _caps;
-            _textbeg = begpos;
-            _textend = begpos + len;
-            _textstart = startpos;
+            _textend = textLength;
             _balancing = false;
         }
 
         /// <summary>Returns an empty Match object.</summary>
-        public static Match Empty { get; } = new Match(null, 1, string.Empty, 0, 0, 0);
+        public static Match Empty { get; } = new Match(null, 1, string.Empty, 0);
 
-        internal void Reset(Regex regex, string? text, int textbeg, int textend, int textstart)
+        internal void Reset(string? text, int textLength)
         {
-            _regex = regex;
             Text = text;
-            _textbeg = textbeg;
-            _textend = textend;
-            _textstart = textstart;
+            _textbeg = 0;
+            _textend = textLength;
 
             int[] matchcount = _matchcount;
             for (int i = 0; i < matchcount.Length; i++)
@@ -89,7 +84,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         /// <remarks>
         /// The main difference between the public <see cref="Group.Success"/> property and this one, is that <see cref="Group.Success"/> requires
-        /// for a <see cref="Match"/> to call <see cref="Match.Tidy(int)"/> first, in order to report the correct value, while this API will return
+        /// for a <see cref="Match"/> to call <see cref="Tidy"/> first, in order to report the correct value, while this API will return
         /// the correct value right after a Match gets calculated, meaning that it will return <see langword="true"/> right after <see cref="RegexRunner.Capture(int, int, int)"/>
         /// </remarks>
         internal bool FoundMatch => _matchcount[0] > 0;
@@ -106,7 +101,7 @@ namespace System.Text.RegularExpressions
             Regex? r = _regex;
             Debug.Assert(Text != null);
             return r != null ?
-                r.RunSingleMatch(false, Length, Text, _textbeg, _textend - _textbeg, _textpos)! :
+                r.RunSingleMatch(RegexRunnerMode.FullMatchRequired, Length, Text, _textbeg, _textend - _textbeg, _textpos)! :
                 this;
         }
 
@@ -272,16 +267,54 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Tidy the match so that it can be used as an immutable result</summary>
-        internal void Tidy(int textpos)
+        internal void Tidy(int textpos, int beginningOfSpanSlice, RegexRunnerMode mode)
         {
-            _textpos = textpos;
-            _capcount = _matchcount[0];
-            int[] interval = _matches[0];
-            Index = interval[0];
-            Length = interval[1];
-            if (_balancing)
+            Debug.Assert(mode != RegexRunnerMode.ExistenceRequired);
+
+            int[] matchcount = _matchcount;
+            _capcount = matchcount[0]; // used to indicate Success
+
+            // Used for NextMatch. During the matching process these stored the span-based offsets.
+            // If there was actually a beginning supplied, all of these need to be shifted by that
+            // beginning value.
+            Debug.Assert(_textbeg == 0);
+            _textbeg = beginningOfSpanSlice;
+            _textpos = beginningOfSpanSlice + textpos;
+            _textend += beginningOfSpanSlice;
+
+            int[][] matches = _matches;
+            int[] interval = matches[0];
+            Length = interval[1]; // the length of the match
+            Index = interval[0] + beginningOfSpanSlice; // the index of the match, adjusted for input slicing
+
+            // At this point the Match is consistent for handing back to a caller, with regards to the span that was processed.
+            // However, the caller may have actually provided a string, and may have done so with a non-zero beginning.
+            // In such a case, all offsets need to be shifted by beginning, e.g. if beginning is 5 and a capture occurred at
+            // offset 17, that 17 offset needs to be increased to 22 to account for the fact that it was actually 17 from the
+            // beginning, which the implementation saw as 0 but which from the caller's perspective was 5.
+            if (mode == RegexRunnerMode.FullMatchRequired)
             {
-                TidyBalancing();
+                if (_balancing)
+                {
+                    TidyBalancing();
+                }
+                Debug.Assert(!_balancing);
+
+                if (beginningOfSpanSlice != 0)
+                {
+                    for (int groupNumber = 0; groupNumber < matches.Length; groupNumber++)
+                    {
+                        int[] captures = matches[groupNumber];
+                        if (captures is not null)
+                        {
+                            int capturesLength = matchcount[groupNumber] * 2; // each capture has an offset and a length
+                            for (int c = 0; c < capturesLength; c += 2)
+                            {
+                                captures[c] += beginningOfSpanSlice;
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -349,8 +382,8 @@ namespace System.Text.RegularExpressions
     {
         private new readonly Hashtable _caps;
 
-        internal MatchSparse(Regex regex, Hashtable caps, int capcount, string? text, int begpos, int len, int startpos) :
-            base(regex, capcount, text, begpos, len, startpos)
+        internal MatchSparse(Regex regex, Hashtable caps, int capcount, string? text, int textLength) :
+            base(regex, capcount, text, textLength)
         {
             _caps = caps;
         }

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable disable
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -30,31 +29,31 @@ namespace System.Xml.Xsl.Runtime
     {
         // Early-Bound Library Objects
         private readonly XmlQueryContext _ctxt;
-        private XsltLibrary _xsltLib;
-        private readonly EarlyBoundInfo[] _earlyInfo;
-        private readonly object[] _earlyObjects;
+        private XsltLibrary? _xsltLib;
+        private readonly EarlyBoundInfo[]? _earlyInfo;
+        private readonly object[]? _earlyObjects;
 
         // Global variables and parameters
-        private readonly string[] _globalNames;
-        private readonly object[] _globalValues;
+        private readonly string[]? _globalNames;
+        private readonly object[]? _globalValues;
 
         // Names, prefix mappings, and name filters
         private readonly XmlNameTable _nameTableQuery;
-        private readonly string[] _atomizedNames;             // Names after atomization
-        private readonly XmlNavigatorFilter[] _filters;       // Name filters (contain atomized names)
-        private readonly StringPair[][] _prefixMappingsList;  // Lists of prefix mappings (used to resolve computed names)
+        private readonly string[]? _atomizedNames;             // Names after atomization
+        private readonly XmlNavigatorFilter[]? _filters;       // Name filters (contain atomized names)
+        private readonly StringPair[][]? _prefixMappingsList;  // Lists of prefix mappings (used to resolve computed names)
 
         // Xml types
-        private readonly XmlQueryType[] _types;
+        private readonly XmlQueryType[]? _types;
 
         // Collations
-        private readonly XmlCollation[] _collations;
+        private readonly XmlCollation[]? _collations;
 
         // Document ordering
         private readonly DocumentOrderComparer _docOrderCmp;
 
         // Indexes
-        private ArrayList[] _indexes;
+        private ArrayList[]? _indexes;
 
         // Output construction
         private XmlQueryOutput _output;
@@ -68,12 +67,12 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// This constructor is internal so that external users cannot construct it (and therefore we do not have to test it separately).
         /// </summary>
-        internal XmlQueryRuntime(XmlQueryStaticData data, object defaultDataSource, XmlResolver dataSources, XsltArgumentList argList, XmlSequenceWriter seqWrt)
+        internal XmlQueryRuntime(XmlQueryStaticData data, object defaultDataSource, XmlResolver dataSources, XsltArgumentList? argList, XmlSequenceWriter seqWrt)
         {
             Debug.Assert(data != null);
-            string[] names = data.Names;
-            Int32Pair[] filters = data.Filters;
-            WhitespaceRuleLookup wsRules;
+            string[]? names = data.Names;
+            Int32Pair[]? filters = data.Filters;
+            WhitespaceRuleLookup? wsRules;
             int i;
 
             // Early-Bound Library Objects
@@ -95,7 +94,7 @@ namespace System.Xml.Xsl.Runtime
             {
                 // Atomize all names in "nameTableQuery".  Use names from the default data source's
                 // name table when possible.
-                XmlNameTable nameTableDefault = _ctxt.DefaultNameTable;
+                XmlNameTable? nameTableDefault = _ctxt.DefaultNameTable;
                 _atomizedNames = new string[names.Length];
 
                 if (nameTableDefault != _nameTableQuery && nameTableDefault != null)
@@ -104,7 +103,7 @@ namespace System.Xml.Xsl.Runtime
                     // name table used in this query
                     for (i = 0; i < names.Length; i++)
                     {
-                        string name = nameTableDefault.Get(names[i]);
+                        string? name = nameTableDefault.Get(names[i]);
                         _atomizedNames[i] = _nameTableQuery.Add(name ?? names[i]);
                     }
                 }
@@ -125,7 +124,7 @@ namespace System.Xml.Xsl.Runtime
                 _filters = new XmlNavigatorFilter[filters.Length];
 
                 for (i = 0; i < filters.Length; i++)
-                    _filters[i] = XmlNavNameFilter.Create(_atomizedNames[filters[i].Left], _atomizedNames[filters[i].Right]);
+                    _filters[i] = XmlNavNameFilter.Create(_atomizedNames![filters[i].Left], _atomizedNames[filters[i].Right]);
             }
 
             // Prefix maping lists
@@ -157,7 +156,7 @@ namespace System.Xml.Xsl.Runtime
         /// Return array containing the names of all the global variables and parameters used in this query, in this format:
         ///     {namespace}prefix:local-name
         /// </summary>
-        public string[] DebugGetGlobalNames()
+        public string[]? DebugGetGlobalNames()
         {
             return _globalNames;
         }
@@ -166,14 +165,14 @@ namespace System.Xml.Xsl.Runtime
         /// Get the value of a global value having the specified name.  Always return the global value as a list of XPathItem.
         /// Return null if there is no global value having the specified name.
         /// </summary>
-        public IList DebugGetGlobalValue(string name)
+        public IList? DebugGetGlobalValue(string name)
         {
-            for (int idx = 0; idx < _globalNames.Length; idx++)
+            for (int idx = 0; idx < _globalNames!.Length; idx++)
             {
                 if (_globalNames[idx] == name)
                 {
                     Debug.Assert(IsGlobalComputed(idx), "Cannot get the value of a global value until it has been computed.");
-                    Debug.Assert(_globalValues[idx] is IList<XPathItem>, "Only debugger should call this method, and all global values should have type item* in debugging scenarios.");
+                    Debug.Assert(_globalValues![idx] is IList<XPathItem>, "Only debugger should call this method, and all global values should have type item* in debugging scenarios.");
                     return (IList)_globalValues[idx];
                 }
             }
@@ -185,12 +184,12 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void DebugSetGlobalValue(string name, object value)
         {
-            for (int idx = 0; idx < _globalNames.Length; idx++)
+            for (int idx = 0; idx < _globalNames!.Length; idx++)
             {
                 if (_globalNames[idx] == name)
                 {
                     Debug.Assert(IsGlobalComputed(idx), "Cannot get the value of a global value until it has been computed.");
-                    Debug.Assert(_globalValues[idx] is IList<XPathItem>, "Only debugger should call this method, and all global values should have type item* in debugging scenarios.");
+                    Debug.Assert(_globalValues![idx] is IList<XPathItem>, "Only debugger should call this method, and all global values should have type item* in debugging scenarios.");
 
                     // Always convert "value" to a list of XPathItem using the item* converter
                     _globalValues[idx] = (IList<XPathItem>)XmlAnyListConverter.ItemList.ChangeType(value, typeof(XPathItem[]), null);
@@ -202,11 +201,11 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Convert sequence to it's appropriate XSLT type and return to caller.
         /// </summary>
-        public object DebugGetXsltValue(IList seq)
+        public object? DebugGetXsltValue(IList? seq)
         {
             if (seq != null && seq.Count == 1)
             {
-                XPathItem item = seq[0] as XPathItem;
+                XPathItem? item = seq[0] as XPathItem;
                 if (item != null && !item.IsNode)
                 {
                     return item.TypedValue;
@@ -239,18 +238,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Return the object that manages the state needed to implement various Xslt functions.
         /// </summary>
-        public XsltLibrary XsltFunctions
-        {
-            get
-            {
-                if (_xsltLib == null)
-                {
-                    _xsltLib = new XsltLibrary(this);
-                }
-
-                return _xsltLib;
-            }
-        }
+        public XsltLibrary XsltFunctions => _xsltLib ??= new XsltLibrary(this);
 
         /// <summary>
         /// Get the early-bound extension object identified by "index".  If it does not yet exist, create an instance using the
@@ -265,7 +253,7 @@ namespace System.Xml.Xsl.Runtime
             if (obj == null)
             {
                 // Early-bound object does not yet exist, so create it now
-                obj = _earlyInfo[index].CreateObject();
+                obj = _earlyInfo![index].CreateObject();
                 _earlyObjects[index] = obj;
             }
 
@@ -300,7 +288,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public bool IsGlobalComputed(int index)
         {
-            return _globalValues[index] != null;
+            return _globalValues![index] != null;
         }
 
         /// <summary>
@@ -310,7 +298,7 @@ namespace System.Xml.Xsl.Runtime
         public object GetGlobalValue(int index)
         {
             Debug.Assert(IsGlobalComputed(index), "Cannot get the value of a global value until it has been computed.");
-            return _globalValues[index];
+            return _globalValues![index];
         }
 
         /// <summary>
@@ -320,7 +308,7 @@ namespace System.Xml.Xsl.Runtime
         public void SetGlobalValue(int index, object value)
         {
             Debug.Assert(!IsGlobalComputed(index), "Global value should only be set once.");
-            _globalValues[index] = value;
+            _globalValues![index] = value;
         }
 
 
@@ -377,7 +365,8 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public XmlQualifiedName ParseTagName(string tagName, int indexPrefixMappings)
         {
-            string localName, ns;
+            string localName;
+            string? ns;
 
             // Parse the tagName as a prefix, localName pair and resolve the prefix
             ParseTagName(tagName, indexPrefixMappings, out _, out localName, out ns);
@@ -409,7 +398,7 @@ namespace System.Xml.Xsl.Runtime
             ValidateNames.ParseQNameThrow(tagName, out prefix, out localName);
 
             // Map the prefix to a namespace URI
-            ns = null;
+            ns = null!;
             foreach (StringPair pair in _prefixMappingsList[idxPrefixMappings])
             {
                 if (prefix == pair.Left)
@@ -486,7 +475,7 @@ namespace System.Xml.Xsl.Runtime
         /// Convert from the Clr type of "value" to Clr type "destinationType" using V1 Xslt rules.
         /// These rules include converting any Rtf values to Nodes.
         /// </summary>
-        internal object ChangeTypeXsltArgument(XmlQueryType xmlType, object value, Type destinationType)
+        internal static object ChangeTypeXsltArgument(XmlQueryType xmlType, object value, Type destinationType)
         {
             Debug.Assert(XmlILTypeHelper.GetStorageType(xmlType).IsAssignableFrom(value.GetType()),
                          "Values passed to ChangeTypeXsltArgument should be in ILGen's default Clr representation.");
@@ -545,7 +534,7 @@ namespace System.Xml.Xsl.Runtime
                             if (item.IsNode)
                             {
                                 // Node or Rtf
-                                RtfNavigator rtf = item as RtfNavigator;
+                                RtfNavigator? rtf = item as RtfNavigator;
                                 if (rtf != null)
                                     value = rtf.ToNavigator();
                                 else
@@ -582,7 +571,7 @@ namespace System.Xml.Xsl.Runtime
         /// Convert from the Clr type of "value" to the default Clr type that ILGen uses to represent the xml type, using
         /// the conversion rules of the xml type.
         /// </summary>
-        internal object ChangeTypeXsltResult(XmlQueryType xmlType, object value)
+        internal object ChangeTypeXsltResult(XmlQueryType xmlType, object? value)
         {
             if (value == null)
                 throw new XslTransformException(SR.Xslt_ItemNull, string.Empty);
@@ -603,18 +592,18 @@ namespace System.Xml.Xsl.Runtime
                 case XmlTypeCode.Node:
                     if (!xmlType.IsSingleton)
                     {
-                        XPathArrayIterator iter = value as XPathArrayIterator;
+                        XPathArrayIterator? iter = value as XPathArrayIterator;
 
                         // Special-case XPathArrayIterator in order to avoid copies
-                        if (iter != null && iter.AsList is XmlQueryNodeSequence)
+                        if (iter != null && iter.AsList is XmlQueryNodeSequence sequence)
                         {
-                            value = iter.AsList as XmlQueryNodeSequence;
+                            value = sequence;
                         }
                         else
                         {
                             // Iterate over list and ensure it only contains nodes
                             XmlQueryNodeSequence seq = new XmlQueryNodeSequence();
-                            IList list = value as IList;
+                            IList? list = value as IList;
 
                             if (list != null)
                             {
@@ -638,7 +627,7 @@ namespace System.Xml.Xsl.Runtime
                 case XmlTypeCode.Item:
                     {
                         Type sourceType = value.GetType();
-                        IXPathNavigable navigable;
+                        IXPathNavigable? navigable;
 
                         // If static type is item, then infer type based on dynamic value
                         switch (XsltConvert.InferXsltType(sourceType).TypeCode)
@@ -675,10 +664,10 @@ namespace System.Xml.Xsl.Runtime
                                 navigable = value as IXPathNavigable;
                                 if (navigable != null)
                                 {
-                                    if (value is XPathNavigator)
-                                        value = new XmlQueryNodeSequence((XPathNavigator)value);
+                                    if (value is XPathNavigator navigator)
+                                        value = new XmlQueryNodeSequence(navigator);
                                     else
-                                        value = new XmlQueryNodeSequence(navigable.CreateNavigator());
+                                        value = new XmlQueryNodeSequence(navigable.CreateNavigator()!);
                                     break;
                                 }
 
@@ -696,9 +685,9 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Ensure that "value" is a navigator and not null.
         /// </summary>
-        private static XPathNavigator EnsureNavigator(object value)
+        private static XPathNavigator EnsureNavigator(object? value)
         {
-            XPathNavigator nav = value as XPathNavigator;
+            XPathNavigator? nav = value as XPathNavigator;
 
             if (nav == null)
                 throw new XslTransformException(SR.Xslt_ItemNull, string.Empty);
@@ -759,7 +748,7 @@ namespace System.Xml.Xsl.Runtime
         {
             // All atomic type codes appear after AnyAtomicType
             if (code > XmlTypeCode.AnyAtomicType)
-                return !item.IsNode && item.XmlType.TypeCode == code;
+                return !item.IsNode && item.XmlType!.TypeCode == code;
 
             // Handle node code and AnyAtomicType
             switch (code)
@@ -793,12 +782,12 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Create an XmlQueryType that represents the type of "item".
         /// </summary>
-        private XmlQueryType CreateXmlType(XPathItem item)
+        private static XmlQueryType CreateXmlType(XPathItem item)
         {
             if (item.IsNode)
             {
                 // Rtf
-                RtfNavigator rtf = item as RtfNavigator;
+                RtfNavigator? rtf = item as RtfNavigator;
                 if (rtf != null)
                     return XmlQueryTypeFactory.Node;
 
@@ -811,7 +800,7 @@ namespace System.Xml.Xsl.Runtime
                         if (nav.XmlType == null)
                             return XmlQueryTypeFactory.Type(nav.NodeType, XmlQualifiedNameTest.New(nav.LocalName, nav.NamespaceURI), XmlSchemaComplexType.UntypedAnyType, false);
 
-                        return XmlQueryTypeFactory.Type(nav.NodeType, XmlQualifiedNameTest.New(nav.LocalName, nav.NamespaceURI), nav.XmlType, nav.SchemaInfo.SchemaElement.IsNillable);
+                        return XmlQueryTypeFactory.Type(nav.NodeType, XmlQualifiedNameTest.New(nav.LocalName, nav.NamespaceURI), nav.XmlType, nav.SchemaInfo!.SchemaElement!.IsNillable);
 
                     case XPathNodeType.Attribute:
                         if (nav.XmlType == null)
@@ -824,7 +813,7 @@ namespace System.Xml.Xsl.Runtime
             }
 
             // Atomic value
-            return XmlQueryTypeFactory.Type((XmlSchemaSimpleType)item.XmlType, true);
+            return XmlQueryTypeFactory.Type((XmlSchemaSimpleType)item.XmlType!, true);
         }
 
 
@@ -844,7 +833,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Create a collation from a string.
         /// </summary>
-        public XmlCollation CreateCollation(string collation)
+        public XmlCollation? CreateCollation(string collation)
         {
             return XmlCollation.Create(collation);
         }
@@ -907,16 +896,16 @@ namespace System.Xml.Xsl.Runtime
             // Search pre-existing indexes in order to determine whether the specified index has already been created
             if (_indexes != null && indexId < _indexes.Length)
             {
-                docIndexes = (ArrayList)_indexes[indexId];
+                docIndexes = _indexes[indexId];
                 if (docIndexes != null)
                 {
                     // Search for an index defined over the specified document
                     for (int i = 0; i < docIndexes.Count; i += 2)
                     {
                         // If we find a matching document, then return the index saved in the next slot
-                        if (((XPathNavigator)docIndexes[i]).IsSamePosition(navRoot))
+                        if (((XPathNavigator)docIndexes[i]!).IsSamePosition(navRoot))
                         {
-                            index = (XmlILIndex)docIndexes[i + 1];
+                            index = (XmlILIndex)docIndexes[i + 1]!;
                             return true;
                         }
                     }
@@ -997,7 +986,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public IList<XPathItem> EndSequenceConstruction(out XmlQueryOutput output)
         {
-            IList<XPathItem> seq = ((XmlCachedSequenceWriter)_output.SequenceWriter).ResultSequence;
+            IList<XPathItem> seq = ((XmlCachedSequenceWriter)_output.SequenceWriter!).ResultSequence;
 
             // Restore previous XmlQueryOutput
             output = _output = _stkOutput.Pop();
@@ -1024,7 +1013,7 @@ namespace System.Xml.Xsl.Runtime
         {
             XmlEventCache events;
 
-            events = (XmlEventCache)_output.Writer;
+            events = (XmlEventCache)_output.Writer!;
 
             // Restore previous XmlQueryOutput
             output = _output = _stkOutput.Pop();
@@ -1067,7 +1056,7 @@ namespace System.Xml.Xsl.Runtime
         /// <summary>
         /// Position navThis to the same location as navThat.
         /// </summary>
-        internal static XPathNavigator SyncToNavigator(XPathNavigator navigatorThis, XPathNavigator navigatorThat)
+        internal static XPathNavigator SyncToNavigator(XPathNavigator? navigatorThis, XPathNavigator navigatorThat)
         {
             if (navigatorThis == null || !navigatorThis.MoveTo(navigatorThat))
                 return navigatorThat.Clone();
@@ -1080,7 +1069,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public static int OnCurrentNodeChanged(XPathNavigator currentNode)
         {
-            IXmlLineInfo lineInfo = currentNode as IXmlLineInfo;
+            IXmlLineInfo? lineInfo = currentNode as IXmlLineInfo;
 
             // In case of a namespace node, check whether it is inherited or locally defined
             if (lineInfo != null && !(currentNode.NodeType == XPathNodeType.Namespace && IsInheritedNamespace(currentNode)))

@@ -259,6 +259,15 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             }
         }
 
+        public void RemoveModuleIDFromLoader(long handle)
+        {
+            lock (_lock)
+            {
+                var moduleDesc = _modules[handle];
+                _modules.Remove(handle);
+            }
+        }
+
         public ModuleDesc ResolveModuleID(long handle, bool throwIfNotFound = true)
         {
             lock (_lock)

@@ -51,8 +51,8 @@ inline void FATAL_GC_ERROR()
 //
 // This means any empty regions can be freely used for any generation. For
 // Server GC we will balance regions between heaps.
-// For now disable regions outside of StandAlone GC builds
-#if defined (HOST_64BIT) && defined (BUILD_AS_STANDALONE)
+// For now disable regions for StandAlone GC, NativeAOT and MacOS builds
+#if defined (HOST_64BIT) && !defined (BUILD_AS_STANDALONE) && !defined(__APPLE__) && !defined(FEATURE_NATIVEAOT)
 #define USE_REGIONS
 #endif //HOST_64BIT && BUILD_AS_STANDALONE
 
@@ -92,10 +92,10 @@ inline void FATAL_GC_ERROR()
 #define DOUBLY_LINKED_FL
 #endif //HOST_64BIT
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NATIVEAOT
 #define HEAP_ANALYZE
 #define COLLECTIBLE_CLASS
-#endif // !FEATURE_REDHAWK
+#endif // !FEATURE_NATIVEAOT
 
 #ifdef HEAP_ANALYZE
 #define initial_internal_roots        (1024*16)
@@ -257,24 +257,23 @@ const int policy_expand  = 2;
 void GCLog (const char *fmt, ... );
 #define dprintf(l,x) {if ((l == 1) || (l == GTC_LOG)) {GCLog x;}}
 #else //SIMPLE_DPRINTF
-// Nobody used the logging mechanism that used to be here. If we find ourselves
-// wanting to inspect GC logs on unmodified builds, we can use this define here
-// to do so.
-//#define dprintf(l, x)
+#ifdef HOST_64BIT
 #define dprintf(l,x) STRESS_LOG_VA(l,x);
-
+#else
+#error Logging dprintf to stress log on 32 bits platforms is not supported.
+#endif
 #endif //SIMPLE_DPRINTF
 
 #else //TRACE_GC
 #define dprintf(l,x)
 #endif //TRACE_GC
 
-#if !defined(FEATURE_REDHAWK) && !defined(BUILD_AS_STANDALONE)
+#if !defined(FEATURE_NATIVEAOT) && !defined(BUILD_AS_STANDALONE)
 #undef  assert
 #define assert _ASSERTE
 #undef  ASSERT
 #define ASSERT _ASSERTE
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NATIVEAOT
 
 struct GCDebugSpinLock {
     VOLATILE(int32_t) lock;                   // -1 if free, 0 if held
@@ -387,7 +386,7 @@ enum set_pause_mode_status
  in the future.
 
  +----------+--------------------+---------------------------------------+
- | Level    | Optimization Goals | Latency Charactaristics               |
+ | Level    | Optimization Goals | Latency Characteristics               |
  +==========+====================+=======================================+
  | 0        | memory footprint   | pauses can be long and more frequent  |
  +----------+--------------------+---------------------------------------+
@@ -420,9 +419,13 @@ enum gc_oh_num
     soh = 0,
     loh = 1,
     poh = 2,
-    none = 3,
-    total_oh_count = 4
+    unknown = -1,
 };
+
+const int total_oh_count = gc_oh_num::poh + 1;
+const int recorded_committed_free_bucket = total_oh_count;
+const int recorded_committed_bookkeeping_bucket = recorded_committed_free_bucket + 1;
+const int recorded_committed_bucket_counts = recorded_committed_bookkeeping_bucket + 1;
 
 gc_oh_num gen_to_oh (int gen);
 
@@ -860,7 +863,7 @@ struct static_data
     float limit;
     float max_limit;
     uint64_t time_clock; // time after which to collect generation, in performance counts (see QueryPerformanceCounter)
-    size_t gc_clock; // nubmer of gcs after which to collect generation
+    size_t gc_clock; // number of gcs after which to collect generation
 };
 
 // The dynamic data fields are grouped into 3 categories:
@@ -1096,9 +1099,9 @@ struct snoop_stats_data
     size_t busy_count;
     // how many interlocked exchange operations we did
     size_t interlocked_count;
-    // numer of times parent objects stolen
+    // number of times parent objects stolen
     size_t partial_mark_parent_count;
-    // numer of times we look at a normal stolen entry,
+    // number of times we look at a normal stolen entry,
     // or the beginning/ending PM pair.
     size_t stolen_or_pm_count;
     // number of times we see 2 for the entry.
@@ -1189,6 +1192,7 @@ public:
     void print (int hn, const char* msg="", int* ages=nullptr);
     static void print (region_free_list free_list[count_free_region_kinds], int hn, const char* msg="", int* ages=nullptr);
     void sort_by_committed_and_age();
+    static bool is_on_free_list (heap_segment* region, region_free_list free_list[count_free_region_kinds]);
 };
 #endif
 
@@ -1296,7 +1300,7 @@ public:
     PER_HEAP
     void verify_free_lists();
     PER_HEAP
-    void verify_regions (int gen_number, bool can_verify_gen_num, bool can_verify_tail);
+    void verify_regions (int gen_number, bool can_verify_gen_num, bool can_verify_tail, size_t* p_total_committed = nullptr);
     PER_HEAP
     void verify_regions (bool can_verify_gen_num, bool concurrent_p);
     PER_HEAP_ISOLATED
@@ -1476,10 +1480,14 @@ public:
     static
     void shutdown_gc();
 
-    // If the hard limit is specified, take that into consideration
-    // and this means it may modify the # of heaps.
     PER_HEAP_ISOLATED
-    size_t get_segment_size_hard_limit (uint32_t* num_heaps, bool should_adjust_num_heaps);
+    uint32_t adjust_heaps_hard_limit (uint32_t nhp);
+
+    PER_HEAP_ISOLATED
+    size_t adjust_segment_size_hard_limit_va (size_t seg_size);
+
+    PER_HEAP_ISOLATED
+    size_t adjust_segment_size_hard_limit (size_t limit, uint32_t nhp);
 
     PER_HEAP_ISOLATED
     bool should_retry_other_heap (int gen_number, size_t size);
@@ -1588,17 +1596,16 @@ public:
     static
     void get_card_table_element_sizes (uint8_t* start, uint8_t* end, size_t bookkeeping_sizes[total_bookkeeping_elements]);
 
+    static
+    void set_fgm_result (failure_get_memory f, size_t s, BOOL loh_p);
+
 #ifdef USE_REGIONS
     static
     bool on_used_changed (uint8_t* left);
 
     static
     bool inplace_commit_card_table (uint8_t* from, uint8_t* to);
-#endif //USE_REGIONS
-
-    static
-    void set_fgm_result (failure_get_memory f, size_t s, BOOL loh_p);
-
+#else //USE_REGIONS
     static
     int grow_brick_card_tables (uint8_t* start,
                                 uint8_t* end,
@@ -1606,6 +1613,7 @@ public:
                                 heap_segment* new_seg,
                                 gc_heap* hp,
                                 BOOL loh_p);
+#endif //USE_REGIONS
 
     PER_HEAP_ISOLATED
     BOOL is_mark_set (uint8_t* o);
@@ -1646,7 +1654,10 @@ protected:
 
     PER_HEAP
     void walk_relocation (void* profiling_context, record_surv_fn fn);
-
+#ifdef USE_REGIONS
+    PER_HEAP
+    heap_segment* walk_relocation_sip (heap_segment* current_heap_segment, void* profiling_context, record_surv_fn fn);
+#endif // USE_REGIONS
     PER_HEAP
     void walk_relocation_in_brick (uint8_t* tree, walk_relocate_args* args);
 
@@ -1990,11 +2001,11 @@ protected:
 #ifndef USE_REGIONS
     PER_HEAP
     heap_segment* soh_get_segment_to_expand();
-#endif //!USE_REGIONS
     PER_HEAP
     heap_segment* get_segment (size_t size, gc_oh_num oh);
     PER_HEAP_ISOLATED
     void release_segment (heap_segment* sg);
+#endif //!USE_REGIONS
     PER_HEAP_ISOLATED
     void seg_mapping_table_add_segment (heap_segment* seg, gc_heap* hp);
     PER_HEAP_ISOLATED
@@ -2026,9 +2037,9 @@ protected:
     PER_HEAP_ISOLATED
     bool virtual_alloc_commit_for_heap (void* addr, size_t size, int h_number);
     PER_HEAP_ISOLATED
-    bool virtual_commit (void* address, size_t size, gc_oh_num oh, int h_number=-1, bool* hard_limit_exceeded_p=NULL);
+    bool virtual_commit (void* address, size_t size, int bucket, int h_number=-1, bool* hard_limit_exceeded_p=NULL);
     PER_HEAP_ISOLATED
-    bool virtual_decommit (void* address, size_t size, gc_oh_num oh, int h_number=-1);
+    bool virtual_decommit (void* address, size_t size, int bucket, int h_number=-1);
     PER_HEAP_ISOLATED
     void virtual_free (void* add, size_t size, heap_segment* sg=NULL);
     PER_HEAP
@@ -3796,7 +3807,7 @@ public:
     gen_to_condemn_tuning gen_to_condemn_reasons;
 
     PER_HEAP
-    size_t etw_allocation_running_amount[gc_oh_num::total_oh_count - 1];
+    size_t etw_allocation_running_amount[total_oh_count];
 
     PER_HEAP
     uint64_t total_alloc_bytes_soh;
@@ -4000,7 +4011,7 @@ public:
     size_t heap_hard_limit;
 
     PER_HEAP_ISOLATED
-    size_t heap_hard_limit_oh[total_oh_count - 1];
+    size_t heap_hard_limit_oh[total_oh_count];
 
     PER_HEAP_ISOLATED
     CLRCriticalSection check_commit_cs;
@@ -4009,7 +4020,12 @@ public:
     size_t current_total_committed;
 
     PER_HEAP_ISOLATED
-    size_t committed_by_oh[total_oh_count];
+    size_t committed_by_oh[recorded_committed_bucket_counts];
+
+#if defined (_DEBUG) && defined (MULTIPLE_HEAPS)
+    PER_HEAP
+    size_t committed_by_oh_per_heap[total_oh_count];
+#endif // _DEBUG && MULTIPLE_HEAPS
 
     // This is what GC uses for its own bookkeeping.
     PER_HEAP_ISOLATED
@@ -4024,7 +4040,10 @@ public:
     size_t last_gc_end_time_us;
 #endif //HEAP_BALANCE_INSTRUMENTATION
 
-#ifndef USE_REGIONS
+#ifdef USE_REGIONS
+    PER_HEAP_ISOLATED
+    bool enable_special_regions_p;
+#else //USE_REGIONS
     PER_HEAP_ISOLATED
     size_t min_segment_size;
 
@@ -4811,7 +4830,7 @@ protected:
     size_t num_provisional_triggered;
 
     PER_HEAP
-    size_t allocated_since_last_gc[gc_oh_num::total_oh_count - 1];
+    size_t allocated_since_last_gc[total_oh_count];
 
 #ifdef BACKGROUND_GC
     PER_HEAP_ISOLATED

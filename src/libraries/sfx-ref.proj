@@ -13,7 +13,8 @@
     <NonNetCoreAppProject Include="@(AnyProject)"
                           Exclude="@(NetCoreAppLibrary->'%(Identity)\ref\%(Identity).csproj')" />
     <ProjectReference Include="@(AnyProject)"
-                      Exclude="@(NonNetCoreAppProject)" />
+                      Exclude="@(NonNetCoreAppProject);
+                               @(NetCoreAppLibraryNoReference->'%(Identity)\ref\%(Identity).csproj')" />
   </ItemGroup>
 
 </Project>

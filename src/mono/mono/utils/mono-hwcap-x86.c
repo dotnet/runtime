@@ -157,8 +157,4 @@ mono_hwcap_arch_init (void)
 		if (ecx & (1 << 5))
 			mono_hwcap_x86_has_lzcnt = TRUE;
 	}
-
-#if defined(HAVE_UNISTD_H) && defined(HAVE_ACCESS)
-	mono_hwcap_x86_is_xen = !access ("/proc/xen", F_OK);
-#endif
 }

@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-internal unsafe class testout1
+using Xunit;
+namespace Test_5w1d_01
+{
+public unsafe class testout1
 {
     public struct VT_0
     {
@@ -47,7 +50,8 @@ internal unsafe class testout1
         return Convert.ToInt32((Convert.ToInt32(((583855800 * -1.1646711396889438E-07) / vtstatic_0.arr2d_0[2, 0]) - (vtstatic_0.arr2d_0[2, 2]))));
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         vtstatic_0.arr2d_0[2, 0] = -2.125;
         vtstatic_0.arr2d_0[2, 2] = -68.0;
@@ -61,4 +65,5 @@ internal unsafe class testout1
         Console.WriteLine(retval);
         return retval;
     }
+}
 }

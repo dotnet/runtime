@@ -204,15 +204,15 @@ namespace System.Runtime.CompilerServices
 
             // At this point, taskField should really be null, in which case we want to create the box.
             // However, in a variety of debugger-related (erroneous) situations, it might be non-null,
-            // e.g. if the Task property is examined in a Watch window, forcing it to be lazily-intialized
+            // e.g. if the Task property is examined in a Watch window, forcing it to be lazily-initialized
             // as a Task<TResult> rather than as an AsyncStateMachineBox.  The worst that happens in such
             // cases is we lose the ability to properly step in the debugger, as the debugger uses that
             // object's identity to track this specific builder/state machine.  As such, we proceed to
             // overwrite whatever's there anyway, even if it's non-null.
-#if CORERT
+#if NATIVEAOT
             // DebugFinalizableAsyncStateMachineBox looks like a small type, but it actually is not because
             // it will have a copy of all the slots from its parent. It will add another hundred(s) bytes
-            // per each async method in CoreRT / ProjectN binaries without adding much value. Avoid
+            // per each async method in NativeAOT binaries without adding much value. Avoid
             // generating this extra code until a better solution is implemented.
             var box = new AsyncStateMachineBox<TStateMachine>();
 #else
@@ -239,7 +239,7 @@ namespace System.Runtime.CompilerServices
             return box;
         }
 
-#if !CORERT
+#if !NATIVEAOT
         // Avoid forcing the JIT to build DebugFinalizableAsyncStateMachineBox<TStateMachine> unless it's actually needed.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static AsyncStateMachineBox<TStateMachine> CreateDebugFinalizableAsyncStateMachineBox<TStateMachine>()
@@ -360,7 +360,7 @@ namespace System.Runtime.CompilerServices
                 StateMachine = default;
                 Context = default;
 
-#if !CORERT
+#if !NATIVEAOT
                 // In case this is a state machine box with a finalizer, suppress its finalization
                 // as it's now complete.  We only need the finalizer to run if the box is collected
                 // without having been completed.
@@ -397,10 +397,10 @@ namespace System.Runtime.CompilerServices
 
         internal static Task<TResult> CreateWeaklyTypedStateMachineBox()
         {
-#if CORERT
+#if NATIVEAOT
             // DebugFinalizableAsyncStateMachineBox looks like a small type, but it actually is not because
             // it will have a copy of all the slots from its parent. It will add another hundred(s) bytes
-            // per each async method in CoreRT / ProjectN binaries without adding much value. Avoid
+            // per each async method in NativeAOT binaries without adding much value. Avoid
             // generating this extra code until a better solution is implemented.
             return new AsyncStateMachineBox<IAsyncStateMachine>();
 #else

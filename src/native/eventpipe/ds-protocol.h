@@ -117,33 +117,11 @@ ds_ipc_message_try_parse_uint64_t (
 	uint32_t *buffer_len,
 	uint64_t *value);
 
-static
-inline
-bool
-ds_ipc_message_try_parse_int64_t (
-	uint8_t **buffer,
-	uint32_t *buffer_len,
-	int64_t *value)
-{
-	return ds_ipc_message_try_parse_uint64_t (buffer, buffer_len, (uint64_t *)value);
-}
-
 bool
 ds_ipc_message_try_parse_uint32_t (
 	uint8_t **buffer,
 	uint32_t *buffer_len,
 	uint32_t *value);
-
-static
-inline
-bool
-ds_ipc_message_try_parse_int32_t (
-	uint8_t **buffer,
-	uint32_t *buffer_len,
-	int32_t *value)
-{
-	return ds_ipc_message_try_parse_uint32_t (buffer, buffer_len, (uint32_t *)value);
-}
 
 bool
 ds_ipc_message_try_parse_string_utf16_t_byte_array_alloc (
@@ -180,17 +158,6 @@ ds_ipc_message_initialize_header_uint64_t_payload (
 	DiagnosticsIpcMessage *message,
 	const DiagnosticsIpcHeader *header,
 	uint64_t payload);
-
-static
-inline
-bool
-ds_ipc_message_initialize_header_int64_t_payload (
-	DiagnosticsIpcMessage *message,
-	const DiagnosticsIpcHeader *header,
-	int64_t payload)
-{
-	return ds_ipc_message_initialize_header_uint64_t_payload (message, header, (uint64_t)payload);
-}
 
 bool
 ds_ipc_message_initialize_buffer (

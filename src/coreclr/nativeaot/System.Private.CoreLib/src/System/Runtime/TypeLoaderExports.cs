@@ -13,22 +13,6 @@ namespace System.Runtime
     [ReflectionBlocked]
     public static class TypeLoaderExports
     {
-        public static IntPtr GetThreadStaticsForDynamicType(int index)
-        {
-            IntPtr result = RuntimeImports.RhGetThreadLocalStorageForDynamicType(index, 0, 0);
-            if (result != IntPtr.Zero)
-                return result;
-
-            int numTlsCells;
-            int tlsStorageSize = RuntimeAugments.TypeLoaderCallbacks.GetThreadStaticsSizeForDynamicType(index, out numTlsCells);
-            result = RuntimeImports.RhGetThreadLocalStorageForDynamicType(index, tlsStorageSize, numTlsCells);
-
-            if (result == IntPtr.Zero)
-                throw new OutOfMemoryException();
-
-            return result;
-        }
-
         public static unsafe void ActivatorCreateInstanceAny(ref object ptrToData, IntPtr pEETypePtr)
         {
             EETypePtr pEEType = new EETypePtr(pEETypePtr);
@@ -46,9 +30,7 @@ namespace System.Runtime
             ptrToData = RuntimeImports.RhNewObject(pEEType);
 
             Entry entry = LookupInCache(s_cache, pEETypePtr, pEETypePtr);
-            if (entry == null)
-            {
-                entry = CacheMiss(pEETypePtr, pEETypePtr,
+            entry ??= CacheMiss(pEETypePtr, pEETypePtr,
                     (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult) =>
                     {
                         IntPtr result = RuntimeAugments.TypeLoaderCallbacks.TryGetDefaultConstructorForType(new RuntimeTypeHandle(new EETypePtr(context)));
@@ -56,7 +38,6 @@ namespace System.Runtime
                             result = RuntimeAugments.GetFallbackDefaultConstructor();
                         return result;
                     });
-            }
             RawCalliHelper.Call(entry.Result, ptrToData);
         }
 
@@ -89,60 +70,42 @@ namespace System.Runtime
         public static IntPtr GenericLookup(IntPtr context, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
-            if (entry == null)
-            {
-                entry = CacheMiss(context, signature);
-            }
+            entry ??= CacheMiss(context, signature);
             return entry.Result;
         }
 
         public static void GenericLookupAndCallCtor(object arg, IntPtr context, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
-            if (entry == null)
-            {
-                entry = CacheMiss(context, signature);
-            }
+            entry ??= CacheMiss(context, signature);
             RawCalliHelper.Call(entry.Result, arg);
         }
 
         public static object GenericLookupAndAllocObject(IntPtr context, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
-            if (entry == null)
-            {
-                entry = CacheMiss(context, signature);
-            }
+            entry ??= CacheMiss(context, signature);
             return RawCalliHelper.Call<object>(entry.Result, entry.AuxResult);
         }
 
         public static object GenericLookupAndAllocArray(IntPtr context, IntPtr arg, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
-            if (entry == null)
-            {
-                entry = CacheMiss(context, signature);
-            }
+            entry ??= CacheMiss(context, signature);
             return RawCalliHelper.Call<object>(entry.Result, entry.AuxResult, arg);
         }
 
         public static void GenericLookupAndCheckArrayElemType(IntPtr context, object arg, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
-            if (entry == null)
-            {
-                entry = CacheMiss(context, signature);
-            }
+            entry ??= CacheMiss(context, signature);
             RawCalliHelper.Call(entry.Result, entry.AuxResult, arg);
         }
 
         public static object GenericLookupAndCast(object arg, IntPtr context, IntPtr signature)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
-            if (entry == null)
-            {
-                entry = CacheMiss(context, signature);
-            }
+            entry ??= CacheMiss(context, signature);
             return RawCalliHelper.Call<object>(entry.Result, arg, entry.AuxResult);
         }
 
@@ -158,42 +121,38 @@ namespace System.Runtime
             return RuntimeAugments.TypeLoaderCallbacks.UpdateFloatingDictionary(dictionaryPtr, dictionaryPtr);
         }
 
+#if FEATURE_UNIVERSAL_GENERICS
         public static unsafe IntPtr GetDelegateThunk(object delegateObj, int whichThunk)
         {
-            Entry entry = LookupInCache(s_cache, (IntPtr)delegateObj.MethodTable, new IntPtr(whichThunk));
+            Entry entry = LookupInCache(s_cache, (IntPtr)delegateObj.GetMethodTable(), new IntPtr(whichThunk));
             if (entry == null)
             {
-                entry = CacheMiss((IntPtr)delegateObj.MethodTable, new IntPtr(whichThunk),
+                entry = CacheMiss((IntPtr)delegateObj.GetMethodTable(), new IntPtr(whichThunk),
                     (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
                         => RuntimeAugments.TypeLoaderCallbacks.GetDelegateThunk((Delegate)contextObject, (int)signature),
                     delegateObj);
             }
             return entry.Result;
         }
+#endif
 
         public static unsafe IntPtr GVMLookupForSlot(object obj, RuntimeMethodHandle slot)
         {
-            Entry entry = LookupInCache(s_cache, (IntPtr)obj.MethodTable, *(IntPtr*)&slot);
-            if (entry == null)
-            {
-                entry = CacheMiss((IntPtr)obj.MethodTable, *(IntPtr*)&slot,
+            Entry entry = LookupInCache(s_cache, (IntPtr)obj.GetMethodTable(), *(IntPtr*)&slot);
+            entry ??= CacheMiss((IntPtr)obj.GetMethodTable(), *(IntPtr*)&slot,
                     (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
                         => Internal.Runtime.CompilerServices.GenericVirtualMethodSupport.GVMLookupForSlot(new RuntimeTypeHandle(new EETypePtr(context)), *(RuntimeMethodHandle*)&signature));
-            }
             return entry.Result;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe IntPtr OpenInstanceMethodLookup(IntPtr openResolver, object obj)
         {
-            Entry entry = LookupInCache(s_cache, (IntPtr)obj.MethodTable, openResolver);
-            if (entry == null)
-            {
-                entry = CacheMiss((IntPtr)obj.MethodTable, openResolver,
+            Entry entry = LookupInCache(s_cache, (IntPtr)obj.GetMethodTable(), openResolver);
+            entry ??= CacheMiss((IntPtr)obj.GetMethodTable(), openResolver,
                     (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
                         => Internal.Runtime.CompilerServices.OpenMethodResolver.ResolveMethodWorker(signature, contextObject),
                     obj);
-            }
             return entry.Result;
         }
 
@@ -215,10 +174,7 @@ namespace System.Runtime
         internal static IntPtr RuntimeCacheLookupInCache(IntPtr context, IntPtr signature, RuntimeObjectFactory factory, object contextObject, out IntPtr auxResult)
         {
             Entry entry = LookupInCache(s_cache, context, signature);
-            if (entry == null)
-            {
-                entry = CacheMiss(context, signature, factory, contextObject);
-            }
+            entry ??= CacheMiss(context, signature, factory, contextObject);
             auxResult = entry.AuxResult;
             return entry.Result;
         }
@@ -425,5 +381,9 @@ namespace System.Runtime
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
         public static T Call<T>(IntPtr pfn, string[] arg0)
             => ((delegate*<string[], T>)pfn)(arg0);
+
+        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        public static ref byte Call(IntPtr pfn, void* arg1, ref byte arg2, ref byte arg3, void* arg4)
+            => ref ((delegate*<void*, ref byte, ref byte, void*, ref byte>)pfn)(arg1, ref arg2, ref arg3, arg4);
     }
 }

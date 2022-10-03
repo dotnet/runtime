@@ -1,14 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <Nullable>enable</Nullable>
-    <EnableRegexGenerator>true</EnableRegexGenerator>
   </PropertyGroup>
+
   <ItemGroup>
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
   </ItemGroup>
+
   <ItemGroup>
     <Compile Include="MS\Internal\Xml\Linq\ComponentModel\XComponentModel.cs" />
     <Compile Include="System\ComponentModel\ArrayConverter.cs" />
@@ -17,13 +17,16 @@
     <Compile Include="System\ComponentModel\ByteConverter.cs" />
     <Compile Include="System\ComponentModel\CharConverter.cs" />
     <Compile Include="System\ComponentModel\CollectionConverter.cs" />
+    <Compile Include="System\ComponentModel\DateOnlyConverter.cs" />
     <Compile Include="System\ComponentModel\DateTimeConverter.cs" />
     <Compile Include="System\ComponentModel\DateTimeOffsetConverter.cs" />
     <Compile Include="System\ComponentModel\DecimalConverter.cs" />
     <Compile Include="System\ComponentModel\DoubleConverter.cs" />
     <Compile Include="System\ComponentModel\EnumConverter.cs" />
     <Compile Include="System\ComponentModel\GuidConverter.cs" />
+    <Compile Include="System\ComponentModel\HalfConverter.cs" />
     <Compile Include="System\ComponentModel\Int16Converter.cs" />
+    <Compile Include="System\ComponentModel\Int128Converter.cs" />
     <Compile Include="System\ComponentModel\Int32Converter.cs" />
     <Compile Include="System\ComponentModel\Int64Converter.cs" />
     <Compile Include="System\ComponentModel\ITypeDescriptorContext.cs" />
@@ -33,9 +36,11 @@
     <Compile Include="System\ComponentModel\SByteConverter.cs" />
     <Compile Include="System\ComponentModel\SingleConverter.cs" />
     <Compile Include="System\ComponentModel\StringConverter.cs" />
+    <Compile Include="System\ComponentModel\TimeOnlyConverter.cs" />
     <Compile Include="System\ComponentModel\TimeSpanConverter.cs" />
     <Compile Include="System\ComponentModel\TypeConverter.cs" />
     <Compile Include="System\ComponentModel\TypeListConverter.cs" />
+    <Compile Include="System\ComponentModel\UInt128Converter.cs" />
     <Compile Include="System\ComponentModel\UInt16Converter.cs" />
     <Compile Include="System\ComponentModel\UInt32Converter.cs" />
     <Compile Include="System\ComponentModel\UInt64Converter.cs" />
@@ -239,28 +244,26 @@
     <Compile Include="System\ComponentModel\ComponentResourceManager.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ExtendedProtectionPolicyTypeConverter.cs" />
   </ItemGroup>
+
   <ItemGroup>
+    <AnalyzerReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.ComponentModel" />
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.Drawing.Primitives" />
-    <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Memory" />
-    <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Security" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Resources.Writer" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.Loader" />
     <Reference Include="System.Runtime.Serialization.Formatters" />
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Xml.XDocument" />
   </ItemGroup>
 </Project>

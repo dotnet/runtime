@@ -168,7 +168,7 @@ namespace System.Linq.Expressions
             ExpressionUtils.RequiresCanRead(test, nameof(test));
             ExpressionUtils.RequiresCanRead(ifTrue, nameof(ifTrue));
             ExpressionUtils.RequiresCanRead(ifFalse, nameof(ifFalse));
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
 
             if (test.Type != typeof(bool))
             {

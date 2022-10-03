@@ -145,8 +145,10 @@ namespace System.Net
         // Returns:
         //     Newly created WebRequest.
         [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        public static WebRequest Create(string requestUriString!!)
+        public static WebRequest Create(string requestUriString)
         {
+            ArgumentNullException.ThrowIfNull(requestUriString);
+
             return Create(new Uri(requestUriString), false);
         }
 
@@ -161,8 +163,10 @@ namespace System.Net
         // Returns:
         //     Newly created WebRequest.
         [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        public static WebRequest Create(Uri requestUri!!)
+        public static WebRequest Create(Uri requestUri)
         {
+            ArgumentNullException.ThrowIfNull(requestUri);
+
             return Create(requestUri, false);
         }
 
@@ -178,20 +182,26 @@ namespace System.Net
         // Returns:
         //     Newly created WebRequest.
         [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        public static WebRequest CreateDefault(Uri requestUri!!)
+        public static WebRequest CreateDefault(Uri requestUri)
         {
+            ArgumentNullException.ThrowIfNull(requestUri);
+
             return Create(requestUri, true);
         }
 
         [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        public static HttpWebRequest CreateHttp(string requestUriString!!)
+        public static HttpWebRequest CreateHttp(string requestUriString)
         {
+            ArgumentNullException.ThrowIfNull(requestUriString);
+
             return CreateHttp(new Uri(requestUriString));
         }
 
         [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
-        public static HttpWebRequest CreateHttp(Uri requestUri!!)
+        public static HttpWebRequest CreateHttp(Uri requestUri)
         {
+            ArgumentNullException.ThrowIfNull(requestUri);
+
             if ((requestUri.Scheme != "http") && (requestUri.Scheme != "https"))
             {
                 throw new NotSupportedException(SR.net_unknown_prefix);
@@ -216,8 +226,11 @@ namespace System.Net
         //
         // Returns:
         //     True if the registration worked, false otherwise.
-        public static bool RegisterPrefix(string prefix!!, IWebRequestCreate creator!!)
+        public static bool RegisterPrefix(string prefix, IWebRequestCreate creator)
         {
+            ArgumentNullException.ThrowIfNull(prefix);
+            ArgumentNullException.ThrowIfNull(creator);
+
             bool Error = false;
             int i;
             WebRequestPrefixElement Current;
@@ -535,7 +548,7 @@ namespace System.Net
 
         public static IWebProxy? DefaultWebProxy
         {
-            get => LazyInitializer.EnsureInitialized<IWebProxy>(ref s_DefaultWebProxy, ref s_DefaultWebProxyInitialized, ref s_internalSyncObject, () => GetSystemWebProxy());
+            get => LazyInitializer.EnsureInitialized<IWebProxy>(ref s_DefaultWebProxy, ref s_DefaultWebProxyInitialized, ref s_internalSyncObject, GetSystemWebProxy);
             set
             {
                 lock (s_internalSyncObject)

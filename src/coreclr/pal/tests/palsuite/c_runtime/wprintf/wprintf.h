@@ -5,7 +5,7 @@
 **
 ** Source: wprintf.h
 **
-** Purpose: Containts common testing functions for wprintf
+** Purpose: Contains common testing functions for wprintf
 **
 **
 **==========================================================================*/
@@ -20,13 +20,13 @@ inline void DoStrTest_wprintf(const WCHAR *formatstr, const WCHAR *param, const 
     ret = wprintf(formatstr, param);
     if (ret != wcslen(checkstr))
     {
-        Fail("DoStrTest:Expected wprintf to return %d, got %d.\n", 
+        Fail("DoStrTest:Expected wprintf to return %d, got %d.\n",
             wcslen(checkstr), ret);
     }
 }
 #define DoStrTest DoStrTest_wprintf
 
-inline void DoPointerTest_wprintf(const WCHAR *formatstr, void* param, WCHAR* paramstr, 
+inline void DoPointerTest_wprintf(const WCHAR *formatstr, void* param, WCHAR* paramstr,
                    const WCHAR *checkstr1)
 {
     int ret;
@@ -34,7 +34,7 @@ inline void DoPointerTest_wprintf(const WCHAR *formatstr, void* param, WCHAR* pa
     ret = wprintf(formatstr, param);
     if (ret != wcslen(checkstr1))
     {
-        Fail("DoPointerTest:Expected wprintf to return %d, got %d.\n", 
+        Fail("DoPointerTest:Expected wprintf to return %d, got %d.\n",
             wcslen(checkstr1), ret);
     }
 }
@@ -44,7 +44,7 @@ inline void DoCountTest_wprintf(const WCHAR *formatstr, int param, const WCHAR *
 {
     int ret;
     int n = -1;
-    
+
     ret = wprintf(formatstr, &n);
 
     if (n != param)
@@ -54,9 +54,9 @@ inline void DoCountTest_wprintf(const WCHAR *formatstr, int param, const WCHAR *
 
     if (ret != wcslen(checkstr))
     {
-        Fail("DoCountTest:Expected wprintf to return %d, got %d.\n", 
+        Fail("DoCountTest:Expected wprintf to return %d, got %d.\n",
             wcslen(checkstr), ret);
-    }    
+    }
 }
 #define DoCountTest DoCountTest_wprintf
 
@@ -64,7 +64,7 @@ inline void DoShortCountTest_wprintf(const WCHAR *formatstr, int param, const WC
 {
     int ret;
     short int n = -1;
-    
+
     ret = wprintf(formatstr, &n);
 
     if (n != param)
@@ -74,9 +74,9 @@ inline void DoShortCountTest_wprintf(const WCHAR *formatstr, int param, const WC
 
     if (ret != wcslen(checkstr))
     {
-        Fail("DoShortCountTest:Expected wprintf to return %d, got %d.\n", 
+        Fail("DoShortCountTest:Expected wprintf to return %d, got %d.\n",
             wcslen(checkstr), ret);
-    }    
+    }
 }
 #define DoShortCountTest DoShortCountTest_wprintf
 
@@ -87,7 +87,7 @@ inline void DoCharTest_wprintf(const WCHAR *formatstr, WCHAR param, const WCHAR 
     ret = wprintf(formatstr, param);
     if (ret != wcslen(checkstr))
     {
-        Fail("DoCharTest:Expected wprintf to return %d, got %d.\n", 
+        Fail("DoCharTest:Expected wprintf to return %d, got %d.\n",
             wcslen(checkstr), ret);
     }
 }
@@ -100,9 +100,9 @@ inline void DoWCharTest_wprintf(const WCHAR *formatstr, WCHAR param, const WCHAR
     ret = wprintf(formatstr, param);
     if (ret != wcslen(checkstr))
     {
-        Fail("DoWCharTest:Expected wprintf to return %d, got %d.\n", 
+        Fail("DoWCharTest:Expected wprintf to return %d, got %d.\n",
             wcslen(checkstr), ret);
-    }    
+    }
 }
 #define DoWCharTest DoWCharTest_wprintf
 
@@ -113,13 +113,13 @@ inline void DoNumTest_wprintf(const WCHAR *formatstr, int param, const WCHAR *ch
     ret = wprintf(formatstr, param);
     if (ret != wcslen(checkstr))
     {
-        Fail("DoNumTest:Expected wprintf to return %d, got %d.\n", 
+        Fail("DoNumTest:Expected wprintf to return %d, got %d.\n",
             wcslen(checkstr), ret);
-    }    
+    }
 }
 #define DoNumTest DoNumTest_wprintf
 
-inline void DoI64Test_wprintf(const WCHAR *formatstr, INT64 param, const WCHAR *valuestr, 
+inline void DoI64Test_wprintf(const WCHAR *formatstr, INT64 param, const WCHAR *valuestr,
                const WCHAR *checkstr1)
 {
     int ret;
@@ -127,13 +127,13 @@ inline void DoI64Test_wprintf(const WCHAR *formatstr, INT64 param, const WCHAR *
     ret = wprintf(formatstr, param);
     if (ret != wcslen(checkstr1))
     {
-        Fail("DoI64Test:Expected wprintf to return %d, got %d.\n", 
+        Fail("DoI64Test:Expected wprintf to return %d, got %d.\n",
             wcslen(checkstr1), ret);
     }
 }
 #define DoI64Test DoI64Test_wprintf
 
-inline void DoDoubleTest_wprintf(const WCHAR *formatstr, double param, 
+inline void DoDoubleTest_wprintf(const WCHAR *formatstr, double param,
                   const WCHAR *checkstr1, const WCHAR *checkstr2)
 {
     int ret;
@@ -141,13 +141,13 @@ inline void DoDoubleTest_wprintf(const WCHAR *formatstr, double param,
     ret = wprintf(formatstr, param);
     if (ret != wcslen(checkstr1) && ret != wcslen(checkstr2))
     {
-        Fail("DoDoubleTest:Expected wprintf to return %d or %d, got %d.\n", 
+        Fail("DoDoubleTest:Expected wprintf to return %d or %d, got %d.\n",
             wcslen(checkstr1), wcslen(checkstr2), ret);
     }
 }
 #define DoDoubleTest DoDoubleTest_wprintf
 
-inline void DoArgumentPrecTest_wprintf(const WCHAR *formatstr, int precision, void *param, 
+inline void DoArgumentPrecTest_wprintf(const WCHAR *formatstr, int precision, void *param,
                         WCHAR *paramstr, const WCHAR *checkstr1, const WCHAR *checkstr2)
 {
     int ret;
@@ -155,13 +155,13 @@ inline void DoArgumentPrecTest_wprintf(const WCHAR *formatstr, int precision, vo
     ret = wprintf(formatstr, precision, param);
     if (ret != wcslen(checkstr1) && ret != wcslen(checkstr2))
     {
-        Fail("DoArgumentPrecTest:Expected wprintf to return %d or %d, got %d.\n", 
+        Fail("DoArgumentPrecTest:Expected wprintf to return %d or %d, got %d.\n",
             wcslen(checkstr1), wcslen(checkstr2), ret);
     }
 }
 #define DoArgumentPrecTest DoArgumentPrecTest_wprintf
 
-inline void DoArgumentPrecDoubleTest_wprintf(const WCHAR *formatstr, int precision, double param, 
+inline void DoArgumentPrecDoubleTest_wprintf(const WCHAR *formatstr, int precision, double param,
     const WCHAR *checkstr1, const WCHAR *checkstr2)
 {
     int ret;
@@ -169,7 +169,7 @@ inline void DoArgumentPrecDoubleTest_wprintf(const WCHAR *formatstr, int precisi
     ret = wprintf(formatstr, precision, param);
     if (ret != wcslen(checkstr1) && ret != wcslen(checkstr2))
     {
-        Fail("DoArgumentPrecDoubleTest:Expected wprintf to return %d or %d, got %d.\n", 
+        Fail("DoArgumentPrecDoubleTest:Expected wprintf to return %d or %d, got %d.\n",
             wcslen(checkstr1), wcslen(checkstr2), ret);
     }
 }

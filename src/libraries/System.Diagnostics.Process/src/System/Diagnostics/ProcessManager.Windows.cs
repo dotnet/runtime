@@ -29,12 +29,22 @@ namespace System.Diagnostics
         {
             // Performance optimization for the local machine:
             // First try to OpenProcess by id, if valid handle is returned verify that process is running
-            // Otherwise enumerate all processes and compare ids
-            if (!IsRemoteMachine(machineName))
+            // When the attempt to open a handle fails due to lack of permissions enumerate all processes and compare ids
+            // Attempt to open handle for Idle process (processId == 0) fails with ERROR_INVALID_PARAMETER
+            if (processId != 0 && !IsRemoteMachine(machineName))
             {
                 using (SafeProcessHandle processHandle = Interop.Kernel32.OpenProcess(ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION | ProcessOptions.SYNCHRONIZE, false, processId))
                 {
-                    if (!processHandle.IsInvalid)
+                    if (processHandle.IsInvalid)
+                    {
+                        int error = Marshal.GetLastWin32Error();
+                        if (error == Interop.Errors.ERROR_INVALID_PARAMETER)
+                        {
+                            Debug.Assert(processId != 0, "OpenProcess fails with ERROR_INVALID_PARAMETER for Idle Process");
+                            return false;
+                        }
+                    }
+                    else
                     {
                         bool signaled = false;
                         return !HasExited(processHandle, ref signaled, out _);
@@ -46,13 +56,32 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets process infos for each process on the specified machine.</summary>
+        /// <param name="processNameFilter">Optional process name to use as an inclusion filter.</param>
         /// <param name="machineName">The target machine.</param>
         /// <returns>An array of process infos, one per found process.</returns>
-        public static ProcessInfo[] GetProcessInfos(string machineName)
+        public static ProcessInfo[] GetProcessInfos(string? processNameFilter, string machineName)
         {
-            return IsRemoteMachine(machineName) ?
-                NtProcessManager.GetProcessInfos(machineName, isRemoteMachine: true) :
-                NtProcessInfoHelper.GetProcessInfos();
+            if (!IsRemoteMachine(machineName))
+            {
+                return NtProcessInfoHelper.GetProcessInfos(processNameFilter: processNameFilter);
+            }
+
+            ProcessInfo[] processInfos = NtProcessManager.GetProcessInfos(machineName, isRemoteMachine: true);
+            if (string.IsNullOrEmpty(processNameFilter))
+            {
+                return processInfos;
+            }
+
+            ArrayBuilder<ProcessInfo> results = default;
+            foreach (ProcessInfo pi in processInfos)
+            {
+                if (string.Equals(processNameFilter, pi.ProcessName, StringComparison.OrdinalIgnoreCase))
+                {
+                    results.Add(pi);
+                }
+            }
+
+            return results.ToArray();
         }
 
         /// <summary>Gets the ProcessInfo for the specified process ID on the specified machine.</summary>
@@ -111,7 +140,10 @@ namespace System.Diagnostics
                 string? processName = Interop.Kernel32.GetProcessName((uint)processId);
                 if (processName is not null)
                 {
-                    return NtProcessInfoHelper.GetProcessShortName(processName);
+                    ReadOnlySpan<char> newName = NtProcessInfoHelper.GetProcessShortName(processName);
+                    return newName.SequenceEqual(processName) ?
+                        processName :
+                        newName.ToString();
                 }
             }
 
@@ -199,10 +231,7 @@ namespace System.Diagnostics
             }
             finally
             {
-                if (tokenHandle != null)
-                {
-                    tokenHandle.Dispose();
-                }
+                tokenHandle?.Dispose();
             }
         }
 
@@ -214,6 +243,8 @@ namespace System.Diagnostics
             {
                 return processHandle;
             }
+
+            processHandle.Dispose();
 
             if (processId == 0)
             {
@@ -242,6 +273,7 @@ namespace System.Diagnostics
             int result = Marshal.GetLastWin32Error();
             if (threadHandle.IsInvalid)
             {
+                threadHandle.Dispose();
                 if (result == Interop.Errors.ERROR_INVALID_PARAMETER)
                     throw new InvalidOperationException(SR.Format(SR.ThreadExited, threadId.ToString()));
                 throw new Win32Exception(result);

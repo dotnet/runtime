@@ -501,7 +501,7 @@ mono_gc_invoke_finalizers (void)
 MonoBoolean
 mono_gc_pending_finalizers (void)
 {
-	return sgen_have_pending_finalizers ();
+	return !!sgen_have_pending_finalizers ();
 }
 
 void
@@ -1066,7 +1066,7 @@ mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box, gboolean know
 
 	if (sgen_collect_before_allocs)
 		return NULL;
-	if (m_class_get_instance_size (klass) > sgen_tlab_size)
+	if (GINT_TO_UINT32(m_class_get_instance_size (klass)) > sgen_tlab_size)
 		return NULL;
 	if (known_instance_size && ALIGN_TO (m_class_get_instance_size (klass), SGEN_ALLOC_ALIGN) >= SGEN_MAX_SMALL_OBJ_SIZE)
 		return NULL;
@@ -1812,13 +1812,13 @@ report_pin_queue (void)
 	//sort the addresses
 	sgen_pointer_queue_sort_uniq (&pinned_objects);
 
-	for (int i = 0; i < pinned_objects.next_slot; ++i) {
+	for (gsize i = 0; i < pinned_objects.next_slot; ++i) {
 		GCObject *obj = (GCObject*)pinned_objects.data [i];
 		ssize_t size = sgen_safe_object_get_size (obj);
 
 		ssize_t addr = (ssize_t)obj;
-		lower_bound = MIN (lower_bound, addr);
-		upper_bound = MAX (upper_bound, addr + size);
+		lower_bound = MIN (lower_bound, GSSIZE_TO_SIZE(addr));
+		upper_bound = MAX (upper_bound, GSSIZE_TO_SIZE(addr + size));
 	}
 
 	report_stack_roots ();
@@ -2816,9 +2816,6 @@ mono_gchandle_set_target (MonoGCHandle gchandle, MonoObject *obj)
 void
 sgen_client_gchandle_created (int handle_type, GCObject *obj, guint32 handle)
 {
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_inc_i32 (&mono_perfcounters->gc_num_handles);
-#endif
 
 	MONO_PROFILER_RAISE (gc_handle_created, (handle, (MonoGCHandleType)handle_type, obj));
 }
@@ -2826,9 +2823,6 @@ sgen_client_gchandle_created (int handle_type, GCObject *obj, guint32 handle)
 void
 sgen_client_gchandle_destroyed (int handle_type, guint32 handle)
 {
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_dec_i32 (&mono_perfcounters->gc_num_handles);
-#endif
 
 	MONO_PROFILER_RAISE (gc_handle_deleted, (handle, (MonoGCHandleType)handle_type));
 }
@@ -2899,7 +2893,7 @@ mono_gc_add_memory_pressure (gint64 value)
 void
 sgen_client_degraded_allocation (void)
 {
-	//The WASM target aways triggers degrated allocation before collecting. So no point in printing the warning as it will just confuse users
+	//The WASM target always triggers degrated allocation before collecting. So no point in printing the warning as it will just confuse users
 #ifndef HOST_WASM
 	static gint32 last_major_gc_warned = -1;
 	static gint32 num_degraded = 0;
@@ -3165,12 +3159,6 @@ sgen_client_binary_protocol_collection_begin (int minor_gc_count, int generation
 		MONO_PROFILER_RAISE (gc_root_register, (SPECIAL_ADDRESS_TOGGLEREF, 1, MONO_ROOT_SOURCE_TOGGLEREF, NULL, "ToggleRefs"));
 	}
 
-#ifndef DISABLE_PERFCOUNTERS
-	if (generation == GENERATION_NURSERY)
-		mono_atomic_inc_i32 (&mono_perfcounters->gc_collections0);
-	else
-		mono_atomic_inc_i32 (&mono_perfcounters->gc_collections1);
-#endif
 }
 
 void

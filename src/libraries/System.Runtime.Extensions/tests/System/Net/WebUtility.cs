@@ -131,7 +131,7 @@ namespace System.Net.Tests
             yield return Tuple.Create("%2F%5C%22%09Hello!+%E2%99%A5%3F%2F%5C%22%09World!+%E2%99%A5%3F%E2%99%A5", "/\\\"\tHello! \u2665?/\\\"\tWorld! \u2665?\u2665");
             yield return Tuple.Create("%2f%5c%22%09Hello!+%e2%99%a5%3f%2f%5c%22%09World!+%e2%99%a5%3F%e2%99%a5", "/\\\"\tHello! \u2665?/\\\"\tWorld! \u2665?\u2665");
 
-            // Unecessary escaping
+            // Unnecessary escaping
             yield return Tuple.Create("%61%62%63", "abc");
             yield return Tuple.Create("\u1234%61%62%63\u1234", "\u1234abc\u1234");
 
@@ -437,7 +437,7 @@ namespace System.Net.Tests
             // prevent problems where the input array is changed if
             // the output one is modified.
 
-            byte[] input = Encoding.UTF8.GetBytes("Dont.Need.Encoding");
+            byte[] input = "Dont.Need.Encoding"u8.ToArray();
             byte[] output = WebUtility.UrlEncodeToBytes(input, 0, input.Length);
             Assert.NotSame(input, output);
         }
@@ -445,7 +445,7 @@ namespace System.Net.Tests
         [Fact]
         public static void UrlDecodeToBytes_NoDecodingNeeded_ReturnsNewClonedArray()
         {
-            byte[] input = Encoding.UTF8.GetBytes("Dont.Need.Decoding");
+            byte[] input = "Dont.Need.Decoding"u8.ToArray();
             byte[] output = WebUtility.UrlDecodeToBytes(input, 0, input.Length);
             Assert.NotSame(input, output);
         }

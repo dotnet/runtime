@@ -53,18 +53,16 @@ public:
 
 struct CPU_Group_Info
 {
-    WORD    nr_active;  // at most 64
-    WORD    reserved[1];
-    WORD    begin;
-    WORD    end;
     DWORD_PTR   active_mask;
-    DWORD   groupWeight;
-    DWORD   activeThreadWeight;
+    WORD        nr_active;  // at most 64
+    WORD        begin;
+    DWORD       groupWeight;
+    DWORD       activeThreadWeight;
 };
 
 static bool g_fEnableGCCPUGroups;
 static bool g_fHadSingleProcessorAtStartup;
-static DWORD  g_nGroups;
+static DWORD g_nGroups;
 static DWORD g_nProcessors;
 static CPU_Group_Info *g_CPUGroupInfoArray;
 
@@ -154,8 +152,8 @@ bool InitCPUGroupInfoArray()
     DWORD dwNumElements = 0;
     DWORD dwWeight = 1;
 
-    if (GetLogicalProcessorInformationEx(RelationGroup, pSLPIEx, &cbSLPIEx) &&
-                      GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+    if (GetLogicalProcessorInformationEx(RelationGroup, pSLPIEx, &cbSLPIEx) ||
+        GetLastError() != ERROR_INSUFFICIENT_BUFFER)
         return false;
 
     assert(cbSLPIEx);
@@ -195,6 +193,7 @@ bool InitCPUGroupInfoArray()
     {
         g_CPUGroupInfoArray[i].nr_active   = (WORD)pRecord->Group.GroupInfo[i].ActiveProcessorCount;
         g_CPUGroupInfoArray[i].active_mask = pRecord->Group.GroupInfo[i].ActiveProcessorMask;
+        g_CPUGroupInfoArray[i].begin       = (WORD)g_nProcessors;
         g_nProcessors += g_CPUGroupInfoArray[i].nr_active;
         dwWeight = LCM(dwWeight, (DWORD)g_CPUGroupInfoArray[i].nr_active);
     }
@@ -216,26 +215,6 @@ bool InitCPUGroupInfoArray()
 #endif
 }
 
-bool InitCPUGroupInfoRange()
-{
-#if (defined(TARGET_AMD64) || defined(TARGET_ARM64))
-    WORD begin   = 0;
-    WORD nr_proc = 0;
-
-    for (WORD i = 0; i < g_nGroups; i++)
-    {
-        nr_proc += g_CPUGroupInfoArray[i].nr_active;
-        g_CPUGroupInfoArray[i].begin = begin;
-        g_CPUGroupInfoArray[i].end   = nr_proc - 1;
-        begin = nr_proc;
-    }
-
-    return true;
-#else
-    return false;
-#endif
-}
-
 void InitCPUGroupInfo()
 {
     g_fEnableGCCPUGroups = false;
@@ -247,9 +226,6 @@ void InitCPUGroupInfo()
     if (!InitCPUGroupInfoArray())
         return;
 
-    if (!InitCPUGroupInfoRange())
-        return;
-
     // only enable CPU groups if more than one group exists
     g_fEnableGCCPUGroups = g_nGroups > 1;
 #endif // TARGET_AMD64 || TARGET_ARM64
@@ -258,7 +234,6 @@ void InitCPUGroupInfo()
     DWORD_PTR processAffinityMask, systemAffinityMask;
     if (::GetProcessAffinityMask(::GetCurrentProcess(), &processAffinityMask, &systemAffinityMask))
     {
-        processAffinityMask &= systemAffinityMask;
         if (processAffinityMask != 0 && // only one CPU group is involved
             (processAffinityMask & (processAffinityMask - 1)) == 0) // only one bit is set
         {
@@ -426,6 +401,8 @@ SYSTEM_LOGICAL_PROCESSOR_INFORMATION *GetLPI(PDWORD nEntries)
 size_t GetLogicalProcessorCacheSizeFromOS()
 {
     size_t cache_size = 0;
+    size_t cache_level = 0;
+
     DWORD nEntries = 0;
 
     // Try to use GetLogicalProcessorInformation API and get a valid pointer to the SLPI array if successful.  Returns NULL
@@ -448,7 +425,11 @@ size_t GetLogicalProcessorCacheSizeFromOS()
         {
             if (pslpi[i].Relationship == RelationCache)
             {
-                last_cache_size = max(last_cache_size, pslpi[i].Cache.Size);
+                if (last_cache_size < pslpi[i].Cache.Size)
+                {
+                    last_cache_size = pslpi[i].Cache.Size;
+                    cache_level = pslpi[i].Cache.Level;
+                }
             }
         }
         cache_size = last_cache_size;
@@ -457,6 +438,39 @@ Exit:
 
     if(pslpi)
         delete[] pslpi;  // release the memory allocated for the SLPI array.
+
+#if defined(TARGET_ARM64)
+    if (cache_level != 3)
+    {
+        uint32_t totalCPUCount = GCToOSInterface::GetTotalProcessorCount();
+
+        // We expect to get the L3 cache size for Arm64 but currently expected to be missing that info
+        // from most of the machines.
+        // Hence, just use the following heuristics at best depending on the CPU count
+        // 1 ~ 4   :  4 MB
+        // 5 ~ 16  :  8 MB
+        // 17 ~ 64 : 16 MB
+        // 65+     : 32 MB
+        if (totalCPUCount < 5)
+        {
+            cache_size = 4;
+        }
+        else if (totalCPUCount < 17)
+        {
+            cache_size = 8;
+        }
+        else if (totalCPUCount < 65)
+        {
+            cache_size = 16;
+        }
+        else
+        {
+            cache_size = 32;
+        }
+
+        cache_size *= (1024 * 1024);
+    }
+#endif // TARGET_ARM64
 
     return cache_size;
 }
@@ -471,7 +485,7 @@ void GetGroupForProcessor(uint16_t processor_number, uint16_t* group_number, uin
 {
     assert(g_fEnableGCCPUGroups);
 
-#if !defined(FEATURE_REDHAWK) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
+#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64))
     WORD bTemp = 0;
     WORD bDiff = processor_number - bTemp;
 
@@ -527,8 +541,6 @@ bool GCToOSInterface::Initialize()
         uintptr_t pmask, smask;
         if (!!::GetProcessAffinityMask(::GetCurrentProcess(), (PDWORD_PTR)&pmask, (PDWORD_PTR)&smask))
         {
-            pmask &= smask;
-
             for (size_t i = 0; i < 8 * sizeof(uintptr_t); i++)
             {
                 if ((pmask & ((uintptr_t)1 << i)) != 0)
@@ -549,7 +561,7 @@ void GCToOSInterface::Shutdown()
 }
 
 // Get numeric id of the current thread if possible on the
-// current platform. It is indended for logging purposes only.
+// current platform. It is intended for logging purposes only.
 // Return:
 //  Numeric id of the current thread or 0 if the
 uint64_t GCToOSInterface::GetCurrentThreadIdForLogging()
@@ -860,15 +872,10 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 
     maxSize = maxTrueSize = GetLogicalProcessorCacheSizeFromOS() ; // Returns the size of the highest level processor cache
 
-#if defined(TARGET_ARM64)
-    // Bigger gen0 size helps arm64 targets
-    maxSize = maxTrueSize * 3;
-#endif
-
     s_maxSize = maxSize;
     s_maxTrueSize = maxTrueSize;
 
-    //    printf("GetCacheSizePerLogicalCpu returns %d, adjusted size %d\n", maxSize, maxTrueSize);
+    // printf("GetCacheSizePerLogicalCpu returns %zu, adjusted size %zu\n", maxSize, maxTrueSize);
     return trueSize ? maxTrueSize : maxSize;
 }
 
@@ -1126,7 +1133,7 @@ bool GCToOSInterface::GetNumaInfo(uint16_t* total_nodes, uint32_t* max_procs_per
         for (uint32_t i = 0; i < g_nNodes; i++)
         {
             GROUP_AFFINITY processorMask;
-            if (GetNumaNodeProcessorMaskEx(i, &processorMask))
+            if (GetNumaNodeProcessorMaskEx((uint16_t)i, &processorMask))
             {
                 DWORD procsOnNode = 0;
                 uintptr_t mask = (uintptr_t)processorMask.Mask;
@@ -1139,7 +1146,7 @@ bool GCToOSInterface::GetNumaInfo(uint16_t* total_nodes, uint32_t* max_procs_per
                 currentProcsOnNode = max(currentProcsOnNode, procsOnNode);
             }
             *max_procs_per_node = currentProcsOnNode;
-            *total_nodes = g_nNodes;
+            *total_nodes = (uint16_t)g_nNodes;
         }
         return true;
     }
@@ -1181,7 +1188,7 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
     bool success = false;
 
     // Locate heap_number-th available processor
-    uint16_t procIndex;
+    uint16_t procIndex = 0;
     size_t cnt = heap_number;
     for (uint16_t i = 0; i < GCToOSInterface::GetTotalProcessorCount(); i++)
     {

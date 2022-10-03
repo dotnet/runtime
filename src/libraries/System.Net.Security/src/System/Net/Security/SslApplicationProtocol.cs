@@ -10,9 +10,9 @@ namespace System.Net.Security
     public readonly struct SslApplicationProtocol : IEquatable<SslApplicationProtocol>
     {
         private static readonly Encoding s_utf8 = Encoding.GetEncoding(Encoding.UTF8.CodePage, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback);
-        private static readonly byte[] s_http3Utf8 = new byte[] { 0x68, 0x33 }; // "h3"
-        private static readonly byte[] s_http2Utf8 = new byte[] { 0x68, 0x32 }; // "h2"
-        private static readonly byte[] s_http11Utf8 = new byte[] { 0x68, 0x74, 0x74, 0x70, 0x2f, 0x31, 0x2e, 0x31 }; // "http/1.1"
+        private static readonly byte[] s_http3Utf8 = "h3"u8.ToArray();
+        private static readonly byte[] s_http2Utf8 = "h2"u8.ToArray();
+        private static readonly byte[] s_http11Utf8 = "http/1.1"u8.ToArray();
 
         // Refer to IANA on ApplicationProtocols: https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml#alpn-protocol-ids
         /// <summary>Defines a <see cref="SslApplicationProtocol"/> instance for HTTP 3.0.</summary>
@@ -39,13 +39,13 @@ namespace System.Net.Security
                 protocol;
         }
 
-        public SslApplicationProtocol(byte[] protocol!!) :
-            this(protocol, copy: true)
+        public SslApplicationProtocol(byte[] protocol) :
+            this(protocol ?? throw new ArgumentNullException(nameof(protocol)), copy: true)
         {
         }
 
-        public SslApplicationProtocol(string protocol!!) :
-            this(s_utf8.GetBytes(protocol), copy: false)
+        public SslApplicationProtocol(string protocol) :
+            this(s_utf8.GetBytes(protocol ?? throw new ArgumentNullException(nameof(protocol))), copy: false)
         {
         }
 

@@ -17,8 +17,10 @@ namespace Microsoft.Extensions.Logging
         /// <param name="factory">The factory.</param>
         /// <typeparam name="T">The type.</typeparam>
         /// <returns>The <see cref="ILogger"/> that was created.</returns>
-        public static ILogger<T> CreateLogger<T>(this ILoggerFactory factory!!)
+        public static ILogger<T> CreateLogger<T>(this ILoggerFactory factory)
         {
+            ThrowHelper.ThrowIfNull(factory);
+
             return new Logger<T>(factory);
         }
         /// <summary>
@@ -26,9 +28,12 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         /// <param name="factory">The factory.</param>
         /// <param name="type">The type.</param>
-        /// <return>The <see cref="ILogger"/> that was created.</return>
-        public static ILogger CreateLogger(this ILoggerFactory factory!!, Type type!!)
+        /// <returns>The <see cref="ILogger"/> that was created.</returns>
+        public static ILogger CreateLogger(this ILoggerFactory factory, Type type)
         {
+            ThrowHelper.ThrowIfNull(factory);
+            ThrowHelper.ThrowIfNull(type);
+
             return factory.CreateLogger(TypeNameHelper.GetTypeDisplayName(type, includeGenericParameters: false, nestedTypeDelimiter: '.'));
         }
     }

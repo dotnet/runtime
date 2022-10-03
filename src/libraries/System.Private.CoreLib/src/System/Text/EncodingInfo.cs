@@ -15,8 +15,12 @@ namespace System.Text
         /// <param name="name">The encoding name</param>
         /// <param name="displayName">The encoding display name</param>
         /// <returns></returns>
-        public EncodingInfo(EncodingProvider provider!!, int codePage, string name!!, string displayName!!) : this(codePage, name, displayName)
+        public EncodingInfo(EncodingProvider provider, int codePage, string name, string displayName) : this(codePage, name, displayName)
         {
+            ArgumentNullException.ThrowIfNull(provider);
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(displayName);
+
             Provider = provider;
         }
 

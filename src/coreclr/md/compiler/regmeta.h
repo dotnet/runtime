@@ -789,7 +789,7 @@ public:
         mdTypeRef   *ptr);                  // [OUT] Put TypeRef token here.
 
     STDMETHODIMP DefineImportType(          // S_OK or error.
-        IMetaDataAssemblyImport *pAssemImport,  // [IN] Assemby containing the TypeDef.
+        IMetaDataAssemblyImport *pAssemImport,  // [IN] Assembly containing the TypeDef.
         const void  *pbHashValue,           // [IN] Hash Blob for Assembly.
         ULONG       cbHashValue,            // [IN] Count of bytes.
         IMetaDataImport *pImport,           // [IN] Scope containing the TypeDef.
@@ -805,7 +805,7 @@ public:
         mdMemberRef *pmr);                  // [OUT] memberref token
 
     STDMETHODIMP DefineImportMember(        // S_OK or error.
-        IMetaDataAssemblyImport *pAssemImport,  // [IN] Assemby containing the Member.
+        IMetaDataAssemblyImport *pAssemImport,  // [IN] Assembly containing the Member.
         const void  *pbHashValue,           // [IN] Hash Blob for Assembly.
         ULONG       cbHashValue,            // [IN] Count of bytes.
         IMetaDataImport *pImport,           // [IN] Import scope, with member.
@@ -2058,8 +2058,6 @@ private:
     CCustAttrHash               m_caHash;   // Hashed list of custom attribute types seen.
 
     bool        m_bKeepKnownCa;             // Should all known CA's be kept?
-
-    CorProfileData  *m_pCorProfileData;
 
     MetaDataReorderingOptions m_ReorderingOptions;
 

@@ -92,7 +92,7 @@ namespace System.ServiceModel
             _stream = null;
         }
 
-        private Exception CreateInvalidStateException() => new InvalidOperationException(SR.XmlBufferInInvalidState);
+        private static Exception CreateInvalidStateException() => new InvalidOperationException(SR.XmlBufferInInvalidState);
 
         public XmlDictionaryReader GetReader(int sectionIndex)
         {

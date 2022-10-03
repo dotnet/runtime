@@ -1,23 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Runtime.Serialization;
+using System.Security;
+using System.Text;
+using System.Xml;
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+
 namespace System.Runtime.Serialization.Json
 {
-    using System.Runtime.Serialization;
-    using System;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.IO;
-    using System.Text;
-    using System.Xml;
-    using System.Collections;
-    using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
-
-    using System.Globalization;
-    using System.Reflection;
-    using System.Security;
-    using System.Diagnostics.CodeAnalysis;
-
     public sealed class DataContractJsonSerializer : XmlObjectSerializer
     {
         internal IList<Type>? knownTypeList;
@@ -74,10 +73,7 @@ namespace System.Runtime.Serialization.Json
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public DataContractJsonSerializer(Type type, DataContractJsonSerializerSettings? settings)
         {
-            if (settings == null)
-            {
-                settings = new DataContractJsonSerializerSettings();
-            }
+            settings ??= new DataContractJsonSerializerSettings();
 
             XmlDictionaryString? rootName = (settings.RootName == null) ? null : new XmlDictionary(1).Add(settings.RootName);
             Initialize(type, rootName, settings.KnownTypes, settings.MaxItemsInObjectGraph, settings.IgnoreExtensionDataObject,
@@ -212,8 +208,10 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public override object? ReadObject(Stream stream!!)
+        public override object? ReadObject(Stream stream)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             return ReadObject(JsonReaderWriterFactory.CreateJsonReader(stream, XmlDictionaryReaderQuotas.Max));
         }
 
@@ -256,8 +254,10 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public override void WriteObject(Stream stream!!, object? graph)
+        public override void WriteObject(Stream stream, object? graph)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             XmlDictionaryWriter jsonWriter = JsonReaderWriterFactory.CreateJsonWriter(stream, Encoding.UTF8, false); //  ownsStream
             WriteObject(jsonWriter, graph);
             jsonWriter.Flush();
@@ -341,7 +341,7 @@ namespace System.Runtime.Serialization.Json
             return XmlConvert.DecodeName(xmlName);
         }
 
-        [return: NotNullIfNotNull("xmlName")]
+        [return: NotNullIfNotNull(nameof(xmlName))]
         internal static XmlDictionaryString? ConvertXmlNameToJsonName(XmlDictionaryString? xmlName)
         {
             return (xmlName == null) ? null : new XmlDictionary().Add(ConvertXmlNameToJsonName(xmlName.Value));
@@ -519,7 +519,7 @@ namespace System.Runtime.Serialization.Json
 
         [MemberNotNull(nameof(_rootType))]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private void Initialize(Type type!!,
+        private void Initialize(Type type,
             IEnumerable<Type>? knownTypes,
             int maxItemsInObjectGraph,
             bool ignoreExtensionDataObject,
@@ -528,6 +528,8 @@ namespace System.Runtime.Serialization.Json
             DateTimeFormat? dateTimeFormat,
             bool useSimpleDictionaryFormat)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             _rootType = type;
 
             if (knownTypes != null)

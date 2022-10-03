@@ -4,6 +4,336 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+#if !BUILDING_CORELIB_REFERENCE
+namespace System.Runtime.CompilerServices
+{
+    [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter, Inherited=false)]
+    public sealed partial class IDispatchConstantAttribute : System.Runtime.CompilerServices.CustomConstantAttribute
+    {
+        public IDispatchConstantAttribute() { }
+        public override object Value { get { throw null; } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter, Inherited=false)]
+    public sealed partial class IUnknownConstantAttribute : System.Runtime.CompilerServices.CustomConstantAttribute
+    {
+        public IUnknownConstantAttribute() { }
+        public override object Value { get { throw null; } }
+    }
+}
+namespace System.Runtime.InteropServices
+{
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Interface, Inherited=false)]
+    public sealed partial class AutomationProxyAttribute : System.Attribute
+    {
+        public AutomationProxyAttribute(bool val) { }
+        public bool Value { get { throw null; } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited=false)]
+    public sealed partial class ComAliasNameAttribute : System.Attribute
+    {
+        public ComAliasNameAttribute(string alias) { }
+        public string Value { get { throw null; } }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public partial class ComAwareEventInfo : System.Reflection.EventInfo
+    {
+        public ComAwareEventInfo([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents)] System.Type type, string eventName) { }
+        public override System.Reflection.EventAttributes Attributes { get { throw null; } }
+        public override System.Type? DeclaringType { get { throw null; } }
+        public override int MetadataToken { get { throw null; } }
+        public override System.Reflection.Module Module { get { throw null; } }
+        public override string Name { get { throw null; } }
+        public override System.Type? ReflectedType { get { throw null; } }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public override void AddEventHandler(object target, System.Delegate handler) { }
+        public override System.Reflection.MethodInfo? GetAddMethod(bool nonPublic) { throw null; }
+        public override object[] GetCustomAttributes(bool inherit) { throw null; }
+        public override object[] GetCustomAttributes(System.Type attributeType, bool inherit) { throw null; }
+        public override System.Collections.Generic.IList<System.Reflection.CustomAttributeData> GetCustomAttributesData() { throw null; }
+        public override System.Reflection.MethodInfo[] GetOtherMethods(bool nonPublic) { throw null; }
+        public override System.Reflection.MethodInfo? GetRaiseMethod(bool nonPublic) { throw null; }
+        public override System.Reflection.MethodInfo? GetRemoveMethod(bool nonPublic) { throw null; }
+        public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public override void RemoveEventHandler(object target, System.Delegate handler) { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
+    public sealed partial class ComCompatibleVersionAttribute : System.Attribute
+    {
+        public ComCompatibleVersionAttribute(int major, int minor, int build, int revision) { }
+        public int BuildNumber { get { throw null; } }
+        public int MajorVersion { get { throw null; } }
+        public int MinorVersion { get { throw null; } }
+        public int RevisionNumber { get { throw null; } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false)]
+    public sealed partial class ComConversionLossAttribute : System.Attribute
+    {
+        public ComConversionLossAttribute() { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
+    public sealed partial class ComRegisterFunctionAttribute : System.Attribute
+    {
+        public ComRegisterFunctionAttribute() { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
+    public sealed partial class ComUnregisterFunctionAttribute : System.Attribute
+    {
+        public ComUnregisterFunctionAttribute() { }
+    }
+    public sealed partial class HandleCollector
+    {
+        public HandleCollector(string? name, int initialThreshold) { }
+        public HandleCollector(string? name, int initialThreshold, int maximumThreshold) { }
+        public int Count { get { throw null; } }
+        public int InitialThreshold { get { throw null; } }
+        public int MaximumThreshold { get { throw null; } }
+        public string Name { get { throw null; } }
+        public void Add() { }
+        public void Remove() { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
+    public sealed partial class ImportedFromTypeLibAttribute : System.Attribute
+    {
+        public ImportedFromTypeLibAttribute(string tlbFile) { }
+        public string Value { get { throw null; } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false, AllowMultiple=false)]
+    public sealed partial class ManagedToNativeComInteropStubAttribute : System.Attribute
+    {
+        public ManagedToNativeComInteropStubAttribute(System.Type classType, string methodName) { }
+        public System.Type ClassType { get { throw null; } }
+        public string MethodName { get { throw null; } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false, AllowMultiple=true)]
+    public sealed partial class PrimaryInteropAssemblyAttribute : System.Attribute
+    {
+        public PrimaryInteropAssemblyAttribute(int major, int minor) { }
+        public int MajorVersion { get { throw null; } }
+        public int MinorVersion { get { throw null; } }
+    }
+    public static partial class RuntimeEnvironment
+    {
+        [System.ObsoleteAttribute("RuntimeEnvironment members SystemConfigurationFile, GetRuntimeInterfaceAsIntPtr, and GetRuntimeInterfaceAsObject are not supported and throw PlatformNotSupportedException.", DiagnosticId = "SYSLIB0019", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        public static string SystemConfigurationFile { get { throw null; } }
+        public static bool FromGlobalAccessCache(System.Reflection.Assembly a) { throw null; }
+        public static string GetRuntimeDirectory() { throw null; }
+        [System.ObsoleteAttribute("RuntimeEnvironment members SystemConfigurationFile, GetRuntimeInterfaceAsIntPtr, and GetRuntimeInterfaceAsObject are not supported and throw PlatformNotSupportedException.", DiagnosticId = "SYSLIB0019", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        public static System.IntPtr GetRuntimeInterfaceAsIntPtr(System.Guid clsid, System.Guid riid) { throw null; }
+        [System.ObsoleteAttribute("RuntimeEnvironment members SystemConfigurationFile, GetRuntimeInterfaceAsIntPtr, and GetRuntimeInterfaceAsObject are not supported and throw PlatformNotSupportedException.", DiagnosticId = "SYSLIB0019", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        public static object GetRuntimeInterfaceAsObject(System.Guid clsid, System.Guid riid) { throw null; }
+        public static string GetSystemVersion() { throw null; }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
+    public sealed partial class TypeLibFuncAttribute : System.Attribute
+    {
+        public TypeLibFuncAttribute(short flags) { }
+        public TypeLibFuncAttribute(System.Runtime.InteropServices.TypeLibFuncFlags flags) { }
+        public System.Runtime.InteropServices.TypeLibFuncFlags Value { get { throw null; } }
+    }
+    [System.FlagsAttribute]
+    public enum TypeLibFuncFlags
+    {
+        FRestricted = 1,
+        FSource = 2,
+        FBindable = 4,
+        FRequestEdit = 8,
+        FDisplayBind = 16,
+        FDefaultBind = 32,
+        FHidden = 64,
+        FUsesGetLastError = 128,
+        FDefaultCollelem = 256,
+        FUiDefault = 512,
+        FNonBrowsable = 1024,
+        FReplaceable = 2048,
+        FImmediateBind = 4096,
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Interface, Inherited=false)]
+    public sealed partial class TypeLibImportClassAttribute : System.Attribute
+    {
+        public TypeLibImportClassAttribute(System.Type importClass) { }
+        public string Value { get { throw null; } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Struct, Inherited=false)]
+    public sealed partial class TypeLibTypeAttribute : System.Attribute
+    {
+        public TypeLibTypeAttribute(short flags) { }
+        public TypeLibTypeAttribute(System.Runtime.InteropServices.TypeLibTypeFlags flags) { }
+        public System.Runtime.InteropServices.TypeLibTypeFlags Value { get { throw null; } }
+    }
+    [System.FlagsAttribute]
+    public enum TypeLibTypeFlags
+    {
+        FAppObject = 1,
+        FCanCreate = 2,
+        FLicensed = 4,
+        FPreDeclId = 8,
+        FHidden = 16,
+        FControl = 32,
+        FDual = 64,
+        FNonExtensible = 128,
+        FOleAutomation = 256,
+        FRestricted = 512,
+        FAggregatable = 1024,
+        FReplaceable = 2048,
+        FDispatchable = 4096,
+        FReverseBind = 8192,
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited=false)]
+    public sealed partial class TypeLibVarAttribute : System.Attribute
+    {
+        public TypeLibVarAttribute(short flags) { }
+        public TypeLibVarAttribute(System.Runtime.InteropServices.TypeLibVarFlags flags) { }
+        public System.Runtime.InteropServices.TypeLibVarFlags Value { get { throw null; } }
+    }
+    [System.FlagsAttribute]
+    public enum TypeLibVarFlags
+    {
+        FReadOnly = 1,
+        FSource = 2,
+        FBindable = 4,
+        FRequestEdit = 8,
+        FDisplayBind = 16,
+        FDefaultBind = 32,
+        FHidden = 64,
+        FRestricted = 128,
+        FDefaultCollelem = 256,
+        FUiDefault = 512,
+        FNonBrowsable = 1024,
+        FReplaceable = 2048,
+        FImmediateBind = 4096,
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
+    public sealed partial class TypeLibVersionAttribute : System.Attribute
+    {
+        public TypeLibVersionAttribute(int major, int minor) { }
+        public int MajorVersion { get { throw null; } }
+        public int MinorVersion { get { throw null; } }
+    }
+}
+namespace System.Runtime.InteropServices.ComTypes
+{
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.FlagsAttribute]
+    public enum ADVF
+    {
+        ADVF_NODATA = 1,
+        ADVF_PRIMEFIRST = 2,
+        ADVF_ONLYONCE = 4,
+        ADVFCACHE_NOHANDLER = 8,
+        ADVFCACHE_FORCEBUILTIN = 16,
+        ADVFCACHE_ONSAVE = 32,
+        ADVF_DATAONSTOP = 64,
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public enum DATADIR
+    {
+        DATADIR_GET = 1,
+        DATADIR_SET = 2,
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.FlagsAttribute]
+    public enum DVASPECT
+    {
+        DVASPECT_CONTENT = 1,
+        DVASPECT_THUMBNAIL = 2,
+        DVASPECT_ICON = 4,
+        DVASPECT_DOCPRINT = 8,
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public partial struct FORMATETC
+    {
+        public short cfFormat;
+        public System.Runtime.InteropServices.ComTypes.DVASPECT dwAspect;
+        public int lindex;
+        public System.IntPtr ptd;
+        public System.Runtime.InteropServices.ComTypes.TYMED tymed;
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.Runtime.InteropServices.InterfaceTypeAttribute(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIUnknown)]
+    public partial interface IAdviseSink
+    {
+        void OnClose();
+        void OnDataChange(ref System.Runtime.InteropServices.ComTypes.FORMATETC format, ref System.Runtime.InteropServices.ComTypes.STGMEDIUM stgmedium);
+        void OnRename(System.Runtime.InteropServices.ComTypes.IMoniker moniker);
+        void OnSave();
+        void OnViewChange(int aspect, int index);
+    }
+    [System.CLSCompliantAttribute(false)]
+    [System.Runtime.InteropServices.InterfaceTypeAttribute(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIUnknown)]
+    public partial interface IDataObject
+    {
+        int DAdvise(ref System.Runtime.InteropServices.ComTypes.FORMATETC pFormatetc, System.Runtime.InteropServices.ComTypes.ADVF advf, System.Runtime.InteropServices.ComTypes.IAdviseSink adviseSink, out int connection);
+        void DUnadvise(int connection);
+        int EnumDAdvise(out System.Runtime.InteropServices.ComTypes.IEnumSTATDATA? enumAdvise);
+        System.Runtime.InteropServices.ComTypes.IEnumFORMATETC EnumFormatEtc(System.Runtime.InteropServices.ComTypes.DATADIR direction);
+        int GetCanonicalFormatEtc(ref System.Runtime.InteropServices.ComTypes.FORMATETC formatIn, out System.Runtime.InteropServices.ComTypes.FORMATETC formatOut);
+        void GetData(ref System.Runtime.InteropServices.ComTypes.FORMATETC format, out System.Runtime.InteropServices.ComTypes.STGMEDIUM medium);
+        void GetDataHere(ref System.Runtime.InteropServices.ComTypes.FORMATETC format, ref System.Runtime.InteropServices.ComTypes.STGMEDIUM medium);
+        int QueryGetData(ref System.Runtime.InteropServices.ComTypes.FORMATETC format);
+        void SetData(ref System.Runtime.InteropServices.ComTypes.FORMATETC formatIn, ref System.Runtime.InteropServices.ComTypes.STGMEDIUM medium, bool release);
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.Runtime.InteropServices.InterfaceTypeAttribute(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIUnknown)]
+    public partial interface IEnumFORMATETC
+    {
+        void Clone(out System.Runtime.InteropServices.ComTypes.IEnumFORMATETC newEnum);
+        int Next(int celt, System.Runtime.InteropServices.ComTypes.FORMATETC[] rgelt, int[] pceltFetched);
+        int Reset();
+        int Skip(int celt);
+    }
+    [System.Runtime.InteropServices.InterfaceTypeAttribute(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIUnknown)]
+    public partial interface IEnumSTATDATA
+    {
+        void Clone(out System.Runtime.InteropServices.ComTypes.IEnumSTATDATA newEnum);
+        int Next(int celt, System.Runtime.InteropServices.ComTypes.STATDATA[] rgelt, int[] pceltFetched);
+        int Reset();
+        int Skip(int celt);
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public partial struct STATDATA
+    {
+        public System.Runtime.InteropServices.ComTypes.ADVF advf;
+        public System.Runtime.InteropServices.ComTypes.IAdviseSink advSink;
+        public int connection;
+        public System.Runtime.InteropServices.ComTypes.FORMATETC formatetc;
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public partial struct STGMEDIUM
+    {
+        public object? pUnkForRelease;
+        public System.Runtime.InteropServices.ComTypes.TYMED tymed;
+        public System.IntPtr unionmember;
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    [System.FlagsAttribute]
+    public enum TYMED
+    {
+        TYMED_NULL = 0,
+        TYMED_HGLOBAL = 1,
+        TYMED_FILE = 2,
+        TYMED_ISTREAM = 4,
+        TYMED_ISTORAGE = 8,
+        TYMED_GDI = 16,
+        TYMED_MFPICT = 32,
+        TYMED_ENHMF = 64,
+    }
+}
+namespace System.Security
+{
+    public static partial class SecureStringMarshal
+    {
+        public static System.IntPtr SecureStringToCoTaskMemAnsi(System.Security.SecureString s) { throw null; }
+        public static System.IntPtr SecureStringToCoTaskMemUnicode(System.Security.SecureString s) { throw null; }
+        public static System.IntPtr SecureStringToGlobalAllocAnsi(System.Security.SecureString s) { throw null; }
+        public static System.IntPtr SecureStringToGlobalAllocUnicode(System.Security.SecureString s) { throw null; }
+    }
+}
+#endif // !BUILDING_CORELIB_REFERENCE
 namespace System
 {
     public sealed partial class DataMisalignedException : System.SystemException
@@ -74,22 +404,6 @@ namespace System.IO
         public void Write<T>(long position, ref T structure) where T : struct { }
     }
 }
-namespace System.Runtime.CompilerServices
-{
-    [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter, Inherited=false)]
-    public sealed partial class IDispatchConstantAttribute : System.Runtime.CompilerServices.CustomConstantAttribute
-    {
-        public IDispatchConstantAttribute() { }
-        public override object Value { get { throw null; } }
-    }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter, Inherited=false)]
-    public sealed partial class IUnknownConstantAttribute : System.Runtime.CompilerServices.CustomConstantAttribute
-    {
-        public IUnknownConstantAttribute() { }
-        public override object Value { get { throw null; } }
-    }
-}
 namespace System.Runtime.InteropServices
 {
     [System.ObsoleteAttribute("Code Access Security is not supported or honored by the runtime.", DiagnosticId = "SYSLIB0003", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
@@ -110,12 +424,6 @@ namespace System.Runtime.InteropServices
         public int GetOffset() { throw null; }
         public static bool operator ==(System.Runtime.InteropServices.ArrayWithOffset a, System.Runtime.InteropServices.ArrayWithOffset b) { throw null; }
         public static bool operator !=(System.Runtime.InteropServices.ArrayWithOffset a, System.Runtime.InteropServices.ArrayWithOffset b) { throw null; }
-    }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Interface, Inherited=false)]
-    public sealed partial class AutomationProxyAttribute : System.Attribute
-    {
-        public AutomationProxyAttribute(bool val) { }
-        public bool Value { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Interface | System.AttributeTargets.Struct, Inherited=false)]
     public sealed partial class BestFitMappingAttribute : System.Attribute
@@ -149,11 +457,7 @@ namespace System.Runtime.InteropServices
     public enum ClassInterfaceType
     {
         None = 0,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Support for IDispatch may be unavailable in future releases.")]
         AutoDispatch = 1,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.ObsoleteAttribute("Support for IDispatch may be unavailable in future releases.")]
         AutoDual = 2,
     }
     [System.CLSCompliantAttribute(false)]
@@ -179,49 +483,6 @@ namespace System.Runtime.InteropServices
         public static System.Span<T> AsSpan<T>(System.Collections.Generic.List<T>? list) { throw null; }
         public static ref TValue GetValueRefOrNullRef<TKey, TValue>(System.Collections.Generic.Dictionary<TKey, TValue> dictionary, TKey key) where TKey : notnull { throw null; }
         public static ref TValue? GetValueRefOrAddDefault<TKey, TValue>(System.Collections.Generic.Dictionary<TKey, TValue> dictionary, TKey key, out bool exists) where TKey : notnull { throw null; }
-    }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited=false)]
-    public sealed partial class ComAliasNameAttribute : System.Attribute
-    {
-        public ComAliasNameAttribute(string alias) { }
-        public string Value { get { throw null; } }
-    }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    public partial class ComAwareEventInfo : System.Reflection.EventInfo
-    {
-        public ComAwareEventInfo([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicEvents)] System.Type type, string eventName) { }
-        public override System.Reflection.EventAttributes Attributes { get { throw null; } }
-        public override System.Type? DeclaringType { get { throw null; } }
-        public override int MetadataToken { get { throw null; } }
-        public override System.Reflection.Module Module { get { throw null; } }
-        public override string Name { get { throw null; } }
-        public override System.Type? ReflectedType { get { throw null; } }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
-        public override void AddEventHandler(object target, System.Delegate handler) { }
-        public override System.Reflection.MethodInfo? GetAddMethod(bool nonPublic) { throw null; }
-        public override object[] GetCustomAttributes(bool inherit) { throw null; }
-        public override object[] GetCustomAttributes(System.Type attributeType, bool inherit) { throw null; }
-        public override System.Collections.Generic.IList<System.Reflection.CustomAttributeData> GetCustomAttributesData() { throw null; }
-        public override System.Reflection.MethodInfo[] GetOtherMethods(bool nonPublic) { throw null; }
-        public override System.Reflection.MethodInfo? GetRaiseMethod(bool nonPublic) { throw null; }
-        public override System.Reflection.MethodInfo? GetRemoveMethod(bool nonPublic) { throw null; }
-        public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
-        public override void RemoveEventHandler(object target, System.Delegate handler) { }
-    }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
-    public sealed partial class ComCompatibleVersionAttribute : System.Attribute
-    {
-        public ComCompatibleVersionAttribute(int major, int minor, int build, int revision) { }
-        public int BuildNumber { get { throw null; } }
-        public int MajorVersion { get { throw null; } }
-        public int MinorVersion { get { throw null; } }
-        public int RevisionNumber { get { throw null; } }
-    }
-    [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false)]
-    public sealed partial class ComConversionLossAttribute : System.Attribute
-    {
-        public ComConversionLossAttribute() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited=false)]
     public sealed partial class ComDefaultInterfaceAttribute : System.Attribute
@@ -273,11 +534,6 @@ namespace System.Runtime.InteropServices
         PropGet = 1,
         PropSet = 2,
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
-    public sealed partial class ComRegisterFunctionAttribute : System.Attribute
-    {
-        public ComRegisterFunctionAttribute() { }
-    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited=true)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class ComSourceInterfacesAttribute : System.Attribute
@@ -289,10 +545,50 @@ namespace System.Runtime.InteropServices
         public ComSourceInterfacesAttribute(System.Type sourceInterface1, System.Type sourceInterface2, System.Type sourceInterface3, System.Type sourceInterface4) { }
         public string Value { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
-    public sealed partial class ComUnregisterFunctionAttribute : System.Attribute
+    [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
+    [System.CLSCompliantAttribute(false)]
+    public abstract class ComWrappers
     {
-        public ComUnregisterFunctionAttribute() { }
+        public struct ComInterfaceEntry
+        {
+            public System.Guid IID;
+            public System.IntPtr Vtable;
+        }
+        public struct ComInterfaceDispatch
+        {
+            public System.IntPtr Vtable;
+            public unsafe static T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class { throw null; }
+        }
+        public System.IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags) { throw null; }
+        protected unsafe abstract ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
+        public object GetOrCreateObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags) { throw null; }
+        protected abstract object? CreateObject(System.IntPtr externalComObject, CreateObjectFlags flags);
+        public object GetOrRegisterObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags, object wrapper) { throw null; }
+        public object GetOrRegisterObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags, object wrapper, System.IntPtr inner) { throw null; }
+        protected abstract void ReleaseObjects(System.Collections.IEnumerable objects);
+        public static void RegisterForTrackerSupport(ComWrappers instance) { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
+        public static void RegisterForMarshalling(ComWrappers instance) { }
+        protected static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
+    }
+    [System.FlagsAttribute]
+    public enum CreateComInterfaceFlags
+    {
+        None = 0,
+        CallerDefinedIUnknown = 1,
+        TrackerSupport = 2,
+    }
+    [System.FlagsAttribute]
+    public enum CreateObjectFlags
+    {
+        None = 0,
+        TrackerObject = 1,
+        UniqueInstance = 2,
+        Aggregation = 4,
+        Unwrap = 8,
     }
     [System.CLSCompliantAttribute(false)]
     public readonly partial struct CULong : System.IEquatable<System.Runtime.InteropServices.CULong>
@@ -403,17 +699,6 @@ namespace System.Runtime.InteropServices
         public GuidAttribute(string guid) { }
         public string Value { get { throw null; } }
     }
-    public sealed partial class HandleCollector
-    {
-        public HandleCollector(string? name, int initialThreshold) { }
-        public HandleCollector(string? name, int initialThreshold, int maximumThreshold) { }
-        public int Count { get { throw null; } }
-        public int InitialThreshold { get { throw null; } }
-        public int MaximumThreshold { get { throw null; } }
-        public string Name { get { throw null; } }
-        public void Add() { }
-        public void Remove() { }
-    }
     public readonly partial struct HandleRef
     {
         private readonly object _dummy;
@@ -451,12 +736,6 @@ namespace System.Runtime.InteropServices
         bool IsInterfaceImplemented(System.RuntimeTypeHandle interfaceType, bool throwIfNotImplemented);
         System.RuntimeTypeHandle GetInterfaceImplementation(System.RuntimeTypeHandle interfaceType);
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
-    public sealed partial class ImportedFromTypeLibAttribute : System.Attribute
-    {
-        public ImportedFromTypeLibAttribute(string tlbFile) { }
-        public string Value { get { throw null; } }
-    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Interface, Inherited=false)]
     public sealed partial class InterfaceTypeAttribute : System.Attribute
     {
@@ -484,12 +763,15 @@ namespace System.Runtime.InteropServices
         public LCIDConversionAttribute(int lcid) { }
         public int Value { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false, AllowMultiple=false)]
-    public sealed partial class ManagedToNativeComInteropStubAttribute : System.Attribute
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple = false, Inherited=false)]
+    public sealed partial class LibraryImportAttribute : System.Attribute
     {
-        public ManagedToNativeComInteropStubAttribute(System.Type classType, string methodName) { }
-        public System.Type ClassType { get { throw null; } }
-        public string MethodName { get { throw null; } }
+        public LibraryImportAttribute(string libraryName) { }
+        public string LibraryName { get { throw null; } }
+        public string? EntryPoint { get { throw null; } set { } }
+        public bool SetLastError { get { throw null; } set { }}
+        public System.Runtime.InteropServices.StringMarshalling StringMarshalling { get { throw null; } set { } }
+        public System.Type? StringMarshallingCustomType { get { throw null; } set { } }
     }
     public static partial class Marshal
     {
@@ -570,6 +852,7 @@ namespace System.Runtime.InteropServices
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static System.IntPtr GetFunctionPointerForDelegate(System.Delegate d) { throw null; }
         public static System.IntPtr GetFunctionPointerForDelegate<TDelegate>(TDelegate d) where TDelegate : notnull { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresAssemblyFiles("Windows only assigns HINSTANCE to assemblies loaded from disk. This API will return -1 for modules without a file on disk.")]
         public static System.IntPtr GetHINSTANCE(System.Reflection.Module m) { throw null; }
         public static int GetHRForException(System.Exception? e) { throw null; }
         public static int GetHRForLastWin32Error() { throw null; }
@@ -580,6 +863,8 @@ namespace System.Runtime.InteropServices
         public static int GetLastPInvokeError() { throw null; }
         public static int GetLastSystemError() { throw null; }
         public static int GetLastWin32Error() { throw null; }
+        public static string GetLastPInvokeErrorMessage() { throw null; }
+        public static string GetPInvokeErrorMessage(int error) { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static void GetNativeVariantForObject(object? obj, System.IntPtr pDstNativeVariant) { }
@@ -774,6 +1059,7 @@ namespace System.Runtime.InteropServices
     public static partial class NativeLibrary
     {
         public static void Free(System.IntPtr handle) { }
+        public static System.IntPtr GetMainProgramHandle() { throw null; }
         public static System.IntPtr GetExport(System.IntPtr handle, string name) { throw null; }
         public static System.IntPtr Load(string libraryPath) { throw null; }
         public static System.IntPtr Load(string libraryName, System.Reflection.Assembly assembly, System.Runtime.InteropServices.DllImportSearchPath? searchPath) { throw null; }
@@ -802,42 +1088,137 @@ namespace System.Runtime.InteropServices
         public static void Free(void* ptr) { }
         [System.CLSCompliantAttribute(false)]
         public static void* Realloc(void* ptr, nuint byteCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void Clear(void* ptr, nuint byteCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void Copy(void* source, void* destination, nuint byteCount) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static void Fill(void* ptr, nuint byteCount, byte value) { throw null; }
     }
-    public readonly partial struct NFloat : System.IComparable, System.IComparable<System.Runtime.InteropServices.NFloat>, System.IEquatable<System.Runtime.InteropServices.NFloat>, System.IFormattable, System.ISpanFormattable
+    public readonly partial struct NFloat : System.IComparable, System.IComparable<System.Runtime.InteropServices.NFloat>, System.IEquatable<System.Runtime.InteropServices.NFloat>, System.IFormattable, System.IParsable<System.Runtime.InteropServices.NFloat>, System.ISpanFormattable, System.ISpanParsable<System.Runtime.InteropServices.NFloat>, System.Numerics.IAdditionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IAdditiveIdentity<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IBinaryFloatingPointIeee754<System.Runtime.InteropServices.NFloat>, System.Numerics.IBinaryNumber<System.Runtime.InteropServices.NFloat>, System.Numerics.IBitwiseOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IComparisonOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, bool>, System.Numerics.IDecrementOperators<System.Runtime.InteropServices.NFloat>, System.Numerics.IDivisionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IEqualityOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, bool>, System.Numerics.IExponentialFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPointConstants<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPointIeee754<System.Runtime.InteropServices.NFloat>, System.Numerics.IHyperbolicFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IIncrementOperators<System.Runtime.InteropServices.NFloat>, System.Numerics.ILogarithmicFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IMinMaxValue<System.Runtime.InteropServices.NFloat>, System.Numerics.IModulusOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IMultiplicativeIdentity<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IMultiplyOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.INumber<System.Runtime.InteropServices.NFloat>, System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>, System.Numerics.IPowerFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IRootFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.ISignedNumber<System.Runtime.InteropServices.NFloat>, System.Numerics.ISubtractionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.ITrigonometricFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IUnaryNegationOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IUnaryPlusOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>
     {
         private readonly int _dummyPrimitive;
         public NFloat(double value) { throw null; }
         public NFloat(float value) { throw null; }
+        public static System.Runtime.InteropServices.NFloat E { get { throw null; } }
         public static System.Runtime.InteropServices.NFloat Epsilon { get { throw null; } }
         public static System.Runtime.InteropServices.NFloat MaxValue { get { throw null; } }
         public static System.Runtime.InteropServices.NFloat MinValue { get { throw null; } }
         public static System.Runtime.InteropServices.NFloat NaN { get { throw null; } }
         public static System.Runtime.InteropServices.NFloat NegativeInfinity { get { throw null; } }
+        public static System.Runtime.InteropServices.NFloat NegativeZero { get { throw null; } }
+        public static System.Runtime.InteropServices.NFloat Pi { get { throw null; } }
         public static System.Runtime.InteropServices.NFloat PositiveInfinity { get { throw null; } }
         public static int Size { get { throw null; } }
+        static System.Runtime.InteropServices.NFloat System.Numerics.IAdditiveIdentity<System.Runtime.InteropServices.NFloat,System.Runtime.InteropServices.NFloat>.AdditiveIdentity { get { throw null; } }
+        static System.Runtime.InteropServices.NFloat System.Numerics.IBinaryNumber<System.Runtime.InteropServices.NFloat>.AllBitsSet { get { throw null; } }
+        static System.Runtime.InteropServices.NFloat System.Numerics.IMultiplicativeIdentity<System.Runtime.InteropServices.NFloat,System.Runtime.InteropServices.NFloat>.MultiplicativeIdentity { get { throw null; } }
+        static System.Runtime.InteropServices.NFloat System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.One { get { throw null; } }
+        static int System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.Radix { get { throw null; } }
+        static System.Runtime.InteropServices.NFloat System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.Zero { get { throw null; } }
+        static System.Runtime.InteropServices.NFloat System.Numerics.ISignedNumber<System.Runtime.InteropServices.NFloat>.NegativeOne { get { throw null; } }
+        public static System.Runtime.InteropServices.NFloat Tau { get { throw null; } }
         public double Value { get { throw null; } }
+        public static System.Runtime.InteropServices.NFloat Abs(System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Acos(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Acosh(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat AcosPi(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Asin(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Asinh(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat AsinPi(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Atan(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Atan2(System.Runtime.InteropServices.NFloat y, System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Atan2Pi(System.Runtime.InteropServices.NFloat y, System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Atanh(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat AtanPi(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat BitDecrement(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat BitIncrement(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Cbrt(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Ceiling(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Clamp(System.Runtime.InteropServices.NFloat value, System.Runtime.InteropServices.NFloat min, System.Runtime.InteropServices.NFloat max) { throw null; }
         public int CompareTo(object? obj) { throw null; }
         public int CompareTo(System.Runtime.InteropServices.NFloat other) { throw null; }
+        public static System.Runtime.InteropServices.NFloat CopySign(System.Runtime.InteropServices.NFloat value, System.Runtime.InteropServices.NFloat sign) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Cos(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Cosh(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat CosPi(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static System.Runtime.InteropServices.NFloat CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static System.Runtime.InteropServices.NFloat CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Runtime.InteropServices.NFloat other) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Exp(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Exp10(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Exp10M1(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Exp2(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Exp2M1(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat ExpM1(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Floor(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat FusedMultiplyAdd(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right, System.Runtime.InteropServices.NFloat addend) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static System.Runtime.InteropServices.NFloat Hypot(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Ieee754Remainder(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
+        public static int ILogB(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static bool IsEvenInteger(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsFinite(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsInfinity(System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static bool IsInteger(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsNaN(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsNegative(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsNegativeInfinity(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsNormal(System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static bool IsOddInteger(System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static bool IsPositive(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsPositiveInfinity(System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static bool IsPow2(System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static bool IsRealNumber(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsSubnormal(System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Log(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Log(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat newBase) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Log10(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Log10P1(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Log2(System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Log2P1(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat LogP1(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Max(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
+        public static System.Runtime.InteropServices.NFloat MaxMagnitude(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
+        public static System.Runtime.InteropServices.NFloat MaxMagnitudeNumber(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
+        public static System.Runtime.InteropServices.NFloat MaxNumber(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Min(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
+        public static System.Runtime.InteropServices.NFloat MinMagnitude(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
+        public static System.Runtime.InteropServices.NFloat MinMagnitudeNumber(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
+        public static System.Runtime.InteropServices.NFloat MinNumber(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
         public static System.Runtime.InteropServices.NFloat operator +(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
+        public static explicit operator checked byte (System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static explicit operator checked char (System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static explicit operator checked short (System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static explicit operator checked int (System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static explicit operator checked long (System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static explicit operator checked System.Int128 (System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static explicit operator checked nint (System.Runtime.InteropServices.NFloat value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked sbyte (System.Runtime.InteropServices.NFloat value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked ushort (System.Runtime.InteropServices.NFloat value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked uint (System.Runtime.InteropServices.NFloat value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked ulong (System.Runtime.InteropServices.NFloat value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked System.UInt128 (System.Runtime.InteropServices.NFloat value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator checked nuint (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static System.Runtime.InteropServices.NFloat operator --(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static System.Runtime.InteropServices.NFloat operator /(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
         public static bool operator ==(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
         public static explicit operator System.Runtime.InteropServices.NFloat (decimal value) { throw null; }
         public static explicit operator System.Runtime.InteropServices.NFloat (double value) { throw null; }
+        public static explicit operator System.Runtime.InteropServices.NFloat (System.Int128 value) { throw null; }
         public static explicit operator byte (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static explicit operator char (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static explicit operator decimal (System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static explicit operator System.Half (System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static explicit operator System.Int128 (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static explicit operator short (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static explicit operator int (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static explicit operator long (System.Runtime.InteropServices.NFloat value) { throw null; }
@@ -846,6 +1227,8 @@ namespace System.Runtime.InteropServices
         public static explicit operator sbyte (System.Runtime.InteropServices.NFloat value) { throw null; }
         public static explicit operator float (System.Runtime.InteropServices.NFloat value) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.UInt128 (System.Runtime.InteropServices.NFloat value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static explicit operator ushort (System.Runtime.InteropServices.NFloat value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static explicit operator uint (System.Runtime.InteropServices.NFloat value) { throw null; }
@@ -853,6 +1236,8 @@ namespace System.Runtime.InteropServices
         public static explicit operator ulong (System.Runtime.InteropServices.NFloat value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static explicit operator nuint (System.Runtime.InteropServices.NFloat value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.Runtime.InteropServices.NFloat (System.UInt128 value) { throw null; }
         public static bool operator >(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
         public static bool operator >=(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
         public static implicit operator System.Runtime.InteropServices.NFloat (byte value) { throw null; }
@@ -861,6 +1246,7 @@ namespace System.Runtime.InteropServices
         public static implicit operator System.Runtime.InteropServices.NFloat (int value) { throw null; }
         public static implicit operator System.Runtime.InteropServices.NFloat (long value) { throw null; }
         public static implicit operator System.Runtime.InteropServices.NFloat (nint value) { throw null; }
+        public static implicit operator System.Runtime.InteropServices.NFloat (System.Half value) { throw null; }
         public static implicit operator double (System.Runtime.InteropServices.NFloat value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static implicit operator System.Runtime.InteropServices.NFloat (sbyte value) { throw null; }
@@ -883,18 +1269,70 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat operator -(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static System.Runtime.InteropServices.NFloat operator +(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static System.Runtime.InteropServices.NFloat Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, System.IFormatProvider? provider = null) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
         public static System.Runtime.InteropServices.NFloat Parse(string s) { throw null; }
         public static System.Runtime.InteropServices.NFloat Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static System.Runtime.InteropServices.NFloat Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static System.Runtime.InteropServices.NFloat Parse(string s, System.IFormatProvider? provider) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Pow(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
+        public static System.Runtime.InteropServices.NFloat ReciprocalEstimate(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat ReciprocalSqrtEstimate(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat RootN(System.Runtime.InteropServices.NFloat x, int n) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Round(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Round(System.Runtime.InteropServices.NFloat x, int digits) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Round(System.Runtime.InteropServices.NFloat x, int digits, System.MidpointRounding mode) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Round(System.Runtime.InteropServices.NFloat x, System.MidpointRounding mode) { throw null; }
+        public static System.Runtime.InteropServices.NFloat ScaleB(System.Runtime.InteropServices.NFloat x, int n) { throw null; }
+        public static int Sign(System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Sin(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static (System.Runtime.InteropServices.NFloat Sin, System.Runtime.InteropServices.NFloat Cos) SinCos(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static (System.Runtime.InteropServices.NFloat SinPi, System.Runtime.InteropServices.NFloat CosPi) SinCosPi(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Sinh(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat SinPi(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Sqrt(System.Runtime.InteropServices.NFloat x) { throw null; }
+        static System.Runtime.InteropServices.NFloat System.Numerics.IAdditionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>.operator checked +(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
+        static System.Runtime.InteropServices.NFloat System.Numerics.IBitwiseOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>.operator &(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
+        static System.Runtime.InteropServices.NFloat System.Numerics.IBitwiseOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>.operator |(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
+        static System.Runtime.InteropServices.NFloat System.Numerics.IBitwiseOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>.operator ^(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
+        static System.Runtime.InteropServices.NFloat System.Numerics.IBitwiseOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>.operator ~(System.Runtime.InteropServices.NFloat value) { throw null; }
+        static System.Runtime.InteropServices.NFloat System.Numerics.IDecrementOperators<System.Runtime.InteropServices.NFloat>.operator checked --(System.Runtime.InteropServices.NFloat value) { throw null; }
+        static System.Runtime.InteropServices.NFloat System.Numerics.IDivisionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>.operator checked /(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
+        int System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>.GetExponentByteCount() { throw null; }
+        int System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>.GetExponentShortestBitLength() { throw null; }
+        int System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>.GetSignificandBitLength() { throw null; }
+        int System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>.GetSignificandByteCount() { throw null; }
+        bool System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>.TryWriteExponentBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        bool System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>.TryWriteExponentLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        bool System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>.TryWriteSignificandBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        bool System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>.TryWriteSignificandLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        static System.Runtime.InteropServices.NFloat System.Numerics.IIncrementOperators<System.Runtime.InteropServices.NFloat>.operator checked ++(System.Runtime.InteropServices.NFloat value) { throw null; }
+        static System.Runtime.InteropServices.NFloat System.Numerics.IMultiplyOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>.operator checked *(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.IsCanonical(System.Runtime.InteropServices.NFloat value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.IsComplexNumber(System.Runtime.InteropServices.NFloat value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.IsImaginaryNumber(System.Runtime.InteropServices.NFloat value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.IsZero(System.Runtime.InteropServices.NFloat value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertFromChecked<TOther>(TOther value, out System.Runtime.InteropServices.NFloat result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertFromSaturating<TOther>(TOther value, out System.Runtime.InteropServices.NFloat result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertFromTruncating<TOther>(TOther value, out System.Runtime.InteropServices.NFloat result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertToChecked<TOther>(System.Runtime.InteropServices.NFloat value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertToSaturating<TOther>(System.Runtime.InteropServices.NFloat value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static bool System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>.TryConvertToTruncating<TOther>(System.Runtime.InteropServices.NFloat value, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out TOther result) { throw null; }
+        static System.Runtime.InteropServices.NFloat System.Numerics.ISubtractionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>.operator checked -(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
+        static System.Runtime.InteropServices.NFloat System.Numerics.IUnaryNegationOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>.operator checked -(System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Tan(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Tanh(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat TanPi(System.Runtime.InteropServices.NFloat x) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
-        public string ToString(string? format) { throw null; }
-        public string ToString(string? format, System.IFormatProvider? provider) { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
+        public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Truncate(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Runtime.InteropServices.NFloat result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.Runtime.InteropServices.NFloat result) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited=false)]
@@ -943,30 +1381,11 @@ namespace System.Runtime.InteropServices
     {
         public PreserveSigAttribute() { }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false, AllowMultiple=true)]
-    public sealed partial class PrimaryInteropAssemblyAttribute : System.Attribute
-    {
-        public PrimaryInteropAssemblyAttribute(int major, int minor) { }
-        public int MajorVersion { get { throw null; } }
-        public int MinorVersion { get { throw null; } }
-    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited=false)]
     public sealed partial class ProgIdAttribute : System.Attribute
     {
         public ProgIdAttribute(string progId) { }
         public string Value { get { throw null; } }
-    }
-    public static partial class RuntimeEnvironment
-    {
-        [System.ObsoleteAttribute("RuntimeEnvironment members SystemConfigurationFile, GetRuntimeInterfaceAsIntPtr, and GetRuntimeInterfaceAsObject are not supported and throw PlatformNotSupportedException.", DiagnosticId = "SYSLIB0019", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-        public static string SystemConfigurationFile { get { throw null; } }
-        public static bool FromGlobalAccessCache(System.Reflection.Assembly a) { throw null; }
-        public static string GetRuntimeDirectory() { throw null; }
-        [System.ObsoleteAttribute("RuntimeEnvironment members SystemConfigurationFile, GetRuntimeInterfaceAsIntPtr, and GetRuntimeInterfaceAsObject are not supported and throw PlatformNotSupportedException.", DiagnosticId = "SYSLIB0019", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-        public static System.IntPtr GetRuntimeInterfaceAsIntPtr(System.Guid clsid, System.Guid riid) { throw null; }
-        [System.ObsoleteAttribute("RuntimeEnvironment members SystemConfigurationFile, GetRuntimeInterfaceAsIntPtr, and GetRuntimeInterfaceAsObject are not supported and throw PlatformNotSupportedException.", DiagnosticId = "SYSLIB0019", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
-        public static object GetRuntimeInterfaceAsObject(System.Guid clsid, System.Guid riid) { throw null; }
-        public static string GetSystemVersion() { throw null; }
     }
     public partial class SafeArrayRankMismatchException : System.SystemException
     {
@@ -994,6 +1413,12 @@ namespace System.Runtime.InteropServices
     {
         protected StandardOleMarshalObject() { }
     }
+    public enum StringMarshalling
+    {
+        Custom = 0,
+        Utf8 = 1,
+        Utf16 = 2,
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Struct, AllowMultiple=false, Inherited=false)]
     public sealed partial class TypeIdentifierAttribute : System.Attribute
     {
@@ -1002,97 +1427,24 @@ namespace System.Runtime.InteropServices
         public string? Identifier { get { throw null; } }
         public string? Scope { get { throw null; } }
     }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited=false)]
-    public sealed partial class TypeLibFuncAttribute : System.Attribute
-    {
-        public TypeLibFuncAttribute(short flags) { }
-        public TypeLibFuncAttribute(System.Runtime.InteropServices.TypeLibFuncFlags flags) { }
-        public System.Runtime.InteropServices.TypeLibFuncFlags Value { get { throw null; } }
-    }
-    [System.FlagsAttribute]
-    public enum TypeLibFuncFlags
-    {
-        FRestricted = 1,
-        FSource = 2,
-        FBindable = 4,
-        FRequestEdit = 8,
-        FDisplayBind = 16,
-        FDefaultBind = 32,
-        FHidden = 64,
-        FUsesGetLastError = 128,
-        FDefaultCollelem = 256,
-        FUiDefault = 512,
-        FNonBrowsable = 1024,
-        FReplaceable = 2048,
-        FImmediateBind = 4096,
-    }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Interface, Inherited=false)]
-    public sealed partial class TypeLibImportClassAttribute : System.Attribute
-    {
-        public TypeLibImportClassAttribute(System.Type importClass) { }
-        public string Value { get { throw null; } }
-    }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Struct, Inherited=false)]
-    public sealed partial class TypeLibTypeAttribute : System.Attribute
-    {
-        public TypeLibTypeAttribute(short flags) { }
-        public TypeLibTypeAttribute(System.Runtime.InteropServices.TypeLibTypeFlags flags) { }
-        public System.Runtime.InteropServices.TypeLibTypeFlags Value { get { throw null; } }
-    }
-    [System.FlagsAttribute]
-    public enum TypeLibTypeFlags
-    {
-        FAppObject = 1,
-        FCanCreate = 2,
-        FLicensed = 4,
-        FPreDeclId = 8,
-        FHidden = 16,
-        FControl = 32,
-        FDual = 64,
-        FNonExtensible = 128,
-        FOleAutomation = 256,
-        FRestricted = 512,
-        FAggregatable = 1024,
-        FReplaceable = 2048,
-        FDispatchable = 4096,
-        FReverseBind = 8192,
-    }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited=false)]
-    public sealed partial class TypeLibVarAttribute : System.Attribute
-    {
-        public TypeLibVarAttribute(short flags) { }
-        public TypeLibVarAttribute(System.Runtime.InteropServices.TypeLibVarFlags flags) { }
-        public System.Runtime.InteropServices.TypeLibVarFlags Value { get { throw null; } }
-    }
-    [System.FlagsAttribute]
-    public enum TypeLibVarFlags
-    {
-        FReadOnly = 1,
-        FSource = 2,
-        FBindable = 4,
-        FRequestEdit = 8,
-        FDisplayBind = 16,
-        FDefaultBind = 32,
-        FHidden = 64,
-        FRestricted = 128,
-        FDefaultCollelem = 256,
-        FUiDefault = 512,
-        FNonBrowsable = 1024,
-        FReplaceable = 2048,
-        FImmediateBind = 4096,
-    }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, Inherited=false)]
-    public sealed partial class TypeLibVersionAttribute : System.Attribute
-    {
-        public TypeLibVersionAttribute(int major, int minor) { }
-        public int MajorVersion { get { throw null; } }
-        public int MinorVersion { get { throw null; } }
-    }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class UnknownWrapper
     {
         public UnknownWrapper(object? obj) { }
         public object? WrappedObject { get { throw null; } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
+    public sealed class UnmanagedCallConvAttribute : System.Attribute
+    {
+        public UnmanagedCallConvAttribute() { }
+        public System.Type[]? CallConvs;
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
+    public sealed class UnmanagedCallersOnlyAttribute : System.Attribute
+    {
+        public UnmanagedCallersOnlyAttribute() { }
+        public System.Type[]? CallConvs;
+        public string? EntryPoint;
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Delegate, AllowMultiple=false, Inherited=false)]
     public sealed partial class UnmanagedFunctionPointerAttribute : System.Attribute
@@ -1158,79 +1510,9 @@ namespace System.Runtime.InteropServices
         public VariantWrapper(object? obj) { }
         public object? WrappedObject { get { throw null; } }
     }
-    [System.FlagsAttribute]
-    public enum CreateComInterfaceFlags
-    {
-        None = 0,
-        CallerDefinedIUnknown = 1,
-        TrackerSupport = 2,
-    }
-    [System.FlagsAttribute]
-    public enum CreateObjectFlags
-    {
-        None = 0,
-        TrackerObject = 1,
-        UniqueInstance = 2,
-        Aggregation = 4,
-        Unwrap = 8,
-    }
-    [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
-    [System.CLSCompliantAttribute(false)]
-    public abstract class ComWrappers
-    {
-        public struct ComInterfaceEntry
-        {
-            public System.Guid IID;
-            public System.IntPtr Vtable;
-        }
-        public struct ComInterfaceDispatch
-        {
-            public System.IntPtr Vtable;
-            public unsafe static T GetInstance<T>(ComInterfaceDispatch* dispatchPtr) where T : class { throw null; }
-        }
-        public System.IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags) { throw null; }
-        protected unsafe abstract ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count);
-        public object GetOrCreateObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags) { throw null; }
-        protected abstract object? CreateObject(System.IntPtr externalComObject, CreateObjectFlags flags);
-        public object GetOrRegisterObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags, object wrapper) { throw null; }
-        public object GetOrRegisterObjectForComInstance(System.IntPtr externalComObject, CreateObjectFlags flags, object wrapper, System.IntPtr inner) { throw null; }
-        protected abstract void ReleaseObjects(System.Collections.IEnumerable objects);
-        public static void RegisterForTrackerSupport(ComWrappers instance) { }
-        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
-        public static void RegisterForMarshalling(ComWrappers instance) { }
-        protected static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
-    }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
-    public sealed class UnmanagedCallConvAttribute : System.Attribute
-    {
-        public UnmanagedCallConvAttribute() { }
-        public System.Type[]? CallConvs;
-    }
-    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
-    public sealed class UnmanagedCallersOnlyAttribute : System.Attribute
-    {
-        public UnmanagedCallersOnlyAttribute() { }
-        public System.Type[]? CallConvs;
-        public string? EntryPoint;
-    }
 }
 namespace System.Runtime.InteropServices.ComTypes
 {
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.FlagsAttribute]
-    public enum ADVF
-    {
-        ADVF_NODATA = 1,
-        ADVF_PRIMEFIRST = 2,
-        ADVF_ONLYONCE = 4,
-        ADVFCACHE_NOHANDLER = 8,
-        ADVFCACHE_FORCEBUILTIN = 16,
-        ADVFCACHE_ONSAVE = 32,
-        ADVF_DATAONSTOP = 64,
-    }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Explicit)]
     public partial struct BINDPTR
@@ -1273,12 +1555,6 @@ namespace System.Runtime.InteropServices.ComTypes
         public object pUnk;
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    public enum DATADIR
-    {
-        DATADIR_GET = 1,
-        DATADIR_SET = 2,
-    }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public enum DESCKIND
     {
         DESCKIND_NONE = 0,
@@ -1296,15 +1572,6 @@ namespace System.Runtime.InteropServices.ComTypes
         public int cNamedArgs;
         public System.IntPtr rgdispidNamedArgs;
         public System.IntPtr rgvarg;
-    }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.FlagsAttribute]
-    public enum DVASPECT
-    {
-        DVASPECT_CONTENT = 1,
-        DVASPECT_THUMBNAIL = 2,
-        DVASPECT_ICON = 4,
-        DVASPECT_DOCPRINT = 8,
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -1341,16 +1608,6 @@ namespace System.Runtime.InteropServices.ComTypes
     {
         public int dwHighDateTime;
         public int dwLowDateTime;
-    }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct FORMATETC
-    {
-        public short cfFormat;
-        public System.Runtime.InteropServices.ComTypes.DVASPECT dwAspect;
-        public int lindex;
-        public System.IntPtr ptd;
-        public System.Runtime.InteropServices.ComTypes.TYMED tymed;
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -1398,16 +1655,6 @@ namespace System.Runtime.InteropServices.ComTypes
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     [System.Runtime.InteropServices.InterfaceTypeAttribute(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIUnknown)]
-    public partial interface IAdviseSink
-    {
-        void OnClose();
-        void OnDataChange(ref System.Runtime.InteropServices.ComTypes.FORMATETC format, ref System.Runtime.InteropServices.ComTypes.STGMEDIUM stgmedium);
-        void OnRename(System.Runtime.InteropServices.ComTypes.IMoniker moniker);
-        void OnSave();
-        void OnViewChange(int aspect, int index);
-    }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.Runtime.InteropServices.InterfaceTypeAttribute(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIUnknown)]
     public partial interface IBindCtx
     {
         void EnumObjectParam(out System.Runtime.InteropServices.ComTypes.IEnumString? ppenum);
@@ -1437,20 +1684,6 @@ namespace System.Runtime.InteropServices.ComTypes
     {
         void EnumConnectionPoints(out System.Runtime.InteropServices.ComTypes.IEnumConnectionPoints ppEnum);
         void FindConnectionPoint(ref System.Guid riid, out System.Runtime.InteropServices.ComTypes.IConnectionPoint? ppCP);
-    }
-    [System.CLSCompliantAttribute(false)]
-    [System.Runtime.InteropServices.InterfaceTypeAttribute(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIUnknown)]
-    public partial interface IDataObject
-    {
-        int DAdvise(ref System.Runtime.InteropServices.ComTypes.FORMATETC pFormatetc, System.Runtime.InteropServices.ComTypes.ADVF advf, System.Runtime.InteropServices.ComTypes.IAdviseSink adviseSink, out int connection);
-        void DUnadvise(int connection);
-        int EnumDAdvise(out System.Runtime.InteropServices.ComTypes.IEnumSTATDATA? enumAdvise);
-        System.Runtime.InteropServices.ComTypes.IEnumFORMATETC EnumFormatEtc(System.Runtime.InteropServices.ComTypes.DATADIR direction);
-        int GetCanonicalFormatEtc(ref System.Runtime.InteropServices.ComTypes.FORMATETC formatIn, out System.Runtime.InteropServices.ComTypes.FORMATETC formatOut);
-        void GetData(ref System.Runtime.InteropServices.ComTypes.FORMATETC format, out System.Runtime.InteropServices.ComTypes.STGMEDIUM medium);
-        void GetDataHere(ref System.Runtime.InteropServices.ComTypes.FORMATETC format, ref System.Runtime.InteropServices.ComTypes.STGMEDIUM medium);
-        int QueryGetData(ref System.Runtime.InteropServices.ComTypes.FORMATETC format);
-        void SetData(ref System.Runtime.InteropServices.ComTypes.FORMATETC formatIn, ref System.Runtime.InteropServices.ComTypes.STGMEDIUM medium, bool release);
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -1489,28 +1722,11 @@ namespace System.Runtime.InteropServices.ComTypes
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     [System.Runtime.InteropServices.InterfaceTypeAttribute(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIUnknown)]
-    public partial interface IEnumFORMATETC
-    {
-        void Clone(out System.Runtime.InteropServices.ComTypes.IEnumFORMATETC newEnum);
-        int Next(int celt, System.Runtime.InteropServices.ComTypes.FORMATETC[] rgelt, int[] pceltFetched);
-        int Reset();
-        int Skip(int celt);
-    }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.Runtime.InteropServices.InterfaceTypeAttribute(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIUnknown)]
     public partial interface IEnumMoniker
     {
         void Clone(out System.Runtime.InteropServices.ComTypes.IEnumMoniker ppenum);
         int Next(int celt, System.Runtime.InteropServices.ComTypes.IMoniker[] rgelt, System.IntPtr pceltFetched);
         void Reset();
-        int Skip(int celt);
-    }
-    [System.Runtime.InteropServices.InterfaceTypeAttribute(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIUnknown)]
-    public partial interface IEnumSTATDATA
-    {
-        void Clone(out System.Runtime.InteropServices.ComTypes.IEnumSTATDATA newEnum);
-        int Next(int celt, System.Runtime.InteropServices.ComTypes.STATDATA[] rgelt, int[] pceltFetched);
-        int Reset();
         int Skip(int celt);
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -1748,15 +1964,6 @@ namespace System.Runtime.InteropServices.ComTypes
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct STATDATA
-    {
-        public System.Runtime.InteropServices.ComTypes.ADVF advf;
-        public System.Runtime.InteropServices.ComTypes.IAdviseSink advSink;
-        public int connection;
-        public System.Runtime.InteropServices.ComTypes.FORMATETC formatetc;
-    }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct STATSTG
     {
         public System.Runtime.InteropServices.ComTypes.FILETIME atime;
@@ -1772,33 +1979,12 @@ namespace System.Runtime.InteropServices.ComTypes
         public int type;
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct STGMEDIUM
-    {
-        public object? pUnkForRelease;
-        public System.Runtime.InteropServices.ComTypes.TYMED tymed;
-        public System.IntPtr unionmember;
-    }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public enum SYSKIND
     {
         SYS_WIN16 = 0,
         SYS_WIN32 = 1,
         SYS_MAC = 2,
         SYS_WIN64 = 3,
-    }
-    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    [System.FlagsAttribute]
-    public enum TYMED
-    {
-        TYMED_NULL = 0,
-        TYMED_HGLOBAL = 1,
-        TYMED_FILE = 2,
-        TYMED_ISTREAM = 4,
-        TYMED_ISTORAGE = 8,
-        TYMED_GDI = 16,
-        TYMED_MFPICT = 32,
-        TYMED_ENHMF = 64,
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -1958,6 +2144,162 @@ namespace System.Runtime.InteropServices.ObjectiveC
         public static void SetMessageSendPendingException(Exception? exception) => throw null;
     }
 }
+namespace System.Runtime.InteropServices.Marshalling
+{
+    [System.CLSCompliant(false)]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(string),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.Default,
+        typeof(System.Runtime.InteropServices.Marshalling.AnsiStringMarshaller))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(string),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn,
+        typeof(System.Runtime.InteropServices.Marshalling.AnsiStringMarshaller.ManagedToUnmanagedIn))]
+    public static unsafe class AnsiStringMarshaller
+    {
+        public static byte* ConvertToUnmanaged(string? managed) { throw null; }
+        public static string? ConvertToManaged(byte* unmanaged) { throw null; }
+        public static void Free(byte* unmanaged) { throw null; }
+
+        public ref struct ManagedToUnmanagedIn
+        {
+            public static int BufferSize { get { throw null; } }
+            public void FromManaged(string? managed, System.Span<byte> buffer) { throw null; }
+            public byte* ToUnmanaged()  { throw null; }
+            public void Free() { throw null; }
+        }
+    }
+
+    [System.CLSCompliant(false)]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(CustomMarshallerAttribute.GenericPlaceholder[]),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.Default,
+        typeof(System.Runtime.InteropServices.Marshalling.ArrayMarshaller<,>))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(CustomMarshallerAttribute.GenericPlaceholder[]),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn,
+        typeof(System.Runtime.InteropServices.Marshalling.ArrayMarshaller<,>.ManagedToUnmanagedIn))]
+    [System.Runtime.InteropServices.Marshalling.ContiguousCollectionMarshaller]
+    public static unsafe class ArrayMarshaller<T, TUnmanagedElement>
+        where TUnmanagedElement : unmanaged
+    {
+        public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[]? managed, out int numElements) { throw null; }
+        public static System.ReadOnlySpan<T> GetManagedValuesSource(T[]? managed) { throw null; }
+        public static System.Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements) { throw null; }
+        public static T[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements) { throw null; }
+        public static System.Span<T> GetManagedValuesDestination(T[]? managed) { throw null; }
+        public static System.ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanagedValue, int numElements) { throw null; }
+        public static void Free(TUnmanagedElement* unmanaged) { }
+
+        public unsafe ref struct ManagedToUnmanagedIn
+        {
+            private object _dummy;
+            private int _dummyPrimitive;
+            public static int BufferSize { get { throw null; } }
+            public void FromManaged(T[]? array, System.Span<TUnmanagedElement> buffer) { }
+            public System.ReadOnlySpan<T> GetManagedValuesSource() { throw null; }
+            public System.Span<TUnmanagedElement> GetUnmanagedValuesDestination() { throw null; }
+            public ref TUnmanagedElement GetPinnableReference() { throw null; }
+            public static ref T GetPinnableReference(T[]? array) { throw null; }
+            public TUnmanagedElement* ToUnmanaged() { throw null; }
+            public void Free() { }
+        }
+    }
+    [System.CLSCompliant(false)]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(string),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.Default,
+        typeof(System.Runtime.InteropServices.Marshalling.BStrStringMarshaller))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(string),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn,
+        typeof(System.Runtime.InteropServices.Marshalling.BStrStringMarshaller.ManagedToUnmanagedIn))]
+    public static unsafe class BStrStringMarshaller
+    {
+        public static ushort* ConvertToUnmanaged(string? managed) { throw null; }
+        public static string? ConvertToManaged(ushort* unmanaged) { throw null; }
+        public static void Free(ushort* unmanaged) { throw null; }
+
+        public ref struct ManagedToUnmanagedIn
+        {
+            public static int BufferSize { get { throw null; } }
+            public void FromManaged(string? managed, System.Span<byte> buffer) { throw null; }
+            public ushort* ToUnmanaged()  { throw null; }
+            public void Free() { throw null; }
+        }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.ReturnValue, AllowMultiple = true)]
+    public sealed partial class MarshalUsingAttribute : System.Attribute
+    {
+        public MarshalUsingAttribute() { }
+        public MarshalUsingAttribute(System.Type nativeType) { }
+        public System.Type? NativeType { get { throw null; } }
+        public string CountElementName { get { throw null; } set { } }
+        public int ConstantElementCount { get { throw null; } set { } }
+        public int ElementIndirectionDepth { get { throw null; } set { } }
+        public const string ReturnsCountValue = "return-value";
+    }
+    [System.CLSCompliant(false)]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(CustomMarshallerAttribute.GenericPlaceholder*[]),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.Default,
+        typeof(System.Runtime.InteropServices.Marshalling.PointerArrayMarshaller<,>))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(CustomMarshallerAttribute.GenericPlaceholder*[]),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn,
+        typeof(System.Runtime.InteropServices.Marshalling.PointerArrayMarshaller<,>.ManagedToUnmanagedIn))]
+    [System.Runtime.InteropServices.Marshalling.ContiguousCollectionMarshaller]
+    public static unsafe class PointerArrayMarshaller<T, TUnmanagedElement>
+        where T : unmanaged
+        where TUnmanagedElement : unmanaged
+    {
+        public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T*[]? managed, out int numElements) { throw null; }
+        public static System.ReadOnlySpan<IntPtr> GetManagedValuesSource(T*[]? managed) { throw null; }
+        public static System.Span<TUnmanagedElement> GetUnmanagedValuesDestination(TUnmanagedElement* unmanaged, int numElements) { throw null; }
+        public static T*[]? AllocateContainerForManagedElements(TUnmanagedElement* unmanaged, int numElements) { throw null; }
+        public static System.Span<IntPtr> GetManagedValuesDestination(T*[]? managed) { throw null; }
+        public static System.ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(TUnmanagedElement* unmanagedValue, int numElements) { throw null; }
+        public static void Free(TUnmanagedElement* unmanaged) { }
+
+        public unsafe ref struct ManagedToUnmanagedIn
+        {
+            private object _dummy;
+            private int _dummyPrimitive;
+            public static int BufferSize { get { throw null; } }
+            public void FromManaged(T*[]? array, System.Span<TUnmanagedElement> buffer) { }
+            public System.ReadOnlySpan<IntPtr> GetManagedValuesSource() { throw null; }
+            public System.Span<TUnmanagedElement> GetUnmanagedValuesDestination() { throw null; }
+            public ref TUnmanagedElement GetPinnableReference() { throw null; }
+            public static ref byte GetPinnableReference(T*[]? array) { throw null; }
+            public TUnmanagedElement* ToUnmanaged() { throw null; }
+            public void Free() { }
+        }
+    }
+    [System.CLSCompliant(false)]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(string),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.Default,
+        typeof(System.Runtime.InteropServices.Marshalling.Utf8StringMarshaller))]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(string),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.ManagedToUnmanagedIn,
+        typeof(System.Runtime.InteropServices.Marshalling.Utf8StringMarshaller.ManagedToUnmanagedIn))]
+    public static unsafe class Utf8StringMarshaller
+    {
+        public static byte* ConvertToUnmanaged(string? managed) { throw null; }
+        public static string? ConvertToManaged(byte* unmanaged) { throw null; }
+        public static void Free(byte* unmanaged) { throw null; }
+
+        public ref struct ManagedToUnmanagedIn
+        {
+            public static int BufferSize { get { throw null; } }
+            public void FromManaged(string? managed, System.Span<byte> buffer) { throw null; }
+            public byte* ToUnmanaged()  { throw null; }
+            public void Free() { throw null; }
+        }
+    }
+    [System.CLSCompliant(false)]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(string),
+        System.Runtime.InteropServices.Marshalling.MarshalMode.Default,
+        typeof(System.Runtime.InteropServices.Marshalling.Utf16StringMarshaller))]
+    public static unsafe class Utf16StringMarshaller
+    {
+        public static ushort* ConvertToUnmanaged(string? managed) { throw null; }
+        public static string? ConvertToManaged(ushort* unmanaged) { throw null; }
+        public static void Free(ushort* unmanaged) { throw null; }
+        public static ref readonly char GetPinnableReference(string? str) { throw null; }
+    }
+}
 namespace System.Security
 {
     public sealed partial class SecureString : System.IDisposable
@@ -1975,12 +2317,5 @@ namespace System.Security
         public void MakeReadOnly() { }
         public void RemoveAt(int index) { }
         public void SetAt(int index, char c) { }
-    }
-    public static partial class SecureStringMarshal
-    {
-        public static System.IntPtr SecureStringToCoTaskMemAnsi(System.Security.SecureString s) { throw null; }
-        public static System.IntPtr SecureStringToCoTaskMemUnicode(System.Security.SecureString s) { throw null; }
-        public static System.IntPtr SecureStringToGlobalAllocAnsi(System.Security.SecureString s) { throw null; }
-        public static System.IntPtr SecureStringToGlobalAllocUnicode(System.Security.SecureString s) { throw null; }
     }
 }

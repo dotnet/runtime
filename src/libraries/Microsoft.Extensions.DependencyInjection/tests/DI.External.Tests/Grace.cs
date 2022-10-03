@@ -7,13 +7,14 @@ using Grace.DependencyInjection.Extensions;
 
 namespace Microsoft.Extensions.DependencyInjection.Specification
 {
-    public class GraceDependencyInjectionSpecificationTests: SkippableDependencyInjectionSpecificationTests
+    public class GraceDependencyInjectionSpecificationTests : SkippableDependencyInjectionSpecificationTests
     {
         public override bool SupportsIServiceProviderIsService => false;
 
         public override string[] SkippedTests => new[]
         {
             "ResolvesMixedOpenClosedGenericsAsEnumerable",
+            "ServiceScopeFactoryIsSingleton",
             "TypeActivatorWorksWithCtorWithOptionalArgs_WithStructDefaults"
         };
 

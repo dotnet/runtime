@@ -143,12 +143,7 @@ namespace System.Xml.Schema
             string? tns;
             foreach (XmlSchema? schema in _schemasToCompile.Values)
             {
-                tns = schema!.TargetNamespace;
-                if (tns == null)
-                {
-                    tns = string.Empty;
-                }
-
+                tns = schema!.TargetNamespace ?? string.Empty;
                 schemaInfo.TargetNamespaces[tns] = true;
             }
 
@@ -326,12 +321,10 @@ namespace System.Xml.Schema
 
             if (complexType.ContentModel != null)
             { //simpleContent or complexContent
-                if (complexType.ContentModel is XmlSchemaSimpleContent)
+                if (complexType.ContentModel is XmlSchemaSimpleContent simpleContent)
                 {
-                    XmlSchemaSimpleContent simpleContent = (XmlSchemaSimpleContent)complexType.ContentModel;
-                    if (simpleContent.Content is XmlSchemaSimpleContentExtension)
+                    if (simpleContent.Content is XmlSchemaSimpleContentExtension simpleExtension)
                     {
-                        XmlSchemaSimpleContentExtension simpleExtension = (XmlSchemaSimpleContentExtension)simpleContent.Content;
                         CleanupAttributes(simpleExtension.Attributes);
                     }
                     else
@@ -343,9 +336,8 @@ namespace System.Xml.Schema
                 else
                 { // complexType.ContentModel is XmlSchemaComplexContent
                     XmlSchemaComplexContent complexContent = (XmlSchemaComplexContent)complexType.ContentModel;
-                    if (complexContent.Content is XmlSchemaComplexContentExtension)
+                    if (complexContent.Content is XmlSchemaComplexContentExtension complexExtension)
                     {
-                        XmlSchemaComplexContentExtension complexExtension = (XmlSchemaComplexContentExtension)complexContent.Content;
                         CleanupParticle(complexExtension.Particle);
                         CleanupAttributes(complexExtension.Attributes);
                     }
@@ -537,10 +529,7 @@ namespace System.Xml.Schema
                             {
                                 if (g.Members[j] != element)
                                 { //Exclude the head
-                                    if (newMembers == null)
-                                    {
-                                        newMembers = new ArrayList();
-                                    }
+                                    newMembers ??= new ArrayList();
                                     newMembers.Add(g.Members[j]);
                                 }
                             }
@@ -573,15 +562,8 @@ namespace System.Xml.Schema
 
             if (redefinedGroup.SelfReferenceCount == 0)
             {
-                if (baseGroup.CanonicalParticle == null)
-                {
-                    baseGroup.CanonicalParticle = CannonicalizeParticle(baseGroup.Particle, true);
-                }
-
-                if (redefinedGroup.CanonicalParticle == null)
-                {
-                    redefinedGroup.CanonicalParticle = CannonicalizeParticle(redefinedGroup.Particle, true);
-                }
+                baseGroup.CanonicalParticle ??= CanonicalizeParticle(baseGroup.Particle, true);
+                redefinedGroup.CanonicalParticle ??= CanonicalizeParticle(redefinedGroup.Particle, true);
 
                 CompileParticleElements(redefinedGroup.CanonicalParticle);
                 CompileParticleElements(baseGroup.CanonicalParticle);
@@ -599,7 +581,7 @@ namespace System.Xml.Schema
             {
                 CompileAttributeGroup(baseAttributeGroup);
                 CompileAttributeGroup(attributeGroup);
-                CheckAtrributeGroupRestriction(baseAttributeGroup, attributeGroup);
+                CheckAttributeGroupRestriction(baseAttributeGroup, attributeGroup);
             }
         }
 
@@ -613,12 +595,9 @@ namespace System.Xml.Schema
             else
             {
                 group.IsProcessing = true;
-                if (group.CanonicalParticle == null)
-                {
-                    group.CanonicalParticle = CannonicalizeParticle(group.Particle, true);
-                }
+                group.CanonicalParticle ??= CanonicalizeParticle(group.Particle, true);
                 Debug.Assert(group.CanonicalParticle != null);
-                group.IsProcessing = false; //Not enclosung in try -finally as cannonicalizeParticle will not throw exception
+                group.IsProcessing = false; //Not enclosung in try -finally as canonicalizeParticle will not throw exception
             }
         }
 
@@ -637,9 +616,8 @@ namespace System.Xml.Schema
             simpleType.IsProcessing = true;
             try
             {
-                if (simpleType.Content is XmlSchemaSimpleTypeList)
+                if (simpleType.Content is XmlSchemaSimpleTypeList list)
                 {
-                    XmlSchemaSimpleTypeList list = (XmlSchemaSimpleTypeList)simpleType.Content;
                     XmlSchemaDatatype datatype;
                     simpleType.SetBaseSchemaType(DatatypeImplementation.AnySimpleType);
                     if (list.ItemTypeName.IsEmpty)
@@ -670,9 +648,8 @@ namespace System.Xml.Schema
                     simpleType.SetDatatype(datatype.DeriveByList(simpleType));
                     simpleType.SetDerivedBy(XmlSchemaDerivationMethod.List);
                 }
-                else if (simpleType.Content is XmlSchemaSimpleTypeRestriction)
+                else if (simpleType.Content is XmlSchemaSimpleTypeRestriction restriction)
                 {
-                    XmlSchemaSimpleTypeRestriction restriction = (XmlSchemaSimpleTypeRestriction)simpleType.Content;
                     XmlSchemaDatatype datatype;
                     if (restriction.BaseTypeName.IsEmpty)
                     {
@@ -832,9 +809,8 @@ namespace System.Xml.Schema
             {
                 if (complexType.ContentModel != null)
                 { //simpleContent or complexContent
-                    if (complexType.ContentModel is XmlSchemaSimpleContent)
+                    if (complexType.ContentModel is XmlSchemaSimpleContent simpleContent)
                     {
-                        XmlSchemaSimpleContent simpleContent = (XmlSchemaSimpleContent)complexType.ContentModel;
                         complexType.SetContentType(XmlSchemaContentType.TextOnly);
                         if (simpleContent.Content is XmlSchemaSimpleContentExtension)
                         {
@@ -1058,7 +1034,7 @@ namespace System.Xml.Schema
             CompileLocalAttributes(baseType, complexType, complexExtension.Attributes, complexExtension.AnyAttribute, XmlSchemaDerivationMethod.Extension);
 
             XmlSchemaParticle baseParticle = baseType.ContentTypeParticle;
-            XmlSchemaParticle extendedParticle = CannonicalizeParticle(complexExtension.Particle, true);
+            XmlSchemaParticle extendedParticle = CanonicalizeParticle(complexExtension.Particle, true);
             if (baseParticle != XmlSchemaParticle.Empty)
             {
                 if (extendedParticle != XmlSchemaParticle.Empty)
@@ -1155,8 +1131,8 @@ namespace System.Xml.Schema
             _restrictionErrorMsg = null;
             if (baseType != null && baseType != XmlSchemaComplexType.AnyType && complexType.DerivedBy == XmlSchemaDerivationMethod.Restriction)
             {
-                XmlSchemaParticle derivedParticle = CannonicalizePointlessRoot(complexType.ContentTypeParticle);
-                XmlSchemaParticle baseParticle = CannonicalizePointlessRoot(baseType.ContentTypeParticle);
+                XmlSchemaParticle derivedParticle = CanonicalizePointlessRoot(complexType.ContentTypeParticle);
+                XmlSchemaParticle baseParticle = CanonicalizePointlessRoot(baseType.ContentTypeParticle);
                 if (!IsValidRestriction(derivedParticle, baseParticle))
                 {
                     if (_restrictionErrorMsg != null)
@@ -1191,8 +1167,8 @@ namespace System.Xml.Schema
         private void CheckParticleDerivation(XmlSchemaParticle derivedParticle, XmlSchemaParticle baseParticle)
         {
             _restrictionErrorMsg = null;
-            derivedParticle = CannonicalizePointlessRoot(derivedParticle);
-            baseParticle = CannonicalizePointlessRoot(baseParticle);
+            derivedParticle = CanonicalizePointlessRoot(derivedParticle);
+            baseParticle = CanonicalizePointlessRoot(baseParticle);
             if (!IsValidRestriction(derivedParticle, baseParticle))
             {
                 if (_restrictionErrorMsg != null)
@@ -1208,7 +1184,7 @@ namespace System.Xml.Schema
 
         private XmlSchemaParticle CompileContentTypeParticle(XmlSchemaParticle? particle)
         {
-            XmlSchemaParticle ctp = CannonicalizeParticle(particle, true);
+            XmlSchemaParticle ctp = CanonicalizeParticle(particle, true);
             XmlSchemaChoice? choice = ctp as XmlSchemaChoice;
             if (choice != null && choice.Items.Count == 0)
             {
@@ -1222,7 +1198,7 @@ namespace System.Xml.Schema
             return ctp;
         }
 
-        private XmlSchemaParticle CannonicalizeParticle(XmlSchemaParticle? particle, bool root)
+        private XmlSchemaParticle CanonicalizeParticle(XmlSchemaParticle? particle, bool root)
         {
             if (particle == null || particle.IsEmpty)
             {
@@ -1230,24 +1206,24 @@ namespace System.Xml.Schema
             }
             else if (particle is XmlSchemaElement)
             {
-                //return CannonicalizeElement((XmlSchemaElement)particle, substitution);
+                //return CanonicalizeElement((XmlSchemaElement)particle, substitution);
                 return particle;
             }
             else if (particle is XmlSchemaGroupRef)
             {
-                return CannonicalizeGroupRef((XmlSchemaGroupRef)particle, root);
+                return CanonicalizeGroupRef((XmlSchemaGroupRef)particle, root);
             }
             else if (particle is XmlSchemaAll)
             {
-                return CannonicalizeAll((XmlSchemaAll)particle, root);
+                return CanonicalizeAll((XmlSchemaAll)particle, root);
             }
             else if (particle is XmlSchemaChoice)
             {
-                return CannonicalizeChoice((XmlSchemaChoice)particle, root);
+                return CanonicalizeChoice((XmlSchemaChoice)particle, root);
             }
             else if (particle is XmlSchemaSequence)
             {
-                return CannonicalizeSequence((XmlSchemaSequence)particle, root);
+                return CanonicalizeSequence((XmlSchemaSequence)particle, root);
             }
             else
             {
@@ -1255,7 +1231,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private XmlSchemaParticle CannonicalizeElement(XmlSchemaElement element)
+        private XmlSchemaParticle CanonicalizeElement(XmlSchemaElement element)
         {
             if (!element.RefName.IsEmpty && (element.ElementDecl!.Block & XmlSchemaDerivationMethod.Substitution) == 0)
             {
@@ -1283,7 +1259,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private XmlSchemaParticle CannonicalizeGroupRef(XmlSchemaGroupRef groupRef, bool root)
+        private XmlSchemaParticle CanonicalizeGroupRef(XmlSchemaGroupRef groupRef, bool root)
         {
             XmlSchemaGroup? group;
             if (groupRef.Redefined != null)
@@ -1354,7 +1330,7 @@ namespace System.Xml.Schema
             return groupRefBase;
         }
 
-        private XmlSchemaParticle CannonicalizeAll(XmlSchemaAll all, bool root)
+        private XmlSchemaParticle CanonicalizeAll(XmlSchemaAll all, bool root)
         {
             if (all.Items.Count > 0)
             {
@@ -1364,7 +1340,7 @@ namespace System.Xml.Schema
                 CopyPosition(newAll, all, true);
                 for (int i = 0; i < all.Items.Count; ++i)
                 {
-                    XmlSchemaParticle p = CannonicalizeParticle((XmlSchemaElement)all.Items[i], false);
+                    XmlSchemaParticle p = CanonicalizeParticle((XmlSchemaElement)all.Items[i], false);
                     if (p != XmlSchemaParticle.Empty)
                     {
                         newAll.Items.Add(p);
@@ -1387,7 +1363,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private XmlSchemaParticle CannonicalizeChoice(XmlSchemaChoice choice, bool root)
+        private XmlSchemaParticle CanonicalizeChoice(XmlSchemaChoice choice, bool root)
         {
             XmlSchemaChoice oldChoice = choice;
             if (choice.Items.Count > 0)
@@ -1398,7 +1374,7 @@ namespace System.Xml.Schema
                 CopyPosition(newChoice, choice, true);
                 for (int i = 0; i < choice.Items.Count; ++i)
                 {
-                    XmlSchemaParticle p1 = CannonicalizeParticle((XmlSchemaParticle)choice.Items[i], false);
+                    XmlSchemaParticle p1 = CanonicalizeParticle((XmlSchemaParticle)choice.Items[i], false);
                     if (p1 != XmlSchemaParticle.Empty)
                     {
                         if (p1.MinOccurs == decimal.One && p1.MaxOccurs == decimal.One && p1 is XmlSchemaChoice)
@@ -1435,7 +1411,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private XmlSchemaParticle CannonicalizeSequence(XmlSchemaSequence sequence, bool root)
+        private XmlSchemaParticle CanonicalizeSequence(XmlSchemaSequence sequence, bool root)
         {
             if (sequence.Items.Count > 0)
             {
@@ -1445,7 +1421,7 @@ namespace System.Xml.Schema
                 CopyPosition(newSequence, sequence, true);
                 for (int i = 0; i < sequence.Items.Count; ++i)
                 {
-                    XmlSchemaParticle p1 = CannonicalizeParticle((XmlSchemaParticle)sequence.Items[i], false);
+                    XmlSchemaParticle p1 = CanonicalizeParticle((XmlSchemaParticle)sequence.Items[i], false);
                     if (p1 != XmlSchemaParticle.Empty)
                     {
                         XmlSchemaSequence p1Sequence = (p1 as XmlSchemaSequence)!;
@@ -1478,8 +1454,8 @@ namespace System.Xml.Schema
             }
         }
 
-        [return: NotNullIfNotNull("particle")]
-        private XmlSchemaParticle? CannonicalizePointlessRoot(XmlSchemaParticle particle)
+        [return: NotNullIfNotNull(nameof(particle))]
+        private static XmlSchemaParticle? CanonicalizePointlessRoot(XmlSchemaParticle particle)
         {
             if (particle == null)
             {
@@ -1551,16 +1527,14 @@ namespace System.Xml.Schema
             {
                 return false;
             }
-            if (derivedParticle is XmlSchemaElement)
+            if (derivedParticle is XmlSchemaElement derivedElem)
             { //check for derived element being head of substitutionGroup
-                XmlSchemaElement derivedElem = (XmlSchemaElement)derivedParticle;
-                derivedParticle = CannonicalizeElement(derivedElem);
+                derivedParticle = CanonicalizeElement(derivedElem);
             }
-            if (baseParticle is XmlSchemaElement)
+            if (baseParticle is XmlSchemaElement baseElem)
             {
-                XmlSchemaElement baseElem = (XmlSchemaElement)baseParticle;
                 XmlSchemaParticle newBaseParticle;
-                newBaseParticle = CannonicalizeElement(baseElem);
+                newBaseParticle = CanonicalizeElement(baseElem);
                 if (newBaseParticle is XmlSchemaChoice)
                 { //Base Element is subs grp head.
                     return IsValidRestriction(derivedParticle, newBaseParticle);
@@ -1892,10 +1866,8 @@ namespace System.Xml.Schema
                 }
                 else if (skipEmptableOnly && !IsParticleEmptiable(baseParticle))
                 {
-                    if (_restrictionErrorMsg == null)
-                    { //If restriction failed on previous check, do not overwrite error
-                        _restrictionErrorMsg = SR.Sch_GroupBaseRestNotEmptiable;
-                    }
+                    //If restriction failed on previous check, do not overwrite error
+                    _restrictionErrorMsg ??= SR.Sch_GroupBaseRestNotEmptiable;
                     return false;
                 }
             }
@@ -1966,12 +1938,12 @@ namespace System.Xml.Schema
             return true;
         }
 
-        private bool IsValidOccurrenceRangeRestriction(XmlSchemaParticle derivedParticle, XmlSchemaParticle baseParticle)
+        private static bool IsValidOccurrenceRangeRestriction(XmlSchemaParticle derivedParticle, XmlSchemaParticle baseParticle)
         {
             return IsValidOccurrenceRangeRestriction(derivedParticle.MinOccurs, derivedParticle.MaxOccurs, baseParticle.MinOccurs, baseParticle.MaxOccurs);
         }
 
-        private bool IsValidOccurrenceRangeRestriction(decimal minOccurs, decimal maxOccurs, decimal baseMinOccurs, decimal baseMaxOccurs)
+        private static bool IsValidOccurrenceRangeRestriction(decimal minOccurs, decimal maxOccurs, decimal baseMinOccurs, decimal baseMaxOccurs)
         {
             return (baseMinOccurs <= minOccurs) && (maxOccurs <= baseMaxOccurs);
         }
@@ -2076,7 +2048,7 @@ namespace System.Xml.Schema
             _complexTypeStack.Push(complexType);
         }
 
-        private XmlSchemaContentType GetSchemaContentType(XmlSchemaComplexType complexType, XmlSchemaComplexContent? complexContent, XmlSchemaParticle particle)
+        private static XmlSchemaContentType GetSchemaContentType(XmlSchemaComplexType complexType, XmlSchemaComplexContent? complexContent, XmlSchemaParticle particle)
         {
             if ((complexContent != null && complexContent.IsMixed) ||
                 (complexContent == null && complexType.IsMixed))
@@ -2174,7 +2146,7 @@ namespace System.Xml.Schema
 
         private void CompileLocalAttributes(XmlSchemaComplexType? baseType, XmlSchemaComplexType derivedType, XmlSchemaObjectCollection attributes, XmlSchemaAnyAttribute? anyAttribute, XmlSchemaDerivationMethod derivedBy)
         {
-            XmlSchemaAnyAttribute? baseAttributeWildcard = baseType != null ? baseType.AttributeWildcard : null;
+            XmlSchemaAnyAttribute? baseAttributeWildcard = baseType?.AttributeWildcard;
             for (int i = 0; i < attributes.Count; ++i)
             {
                 XmlSchemaAttribute? attr = attributes[i] as XmlSchemaAttribute;
@@ -2327,7 +2299,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private void CheckAtrributeGroupRestriction(XmlSchemaAttributeGroup baseAttributeGroup, XmlSchemaAttributeGroup derivedAttributeGroup)
+        private void CheckAttributeGroupRestriction(XmlSchemaAttributeGroup baseAttributeGroup, XmlSchemaAttributeGroup derivedAttributeGroup)
         {
             XmlSchemaAnyAttribute? baseAnyAtt = baseAttributeGroup.AttributeWildcard;
             XmlSchemaAnyAttribute? derivedAnyAtt = derivedAttributeGroup.AttributeWildcard;
@@ -2384,7 +2356,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private bool IsProcessContentsRestricted(XmlSchemaComplexType? baseType, XmlSchemaAnyAttribute derivedAttributeWildcard, XmlSchemaAnyAttribute baseAttributeWildcard)
+        private static bool IsProcessContentsRestricted(XmlSchemaComplexType? baseType, XmlSchemaAnyAttribute derivedAttributeWildcard, XmlSchemaAnyAttribute baseAttributeWildcard)
         {
             if (baseType == XmlSchemaComplexType.AnyType)
             {
@@ -2526,10 +2498,7 @@ namespace System.Xml.Schema
                         xa.SetAttributeType(DatatypeImplementation.AnySimpleType);
                     }
                     //} //Removed this here since the following should be done only if RefName is Empty
-                    if (decl.Datatype != null)
-                    {
-                        decl.Datatype.VerifySchemaValid(_notations, xa);
-                    }
+                    decl.Datatype?.VerifySchemaValid(_notations, xa);
                     SetDefaultFixed(xa, decl);
                 } //End of Else for !RefName.IsEmpty
 
@@ -2743,9 +2712,8 @@ namespace System.Xml.Schema
                     if (decl == null)
                     {
                         Debug.Assert(xe.ElementSchemaType != null);
-                        if (xe.ElementSchemaType is XmlSchemaComplexType)
+                        if (xe.ElementSchemaType is XmlSchemaComplexType complexType)
                         {
-                            XmlSchemaComplexType complexType = (XmlSchemaComplexType)xe.ElementSchemaType;
                             CompileComplexType(complexType);
                             if (complexType.ElementDecl != null)
                             {
@@ -2753,9 +2721,8 @@ namespace System.Xml.Schema
                                 //                                decl.LocalElements = complexType.LocalElementDecls;
                             }
                         }
-                        else if (xe.ElementSchemaType is XmlSchemaSimpleType)
+                        else if (xe.ElementSchemaType is XmlSchemaSimpleType simpleType)
                         {
-                            XmlSchemaSimpleType simpleType = (XmlSchemaSimpleType)xe.ElementSchemaType;
                             CompileSimpleType(simpleType);
                             if (simpleType.ElementDecl != null)
                             {
@@ -2774,10 +2741,7 @@ namespace System.Xml.Schema
                     decl.IsNillable = xe.IsNillable;
                     decl.Block |= xe.BlockResolved;
                 }
-                if (decl.Datatype != null)
-                {
-                    decl.Datatype.VerifySchemaValid(_notations, xe);
-                }
+                decl.Datatype?.VerifySchemaValid(_notations, xe);
 
                 if (xe.DefaultValue != null || xe.FixedValue != null)
                 {
@@ -2871,9 +2835,8 @@ namespace System.Xml.Schema
                 }
             }
             PushComplexType(complexType);
-            if (particle is XmlSchemaAll)
+            if (particle is XmlSchemaAll all)
             {
-                XmlSchemaAll all = (XmlSchemaAll)particle;
                 AllElementsContentValidator contentValidator = new AllElementsContentValidator(complexType.ContentType, all.Items.Count, all.MinOccurs == decimal.Zero);
                 for (int i = 0; i < all.Items.Count; ++i)
                 {
@@ -2931,9 +2894,8 @@ namespace System.Xml.Schema
         private bool BuildParticleContentModel(ParticleContentValidator contentValidator, XmlSchemaParticle particle)
         {
             bool hasWildCard = false;
-            if (particle is XmlSchemaElement)
+            if (particle is XmlSchemaElement element)
             {
-                XmlSchemaElement element = (XmlSchemaElement)particle;
                 contentValidator.AddName(element.QualifiedName, element);
             }
             else if (particle is XmlSchemaAny)
@@ -2996,9 +2958,8 @@ namespace System.Xml.Schema
 
         private void CompileParticleElements(XmlSchemaComplexType complexType, XmlSchemaParticle particle)
         {
-            if (particle is XmlSchemaElement)
+            if (particle is XmlSchemaElement localElement)
             {
-                XmlSchemaElement localElement = (XmlSchemaElement)particle;
                 CompileElement(localElement);
                 if (complexType.LocalElements[localElement.QualifiedName] == null)
                 {
@@ -3025,9 +2986,8 @@ namespace System.Xml.Schema
 
         private void CompileParticleElements(XmlSchemaParticle particle)
         { //For checking redefined group particle derivation
-            if (particle is XmlSchemaElement)
+            if (particle is XmlSchemaElement localElement)
             {
-                XmlSchemaElement localElement = (XmlSchemaElement)particle;
                 CompileElement(localElement);
             }
             else if (particle is XmlSchemaGroupBase)
@@ -3108,7 +3068,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private void CopyPosition(XmlSchemaAnnotated to, XmlSchemaAnnotated from, bool copyParent)
+        private static void CopyPosition(XmlSchemaAnnotated to, XmlSchemaAnnotated from, bool copyParent)
         {
             to.SourceUri = from.SourceUri;
             to.LinePosition = from.LinePosition;
@@ -3120,7 +3080,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private bool IsFixedEqual(SchemaDeclBase baseDecl, SchemaDeclBase derivedDecl)
+        private static bool IsFixedEqual(SchemaDeclBase baseDecl, SchemaDeclBase derivedDecl)
         {
             if (baseDecl.Presence == SchemaDeclBase.Use.Fixed || baseDecl.Presence == SchemaDeclBase.Use.RequiredFixed)
             {

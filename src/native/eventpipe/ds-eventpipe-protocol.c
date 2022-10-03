@@ -182,7 +182,7 @@ eventpipe_collect_tracing_command_try_parse_config (
 		uint32_t provider_name_byte_array_len = 0;
 		ep_raise_error_if_nok (ds_ipc_message_try_parse_string_utf16_t_byte_array_alloc (buffer, buffer_len, &provider_name_byte_array, &provider_name_byte_array_len));
 
-		provider_name_utf8 = ep_rt_utf16_to_utf8_string ((const ep_char16_t *)provider_name_byte_array, -1);
+		provider_name_utf8 = ep_rt_utf16le_to_utf8_string ((const ep_char16_t *)provider_name_byte_array, -1);
 		ep_raise_error_if_nok (provider_name_utf8 != NULL);
 
 		ep_raise_error_if_nok (!ep_rt_utf8_string_is_null_or_empty (provider_name_utf8));
@@ -195,7 +195,7 @@ eventpipe_collect_tracing_command_try_parse_config (
 
 		// This parameter is optional.
 		if (filter_data_byte_array) {
-			filter_data_utf8 = ep_rt_utf16_to_utf8_string ((const ep_char16_t *)filter_data_byte_array, -1);
+			filter_data_utf8 = ep_rt_utf16le_to_utf8_string ((const ep_char16_t *)filter_data_byte_array, -1);
 			ep_raise_error_if_nok (filter_data_utf8 != NULL);
 
 			ep_rt_byte_array_free (filter_data_byte_array);
@@ -205,7 +205,7 @@ eventpipe_collect_tracing_command_try_parse_config (
 		EventPipeProviderConfiguration provider_config;
 		if (ep_provider_config_init (&provider_config, provider_name_utf8, keywords, (EventPipeEventLevel)log_level, filter_data_utf8)) {
 			if (ep_rt_provider_config_array_append (result, provider_config)) {
-				// Ownership transfered.
+				// Ownership transferred.
 				provider_name_utf8 = NULL;
 				filter_data_utf8 = NULL;
 			}
@@ -560,7 +560,7 @@ ds_eventpipe_protocol_helper_handle_ipc_message (
 #endif /* !defined(DS_INCLUDE_SOURCE_FILES) || defined(DS_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef DS_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(DS_INCLUDE_SOURCE_FILES) && !defined(DS_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_diagnostics_eventpipe_protocol;
 const char quiet_linker_empty_file_warning_diagnostics_eventpipe_protocol = 0;
 #endif

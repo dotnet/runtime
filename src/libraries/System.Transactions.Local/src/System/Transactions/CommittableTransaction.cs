@@ -50,10 +50,7 @@ namespace System.Transactions
                 etwLog.TransactionCommit(this, "CommittableTransaction");
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(CommittableTransaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             lock (_internalTransaction)
             {
@@ -87,10 +84,7 @@ namespace System.Transactions
                 etwLog.TransactionCommit(this, "CommittableTransaction");
             }
 
-            if (Disposed)
-            {
-                throw new ObjectDisposedException(nameof(CommittableTransaction));
-            }
+            ObjectDisposedException.ThrowIf(Disposed, this);
 
             lock (_internalTransaction)
             {

@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -19,27 +20,37 @@ internal static partial class Interop
             out SafeLsaMemoryHandle sids
         );
 
-        [NativeMarshalling(typeof(Native))]
+        [NativeMarshalling(typeof(Marshaller))]
         internal struct MARSHALLED_UNICODE_STRING
         {
             internal ushort Length;
             internal ushort MaximumLength;
             internal string Buffer;
 
-            public struct Native
+            [CustomMarshaller(typeof(MARSHALLED_UNICODE_STRING), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller))]
+            [CustomMarshaller(typeof(MARSHALLED_UNICODE_STRING), MarshalMode.ElementIn, typeof(Marshaller))]
+            public static class Marshaller
             {
-                internal ushort Length;
-                internal ushort MaximumLength;
-                internal IntPtr Buffer;
-
-                public Native(MARSHALLED_UNICODE_STRING managed)
+                public static Native ConvertToUnmanaged(MARSHALLED_UNICODE_STRING managed)
                 {
-                    Length = managed.Length;
-                    MaximumLength = managed.MaximumLength;
-                    Buffer = Marshal.StringToCoTaskMemUni(managed.Buffer);
+                    Native n;
+                    n.Length = managed.Length;
+                    n.MaximumLength = managed.MaximumLength;
+                    n.Buffer = Marshal.StringToCoTaskMemUni(managed.Buffer);
+                    return n;
                 }
 
-                public void FreeNative() => Marshal.FreeCoTaskMem(Buffer);
+                public static void Free(Native native)
+                {
+                    Marshal.FreeCoTaskMem(native.Buffer);
+                }
+
+                public struct Native
+                {
+                    internal ushort Length;
+                    internal ushort MaximumLength;
+                    internal IntPtr Buffer;
+                }
             }
         }
     }

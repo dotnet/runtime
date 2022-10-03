@@ -325,11 +325,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
     assert(category != HW_Category_Scalar);
     assert(!HWIntrinsicInfo::isScalarIsa(HWIntrinsicInfo::lookupIsa(intrinsic)));
 
-    if (!featureSIMD || !IsBaselineSimdIsaSupported())
-    {
-        return nullptr;
-    }
-
     assert(numArgs >= 0);
 
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
@@ -553,8 +548,190 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector64_Create:
         case NI_Vector128_Create:
         {
-            // We shouldn't handle this as an intrinsic if the
-            // respective ISAs have been disabled by the user.
+            uint32_t simdLength = getSIMDVectorLength(simdSize, simdBaseType);
+            assert((sig->numArgs == 1) || (sig->numArgs == simdLength));
+
+            bool isConstant = true;
+
+            if (varTypeIsFloating(simdBaseType))
+            {
+                for (uint32_t index = 0; index < sig->numArgs; index++)
+                {
+                    GenTree* arg = impStackTop(index).val;
+
+                    if (!arg->IsCnsFltOrDbl())
+                    {
+                        isConstant = false;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                assert(varTypeIsIntegral(simdBaseType));
+
+                for (uint32_t index = 0; index < sig->numArgs; index++)
+                {
+                    GenTree* arg = impStackTop(index).val;
+
+                    if (!arg->IsIntegralConst())
+                    {
+                        isConstant = false;
+                        break;
+                    }
+                }
+            }
+
+            if (isConstant)
+            {
+                // Some of the below code assumes 8 or 16 byte SIMD types
+                assert((simdSize == 8) || (simdSize == 16));
+
+                // For create intrinsics that take 1 operand, we broadcast the value.
+                //
+                // This happens even for CreateScalarUnsafe since the upper bits are
+                // considered non-deterministic and we can therefore set them to anything.
+                //
+                // We do this as it simplifies the logic and allows certain code paths to
+                // have better codegen, such as for 0, AllBitsSet, or certain small constants
+
+                GenTreeVecCon* vecCon = gtNewVconNode(retType, simdBaseJitType);
+
+                switch (simdBaseType)
+                {
+                    case TYP_BYTE:
+                    case TYP_UBYTE:
+                    {
+                        uint8_t cnsVal = 0;
+
+                        for (uint32_t index = 0; index < sig->numArgs; index++)
+                        {
+                            cnsVal = static_cast<uint8_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
+                            vecCon->gtSimd16Val.u8[simdLength - 1 - index] = cnsVal;
+                        }
+
+                        if (sig->numArgs == 1)
+                        {
+                            for (uint32_t index = 0; index < simdLength - 1; index++)
+                            {
+                                vecCon->gtSimd16Val.u8[index] = cnsVal;
+                            }
+                        }
+                        break;
+                    }
+
+                    case TYP_SHORT:
+                    case TYP_USHORT:
+                    {
+                        uint16_t cnsVal = 0;
+
+                        for (uint32_t index = 0; index < sig->numArgs; index++)
+                        {
+                            cnsVal = static_cast<uint16_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
+                            vecCon->gtSimd16Val.u16[simdLength - 1 - index] = cnsVal;
+                        }
+
+                        if (sig->numArgs == 1)
+                        {
+                            for (uint32_t index = 0; index < (simdLength - 1); index++)
+                            {
+                                vecCon->gtSimd16Val.u16[index] = cnsVal;
+                            }
+                        }
+                        break;
+                    }
+
+                    case TYP_INT:
+                    case TYP_UINT:
+                    {
+                        uint32_t cnsVal = 0;
+
+                        for (uint32_t index = 0; index < sig->numArgs; index++)
+                        {
+                            cnsVal = static_cast<uint32_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
+                            vecCon->gtSimd16Val.u32[simdLength - 1 - index] = cnsVal;
+                        }
+
+                        if (sig->numArgs == 1)
+                        {
+                            for (uint32_t index = 0; index < (simdLength - 1); index++)
+                            {
+                                vecCon->gtSimd16Val.u32[index] = cnsVal;
+                            }
+                        }
+                        break;
+                    }
+
+                    case TYP_LONG:
+                    case TYP_ULONG:
+                    {
+                        uint64_t cnsVal = 0;
+
+                        for (uint32_t index = 0; index < sig->numArgs; index++)
+                        {
+                            cnsVal = static_cast<uint64_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
+                            vecCon->gtSimd16Val.u64[simdLength - 1 - index] = cnsVal;
+                        }
+
+                        if (sig->numArgs == 1)
+                        {
+                            for (uint32_t index = 0; index < (simdLength - 1); index++)
+                            {
+                                vecCon->gtSimd16Val.u64[index] = cnsVal;
+                            }
+                        }
+                        break;
+                    }
+
+                    case TYP_FLOAT:
+                    {
+                        float cnsVal = 0;
+
+                        for (uint32_t index = 0; index < sig->numArgs; index++)
+                        {
+                            cnsVal = static_cast<float>(impPopStack().val->AsDblCon()->gtDconVal);
+                            vecCon->gtSimd16Val.f32[simdLength - 1 - index] = cnsVal;
+                        }
+
+                        if (sig->numArgs == 1)
+                        {
+                            for (uint32_t index = 0; index < (simdLength - 1); index++)
+                            {
+                                vecCon->gtSimd16Val.f32[index] = cnsVal;
+                            }
+                        }
+                        break;
+                    }
+
+                    case TYP_DOUBLE:
+                    {
+                        double cnsVal = 0;
+
+                        for (uint32_t index = 0; index < sig->numArgs; index++)
+                        {
+                            cnsVal = static_cast<double>(impPopStack().val->AsDblCon()->gtDconVal);
+                            vecCon->gtSimd16Val.f64[simdLength - 1 - index] = cnsVal;
+                        }
+
+                        if (sig->numArgs == 1)
+                        {
+                            for (uint32_t index = 0; index < (simdLength - 1); index++)
+                            {
+                                vecCon->gtSimd16Val.f64[index] = cnsVal;
+                            }
+                        }
+                        break;
+                    }
+
+                    default:
+                    {
+                        unreached();
+                    }
+                }
+
+                retNode = vecCon;
+                break;
+            }
 
             IntrinsicNodeBuilder nodeBuilder(getAllocator(CMK_ASTNode), sig->numArgs);
 
@@ -791,7 +968,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                                /* isSimdAsHWIntrinsic */ false);
                 op1 = gtNewCastNode(TYP_INT, op1, /* isUnsigned */ true, TYP_INT);
 
-                GenTree* zero = gtNewSimdZeroNode(simdType, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+                GenTree* zero  = gtNewZeroConNode(simdType, simdBaseJitType);
                 ssize_t  index = 8 / genTypeSize(simdBaseType);
 
                 op2 = gtNewSimdHWIntrinsicNode(simdType, op2, zero, gtNewIconNode(index), NI_AdvSimd_ExtractVector128,
@@ -857,10 +1034,8 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector64_get_AllBitsSet:
         case NI_Vector128_get_AllBitsSet:
         {
-            assert(!sig->hasThis());
-            assert(numArgs == 0);
-
-            retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseJitType, simdSize);
+            assert(sig->numArgs == 0);
+            retNode = gtNewAllBitsSetConNode(retType, simdBaseJitType);
             break;
         }
 
@@ -868,7 +1043,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector128_get_Zero:
         {
             assert(sig->numArgs == 0);
-            retNode = gtNewSimdZeroNode(retType, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewZeroConNode(retType, simdBaseJitType);
             break;
         }
 
@@ -892,7 +1067,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             //   AdvSimd.ExtractVector128(vector, Vector128<T>.Zero, 8 / sizeof(T)).GetLower();
             assert(numArgs == 1);
             op1            = impPopStack().val;
-            GenTree* zero  = gtNewSimdHWIntrinsicNode(retType, NI_Vector128_get_Zero, simdBaseJitType, simdSize);
+            GenTree* zero  = gtNewZeroConNode(retType, simdBaseJitType);
             ssize_t  index = 8 / genTypeSize(simdBaseType);
 
             retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, zero, gtNewIconNode(index), NI_AdvSimd_ExtractVector128,
@@ -1389,6 +1564,31 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector64_Shuffle:
+        case NI_Vector128_Shuffle:
+        {
+            assert((sig->numArgs == 2) || (sig->numArgs == 3));
+            assert((simdSize == 8) || (simdSize == 16));
+
+            GenTree* indices = impStackTop(0).val;
+
+            if (!indices->IsVectorConst())
+            {
+                // TODO-ARM64-CQ: Handling non-constant indices is a bit more complex
+                break;
+            }
+
+            if (sig->numArgs == 2)
+            {
+                op2 = impSIMDPopStack(retType);
+                op1 = impSIMDPopStack(retType);
+
+                retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize,
+                                               /* isSimdAsHWIntrinsic */ false);
+            }
+            break;
+        }
+
         case NI_Vector64_Sqrt:
         case NI_Vector128_Sqrt:
         {
@@ -1407,6 +1607,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
             var_types simdType = getSIMDTypeForSize(simdSize);
+
+            impSpillSideEffect(true,
+                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
 
             op2 = impPopStack().val;
             op1 = impSIMDPopStack(simdType);
@@ -1428,6 +1631,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
+            impSpillSideEffect(true,
+                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+
             op2 = impPopStack().val;
             op1 = impSIMDPopStack(simdType);
 
@@ -1448,6 +1654,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                 break;
             }
 
+            impSpillSideEffect(true,
+                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+
             op2 = impPopStack().val;
             op1 = impSIMDPopStack(simdType);
 
@@ -1464,11 +1673,20 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (sig->numArgs == 3)
             {
+                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                             3 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
+
+                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                             2 DEBUGARG("Spilling op2 side effects for HWIntrinsic"));
+
                 op3 = impPopStack().val;
             }
             else
             {
                 assert(sig->numArgs == 2);
+
+                impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                             2 DEBUGARG("Spilling op1 side effects for HWIntrinsic"));
             }
 
             op2 = impPopStack().val;
@@ -1535,7 +1753,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
             if (imm8 >= count || imm8 < 0)
             {
-                // Using software fallback if index is out of range (throw exeception)
+                // Using software fallback if index is out of range (throw exception)
                 return nullptr;
             }
 

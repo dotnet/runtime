@@ -223,7 +223,7 @@ Arguments:
                 break;
 
                 //
-                // Establish the the frame pointer register.
+                // Establish the frame pointer register.
                 //
                 // The operation information is not used.
                 //
@@ -235,7 +235,7 @@ Arguments:
 
                 //
                 // Save nonvolatile integer register on the stack using a
-                // 16-bit displacment.
+                // 16-bit displacement.
                 //
                 // The operation information is the register number.
                 //
@@ -257,7 +257,7 @@ Arguments:
 
                 //
                 // Save nonvolatile integer register on the stack using a
-                // 32-bit displacment.
+                // 32-bit displacement.
                 //
                 // The operation information is the register number.
                 //

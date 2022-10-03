@@ -33,7 +33,7 @@ echo ****************************
 echo Unity: Running runtime tests
 echo ****************************
 echo.
-cmd /c src\tests\build.cmd x86 release ci tree GC tree baseservices tree interop tree reflection || goto :error
+cmd /c src\tests\build.cmd x86 release ci tree baseservices tree interop tree reflection || goto :error
 cmd /c src\tests\run.cmd x86 release || goto :error
 
 rem Every thing succeeded - jump to the end of the file and return a 0 exit code

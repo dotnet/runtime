@@ -17,8 +17,11 @@ namespace System.ComponentModel.Composition.Hosting
             private readonly Func<ImportDefinition, bool> _importFilter;
             private Dictionary<string, List<ComposablePartDefinition>>? _exportersIndex;
 
-            public DependenciesTraversal(FilteredCatalog catalog!!, Func<ImportDefinition, bool> importFilter!!)
+            public DependenciesTraversal(FilteredCatalog catalog, Func<ImportDefinition, bool> importFilter)
             {
+                ArgumentNullException.ThrowIfNull(catalog);
+                ArgumentNullException.ThrowIfNull(importFilter);
+
                 _parts = catalog._innerCatalog;
                 _importFilter = importFilter;
             }
@@ -72,10 +75,7 @@ namespace System.ComponentModel.Composition.Hosting
                                 {
                                     if (import.IsImportDependentOnPart(candidateReachablePart, export, part.IsGeneric() != candidateReachablePart.IsGeneric()))
                                     {
-                                        if (reachablePartList == null)
-                                        {
-                                            reachablePartList = new List<ComposablePartDefinition>();
-                                        }
+                                        reachablePartList ??= new List<ComposablePartDefinition>();
                                         reachablePartList.Add(candidateReachablePart);
                                     }
                                 }

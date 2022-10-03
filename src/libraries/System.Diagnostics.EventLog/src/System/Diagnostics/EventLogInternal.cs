@@ -109,8 +109,10 @@ namespace System.Diagnostics
         {
         }
 
-        public EventLogInternal(string logName!!, string machineName, string source, EventLog parent)
+        public EventLogInternal(string logName, string machineName, string source, EventLog parent)
         {
+            ArgumentNullException.ThrowIfNull(logName);
+
             if (!ValidLogName(logName, true))
                 throw new ArgumentException(SR.BadLogName);
 
@@ -130,9 +132,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (entriesCollection == null)
-                    entriesCollection = new EventLogEntryCollection(this);
-                return entriesCollection;
+                return entriesCollection ??= new EventLogEntryCollection(this);
             }
         }
 
@@ -195,13 +195,14 @@ namespace System.Diagnostics
 
                         string resourceDll = (string)logkey.GetValue("DisplayNameFile");
                         if (resourceDll == null)
+                        {
                             logDisplayName = GetLogName(currentMachineName);
+                        }
                         else
                         {
                             int resourceId = (int)logkey.GetValue("DisplayNameID");
                             logDisplayName = FormatMessageWrapper(resourceDll, (uint)resourceId, null);
-                            if (logDisplayName == null)
-                                logDisplayName = GetLogName(currentMachineName);
+                            logDisplayName ??= GetLogName(currentMachineName);
                         }
                     }
                     finally
@@ -225,7 +226,7 @@ namespace System.Diagnostics
 
         private string GetLogName(string currentMachineName)
         {
-            if ((logName == null || logName.Length == 0) && sourceName != null && sourceName.Length != 0)
+            if (string.IsNullOrEmpty(logName) && !string.IsNullOrEmpty(sourceName))
             {
                 logName = EventLog._InternalLogNameFromSourceName(sourceName, currentMachineName);
             }
@@ -276,9 +277,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (messageLibraries == null)
-                    messageLibraries = new Hashtable(StringComparer.OrdinalIgnoreCase);
-                return messageLibraries;
+                return messageLibraries ??= new Hashtable(StringComparer.OrdinalIgnoreCase);
             }
         }
 
@@ -647,15 +646,14 @@ namespace System.Diagnostics
             if (dllNameList == null)
                 return null;
 
-            if (insertionStrings == null)
-                insertionStrings = Array.Empty<string>();
+            insertionStrings ??= Array.Empty<string>();
 
             string[] listDll = dllNameList.Split(';');
 
             // Find first mesage in DLL list
             foreach (string dllName in listDll)
             {
-                if (dllName == null || dllName.Length == 0)
+                if (string.IsNullOrEmpty(dllName))
                     continue;
 
                 SafeLibraryHandle hModule;
@@ -1046,7 +1044,7 @@ namespace System.Diagnostics
 
             string logname = GetLogName(currentMachineName);
 
-            if (logname == null || logname.Length == 0)
+            if (string.IsNullOrEmpty(logname))
                 throw new ArgumentException(SR.MissingLogProperty);
 
             if (!EventLog.Exists(logname, currentMachineName))        // do not open non-existing Log [alexvec]
@@ -1068,6 +1066,7 @@ namespace System.Diagnostics
                 {
                     e = new Win32Exception();
                 }
+                handle.Dispose();
                 throw new InvalidOperationException(SR.Format(SR.CantOpenLog, logname, currentMachineName, e?.Message ?? ""));
             }
 
@@ -1080,7 +1079,7 @@ namespace System.Diagnostics
             if (this.boolFlags[Flag_disposed])
                 throw new ObjectDisposedException(GetType().Name);
 
-            if (sourceName == null || sourceName.Length == 0)
+            if (string.IsNullOrEmpty(sourceName))
                 throw new ArgumentException(SR.NeedSourceToOpen);
 
             SafeEventLogWriteHandle handle = Interop.Advapi32.RegisterEventSource(currentMachineName, sourceName);
@@ -1091,6 +1090,7 @@ namespace System.Diagnostics
                 {
                     e = new Win32Exception();
                 }
+                handle.Dispose();
                 throw new InvalidOperationException(SR.Format(SR.CantOpenLogAccess, sourceName), e);
             }
             writeHandle = handle;
@@ -1182,10 +1182,7 @@ namespace System.Diagnostics
             {
                 try
                 {
-                    if (interestedComponents[i] != null)
-                    {
-                        interestedComponents[i].CompletionCallback(null);
-                    }
+                    interestedComponents[i]?.CompletionCallback(null);
                 }
                 catch (ObjectDisposedException)
                 {
@@ -1311,8 +1308,10 @@ namespace System.Diagnostics
             InternalWriteEvent((uint)eventID, (ushort)category, type, new string[] { message }, rawData, currentMachineName);
         }
 
-        public void WriteEvent(EventInstance instance!!, byte[] data, params object[] values)
+        public void WriteEvent(EventInstance instance, byte[] data, params object[] values)
         {
+            ArgumentNullException.ThrowIfNull(instance);
+
             if (Source.Length == 0)
                 throw new ArgumentException(SR.NeedSourceToWrite);
 
@@ -1344,24 +1343,20 @@ namespace System.Diagnostics
         private void InternalWriteEvent(uint eventID, ushort category, EventLogEntryType type, string[] strings,
                                 byte[] rawData, string currentMachineName)
         {
-            // check arguments
-            if (strings == null)
-                strings = Array.Empty<string>();
+            strings ??= Array.Empty<string>();
             if (strings.Length >= 256)
                 throw new ArgumentException(SR.TooManyReplacementStrings);
 
             for (int i = 0; i < strings.Length; i++)
             {
-                if (strings[i] == null)
-                    strings[i] = string.Empty;
+                strings[i] ??= string.Empty;
 
                 // make sure the strings aren't too long.  MSDN says each string has a limit of 32k (32768) characters, but
                 // experimentation shows that it doesn't like anything larger than 32766
                 if (strings[i].Length > 32766)
                     throw new ArgumentException(SR.LogEntryTooLong);
             }
-            if (rawData == null)
-                rawData = Array.Empty<byte>();
+            rawData ??= Array.Empty<byte>();
 
             if (Source.Length == 0)
                 throw new ArgumentException(SR.NeedSourceToWrite);

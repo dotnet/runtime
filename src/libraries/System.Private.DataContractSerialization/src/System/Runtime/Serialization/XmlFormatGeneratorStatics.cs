@@ -68,8 +68,7 @@ namespace System.Runtime.Serialization
         }
 
         private static PropertyInfo? s_extensionDataProperty;
-        internal static PropertyInfo ExtensionDataProperty => s_extensionDataProperty ??
-                                                              (s_extensionDataProperty = typeof(IExtensibleDataObject).GetProperty("ExtensionData")!);
+        internal static PropertyInfo ExtensionDataProperty => s_extensionDataProperty ??= typeof(IExtensibleDataObject).GetProperty("ExtensionData")!;
 
         private static ConstructorInfo? s_dictionaryEnumeratorCtor;
         internal static ConstructorInfo DictionaryEnumeratorCtor
@@ -200,9 +199,8 @@ namespace System.Runtime.Serialization
         }
 
         private static ConstructorInfo? s_extensionDataObjectCtor;
-        internal static ConstructorInfo ExtensionDataObjectCtor => s_extensionDataObjectCtor ??
-                                                                   (s_extensionDataObjectCtor =
-                                                                       typeof(ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, Type.EmptyTypes)!);
+        internal static ConstructorInfo ExtensionDataObjectCtor => s_extensionDataObjectCtor ??=
+                                                                       typeof(ExtensionDataObject).GetConstructor(Globals.ScanAllMembers, Type.EmptyTypes)!;
 
         private static ConstructorInfo? s_hashtableCtor;
         internal static ConstructorInfo HashtableCtor
@@ -842,14 +840,7 @@ namespace System.Runtime.Serialization
         internal static MethodInfo WriteExtensionDataMethod
         {
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            get
-            {
-                if (s_writeExtensionDataMethod == null)
-                {
-                    s_writeExtensionDataMethod = typeof(XmlObjectSerializerWriteContext).GetMethod("WriteExtensionData", Globals.ScanAllMembers)!;
-                }
-                return s_writeExtensionDataMethod;
-            }
+            get => s_writeExtensionDataMethod ??= typeof(XmlObjectSerializerWriteContext).GetMethod("WriteExtensionData", Globals.ScanAllMembers)!;
         }
 
         private static MethodInfo? s_writeXmlValueMethod;
@@ -925,8 +916,7 @@ namespace System.Runtime.Serialization
         }
 
         private static MethodInfo? s_extensionDataSetExplicitMethodInfo;
-        internal static MethodInfo ExtensionDataSetExplicitMethodInfo => s_extensionDataSetExplicitMethodInfo ??
-                                                                         (s_extensionDataSetExplicitMethodInfo = typeof(IExtensibleDataObject).GetMethod(Globals.ExtensionDataSetMethod)!);
+        internal static MethodInfo ExtensionDataSetExplicitMethodInfo => s_extensionDataSetExplicitMethodInfo ??= typeof(IExtensibleDataObject).GetMethod(Globals.ExtensionDataSetMethod)!;
 
         private static PropertyInfo? s_childElementNamespacesProperty;
         internal static PropertyInfo ChildElementNamespacesProperty

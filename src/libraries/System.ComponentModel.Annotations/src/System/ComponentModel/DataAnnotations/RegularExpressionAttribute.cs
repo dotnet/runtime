@@ -32,6 +32,11 @@ namespace System.ComponentModel.DataAnnotations
         public int MatchTimeoutInMilliseconds { get; set; }
 
         /// <summary>
+        /// Gets the timeout to use when matching the regular expression pattern
+        /// </summary>
+        public TimeSpan MatchTimeout => TimeSpan.FromMilliseconds(MatchTimeoutInMilliseconds);
+
+        /// <summary>
         ///     Gets the regular expression pattern to use
         /// </summary>
         public string Pattern { get; }
@@ -61,11 +66,14 @@ namespace System.ComponentModel.DataAnnotations
                 return true;
             }
 
-            var m = Regex!.Match(stringValue);
+            foreach (ValueMatch m in Regex!.EnumerateMatches(stringValue))
+            {
+                // We are looking for an exact match, not just a search hit. This matches what
+                // the RegularExpressionValidator control does
+                return m.Index == 0 && m.Length == stringValue.Length;
+            }
 
-            // We are looking for an exact match, not just a search hit. This matches what
-            // the RegularExpressionValidator control does
-            return (m.Success && m.Index == 0 && m.Length == stringValue.Length);
+            return false;
         }
 
         /// <summary>

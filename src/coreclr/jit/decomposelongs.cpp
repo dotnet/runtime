@@ -157,7 +157,7 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
     LIR::Use use;
     if (!Range().TryGetUse(tree, &use))
     {
-        use = LIR::Use::GetDummyUse(Range(), tree);
+        LIR::Use::MakeDummyUse(Range(), tree, &use);
     }
 
     GenTree* nextNode = nullptr;
@@ -366,11 +366,9 @@ GenTree* DecomposeLongs::DecomposeLclVar(LIR::Use& use)
         m_compiler->lvaSetVarDoNotEnregister(varNum DEBUGARG(DoNotEnregisterReason::LocalField));
         loResult->SetOper(GT_LCL_FLD);
         loResult->AsLclFld()->SetLclOffs(0);
-        loResult->AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
 
         hiResult->SetOper(GT_LCL_FLD);
         hiResult->AsLclFld()->SetLclOffs(4);
-        hiResult->AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
     }
 
     return FinalizeDecomposition(use, loResult, hiResult, hiResult);
@@ -933,7 +931,6 @@ GenTree* DecomposeLongs::DecomposeNeg(LIR::Use& use)
     Range().InsertAfter(loResult, zero, hiAdjust, hiResult);
 
     loResult->gtFlags |= GTF_SET_FLAGS;
-    hiAdjust->gtFlags |= GTF_USE_FLAGS;
 
 #elif defined(TARGET_ARM)
 
@@ -944,7 +941,6 @@ GenTree* DecomposeLongs::DecomposeNeg(LIR::Use& use)
     Range().InsertAfter(loResult, hiResult);
 
     loResult->gtFlags |= GTF_SET_FLAGS;
-    hiResult->gtFlags |= GTF_USE_FLAGS;
 
 #endif
 
@@ -999,7 +995,6 @@ GenTree* DecomposeLongs::DecomposeArith(LIR::Use& use)
     if ((oper == GT_ADD) || (oper == GT_SUB))
     {
         loResult->gtFlags |= GTF_SET_FLAGS;
-        hiResult->gtFlags |= GTF_USE_FLAGS;
 
         if ((loResult->gtFlags & GTF_OVERFLOW) != 0)
         {
@@ -1355,9 +1350,11 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
                 unreached();
         }
 
-        GenTreeCall::Use* argList = m_compiler->gtNewCallArgs(loOp1, hiOp1, shiftByOp);
-
-        GenTreeCall* call = m_compiler->gtNewHelperCallNode(helper, TYP_LONG, argList);
+        GenTreeCall* call       = m_compiler->gtNewHelperCallNode(helper, TYP_LONG);
+        NewCallArg   loArg      = NewCallArg::Primitive(loOp1).WellKnown(WellKnownArg::ShiftLow);
+        NewCallArg   hiArg      = NewCallArg::Primitive(hiOp1).WellKnown(WellKnownArg::ShiftHigh);
+        NewCallArg   shiftByArg = NewCallArg::Primitive(shiftByOp);
+        call->gtArgs.PushFront(m_compiler, loArg, hiArg, shiftByArg);
         call->gtFlags |= shift->gtFlags & GTF_ALL_EFFECT;
 
         if (shift->IsUnusedValue())
@@ -1797,7 +1794,7 @@ GenTree* DecomposeLongs::DecomposeHWIntrinsicGetElement(LIR::Use& use, GenTreeHW
 //------------------------------------------------------------------------
 // OptimizeCastFromDecomposedLong: optimizes a cast from GT_LONG by discarding
 // the high part of the source and, if the cast is to INT, the cast node itself.
-// Accounts for side effects and marks nodes unused as neccessary.
+// Accounts for side effects and marks nodes unused as necessary.
 //
 // Only accepts casts to integer types that are not long.
 // Does not optimize checked casts.

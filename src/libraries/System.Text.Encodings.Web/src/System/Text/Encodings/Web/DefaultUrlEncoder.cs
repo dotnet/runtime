@@ -12,8 +12,13 @@ namespace System.Text.Encodings.Web
 
         private readonly OptimizedInboxTextEncoder _innerEncoder;
 
-        internal DefaultUrlEncoder(TextEncoderSettings settings!!)
+        internal DefaultUrlEncoder(TextEncoderSettings settings)
         {
+            if (settings is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.settings);
+            }
+
             // Per RFC 3987, Sec. 2.2, we want encodings that are safe for
             // four particular components: 'isegment', 'ipath-noscheme',
             // 'iquery', and 'ifragment'. The relevant definitions are below.

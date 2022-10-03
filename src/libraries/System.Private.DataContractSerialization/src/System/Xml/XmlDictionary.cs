@@ -20,15 +20,7 @@ namespace System.Xml
         private XmlDictionaryString[]? _strings;
         private int _nextId;
 
-        public static IXmlDictionary Empty
-        {
-            get
-            {
-                if (s_empty == null)
-                    s_empty = new EmptyDictionary();
-                return s_empty;
-            }
-        }
+        public static IXmlDictionary Empty => s_empty ??= new EmptyDictionary();
 
         public XmlDictionary()
         {
@@ -84,8 +76,10 @@ namespace System.Xml
             return true;
         }
 
-        public virtual bool TryLookup(XmlDictionaryString value!!, [NotNullWhen(true)] out XmlDictionaryString? result)
+        public virtual bool TryLookup(XmlDictionaryString value, [NotNullWhen(true)] out XmlDictionaryString? result)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if (value.Dictionary != this)
             {
                 result = null;

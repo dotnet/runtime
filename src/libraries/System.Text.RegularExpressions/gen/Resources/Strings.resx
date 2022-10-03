@@ -117,31 +117,28 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="InvalidRegexGeneratorAttributeTitle" xml:space="preserve">
-    <value>Invalid RegexGenerator usage</value>
-    <comment>{Locked="RegexGenerator"}</comment>
+  <data name="InvalidGeneratedRegexAttributeTitle" xml:space="preserve">
+    <value>Invalid GeneratedRegexAttribute usage</value>
+    <comment>{Locked="GeneratedRegexAttribute"}</comment>
   </data>
-  <data name="InvalidRegexGeneratorAttributeMessage" xml:space="preserve">
-    <value>The RegexGeneratorAttribute is malformed</value>
-    <comment>{Locked="RegexGeneratorAttribute"}</comment>
+  <data name="InvalidGeneratedRegexAttributeMessage" xml:space="preserve">
+    <value>The GeneratedRegexAttribute is malformed</value>
+    <comment>{Locked="GeneratedRegexAttribute"}</comment>
   </data>
-  <data name="MultipleRegexGeneratorAttributesMessage" xml:space="preserve">
-    <value>Multiple RegexGeneratorAttributes were applied to the same method, but only one is allowed</value>
+  <data name="MultipleGeneratedRegexAttributesMessage" xml:space="preserve">
+    <value>Multiple GeneratedRegexAttributes were applied to the same method, but only one is allowed.</value>
   </data>
   <data name="InvalidRegexArgumentsMessage" xml:space="preserve">
     <value>The specified regex is invalid. '{0}'</value>
   </data>
   <data name="RegexMethodMustHaveValidSignatureMessage" xml:space="preserve">
-    <value>Regex method must be partial, parameterless, non-generic, and return Regex</value>
-  </data>
-  <data name="InvalidLangVersionMessage" xml:space="preserve">
-    <value>C# LangVersion of 11 or greater is required</value>
+    <value>GeneratedRegexAttribute method must be partial, parameterless, non-generic, non-abstract, and return Regex.</value>
   </data>
   <data name="LimitedSourceGenerationTitle" xml:space="preserve">
-    <value>RegexGenerator limitation reached.</value>
+    <value>Regex generator limitation reached.</value>
   </data>
   <data name="LimitedSourceGenerationMessage" xml:space="preserve">
-    <value>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression, due to an unsupported option or too complex a regular expression.  The implementation will interpret the regular expression at run-time.</value>
+    <value>The regex generator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation. See the explanation in the generated source for more details.</value>
   </data>
   <data name="Generic" xml:space="preserve">
     <value>Regular expression parser error '{0}' at offset {1}.</value>
@@ -158,14 +155,11 @@
   <data name="ShorthandClassInCharacterRange" xml:space="preserve">
     <value>Cannot include class \\{0} in character range.</value>
   </data>
-  <data name="ShorthandClassInCharacterRangeNoPlaceholder" xml:space="preserve">
-    <value>Cannot include class in character range.</value>
-  </data>
   <data name="BeginIndexNotNegative" xml:space="preserve">
     <value>Start index cannot be less than 0 or greater than input length.</value>
   </data>
   <data name="QuantifierOrCaptureGroupOutOfRange" xml:space="preserve">
-    <value>Capture group numbers must be less than or equal to Int32.MaxValue.</value>
+    <value>Quantifier and capture group numbers must be less than or equal to Int32.MaxValue.</value>
     <comment>{Locked="Int32.MaxValue"}</comment>
   </data>
   <data name="CaptureGroupOfZero" xml:space="preserve">
@@ -192,15 +186,8 @@
   <data name="InvalidUnicodePropertyEscape" xml:space="preserve">
     <value>Incomplete \\p{X} character escape.</value>
   </data>
-  <data name="InternalError_ScanRegex" xml:space="preserve">
-    <value>Internal error in ScanRegex.</value>
-    <comment>{Locked="ScanRegex"}</comment>
-  </data>
   <data name="CaptureGroupNameInvalid" xml:space="preserve">
     <value>Invalid group name: Group names must begin with a word character.</value>
-  </data>
-  <data name="InvalidEmptyArgument" xml:space="preserve">
-    <value>Argument {0} cannot be zero-length.</value>
   </data>
   <data name="LengthNotNegative" xml:space="preserve">
     <value>Length cannot be less than 0 or exceed input length.</value>
@@ -209,10 +196,7 @@
     <value>Malformed \\k&lt;...&gt; named back reference.</value>
   </data>
   <data name="AlternationHasMalformedReference" xml:space="preserve">
-    <value>(?({0}) ) malformed.</value>
-  </data>
-  <data name="AlternationHasMalformedReferenceNoPlaceholder" xml:space="preserve">
-    <value>Alternation has malformed reference.</value>
+    <value>Conditional alternation is missing a closing parenthesis after the group number {0}.</value>
   </data>
   <data name="MalformedUnicodePropertyEscape" xml:space="preserve">
     <value>Malformed \\p{X} character escape.</value>
@@ -225,9 +209,6 @@
   </data>
   <data name="NestedQuantifiersNotParenthesized" xml:space="preserve">
     <value>Nested quantifier '{0}'.</value>
-  </data>
-  <data name="NestedQuantifiersNotParenthesizedNoPlaceholder" xml:space="preserve">
-    <value>Nested quantifier no parenthesized.</value>
   </data>
   <data name="NoResultOnFailed" xml:space="preserve">
     <value>Result cannot be called on a failed Match.</value>
@@ -242,13 +223,10 @@
     <value>This platform does not support writing compiled regular expressions to an assembly.</value>
   </data>
   <data name="QuantifierAfterNothing" xml:space="preserve">
-    <value>Quantifier {x,y} following nothing.</value>
+    <value>Quantifier '{0}' following nothing.</value>
   </data>
   <data name="RegexMatchTimeoutException_Occurred" xml:space="preserve">
     <value>The RegEx engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</value>
-  </data>
-  <data name="ReplacementError" xml:space="preserve">
-    <value>Replacement pattern error.</value>
   </data>
   <data name="ReversedCharacterRange" xml:space="preserve">
     <value>[x-y] range in reverse order.</value>
@@ -268,26 +246,14 @@
   <data name="UndefinedNumberedReference" xml:space="preserve">
     <value>Reference to undefined group number {0}.</value>
   </data>
-  <data name="UndefinedNumberedReferenceNoPlaceholder" xml:space="preserve">
-    <value>Reference to undefined group number.</value>
-  </data>
   <data name="UndefinedNamedReference" xml:space="preserve">
     <value>Reference to undefined group name '{0}'.</value>
   </data>
-  <data name="UndefinedNamedReferenceNoPlaceholder" xml:space="preserve">
-    <value>Reference to undefined group name.</value>
-  </data>
   <data name="AlternationHasUndefinedReference" xml:space="preserve">
-    <value>(?({0}) ) reference to undefined group.</value>
-  </data>
-  <data name="AlternationHasUndefinedReferenceNoPlaceholder" xml:space="preserve">
-    <value>Alternation has a reference to undefined group.</value>
+    <value>Conditional alternation refers to an undefined group number {0}.</value>
   </data>
   <data name="UnrecognizedUnicodeProperty" xml:space="preserve">
     <value>Unknown property '{0}'.</value>
-  </data>
-  <data name="UnrecognizedUnicodePropertyNoPlaceholder" xml:space="preserve">
-    <value>Unknown property Unicode property.</value>
   </data>
   <data name="UnrecognizedControlCharacter" xml:space="preserve">
     <value>Unrecognized control character.</value>
@@ -307,5 +273,11 @@
   <data name="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups" xml:space="preserve">
     <value>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</value>
     <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
+  </data>
+  <data name="UseRegexSourceGeneratorMessage" xml:space="preserve">
+    <value>Use 'GeneratedRegexAttribute' to generate the regular expression implementation at compile-time.</value>
+  </data>
+  <data name="UseRegexSourceGeneratorTitle" xml:space="preserve">
+    <value>Convert to 'GeneratedRegexAttribute'.</value>
   </data>
 </root>

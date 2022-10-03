@@ -25,13 +25,13 @@
 //
 // With FEATURE_RX_THUNKS, thunks are created by allocating new virtual memory space, where the first half of
 // that space is filled with thunk stubs, and gets RX permissions, and the second half is for the thunks data,
-// and gets RW permissions. The thunk stubs and data blocks are not in groupped in pairs like in ProjectN: all
-// the thunk stubs blocks are groupped at the begining of the allocated virtual memory space, and all the
+// and gets RW permissions. The thunk stubs and data blocks are not in groupped in pairs:
+// all the thunk stubs blocks are groupped at the beginning of the allocated virtual memory space, and all the
 // thunk data blocks are groupped in the second half of the virtual space.
 //
 // Available thunks are tracked using a linked list. The first cell in the data block of each thunk is
 // used as the nodes of the linked list. The cell will point to the data block of the next available thunk,
-// if one is available, or point to null. When thunks are freed, they are added to the begining of the list.
+// if one is available, or point to null. When thunks are freed, they are added to the beginning of the list.
 //
 
 using System.Diagnostics;
@@ -99,7 +99,7 @@ namespace System.Runtime
             {
                 IntPtr thunkDataBlock = InternalCalls.RhpGetThunkDataBlockAddress(thunkStubsBlock);
 
-                // Address of the first thunk data cell should be at the begining of the thunks data block (page-aligned)
+                // Address of the first thunk data cell should be at the beginning of the thunks data block (page-aligned)
                 Debug.Assert(((nuint)(nint)thunkDataBlock % Constants.PageSize) == 0);
 
                 // Update the last pointer value in the thunks data section with the value of the common stub address
@@ -155,7 +155,7 @@ namespace System.Runtime
             {
                 IntPtr thunkDataBlock = InternalCalls.RhpGetThunkDataBlockAddress(thunkStubsBlock);
 
-                // Address of the first thunk data cell should be at the begining of the thunks data block (page-aligned)
+                // Address of the first thunk data cell should be at the beginning of the thunks data block (page-aligned)
                 Debug.Assert(((nuint)(nint)thunkDataBlock % Constants.PageSize) == 0);
 
                 // Update the last pointer value in the thunks data section with the value of the common stub address
@@ -217,7 +217,7 @@ namespace System.Runtime
 
             int thunkIndex = (int)(((nuint)(nint)nextAvailableThunkPtr) - ((nuint)(nint)nextAvailableThunkPtr & ~Constants.PageSizeMask));
             Debug.Assert((thunkIndex % Constants.ThunkDataSize) == 0);
-            thunkIndex = thunkIndex / Constants.ThunkDataSize;
+            thunkIndex /= Constants.ThunkDataSize;
 
             IntPtr thunkAddress = InternalCalls.RhpGetThunkStubsBlockAddress(nextAvailableThunkPtr) + thunkIndex * Constants.ThunkCodeSize;
 
@@ -269,7 +269,7 @@ namespace System.Runtime
             return false;
         }
 
-        private IntPtr TryGetThunkDataAddress(IntPtr thunkAddress)
+        private static IntPtr TryGetThunkDataAddress(IntPtr thunkAddress)
         {
             nuint thunkAddressValue = (nuint)(nint)ClearThumbBit(thunkAddress);
 

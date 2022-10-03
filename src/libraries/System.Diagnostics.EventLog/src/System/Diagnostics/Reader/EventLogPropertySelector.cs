@@ -13,8 +13,10 @@ namespace System.Diagnostics.Eventing.Reader
     /// </summary>
     public class EventLogPropertySelector : IDisposable
     {
-        public EventLogPropertySelector(IEnumerable<string> propertyQueries!!)
+        public EventLogPropertySelector(IEnumerable<string> propertyQueries)
         {
+            ArgumentNullException.ThrowIfNull(propertyQueries);
+
             string[] paths;
 
             ICollection<string> coll = propertyQueries as ICollection<string>;

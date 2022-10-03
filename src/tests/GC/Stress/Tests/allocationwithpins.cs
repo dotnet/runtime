@@ -504,7 +504,7 @@ internal class FreeListTest
             Console.WriteLine("iterating {0} times", iter_num);
         }
 
-        // ProjectN doesn't support thread! for now just do everything on the main thread.
+        // For now just do everything on the main thread.
         //int threadCount = 8;
         //        int threadCount = 1;
         //        if (args.Length >= 2)

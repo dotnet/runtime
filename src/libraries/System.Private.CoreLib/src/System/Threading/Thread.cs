@@ -107,15 +107,19 @@ namespace System.Threading
             }
         }
 
-        public Thread(ThreadStart start!!)
+        public Thread(ThreadStart start)
         {
+            ArgumentNullException.ThrowIfNull(start);
+
             _startHelper = new StartHelper(start);
 
             Initialize();
         }
 
-        public Thread(ThreadStart start!!, int maxStackSize)
+        public Thread(ThreadStart start, int maxStackSize)
         {
+            ArgumentNullException.ThrowIfNull(start);
+
             if (maxStackSize < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(maxStackSize), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -126,15 +130,19 @@ namespace System.Threading
             Initialize();
         }
 
-        public Thread(ParameterizedThreadStart start!!)
+        public Thread(ParameterizedThreadStart start)
         {
+            ArgumentNullException.ThrowIfNull(start);
+
             _startHelper = new StartHelper(start);
 
             Initialize();
         }
 
-        public Thread(ParameterizedThreadStart start!!, int maxStackSize)
+        public Thread(ParameterizedThreadStart start, int maxStackSize)
         {
+            ArgumentNullException.ThrowIfNull(start);
+
             if (maxStackSize < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(maxStackSize), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -145,16 +153,37 @@ namespace System.Threading
             Initialize();
         }
 
-#if !TARGET_BROWSER
+#if !TARGET_BROWSER || FEATURE_WASM_THREADS
         [UnsupportedOSPlatformGuard("browser")]
         internal static bool IsThreadStartSupported => true;
+        internal static bool IsInternalThreadStartSupported => true;
+#elif FEATURE_WASM_PERFTRACING
+        [UnsupportedOSPlatformGuard("browser")]
+        internal static bool IsThreadStartSupported => false;
+        internal static bool IsInternalThreadStartSupported => true;
+#else
+        [UnsupportedOSPlatformGuard("browser")]
+        internal static bool IsThreadStartSupported => false;
+        internal static bool IsInternalThreadStartSupported => false;
+#endif
+
+        internal static void ThrowIfNoThreadStart(bool internalThread = false)
+        {
+            if (IsThreadStartSupported)
+                return;
+            if (IsInternalThreadStartSupported && internalThread)
+                return;
+            throw new PlatformNotSupportedException();
+        }
 
         /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>, and optionally supplies an object containing data to be used by the method the thread executes.</summary>
         /// <param name="parameter">An object that contains data to be used by the method the thread executes.</param>
         /// <exception cref="ThreadStateException">The thread has already been started.</exception>
         /// <exception cref="OutOfMemoryException">There is not enough memory available to start this thread.</exception>
         /// <exception cref="InvalidOperationException">This thread was created using a <see cref="ThreadStart"/> delegate instead of a <see cref="ParameterizedThreadStart"/> delegate.</exception>
-        [UnsupportedOSPlatform("browser")]
+#if !FEATURE_WASM_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public void Start(object? parameter) => Start(parameter, captureContext: true);
 
         /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>, and optionally supplies an object containing data to be used by the method the thread executes.</summary>
@@ -166,11 +195,15 @@ namespace System.Threading
         /// Unlike <see cref="Start"/>, which captures the current <see cref="ExecutionContext"/> and uses that context to invoke the thread's delegate,
         /// <see cref="UnsafeStart"/> explicitly avoids capturing the current context and flowing it to the invocation.
         /// </remarks>
-        [UnsupportedOSPlatform("browser")]
+#if !FEATURE_WASM_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public void UnsafeStart(object? parameter) => Start(parameter, captureContext: false);
 
-        private void Start(object? parameter, bool captureContext)
+        private void Start(object? parameter, bool captureContext, bool internalThread = false)
         {
+            ThrowIfNoThreadStart(internalThread);
+
             StartHelper? startHelper = _startHelper;
 
             // In the case of a null startHelper (second call to start on same thread)
@@ -193,7 +226,9 @@ namespace System.Threading
         /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>.</summary>
         /// <exception cref="ThreadStateException">The thread has already been started.</exception>
         /// <exception cref="OutOfMemoryException">There is not enough memory available to start this thread.</exception>
-        [UnsupportedOSPlatform("browser")]
+#if !FEATURE_WASM_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public void Start() => Start(captureContext: true);
 
         /// <summary>Causes the operating system to change the state of the current instance to <see cref="ThreadState.Running"/>.</summary>
@@ -203,11 +238,16 @@ namespace System.Threading
         /// Unlike <see cref="Start"/>, which captures the current <see cref="ExecutionContext"/> and uses that context to invoke the thread's delegate,
         /// <see cref="UnsafeStart"/> explicitly avoids capturing the current context and flowing it to the invocation.
         /// </remarks>
-        [UnsupportedOSPlatform("browser")]
+#if !FEATURE_WASM_THREADS
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
         public void UnsafeStart() => Start(captureContext: false);
 
-        private void Start(bool captureContext)
+        internal void InternalUnsafeStart() => Start(captureContext: false, internalThread: true);
+
+        private void Start(bool captureContext, bool internalThread = false)
         {
+            ThrowIfNoThreadStart(internalThread);
             StartHelper? startHelper = _startHelper;
 
             // In the case of a null startHelper (second call to start on same thread)
@@ -220,7 +260,6 @@ namespace System.Threading
 
             StartCore();
         }
-#endif
 
         private void RequireCurrentThread()
         {
@@ -230,8 +269,10 @@ namespace System.Threading
             }
         }
 
-        private void SetCultureOnUnstartedThread(CultureInfo value!!, bool uiCulture)
+        private void SetCultureOnUnstartedThread(CultureInfo value, bool uiCulture)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             StartHelper? startHelper = _startHelper;
 
             // This check is best effort to catch common user errors only. It won't catch all posssible race
@@ -333,7 +374,7 @@ namespace System.Threading
             SleepInternal(millisecondsTimeout);
         }
 
-#if !CORERT
+#if !NATIVEAOT
         /// <summary>Returns the operating system identifier for the current thread.</summary>
         internal static ulong CurrentOSThreadId => GetCurrentOSThreadId();
 #endif
@@ -452,7 +493,7 @@ namespace System.Threading
         public static object? GetData(LocalDataStoreSlot slot) => LocalDataStore.GetData(slot);
         public static void SetData(LocalDataStoreSlot slot, object? data) => LocalDataStore.SetData(slot, data);
 
-        [Obsolete("The ApartmentState property has been deprecated. Use GetApartmentState, SetApartmentState or TrySetApartmentState.")]
+        [Obsolete("The ApartmentState property has been deprecated. Use GetApartmentState, SetApartmentState or TrySetApartmentState instead.")]
         public ApartmentState ApartmentState
         {
             get => GetApartmentState();
@@ -470,6 +511,7 @@ namespace System.Threading
             return SetApartmentState(state, throwOnError:false);
         }
 
+#pragma warning disable CA1822 // SetApartmentStateUnchecked should pass `this`
         private bool SetApartmentState(ApartmentState state, bool throwOnError)
         {
             switch (state)
@@ -485,6 +527,7 @@ namespace System.Threading
 
             return SetApartmentStateUnchecked(state, throwOnError);
         }
+#pragma warning disable CA1822
 
         [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public CompressedStack GetCompressedStack()
@@ -512,8 +555,8 @@ namespace System.Threading
         public static int VolatileRead(ref int address) => Volatile.Read(ref address);
         public static long VolatileRead(ref long address) => Volatile.Read(ref address);
         public static IntPtr VolatileRead(ref IntPtr address) => Volatile.Read(ref address);
-        [return: NotNullIfNotNull("address")]
-        public static object? VolatileRead([NotNullIfNotNull("address")] ref object? address) => Volatile.Read(ref address);
+        [return: NotNullIfNotNull(nameof(address))]
+        public static object? VolatileRead([NotNullIfNotNull(nameof(address))] ref object? address) => Volatile.Read(ref address);
         [CLSCompliant(false)]
         public static sbyte VolatileRead(ref sbyte address) => Volatile.Read(ref address);
         public static float VolatileRead(ref float address) => Volatile.Read(ref address);
@@ -531,7 +574,7 @@ namespace System.Threading
         public static void VolatileWrite(ref int address, int value) => Volatile.Write(ref address, value);
         public static void VolatileWrite(ref long address, long value) => Volatile.Write(ref address, value);
         public static void VolatileWrite(ref IntPtr address, IntPtr value) => Volatile.Write(ref address, value);
-        public static void VolatileWrite([NotNullIfNotNull("value")] ref object? address, object? value) => Volatile.Write(ref address, value);
+        public static void VolatileWrite([NotNullIfNotNull(nameof(value))] ref object? address, object? value) => Volatile.Write(ref address, value);
         [CLSCompliant(false)]
         public static void VolatileWrite(ref sbyte address, sbyte value) => Volatile.Write(ref address, value);
         public static void VolatileWrite(ref float address, float value) => Volatile.Write(ref address, value);
@@ -602,8 +645,10 @@ namespace System.Threading
                 }
             }
 
-            private static ThreadLocal<object?> GetThreadLocal(LocalDataStoreSlot slot!!)
+            private static ThreadLocal<object?> GetThreadLocal(LocalDataStoreSlot slot)
             {
+                ArgumentNullException.ThrowIfNull(slot);
+
                 Debug.Assert(slot.Data != null);
                 return slot.Data;
             }

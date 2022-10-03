@@ -177,29 +177,32 @@ namespace System.Reflection.Emit
 
         internal override MethodInfo GetMethod(MethodInfo fromNoninstanciated)
         {
-            if (methods == null)
-                methods = new Dictionary<MethodInfo, MethodInfo>();
-            if (!methods.ContainsKey(fromNoninstanciated))
-                methods[fromNoninstanciated] = new MethodOnTypeBuilderInst(this, fromNoninstanciated);
-            return methods[fromNoninstanciated]!;
+            methods ??= new Dictionary<MethodInfo, MethodInfo>();
+            if (!methods.TryGetValue(fromNoninstanciated, out MethodInfo? mi))
+            {
+                methods[fromNoninstanciated] = mi = new MethodOnTypeBuilderInst(this, fromNoninstanciated);
+            }
+            return mi;
         }
 
         internal override ConstructorInfo GetConstructor(ConstructorInfo fromNoninstanciated)
         {
-            if (ctors == null)
-                ctors = new Dictionary<ConstructorInfo, ConstructorInfo>();
-            if (!ctors.ContainsKey(fromNoninstanciated))
-                ctors[fromNoninstanciated] = new ConstructorOnTypeBuilderInst(this, fromNoninstanciated);
-            return ctors[fromNoninstanciated]!;
+            ctors ??= new Dictionary<ConstructorInfo, ConstructorInfo>();
+            if (!ctors.TryGetValue(fromNoninstanciated, out ConstructorInfo? ci))
+            {
+                ctors[fromNoninstanciated] = ci = new ConstructorOnTypeBuilderInst(this, fromNoninstanciated);
+            }
+            return ci;
         }
 
         internal override FieldInfo GetField(FieldInfo fromNoninstanciated)
         {
-            if (fields == null)
-                fields = new Dictionary<FieldInfo, FieldInfo>();
-            if (!fields.ContainsKey(fromNoninstanciated))
-                fields[fromNoninstanciated] = new FieldOnTypeBuilderInst(this, fromNoninstanciated);
-            return fields[fromNoninstanciated]!;
+            fields ??= new Dictionary<FieldInfo, FieldInfo>();
+            if (!fields.TryGetValue(fromNoninstanciated, out FieldInfo? fi))
+            {
+                fields[fromNoninstanciated] = fi = new FieldOnTypeBuilderInst(this, fromNoninstanciated);
+            }
+            return fi;
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]

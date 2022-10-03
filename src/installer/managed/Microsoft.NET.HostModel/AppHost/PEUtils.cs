@@ -25,7 +25,7 @@ namespace Microsoft.NET.HostModel.AppHost
         private const int SubsystemOffset = 0x5C;
 
         /// <summary>
-        /// The value of the sybsystem field which indicates Windows GUI (Graphical UI)
+        /// The value of the subsystem field which indicates Windows GUI (Graphical UI)
         /// </summary>
         private const ushort WindowsGUISubsystem = 0x2;
 

@@ -16,9 +16,11 @@ class fx_resolver_t
 public:
     static StatusCode resolve_frameworks_for_app(
         const host_startup_info_t& host_info,
+        bool disable_multilevel_lookup,
         const runtime_config_t::settings_t& override_settings,
         const runtime_config_t& app_config,
-        fx_definition_vector_t& fx_definitions);
+        fx_definition_vector_t& fx_definitions,
+        const pal::char_t* app_display_name = nullptr);
 
     static bool is_config_compatible_with_frameworks(
         const runtime_config_t& config,
@@ -31,10 +33,12 @@ private:
         const runtime_config_t& config);
     StatusCode read_framework(
         const host_startup_info_t& host_info,
+        bool disable_multilevel_lookup,
         const runtime_config_t::settings_t& override_settings,
         const runtime_config_t& config,
         const fx_reference_t * effective_parent_fx_ref,
-        fx_definition_vector_t& fx_definitions);
+        fx_definition_vector_t& fx_definitions,
+        const pal::char_t* app_display_name);
 
     static StatusCode reconcile_fx_references_helper(
         const fx_reference_t& lower_fx_ref,
@@ -49,7 +53,8 @@ private:
         const pal::string_t& fx_name,
         const pal::string_t& fx_version,
         const pal::string_t& fx_dir,
-        const pal::string_t& dotnet_root);
+        const pal::string_t& dotnet_root,
+        bool disable_multilevel_lookup);
     static void display_incompatible_framework_error(
         const pal::string_t& higher,
         const fx_reference_t& lower);

@@ -48,16 +48,7 @@ namespace System.Configuration
 
         private ArgumentException CreateExceptionForInvalidValue()
         {
-            StringBuilder names = new StringBuilder();
-
-            foreach (string name in Enum.GetNames(_enumType))
-            {
-                if (names.Length != 0)
-                {
-                    names.Append(", ");
-                }
-                names.Append(name);
-            }
+            string names = string.Join(", ", Enum.GetNames(_enumType));
             return new ArgumentException(SR.Format(SR.Invalid_enum_value, names));
         }
     }

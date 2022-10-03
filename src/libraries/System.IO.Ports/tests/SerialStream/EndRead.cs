@@ -19,7 +19,7 @@ namespace System.IO.Ports.Tests
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             using (var com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
             {
-                Debug.WriteLine("Verifying EndRead method throws exception after a call to Cloes()");
+                Debug.WriteLine("Verifying EndRead method throws exception after a call to Close()");
 
                 com1.Open();
                 com2.Open();

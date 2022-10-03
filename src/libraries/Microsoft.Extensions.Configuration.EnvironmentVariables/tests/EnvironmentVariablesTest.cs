@@ -156,7 +156,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
         }
 
         [Fact]
-        public void ReplaceDoubleUnderscoreInEnvironmentVariablesButNotPrefix()
+        public void ReplaceDoubleUnderscoreInEnvironmentVariablesDoubleUnderscorePrefixStillMatches()
         {
             var dict = new Hashtable()
                 {
@@ -166,11 +166,11 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
 
             envConfigSrc.Load(dict);
 
-            Assert.Throws<InvalidOperationException>(() => envConfigSrc.Get("data:ConnectionString"));
+            Assert.Equal("connection", envConfigSrc.Get("data:ConnectionString"));
         }
 
         [Fact]
-        public void ReplaceDoubleUnderscoreInEnvironmentVariablesButNotInAnomalousPrefix()
+        public void MixingPathSeparatorsInPrefixStillMatchesEnvironmentVariable()
         {
             var dict = new Hashtable()
                 {
@@ -184,7 +184,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
         }
 
         [Fact]
-        public void ReplaceDoubleUnderscoreInEnvironmentVariablesWithDuplicatedPrefix()
+        public void OnlyASinglePrefixIsRemovedFromMatchingKey()
         {
             var dict = new Hashtable()
                 {
@@ -194,7 +194,29 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
 
             envConfigSrc.Load(dict);
 
-            Assert.Throws<InvalidOperationException>(() => envConfigSrc.Get("test:ConnectionString"));
+            Assert.Equal("connection", envConfigSrc.Get("test:ConnectionString"));
+        }
+
+        [Fact]
+        public void OnlyEnvironmentVariablesMatchingTheGivenPrefixAreIncluded()
+        {
+            var dict = new Hashtable()
+                {
+                    {"projectA__section1__project", "A"},
+                    {"projectA__section1__projectA", "true"},
+                    {"projectB__section1__project", "B"},
+                    {"projectB__section1__projectB", "true"},
+                    {"section1__project", "unknown"},
+                    {"section1__noProject", "true"}
+                };
+            var envConfigSrc = new EnvironmentVariablesConfigurationProvider("projectB__");
+
+            envConfigSrc.Load(dict);
+
+            Assert.Equal("B", envConfigSrc.Get("section1:project"));
+            Assert.Equal("true", envConfigSrc.Get("section1:projectB"));
+            Assert.Throws<InvalidOperationException>(() => envConfigSrc.Get("section1:projectA"));
+            Assert.Throws<InvalidOperationException>(() => envConfigSrc.Get("section1:noProject"));
         }
 
         [Fact]
@@ -220,7 +242,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
         }
 
         [Fact]
-        public void AddEnvironmentVariables_Bind_PrefixShouldNormalize()
+        public void AddEnvironmentVariablesUsingNormalizedPrefix_Bind_PrefixMatches()
         {
             try
             {
@@ -241,7 +263,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
         }
 
         [Fact]
-        public void AddEnvironmentVariables_UsingDoubleUnderscores_Bind_PrefixWontNormalize()
+        public void AddEnvironmentVariablesUsingPrefixWithDoubleUnderscores_Bind_PrefixMatches()
         {
             try
             {
@@ -253,7 +275,7 @@ namespace Microsoft.Extensions.Configuration.EnvironmentVariables.Test
                 var settingsWithFoo = new SettingsWithFoo();
                 configuration.Bind(settingsWithFoo);
 
-                Assert.Null(settingsWithFoo.Foo);
+                Assert.Equal("myFooValue", settingsWithFoo.Foo);
             }
             finally
             {

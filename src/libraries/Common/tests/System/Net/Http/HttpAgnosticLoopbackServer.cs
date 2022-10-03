@@ -109,15 +109,18 @@ namespace System.Net.Test.Common
                 {
                     return connection = await Http2LoopbackServerFactory.Singleton.CreateConnectionAsync(new SocketWrapper(socket), stream, options).ConfigureAwait(false);
                 }
-                else 
+                else
                 {
                     throw new Exception($"Invalid ClearTextVersion={_options.ClearTextVersion} specified");
                 }
             }
             catch
-            {            
-                connection?.Dispose();
-                connection = null;
+            {
+                if (connection is not null)
+                {
+                    await connection.DisposeAsync();
+                    connection = null;
+                }
                 stream.Dispose();
                 throw;
             }
@@ -132,7 +135,7 @@ namespace System.Net.Test.Common
 
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
-            using (GenericLoopbackConnection connection = await EstablishGenericConnectionAsync().ConfigureAwait(false))
+            await using (GenericLoopbackConnection connection = await EstablishGenericConnectionAsync().ConfigureAwait(false))
             {
                 return await connection.HandleRequestAsync(statusCode, headers, content).ConfigureAwait(false);
             }
@@ -140,7 +143,7 @@ namespace System.Net.Test.Common
 
         public override async Task AcceptConnectionAsync(Func<GenericLoopbackConnection, Task> funcAsync)
         {
-            using (GenericLoopbackConnection connection = await EstablishGenericConnectionAsync().ConfigureAwait(false))
+            await using (GenericLoopbackConnection connection = await EstablishGenericConnectionAsync().ConfigureAwait(false))
             {
                 await funcAsync(connection).ConfigureAwait(false);
             }

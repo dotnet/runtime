@@ -2869,7 +2869,7 @@ namespace System.Xml.Tests
 
             if (iCount.Equals(2))
                 return;
-            _output.WriteLine("Exception not generated for invalid ouput destinations");
+            _output.WriteLine("Exception not generated for invalid output destinations");
             Assert.True(false);
         }
 
@@ -2889,7 +2889,7 @@ namespace System.Xml.Tests
                     return;
             }
 
-            _output.WriteLine("Exception not generated for invalid ouput destinations");
+            _output.WriteLine("Exception not generated for invalid output destinations");
             Assert.True(false);
         }
 
@@ -3029,10 +3029,10 @@ namespace System.Xml.Tests
 
     //[TestCase(Name = "XslCompiledTransform.Transform(IXPathNavigable, XsltArgumentList, XmlWriter, XmlResolver)", Desc = "Constructor Tests", Param = "IXPathNavigable")]
     //[TestCase(Name = "XslCompiledTransform.Transform(XmlReader, XsltArgumentList, XmlWriter, XmlResolver)", Desc = "Constructor Tests", Param = "XmlReader")]
-    public class CTransformConstructorWihtFourParametersTest : XsltApiTestCaseBase2
+    public class CTransformConstructorWithFourParametersTest : XsltApiTestCaseBase2
     {
         private ITestOutputHelper _output;
-        public CTransformConstructorWihtFourParametersTest(ITestOutputHelper output) : base(output)
+        public CTransformConstructorWithFourParametersTest(ITestOutputHelper output) : base(output)
         {
             _output = output;
         }

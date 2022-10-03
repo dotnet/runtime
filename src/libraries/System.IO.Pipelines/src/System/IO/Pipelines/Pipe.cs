@@ -197,10 +197,21 @@ namespace System.IO.Pipelines
                             _writingHeadBytesBuffered = 0;
                         }
 
-                        BufferSegment newSegment = AllocateSegment(sizeHint);
+                        if (_writingHead.Length == 0)
+                        {
+                            // If we got here that means Advance was called with 0 bytes or GetMemory was called again without any writes occurring
+                            // And, the newly requested memory size is greater than our unused segments internal memory buffer
+                            // So we should reuse the BufferSegment and replace the memory it's holding, this way ReadAsync will not receive a buffer with one segment being empty
+                            _writingHead.ResetMemory();
+                            RentMemory(_writingHead, sizeHint);
+                        }
+                        else
+                        {
+                            BufferSegment newSegment = AllocateSegment(sizeHint);
 
-                        _writingHead.SetNext(newSegment);
-                        _writingHead = newSegment;
+                            _writingHead.SetNext(newSegment);
+                            _writingHead = newSegment;
+                        }
                     }
                 }
             }
@@ -208,8 +219,18 @@ namespace System.IO.Pipelines
 
         private BufferSegment AllocateSegment(int sizeHint)
         {
-            Debug.Assert(sizeHint >= 0);
             BufferSegment newSegment = CreateSegmentUnsynchronized();
+
+            RentMemory(newSegment, sizeHint);
+
+            return newSegment;
+        }
+
+        private void RentMemory(BufferSegment segment, int sizeHint)
+        {
+            // Segment should be new or reset, otherwise a memory leak could occur
+            Debug.Assert(segment.MemoryOwner is null);
+            Debug.Assert(sizeHint >= 0);
 
             MemoryPool<byte>? pool = null;
             int maxSize = -1;
@@ -223,18 +244,16 @@ namespace System.IO.Pipelines
             if (sizeHint <= maxSize)
             {
                 // Use the specified pool as it fits. Specified pool is not null as maxSize == -1 if _pool is null.
-                newSegment.SetOwnedMemory(pool!.Rent(GetSegmentSize(sizeHint, maxSize)));
+                segment.SetOwnedMemory(pool!.Rent(GetSegmentSize(sizeHint, maxSize)));
             }
             else
             {
                 // Use the array pool
                 int sizeToRequest = GetSegmentSize(sizeHint);
-                newSegment.SetOwnedMemory(ArrayPool<byte>.Shared.Rent(sizeToRequest));
+                segment.SetOwnedMemory(ArrayPool<byte>.Shared.Rent(sizeToRequest));
             }
 
-            _writingHeadMemory = newSegment.AvailableMemory;
-
-            return newSegment;
+            _writingHeadMemory = segment.AvailableMemory;
         }
 
         private int GetSegmentSize(int sizeHint, int maxBufferSize = int.MaxValue)
@@ -347,7 +366,7 @@ namespace System.IO.Pipelines
             ValueTask<FlushResult> result;
             lock (SyncObj)
             {
-                PrepareFlush(out completionData, out result, cancellationToken);
+                PrepareFlushUnsynchronized(out completionData, out result, cancellationToken);
             }
 
             TrySchedule(ReaderScheduler, completionData);
@@ -355,7 +374,7 @@ namespace System.IO.Pipelines
             return result;
         }
 
-        private void PrepareFlush(out CompletionData completionData, out ValueTask<FlushResult> result, CancellationToken cancellationToken)
+        private void PrepareFlushUnsynchronized(out CompletionData completionData, out ValueTask<FlushResult> result, CancellationToken cancellationToken)
         {
             var completeReader = CommitUnsynchronized();
 
@@ -553,7 +572,7 @@ namespace System.IO.Pipelines
                 while (returnStart != null && returnStart != returnEnd)
                 {
                     BufferSegment? next = returnStart.NextSegment;
-                    returnStart.ResetMemory();
+                    returnStart.Reset();
                     ReturnSegmentUnsynchronized(returnStart);
                     returnStart = next;
                 }
@@ -691,6 +710,9 @@ namespace System.IO.Pipelines
 
                     // We also need to flip the reading state off
                     _operationState.EndRead();
+
+                    // Begin read again to wire up cancellation token
+                    _readerAwaitable.BeginOperation(token, s_signalReaderAwaitable, this);
                 }
 
                 // If the writer is currently paused and we are about the wait for more data then this would deadlock.
@@ -863,7 +885,7 @@ namespace System.IO.Pipelines
                     BufferSegment returnSegment = segment;
                     segment = segment.NextSegment;
 
-                    returnSegment.ResetMemory();
+                    returnSegment.Reset();
                 }
 
                 _writingHead = null;
@@ -1057,7 +1079,7 @@ namespace System.IO.Pipelines
                     WriteMultiSegment(source.Span);
                 }
 
-                PrepareFlush(out completionData, out result, cancellationToken);
+                PrepareFlushUnsynchronized(out completionData, out result, cancellationToken);
             }
 
             TrySchedule(ReaderScheduler, completionData);

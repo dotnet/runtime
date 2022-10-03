@@ -10,12 +10,15 @@ namespace System.Threading
     /// <summary>
     /// An object representing the registration of a <see cref="WaitHandle"/> via <see cref="ThreadPool.RegisterWaitForSingleObject"/>.
     /// </summary>
-    [UnsupportedOSPlatform("browser")]
+#if !FEATURE_WASM_THREADS
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+#endif
     public sealed partial class RegisteredWaitHandle : MarshalByRefObject
     {
         internal RegisteredWaitHandle(WaitHandle waitHandle, _ThreadPoolWaitOrTimerCallback callbackHelper,
             int millisecondsTimeout, bool repeating)
         {
+            Thread.ThrowIfNoThreadStart();
             Handle = waitHandle.SafeWaitHandle;
             Callback = callbackHelper;
             TimeoutDurationMs = millisecondsTimeout;

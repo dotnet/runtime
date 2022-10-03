@@ -21,9 +21,9 @@
 }
 .assembly extern xunit.core {}
 // MVID: {90803FD0-8E18-44C9-A242-98463ADD450D}
-.namespace JitTest
+.namespace JitTest_virtftn_t_fptr_il
 {
-  .class private auto ansi Test extends [mscorlib]System.Object
+  .class public auto ansi Test extends [mscorlib]System.Object
   {
     .method private hidebysig virtual instance int32 DoStuff(method instance int32 *()) il managed
     {
@@ -39,7 +39,7 @@
 			// Code size       1 (0x1)
 			.maxstack  8
 			ldarg.0
-			ldvirtftn 		instance int32 JitTest.Test::DummyMethod()
+			ldvirtftn 		instance int32 JitTest_virtftn_t_fptr_il.Test::DummyMethod()
 			ret
     } // end of method 'Test::DoStuff'
     .method private hidebysig virtual instance int32 DummyMethod() il managed
@@ -59,28 +59,28 @@
             TestMain() il managed
     {
 			.maxstack  8
-			.locals (class JitTest.Test)
-			newobj		instance void JitTest.Test::.ctor()
+			.locals (class JitTest_virtftn_t_fptr_il.Test)
+			newobj		instance void JitTest_virtftn_t_fptr_il.Test::.ctor()
 			stloc.0
 			ldloc.0
 			dup
 			dup
 			dup
-			ldvirtftn 	instance int32 JitTest.Test::DummyMethod()
+			ldvirtftn 	instance int32 JitTest_virtftn_t_fptr_il.Test::DummyMethod()
 			ldloc.0
-			ldvirtftn	instance int32 JitTest.Test::DoStuff(method instance int32 *())
+			ldvirtftn	instance int32 JitTest_virtftn_t_fptr_il.Test::DoStuff(method instance int32 *())
 			calli		instance int32 (method instance int32 *())
 			pop
 			
 			ldloc.0
-			ldvirtftn	instance method instance int32 *() JitTest.Test::RetStuff()
+			ldvirtftn	instance method instance int32 *() JitTest_virtftn_t_fptr_il.Test::RetStuff()
 			calli		instance method instance int32 *()()
 			tail. calli		instance int32 ()
 			ret
 
     } // end of method 'Test::TestMain'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
 			.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -88,7 +88,7 @@
 			)
 			.entrypoint
 			.maxstack  4
-			ldftn 		int32 JitTest.Test::TestMain()
+			ldftn 		int32 JitTest_virtftn_t_fptr_il.Test::TestMain()
 			calli		int32 ()
 
 			ldc.i4		0x64
@@ -109,5 +109,5 @@
 
   } // end of class 'Test'
 
-} // end of namespace 'JitTest'
+} // end of namespace 'JitTest_virtftn_t_fptr_il'
 //*********** DISASSEMBLY COMPLETE ***********************

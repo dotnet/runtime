@@ -95,7 +95,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 {
                     newEc.ImportParameters(param);
 
-                    // The curve name is not flowed on explicit export\import (by design) so this excercises logic
+                    // The curve name is not flowed on explicit export\import (by design) so this exercises logic
                     // that regenerates based on current curve values
                     newEc.GenerateKey(param.Curve);
                     param2 = newEc.ExportExplicitParameters(true);
@@ -284,6 +284,63 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
                 Assert.ThrowsAny<CryptographicException>(
                     () => SignData(ecdsa, new byte[] { 1, 2, 3, 4, 5 }, HashAlgorithmName.SHA256));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TestCurves))]
+        public void SignaturesAtZeroDoNotVerify_IEEEP1363(CurveDef curveDef)
+        {
+            using (ECDsa ec = ECDsaFactory.Create(curveDef.Curve))
+            {
+                byte[] data = new byte[] { 1, 2, 3, 4 };
+                byte[] signature = ec.SignData(data, HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+
+                // Verify it now.
+                bool verified = ec.VerifyData(
+                    data,
+                    signature,
+                    HashAlgorithmName.SHA256,
+                    DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+                Assert.True(verified, nameof(ec.VerifyData));
+
+                // Since the signature is fixed field, create a zero signature just by zeroing it out.
+                // The important thing is that it is the right length.
+                Array.Clear(signature);
+
+                verified = ec.VerifyData(
+                    data,
+                    signature,
+                    HashAlgorithmName.SHA256,
+                    DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+                Assert.False(verified, nameof(ec.VerifyData));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TestCurves))]
+        public void SignaturesAtZeroDoNotVerify_DER(CurveDef curveDef)
+        {
+            using (ECDsa ec = ECDsaFactory.Create(curveDef.Curve))
+            {
+                byte[] data = new byte[] { 1, 2, 3, 4 };
+
+                // ASN.1:
+                // SEQUENCE {
+                //    INTEGER 0,
+                //    INTEGER 0
+                // }
+                byte[] zeroSignature = new byte[]
+                {
+                    0x30, 0x06, 0x02, 0x01, 0x00, 0x02, 0x01, 0x00
+                };
+
+                bool verified = ec.VerifyData(
+                    data,
+                    zeroSignature,
+                    HashAlgorithmName.SHA256,
+                    DSASignatureFormat.Rfc3279DerSequence);
+                Assert.False(verified, nameof(ec.VerifyData));
             }
         }
     }

@@ -8,9 +8,7 @@
 #include <crtwrap.h>
 #include "comcache.h"
 #include "runtimecallablewrapper.h"
-#include "mtx.h"
-#include "contxt.h"
-#include "ctxtcall.h"
+#include <mtx.h>
 #include "win32threadpool.h"
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -721,7 +719,7 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContext()
 
                         // The proxy is no longer valid. This sometimes manifests itself by
                         // a failure during re-marshaling it to the stream. When this happens,
-                        // we need to release the the pUnk we extracted and the stream and try to
+                        // we need to release the pUnk we extracted and the stream and try to
                         // re-create the stream. We don't want to release the stream data since
                         // we already extracted the proxy from the stream and released it.
                         RCW_VTABLEPTR(GetRCW());
@@ -1102,7 +1100,7 @@ HRESULT IUnkEntry::MarshalIUnknownToStream()
 
     // Try to set the stream in the IUnkEntry. If another thread already set it,
     // then we need to release the stream we just set up.
-    if (FastInterlockCompareExchangePointer(&m_pStream, pStream, NULL) != NULL)
+    if (InterlockedCompareExchangeT(&m_pStream, pStream, NULL) != NULL)
         SafeReleaseStream(pStream);
 
     return hr;
@@ -1250,7 +1248,7 @@ DWORD CtxEntry::AddRef()
     }
     CONTRACTL_END;
 
-    ULONG cbRef = FastInterlockIncrement((LONG*)&m_dwRefCount);
+    ULONG cbRef = InterlockedIncrement((LONG*)&m_dwRefCount);
     LOG((LF_INTEROP, LL_INFO100, "CtxEntry::Addref %8.8x with %d\n", this, cbRef));
     return cbRef;
 }
@@ -1271,7 +1269,7 @@ DWORD CtxEntry::Release()
 
     LPVOID pCtxCookie = m_pCtxCookie;
 
-    LONG cbRef = FastInterlockDecrement((LONG*)&m_dwRefCount);
+    LONG cbRef = InterlockedDecrement((LONG*)&m_dwRefCount);
     LOG((LF_INTEROP, LL_INFO100, "CtxEntry::Release %8.8x with %d\n", this, cbRef));
 
     // If the ref count falls to 0, try and delete the ctx entry.

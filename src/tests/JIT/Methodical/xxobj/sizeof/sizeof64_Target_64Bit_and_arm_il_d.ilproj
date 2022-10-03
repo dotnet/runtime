@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <RestorePackages>true</RestorePackages>
     <CLRTestPriority>1</CLRTestPriority>
     <DebugType>Full</DebugType>
     <!-- There are arch-specific versions of this test to allow it to be compiled for all targets -->
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'x86'">true</CLRTestTargetUnsupported>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="sizeof64_Target_64Bit_and_arm.il" />

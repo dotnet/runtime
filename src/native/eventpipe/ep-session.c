@@ -180,6 +180,7 @@ ep_session_alloc (
 	case EP_SESSION_TYPE_FILESTREAM :
 		if (output_path) {
 			file_stream_writer = ep_file_stream_writer_alloc (output_path);
+			ep_raise_error_if_nok (file_stream_writer != NULL);
 			instance->file = ep_file_alloc (ep_file_stream_writer_get_stream_writer_ref (file_stream_writer), format);
 			ep_raise_error_if_nok (instance->file != NULL);
 			file_stream_writer = NULL;
@@ -578,7 +579,7 @@ ep_session_resume (EventPipeSession *session)
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef EP_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(EP_INCLUDE_SOURCE_FILES) && !defined(EP_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_eventpipe_session;
 const char quiet_linker_empty_file_warning_eventpipe_session = 0;
 #endif

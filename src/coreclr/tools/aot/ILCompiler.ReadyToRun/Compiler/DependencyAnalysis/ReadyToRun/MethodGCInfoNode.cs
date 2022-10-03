@@ -138,7 +138,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     unwindInfo[0] |= (byte)((UNW_FLAG_EHANDLER | UNW_FLAG_UHANDLER) << FlagsShift);
                 }
-                else if ((targetArch == TargetArchitecture.ARM) || (targetArch == TargetArchitecture.ARM64))
+                else if ((targetArch == TargetArchitecture.ARM) || (targetArch == TargetArchitecture.ARM64) || (targetArch == TargetArchitecture.LoongArch64))
                 {
                     // Set the 'X' bit to indicate that there is a personality routine associated with this method
                     unwindInfo[2] |= 1 << 4;

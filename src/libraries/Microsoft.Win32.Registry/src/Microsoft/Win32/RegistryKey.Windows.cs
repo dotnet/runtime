@@ -6,8 +6,11 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Security;
+using System.Text;
 
 /*
   Note on transaction support:
@@ -57,7 +60,7 @@ namespace Microsoft.Win32
 {
     public sealed partial class RegistryKey : MarshalByRefObject, IDisposable
     {
-        private void ClosePerfDataKey()
+        private static void ClosePerfDataKey()
         {
             // System keys should never be closed.  However, we want to call RegCloseKey
             // on HKEY_PERFORMANCE_DATA when called from PerformanceCounter.CloseSharedResources
@@ -111,7 +114,10 @@ namespace Microsoft.Win32
                 }
                 return key;
             }
-            else if (ret != 0) // syscall failed, ret is an error code.
+
+            result.Dispose();
+
+            if (ret != 0) // syscall failed, ret is an error code.
             {
                 Win32Error(ret, _keyName + "\\" + subkey);  // Access denied?
             }
@@ -217,29 +223,30 @@ namespace Microsoft.Win32
             }
 
             // connect to the specified remote registry
-            int ret = Interop.Advapi32.RegConnectRegistry(machineName, new SafeRegistryHandle(new IntPtr((int)hKey), false), out SafeRegistryHandle foreignHKey);
-
-            if (ret == Interop.Errors.ERROR_DLL_INIT_FAILED)
+            int ret = Interop.Advapi32.RegConnectRegistry(machineName, new IntPtr((int)hKey), out SafeRegistryHandle foreignHKey);
+            if (ret == 0 && !foreignHKey.IsInvalid)
             {
-                // return value indicates an error occurred
-                throw new ArgumentException(SR.Arg_DllInitFailure);
+                RegistryKey key = new RegistryKey(foreignHKey, true, false, true, ((IntPtr)hKey) == HKEY_PERFORMANCE_DATA, view);
+                key._checkMode = RegistryKeyPermissionCheck.Default;
+                key._keyName = s_hkeyNames[index];
+                return key;
             }
+
+            foreignHKey.Dispose();
 
             if (ret != 0)
             {
+                if (ret == Interop.Errors.ERROR_DLL_INIT_FAILED)
+                {
+                    // return value indicates an error occurred
+                    throw new ArgumentException(SR.Arg_DllInitFailure);
+                }
+
                 Win32ErrorStatic(ret, null);
             }
 
-            if (foreignHKey.IsInvalid)
-            {
-                // return value indicates an error occurred
-                throw new ArgumentException(SR.Format(SR.Arg_RegKeyNoRemoteConnect, machineName));
-            }
-
-            RegistryKey key = new RegistryKey(foreignHKey, true, false, true, ((IntPtr)hKey) == HKEY_PERFORMANCE_DATA, view);
-            key._checkMode = RegistryKeyPermissionCheck.Default;
-            key._keyName = s_hkeyNames[index];
-            return key;
+            // return value indicates an error occurred
+            throw new ArgumentException(SR.Format(SR.Arg_RegKeyNoRemoteConnect, machineName));
         }
 
         private RegistryKey? InternalOpenSubKeyCore(string name, RegistryKeyPermissionCheck permissionCheck, int rights)
@@ -252,6 +259,8 @@ namespace Microsoft.Win32
                 key._checkMode = permissionCheck;
                 return key;
             }
+
+            result.Dispose();
 
             if (ret == Interop.Errors.ERROR_ACCESS_DENIED || ret == Interop.Errors.ERROR_BAD_IMPERSONATION_LEVEL)
             {
@@ -275,6 +284,8 @@ namespace Microsoft.Win32
                 return key;
             }
 
+            result.Dispose();
+
             if (ret == Interop.Errors.ERROR_ACCESS_DENIED || ret == Interop.Errors.ERROR_BAD_IMPERSONATION_LEVEL)
             {
                 // We need to throw SecurityException here for compatibility reasons,
@@ -295,6 +306,8 @@ namespace Microsoft.Win32
                 key._keyName = _keyName + "\\" + name;
                 return key;
             }
+
+            result.Dispose();
 
             return null;
         }
@@ -339,15 +352,13 @@ namespace Microsoft.Win32
                     GetRegistryKeyAccess(IsWritable()) | (int)_regView,
                     out SafeRegistryHandle result);
 
-                if (ret == 0 && !result.IsInvalid)
+                if (ret != 0 || result.IsInvalid)
                 {
-                    return result;
-                }
-                else
-                {
+                    result.Dispose();
                     Win32Error(ret, null);
-                    throw new IOException(Interop.Kernel32.GetMessage(ret), ret);
                 }
+
+                return result;
             }
         }
 
@@ -520,263 +531,221 @@ namespace Microsoft.Win32
             return names.ToArray();
         }
 
-        private object? InternalGetValueCore(string? name, object? defaultValue, bool doNotExpand)
+        [return: NotNullIfNotNull(nameof(defaultValue))]
+        private unsafe object? InternalGetValueCore(string? name, object? defaultValue, bool doNotExpand)
         {
-            object? data = defaultValue;
-            int type = 0;
-            int datasize = 0;
-
-            int ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, (byte[]?)null, ref datasize);
-
-            if (ret != 0)
+            // Create an initial stack buffer large enough to satisfy many reg keys.  We need to call RegQueryValueEx
+            // in order to determine the type of the value, and we can avoid further retries if all of the data can be
+            // retrieved in that single call with this buffer.  If we do need to grow, we grow into a pooled array. The
+            // caller is always handed back a copy of this data, either in an array, a string, or a boxed integer.
+            Span<byte> span = stackalloc byte[512];
+            byte[]? pooledArray = null;
+            if (IsPerfDataKey())
             {
-                if (IsPerfDataKey())
-                {
-                    int size = 65000;
-                    int sizeInput = size;
-
-                    int r;
-                    byte[] blob = new byte[size];
-                    while (Interop.Errors.ERROR_MORE_DATA == (r = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref sizeInput)))
-                    {
-                        if (size == int.MaxValue)
-                        {
-                            // ERROR_MORE_DATA was returned however we cannot increase the buffer size beyond Int32.MaxValue
-                            Win32Error(r, name);
-                        }
-                        else if (size > (int.MaxValue / 2))
-                        {
-                            // at this point in the loop "size * 2" would cause an overflow
-                            size = int.MaxValue;
-                        }
-                        else
-                        {
-                            size *= 2;
-                        }
-                        sizeInput = size;
-                        blob = new byte[size];
-                    }
-                    if (r != 0)
-                    {
-                        Win32Error(r, name);
-                    }
-                    return blob;
-                }
-                else
-                {
-                    // For stuff like ERROR_FILE_NOT_FOUND, we want to return null (data).
-                    // Some OS's returned ERROR_MORE_DATA even in success cases, so we
-                    // want to continue on through the function.
-                    if (ret != Interop.Errors.ERROR_MORE_DATA)
-                    {
-                        return data;
-                    }
-                }
+                // If this is a performance key (rare usage), we're not actually retrieving data stored in the registry:
+                // calling RegQueryValueEx causes the system to collect the data from the appropriate provider. The value
+                // is expected to be much larger than for other keys, such that our stack-allocated space is less likely
+                // to be sufficient, so we immediately grow into the ArrayPool, using the same buffer size chosen
+                // in .NET Framework (until such time as a better estimate is selected).  Additionally, the returned
+                // length when dealing with perf data keys can't be trusted, so the buffer needs to be zero'd.
+                span = pooledArray = ArrayPool<byte>.Shared.Rent(65_000);
+                span.Clear();
             }
 
-            if (datasize < 0)
+            try
             {
-                // unexpected code path
-                Debug.Fail("[InternalGetValue] RegQueryValue returned ERROR_SUCCESS but gave a negative datasize");
-                datasize = 0;
-            }
+                // Loop in case we need to try again with a larger buffer size.
+                while (true)
+                {
+                    int type = 0;
+                    int result;
+                    int dataLength = span.Length;
 
-            switch (type)
-            {
-                case Interop.Advapi32.RegistryValues.REG_NONE:
-                case Interop.Advapi32.RegistryValues.REG_DWORD_BIG_ENDIAN:
-                case Interop.Advapi32.RegistryValues.REG_BINARY:
+                    fixed (byte* lpData = &MemoryMarshal.GetReference(span))
                     {
-                        byte[] blob = new byte[datasize];
-                        Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
-                        data = blob;
-                    }
-                    break;
-                case Interop.Advapi32.RegistryValues.REG_QWORD:
-                    {    // also REG_QWORD_LITTLE_ENDIAN
-                        if (datasize > 8)
+                        result = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, &type, lpData, (uint*)&dataLength);
+                        if (dataLength < 0)
                         {
-                            // prevent an AV in the edge case that datasize is larger than sizeof(long)
-                            goto case Interop.Advapi32.RegistryValues.REG_BINARY;
+                            // Greater than 2GB values aren't supported.
+                            throw new IOException(SR.Arg_RegValueTooLarge);
                         }
-                        long blob = 0;
-                        Debug.Assert(datasize == 8, "datasize==8");
-                        // Here, datasize must be 8 when calling this
-                        Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, ref blob, ref datasize);
-
-                        data = blob;
                     }
-                    break;
-                case Interop.Advapi32.RegistryValues.REG_DWORD:
-                    {    // also REG_DWORD_LITTLE_ENDIAN
-                        if (datasize > 4)
-                        {
-                            // prevent an AV in the edge case that datasize is larger than sizeof(int)
-                            goto case Interop.Advapi32.RegistryValues.REG_QWORD;
-                        }
-                        int blob = 0;
-                        Debug.Assert(datasize == 4, "datasize==4");
-                        // Here, datasize must be four when calling this
-                        Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, ref blob, ref datasize);
 
-                        data = blob;
-                    }
-                    break;
-
-                case Interop.Advapi32.RegistryValues.REG_SZ:
+                    // If RegQueryValueEx told us we need a larger buffer, get one and then loop around to try again.
+                    if (result == Interop.Errors.ERROR_MORE_DATA)
                     {
-                        if (datasize % 2 == 1)
+                        if (IsPerfDataKey())
                         {
-                            // handle the case where the registry contains an odd-byte length (corrupt data?)
-                            try
-                            {
-                                datasize = checked(datasize + 1);
-                            }
-                            catch (OverflowException e)
-                            {
-                                throw new IOException(SR.Arg_RegGetOverflowBug, e);
-                            }
+                            // In the case of a performance key, dataLength is not reliable, but we know the existing
+                            // size was insufficient, so double the buffer size.
+                            dataLength = span.Length * 2;
                         }
-                        char[] blob = new char[datasize / 2];
 
-                        Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
-                        if (blob.Length > 0 && blob[blob.Length - 1] == (char)0)
+                        if (pooledArray is not null)
                         {
-                            data = new string(blob, 0, blob.Length - 1);
+                            // This should only happen if the registry key was changed concurrently, such that
+                            // we called RegQueryValueEx with our initial buffer size that was too small, we then
+                            // rented a buffer of the reportedly right size and called RegQueryValueEx again, but
+                            // it still came back with ERROR_MORE_DATA again.
+                            byte[] toReturn = pooledArray;
+                            pooledArray = null;
+                            ArrayPool<byte>.Shared.Return(toReturn);
                         }
-                        else
+
+                        // Greater than 2GB values aren't supported.
+                        if (dataLength < 0)
                         {
-                            // in the very unlikely case the data is missing null termination,
-                            // pass in the whole char[] to prevent truncating a character
-                            data = new string(blob);
+                            throw new IOException(SR.Arg_RegValueTooLarge);
                         }
+
+                        span = pooledArray = ArrayPool<byte>.Shared.Rent(dataLength);
+                        if (IsPerfDataKey())
+                        {
+                            span.Clear();
+                        }
+
+                        continue;
                     }
-                    break;
 
-                case Interop.Advapi32.RegistryValues.REG_EXPAND_SZ:
+                    // For any other error, return the default value.  This might be ERROR_FILE_NOT_FOUND if the reg key
+                    // wasn't found, or any other system error value for unspecified reasons. For compat, an exception
+                    // is thrown for perf keys rather than returning the default value.
+                    if (result != Interop.Errors.ERROR_SUCCESS)
                     {
-                        if (datasize % 2 == 1)
+                        if (IsPerfDataKey())
                         {
-                            // handle the case where the registry contains an odd-byte length (corrupt data?)
-                            try
-                            {
-                                datasize = checked(datasize + 1);
-                            }
-                            catch (OverflowException e)
-                            {
-                                throw new IOException(SR.Arg_RegGetOverflowBug, e);
-                            }
+                            Win32Error(result, name);
                         }
-                        char[] blob = new char[datasize / 2];
-
-                        Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
-
-                        if (blob.Length > 0 && blob[blob.Length - 1] == (char)0)
-                        {
-                            data = new string(blob, 0, blob.Length - 1);
-                        }
-                        else
-                        {
-                            // in the very unlikely case the data is missing null termination,
-                            // pass in the whole char[] to prevent truncating a character
-                            data = new string(blob);
-                        }
-
-                        if (!doNotExpand)
-                        {
-                            data = Environment.ExpandEnvironmentVariables((string)data);
-                        }
+                        return defaultValue;
                     }
-                    break;
-                case Interop.Advapi32.RegistryValues.REG_MULTI_SZ:
+
+                    // We only get here for a successful query of the data. Process and return the results.
+                    Debug.Assert((uint)dataLength <= span.Length, $"Expected {dataLength} <= {span.Length}");
+                    switch (type)
                     {
-                        if (datasize % 2 == 1)
-                        {
-                            // handle the case where the registry contains an odd-byte length (corrupt data?)
-                            try
+                        case Interop.Advapi32.RegistryValues.REG_NONE:
+                        case Interop.Advapi32.RegistryValues.REG_BINARY:
+                        case Interop.Advapi32.RegistryValues.REG_DWORD_BIG_ENDIAN:
+                            return span.Slice(0, dataLength).ToArray();
+
+                        case Interop.Advapi32.RegistryValues.REG_DWORD:
+                        case Interop.Advapi32.RegistryValues.REG_QWORD:
+                            return dataLength switch
                             {
-                                datasize = checked(datasize + 1);
-                            }
-                            catch (OverflowException e)
+                                4 => MemoryMarshal.Read<int>(span),
+                                8 => MemoryMarshal.Read<long>(span),
+                                _ => span.Slice(0, dataLength).ToArray(), // This shouldn't happen, but the previous implementation included it defensively.
+                            };
+
+                        case Interop.Advapi32.RegistryValues.REG_SZ:
+                        case Interop.Advapi32.RegistryValues.REG_EXPAND_SZ:
+                        case Interop.Advapi32.RegistryValues.REG_MULTI_SZ:
                             {
-                                throw new IOException(SR.Arg_RegGetOverflowBug, e);
-                            }
-                        }
-                        char[] blob = new char[datasize / 2];
-
-                        ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, blob, ref datasize);
-
-                        // make sure the string is null terminated before processing the data
-                        if (blob.Length > 0 && blob[blob.Length - 1] != (char)0)
-                        {
-                            Array.Resize(ref blob, blob.Length + 1);
-                        }
-
-                        string[] strings = Array.Empty<string>();
-                        int stringsCount = 0;
-
-                        int cur = 0;
-                        int len = blob.Length;
-
-                        while (ret == 0 && cur < len)
-                        {
-                            int nextNull = cur;
-                            while (nextNull < len && blob[nextNull] != (char)0)
-                            {
-                                nextNull++;
-                            }
-
-                            string? toAdd = null;
-                            if (nextNull < len)
-                            {
-                                Debug.Assert(blob[nextNull] == (char)0, "blob[nextNull] should be 0");
-                                if (nextNull - cur > 0)
+                                // Handle the case where the registry contains an odd-byte length (corrupt data?)
+                                // by increasing the data by a single zero byte.
+                                if (dataLength % 2 == 1)
                                 {
-                                    toAdd = new string(blob, cur, nextNull - cur);
+                                    if (dataLength == int.MaxValue)
+                                    {
+                                        throw new IOException(SR.Arg_RegValueTooLarge);
+                                    }
+
+                                    if (dataLength >= span.Length)
+                                    {
+                                        byte[] newPooled = ArrayPool<byte>.Shared.Rent(dataLength + 1);
+                                        span.CopyTo(newPooled);
+                                        if (pooledArray is not null)
+                                        {
+                                            byte[] toReturn = pooledArray;
+                                            pooledArray = null;
+                                            ArrayPool<byte>.Shared.Return(toReturn);
+                                        }
+                                        span = pooledArray = newPooled;
+                                    }
+
+                                    span[dataLength++] = 0;
+                                }
+
+                                // From here on, we interpret the read bytes as chars; span and dataLength should no longer be used.
+                                ReadOnlySpan<char> chars = MemoryMarshal.Cast<byte, char>(span.Slice(0, dataLength));
+
+                                if (type == Interop.Advapi32.RegistryValues.REG_MULTI_SZ)
+                                {
+                                    string[] strings = Array.Empty<string>();
+                                    int count = 0;
+
+                                    while (chars.Length > 1 || (chars.Length == 1 && chars[0] != '\0'))
+                                    {
+                                        int nullPos = chars.IndexOf('\0');
+                                        string toAdd;
+                                        if (nullPos < 0)
+                                        {
+                                            toAdd = chars.ToString();
+                                            chars = default;
+                                        }
+                                        else
+                                        {
+                                            toAdd = chars.Slice(0, nullPos).ToString();
+                                            chars = chars.Slice(nullPos + 1);
+                                        }
+
+                                        if (count == strings.Length)
+                                        {
+                                            Array.Resize(ref strings, count == 0 ? 4 : count * 2);
+                                        }
+                                        strings[count++] = toAdd;
+                                    }
+
+                                    if (count != 0)
+                                    {
+                                        Array.Resize(ref strings, count);
+                                    }
+
+                                    return strings;
                                 }
                                 else
                                 {
-                                    // we found an empty string.  But if we're at the end of the data,
-                                    // it's just the extra null terminator.
-                                    if (nextNull != len - 1)
+                                    if (chars.Length == 0)
                                     {
-                                        toAdd = string.Empty;
+                                        return string.Empty;
                                     }
+
+                                    // Remove null termination if it exists.
+                                    if (chars[^1] == 0)
+                                    {
+                                        chars = chars[0..^1];
+                                    }
+
+                                    // Get the resulting string from the bytes.
+                                    string str = chars.ToString();
+                                    if (type == Interop.Advapi32.RegistryValues.REG_EXPAND_SZ && !doNotExpand)
+                                    {
+                                        str = Environment.ExpandEnvironmentVariables(str);
+                                    }
+
+                                    return str;
                                 }
                             }
-                            else
-                            {
-                                toAdd = new string(blob, cur, len - cur);
-                            }
-                            cur = nextNull + 1;
 
-                            if (toAdd != null)
-                            {
-                                if (strings.Length == stringsCount)
-                                {
-                                    Array.Resize(ref strings, stringsCount > 0 ? stringsCount * 2 : 4);
-                                }
-                                strings[stringsCount++] = toAdd;
-                            }
-                        }
-
-                        Array.Resize(ref strings, stringsCount);
-                        data = strings;
+                        default:
+                            return defaultValue;
                     }
-                    break;
-                case Interop.Advapi32.RegistryValues.REG_LINK:
-                default:
-                    break;
+                }
             }
-
-            return data;
+            finally
+            {
+                if (pooledArray is not null)
+                {
+                    ArrayPool<byte>.Shared.Return(pooledArray);
+                }
+            }
         }
 
-        private RegistryValueKind GetValueKindCore(string? name)
+        private unsafe RegistryValueKind GetValueKindCore(string? name)
         {
             int type = 0;
             int datasize = 0;
-            int ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, (byte[]?)null, ref datasize);
+            int ret = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, &type, (byte*)null, (uint*)&datasize);
             if (ret != 0)
             {
                 Win32Error(ret, null);

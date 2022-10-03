@@ -12,7 +12,6 @@
 #include "eepolicy.h"
 #include "corhost.h"
 #include "dbginterface.h"
-#include "eemessagebox.h"
 
 #include "eventreporter.h"
 #include "finalizerthread.h"
@@ -42,43 +41,23 @@ void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcess
     // other DLLs call Release() on us in their detach [dangerous!], etc.
     GCX_PREEMP_NO_DTOR();
 
-    FastInterlockExchange((LONG*)&g_fForbidEnterEE, TRUE);
+    InterlockedExchange((LONG*)&g_fForbidEnterEE, TRUE);
 
     // Note that for free and retail builds StressLog must also be enabled
     if (g_pConfig && g_pConfig->StressLog())
     {
         if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_BreakOnBadExit))
         {
-            // Workaround for aspnet
-            PathString  wszFilename;
-            bool bShouldAssert = true;
-            if (WszGetModuleFileName(NULL, wszFilename))
-            {
-                wszFilename.LowerCase();
-
-                if (wcsstr(wszFilename, W("aspnet_compiler")))
-                {
-                    bShouldAssert = false;
-                }
-            }
-
             unsigned goodExit = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_SuccessExit);
-            if (bShouldAssert && exitCode != goodExit)
+            if (exitCode != goodExit)
             {
                 _ASSERTE(!"Bad Exit value");
                 FAULT_NOT_FATAL();      // if we OOM we can simply give up
-                SetErrorMode(0);        // Insure that we actually cause the messsage box to pop.
-                EEMessageBoxCatastrophic(IDS_EE_ERRORMESSAGETEMPLATE, IDS_EE_ERRORTITLE, exitCode, W("BreakOnBadExit: returning bad exit code"));
+                fprintf(stderr, "Error 0x%08x.\n\nBreakOnBadExit: returning bad exit code.", exitCode);
+                DebugBreak();
             }
         }
     }
-
-    // If we call ExitProcess, other threads will be torn down
-    // so we don't get to debug their state.  Stop this!
-#ifdef _DEBUG
-    if (_DbgBreakCount)
-        _ASSERTE(!"In SafeExitProcess: An assert was hit on some other thread");
-#endif
 
     // Turn off exception processing, because if some other random DLL has a
     //  fault in DLL_PROCESS_DETACH, we could get called for exception handling.
@@ -346,24 +325,31 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource
 {
     WRAPPER_NO_CONTRACT;
 
-    static Thread *const FatalErrorNotSeenYet = nullptr;
-    static Thread *const FatalErrorLoggingFinished = reinterpret_cast<Thread *>(1);
+    static size_t s_pCrashingThreadID;
 
-    static Thread *volatile s_pCrashingThread = FatalErrorNotSeenYet;
+    size_t currentThreadID;
+#ifndef TARGET_UNIX
+    currentThreadID = GetCurrentThreadId();
+#else
+    currentThreadID = PAL_GetCurrentOSThreadId();
+#endif
 
-    Thread *pThread = GetThreadNULLOk();
-    Thread *pPreviousThread = InterlockedCompareExchangeT<Thread *>(&s_pCrashingThread, pThread, FatalErrorNotSeenYet);
+    size_t previousThreadID = InterlockedCompareExchangeT<size_t>(&s_pCrashingThreadID, currentThreadID, 0);
 
-    if (pPreviousThread == pThread)
+    // Let the first crashing thread take care of the reporting.
+    if (previousThreadID != 0)
     {
-        PrintToStdErrA("Fatal error while logging another fatal error.\n");
-        return;
-    }
-    else if (pPreviousThread != nullptr)
-    {
-        while (s_pCrashingThread != FatalErrorLoggingFinished)
+        if (previousThreadID == currentThreadID)
         {
-            ClrSleepEx(50, /*bAlertable*/ FALSE);
+            PrintToStdErrA("Fatal error while logging another fatal error.\n");
+        }
+        else
+        {
+            // Switch to preemptive mode to avoid blocking the crashing thread. It may try to suspend the runtime
+            // for GC during the stacktrace reporting.
+            GCX_PREEMP();
+
+            ClrSleepEx(INFINITE, /*bAlertable*/ FALSE);
         }
         return;
     }
@@ -399,9 +385,10 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource
 
         PrintToStdErrA("\n");
 
+        Thread* pThread = GetThreadNULLOk();
         if (pThread && errorSource == NULL)
         {
-            LogCallstackForLogWorker(GetThread());
+            LogCallstackForLogWorker(pThread);
 
             if (argExceptionString != NULL) {
                 PrintToStdErrW(argExceptionString);
@@ -412,12 +399,10 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource
     {
     }
     EX_END_CATCH(SwallowAllExceptions)
-
-    InterlockedCompareExchangeT<Thread *>(&s_pCrashingThread, FatalErrorLoggingFinished, pThread);
 }
 
 //This starts FALSE and then converts to true if HandleFatalError has ever been called by a GC thread
-BOOL g_fFatalErrorOccuredOnGCThread = FALSE;
+BOOL g_fFatalErrorOccurredOnGCThread = FALSE;
 //
 // Log an error to the event log if possible, then throw up a dialog box.
 //
@@ -486,7 +471,7 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
                 if(!ssErrorFormat.LoadResource(CCompRC::Optional, IDS_ER_UNMANAGEDFAILFASTMSG ))
                     ssErrorFormat.Set(W("at IP 0x%x (0x%x) with exit code 0x%x."));
                 SmallStackSString addressString;
-                addressString.Printf(W("%p"), pExceptionInfo? (UINT_PTR)pExceptionInfo->ExceptionRecord->ExceptionAddress : address);
+                addressString.Printf(W("%p"), pExceptionInfo? (PVOID)pExceptionInfo->ExceptionRecord->ExceptionAddress : (PVOID)address);
 
                 // We should always have the reference to the runtime's instance
                 _ASSERTE(GetClrModuleBase() != NULL);
@@ -541,7 +526,7 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
         //Give a managed debugger a chance if this fatal error is on a managed thread.
         Thread *pThread = GetThreadNULLOk();
 
-        if (pThread && !g_fFatalErrorOccuredOnGCThread)
+        if (pThread && !g_fFatalErrorOccurredOnGCThread)
         {
             GCX_COOP();
 
@@ -786,11 +771,11 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
         CONTRACT_VIOLATION(GCViolation | ModeViolation | FaultNotFatal | TakesLockViolation);
 
 
-        // Setting g_fFatalErrorOccuredOnGCThread allows code to avoid attempting to make GC mode transitions which could
-        // block indefinately if the fatal error occured during the GC.
+        // Setting g_fFatalErrorOccurredOnGCThread allows code to avoid attempting to make GC mode transitions which could
+        // block indefinitely if the fatal error occurred during the GC.
         if (IsGCSpecialThread() && GCHeapUtilities::IsGCInProgress())
         {
-            g_fFatalErrorOccuredOnGCThread = TRUE;
+            g_fFatalErrorOccurredOnGCThread = TRUE;
         }
 
         // ThreadStore lock needs to be released before continuing with the FatalError handling should

@@ -34,7 +34,11 @@ namespace System.Xml.Serialization
         public XmlAttributes XmlAttributes
         {
             get { return _xmlAttributes; }
-            set { _xmlAttributes = value; }
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                _xmlAttributes = value;
+            }
         }
 
         /// <devdoc>
@@ -43,7 +47,11 @@ namespace System.Xml.Serialization
         public SoapAttributes SoapAttributes
         {
             get { return _soapAttributes; }
-            set { _soapAttributes = value; }
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                _soapAttributes = value;
+            }
         }
 
         /// <devdoc>
@@ -51,7 +59,7 @@ namespace System.Xml.Serialization
         /// </devdoc>
         public string MemberName
         {
-            get { return _memberName == null ? string.Empty : _memberName; }
+            get { return _memberName ?? string.Empty; }
             set { _memberName = value; }
         }
 

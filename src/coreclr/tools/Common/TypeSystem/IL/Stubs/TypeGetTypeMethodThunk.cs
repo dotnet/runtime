@@ -161,7 +161,7 @@ namespace Internal.IL.Stubs
             }
             protected override TypeGetTypeMethodThunk CreateValueFromKey(Key key)
             {
-                TypeSystemContext contex = key.GetTypeOverload.Context;
+                TypeSystemContext context = key.GetTypeOverload.Context;
 
                 // This will be one of the 6 possible overloads:
                 // (String), (String, bool), (String, bool, bool)
@@ -176,7 +176,7 @@ namespace Internal.IL.Stubs
                 else
                     helperName = "GetType";
 
-                MethodDesc helper = contex.GetHelperEntryPoint("ReflectionHelpers", helperName);
+                MethodDesc helper = context.GetHelperEntryPoint("ReflectionHelpers", helperName);
 
                 return new TypeGetTypeMethodThunk(_parent._owningTypeForThunks, signature, helper, key.DefaultAssemblyName);
             }

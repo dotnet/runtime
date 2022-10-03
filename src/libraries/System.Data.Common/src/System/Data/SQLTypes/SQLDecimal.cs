@@ -1073,15 +1073,19 @@ namespace System.Data.SqlTypes
                 usChar = rgwchStr[iCurChar];
                 iCurChar++;
 
-                if (usChar >= '0' && usChar <= '9')
+                if (char.IsAsciiDigit(usChar))
+                {
                     usChar -= '0';
+                }
                 else if (usChar == '.' && lDecPnt < 0)
                 {
                     lDecPnt = iData;
                     continue;
                 }
                 else
+                {
                     throw new FormatException(SQLResource.FormatMessage);
+                }
 
                 snResult.MultByULong(s_ulBase10);
                 snResult.AddULong(usChar);
@@ -1146,6 +1150,26 @@ namespace System.Data.SqlTypes
             {
                 return new decimal((int)_data1, (int)_data2, (int)_data3, !IsPositive, _bScale);
             }
+        }
+
+        [CLSCompliant(false)]
+        public int WriteTdsValue(Span<uint> destination)
+        {
+            if (IsNull)
+            {
+                throw new SqlNullValueException();
+            }
+
+            if (destination.Length < 4)
+            {
+                throw new ArgumentOutOfRangeException(nameof(destination));
+            }
+
+            destination[0] = _data1;
+            destination[1] = _data2;
+            destination[2] = _data3;
+            destination[3] = _data4;
+            return 4;
         }
 
         // Implicit conversion from Decimal to SqlDecimal
@@ -1220,7 +1244,7 @@ namespace System.Data.SqlTypes
             fOpSignPos = y.IsPositive;
 
             //result scale = max(s1,s2)
-            //result precison = max(s1,s2) + max(p1-s1,p2-s2)
+            //result precision = max(s1,s2) + max(p1-s1,p2-s2)
             MyScale = x._bScale;
             OpScale = y._bScale;
 
@@ -1238,7 +1262,7 @@ namespace System.Data.SqlTypes
             ResPrec = Math.Min(MaxPrecision, ResPrec);
 
             // If precision adjusted, scale is reduced to keep the integer part untruncated.
-            // But discard the extra carry, only keep the interger part as ResInteger, not ResInteger + 1.
+            // But discard the extra carry, only keep the integer part as ResInteger, not ResInteger + 1.
             Debug.Assert(ResPrec - ResInteger >= 0);
             if (ResPrec - ResInteger < ResScale)
                 ResScale = ResPrec - ResInteger;
@@ -1365,7 +1389,7 @@ namespace System.Data.SqlTypes
         //
         //    Result scale and precision(same as in SQL Server Manual and Hydra):
         //        scale = s1 + s2
-        //        precison = s1 + s2 + (p1 - s1) + (p2 - s2) + 1
+        //        precision = s1 + s2 + (p1 - s1) + (p2 - s2) + 1
         //
         //    Overflow Rules:
         //        If scale is greater than NUMERIC_MAX_PRECISION it is set to
@@ -1424,7 +1448,7 @@ namespace System.Data.SqlTypes
             ResScale = ActualScale;
             ResInteger = (x._bPrec - x._bScale) + (y._bPrec - y._bScale) + 1;
 
-            //result precison = s1 + s2 + (p1 - s1) + (p2 - s2) + 1
+            //result precision = s1 + s2 + (p1 - s1) + (p2 - s2) + 1
             ResPrec = ResScale + ResInteger;
 
             // Downward adjust res prec,scale if either larger than NUMERIC_MAX_PRECISION
@@ -1620,7 +1644,7 @@ namespace System.Data.SqlTypes
         //    scale is 10, the precision will be reduced to 38, to keep the integral part
         //    untruncated the scale needs be recuded to 2, but since x_cNumeDivScaleMin
         //    is set to 6 currently, resulting scale will be 6.
-        //        OverflowException is throwed only if the actual precision is greater than
+        //        OverflowException is thrown only if the actual precision is greater than
         //    NUMERIC_MAX_PRECISION or actual length is greater than x_cbNumeBuf
         //
         //Algorithm
@@ -1874,12 +1898,9 @@ namespace System.Data.SqlTypes
         //Precision        Length
         //    0            invalid
         //    1-9            1
-        //    10-19        2
-        //    20-28        3
-        //    29-38        4
-        // The array in Shiloh. Listed here for comparison.
-        //private static readonly byte[] rgCLenFromPrec = new byte[] {5,5,5,5,5,5,5,5,5,9,9,9,9,9,
-        //    9,9,9,9,9,13,13,13,13,13,13,13,13,13,17,17,17,17,17,17,17,17,17,17};
+        //    10-19          2
+        //    20-28          3
+        //    29-38          4
         private static ReadOnlySpan<byte> RgCLenFromPrec => new byte[] // rely on C# compiler optimization to eliminate allocation
         {
             1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2,
@@ -1908,7 +1929,7 @@ namespace System.Data.SqlTypes
              (_data3 == 0x5a86c47aL) && (_data2 >= 0x098a2240L));
         }
 
-        private bool FGt10_38(Span<uint> rglData)
+        private static bool FGt10_38(Span<uint> rglData)
         {
             Debug.Assert(rglData.Length == 4, "rglData.Length == 4", $"Wrong array length: {rglData.Length}");
 
@@ -2221,7 +2242,7 @@ namespace System.Data.SqlTypes
                 ulQuotientCur = (uint)(dwlAccum / dwlDivisor);
                 rguiData[iData - 1] = ulQuotientCur;
                 //Remainder to be carried to the next lower significant byte.
-                dwlAccum = dwlAccum % dwlDivisor;
+                dwlAccum %= dwlDivisor;
 
                 // While current part of quotient still 0, reduce length
                 if (fAllZero && (ulQuotientCur == 0))
@@ -2704,7 +2725,7 @@ namespace System.Data.SqlTypes
                     // D5. Test remainder. Carry indicates result<0, therefore QH 1 too large
                     if (HI(dwlAccum) == 0)
                     {
-                        // D6. Add back - probabilty is 2**(-31). R += D. Q[digit] -= 1
+                        // D6. Add back - probability is 2**(-31). R += D. Q[digit] -= 1
                         uint ulCarry;
 
                         rgulQ[iulRindex - ciulD] = QH - 1;
@@ -2761,7 +2782,7 @@ namespace System.Data.SqlTypes
             int Sign1;
             int Sign2;
 
-            int iFinalResult;   //Final result of comparision: positive = greater
+            int iFinalResult;   //Final result of comparison: positive = greater
                                 //than, 0 = equal, negative = less than
 
             //Initialize the sign values to be 1(positive) or -1(negative)
@@ -2829,7 +2850,7 @@ namespace System.Data.SqlTypes
 
         private static void CheckValidPrecScale(byte bPrec, byte bScale)
         {
-            if (bPrec < 1 || bPrec > MaxPrecision || bScale < 0 || bScale > MaxScale || bScale > bPrec)
+            if (bPrec < 1 || bPrec > MaxPrecision || bScale > MaxScale || bScale > bPrec)
                 throw new SqlTypeException(SQLResource.InvalidPrecScaleMessage);
         }
 

@@ -332,17 +332,130 @@ namespace System.IO
             }
         }
 
-#if CORERT // TODO: https://github.com/dotnet/corert/issues/3251
-        private bool HasOverriddenBeginEndRead() => true;
+        /// <summary>
+        /// Asynchronously reads bytes from the current stream, advances the position within the stream until the <paramref name="buffer"/> is filled,
+        /// and monitors cancellation requests.
+        /// </summary>
+        /// <param name="buffer">The buffer to write the data into.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>A task that represents the asynchronous read operation.</returns>
+        /// <exception cref="EndOfStreamException">
+        /// The end of the stream is reached before filling the <paramref name="buffer"/>.
+        /// </exception>
+        /// <remarks>
+        /// When <paramref name="buffer"/> is empty, this read operation will be completed without waiting for available data in the stream.
+        /// </remarks>
+        public ValueTask ReadExactlyAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            ValueTask<int> vt = ReadAtLeastAsyncCore(buffer, buffer.Length, throwOnEndOfStream: true, cancellationToken);
 
-        private bool HasOverriddenBeginEndWrite() => true;
-#else
+            // transfer the ValueTask<int> to a ValueTask without allocating here.
+            return ValueTask.DangerousCreateFromTypedValueTask(vt);
+        }
+
+        /// <summary>
+        /// Asynchronously reads <paramref name="count"/> number of bytes from the current stream, advances the position within the stream,
+        /// and monitors cancellation requests.
+        /// </summary>
+        /// <param name="buffer">The buffer to write the data into.</param>
+        /// <param name="offset">The byte offset in <paramref name="buffer"/> at which to begin writing data from the stream.</param>
+        /// <param name="count">The number of bytes to be read from the current stream.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>A task that represents the asynchronous read operation.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="offset"/> is outside the bounds of <paramref name="buffer"/>.
+        /// -or-
+        /// <paramref name="count"/> is negative.
+        /// -or-
+        /// The range specified by the combination of <paramref name="offset"/> and <paramref name="count"/> exceeds the
+        /// length of <paramref name="buffer"/>.
+        /// </exception>
+        /// <exception cref="EndOfStreamException">
+        /// The end of the stream is reached before reading <paramref name="count"/> number of bytes.
+        /// </exception>
+        /// <remarks>
+        /// When <paramref name="count"/> is 0 (zero), this read operation will be completed without waiting for available data in the stream.
+        /// </remarks>
+        public ValueTask ReadExactlyAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+
+            ValueTask<int> vt = ReadAtLeastAsyncCore(buffer.AsMemory(offset, count), count, throwOnEndOfStream: true, cancellationToken);
+
+            // transfer the ValueTask<int> to a ValueTask without allocating here.
+            return ValueTask.DangerousCreateFromTypedValueTask(vt);
+        }
+
+        /// <summary>
+        /// Asynchronously reads at least a minimum number of bytes from the current stream, advances the position within the stream by the
+        /// number of bytes read, and monitors cancellation requests.
+        /// </summary>
+        /// <param name="buffer">The region of memory to write the data into.</param>
+        /// <param name="minimumBytes">The minimum number of bytes to read into the buffer.</param>
+        /// <param name="throwOnEndOfStream">
+        /// <see langword="true"/> to throw an exception if the end of the stream is reached before reading <paramref name="minimumBytes"/> of bytes;
+        /// <see langword="false"/> to return less than <paramref name="minimumBytes"/> when the end of the stream is reached.
+        /// The default is <see langword="true"/>.
+        /// </param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>
+        /// A task that represents the asynchronous read operation. The value of its <see cref="ValueTask{TResult}.Result"/> property contains the
+        /// total number of bytes read into the buffer. This is guaranteed to be greater than or equal to <paramref name="minimumBytes"/> when
+        /// <paramref name="throwOnEndOfStream"/> is <see langword="true"/>. This will be less than <paramref name="minimumBytes"/> when the end
+        /// of the stream is reached and <paramref name="throwOnEndOfStream"/> is <see langword="false"/>. This can be less than the number of
+        /// bytes allocated in the buffer if that many bytes are not currently available.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="minimumBytes"/> is negative, or is greater than the length of <paramref name="buffer"/>.
+        /// </exception>
+        /// <exception cref="EndOfStreamException">
+        /// <paramref name="throwOnEndOfStream"/> is <see langword="true"/> and the end of the stream is reached before reading
+        /// <paramref name="minimumBytes"/> bytes of data.
+        /// </exception>
+        /// <remarks>
+        /// When <paramref name="minimumBytes"/> is 0 (zero), this read operation will be completed without waiting for available data in the stream.
+        /// </remarks>
+        public ValueTask<int> ReadAtLeastAsync(Memory<byte> buffer, int minimumBytes, bool throwOnEndOfStream = true, CancellationToken cancellationToken = default)
+        {
+            ValidateReadAtLeastArguments(buffer.Length, minimumBytes);
+
+            return ReadAtLeastAsyncCore(buffer, minimumBytes, throwOnEndOfStream, cancellationToken);
+        }
+
+        // No argument checking is done here. It is up to the caller.
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+        private async ValueTask<int> ReadAtLeastAsyncCore(Memory<byte> buffer, int minimumBytes, bool throwOnEndOfStream, CancellationToken cancellationToken)
+        {
+            Debug.Assert(minimumBytes <= buffer.Length);
+
+            int totalRead = 0;
+            while (totalRead < minimumBytes)
+            {
+                int read = await ReadAsync(buffer.Slice(totalRead), cancellationToken).ConfigureAwait(false);
+                if (read == 0)
+                {
+                    if (throwOnEndOfStream)
+                    {
+                        ThrowHelper.ThrowEndOfFileException();
+                    }
+
+                    return totalRead;
+                }
+
+                totalRead += read;
+            }
+
+            return totalRead;
+        }
+
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern bool HasOverriddenBeginEndRead();
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern bool HasOverriddenBeginEndWrite();
-#endif
 
         private Task<int> BeginEndReadAsync(byte[] buffer, int offset, int count)
         {
@@ -701,6 +814,109 @@ namespace System.IO
             return r == 0 ? -1 : oneByteArray[0];
         }
 
+        /// <summary>
+        /// Reads bytes from the current stream and advances the position within the stream until the <paramref name="buffer"/> is filled.
+        /// </summary>
+        /// <param name="buffer">A region of memory. When this method returns, the contents of this region are replaced by the bytes read from the current stream.</param>
+        /// <exception cref="EndOfStreamException">
+        /// The end of the stream is reached before filling the <paramref name="buffer"/>.
+        /// </exception>
+        /// <remarks>
+        /// When <paramref name="buffer"/> is empty, this read operation will be completed without waiting for available data in the stream.
+        /// </remarks>
+        public void ReadExactly(Span<byte> buffer) =>
+            _ = ReadAtLeastCore(buffer, buffer.Length, throwOnEndOfStream: true);
+
+        /// <summary>
+        /// Reads <paramref name="count"/> number of bytes from the current stream and advances the position within the stream.
+        /// </summary>
+        /// <param name="buffer">
+        /// An array of bytes. When this method returns, the buffer contains the specified byte array with the values
+        /// between <paramref name="offset"/> and (<paramref name="offset"/> + <paramref name="count"/> - 1) replaced
+        /// by the bytes read from the current stream.
+        /// </param>
+        /// <param name="offset">The byte offset in <paramref name="buffer"/> at which to begin storing the data read from the current stream.</param>
+        /// <param name="count">The number of bytes to be read from the current stream.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="offset"/> is outside the bounds of <paramref name="buffer"/>.
+        /// -or-
+        /// <paramref name="count"/> is negative.
+        /// -or-
+        /// The range specified by the combination of <paramref name="offset"/> and <paramref name="count"/> exceeds the
+        /// length of <paramref name="buffer"/>.
+        /// </exception>
+        /// <exception cref="EndOfStreamException">
+        /// The end of the stream is reached before reading <paramref name="count"/> number of bytes.
+        /// </exception>
+        /// <remarks>
+        /// When <paramref name="count"/> is 0 (zero), this read operation will be completed without waiting for available data in the stream.
+        /// </remarks>
+        public void ReadExactly(byte[] buffer, int offset, int count)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+
+            _ = ReadAtLeastCore(buffer.AsSpan(offset, count), count, throwOnEndOfStream: true);
+        }
+
+        /// <summary>
+        /// Reads at least a minimum number of bytes from the current stream and advances the position within the stream by the number of bytes read.
+        /// </summary>
+        /// <param name="buffer">A region of memory. When this method returns, the contents of this region are replaced by the bytes read from the current stream.</param>
+        /// <param name="minimumBytes">The minimum number of bytes to read into the buffer.</param>
+        /// <param name="throwOnEndOfStream">
+        /// <see langword="true"/> to throw an exception if the end of the stream is reached before reading <paramref name="minimumBytes"/> of bytes;
+        /// <see langword="false"/> to return less than <paramref name="minimumBytes"/> when the end of the stream is reached.
+        /// The default is <see langword="true"/>.
+        /// </param>
+        /// <returns>
+        /// The total number of bytes read into the buffer. This is guaranteed to be greater than or equal to <paramref name="minimumBytes"/>
+        /// when <paramref name="throwOnEndOfStream"/> is <see langword="true"/>. This will be less than <paramref name="minimumBytes"/> when the
+        /// end of the stream is reached and <paramref name="throwOnEndOfStream"/> is <see langword="false"/>. This can be less than the number
+        /// of bytes allocated in the buffer if that many bytes are not currently available.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="minimumBytes"/> is negative, or is greater than the length of <paramref name="buffer"/>.
+        /// </exception>
+        /// <exception cref="EndOfStreamException">
+        /// <paramref name="throwOnEndOfStream"/> is <see langword="true"/> and the end of the stream is reached before reading
+        /// <paramref name="minimumBytes"/> bytes of data.
+        /// </exception>
+        /// <remarks>
+        /// When <paramref name="minimumBytes"/> is 0 (zero), this read operation will be completed without waiting for available data in the stream.
+        /// </remarks>
+        public int ReadAtLeast(Span<byte> buffer, int minimumBytes, bool throwOnEndOfStream = true)
+        {
+            ValidateReadAtLeastArguments(buffer.Length, minimumBytes);
+
+            return ReadAtLeastCore(buffer, minimumBytes, throwOnEndOfStream);
+        }
+
+        // No argument checking is done here. It is up to the caller.
+        private int ReadAtLeastCore(Span<byte> buffer, int minimumBytes, bool throwOnEndOfStream)
+        {
+            Debug.Assert(minimumBytes <= buffer.Length);
+
+            int totalRead = 0;
+            while (totalRead < minimumBytes)
+            {
+                int read = Read(buffer.Slice(totalRead));
+                if (read == 0)
+                {
+                    if (throwOnEndOfStream)
+                    {
+                        ThrowHelper.ThrowEndOfFileException();
+                    }
+
+                    return totalRead;
+                }
+
+                totalRead += read;
+            }
+
+            return totalRead;
+        }
+
         public abstract void Write(byte[] buffer, int offset, int count);
 
         public virtual void Write(ReadOnlySpan<byte> buffer)
@@ -719,8 +935,11 @@ namespace System.IO
 
         public virtual void WriteByte(byte value) => Write(new byte[1] { value }, 0, 1);
 
-        public static Stream Synchronized(Stream stream!!) =>
-            stream as SyncStream ?? new SyncStream(stream);
+        public static Stream Synchronized(Stream stream)
+        {
+            ArgumentNullException.ThrowIfNull(stream);
+            return stream as SyncStream ?? new SyncStream(stream);
+        }
 
         [Obsolete("Do not call or override this method.")]
         protected virtual void ObjectInvariant() { }
@@ -754,6 +973,19 @@ namespace System.IO
             }
         }
 
+        private static void ValidateReadAtLeastArguments(int bufferLength, int minimumBytes)
+        {
+            if (minimumBytes < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.minimumBytes, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+            }
+
+            if (bufferLength < minimumBytes)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.minimumBytes, ExceptionResource.ArgumentOutOfRange_NotGreaterThanBufferLength);
+            }
+        }
+
         /// <summary>Validates arguments provided to the <see cref="CopyTo(Stream, int)"/> or <see cref="CopyToAsync(Stream, int, CancellationToken)"/> methods.</summary>
         /// <param name="destination">The <see cref="Stream"/> "destination" argument passed to the copy method.</param>
         /// <param name="bufferSize">The integer "bufferSize" argument passed to the copy method.</param>
@@ -761,8 +993,10 @@ namespace System.IO
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="bufferSize"/> was not a positive value.</exception>
         /// <exception cref="NotSupportedException"><paramref name="destination"/> does not support writing.</exception>
         /// <exception cref="ObjectDisposedException"><paramref name="destination"/> does not support writing or reading.</exception>
-        protected static void ValidateCopyToArguments(Stream destination!!, int bufferSize)
+        protected static void ValidateCopyToArguments(Stream destination, int bufferSize)
         {
+            ArgumentNullException.ThrowIfNull(destination);
+
             if (bufferSize <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), bufferSize, SR.ArgumentOutOfRange_NeedPosNum);
@@ -863,7 +1097,7 @@ namespace System.IO
         {
             private readonly Stream _stream;
 
-            internal SyncStream(Stream stream!!) => _stream = stream;
+            internal SyncStream(Stream stream) => _stream = stream;
 
             public override bool CanRead => _stream.CanRead;
             public override bool CanWrite => _stream.CanWrite;
@@ -989,9 +1223,6 @@ namespace System.IO
 
             public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
             {
-#if CORERT
-                throw new NotImplementedException(); // TODO: https://github.com/dotnet/corert/issues/3251
-#else
                 bool overridesBeginRead = _stream.HasOverriddenBeginEndRead();
 
                 lock (_stream)
@@ -1006,7 +1237,6 @@ namespace System.IO
                         _stream.BeginRead(buffer, offset, count, callback, state) :
                         _stream.BeginReadInternal(buffer, offset, count, callback, state, serializeAsynchronously: true, apm: true);
                 }
-#endif
             }
 
             public override int EndRead(IAsyncResult asyncResult)
@@ -1064,9 +1294,6 @@ namespace System.IO
 
             public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
             {
-#if CORERT
-                throw new NotImplementedException(); // TODO: https://github.com/dotnet/corert/issues/3251
-#else
                 bool overridesBeginWrite = _stream.HasOverriddenBeginEndWrite();
 
                 lock (_stream)
@@ -1081,7 +1308,6 @@ namespace System.IO
                         _stream.BeginWrite(buffer, offset, count, callback, state) :
                         _stream.BeginWriteInternal(buffer, offset, count, callback, state, serializeAsynchronously: true, apm: true);
                 }
-#endif
             }
 
             public override void EndWrite(IAsyncResult asyncResult)

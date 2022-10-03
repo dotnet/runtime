@@ -912,6 +912,36 @@ namespace System.Threading.Tasks.Tests
             }));
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public void Exception_LockWaitAsyncCancellationDoesntPropagate()
+        {
+            static async IAsyncEnumerable<int> Iterate(Task signal)
+            {
+                for (int i = 0; ; i++)
+                {
+                    if (i != 0)
+                    {
+                        await signal;
+                    }
+                    yield return i;
+                }
+            }
+
+            var signal = new TaskCompletionSource(TaskContinuationOptions.RunContinuationsAsynchronously);
+            AggregateException ae = Assert.Throws<AggregateException>(() => Parallel.ForEachAsync(Iterate(signal.Task), new ParallelOptions { MaxDegreeOfParallelism = 3 }, async (item, cancellationToken) =>
+            {
+                if (item == 0)
+                {
+                    signal.SetResult();
+                    throw new FormatException();
+                }
+                await Task.CompletedTask;
+            }).Wait());
+
+            Assert.Equal(1, ae.InnerExceptions.Count);
+            Assert.IsType<FormatException>(ae.InnerException);
+        }
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]

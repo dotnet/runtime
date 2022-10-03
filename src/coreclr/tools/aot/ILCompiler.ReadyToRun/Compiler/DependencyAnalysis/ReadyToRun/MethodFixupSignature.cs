@@ -46,6 +46,24 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public bool IsUnboxingStub => _method.Unboxing;
 
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            DependencyList list = base.ComputeNonRelocationBasedDependencies(factory);
+            if (_fixupKind == ReadyToRunFixupKind.VirtualEntry &&
+                !Method.IsAbstract &&
+                !Method.HasInstantiation &&
+                Method.GetCanonMethodTarget(CanonicalFormKind.Specific) is var canonMethod &&
+                !factory.CompilationModuleGroup.VersionsWithMethodBody(canonMethod) &&
+                factory.CompilationModuleGroup.CrossModuleCompileable(canonMethod) &&
+                factory.CompilationModuleGroup.ContainsMethodBody(canonMethod, false))
+            {
+                list = list ?? new DependencyAnalysisFramework.DependencyNodeCore<NodeFactory>.DependencyList();
+                list.Add(factory.CompiledMethodNode(canonMethod), "Virtual function dependency on cross module inlineable method");
+            }
+
+            return list;
+        }
+
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
         {
             if (relocsOnly)
@@ -87,13 +105,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 if (method.Token.TokenType == CorTokenType.mdtMethodSpec)
                 {
-                    method = new MethodWithToken(method.Method, factory.SignatureContext.GetModuleTokenForMethod(method.Method, throwIfNotFound: false), method.ConstrainedType, unboxing: _method.Unboxing, null);
+                    method = new MethodWithToken(method.Method, factory.SignatureContext.GetModuleTokenForMethod(method.Method), method.ConstrainedType, unboxing: _method.Unboxing, null);
                 }
                 else if (!optimized && (method.Token.TokenType == CorTokenType.mdtMemberRef))
                 {
                     if (method.Method.OwningType.GetTypeDefinition() is EcmaType)
                     {
-                        method = new MethodWithToken(method.Method, factory.SignatureContext.GetModuleTokenForMethod(method.Method, throwIfNotFound: false), method.ConstrainedType, unboxing: _method.Unboxing, null);
+                        method = new MethodWithToken(method.Method, factory.SignatureContext.GetModuleTokenForMethod(method.Method), method.ConstrainedType, unboxing: _method.Unboxing, null);
                     }
                 }
             }

@@ -8,24 +8,19 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    private static void ThrowExceptionForIoErrno(ErrorInfo errorInfo, string? path, bool isDirectory, Func<ErrorInfo, ErrorInfo>? errorRewriter)
+    private static void ThrowExceptionForIoErrno(ErrorInfo errorInfo, string? path, bool isDirectory)
     {
         Debug.Assert(errorInfo.Error != Error.SUCCESS);
         Debug.Assert(errorInfo.Error != Error.EINTR, "EINTR errors should be handled by the native shim and never bubble up to managed code");
 
-        if (errorRewriter != null)
-        {
-            errorInfo = errorRewriter(errorInfo);
-        }
-
         throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirectory);
     }
 
-    internal static void CheckIo(Error error, string? path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo>? errorRewriter = null)
+    internal static void CheckIo(Error error, string? path = null, bool isDirectory = false)
     {
         if (error != Interop.Error.SUCCESS)
         {
-            ThrowExceptionForIoErrno(error.Info(), path, isDirectory, errorRewriter);
+            ThrowExceptionForIoErrno(error.Info(), path, isDirectory);
         }
     }
 
@@ -37,15 +32,14 @@ internal static partial class Interop
     /// <param name="result">The result of the system call.</param>
     /// <param name="path">The path with which this error is associated.  This may be null.</param>
     /// <param name="isDirectory">true if the <paramref name="path"/> is known to be a directory; otherwise, false.</param>
-    /// <param name="errorRewriter">Optional function to change an error code prior to processing it.</param>
     /// <returns>
     /// On success, returns the non-negative result long that was validated.
     /// </returns>
-    internal static long CheckIo(long result, string? path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo>? errorRewriter = null)
+    internal static long CheckIo(long result, string? path = null, bool isDirectory = false)
     {
         if (result < 0)
         {
-            ThrowExceptionForIoErrno(Sys.GetLastErrorInfo(), path, isDirectory, errorRewriter);
+            ThrowExceptionForIoErrno(Sys.GetLastErrorInfo(), path, isDirectory);
         }
 
         return result;
@@ -59,9 +53,9 @@ internal static partial class Interop
     /// <returns>
     /// On success, returns the non-negative result int that was validated.
     /// </returns>
-    internal static int CheckIo(int result, string? path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo>? errorRewriter = null)
+    internal static int CheckIo(int result, string? path = null, bool isDirectory = false)
     {
-        CheckIo((long)result, path, isDirectory, errorRewriter);
+        CheckIo((long)result, path, isDirectory);
 
         return result;
     }
@@ -74,9 +68,9 @@ internal static partial class Interop
     /// <returns>
     /// On success, returns the non-negative result IntPtr that was validated.
     /// </returns>
-    internal static IntPtr CheckIo(IntPtr result, string? path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo>? errorRewriter = null)
+    internal static IntPtr CheckIo(IntPtr result, string? path = null, bool isDirectory = false)
     {
-        CheckIo((long)result, path, isDirectory, errorRewriter);
+        CheckIo((long)result, path, isDirectory);
 
         return result;
     }
@@ -89,12 +83,14 @@ internal static partial class Interop
     /// <returns>
     /// On success, returns the valid SafeFileHandle that was validated.
     /// </returns>
-    internal static TSafeHandle CheckIo<TSafeHandle>(TSafeHandle handle, string? path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo>? errorRewriter = null)
+    internal static TSafeHandle CheckIo<TSafeHandle>(TSafeHandle handle, string? path = null, bool isDirectory = false)
         where TSafeHandle : SafeHandle
     {
         if (handle.IsInvalid)
         {
-            ThrowExceptionForIoErrno(Sys.GetLastErrorInfo(), path, isDirectory, errorRewriter);
+            Exception e = Interop.GetExceptionForIoErrno(Sys.GetLastErrorInfo(), path, isDirectory);
+            handle.Dispose();
+            throw e;
         }
 
         return handle;

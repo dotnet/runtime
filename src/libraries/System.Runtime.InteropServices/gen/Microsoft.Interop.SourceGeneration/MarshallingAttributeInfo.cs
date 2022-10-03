@@ -11,7 +11,6 @@ using System.Runtime.InteropServices;
 
 namespace Microsoft.Interop
 {
-
     /// <summary>
     /// Type used to pass on default marshalling details.
     /// </summary>
@@ -38,9 +37,7 @@ namespace Microsoft.Interop
     /// </remarks>
     public abstract record MarshallingInfo
     {
-        // Add a constructor that can only be called by derived types in the same assembly
-        // to enforce that this type cannot be extended by users of this library.
-        private protected MarshallingInfo()
+        protected MarshallingInfo()
         { }
     }
 
@@ -72,7 +69,6 @@ namespace Microsoft.Interop
         Undefined,
         Utf8,
         Utf16,
-        Ansi,
         Custom
     }
 
@@ -90,24 +86,18 @@ namespace Microsoft.Interop
         UnmanagedType UnmanagedType,
         CharEncoding CharEncoding) : MarshallingInfoStringSupport(CharEncoding)
     {
+        // UnmanagedType.LPUTF8Str is not in netstandard2.0, so we define a constant for the value here.
+        // See https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.unmanagedtype
+        internal const UnmanagedType UnmanagedType_LPUTF8Str = (UnmanagedType)0x30;
     }
 
     /// <summary>
     /// The provided type was determined to be an "unmanaged" type that can be passed as-is to native code.
     /// </summary>
-    public sealed record UnmanagedBlittableMarshallingInfo : MarshallingInfo;
-
-    [Flags]
-    public enum CustomMarshallingFeatures
-    {
-        None = 0,
-        ManagedToNative = 0x1,
-        NativeToManaged = 0x2,
-        ManagedToNativeStackalloc = 0x4,
-        ManagedTypePinning = 0x8,
-        NativeTypePinning = 0x10,
-        FreeNativeResources = 0x20,
-    }
+    /// <param name="IsStrictlyBlittable">Indicates if the type is blittable as defined by the built-in .NET marshallers.</param>
+    public sealed record UnmanagedBlittableMarshallingInfo(
+        bool IsStrictlyBlittable
+    ) : MarshallingInfo;
 
     public abstract record CountInfo
     {
@@ -138,44 +128,27 @@ namespace Microsoft.Interop
     }
 
     /// <summary>
-    /// User-applied System.Runtime.InteropServices.NativeMarshallingAttribute
+    /// Custom type marshalling via MarshalUsingAttribute or NativeMarshallingAttribute
     /// </summary>
     public record NativeMarshallingAttributeInfo(
-        ManagedTypeInfo NativeMarshallingType,
-        ManagedTypeInfo? ValuePropertyType,
-        CustomMarshallingFeatures MarshallingFeatures,
-        bool UseDefaultMarshalling) : MarshallingInfo;
+        ManagedTypeInfo EntryPointType,
+        CustomTypeMarshallers Marshallers) : MarshallingInfo;
 
     /// <summary>
-    /// User-applied System.Runtime.InteropServices.GeneratedMarshallingAttribute
-    /// on a non-blittable type in source in this compilation.
+    /// Custom type marshalling via MarshalUsingAttribute or NativeMarshallingAttribute for a linear collection
     /// </summary>
-    public sealed record GeneratedNativeMarshallingAttributeInfo(
-        string NativeMarshallingFullyQualifiedTypeName) : MarshallingInfo;
+    public sealed record NativeLinearCollectionMarshallingInfo(
+        ManagedTypeInfo EntryPointType,
+        CustomTypeMarshallers Marshallers,
+        CountInfo ElementCountInfo,
+        ManagedTypeInfo PlaceholderTypeParameter) : NativeMarshallingAttributeInfo(
+            EntryPointType,
+            Marshallers);
 
     /// <summary>
     /// The type of the element is a SafeHandle-derived type with no marshalling attributes.
     /// </summary>
     public sealed record SafeHandleMarshallingInfo(bool AccessibleDefaultConstructor, bool IsAbstract) : MarshallingInfo;
-
-    /// <summary>
-    /// User-applied System.Runtime.InteropServices.NativeMarshallingAttribute
-    /// with a contiguous collection marshaller
-    /// </summary>
-    public sealed record NativeContiguousCollectionMarshallingInfo(
-        ManagedTypeInfo NativeMarshallingType,
-        ManagedTypeInfo? ValuePropertyType,
-        CustomMarshallingFeatures MarshallingFeatures,
-        bool UseDefaultMarshalling,
-        CountInfo ElementCountInfo,
-        ManagedTypeInfo ElementType,
-        MarshallingInfo ElementMarshallingInfo) : NativeMarshallingAttributeInfo(
-            NativeMarshallingType,
-            ValuePropertyType,
-            MarshallingFeatures,
-            UseDefaultMarshalling
-        );
-
 
     /// <summary>
     /// Marshalling information is lacking because of support not because it is
@@ -223,36 +196,36 @@ namespace Microsoft.Interop
             IEnumerable<AttributeData> useSiteAttributes,
             ImmutableHashSet<string> inspectedElements)
         {
-            Dictionary<int, AttributeData> marshallingAttributesByIndirectionLevel = new();
+            Dictionary<int, AttributeData> marshallingAttributesByIndirectionDepth = new();
             int maxIndirectionLevelDataProvided = 0;
             foreach (AttributeData attribute in useSiteAttributes)
             {
                 if (TryGetAttributeIndirectionLevel(attribute, out int indirectionLevel))
                 {
-                    if (marshallingAttributesByIndirectionLevel.ContainsKey(indirectionLevel))
+                    if (marshallingAttributesByIndirectionDepth.ContainsKey(indirectionLevel))
                     {
-                        _diagnostics.ReportInvalidMarshallingAttributeInfo(attribute, nameof(Resources.DuplicateMarshallingInfo), indirectionLevel.ToString());
+                        _diagnostics.ReportInvalidMarshallingAttributeInfo(attribute, nameof(SR.DuplicateMarshallingInfo), indirectionLevel.ToString());
                         return NoMarshallingInfo.Instance;
                     }
-                    marshallingAttributesByIndirectionLevel.Add(indirectionLevel, attribute);
+                    marshallingAttributesByIndirectionDepth.Add(indirectionLevel, attribute);
                     maxIndirectionLevelDataProvided = Math.Max(maxIndirectionLevelDataProvided, indirectionLevel);
                 }
             }
 
-            int maxIndirectionLevelUsed = 0;
+            int maxIndirectionDepthUsed = 0;
             MarshallingInfo info = GetMarshallingInfo(
                 managedType,
-                marshallingAttributesByIndirectionLevel,
+                marshallingAttributesByIndirectionDepth,
                 indirectionLevel: 0,
                 inspectedElements,
-                ref maxIndirectionLevelUsed);
-            if (maxIndirectionLevelUsed < maxIndirectionLevelDataProvided)
+                ref maxIndirectionDepthUsed);
+            if (maxIndirectionDepthUsed < maxIndirectionLevelDataProvided)
             {
                 _diagnostics.ReportInvalidMarshallingAttributeInfo(
-                    marshallingAttributesByIndirectionLevel[maxIndirectionLevelDataProvided],
-                    nameof(Resources.ExtraneousMarshallingInfo),
+                    marshallingAttributesByIndirectionDepth[maxIndirectionLevelDataProvided],
+                    nameof(SR.ExtraneousMarshallingInfo),
                     maxIndirectionLevelDataProvided.ToString(),
-                    maxIndirectionLevelUsed.ToString());
+                    maxIndirectionDepthUsed.ToString());
             }
             return info;
         }
@@ -262,9 +235,9 @@ namespace Microsoft.Interop
             Dictionary<int, AttributeData> useSiteAttributes,
             int indirectionLevel,
             ImmutableHashSet<string> inspectedElements,
-            ref int maxIndirectionLevelUsed)
+            ref int maxIndirectionDepthUsed)
         {
-            maxIndirectionLevelUsed = Math.Max(indirectionLevel, maxIndirectionLevelUsed);
+            maxIndirectionDepthUsed = Math.Max(indirectionLevel, maxIndirectionDepthUsed);
             CountInfo parsedCountInfo = NoCountInfo.Instance;
 
             if (useSiteAttributes.TryGetValue(indirectionLevel, out AttributeData useSiteAttribute))
@@ -275,13 +248,13 @@ namespace Microsoft.Interop
                     && SymbolEqualityComparer.Default.Equals(_compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute), attributeClass))
                 {
                     // https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute
-                    return CreateInfoFromMarshalAs(type, useSiteAttribute, inspectedElements, ref maxIndirectionLevelUsed);
+                    return CreateInfoFromMarshalAs(type, useSiteAttribute, inspectedElements, ref maxIndirectionDepthUsed);
                 }
                 else if (SymbolEqualityComparer.Default.Equals(_compilation.GetTypeByMetadataName(TypeNames.MarshalUsingAttribute), attributeClass))
                 {
                     if (parsedCountInfo != NoCountInfo.Instance)
                     {
-                        _diagnostics.ReportInvalidMarshallingAttributeInfo(useSiteAttribute, nameof(Resources.DuplicateCountInfo));
+                        _diagnostics.ReportInvalidMarshallingAttributeInfo(useSiteAttribute, nameof(SR.DuplicateCountInfo));
                         return NoMarshallingInfo.Instance;
                     }
                     parsedCountInfo = CreateCountInfo(useSiteAttribute, inspectedElements);
@@ -296,7 +269,7 @@ namespace Microsoft.Interop
                             parsedCountInfo,
                             useSiteAttributes,
                             inspectedElements,
-                            ref maxIndirectionLevelUsed);
+                            ref maxIndirectionDepthUsed);
                     }
                 }
             }
@@ -318,11 +291,7 @@ namespace Microsoft.Interop
                         parsedCountInfo,
                         useSiteAttributes,
                         inspectedElements,
-                        ref maxIndirectionLevelUsed);
-                }
-                else if (attributeClass.ToDisplayString() == TypeNames.GeneratedMarshallingAttribute)
-                {
-                    return type.IsConsideredBlittable() ? GetBlittableMarshallingInfo(type) : new GeneratedNativeMarshallingAttributeInfo(null! /* TODO: determine naming convention */);
+                        ref maxIndirectionDepthUsed);
                 }
             }
 
@@ -334,7 +303,7 @@ namespace Microsoft.Interop
                 indirectionLevel,
                 useSiteAttributes,
                 inspectedElements,
-                ref maxIndirectionLevelUsed,
+                ref maxIndirectionDepthUsed,
                 out MarshallingInfo infoMaybe))
             {
                 return infoMaybe;
@@ -366,7 +335,7 @@ namespace Microsoft.Interop
 
             if (constSize is not null && elementName is not null)
             {
-                _diagnostics.ReportInvalidMarshallingAttributeInfo(marshalUsingData, nameof(Resources.ConstantAndElementCountInfoDisallowed));
+                _diagnostics.ReportInvalidMarshallingAttributeInfo(marshalUsingData, nameof(SR.ConstantAndElementCountInfoDisallowed));
             }
             else if (constSize is not null)
             {
@@ -393,7 +362,7 @@ namespace Microsoft.Interop
                 // This ensures that we've unwound the whole cycle so when we return NoCountInfo.Instance, there will be no cycles in the count info.
                 catch (CyclicalCountElementInfoException ex) when (ex.StartOfCycle == elementName)
                 {
-                    _diagnostics.ReportInvalidMarshallingAttributeInfo(marshalUsingData, nameof(Resources.CyclicalCountInfo), elementName);
+                    _diagnostics.ReportInvalidMarshallingAttributeInfo(marshalUsingData, nameof(SR.CyclicalCountInfo), elementName);
                     return NoCountInfo.Instance;
                 }
             }
@@ -425,7 +394,7 @@ namespace Microsoft.Interop
             // This ensures that we've unwound the whole cycle so when we return, there will be no cycles in the count info.
             catch (CyclicalCountElementInfoException ex) when (ex.StartOfCycle == param.Name)
             {
-                _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(Resources.CyclicalCountInfo), param.Name);
+                _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(SR.CyclicalCountInfo), param.Name);
                 return SizeAndParamIndexInfo.UnspecifiedParam;
             }
         }
@@ -453,7 +422,7 @@ namespace Microsoft.Interop
                     }
                 }
             }
-            else if (_contextSymbol is INamedTypeSymbol _)
+            else if (_contextSymbol is INamedTypeSymbol)
             {
                 // TODO: Handle when we create a struct marshalling generator
                 // Do we want to support CountElementName pointing to only fields, or properties as well?
@@ -467,7 +436,7 @@ namespace Microsoft.Interop
             ITypeSymbol type,
             AttributeData attrData,
             ImmutableHashSet<string> inspectedElements,
-            ref int maxIndirectionLevelUsed)
+            ref int maxIndirectionDepthUsed)
         {
             object unmanagedTypeObj = attrData.ConstructorArguments[0].Value!;
             UnmanagedType unmanagedType = unmanagedTypeObj is short unmanagedTypeAsShort
@@ -479,6 +448,7 @@ namespace Microsoft.Interop
             {
                 _diagnostics.ReportConfigurationNotSupported(attrData, nameof(UnmanagedType), unmanagedType.ToString());
             }
+
             bool isArrayType = unmanagedType == UnmanagedType.LPArray || unmanagedType == UnmanagedType.ByValArray;
             UnmanagedType elementUnmanagedType = (UnmanagedType)SizeAndParamIndexInfo.UnspecifiedConstSize;
             SizeAndParamIndexInfo arraySizeInfo = SizeAndParamIndexInfo.Unspecified;
@@ -529,190 +499,133 @@ namespace Microsoft.Interop
                 }
             }
 
-            if (!isArrayType)
+            if (isArrayType)
             {
-                return new MarshalAsInfo(unmanagedType, _defaultInfo.CharEncoding);
+                if (type is not IArrayTypeSymbol { ElementType: ITypeSymbol elementType })
+                {
+                    _diagnostics.ReportConfigurationNotSupported(attrData, nameof(UnmanagedType), unmanagedType.ToString());
+                    return NoMarshallingInfo.Instance;
+                }
+
+                MarshallingInfo elementMarshallingInfo = NoMarshallingInfo.Instance;
+                if (elementUnmanagedType != (UnmanagedType)SizeAndParamIndexInfo.UnspecifiedConstSize)
+                {
+                    elementMarshallingInfo = elementType.SpecialType == SpecialType.System_String
+                        ? CreateStringMarshallingInfo(elementType, elementUnmanagedType)
+                        : new MarshalAsInfo(elementUnmanagedType, _defaultInfo.CharEncoding);
+                }
+                else
+                {
+                    maxIndirectionDepthUsed = 1;
+                    elementMarshallingInfo = GetMarshallingInfo(elementType, new Dictionary<int, AttributeData>(), 1, ImmutableHashSet<string>.Empty, ref maxIndirectionDepthUsed);
+                }
+
+                return CreateArrayMarshallingInfo(type, elementType, arraySizeInfo, elementMarshallingInfo);
             }
 
-            if (type is not IArrayTypeSymbol { ElementType: ITypeSymbol elementType })
+            if (type.SpecialType == SpecialType.System_String)
             {
-                _diagnostics.ReportConfigurationNotSupported(attrData, nameof(UnmanagedType), unmanagedType.ToString());
-                return NoMarshallingInfo.Instance;
+                return CreateStringMarshallingInfo(type, unmanagedType);
             }
 
-            MarshallingInfo elementMarshallingInfo = NoMarshallingInfo.Instance;
-            if (elementUnmanagedType != (UnmanagedType)SizeAndParamIndexInfo.UnspecifiedConstSize)
-            {
-                elementMarshallingInfo = new MarshalAsInfo(elementUnmanagedType, _defaultInfo.CharEncoding);
-            }
-            else
-            {
-                maxIndirectionLevelUsed = 1;
-                elementMarshallingInfo = GetMarshallingInfo(elementType, new Dictionary<int, AttributeData>(), 1, ImmutableHashSet<string>.Empty, ref maxIndirectionLevelUsed);
-            }
-
-            INamedTypeSymbol? arrayMarshaller;
-
-            if (elementType is IPointerTypeSymbol { PointedAtType: ITypeSymbol pointedAt })
-            {
-                arrayMarshaller = _compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_GeneratedMarshalling_PtrArrayMarshaller_Metadata)?.Construct(pointedAt);
-            }
-            else
-            {
-                arrayMarshaller = _compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_GeneratedMarshalling_ArrayMarshaller_Metadata)?.Construct(elementType);
-            }
-
-            if (arrayMarshaller is null)
-            {
-                // If the array marshaler type is not available, then we cannot marshal arrays but indicate it is missing.
-                return new MissingSupportCollectionMarshallingInfo(arraySizeInfo, elementMarshallingInfo);
-            }
-
-            ITypeSymbol? valuePropertyType = ManualTypeMarshallingHelper.FindValueProperty(arrayMarshaller)?.Type;
-
-            return new NativeContiguousCollectionMarshallingInfo(
-                NativeMarshallingType: ManagedTypeInfo.CreateTypeInfoForTypeSymbol(arrayMarshaller),
-                ValuePropertyType: valuePropertyType is not null ? ManagedTypeInfo.CreateTypeInfoForTypeSymbol(valuePropertyType) : null,
-                MarshallingFeatures: ~CustomMarshallingFeatures.ManagedTypePinning,
-                UseDefaultMarshalling: true,
-                ElementCountInfo: arraySizeInfo,
-                ElementType: ManagedTypeInfo.CreateTypeInfoForTypeSymbol(elementType),
-                ElementMarshallingInfo: elementMarshallingInfo);
+            return new MarshalAsInfo(unmanagedType, _defaultInfo.CharEncoding);
         }
 
         private MarshallingInfo CreateNativeMarshallingInfo(
             ITypeSymbol type,
-            INamedTypeSymbol nativeType,
+            INamedTypeSymbol entryPointType,
             AttributeData attrData,
             bool isMarshalUsingAttribute,
             int indirectionLevel,
             CountInfo parsedCountInfo,
             Dictionary<int, AttributeData> useSiteAttributes,
             ImmutableHashSet<string> inspectedElements,
-            ref int maxIndirectionLevelUsed)
+            ref int maxIndirectionDepthUsed)
         {
-            CustomMarshallingFeatures features = CustomMarshallingFeatures.None;
-
-            if (!isMarshalUsingAttribute && ManualTypeMarshallingHelper.FindGetPinnableReference(type) is not null)
+            if (!ManualTypeMarshallingHelper.HasEntryPointMarshallerAttribute(entryPointType))
             {
-                features |= CustomMarshallingFeatures.ManagedTypePinning;
-            }
-
-            ITypeSymbol spanOfByte = _compilation.GetTypeByMetadataName(TypeNames.System_Span_Metadata)!.Construct(_compilation.GetSpecialType(SpecialType.System_Byte));
-
-            if (nativeType.IsUnboundGenericType)
-            {
-                if (isMarshalUsingAttribute)
-                {
-                    _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(Resources.NativeGenericTypeMustBeClosedOrMatchArityMessage), nativeType.ToDisplayString());
-                    return NoMarshallingInfo.Instance;
-                }
-                else if (type is INamedTypeSymbol namedType)
-                {
-                    if (namedType.Arity != nativeType.Arity)
-                    {
-                        _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(Resources.NativeGenericTypeMustBeClosedOrMatchArityMessage), nativeType.ToDisplayString());
-                        return NoMarshallingInfo.Instance;
-                    }
-                    else
-                    {
-                        nativeType = nativeType.ConstructedFrom.Construct(namedType.TypeArguments.ToArray());
-                    }
-                }
-                else
-                {
-                    _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(Resources.NativeGenericTypeMustBeClosedOrMatchArityMessage), nativeType.ToDisplayString());
-                    return NoMarshallingInfo.Instance;
-                }
-            }
-
-            ITypeSymbol contiguousCollectionMarshalerAttribute = _compilation.GetTypeByMetadataName(TypeNames.GenericContiguousCollectionMarshallerAttribute)!;
-
-            bool isContiguousCollectionMarshaller = nativeType.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, contiguousCollectionMarshalerAttribute));
-            IPropertySymbol? valueProperty = ManualTypeMarshallingHelper.FindValueProperty(nativeType);
-
-            ManualTypeMarshallingHelper.NativeTypeMarshallingVariant marshallingVariant = isContiguousCollectionMarshaller
-                ? ManualTypeMarshallingHelper.NativeTypeMarshallingVariant.ContiguousCollection
-                : ManualTypeMarshallingHelper.NativeTypeMarshallingVariant.Standard;
-
-            bool hasInt32Constructor = false;
-            foreach (IMethodSymbol ctor in nativeType.Constructors)
-            {
-                if (ManualTypeMarshallingHelper.IsManagedToNativeConstructor(ctor, type, marshallingVariant) && (valueProperty is null or { GetMethod: not null }))
-                {
-                    features |= CustomMarshallingFeatures.ManagedToNative;
-                }
-                else if (ManualTypeMarshallingHelper.IsCallerAllocatedSpanConstructor(ctor, type, spanOfByte, marshallingVariant)
-                    && (valueProperty is null or { GetMethod: not null }))
-                {
-                    features |= CustomMarshallingFeatures.ManagedToNativeStackalloc;
-                }
-                else if (ctor.Parameters.Length == 1 && ctor.Parameters[0].Type.SpecialType == SpecialType.System_Int32)
-                {
-                    hasInt32Constructor = true;
-                }
-            }
-
-            // The constructor that takes only the native element size is required for collection marshallers
-            // in the native-to-managed scenario.
-            if ((!isContiguousCollectionMarshaller
-                    || (hasInt32Constructor && ManualTypeMarshallingHelper.HasSetUnmarshalledCollectionLengthMethod(nativeType)))
-                && ManualTypeMarshallingHelper.HasToManagedMethod(nativeType, type)
-                && (valueProperty is null or { SetMethod: not null }))
-            {
-                features |= CustomMarshallingFeatures.NativeToManaged;
-            }
-
-            if (features == CustomMarshallingFeatures.None)
-            {
-                _diagnostics.ReportInvalidMarshallingAttributeInfo(
-                    attrData,
-                    isContiguousCollectionMarshaller
-                        ? nameof(Resources.CollectionNativeTypeMustHaveRequiredShapeMessage)
-                        : nameof(Resources.NativeTypeMustHaveRequiredShapeMessage),
-                    nativeType.ToDisplayString());
                 return NoMarshallingInfo.Instance;
             }
 
-            if (ManualTypeMarshallingHelper.HasFreeNativeMethod(nativeType))
+            if (!(entryPointType.IsStatic && entryPointType.TypeKind == TypeKind.Class)
+                && entryPointType.TypeKind != TypeKind.Struct)
             {
-                features |= CustomMarshallingFeatures.FreeNativeResources;
+                _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(SR.MarshallerTypeMustBeStaticClassOrStruct), entryPointType.ToDisplayString(), type.ToDisplayString());
+                return NoMarshallingInfo.Instance;
             }
 
-            if (ManualTypeMarshallingHelper.FindGetPinnableReference(nativeType) is not null)
-            {
-                features |= CustomMarshallingFeatures.NativeTypePinning;
-            }
+            ManagedTypeInfo entryPointTypeInfo = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(entryPointType);
 
-            if (isContiguousCollectionMarshaller)
+            bool isLinearCollectionMarshalling = ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(entryPointType);
+            if (isLinearCollectionMarshalling)
             {
-                if (!ManualTypeMarshallingHelper.HasNativeValueStorageProperty(nativeType, spanOfByte))
+                // Update the entry point type with the type arguments based on the managed type
+                if (type is IArrayTypeSymbol arrayManagedType)
                 {
-                    _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(Resources.CollectionNativeTypeMustHaveRequiredShapeMessage), nativeType.ToDisplayString());
+                    if (entryPointType.Arity != 2)
+                    {
+                        _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(SR.MarshallerEntryPointTypeMustMatchArity), entryPointType.ToDisplayString(), type.ToDisplayString());
+                        return NoMarshallingInfo.Instance;
+                    }
+
+                    entryPointType = entryPointType.ConstructedFrom.Construct(
+                        arrayManagedType.ElementType,
+                        entryPointType.TypeArguments.Last());
+                }
+                else if (type is INamedTypeSymbol namedManagedCollectionType && entryPointType.IsUnboundGenericType)
+                {
+                    if (!ManualTypeMarshallingHelper.TryResolveEntryPointType(
+                        namedManagedCollectionType,
+                        entryPointType,
+                        isLinearCollectionMarshalling,
+                        (type, entryPointType) => _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(SR.MarshallerEntryPointTypeMustMatchArity), entryPointType.ToDisplayString(), type.ToDisplayString()),
+                        out ITypeSymbol resolvedEntryPointType))
+                    {
+                        return NoMarshallingInfo.Instance;
+                    }
+
+                    entryPointType = (INamedTypeSymbol)resolvedEntryPointType;
+                }
+                else
+                {
+                    _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(SR.MarshallerEntryPointTypeMustMatchArity), entryPointType.ToDisplayString(), type.ToDisplayString());
                     return NoMarshallingInfo.Instance;
                 }
 
-                if (!ManualTypeMarshallingHelper.TryGetElementTypeFromContiguousCollectionMarshaller(nativeType, out ITypeSymbol elementType))
+                int maxIndirectionDepthUsedLocal = maxIndirectionDepthUsed;
+                Func<ITypeSymbol, MarshallingInfo> getMarshallingInfoForElement = (ITypeSymbol elementType) => GetMarshallingInfo(elementType, new Dictionary<int, AttributeData>(), 1, ImmutableHashSet<string>.Empty, ref maxIndirectionDepthUsedLocal);
+                if (ManualTypeMarshallingHelper.TryGetLinearCollectionMarshallersFromEntryType(entryPointType, type, _compilation, getMarshallingInfoForElement, out CustomTypeMarshallers? collectionMarshallers))
                 {
-                    _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(Resources.CollectionNativeTypeMustHaveRequiredShapeMessage), nativeType.ToDisplayString());
+                    maxIndirectionDepthUsed = maxIndirectionDepthUsedLocal;
+                    return new NativeLinearCollectionMarshallingInfo(
+                        entryPointTypeInfo,
+                        collectionMarshallers.Value,
+                        parsedCountInfo,
+                        ManagedTypeInfo.CreateTypeInfoForTypeSymbol(entryPointType.TypeParameters.Last()));
+                }
+                return NoMarshallingInfo.Instance;
+            }
+
+            if (type is INamedTypeSymbol namedManagedType && entryPointType.IsUnboundGenericType)
+            {
+                if (!ManualTypeMarshallingHelper.TryResolveEntryPointType(
+                    namedManagedType,
+                    entryPointType,
+                    isLinearCollectionMarshalling,
+                    (type, entryPointType) => _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(SR.MarshallerEntryPointTypeMustMatchArity), entryPointType.ToDisplayString(), type.ToDisplayString()),
+                    out ITypeSymbol resolvedEntryPointType))
+                {
                     return NoMarshallingInfo.Instance;
                 }
 
-                return new NativeContiguousCollectionMarshallingInfo(
-                    ManagedTypeInfo.CreateTypeInfoForTypeSymbol(nativeType),
-                    valueProperty is not null ? ManagedTypeInfo.CreateTypeInfoForTypeSymbol(valueProperty.Type) : null,
-                    features,
-                    UseDefaultMarshalling: !isMarshalUsingAttribute,
-                    parsedCountInfo,
-                    ManagedTypeInfo.CreateTypeInfoForTypeSymbol(elementType),
-                    GetMarshallingInfo(elementType, useSiteAttributes, indirectionLevel + 1, inspectedElements, ref maxIndirectionLevelUsed));
+                entryPointType = (INamedTypeSymbol)resolvedEntryPointType;
             }
 
-            return new NativeMarshallingAttributeInfo(
-                ManagedTypeInfo.CreateTypeInfoForTypeSymbol(nativeType),
-                valueProperty is not null ? ManagedTypeInfo.CreateTypeInfoForTypeSymbol(valueProperty.Type) : null,
-                features,
-                UseDefaultMarshalling: !isMarshalUsingAttribute);
+            if (ManualTypeMarshallingHelper.TryGetValueMarshallersFromEntryType(entryPointType, type, _compilation, out CustomTypeMarshallers? marshallers))
+            {
+                return new NativeMarshallingAttributeInfo(entryPointTypeInfo, marshallers.Value);
+            }
+            return NoMarshallingInfo.Instance;
         }
 
         private bool TryCreateTypeBasedMarshallingInfo(
@@ -721,7 +634,7 @@ namespace Microsoft.Interop
             int indirectionLevel,
             Dictionary<int, AttributeData> useSiteAttributes,
             ImmutableHashSet<string> inspectedElements,
-            ref int maxIndirectionLevelUsed,
+            ref int maxIndirectionDepthUsed,
             out MarshallingInfo marshallingInfo)
         {
             // Check for an implicit SafeHandle conversion.
@@ -753,56 +666,48 @@ namespace Microsoft.Interop
 
             if (type is IArrayTypeSymbol { ElementType: ITypeSymbol elementType })
             {
-                INamedTypeSymbol? arrayMarshaller;
-
-                if (elementType is IPointerTypeSymbol { PointedAtType: ITypeSymbol pointedAt })
-                {
-                    arrayMarshaller = _compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_GeneratedMarshalling_PtrArrayMarshaller_Metadata)?.Construct(pointedAt);
-                }
-                else
-                {
-                    arrayMarshaller = _compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_GeneratedMarshalling_ArrayMarshaller_Metadata)?.Construct(elementType);
-                }
-
-                if (arrayMarshaller is null)
-                {
-                    // If the array marshaler type is not available, then we cannot marshal arrays but indicate it is missing.
-                    marshallingInfo = new MissingSupportCollectionMarshallingInfo(parsedCountInfo, GetMarshallingInfo(elementType, useSiteAttributes, indirectionLevel + 1, inspectedElements, ref maxIndirectionLevelUsed));
-                    return true;
-                }
-
-                ITypeSymbol? valuePropertyType = ManualTypeMarshallingHelper.FindValueProperty(arrayMarshaller)?.Type;
-
-                marshallingInfo = new NativeContiguousCollectionMarshallingInfo(
-                    NativeMarshallingType: ManagedTypeInfo.CreateTypeInfoForTypeSymbol(arrayMarshaller),
-                    ValuePropertyType: valuePropertyType is not null ? ManagedTypeInfo.CreateTypeInfoForTypeSymbol(valuePropertyType) : null,
-                    MarshallingFeatures: ~CustomMarshallingFeatures.ManagedTypePinning,
-                    UseDefaultMarshalling: true,
-                    ElementCountInfo: parsedCountInfo,
-                    ElementType: ManagedTypeInfo.CreateTypeInfoForTypeSymbol(elementType),
-                    ElementMarshallingInfo: GetMarshallingInfo(elementType, useSiteAttributes, indirectionLevel + 1, inspectedElements, ref maxIndirectionLevelUsed));
+                MarshallingInfo elementMarshallingInfo = GetMarshallingInfo(elementType, useSiteAttributes, indirectionLevel + 1, inspectedElements, ref maxIndirectionDepthUsed);
+                marshallingInfo = CreateArrayMarshallingInfo(type, elementType, parsedCountInfo, elementMarshallingInfo);
                 return true;
             }
 
             // No marshalling info was computed, but a character encoding was provided.
             // If the type is a character or string then pass on these details.
-            if (type.SpecialType == SpecialType.System_Char || type.SpecialType == SpecialType.System_String)
+            if (type.SpecialType == SpecialType.System_Char && _defaultInfo.CharEncoding != CharEncoding.Undefined)
             {
-                if (_defaultInfo.CharEncoding == CharEncoding.Custom && _defaultInfo.StringMarshallingCustomType is not null)
+                marshallingInfo = new MarshallingInfoStringSupport(_defaultInfo.CharEncoding);
+                return true;
+            }
+
+            if (type.SpecialType == SpecialType.System_String && _defaultInfo.CharEncoding != CharEncoding.Undefined)
+            {
+                if (_defaultInfo.CharEncoding == CharEncoding.Custom)
                 {
-                    AttributeData attrData = _contextSymbol is IMethodSymbol
-                        ? _contextSymbol.GetAttributes().First(a => a.AttributeClass.ToDisplayString() == TypeNames.LibraryImportAttribute)
-                        : default;
-                    marshallingInfo = CreateNativeMarshallingInfo(type, _defaultInfo.StringMarshallingCustomType, attrData, true, indirectionLevel, parsedCountInfo, useSiteAttributes, inspectedElements, ref maxIndirectionLevelUsed);
+                    if (_defaultInfo.StringMarshallingCustomType is not null)
+                    {
+                        AttributeData attrData = _contextSymbol is IMethodSymbol
+                            ? _contextSymbol.GetAttributes().FirstOrDefault(a => a.AttributeClass.ToDisplayString() == TypeNames.LibraryImportAttribute)
+                            : default;
+                        marshallingInfo = CreateNativeMarshallingInfo(type, _defaultInfo.StringMarshallingCustomType, attrData, true, indirectionLevel, parsedCountInfo, useSiteAttributes, inspectedElements, ref maxIndirectionDepthUsed);
+                        return true;
+                    }
+                }
+                else
+                {
+                    marshallingInfo = _defaultInfo.CharEncoding switch
+                    {
+                        CharEncoding.Utf16 => CreateStringMarshallingInfo(type, TypeNames.Utf16StringMarshaller),
+                        CharEncoding.Utf8 => CreateStringMarshallingInfo(type, TypeNames.Utf8StringMarshaller),
+                        _ => throw new InvalidOperationException()
+                    };
+
                     return true;
                 }
 
-                if (_defaultInfo.CharEncoding != CharEncoding.Undefined)
-                {
-                    marshallingInfo = new MarshallingInfoStringSupport(_defaultInfo.CharEncoding);
-                    return true;
-                }
+                marshallingInfo = new MarshallingInfoStringSupport(_defaultInfo.CharEncoding);
+                return true;
             }
+
 
             if (type.SpecialType == SpecialType.System_Boolean)
             {
@@ -826,6 +731,92 @@ namespace Microsoft.Interop
             return false;
         }
 
+        private MarshallingInfo CreateArrayMarshallingInfo(
+            ITypeSymbol managedType,
+            ITypeSymbol elementType,
+            CountInfo countInfo,
+            MarshallingInfo elementMarshallingInfo)
+        {
+            ITypeSymbol typeArgumentToInsert = elementType;
+            INamedTypeSymbol? arrayMarshaller;
+            if (elementType is IPointerTypeSymbol { PointedAtType: ITypeSymbol pointedAt })
+            {
+                arrayMarshaller = _compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_PointerArrayMarshaller_Metadata);
+                typeArgumentToInsert = pointedAt;
+            }
+            else
+            {
+                arrayMarshaller = _compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_ArrayMarshaller_Metadata);
+            }
+
+            if (arrayMarshaller is null)
+            {
+                // If the array marshaler type is not available, then we cannot marshal arrays but indicate it is missing.
+                return new MissingSupportCollectionMarshallingInfo(countInfo, elementMarshallingInfo);
+            }
+
+            if (ManualTypeMarshallingHelper.HasEntryPointMarshallerAttribute(arrayMarshaller)
+                && ManualTypeMarshallingHelper.IsLinearCollectionEntryPoint(arrayMarshaller))
+            {
+                arrayMarshaller = arrayMarshaller.Construct(
+                    typeArgumentToInsert,
+                    arrayMarshaller.TypeArguments.Last());
+
+                Func<ITypeSymbol, MarshallingInfo> getMarshallingInfoForElement = (ITypeSymbol elementType) => elementMarshallingInfo;
+                if (ManualTypeMarshallingHelper.TryGetLinearCollectionMarshallersFromEntryType(arrayMarshaller, managedType, _compilation, getMarshallingInfoForElement, out CustomTypeMarshallers? marshallers))
+                {
+                    return new NativeLinearCollectionMarshallingInfo(
+                        ManagedTypeInfo.CreateTypeInfoForTypeSymbol(arrayMarshaller),
+                        marshallers.Value,
+                        countInfo,
+                        ManagedTypeInfo.CreateTypeInfoForTypeSymbol(arrayMarshaller.TypeParameters.Last()));
+                }
+            }
+
+            Debug.WriteLine("Default marshallers for arrays should be a valid shape.");
+            return NoMarshallingInfo.Instance;
+        }
+
+        private MarshallingInfo CreateStringMarshallingInfo(
+            ITypeSymbol type,
+            UnmanagedType unmanagedType)
+        {
+            string? marshallerName = unmanagedType switch
+            {
+                UnmanagedType.BStr => TypeNames.BStrStringMarshaller,
+                UnmanagedType.LPStr => TypeNames.AnsiStringMarshaller,
+                UnmanagedType.LPTStr or UnmanagedType.LPWStr => TypeNames.Utf16StringMarshaller,
+                MarshalAsInfo.UnmanagedType_LPUTF8Str => TypeNames.Utf8StringMarshaller,
+                _ => null
+            };
+
+            if (marshallerName is null)
+                return new MarshalAsInfo(unmanagedType, _defaultInfo.CharEncoding);
+
+            return CreateStringMarshallingInfo(type, marshallerName);
+        }
+
+        private MarshallingInfo CreateStringMarshallingInfo(
+            ITypeSymbol type,
+            string marshallerName)
+        {
+            INamedTypeSymbol? stringMarshaller = _compilation.GetTypeByMetadataName(marshallerName);
+            if (stringMarshaller is null)
+                return new MissingSupportMarshallingInfo();
+
+            if (ManualTypeMarshallingHelper.HasEntryPointMarshallerAttribute(stringMarshaller))
+            {
+                if (ManualTypeMarshallingHelper.TryGetValueMarshallersFromEntryType(stringMarshaller, type, _compilation, out CustomTypeMarshallers? marshallers))
+                {
+                    return new NativeMarshallingAttributeInfo(
+                        EntryPointType: ManagedTypeInfo.CreateTypeInfoForTypeSymbol(stringMarshaller),
+                        Marshallers: marshallers.Value);
+                }
+            }
+
+            return new MissingSupportMarshallingInfo();
+        }
+
         private MarshallingInfo GetBlittableMarshallingInfo(ITypeSymbol type)
         {
             if (type.TypeKind is TypeKind.Enum or TypeKind.Pointer or TypeKind.FunctionPointer
@@ -837,12 +828,12 @@ namespace Microsoft.Interop
             }
             else if (_compilation.GetTypeByMetadataName(TypeNames.System_Runtime_CompilerServices_DisableRuntimeMarshallingAttribute) is null)
             {
-                // If runtime marshalling cannot be disabled, then treat this as a "missing support" scenario so we can gracefully fall back to using the fowarder downlevel.
+                // If runtime marshalling cannot be disabled, then treat this as a "missing support" scenario so we can gracefully fall back to using the forwarder downlevel.
                 return new MissingSupportMarshallingInfo();
             }
             else
             {
-                return new UnmanagedBlittableMarshallingInfo();
+                return new UnmanagedBlittableMarshallingInfo(type.IsStrictlyBlittable());
             }
         }
 
@@ -862,7 +853,7 @@ namespace Microsoft.Interop
 
             foreach (KeyValuePair<string, TypedConstant> arg in attrData.NamedArguments)
             {
-                if (arg.Key == ManualTypeMarshallingHelper.MarshalUsingProperties.ElementIndirectionLevel)
+                if (arg.Key == ManualTypeMarshallingHelper.MarshalUsingProperties.ElementIndirectionDepth)
                 {
                     indirectionLevel = (int)arg.Value.Value!;
                     return true;
@@ -872,7 +863,7 @@ namespace Microsoft.Interop
             return true;
         }
 
-        private class CyclicalCountElementInfoException : Exception
+        private sealed class CyclicalCountElementInfoException : Exception
         {
             public CyclicalCountElementInfoException(ImmutableHashSet<string> elementsInCycle, string startOfCycle)
             {

@@ -15,4 +15,11 @@
       want to ensure we use the correct packages. -->
     <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
   </PropertyGroup>
+
+  <!-- Construct the path to the sign project, so that signing can be called during prepare-artifacts -->
+  <PropertyGroup>
+    <ArcadeSdkMSBuildProjectDir>$([System.IO.Path]::GetDirectoryName('$(ArcadeSdkBuildTasksAssembly)'))\..\</ArcadeSdkMSBuildProjectDir>
+    <ArcadeSdkSignProject>$(ArcadeSdkMSBuildProjectDir)Sign.proj</ArcadeSdkSignProject>
+  </PropertyGroup>
+
 </Project>

@@ -7,11 +7,10 @@ using System.Globalization;
 using System.IO;
 using System.Xml.Schema;
 using System.Xml.XPath;
+using TF = System.Xml.Xsl.XmlQueryTypeFactory;
 
 namespace System.Xml.Xsl
 {
-    using TF = XmlQueryTypeFactory;
-
     /// <summary>
     /// This class is the only way to create concrete instances of the abstract XmlQueryType class.
     /// Once basic types have been created, they can be combined and transformed in various ways.
@@ -347,8 +346,8 @@ namespace System.Xml.Xsl
             static ItemType()
             {
 #if DEBUG
-                Array arrEnum = Enum.GetValues(typeof(XmlTypeCode));
-                Debug.Assert((XmlTypeCode)arrEnum.GetValue(arrEnum.Length - 1)! == XmlTypeCode.DayTimeDuration,
+                XmlTypeCode[] arrEnum = Enum.GetValues<XmlTypeCode>();
+                Debug.Assert(arrEnum[arrEnum.Length - 1] == XmlTypeCode.DayTimeDuration,
                              "DayTimeDuration is no longer the last item in XmlTypeCode.  This code expects it to be.");
 #endif
 
@@ -1366,7 +1365,7 @@ namespace System.Xml.Xsl
                             XmlQueryType atomicSeq = Type((XmlSchemaSimpleType)schemaType, false);
 
                             // Add prime to a choice
-                            // It doen't have to be a single item!
+                            // It doesn't have to be a single item!
                             PrimeChoice(list, atomicSeq.Prime);
 
                             // Add cardinality to a choice

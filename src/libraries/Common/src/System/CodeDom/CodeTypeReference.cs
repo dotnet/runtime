@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 
-#nullable enable
-
 #if CODEDOM
 namespace System.CodeDom
 #else
@@ -42,8 +40,13 @@ namespace System.Runtime.Serialization
             ArrayElementType = null;
         }
 
-        public CodeTypeReference(Type type!!)
+        public CodeTypeReference(Type type)
         {
+            if (type is null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
             if (type.IsArray)
             {
                 ArrayRank = type.GetArrayRank();
@@ -65,7 +68,7 @@ namespace System.Runtime.Serialization
             Options = codeTypeReferenceOption;
         }
 
-        public CodeTypeReference(string typeName, CodeTypeReferenceOptions codeTypeReferenceOption)
+        public CodeTypeReference(string? typeName, CodeTypeReferenceOptions codeTypeReferenceOption)
         {
             Initialize(typeName, codeTypeReferenceOption);
         }
@@ -343,12 +346,7 @@ namespace System.Runtime.Serialization
                     return ArrayElementType.TypeArguments;
                 }
 
-                if (_typeArguments == null)
-                {
-                    _typeArguments = new CodeTypeReferenceCollection();
-                }
-
-                return _typeArguments;
+                return _typeArguments ??= new CodeTypeReferenceCollection();
             }
         }
 
@@ -362,7 +360,7 @@ namespace System.Runtime.Serialization
         // " [System.Collections.Generic.List[[System.string, mscorlib, Version=2.0.0.0, Culture=neutral,
         //   PublicKeyToken=b77a5c561934e089]], mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]"
         //
-        private string RipOffAssemblyInformationFromTypeName(string typeName)
+        private static string RipOffAssemblyInformationFromTypeName(string typeName)
         {
             int start = 0;
             int end = typeName.Length - 1;

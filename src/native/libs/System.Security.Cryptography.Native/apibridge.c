@@ -340,7 +340,7 @@ int32_t local_EVP_CIPHER_CTX_reset(EVP_CIPHER_CTX* ctx)
         return ret;
     }
 
-    // OpenSSL 1.1 returns succes 1 on a NULL input
+    // OpenSSL 1.1 returns success 1 on a NULL input
     return 1;
 }
 
@@ -890,4 +890,12 @@ int local_EVP_PKEY_public_check(EVP_PKEY_CTX* ctx)
     }
 }
 
+
+int local_ASN1_TIME_to_tm(const ASN1_TIME* s, struct tm* tm)
+{
+    (void)s;
+    (void)tm;
+
+    return 0;
+}
 #endif

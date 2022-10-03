@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 
 namespace Microsoft.Interop
 {
-    internal record LibraryImportGeneratorOptions(bool GenerateForwarders, bool UseMarshalType)
+    internal sealed record LibraryImportGeneratorOptions(bool GenerateForwarders, bool UseMarshalType)
     {
         public LibraryImportGeneratorOptions(AnalyzerConfigOptions options)
             : this(options.GenerateForwarders(), options.UseMarshalType())

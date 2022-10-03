@@ -25,8 +25,10 @@ namespace System.Collections.Specialized.Tests
             return x.Equals(y);
         }
 
-        public int GetHashCode(object obj!!)
+        public int GetHashCode(object obj)
         {
+            ArgumentNullException.ThrowIfNull(obj);
+
             string s = obj as string;
             if (s != null)
             {

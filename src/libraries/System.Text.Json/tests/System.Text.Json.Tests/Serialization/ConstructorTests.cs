@@ -6,25 +6,25 @@ namespace System.Text.Json.Serialization.Tests
     public class ConstructorTests_String : ConstructorTests
     {
         public ConstructorTests_String()
-            : base(JsonSerializerWrapperForString.StringSerializer, JsonSerializerWrapperForStream.SyncStreamSerializer)
+            : base(JsonSerializerWrapper.StringSerializer)
         { }
     }
 
     public class ConstructorTests_AsyncStream : ConstructorTests
     {
         public ConstructorTests_AsyncStream()
-            : base(JsonSerializerWrapperForString.AsyncStreamSerializer, JsonSerializerWrapperForStream.AsyncStreamSerializer) { }
+            : base(JsonSerializerWrapper.AsyncStreamSerializer) { }
     }
 
     public class ConstructorTests_SyncStream : ConstructorTests
     {
         public ConstructorTests_SyncStream()
-            : base(JsonSerializerWrapperForString.SyncStreamSerializer, JsonSerializerWrapperForStream.SyncStreamSerializer) { }
+            : base(JsonSerializerWrapper.SyncStreamSerializer) { }
     }
 
     public class ConstructorTests_Span : ConstructorTests
     {
         public ConstructorTests_Span()
-            : base(JsonSerializerWrapperForString.SpanSerializer, JsonSerializerWrapperForStream.SyncStreamSerializer) { }
+            : base(JsonSerializerWrapper.SpanSerializer) { }
     }
 }

@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.IO.Tests;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -10,31 +11,19 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public class StreamContentTest
+    public class StreamContentTest : StandaloneStreamConformanceTests
     {
-        private readonly ITestOutputHelper _output;
-
-        public StreamContentTest(ITestOutputHelper output)
-        {
-            _output = output;
-        }
+        protected override Task<Stream> CreateReadOnlyStreamCore(byte[]? initialData) => initialData is null ? Task.FromResult<Stream>(null) : new StreamContent(new MemoryStream(initialData)).ReadAsStreamAsync();
+        protected override Task<Stream> CreateWriteOnlyStreamCore(byte[]? initialData) => Task.FromResult<Stream>(null);
+        protected override Task<Stream> CreateReadWriteStreamCore(byte[]? initialData) => Task.FromResult<Stream>(null);
+        protected override bool CanSetLength => false;
 
         [Fact]
-        public void Ctor_NullStream_ThrowsArgumentNullException()
+        public void Ctor_InvalidArguments_Throws()
         {
             Assert.Throws<ArgumentNullException>(() => new StreamContent(null));
-        }
-
-        [Fact]
-        public void Ctor_ZeroBufferSize_ThrowsArgumentOutOfRangeException()
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new StreamContent(new MemoryStream(), 0));
-        }
-
-        [Fact]
-        public void Ctor_NullStreamAndZeroBufferSize_ThrowsArgumentNullException()
-        {
             Assert.Throws<ArgumentNullException>(() => new StreamContent(null, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new StreamContent(new MemoryStream(), 0));
         }
 
         [Fact]
@@ -207,80 +196,6 @@ namespace System.Net.Http.Functional.Tests
             Assert.NotSame(source, stream);
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task ContentReadStream_CheckResultProperties_ValuesRepresentReadOnlyStream(bool readStreamAsync)
-        {
-            byte[] data = new byte[10];
-            for (int i = 0; i < data.Length; i++)
-            {
-                data[i] = (byte)i;
-            }
-
-            var source = new MockStream(data);
-
-            var content = new StreamContent(source);
-            Stream contentReadStream = await content.ReadAsStreamAsync(readStreamAsync);
-
-            // The following checks verify that the stream returned passes all read-related properties to the
-            // underlying MockStream and throws when using write-related members.
-
-            Assert.False(contentReadStream.CanWrite);
-            Assert.True(contentReadStream.CanRead);
-            Assert.Equal(source.Length, contentReadStream.Length);
-
-            Assert.Equal(1, source.CanSeekCount);
-            _output.WriteLine(contentReadStream.CanSeek.ToString());
-            Assert.Equal(2, source.CanSeekCount);
-
-            contentReadStream.Position = 3; // No exception.
-            Assert.Equal(3, contentReadStream.Position);
-
-            byte byteOnIndex3 = (byte)contentReadStream.ReadByte();
-            Assert.Equal(data[3], byteOnIndex3);
-
-            byte[] byteOnIndex4 = new byte[1];
-            int result = await contentReadStream.ReadAsync(byteOnIndex4, 0, 1);
-            Assert.Equal(1, result);
-
-            Assert.Equal(data[4], byteOnIndex4[0]);
-
-            byte[] byteOnIndex5 = new byte[1];
-            Assert.Equal(1, contentReadStream.Read(byteOnIndex5, 0, 1));
-            Assert.Equal(data[5], byteOnIndex5[0]);
-
-            byte[] byteOnIndex6 = new byte[1];
-            Assert.Equal(1, contentReadStream.Read(new Span<byte>(byteOnIndex6, 0, 1)));
-            Assert.Equal(data[6], byteOnIndex6[0]);
-
-            contentReadStream.ReadTimeout = 123;
-            Assert.Equal(123, source.ReadTimeout);
-            Assert.Equal(123, contentReadStream.ReadTimeout);
-
-            Assert.Equal(0, source.CanTimeoutCount);
-            _output.WriteLine(contentReadStream.CanTimeout.ToString());
-            Assert.Equal(1, source.CanTimeoutCount);
-
-            Assert.Equal(0, source.SeekCount);
-            contentReadStream.Seek(0, SeekOrigin.Begin);
-            Assert.Equal(1, source.SeekCount);
-
-            Assert.Throws<NotSupportedException>(() => { contentReadStream.WriteTimeout = 5; });
-            Assert.Throws<NotSupportedException>(() => contentReadStream.WriteTimeout.ToString());
-            Assert.Throws<NotSupportedException>(() => contentReadStream.Flush());
-            Assert.Throws<NotSupportedException>(() => contentReadStream.SetLength(1));
-            Assert.Throws<NotSupportedException>(() => contentReadStream.Write(null, 0, 0));
-            Assert.Throws<NotSupportedException>(() => contentReadStream.Write(new Span<byte>(Array.Empty<byte>())));
-            Assert.Throws<NotSupportedException>(() => contentReadStream.WriteByte(1));
-
-            Assert.Equal(0, source.DisposeCount);
-            contentReadStream.Dispose();
-            Assert.Equal(1, source.DisposeCount);
-        }
-
-        #region Helper methods
-
         private class MockStream : MemoryStream
         {
             private bool _canSeek;
@@ -362,7 +277,5 @@ namespace System.Net.Http.Functional.Tests
                 }
             }
         }
-
-        #endregion
     }
 }

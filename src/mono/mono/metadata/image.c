@@ -51,7 +51,6 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include <mono/metadata/w32error.h>
 
 #define INVALID_ADDRESS 0xffffffff
 
@@ -105,7 +104,7 @@ mono_images_unlock(void)
 }
 
 static MonoImage *
-mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status);
+mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status, const MonoImageOpenOptions *options);
 
 /* Maps string keys to MonoImageStorage values.
  *
@@ -482,7 +481,7 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 		ptr += 4;
 		image->version = g_strndup (ptr, version_string_len);
 		ptr += version_string_len;
-		pad = ptr - image->raw_metadata;
+		pad = GPTRDIFF_TO_UINT32 (ptr - image->raw_metadata);
 		if (pad % 4)
 			ptr += 4 - (pad % 4);
 	} else
@@ -536,7 +535,7 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 			g_message ("Unknown heap type: %s\n", ptr + 8);
 			ptr += 8 + strlen (ptr + 8) + 1;
 		}
-		pad = ptr - image->raw_metadata;
+		pad = GPTRDIFF_TO_UINT32 (ptr - image->raw_metadata);
 		if (pad % 4)
 			ptr += 4 - (pad % 4);
 	}
@@ -701,7 +700,7 @@ mono_image_check_for_module_cctor (MonoImage *image)
  * it cannot be loaded. NULL without MonoError being set will be interpreted as "not found".
  */
 MonoImage*
-mono_image_load_module_checked (MonoImage *image, int idx, MonoError *error)
+mono_image_load_module_checked (MonoImage *image, uint32_t idx, MonoError *error)
 {
 	error_init (error);
 
@@ -833,15 +832,15 @@ do_load_header_internal (const char *raw_data, guint32 raw_data_len, MonoDotNetH
 		 * will be fixed when we change MonoDotNetHeader to not match the 32 bit variant
 		 */
 		SWAP64	(header64.nt.pe_image_base);
-		header->nt.pe_image_base = header64.nt.pe_image_base;
+		header->nt.pe_image_base = GUINT64_TO_UINT32 (header64.nt.pe_image_base);
 		SWAP64	(header64.nt.pe_stack_reserve);
-		header->nt.pe_stack_reserve = header64.nt.pe_stack_reserve;
+		header->nt.pe_stack_reserve = GUINT64_TO_UINT32 (header64.nt.pe_stack_reserve);
 		SWAP64	(header64.nt.pe_stack_commit);
-		header->nt.pe_stack_commit = header64.nt.pe_stack_commit;
+		header->nt.pe_stack_commit = GUINT64_TO_UINT32 (header64.nt.pe_stack_commit);
 		SWAP64	(header64.nt.pe_heap_reserve);
-		header->nt.pe_heap_reserve = header64.nt.pe_heap_reserve;
+		header->nt.pe_heap_reserve = GUINT64_TO_UINT32 (header64.nt.pe_heap_reserve);
 		SWAP64	(header64.nt.pe_heap_commit);
-		header->nt.pe_heap_commit = header64.nt.pe_heap_commit;
+		header->nt.pe_heap_commit = GUINT64_TO_UINT32 (header64.nt.pe_heap_commit);
 
 		header->nt.pe_section_align = header64.nt.pe_section_align;
 		header->nt.pe_file_alignment = header64.nt.pe_file_alignment;
@@ -929,7 +928,6 @@ mono_has_pdb_checksum (char *raw_data, uint32_t raw_data_len)
 {
 	MonoDotNetHeader cli_header;
 	MonoMSDOSHeader msdos;
-	int idx;
 	guint8 *data;
 
 	int offset = 0;
@@ -951,7 +949,7 @@ mono_has_pdb_checksum (char *raw_data, uint32_t raw_data_len)
 			return FALSE;
 		else {
 			const int top = cli_header.coff.coff_sections;
-			int addr = debug_dir_entry->rva;
+			guint32 addr = debug_dir_entry->rva;
 			int i = 0;
 			for (i = 0; i < top; i++){
 				MonoSectionTable t;
@@ -975,14 +973,14 @@ mono_has_pdb_checksum (char *raw_data, uint32_t raw_data_len)
 					break;
 				}
 			}
-			for (idx = 0; idx < debug_dir_entry->size / sizeof (ImageDebugDirectory); ++idx) {
+			for (guint32 idx = 0; idx < debug_dir_entry->size / sizeof (ImageDebugDirectory); ++idx) {
 				data = (guint8 *) ((ImageDebugDirectory *) (raw_data + addr) + idx);
 				debug_dir.characteristics = read32(data);
 				debug_dir.time_date_stamp = read32(data + 4);
 				debug_dir.major_version   = read16(data + 8);
 				debug_dir.minor_version   = read16(data + 10);
 				debug_dir.type            = read32(data + 12);
-				if (debug_dir.type == DEBUG_DIR_PDB_CHECKSUM || debug_dir.type == DEBUG_DIR_REPRODUCIBLE)
+				if (debug_dir.type == DEBUG_DIR_PDB_CHECKSUM || debug_dir.type == DEBUG_DIR_ENTRY_CODEVIEW)
 					return TRUE;
 			}
 		}
@@ -1085,20 +1083,6 @@ pe_image_load_cli_data (MonoImage *image)
 	return TRUE;
 }
 
-static void
-mono_image_load_time_date_stamp (MonoImage *image)
-{
-	image->time_date_stamp = 0;
-#ifndef HOST_WIN32
-	if (!image->filename)
-		return;
-
-	gunichar2 *uni_name = g_utf8_to_utf16 (image->filename, -1, NULL, NULL, NULL);
-	mono_pe_file_time_date_stamp (uni_name, &image->time_date_stamp);
-	g_free (uni_name);
-#endif
-}
-
 void
 mono_image_load_names (MonoImage *image)
 {
@@ -1179,7 +1163,7 @@ dump_encmap (MonoImage *image)
 
 	if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE)) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "ENCMAP for %s", image->filename);
-		for (int i = 0; i < table_info_get_rows (encmap); ++i) {
+		for (guint32 i = 0; i < table_info_get_rows (encmap); ++i) {
 			guint32 cols [MONO_ENCMAP_SIZE];
 			mono_metadata_decode_row (encmap, i, cols, MONO_ENCMAP_SIZE);
 			int token = cols [MONO_ENCMAP_TOKEN];
@@ -1189,8 +1173,7 @@ dump_encmap (MonoImage *image)
 }
 
 static MonoImage *
-do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
-		    gboolean care_about_cli, gboolean care_about_pecoff)
+do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status, const MonoImageLoadOptions *options)
 {
 	ERROR_DECL (error);
 	GSList *l;
@@ -1216,7 +1199,7 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 		if (status)
 			*status = MONO_IMAGE_IMAGE_INVALID;
 
-		if (care_about_pecoff == FALSE)
+		if (options->dont_care_about_pecoff == TRUE)
 			goto done;
 
 		if (!mono_image_load_pe_data (image))
@@ -1225,7 +1208,7 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 		image->loader = (MonoImageLoader*)&pe_loader;
 	}
 
-	if (care_about_cli == FALSE) {
+	if (options->dont_care_about_cli == TRUE) {
 		goto done;
 	}
 
@@ -1235,8 +1218,6 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	dump_encmap (image);
 
 	mono_image_load_names (image);
-
-	mono_image_load_time_date_stamp (image);
 
 done:
 	MONO_PROFILER_RAISE (image_loaded, (image));
@@ -1379,7 +1360,7 @@ mono_image_storage_open (const char *fname)
 	MonoImageStorage *storage = g_new0 (MonoImageStorage, 1);
 	mono_refcount_init (storage, mono_image_storage_dtor);
 	storage->raw_buffer_used = TRUE;
-	storage->raw_data_len = mono_file_map_size (filed);
+	storage->raw_data_len = GUINT64_TO_UINT32 (mono_file_map_size (filed));
 	storage->raw_data = (char*)mono_file_map (storage->raw_data_len, MONO_MMAP_READ|MONO_MMAP_PRIVATE, mono_file_map_fd (filed), 0, &storage->raw_data_handle);
 #if defined(HAVE_MMAP) && !defined (HOST_WIN32)
 	if (!storage->raw_data) {
@@ -1414,7 +1395,7 @@ mono_image_storage_new_raw_data (char *datac, guint32 data_len, gboolean raw_dat
 
 	storage->raw_data = datac;
 	storage->raw_data_len = data_len;
-	storage->raw_data_allocated = raw_data_allocated;
+	storage->raw_data_allocated = !!raw_data_allocated;
 
 	storage->key = key;
 	MonoImageStorage *other_storage = NULL;
@@ -1426,8 +1407,7 @@ mono_image_storage_new_raw_data (char *datac, guint32 data_len, gboolean raw_dat
 }
 
 static MonoImage *
-do_mono_image_open (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status,
-					gboolean care_about_cli, gboolean care_about_pecoff, gboolean metadata_only)
+do_mono_image_open (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status, const MonoImageOpenOptions *options)
 {
 	MonoCLIImageInfo *iinfo;
 	MonoImage *image;
@@ -1441,6 +1421,7 @@ do_mono_image_open (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOp
 	}
 
 	image = g_new0 (MonoImage, 1);
+	image->ref_count = 1;
 	image->storage = storage;
 	mono_image_init_raw_data (image, storage);
 	if (!image->raw_data) {
@@ -1450,14 +1431,14 @@ do_mono_image_open (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOp
 			*status = MONO_IMAGE_IMAGE_INVALID;
 		return NULL;
 	}
-	iinfo = g_new0 (MonoCLIImageInfo, 1);
-	image->image_info = iinfo;
+	image->not_executable = !!options->not_executable;
+	image->metadata_only = !!options->metadata_only;
 	image->name = mono_path_resolve_symlinks (fname);
 	image->filename = g_strdup (image->name);
-	image->metadata_only = metadata_only;
-	image->ref_count = 1;
+	iinfo = g_new0 (MonoCLIImageInfo, 1);
+	image->image_info = iinfo;
 	image->alc = alc;
-	return do_mono_image_load (image, status, care_about_cli, care_about_pecoff);
+	return do_mono_image_load (image, status, &options->load_options);
 }
 
 /**
@@ -1640,11 +1621,12 @@ mono_image_open_from_data_internal (MonoAssemblyLoadContext *alc, char *data, gu
 	image->filename = filename ? g_strdup (filename) : NULL;
 	iinfo = g_new0 (MonoCLIImageInfo, 1);
 	image->image_info = iinfo;
-	image->metadata_only = metadata_only;
+	image->metadata_only = !!metadata_only;
 	image->ref_count = 1;
 	image->alc = alc;
 
-	image = do_mono_image_load (image, status, TRUE, TRUE);
+	MonoImageLoadOptions options = {0, };
+	image = do_mono_image_load (image, status, &options);
 	if (image == NULL)
 		return NULL;
 
@@ -1671,7 +1653,7 @@ mono_image_open_from_data_with_name (char *data, guint32 data_len, gboolean need
 {
 	if (refonly) {
 		if (status) {
-			*status = MONO_IMAGE_IMAGE_INVALID;
+			*status = MONO_IMAGE_NOT_SUPPORTED;
 			return NULL;
 		}
 	}
@@ -1690,7 +1672,7 @@ mono_image_open_from_data_full (char *data, guint32 data_len, gboolean need_copy
 {
 	if (refonly) {
 		if (status) {
-			*status = MONO_IMAGE_IMAGE_INVALID;
+			*status = MONO_IMAGE_NOT_SUPPORTED;
 			return NULL;
 		}
 	}
@@ -1729,7 +1711,7 @@ mono_image_storage_open_from_module_handle (HMODULE module_handle, const char *f
 	mono_refcount_init (storage, mono_image_storage_dtor);
 	storage->raw_data = (char*) module_handle;
 	storage->is_module_handle = TRUE;
-	storage->has_entry_point = has_entry_point;
+	storage->has_entry_point = !!has_entry_point;
 
 	storage->key = key;
 
@@ -1759,7 +1741,8 @@ mono_image_open_from_module_handle (MonoAssemblyLoadContext *alc, HMODULE module
 	image->ref_count = has_entry_point ? 0 : 1;
 	image->alc = alc;
 
-	image = do_mono_image_load (image, status, TRUE, TRUE);
+	MonoImageLoadOptions options = {0, };
+	image = do_mono_image_load (image, status, &options);
 	if (image == NULL)
 		return NULL;
 
@@ -1775,14 +1758,15 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 {
 	if (refonly) {
 		if (status)
-			*status = MONO_IMAGE_IMAGE_INVALID;
+			*status = MONO_IMAGE_NOT_SUPPORTED;
 		return NULL;
 	}
-	return mono_image_open_a_lot (mono_alc_get_default (), fname, status);
+	MonoImageOpenOptions options = {0, };
+	return mono_image_open_a_lot (mono_alc_get_default (), fname, status, &options);
 }
 
 static MonoImage *
-mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status)
+mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status, const MonoImageOpenOptions *options)
 {
 	MonoImage *image;
 	GHashTable *loaded_images = mono_loaded_images_get_hash (li);
@@ -1796,7 +1780,6 @@ mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadConte
 	if (coree_module_handle) {
 		HMODULE module_handle;
 		gunichar2 *fname_utf16;
-		DWORD last_error;
 
 		absfname = mono_path_resolve_symlinks (fname);
 		fname_utf16 = NULL;
@@ -1821,11 +1804,13 @@ mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadConte
 			return image;
 		}
 
+		DWORD last_error = ERROR_SUCCESS;
+
 		// Image not loaded, load it now
 		fname_utf16 = g_utf8_to_utf16 (absfname, -1, NULL, NULL, NULL);
 		module_handle = MonoLoadImage (fname_utf16);
 		if (status && module_handle == NULL)
-			last_error = mono_w32error_get_last ();
+			last_error = GetLastError ();
 
 		/* mono_image_open_from_module_handle is called by _CorDllMain. */
 		image = (MonoImage*)g_hash_table_lookup (loaded_images, absfname);
@@ -1883,7 +1868,7 @@ mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadConte
 	mono_images_unlock ();
 
 	// Image not loaded, load it now
-	image = do_mono_image_open (alc, fname, status, TRUE, TRUE, FALSE);
+	image = do_mono_image_open (alc, fname, status, options);
 	if (image == NULL)
 		return NULL;
 
@@ -1891,10 +1876,10 @@ mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadConte
 }
 
 MonoImage *
-mono_image_open_a_lot (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status)
+mono_image_open_a_lot (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status, const MonoImageOpenOptions *options)
 {
 	MonoLoadedImages *li = mono_alc_get_loaded_images (alc);
-	return mono_image_open_a_lot_parameterized (li, alc, fname, status);
+	return mono_image_open_a_lot_parameterized (li, alc, fname, status, options);
 }
 
 /**
@@ -1909,7 +1894,8 @@ mono_image_open_a_lot (MonoAssemblyLoadContext *alc, const char *fname, MonoImag
 MonoImage *
 mono_image_open (const char *fname, MonoImageOpenStatus *status)
 {
-	return mono_image_open_a_lot (mono_alc_get_default (), fname, status);
+	MonoImageOpenOptions options = {0, };
+	return mono_image_open_a_lot (mono_alc_get_default (), fname, status, &options);
 }
 
 /**
@@ -1927,7 +1913,9 @@ mono_pe_file_open (const char *fname, MonoImageOpenStatus *status)
 {
 	g_return_val_if_fail (fname != NULL, NULL);
 
-	return do_mono_image_open (mono_alc_get_default (), fname, status, FALSE, TRUE, FALSE);
+	MonoImageOpenOptions options = {0, };
+	options.load_options.dont_care_about_cli = 1;
+	return do_mono_image_open (mono_alc_get_default (), fname, status, &options);
 }
 
 /**
@@ -1942,7 +1930,10 @@ mono_image_open_raw (MonoAssemblyLoadContext *alc, const char *fname, MonoImageO
 {
 	g_return_val_if_fail (fname != NULL, NULL);
 
-	return do_mono_image_open (alc, fname, status, FALSE, FALSE, FALSE);
+	MonoImageOpenOptions options = {0, };
+	options.load_options.dont_care_about_cli = 1;
+	options.load_options.dont_care_about_pecoff = 1;
+	return do_mono_image_open (alc, fname, status, &options);
 }
 
 /*
@@ -1953,7 +1944,9 @@ mono_image_open_raw (MonoAssemblyLoadContext *alc, const char *fname, MonoImageO
 MonoImage *
 mono_image_open_metadata_only (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status)
 {
-	return do_mono_image_open (alc, fname, status, TRUE, TRUE, TRUE);
+	MonoImageOpenOptions options = {0, };
+	options.metadata_only = 1;
+	return do_mono_image_open (alc, fname, status, &options);
 }
 
 /**
@@ -1997,7 +1990,7 @@ mono_image_fixup_vtable (MonoImage *image)
 			}
 		else if (slot_type & VTFIXUP_TYPE_64BIT)
 			while (slot_count--) {
-				*((guint64*) slot) = (guint64) mono_marshal_get_vtfixup_ftnptr (image, *((guint64*) slot), slot_type);
+				*((guint64*) slot) = (guint64) mono_marshal_get_vtfixup_ftnptr (image, GUINT64_TO_UINT32 (*((guint64*) slot)), slot_type);
 				slot = ((guint32*) slot) + 1;
 			}
 		else
@@ -2183,12 +2176,8 @@ mono_image_close_except_pools (MonoImage *image)
 		char *old_name = image->name;
 		image->name = g_strdup_printf ("%s - UNLOADED", old_name);
 		g_free (old_name);
-		g_free (image->filename);
-		image->filename = NULL;
 	} else {
 		g_free (image->name);
-		g_free (image->filename);
-		g_free (image->guid);
 		g_free (image->version);
 	}
 
@@ -2252,6 +2241,7 @@ mono_image_close_except_pools (MonoImage *image)
 		g_free (ii->cli_section_tables);
 		g_free (ii->cli_sections);
 		g_free (image->image_info);
+		image->image_info = NULL;
 	}
 
 	mono_image_close_except_pools_all (image->files, image->file_count);
@@ -2272,6 +2262,13 @@ mono_image_close_except_pools (MonoImage *image)
 	}
 
 	MONO_PROFILER_RAISE (image_unloaded, (image));
+
+	g_free (image->filename);
+	image->filename = NULL;
+	if (!debug_assembly_unload) {
+		g_free (image->guid);
+		image->guid = NULL;
+	}
 
 	return TRUE;
 }
@@ -2307,10 +2304,6 @@ mono_image_close_finish (MonoImage *image)
 
 	mono_metadata_update_image_close_all (image);
 
-#ifndef DISABLE_PERFCOUNTERS
-	/* FIXME: use an explicit subtraction method as soon as it's available */
-	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, -1 * mono_mempool_get_allocated (image->mempool));
-#endif
 
 	if (!image_is_dynamic (image)) {
 		if (debug_assembly_unload)
@@ -2359,6 +2352,8 @@ mono_image_strerror (MonoImageOpenStatus status)
 		return "File does not contain a valid CIL image";
 	case MONO_IMAGE_MISSING_ASSEMBLYREF:
 		return "An assembly was referenced, but could not be found";
+	case MONO_IMAGE_NOT_SUPPORTED:
+		return "Image operation not supported in this runtime";
 	}
 	return "Internal error";
 }
@@ -2560,7 +2555,7 @@ mono_image_get_resource (MonoImage *image, guint32 offset, guint32 *size)
 
 // Returning NULL with no error set will be interpeted as "not found"
 MonoImage*
-mono_image_load_file_for_image_checked (MonoImage *image, int fileidx, MonoError *error)
+mono_image_load_file_for_image_checked (MonoImage *image, uint32_t fileidx, MonoError *error)
 {
 	char *base_dir, *name;
 	MonoImage *res;
@@ -2595,7 +2590,6 @@ mono_image_load_file_for_image_checked (MonoImage *image, int fileidx, MonoError
 		mono_image_unlock (image);
 		mono_image_close (old);
 	} else {
-		int i;
 		/* g_print ("loaded file %s from %s (%p)\n", name, image->name, image->assembly); */
 		if (!assign_assembly_parent_for_netmodule (res, image, error)) {
 			mono_image_unlock (image);
@@ -2603,13 +2597,13 @@ mono_image_load_file_for_image_checked (MonoImage *image, int fileidx, MonoError
 			return NULL;
 		}
 
-		for (i = 0; i < res->module_count; ++i) {
+		for (guint32 i = 0; i < res->module_count; ++i) {
 			if (res->modules [i] && !res->modules [i]->assembly)
 				res->modules [i]->assembly = image->assembly;
 		}
 
 		if (!image->files) {
-			int n = table_info_get_rows (t);
+			guint32 n = table_info_get_rows (t);
 			image->files = g_new0 (MonoImage*, n);
 			image->file_count = n;
 		}
@@ -2844,9 +2838,6 @@ mono_image_alloc (MonoImage *image, guint size)
 {
 	gpointer res;
 
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
-#endif
 	mono_image_lock (image);
 	res = mono_mempool_alloc (image->mempool, size);
 	mono_image_unlock (image);
@@ -2859,9 +2850,6 @@ mono_image_alloc0 (MonoImage *image, guint size)
 {
 	gpointer res;
 
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
-#endif
 	mono_image_lock (image);
 	res = mono_mempool_alloc0 (image->mempool, size);
 	mono_image_unlock (image);
@@ -2874,9 +2862,6 @@ mono_image_strdup (MonoImage *image, const char *s)
 {
 	char *res;
 
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, (gint32)strlen (s));
-#endif
 	mono_image_lock (image);
 	res = mono_mempool_strdup (image->mempool, s);
 	mono_image_unlock (image);
@@ -2891,9 +2876,6 @@ mono_image_strdup_vprintf (MonoImage *image, const char *format, va_list args)
 	mono_image_lock (image);
 	buf = mono_mempool_strdup_vprintf (image->mempool, format, args);
 	mono_image_unlock (image);
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, (gint32)strlen (buf));
-#endif
 	return buf;
 }
 

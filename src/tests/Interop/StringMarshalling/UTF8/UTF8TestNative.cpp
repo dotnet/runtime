@@ -33,10 +33,10 @@ char* utf16_to_utf8(const wchar_t *srcstring)
 
     char *pszUTF8 = (char*)CoreClrAlloc(sizeof(char) * (cbUTF8 + 1));
     int nc = WideCharToMultiByte(CP_UTF8, // convert to UTF-8
-        0,       //default flags 
+        0,       //default flags
         srcstring, //source wide string
         (int)cchUTF16,     // length of wide string
-        pszUTF8,      // destination buffer 
+        pszUTF8,      // destination buffer
         cbUTF8,       // destination buffer size
         NULL,
         NULL);
@@ -116,7 +116,7 @@ char *get_utf8_string(int index) {
 
 void free_utf8_string(char *str)
 {
-    // do nothing , we never allocated the temp buffer on non-windows 
+    // do nothing , we never allocated the temp buffer on non-windows
 }
 
 #endif
@@ -137,7 +137,7 @@ LPSTR build_return_string(const char* pReturn)
 // Modify the string builder in place, managed side validates.
 extern "C" DLL_EXPORT void __cdecl StringBuilderParameterInOut(/*[In,Out] StringBuilder*/ char *s, int index)
 {
-    // if string.empty 
+    // if string.empty
     if (s == 0 || *s == 0)
         return;
 
@@ -145,16 +145,16 @@ extern "C" DLL_EXPORT void __cdecl StringBuilderParameterInOut(/*[In,Out] String
 
     // do byte by byte validation of in string
     size_t szLen = strlen(s);
-    for (size_t i = 0; i < szLen; i++) 
+    for (size_t i = 0; i < szLen; i++)
     {
         if (s[i] != pszTextutf8[i])
         {
             printf("[in] managed string do not match native string\n");
             throw;
         }
-    }  
+    }
 
-    // modify the string inplace 
+    // modify the string inplace
     size_t outLen = strlen(pszTextutf8);
     for (size_t i = 0; i < outLen; i++) {
         s[i] = pszTextutf8[i];
@@ -167,7 +167,7 @@ extern "C" DLL_EXPORT void __cdecl StringBuilderParameterInOut(/*[In,Out] String
 extern "C" DLL_EXPORT void __cdecl  StringBuilderParameterOut(/*[Out] StringBuilder*/ char *s, int index)
 {
     char *pszTextutf8 = get_utf8_string(index);
-    // modify the string inplace 
+    // modify the string inplace
     size_t outLen = strlen(pszTextutf8);
     for (size_t i = 0; i < outLen; i++) {
         s[i] = pszTextutf8[i];
@@ -177,7 +177,7 @@ extern "C" DLL_EXPORT void __cdecl  StringBuilderParameterOut(/*[Out] StringBuil
 }
 
 // return utf8 stringbuilder
-extern "C" DLL_EXPORT char* __cdecl  StringBuilderParameterReturn(int index) 
+extern "C" DLL_EXPORT char* __cdecl  StringBuilderParameterReturn(int index)
 {
     char *pszTextutf8 = get_utf8_string(index);
     size_t strLength = strlen(pszTextutf8);
@@ -194,7 +194,7 @@ extern "C" DLL_EXPORT LPSTR __cdecl StringParameterOut(/*[Out]*/ char *s, int in
     return build_return_string(s);
 }
 
-// string 
+// string
 extern "C" DLL_EXPORT LPSTR __cdecl StringParameterInOut(/*[In,Out]*/ char *s, int index)
 {
     // return a copy
@@ -221,10 +221,10 @@ extern "C" DLL_EXPORT void __cdecl TestStructWithUtf8Field(struct FieldWithUtf8 
 
     pszNative = get_utf8_string(stringIndex);
     outLen = strlen(pszNative);
-    // do byte by byte comparision
-    for (size_t i = 0; i < outLen; i++) 
+    // do byte by byte comparison
+    for (size_t i = 0; i < outLen; i++)
     {
-        if (pszNative[i] != pszManagedutf8[i]) 
+        if (pszNative[i] != pszManagedutf8[i])
         {
             printf("Native and managed string do not match.\n");
             throw;
@@ -274,7 +274,7 @@ extern "C" DLL_EXPORT void __cdecl StringParameterRef(/*ref*/ char **s, int inde
     {
        CoreClrFree(*s);
     }
-    // overwrite the orginal 
+    // overwrite the original
     *s = (LPSTR)(CoreClrAlloc(sizeof(char)* (strLength + 1)));
     memcpy(*s, pszTextutf8, strLength);
     (*s)[strLength] = '\0';
@@ -285,8 +285,8 @@ extern "C" DLL_EXPORT void __cdecl StringParameterRef(/*ref*/ char **s, int inde
 typedef void (__cdecl * Callback)(char *text, int index);
 extern "C" DLL_EXPORT void __cdecl Utf8DelegateAsParameter(Callback managedCallback)
 {
-    for (int i = 0; i < NSTRINGS; ++i) 
-    {        
+    for (int i = 0; i < NSTRINGS; ++i)
+    {
         char *pszNative = get_utf8_string(i);
         managedCallback(pszNative, i);
         free_utf8_string(pszNative);

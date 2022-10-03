@@ -85,10 +85,7 @@ namespace System.Reflection.Metadata
                 Throw.ArgumentNull(nameof(metadata));
             }
 
-            if (utf8Decoder == null)
-            {
-                utf8Decoder = MetadataStringDecoder.DefaultUTF8;
-            }
+            utf8Decoder ??= MetadataStringDecoder.DefaultUTF8;
 
             if (!(utf8Decoder.Encoding is UTF8Encoding))
             {
@@ -234,7 +231,7 @@ namespace System.Reflection.Metadata
         /// <summary>
         /// Reads stream headers described in ECMA-335 24.2.2 Stream header
         /// </summary>
-        private StreamHeader[] ReadStreamHeaders(ref BlobReader memReader)
+        private static StreamHeader[] ReadStreamHeaders(ref BlobReader memReader)
         {
             // storage header:
             memReader.ReadUInt16();

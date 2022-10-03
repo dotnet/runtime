@@ -152,7 +152,7 @@ namespace System.Data
             _start = 0;
 
             _topOperator = 0;
-            _ops[_topOperator++] = new OperatorInfo(Nodes.Noop, Operators.Noop, Operators.priStart);
+            _ops[_topOperator++] = new OperatorInfo(Nodes.Noop, Operators.Noop, Operators.PriStart);
         }
 
         // CONSIDER: configure the scanner : local info
@@ -192,7 +192,7 @@ namespace System.Data
                             throw ExprException.MissingOperand(opInfo);
                         }
                         // collect all nodes
-                        BuildExpression(Operators.priLow);
+                        BuildExpression(Operators.PriLow);
                         if (_topOperator != 1)
                         {
                             throw ExprException.MissingRightParen();
@@ -329,12 +329,12 @@ namespace System.Data
                                 node = new FunctionNode(_table, "In");
                                 NodePush(node);
                                 /* Push operator decriptor */
-                                _ops[_topOperator++] = new OperatorInfo(Nodes.Call, Operators.Noop, Operators.priParen);
+                                _ops[_topOperator++] = new OperatorInfo(Nodes.Call, Operators.Noop, Operators.PriParen);
                             }
                             else
                             {  /* Normal ( */
                                 /* Push operator decriptor */
-                                _ops[_topOperator++] = new OperatorInfo(Nodes.Paren, Operators.Noop, Operators.priParen);
+                                _ops[_topOperator++] = new OperatorInfo(Nodes.Paren, Operators.Noop, Operators.PriParen);
                             }
                         }
                         else
@@ -342,7 +342,7 @@ namespace System.Data
                             // This is a procedure call or () qualification
                             // Force out any dot qualifiers; check for bomb
 
-                            BuildExpression(Operators.priProc);
+                            BuildExpression(Operators.PriProc);
                             _prevOperand = Empty;
                             ExpressionNode? nodebefore = NodePeek();
 
@@ -371,7 +371,7 @@ namespace System.Data
                             }
 
                             NodePush(node);
-                            _ops[_topOperator++] = new OperatorInfo(Nodes.Call, Operators.Noop, Operators.priParen);
+                            _ops[_topOperator++] = new OperatorInfo(Nodes.Call, Operators.Noop, Operators.PriParen);
                         }
                         goto loop;
 
@@ -380,7 +380,7 @@ namespace System.Data
                             /* Right parentheses: Build expression if we have an operand. */
                             if (_prevOperand != Empty)
                             {
-                                BuildExpression(Operators.priLow);
+                                BuildExpression(Operators.PriLow);
                             }
 
                             /* We must have Tokens.LeftParen on stack. If no operand, must be procedure call. */
@@ -400,7 +400,7 @@ namespace System.Data
                                 throw ExprException.MissingOperand(opInfo);
                             }
 
-                            Debug.Assert(opInfo._priority == Operators.priParen, "melformed operator stack.");
+                            Debug.Assert(opInfo._priority == Operators.PriParen, "melformed operator stack.");
 
                             if (opInfo._type == Nodes.Call)
                             {
@@ -445,7 +445,7 @@ namespace System.Data
                             /* We are be in a procedure call */
 
                             /* build next argument */
-                            BuildExpression(Operators.priLow);
+                            BuildExpression(Operators.PriLow);
 
                             opInfo = _ops[_topOperator - 1];
 
@@ -518,7 +518,7 @@ namespace System.Data
                         }
 
                         // PushOperator descriptor
-                        _ops[_topOperator++] = new OperatorInfo(Nodes.Zop, _op, Operators.priMax);
+                        _ops[_topOperator++] = new OperatorInfo(Nodes.Zop, _op, Operators.PriMax);
                         _prevOperand = Expr;
                         goto loop;
 
@@ -655,7 +655,7 @@ namespace System.Data
         {
             ExpressionNode? expr;
 
-            Debug.Assert(pri > Operators.priStart && pri <= Operators.priMax, "Invalid priority value");
+            Debug.Assert(pri > Operators.PriStart && pri <= Operators.PriMax, "Invalid priority value");
 
             /* For all operators of higher or same precedence (we are always
             left-associative) */
@@ -1191,7 +1191,7 @@ namespace System.Data
         ///     is the character a whitespace character?
         ///     Consider using CharacterInfo().IsWhiteSpace(ch) (System.Globalization)
         /// </summary>
-        private bool IsWhiteSpace(char ch)
+        private static bool IsWhiteSpace(char ch)
         {
             return ch <= 32 && ch != '\0';
         }
@@ -1199,7 +1199,7 @@ namespace System.Data
         /// <summary>
         ///     is the character an alphanumeric?
         /// </summary>
-        private bool IsAlphaNumeric(char ch)
+        private static bool IsAlphaNumeric(char ch)
         {
             //single comparison
             switch (ch)
@@ -1277,7 +1277,7 @@ namespace System.Data
             }
         }
 
-        private bool IsDigit(char ch)
+        private static bool IsDigit(char ch)
         {
             //single comparison
             switch (ch)
@@ -1301,7 +1301,7 @@ namespace System.Data
         /// <summary>
         ///     is the character an alpha?
         /// </summary>
-        private bool IsAlpha(char ch)
+        private static bool IsAlpha(char ch)
         {
             //single comparison
             switch (ch)

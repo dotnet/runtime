@@ -156,9 +156,6 @@
   <data name="InvalidProgramCallVirtFinalize" xml:space="preserve">
     <value>Callvirt of '{0}' not supported</value>
   </data>
-  <data name="InvalidProgramUnmanagedCallersOnly" xml:space="preserve">
-    <value>UnmanagedCallersOnly method '{0}' cannot be called from managed code</value>
-  </data>
   <data name="InvalidProgramCallAbstractMethod" xml:space="preserve">
     <value>Direct call to abstract method '{0}' not allowed</value>
   </data>

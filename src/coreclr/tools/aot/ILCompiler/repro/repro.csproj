@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <OutputType>Exe</OutputType>
     <Platforms>x64;x86</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -27,8 +27,8 @@
       <ReproResponseLines Include="--initassembly:System.Private.StackTraceMetadata" />
       <ReproResponseLines Include="--initassembly:System.Private.TypeLoader" />
       <ReproResponseLines Include="--initassembly:System.Private.Reflection.Execution" />
-      <ReproResponseLines Include="--initassembly:System.Private.Interop" />
       <ReproResponseLines Include="--directpinvokelist:$(RuntimeBinDir)build\WindowsAPIs.txt" />
+      <ReproResponseLines Include="--directpinvoke:System.Globalization.Native" />
       <ReproResponseLines Include="--stacktracedata" />
       <ReproResponseLines Include="--scanreflection" />
       <ReproResponseLines Include="--feature:System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization=false" />

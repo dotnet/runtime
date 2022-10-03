@@ -323,6 +323,9 @@ LEAF_END RhpCheckedXchg, _TEXT
 //      r2, r3: trashed
 //
 LEAF_ENTRY RhpByRefAssignRef, _TEXT
+          // See comment in RhpAssignRef
+          dmb
+
           ldr          r2, [r1]
           str          r2, [r0]
 

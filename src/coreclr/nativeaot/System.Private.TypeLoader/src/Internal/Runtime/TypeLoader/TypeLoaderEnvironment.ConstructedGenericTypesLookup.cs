@@ -288,7 +288,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        internal unsafe bool TryGetStaticGenericTypeForComponents(GenericTypeLookupData lookupData, out RuntimeTypeHandle runtimeTypeHandle)
+        internal static unsafe bool TryGetStaticGenericTypeForComponents(GenericTypeLookupData lookupData, out RuntimeTypeHandle runtimeTypeHandle)
         {
             // Search the hashtable for a generic instantiation match
             // TODO multi-file: consider whether we can limit the search somehow,

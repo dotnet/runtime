@@ -1,11 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
     <RootNamespace>System.Xml</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
-    <Nullable>enable</Nullable>
-    <EnableRegexGenerator>true</EnableRegexGenerator>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Text\StringBuilderCache.cs" Link="Common\System\StringBuilderCache.cs" />
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
@@ -306,7 +305,7 @@
     <Compile Include="System\Xml\XPath\Internal\PreSiblingQuery.cs" />
     <Compile Include="System\Xml\XPath\Internal\QueryBuilder.cs" />
     <Compile Include="System\Xml\XPath\Internal\UnionExpr.cs" />
-    <Compile Include="System\Xml\XPath\Internal\ResetableIterator.cs" />
+    <Compile Include="System\Xml\XPath\Internal\ResettableIterator.cs" />
     <Compile Include="System\Xml\XPath\Internal\ReversePositionQuery.cs" />
     <Compile Include="System\Xml\XPath\Internal\Root.cs" />
     <Compile Include="System\Xml\XPath\Internal\SortQuery.cs" />
@@ -514,9 +513,9 @@
     <Compile Include="System\Xml\Serialization\TypeExtensions.cs" />
     <Compile Include="System\Xml\Serialization\PrimitiveXmlSerializers.cs" />
     <Compile Include="System\Xml\Serialization\Configuration\DateTimeSerializationSection.cs" />
-    <Compile Include="System\Xml\Extensions\ExtensionMethods.cs" />
     <Compile Include="System\Xml\Serialization\Globals.cs" />
   </ItemGroup>
+
   <!-- Embedded DTD files -->
   <ItemGroup>
     <EmbeddedResource Include="Utils\DTDs\XHTML10\no_comments\xhtml1-strict.dtd">
@@ -541,38 +540,7 @@
       <LogicalName>rss-0.91.dtd</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.Reflection.Emit" />
-    <Reference Include="System.Reflection.Emit.ILGeneration" />
-    <Reference Include="System.Reflection.Emit.Lightweight" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.Concurrent" />
-    <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.Console" />
-    <Reference Include="System.Diagnostics.TraceSource" />
-    <Reference Include="System.Diagnostics.Tracing" />
-    <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.Linq.Expressions" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Net.Primitives" />
-    <Reference Include="System.ObjectModel" />
-    <Reference Include="System.Reflection.Primitives" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Runtime.Loader" />
-    <Reference Include="System.Security.Cryptography" />
-    <Reference Include="System.Security.Cryptography.Algorithms" />
-    <Reference Include="System.Text.Encoding.Extensions" />
-    <Reference Include="System.Text.RegularExpressions" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Thread" />
-  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="System\Xml\Xsl\IlGen\GenerateHelper.cs" />
     <Compile Include="System\Xml\Xsl\IlGen\IteratorDescriptor.cs" />
@@ -703,7 +671,6 @@
     <Compile Include="System\Xml\Xsl\XsltOld\CopyNamespacesAction.cs" />
     <Compile Include="System\Xml\Xsl\XsltOld\CopyNodeSetAction.cs" />
     <Compile Include="System\Xml\Xsl\XsltOld\CopyOfAction.cs" />
-    <Compile Include="System\Xml\Xsl\XsltOld\DbgCompiler.cs" />
     <Compile Include="System\Xml\Xsl\XsltOld\DocumentScope.cs" />
     <Compile Include="System\Xml\Xsl\XsltOld\ElementAction.cs" />
     <Compile Include="System\Xml\Xsl\XsltOld\EndEvent.cs" />
@@ -782,11 +749,41 @@
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs" Link="Common\System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.AppendSpanFormattable.cs" Link="Common\System\Text\ValueStringBuilder.AppendSpanFormattable.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\Xml\Xsl\Runtime\XmlCollation.Windows.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == ''">
     <Compile Include="System\Xml\Xsl\Runtime\XmlCollation.Unix.cs" />
     <Compile Include="System\Xml\Core\XmlTextReaderImpl.Unix.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AnalyzerReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj" />
+    <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.Concurrent" />
+    <Reference Include="System.Collections.NonGeneric" />
+    <Reference Include="System.Collections.Specialized" />
+    <Reference Include="System.Console" />
+    <Reference Include="System.Diagnostics.TraceSource" />
+    <Reference Include="System.Diagnostics.Tracing" />
+    <Reference Include="System.Linq.Expressions" />
+    <Reference Include="System.Memory" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Net.Primitives" />
+    <Reference Include="System.ObjectModel" />
+    <Reference Include="System.Reflection.Emit" />
+    <Reference Include="System.Reflection.Emit.ILGeneration" />
+    <Reference Include="System.Reflection.Emit.Lightweight" />
+    <Reference Include="System.Reflection.Primitives" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.Loader" />
+    <Reference Include="System.Security.Cryptography" />
+    <Reference Include="System.Text.Encoding.Extensions" />
+    <Reference Include="System.Text.RegularExpressions" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Thread" />
   </ItemGroup>
 </Project>

@@ -1,17 +1,17 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
+  <!--
+    Microsoft ResX Schema
+
     Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
     associated with the data types.
-    
+
     Example:
-    
+
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,35 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-                
-    There are any number of "resheader" rows that contain simple 
+
+    There are any number of "resheader" rows that contain simple
     name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
     mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
-    extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
+    extensible. For a given mimetype the value must be set accordingly
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
     read any of the formats listed below.
-    
+
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-    
+
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
+    value   : The object must be serialized with
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
+
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
+    value   : The object must be serialized into a byte array
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -524,10 +525,10 @@
   <data name="XmlMoreThanOneReturnElementForMethodMessage" xml:space="preserve">
     <value>There is more than one 'return' child element specified for method '{0}'.</value>
   </data>
-  <data name="XmlMoreThanOneValueForParameterOfMethodTitle" xml:space="preserve">
+  <data name="XmlMoreThanOneValyForParameterOfMethodTitle" xml:space="preserve">
     <value>Method has more than one parameter for the XML element 'parameter'. There can only be one value specified for each parameter.</value>
   </data>
-  <data name="XmlMoreThanOneValueForParameterOfMethodMessage" xml:space="preserve">
+  <data name="XmlMoreThanOneValyForParameterOfMethodMessage" xml:space="preserve">
     <value>More than one value specified for parameter '{0}' of method '{1}'.</value>
   </data>
   <data name="XmlDuplicatePreserveMemberTitle" xml:space="preserve">
@@ -1064,6 +1065,30 @@
   <data name="RequiresUnreferencedCodeOnStaticConstructorMessage" xml:space="preserve">
     <value>'RequiresUnreferencedCodeAttribute' cannot be placed directly on static constructor '{0}', consider placing 'RequiresUnreferencedCodeAttribute' on the type declaration instead.</value>
   </data>
+  <data name="MethodsAreAssociatedWithUserMethodTitle" xml:space="preserve">
+    <value>Trimmer currently can't correctly handle if the same compiler generated lambda or local function is associated with two different methods.</value>
+  </data>
+  <data name="MethodsAreAssociatedWithUserMethodMessage" xml:space="preserve">
+    <value>Methods '{0}' and '{1}' are both associated with lambda or local function '{2}'. This is currently unsupported and may lead to incorrectly reported warnings.</value>
+  </data>
+  <data name="CompilerGeneratedMemberAccessedViaReflectionTitle" xml:space="preserve">
+    <value>Compiler-generated member is accessed via reflection. Trimmer can't guarantee availability of the requirements of the member.</value>
+  </data>
+  <data name="CompilerGeneratedMemberAccessedViaReflectionMessage" xml:space="preserve">
+    <value>Compiler-generated member '{0}' is accessed via reflection. Trimmer can't guarantee availability of the requirements of the member.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberTitle" xml:space="preserve">
+    <value>'DynamicallyAccessedMemberAttribute' on a type or one of its base types references a compiler-generated member.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberMessage" xml:space="preserve">
+    <value>'DynamicallyAccessedMemberAttribute' on '{0}' or one of its base types references compiler-generated member '{1}'.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBaseTitle" xml:space="preserve">
+    <value>'DynamicallyAccessedMemberAttribute' on a type or one of its base types references a compiler-generated member.</value>
+  </data>
+  <data name="DynamicallyAccessedMembersOnTypeReferencesCompilerGeneratedMemberOnBaseMessage" xml:space="preserve">
+    <value>'DynamicallyAccessedMemberAttribute' on '{0}' or one of its base types references compiler-generated member '{1}'.</value>
+  </data>
   <data name="AvoidAssemblyLocationInSingleFileTitle" xml:space="preserve">
     <value>Avoid accessing Assembly file path when publishing as a single file</value>
   </data>
@@ -1135,5 +1160,41 @@
   </data>
   <data name="InterfaceRequiresMismatchMessage" xml:space="preserve">
     <value>Interface member '{2}' with '{0}' has an implementation member '{1}' without '{0}'</value>
+  </data>
+  <data name="RequiresOnBaseClassMessage" xml:space="preserve">
+    <value>Type '{0}' derives from '{1}' which has 'RequiresUnreferencedCodeAttribute'. {2}{3}</value>
+  </data>
+  <data name="RequiresOnBaseClassTitle" xml:space="preserve">
+    <value>Types that derive from a base class with 'RequiresUnreferencedCodeAttribute' need to explicitly use the 'RequiresUnreferencedCodeAttribute' or suppress this warning</value>
+  </data>
+  <data name="RequiresDynamicCodeOnStaticConstructorMessage" xml:space="preserve">
+    <value>'RequiresDynamicCodeAttribute' cannot be placed directly on static constructor '{0}'.</value>
+  </data>
+  <data name="RequiresDynamicCodeOnStaticConstructorTitle" xml:space="preserve">
+    <value>The use of 'RequiresDynamicCodeAttribute' on static constructors is disallowed since is a method not callable by the user, is only called by the runtime. Placing the attribute directly on the static constructor will have no effect, instead use 'RequiresUnreferencedCodeAttribute' on the type which will handle warning and silencing from the static constructor.</value>
+  </data>
+  <data name="RequiresAssemblyFilesOnStaticConstructorMessage" xml:space="preserve">
+    <value>'RequiresAssemblyFilesAttribute' cannot be placed directly on static constructor '{0}'.</value>
+  </data>
+  <data name="RequiresAssemblyFilesOnStaticConstructorTitle" xml:space="preserve">
+    <value>The use of 'RequiresAssemblyFilesAttribute' on static constructors is disallowed since is a method not callable by the user, is only called by the runtime. Placing the attribute directly on the static constructor will have no effect, instead use 'RequiresUnreferencedCodeAttribute' on the type which will handle warning and silencing from the static constructor.</value>
+  </data>
+  <data name="UnrecognizedInternalAttributeMessage" xml:space="preserve">
+    <value>The internal attribute name '{0}' being used in the xml is not supported by the linker, check the spelling and the supported internal attributes.</value>
+  </data>
+  <data name="UnrecognizedInternalAttributeTitle" xml:space="preserve">
+    <value>Unrecognized internal attribute '{0}'</value>
+  </data>
+  <data name="InvalidDependenciesFileFormatMessage" xml:space="preserve">
+    <value>The only allowed file types are Xml or Dgml.</value>
+  </data>
+  <data name="InvalidDependenciesFileFormatTitle" xml:space="preserve">
+    <value>Unrecognized dependencies file type.</value>
+  </data>
+  <data name="RedundantSuppressionMessage" xml:space="preserve">
+    <value>Unused 'UnconditionalSuppressMessageAttribute' for warning '{0}'. Consider removing the unused warning suppression.</value>
+  </data>
+  <data name="RedundantSuppressionTitle" xml:space="preserve">
+    <value>Unused 'UnconditionalSuppressMessageAttribute' found. Consider removing the unused warning suppression.</value>
   </data>
 </root>

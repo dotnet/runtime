@@ -771,6 +771,12 @@ RtlpUnwindFunctionCompact(
         if (OffsetInFunction < PrologLength) {
             OffsetInScope = PrologLength - OffsetInFunction;
         }
+    } else {
+        ComputeFramePointerLength = 0;
+        PushPopParamsLength = 0;
+        PushPopFloatingPointLength = 0;
+        PushPopIntegerLength = 0;
+        StackAdjustLength = 0;
     }
 
     //
@@ -942,7 +948,7 @@ Routine Description:
 Arguments:
 
     ControlPcRva - Supplies the address where control left the specified
-        function, as an offset relative to the IamgeBase.
+        function, as an offset relative to the ImageBase.
 
     ImageBase - Supplies the base address of the image that contains the
         function being unwound.
@@ -964,7 +970,7 @@ Arguments:
         returned.
 
     HandlerData - Supplies a pointer to a variable that receives a pointer
-        the the language handler data.
+        the language handler data.
 
     UnwindParams - Additional parameters shared with caller.
 
@@ -1043,6 +1049,8 @@ Return Value:
     if ((HeaderWord & (1 << 21)) != 0) {
         UnwindIndex = EpilogScopeCount;
         EpilogScopeCount = 0;
+    } else {
+        UnwindIndex = 0;
     }
 
     //

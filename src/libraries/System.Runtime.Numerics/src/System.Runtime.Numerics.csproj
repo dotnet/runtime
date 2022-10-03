@@ -1,11 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>System.Numerics</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Nullable>enable</Nullable>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="System\ThrowHelper.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.AddSub.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.DivRem.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.FastReducer.cs" />
@@ -19,6 +19,9 @@
     <Compile Include="System\Numerics\Complex.cs" />
     <Compile Include="System\Globalization\FormatProvider.BigInteger.cs" />
     <Compile Include="System\Globalization\FormatProvider.NumberBuffer.cs" />
+    <Compile Include="Properties\InternalsVisibleTo.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="$(CommonPath)System\Globalization\FormatProvider.Number.cs"
              Link="System\Globalization\FormatProvider.Number.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
@@ -29,7 +32,5 @@
   <ItemGroup>
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
   </ItemGroup>
 </Project>

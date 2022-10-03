@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -x
+
 source_directory=$BUILD_SOURCESDIRECTORY
 core_root_directory=
 baseline_core_root_directory=
@@ -21,15 +23,21 @@ monoaot_path=
 run_categories="Libraries Runtime"
 csproj="src\benchmarks\micro\MicroBenchmarks.csproj"
 configurations="CompliationMode=$compilation_mode RunKind=$kind"
+perf_fork=""
+perf_fork_branch="main"
 run_from_perf_repo=false
 use_core_run=true
 use_baseline_core_run=true
 using_mono=false
-wasm_runtime_loc=
+wasm_bundle_directory=
 using_wasm=false
 use_latest_dotnet=false
 logical_machine=
 javascript_engine="v8"
+iosmono=false
+iosllvmbuild=""
+maui_version=""
+only_sanity=false
 
 while (($# > 0)); do
   lowerI="$(echo $1 | tr "[:upper:]" "[:lower:]")"
@@ -120,8 +128,8 @@ while (($# > 0)); do
       mono_dotnet=$2
       shift 2
       ;;
-    --wasm)
-      wasm_runtime_loc=$2
+    --wasmbundle)
+      wasm_bundle_directory=$2
       shift 2
       ;;
     --wasmaot)
@@ -138,6 +146,30 @@ while (($# > 0)); do
       ;;
     --latestdotnet)
       use_latest_dotnet=true
+      shift 1
+      ;;
+    --iosmono)
+      iosmono=true
+      shift 1
+      ;;
+    --iosllvmbuild)
+      iosllvmbuild=$2
+      shift 2
+      ;;
+    --mauiversion)
+      maui_version=$2
+      shift 2
+      ;;
+    --perffork)
+      perf_fork=$2
+      shift 2
+      ;;
+    --perfforkbranch)
+      perf_fork_branch=$2
+      shift 2
+      ;;
+    --only-sanity)
+      only_sanity=true
       shift 1
       ;;
     *)
@@ -161,10 +193,13 @@ while (($# > 0)); do
       echo "  --runcategories <value>        Related to csproj. Categories of benchmarks to run. Defaults to \"coreclr corefx\""
       echo "  --internal                     If the benchmarks are running as an official job."
       echo "  --monodotnet                   Pass the path to the mono dotnet for mono performance testing."
-      echo "  --wasm                         Path to the unpacked wasm runtime pack."
+      echo "  --wasmbundle                   Path to the wasm bundle containing the dotnet, and data needed for helix payload"
       echo "  --wasmaot                      Indicate wasm aot"
       echo "  --latestdotnet                 --dotnet-versions will not be specified. --dotnet-versions defaults to LKG version in global.json "
       echo "  --alpine                       Set for runs on Alpine"
+      echo "  --iosmono                      Set for ios Mono/Maui runs"
+      echo "  --iosllvmbuild                 Set LLVM for iOS Mono/Maui runs"
+      echo "  --mauiversion                  Set the maui version for Mono/Maui runs"
       echo ""
       exit 0
       ;;
@@ -203,7 +238,11 @@ if [[ "$internal" == true ]]; then
     creator=
     extra_benchmark_dotnet_arguments=
 
-    if [[ "$architecture" == "arm64" ]]; then
+    if [[ "$logical_machine" == "perfiphone12mini" ]]; then
+        queue=OSX.1015.Amd64.Iphone.Perf
+    elif [[ "$logical_machine" == "perfampere" ]]; then
+        queue=Ubuntu.2004.Arm64.Perf
+    elif [[ "$architecture" == "arm64" ]]; then
         queue=Ubuntu.1804.Arm64.Perf
     else
         if [[ "$logical_machine" == "perfowl" ]]; then
@@ -233,11 +272,15 @@ if [[ -n "$mono_dotnet" && "$monointerpreter" == "false" ]]; then
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoMono"
 fi
 
-if [[ -n "$wasm_runtime_loc" ]]; then
+_BuildConfig="$architecture.$kind.$framework"
+
+if [[ -n "$wasm_bundle_directory" ]]; then
     if [[ "$wasmaot" == "true" ]]; then
         configurations="CompilationMode=wasm AOT=true RunKind=$kind"
+        _BuildConfig="wasmaot.$_BuildConfig"
     else
         configurations="CompilationMode=wasm RunKind=$kind"
+        _BuildConfig="wasm.$_BuildConfig"
     fi
     if [[ "$javascript_engine" == "javascriptcore" ]]; then
       configurations="$configurations JSEngine=javascriptcore"
@@ -252,7 +295,12 @@ fi
 
 if [[ "$monoaot" == "true" ]]; then
     configurations="$configurations LLVM=$llvm MonoInterpreter=$monointerpreter MonoAOT=$monoaot"
-    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoAOT"
+    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --category-exclusion-filter NoAOT NoWASM"
+fi
+
+if [[ "$iosmono" == "true" ]]; then
+    configurations="$configurations iOSLlvmBuild=$iosllvmbuild"
+    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments"
 fi
 
 cleaned_branch_name="main"
@@ -262,13 +310,21 @@ fi
 common_setup_arguments="--channel $cleaned_branch_name --queue $queue --build-number $build_number --build-configs $configurations --architecture $architecture"
 setup_arguments="--repository https://github.com/$repository --branch $branch --get-perf-hash --commit-sha $commit_sha $common_setup_arguments"
 
+if [[ "$internal" != true ]]; then
+    setup_arguments="$setup_arguments --not-in-lab"
+fi
+
 if [[ "$run_from_perf_repo" == true ]]; then
     payload_directory=
     workitem_directory=$source_directory
     performance_directory=$workitem_directory
     setup_arguments="--perf-hash $commit_sha $common_setup_arguments"
 else
-    git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance.git $performance_directory
+    if [[ -n "$perf_fork" ]]; then
+        git clone --branch $perf_fork_branch --depth 1 --quiet $perf_fork $performance_directory
+    else
+        git clone --branch main --depth 1 --quiet https://github.com/dotnet/performance.git $performance_directory
+    fi
     # uncomment to use BenchmarkDotNet sources instead of nuget packages
     # git clone https://github.com/dotnet/BenchmarkDotNet.git $benchmark_directory
 
@@ -276,25 +332,20 @@ else
     mv $docs_directory $workitem_directory
 fi
 
-if [[ -n "$wasm_runtime_loc" ]]; then
+if [[ -n "$maui_version" ]]; then
+    setup_arguments="$setup_arguments --maui-version $maui_version"
+fi
+
+if [[ -n "$wasm_bundle_directory" ]]; then
     using_wasm=true
-    wasm_dotnet_path=$payload_directory/dotnet-wasm
-    mv $wasm_runtime_loc $wasm_dotnet_path
-    # install emsdk, $source_directory/src/mono/wasm/ has the nuget.config with require feed. EMSDK may be available in the payload in a different directory, should visit this install to avoid deplicated payload.
-    pushd $source_directory/src/mono/wasm/
-    make provision-wasm
-    EMSDK_PATH = $source_directory/src/mono/wasm/emsdk
-    popd
-    # wasm aot and interpreter need some source code from dotnet\runtime repo
-    rsync -aq --progress $source_directory/* $wasm_dotnet_path --exclude Payload --exclude docs --exclude src/coreclr --exclude src/tests --exclude artifacts/obj --exclude artifacts/log --exclude artifacts/tests --exclude __download__
-    # copy wasm build drop to the location that aot and interpreter build expects
-    rsync -a --progress $wasm_dotnet_path/artifacts/BrowserWasm/artifacts/* $wasm_dotnet_path/artifacts
-    rm -r $wasm_dotnet_path/artifacts/BrowserWasm/artifacts
+    wasm_bundle_directory_path=$payload_directory
+    mv $wasm_bundle_directory/* $wasm_bundle_directory_path
+    find $wasm_bundle_directory_path -type d
+    extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --cli \$HELIX_CORRELATION_PAYLOAD/dotnet/dotnet --wasmDataDir \$HELIX_CORRELATION_PAYLOAD/wasm-data"
     if [[ "$wasmaot" == "true" ]]; then
-        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --runtimeSrcDir \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm --aotcompilermode wasm --buildTimeout 3600"
-    else
-        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --wasmEngine /home/helixbot/.jsvu/$javascript_engine --runtimeSrcDir \$HELIX_CORRELATION_PAYLOAD/dotnet-wasm"
+        extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --aotcompilermode wasm --buildTimeout 3600"
     fi
+    setup_arguments="$setup_arguments --dotnet-path $wasm_bundle_directory_path/dotnet"
 fi
 
 if [[ -n "$mono_dotnet" && "$monoaot" == "false" ]]; then
@@ -309,6 +360,8 @@ if [[ "$monoaot" == "true" ]]; then
     extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --runtimes monoaotllvm --aotcompilerpath \$HELIX_CORRELATION_PAYLOAD/monoaot/sgen/mini/mono-sgen --customruntimepack \$HELIX_CORRELATION_PAYLOAD/monoaot/pack --aotcompilermode llvm"
 fi
 
+extra_benchmark_dotnet_arguments="$extra_benchmark_dotnet_arguments --logBuildOutput --generateBinLog"
+
 if [[ "$use_core_run" == true ]]; then
     new_core_root=$payload_directory/Core_Root
     mv $core_root_directory $new_core_root
@@ -317,6 +370,42 @@ fi
 if [[ "$use_baseline_core_run" == true ]]; then
   new_baseline_core_root=$payload_directory/Baseline_Core_Root
   mv $baseline_core_root_directory $new_baseline_core_root
+fi
+
+if [[ "$iosmono" == "true" ]]; then
+    if [[ "$iosllvmbuild" == "True" ]]; then
+        if [[ "$kind" != "ios_scenarios_net6" ]]; then
+            # LLVM Mono .app
+            mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/llvm $payload_directory/iosHelloWorld
+            mkdir -p $payload_directory/iosHelloWorldZip/llvmzip && cp -rv $source_directory/iosHelloWorldZip/llvmzip $payload_directory/iosHelloWorldZip
+        fi
+    else
+        # NoLLVM Mono .app, Maui iOS IPA, Maui Maccatalyst, Maui iOS Podcast IPA
+        if [[ "$kind" != "ios_scenarios_net6" ]]; then
+            mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nollvm $payload_directory/iosHelloWorld
+            mkdir -p $payload_directory/iosHelloWorldZip/nollvmzip && cp -rv $source_directory/iosHelloWorldZip/nollvmzip $payload_directory/iosHelloWorldZip
+        fi
+        mkdir -p $payload_directory/MauiMacCatalystDefault && cp -rv $source_directory/MauiMacCatalystDefault/MauiMacCatalystDefault.app $payload_directory/MauiMacCatalystDefault
+        mkdir -p $payload_directory/MauiBlazorMacCatalystDefault && cp -rv $source_directory/MauiBlazorMacCatalystDefault/MauiBlazorMacCatalystDefault.app $payload_directory/MauiBlazorMacCatalystDefault
+        cp -v $source_directory/MauiiOSDefaultIPA/MauiiOSDefault.ipa $payload_directory/MauiiOSDefault.ipa
+        cp -v $source_directory/MauiBlazoriOSDefaultIPA/MauiBlazoriOSDefault.ipa $payload_directory/MauiBlazoriOSDefault.ipa
+        cp -v $source_directory/MauiiOSPodcastIPA/MauiiOSPodcast.ipa $payload_directory/MauiiOSPodcast.ipa
+
+        # Get the .app so we can resign in the xharness item
+        cp -v $source_directory/MauiiOSDefaultIPA/MauiiOSDefault.ipa $source_directory/MauiiOSDefaultIPA/MauiiOSDefault.zip
+        unzip -d $source_directory/MauiiOSDefaultIPA $source_directory/MauiiOSDefaultIPA/MauiiOSDefault.zip
+        mv $source_directory/MauiiOSDefaultIPA/Payload/MauiTesting.app $payload_directory/
+
+        # Get the .app so we can resign in the xharness item for Maui Blazor
+        cp -v $source_directory/MauiBlazoriOSDefaultIPA/MauiBlazoriOSDefault.ipa $source_directory/MauiBlazoriOSDefaultIPA/MauiBlazoriOSDefault.zip
+        unzip -d $source_directory/MauiBlazoriOSDefaultIPA $source_directory/MauiBlazoriOSDefaultIPA/MauiBlazoriOSDefault.zip
+        mv $source_directory/MauiBlazoriOSDefaultIPA/Payload/MauiBlazorTesting.app $payload_directory/
+
+        # Get the .app so we can resign in the xharness item for podcast
+        cp -v $source_directory/MauiiOSPodcastIPA/MauiiOSPodcast.ipa $source_directory/MauiiOSPodcastIPA/MauiiOSPodcast.zip
+        unzip -d $source_directory/MauiiOSPodcastIPA $source_directory/MauiiOSPodcastIPA/MauiiOSPodcast.zip
+        mv $source_directory/MauiiOSPodcastIPA/Payload/Microsoft.NetConf2021.Maui.app $payload_directory/
+    fi
 fi
 
 ci=true
@@ -342,7 +431,9 @@ Write-PipelineSetVariable -name "RunFromPerfRepo" -value "$run_from_perf_repo" -
 Write-PipelineSetVariable -name "Creator" -value "$creator" -is_multi_job_variable false
 Write-PipelineSetVariable -name "HelixSourcePrefix" -value "$helix_source_prefix" -is_multi_job_variable false
 Write-PipelineSetVariable -name "Kind" -value "$kind" -is_multi_job_variable false
-Write-PipelineSetVariable -name "_BuildConfig" -value "$architecture.$kind.$framework" -is_multi_job_variable false
+Write-PipelineSetVariable -name "_BuildConfig" -value "$_BuildConfig" -is_multi_job_variable false
 Write-PipelineSetVariable -name "Compare" -value "$compare" -is_multi_job_variable false
 Write-PipelineSetVariable -name "MonoDotnet" -value "$using_mono" -is_multi_job_variable false
 Write-PipelineSetVariable -name "WasmDotnet" -value "$using_wasm" -is_multi_job_variable false
+Write-PipelineSetVariable -Name 'iOSLlvmBuild' -Value "$iosllvmbuild" -is_multi_job_variable false
+Write-PipelineSetVariable -name "OnlySanityCheck" -value "$only_sanity" -is_multi_job_variable false

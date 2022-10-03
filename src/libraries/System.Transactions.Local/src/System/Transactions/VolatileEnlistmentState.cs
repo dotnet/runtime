@@ -261,10 +261,7 @@ namespace System.Transactions
         {
             VolatileEnlistmentEnded.EnterState(enlistment);
 
-            if (enlistment.Transaction._innerException == null)
-            {
-                enlistment.Transaction._innerException = e;
-            }
+            enlistment.Transaction._innerException ??= e;
 
             Debug.Assert(enlistment.Transaction.State != null);
             enlistment.Transaction.State.InDoubtFromEnlistment(enlistment.Transaction);

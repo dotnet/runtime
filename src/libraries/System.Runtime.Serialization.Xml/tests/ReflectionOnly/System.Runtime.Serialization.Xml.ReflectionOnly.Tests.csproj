@@ -34,10 +34,10 @@
              Link="SerializationTestTypes\DataContract.cs" />
     <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\DCRImplVariations.cs"
              Link="SerializationTestTypes\DCRImplVariations.cs" />
-    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\InheritenceCases.cs"
-             Link="SerializationTestTypes\InheritenceCases.cs" />
-    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\InheritenceObjectRef.cs"
-             Link="SerializationTestTypes\InheritenceObjectRef.cs" />
+    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\InheritanceCases.cs"
+             Link="SerializationTestTypes\InheritanceCases.cs" />
+    <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\InheritanceObjectRef.cs"
+             Link="SerializationTestTypes\InheritanceObjectRef.cs" />
     <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\SampleIObjectRef.cs"
              Link="SerializationTestTypes\SampleIObjectRef.cs" />
     <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\SampleTypes.cs"

@@ -44,7 +44,7 @@ namespace Internal.TypeSystem
         }
 #endif
 
-        // The most frequently used type properties are cached here to avoid excesive virtual calls
+        // The most frequently used type properties are cached here to avoid excessive virtual calls
         private TypeFlags _typeFlags;
 
         /// <summary>
@@ -117,7 +117,6 @@ namespace Internal.TypeSystem
                 case WellKnownType.RuntimeMethodHandle:
                 case WellKnownType.RuntimeFieldHandle:
                 case WellKnownType.TypedReference:
-                case WellKnownType.ByReferenceOfT:
                     flags = TypeFlags.ValueType;
                     break;
 
@@ -286,6 +285,14 @@ namespace Internal.TypeSystem
             }
         }
 
+        public bool IsTypedReference
+        {
+            get
+            {
+                return this.IsWellKnownType(WellKnownType.TypedReference);
+            }
+        }
+
         /// <summary>
         /// Gets a value indicating whether this is a generic definition, or
         /// an instance of System.Nullable`1.
@@ -295,18 +302,6 @@ namespace Internal.TypeSystem
             get
             {
                 return this.GetTypeDefinition().IsWellKnownType(WellKnownType.Nullable);
-            }
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether this is a generic definition, or
-        /// an instance of System.ByReference`1.
-        /// </summary>
-        public bool IsByReferenceOfT
-        {
-            get
-            {
-                return this.GetTypeDefinition().IsWellKnownType(WellKnownType.ByReferenceOfT);
             }
         }
 

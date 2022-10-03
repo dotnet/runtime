@@ -280,7 +280,7 @@ typedef union {
 			x86_byte (inst, imb.b [2]);	\
 			x86_byte (inst, imb.b [3]);	\
 	} while (0)
-#define x86_imm_emit16(inst,imm)     do { *(short*)(inst) = (imm); (inst) += 2; } while (0)
+#define x86_imm_emit16(inst,imm)     do { *(short*)(inst) = (short)(imm); (inst) += 2; } while (0)
 #define x86_imm_emit8(inst,imm)      do { *(inst) = (unsigned char)((imm) & 0xff); ++(inst); } while (0)
 #define x86_is_imm8(imm)             (((int)(imm) >= -128 && (int)(imm) <= 127))
 #define x86_is_imm16(imm)            (((int)(imm) >= -(1<<16) && (int)(imm) <= ((1<<16)-1)))
@@ -1710,7 +1710,7 @@ mono_x86_patch_inline (guchar* code, gpointer target)
  */
 #define x86_jump_code(inst,target)	\
 	do {	\
-		int t; \
+		ptrdiff_t t; \
 		x86_codegen_pre(&(inst), 2); \
 		t = (unsigned char*)(target) - (inst) - 2;	\
 		if (x86_is_imm8(t)) {	\
@@ -1783,45 +1783,45 @@ mono_x86_patch_inline (guchar* code, gpointer target)
 #if defined(TARGET_X86)
 #define x86_branch(inst,cond,target,is_signed)	\
 	do {	\
-		int offset;					 \
-		guint8* branch_start; \
+		ptrdiff_t __offset; \
+		guint8* __branch_start; \
 		x86_codegen_pre(&(inst), 2); \
-		offset = (target) - (inst) - 2;	\
-		branch_start = (inst); \
-		if (x86_is_imm8 ((offset)))	\
-			x86_branch8 ((inst), (cond), offset, (is_signed));	\
-		else {	\
+		__offset = (target) - (inst) - 2; \
+		__branch_start = (inst); \
+		if (x86_is_imm8 ((__offset))) \
+			x86_branch8 ((inst), (cond), __offset, (is_signed)); \
+		else { \
 			x86_codegen_pre(&(inst), 6); \
-			offset = (target) - (inst) - 6;	\
-			x86_branch32 ((inst), (cond), offset, (is_signed));	\
-		}	\
-		x86_patch(branch_start, (target)); \
+			__offset = (target) - (inst) - 6; \
+			x86_branch32 ((inst), (cond), __offset, (is_signed)); \
+		} \
+		x86_patch(__branch_start, (target)); \
 	} while (0)
 #elif defined(TARGET_AMD64)
 /* This macro is used directly from mini-amd64.c and other        */
 /* amd64 specific files, so it needs to be instrumented directly. */
 
-#define x86_branch(inst,cond,target,is_signed)	\
-	do {	\
-		int offset = (target) - (inst) - 2;	\
-		if (x86_is_imm8 ((offset)))	\
-			x86_branch8 ((inst), (cond), offset, (is_signed));	\
-		else {	\
-			offset = (target) - (inst) - 6;	\
-			x86_branch32 ((inst), (cond), offset, (is_signed));	\
-		}	\
+#define x86_branch(inst,cond,target,is_signed) \
+	do { \
+		ptrdiff_t __offset = (target) - (inst) - 2; \
+		if (x86_is_imm8 ((__offset))) \
+			x86_branch8 ((inst), (cond), __offset, (is_signed)); \
+		else { \
+			__offset = (target) - (inst) - 6; \
+			x86_branch32 ((inst), (cond), __offset, (is_signed)); \
+		} \
 	} while (0)
 
 #endif /* TARGET_AMD64 */
 
 #define x86_branch_disp(inst,cond,disp,is_signed)	\
 	do {	\
-		int offset = (disp) - 2;	\
-		if (x86_is_imm8 ((offset)))	\
-			x86_branch8 ((inst), (cond), offset, (is_signed));	\
+		int __offset = (disp) - 2;	\
+		if (x86_is_imm8 ((__offset)))	\
+			x86_branch8 ((inst), (cond), __offset, (is_signed));	\
 		else {	\
-			offset -= 4;	\
-			x86_branch32 ((inst), (cond), offset, (is_signed));	\
+			__offset -= 4;	\
+			x86_branch32 ((inst), (cond), __offset, (is_signed));	\
 		}	\
 	} while (0)
 
@@ -1893,7 +1893,7 @@ mono_x86_patch_inline (guchar* code, gpointer target)
 
 #define x86_call_code(inst,target)	\
 	do {	\
-		int _x86_offset; \
+		ptrdiff_t _x86_offset; \
 		_x86_offset = (unsigned char*)(target) - (inst);	\
 		_x86_offset -= 5;	\
 		x86_call_imm_body ((inst), _x86_offset);	\

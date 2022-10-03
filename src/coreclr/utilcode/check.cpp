@@ -107,14 +107,11 @@ void CHECK::Trigger(LPCSTR reason)
     STATIC_CONTRACT_GC_NOTRIGGER;
 
     const char *messageString = NULL;
-    NewHolder<StackScratchBuffer> pScratch(NULL);
     NewHolder<StackSString> pMessage(NULL);
 
     EX_TRY
     {
         FAULT_NOT_FATAL();
-
-        pScratch = new StackScratchBuffer();
         pMessage = new StackSString();
 
         pMessage->AppendASCII(reason);
@@ -127,7 +124,7 @@ void CHECK::Trigger(LPCSTR reason)
         pMessage->AppendASCII(m_condition);
 #endif
 
-        messageString = pMessage->GetANSI(*pScratch);
+        messageString = pMessage->GetUTF8();
     }
     EX_CATCH
     {
@@ -138,7 +135,7 @@ void CHECK::Trigger(LPCSTR reason)
 #if _DEBUG
     DbgAssertDialog((char*)m_file, m_line, (char *)messageString);
 #else
-    OutputDebugStringA(messageString);
+    OutputDebugStringUtf8(messageString);
     DebugBreak();
 #endif
 
@@ -260,8 +257,7 @@ LPCSTR CHECK::AllocateDynamicMessage(const SString &s)
     STATIC_CONTRACT_GC_NOTRIGGER;
 
     // Make a copy of it.
-    StackScratchBuffer buffer;
-    const char * pMsg = s.GetANSI(buffer);
+    const char * pMsg = s.GetUTF8();
 
     // Must copy that into our own field.
     size_t len = strlen(pMsg) + 1;

@@ -153,10 +153,8 @@ namespace System.Xml.Xsl.Qil
                 this.writer.WriteValue(Convert.ToString(((QilLiteral)node).Value, CultureInfo.InvariantCulture));
                 return node;
             }
-            else if (node is QilReference)
+            else if (node is QilReference reference)
             {
-                QilReference reference = (QilReference)node;
-
                 // Write the generated identifier for this iterator
                 this.writer.WriteAttributeString("id", _ngen.NameOf(node));
 
@@ -185,9 +183,7 @@ namespace System.Xml.Xsl.Qil
         protected override QilNode VisitReference(QilNode node)
         {
             QilReference reference = (QilReference)node;
-            string name = _ngen.NameOf(node);
-            if (name == null)
-                name = "OUT-OF-SCOPE REFERENCE";
+            string name = _ngen.NameOf(node) ?? "OUT-OF-SCOPE REFERENCE";
 
             this.writer.WriteStartElement("RefTo");
             this.writer.WriteAttributeString("id", name);
@@ -265,7 +261,7 @@ namespace System.Xml.Xsl.Qil
         /// </summary>
         protected override void EndScope(QilNode node)
         {
-            _ngen.ClearName(node);
+            NameGenerator.ClearName(node);
         }
 
         /// <summary>
@@ -430,7 +426,7 @@ namespace System.Xml.Xsl.Qil
             /// Clear name annotation from a node.
             /// </summary>
             /// <param name="n">the node</param>
-            public void ClearName(QilNode n)
+            public static void ClearName(QilNode n)
             {
                 if (n.Annotation is NameAnnotation)
                     n.Annotation = ((NameAnnotation)n.Annotation).PriorAnnotation;

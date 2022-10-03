@@ -23,10 +23,10 @@ parameters:
   pgoType: ''
 
   packageDistroList:
-  - image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-14.04-debpkg-e5cf912-20175003025046
+  - image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-debpkg-20220504035737-cfdd435
     packageType: deb
     packagingArgs: /p:BuildDebPackage=true
-  - image: mcr.microsoft.com/dotnet-buildtools/prereqs:rhel-7-rpmpkg-c982313-20174116044113
+  - image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-8-rpmpkg-20210714125410-daa5116
     packageType: rpm
     packagingArgs: /p:BuildRpmPackage=true
 
@@ -472,7 +472,7 @@ jobs:
       name: ${{ coalesce(parameters.name, parameters.platform) }}
       runtimeFlavor: ${{ parameters.runtimeFlavor }}
       runtimeVariant: ${{ parameters.runtimeVariant }}
-      skipTests: $(SkipTests)
+      skipTests: ${{ variables.SkipTests }}
       isOfficialBuild: ${{ eq(parameters.isOfficialBuild, true) }}
       pgoType: ${{ parameters.pgoType }}
 

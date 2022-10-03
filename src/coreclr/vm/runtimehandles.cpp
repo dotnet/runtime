@@ -220,18 +220,6 @@ NOINLINE AssemblyBaseObject* GetRuntimeAssemblyHelper(LPVOID __me, DomainAssembl
     return (AssemblyBaseObject*)OBJECTREFToObject(refAssembly);
 }
 
-
-// This is the routine that is called by the 'typeof()' operator in C#.  It is one of the most commonly used
-// reflection operations. This call should be optimized away in nearly all situations
-FCIMPL1_V(ReflectClassBaseObject*, RuntimeTypeHandle::GetTypeFromHandle, FCALLRuntimeTypeHandle th)
-{
-    FCALL_CONTRACT;
-
-    FCUnique(0x31);
-    return FCALL_RTH_TO_REFLECTCLASS(th);
-}
-FCIMPLEND
-
 FCIMPL1(ReflectClassBaseObject*, RuntimeTypeHandle::GetRuntimeType, EnregisteredTypeHandle th)
 {
     FCALL_CONTRACT;
@@ -253,17 +241,6 @@ FCIMPL1(ReflectClassBaseObject*, RuntimeTypeHandle::GetRuntimeType, Enregistered
         return NULL;
 
     RETURN_CLASS_OBJECT(typeHandle, NULL);
-}
-FCIMPLEND
-
-FCIMPL1_V(EnregisteredTypeHandle, RuntimeTypeHandle::GetValueInternal, FCALLRuntimeTypeHandle RTH)
-{
-    FCALL_CONTRACT;
-
-    if (FCALL_RTH_TO_REFLECTCLASS(RTH) == NULL)
-        return 0;
-
-    return FCALL_RTH_TO_REFLECTCLASS(RTH) ->GetType().AsPtr();
 }
 FCIMPLEND
 
@@ -362,7 +339,7 @@ FCIMPL1(AssemblyBaseObject*, RuntimeTypeHandle::GetAssembly, ReflectClassBaseObj
 FCIMPLEND
 
 
-FCIMPL1(FC_BOOL_RET, RuntimeFieldHandle::AcquiresContextFromThis, FieldDesc *pField)
+FCIMPL1(FC_BOOL_RET, RuntimeFieldHandle::AcquiresContextFromThis, FieldDesc* pField)
 {
     CONTRACTL {
         FCALL_CHECK;
@@ -372,6 +349,29 @@ FCIMPL1(FC_BOOL_RET, RuntimeFieldHandle::AcquiresContextFromThis, FieldDesc *pFi
 
     FC_RETURN_BOOL(pField->IsSharedByGenericInstantiations());
 
+}
+FCIMPLEND
+
+FCIMPL1(Object*, RuntimeFieldHandle::GetLoaderAllocator, FieldDesc* pField)
+{
+    CONTRACTL {
+        FCALL_CHECK;
+    }
+    CONTRACTL_END;
+
+    OBJECTREF loaderAllocator = NULL;
+
+    if (!pField)
+        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+
+    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(loaderAllocator);
+
+    LoaderAllocator *pLoaderAllocator = pField->GetApproxEnclosingMethodTable()->GetLoaderAllocator();
+    loaderAllocator = pLoaderAllocator->GetExposedObject();
+
+    HELPER_METHOD_FRAME_END();
+
+    return OBJECTREFToObject(loaderAllocator);
 }
 FCIMPLEND
 
@@ -1056,7 +1056,12 @@ extern "C" MethodDesc* QCALLTYPE RuntimeTypeHandle_GetInterfaceMethodImplementat
 
     if (pMD->IsStatic())
     {
-        pResult = typeHandle.GetMethodTable()->ResolveVirtualStaticMethod(thOwnerOfMD.GetMethodTable(), pMD, /* allowNullResult */ TRUE, /* verifyImplemented*/ FALSE, /*allowVariantMatches */ TRUE);
+        pResult = typeHandle.GetMethodTable()->ResolveVirtualStaticMethod(
+            thOwnerOfMD.GetMethodTable(),
+            pMD,
+            /* allowNullResult */ TRUE,
+            /* verifyImplemented*/ FALSE,
+            /*allowVariantMatches */ TRUE);
     }
     else
     {
@@ -1241,7 +1246,7 @@ FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::CanCastTo, ReflectClassBaseObject *pType
         FC_RETURN_BOOL((BOOL)r);
     }
 
-    BOOL iRetVal;
+    BOOL iRetVal = FALSE;
     HELPER_METHOD_FRAME_BEGIN_RET_2(refType, refTarget);
     {
         // We allow T to be cast to Nullable<T>
@@ -2223,7 +2228,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_StripMethodInstantiation(MethodDes
 //  - static or instance method on a generic value type
 // The Reflection policy is to always hand out instantiating stubs in these cases
 //
-// For methods on non-generic value types we can use either the cannonical method or the unboxing stub
+// For methods on non-generic value types we can use either the canonical method or the unboxing stub
 // The Reflection policy is to always hand out unboxing stubs if the methods are virtual methods
 // The reason for this is that in the current implementation of the class loader, the v-table slots for
 // those methods point to unboxing stubs already. Note that this is just a implementation choice
@@ -2664,28 +2669,7 @@ FCIMPL1(ReflectModuleBaseObject*, AssemblyHandle::GetManifestModule, AssemblyBas
     DomainAssembly *pAssembly = refAssembly->GetDomainAssembly();
     Assembly* currentAssembly = pAssembly->GetAssembly();
 
-    Module *pModule = currentAssembly->GetModule();
-    DomainAssembly * pDomainAssembly = pModule->GetDomainAssembly();
-
-#ifdef _DEBUG
-    OBJECTREF orModule;
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refAssembly);
-    orModule = (pDomainAssembly != NULL) ? pDomainAssembly->GetExposedModuleObjectIfExists() : NULL;
-    if (orModule == NULL)
-        orModule = pModule->GetExposedObject();
-#else
-    OBJECTREF orModule = (pDomainAssembly != NULL) ? pDomainAssembly->GetExposedModuleObjectIfExists() : NULL;
-    if (orModule != NULL)
-        return (ReflectModuleBaseObject*)OBJECTREFToObject(orModule);
-
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refAssembly);
-    orModule = pModule->GetExposedObject();
-#endif
-
-    HELPER_METHOD_FRAME_END();
-    return (ReflectModuleBaseObject*)OBJECTREFToObject(orModule);
-
+    FC_RETURN_MODULE_OBJECT(currentAssembly->GetModule(), refAssembly);
 }
 FCIMPLEND
 

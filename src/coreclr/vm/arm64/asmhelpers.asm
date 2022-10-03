@@ -1,11 +1,6 @@
 ; Licensed to the .NET Foundation under one or more agreements.
 ; The .NET Foundation licenses this file to you under the MIT license.
 
-;; ==++==
-;;
-
-;;
-;; ==--==
 #include "ksarm64.h"
 #include "asmconstants.h"
 #include "asmmacros.h"
@@ -21,12 +16,12 @@
     IMPORT UMEntryPrestubUnwindFrameChainHandler
     IMPORT TheUMEntryPrestubWorker
     IMPORT GetCurrentSavedRedirectContext
-    IMPORT LinkFrameAndThrow
-    IMPORT FixContextHandler
     IMPORT OnHijackWorker
 #ifdef FEATURE_READYTORUN
     IMPORT DynamicHelperWorker
 #endif
+    IMPORT HijackHandler
+    IMPORT ThrowControlForThread
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
     IMPORT  g_sw_ww_table
@@ -210,27 +205,6 @@ Done
         NESTED_END
 
 ; ------------------------------------------------------------------
-; The call in fixup precode initally points to this function.
-; The pupose of this function is to load the MethodDesc and forward the call to prestub.
-        NESTED_ENTRY PrecodeFixupThunk
-
-        ; x12 = FixupPrecode *
-        ; On Exit
-        ; x12 = MethodDesc*
-        ; x13, x14 Trashed
-        ; Inline computation done by FixupPrecode::GetMethodDesc()
-        ldrb    w13, [x12, #Offset_PrecodeChunkIndex]              ; m_PrecodeChunkIndex
-        ldrb    w14, [x12, #Offset_MethodDescChunkIndex]           ; m_MethodDescChunkIndex
-
-        add     x12,x12,w13,uxtw #FixupPrecode_ALIGNMENT_SHIFT_1
-        add     x13,x12,w13,uxtw #FixupPrecode_ALIGNMENT_SHIFT_2
-        ldr     x13, [x13,#SIZEOF__FixupPrecode]
-        add     x12,x13,w14,uxtw #MethodDesc_ALIGNMENT_SHIFT
-
-        b ThePreStub
-
-        NESTED_END
-; ------------------------------------------------------------------
 
         NESTED_ENTRY ThePreStub
 
@@ -259,7 +233,7 @@ ThePreStubPatchLabel
         LEAF_END
 
 ;-----------------------------------------------------------------------------
-; The following Macros help in WRITE_BARRIER Implemetations
+; The following Macros help in WRITE_BARRIER Implementations
     ; WRITE_BARRIER_ENTRY
     ;
     ; Declare the start of a write barrier function. Use similarly to NESTED_ENTRY. This is the only legal way
@@ -1058,24 +1032,28 @@ FaultingExceptionFrame_FrameOffset        SETA  SIZEOF__GSCookie
 
 ; ------------------------------------------------------------------
 ;
-; Helpers for async (NullRef, AccessViolation) exceptions
+; Helpers for ThreadAbort exceptions
 ;
 
-        NESTED_ENTRY NakedThrowHelper2,,FixContextHandler
+        NESTED_ENTRY RedirectForThreadAbort2,,HijackHandler
         PROLOG_SAVE_REG_PAIR fp,lr, #-16!
+
+        ; stack must be 16 byte aligned
+        CHECK_STACK_ALIGNMENT
 
         ; On entry:
         ;
-        ; X0 = Address of FaultingExceptionFrame
-        bl LinkFrameAndThrow
+        ; x0 = address of FaultingExceptionFrame
+        ;
+        ; Invoke the helper to setup the FaultingExceptionFrame and raise the exception
+        bl              ThrowControlForThread
 
-        ; Target should not return.
+        ; ThrowControlForThread doesn't return.
         EMIT_BREAKPOINT
 
-        NESTED_END NakedThrowHelper2
+        NESTED_END RedirectForThreadAbort2
 
-
-        GenerateRedirectedStubWithFrame NakedThrowHelper, NakedThrowHelper2
+        GenerateRedirectedStubWithFrame RedirectForThreadAbort, RedirectForThreadAbort2
 
 ; ------------------------------------------------------------------
 ; ResolveWorkerChainLookupAsmStub
@@ -1134,10 +1112,10 @@ Success
         blt     Promote
 
         ldr     x16, [x9, #ResolveCacheElem__target]    ; get the ImplTarget
-        br      x16               ; branch to interface implemenation target
+        br      x16               ; branch to interface implementation target
 
 Promote
-                                  ; Move this entry to head postion of the chain
+                                  ; Move this entry to head position of the chain
         mov     x16, #256
         str     x16, [x13]        ; be quick to reset the counter so we don't get a bunch of contending threads
         orr     x11, x11, #PROMOTE_CHAIN_FLAG   ; set PROMOTE_CHAIN_FLAG
@@ -1391,7 +1369,7 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
         PROLOG_WITH_TRANSITION_BLOCK
 
         add     x0, sp, #__PWTB_TransitionBlock ; TransitionBlock *
-        mov     x1, x10 ; stub-identifying token
+        mov     x1, x9 ; stub-identifying token
         bl      OnCallCountThresholdReached
         mov     x9, x0
 

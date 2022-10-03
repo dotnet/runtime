@@ -24,18 +24,16 @@
 #include "primitives.h"
 #include "dbgutil.h"
 
-#ifdef TARGET_UNIX
 #ifdef USE_DAC_TABLE_RVA
 #include <dactablerva.h>
 #else
 extern "C" bool TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress);
 #endif
-#endif
 
 #include "dwbucketmanager.hpp"
 #include "gcinterface.dac.h"
 
-// To include definiton of IsThrowableThreadAbortException
+// To include definition of IsThrowableThreadAbortException
 // #include <exstatecommon.h>
 
 CRITICAL_SECTION g_dacCritSec;
@@ -271,7 +269,7 @@ SplitFullName(_In_z_ PCWSTR fullName,
 
         memberStart = memberEnd;
 
-        for (;;)
+        while (true)
         {
             while (memberStart >= fullName &&
                    *memberStart != W('.'))
@@ -549,7 +547,7 @@ MetaEnum::NextDomainToken(AppDomain** appDomain,
     // Splay tokens across all app domains.
     //
 
-    for (;;)
+    while (true)
     {
         if (m_lastToken == mdTokenNil)
         {
@@ -585,7 +583,7 @@ MetaEnum::NextTokenByName(_In_opt_ LPCUTF8 namespaceName,
     HRESULT status;
     LPCUTF8 tokNamespace, tokName;
 
-    for (;;)
+    while (true)
     {
         if ((status = NextToken(token, &tokNamespace, &tokName)) != S_OK)
         {
@@ -628,7 +626,7 @@ MetaEnum::NextDomainTokenByName(_In_opt_ LPCUTF8 namespaceName,
     // Splay tokens across all app domains.
     //
 
-    for (;;)
+    while (true)
     {
         if (m_lastToken == mdTokenNil)
         {
@@ -1372,7 +1370,7 @@ SplitName::CdNextDomainField(ClrDataAccess* dac,
     // Splay fields across all app domains.
     //
 
-    for (;;)
+    while (true)
     {
         if (!split->m_lastField)
         {
@@ -1996,7 +1994,7 @@ void DacInstanceManager::Flush(bool fSaveBlock)
     // forget all the internal pointers.
     //
 
-    for (;;)
+    while (true)
     {
         FreeAllBlocks(fSaveBlock);
 
@@ -2503,7 +2501,7 @@ namespace serialization { namespace bin {
                 return ErrOverflow;
             }
 
-            memcpy_s(dest, destSize, s.GetUTF8NoConvert(), cnt);
+            memcpy_s(dest, destSize, s.GetUTF8(), cnt);
 
             return cnt;
         }
@@ -3092,8 +3090,6 @@ private:
 //
 //----------------------------------------------------------------------------
 
-LONG ClrDataAccess::s_procInit;
-
 ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget/*=0*/)
 {
     SUPPORTS_DAC_HOST_ONLY;     // ctor does no marshalling - don't check with DacCop
@@ -3282,6 +3278,10 @@ ClrDataAccess::QueryInterface(THIS_
     else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface11)))
     {
         ifaceRet = static_cast<ISOSDacInterface11*>(this);
+    }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface12)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface12*>(this);
     }
     else
     {
@@ -4377,7 +4377,7 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
     ClrDataModule* pubModule = NULL;
     ClrDataMethodInstance* pubMethodInst = NULL;
     ClrDataExceptionState* pubExState = NULL;
-    GcEvtArgs pubGcEvtArgs;
+    GcEvtArgs pubGcEvtArgs = {};
     ULONG32 notifyType = 0;
     DWORD catcherNativeOffset = 0;
     TADDR nativeCodeLocation = NULL;
@@ -4790,7 +4790,7 @@ ClrDataAccess::SetAllCodeNotifications(
                     PTR_HOST_TO_TADDR(((ClrDataModule*)mod)->GetModule()) :
                     NULL;
 
-                if (jn.SetAllNotifications(modulePtr, flags, &changedTable))
+                if (jn.SetAllNotifications(modulePtr, (USHORT)flags, &changedTable))
                 {
                     if (!changedTable ||
                         (changedTable && jn.UpdateOutOfProcTable()))
@@ -5335,7 +5335,7 @@ ClrDataAccess::FollowStub2(
         Thread* thread = task ? ((ClrDataTask*)task)->GetThread() : NULL;
         ULONG32 loops = 4;
 
-        for (;;)
+        while (true)
         {
             if ((status = FollowStubStep(thread,
                                          inFlags,
@@ -5491,7 +5491,7 @@ HRESULT
 ClrDataAccess::Initialize(void)
 {
     HRESULT hr;
-    CLRDATA_ADDRESS base;
+    CLRDATA_ADDRESS base = { 0 };
 
     //
     // We do not currently support cross-platform
@@ -5510,6 +5510,8 @@ ClrDataAccess::Initialize(void)
         CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_ARM;
     #elif defined(TARGET_ARM64)
         CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_ARM64;
+    #elif defined(TARGET_LOONGARCH64)
+        CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_LOONGARCH64;
     #else
         #error Unknown Processor.
     #endif
@@ -5534,7 +5536,7 @@ ClrDataAccess::Initialize(void)
     {
         // DAC fatal error: Platform mismatch - the platform reported by the data target
         // is not what this version of mscordacwks.dll was built for.
-        return CORDBG_E_UNCOMPATIBLE_PLATFORMS;
+        return CORDBG_E_INCOMPATIBLE_PLATFORMS;
     }
 
     //
@@ -5566,12 +5568,8 @@ ClrDataAccess::Initialize(void)
     // multiple initializations as each one will
     // copy the same data into the globals and so
     // cannot interfere with each other.
-    if (!s_procInit)
-    {
-        IfFailRet(GetDacGlobals());
-        IfFailRet(DacGetHostVtPtrs());
-        s_procInit = true;
-    }
+    IfFailRet(GetDacGlobalValues());
+    IfFailRet(DacGetHostVtPtrs());
 
     //
     // DAC is now setup and ready to use
@@ -5724,6 +5722,86 @@ ClrDataAccess::GetJitHelperName(
     return NULL;
 }
 
+// This function expects more memory than maybe needed.
+static int FormatCLRStubName(
+    _In_opt_z_ LPCWSTR stubNameMaybe,
+    _In_ TADDR stubAddr,
+    _In_ ULONG32 bufLen,
+    _Out_ ULONG32 *symbolLen,
+    _Out_writes_bytes_opt_(bufLen) WCHAR* symbolBuf)
+{
+    // Parts needed to construct a name:
+    // With stub manager name: "CLRStub[%s]@%p"
+    //   No stub manager name: "CLRStub@%p"
+    const WCHAR formatName_Prefix[] = W("CLRStub");
+    const WCHAR formatName_OpenBracket[] = W("[");
+    const WCHAR formatName_CloseBracket[] = W("]");
+    const WCHAR formatName_PrefixEnd[] = W("@");
+
+    // Compute the address as a string safely.
+    WCHAR addrString[Max64BitHexString + 1];
+    FormatInteger(addrString, ARRAY_SIZE(addrString), "%p", stubAddr);
+    size_t addStringLen = wcslen(addrString);
+
+    // Compute maximum length, include the null terminator.
+    size_t formatName_MaxLen = ARRAY_SIZE(formatName_Prefix) // Include trailing null
+                                + ARRAY_SIZE(formatName_PrefixEnd) - 1
+                                + addStringLen;
+
+    // Consider stub manager name
+    size_t stubManagedNameLen = 0;
+    if (stubNameMaybe != NULL)
+    {
+        stubManagedNameLen = wcslen(stubNameMaybe);
+        formatName_MaxLen += ARRAY_SIZE(formatName_OpenBracket) - 1;
+        formatName_MaxLen += ARRAY_SIZE(formatName_CloseBracket) - 1;
+    }
+
+    HRESULT hr = S_FALSE;
+
+    // Compute the exact length needed.
+    const size_t lenNeeded = formatName_MaxLen + stubManagedNameLen;
+    if (lenNeeded <= bufLen)
+    {
+        size_t written = 0;
+
+        // Set the prefix
+        wcscpy_s(symbolBuf, bufLen - written, formatName_Prefix);
+        written += ARRAY_SIZE(formatName_Prefix) - 1;
+
+        // Add the name
+        if (stubManagedNameLen > 0)
+        {
+            wcscat_s(symbolBuf, bufLen - written, formatName_OpenBracket);
+            written += ARRAY_SIZE(formatName_OpenBracket) - 1;
+            wcscat_s(symbolBuf, bufLen - written, stubNameMaybe);
+            written += stubManagedNameLen;
+            wcscat_s(symbolBuf, bufLen - written, formatName_CloseBracket);
+            written += ARRAY_SIZE(formatName_CloseBracket) - 1;
+        }
+
+        // Append the prefix end
+        wcscat_s(symbolBuf, bufLen - written, formatName_PrefixEnd);
+        written += ARRAY_SIZE(formatName_PrefixEnd) - 1;
+
+        // Append the address
+        wcscat_s(symbolBuf, bufLen - written, addrString);
+        written += addStringLen;
+
+        hr = S_OK;
+    }
+
+    if (symbolLen)
+    {
+        if (!FitsIn<ULONG32>(lenNeeded))
+            return COR_E_OVERFLOW;
+
+        *symbolLen = (ULONG32)lenNeeded;
+    }
+
+    return hr;
+}
+
 HRESULT
 ClrDataAccess::RawGetMethodName(
     /* [in] */ CLRDATA_ADDRESS address,
@@ -5738,7 +5816,6 @@ ClrDataAccess::RawGetMethodName(
     address &= ~THUMB_CODE;
 #endif
 
-    const UINT k_cch64BitHexFormat = ARRAY_SIZE("1234567812345678");
     HRESULT status;
 
     if (flags != 0)
@@ -5850,47 +5927,15 @@ ClrDataAccess::RawGetMethodName(
             }
         }
 
-        static WCHAR s_wszFormatNameWithStubManager[] = W("CLRStub[%s]@%I64x");
-
         LPCWSTR wszStubManagerName = pStubManager->GetStubManagerName(TO_TADDR(address));
         _ASSERTE(wszStubManagerName != NULL);
 
-        int result = _snwprintf_s(
-            symbolBuf,
+        return FormatCLRStubName(
+            wszStubManagerName,
+            TO_TADDR(address),
             bufLen,
-            _TRUNCATE,
-            s_wszFormatNameWithStubManager,
-            wszStubManagerName,                                         // Arg 1 = stub name
-            TO_TADDR(address));                                         // Arg 2 = stub hex address
-
-        if (result != -1)
-        {
-            // Printf succeeded, so we have an exact char count to return
-            if (symbolLen)
-            {
-                size_t cchSymbol = wcslen(symbolBuf) + 1;
-                if (!FitsIn<ULONG32>(cchSymbol))
-                    return COR_E_OVERFLOW;
-
-                *symbolLen = (ULONG32) cchSymbol;
-            }
-            return S_OK;
-        }
-
-        // Printf failed.  Estimate a size that will be at least big enough to hold the name
-        if (symbolLen)
-        {
-            size_t cchSymbol = ARRAY_SIZE(s_wszFormatNameWithStubManager) +
-                wcslen(wszStubManagerName) +
-                k_cch64BitHexFormat +
-                1;
-
-            if (!FitsIn<ULONG32>(cchSymbol))
-                return COR_E_OVERFLOW;
-
-            *symbolLen = (ULONG32) cchSymbol;
-        }
-        return S_FALSE;
+            symbolLen,
+            symbolBuf);
     }
 
     // Do not waste time looking up name for static helper. Debugger can get the actual name from .pdb.
@@ -5916,44 +5961,12 @@ NameFromMethodDesc:
     if (methodDesc->GetClassification() == mcDynamic &&
         !methodDesc->GetSig())
     {
-        // XXX Microsoft - Should this case have a more specific name?
-        static WCHAR s_wszFormatNameAddressOnly[] = W("CLRStub@%I64x");
-
-        int result = _snwprintf_s(
-            symbolBuf,
+        return FormatCLRStubName(
+            NULL,
+            TO_TADDR(address),
             bufLen,
-            _TRUNCATE,
-            s_wszFormatNameAddressOnly,
-            TO_TADDR(address));
-
-        if (result != -1)
-        {
-            // Printf succeeded, so we have an exact char count to return
-            if (symbolLen)
-            {
-                size_t cchSymbol = wcslen(symbolBuf) + 1;
-                if (!FitsIn<ULONG32>(cchSymbol))
-                    return COR_E_OVERFLOW;
-
-                *symbolLen = (ULONG32) cchSymbol;
-            }
-            return S_OK;
-        }
-
-        // Printf failed.  Estimate a size that will be at least big enough to hold the name
-        if (symbolLen)
-        {
-            size_t cchSymbol = ARRAY_SIZE(s_wszFormatNameAddressOnly) +
-                k_cch64BitHexFormat +
-                1;
-
-            if (!FitsIn<ULONG32>(cchSymbol))
-                return COR_E_OVERFLOW;
-
-            *symbolLen = (ULONG32) cchSymbol;
-        }
-
-        return S_FALSE;
+            symbolLen,
+            symbolBuf);
     }
 
     return GetFullMethodName(methodDesc, bufLen, symbolLen, symbolBuf);
@@ -6458,7 +6471,7 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
 {
     SUPPORTS_DAC_HOST_ONLY;
     PEImage *mdImage = NULL;
-    PEImageLayout   *layout;
+    PEImageLayout   *layout = NULL;
     IMAGE_DATA_DIRECTORY *pDir = NULL;
     COUNT_T uniPathChars = 0;
 
@@ -6881,129 +6894,6 @@ bool ClrDataAccess::TargetConsistencyAssertsEnabled()
 //
 HRESULT ClrDataAccess::VerifyDlls()
 {
-#ifndef TARGET_UNIX
-    // Provide a knob for disabling this check if we really want to try and proceed anyway with a
-    // DAC mismatch.  DAC behavior may be arbitrarily bad - globals probably won't be at the same
-    // address, data structures may be laid out differently, etc.
-    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgDACSkipVerifyDlls))
-    {
-        return S_OK;
-    }
-
-    // Read the debug directory timestamp from the target mscorwks image using DAC
-    // Note that we don't use the PE timestamp because the PE pPEAssembly might be changed in ways
-    // that don't effect the PDB (and therefore don't effect DAC).  Specifically, we rebase
-    // our DLLs at the end of a build, that changes the PE pPEAssembly, but not the PDB.
-    // Note that if we wanted to be extra careful, we could read the CV contents (which includes
-    // the GUID signature) and verify it matches.  Using the timestamp is useful for helpful error
-    // messages, and should be sufficient in any real scenario.
-    DWORD timestamp = 0;
-    HRESULT hr = S_OK;
-    DAC_ENTER();
-    EX_TRY
-    {
-        // Note that we don't need to worry about ensuring the image memory read by this code
-        // is saved in a minidump.  Managed minidump debugging already requires that you have
-        // the full mscorwks.dll available at debug time (eg. windbg won't even load DAC without it).
-        PEDecoder pedecoder(dac_cast<PTR_VOID>(m_globalBase));
-
-        // We use the first codeview debug directory entry since this should always refer to the single
-        // PDB for mscorwks.dll.
-        const UINT k_maxDebugEntries = 32;  // a reasonable upper limit in case of corruption
-        for( UINT i = 0; i < k_maxDebugEntries; i++)
-        {
-            PTR_IMAGE_DEBUG_DIRECTORY pDebugEntry = pedecoder.GetDebugDirectoryEntry(i);
-
-            // If there are no more entries, then stop
-            if (pDebugEntry == NULL)
-                break;
-
-            // Ignore non-codeview entries.  Some scenarios (eg. optimized builds), there may be extra
-            // debug directory entries at the end of some other type.
-            if (pDebugEntry->Type == IMAGE_DEBUG_TYPE_CODEVIEW)
-            {
-                // Found a codeview entry - use it's timestamp for comparison
-                timestamp = pDebugEntry->TimeDateStamp;
-                break;
-            }
-        }
-        char szMsgBuf[1024];
-        _snprintf_s(szMsgBuf, sizeof(szMsgBuf), _TRUNCATE,
-            "Failed to find any valid codeview debug directory entry in %s image",
-            MAIN_CLR_MODULE_NAME_A);
-        _ASSERTE_MSG(timestamp != 0, szMsgBuf);
-    }
-    EX_CATCH
-    {
-        if (!DacExceptionFilter(GET_EXCEPTION(), this, &hr))
-        {
-            EX_RETHROW;
-        }
-    }
-    EX_END_CATCH(SwallowAllExceptions)
-    DAC_LEAVE();
-    if (FAILED(hr))
-    {
-        return hr;
-    }
-
-    // Validate that we got a timestamp and it matches what the DAC table told us to expect
-    if (timestamp == 0 || timestamp != g_dacTableInfo.dwID0)
-    {
-        // Timestamp mismatch.  This means mscordacwks is being used with a version of
-        // mscorwks other than the one it was built for.  This will not work reliably.
-
-#ifdef _DEBUG
-        // Check if verbose asserts are enabled.  The default is up to the specific instantiation of
-        // ClrDataAccess, but can be overridden (in either direction) by a COMPlus_ knob.
-        // Note that we check this knob every time because it may be handy to turn it on in
-        // the environment mid-flight.
-        DWORD dwAssertDefault = m_fEnableDllVerificationAsserts ? 1 : 0;
-        if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgDACAssertOnMismatch, dwAssertDefault))
-        {
-            // Output a nice error message that contains the timestamps in string format.
-            time_t actualTime = timestamp;
-            char szActualTime[30];
-            ctime_s(szActualTime, sizeof(szActualTime), &actualTime);
-
-            time_t expectedTime = g_dacTableInfo.dwID0;
-            char szExpectedTime[30];
-            ctime_s(szExpectedTime, sizeof(szExpectedTime), &expectedTime);
-
-            // Create a nice detailed message for the assert dialog.
-            // Note that the strings returned by ctime_s have terminating newline characters.
-            // This is technically a TARGET_CONSISTENCY_CHECK because a corrupt target could,
-            // in-theory, have a corrupt mscrowks PE header and cause this check to fail
-            // unnecessarily.  However, this check occurs during startup, before we know
-            // whether target consistency checks should be enabled, so it's always enabled
-            // at the moment.
-
-            char szMsgBuf[1024];
-            _snprintf_s(szMsgBuf, sizeof(szMsgBuf), _TRUNCATE,
-                "DAC fatal error: %s/mscordacwks.dll version mismatch\n\n"\
-                "The debug directory timestamp of the loaded %s does not match the\n"\
-                "version mscordacwks.dll was built for.\n"\
-                "Expected %s timestamp: %s"\
-                "Actual %s timestamp: %s\n"\
-                "DAC will now fail to initialize with a CORDBG_E_MISMATCHED_CORWKS_AND_DACWKS_DLLS\n"\
-                "error.  If you really want to try and use the mimatched DLLs, you can disable this\n"\
-                "check by setting COMPlus_DbgDACSkipVerifyDlls=1.  However, using a mismatched DAC\n"\
-                "DLL will usually result in arbitrary debugger failures.\n",
-                TARGET_MAIN_CLR_DLL_NAME_A,
-                TARGET_MAIN_CLR_DLL_NAME_A,
-                TARGET_MAIN_CLR_DLL_NAME_A,
-                szExpectedTime,
-                TARGET_MAIN_CLR_DLL_NAME_A,
-                szActualTime);
-            _ASSERTE_MSG(false, szMsgBuf);
-        }
-#endif
-
-        // Return a specific hresult indicating this problem
-        return CORDBG_E_MISMATCHED_CORWKS_AND_DACWKS_DLLS;
-    }
-#endif // TARGET_UNIX
-
     return S_OK;
 }
 
@@ -7092,20 +6982,12 @@ bool ClrDataAccess::MdCacheGetEEName(TADDR taEEStruct, SString & eeName)
 
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
-// Needed for RT_RCDATA.
-#define MAKEINTRESOURCE(v) MAKEINTRESOURCEW(v)
-
-// this funny looking double macro forces x to be macro expanded before L is prepended
-#define _WIDE(x) _WIDE2(x)
-#define _WIDE2(x) W(x)
-
 HRESULT
 GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG64 dacTableAddress)
 {
-#ifdef TARGET_UNIX
 #ifdef USE_DAC_TABLE_RVA
 #ifdef DAC_TABLE_SIZE
-    if (DAC_TABLE_SIZE != sizeof(g_dacGlobals))
+    if (DAC_TABLE_SIZE != sizeof(DacGlobals))
     {
         return E_INVALIDARG;
     }
@@ -7113,144 +6995,34 @@ GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG6
     // On MacOS, FreeBSD or NetBSD use the RVA include file
     *dacTableAddress = baseAddress + DAC_TABLE_RVA;
 #else
-    // On Linux/MacOS try to get the dac table address via the export symbol
-    if (!TryGetSymbol(dataTarget, baseAddress, "g_dacTable", dacTableAddress))
+    // Otherwise, try to get the dac table address via the export symbol
+    if (!TryGetSymbol(dataTarget, baseAddress, DACCESS_TABLE_SYMBOL, dacTableAddress))
     {
         return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
     }
-#endif
 #endif
     return S_OK;
 }
 
 HRESULT
-ClrDataAccess::GetDacGlobals()
+ClrDataAccess::GetDacGlobalValues()
 {
-#ifdef TARGET_UNIX
     ULONG64 dacTableAddress;
     HRESULT hr = GetDacTableAddress(m_pTarget, m_globalBase, &dacTableAddress);
     if (FAILED(hr))
     {
         return hr;
     }
-    if (FAILED(ReadFromDataTarget(m_pTarget, dacTableAddress, (BYTE*)&g_dacGlobals, sizeof(g_dacGlobals))))
+    if (FAILED(ReadFromDataTarget(m_pTarget, dacTableAddress, (BYTE*)&m_dacGlobals, sizeof(m_dacGlobals))))
     {
         return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
     }
-    if (g_dacGlobals.ThreadStore__s_pThreadStore == NULL)
+    if (m_dacGlobals.ThreadStore__s_pThreadStore == NULL)
     {
         return CORDBG_E_UNSUPPORTED;
     }
     return S_OK;
-#else
-    HRESULT status = E_FAIL;
-    DWORD rsrcRVA = 0;
-    LPVOID rsrcData = NULL;
-    DWORD rsrcSize = 0;
-
-    DWORD resourceSectionRVA = 0;
-
-    if (FAILED(status = GetMachineAndResourceSectionRVA(m_pTarget, m_globalBase, NULL, &resourceSectionRVA)))
-    {
-        _ASSERTE_MSG(false, "DAC fatal error: can't locate resource section in " TARGET_MAIN_CLR_DLL_NAME_A);
-        return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
-    }
-
-    if (FAILED(status = GetResourceRvaFromResourceSectionRvaByName(m_pTarget, m_globalBase,
-        resourceSectionRVA, (DWORD)(size_t)RT_RCDATA, _WIDE(DACCESS_TABLE_RESOURCE), 0,
-        &rsrcRVA, &rsrcSize)))
-    {
-        _ASSERTE_MSG(false, "DAC fatal error: can't locate DAC table resource in " TARGET_MAIN_CLR_DLL_NAME_A);
-        return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
-    }
-
-    rsrcData = new (nothrow) BYTE[rsrcSize];
-    if (rsrcData == NULL)
-        return E_OUTOFMEMORY;
-
-    if (FAILED(status = ReadFromDataTarget(m_pTarget, m_globalBase + rsrcRVA, (BYTE*)rsrcData, rsrcSize)))
-    {
-        _ASSERTE_MSG(false, "DAC fatal error: can't load DAC table resource from " TARGET_MAIN_CLR_DLL_NAME_A);
-        return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
-    }
-
-
-    PBYTE rawData = (PBYTE)rsrcData;
-    DWORD bytesLeft = rsrcSize;
-
-    // Read the header
-    struct DacTableHeader header;
-
-    // We currently expect the header to be 2 32-bit values and 1 16-byte value,
-    // make sure there is no packing going on or anything.
-    static_assert_no_msg(sizeof(DacTableHeader) == 2 * 4 + 16);
-
-    if (bytesLeft < sizeof(DacTableHeader))
-    {
-        _ASSERTE_MSG(false, "DAC fatal error: DAC table too small for header.");
-        goto Exit;
-    }
-    memcpy(&header, rawData, sizeof(DacTableHeader));
-    rawData += sizeof(DacTableHeader);
-    bytesLeft -= sizeof(DacTableHeader);
-
-    // Save the table info for later use
-    g_dacTableInfo = header.info;
-
-    // Sanity check that the DAC table is the size we expect.
-    // This could fail if a different version of dacvars.h or vptr_list.h was used when building
-    // mscordacwks.dll than when running DacTableGen.
-
-    if (offsetof(DacGlobals, EEJitManager__vtAddr) != header.numGlobals * sizeof(ULONG))
-    {
-#ifdef _DEBUG
-        char szMsgBuf[1024];
-        _snprintf_s(szMsgBuf, sizeof(szMsgBuf), _TRUNCATE,
-            "DAC fatal error: mismatch in number of globals in DAC table. Read from file: %d, expected: %zd.",
-            header.numGlobals,
-            (size_t)offsetof(DacGlobals, EEJitManager__vtAddr) / sizeof(ULONG));
-        _ASSERTE_MSG(false, szMsgBuf);
-#endif // _DEBUG
-
-        status = E_INVALIDARG;
-        goto Exit;
-    }
-
-    if (sizeof(DacGlobals) != (header.numGlobals + header.numVptrs) * sizeof(ULONG))
-    {
-#ifdef _DEBUG
-        char szMsgBuf[1024];
-        _snprintf_s(szMsgBuf, sizeof(szMsgBuf), _TRUNCATE,
-            "DAC fatal error: mismatch in number of vptrs in DAC table. Read from file: %d, expected: %zd.",
-            header.numVptrs,
-            (size_t)(sizeof(DacGlobals) - offsetof(DacGlobals, EEJitManager__vtAddr)) / sizeof(ULONG));
-        _ASSERTE_MSG(false, szMsgBuf);
-#endif // _DEBUG
-
-        status = E_INVALIDARG;
-        goto Exit;
-    }
-
-    // Copy the DAC table into g_dacGlobals
-    if (bytesLeft < sizeof(DacGlobals))
-    {
-        _ASSERTE_MSG(false, "DAC fatal error: DAC table resource too small for DacGlobals.");
-        status = E_UNEXPECTED;
-        goto Exit;
-    }
-    memcpy(&g_dacGlobals, rawData, sizeof(DacGlobals));
-    rawData += sizeof(DacGlobals);
-    bytesLeft -= sizeof(DacGlobals);
-
-    status = S_OK;
-
-Exit:
-
-    return status;
-#endif
 }
-
-#undef MAKEINTRESOURCE
 
 //----------------------------------------------------------------------------
 //

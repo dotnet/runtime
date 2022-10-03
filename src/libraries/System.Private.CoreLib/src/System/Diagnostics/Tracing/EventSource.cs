@@ -3,10 +3,6 @@
 
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
 // It is available from http://www.codeplex.com/hyperAddin
-#if ES_BUILD_STANDALONE
-#define FEATURE_MANAGED_ETW_CHANNELS
-// #define FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-#endif
 
 /* DESIGN NOTES DESIGN NOTES DESIGN NOTES DESIGN NOTES */
 // DESIGN NOTES
@@ -17,14 +13,14 @@
 //
 // PRINCIPLE: EventSource - ETW decoupling
 //
-// Conceptually an EventSouce is something that takes event logging data from the source methods
+// Conceptually an EventSource is something that takes event logging data from the source methods
 // to the EventListener that can subscribe to them.  Note that CONCEPTUALLY EVENTSOURCES DON'T
 // KNOW ABOUT ETW!.   The MODEL of the system is that there is a special EventListener which
 // we will call the EtwEventListener, that forwards commands from ETW to EventSources and
 // listens to EventSources and forwards on those events to ETW.   Thus the model should
 // be that you DON'T NEED ETW.
 //
-// Now in actual practice, EventSouce have rather intimate knowledge of ETW and send events
+// Now in actual practice, EventSource have rather intimate knowledge of ETW and send events
 // to it directly, but this can be VIEWED AS AN OPTIMIZATION.
 //
 // Basic Event Data Flow:
@@ -177,14 +173,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-#if ES_BUILD_STANDALONE
-using System.Security.Permissions;
-#endif
 
-#if ES_BUILD_STANDALONE
-namespace Microsoft.Diagnostics.Tracing
-{
-#else
 namespace System.Diagnostics.Tracing
 {
     [Conditional("NEEDED_FOR_SOURCE_GENERATOR_ONLY")]
@@ -193,7 +182,6 @@ namespace System.Diagnostics.Tracing
     {
     }
 
-#endif
     /// <summary>
     /// This class is meant to be inherited by a user-defined event source in order to define a managed
     /// ETW provider.   Please See DESIGN NOTES above for the internal architecture.
@@ -229,7 +217,6 @@ namespace System.Diagnostics.Tracing
     /// }
     /// </code>
     /// </remarks>
-#if !ES_BUILD_STANDALONE
     // The EnsureDescriptorsInitialized() method might need to access EventSource and its derived type
     // members and the trimmer ensures that these members are preserved.
     [DynamicallyAccessedMembers(ManifestMemberTypes)]
@@ -243,7 +230,6 @@ namespace System.Diagnostics.Tracing
                         "because the nested type OverrideEventProvider's base type EventProvider defines a delegate. " +
                         "This includes Delegate and MulticastDelegate methods which have dynamically accessed members requirements, but " +
                         "EnsureDescriptorsInitialized does not access these members and is safe to call.")]
-#endif
     public partial class EventSource : IDisposable
     {
 
@@ -357,9 +343,7 @@ namespace System.Diagnostics.Tracing
             return GetName(eventSourceType, EventManifestOptions.None);
         }
 
-#if !ES_BUILD_STANDALONE
         private const DynamicallyAccessedMemberTypes ManifestMemberTypes = DynamicallyAccessedMemberTypes.All;
-#endif
 
         /// <summary>
         /// Returns a string of the XML manifest associated with the eventSourceType. The scheme for this XML is
@@ -371,16 +355,12 @@ namespace System.Diagnostics.Tracing
         /// <param name="assemblyPathToIncludeInManifest">The manifest XML fragment contains the string name of the DLL name in
         /// which it is embedded.  This parameter specifies what name will be used</param>
         /// <returns>The XML data string</returns>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2114:ReflectionToDynamicallyAccessedMembers",
             Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                             "has dynamically accessed members requirements, but EnsureDescriptorsInitialized does not "+
                             "access this member and is safe to call.")]
-#endif
         public static string? GenerateManifest(
-#if !ES_BUILD_STANDALONE
             [DynamicallyAccessedMembers(ManifestMemberTypes)]
-#endif
             Type eventSourceType,
             string? assemblyPathToIncludeInManifest)
         {
@@ -398,16 +378,12 @@ namespace System.Diagnostics.Tracing
         /// <param name="flags">The flags to customize manifest generation. If flags has bit OnlyIfNeededForRegistration specified
         /// this returns null when the eventSourceType does not require explicit registration</param>
         /// <returns>The XML data string or null</returns>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2114:ReflectionToDynamicallyAccessedMembers",
             Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                             "has dynamically accessed members requirements, but EnsureDescriptorsInitialized does not "+
                             "access this member and is safe to call.")]
-#endif
         public static string? GenerateManifest(
-#if !ES_BUILD_STANDALONE
             [DynamicallyAccessedMembers(ManifestMemberTypes)]
-#endif
             Type eventSourceType,
             string? assemblyPathToIncludeInManifest,
             EventManifestOptions flags)
@@ -578,8 +554,7 @@ namespace System.Diagnostics.Tracing
                 return;
             }
 
-            if (TplEventSource.Log != null)
-                TplEventSource.Log.SetActivityId(activityId);
+            TplEventSource.Log?.SetActivityId(activityId);
 
             // We ignore errors to keep with the convention that EventSources do not throw errors.
             // Note we can't access m_throwOnWrites because this is a static method.
@@ -680,8 +655,7 @@ namespace System.Diagnostics.Tracing
 
             // We don't call the activityDying callback here because the caller has declared that
             // it is not dying.
-            if (TplEventSource.Log != null)
-                TplEventSource.Log.SetActivityId(activityId);
+            TplEventSource.Log?.SetActivityId(activityId);
         }
 #endregion
 
@@ -799,20 +773,16 @@ namespace System.Diagnostics.Tracing
 
 #pragma warning disable 1591
         // optimized for common signatures (no args)
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         protected unsafe void WriteEvent(int eventId)
         {
             WriteEventCore(eventId, 0, null);
         }
 
         // optimized for common signatures (ints)
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         protected unsafe void WriteEvent(int eventId, int arg1)
         {
             if (IsEnabled())
@@ -825,10 +795,8 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         protected unsafe void WriteEvent(int eventId, int arg1, int arg2)
         {
             if (IsEnabled())
@@ -844,10 +812,8 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         protected unsafe void WriteEvent(int eventId, int arg1, int arg2, int arg3)
         {
             if (IsEnabled())
@@ -867,10 +833,8 @@ namespace System.Diagnostics.Tracing
         }
 
         // optimized for common signatures (longs)
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         protected unsafe void WriteEvent(int eventId, long arg1)
         {
             if (IsEnabled())
@@ -883,10 +847,8 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         protected unsafe void WriteEvent(int eventId, long arg1, long arg2)
         {
             if (IsEnabled())
@@ -902,10 +864,8 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         protected unsafe void WriteEvent(int eventId, long arg1, long arg2, long arg3)
         {
             if (IsEnabled())
@@ -925,10 +885,8 @@ namespace System.Diagnostics.Tracing
         }
 
         // optimized for common signatures (strings)
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         protected unsafe void WriteEvent(int eventId, string? arg1)
         {
             if (IsEnabled())
@@ -945,10 +903,8 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         protected unsafe void WriteEvent(int eventId, string? arg1, string? arg2)
         {
             if (IsEnabled())
@@ -970,10 +926,8 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         protected unsafe void WriteEvent(int eventId, string? arg1, string? arg2, string? arg3)
         {
             if (IsEnabled())
@@ -1001,10 +955,8 @@ namespace System.Diagnostics.Tracing
         }
 
         // optimized for common signatures (string and ints)
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         protected unsafe void WriteEvent(int eventId, string? arg1, int arg2)
         {
             if (IsEnabled())
@@ -1024,10 +976,8 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         protected unsafe void WriteEvent(int eventId, string? arg1, int arg2, int arg3)
         {
             if (IsEnabled())
@@ -1051,10 +1001,8 @@ namespace System.Diagnostics.Tracing
         }
 
         // optimized for common signatures (string and longs)
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         protected unsafe void WriteEvent(int eventId, string? arg1, long arg2)
         {
             if (IsEnabled())
@@ -1075,10 +1023,8 @@ namespace System.Diagnostics.Tracing
         }
 
         // optimized for common signatures (long and string)
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         protected unsafe void WriteEvent(int eventId, long arg1, string? arg2)
         {
             if (IsEnabled())
@@ -1099,10 +1045,8 @@ namespace System.Diagnostics.Tracing
         }
 
         // optimized for common signatures (int and string)
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         protected unsafe void WriteEvent(int eventId, int arg1, string? arg2)
         {
             if (IsEnabled())
@@ -1122,10 +1066,8 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         protected unsafe void WriteEvent(int eventId, byte[]? arg1)
         {
             if (IsEnabled())
@@ -1159,10 +1101,8 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
                    Justification = EventSourceSuppressMessage)]
-#endif
         protected unsafe void WriteEvent(int eventId, long arg1, byte[]? arg2)
         {
             if (IsEnabled())
@@ -1251,7 +1191,7 @@ namespace System.Diagnostics.Tracing
             }
 
             // Important, we pass this structure directly to the Win32 EventWrite API, so this structure must
-            // be layed out exactly the way EventWrite wants it.
+            // be laid out exactly the way EventWrite wants it.
             internal ulong m_Ptr;
             internal int m_Size;
 #pragma warning disable 0649
@@ -1286,12 +1226,10 @@ namespace System.Diagnostics.Tracing
         ///    }
         /// </code>
         /// </remarks>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
                     Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
-#endif
         [CLSCompliant(false)]
         protected unsafe void WriteEventCore(int eventId, int eventDataCount, EventSource.EventData* data)
         {
@@ -1323,12 +1261,10 @@ namespace System.Diagnostics.Tracing
         ///    }
         /// </code>
         /// </remarks>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
                     Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
-#endif
         [CLSCompliant(false)]
         protected unsafe void WriteEventWithRelatedActivityIdCore(int eventId, Guid* relatedActivityId, int eventDataCount, EventSource.EventData* data)
         {
@@ -1421,12 +1357,10 @@ namespace System.Diagnostics.Tracing
         /// method signature. Even if you use this for rare events, this call should be guarded by an <see cref="IsEnabled()"/>
         /// check so that the varargs call is not made when the EventSource is not active.
         /// </summary>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
                     Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
-#endif
         protected unsafe void WriteEvent(int eventId, params object?[] args)
         {
             WriteEventVarargs(eventId, null, args);
@@ -1440,12 +1374,10 @@ namespace System.Diagnostics.Tracing
         /// particular method signature. Even if you use this for rare events, this call should be guarded by an <see cref="IsEnabled()"/>
         /// check so that the varargs call is not made when the EventSource is not active.
         /// </summary>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
                     Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
-#endif
         protected unsafe void WriteEventWithRelatedActivityId(int eventId, Guid relatedActivityId, params object?[] args)
         {
             WriteEventVarargs(eventId, &relatedActivityId, args);
@@ -1644,11 +1576,9 @@ namespace System.Diagnostics.Tracing
                 m_etwProvider = etwProvider;
 
 #if TARGET_WINDOWS
-#if (!ES_BUILD_STANDALONE)
                 // API available on OS >= Win 8 and patched Win 7.
                 // Disable only for FrameworkEventSource to avoid recursion inside exception handling.
                 if (this.Name != "System.Diagnostics.Eventing.FrameworkEventSource" || Environment.IsWindows8OrAbove)
-#endif
                 {
                     var providerMetadata = ProviderMetadata;
                     fixed (byte* pMetadata = providerMetadata)
@@ -1705,21 +1635,11 @@ namespace System.Diagnostics.Tracing
 
         private static Guid GenerateGuidFromName(string name)
         {
-#if ES_BUILD_STANDALONE
-            if (namespaceBytes == null)
-            {
-                namespaceBytes = new byte[] {
-                    0x48, 0x2C, 0x2D, 0xB2, 0xC3, 0x90, 0x47, 0xC8,
-                    0x87, 0xF8, 0x1A, 0x15, 0xBF, 0xC1, 0x30, 0xFB,
-                };
-            }
-#else
             ReadOnlySpan<byte> namespaceBytes = new byte[] // rely on C# compiler optimization to remove byte[] allocation
             {
                 0x48, 0x2C, 0x2D, 0xB2, 0xC3, 0x90, 0x47, 0xC8,
                 0x87, 0xF8, 0x1A, 0x15, 0xBF, 0xC1, 0x30, 0xFB,
             };
-#endif
 
             byte[] bytes = Encoding.BigEndianUnicode.GetBytes(name);
             Sha1ForNonSecretPurposes hash = default;
@@ -1841,7 +1761,7 @@ namespace System.Diagnostics.Tracing
                         }
                         else if (typeCode == TypeCode.DateTime)
                         {
-                            decoded = *(DateTime*)dataPointer;
+                            decoded = DateTime.FromFileTimeUtc(*(long*)dataPointer);
                         }
                         else if (IntPtr.Size == 8 && dataType == typeof(IntPtr))
                         {
@@ -1927,12 +1847,10 @@ namespace System.Diagnostics.Tracing
             return dispatcher;
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
                     Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
-#endif
         private unsafe void WriteEventVarargs(int eventId, Guid* childActivityID, object?[] args)
         {
             if (IsEnabled())
@@ -2016,10 +1934,8 @@ namespace System.Diagnostics.Tracing
 #endif // FEATURE_MANAGED_ETW
                     if (m_Dispatchers != null && metadata.EnabledForAnyListener)
                     {
-#if !ES_BUILD_STANDALONE
                         // Maintain old behavior - object identity is preserved
-                        if (!LocalAppContextSwitches.PreserveEventListnerObjectIdentity)
-#endif // !ES_BUILD_STANDALONE
+                        if (!LocalAppContextSwitches.PreserveEventListenerObjectIdentity)
                         {
                             args = SerializeEventArgs(eventId, args);
                         }
@@ -2042,12 +1958,10 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
             Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                             "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
-#endif
         private unsafe object?[] SerializeEventArgs(int eventId, object?[] args)
         {
             Debug.Assert(m_eventData != null);
@@ -2203,10 +2117,11 @@ namespace System.Diagnostics.Tracing
                     Level = level
                 };
 
-#if !ES_BUILD_STANDALONE
                 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                     Justification = "The call to TraceLoggingEventTypes with the below parameter values are trim safe")]
-#endif
+                [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2119",
+                    Justification = "DAM on EventSource references this compiler-generated local function which calls a " +
+                                    "constructor that requires unreferenced code. EventSource will not access this local function.")]
                 static TraceLoggingEventTypes GetTrimSafeTraceLoggingEventTypes() =>
                     new TraceLoggingEventTypes(EventName, EventTags.None, new Type[] { typeof(string) });
 
@@ -2235,10 +2150,7 @@ namespace System.Diagnostics.Tracing
                     data.Size = (uint)(2 * (msgString.Length + 1));
                     data.Reserved = 0;
 #if FEATURE_MANAGED_ETW
-                    if (m_etwProvider != null)
-                    {
-                        m_etwProvider.WriteEvent(ref descr, IntPtr.Zero, null, null, 1, (IntPtr)((void*)&data));
-                    }
+                    m_etwProvider?.WriteEvent(ref descr, IntPtr.Zero, null, null, 1, (IntPtr)((void*)&data));
 #endif // FEATURE_MANAGED_ETW
 #if FEATURE_PERFTRACING
                     if (m_eventPipeProvider != null)
@@ -2504,12 +2416,10 @@ namespace System.Diagnostics.Tracing
             private TraceLoggingEventTypes _traceLoggingEventTypes;
             public TraceLoggingEventTypes TraceLoggingEventTypes
             {
-#if !ES_BUILD_STANDALONE
                 [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
                     Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
                 [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
-#endif
                 get
                 {
                     if (_traceLoggingEventTypes is null)
@@ -2855,9 +2765,7 @@ namespace System.Diagnostics.Tracing
 
         private void EnsureDescriptorsInitialized()
         {
-#if !ES_BUILD_STANDALONE
             Debug.Assert(Monitor.IsEntered(EventListener.EventListenersLock));
-#endif
             if (m_eventData == null)
             {
                 // get the metadata via reflection.
@@ -2998,17 +2906,13 @@ namespace System.Diagnostics.Tracing
 
         // Helper to deal with the fact that the type we are reflecting over might be loaded in the ReflectionOnly context.
         // When that is the case, we have the build the custom assemblies on a member by hand.
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2114:ReflectionToDynamicallyAccessedMembers",
             Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                             "has dynamically accessed members requirements, but EnsureDescriptorsInitialized does not "+
                             "access this member and is safe to call.")]
-#endif
         internal static Attribute? GetCustomAttributeHelper(
             MemberInfo member,
-#if !ES_BUILD_STANDALONE
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicProperties)]
-#endif
             Type attributeType,
             EventManifestOptions flags = EventManifestOptions.None)
         {
@@ -3125,16 +3029,12 @@ namespace System.Diagnostics.Tracing
         // return the UTF8 bytes.  It also sets up the code:EventData structures needed to dispatch events
         // at run time.  'source' is the event source to place the descriptors.  If it is null,
         // then the descriptors are not created, and just the manifest is generated.
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2114:ReflectionToDynamicallyAccessedMembers",
             Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                             "has dynamically accessed members requirements, but its use of this method satisfies " +
                             "these requirements because it passes in the result of GetType with the same annotations.")]
-#endif
         private static byte[]? CreateManifestAndDescriptors(
-#if !ES_BUILD_STANDALONE
             [DynamicallyAccessedMembers(ManifestMemberTypes)]
-#endif
             Type eventSourceType,
             string? eventSourceDllName,
             EventSource? source,
@@ -3706,16 +3606,14 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         /// <param name="method">The method to probe.</param>
         /// <returns>The literal value or -1 if the value could not be determined. </returns>
-#if !ES_BUILD_STANDALONE
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                    Justification = "The method calls MethodBase.GetMethodBody. Trimming application can change IL of various methods" +
                                    "which can lead to change of behavior. This method only uses this to validate usage of event source APIs." +
                                    "In the worst case it will not be able to determine the value it's looking for and will not perform" +
                                    "any validation.")]
-#endif
         private static int GetHelperCallFirstArg(MethodInfo method)
         {
-#if !CORERT
+#if !NATIVEAOT
             // Currently searches for the following pattern
             //
             // ...     // CAN ONLY BE THE INSTRUCTIONS BELOW
@@ -3727,9 +3625,6 @@ namespace System.Diagnostics.Tracing
             // RET
             //
             // If we find this pattern we return the XXX.  Otherwise we return -1.
-#if ES_BUILD_STANDALONE
-            (new ReflectionPermission(ReflectionPermissionFlag.MemberAccess)).Assert();
-#endif
             byte[] instrs = method.GetMethodBody()!.GetILAsByteArray()!;
             int retVal = -1;
             for (int idx = 0; idx < instrs.Length;)
@@ -3767,11 +3662,11 @@ namespace System.Diagnostics.Tracing
                     case 28: // LDC_I4_6
                     case 29: // LDC_I4_7
                     case 30: // LDC_I4_8
-                        if (idx > 0 && instrs[idx - 1] == 2)  // preceeded by LDARG0
+                        if (idx > 0 && instrs[idx - 1] == 2)  // preceded by LDARG0
                             retVal = instrs[idx] - 22;
                         break;
                     case 31: // LDC_I4_S
-                        if (idx > 0 && instrs[idx - 1] == 2)  // preceeded by LDARG0
+                        if (idx > 0 && instrs[idx - 1] == 2)  // preceded by LDARG0
                             retVal = instrs[idx + 1];
                         idx++;
                         break;
@@ -3826,7 +3721,7 @@ namespace System.Diagnostics.Tracing
                             goto default;
                         break;
                     default:
-                        /* Debug.Fail("Warning: User validation code sub-optimial: Unsuported opcode " + instrs[idx] +
+                        /* Debug.Fail("Warning: User validation code sub-optimial: Unsupported opcode " + instrs[idx] +
                             " at " + idx + " in method " + method.Name); */
                         return -1;
                 }
@@ -3934,7 +3829,6 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_MANAGED_ETW_CHANNELS
         internal volatile ulong[]? m_channelData;
 #endif
-
         // We use a single instance of ActivityTracker for all EventSources instances to allow correlation between multiple event providers.
         // We have m_activityTracker field simply because instance field is more efficient than static field fetch.
         private ActivityTracker m_activityTracker = null!;
@@ -3956,13 +3850,6 @@ namespace System.Diagnostics.Tracing
         internal const string DuplicateSourceNamesSwitch = "System.Diagnostics.Tracing.EventSource.AllowDuplicateSourceNames";
         private static readonly bool AllowDuplicateSourceNames = AppContext.TryGetSwitch(DuplicateSourceNamesSwitch, out bool isEnabled) ? isEnabled : false;
 
-        // WARNING: Do not depend upon initialized statics during creation of EventSources, as it is possible for creation of an EventSource to trigger
-        // creation of yet another EventSource.  When this happens, these statics may not yet be initialized.
-        // Rather than depending on initialized statics, use lazy initialization to ensure that the statics are initialized exactly when they are needed.
-#if ES_BUILD_STANDALONE
-        // used for generating GUID from eventsource name
-        private static byte[]? namespaceBytes;
-#endif
 #endregion
     }
 
@@ -4070,15 +3957,6 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public event EventHandler<EventWrittenEventArgs>? EventWritten;
 
-        static EventListener()
-        {
-#if FEATURE_PERFTRACING
-            // This allows NativeRuntimeEventSource to get initialized so that EventListeners can subscribe to the runtime events emitted from
-            // native side.
-            GC.KeepAlive(NativeRuntimeEventSource.Log);
-#endif
-        }
-
         /// <summary>
         /// Create a new EventListener in which all events start off turned off (use EnableEvents to turn
         /// them on).
@@ -4175,8 +4053,13 @@ namespace System.Diagnostics.Tracing
         ///
         /// This call never has an effect on other EventListeners.
         /// </summary>
-        public void EnableEvents(EventSource eventSource!!, EventLevel level, EventKeywords matchAnyKeyword, IDictionary<string, string?>? arguments)
+        public void EnableEvents(EventSource eventSource, EventLevel level, EventKeywords matchAnyKeyword, IDictionary<string, string?>? arguments)
         {
+            if (eventSource is null)
+            {
+                throw new ArgumentNullException(nameof(eventSource));
+            }
+
             eventSource.SendCommand(this, EventProviderType.None, 0, 0, EventCommand.Update, true, level, matchAnyKeyword, arguments);
 
 #if FEATURE_PERFTRACING
@@ -4191,8 +4074,13 @@ namespace System.Diagnostics.Tracing
         ///
         /// This call never has an effect on other EventListeners.
         /// </summary>
-        public void DisableEvents(EventSource eventSource!!)
+        public void DisableEvents(EventSource eventSource)
         {
+            if (eventSource is null)
+            {
+                throw new ArgumentNullException(nameof(eventSource));
+            }
+
             eventSource.SendCommand(this, EventProviderType.None, 0, 0, EventCommand.Update, false, EventLevel.LogAlways, EventKeywords.None, null);
 
 #if FEATURE_PERFTRACING
@@ -4265,16 +4153,6 @@ namespace System.Diagnostics.Tracing
             {
                 Debug.Assert(s_EventSources != null);
 
-#if ES_BUILD_STANDALONE
-                // netcoreapp build calls DisposeOnShutdown directly from AppContext.OnProcessExit
-                if (!s_EventSourceShutdownRegistered)
-                {
-                    s_EventSourceShutdownRegistered = true;
-                    AppDomain.CurrentDomain.ProcessExit += DisposeOnShutdown;
-                    AppDomain.CurrentDomain.DomainUnload += DisposeOnShutdown;
-                }
-#endif
-
                 // Periodically search the list for existing entries to reuse, this avoids
                 // unbounded memory use if we keep recycling eventSources (an unlikely thing).
                 int newIndex = -1;
@@ -4323,18 +4201,14 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        // Whenver we have async callbacks from native code, there is an ugly issue where
+        // Whenever we have async callbacks from native code, there is an ugly issue where
         // during .NET shutdown native code could be calling the callback, but the CLR
         // has already prohibited callbacks to managed code in the appdomain, causing the CLR
         // to throw a COMPLUS_BOOT_EXCEPTION.   The guideline we give is that you must unregister
         // such callbacks on process shutdown or appdomain so that unmanaged code will never
         // do this.  This is what this callback is for.
         // See bug 724140 for more
-#if ES_BUILD_STANDALONE
-        private static void DisposeOnShutdown(object? sender, EventArgs e)
-#else
         internal static void DisposeOnShutdown()
-#endif
         {
             Debug.Assert(EventSource.IsSupported);
             List<EventSource> sourcesToDispose = new List<EventSource>();
@@ -4367,9 +4241,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         private static void RemoveReferencesToListenerInEventSources(EventListener listenerToRemove)
         {
-#if !ES_BUILD_STANDALONE
             Debug.Assert(Monitor.IsEntered(EventListener.EventListenersLock));
-#endif
             // Foreach existing EventSource in the appdomain
             Debug.Assert(s_EventSources != null);
             foreach (WeakReference<EventSource> eventSourceRef in s_EventSources)
@@ -4477,7 +4349,18 @@ namespace System.Diagnostics.Tracing
             get
             {
                 if (s_EventSources == null)
+                {
                     Interlocked.CompareExchange(ref s_EventSources, new List<WeakReference<EventSource>>(2), null);
+#if FEATURE_PERFTRACING
+                    // It is possible that another thread could observe the s_EventSources list at this point and it
+                    // won't have the NativeRuntimeEventSource in it. In the past we guaranteed that the NativeRuntimeEventSource
+                    // was always visible in the list by initializing it in the EventListener static constructor, however doing it
+                    // that way triggered deadlocks between the static constructor and an OS ETW lock. There is no known issue here
+                    // having a small window of time where NativeRuntimeEventSource is not in the list as long
+                    // as we still guarantee it gets initialized eventually.
+                    GC.KeepAlive(NativeRuntimeEventSource.Log);
+#endif
+                }
                 return s_EventSources;
             }
         }
@@ -4582,12 +4465,6 @@ namespace System.Diagnostics.Tracing
         private static bool s_ConnectingEventSourcesAndListener;
 #endif
 
-#if ES_BUILD_STANDALONE
-        /// <summary>
-        /// Used to register AD/Process shutdown callbacks.
-        /// </summary>
-        private static bool s_EventSourceShutdownRegistered;
-#endif
 #endregion
     }
 
@@ -4816,11 +4693,7 @@ namespace System.Diagnostics.Tracing
                 ref long? osThreadId = ref MoreInfo.OsThreadId;
                 if (!osThreadId.HasValue)
                 {
-#if ES_BUILD_STANDALONE
-                    osThreadId = (long)Interop.Kernel32.GetCurrentThreadId();
-#else
                     osThreadId = (long)Thread.CurrentOSThreadId;
-#endif
                 }
 
                 return osThreadId.Value;
@@ -5016,7 +4889,7 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
     public
 #else
-    internal
+    internal sealed
 #endif
     class EventChannelAttribute : Attribute
     {
@@ -5388,9 +5261,7 @@ namespace System.Diagnostics.Tracing
 
         private static EventChannelType EventChannelToChannelType(EventChannel channel)
         {
-#if !ES_BUILD_STANDALONE
             Debug.Assert(channel >= EventChannel.Admin && channel <= EventChannel.Debug);
-#endif
             return (EventChannelType)((int)channel - (int)EventChannel.Admin + (int)EventChannelType.Admin);
         }
 
@@ -5603,9 +5474,7 @@ namespace System.Diagnostics.Tracing
 
         private string CreateManifestString()
         {
-#if !ES_BUILD_STANDALONE
             Span<char> ulongHexScratch = stackalloc char[16]; // long enough for ulong.MaxValue formatted as hex
-#endif
 
 #if FEATURE_MANAGED_ETW_CHANNELS
             // Write out the channels
@@ -5685,10 +5554,8 @@ namespace System.Diagnostics.Tracing
             // Write out the maps
 
             // Scoping the call to enum GetFields to a local function to limit the linker suppression
-#if !ES_BUILD_STANDALONE
             [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Trimmer does not trim enums")]
-#endif
             static FieldInfo[] GetEnumFields(Type localEnumType)
             {
                 Debug.Assert(localEnumType.IsEnum);
@@ -5724,12 +5591,8 @@ namespace System.Diagnostics.Tracing
                             if (isbitmap && ((hexValue & (hexValue - 1)) != 0 || hexValue == 0))
                                 continue;
 
-#if ES_BUILD_STANDALONE
-                            string hexValueFormatted = hexValue.ToString("x", CultureInfo.InvariantCulture);
-#else
                             hexValue.TryFormat(ulongHexScratch, out int charsWritten, "x");
                             Span<char> hexValueFormatted = ulongHexScratch.Slice(0, charsWritten);
-#endif
                             sb.Append("   <map value=\"0x").Append(hexValueFormatted).Append('"');
                             WriteMessageAttrib(sb, "map", enumType.Name + "." + staticField.Name, staticField.Name);
                             sb.AppendLine("/>");
@@ -5772,12 +5635,8 @@ namespace System.Diagnostics.Tracing
                 {
                     sb.Append("  <keyword");
                     WriteNameAndMessageAttribs(sb, "keyword", keywordTab[keyword]);
-#if ES_BUILD_STANDALONE
-                    string keywordFormatted = keyword.ToString("x", CultureInfo.InvariantCulture);
-#else
                     keyword.TryFormat(ulongHexScratch, out int charsWritten, "x");
                     Span<char> keywordFormatted = ulongHexScratch.Slice(0, charsWritten);
-#endif
                     sb.Append(" mask=\"0x").Append(keywordFormatted).AppendLine("\"/>");
                 }
                 sb.AppendLine(" </keywords>");

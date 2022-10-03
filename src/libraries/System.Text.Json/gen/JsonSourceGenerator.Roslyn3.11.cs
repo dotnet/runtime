@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.Reflection;
+using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -27,7 +28,11 @@ namespace System.Text.Json.SourceGeneration
         /// <param name="context"></param>
         public void Initialize(GeneratorInitializationContext context)
         {
-            context.RegisterForSyntaxNotifications(() => new SyntaxContextReceiver());
+            // Unfortunately, there is no cancellation token that can be passed here
+            // (the one in GeneratorInitializationContext is not safe to capture).
+            // In practice this should still be ok as the generator driver itself will
+            // cancel after every file it processes.
+            context.RegisterForSyntaxNotifications(static () => new SyntaxContextReceiver(CancellationToken.None));
         }
 
         /// <summary>
@@ -50,7 +55,7 @@ namespace System.Text.Json.SourceGeneration
 
             JsonSourceGenerationContext context = new JsonSourceGenerationContext(executionContext);
             Parser parser = new(executionContext.Compilation, context);
-            SourceGenerationSpec? spec = parser.GetGenerationSpec(receiver.ClassDeclarationSyntaxList);
+            SourceGenerationSpec? spec = parser.GetGenerationSpec(receiver.ClassDeclarationSyntaxList, executionContext.CancellationToken);
             if (spec != null)
             {
                 _rootTypes = spec.ContextGenerationSpecList[0].RootSerializableTypes;
@@ -62,18 +67,57 @@ namespace System.Text.Json.SourceGeneration
 
         private sealed class SyntaxContextReceiver : ISyntaxContextReceiver
         {
+            private readonly CancellationToken _cancellationToken;
+
+            public SyntaxContextReceiver(CancellationToken cancellationToken)
+            {
+                _cancellationToken = cancellationToken;
+            }
+
             public List<ClassDeclarationSyntax>? ClassDeclarationSyntaxList { get; private set; }
 
             public void OnVisitSyntaxNode(GeneratorSyntaxContext context)
             {
-                if (Parser.IsSyntaxTargetForGeneration(context.Node))
+                if (IsSyntaxTargetForGeneration(context.Node))
                 {
-                    ClassDeclarationSyntax classSyntax = Parser.GetSemanticTargetForGeneration(context);
+                    ClassDeclarationSyntax classSyntax = GetSemanticTargetForGeneration(context, _cancellationToken);
                     if (classSyntax != null)
                     {
                         (ClassDeclarationSyntaxList ??= new List<ClassDeclarationSyntax>()).Add(classSyntax);
                     }
                 }
+            }
+
+            private static bool IsSyntaxTargetForGeneration(SyntaxNode node) => node is ClassDeclarationSyntax { AttributeLists.Count: > 0, BaseList.Types.Count: > 0 };
+
+            private static ClassDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext context, CancellationToken cancellationToken)
+            {
+                var classDeclarationSyntax = (ClassDeclarationSyntax)context.Node;
+
+                foreach (AttributeListSyntax attributeListSyntax in classDeclarationSyntax.AttributeLists)
+                {
+                    foreach (AttributeSyntax attributeSyntax in attributeListSyntax.Attributes)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        IMethodSymbol attributeSymbol = context.SemanticModel.GetSymbolInfo(attributeSyntax, cancellationToken).Symbol as IMethodSymbol;
+                        if (attributeSymbol == null)
+                        {
+                            continue;
+                        }
+
+                        INamedTypeSymbol attributeContainingTypeSymbol = attributeSymbol.ContainingType;
+                        string fullName = attributeContainingTypeSymbol.ToDisplayString();
+
+                        if (fullName == Parser.JsonSerializableAttributeFullName)
+                        {
+                            return classDeclarationSyntax;
+                        }
+                    }
+
+                }
+
+                return null;
             }
         }
 

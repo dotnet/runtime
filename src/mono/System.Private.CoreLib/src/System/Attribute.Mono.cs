@@ -9,8 +9,7 @@ namespace System
     {
         private static Attribute? GetAttr(ICustomAttributeProvider element, Type attributeType, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(attributeType);
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && !attributeType.IsInterface
                 && attributeType != typeof(Attribute) && attributeType != typeof(CustomAttribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass + " " + attributeType.FullName);

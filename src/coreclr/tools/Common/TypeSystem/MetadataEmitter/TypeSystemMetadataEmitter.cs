@@ -18,14 +18,18 @@ namespace Internal.TypeSystem
         MetadataBuilder _metadataBuilder;
         BlobBuilder _ilBuilder;
         MethodBodyStreamEncoder _methodBodyStream;
+        Dictionary<string, AssemblyReferenceHandle> _assemblyRefNameHandles = new Dictionary<string, AssemblyReferenceHandle>();
         Dictionary<IAssemblyDesc, AssemblyReferenceHandle> _assemblyRefs = new Dictionary<IAssemblyDesc, AssemblyReferenceHandle>();
         Dictionary<TypeDesc, EntityHandle> _typeRefs = new Dictionary<TypeDesc, EntityHandle>();
         Dictionary<MethodDesc, EntityHandle> _methodRefs = new Dictionary<MethodDesc, EntityHandle>();
+        Dictionary<FieldDesc, EntityHandle> _fieldRefs = new Dictionary<FieldDesc, EntityHandle>();
         Blob _mvidFixup;
         BlobHandle _noArgsVoidReturnStaticMethodSigHandle;
+        protected TypeSystemContext _typeSystemContext;
 
-        public TypeSystemMetadataEmitter(AssemblyName assemblyName, TypeSystemContext context, AssemblyFlags flags = default(AssemblyFlags))
+        public TypeSystemMetadataEmitter(AssemblyName assemblyName, TypeSystemContext context, AssemblyFlags flags = default(AssemblyFlags), byte[] publicKeyArray = null, AssemblyHashAlgorithm hashAlgorithm = AssemblyHashAlgorithm.None)
         {
+            _typeSystemContext = context;
             _metadataBuilder = new MetadataBuilder();
             _ilBuilder = new BlobBuilder();
             _methodBodyStream = new MethodBodyStreamEncoder(_ilBuilder);
@@ -33,21 +37,11 @@ namespace Internal.TypeSystem
             if (assemblyName.CultureName != null)
                 throw new ArgumentException("assemblyName");
 
-            if (assemblyName.GetPublicKeyToken() != null)
-                throw new ArgumentException("assemblyName");
-
             var mvid = _metadataBuilder.ReserveGuid();
             _mvidFixup = mvid.Content;
 
             _metadataBuilder.AddModule(0, assemblyNameHandle, mvid.Handle, default(GuidHandle), default(GuidHandle));
-            _metadataBuilder.AddAssembly(assemblyNameHandle, assemblyName.Version ?? new Version(0,0,0,0), default(StringHandle), default(BlobHandle), flags, AssemblyHashAlgorithm.None);
-
-            var canonAssemblyNameHandle = _metadataBuilder.GetOrAddString("System.Private.Canon");
-            var canonAssemblyRef = _metadataBuilder.AddAssemblyReference(canonAssemblyNameHandle, new Version(0, 0, 0, 0), default(StringHandle), default(BlobHandle), (AssemblyFlags)0, default(BlobHandle));
-            var systemStringHandle = _metadataBuilder.GetOrAddString("System");
-            var canonStringHandle = _metadataBuilder.GetOrAddString("__Canon");
-            var canonTypeRef = _metadataBuilder.AddTypeReference(canonAssemblyRef, systemStringHandle, canonStringHandle);
-            _typeRefs.Add(context.CanonType, canonTypeRef);
+            _metadataBuilder.AddAssembly(assemblyNameHandle, assemblyName.Version ?? new Version(0,0,0,0), default(StringHandle), publicKey: publicKeyArray != null ? _metadataBuilder.GetOrAddBlob(publicKeyArray) : default(BlobHandle), flags, AssemblyHashAlgorithm.None);
 
             _metadataBuilder.AddTypeDefinition(
                default(TypeAttributes),
@@ -56,7 +50,20 @@ namespace Internal.TypeSystem
                baseType: default(EntityHandle),
                fieldList: MetadataTokens.FieldDefinitionHandle(1),
                methodList: MetadataTokens.MethodDefinitionHandle(1));
+        }
 
+        public void InjectSystemPrivateCanon()
+        {
+            var canonAssemblyNameHandle = _metadataBuilder.GetOrAddString("System.Private.Canon");
+            var canonAssemblyRef = _metadataBuilder.AddAssemblyReference(canonAssemblyNameHandle, new Version(0, 0, 0, 0), default(StringHandle), default(BlobHandle), (AssemblyFlags)0, default(BlobHandle));
+            var systemStringHandle = _metadataBuilder.GetOrAddString("System");
+            var canonStringHandle = _metadataBuilder.GetOrAddString("__Canon");
+            var canonTypeRef = _metadataBuilder.AddTypeReference(canonAssemblyRef, systemStringHandle, canonStringHandle);
+            _typeRefs.Add(_typeSystemContext.CanonType, canonTypeRef);
+        }
+
+        public void AllowUseOfAddGlobalMethod()
+        {
             BlobBuilder noArgsNoReturnStaticMethodSig = new BlobBuilder();
             BlobEncoder signatureEncoder = new BlobEncoder(noArgsNoReturnStaticMethodSig);
 
@@ -79,6 +86,8 @@ namespace Internal.TypeSystem
         private static readonly Guid s_guid = new Guid("97F4DBD4-F6D1-4FAD-91B3-1001F92068E5");
         private static readonly BlobContentId s_contentId = new BlobContentId(s_guid, 0x04030201);
 
+        public MetadataBuilder Builder => _metadataBuilder;
+
         public void SerializeToStream(Stream peStream)
         {
             var peHeaderBuilder = new PEHeaderBuilder();
@@ -91,6 +100,47 @@ namespace Internal.TypeSystem
             peBlob.WriteContentTo(peStream);
         }
 
+        // Generate only the metadata blob as a byte[]
+        public byte[] EmitToMetadataBlob()
+        {
+            MetadataRootBuilder metadataRootBuilder = new MetadataRootBuilder(_metadataBuilder);
+            BlobBuilder metadataBlobBuilder = new BlobBuilder();
+            metadataRootBuilder.Serialize(metadataBlobBuilder, methodBodyStreamRva: 0, mappedFieldDataStreamRva: 0);
+
+            // Clear some variables to catch any caller trying to emit data after writing the output file
+            _metadataBuilder = null;
+
+            return metadataBlobBuilder.ToArray();
+        }
+
+        public AssemblyReferenceHandle GetAssemblyRef(AssemblyName name)
+        {
+            if (!_assemblyRefNameHandles.TryGetValue(name.FullName, out var handle))
+            {
+                StringHandle assemblyName = _metadataBuilder.GetOrAddString(name.Name);
+                StringHandle cultureName = (name.CultureName != null) ? _metadataBuilder.GetOrAddString(name.CultureName) : default(StringHandle);
+                BlobHandle publicTokenBlob = name.GetPublicKeyToken() != null ? _metadataBuilder.GetOrAddBlob(name.GetPublicKeyToken()) : default(BlobHandle);
+                AssemblyFlags flags = default(AssemblyFlags);
+                if (name.Flags.HasFlag(AssemblyNameFlags.Retargetable))
+                {
+                    flags |= AssemblyFlags.Retargetable;
+                }
+                if (name.ContentType == AssemblyContentType.WindowsRuntime)
+                {
+                    flags |= AssemblyFlags.WindowsRuntime;
+                }
+
+                Version version = name.Version;
+                if (version == null)
+                    version = new Version(0, 0);
+
+                handle = _metadataBuilder.AddAssemblyReference(assemblyName, version, cultureName, publicTokenBlob, flags, default(BlobHandle));
+
+                _assemblyRefNameHandles[name.FullName] = handle;
+            }
+            return handle;
+        }
+
         public AssemblyReferenceHandle GetAssemblyRef(IAssemblyDesc assemblyDesc)
         {
             if (_assemblyRefs.TryGetValue(assemblyDesc, out var handle))
@@ -98,26 +148,50 @@ namespace Internal.TypeSystem
                 return handle;
             }
             AssemblyName name = assemblyDesc.GetName();
-            StringHandle assemblyName = _metadataBuilder.GetOrAddString(name.Name);
-            StringHandle cultureName = (name.CultureName != null) ? _metadataBuilder.GetOrAddString(name.CultureName) : default(StringHandle);
-            BlobHandle publicTokenBlob = name.GetPublicKeyToken() != null ? _metadataBuilder.GetOrAddBlob(name.GetPublicKeyToken()) : default(BlobHandle);
-            AssemblyFlags flags = default(AssemblyFlags);
-            if (name.Flags.HasFlag(AssemblyNameFlags.Retargetable))
-            {
-                flags |= AssemblyFlags.Retargetable;
-            }
-            if (name.ContentType == AssemblyContentType.WindowsRuntime)
-            {
-                flags |= AssemblyFlags.WindowsRuntime;
-            }
-
-            Version version = name.Version;
-            if (version == null)
-                version = new Version(0, 0);
-
-            var referenceHandle = _metadataBuilder.AddAssemblyReference(assemblyName, version, cultureName, publicTokenBlob, flags, default(BlobHandle));
+            var referenceHandle = GetAssemblyRef(name);
             _assemblyRefs.Add(assemblyDesc, referenceHandle);
             return referenceHandle;
+        }
+
+        public EntityHandle EmitMetadataHandleForTypeSystemEntity(TypeSystemEntity entity)
+        {
+            switch (entity)
+            {
+                case FieldDesc field: return GetFieldRef(field);
+                case MethodDesc method: return GetMethodRef(method);
+                case TypeDesc type: return GetTypeRef(type);
+                case ModuleDesc assembly: return GetAssemblyRef(assembly.Assembly);
+                case MethodSignature methodSignature: return GetStandaloneSig(methodSignature);
+
+                default:
+                    throw new NotSupportedException();
+            }
+        }
+        
+        public IEnumerable<KeyValuePair<TypeSystemEntity, EntityHandle>> TypeSystemEntitiesKnown
+        {
+            get
+            {
+                foreach (var item in _typeRefs)
+                {
+                    yield return new KeyValuePair<TypeSystemEntity, EntityHandle>(item.Key, item.Value);
+                }
+
+                foreach (var item in _methodRefs)
+                {
+                    yield return new KeyValuePair<TypeSystemEntity, EntityHandle>(item.Key, item.Value);
+                }
+
+                foreach (var item in _fieldRefs)
+                {
+                    yield return new KeyValuePair<TypeSystemEntity, EntityHandle>(item.Key, item.Value);
+                }
+            }
+        }
+
+        protected virtual EntityHandle GetNonNestedResolutionScope(MetadataType metadataType)
+        {
+            return GetAssemblyRef(metadataType.Module.Assembly);
         }
 
         public EntityHandle GetTypeRef(TypeDesc type)
@@ -144,7 +218,7 @@ namespace Internal.TypeSystem
                 if (metadataType.ContainingType == null)
                 {
                     // non-nested type
-                    resolutionScope = GetAssemblyRef(metadataType.Module.Assembly);
+                    resolutionScope = GetNonNestedResolutionScope(metadataType);
                 }
                 else
                 {
@@ -164,6 +238,58 @@ namespace Internal.TypeSystem
 
             _typeRefs.Add(type, typeHandle);
             return typeHandle;
+        }
+
+        private BlobHandle GetMethodSignatureBlobHandle(MethodSignature sig)
+        {
+            EmbeddedSignatureDataEmitter signatureDataEmitter;
+            if (sig.HasEmbeddedSignatureData)
+            {
+                signatureDataEmitter = new EmbeddedSignatureDataEmitter(sig.GetEmbeddedSignatureData(), this);
+            }
+            else
+            {
+                signatureDataEmitter = EmbeddedSignatureDataEmitter.EmptySingleton;
+            }
+
+            BlobBuilder memberRefSig = new BlobBuilder();
+            EncodeMethodSignature(memberRefSig, sig, signatureDataEmitter);
+
+            if (!signatureDataEmitter.Complete)
+                throw new ArgumentException();
+
+            var sigBlob = _metadataBuilder.GetOrAddBlob(memberRefSig);
+            return sigBlob;
+        }
+
+        private BlobHandle GetFieldSignatureBlobHandle(FieldDesc field)
+        {
+            var fieldDef = field.GetTypicalFieldDefinition();
+            var embeddedSigData = field.GetEmbeddedSignatureData();
+            EmbeddedSignatureDataEmitter signatureDataEmitter;
+            if (embeddedSigData != null && embeddedSigData.Length != 0)
+            {
+                signatureDataEmitter = new EmbeddedSignatureDataEmitter(embeddedSigData, this);
+            }
+            else
+            {
+                signatureDataEmitter = EmbeddedSignatureDataEmitter.EmptySingleton;
+            }
+
+            BlobBuilder memberRefSig = new BlobBuilder();
+            EncodeFieldSignature(memberRefSig, field.FieldType, signatureDataEmitter);
+
+            if (!signatureDataEmitter.Complete)
+                throw new ArgumentException();
+
+            var sigBlob = _metadataBuilder.GetOrAddBlob(memberRefSig);
+            return sigBlob;
+        }
+
+        public EntityHandle GetStandaloneSig(MethodSignature sig)
+        {
+            var sigBlob = GetMethodSignatureBlobHandle(sig);
+            return _metadataBuilder.AddStandaloneSignature(sigBlob);
         }
 
         public EntityHandle GetMethodRef(MethodDesc method)
@@ -189,32 +315,35 @@ namespace Internal.TypeSystem
             }
             else
             {
-                EntityHandle typeHandle = GetTypeRef((MetadataType)method.OwningType);
+                EntityHandle typeHandle = GetTypeRef(method.OwningType);
                 StringHandle methodName = _metadataBuilder.GetOrAddString(method.Name);
                 var sig = method.GetTypicalMethodDefinition().Signature;
+                var sigBlob = GetMethodSignatureBlobHandle(sig);
 
-                EmbeddedSignatureDataEmitter signatureDataEmitter;
-                if (sig.HasEmbeddedSignatureData)
-                {
-                    signatureDataEmitter = new EmbeddedSignatureDataEmitter(sig.GetEmbeddedSignatureData(), this);
-                }
-                else
-                {
-                    signatureDataEmitter = EmbeddedSignatureDataEmitter.EmptySingleton;
-                }
-
-                BlobBuilder memberRefSig = new BlobBuilder();
-                EncodeMethodSignature(memberRefSig, sig, signatureDataEmitter);
-
-                if (!signatureDataEmitter.Complete)
-                    throw new ArgumentException();
-
-                var sigBlob = _metadataBuilder.GetOrAddBlob(memberRefSig);
                 methodHandle = _metadataBuilder.AddMemberReference(typeHandle, methodName, sigBlob);
             }
 
             _methodRefs.Add(method, methodHandle);
             return methodHandle;
+        }
+
+        public EntityHandle GetFieldRef(FieldDesc field)
+        {
+            if (_fieldRefs.TryGetValue(field, out var handle))
+            {
+                return handle;
+            }
+
+            EntityHandle fieldHandle;
+
+            EntityHandle typeHandle = GetTypeRef((MetadataType)field.OwningType);
+            StringHandle fieldName = _metadataBuilder.GetOrAddString(field.Name);
+
+            var sigBlob = GetFieldSignatureBlobHandle(field.GetTypicalFieldDefinition());
+            fieldHandle = _metadataBuilder.AddMemberReference(typeHandle, fieldName, sigBlob);
+
+            _fieldRefs.Add(field, fieldHandle);
+            return fieldHandle;
         }
 
         private void EncodeType(BlobBuilder blobBuilder, TypeDesc type, EmbeddedSignatureDataEmitter signatureDataEmitter)
@@ -540,6 +669,15 @@ namespace Internal.TypeSystem
             for (int i = 0; i < sig.Length; i++)
                 EncodeType(signatureBuilder, sig[i], signatureDataEmitter);
 
+            signatureDataEmitter.Pop();
+        }
+
+        void EncodeFieldSignature(BlobBuilder signatureBuilder, TypeDesc fieldType, EmbeddedSignatureDataEmitter signatureDataEmitter)
+        {
+            signatureDataEmitter.Push();
+            BlobEncoder signatureEncoder = new BlobEncoder(signatureBuilder);
+            signatureEncoder.FieldSignature();
+            EncodeType(signatureBuilder, fieldType, signatureDataEmitter);
             signatureDataEmitter.Pop();
         }
 

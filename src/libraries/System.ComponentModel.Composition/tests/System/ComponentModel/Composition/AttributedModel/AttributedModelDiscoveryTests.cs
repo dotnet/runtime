@@ -116,14 +116,14 @@ namespace System.ComponentModel.Composition.AttributedModel
 
         [PartMetadata("BaseOnlyName", 1)]
         [PartMetadata("OverrideName", 2)]
-        public class BasePartWithMetdata
+        public class BasePartWithMetadata
         {
 
         }
 
         [PartMetadata("DerivedOnlyName", 3)]
         [PartMetadata("OverrideName", 4)]
-        public class DerivedPartWithMetadata : BasePartWithMetdata
+        public class DerivedPartWithMetadata : BasePartWithMetadata
         {
 
         }

@@ -197,8 +197,13 @@ namespace System.Security.Cryptography.Xml
             return signedInfoElement;
         }
 
-        public void LoadXml(XmlElement value!!)
+        public void LoadXml(XmlElement value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             // SignedInfo
             XmlElement signedInfoElement = value;
             if (!signedInfoElement.LocalName.Equals("SignedInfo"))
@@ -271,8 +276,13 @@ namespace System.Security.Cryptography.Xml
             _cachedXml = signedInfoElement;
         }
 
-        public void AddReference(Reference reference!!)
+        public void AddReference(Reference reference)
         {
+            if (reference is null)
+            {
+                throw new ArgumentNullException(nameof(reference));
+            }
+
             reference.SignedXml = SignedXml;
             _references.Add(reference);
         }

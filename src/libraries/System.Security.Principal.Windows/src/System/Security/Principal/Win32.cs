@@ -28,7 +28,10 @@ namespace System.Security.Principal
             {
                 return policyHandle;
             }
-            else if (error == Interop.StatusOptions.STATUS_ACCESS_DENIED)
+
+            policyHandle.Dispose();
+
+            if (error == Interop.StatusOptions.STATUS_ACCESS_DENIED)
             {
                 throw new UnauthorizedAccessException();
             }

@@ -162,15 +162,15 @@ namespace System.Linq.Expressions.Interpreter
         public static Instruction Create(Type type) =>
             type.GetNonNullableType().GetTypeCode() switch
             {
-                TypeCode.SByte => s_SByte ?? (s_SByte = new ExclusiveOrSByte()),
-                TypeCode.Int16 => s_Int16 ?? (s_Int16 = new ExclusiveOrInt16()),
-                TypeCode.Int32 => s_Int32 ?? (s_Int32 = new ExclusiveOrInt32()),
-                TypeCode.Int64 => s_Int64 ?? (s_Int64 = new ExclusiveOrInt64()),
-                TypeCode.Byte => s_Byte ?? (s_Byte = new ExclusiveOrByte()),
-                TypeCode.UInt16 => s_UInt16 ?? (s_UInt16 = new ExclusiveOrUInt16()),
-                TypeCode.UInt32 => s_UInt32 ?? (s_UInt32 = new ExclusiveOrUInt32()),
-                TypeCode.UInt64 => s_UInt64 ?? (s_UInt64 = new ExclusiveOrUInt64()),
-                TypeCode.Boolean => s_Boolean ?? (s_Boolean = new ExclusiveOrBoolean()),
+                TypeCode.SByte => s_SByte ??= new ExclusiveOrSByte(),
+                TypeCode.Int16 => s_Int16 ??= new ExclusiveOrInt16(),
+                TypeCode.Int32 => s_Int32 ??= new ExclusiveOrInt32(),
+                TypeCode.Int64 => s_Int64 ??= new ExclusiveOrInt64(),
+                TypeCode.Byte => s_Byte ??= new ExclusiveOrByte(),
+                TypeCode.UInt16 => s_UInt16 ??= new ExclusiveOrUInt16(),
+                TypeCode.UInt32 => s_UInt32 ??= new ExclusiveOrUInt32(),
+                TypeCode.UInt64 => s_UInt64 ??= new ExclusiveOrUInt64(),
+                TypeCode.Boolean => s_Boolean ??= new ExclusiveOrBoolean(),
                 _ => throw ContractUtils.Unreachable,
             };
     }

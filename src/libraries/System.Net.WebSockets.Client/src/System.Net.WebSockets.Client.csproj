@@ -2,14 +2,18 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Browser</TargetFrameworks>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
+    <DefineConstants>$(DefineConstants);TARGET_BROWSER</DefineConstants>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Net\WebSockets\ClientWebSocket.cs" />
     <Compile Include="System\Net\WebSockets\ClientWebSocketDeflateConstants.cs" />
     <Compile Include="System\Net\WebSockets\ClientWebSocketOptions.cs" Condition="'$(TargetPlatformIdentifier)' != 'Browser'" />
     <Compile Include="$(CommonPath)System\Net\UriScheme.cs" Link="Common\System\Net\UriScheme.cs" />
     <Compile Include="$(CommonPath)System\Net\WebSockets\WebSocketValidate.cs" Link="Common\System\Net\WebSockets\WebSocketValidate.cs" />
+    <Compile Include="System\Net\WebSockets\HttpResponseHeadersReadOnlyCollection.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Browser'">
     <Compile Include="System\Net\WebSockets\WebSocketHandle.Managed.cs" />
@@ -17,8 +21,10 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="System\Net\WebSockets\WebSocketHandle.Browser.cs" />
+    <Compile Include="System\Net\WebSockets\BrowserWebSockets\BrowserInterop.cs" />
     <Compile Include="System\Net\WebSockets\BrowserWebSockets\BrowserWebSocket.cs" />
     <Compile Include="System\Net\WebSockets\BrowserWebSockets\ClientWebSocketOptions.cs" />
+    <Compile Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\src\System\Runtime\InteropServices\JavaScript\CancelablePromise.cs" Link="InteropServices\JavaScript\CancelablePromise.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
@@ -31,15 +37,15 @@
     <Reference Include="System.Net.WebHeaderCollection" />
     <Reference Include="System.Net.WebSockets" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Security.Cryptography" />
-    <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Threading.Channels" Condition="'$(TargetPlatformIdentifier)' == 'Browser'" />
     <Reference Include="System.Memory" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Runtime.InteropServices.JavaScript\src\System.Private.Runtime.InteropServices.JavaScript.csproj" Condition="'$(TargetPlatformIdentifier)' == 'Browser'" />
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <Reference Include="System.Runtime.InteropServices.JavaScript" />
   </ItemGroup>
 </Project>

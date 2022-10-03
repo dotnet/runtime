@@ -23,18 +23,62 @@ namespace System.Text.Json
         // Simple LRU cache for the public (de)serialize entry points that avoid some lookups in _cachingContext.
         private volatile JsonTypeInfo? _lastTypeInfo;
 
-        internal JsonTypeInfo GetOrAddJsonTypeInfo(Type type)
+        /// <summary>
+        /// Gets the <see cref="JsonTypeInfo"/> contract metadata resolved by the current <see cref="JsonSerializerOptions"/> instance.
+        /// </summary>
+        /// <param name="type">The type to resolve contract metadata for.</param>
+        /// <returns>The contract metadata resolved for <paramref name="type"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="type"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException"><paramref name="type"/> is not valid for serialization.</exception>
+        /// <remarks>
+        /// Returned metadata can be downcast to <see cref="JsonTypeInfo{T}"/> and used with the relevant <see cref="JsonSerializer"/> overloads.
+        ///
+        /// If the <see cref="JsonSerializerOptions"/> instance is locked for modification, the method will return a cached instance for the metadata.
+        /// </remarks>
+        public JsonTypeInfo GetTypeInfo(Type type)
         {
-            if (_cachingContext == null)
+            if (type is null)
             {
-                InitializeCachingContext();
-                Debug.Assert(_cachingContext != null);
+                ThrowHelper.ThrowArgumentNullException(nameof(type));
             }
 
-            return _cachingContext.GetOrAddJsonTypeInfo(type);
+            if (JsonTypeInfo.IsInvalidForSerialization(type))
+            {
+                ThrowHelper.ThrowArgumentException_CannotSerializeInvalidType(nameof(type), type, null, null);
+            }
+
+            return GetTypeInfoInternal(type, resolveIfMutable: true);
         }
 
-        internal bool TryGetJsonTypeInfo(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo)
+        /// <summary>
+        /// Same as GetTypeInfo but without validation and additional knobs.
+        /// </summary>
+        internal JsonTypeInfo GetTypeInfoInternal(Type type, bool ensureConfigured = true, bool resolveIfMutable = false)
+        {
+            JsonTypeInfo? typeInfo = null;
+
+            if (IsImmutable)
+            {
+                typeInfo = GetCachingContext()?.GetOrAddJsonTypeInfo(type);
+                if (ensureConfigured)
+                {
+                    typeInfo?.EnsureConfigured();
+                }
+            }
+            else if (resolveIfMutable)
+            {
+                typeInfo = GetTypeInfoNoCaching(type);
+            }
+
+            if (typeInfo == null)
+            {
+                ThrowHelper.ThrowNotSupportedException_NoMetadataForType(type, TypeInfoResolver);
+            }
+
+            return typeInfo;
+        }
+
+        internal bool TryGetTypeInfoCached(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo)
         {
             if (_cachingContext == null)
             {
@@ -45,39 +89,47 @@ namespace System.Text.Json
             return _cachingContext.TryGetJsonTypeInfo(type, out typeInfo);
         }
 
-        internal bool IsJsonTypeInfoCached(Type type) => _cachingContext?.IsJsonTypeInfoCached(type) == true;
-
         /// <summary>
         /// Return the TypeInfo for root API calls.
         /// This has an LRU cache that is intended only for public API calls that specify the root type.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal JsonTypeInfo GetOrAddJsonTypeInfoForRootType(Type type)
+        internal JsonTypeInfo GetTypeInfoForRootType(Type type)
         {
             JsonTypeInfo? jsonTypeInfo = _lastTypeInfo;
 
             if (jsonTypeInfo?.Type != type)
             {
-                jsonTypeInfo = GetOrAddJsonTypeInfo(type);
-                _lastTypeInfo = jsonTypeInfo;
+                _lastTypeInfo = jsonTypeInfo = GetTypeInfoInternal(type);
             }
 
             return jsonTypeInfo;
         }
 
+        // Caches the resolved JsonTypeInfo<object> for faster access during root-level object type serialization.
+        internal JsonTypeInfo ObjectTypeInfo
+        {
+            get
+            {
+                Debug.Assert(IsImmutable);
+                return _objectTypeInfo ??= GetTypeInfoInternal(JsonTypeInfo.ObjectType);
+            }
+        }
+
+        private JsonTypeInfo? _objectTypeInfo;
+
         internal void ClearCaches()
         {
             _cachingContext?.Clear();
             _lastTypeInfo = null;
+            _objectTypeInfo = null;
         }
 
-        private void InitializeCachingContext()
+        private CachingContext? GetCachingContext()
         {
-            _cachingContext = TrackedCachingContexts.GetOrCreate(this);
-            if (IsInitializedForReflectionSerializer)
-            {
-                _cachingContext.Options.IsInitializedForReflectionSerializer = true;
-            }
+            Debug.Assert(IsImmutable);
+
+            return _cachingContext ??= TrackedCachingContexts.GetOrCreate(this);
         }
 
         /// <summary>
@@ -88,8 +140,7 @@ namespace System.Text.Json
         /// </summary>
         internal sealed class CachingContext
         {
-            private readonly ConcurrentDictionary<Type, JsonConverter> _converterCache = new();
-            private readonly ConcurrentDictionary<Type, JsonTypeInfo> _jsonTypeInfoCache = new();
+            private readonly ConcurrentDictionary<Type, JsonTypeInfo?> _jsonTypeInfoCache = new();
 
             public CachingContext(JsonSerializerOptions options)
             {
@@ -99,15 +150,13 @@ namespace System.Text.Json
             public JsonSerializerOptions Options { get; }
             // Property only accessed by reflection in testing -- do not remove.
             // If changing please ensure that src/ILLink.Descriptors.LibraryBuild.xml is up-to-date.
-            public int Count => _converterCache.Count + _jsonTypeInfoCache.Count;
-            public JsonConverter GetOrAddConverter(Type type) => _converterCache.GetOrAdd(type, Options.GetConverterFromType);
-            public JsonTypeInfo GetOrAddJsonTypeInfo(Type type) => _jsonTypeInfoCache.GetOrAdd(type, Options.GetJsonTypeInfoFromContextOrCreate);
+            public int Count => _jsonTypeInfoCache.Count;
+
+            public JsonTypeInfo? GetOrAddJsonTypeInfo(Type type) => _jsonTypeInfoCache.GetOrAdd(type, Options.GetTypeInfoNoCaching);
             public bool TryGetJsonTypeInfo(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo) => _jsonTypeInfoCache.TryGetValue(type, out typeInfo);
-            public bool IsJsonTypeInfoCached(Type type) => _jsonTypeInfoCache.ContainsKey(type);
 
             public void Clear()
             {
-                _converterCache.Clear();
                 _jsonTypeInfoCache.Clear();
             }
         }
@@ -124,11 +173,14 @@ namespace System.Text.Json
                 new(concurrencyLevel: 1, capacity: MaxTrackedContexts, new EqualityComparer());
 
             private const int EvictionCountHistory = 16;
-            private static Queue<int> s_recentEvictionCounts = new(EvictionCountHistory);
+            private static readonly Queue<int> s_recentEvictionCounts = new(EvictionCountHistory);
             private static int s_evictionRunsToSkip;
 
             public static CachingContext GetOrCreate(JsonSerializerOptions options)
             {
+                Debug.Assert(options.IsImmutable, "Cannot create caching contexts for mutable JsonSerializerOptions instances");
+                Debug.Assert(options._typeInfoResolver != null);
+
                 ConcurrentDictionary<JsonSerializerOptions, WeakReference<CachingContext>> cache = s_cache;
 
                 if (cache.TryGetValue(options, out WeakReference<CachingContext>? wr) && wr.TryGetTarget(out CachingContext? ctx))
@@ -163,16 +215,11 @@ namespace System.Text.Json
 
                     // Use a defensive copy of the options instance as key to
                     // avoid capturing references to any caching contexts.
-                    var key = new JsonSerializerOptions(options)
-                    {
-                        // Copy fields ignored by the copy constructor
-                        // but are necessary to determine equivalence.
-                        _serializerContext = options._serializerContext,
-                    };
+                    var key = new JsonSerializerOptions(options);
                     Debug.Assert(key._cachingContext == null);
 
                     ctx = new CachingContext(options);
-                    bool success = cache.TryAdd(key, new(ctx));
+                    bool success = cache.TryAdd(key, new WeakReference<CachingContext>(ctx));
                     Debug.Assert(success);
 
                     return ctx;
@@ -269,6 +316,7 @@ namespace System.Text.Json
             public bool Equals(JsonSerializerOptions? left, JsonSerializerOptions? right)
             {
                 Debug.Assert(left != null && right != null);
+
                 return
                     left._dictionaryKeyPolicy == right._dictionaryKeyPolicy &&
                     left._jsonPropertyNamingPolicy == right._jsonPropertyNamingPolicy &&
@@ -287,10 +335,10 @@ namespace System.Text.Json
                     left._includeFields == right._includeFields &&
                     left._propertyNameCaseInsensitive == right._propertyNameCaseInsensitive &&
                     left._writeIndented == right._writeIndented &&
-                    left._serializerContext == right._serializerContext &&
-                    CompareConverters(left._converters, right._converters);
+                    left._typeInfoResolver == right._typeInfoResolver &&
+                    CompareLists(left._converters, right._converters);
 
-                static bool CompareConverters(ConverterList left, ConverterList right)
+                static bool CompareLists<TValue>(ConfigurationList<TValue> left, ConfigurationList<TValue> right)
                 {
                     int n;
                     if ((n = left.Count) != right.Count)
@@ -300,7 +348,7 @@ namespace System.Text.Json
 
                     for (int i = 0; i < n; i++)
                     {
-                        if (left[i] != right[i])
+                        if (!left[i]!.Equals(right[i]))
                         {
                             return false;
                         }
@@ -331,11 +379,15 @@ namespace System.Text.Json
                 hc.Add(options._includeFields);
                 hc.Add(options._propertyNameCaseInsensitive);
                 hc.Add(options._writeIndented);
-                hc.Add(options._serializerContext);
+                hc.Add(options._typeInfoResolver);
+                GetHashCode(ref hc, options._converters);
 
-                for (int i = 0; i < options._converters.Count; i++)
+                static void GetHashCode<TValue>(ref HashCode hc, ConfigurationList<TValue> list)
                 {
-                    hc.Add(options._converters[i]);
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        hc.Add(list[i]);
+                    }
                 }
 
                 return hc.ToHashCode();

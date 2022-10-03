@@ -361,7 +361,7 @@ namespace PInvokeTests
 
                 if (retval == false)
                 {
-                    TestFramework.LogError("01", "PInvokeTests->PosTest3 : Unexpected error occured on unmanaged side");
+                    TestFramework.LogError("01", "PInvokeTests->PosTest3 : Unexpected error occurred on unmanaged side");
                     return false;
                 }
                 if ((p.type != DialogResult.OK) || (!p.b))
@@ -389,7 +389,7 @@ namespace PInvokeTests
 
                 if (retval == false)
                 {
-                    TestFramework.LogError("01", "PInvokeTests->PosTest3 : Unexpected error occured on unmanaged side");
+                    TestFramework.LogError("01", "PInvokeTests->PosTest3 : Unexpected error occurred on unmanaged side");
                     return false;
                 }
                 if ((p.type != DialogResult.OK) || (!p.b))

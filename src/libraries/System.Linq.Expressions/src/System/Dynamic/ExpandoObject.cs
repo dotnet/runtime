@@ -300,7 +300,7 @@ namespace System.Dynamic
         #region Helper methods
         private void TryAddMember(string key, object? value)
         {
-            ContractUtils.RequiresNotNull(key, nameof(key));
+            ArgumentNullException.ThrowIfNull(key);
             // Pass null to the class, which forces lookup.
             TrySetValue(null, -1, value, key, ignoreCase: false, add: true);
         }
@@ -328,7 +328,7 @@ namespace System.Dynamic
 
             public KeyCollectionDebugView(ICollection<string> collection)
             {
-                ContractUtils.RequiresNotNull(collection, nameof(collection));
+                ArgumentNullException.ThrowIfNull(collection);
                 _collection = collection;
             }
 
@@ -396,7 +396,7 @@ namespace System.Dynamic
 
             public void CopyTo(string[] array, int arrayIndex)
             {
-                ContractUtils.RequiresNotNull(array, nameof(array));
+                ArgumentNullException.ThrowIfNull(array);
                 ContractUtils.RequiresArrayRange(array, arrayIndex, _expandoCount, nameof(arrayIndex), nameof(Count));
                 lock (_expando.LockObject)
                 {
@@ -467,7 +467,7 @@ namespace System.Dynamic
 
             public ValueCollectionDebugView(ICollection<object> collection)
             {
-                ContractUtils.RequiresNotNull(collection, nameof(collection));
+                ArgumentNullException.ThrowIfNull(collection);
                 _collection = collection;
             }
 
@@ -546,7 +546,7 @@ namespace System.Dynamic
 
             public void CopyTo(object?[] array, int arrayIndex)
             {
-                ContractUtils.RequiresNotNull(array, nameof(array));
+                ArgumentNullException.ThrowIfNull(array);
                 ContractUtils.RequiresArrayRange(array, arrayIndex, _expandoCount, nameof(arrayIndex), nameof(Count));
                 lock (_expando.LockObject)
                 {
@@ -630,7 +630,7 @@ namespace System.Dynamic
             }
             set
             {
-                ContractUtils.RequiresNotNull(key, nameof(key));
+                ArgumentNullException.ThrowIfNull(key);
                 // Pass null to the class, which forces lookup.
                 TrySetValue(null, -1, value, key, ignoreCase: false, add: false);
             }
@@ -643,7 +643,7 @@ namespace System.Dynamic
 
         bool IDictionary<string, object?>.ContainsKey(string key)
         {
-            ContractUtils.RequiresNotNull(key, nameof(key));
+            ArgumentNullException.ThrowIfNull(key);
 
             ExpandoData data = _data;
             int index = data.Class.GetValueIndexCaseSensitive(key);
@@ -652,7 +652,7 @@ namespace System.Dynamic
 
         bool IDictionary<string, object?>.Remove(string key)
         {
-            ContractUtils.RequiresNotNull(key, nameof(key));
+            ArgumentNullException.ThrowIfNull(key);
             // Pass null to the class, which forces lookup.
             return TryDeleteValue(null, -1, key, ignoreCase: false, deleteValue: Uninitialized);
         }
@@ -712,7 +712,7 @@ namespace System.Dynamic
 
         void ICollection<KeyValuePair<string, object?>>.CopyTo(KeyValuePair<string, object?>[] array, int arrayIndex)
         {
-            ContractUtils.RequiresNotNull(array, nameof(array));
+            ArgumentNullException.ThrowIfNull(array);
 
             // We want this to be atomic and not throw, though we must do the range checks inside this lock.
             lock (LockObject)
@@ -825,7 +825,7 @@ namespace System.Dynamic
 
             public override DynamicMetaObject BindGetMember(GetMemberBinder binder)
             {
-                ContractUtils.RequiresNotNull(binder, nameof(binder));
+                ArgumentNullException.ThrowIfNull(binder);
                 return BindGetOrInvokeMember(
                     binder,
                     binder.Name,
@@ -837,7 +837,7 @@ namespace System.Dynamic
 
             public override DynamicMetaObject BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args)
             {
-                ContractUtils.RequiresNotNull(binder, nameof(binder));
+                ArgumentNullException.ThrowIfNull(binder);
                 return BindGetOrInvokeMember(
                     binder,
                     binder.Name,
@@ -849,8 +849,8 @@ namespace System.Dynamic
 
             public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value)
             {
-                ContractUtils.RequiresNotNull(binder, nameof(binder));
-                ContractUtils.RequiresNotNull(value, nameof(value));
+                ArgumentNullException.ThrowIfNull(binder);
+                ArgumentNullException.ThrowIfNull(value);
 
                 ExpandoClass klass;
                 int index;
@@ -878,7 +878,7 @@ namespace System.Dynamic
 
             public override DynamicMetaObject BindDeleteMember(DeleteMemberBinder binder)
             {
-                ContractUtils.RequiresNotNull(binder, nameof(binder));
+                ArgumentNullException.ThrowIfNull(binder);
 
                 int index = Value.Class.GetValueIndex(binder.Name, binder.IgnoreCase, Value);
 

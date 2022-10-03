@@ -7,7 +7,8 @@ op1 and op2 can be static, local, class/struct member, function retval, 1D/2D/3D
 *****************************************************************************/
 
 using System;
-internal class i4rem
+using Xunit;
+public class i4rem
 {
     private static int s_i_s_op1 = 7;
     private static int s_i_s_op2 = 3;
@@ -91,7 +92,8 @@ internal class i4rem
         public decimal m_vt_op2;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool passed = true;
         //initialize class

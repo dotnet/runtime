@@ -16,6 +16,7 @@ namespace System.Diagnostics
             get { throw null; }
             set { }
         }
+        public static event System.EventHandler<System.Diagnostics.ActivityChangedEventArgs>? CurrentChanged { add { } remove { } }
         public static System.Diagnostics.ActivityIdFormat DefaultIdFormat { get { throw null; } set { } }
         public System.TimeSpan Duration { get { throw null; } }
         public static bool ForceDefaultIdFormat { get { throw null; } set { } }
@@ -24,6 +25,7 @@ namespace System.Diagnostics
             get { throw null; }
         }
 
+        public bool HasRemoteParent { get { throw null; } }
         public bool IsAllDataRequested { get { throw null; } set { throw null; } }
         public bool IsStopped { get { throw null; } }
         public System.Diagnostics.ActivityIdFormat IdFormat { get { throw null; } }
@@ -67,7 +69,23 @@ namespace System.Diagnostics
         protected virtual void Dispose(bool disposing) { throw null; }
         public void SetCustomProperty(string propertyName, object? propertyValue) { throw null; }
         public object? GetCustomProperty(string propertyName) { throw null; }
-        public ActivityContext Context { get { throw null; } }
+        public System.Diagnostics.ActivityContext Context { get { throw null; } }
+        public System.Diagnostics.Activity.Enumerator<System.Collections.Generic.KeyValuePair<string, object?>> EnumerateTagObjects() { throw null; }
+        public System.Diagnostics.Activity.Enumerator<ActivityEvent> EnumerateEvents() { throw null; }
+        public System.Diagnostics.Activity.Enumerator<ActivityLink> EnumerateLinks() { throw null; }
+
+        public struct Enumerator<T>
+        {
+            [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+            public readonly System.Diagnostics.Activity.Enumerator<T> GetEnumerator() { throw null; }
+            public readonly ref T Current { get { throw null; } }
+            public bool MoveNext() { throw null; }
+        }
+    }
+    public readonly struct ActivityChangedEventArgs
+    {
+        public System.Diagnostics.Activity? Previous { get { throw null; } init { throw null; } }
+        public System.Diagnostics.Activity? Current { get { throw null; } init { throw null; } }
     }
     public class ActivityTagsCollection : System.Collections.Generic.IDictionary<string, object?>
     {
@@ -137,10 +155,10 @@ namespace System.Diagnostics
         public bool HasListeners() { throw null; }
         public System.Diagnostics.Activity? CreateActivity(string name, System.Diagnostics.ActivityKind kind) { throw null; }
         public System.Diagnostics.Activity? CreateActivity(string name, System.Diagnostics.ActivityKind kind, System.Diagnostics.ActivityContext parentContext, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null, System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? links = null, System.Diagnostics.ActivityIdFormat idFormat = System.Diagnostics.ActivityIdFormat.Unknown) { throw null; }
-        public System.Diagnostics.Activity? CreateActivity(string name, System.Diagnostics.ActivityKind kind, string parentId, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null, System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? links = null, System.Diagnostics.ActivityIdFormat idFormat = System.Diagnostics.ActivityIdFormat.Unknown) { throw null; }
+        public System.Diagnostics.Activity? CreateActivity(string name, System.Diagnostics.ActivityKind kind, string? parentId, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null, System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? links = null, System.Diagnostics.ActivityIdFormat idFormat = System.Diagnostics.ActivityIdFormat.Unknown) { throw null; }
         public System.Diagnostics.Activity? StartActivity([System.Runtime.CompilerServices.CallerMemberName] string name = "", System.Diagnostics.ActivityKind kind = ActivityKind.Internal)  { throw null; }
         public System.Diagnostics.Activity? StartActivity(string name, System.Diagnostics.ActivityKind kind, System.Diagnostics.ActivityContext parentContext, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null, System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? links = null, System.DateTimeOffset startTime = default) { throw null; }
-        public System.Diagnostics.Activity? StartActivity(string name, System.Diagnostics.ActivityKind kind, string parentId, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null, System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? links = null, System.DateTimeOffset startTime = default) { throw null; }
+        public System.Diagnostics.Activity? StartActivity(string name, System.Diagnostics.ActivityKind kind, string? parentId, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null, System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? links = null, System.DateTimeOffset startTime = default) { throw null; }
         public System.Diagnostics.Activity? StartActivity(System.Diagnostics.ActivityKind kind, System.Diagnostics.ActivityContext parentContext = default, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null, System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? links = null, DateTimeOffset startTime = default, [System.Runtime.CompilerServices.CallerMemberName] string name = "") { throw null; }
         public static void AddActivityListener(System.Diagnostics.ActivityListener listener) { throw null; }
         public void Dispose() { throw null; }
@@ -179,8 +197,10 @@ namespace System.Diagnostics
         public virtual void OnActivityExport(System.Diagnostics.Activity activity, object? payload) { }
         public virtual void OnActivityImport(System.Diagnostics.Activity activity, object? payload) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of object being written to DiagnosticSource cannot be discovered statically.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("DiagnosticSource may require creating new generic types or methods, which requires creating code at runtime. This may not work when AOT compiling.")]
         public System.Diagnostics.Activity StartActivity(System.Diagnostics.Activity activity, object? args) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("The type of object being written to DiagnosticSource cannot be discovered statically.")]
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("DiagnosticSource may require creating new generic types or methods, which requires creating code at runtime. This may not work when AOT compiling.")]
         public void StopActivity(System.Diagnostics.Activity activity, object? args) { }
     }
     public enum ActivitySamplingResult
@@ -205,6 +225,7 @@ namespace System.Diagnostics
         public string Name { get { throw null; } }
         public System.DateTimeOffset Timestamp { get { throw null; } }
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> Tags { get { throw null; } }
+        public System.Diagnostics.Activity.Enumerator<System.Collections.Generic.KeyValuePair<string, object?>> EnumerateTagObjects() { throw null; }
     }
     public readonly struct ActivityContext : System.IEquatable<System.Diagnostics.ActivityContext>
     {
@@ -233,6 +254,7 @@ namespace System.Diagnostics
         public static bool operator ==(System.Diagnostics.ActivityLink left, System.Diagnostics.ActivityLink right) { throw null; }
         public static bool operator !=(System.Diagnostics.ActivityLink left, System.Diagnostics.ActivityLink right) { throw null; }
         public override int GetHashCode()  { throw null; }
+        public System.Diagnostics.Activity.Enumerator<System.Collections.Generic.KeyValuePair<string, object?>> EnumerateTagObjects() { throw null; }
     }
     public readonly struct ActivityCreationOptions<T>
     {

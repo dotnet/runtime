@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Reset();
         }
 
-        public IDisposable BeginScope<TState>(TState state)
+        public IDisposable BeginScope<TState>(TState state) where TState : notnull
         {
             return new Disposable();
         }

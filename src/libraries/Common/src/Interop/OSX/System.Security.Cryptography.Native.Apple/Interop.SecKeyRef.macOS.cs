@@ -54,10 +54,13 @@ internal static partial class Interop
 
             if (ret == 0)
             {
-                throw CreateExceptionForOSStatus(osStatus);
+                Exception e = CreateExceptionForOSStatus(osStatus);
+                keyHandle.Dispose();
+                throw e;
             }
 
             Debug.Fail($"SecKeyImportEphemeral returned {ret}");
+            keyHandle.Dispose();
             throw new CryptographicException();
         }
 

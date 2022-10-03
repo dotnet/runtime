@@ -47,7 +47,7 @@ namespace LibraryImportGenerator.UnitTests
             new object[] { typeof(System.Text.StringBuilder) },
         };
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(MarshallingRequiredTypes))]
         [MemberData(nameof(NoMarshallingRequiredTypes))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60909", typeof(PlatformDetection), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsWindows))]
@@ -64,7 +64,7 @@ namespace LibraryImportGenerator.UnitTests
                     .WithArguments("Method_Return"));
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(MarshallingRequiredTypes))]
         [MemberData(nameof(NoMarshallingRequiredTypes))]
         public async Task ByRef_ReportsDiagnostic(Type type)
@@ -97,7 +97,7 @@ unsafe partial class Test
                     .WithArguments("Method_Ref"));
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task SetLastErrorTrue_ReportsDiagnostic()
         {
             string source = @$"
@@ -121,7 +121,7 @@ partial class Test
                     .WithArguments("Method2"));
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(UnsupportedTypes))]
         public async Task UnsupportedType_NoDiagnostic(Type type)
         {
@@ -129,7 +129,7 @@ partial class Test
             await VerifyCS.VerifyAnalyzerAsync(source);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(UnmanagedType.Interface)]
         [InlineData(UnmanagedType.IDispatch)]
         [InlineData(UnmanagedType.IInspectable)]
@@ -152,7 +152,7 @@ unsafe partial class Test
             await VerifyCS.VerifyAnalyzerAsync(source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task LibraryImport_NoDiagnostic()
         {
             string source = @$"
@@ -171,7 +171,7 @@ partial class Test
             await VerifyCS.VerifyAnalyzerAsync(source);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task NotDllImport_NoDiagnostic()
         {
             string source = @$"

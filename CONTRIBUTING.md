@@ -63,7 +63,7 @@ Project maintainers will merge changes that improve the product significantly an
 
 Maintainers will not merge changes that have narrowly-defined benefits, due to compatibility risk. The .NET Core codebase is used by several Microsoft products (for example, ASP.NET Core, .NET Framework 4.x, Windows Universal Apps) to enable execution of managed code. Other companies are building products on top of .NET, too. We may revert changes if they are found to be breaking.
 
-Contributions must also satisfy the other published guidelines defined in this document.
+Contributions must also satisfy the other published guidelines defined in this document as well as in [pr-guide docs](docs/pr-guide.md).
 
 ### DOs and DON'Ts
 

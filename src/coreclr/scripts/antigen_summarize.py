@@ -68,7 +68,7 @@ def setup_args(args):
 
 def extract_assertion_error(text):
     """ Extract assertion error from stderr output
-    
+
     Args:
         text (string): The text that might contain an assertion
     Returns:
@@ -144,9 +144,9 @@ def print_unique_issues_summary(issues_directory, platform, arch, build_config):
         if len(issues_by_assert) > 0:
             f.write("# {} distinct assertion errors seen\n".format(len(issues_by_assert)))
             for message, issues in sorted(issues_by_assert.items(), key=lambda p: len(p[1]), reverse=True):
-                f.write("## ({} occurences) {}\n".format(len(issues), message))
+                f.write("## ({} occurrences) {}\n".format(len(issues), message))
                 (partition, issue) = issues[0]
-                f.write("Example occurence from {}:\n".format(partition))
+                f.write("Example occurrence from {}:\n".format(partition))
                 f.write("```scala\n")
                 f.write(issue.strip() + "\n")
                 f.write("```\n\n")
@@ -154,8 +154,8 @@ def print_unique_issues_summary(issues_directory, platform, arch, build_config):
         if len(remaining_issues) > 0:
             f.write("# {} uncategorized issues found\n".format(len(remaining_issues)))
 # Turned off since the output does not seem particularly useful
-#            for issue, occurences in sorted(remaining_issues.items(), key=lambda p: p[1], reverse=True):
-#                f.write("## {} occurences\n".format(occurences))
+#            for issue, occurrences in sorted(remaining_issues.items(), key=lambda p: p[1], reverse=True):
+#                f.write("## {} occurrences\n".format(occurrences))
 #                f.write("```scala\n")
 #                f.write(issue.strip() + "\n")
 #                f.write("```\n\n")

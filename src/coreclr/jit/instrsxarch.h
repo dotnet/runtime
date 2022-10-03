@@ -167,6 +167,7 @@ INSTMUL(imul_15,        "imul",             IUM_RD, BAD_CODE,     0x4400003868, 
 #define SSEDBL(c) PACK3(0xf2, 0x0f, c)
 #define PCKDBL(c) PACK3(0x66, 0x0f, c)
 #define PCKFLT(c) PACK2(0x0f,c)
+#define PCKMVB(c) PACK3(0x0F, 0x38, c)
 
 // These macros encode extra byte that is implicit in the macro.
 #define PACK4(byte1,byte2,byte3,byte4) (((byte1) << 16) | ((byte2) << 24) | (byte3) | ((byte4) << 8))
@@ -593,8 +594,8 @@ INST3(LAST_AVXVNNI_INSTRUCTION, "LAST_AVXVNNI_INSTRUCTION", IUM_WR, BAD_CODE, BA
 // BMI1
 INST3(FIRST_BMI_INSTRUCTION, "FIRST_BMI_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
 INST3(andn,             "andn",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF2),                             Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Undefined_PF  | Resets_CF     | INS_Flags_IsDstDstSrcAVXInstruction)    // Logical AND NOT
-INST3(blsi,             "blsi",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF3),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Extract Lowest Set Isolated Bit
-INST3(blsmsk,           "blsmsk",           IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF3),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Get Mask Up to Lowest Set Bit
+INST3(blsi,				"blsi",				IUM_WR, BAD_CODE,	  BAD_CODE,		SSE38(0xF3),							 Resets_OF		| Writes_SF		| Writes_ZF		| Undefined_AF	| Undefined_PF	| Writes_CF		| INS_Flags_IsDstDstSrcAVXInstruction)    // Extract Lowest Set Isolated Bit
+INST3(blsmsk,			"blsmsk",			IUM_WR, BAD_CODE,	  BAD_CODE,		SSE38(0xF3),							 Resets_OF		| Writes_SF		| Writes_ZF		| Undefined_AF	| Undefined_PF	| Resets_CF		| INS_Flags_IsDstDstSrcAVXInstruction)    // Get Mask Up to Lowest Set Bit
 INST3(blsr,             "blsr",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF3),                             Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_Flags_IsDstDstSrcAVXInstruction)    // Reset Lowest Set Bit
 INST3(bextr,            "bextr",            IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF7),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Bit Field Extract
 
@@ -604,6 +605,11 @@ INST3(pdep,             "pdep",             IUM_WR, BAD_CODE,     BAD_CODE,     
 INST3(pext,             "pext",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF5),                             INS_Flags_IsDstDstSrcAVXInstruction)                               // Parallel Bits Extract
 INST3(bzhi,             "bzhi",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF5),                             Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_Flags_IsDstDstSrcAVXInstruction)    // Zero High Bits Starting with Specified Bit Position
 INST3(mulx,             "mulx",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF6),                             INS_Flags_IsDstDstSrcAVXInstruction)                               // Unsigned Multiply Without Affecting Flags
+#ifdef TARGET_AMD64
+INST3(shlx,             "shlx",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF7),                             INS_Flags_IsDstDstSrcAVXInstruction)   //  Shift Logical Left Without Affecting Flags
+INST3(sarx,             "sarx",             IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF3, 0x0F, 0x38, 0xF7),           INS_Flags_IsDstDstSrcAVXInstruction)   //  Shift Arithmetic Right Without Affecting Flags
+INST3(shrx,             "shrx",             IUM_WR, BAD_CODE,     BAD_CODE,     PACK4(0xF2, 0x0F, 0x38, 0xF7),           INS_Flags_IsDstDstSrcAVXInstruction)   //  Shift Logical Right Without Affecting Flags
+#endif
 
 INST3(LAST_BMI_INSTRUCTION, "LAST_BMI_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
 
@@ -617,6 +623,9 @@ INST3(tzcnt,            "tzcnt",            IUM_WR, BAD_CODE,     BAD_CODE,     
 
 // LZCNT
 INST3(lzcnt,            "lzcnt",            IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0xBD),                            Undefined_OF   | Undefined_SF  | Writes_ZF     | Undefined_AF  | Undefined_PF  | Writes_CF )
+
+// MOVBE
+INST3(movbe,            "movbe",            IUM_WR, PCKMVB(0xF1), BAD_CODE,     PCKMVB(0xF0),                            INS_FLAGS_None )
 
 // POPCNT
 INST3(popcnt,           "popcnt",           IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0xB8),                            Resets_OF      | Resets_SF     | Writes_ZF     | Resets_AF     | Resets_PF     | Resets_CF )
@@ -678,6 +687,8 @@ INST1(nop,              "nop",              IUM_RD, 0x000090,                   
 INST1(pause,            "pause",            IUM_RD, 0x0090F3,                                                            INS_FLAGS_None )
 INST1(lock,             "lock",             IUM_RD, 0x0000F0,                                                            INS_FLAGS_None )
 INST1(leave,            "leave",            IUM_RD, 0x0000C9,                                                            INS_FLAGS_None )
+
+INST1(serialize,        "serialize",        IUM_RD, 0x0fe801,                                                            INS_FLAGS_None )
 
 INST1(neg,              "neg",              IUM_RW, 0x0018F6,                                                            Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF     | INS_FLAGS_Has_Wbit )
 INST1(not,              "not",              IUM_RW, 0x0010F6,                                                            INS_FLAGS_None | INS_FLAGS_Has_Wbit )

@@ -28,6 +28,9 @@ namespace System.IO.Tests
 
         protected abstract T CreateSymlink(string path, string pathToTarget);
 
+        // When the item is a link, indicates whether the .NET API will get/set the link itself, or its target. 
+        protected virtual bool ApiTargetsLink => true;
+
         protected T CreateSymlinkToItem(T item)
         {
             // Creates a Symlink to 'item' (target may or may not exist)
@@ -37,6 +40,7 @@ namespace System.IO.Tests
 
         protected abstract string GetItemPath(T item);
 
+        // requiresRoundtripping defines whether to convert DateTimeFormat 'a' to 'b' and then back to 'a' to verify the DateTimeFormat-conversion
         public abstract IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false);
 
         public class TimeFunction : Tuple<SetTime, GetTime, DateTimeKind>
@@ -52,17 +56,27 @@ namespace System.IO.Tests
             public SetTime Setter => Item1;
             public GetTime Getter => Item2;
             public DateTimeKind Kind => Item3;
+
+            public override string ToString()
+            {
+                return $"TimeFunction DateTimeKind.{Kind} Setter: {Setter.Method.Name} Getter: {Getter.Method.Name}";
+            }
         }
 
-        private void SettingUpdatesPropertiesCore(T item)
+        private void SettingUpdatesPropertiesCore(T item, T? linkTarget = default)
         {
             Assert.All(TimeFunctions(requiresRoundtripping: true), (function) =>
             {
+                bool isLink = linkTarget is not null;
+
                 // Checking that milliseconds are not dropped after setter.
                 // Emscripten drops milliseconds in Browser
                 DateTime dt = new DateTime(2014, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, function.Kind);
                 function.Setter(item, dt);
-                DateTime result = function.Getter(item);
+
+                T getTarget = !isLink || ApiTargetsLink ? item : linkTarget;
+                DateTime result = function.Getter(getTarget);
+
                 Assert.Equal(dt, result);
                 Assert.Equal(dt.ToLocalTime(), result.ToLocalTime());
 
@@ -102,7 +116,7 @@ namespace System.IO.Tests
         [PlatformSpecific(~TestPlatforms.Browser)] // Browser is excluded as it doesn't support symlinks
         [InlineData(false)]
         [InlineData(true)]
-        public void SettingUpdatesPropertiesOnSymlink(bool targetExists)
+        public void SettingPropertiesOnSymlink(bool targetExists)
         {
             // This test is in this class since it needs all of the time functions.
             // This test makes sure that the times are set on the symlink itself.
@@ -119,25 +133,37 @@ namespace System.IO.Tests
             T link = CreateSymlinkToItem(target);
             if (!targetExists)
             {
-                SettingUpdatesPropertiesCore(link);
+                // Don't check when settings update the target.
+                if (ApiTargetsLink)
+                {
+                    SettingUpdatesPropertiesCore(link, target);
+                }
             }
             else
             {
-                // Get the target's initial times
-                IEnumerable<TimeFunction> timeFunctions = TimeFunctions(requiresRoundtripping: true);
-                DateTime[] initialTimes = timeFunctions.Select((funcs) => funcs.Getter(target)).ToArray();
-
-                SettingUpdatesPropertiesCore(link);
-
-                // Ensure that we have the latest times.
-                if (target is FileSystemInfo fsi)
+                // When properties update link, verify the target properties don't change.
+                IEnumerable<TimeFunction>? timeFunctions = null;
+                DateTime[]? initialTimes = null;
+                if (ApiTargetsLink)
                 {
-                    fsi.Refresh();
+                    timeFunctions = TimeFunctions(requiresRoundtripping: true);
+                    initialTimes = timeFunctions.Select((funcs) => funcs.Getter(target)).ToArray();
                 }
 
-                // Ensure the target's times haven't changed.
-                DateTime[] updatedTimes = timeFunctions.Select((funcs) => funcs.Getter(target)).ToArray();
-                Assert.Equal(initialTimes, updatedTimes);
+                SettingUpdatesPropertiesCore(link, target);
+
+                // Ensure target properties haven't changed.
+                if (ApiTargetsLink)
+                {
+                    // Ensure that we have the latest times.
+                    if (target is FileSystemInfo fsi)
+                    {
+                        fsi.Refresh();
+                    }
+
+                    DateTime[] updatedTimes = timeFunctions.Select((funcs) => funcs.Getter(target)).ToArray();
+                    Assert.Equal(initialTimes, updatedTimes);
+                }
             }
         }
 
@@ -148,7 +174,7 @@ namespace System.IO.Tests
             T item = GetExistingItem();
 
             // These linq calls make an IEnumerable of pairs of functions that are not identical
-            // (eg. not (creationtime, creationtime)), includes both orders as seperate entries
+            // (eg. not (creationtime, creationtime)), includes both orders as separate entries
             // as they it have different behavior in reverse order (of functions), in addition
             // to the pairs of functions, there is a reverse bool that allows a test for both
             // increasing and decreasing timestamps as to not limit the test unnecessarily.

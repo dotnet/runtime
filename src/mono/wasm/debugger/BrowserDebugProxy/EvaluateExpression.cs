@@ -20,10 +20,11 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Text.RegularExpressions;
 using System.Globalization;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
-    internal static class EvaluateExpression
+    internal static class ExpressionEvaluator
     {
         internal static Script<object> script = CSharpScript.Create(
             "",
@@ -32,11 +33,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 typeof(Enumerable).Assembly,
                 typeof(JObject).Assembly
                 ));
-        private class FindVariableNMethodCall : CSharpSyntaxWalker
+        private sealed class ExpressionSyntaxReplacer : CSharpSyntaxWalker
         {
             private static Regex regexForReplaceVarName = new Regex(@"[^A-Za-z0-9_]", RegexOptions.Singleline);
             public List<IdentifierNameSyntax> identifiers = new List<IdentifierNameSyntax>();
-            public List<InvocationExpressionSyntax> methodCall = new List<InvocationExpressionSyntax>();
+            public List<InvocationExpressionSyntax> methodCalls = new List<InvocationExpressionSyntax>();
             public List<MemberAccessExpressionSyntax> memberAccesses = new List<MemberAccessExpressionSyntax>();
             public List<ElementAccessExpressionSyntax> elementAccess = new List<ElementAccessExpressionSyntax>();
             public List<object> argValues = new List<object>();
@@ -78,7 +79,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (node is InvocationExpressionSyntax)
                 {
                     if (visitCount == 1)
-                        methodCall.Add(node as InvocationExpressionSyntax);
+                        methodCalls.Add(node as InvocationExpressionSyntax);
                     hasMethodCalls = true;
                 }
 
@@ -120,7 +121,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 });
 
                  // 1.1 Replace all this.a() occurrences with this_a_ABDE
-                root = root.ReplaceNodes(methodCall, (m, _) =>
+                root = root.ReplaceNodes(methodCalls, (m, _) =>
                 {
                     string iesStr = m.ToString();
                     if (!methodCallToParamName.TryGetValue(iesStr, out string id_name))
@@ -143,7 +144,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
-                        string prefix = eaStr.Trim().Replace(".", "_").Replace("[", "_").Replace("]", "_");
+                        string prefix = regexForReplaceVarName.Replace(eaStr, "_");
                         id_name = $"{prefix}_{suffix}";
                         elementAccessToParamName[eaStr] = id_name;
                     }
@@ -166,6 +167,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         memberAccessValues[id_name] = value;
                         AddLocalVariableWithValue(id_name, value);
                     }
+                    // do not replace memberAccesses that were already replaced
+                    memberAccesses = new List<MemberAccessExpressionSyntax>();
                 }
 
                 if (id_values != null)
@@ -178,7 +181,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 if (method_values != null)
                 {
-                    foreach ((InvocationExpressionSyntax ies, JObject value) in methodCall.Zip(method_values))
+                    foreach ((InvocationExpressionSyntax ies, JObject value) in methodCalls.Zip(method_values))
                     {
                         string node_str = ies.ToString();
                         if (!methodCallToParamName.TryGetValue(node_str, out string id_name))
@@ -212,18 +215,18 @@ namespace Microsoft.WebAssembly.Diagnostics
                     variableDefinitions.Add(ConvertJSToCSharpLocalVariableAssignment(idName, value));
                 }
             }
+        }
 
-            private string ConvertJSToCSharpLocalVariableAssignment(string idName, JToken variable)
+        public static string ConvertJSToCSharpLocalVariableAssignment(string idName, JToken variable)
+        {
+            string typeRet;
+            object valueRet;
+            JToken value = variable["value"];
+            string type = variable["type"].Value<string>();
+            string subType = variable["subtype"]?.Value<string>();
+            switch (type)
             {
-                string typeRet;
-                object valueRet;
-                JToken value = variable["value"];
-                string type = variable["type"].Value<string>();
-                string subType = variable["subtype"]?.Value<string>();
-                string objectId = variable["objectId"]?.Value<string>();
-                switch (type)
-                {
-                    case "string":
+                case "string":
                     {
                         var str = value?.Value<string>();
                         str = str.Replace("\"", "\\\"");
@@ -231,100 +234,148 @@ namespace Microsoft.WebAssembly.Diagnostics
                         typeRet = "string";
                         break;
                     }
-                    case "symbol":
-                     {
-                         valueRet = $"'{value?.Value<char>()}'";
-                         typeRet = "char";
-                         break;
-                     }
-                    case "number":
-                        //casting to double and back to string would loose precision; so casting straight to string
-                        valueRet = value?.Value<string>();
-                        typeRet = "double";
+                case "symbol":
+                    {
+                        valueRet = $"'{value?.Value<char>()}'";
+                        typeRet = "char";
                         break;
-                    case "boolean":
-                        valueRet = value?.Value<string>().ToLower();
-                        typeRet = "bool";
-                        break;
-                    case "object":
-                        valueRet = "Newtonsoft.Json.Linq.JObject.FromObject(new {"
-                            + $"type = \"{type}\""
-                            + $", description = \"{variable["description"].Value<string>()}\""
-                            + $", className = \"{variable["className"].Value<string>()}\""
-                            + (subType != null ? $", subtype = \"{subType}\"" : "")
-                            + (objectId != null ? $", objectId = \"{objectId}\"" : "")
-                            + "})";
-                        typeRet = "object";
-                        break;
-                    case "void":
-                        valueRet = "Newtonsoft.Json.Linq.JObject.FromObject(new {"
-                                + $"type = \"object\","
-                                + $"description = \"object\","
-                                + $"className = \"object\","
-                                + $"subtype = \"null\""
-                                + "})";
-                        typeRet = "object";
-                        break;
-                    default:
-                        throw new Exception($"Evaluate of this datatype {type} not implemented yet");//, "Unsupported");
-                }
-                return $"{typeRet} {idName} = {valueRet};";
+                    }
+                case "number":
+                    //casting to double and back to string would loose precision; so casting straight to string
+                    valueRet = value?.Value<string>();
+                    typeRet = "double";
+                    break;
+                case "boolean":
+                    valueRet = value?.Value<string>().ToLowerInvariant();
+                    typeRet = "bool";
+                    break;
+                case "object":
+                    if (variable["subtype"]?.Value<string>() == "null")
+                    {
+                        (valueRet, typeRet) = GetNullObject(variable["className"]?.Value<string>());
+                    }
+                    else
+                    {
+                        if (!DotnetObjectId.TryParse(variable["objectId"], out DotnetObjectId objectId))
+                            throw new Exception($"Internal error: Cannot parse objectId for var {idName}, with value: {variable}");
+
+                        switch (objectId?.Scheme)
+                        {
+                            case "valuetype" when variable["isEnum"]?.Value<bool>() == true:
+                                typeRet = variable["className"]?.Value<string>();
+                                valueRet = $"({typeRet}) {value["value"].Value<double>()}";
+                                break;
+                            case "object":
+                            default:
+                                valueRet = "Newtonsoft.Json.Linq.JObject.FromObject(new {"
+                                        + $"type = \"{type}\""
+                                        + $", description = \"{variable["description"].Value<string>()}\""
+                                        + $", className = \"{variable["className"].Value<string>()}\""
+                                        + (subType != null ? $", subtype = \"{subType}\"" : "")
+                                        + (objectId != null ? $", objectId = \"{objectId}\"" : "")
+                                        + "})";
+                                typeRet = "object";
+                                break;
+                        }
+                    }
+                    break;
+                case "void":
+                    (valueRet, typeRet) = GetNullObject("object");
+                    break;
+                default:
+                    throw new Exception($"Evaluate of this datatype {type} not implemented yet");//, "Unsupported");
             }
+            return $"{typeRet} {idName} = {valueRet};";
+
+            static (string, string) GetNullObject(string className = "object")
+                => ("Newtonsoft.Json.Linq.JObject.FromObject(new {"
+                + $"type = \"object\","
+                + $"description = \"object\","
+                + $"className = \"{className}\","
+                + $"subtype = \"null\""
+                + "})",
+                "object");
         }
 
-        private static async Task<IList<JObject>> ResolveMemberAccessExpressions(IEnumerable<MemberAccessExpressionSyntax> member_accesses,
+        private static async Task<IList<JObject>> Resolve<T>(IList<T> collectionToResolve, MemberReferenceResolver resolver,
+                                Func<T, MemberReferenceResolver, CancellationToken, Task<JObject>> resolutionFunc, CancellationToken token)
+        {
+            IList<JObject> values = new List<JObject>();
+            foreach (T element in collectionToResolve)
+                values.Add(await resolutionFunc(element, resolver, token));
+            return values;
+        }
+
+        private static async Task<JObject> ResolveMemberAccessExpression(MemberAccessExpressionSyntax memberAccess,
                                 MemberReferenceResolver resolver, CancellationToken token)
         {
-            var memberAccessValues = new List<JObject>();
-            foreach (MemberAccessExpressionSyntax maes in member_accesses)
-            {
-                string memberAccessString = maes.ToString();
-                JObject value = await resolver.Resolve(memberAccessString, token);
-                if (value == null)
-                    throw new ReturnAsErrorException($"Failed to resolve member access for {memberAccessString}", "ReferenceError");
-
-                memberAccessValues.Add(value);
-            }
-
-            return memberAccessValues;
+            string memberAccessString = memberAccess.ToString();
+            JObject value = await resolver.Resolve(memberAccessString, token);
+            return value ?? throw new ReturnAsErrorException($"Failed to resolve member access for {memberAccessString}", "ReferenceError");
         }
 
-        private static async Task<IList<JObject>> ResolveIdentifiers(IEnumerable<IdentifierNameSyntax> identifiers, MemberReferenceResolver resolver, CancellationToken token)
+        private static async Task<JObject> ResolveIdentifier(IdentifierNameSyntax identifier,
+                                MemberReferenceResolver resolver, CancellationToken token)
         {
-            var values = new List<JObject>();
-            foreach (IdentifierNameSyntax var in identifiers)
-            {
-                JObject value = await resolver.Resolve(var.Identifier.Text, token);
-                if (value == null)
-                    throw new ReturnAsErrorException($"The name {var.Identifier.Text} does not exist in the current context", "ReferenceError");
-
-                values.Add(value);
-            }
-
-            return values;
+            JObject value = await resolver.Resolve(identifier.Identifier.Text, token);
+            return value ?? throw new ReturnAsErrorException($"The name {identifier.Identifier.Text} does not exist in the current context", "ReferenceError");
         }
 
-        private static async Task<IList<JObject>> ResolveMethodCalls(IEnumerable<InvocationExpressionSyntax> methodCalls, Dictionary<string, JObject> memberAccessValues, MemberReferenceResolver resolver, CancellationToken token)
+        private static async Task<(IList<JObject>, IList<JObject>, IList<JObject>)> ResolveMethodCalls(ExpressionSyntaxReplacer replacer, MemberReferenceResolver resolver, CancellationToken token)
         {
-            var values = new List<JObject>();
-            foreach (InvocationExpressionSyntax methodCall in methodCalls)
+            var methodCallValues = new List<JObject>(capacity: replacer.methodCalls.Count);
+            // used for replacing method call on primitive:
+            var maesValues = new List<JObject>(capacity: replacer.methodCalls.Count);
+            var identifierValues = new List<JObject>(capacity: replacer.methodCalls.Count);
+            InvocationExpressionSyntax[] methodCallsCopy = replacer.methodCalls.ToArray();
+            foreach (InvocationExpressionSyntax methodCall in methodCallsCopy)
             {
-                JObject value = await resolver.Resolve(methodCall, memberAccessValues, token);
+                JObject value = await resolver.Resolve(methodCall, replacer.memberAccessValues, token);
                 if (value == null)
-                    throw new ReturnAsErrorException($"Failed to resolve member access for {methodCall}", "ReferenceError");
-
-                values.Add(value);
+                {
+                    await ReplaceMethodCall(methodCall);
+                    continue;
+                }
+                methodCallValues.Add(value);
             }
-            return values;
+            return (methodCallValues, maesValues, identifierValues);
+
+            async Task ReplaceMethodCall(InvocationExpressionSyntax method)
+            {
+                /*
+                    Instead of invoking the method on the primitive type in the runtime,
+                    we emit a local for the primitive, and emit the method call itself
+                    in the script. For example:
+                    double test_propUlong_2c64c = 12;
+                    return (test_propUlong_2c64c.ToString());
+                */
+                replacer.methodCalls.Remove(method);
+                if (method.Expression is MemberAccessExpressionSyntax mses)
+                {
+                    // primitive is a member field:
+                    if (mses.Expression is MemberAccessExpressionSyntax msesExpr)
+                    {
+                        replacer.memberAccesses.Add(msesExpr);
+                        maesValues.Add(await ResolveMemberAccessExpression(msesExpr, resolver, token));
+                    }
+                    // primitive is a local value:
+                    else if (mses.Expression is IdentifierNameSyntax identifierExpr)
+                    {
+                        replacer.identifiers.Add(identifierExpr);
+                        identifierValues.Add(await ResolveIdentifier(identifierExpr, resolver, token));
+                    }
+                }
+            }
         }
 
-        private static async Task<IList<JObject>> ResolveElementAccess(IEnumerable<ElementAccessExpressionSyntax> elementAccesses, Dictionary<string, JObject> memberAccessValues, MemberReferenceResolver resolver, CancellationToken token)
+        private static async Task<IList<JObject>> ResolveElementAccess(ExpressionSyntaxReplacer replacer, MemberReferenceResolver resolver, CancellationToken token)
         {
             var values = new List<JObject>();
             JObject index = null;
+            IEnumerable<ElementAccessExpressionSyntax> elementAccesses = replacer.elementAccess;
             foreach (ElementAccessExpressionSyntax elementAccess in elementAccesses.Reverse())
             {
-                index = await resolver.Resolve(elementAccess, memberAccessValues, index, token);
+                index = await resolver.Resolve(elementAccess, replacer.memberAccessValues, index, replacer.variableDefinitions, token);
                 if (index == null)
                     throw new ReturnAsErrorException($"Failed to resolve element access for {elementAccess}", "ReferenceError");
             }
@@ -332,7 +383,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             return values;
         }
 
-        internal static async Task<JObject> CompileAndRunTheExpression(string expression, MemberReferenceResolver resolver, CancellationToken token)
+        internal static async Task<JObject> CompileAndRunTheExpression(
+            string expression, MemberReferenceResolver resolver, ILogger logger, CancellationToken token)
         {
             expression = expression.Trim();
             if (!expression.StartsWith('('))
@@ -344,8 +396,8 @@ namespace Microsoft.WebAssembly.Diagnostics
             SyntaxNode expressionTree = syntaxTree.GetCompilationUnitRoot(token);
             if (expressionTree == null)
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
-            FindVariableNMethodCall findVarNMethodCall = new FindVariableNMethodCall();
-            findVarNMethodCall.VisitInternal(expressionTree);
+            ExpressionSyntaxReplacer replacer = new ExpressionSyntaxReplacer();
+            replacer.VisitInternal(expressionTree);
             // this fails with `"a)"`
             // because the code becomes: return (a));
             // and the returned expression from GetExpressionFromSyntaxTree is `a`!
@@ -359,89 +411,69 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return value;
             }
 
-            IList<JObject> memberAccessValues = await ResolveMemberAccessExpressions(findVarNMethodCall.memberAccesses, resolver, token);
+            IList<JObject> memberAccessValues = await Resolve(replacer.memberAccesses, resolver, ResolveMemberAccessExpression, token);
+            IList<JObject> identifierValues = await Resolve(replacer.identifiers, resolver, ResolveIdentifier, token);
+            syntaxTree = replacer.ReplaceVars(syntaxTree, memberAccessValues, identifierValues, null, null);
 
             // eg. "this.dateTime", "  dateTime.TimeOfDay"
-            if (expressionTree.Kind() == SyntaxKind.SimpleMemberAccessExpression && findVarNMethodCall.memberAccesses.Count == 1)
+            if (expressionTree.Kind() == SyntaxKind.SimpleMemberAccessExpression && replacer.memberAccesses.Count == 1)
             {
                 return memberAccessValues[0];
             }
 
-            IList<JObject> identifierValues = await ResolveIdentifiers(findVarNMethodCall.identifiers, resolver, token);
-
-            syntaxTree = findVarNMethodCall.ReplaceVars(syntaxTree, memberAccessValues, identifierValues, null, null);
-
-            if (findVarNMethodCall.hasMethodCalls)
+            if (replacer.hasMethodCalls)
             {
                 expressionTree = syntaxTree.GetCompilationUnitRoot(token);
 
-                findVarNMethodCall.VisitInternal(expressionTree);
+                replacer.VisitInternal(expressionTree);
 
-                IList<JObject> methodValues = await ResolveMethodCalls(findVarNMethodCall.methodCall, findVarNMethodCall.memberAccessValues, resolver, token);
-
-                syntaxTree = findVarNMethodCall.ReplaceVars(syntaxTree, null, null, methodValues, null);
+                (IList<JObject> methodValues, IList<JObject> newMemberAccessValues, IList<JObject> newIdentifierValues) =
+                    await ResolveMethodCalls(replacer, resolver, token);
+                syntaxTree = replacer.ReplaceVars(syntaxTree, newMemberAccessValues, newIdentifierValues, methodValues, null);
             }
 
             // eg. "elements[0]"
-            if (findVarNMethodCall.hasElementAccesses)
+            if (replacer.hasElementAccesses)
             {
                 expressionTree = syntaxTree.GetCompilationUnitRoot(token);
 
-                findVarNMethodCall.VisitInternal(expressionTree);
+                replacer.VisitInternal(expressionTree);
 
-                IList<JObject> elementAccessValues = await ResolveElementAccess(findVarNMethodCall.elementAccess, findVarNMethodCall.memberAccessValues, resolver, token);
+                IList<JObject> elementAccessValues = await ResolveElementAccess(replacer, resolver, token);
 
-                syntaxTree = findVarNMethodCall.ReplaceVars(syntaxTree, null, null, null, elementAccessValues);
+                syntaxTree = replacer.ReplaceVars(syntaxTree, null, null, null, elementAccessValues);
             }
 
             expressionTree = syntaxTree.GetCompilationUnitRoot(token);
             if (expressionTree == null)
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
 
+            return await EvaluateSimpleExpression(resolver, syntaxTree.ToString(), expression, replacer.variableDefinitions, logger, token);
+        }
+
+        internal static async Task<JObject> EvaluateSimpleExpression(
+            MemberReferenceResolver resolver, string compiledExpression, string originalExpression, List<string> variableDefinitions, ILogger logger, CancellationToken token)
+        {
+            Script<object> newScript = script;
             try
             {
-                var newScript = script.ContinueWith(
-                    string.Join("\n", findVarNMethodCall.variableDefinitions) + "\nreturn " + syntaxTree.ToString());
-
+                newScript = script.ContinueWith(string.Join("\n", variableDefinitions) + "\nreturn " + compiledExpression + ";");
                 var state = await newScript.RunAsync(cancellationToken: token);
-                return JObject.FromObject(ConvertCSharpToJSType(state.ReturnValue, state.ReturnValue?.GetType()));
+                return JObject.FromObject(resolver.ConvertCSharpToJSType(state.ReturnValue, state.ReturnValue.GetType()));
             }
             catch (CompilationErrorException cee)
             {
-                throw new ReturnAsErrorException($"Cannot evaluate '{expression}': {cee.Message}", "CompilationError");
+                logger.LogDebug($"Cannot evaluate '{originalExpression}'. Script used to compile it: {newScript.Code}{Environment.NewLine}{cee.Message}");
+                throw new ReturnAsErrorException($"Cannot evaluate '{originalExpression}': {cee.Message}", "CompilationError");
             }
             catch (Exception ex)
             {
-                throw new Exception($"Internal Error: Unable to run {expression}, error: {ex.Message}.", ex);
+                throw new Exception($"Internal Error: Unable to run {originalExpression}, error: {ex.Message}.", ex);
             }
         }
-
-        private static readonly HashSet<Type> NumericTypes = new HashSet<Type>
-        {
-            typeof(decimal), typeof(byte), typeof(sbyte),
-            typeof(short), typeof(ushort),
-            typeof(int), typeof(uint),
-            typeof(float), typeof(double)
-        };
-
-        private static object ConvertCSharpToJSType(object v, Type type)
-        {
-            if (v == null)
-                return new { type = "object", subtype = "null", className = type?.ToString(), description = type?.ToString() };
-            if (v is string s)
-                return new { type = "string", value = s, description = s };
-            if (v is char c)
-                return new { type = "symbol", value = c, description = $"{(int)c} '{c}'" };
-            if (NumericTypes.Contains(v.GetType()))
-                return new { type = "number", value = v, description = Convert.ToDouble(v).ToString(CultureInfo.InvariantCulture) };
-            if (v is JObject)
-                return v;
-            return new { type = "object", value = v, description = v.ToString(), className = type.ToString() };
-        }
-
     }
 
-    internal class ReturnAsErrorException : Exception
+    internal sealed class ReturnAsErrorException : Exception
     {
         private Result _error;
         public Result Error

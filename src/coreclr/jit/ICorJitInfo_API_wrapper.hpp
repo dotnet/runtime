@@ -69,6 +69,15 @@ CorInfoInline WrapICorJitInfo::canInline(
     return temp;
 }
 
+void WrapICorJitInfo::beginInlining(
+          CORINFO_METHOD_HANDLE inlinerHnd,
+          CORINFO_METHOD_HANDLE inlineeHnd)
+{
+    API_ENTER(beginInlining);
+    wrapHnd->beginInlining(inlinerHnd, inlineeHnd);
+    API_LEAVE(beginInlining);
+}
+
 void WrapICorJitInfo::reportInliningDecision(
           CORINFO_METHOD_HANDLE inlinerHnd,
           CORINFO_METHOD_HANDLE inlineeHnd,
@@ -353,13 +362,14 @@ bool WrapICorJitInfo::isValidStringRef(
     return temp;
 }
 
-const char16_t* WrapICorJitInfo::getStringLiteral(
+int WrapICorJitInfo::getStringLiteral(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK,
-          int* length)
+          char16_t* buffer,
+          int bufferSize)
 {
     API_ENTER(getStringLiteral);
-    const char16_t* temp = wrapHnd->getStringLiteral(module, metaTOK, length);
+    int temp = wrapHnd->getStringLiteral(module, metaTOK, buffer, bufferSize);
     API_LEAVE(getStringLiteral);
     return temp;
 }
@@ -656,11 +666,12 @@ bool WrapICorJitInfo::getReadyToRunHelper(
 
 void WrapICorJitInfo::getReadyToRunDelegateCtorHelper(
           CORINFO_RESOLVED_TOKEN* pTargetMethod,
+          mdToken targetConstraint,
           CORINFO_CLASS_HANDLE delegateType,
           CORINFO_LOOKUP* pLookup)
 {
     API_ENTER(getReadyToRunDelegateCtorHelper);
-    wrapHnd->getReadyToRunDelegateCtorHelper(pTargetMethod, delegateType, pLookup);
+    wrapHnd->getReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, pLookup);
     API_LEAVE(getReadyToRunDelegateCtorHelper);
 }
 
@@ -954,6 +965,17 @@ void WrapICorJitInfo::setVars(
     API_ENTER(setVars);
     wrapHnd->setVars(ftn, cVars, vars);
     API_LEAVE(setVars);
+}
+
+void WrapICorJitInfo::reportRichMappings(
+          ICorDebugInfo::InlineTreeNode* inlineTreeNodes,
+          uint32_t numInlineTreeNodes,
+          ICorDebugInfo::RichOffsetMapping* mappings,
+          uint32_t numMappings)
+{
+    API_ENTER(reportRichMappings);
+    wrapHnd->reportRichMappings(inlineTreeNodes, numInlineTreeNodes, mappings, numMappings);
+    API_LEAVE(reportRichMappings);
 }
 
 void* WrapICorJitInfo::allocateArray(
@@ -1685,16 +1707,6 @@ uint32_t WrapICorJitInfo::getJitFlags(
     API_ENTER(getJitFlags);
     uint32_t temp = wrapHnd->getJitFlags(flags, sizeInBytes);
     API_LEAVE(getJitFlags);
-    return temp;
-}
-
-bool WrapICorJitInfo::doesFieldBelongToClass(
-          CORINFO_FIELD_HANDLE fldHnd,
-          CORINFO_CLASS_HANDLE cls)
-{
-    API_ENTER(doesFieldBelongToClass);
-    bool temp = wrapHnd->doesFieldBelongToClass(fldHnd, cls);
-    API_LEAVE(doesFieldBelongToClass);
     return temp;
 }
 

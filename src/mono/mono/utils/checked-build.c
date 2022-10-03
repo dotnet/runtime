@@ -30,6 +30,8 @@
 
 // Selective-enable support
 
+MONO_DISABLE_WARNING(4189) /* local variable is initialized but not referenced */
+
 // Returns true for check modes which are allowed by both the current DISABLE_ macros and the MONO_CHECK_MODE env var.
 // Argument may be a bitmask; if so, result is true if at least one specified mode is enabled.
 mono_bool
@@ -68,6 +70,8 @@ mono_check_mode_enabled (MonoCheckMode query)
 	}
 	return check_mode & query;
 }
+
+MONO_RESTORE_WARNING
 
 static int
 mono_check_transition_limit (void)

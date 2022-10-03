@@ -41,7 +41,7 @@ size_t GcInfoDumper::GetGCInfoSize()
 //static*
 void GcInfoDumper::LivePointerCallback (
         LPVOID          hCallback,      // callback data
-        OBJECTREF*      pObject,        // address of obect-reference we are reporting
+        OBJECTREF*      pObject,        // address of object-reference we are reporting
         uint32_t        flags           // is this a pinned and/or interior pointer
         DAC_ARG(DacSlotLocation loc))   // the location of the slot
 {

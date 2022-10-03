@@ -30,12 +30,24 @@ jobs:
     name: ${{ format('format_{0}{1}_{2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
     displayName: ${{ format('Formatting {0}{1} {2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
     helixType: 'format'
-    ${{ if eq(parameters.osGroup, 'windows') }}:
-      pool: 
-        vmImage: 'windows-2019'
-    ${{ if ne(parameters.osGroup, 'windows') }}:
-      pool: ${{ parameters.pool }}
-    variables: ${{ parameters.variables }}
+    pool: ${{ parameters.pool }}
+    variables:
+
+    - ${{ each variable in parameters.variables }}:
+      - ${{ if ne(variable.name, '') }}:
+        - name: ${{ variable.name }}
+          value: ${{ variable.value }}
+      - ${{ if ne(variable.group, '') }}:
+        - group: ${{ variable.group }}
+
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - name: PythonScript
+        value: 'py -3'
+
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - name: PythonScript
+        value: 'python3'
+
     condition: ${{ parameters.condition }}
     steps:
     - task: UseDotNet@2
@@ -46,18 +58,8 @@ jobs:
         version: '3.x'
         includePreviewVersions: true
         installationPath: $(Agent.ToolsDirectory)/dotnet
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: '3.x' 
-        addToPath: true 
-        architecture: 'x64'
-      condition: ${{ eq(parameters.osGroup, 'windows') }}
-    - task: PythonScript@0
-      displayName: Run tests/scripts/format.py
-      inputs:
-        scriptSource: 'filePath'
-        scriptPath: $(Build.SourcesDirectory)/src/tests/Common/scripts/format.py
-        arguments: '-c $(Build.SourcesDirectory)/src/coreclr -o $(osGroup) -a $(archType)'
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/coreclr/scripts/jitformat.py -c $(Build.SourcesDirectory)/src/coreclr -o $(osGroup) -a $(archType)
+      displayName: Run jitformat.py
     - task: PublishBuildArtifacts@1
       displayName: Publish format.patch
       inputs:

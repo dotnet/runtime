@@ -62,7 +62,7 @@ mono_metadata_update_cleanup_on_close (MonoImage *base_image)
 }
 
 void
-mono_image_effective_table_slow (const MonoTableInfo **t, int idx)
+mono_image_effective_table_slow (const MonoTableInfo **t, uint32_t idx)
 {
 	mono_component_hot_reload ()->effective_table_slow (t, idx);
 }
@@ -74,6 +74,12 @@ mono_image_load_enc_delta (int origin, MonoImage *base_image, gconstpointer dmet
 	if (is_ok (error)) {
 		mono_component_debugger ()->send_enc_delta (base_image, dmeta, dmeta_len, dpdb, dpdb_len);
 	}
+}
+
+const char*
+mono_enc_capabilities (void)
+{
+	return mono_component_hot_reload ()->get_capabilities();
 }
 
 static void
@@ -143,7 +149,7 @@ mono_metadata_has_updates_api (void)
  * Returns the number of rows from the specified table that the current thread can see.
  * If there's a EnC metadata update, this number may change.
  */
-int
+guint32
 mono_metadata_table_num_rows_slow (MonoImage *base_image, int table_index)
 {
 	return mono_component_hot_reload()->table_num_rows_slow (base_image, table_index);
@@ -181,4 +187,46 @@ MonoMethod *
 mono_metadata_update_find_method_by_name (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error)
 {
 	return mono_component_hot_reload()->find_method_by_name (klass, name, param_count, flags, error);
+}
+
+gboolean
+mono_metadata_update_get_typedef_skeleton (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_method_idx, uint32_t *method_count,  uint32_t *first_field_idx, uint32_t *field_count)
+{
+	return mono_component_hot_reload()->get_typedef_skeleton (base_image, typedef_token, first_method_idx, method_count, first_field_idx, field_count);
+}
+
+gboolean
+metadata_update_get_typedef_skeleton_properties (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_prop_idx, uint32_t *prop_count)
+{
+	return mono_component_hot_reload()->get_typedef_skeleton_properties (base_image, typedef_token, first_prop_idx, prop_count);
+}
+
+gboolean
+metadata_update_get_typedef_skeleton_events (MonoImage *base_image, uint32_t typedef_token, uint32_t *first_event_idx, uint32_t *event_count)
+{
+	return mono_component_hot_reload()->get_typedef_skeleton_events (base_image, typedef_token, first_event_idx, event_count);
+}
+
+MonoMethod *
+mono_metadata_update_added_methods_iter (MonoClass *klass, gpointer *iter)
+{
+	return mono_component_hot_reload()->added_methods_iter (klass, iter);
+}
+
+MonoClassField *
+mono_metadata_update_added_fields_iter (MonoClass *klass, gboolean lazy, gpointer *iter)
+{
+	return mono_component_hot_reload()->added_fields_iter (klass, lazy, iter);
+}
+
+uint32_t
+mono_metadata_update_get_num_fields_added (MonoClass *klass)
+{
+	return mono_component_hot_reload()->get_num_fields_added (klass);
+}
+
+uint32_t
+mono_metadata_update_get_num_methods_added (MonoClass *klass)
+{
+	return mono_component_hot_reload()->get_num_methods_added (klass);
 }

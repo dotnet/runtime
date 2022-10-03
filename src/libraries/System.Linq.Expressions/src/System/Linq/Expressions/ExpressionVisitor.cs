@@ -31,7 +31,7 @@ namespace System.Linq.Expressions
         /// <param name="node">The expression to visit.</param>
         /// <returns>The modified expression, if it or any subexpression was modified;
         /// otherwise, returns the original expression.</returns>
-        [return: NotNullIfNotNull("node")]
+        [return: NotNullIfNotNull(nameof(node))]
         public virtual Expression? Visit(Expression? node) => node?.Accept(this);
 
         /// <summary>
@@ -42,7 +42,7 @@ namespace System.Linq.Expressions
         /// otherwise, returns the original expression list.</returns>
         public ReadOnlyCollection<Expression> Visit(ReadOnlyCollection<Expression> nodes)
         {
-            ContractUtils.RequiresNotNull(nodes, nameof(nodes));
+            ArgumentNullException.ThrowIfNull(nodes);
             Expression[]? newNodes = null;
             for (int i = 0, n = nodes.Count; i < n; i++)
             {
@@ -90,8 +90,8 @@ namespace System.Linq.Expressions
         /// otherwise, returns the original node list.</returns>
         public static ReadOnlyCollection<T> Visit<T>(ReadOnlyCollection<T> nodes, Func<T, T> elementVisitor)
         {
-            ContractUtils.RequiresNotNull(nodes, nameof(nodes));
-            ContractUtils.RequiresNotNull(elementVisitor, nameof(elementVisitor));
+            ArgumentNullException.ThrowIfNull(nodes);
+            ArgumentNullException.ThrowIfNull(elementVisitor);
             T[]? newNodes = null;
             for (int i = 0, n = nodes.Count; i < n; i++)
             {
@@ -126,7 +126,7 @@ namespace System.Linq.Expressions
         /// <returns>The modified expression, if it or any subexpression was modified;
         /// otherwise, returns the original expression.</returns>
         /// <exception cref="InvalidOperationException">The visit method for this node returned a different type.</exception>
-        [return: NotNullIfNotNull("node")]
+        [return: NotNullIfNotNull(nameof(node))]
         public T? VisitAndConvert<T>(T? node, string? callerName) where T : Expression
         {
             if (node == null)
@@ -152,7 +152,7 @@ namespace System.Linq.Expressions
         /// <exception cref="InvalidOperationException">The visit method for this node returned a different type.</exception>
         public ReadOnlyCollection<T> VisitAndConvert<T>(ReadOnlyCollection<T> nodes, string? callerName) where T : Expression
         {
-            ContractUtils.RequiresNotNull(nodes, nameof(nodes));
+            ArgumentNullException.ThrowIfNull(nodes);
             T[]? newNodes = null;
             for (int i = 0, n = nodes.Count; i < n; i++)
             {
@@ -317,7 +317,7 @@ namespace System.Linq.Expressions
         /// <param name="node">The expression to visit.</param>
         /// <returns>The modified expression, if it or any subexpression was modified;
         /// otherwise, returns the original expression.</returns>
-        [return: NotNullIfNotNull("node")]
+        [return: NotNullIfNotNull(nameof(node))]
         protected virtual LabelTarget? VisitLabelTarget(LabelTarget? node)
         {
             return node;

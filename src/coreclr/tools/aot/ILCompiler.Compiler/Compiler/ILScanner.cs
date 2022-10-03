@@ -91,7 +91,7 @@ namespace ILCompiler
         {
             if (Logger.IsVerbose)
             {
-                Logger.Writer.WriteLine($"Scanning {methodsToCompile.Count} methods...");
+                Logger.LogMessage($"Scanning {methodsToCompile.Count} methods...");
             }
 
             Parallel.ForEach(
@@ -106,7 +106,7 @@ namespace ILCompiler
             {
                 if (Logger.IsVerbose)
                 {
-                    Logger.Writer.WriteLine($"Compiling {methodCodeNodeNeedingCode.Method}...");
+                    Logger.LogMessage($"Scanning {methodCodeNodeNeedingCode.Method}...");
                 }
 
                 CompileSingleMethod(methodCodeNodeNeedingCode);
@@ -366,16 +366,21 @@ namespace ILCompiler
         {
             private HashSet<TypeDesc> _constructedTypes = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _unsealedTypes = new HashSet<TypeDesc>();
-            private HashSet<TypeDesc> _abstractButNonabstractlyOverridenTypes = new HashSet<TypeDesc>();
+            private HashSet<TypeDesc> _abstractButNonabstractlyOverriddenTypes = new HashSet<TypeDesc>();
 
             public ScannedDevirtualizationManager(ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
             {
                 foreach (var node in markedNodes)
                 {
-                    if (node is ConstructedEETypeNode eetypeNode)
+                    TypeDesc type = node switch
                     {
-                        TypeDesc type = eetypeNode.Type;
+                        ConstructedEETypeNode eetypeNode => eetypeNode.Type,
+                        CanonicalEETypeNode canoneetypeNode => canoneetypeNode.Type,
+                        _ => null,
+                    };
 
+                    if (type != null)
+                    {
                         if (!type.IsInterface)
                         {
                             //
@@ -391,7 +396,8 @@ namespace ILCompiler
                             //    didn't scan the virtual methods on them.
                             //
 
-                            _constructedTypes.Add(type);
+                            if (!type.IsCanonicalSubtype(CanonicalFormKind.Any))
+                                _constructedTypes.Add(type);
 
                             TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
 
@@ -405,7 +411,7 @@ namespace ILCompiler
 
                                 bool currentTypeIsAbstract = ((MetadataType)baseType).IsAbstract;
                                 if (currentTypeIsAbstract && hasNonAbstractTypeInHierarchy)
-                                    added |= _abstractButNonabstractlyOverridenTypes.Add(baseType);
+                                    added |= _abstractButNonabstractlyOverriddenTypes.Add(baseType);
                                 hasNonAbstractTypeInHierarchy |= !currentTypeIsAbstract;
 
                                 baseType = baseType.BaseType;
@@ -451,7 +457,7 @@ namespace ILCompiler
                     // This lets us optimize out some unused virtual method implementations.
                     // Allowing this to devirtualize would cause trouble because we didn't scan the method
                     // and expected it would be optimized out.
-                    if (!_abstractButNonabstractlyOverridenTypes.Contains(mdType.ConvertToCanonForm(CanonicalFormKind.Specific)))
+                    if (!_abstractButNonabstractlyOverriddenTypes.Contains(mdType.ConvertToCanonForm(CanonicalFormKind.Specific)))
                     {
                         // FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE is close enough...
                         devirtualizationDetail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE;

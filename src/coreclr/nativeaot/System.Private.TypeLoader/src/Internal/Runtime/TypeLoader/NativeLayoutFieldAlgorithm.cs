@@ -19,7 +19,7 @@ namespace Internal.Runtime.TypeLoader
         private NoMetadataFieldLayoutAlgorithm _noMetadataFieldLayoutAlgorithm = new NoMetadataFieldLayoutAlgorithm();
         private const int InstanceAlignmentEntry = 4;
 
-        public unsafe override bool ComputeContainsGCPointers(DefType type)
+        public override unsafe bool ComputeContainsGCPointers(DefType type)
         {
             if (type.IsTemplateCanonical())
             {
@@ -138,7 +138,7 @@ namespace Internal.Runtime.TypeLoader
             return layout;
         }
 
-        private ComputedStaticFieldLayout ParseStaticRegionSizesFromNativeLayout(TypeDesc type)
+        private static ComputedStaticFieldLayout ParseStaticRegionSizesFromNativeLayout(TypeDesc type)
         {
             LayoutInt nonGcDataSize = LayoutInt.Zero;
             LayoutInt gcDataSize = LayoutInt.Zero;
@@ -271,7 +271,7 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="type">Type we are computing layout for</param>
         /// <param name="initialSize">What the initial Instance size should be</param>
         /// <param name="alignRequired">What is the basic alignment requirement of the base type or 1 if there is no base type to consider</param>
-        internal void ComputeTypeSizeBeforeFields(TypeDesc type, out LayoutInt initialSize, out LayoutInt alignRequired)
+        internal static void ComputeTypeSizeBeforeFields(TypeDesc type, out LayoutInt initialSize, out LayoutInt alignRequired)
         {
             // Account for the MethodTable pointer in objects...
             initialSize = new LayoutInt(IntPtr.Size);
@@ -298,7 +298,7 @@ namespace Internal.Runtime.TypeLoader
         /// <param name="fieldStorage">the conceptual location of the field</param>
         /// <param name="loadRequested">what sort of load was requested</param>
         /// <returns></returns>
-        internal bool ShouldProcessField(NativeFormat.FieldStorage fieldStorage, FieldLoadState loadRequested)
+        internal static bool ShouldProcessField(NativeFormat.FieldStorage fieldStorage, FieldLoadState loadRequested)
         {
             if (fieldStorage == (int)NativeFormat.FieldStorage.Instance)
             {
@@ -430,7 +430,7 @@ namespace Internal.Runtime.TypeLoader
             alignment = fieldDefType.InstanceFieldAlignment;
         }
 
-        public unsafe override ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
+        public override unsafe ValueTypeShapeCharacteristics ComputeValueTypeShapeCharacteristics(DefType type)
         {
             // Use this constant to make the code below more laconic
             const ValueTypeShapeCharacteristics NotHA = ValueTypeShapeCharacteristics.None;

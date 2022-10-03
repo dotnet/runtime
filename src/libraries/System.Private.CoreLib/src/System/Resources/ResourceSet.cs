@@ -58,9 +58,11 @@ namespace System.Resources
             ReadResources();
         }
 
-        public ResourceSet(IResourceReader reader!!)
+        public ResourceSet(IResourceReader reader)
             : this()
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             Reader = reader;
             ReadResources();
         }
@@ -81,8 +83,7 @@ namespace System.Resources
                 // Close the Reader in a thread-safe way.
                 IResourceReader? copyOfReader = Reader;
                 Reader = null!;
-                if (copyOfReader != null)
-                    copyOfReader.Close();
+                copyOfReader?.Close();
             }
             Reader = null!;
             _caseInsensitiveTable = null;
@@ -198,8 +199,10 @@ namespace System.Resources
             // to help with some WinRes lifetime issues.
         }
 
-        private object? GetObjectInternal(string name!!)
+        private object? GetObjectInternal(string name)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             Dictionary<object, object?>? copyOfTable = _table;  // Avoid a race with Dispose
 
             if (copyOfTable == null)

@@ -3,25 +3,25 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 using Xunit;
 
 namespace LibraryImportGenerator.IntegrationTests
 {
-    public struct SetLastErrorMarshaller
+    [CustomMarshaller(typeof(int), MarshalMode.Default, typeof(SetLastErrorMarshaller))]
+    public static class SetLastErrorMarshaller
     {
-        public int val;
-
-        public SetLastErrorMarshaller(int i)
+        public static int ConvertToUnmanaged(int i)
         {
-            val = i;
+            return i;
         }
 
-        public int ToManaged()
+        public static int ConvertToManaged(int i )
         {
-            // Explicity set the last error to something else on unmarshalling
-            Marshal.SetLastPInvokeError(val * 2);
-            return val;
+            // Explicitly set the last error to something else on unmarshalling
+            Marshal.SetLastPInvokeError(i * 2);
+            return i;
         }
     }
 

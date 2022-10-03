@@ -59,7 +59,7 @@ This is the algorithm we discussed above - only things that are reachable throug
 
 ### Assume code computed by static analysis is accessed dynamically ###
 
-The compiler can build insights into how reflection is used by analyzing the use of reflection APIs within the compiled program and using data flow analysis to see what elements are reflected on. This is effective for a lot of patterns (such as `typeof(Foo).GetMethod("Bar")`), but can also miss a lot of reflection use in practice. Currently, the .NET Native compiler used to build Universal Windows Apps can do this analysis. The CoreRT compiler is structured so that it can consume these inputs, but there's no component to provide them right now.
+The compiler can build insights into how reflection is used by analyzing the use of reflection APIs within the compiled program and using data flow analysis to see what elements are reflected on. This is effective for a lot of patterns (such as `typeof(Foo).GetMethod("Bar")`), but can also miss a lot of reflection use in practice.
 
 ### Assume nothing is accessed dynamically ###
 
@@ -93,3 +93,8 @@ To enable simulated `Assembly.GetCallingAssembly`, you will need:
   <ItemGroup>
     <RuntimeHostConfigurationOption Include="Switch.System.Reflection.Assembly.SimulatedCallingAssembly" Value="true" />
   </ItemGroup>
+```
+
+## Experimental Reflection Free Mode
+
+Reflection-free mode is a an experimental mode of the NativeAOT compiler and runtime that greatly reduces the functionality of the reflection APIs and demonstrates how far reflection trimming can get. See [Reflection Free Mode](reflection-free-mode.md) for mode details.

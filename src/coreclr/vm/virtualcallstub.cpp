@@ -103,6 +103,8 @@ UINT32 STUB_COLLIDE_WRITE_PCT = 100;
 UINT32 STUB_COLLIDE_MONO_PCT  =   0;
 #endif // STUB_LOGGING
 
+FastTable::NumCallStubs_t FastTable::NumCallStubs;
+
 FastTable* BucketTable::dead = NULL;    //linked list of the abandoned buckets
 
 DispatchCache *g_resolveCache = NULL;    //cache of dispatch stubs for in line lookup by resolve stubs.
@@ -135,7 +137,7 @@ void VirtualCallStubManager::StartupLogging()
     {
         FAULT_NOT_FATAL(); // We handle filecreation problems locally
         SString str;
-        str.Printf(W("StubLog_%d.log"), GetCurrentProcessId());
+        str.Printf("StubLog_%d.log", GetCurrentProcessId());
         g_hStubLogFile = WszCreateFile (str.GetUnicode(),
                                         GENERIC_WRITE,
                                         0,
@@ -530,7 +532,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     // Setup an expected number of items to commit and reserve
     //
     // The commit number is not that important as we always commit at least one page worth of items
-    // The reserve number shoudl be high enough to cover a typical lare application,
+    // The reserve number should be high enough to cover a typical lare application,
     // in order to minimize the fragmentation of our rangelists
     //
 
@@ -693,7 +695,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> indcell_heap_holder(
                                new LoaderHeap(indcell_heap_reserve_size, indcell_heap_commit_size,
                                               initReservedMem, indcell_heap_reserve_size,
-                                              NULL, FALSE));
+                                              NULL, UnlockedLoaderHeap::HeapKind::Data));
 
     initReservedMem += indcell_heap_reserve_size;
 
@@ -701,7 +703,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> cache_entry_heap_holder(
                                new LoaderHeap(cache_entry_heap_reserve_size, cache_entry_heap_commit_size,
                                               initReservedMem, cache_entry_heap_reserve_size,
-                                              &cache_entry_rangeList, FALSE));
+                                              &cache_entry_rangeList, UnlockedLoaderHeap::HeapKind::Data));
 
     initReservedMem += cache_entry_heap_reserve_size;
 
@@ -709,7 +711,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> lookup_heap_holder(
                                new LoaderHeap(lookup_heap_reserve_size, lookup_heap_commit_size,
                                               initReservedMem, lookup_heap_reserve_size,
-                                              &lookup_rangeList, TRUE));
+                                              &lookup_rangeList, UnlockedLoaderHeap::HeapKind::Executable));
 
     initReservedMem += lookup_heap_reserve_size;
 
@@ -717,7 +719,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> dispatch_heap_holder(
                                new LoaderHeap(dispatch_heap_reserve_size, dispatch_heap_commit_size,
                                               initReservedMem, dispatch_heap_reserve_size,
-                                              &dispatch_rangeList, TRUE));
+                                              &dispatch_rangeList, UnlockedLoaderHeap::HeapKind::Executable));
 
     initReservedMem += dispatch_heap_reserve_size;
 
@@ -725,7 +727,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> resolve_heap_holder(
                                new LoaderHeap(resolve_heap_reserve_size, resolve_heap_commit_size,
                                               initReservedMem, resolve_heap_reserve_size,
-                                              &resolve_rangeList, TRUE));
+                                              &resolve_rangeList, UnlockedLoaderHeap::HeapKind::Executable));
 
     initReservedMem += resolve_heap_reserve_size;
 
@@ -733,7 +735,7 @@ void VirtualCallStubManager::Init(BaseDomain *pDomain, LoaderAllocator *pLoaderA
     NewHolder<LoaderHeap> vtable_heap_holder(
                                new LoaderHeap(vtable_heap_reserve_size, vtable_heap_commit_size,
                                               initReservedMem, vtable_heap_reserve_size,
-                                              &vtable_rangeList, TRUE));
+                                              &vtable_rangeList, UnlockedLoaderHeap::HeapKind::Executable));
 
     initReservedMem += vtable_heap_reserve_size;
 
@@ -1177,8 +1179,9 @@ VTableCallHolder* VirtualCallStubManager::GenerateVTableCallStub(DWORD slot)
     } CONTRACT_END;
 
     //allocate from the requisite heap and copy the template over it.
-    VTableCallHolder * pHolder = (VTableCallHolder*)(void*)vtable_heap->AllocAlignedMem(VTableCallHolder::GetHolderSize(slot), CODE_SIZE_ALIGN);
-    ExecutableWriterHolder<VTableCallHolder> vtableWriterHolder(pHolder, sizeof(VTableCallHolder));
+    size_t vtableHolderSize = VTableCallHolder::GetHolderSize(slot);
+    VTableCallHolder * pHolder = (VTableCallHolder*)(void*)vtable_heap->AllocAlignedMem(vtableHolderSize, CODE_SIZE_ALIGN);
+    ExecutableWriterHolder<VTableCallHolder> vtableWriterHolder(pHolder, vtableHolderSize);
     vtableWriterHolder.GetRW()->Initialize(slot);
 
     ClrFlushInstructionCache(pHolder->stub(), pHolder->stub()->size());
@@ -1763,7 +1766,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
 #ifdef CHAIN_LOOKUP
                     pResolverFcn  = (PCODE) GetEEFuncEntryPoint(ResolveWorkerChainLookupAsmStub);
 #else // CHAIN_LOOKUP
-                    // Use the the slow resolver
+                    // Use the slow resolver
                     pResolverFcn = (PCODE) GetEEFuncEntryPoint(ResolveWorkerAsmStub);
 #endif
 
@@ -1890,7 +1893,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
             if (insertKind != DispatchCache::IK_NONE)
             {
                 // Because the TransparentProxy MT is process-global, we cannot cache targets for
-                // unshared interfaces because there is the possiblity of caching a
+                // unshared interfaces because there is the possibility of caching a
                 // <token, TPMT, target> entry where target is in AD1, and then matching against
                 // this entry from AD2 which happens to be using the same token, perhaps for a
                 // completely different interface.
@@ -2027,8 +2030,6 @@ VirtualCallStubManager::Resolver(
     }
 #endif // _DEBUG
 
-    g_IBCLogger.LogMethodTableAccess(pMT);
-
     // NOTE: CERs are not hardened against transparent proxy types,
     // so no need to worry about throwing an exception from here.
 
@@ -2044,7 +2045,6 @@ VirtualCallStubManager::Resolver(
     // this target and backpatch the callsite.
     if (!implSlot.IsNull())
     {
-        g_IBCLogger.LogDispatchTableSlotAccess(&implSlot);
 #if defined(LOGGING) || defined(_DEBUG)
         {
             pMD = implSlot.GetMethodDesc();
@@ -2111,10 +2111,6 @@ VirtualCallStubManager::Resolver(
                     //           to change.
                     fShouldPatch = TRUE;
                 }
-                else
-                {
-                    g_IBCLogger.LogMethodDescAccess(pMD);
-                }
             }
         }
     }
@@ -2158,8 +2154,8 @@ VirtualCallStubManager::Resolver(
         }
 
         ReflectClassBaseObject* resultTypeObj = ((ReflectClassBaseObject*)OBJECTREFToObject(impTypeObj));
-        TypeHandle resulTypeHnd = resultTypeObj->GetType();
-        MethodTable *pResultMT = resulTypeHnd.GetMethodTable();
+        TypeHandle resultTypeHnd = resultTypeObj->GetType();
+        MethodTable *pResultMT = resultTypeHnd.GetMethodTable();
 
         return Resolver(pResultMT, token, protectedObj, ppTarget, throwOnConflict);
     }
@@ -2750,7 +2746,7 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
 
         if ((cur_block != NULL) && (cur_block->used < counter_block::MAX_COUNTER_ENTRIES))
         {
-            counter_index = FastInterlockIncrement((LONG*)&cur_block->used) - 1;
+            counter_index = InterlockedIncrement((LONG*)&cur_block->used) - 1;
             if (counter_index < counter_block::MAX_COUNTER_ENTRIES)
             {
                 // Typical case we allocate the next free counter in the block
@@ -3155,7 +3151,7 @@ BOOL Prober::GrabEntry(size_t entryValue)
 {
     LIMITED_METHOD_CONTRACT;
 
-    return FastInterlockCompareExchangePointer(&base[index],
+    return InterlockedCompareExchangeT(&base[index],
         entryValue, static_cast<size_t>(CALL_STUB_EMPTY_ENTRY)) == CALL_STUB_EMPTY_ENTRY;
 }
 
@@ -3169,7 +3165,7 @@ inline void FastTable::IncrementCount()
     // at the same time and one increment is lost, then the size will be inaccurate and
     // BucketTable::GetMoreSpace will never succeed, resulting in an infinite loop trying
     // to add a new entry.
-    FastInterlockIncrement((LONG *)&contents[CALL_STUB_COUNT_INDEX]);
+    InterlockedIncrement((LONG *)&contents[CALL_STUB_COUNT_INDEX]);
 }
 
 size_t FastTable::Add(size_t entry, Prober* probe)
@@ -3255,7 +3251,7 @@ BOOL BucketTable::GetMoreSpace(const Prober* p)
     // replacing the entry, then we will just put the new bucket we just created in the
     // dead list instead of risking a race condition which would put a duplicate of the old
     // bucket in the dead list (and even possibly cause a cyclic list).
-    if (FastInterlockCompareExchangePointer(reinterpret_cast<FastTable * volatile *>(&buckets[index]), newBucket, oldBucket) != oldBucket)
+    if (InterlockedCompareExchangeT(reinterpret_cast<FastTable * volatile *>(&buckets[index]), newBucket, oldBucket) != oldBucket)
         oldBucket = newBucket;
 
     // Link the old onto the "to be reclaimed" list.
@@ -3264,7 +3260,7 @@ BOOL BucketTable::GetMoreSpace(const Prober* p)
     do {
         list = VolatileLoad(&dead);
         oldBucket->contents[CALL_STUB_DEAD_LINK] = (size_t) list;
-    } while (FastInterlockCompareExchangePointer(&dead, oldBucket, list) != list);
+    } while (InterlockedCompareExchangeT(&dead, oldBucket, list) != list);
 
 #ifdef _DEBUG
     {
@@ -3322,7 +3318,7 @@ void BucketTable::Reclaim()
     //We are assuming that we are assuming the actually having to do anything is rare
     //so that the interlocked overhead is acceptable.  If this is not true, then
     //we need to examine exactly how and when we may be called during shutdown.
-    if (FastInterlockCompareExchangePointer(&dead, NULL, list) != list)
+    if (InterlockedCompareExchangeT(&dead, NULL, list) != list)
         return;
 
 #ifdef _DEBUG
@@ -3346,7 +3342,7 @@ void BucketTable::Reclaim()
     while (list)
     {
         size_t next = list->contents[CALL_STUB_DEAD_LINK];
-        delete [] (size_t*)list;
+        delete list;
         list = (FastTable*) next;
     }
 }
@@ -3376,7 +3372,7 @@ BOOL BucketTable::SetUpProber(size_t keyA, size_t keyB, Prober *prober)
     // scenario each processor could see old memory values that would cause us to
     // leak memory.
     //
-    // Since this a a fairly hot code path and it is very rare for buckets[index]
+    // Since this is a fairly hot code path and it is very rare for buckets[index]
     // to be CALL_STUB_EMPTY_ENTRY, we can first try a non-volatile read and then
     // if it looks like we need to create a new FastTable we double check by doing
     // a volatile read.
@@ -3397,7 +3393,7 @@ BOOL BucketTable::SetUpProber(size_t keyA, size_t keyB, Prober *prober)
 
         // Doing an interlocked exchange here ensures that if someone has raced and beaten us to
         // replacing the entry, then we will free the new bucket we just created.
-        bucket = FastInterlockCompareExchangePointer(&buckets[index], reinterpret_cast<size_t>(newBucket), static_cast<size_t>(CALL_STUB_EMPTY_ENTRY));
+        bucket = InterlockedCompareExchangeT(&buckets[index], reinterpret_cast<size_t>(newBucket), static_cast<size_t>(CALL_STUB_EMPTY_ENTRY));
         if (bucket == CALL_STUB_EMPTY_ENTRY)
         {
             // We successfully wrote newBucket into buckets[index], overwritting the CALL_STUB_EMPTY_ENTRY value

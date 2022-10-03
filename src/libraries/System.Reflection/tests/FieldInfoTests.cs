@@ -435,6 +435,18 @@ namespace System.Reflection.Tests
             Assert.False(info.IsSecurityTransparent);
         }
 
+        [Fact]
+        public static void SetNullOnValueTypeDefaultToZero()
+        {
+            FieldInfoTests obj = new();
+            FieldInfo info = GetField(typeof(FieldInfoTests), nameof(intField));
+
+            info.SetValue(obj, 5);
+            Assert.Equal(5, obj.intField);
+            info.SetValue(obj, null);
+            Assert.Equal(0, obj.intField);
+        }
+
         private static FieldInfo GetField(Type type, string name)
         {
             return type.GetTypeInfo().DeclaredFields.FirstOrDefault(fieldInfo => fieldInfo.Name.Equals(name));

@@ -12,6 +12,13 @@
       <argument>ILLink</argument>
       <argument>IL2026</argument>
       <property name="Scope">member</property>
+      <property name="Target">M:Internal.Runtime.InteropServices.ComActivator.GetClassFactoryForTypeInternal(Internal.Runtime.InteropServices.ComActivationContextInternal*)</property>
+      <property name="Justification">This warning is left in the product so developers get an ILLink warning when trimming an app with System.Runtime.InteropServices.BuiltInComInterop.IsSupported.IsSupported=true.</property>
+    </attribute>
+    <attribute fullname="System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute">
+      <argument>ILLink</argument>
+      <argument>IL2026</argument>
+      <property name="Scope">member</property>
       <property name="Target">M:Internal.Runtime.InteropServices.InMemoryAssemblyLoader.LoadInMemoryAssembly(System.IntPtr,System.IntPtr)</property>
       <property name="Justification">This warning is left in the product so developers get an ILLink warning when trimming an app with Internal.Runtime.InteropServices.InMemoryAssemblyLoader.IsSupported=true.</property>
     </attribute>

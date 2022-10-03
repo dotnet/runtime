@@ -10,16 +10,16 @@ elseif (CLR_CMAKE_TARGET_FREEBSD)
 endif()
 
 if(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
-  include_directories(libunwind/include)
-  include_directories(libunwind/include/tdep)
-  include_directories(${CMAKE_CURRENT_BINARY_DIR}/libunwind/include)
-  include_directories(${CMAKE_CURRENT_BINARY_DIR}/libunwind/include/tdep)
+  include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include)
+  include_directories(${CLR_SRC_NATIVE_DIR}/external/libunwind/include/tdep)
+  include_directories(${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include)
+  include_directories(${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include/tdep)
 
-  add_subdirectory(libunwind)
+  add_subdirectory(${CLR_SRC_NATIVE_DIR}/external/libunwind_extras ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind)
 elseif(NOT CLR_CMAKE_TARGET_OSX)
   find_unwind_libs(UNWIND_LIBS)
 else()
-  add_subdirectory(libunwind)
+  add_subdirectory(${CLR_SRC_NATIVE_DIR}/external/libunwind_extras ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind)
 endif(NOT CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
 
 include(configure.cmake)
@@ -52,10 +52,14 @@ elseif(CLR_CMAKE_HOST_ARCH_ARM64)
   set(PAL_ARCH_SOURCES_DIR arm64)
 elseif(CLR_CMAKE_HOST_ARCH_LOONGARCH64)
   set(PAL_ARCH_SOURCES_DIR loongarch64)
+elseif(CLR_CMAKE_HOST_ARCH_RISCV64)
+  set(PAL_ARCH_SOURCES_DIR riscv64)
 elseif(CLR_CMAKE_HOST_ARCH_I386)
   set(PAL_ARCH_SOURCES_DIR i386)
 elseif(CLR_CMAKE_HOST_ARCH_S390X)
   set(PAL_ARCH_SOURCES_DIR s390x)
+elseif(CLR_CMAKE_HOST_ARCH_POWERPC64)
+  set(PAL_ARCH_SOURCES_DIR ppc64le)
 endif()
 
 if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
@@ -162,7 +166,6 @@ set(SOURCES
   misc/fmtmessage.cpp
   misc/jitsupport.cpp
   misc/miscpalapi.cpp
-  misc/msgbox.cpp
   misc/perfjitdump.cpp
   misc/strutil.cpp
   misc/sysinfo.cpp
@@ -251,11 +254,10 @@ endif(CLR_CMAKE_TARGET_OSX)
 
 if(NOT FEATURE_CROSSBITNESS)
   target_include_directories(coreclrpal_dac PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/libunwind/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/libunwind/include/tdep
-    ${CMAKE_CURRENT_BINARY_DIR}
-    ${CMAKE_CURRENT_BINARY_DIR}/libunwind/include
-    ${CMAKE_CURRENT_BINARY_DIR}/libunwind/include/tdep
+    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include
+    ${CLR_SRC_NATIVE_DIR}/external/libunwind/include/tdep
+    ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include
+    ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind/include/tdep
   )
 endif(NOT FEATURE_CROSSBITNESS)
 

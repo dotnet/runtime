@@ -30,7 +30,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             // File which is not readable by the current user.
             string unreadableFileName = Path.Combine(sslCertDir, "2.pem");
             File.WriteAllBytes(unreadableFileName, TestData.SelfSigned2PemBytes);
-            Assert.Equal(0, Interop.Sys.ChMod(unreadableFileName, 0));
+            File.SetUnixFileMode(unreadableFileName, UnixFileMode.None);
 
             // Valid file.
             File.WriteAllBytes(Path.Combine(sslCertDir, "3.pem"), TestData.SelfSigned3PemBytes);

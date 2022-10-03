@@ -15,4 +15,7 @@
           <method signature="System.Void .ctor()" />
       </type>
   </assembly>
+  <assembly fullname="System.ComponentModel.TypeConverter">
+      <type fullname="MS.Internal.Xml.Linq.ComponentModel.XDeferredSingleton`1" />
+  </assembly>
 </linker>

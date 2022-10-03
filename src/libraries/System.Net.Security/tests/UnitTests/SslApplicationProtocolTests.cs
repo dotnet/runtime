@@ -13,9 +13,9 @@ namespace System.Net.Security.Tests
         [Fact]
         public void Constants_Values_AreCorrect()
         {
-            Assert.Equal(new SslApplicationProtocol(new byte[] { 0x68, 0x33 }), SslApplicationProtocol.Http3);
-            Assert.Equal(new SslApplicationProtocol(new byte[] { 0x68, 0x32 }), SslApplicationProtocol.Http2);
-            Assert.Equal(new SslApplicationProtocol(new byte[] { 0x68, 0x74, 0x74, 0x70, 0x2f, 0x31, 0x2e, 0x31 }), SslApplicationProtocol.Http11);
+            Assert.Equal(new SslApplicationProtocol("h3"u8.ToArray()), SslApplicationProtocol.Http3);
+            Assert.Equal(new SslApplicationProtocol("h2"u8.ToArray()), SslApplicationProtocol.Http2);
+            Assert.Equal(new SslApplicationProtocol("http/1.1"u8.ToArray()), SslApplicationProtocol.Http11);
         }
 
         [Fact]
@@ -42,7 +42,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public void Constructor_ByteArray_Copies()
         {
-            byte[] expected = Encoding.UTF8.GetBytes("hello");
+            byte[] expected = "hello"u8.ToArray();
             SslApplicationProtocol byteProtocol = new SslApplicationProtocol(expected);
 
             ArraySegment<byte> arraySegment;

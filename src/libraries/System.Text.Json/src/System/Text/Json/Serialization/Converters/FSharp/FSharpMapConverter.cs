@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -15,6 +15,7 @@ namespace System.Text.Json.Serialization.Converters
         private readonly Func<IEnumerable<Tuple<TKey, TValue>>, TMap> _mapConstructor;
 
         [RequiresUnreferencedCode(FSharpCoreReflectionProxy.FSharpCoreUnreferencedCodeMessage)]
+        [RequiresDynamicCode(FSharpCoreReflectionProxy.FSharpCoreUnreferencedCodeMessage)]
         public FSharpMapConverter()
         {
             _mapConstructor = FSharpCoreReflectionProxy.Instance.CreateFSharpMapConstructor<TMap, TKey, TValue>();
@@ -25,8 +26,9 @@ namespace System.Text.Json.Serialization.Converters
             ((List<Tuple<TKey, TValue>>)state.Current.ReturnValue!).Add (new Tuple<TKey, TValue>(key, value));
         }
 
-        internal override bool CanHaveIdMetadata => false;
+        internal override bool CanHaveMetadata => false;
 
+        internal override bool SupportsCreateObjectDelegate => false;
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state)
         {
             state.Current.ReturnValue = new List<Tuple<TKey, TValue>>();

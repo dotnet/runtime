@@ -11,7 +11,6 @@ namespace System
     // CONTRACT with Runtime
     // The Object type is one of the primitives understood by the compilers and runtime
     // Data Contract: Single field of type MethodTable*
-    // VTable Contract: The first vtable slot should be the finalizer for object => The first virtual method in the object class should be the Finalizer
 
     public unsafe class Object
     {
@@ -25,10 +24,6 @@ namespace System
         {
         }
 
-        // Allow an object to free resources before the object is reclaimed by the GC.
-        // CONTRACT with runtime: This method's virtual slot number is hardcoded in the binder. It is an
-        // implementation detail where it winds up at runtime.
-        // **** Do not add any virtual methods in this class ahead of this ****
 #pragma warning disable CA1821 // Remove empty Finalizers
         ~Object()
         {
@@ -45,19 +40,7 @@ namespace System
             return 0;
         }
 
-        internal MethodTable* MethodTable
-        {
-            get
-            {
-                // NOTE:  if managed code can be run when the GC has objects marked, then this method is
-                //        unsafe.  But, generically, we don't expect managed code such as this to be allowed
-                //        to run while the GC is running.
-                return m_pEEType;
-            }
-        }
-
-        [Runtime.CompilerServices.Intrinsic]
-        internal static extern MethodTable* MethodTableOf<T>();
+        internal MethodTable* GetMethodTable() => m_pEEType;
 
         [StructLayout(LayoutKind.Sequential)]
         private class RawData
@@ -74,9 +57,9 @@ namespace System
         /// Return size of all data (excluding ObjHeader and MethodTable*).
         /// Note that for strings/arrays this would include the Length as well.
         /// </summary>
-        internal uint GetRawDataSize()
+        internal uint GetRawObjectDataSize()
         {
-            return MethodTable->BaseSize - (uint)sizeof(ObjHeader) - (uint)sizeof(MethodTable*);
+            return GetMethodTable()->BaseSize - (uint)sizeof(ObjHeader) - (uint)sizeof(MethodTable*);
         }
     }
 }

@@ -36,34 +36,12 @@ namespace System.Configuration
             }
         }
 
-        private XmlEscaper Escaper
-        {
-            get
-            {
-                if (_escaper == null)
-                {
-                    _escaper = new XmlEscaper();
-                }
-
-                return _escaper;
-            }
-        }
+        private XmlEscaper Escaper => _escaper ??= new XmlEscaper();
 
         /// <summary>
         /// We maintain a single instance of the ClientSettingsStore per instance of provider.
         /// </summary>
-        private ClientSettingsStore Store
-        {
-            get
-            {
-                if (_store == null)
-                {
-                    _store = new ClientSettingsStore();
-                }
-
-                return _store;
-            }
-        }
+        private ClientSettingsStore Store => _store ??= new ClientSettingsStore();
 
         /// <summary>
         /// Abstract ProviderBase method.
@@ -87,9 +65,9 @@ namespace System.Configuration
             string sectionName = GetSectionName(context);
 
             // Look for this section in both applicationSettingsGroup and userSettingsGroup
-            IDictionary appSettings = Store.ReadSettings(sectionName, false);
-            IDictionary userSettings = Store.ReadSettings(sectionName, true);
-            ConnectionStringSettingsCollection connStrings = Store.ReadConnectionStrings();
+            IDictionary appSettings = ClientSettingsStore.ReadSettings(sectionName, false);
+            IDictionary userSettings = ClientSettingsStore.ReadSettings(sectionName, true);
+            ConnectionStringSettingsCollection connStrings = ClientSettingsStore.ReadConnectionStrings();
 
             // Now map each SettingProperty to the right StoredSetting and deserialize the value if found.
             foreach (SettingsProperty setting in properties)
@@ -209,12 +187,12 @@ namespace System.Configuration
             // declaration is necessary, it goes in the roaming config file in preference to the local config file.
             if (roamingUserSettings.Count > 0)
             {
-                Store.WriteSettings(sectionName, true, roamingUserSettings);
+                ClientSettingsStore.WriteSettings(sectionName, true, roamingUserSettings);
             }
 
             if (localUserSettings.Count > 0)
             {
-                Store.WriteSettings(sectionName, false, localUserSettings);
+                ClientSettingsStore.WriteSettings(sectionName, false, localUserSettings);
             }
         }
 
@@ -227,8 +205,8 @@ namespace System.Configuration
             string sectionName = GetSectionName(context);
 
             // First revert roaming, then local
-            Store.RevertToParent(sectionName, true);
-            Store.RevertToParent(sectionName, false);
+            ClientSettingsStore.RevertToParent(sectionName, true);
+            ClientSettingsStore.RevertToParent(sectionName, false);
         }
 
         /// <summary>
@@ -372,7 +350,7 @@ namespace System.Configuration
         /// <summary>
         /// Gleans information from the SettingsContext and determines the name of the config section.
         /// </summary>
-        private string GetSectionName(SettingsContext context)
+        private static string GetSectionName(SettingsContext context)
         {
             string groupName = (string)context["GroupName"];
             string key = (string)context["SettingsKey"];
@@ -438,7 +416,7 @@ namespace System.Configuration
         /// ApplicationScopedSettingAttribute. This method determines whether this setting is user-scoped
         /// or not. It will throw if none or both of the attributes are present.
         /// </summary>
-        private bool IsUserSetting(SettingsProperty setting)
+        private static bool IsUserSetting(SettingsProperty setting)
         {
             bool isUser = setting.Attributes[typeof(UserScopedSettingAttribute)] is UserScopedSettingAttribute;
             bool isApp = setting.Attributes[typeof(ApplicationScopedSettingAttribute)] is ApplicationScopedSettingAttribute;
@@ -477,10 +455,7 @@ namespace System.Configuration
                 }
             }
 
-            if (serializedValue == null)
-            {
-                serializedValue = string.Empty;
-            }
+            serializedValue ??= string.Empty;
 
             // We need to escape string serialized values
             if (setting.SerializeAs == SettingsSerializeAs.String)

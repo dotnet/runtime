@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Text;
+using System.Diagnostics;
+
 namespace System.Xml.Schema
 {
-    using System.Collections;
-    using System.Text;
-    using System.Diagnostics;
-
     internal class BaseProcessor
     {
         private readonly XmlNameTable _nameTable;
@@ -35,17 +35,7 @@ namespace System.Xml.Schema
             get { return _nameTable; }
         }
 
-        protected SchemaNames SchemaNames
-        {
-            get
-            {
-                if (_schemaNames == null)
-                {
-                    _schemaNames = new SchemaNames(_nameTable);
-                }
-                return _schemaNames;
-            }
-        }
+        protected SchemaNames SchemaNames => _schemaNames ??= new SchemaNames(_nameTable);
 
         protected ValidationEventHandler? EventHandler
         {
@@ -163,7 +153,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private bool IsValidAttributeGroupRedefine(XmlSchemaObject existingObject, XmlSchemaObject item, XmlSchemaObjectTable table)
+        private static bool IsValidAttributeGroupRedefine(XmlSchemaObject existingObject, XmlSchemaObject item, XmlSchemaObjectTable table)
         {
             XmlSchemaAttributeGroup attGroup = (item as XmlSchemaAttributeGroup)!;
             XmlSchemaAttributeGroup existingAttGroup = (existingObject as XmlSchemaAttributeGroup)!;
@@ -182,7 +172,7 @@ namespace System.Xml.Schema
             return false;
         }
 
-        private bool IsValidGroupRedefine(XmlSchemaObject existingObject, XmlSchemaObject item, XmlSchemaObjectTable table)
+        private static bool IsValidGroupRedefine(XmlSchemaObject existingObject, XmlSchemaObject item, XmlSchemaObjectTable table)
         {
             XmlSchemaGroup group = (item as XmlSchemaGroup)!;
             XmlSchemaGroup existingGroup = (existingObject as XmlSchemaGroup)!;
@@ -201,7 +191,7 @@ namespace System.Xml.Schema
             return false;
         }
 
-        private bool IsValidTypeRedefine(XmlSchemaObject existingObject, XmlSchemaObject item, XmlSchemaObjectTable table)
+        private static bool IsValidTypeRedefine(XmlSchemaObject existingObject, XmlSchemaObject item, XmlSchemaObjectTable table)
         {
             XmlSchemaType schemaType = (item as XmlSchemaType)!;
             XmlSchemaType existingType = (existingObject as XmlSchemaType)!;
@@ -282,10 +272,7 @@ namespace System.Xml.Schema
             {
                 _errorCount++;
             }
-            if (_eventHandler != null)
-            {
-                _eventHandler(null, new ValidationEventArgs(e, severity));
-            }
+            _eventHandler?.Invoke(null, new ValidationEventArgs(e, severity));
         }
     };
 } // namespace System.Xml

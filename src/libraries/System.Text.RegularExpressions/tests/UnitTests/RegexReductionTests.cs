@@ -354,6 +354,10 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("[ab]*[^a]*", "[ab]*(?>[^a]*)")]
         [InlineData("[aa]*[^a]*", "(?>a*)(?>[^a]*)")]
         [InlineData("a??", "")]
+        [InlineData("ab?c", "a(?>b?)c")]
+        [InlineData("ab??c", "a(?>b?)c")]
+        [InlineData("ab{2}?c", "abbc")]
+        [InlineData("ab{2,3}?c", "a(?>b{2,3})c")]
         //[InlineData("(abc*?)", "(ab)")] // TODO https://github.com/dotnet/runtime/issues/66031: Need to reorganize optimizations to avoid an extra Empty being left at the end of the tree
         [InlineData("a{1,3}?", "a{1,4}?")]
         [InlineData("a{2,3}?", "a{2}")]
@@ -377,6 +381,9 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(?:w*)+\\.", "(?>w*)+\\.")]
         [InlineData("(a[bcd]e*)*fg", "(a[bcd](?>e*))*fg")]
         [InlineData("(\\w[bcd]\\s*)*fg", "(\\w[bcd](?>\\s*))*fg")]
+        // Nothing handling
+        [InlineData(@"\wabc(?!)def", "(?!)")]
+        [InlineData(@"\wabc(?!)def|ghi(?!)", "(?!)")]
         // IgnoreCase set creation
         [InlineData("(?i)abcd", "[Aa][Bb][Cc][Dd]")]
         [InlineData("(?i)abcd|efgh", "[Aa][Bb][Cc][Dd]|[Ee][Ff][Gg][Hh]")]
@@ -395,7 +402,7 @@ namespace System.Text.RegularExpressions.Tests
             string expectedStr = RegexParser.Parse(expected, RegexOptions.None, CultureInfo.InvariantCulture).Root.ToString();
             if (actualStr != expectedStr)
             {
-                throw new Xunit.Sdk.EqualException(actualStr, expectedStr);
+                throw new Xunit.Sdk.EqualException(expectedStr, actualStr);
             }
         }
 
@@ -457,6 +464,12 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData("(w+)+", "((?>w+))+")]
         [InlineData("(w{1,2})+", "((?>w{1,2}))+")]
         [InlineData("(?:ab|cd|ae)f", "(?>ab|cd|ae)f")]
+        [InlineData("ab?(b)", "a(?>b?)(b)")]
+        [InlineData("ab??c?", "a(?>b??)c?")]
+        [InlineData("ab{2,3}?c?", "a(?>b{2,3}?)c?")]
+        [InlineData("(?:ab??){2}", "(?:a(?>b??)){2}")]
+        [InlineData("(?:ab??){2, 3}", "(?:a(?>b??)){2, 3}")]
+        [InlineData("ab??(b)", "a(?>b??)(b)")]
         // Loops inside alternation constructs
         [InlineData("(abc*|def)chi", "(ab(?>c*)|def)chi")]
         [InlineData("(abc|def*)fhi", "(abc|de(?>f*))fhi")]
@@ -477,7 +490,7 @@ namespace System.Text.RegularExpressions.Tests
             string expectedStr = RegexParser.Parse(expected, RegexOptions.None, CultureInfo.InvariantCulture).Root.ToString();
             if (actualStr == expectedStr)
             {
-                throw new Xunit.Sdk.NotEqualException(actualStr, expectedStr);
+                throw new Xunit.Sdk.NotEqualException(expectedStr, actualStr);
             }
         }
 

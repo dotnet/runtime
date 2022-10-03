@@ -329,7 +329,7 @@ protected:
 
 public:
     BaseBucketParamsManager(GenericModeBlock* pGenericModeBlock, TypeOfReportedError typeOfError, PCODE initialFaultingPc, Thread* pFaultingThread, OBJECTREF* pThrownException);
-    static int CopyStringToBucket(_Out_writes_(targetMaxLength) LPWSTR pTargetParam, int targetMaxLength, _In_z_ LPCWSTR pSource, bool cannonicalize = false);
+    static int CopyStringToBucket(_Out_writes_(targetMaxLength) LPWSTR pTargetParam, int targetMaxLength, _In_z_ LPCWSTR pSource, bool canonicalize = false);
     // function that consumers should call to populate the GMB
     virtual void PopulateBucketParameters() = 0;
 };
@@ -451,13 +451,14 @@ void BaseBucketParamsManager::GetAppName(_Out_writes_(maxLength) WCHAR* targetPa
     }
     CONTRACTL_END;
 
-    HMODULE hModule = WszGetModuleHandle(NULL);
     PathString appPath;
-
-
     if (GetCurrentModuleFileName(appPath) == S_OK)
     {
-        CopyStringToBucket(targetParam, maxLength, appPath);
+        // Get just the module name; remove the path
+        const WCHAR* appName = wcsrchr(appPath, DIRECTORY_SEPARATOR_CHAR_W);
+        appName = appName ? appName + 1 : appPath;
+
+        CopyStringToBucket(targetParam, maxLength, appName);
     }
     else
     {
@@ -475,10 +476,7 @@ void BaseBucketParamsManager::GetAppVersion(_Out_writes_(maxLength) WCHAR* targe
     }
     CONTRACTL_END;
 
-    HMODULE hModule = WszGetModuleHandle(NULL);
     PathString appPath;
-
-
     WCHAR verBuf[23] = {0};
     USHORT major, minor, build, revision;
 
@@ -1051,7 +1049,7 @@ OBJECTREF BaseBucketParamsManager::GetRealExceptionObject()
 //   pTargetParam     -- the destination buffer.
 //   targetMaxLength  -- the max length of the parameter.
 //   pSource          -- the input string.
-//   cannonicalize    -- if true, cannonicalize the filename (tolower)
+//   canonicalize    -- if true, canonicalize the filename (tolower)
 //
 // Returns
 //   the number of characters copied to the output buffer.  zero indicates an
@@ -1070,7 +1068,7 @@ OBJECTREF BaseBucketParamsManager::GetRealExceptionObject()
 //      because that is what a SHA1 hash coded in base32 will require.
 //    - the maxlen does not include the terminating nul.
 //------------------------------------------------------------------------------
-int BaseBucketParamsManager::CopyStringToBucket(_Out_writes_(targetMaxLength) LPWSTR pTargetParam, int targetMaxLength, _In_z_ LPCWSTR pSource, bool cannonicalize)
+int BaseBucketParamsManager::CopyStringToBucket(_Out_writes_(targetMaxLength) LPWSTR pTargetParam, int targetMaxLength, _In_z_ LPCWSTR pSource, bool canonicalize)
 {
     CONTRACTL
     {
@@ -1122,9 +1120,9 @@ int BaseBucketParamsManager::CopyStringToBucket(_Out_writes_(targetMaxLength) LP
     {
         wcsncpy_s(pTargetParam, DW_MAX_BUCKETPARAM_CWC, pSource, srcLen);
 
-        if (cannonicalize)
+        if (canonicalize)
         {
-            // cannonicalize filenames so that the same exceptions tend to the same buckets.
+            // canonicalize filenames so that the same exceptions tend to the same buckets.
             _wcslwr_s(pTargetParam, DW_MAX_BUCKETPARAM_CWC);
         }
         return srcLen;

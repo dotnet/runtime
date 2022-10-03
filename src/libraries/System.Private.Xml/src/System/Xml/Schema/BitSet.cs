@@ -227,7 +227,7 @@ namespace System.Xml.Schema
             return false;
         }
 
-        private int Subscript(int bitIndex)
+        private static int Subscript(int bitIndex)
         {
             return bitIndex >> bitSlotShift;
         }

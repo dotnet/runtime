@@ -223,7 +223,7 @@ namespace System.Runtime.Tests
             [MethodImpl(MethodImplOptions.NoInlining)]
             static DependentHandle Initialize(out object target, out WeakReference weakDependent)
             {
-                target = new();
+                target = new object();
 
                 object dependent = new();
 
@@ -268,7 +268,7 @@ namespace System.Runtime.Tests
             Assert.Throws<InvalidOperationException>(() =>
             {
                 DependentHandle handle = default;
-                handle.Target = new();
+                handle.Target = new object();
             });
         }
 
@@ -281,7 +281,7 @@ namespace System.Runtime.Tests
 
                 try
                 {
-                    handle.Target = new();
+                    handle.Target = new object();
                 }
                 finally
                 {
@@ -296,7 +296,7 @@ namespace System.Runtime.Tests
             Assert.Throws<InvalidOperationException>(() =>
             {
                 DependentHandle handle = default;
-                handle.Dependent = new();
+                handle.Dependent = new object();
             });
         }
 

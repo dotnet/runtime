@@ -3,17 +3,21 @@
     <NativeOptimizationDataSupported Condition="'$(TargetOS)' == 'windows' And ('$(TargetArchitecture)' == 'x64' Or '$(TargetArchitecture)' == 'x86')">true</NativeOptimizationDataSupported>
     <NativeOptimizationDataSupported Condition="'$(TargetOS)' == 'Linux' And '$(TargetArchitecture)' == 'x64'">true</NativeOptimizationDataSupported>
     <NativeOptimizationDataSupported Condition="'$(NoPgoOptimize)' == 'true'">false</NativeOptimizationDataSupported>
-    <NativeOptimizationDataSupported Condition="'$(DotNetBuildFromSource)' == 'true'">false</NativeOptimizationDataSupported>
     <NativeOptimizationDataSupported Condition="'$(Configuration)' != 'Release'">false</NativeOptimizationDataSupported>
 
     <_NativeOptimizationDataPackageTarget>$(TargetOS.ToLower())-$(TargetArchitecture.ToLower())</_NativeOptimizationDataPackageTarget>
     <_NativeOptimizationDataPackageTarget Condition="'$(TargetOS)' == 'windows'">windows_nt-$(TargetArchitecture.ToLower())</_NativeOptimizationDataPackageTarget>
 
   </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="optimization.$(_NativeOptimizationDataPackageTarget).PGO.CoreCLR"
+  <ItemGroup Condition="'$(optimizationPGOCoreCLRVersion)'!='' and '$(DotNetBuildFromSource)' != 'true'">
+    <PackageReference Include="optimization.windows_nt-x64.PGO.CoreCLR"
       Version="$(optimizationPGOCoreCLRVersion)"
-      Condition="'$(optimizationPGOCoreCLRVersion)'!='' And '$(NativeOptimizationDataSupported)'=='true'"
+      GeneratePathProperty="true" />
+    <PackageReference Include="optimization.windows_nt-x86.PGO.CoreCLR"
+      Version="$(optimizationPGOCoreCLRVersion)"
+      GeneratePathProperty="true" />
+    <PackageReference Include="optimization.linux-x64.PGO.CoreCLR"
+      Version="$(optimizationPGOCoreCLRVersion)"
       GeneratePathProperty="true" />
   </ItemGroup>
 
@@ -40,7 +44,7 @@
     <ItemGroup>
       <PgoPackagePathPropertyItemList Include="$(PgoPackagePathProperty)" />
       <PgoPackagePathPropertyItemList>
-        <PgoPackagePath>$(%(Identity))</PgoPackagePath>
+        <PgoPackagePath>$(%(Identity).TrimEnd('\\'))</PgoPackagePath>
       </PgoPackagePathPropertyItemList>
     </ItemGroup>
 

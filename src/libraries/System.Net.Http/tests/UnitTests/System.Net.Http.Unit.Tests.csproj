@@ -1,10 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-MacCatalyst;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-Android</TargetFrameworks>
-    <Nullable>annotations</Nullable>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
@@ -79,6 +78,8 @@
          Link="ProductionCode\System\Net\Http\EmptyReadStream.cs" />
     <Compile Include="..\..\src\System\Net\Http\FormUrlEncodedContent.cs"
              Link="ProductionCode\System\Net\Http\FormUrlEncodedContent.cs" />
+    <Compile Include="..\..\src\System\Net\Http\GlobalHttpSettings.cs"
+             Link="ProductionCode\System\Net\Http\GlobalHttpSettings.cs"/>
     <Compile Include="..\..\src\System\Net\Http\HeaderEncodingSelector.cs"
              Link="ProductionCode\System\Net\Http\HeaderEncodingSelector.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\AltSvcHeaderParser.cs"
@@ -99,6 +100,8 @@
              Link="ProductionCode\System\Net\Http\Headers\ContentDispositionHeaderValue.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\ContentRangeHeaderValue.cs"
              Link="ProductionCode\System\Net\Http\Headers\ContentRangeHeaderValue.cs" />
+    <Compile Include="..\..\src\System\Net\Http\Headers\CookieHeaderParser.cs"
+             Link="ProductionCode\System\Net\Http\Headers\CookieHeaderParser.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\DateHeaderParser.cs"
              Link="ProductionCode\System\Net\Http\Headers\DateHeaderParser.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\EntityTagHeaderValue.cs"
@@ -205,10 +208,10 @@
              Link="ProductionCode\System\Net\Http\RequestRetryType.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpRequestMessage.cs"
              Link="ProductionCode\System\Net\Http\HttpRequestMessage.cs" />
-   <Compile Include="..\..\src\System\Net\Http\HttpRequestOptions.cs"
-             Link="ProductionCode\System\Net\Http\HttpRequestOptions.cs" />
-   <Compile Include="..\..\src\System\Net\Http\HttpRequestOptionsKey.cs"
-             Link="ProductionCode\System\Net\Http\HttpRequestOptionsKey.cs" />
+    <Compile Include="..\..\src\System\Net\Http\HttpRequestOptions.cs"
+              Link="ProductionCode\System\Net\Http\HttpRequestOptions.cs" />
+    <Compile Include="..\..\src\System\Net\Http\HttpRequestOptionsKey.cs"
+              Link="ProductionCode\System\Net\Http\HttpRequestOptionsKey.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpResponseMessage.cs"
              Link="ProductionCode\System\Net\Http\HttpResponseMessage.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpRuleParser.cs"
@@ -392,6 +395,8 @@
              Link="Common\System\Net\Http\aspnetcore\Http3\QPack\QPackEncodingException.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.AppendSpanFormattable.cs"
+             Link="Common\System\Text\ValueStringBuilder.AppendSpanFormattable.cs" />
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\FakeInterop.cs"
              Link="WinHttpHandler\UnitTests\FakeInterop.cs" />
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\FakeRegistry.cs"

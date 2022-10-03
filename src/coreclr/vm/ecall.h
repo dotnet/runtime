@@ -133,4 +133,11 @@ class ECall
 
 extern "C" FCDECL1(VOID, FCComCtor, LPVOID pV);
 
+class GCReporting final
+{
+public:
+    static FCDECL1(void, Register, GCFrame*);
+    static FCDECL1(void, Unregister, GCFrame*);
+};
+
 #endif // _ECALL_H_

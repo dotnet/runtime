@@ -22,15 +22,9 @@ namespace System.Transactions
     {
         internal static DistributedTransaction ConvertToDistributedTransaction(Transaction transaction)
         {
-            if (null == transaction)
-            {
-                throw new ArgumentNullException(nameof(transaction));
-            }
+            ArgumentNullException.ThrowIfNull(transaction);
 
-            if (transaction.Disposed)
-            {
-                throw new ObjectDisposedException(nameof(Transaction));
-            }
+            ObjectDisposedException.ThrowIf(transaction.Disposed, transaction);
 
             if (transaction._complete)
             {
@@ -60,8 +54,11 @@ namespace System.Transactions
         /// </summary>
         public static readonly Guid PromoterTypeDtc = new Guid("14229753-FFE1-428D-82B7-DF73045CB8DA");
 
-        public static byte[] GetExportCookie(Transaction transaction!!, byte[] whereabouts!!)
+        public static byte[] GetExportCookie(Transaction transaction, byte[] whereabouts)
         {
+            ArgumentNullException.ThrowIfNull(transaction);
+            ArgumentNullException.ThrowIfNull(whereabouts);
+
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -72,8 +69,8 @@ namespace System.Transactions
             var whereaboutsCopy = new byte[whereabouts.Length];
             Buffer.BlockCopy(whereabouts, 0, whereaboutsCopy, 0, whereabouts.Length);
 
-            DistributedTransaction dTx = ConvertToDistributedTransaction(transaction);
-            byte[] cookie = dTx.GetExportCookie(whereaboutsCopy);
+            ConvertToDistributedTransaction(transaction);
+            byte[] cookie = DistributedTransaction.GetExportCookie(whereaboutsCopy);
 
             if (etwLog.IsEnabled())
             {
@@ -83,8 +80,10 @@ namespace System.Transactions
             return cookie;
         }
 
-        public static Transaction GetTransactionFromExportCookie(byte[] cookie!!)
+        public static Transaction GetTransactionFromExportCookie(byte[] cookie)
         {
+            ArgumentNullException.ThrowIfNull(cookie);
+
             if (cookie.Length < 32)
             {
                 throw new ArgumentException(SR.InvalidArgument, nameof(cookie));
@@ -102,7 +101,7 @@ namespace System.Transactions
 
             // Extract the transaction guid from the propagation token to see if we already have a
             // transaction object for the transaction.
-            // In a cookie, the transaction guid is preceeded by a signature guid.
+            // In a cookie, the transaction guid is preceded by a signature guid.
             var txId = new Guid(cookie.AsSpan(16, 16));
 
             // First check to see if there is a promoted LTM transaction with the same ID.  If there
@@ -132,10 +131,7 @@ namespace System.Transactions
 
         public static byte[] GetTransmitterPropagationToken(Transaction transaction)
         {
-            if (null == transaction)
-            {
-                throw new ArgumentNullException(nameof(transaction));
-            }
+            ArgumentNullException.ThrowIfNull(transaction);
 
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
@@ -143,8 +139,8 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetTransmitterPropagationToken");
             }
 
-            DistributedTransaction dTx = ConvertToDistributedTransaction(transaction);
-            byte[] token = dTx.GetTransmitterPropagationToken();
+            ConvertToDistributedTransaction(transaction);
+            byte[] token = DistributedTransaction.GetTransmitterPropagationToken();
 
             if (etwLog.IsEnabled())
             {
@@ -154,8 +150,10 @@ namespace System.Transactions
             return token;
         }
 
-        public static Transaction GetTransactionFromTransmitterPropagationToken(byte[] propagationToken!!)
+        public static Transaction GetTransactionFromTransmitterPropagationToken(byte[] propagationToken)
         {
+            ArgumentNullException.ThrowIfNull(propagationToken);
+
             if (propagationToken.Length < 24)
             {
                 throw new ArgumentException(SR.InvalidArgument, nameof(propagationToken));
@@ -169,7 +167,7 @@ namespace System.Transactions
 
             // Extract the transaction guid from the propagation token to see if we already have a
             // transaction object for the transaction.
-            // In a propagation token, the transaction guid is preceeded by two version DWORDs.
+            // In a propagation token, the transaction guid is preceded by two version DWORDs.
             var txId = new Guid(propagationToken.AsSpan(8, 16));
 
             // First check to see if there is a promoted LTM transaction with the same ID.  If there is, just return that.
@@ -198,10 +196,7 @@ namespace System.Transactions
 
         public static IDtcTransaction GetDtcTransaction(Transaction transaction)
         {
-            if (null == transaction)
-            {
-                throw new ArgumentNullException(nameof(transaction));
-            }
+            ArgumentNullException.ThrowIfNull(transaction);
 
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
@@ -209,8 +204,8 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetDtcTransaction");
             }
 
-            DistributedTransaction dTx = ConvertToDistributedTransaction(transaction);
-            IDtcTransaction transactionNative = dTx.GetDtcTransaction();
+            ConvertToDistributedTransaction(transaction);
+            IDtcTransaction transactionNative = DistributedTransaction.GetDtcTransaction();
 
             if (etwLog.IsEnabled())
             {
@@ -220,8 +215,10 @@ namespace System.Transactions
             return transactionNative;
         }
 
-        public static Transaction GetTransactionFromDtcTransaction(IDtcTransaction transactionNative!!)
+        public static Transaction GetTransactionFromDtcTransaction(IDtcTransaction transactionNative)
         {
+            ArgumentNullException.ThrowIfNull(transactionNative);
+
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -245,8 +242,7 @@ namespace System.Transactions
                 etwLog.MethodEnter(TraceSourceType.TraceSourceDistributed, "TransactionInterop.GetWhereabouts");
             }
 
-            DistributedTransactionManager dTm = TransactionManager.DistributedTransactionManager;
-            byte[] returnValue = dTm.GetWhereabouts();
+            byte[] returnValue = DistributedTransactionManager.GetWhereabouts();
 
             if (etwLog.IsEnabled())
             {
@@ -255,8 +251,10 @@ namespace System.Transactions
             return returnValue;
         }
 
-        internal static DistributedTransaction GetDistributedTransactionFromTransmitterPropagationToken(byte[] propagationToken!!)
+        internal static DistributedTransaction GetDistributedTransactionFromTransmitterPropagationToken(byte[] propagationToken)
         {
+            ArgumentNullException.ThrowIfNull(propagationToken);
+
             if (propagationToken.Length < 24)
             {
                 throw new ArgumentException(SR.InvalidArgument, nameof(propagationToken));

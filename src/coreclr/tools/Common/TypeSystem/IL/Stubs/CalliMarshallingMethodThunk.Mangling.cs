@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
+
 using Internal.TypeSystem;
 
 namespace Internal.IL.Stubs
@@ -20,7 +22,16 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return RuntimeMarshallingEnabled ? "CalliWithRuntimeMarshalling" : "Calli";
+                string prefix = RuntimeMarshallingEnabled ? "CalliWithRuntimeMarshalling" : "Calli";
+
+                // The target signature is expected to be normalized as MethodSignatureFlags.UnmanagedCallingConvention
+                Debug.Assert((_targetSignature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) == MethodSignatureFlags.UnmanagedCallingConvention);
+
+                // Append calling convention details to the prefix
+                if (_targetSignature.HasEmbeddedSignatureData)
+                    prefix += _targetSignature.GetStandaloneMethodSignatureCallingConventions().ToString("x");
+
+                return prefix;
             }
         }
     }

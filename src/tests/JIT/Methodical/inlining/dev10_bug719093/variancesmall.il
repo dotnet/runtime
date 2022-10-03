@@ -31,6 +31,8 @@
 
 
 
+.namespace Test_variancesmall_il
+{
 .class interface private abstract auto ansi I`1<-S>
 {
   .method public hidebysig newslot abstract virtual 
@@ -55,14 +57,14 @@
 } 
 
 .class public auto ansi beforefieldinit CDerived
-       extends CBase
+       extends Test_variancesmall_il.CBase
 {
   .method public hidebysig specialname rtspecialname 
           instance void  .ctor() cil managed
   {
     .maxstack  8
     IL_0000:  ldarg.0
-    IL_0001:  call       instance void CBase::.ctor()
+    IL_0001:  call       instance void Test_variancesmall_il.CBase::.ctor()
     IL_0006:  ret
   } 
 
@@ -70,23 +72,23 @@
 
 .class public sequential ansi sealed beforefieldinit MyStruct2
        extends [mscorlib]System.ValueType
-       implements class I`1<object>,
-                  class I`1<class CDerived>
+       implements class Test_variancesmall_il.I`1<object>,
+                  class Test_variancesmall_il.I`1<class Test_variancesmall_il.CDerived>
 {
   .field public int32 n
   .method public hidebysig newslot virtual final 
-          instance string  Print(class CDerived 'value') cil managed
+          instance string  Print(class Test_variancesmall_il.CDerived 'value') cil managed
   {
     .maxstack  3
     .locals init (string V_0)
     IL_0000:  nop
     IL_0001:  ldarg.0
     IL_0002:  dup
-    IL_0003:  ldfld      int32 MyStruct2::n
+    IL_0003:  ldfld      int32 Test_variancesmall_il.MyStruct2::n
     IL_0008:  ldc.i4.1
     IL_0009:  add
-    IL_000a:  stfld      int32 MyStruct2::n
-    IL_000f:  ldstr      "Print(CDerived)"
+    IL_000a:  stfld      int32 Test_variancesmall_il.MyStruct2::n
+    IL_000f:  ldstr      "Print(Test_variancesmall_il.CDerived)"
     IL_0014:  stloc.0
     IL_0015:  br.s       IL_0017
 
@@ -102,10 +104,10 @@
     IL_0000:  nop
     IL_0001:  ldarg.0
     IL_0002:  dup
-    IL_0003:  ldfld      int32 MyStruct2::n
+    IL_0003:  ldfld      int32 Test_variancesmall_il.MyStruct2::n
     IL_0008:  ldc.i4.1
     IL_0009:  add
-    IL_000a:  stfld      int32 MyStruct2::n
+    IL_000a:  stfld      int32 Test_variancesmall_il.MyStruct2::n
     IL_000f:  ldstr      "Print(object)"
     IL_0014:  stloc.0
     IL_0015:  br.s       IL_0017
@@ -116,7 +118,7 @@
 
 } 
 
-.class private auto ansi beforefieldinit Conversion`2<.ctor (class I`1<!TCBase>) TMyStruct,TCBase>
+.class private auto ansi beforefieldinit Conversion`2<.ctor (class Test_variancesmall_il.I`1<!TCBase>) TMyStruct,TCBase>
        extends [mscorlib]System.Object
 {
   .field public !TCBase 'value'
@@ -143,9 +145,9 @@
     IL_0021:  stloc.0
     IL_0022:  ldloca.s   V_0
     IL_0024:  ldarg.0
-    IL_0025:  ldfld      !1 class Conversion`2<!TMyStruct,!TCBase>::'value'
+    IL_0025:  ldfld      !1 class Test_variancesmall_il.Conversion`2<!TMyStruct,!TCBase>::'value'
     IL_002a:  constrained. !TMyStruct
-    IL_0030:  callvirt   instance string class I`1<!TCBase>::Print(!0)
+    IL_0030:  callvirt   instance string class Test_variancesmall_il.I`1<!TCBase>::Print(!0)
     IL_0035:  stloc.1
     IL_0036:  br.s       IL_0038
 
@@ -161,9 +163,9 @@
     IL_0000:  nop
     IL_0001:  ldarg.1
     IL_0002:  ldarg.0
-    IL_0003:  ldfld      !1 class Conversion`2<!TMyStruct,!TCBase>::'value'
+    IL_0003:  ldfld      !1 class Test_variancesmall_il.Conversion`2<!TMyStruct,!TCBase>::'value'
     IL_0008:  constrained. !TMyStruct
-    IL_000e:  callvirt   instance string class I`1<!TCBase>::Print(!0)
+    IL_000e:  callvirt   instance string class Test_variancesmall_il.I`1<!TCBase>::Print(!0)
     IL_0013:  stloc.0
     IL_0014:  br.s       IL_0016
 
@@ -181,7 +183,7 @@
     IL_0001:  ldarg.1
     IL_0002:  ldarg.2
     IL_0003:  constrained. !TMyStruct
-    IL_0009:  callvirt   instance string class I`1<!TCBase>::Print(!0)
+    IL_0009:  callvirt   instance string class Test_variancesmall_il.I`1<!TCBase>::Print(!0)
     IL_000e:  stloc.0
     IL_000f:  br.s       IL_0011
 
@@ -201,7 +203,7 @@
 } 
 
 
-.class private auto ansi beforefieldinit Program
+.class public auto ansi beforefieldinit Program
        extends [mscorlib]System.Object
 {
   .method private hidebysig static int32 
@@ -289,7 +291,7 @@
     IL_0095:  ret
   } 
 
-  .method private hidebysig static int32 
+  .method public hidebysig static int32 
           Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -298,8 +300,8 @@
     .entrypoint
     .maxstack  6
     .locals init (int32 V_0,
-             valuetype MyStruct2 V_2,
-             class Conversion`2<valuetype MyStruct2,class CBase> V_12,
+             valuetype Test_variancesmall_il.MyStruct2 V_2,
+             class Test_variancesmall_il.Conversion`2<valuetype Test_variancesmall_il.MyStruct2,class Test_variancesmall_il.CBase> V_12,
              string V_21,
              string V_22,
              string V_23,
@@ -308,23 +310,23 @@
     IL_0001:  ldc.i4.0
     IL_0002:  stloc.0
     IL_000b:  ldloca.s   V_2
-    IL_000d:  initobj    MyStruct2
-    IL_005a:  newobj     instance void class Conversion`2<valuetype MyStruct2,class CBase>::.ctor()
+    IL_000d:  initobj    Test_variancesmall_il.MyStruct2
+    IL_005a:  newobj     instance void class Test_variancesmall_il.Conversion`2<valuetype Test_variancesmall_il.MyStruct2,class Test_variancesmall_il.CBase>::.ctor()
     IL_005f:  stloc.s    V_12
     IL_00e2:  ldstr      "TEST2:"
     IL_00e7:  call       void [System.Console]System.Console::WriteLine(string)
     IL_00ec:  nop
     IL_00ed:  ldloc.s    V_12
-    IL_00ef:  callvirt   instance string class Conversion`2<valuetype MyStruct2,class CBase>::Caller1()
+    IL_00ef:  callvirt   instance string class Test_variancesmall_il.Conversion`2<valuetype Test_variancesmall_il.MyStruct2,class Test_variancesmall_il.CBase>::Caller1()
     IL_00f4:  stloc.s    V_21
     IL_00f6:  ldloc.s    V_12
     IL_00f8:  ldloca.s   V_2
-    IL_00fa:  callvirt   instance string class Conversion`2<valuetype MyStruct2,class CBase>::Caller2(!0&)
+    IL_00fa:  callvirt   instance string class Test_variancesmall_il.Conversion`2<valuetype Test_variancesmall_il.MyStruct2,class Test_variancesmall_il.CBase>::Caller2(!0&)
     IL_00ff:  stloc.s    V_22
     IL_0101:  ldloc.s    V_12
     IL_0103:  ldloca.s   V_2
-    IL_0105:  newobj     instance void class CBase::.ctor()
-    IL_010a:  callvirt   instance string class Conversion`2<valuetype MyStruct2,class CBase>::Caller3(!0&,
+    IL_0105:  newobj     instance void class Test_variancesmall_il.CBase::.ctor()
+    IL_010a:  callvirt   instance string class Test_variancesmall_il.Conversion`2<valuetype Test_variancesmall_il.MyStruct2,class Test_variancesmall_il.CBase>::Caller3(!0&,
                                                                                                           !1)
     IL_010f:  stloc.s    V_23
     IL_0111:  ldloc.0
@@ -333,8 +335,8 @@
     IL_0116:  ldloc.s    V_23
     IL_0118:  ldstr      "Print(object)"
     IL_011d:  ldloca.s   V_2
-    IL_011f:  ldfld      int32 MyStruct2::n
-    IL_0124:  call       int32 Program::Verification(string,
+    IL_011f:  ldfld      int32 Test_variancesmall_il.MyStruct2::n
+    IL_0124:  call       int32 Test_variancesmall_il.Program::Verification(string,
                                                      string,
                                                      string,
                                                      string,
@@ -366,3 +368,4 @@
   } 
 
 } 
+}

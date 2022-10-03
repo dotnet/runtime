@@ -61,6 +61,7 @@ namespace DebuggerTests
 
         private static DateTime PrivateStaticDTProp => new DateTime(6, 5, 4, 3, 2, 1);
         public static DateTime PublicStaticDTProp => new DateTime(3, 6, 1, 7, 9, 4);
+        internal static DateTime InternalStaticDTProp => new DateTime(2, 3, 1, 5, 0, 3);
     }
 
     struct StructWithProperties
@@ -77,5 +78,6 @@ namespace DebuggerTests
 
         private static DateTime PrivateStaticDTProp => new DateTime(6, 5, 4, 3, 2, 1);
         public static DateTime PublicStaticDTProp => new DateTime(3, 6, 1, 7, 9, 4);
+        internal static DateTime InternalStaticDTProp => new DateTime(2, 3, 1, 5, 0, 3);
     }
 }

@@ -305,7 +305,7 @@ namespace System.Xml
         //Hashtable namespaces;
         // linked list of pushed nametables (to support nested binary-xml documents)
         private NestedBinXml? _prevNameInfo;
-        // XmlTextReader to handle embeded text blocks
+        // XmlTextReader to handle embedded text blocks
         private XmlReader? _textXmlReader;
         // close input flag
         private readonly bool _closeInput;
@@ -387,7 +387,7 @@ namespace System.Xml
             _ignorePIs = settings.IgnoreProcessingInstructions;
             _ignoreComments = settings.IgnoreComments;
 
-            s_tokenTypeMap = s_tokenTypeMap ?? GenerateTokenTypeMap();
+            s_tokenTypeMap ??= GenerateTokenTypeMap();
         }
 
         public override XmlReaderSettings Settings
@@ -2095,17 +2095,17 @@ namespace System.Xml
             Debug.Assert(0 != (b & 0x80));
             b = ReadByte();
             t = (uint)b & (uint)0x7F;
-            u = u + (t << 7);
+            u += (t << 7);
             if (b > 127)
             {
                 b = ReadByte();
                 t = (uint)b & (uint)0x7F;
-                u = u + (t << 14);
+                u += (t << 14);
                 if (b > 127)
                 {
                     b = ReadByte();
                     t = (uint)b & (uint)0x7F;
-                    u = u + (t << 21);
+                    u += (t << 21);
                     if (b > 127)
                     {
                         b = ReadByte();
@@ -2115,7 +2115,7 @@ namespace System.Xml
                         t = (uint)b & (uint)0x07;
                         if (b > 7)
                             throw ThrowXmlException(SR.XmlBinary_ValueTooBig);
-                        u = u + (t << 28);
+                        u += (t << 28);
                     }
                 }
             }
@@ -2134,17 +2134,17 @@ namespace System.Xml
             {
                 b = data[pos++];
                 t = (uint)b & (uint)0x7F;
-                u = u + (t << 7);
+                u += (t << 7);
                 if (b > 127)
                 {
                     b = data[pos++];
                     t = (uint)b & (uint)0x7F;
-                    u = u + (t << 14);
+                    u += (t << 14);
                     if (b > 127)
                     {
                         b = data[pos++];
                         t = (uint)b & (uint)0x7F;
-                        u = u + (t << 21);
+                        u += (t << 21);
                         if (b > 127)
                         {
                             b = data[pos++];
@@ -2152,7 +2152,7 @@ namespace System.Xml
                             t = (uint)b & (uint)0x07;
                             if (b > 7)
                                 throw ThrowXmlException(SR.XmlBinary_ValueTooBig);
-                            u = u + (t << 28);
+                            u += (t << 28);
                         }
                     }
                 }
@@ -2766,11 +2766,7 @@ namespace System.Xml
             while (PeekToken() == BinXmlToken.CData)
             {
                 _pos++; // skip over token byte
-                if (sb == null)
-                {
-                    sb = new StringBuilder(value.Length + value.Length / 2);
-                    sb.Append(value);
-                }
+                sb ??= new StringBuilder(value.Length + value.Length / 2).Append(value);
                 sb.Append(ParseText());
             }
             if (sb != null)
@@ -3273,7 +3269,7 @@ namespace System.Xml
             }
         }
 
-        private Type?[] GenerateTokenTypeMap()
+        private static Type?[] GenerateTokenTypeMap()
         {
             Type?[] map = new Type[256];
             map[(int)BinXmlToken.XSD_BOOLEAN] = typeof(bool);
@@ -3605,7 +3601,7 @@ namespace System.Xml
             }
         }
 
-        private int XsdKatmaiTimeScaleToValueLength(byte scale)
+        private static int XsdKatmaiTimeScaleToValueLength(byte scale)
         {
             if (scale > 7)
             {
@@ -4180,7 +4176,7 @@ namespace System.Xml
             }
         }
 
-        private XmlValueConverter GetValueConverter(XmlTypeCode typeCode)
+        private static XmlValueConverter GetValueConverter(XmlTypeCode typeCode)
         {
             XmlSchemaSimpleType xsst = DatatypeImplementation.GetSimpleTypeFromTypeCode(typeCode);
             return xsst.ValueConverter;

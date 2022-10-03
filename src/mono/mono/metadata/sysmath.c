@@ -214,7 +214,7 @@ ves_icall_System_MathF_Asinh  (float x)
 float
 ves_icall_System_MathF_Atan  (float x)
 {
-	return atan (x);
+	return atanf (x);
 }
 
 float
@@ -292,7 +292,7 @@ ves_icall_System_MathF_Sin (float x)
 float
 ves_icall_System_MathF_Sinh (float x)
 {
-	return sinh (x);
+	return sinhf (x);
 }
 
 float
@@ -310,7 +310,7 @@ ves_icall_System_MathF_Tan (float x)
 float
 ves_icall_System_MathF_Tanh (float x)
 {
-	return tanh (x);
+	return tanhf (x);
 }
 
 float

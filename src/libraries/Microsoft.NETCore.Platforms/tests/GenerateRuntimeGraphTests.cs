@@ -14,6 +14,8 @@ using Xunit.Abstractions;
 
 namespace Microsoft.NETCore.Platforms.BuildTasks.Tests
 {
+    // MSBuild engine is not compatible with single file
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class GenerateRuntimeGraphTests
     {
         private Log _log;

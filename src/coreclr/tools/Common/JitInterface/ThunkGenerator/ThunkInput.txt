@@ -30,7 +30,7 @@
 ; Also, note that an empty line is ignored, and a line that begins with a ; is ignored.
 ;
 ; If the boilerplate around the individual functions needs adjustment, edit the thunk generator source code, and
-;    rebuild with rebuildthunkgen.cmd in the the ThunkGenerator subdir, then rebuildthunks.cmd
+;    rebuild with rebuildthunkgen.cmd in the ThunkGenerator subdir, then rebuildthunks.cmd
 ; If this file is editted, rebuild with gen.cmd -- DO NOT RUN from within a razzle window.
 ;
 NORMALTYPES
@@ -148,6 +148,8 @@ ICorDebugInfo::OffsetMapping*,OffsetMapping*
 ICorDebugInfo::ILVarInfo**,ILVarInfo**
 ICorDebugInfo::NativeVarInfo*,NativeVarInfo*
 ICorDebugInfo::BoundaryTypes*,BoundaryTypes*
+ICorDebugInfo::InlineTreeNode*,InlineTreeNode*
+ICorDebugInfo::RichOffsetMapping*,RichOffsetMapping*
 
 struct _EXCEPTION_POINTERS*,_EXCEPTION_POINTERS*
 ICorJitInfo::errorTrapFunction,void*
@@ -159,6 +161,7 @@ FUNCTIONS
     void getMethodSig(        CORINFO_METHOD_HANDLE      ftn,        CORINFO_SIG_INFO          *sig,        CORINFO_CLASS_HANDLE      memberParent         );
     bool getMethodInfo(        CORINFO_METHOD_HANDLE   ftn,        CORINFO_METHOD_INFO*    info        );
     CorInfoInline canInline(        CORINFO_METHOD_HANDLE       callerHnd,        CORINFO_METHOD_HANDLE       calleeHnd);
+    void beginInlining(CORINFO_METHOD_HANDLE inlinerHnd,        CORINFO_METHOD_HANDLE inlineeHnd);
     void reportInliningDecision(CORINFO_METHOD_HANDLE inlinerHnd,        CORINFO_METHOD_HANDLE inlineeHnd,        CorInfoInline inlineResult,        const char * reason);
     bool canTailCall(        CORINFO_METHOD_HANDLE   callerHnd,        CORINFO_METHOD_HANDLE   declaredCalleeHnd,        CORINFO_METHOD_HANDLE   exactCalleeHnd,        bool fIsTailPrefix        );
     void reportTailCallDecision(CORINFO_METHOD_HANDLE callerHnd,        CORINFO_METHOD_HANDLE calleeHnd,        bool fIsTailPrefix,        CorInfoTailCall tailCallResult,        const char * reason);
@@ -188,7 +191,7 @@ FUNCTIONS
     CORINFO_CLASS_HANDLE getTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     bool isValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK)
     bool isValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK)
-    const char16_t * getStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length)
+    int getStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize)
     CorInfoType asCorInfoType(CORINFO_CLASS_HANDLE cls)
     const char* getClassName(CORINFO_CLASS_HANDLE cls)
     const char* getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char **namespaceName)
@@ -219,7 +222,7 @@ FUNCTIONS
     CorInfoHelpFunc getBoxHelper(CORINFO_CLASS_HANDLE cls)
     CorInfoHelpFunc getUnBoxHelper(CORINFO_CLASS_HANDLE cls)
     bool getReadyToRunHelper(CORINFO_RESOLVED_TOKEN * pResolvedToken, CORINFO_LOOKUP_KIND * pGenericLookupKind, CorInfoHelpFunc id, CORINFO_CONST_LOOKUP *pLookup)
-    void getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN * pTargetMethod, CORINFO_CLASS_HANDLE delegateType, CORINFO_LOOKUP *pLookup)
+    void getReadyToRunDelegateCtorHelper(CORINFO_RESOLVED_TOKEN * pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_HANDLE delegateType, CORINFO_LOOKUP *pLookup)
     const char* getHelperName(CorInfoHelpFunc helpFunc)
     CorInfoInitClassResult initClass(CORINFO_FIELD_HANDLE field, CORINFO_METHOD_HANDLE method, CORINFO_CONTEXT_HANDLE context)
     void classMustBeLoadedBeforeCodeIsRun(CORINFO_CLASS_HANDLE cls)
@@ -250,6 +253,7 @@ FUNCTIONS
     void setBoundaries(CORINFO_METHOD_HANDLE ftn, uint32_t cMap, ICorDebugInfo::OffsetMapping* pMap)
     void getVars(CORINFO_METHOD_HANDLE ftn, uint32_t* cVars, ICorDebugInfo::ILVarInfo** vars, bool* extendOthers)
     void setVars(CORINFO_METHOD_HANDLE ftn, uint32_t cVars, ICorDebugInfo::NativeVarInfo* vars)
+    void reportRichMappings(ICorDebugInfo::InlineTreeNode* inlineTreeNodes, uint32_t numInlineTreeNodes, ICorDebugInfo::RichOffsetMapping* mappings, uint32_t numMappings)
     void*allocateArray(size_t cBytes);
     void freeArray(void*array);
     CORINFO_ARG_LIST_HANDLE getArgNext(CORINFO_ARG_LIST_HANDLE args);
@@ -325,4 +329,3 @@ FUNCTIONS
     uint16_t getRelocTypeHint(void* target)
     uint32_t getExpectedTargetArchitecture()
     uint32_t getJitFlags(CORJIT_FLAGS* flags, uint32_t  sizeInBytes)
-    bool doesFieldBelongToClass(CORINFO_FIELD_HANDLE fldHnd, CORINFO_CLASS_HANDLE cls)

@@ -9,8 +9,10 @@ namespace System.Collections.Generic
     {
         private readonly Stack<T> _stack;
 
-        public StackDebugView(Stack<T> stack!!)
+        public StackDebugView(Stack<T> stack)
         {
+            ArgumentNullException.ThrowIfNull(stack);
+
             _stack = stack;
         }
 

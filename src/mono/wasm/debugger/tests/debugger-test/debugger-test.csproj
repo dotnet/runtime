@@ -18,14 +18,20 @@
     <WasmExtraFilesToDeploy Include="weather.json" />
 
     <!-- We want to bundle these assemblies, so build them first -->
-    <ProjectReference Include="..\lazy-debugger-test\lazy-debugger-test.csproj" Private="true"/>
-    <ProjectReference Include="..\lazy-debugger-test-embedded\lazy-debugger-test-embedded.csproj" Private="true"/>
-    <ProjectReference Include="..\library-dependency-debugger-test1\library-dependency-debugger-test1.csproj" Private="true"/>
-    <ProjectReference Include="..\library-dependency-debugger-test2\library-dependency-debugger-test2.csproj" Private="true"/>
-    <ProjectReference Include="..\debugger-test-with-source-link\debugger-test-with-source-link.csproj" Private="true"/>
     <ProjectReference Include="..\ApplyUpdateReferencedAssembly\ApplyUpdateReferencedAssembly.csproj" />
-    <ProjectReference Include="..\debugger-test-with-full-debug-type\debugger-test-with-full-debug-type.csproj" Private="true"/>
-    <ProjectReference Include="..\debugger-test-special-char-in-path-#@\debugger-test-special-char-in-path.csproj" Private="true"/>
+    <ProjectReference Include="..\debugger-test-special-char-in-path-#@\debugger-test-special-char-in-path.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\debugger-test-with-source-link\debugger-test-with-source-link.csproj" ReferenceOutputAssembly="false" Private="true" />
+    <!-- loaded by *tests*, and not the test app -->
+    <ProjectReference Include="..\lazy-debugger-test-embedded\lazy-debugger-test-embedded.csproj" ReferenceOutputAssembly="false" Private="true" />
+
+    <!-- These are only loaded dynamically -->
+    <_AssemblyForDynamicLoading Include="lazy-debugger-test" />
+    <_AssemblyForDynamicLoading Include="debugger-test-with-full-debug-type" />
+    <_AssemblyForDynamicLoading Include="debugger-test-with-pdb-deleted" />
+    <_AssemblyForDynamicLoading Include="debugger-test-without-debug-symbols" />
+    <_AssemblyForDynamicLoading Include="library-dependency-debugger-test1" />
+    <_AssemblyForDynamicLoading Include="library-dependency-debugger-test2" />
+    <ProjectReference Include="@(_AssemblyForDynamicLoading -> '../%(Identity)/%(Identity).csproj')" ReferenceOutputAssembly="false" Private="true" />
   </ItemGroup>
 
   <Target Name="PrepareForWasmBuildApp" DependsOnTargets="Build">
@@ -33,10 +39,10 @@
            Text="Cannot find %24(MicrosoftNetCoreAppRuntimePackRidDir)=$(MicrosoftNetCoreAppRuntimePackRidDir)native. Make sure to set the runtime configuration with %24(RuntimeConfiguration). Current value: $(RuntimeConfiguration)" />
 
     <PropertyGroup>
-      <EnableDefaultWasmAssembliesToBundle>false</EnableDefaultWasmAssembliesToBundle>    
+      <EnableDefaultWasmAssembliesToBundle>false</EnableDefaultWasmAssembliesToBundle>
       <WasmAppDir>$(AppDir)</WasmAppDir>
       <WasmMainJSPath>debugger-main.js</WasmMainJSPath>
-      <!-- like is used on blazor -->
+      <!-- -1 enabled debugging and disables debug logging. -->
       <WasmDebugLevel Condition="'$(WasmDebugLevel)'==''">-1</WasmDebugLevel>
 
       <WasmResolveAssembliesBeforeBuild>true</WasmResolveAssembliesBeforeBuild>
@@ -44,13 +50,19 @@
 
     <ItemGroup>
       <WasmAssembliesToBundle Include="$(OutDir)\$(TargetFileName)" />
+      <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-special-char-in-path.dll" />
       <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-with-source-link.dll" />
-      <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-with-full-debug-type.dll" />
+      <WasmAssembliesToBundle Include="$(MicrosoftNetCoreAppRuntimePackRidDir)\lib\$(NetCoreappCurrent)\System.Runtime.InteropServices.JavaScript.dll" />
+
+      <!-- Assemblies only dynamically loaded -->
+      <WasmFilesToIncludeInFileSystem Include="$(OutDir)\%(_AssemblyForDynamicLoading.Identity).dll" />
+
+      <WasmExtraFilesToDeploy Include="$(OutDir)\%(_AssemblyForDynamicLoading.Identity).*" />
+      <WasmExtraFilesToDeploy Include="$(OutDir)\lazy-debugger-test-embedded.*" />
+      <WasmExtraFilesToDeploy Include="@(ReferenceCopyLocalPaths)" />
+
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)native"/>
       <WasmAssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackRidDir)lib\$(NetCoreAppCurrent)"/>
-      <WasmAssembliesToBundle Include="$(OutDir)\debugger-test-special-char-in-path.dll" />
-
-      <WasmExtraFilesToDeploy Include="@(ReferenceCopyLocalPaths)" />
     </ItemGroup>
   </Target>
   <Target Name="PreserveEnCAssembliesFromLinking"

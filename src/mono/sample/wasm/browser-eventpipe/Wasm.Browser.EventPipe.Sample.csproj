@@ -1,0 +1,62 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <WasmCopyAppZipToHelixTestDir Condition="'$(ArchiveTests)' == 'true'">true</WasmCopyAppZipToHelixTestDir>
+    <WasmMainJSPath>main.js</WasmMainJSPath>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>embedded</DebugType>
+    <WasmDebugLevel>1</WasmDebugLevel>
+    <WasmBuildNative>true</WasmBuildNative>
+    <GenerateRunScriptForSample Condition="'$(ArchiveTests)' == 'true'">true</GenerateRunScriptForSample>
+    <RunScriptCommand>$(ExecXHarnessCmd) wasm test-browser  --app=. --browser=Chrome $(XHarnessBrowserPathArg) --html-file=index.html --output-directory=$(XHarnessOutput) -- $(MSBuildProjectName).dll</RunScriptCommand>
+    <FeatureWasmPerfTracing>true</FeatureWasmPerfTracing>
+    <FeatureWasmThreads Condition="false">true</FeatureWasmThreads>
+    <NoWarn>CA2007</NoWarn> <!-- consider ConfigureAwait() -->
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <MonoDiagnosticsMock Condition="('$(MonoDiagnosticsMock)' == '') and ('$(Configuration)' == 'Debug')">true</MonoDiagnosticsMock>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="index.html" />
+    <WasmExtraFilesToDeploy Include="mock.js" Condition="'$(MonoDiagnosticsMock)' == 'true'"/>
+    <WasmExtraConfig Condition="true" Include="environmentVariables" Value='
+{
+  "MONO_LOG_LEVEL": "warning",
+  "MONO_LOG_MASK": "all"
+}' />
+    <!-- this option requires running dotnet-dsrouter and a real dotnet-trace client -->
+    <WasmExtraConfig Condition="true and '$(MonoDiagnosticsMock)' != 'true'" Include="diagnosticOptions" Value='
+{
+  "server": { "suspend": true, "connectUrl": "ws://localhost:8088/diagnostics" }
+}' />
+    <!-- this option requires compiling the runtime with /p:MonoDiagnosticsMock=true and also building this project with the same property-->
+    <WasmExtraConfig Condition="true and '$(MonoDiagnosticsMock)' == 'true'" Include="diagnosticOptions" Value='
+{
+  "server": { "suspend": false, "connectUrl": "mock:./mock.js" }
+}' />
+    <!-- this option will create an EventPipe session at startup, that will dump its data into the Emscripten VFS -->
+    <WasmExtraConfig Condition="false" Include="diagnosticOptions" Value='
+{
+  "sessions": [ { "collectRundownEvents": "true", "providers": "WasmHello::5:EventCounterIntervalSec=1" } ]
+}' />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <_SampleProject>Wasm.Browser.EventPipe.Sample.csproj</_SampleProject>
+  </PropertyGroup>
+
+
+  <PropertyGroup>
+    <RunAnalyzers>true</RunAnalyzers>
+  </PropertyGroup>
+
+  <!-- set the condition to false and you will get a CA1416 errors about calls to create DiagnosticCounter instances -->
+  <ItemGroup Condition="true">
+    <!-- TODO: some .props file that automates this.  Unfortunately just adding a ProjectReference to Microsoft.NET.WebAssembly.Threading.proj doesn't work - it ends up bundling the ref assemblies into the publish directory and breaking the app. -->
+    <!-- it's a reference assembly, but the project system doesn't know that - include it during compilation, but don't publish it -->
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Diagnostics.Tracing.WebAssembly.PerfTracing\ref\System.Diagnostics.Tracing.WebAssembly.PerfTracing.csproj" IncludeAssets="compile" PrivateAssets="none" ExcludeAssets="runtime" Private="false" />
+  </ItemGroup>
+
+  <Target Name="RunSample" DependsOnTargets="RunSampleWithBrowser" />
+</Project>

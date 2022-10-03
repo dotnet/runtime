@@ -5,9 +5,6 @@ using Xunit;
 
 namespace System.PrivateUri.Tests
 {
-    /// <summary>
-    /// Summary description for UriBuilderParamiterTest
-    /// </summary>
     public class UriBuilderParameterTest
     {
         [Fact]

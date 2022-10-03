@@ -7,7 +7,7 @@
 #ifndef _MONO_UTILS_FORWARD_INTERNAL_
 #define _MONO_UTILS_FORWARD_INTERNAL_
 
-#include "mono/utils/mono-forward.h"
+#include <mono/utils/mono-forward.h>
 
 typedef struct MonoAotModule MonoAotModule;
 typedef struct MonoHandleStack MonoHandleStack;

@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!--
-    Microsoft ResX Schema
-
+  <!-- 
+    Microsoft ResX Schema 
+    
     Version 2.0
-
-    The primary goals of this format is to allow a simple XML format
-    that is mostly human readable. The generation and parsing of the
-    various data types are done through the TypeConverter classes
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
     associated with the data types.
-
+    
     Example:
-
+    
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-
-    There are any number of "resheader" rows that contain simple
+                
+    There are any number of "resheader" rows that contain simple 
     name/value pairs.
-
-    Each data row contains a name, and value. The row also contains a
-    type or mimetype. Type corresponds to a .NET class that support
-    text/value conversion through the TypeConverter architecture.
-    Classes that don't support this are serialized and stored with the
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
     mimetype set.
-
-    The mimetype is used for serialized objects, and tells the
-    ResXResourceReader how to depersist the object. This is currently not
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
     extensible. For a given mimetype the value must be set accordingly:
-
-    Note - application/x-microsoft.net.object.binary.base64 is the format
-    that the ResXResourceWriter will generate, however the reader can
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
     read any of the formats listed below.
-
+    
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with
+    value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-
+    
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with
+    value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array
+    value   : The object must be serialized into a byte array 
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -165,6 +165,9 @@
   <data name="DepthTooLarge" xml:space="preserve">
     <value>CurrentDepth ({0}) is equal to or larger than the maximum allowed depth of {1}. Cannot write the next JSON object or array.</value>
   </data>
+  <data name="DestinationTooShort" xml:space="preserve">
+    <value>Destination is too short.</value>
+  </data>
   <data name="EmptyJsonIsInvalid" xml:space="preserve">
     <value>Writing an empty JSON payload (excluding comments) is invalid.</value>
   </data>
@@ -240,6 +243,15 @@
   <data name="JsonElementHasWrongType" xml:space="preserve">
     <value>The requested operation requires an element of type '{0}', but the target element has type '{1}'.</value>
   </data>
+  <data name="TypeInfoResolverImmutable" xml:space="preserve">
+    <value>Cannot add callbacks to the 'Modifiers' property after the resolver has been used for the first time.</value>
+  </data>
+  <data name="TypeInfoImmutable" xml:space="preserve">
+    <value>JsonTypeInfo cannot be changed after first usage.</value>
+  </data>
+  <data name="PropertyInfoImmutable" xml:space="preserve">
+    <value>JsonPropertyInfo cannot be changed after first usage.</value>
+  </data>
   <data name="MaxDepthMustBePositive" xml:space="preserve">
     <value>Max depth must be positive.</value>
   </data>
@@ -312,20 +324,8 @@
   <data name="InvalidComparison" xml:space="preserve">
     <value>Cannot compare the value of a token type '{0}' to text.</value>
   </data>
-  <data name="FormatDateTime" xml:space="preserve">
-    <value>The JSON value is not in a supported DateTime format.</value>
-  </data>
-  <data name="FormatDateTimeOffset" xml:space="preserve">
-    <value>The JSON value is not in a supported DateTimeOffset format.</value>
-  </data>
-  <data name="FormatTimeSpan" xml:space="preserve">
-    <value>The JSON value is not in a supported TimeSpan format.</value>
-  </data>
-  <data name="FormatGuid" xml:space="preserve">
-    <value>The JSON value is not in a supported Guid format.</value>
-  </data>
-  <data name="FormatVersion" xml:space="preserve">
-    <value>The JSON value is not in a supported Version format.</value>
+  <data name="UnsupportedFormat" xml:space="preserve">
+    <value>The JSON value is not in a supported {0} format.</value>
   </data>
   <data name="ExpectedStartOfPropertyOrValueAfterComment" xml:space="preserve">
     <value>'{0}' is an invalid start of a property name or value, after a comment.</value>
@@ -352,7 +352,7 @@
     <value>The JSON property name for '{0}.{1}' cannot be null.</value>
   </data>
   <data name="SerializationDataExtensionPropertyInvalid" xml:space="preserve">
-    <value>The data extension property '{0}.{1}' is invalid. It must implement 'IDictionary&lt;string, JsonElement&gt;' or 'IDictionary&lt;string, object&gt;', or be 'JsonObject'.</value>
+    <value>The extension data property '{0}.{1}' is invalid. It must implement 'IDictionary&lt;string, JsonElement&gt;' or 'IDictionary&lt;string, object&gt;', or be 'JsonObject'.</value>
   </data>
   <data name="SerializationDuplicateTypeAttribute" xml:space="preserve">
     <value>The type '{0}' cannot have more than one member that has the attribute '{1}'.</value>
@@ -399,6 +399,12 @@
   <data name="SerializationConverterNotCompatible" xml:space="preserve">
     <value>The converter '{0}' is not compatible with the type '{1}'.</value>
   </data>
+  <data name="ResolverTypeNotCompatible" xml:space="preserve">
+    <value>The IJsonTypeInfoResolver returned an incompatible JsonTypeInfo instance of type '{0}', expected type '{1}'.</value>
+  </data>
+  <data name="ResolverTypeInfoOptionsNotCompatible" xml:space="preserve">
+    <value>The IJsonTypeInfoResolver returned a JsonTypeInfo instance whose JsonSerializerOptions setting does not match the provided argument.</value>
+  </data>
   <data name="SerializationConverterWrite" xml:space="preserve">
     <value>The converter '{0}' wrote too much or not enough.</value>
   </data>
@@ -430,13 +436,13 @@
     <value>Invalid leading zero before '{0}'.</value>
   </data>
   <data name="MetadataCannotParsePreservedObjectToImmutable" xml:space="preserve">
-    <value>Cannot parse a JSON object containing metadata properties like '$id' into an array or immutable collection type. Type '{0}'.</value>
+    <value>Cannot parse a JSON object containing metadata properties like '$id' or '$type' into an array or immutable collection type. Type '{0}'.</value>
   </data>
   <data name="MetadataDuplicateIdFound" xml:space="preserve">
     <value>The value of the '$id' metadata property '{0}' conflicts with an existing identifier.</value>
   </data>
   <data name="MetadataIdIsNotFirstProperty" xml:space="preserve">
-    <value>The metadata property '$id' must be the first property in the JSON object.</value>
+    <value>The metadata property '$id' must be the first reference preservation property in the JSON object.</value>
   </data>
   <data name="MetadataInvalidReferenceToValueType" xml:space="preserve">
     <value>Invalid reference to value type '{0}'.</value>
@@ -449,35 +455,41 @@
 1. {0}
 2. {1}</value>
   </data>
-  <data name="MetadataPreservedArrayInvalidProperty" xml:space="preserve">
-    <value>Invalid property '{0}' found within a JSON object that must only contain metadata properties and the nested JSON array to be preserved.</value>
+  <data name="MetadataInvalidPropertyInArrayMetadata" xml:space="preserve">
+    <value>A JSON object containing metadata for a nested array includes a non-metadata property '{0}'.</value>
   </data>
-  <data name="MetadataPreservedArrayPropertyNotFound" xml:space="preserve">
-    <value>One or more metadata properties, such as '$id' and '$values', were not found within a JSON object that must only contain metadata properties and the nested JSON array to be preserved.</value>
+  <data name="MetadataStandaloneValuesProperty" xml:space="preserve">
+    <value>A '$values' metadata property must always be preceded by other metadata properties, such as '$id' or '$type'.</value>
   </data>
   <data name="MetadataReferenceCannotContainOtherProperties" xml:space="preserve">
     <value>A JSON object that contains a '$ref' metadata property must not contain any other properties.</value>
   </data>
   <data name="MetadataReferenceNotFound" xml:space="preserve">
-    <value>Reference '{0}' not found.</value>
+    <value>Reference '{0}' was not found.</value>
   </data>
   <data name="MetadataValueWasNotString" xml:space="preserve">
-    <value>The '$id' and '$ref' metadata properties must be JSON strings. Current token type is '{0}'.</value>
+    <value>The '$id', '$ref' or '$type' metadata properties must be JSON strings. Current token type is '{0}'.</value>
   </data>
   <data name="MetadataInvalidPropertyWithLeadingDollarSign" xml:space="preserve">
-    <value>Properties that start with '$' are not allowed on preserve mode, either escape the character or turn off preserve references by setting ReferenceHandler to null.</value>
+    <value>Properties that start with '$' are not allowed in types that support metadata. Either escape the character or disable reference preservation and polymorphic deserialization.</value>
+  </data>
+  <data name="MetadataUnexpectedProperty" xml:space="preserve">
+    <value>The metadata property is either not supported by the type or is not the first property in the deserialized JSON object.</value>
+  </data>
+  <data name="MetadataDuplicateTypeProperty" xml:space="preserve">
+    <value>Deserialized object contains a duplicate type discriminator metadata property.</value>
   </data>
   <data name="MultipleMembersBindWithConstructorParameter" xml:space="preserve">
     <value>Members '{0}' and '{1}' on type '{2}' cannot both bind with parameter '{3}' in the deserialization constructor.</value>
   </data>
   <data name="ConstructorParamIncompleteBinding" xml:space="preserve">
-    <value>Each parameter in the deserialization constructor on type '{0}' must bind to an object property or field on deserialization. Each parameter name must match with a property or field on the object. The match can be case-insensitive.</value>
+    <value>Each parameter in the deserialization constructor on type '{0}' must bind to an object property or field on deserialization. Each parameter name must match with a property or field on the object. Fields are only considered when 'JsonSerializerOptions.IncludeFields' is enabled. The match can be case-insensitive.</value>
   </data>
   <data name="ConstructorMaxOf64Parameters" xml:space="preserve">
     <value>The deserialization constructor on type '{0}' may not have more than 64 parameters for deserialization.</value>
   </data>
-  <data name="ObjectWithParameterizedCtorRefMetadataNotHonored" xml:space="preserve">
-    <value>Reference metadata is not honored when deserializing types using parameterized constructors. See type '{0}'.</value>
+  <data name="ObjectWithParameterizedCtorRefMetadataNotSupported" xml:space="preserve">
+    <value>Reference metadata is not supported when deserializing constructor parameters. See type '{0}'.</value>
   </data>
   <data name="SerializerConverterFactoryReturnsNull" xml:space="preserve">
     <value>The converter '{0}' cannot return a null value.</value>
@@ -506,14 +518,14 @@
   <data name="CannotPopulateCollection" xml:space="preserve">
     <value>The collection type '{0}' is abstract, an interface, or is read only, and could not be instantiated and populated.</value>
   </data>
+  <data name="ConstructorContainsNullParameterNames" xml:space="preserve">
+    <value>The deserialization constructor for type '{0}' contains parameters with null names. This might happen because the parameter names have been trimmed by the linker. Consider using the source generated serializer instead.</value>
+  </data>
   <data name="DefaultIgnoreConditionAlreadySpecified" xml:space="preserve">
     <value>'IgnoreNullValues' and 'DefaultIgnoreCondition' cannot both be set to non-default values.</value>
   </data>
   <data name="DefaultIgnoreConditionInvalid" xml:space="preserve">
     <value>The value cannot be 'JsonIgnoreCondition.Always'.</value>
-  </data>
-  <data name="FormatBoolean" xml:space="preserve">
-    <value>The JSON value is not in a supported Boolean format.</value>
   </data>
   <data name="DictionaryKeyTypeNotSupported" xml:space="preserve">
     <value>The type '{0}' is not a supported dictionary key using converter of type '{1}'.</value>
@@ -567,37 +579,28 @@
     <value>An item with the same key has already been added. Key: {0}</value>
   </data>
   <data name="SerializerContextOptionsImmutable" xml:space="preserve">
-    <value>A 'JsonSerializerOptions' instance associated with a 'JsonSerializerContext' instance cannot be mutated once the context has been instantiated.</value>
+    <value>JsonSerializerOptions instances cannot be modified once encapsulated by a JsonSerializerContext. Such encapsulation can happen either when calling 'JsonSerializerOptions.AddContext' or when passing the options instance to a JsonSerializerContext constructor.</value>
   </data>
   <data name="ConverterForPropertyMustBeValid" xml:space="preserve">
     <value>The generic type of the converter for property '{0}.{1}' must match with the specified converter type '{2}'. The converter must not be 'null'.</value>
   </data>
-  <data name="BuiltInConvertersNotRooted" xml:space="preserve">
-    <value>Built-in type converters have not been initialized. There is no converter available for type '{0}'. To root all built-in converters, use a 'JsonSerializerOptions'-based method of the 'JsonSerializer'.</value>
-  </data>
   <data name="NoMetadataForType" xml:space="preserve">
-    <value>Metadata for type '{0}' was not provided to the serializer. The serializer method used does not support reflection-based creation of serialization-related type metadata. If using source generation, ensure that all root types passed to the serializer have been indicated with 'JsonSerializableAttribute', along with any types that might be serialized polymorphically.</value>
+    <value>Metadata for type '{0}' was not provided by TypeInfoResolver of type '{1}'. If using source generation, ensure that all root types passed to the serializer have been indicated with 'JsonSerializableAttribute', along with any types that might be serialized polymorphically.</value>
   </data>
-  <data name="NodeCollectionIsReadOnly" xml:space="preserve">
+  <data name="CollectionIsReadOnly" xml:space="preserve">
     <value>Collection is read-only.</value>
   </data>
-  <data name="NodeArrayIndexNegative" xml:space="preserve">
+  <data name="ArrayIndexNegative" xml:space="preserve">
     <value>Number was less than 0.</value>
   </data>
-  <data name="NodeArrayTooSmall" xml:space="preserve">
+  <data name="ArrayTooSmall" xml:space="preserve">
     <value>Destination array was not long enough.</value>
   </data>
   <data name="NodeJsonObjectCustomConverterNotAllowedOnExtensionProperty" xml:space="preserve">
     <value>A custom converter for JsonObject is not allowed on an extension property.</value>
   </data>
-  <data name="MetadataInitFuncsNull" xml:space="preserve">
-    <value>Invalid configuration provided for 'propInitFunc', 'ctorParamInitFunc' and 'serializeFunc'.</value>
-  </data>
   <data name="NoMetadataForTypeProperties" xml:space="preserve">
-    <value>'JsonSerializerContext' '{0}' did not provide property metadata for type '{1}'.</value>
-  </data>
-  <data name="NoDefaultOptionsForContext" xml:space="preserve">
-    <value>To specify a serialization implementation for type '{0}'', context '{0}' must specify default options.</value>
+    <value>TypeInfoResolver '{0}' did not provide property metadata for type '{1}'.</value>
   </data>
   <data name="FieldCannotBeVirtual" xml:space="preserve">
     <value>A 'field' member cannot be 'virtual'. See arguments for the '{0}' and '{1}' parameters. </value>
@@ -609,6 +612,66 @@
     <value>F# discriminated union serialization is not supported. Consider authoring a custom converter for the type.</value>
   </data>
   <data name="NoMetadataForTypeCtorParams" xml:space="preserve">
-    <value>'JsonSerializerContext' '{0}' did not provide constructor parameter metadata for type '{1}'.</value>
+    <value>TypeInfoResolver '{0}' did not provide constructor parameter metadata for type '{1}'.</value>
+  </data>
+  <data name="Polymorphism_BaseConverterDoesNotSupportMetadata" xml:space="preserve">
+    <value>The converter for polymorphic type '{0}' does not support metadata writes or reads.</value>
+  </data>
+  <data name="Polymorphism_DerivedConverterDoesNotSupportMetadata" xml:space="preserve">
+    <value>The converter for derived type '{0}' does not support metadata writes or reads.</value>
+  </data>
+  <data name="Polymorphism_TypeDoesNotSupportPolymorphism" xml:space="preserve">
+    <value>Specified type '{0}' does not support polymorphism. Polymorphic types cannot be structs, sealed types, generic types or System.Object.</value>
+  </data>
+  <data name="Polymorphism_DerivedTypeIsNotSupported" xml:space="preserve">
+    <value>Specified type '{0}' is not a supported derived type for the polymorphic type '{1}'. Derived types must be assignable to the base type, must not be generic and cannot be abstact classes or interfaces unless 'JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor' is specified.</value>
+  </data>
+  <data name="Polymorphism_DerivedTypeIsAlreadySpecified" xml:space="preserve">
+    <value>The polymorphic type '{0}' has already specified derived type '{1}'.</value>
+  </data>
+  <data name="Polymorphism_TypeDicriminatorIdIsAlreadySpecified" xml:space="preserve">
+    <value>The polymorphic type '{0}' has already specified a type discriminator '{1}'.</value>
+  </data>
+  <data name="Polymorphism_InvalidCustomTypeDiscriminatorPropertyName" xml:space="preserve">
+    <value>The metadata property names '$id', '$ref', and '$values' are reserved and cannot be used as custom type discriminator property names.</value>
+  </data>
+  <data name="Polymorphism_ConfigurationDoesNotSpecifyDerivedTypes" xml:space="preserve">
+    <value>Polymorphic configuration for type '{0}' should specify at least one derived type.</value>
+  </data>
+  <data name="Polymorphism_UnrecognizedTypeDiscriminator" xml:space="preserve">
+    <value>Read unrecognized type discriminator id '{0}'.</value>
+  </data>
+  <data name="Polymorphism_RuntimeTypeNotSupported" xml:space="preserve">
+    <value>Runtime type '{0}' is not supported by polymorphic type '{1}'.</value>
+  </data>
+  <data name="Polymorphism_RuntimeTypeDiamondAmbiguity" xml:space="preserve">
+    <value>Runtime type '{0}' has a diamond ambiguity between derived types '{1}' and '{2}' of polymorphic type '{3}'. Consider either removing one of the derived types or removing the 'JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor' setting.</value>
+  </data>
+  <data name="InvalidJsonTypeInfoOperationForKind" xml:space="preserve">
+    <value>Invalid JsonTypeInfo operation for JsonTypeInfoKind '{0}'.</value>
+  </data>
+  <data name="CreateObjectConverterNotCompatible" xml:space="preserve">
+    <value>The converter for type '{0}' does not support setting 'CreateObject' delegates.</value>
+  </data>
+  <data name="CombineOneOfResolversIsNull" xml:space="preserve">
+    <value>One of the provided resolvers is null.</value>
+  </data>
+  <data name="JsonPropertyInfoBoundToDifferentParent" xml:space="preserve">
+    <value>JsonPropertyInfo with name '{0}' for type '{1}' is already bound to different JsonTypeInfo.</value>
+  </data>
+  <data name="JsonTypeInfoUsedButTypeInfoResolverNotSet" xml:space="preserve">
+    <value>JsonTypeInfo metadata references a JsonSerializerOptions instance that doesn't specify a TypeInfoResolver.</value>
+  </data>
+  <data name="JsonPolymorphismOptionsAssociatedWithDifferentJsonTypeInfo" xml:space="preserve">
+    <value>Parameter already associated with a different JsonTypeInfo instance.</value>
+  </data>
+  <data name="JsonPropertyRequiredAndNotDeserializable" xml:space="preserve">
+    <value>JsonPropertyInfo '{0}' defined in type '{1}' is marked required but does not specify a setter.</value>
+  </data>
+  <data name="JsonPropertyRequiredAndExtensionData" xml:space="preserve">
+    <value>JsonPropertyInfo '{0}' defined in type '{1}' is marked both as required and as an extension data property. This combination is not supported.</value>
+  </data>
+  <data name="JsonRequiredPropertiesMissing" xml:space="preserve">
+    <value>JSON deserialization for type '{0}' was missing required properties, including the following: {1}</value>
   </data>
 </root>

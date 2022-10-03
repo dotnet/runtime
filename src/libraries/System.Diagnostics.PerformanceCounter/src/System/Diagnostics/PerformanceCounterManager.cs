@@ -7,18 +7,18 @@ namespace System.Diagnostics
 {
     public sealed class PerformanceCounterManager : ICollectData
     {
-        [ObsoleteAttribute("PerformanceCounterManager has been deprecated. Use the PerformanceCounters through the System.Diagnostics.PerformanceCounter class instead.")]
+        [Obsolete("PerformanceCounterManager has been deprecated. Use the PerformanceCounters through the System.Diagnostics.PerformanceCounter class instead.")]
         public PerformanceCounterManager()
         {
         }
 
-        [ObsoleteAttribute("PerformanceCounterManager has been deprecated. Use the PerformanceCounters through the System.Diagnostics.PerformanceCounter class instead.")]
+        [Obsolete("PerformanceCounterManager has been deprecated. Use the PerformanceCounters through the System.Diagnostics.PerformanceCounter class instead.")]
         void ICollectData.CollectData(int callIdx, IntPtr valueNamePtr, IntPtr dataPtr, int totalBytes, out IntPtr res)
         {
             res = (IntPtr)(-1);
         }
 
-        [ObsoleteAttribute("PerformanceCounterManager has been deprecated. Use the PerformanceCounters through the System.Diagnostics.PerformanceCounter class instead.")]
+        [Obsolete("PerformanceCounterManager has been deprecated. Use the PerformanceCounters through the System.Diagnostics.PerformanceCounter class instead.")]
         void ICollectData.CloseData()
         {
         }

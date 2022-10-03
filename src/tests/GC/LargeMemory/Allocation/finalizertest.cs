@@ -71,18 +71,18 @@ public sealed class FinalizerTest {
     public FinalizerTest(uint size) {
         this.size = size;
     }
-    
+
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public void CreateLargeObject() {
         TempObject = new LargeObject2(size);
     }
-    
+
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public void DestroyLargeObject() {
         TempObject = null;
     }
 
-    bool ressurectionTest() {
+    bool resurrectionTest() {
         numTests++;
 
         try {
@@ -90,7 +90,7 @@ public sealed class FinalizerTest {
             DestroyLargeObject();
         } catch (OutOfMemoryException) {
             Console.WriteLine("Large Memory Machine required");
-            return false;
+            return true;
         } catch (Exception e) {
             Console.WriteLine("Unexpected Exception");
             Console.WriteLine(e.ToString());
@@ -102,11 +102,11 @@ public sealed class FinalizerTest {
         GC.Collect();
 
         if (LO2 != null) {
-            Console.WriteLine("ressurectionTest passed");
+            Console.WriteLine("resurrectionTest passed");
             LO2 = null;
             return true;
         }
-        Console.WriteLine("ressurectionTest failed");
+        Console.WriteLine("resurrectionTest failed");
         return false;
 
     }
@@ -119,7 +119,7 @@ public sealed class FinalizerTest {
             new FinalizerObject(size);
         } catch (OutOfMemoryException) {
             Console.WriteLine("Large Memory Machine required");
-            return false;
+            return true;
         } catch (Exception e) {
             Console.WriteLine("Unexpected Exception");
             Console.WriteLine(e.ToString());
@@ -148,7 +148,7 @@ public sealed class FinalizerTest {
             numPassed++;
         }
 
-        if (ressurectionTest() ) {
+        if (resurrectionTest() ) {
             numPassed++;
         }
 

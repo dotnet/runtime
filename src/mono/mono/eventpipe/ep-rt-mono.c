@@ -26,7 +26,8 @@
 #include <mono/mini/mini-runtime.h>
 #include <mono/sgen/sgen-conf.h>
 #include <mono/sgen/sgen-tagged-pointer.h>
-#include "mono/utils/mono-logger-internals.h"
+#include <mono/utils/mono-logger-internals.h>
+#include <minipal/getexepath.h>
 #include <runtime_version.h>
 #include <clretwallmain.h>
 
@@ -37,6 +38,7 @@ gboolean _ep_rt_mono_initialized;
 
 // EventPipe TLS key.
 MonoNativeTlsKey _ep_rt_mono_thread_holder_tls_id;
+MonoNativeTlsKey _ep_rt_mono_thread_data_tls_id;
 
 // Random byte provider.
 gpointer _ep_rt_mono_rand_provider;
@@ -52,6 +54,11 @@ char *_ep_rt_mono_os_cmd_line = NULL;
 mono_lazy_init_t _ep_rt_mono_managed_cmd_line_init = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
 char *_ep_rt_mono_managed_cmd_line = NULL;
 
+// Custom Mono EventPipe thread data.
+typedef struct _EventPipeThreadData EventPipeThreadData;
+struct _EventPipeThreadData {
+	bool prevent_profiler_event_recursion;
+};
 
 // Sample profiler.
 static GArray * _ep_rt_mono_sampled_thread_callstacks = NULL;
@@ -149,7 +156,7 @@ typedef struct _EventPipeSampleProfileStackWalkData {
 } EventPipeSampleProfileStackWalkData;
 
 // Rundown flags.
-#define RUNTIME_SKU_CORECLR 0x2
+#define RUNTIME_SKU_MONO 0x4
 #define METHOD_FLAGS_DYNAMIC_METHOD 0x1
 #define METHOD_FLAGS_GENERIC_METHOD 0x2
 #define METHOD_FLAGS_SHARED_GENERIC_METHOD 0x4
@@ -293,6 +300,14 @@ static ep_rt_spin_lock_handle_t _ep_rt_mono_profiler_gc_state_lock = {0};
 /*
  * Forward declares of all static functions.
  */
+
+static
+EventPipeThreadData *
+eventpipe_thread_data_get_or_create (void);
+
+static
+void
+eventpipe_thread_data_free (EventPipeThreadData *thread_data);
 
 static
 bool
@@ -1123,6 +1138,19 @@ ep_rt_mono_rand_try_get_bytes (
 	uint8_t *buffer,
 	size_t buffer_size);
 
+ep_rt_file_handle_t
+ep_rt_mono_file_open_write(const ep_char8_t *path);
+
+bool
+ep_rt_mono_file_close (ep_rt_file_handle_t handle);
+
+bool
+ep_rt_mono_file_write (
+	ep_rt_file_handle_t handle,
+	const uint8_t *buffer,
+	uint32_t numbytes,
+	uint32_t *byteswritten);
+
 EventPipeThread *
 ep_rt_mono_thread_get_or_create (void);
 
@@ -1205,6 +1233,26 @@ clr_instance_get_id (void)
 {
 	// Mono runtime id.
 	return 9;
+}
+
+static
+EventPipeThreadData *
+eventpipe_thread_data_get_or_create (void)
+{
+	EventPipeThreadData *thread_data = (EventPipeThreadData *)mono_native_tls_get_value (_ep_rt_mono_thread_data_tls_id);
+	if (!thread_data) {
+		thread_data = ep_rt_object_alloc (EventPipeThreadData);
+		mono_native_tls_set_value (_ep_rt_mono_thread_data_tls_id, thread_data);
+	}
+	return thread_data;
+}
+
+static
+void
+eventpipe_thread_data_free (EventPipeThreadData *thread_data)
+{
+	ep_return_void_if_nok (thread_data != NULL);
+	ep_rt_object_free (thread_data);
 }
 
 static
@@ -1429,14 +1477,14 @@ eventpipe_fire_method_events (
 
 		if (verbose) {
 			method_name = method->name;
-			method_signature = mono_signature_full_name (method->signature);
+			method_signature = mono_signature_full_name (mono_method_signature_internal (method));
 			if (method->klass)
 				method_namespace = mono_type_get_name_full (m_class_get_byval_arg (method->klass), MONO_TYPE_NAME_FORMAT_IL);
 		}
 
 	}
 
-	uint16_t offset_entries = 0;
+	uint32_t offset_entries = 0;
 	uint32_t *il_offsets = NULL;
 	uint32_t *native_offsets = NULL;
 
@@ -1455,7 +1503,7 @@ eventpipe_fire_method_events (
 				il_offsets = (uint32_t*)events_data->buffer;
 				native_offsets = il_offsets + offset_entries;
 
-				for (int offset_count = 0; offset_count < offset_entries; ++offset_count) {
+				for (uint32_t offset_count = 0; offset_count < offset_entries; ++offset_count) {
 					il_offsets [offset_count] = debug_info->line_numbers [offset_count].il_offset;
 					native_offsets [offset_count] = debug_info->line_numbers [offset_count].native_offset;
 				}
@@ -1485,7 +1533,7 @@ eventpipe_fire_method_events (
 		(ep_char8_t *)method_namespace,
 		(ep_char8_t *)method_name,
 		(ep_char8_t *)method_signature,
-		offset_entries,
+		GUINT32_TO_UINT16 (offset_entries),
 		il_offsets,
 		native_offsets,
 		(ji->from_aot || ji->from_llvm),
@@ -1541,7 +1589,7 @@ eventpipe_fire_assembly_events (
 	// Native methods are part of JIT table and already emitted.
 	// TODO: FireEtwMethodDCEndVerbose_V1_or_V2 for all native methods in module as well?
 
-	uint64_t binding_id = 0;
+	uint32_t binding_id = 0;
 
 	ModuleEventData module_data;
 	memset (&module_data, 0, sizeof (module_data));
@@ -1623,7 +1671,7 @@ eventpipe_execute_rundown (
 		// Iterate all assemblies in domain.
 		GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
 		if (assemblies) {
-			for (int i = 0; i < assemblies->len; ++i) {
+			for (uint32_t i = 0; i < assemblies->len; ++i) {
 				MonoAssembly *assembly = (MonoAssembly *)g_ptr_array_index (assemblies, i);
 				if (assembly)
 					eventpipe_fire_assembly_events (root_domain, assembly, assembly_events_func);
@@ -1831,7 +1879,8 @@ profiler_eventpipe_thread_exited (
 	ep_rt_mono_thread_exited ();
 }
 
-static bool
+static
+bool
 parse_mono_profiler_options (const ep_char8_t *option)
 {
 	do {
@@ -1917,6 +1966,7 @@ void
 ep_rt_mono_init (void)
 {
 	mono_native_tls_alloc (&_ep_rt_mono_thread_holder_tls_id, NULL);
+	mono_native_tls_alloc (&_ep_rt_mono_thread_data_tls_id, NULL);
 
 	mono_100ns_ticks ();
 	mono_rand_open ();
@@ -2069,6 +2119,179 @@ ep_rt_mono_rand_try_get_bytes (
 	return mono_rand_try_get_bytes (&_ep_rt_mono_rand_provider, (guchar *)buffer, (gssize)buffer_size, error);
 }
 
+char *
+ep_rt_mono_get_managed_cmd_line ()
+{
+	return mono_runtime_get_managed_cmd_line ();
+}
+
+char *
+ep_rt_mono_get_os_cmd_line ()
+{
+	MONO_REQ_GC_NEUTRAL_MODE;
+
+	// we only return the native host here since getting the full commandline is complicated and
+	// it's not super important to have the correct value since it'll only be used during startup
+	// until we have the managed commandline
+	char *host_path = minipal_getexepath ();
+
+	// minipal_getexepath doesn't use Mono APIs to allocate strings so
+	// we can't use g_free (which the callers of this method expect to do)
+	// so create another copy and return that one
+	char *res = g_strdup (host_path);
+	free (host_path);
+	return res;
+}
+
+#ifdef HOST_WIN32
+
+ep_rt_file_handle_t
+ep_rt_mono_file_open_write (const ep_char8_t *path)
+{
+	if (!path)
+		return INVALID_HANDLE_VALUE;
+
+	ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path, -1);
+
+	if (!path_utf16)
+		return INVALID_HANDLE_VALUE;
+
+	ep_rt_file_handle_t res;
+	MONO_ENTER_GC_SAFE;
+	res = (ep_rt_file_handle_t)CreateFileW (path_utf16, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	MONO_EXIT_GC_SAFE;
+	ep_rt_utf16_string_free (path_utf16);
+
+	return res;
+}
+
+bool
+ep_rt_mono_file_close (ep_rt_file_handle_t handle)
+{
+	bool res;
+	MONO_ENTER_GC_SAFE;
+	res = CloseHandle (handle);
+	MONO_EXIT_GC_SAFE;
+	return res;
+}
+
+static
+void
+win32_io_interrupt_handler (void *ignored)
+{
+}
+
+bool
+ep_rt_mono_file_write (
+	ep_rt_file_handle_t handle,
+	const uint8_t *buffer,
+	uint32_t numbytes,
+	uint32_t *byteswritten)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	bool res;
+	MonoThreadInfo *info = mono_thread_info_current ();
+	gboolean alerted = FALSE;
+
+	if (info) {
+		mono_thread_info_install_interrupt (win32_io_interrupt_handler, NULL, &alerted);
+		if (alerted) {
+			return false;
+		}
+		mono_win32_enter_blocking_io_call (info, handle);
+	}
+
+	MONO_ENTER_GC_SAFE;
+	if (info && mono_thread_info_is_interrupt_state (info)) {
+		res = false;
+	} else {
+		res = WriteFile (handle, buffer, numbytes, (PDWORD)byteswritten, NULL) ? true : false;
+	}
+	MONO_EXIT_GC_SAFE;
+
+	if (info) {
+		mono_win32_leave_blocking_io_call (info, handle);
+		mono_thread_info_uninstall_interrupt (&alerted);
+	}
+
+	return res;
+}
+
+#else
+
+#include <fcntl.h>
+#include <unistd.h>
+
+ep_rt_file_handle_t
+ep_rt_mono_file_open_write (const ep_char8_t *path)
+{
+	int fd;
+	mode_t perms = 0666;
+
+	if (!path)
+		return INVALID_HANDLE_VALUE;
+
+	MONO_ENTER_GC_SAFE;
+	fd = creat (path, perms);
+	MONO_EXIT_GC_SAFE;
+
+	if (fd == -1)
+		return INVALID_HANDLE_VALUE;
+
+	return (ep_rt_file_handle_t)(ptrdiff_t)fd;
+}
+
+bool
+ep_rt_mono_file_close (ep_rt_file_handle_t handle)
+{
+	int fd = (int)(ptrdiff_t)handle;
+
+	MONO_ENTER_GC_SAFE;
+	close (fd);
+	MONO_EXIT_GC_SAFE;
+
+	return true;
+}
+
+bool
+ep_rt_mono_file_write (
+	ep_rt_file_handle_t handle,
+	const uint8_t *buffer,
+	uint32_t numbytes,
+	uint32_t *byteswritten)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	int fd = (int)(ptrdiff_t)handle;
+	uint32_t ret;
+	MonoThreadInfo *info = mono_thread_info_current ();
+
+	if (byteswritten != NULL)
+		*byteswritten = 0;
+
+	do {
+		MONO_ENTER_GC_SAFE;
+		ret = write (fd, buffer, numbytes);
+		MONO_EXIT_GC_SAFE;
+	} while (ret == -1 && errno == EINTR &&
+		 !mono_thread_info_is_interrupt_state (info));
+
+	if (ret == -1) {
+		if (errno == EINTR)
+			ret = 0;
+		else
+			return false;
+	}
+
+	if (byteswritten != NULL)
+		*byteswritten = ret;
+
+	return true;
+}
+
+#endif // HOST_WIN32
+
 EventPipeThread *
 ep_rt_mono_thread_get_or_create (void)
 {
@@ -2148,6 +2371,11 @@ ep_rt_mono_thread_exited (void)
 		if (thread_holder)
 			thread_holder_free_func (thread_holder);
 		mono_native_tls_set_value (_ep_rt_mono_thread_holder_tls_id, NULL);
+
+		EventPipeThreadData *thread_data = (EventPipeThreadData *)mono_native_tls_get_value (_ep_rt_mono_thread_data_tls_id);
+		if (thread_data)
+			eventpipe_thread_data_free (thread_data);
+		mono_native_tls_set_value (_ep_rt_mono_thread_data_tls_id, NULL);
 	}
 }
 
@@ -2224,7 +2452,7 @@ static const int64_t SECS_TO_NS = 1000000000;
 static const int64_t MSECS_TO_MIS = 1000;
 
 /* clock_gettime () is found by configure on Apple builds, but its only present from ios 10, macos 10.12, tvos 10 and watchos 3 */
-#if defined (HAVE_CLOCK_MONOTONIC) && (defined(TARGET_IOS) || defined(TARGET_OSX) || defined(TARGET_WATCHOS) || defined(TARGET_TVOS))
+#if defined (HAVE_CLOCK_MONOTONIC) && (defined(HOST_IOS) || defined(HOST_OSX) || defined(HOST_WATCHOS) || defined(HOST_TVOS))
 #undef HAVE_CLOCK_MONOTONIC
 #endif
 
@@ -2324,7 +2552,7 @@ ep_rt_mono_system_time_get (EventPipeSystemTime *system_time)
 		int old_seconds;
 		int new_seconds;
 
-		milliseconds = time_val.tv_usec / MSECS_TO_MIS;
+		milliseconds = (uint16_t)(time_val.tv_usec / MSECS_TO_MIS);
 
 		old_seconds = ut_ptr->tm_sec;
 		new_seconds = time_val.tv_sec % 60;
@@ -2336,13 +2564,13 @@ ep_rt_mono_system_time_get (EventPipeSystemTime *system_time)
 
 	ep_system_time_set (
 		system_time,
-		1900 + ut_ptr->tm_year,
-		ut_ptr->tm_mon + 1,
-		ut_ptr->tm_wday,
-		ut_ptr->tm_mday,
-		ut_ptr->tm_hour,
-		ut_ptr->tm_min,
-		ut_ptr->tm_sec,
+		(uint16_t)(1900 + ut_ptr->tm_year),
+		(uint16_t)ut_ptr->tm_mon + 1,
+		(uint16_t)ut_ptr->tm_wday,
+		(uint16_t)ut_ptr->tm_mday,
+		(uint16_t)ut_ptr->tm_hour,
+		(uint16_t)ut_ptr->tm_min,
+		(uint16_t)ut_ptr->tm_sec,
 		milliseconds);
 }
 
@@ -2375,7 +2603,7 @@ ep_rt_mono_system_timestamp_get (void)
 
 #ifndef HOST_WIN32
 #if defined(__APPLE__)
-#if defined (TARGET_OSX)
+#if defined (HOST_OSX)
 G_BEGIN_DECLS
 gchar ***_NSGetEnviron(void);
 G_END_DECLS
@@ -2383,7 +2611,7 @@ G_END_DECLS
 #else
 static char *_ep_rt_mono_environ[1] = { NULL };
 #define environ _ep_rt_mono_environ
-#endif /* defined (TARGET_OSX) */
+#endif /* defined (HOST_OSX) */
 #else
 G_BEGIN_DECLS
 extern char **environ;
@@ -2408,7 +2636,7 @@ ep_rt_mono_os_environment_get_utf16 (ep_rt_env_array_utf16_t *env_array)
 #else
 	gchar **next = NULL;
 	for (next = environ; *next != NULL; ++next)
-		ep_rt_env_array_utf16_append (env_array, ep_rt_utf8_to_utf16_string (*next, -1));
+		ep_rt_env_array_utf16_append (env_array, ep_rt_utf8_to_utf16le_string (*next, -1));
 #endif
 }
 
@@ -2422,7 +2650,7 @@ void
 ep_rt_mono_provider_config_init (EventPipeProviderConfiguration *provider_config)
 {
 	if (!ep_rt_utf8_string_compare (ep_config_get_rundown_provider_name_utf8 (), ep_provider_config_get_provider_name (provider_config))) {
-		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.Level = ep_provider_config_get_logging_level (provider_config);
+		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.Level = (uint8_t)ep_provider_config_get_logging_level (provider_config);
 		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.EnabledKeywordsBitmask = ep_provider_config_get_keywords (provider_config);
 		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context.IsEnabled = true;
 	}
@@ -2459,10 +2687,31 @@ ep_rt_mono_walk_managed_stack_for_thread (
 	stack_walk_data.safe_point_frame = false;
 	stack_walk_data.runtime_invoke_frame = false;
 
+	bool restore_async_context = FALSE;
+	bool prevent_profiler_event_recursion = FALSE;
+	EventPipeThreadData *thread_data = eventpipe_thread_data_get_or_create ();
+	if (thread_data) {
+		prevent_profiler_event_recursion = thread_data->prevent_profiler_event_recursion;
+		if (prevent_profiler_event_recursion && !mono_thread_info_is_async_context ()) {
+			// Running stackwalk in async context mode is currently the only way to prevent
+			// unwinder to NOT load additional classes during stackwalk, making it signal unsafe and
+			// potential triggering uncontrolled recursion in profiler class loading event.
+			mono_thread_info_set_is_async_context (TRUE);
+			restore_async_context = TRUE;
+		}
+		thread_data->prevent_profiler_event_recursion = TRUE;
+	}
+
 	if (thread == ep_rt_thread_get_handle () && mono_get_eh_callbacks ()->mono_walk_stack_with_ctx)
 		mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (eventpipe_walk_managed_stack_for_thread_func, NULL, MONO_UNWIND_SIGNAL_SAFE, &stack_walk_data);
 	else if (mono_get_eh_callbacks ()->mono_walk_stack_with_state)
 		mono_get_eh_callbacks ()->mono_walk_stack_with_state (eventpipe_walk_managed_stack_for_thread_func, mono_thread_info_get_suspend_state (thread), MONO_UNWIND_SIGNAL_SAFE, &stack_walk_data);
+
+	if (thread_data) {
+		if (restore_async_context)
+			mono_thread_info_set_is_async_context (FALSE);
+		thread_data->prevent_profiler_event_recursion = prevent_profiler_event_recursion;
+	}
 
 	return true;
 }
@@ -2528,8 +2777,11 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 
 	mono_stop_world (MONO_THREAD_INFO_FLAGS_NO_GC);
 
-	gboolean async_context = mono_thread_info_is_async_context ();
-	mono_thread_info_set_is_async_context (TRUE);
+	bool restore_async_context = FALSE;
+	if (!mono_thread_info_is_async_context ()) {
+		mono_thread_info_set_is_async_context (TRUE);
+		restore_async_context = TRUE;
+	}
 
 	// Record all info needed in sample events while runtime is suspended, must be async safe.
 	FOREACH_THREAD_SAFE_EXCLUDE (thread_info, MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE) {
@@ -2571,25 +2823,28 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 		filtered_thread_count++;
 	} FOREACH_THREAD_SAFE_END
 
-	mono_thread_info_set_is_async_context (async_context);
+	if (restore_async_context)
+		mono_thread_info_set_is_async_context (FALSE);
+
 	mono_restart_world (MONO_THREAD_INFO_FLAGS_NO_GC);
 
 	// Fire sample event for threads. Must be done after runtime is resumed since it's not async safe.
 	// Since we can't keep thread info around after runtime as been suspended, use an empty
 	// adapter instance and only set recorded tid as parameter inside adapter.
 	THREAD_INFO_TYPE adapter = { { 0 } };
-	for (uint32_t i = 0; i < sampled_thread_count; ++i) {
-		EventPipeSampleProfileStackWalkData *data = &g_array_index (_ep_rt_mono_sampled_thread_callstacks, EventPipeSampleProfileStackWalkData, i);
+	for (uint32_t thread_count = 0; thread_count < sampled_thread_count; ++thread_count) {
+		EventPipeSampleProfileStackWalkData *data = &g_array_index (_ep_rt_mono_sampled_thread_callstacks, EventPipeSampleProfileStackWalkData, thread_count);
 		if ((data->stack_walk_data.top_frame && data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL) || (data->payload_data != EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR && ep_stack_contents_get_length (&data->stack_contents) > 0)) {
 			// Check if we have an async frame, if so we will need to make sure all frames are registered in regular jit info table.
 			// TODO: An async frame can contain wrapper methods (no way to check during stackwalk), we could skip writing profile event
 			// for this specific stackwalk or we could cleanup stack_frames before writing profile event.
 			if (data->stack_walk_data.async_frame) {
-				for (int i = 0; i < data->stack_contents.next_available_frame; ++i)
-					mono_jit_info_table_find_internal ((gpointer)data->stack_contents.stack_frames [i], TRUE, FALSE);
+				for (uint32_t frame_count = 0; frame_count < data->stack_contents.next_available_frame; ++frame_count)
+					mono_jit_info_table_find_internal ((gpointer)data->stack_contents.stack_frames [frame_count], TRUE, FALSE);
 			}
 			mono_thread_info_set_tid (&adapter, ep_rt_uint64_t_to_thread_id_t (data->thread_id));
-			ep_write_sample_profile_event (sampling_thread, sampling_event, &adapter, &data->stack_contents, (uint8_t *)&data->payload_data, sizeof (data->payload_data));
+			uint32_t payload_data = ep_rt_val_uint32_t (data->payload_data);
+			ep_write_sample_profile_event (sampling_thread, sampling_event, &adapter, &data->stack_contents, (uint8_t *)&payload_data, sizeof (payload_data));
 		}
 	}
 
@@ -2605,7 +2860,7 @@ ep_rt_mono_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkp
 	ep_char8_t runtime_module_path [256];
 	const uint8_t object_guid [EP_GUID_SIZE] = { 0 };
 	const uint16_t runtime_product_qfe_version = 0;
-	const uint32_t startup_flags = 0;
+	const uint8_t startup_flags = 0;
 	const uint8_t startup_mode = 0;
 	const ep_char8_t *command_line = "";
 
@@ -2614,7 +2869,7 @@ ep_rt_mono_execute_rundown (ep_rt_execution_checkpoint_array_t *execution_checkp
 
 	FireEtwRuntimeInformationDCStart (
 		clr_instance_get_id (),
-		RUNTIME_SKU_CORECLR,
+		RUNTIME_SKU_MONO,
 		RuntimeProductMajorVersion,
 		RuntimeProductMinorVersion,
 		RuntimeProductPatchVersion,
@@ -2670,6 +2925,583 @@ ep_rt_mono_write_event_ee_startup_start (void)
 		NULL);
 }
 
+#define STACK_ALLOC 256
+
+// The maximum number of type parameters for a BulkTypeValue instance
+// Aligned with coreCLR StackSArray<ULONGLONG> rgTypeParameters
+#define INIT_SIZE_OF_TYPE_PARAMETER_ARRAY ((uint32_t)(STACK_ALLOC / sizeof (intptr_t)))
+
+// !!!!!!! NOTE !!!!!!!!
+// The flags must match those in the ETW manifest exactly
+// !!!!!!! NOTE !!!!!!!!
+
+typedef enum {
+	TYPE_FLAGS_DELEGATE = 0x1,
+	TYPE_FLAGS_FINALIZABLE = 0x2,
+	TYPE_FLAGS_EXTERNALLY_IMPLEMENTED_COM_OBJECT = 0x4,
+	TYPE_FLAGS_ARRAY = 0x8,
+
+	TYPE_FLAGS_ARRAY_RANK_MASK = 0x3F00,
+	TYPE_FLAGS_ARRAY_RANK_SHIFT = 8,
+	TYPE_FLAGS_ARRAY_RANK_MAX = TYPE_FLAGS_ARRAY_RANK_MASK >> TYPE_FLAGS_ARRAY_RANK_SHIFT
+} TypeFlags;
+
+// This only contains the fixed-size data at the top of each struct in
+// the bulk type event.  These fields must still match exactly the initial
+// fields of the struct described in the manifest.
+typedef struct _EventStructBulkTypeFixedSizedData {
+	uint64_t type_id;
+	uint64_t module_id;
+	uint32_t type_name_id;
+	uint32_t flags;
+	uint8_t cor_element_type;
+} EventStructBulkTypeFixedSizedData;
+
+// Represents one instance of the Value struct inside a single BulkType event
+typedef struct _BulkTypeValue {
+	EventStructBulkTypeFixedSizedData fixed_sized_data;
+	uint32_t type_parameters_count;
+	MonoType **mono_type_parameters;
+	ep_char8_t *name; // Currently should only be NULL, TODO if we want to provide the name in the BulkTypeEvent data, figure out memory management to use
+} BulkTypeValue;
+
+static
+void
+ep_rt_bulk_type_value_clear (BulkTypeValue *bulk_type_value);
+
+static
+int
+ep_rt_mono_get_byte_count_in_event (BulkTypeValue *bulk_type_value);
+
+static
+BulkTypeEventLogger*
+ep_rt_bulk_type_event_logger_alloc (void);
+
+static
+void
+ep_rt_bulk_type_event_logger_free (BulkTypeEventLogger *type_logger);
+
+static
+int
+write_event_buffer (
+	const uint8_t *val,
+	int size,
+	char *buf_start,
+	char **buf_next);
+
+static
+int
+write_event_buffer_int8 (
+	int8_t val,
+	char *buf_start,
+	char **buf_next);
+
+static
+int
+write_event_buffer_int16 (
+	int16_t val,
+	char *buf_start,
+	char **buf_next);
+
+static
+int
+write_event_buffer_int32 (
+	int32_t val,
+	char *buf_start,
+	char **buf_next);
+
+static
+int
+write_event_buffer_int64 (
+	int64_t val,
+	char *buf_start,
+	char **buf_next);
+
+static
+uint64_t
+get_typeid_for_type (MonoType *t);
+
+static
+uint64_t
+get_typeid_for_class (MonoClass *c);
+
+// Clear out BulkTypeValue before filling it out (array elements can get reused if there
+// are enough types that we need to flush to multiple events).
+static
+void
+ep_rt_bulk_type_value_clear (BulkTypeValue *bulk_type_value)
+{
+	memset (bulk_type_value, 0, sizeof(BulkTypeValue));
+}
+
+static
+int
+ep_rt_mono_get_byte_count_in_event (BulkTypeValue *bulk_type_value)
+{
+	int name_len = 0;
+
+	return sizeof (bulk_type_value->fixed_sized_data.type_id) + 	// Fixed Sized Data
+		sizeof (bulk_type_value->fixed_sized_data.module_id) +
+		sizeof (bulk_type_value->fixed_sized_data.type_name_id) +
+		sizeof (bulk_type_value->fixed_sized_data.flags) +
+		sizeof (bulk_type_value->fixed_sized_data.cor_element_type) +
+		sizeof (bulk_type_value->type_parameters_count) +		// Type parameters
+		(name_len + 1) * sizeof (ep_char8_t) +		// Size of name, including null terminator
+		bulk_type_value->type_parameters_count * sizeof (uint64_t);	// Type parameters
+}
+
+// ETW has a limitation of 64K for TOTAL event Size, however there is overhead associated with
+// the event headers.   It is unclear exactly how much that is, but 1K should be sufficiently
+// far away to avoid problems without sacrificing the perf of bulk processing.
+#define MAX_EVENT_BYTE_COUNT (63 * 1024)
+
+// The maximum event size, and the size of the buffer that we allocate to hold the event contents.
+#define MAX_SIZE_OF_EVENT_BUFFER 65536
+
+// Estimate of how many bytes we can squeeze in the event data for the value struct
+// array. (Intentionally overestimate the size of the non-array parts to keep it safe.)
+// This follows CoreCLR's kMaxBytesTypeValues.
+#define MAX_TYPE_VALUES_BYTES (MAX_EVENT_BYTE_COUNT - 0x30)
+
+// Estimate of how many type value elements we can put into the struct array, while
+// staying under the ETW event size limit. Note that this is impossible to calculate
+// perfectly, since each element of the struct array has variable size.
+//
+// In addition to the byte-size limit per event, Windows always forces on us a
+// max-number-of-descriptors per event, which in the case of BulkType, will kick in
+// far sooner. There's a max number of 128 descriptors allowed per event. 2 are used
+// for Count + ClrInstanceID. Then 4 per batched value. (Might actually be 3 if there
+// are no type parameters to log, but let's overestimate at 4 per value).
+#define K_MAX_COUNT_TYPE_VALUES ((uint32_t)(128 - 2) / 4)
+
+struct _BulkTypeEventLogger {
+	BulkTypeValue bulk_type_values [K_MAX_COUNT_TYPE_VALUES];
+	uint8_t *bulk_type_event_buffer;
+	uint32_t bulk_type_value_count;
+	uint32_t bulk_type_value_byte_count;
+	MonoMemPool *mem_pool;
+};
+
+static
+BulkTypeEventLogger*
+ep_rt_bulk_type_event_logger_alloc ()
+{
+	BulkTypeEventLogger *type_logger = g_malloc0 (sizeof (BulkTypeEventLogger));
+	type_logger->bulk_type_event_buffer = g_malloc0 (sizeof (uint8_t) * MAX_SIZE_OF_EVENT_BUFFER);
+	type_logger->mem_pool = mono_mempool_new ();
+	return type_logger;
+}
+
+static
+void
+ep_rt_bulk_type_event_logger_free (BulkTypeEventLogger *type_logger)
+{
+	mono_mempool_destroy (type_logger->mem_pool);
+	g_free (type_logger->bulk_type_event_buffer);
+	g_free (type_logger);
+}
+
+static
+int
+write_event_buffer (
+	const uint8_t *val,
+	int size,
+	char *buf_start,
+	char **buf_next)
+{
+	memcpy (buf_start, val, size);
+	*buf_next = buf_start + size;
+	return size;
+}
+
+static
+int
+write_event_buffer_int8 (
+	int8_t val,
+	char *buf_start,
+	char **buf_next)
+{
+	return write_event_buffer ((const uint8_t *)&val, sizeof (int8_t), buf_start, buf_next);
+}
+
+static
+int
+write_event_buffer_int16 (
+	int16_t val,
+	char *buf_start,
+	char **buf_next)
+{
+	return write_event_buffer ((const uint8_t *)&val, sizeof (int16_t), buf_start, buf_next);
+}
+
+static
+int
+write_event_buffer_int32 (
+	int32_t val,
+	char *buf_start,
+	char **buf_next)
+{
+	return write_event_buffer ((const uint8_t *)&val, sizeof (int32_t), buf_start, buf_next);
+}
+
+static
+int
+write_event_buffer_int64 (
+	int64_t val,
+	char *buf_start,
+	char **buf_next)
+{
+	return write_event_buffer ((const uint8_t *)&val, sizeof (int64_t), buf_start, buf_next);
+}
+
+//---------------------------------------------------------------------------------------
+//
+// ep_rt_mono_fire_bulk_type_event fires an ETW event for all the types batched so far,
+// it then resets the state to start batching new types at the beginning of the
+// bulk_type_values array.
+//
+// This follows CoreCLR's BulkTypeEventLogger::FireBulkTypeEvent
+
+void
+ep_rt_mono_fire_bulk_type_event (BulkTypeEventLogger *type_logger)
+{
+	if (type_logger->bulk_type_value_count == 0)
+		return;
+
+	uint16_t clr_instance_id = clr_instance_get_id ();
+
+	uint32_t values_element_size = 0;
+
+	char *ptr = (char *)type_logger->bulk_type_event_buffer;
+
+	for (uint32_t type_value_index = 0; type_value_index < type_logger->bulk_type_value_count; type_value_index++) {
+		BulkTypeValue *target = &type_logger->bulk_type_values [type_value_index];
+
+		values_element_size += write_event_buffer_int64 (target->fixed_sized_data.type_id, ptr, &ptr);
+		values_element_size += write_event_buffer_int64 (target->fixed_sized_data.module_id, ptr, &ptr);
+		values_element_size += write_event_buffer_int32 (target->fixed_sized_data.type_name_id, ptr, &ptr);
+		values_element_size += write_event_buffer_int32 (target->fixed_sized_data.flags, ptr, &ptr);
+		values_element_size += write_event_buffer_int8 (target->fixed_sized_data.cor_element_type, ptr, &ptr);
+
+		g_assert (target->name == NULL);
+		values_element_size += write_event_buffer_int16 (0, ptr, &ptr);
+
+		values_element_size += write_event_buffer_int32 (target->type_parameters_count, ptr, &ptr);
+
+		for (uint32_t i = 0; i < target->type_parameters_count; i++) {
+			uint64_t type_parameter = get_typeid_for_type (target->mono_type_parameters [i]);
+			values_element_size += write_event_buffer_int64 ((int64_t)type_parameter, ptr, &ptr);
+		}
+	}
+
+	FireEtwBulkType (
+		type_logger->bulk_type_value_count,
+		clr_instance_id,
+		values_element_size,
+		type_logger->bulk_type_event_buffer,
+		NULL,
+		NULL);
+
+	memset (type_logger->bulk_type_event_buffer, 0, sizeof (uint8_t) * MAX_SIZE_OF_EVENT_BUFFER);
+	type_logger->bulk_type_value_count = 0;
+	type_logger->bulk_type_value_byte_count = 0;
+}
+
+//---------------------------------------------------------------------------------------
+//
+// get_typeid_for_type is responsible for obtaining the unique type identifier for a
+// particular MonoType. MonoTypes are structs that are not unique pointers. There
+// can be two different MonoTypes that both System.Thread or int32 or bool []. There
+// is exactly one MonoClass * for any type, so we leverage the MonoClass a MonoType
+// points to in order to obtain a unique type identifier in mono. With that unique
+// MonoClass, its fields this_arg and _byval_arg are unique as well.
+//
+// Arguments:
+//      * mono_type - MonoType to be logged
+//
+// Return Value:
+//      type_id - Unique type identifier of mono_type
+
+static
+uint64_t
+get_typeid_for_type (MonoType *t)
+{
+	if (m_type_is_byref (t))
+		return (uint64_t)m_class_get_this_arg (mono_class_from_mono_type_internal (t));
+	else
+		return (uint64_t)m_class_get_byval_arg (mono_class_from_mono_type_internal (t));
+}
+
+static
+uint64_t
+get_typeid_for_class (MonoClass *c)
+{
+	return get_typeid_for_type (m_class_get_byval_arg (c));
+}
+
+//---------------------------------------------------------------------------------------
+//
+// ep_rt_mono_log_single_type batches a single type into the bulk type array and flushes
+// the array to ETW if it fills up. Most interaction with the type system (type analysis)
+// is done here. This does not recursively batch up any parameter types (arrays or generics),
+// but does add their unique identifiers to the mono_type_parameters array.
+// ep_rt_mono_log_type_and_parameters is responsible for initiating any recursive calls to
+// deal with type parameters.
+//
+// Arguments:
+//	* type_logger - BulkTypeEventLogger instance
+//      * mono_type - MonoType to be logged
+//
+// Return Value:
+//      Index into array of where this type got batched. -1 if there was a failure.
+//
+// This follows CoreCLR's BulkTypeEventLogger::LogSingleType
+
+int
+ep_rt_mono_log_single_type (
+	BulkTypeEventLogger *type_logger,
+	MonoType *mono_type)
+{
+	// If there's no room for another type, flush what we've got
+	if (type_logger->bulk_type_value_count == K_MAX_COUNT_TYPE_VALUES)
+		ep_rt_mono_fire_bulk_type_event (type_logger);
+
+	EP_ASSERT (type_logger->bulk_type_value_count < K_MAX_COUNT_TYPE_VALUES);
+
+	BulkTypeValue *val = &type_logger->bulk_type_values [type_logger->bulk_type_value_count];
+	ep_rt_bulk_type_value_clear (val);
+
+	MonoClass *klass = mono_class_from_mono_type_internal (mono_type);
+	MonoType *mono_underlying_type = mono_type_get_underlying_type (mono_type);
+
+	// Initialize val fixed_sized_data
+	val->fixed_sized_data.type_id = get_typeid_for_type (mono_type);
+	val->fixed_sized_data.module_id = (uint64_t)m_class_get_image (klass);
+	val->fixed_sized_data.type_name_id = m_class_get_type_token (klass) ? mono_metadata_make_token (MONO_TABLE_TYPEDEF, mono_metadata_token_index (m_class_get_type_token (klass))) : 0;
+	if (mono_class_has_finalizer (klass))
+		val->fixed_sized_data.flags |= TYPE_FLAGS_FINALIZABLE;
+	if (m_class_is_delegate (klass))
+		val->fixed_sized_data.flags |= TYPE_FLAGS_DELEGATE;
+	if (mono_class_is_com_object (klass))
+		val->fixed_sized_data.flags |= TYPE_FLAGS_EXTERNALLY_IMPLEMENTED_COM_OBJECT;
+	val->fixed_sized_data.cor_element_type = (uint8_t)mono_underlying_type->type;
+
+	// Sets val variable sized parameter type data, type_parameters_count, and mono_type_parameters associated
+	// with arrays or generics to be recursively batched in the same ep_rt_mono_log_type_and_parameters call
+	switch (mono_underlying_type->type) {
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_SZARRAY:
+	{
+		MonoArrayType *mono_array_type = mono_type_get_array_type (mono_type);
+		val->fixed_sized_data.flags |= TYPE_FLAGS_ARRAY;
+		if (mono_underlying_type->type == MONO_TYPE_ARRAY) {
+			// Only ranks less than TypeFlagsArrayRankMax are supported.
+			// Fortunately TypeFlagsArrayRankMax should be greater than the
+			// number of ranks the type loader will support
+			uint32_t rank = mono_array_type->rank;
+			if (rank < TYPE_FLAGS_ARRAY_RANK_MAX) {
+				rank <<= 8;
+				val->fixed_sized_data.flags |= rank;
+			}
+		}
+
+		// mono arrays are always arrays of by value types
+		val->mono_type_parameters = mono_mempool_alloc0 (type_logger->mem_pool, 1 * sizeof (MonoType*));
+		*val->mono_type_parameters = m_class_get_byval_arg (mono_array_type->eklass);
+		val->type_parameters_count++;
+		break;
+	}
+	case MONO_TYPE_GENERICINST:
+	{
+		MonoGenericInst *class_inst = mono_type->data.generic_class->context.class_inst;
+		val->type_parameters_count = class_inst->type_argc;
+		val->mono_type_parameters = mono_mempool_alloc0 (type_logger->mem_pool, val->type_parameters_count * sizeof (MonoType*));
+		memcpy (val->mono_type_parameters, class_inst->type_argv, val->type_parameters_count * sizeof (MonoType*));
+		break;
+	}
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_VALUETYPE:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_BYREF:
+	{
+		if (mono_underlying_type == mono_type)
+			break;
+		val->mono_type_parameters = mono_mempool_alloc0 (type_logger->mem_pool, 1 * sizeof (MonoType*));
+		*val->mono_type_parameters = mono_underlying_type;
+		val->type_parameters_count++;
+		break;
+	}
+	default:
+		break;
+	}
+
+	// Now that we know the full size of this type's data, see if it fits in our
+	// batch or whether we need to flush
+	int val_byte_count = ep_rt_mono_get_byte_count_in_event (val);
+	if (val_byte_count > MAX_TYPE_VALUES_BYTES) {
+		// NOTE: If name is actively used, set it to NULL and relevant memory management to reduce byte count
+		// This type is apparently so huge, it's too big to squeeze into an event, even
+		// if it were the only type batched in the whole event.  Bail
+		mono_trace (G_LOG_LEVEL_ERROR, MONO_TRACE_DIAGNOSTICS, "Failed to log single mono type %p with typeID %llu. Type is too large for the BulkType Event.\n", (gpointer)mono_type, (unsigned long long)val->fixed_sized_data.type_id);
+		return -1;
+	}
+
+	if (type_logger->bulk_type_value_byte_count + val_byte_count > MAX_TYPE_VALUES_BYTES) {
+		// Although this type fits into the array, its size is so big that the entire
+		// array can't be logged via ETW. So flush the array, and start over by
+		// calling ourselves--this refetches the type info and puts it at the
+		// beginning of the array.  Since we know this type is small enough to be
+		// batched into an event on its own, this recursive call will not try to
+		// call itself again.
+		g_assert (type_logger->bulk_type_value_byte_count + val_byte_count > MAX_TYPE_VALUES_BYTES);
+		ep_rt_mono_fire_bulk_type_event (type_logger);
+		return ep_rt_mono_log_single_type (type_logger, mono_type);
+	}
+
+	// The type fits into the batch, so update our state
+	type_logger->bulk_type_value_count++;
+	type_logger->bulk_type_value_byte_count += val_byte_count;
+	return type_logger->bulk_type_value_count - 1;
+}
+
+//---------------------------------------------------------------------------------------
+//
+// High-level method to batch a type and (recursively) its type parameters, flushing to
+// ETW as needed.  This is called by ep_rt_mono_log_type_and_parameters_if_necessary.
+//
+// Arguments:
+//	* type_logger - BulkTypeEventLogger instance
+//      * mono_type - MonoType to be logged
+//
+// This follows CoreCLR's BulkTypeEventLogger::LogTypeAndParameter
+
+void
+ep_rt_mono_log_type_and_parameters (
+	BulkTypeEventLogger *type_logger,
+	MonoType *mono_type)
+{
+	// Batch up this type.  This grabs useful info about the type, including any
+	// type parameters it may have, and sticks it in bulk_type_values
+	int bulk_type_value_index = ep_rt_mono_log_single_type (type_logger, mono_type);
+	if (bulk_type_value_index == -1) {
+		// There was a failure trying to log the type, so don't bother with its type
+		// parameters
+		return;
+	}
+
+	// Look at the type info we just batched, so we can get the type parameters
+	BulkTypeValue *val = &type_logger->bulk_type_values [bulk_type_value_index];
+
+	// We're about to recursively call ourselves for the type parameters, so make a
+	// local copy of their type handles first (else, as we log them we could flush
+	// and clear out bulk_type_values, thus trashing val)
+	uint32_t param_count = val->type_parameters_count;
+	if (param_count == 0)
+		return;
+
+	MonoType **mono_type_parameters = mono_mempool_alloc0 (type_logger->mem_pool, param_count * sizeof (MonoType*));
+	memcpy (mono_type_parameters, val->mono_type_parameters, sizeof (MonoType*) * param_count);
+
+	for (uint32_t i = 0; i < param_count; i++)
+		ep_rt_mono_log_type_and_parameters_if_necessary (type_logger, mono_type_parameters [i]);
+}
+
+//---------------------------------------------------------------------------------------
+//
+// Outermost level of ETW-type-logging.  This method is used to log a unique type identifier
+// (in this case a MonoType) and (recursively) its type parameters when present.
+//
+// Arguments:
+//	* type_logger - BulkTypeEventLogger instance
+//      * mono_type - MonoType to be logged
+//
+// This follows CoreCLR's BulkTypeEventLogger::LogTypeAndParameters
+
+void
+ep_rt_mono_log_type_and_parameters_if_necessary (
+	BulkTypeEventLogger *type_logger,
+	MonoType *mono_type)
+{
+	// TODO Log the type if necessary
+
+	ep_rt_mono_log_type_and_parameters (type_logger, mono_type);
+}
+
+// ETW has a limit for maximum event size. Do not log overly large method type argument sets
+static const uint32_t MAX_METHOD_TYPE_ARGUMENT_COUNT = 1024;
+
+//---------------------------------------------------------------------------------------
+//
+// ep_rt_mono_send_method_details_event is the method responsible for sending details of
+// methods involved in events such as JitStart, Load/Unload, Rundown, R2R, and other
+// eventpipe events. It calls ep_rt_mono_log_type_and_parameters_if_necessary to log
+// unique types from the method type and available method instantiation parameter types
+// that are ultimately emitted as a BulkType event in ep_rt_mono_fire_bulk_type_event.
+// After appropriately logging type information, it sends method details outlined by
+// the generated dotnetruntime.c and ClrEtwAll manifest.
+//
+// Arguments:
+//      * method - a MonoMethod hit during an eventpipe event
+//
+// This follows CoreCLR's ETW::MethodLog::SendMethodDetailsEvent
+
+void
+ep_rt_mono_send_method_details_event (MonoMethod *method)
+{
+	if (method->wrapper_type != MONO_WRAPPER_NONE || method->dynamic)
+		return;
+
+	MonoGenericContext *method_ctx = mono_method_get_context (method);
+
+	MonoGenericInst *method_inst = NULL;
+	if (method_ctx)
+		method_inst = method_ctx->method_inst;
+
+	if (method_inst && method_inst->type_argc > MAX_METHOD_TYPE_ARGUMENT_COUNT)
+		return;
+
+	BulkTypeEventLogger *type_logger = ep_rt_bulk_type_event_logger_alloc ();
+
+	uint64_t method_type_id = 0;
+	g_assert (mono_metadata_token_index (method->token) != 0);
+	uint32_t method_token = mono_metadata_make_token (MONO_TABLE_METHOD, mono_metadata_token_index (method->token));
+	uint64_t loader_module_id = 0;
+	MonoClass *klass = method->klass;
+	if (klass) {
+		MonoType *method_mono_type = m_class_get_byval_arg (klass);
+		method_type_id = get_typeid_for_class (klass);
+
+		ep_rt_mono_log_type_and_parameters_if_necessary (type_logger, method_mono_type);
+
+		loader_module_id = (uint64_t)mono_class_get_image (klass);
+	}
+
+	uint32_t method_inst_parameter_types_count = 0;
+	if (method_inst)
+		method_inst_parameter_types_count = method_inst->type_argc;
+
+	uint64_t *method_inst_parameters_type_ids = mono_mempool_alloc0 (type_logger->mem_pool, method_inst_parameter_types_count * sizeof (uint64_t));
+	for (uint32_t i = 0; i < method_inst_parameter_types_count; i++) {
+		method_inst_parameters_type_ids [i] = get_typeid_for_type (method_inst->type_argv [i]);
+
+		ep_rt_mono_log_type_and_parameters_if_necessary (type_logger, method_inst->type_argv [i]);
+	}
+
+	ep_rt_mono_fire_bulk_type_event (type_logger);
+
+	FireEtwMethodDetails (
+		(uint64_t)method,
+		method_type_id,
+		method_token,
+		method_inst_parameter_types_count,
+		loader_module_id,
+		(uint64_t*)method_inst_parameters_type_ids,
+		NULL,
+		NULL);
+
+	ep_rt_bulk_type_event_logger_free (type_logger);
+}
+
 bool
 ep_rt_mono_write_event_jit_start (MonoMethod *method)
 {
@@ -2686,7 +3518,7 @@ ep_rt_mono_write_event_jit_start (MonoMethod *method)
 		const char *method_name = NULL;
 		char *method_signature = NULL;
 
-		//TODO: SendMethodDetailsEvent
+		ep_rt_mono_send_method_details_event(method);
 
 		method_id = (uint64_t)method;
 
@@ -2701,7 +3533,7 @@ ep_rt_mono_write_event_jit_start (MonoMethod *method)
 		}
 
 		method_name = method->name;
-		method_signature = mono_signature_full_name (method->signature);
+		method_signature = mono_signature_full_name (mono_method_signature_internal (method));
 
 		if (method->klass) {
 			module_id = (uint64_t)m_class_get_image (method->klass);
@@ -2743,14 +3575,14 @@ ep_rt_mono_write_event_method_il_to_native_map (
 		uint32_t fixed_buffer [64];
 		uint8_t *buffer = NULL;
 
-		uint16_t offset_entries = 0;
+		uint32_t offset_entries = 0;
 		uint32_t *il_offsets = NULL;
 		uint32_t *native_offsets = NULL;
 
 		MonoDebugMethodJitInfo *debug_info = method ? mono_debug_find_method (method, root_domain) : NULL;
 		if (debug_info) {
+			offset_entries = debug_info->num_line_numbers;
 			if (offset_entries != 0) {
-				offset_entries = debug_info->num_line_numbers;
 				size_t needed_size = (offset_entries * sizeof (uint32_t) * 2);
 				if (needed_size > sizeof (fixed_buffer)) {
 					buffer = g_new (uint8_t, needed_size);
@@ -2760,7 +3592,7 @@ ep_rt_mono_write_event_method_il_to_native_map (
 				}
 				if (il_offsets) {
 					native_offsets = il_offsets + offset_entries;
-					for (int offset_count = 0; offset_count < offset_entries; ++offset_count) {
+					for (uint32_t offset_count = 0; offset_count < offset_entries; ++offset_count) {
 						il_offsets [offset_count] = debug_info->line_numbers [offset_count].il_offset;
 						native_offsets [offset_count] = debug_info->line_numbers [offset_count].native_offset;
 					}
@@ -2784,7 +3616,7 @@ ep_rt_mono_write_event_method_il_to_native_map (
 			method_id,
 			0,
 			0,
-			offset_entries,
+			GUINT32_TO_UINT16 (offset_entries),
 			il_offsets,
 			native_offsets,
 			clr_instance_get_id (),
@@ -2852,11 +3684,11 @@ ep_rt_mono_write_event_method_load (
 				method_flags |= METHOD_FLAGS_GENERIC_METHOD;
 		}
 
-		//TODO: SendMethodDetailsEvent
+		ep_rt_mono_send_method_details_event(method);
 
 		if (verbose) {
 			method_name = method->name;
-			method_signature = mono_signature_full_name (method->signature);
+			method_signature = mono_signature_full_name (mono_method_signature_internal (method));
 
 			if (method->klass)
 				method_namespace = mono_type_get_name_full (m_class_get_byval_arg (method->klass), MONO_TYPE_NAME_FORMAT_IL);
@@ -2952,7 +3784,17 @@ get_module_event_data (
 		if (image && image->aot_module)
 			module_data->module_flags |= MODULE_FLAGS_NATIVE_MODULE;
 
-		module_data->module_il_path = image && image->filename ? image->filename : "";
+		module_data->module_il_path = NULL;
+		if (image && image->filename) {
+			/* if there's a filename, use it */
+			module_data->module_il_path = image->filename;
+		} else if (image && image->module_name) {
+			/* otherwise, use the module name */
+			module_data->module_il_path = image->module_name;
+		}
+		if (!module_data->module_il_path)
+			module_data->module_il_path = "";
+
 		module_data->module_il_pdb_path = "";
 		module_data->module_il_pdb_age = 0;
 
@@ -3152,13 +3994,13 @@ ep_rt_mono_write_event_thread_created (ep_rt_thread_id_t tid)
 		return true;
 
 	uint64_t managed_thread = 0;
-	uint64_t native_thread_id = ep_rt_thread_id_t_to_uint64_t (tid);
-	uint64_t managed_thread_id = 0;
+	uint32_t native_thread_id = MONO_NATIVE_THREAD_ID_TO_UINT (tid);
+	uint32_t managed_thread_id = 0;
 	uint32_t flags = 0;
 
 	MonoThread *thread = mono_thread_current ();
 	if (thread && mono_thread_info_get_tid (thread->thread_info) == tid) {
-		managed_thread_id = (uint64_t)mono_thread_get_managed_id (thread);
+		managed_thread_id = mono_thread_get_managed_id (thread);
 		managed_thread = (uint64_t)thread;
 
 		switch (mono_thread_info_get_flags (thread->thread_info)) {
@@ -3216,9 +4058,11 @@ get_type_start_id (MonoType *type)
 
 	start_id = (((start_id * 215497) >> 16) ^ ((start_id * 1823231) + start_id));
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	// Mix in highest bits on 64-bit systems only
 	if (sizeof (type) > 4)
-		start_id = start_id ^ (((uint64_t)type >> 31) >> 1);
+		start_id = start_id ^ GUINT64_TO_UINT32 ((((uint64_t)type >> 31) >> 1));
+MONO_RESTORE_WARNING
 
 	return start_id;
 }
@@ -3292,9 +4136,13 @@ ep_rt_mono_write_event_exception_thrown (MonoObject *obj)
 			flags |= EXCEPTION_THROWN_FLAGS_IS_CLS_COMPLIANT;
 			if (exception->inner_ex)
 				flags |= EXCEPTION_THROWN_FLAGS_HAS_INNER;
-			exception_message = ep_rt_utf16_to_utf8_string (mono_string_chars_internal (exception->message), mono_string_length_internal (exception->message));
+			if (exception->message)
+				exception_message = ep_rt_utf16_to_utf8_string (mono_string_chars_internal (exception->message), mono_string_length_internal (exception->message));
 			hresult = exception->hresult;
 		}
+
+		if (exception_message == NULL)
+			exception_message = g_strdup ("");
 
 		if (mono_get_eh_callbacks ()->mono_walk_stack_with_ctx)
 			mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (get_exception_ip_func, NULL, MONO_UNWIND_SIGNAL_SAFE, (void *)&ip);
@@ -3512,6 +4360,24 @@ ep_rt_write_event_threadpool_worker_thread_wait (
 }
 
 bool
+ep_rt_write_event_threadpool_min_max_threads (
+	uint16_t min_worker_threads,
+	uint16_t max_worker_threads,
+	uint16_t min_io_completion_threads,
+	uint16_t max_io_completion_threads,
+	uint16_t clr_instance_id)
+{
+	return FireEtwThreadPoolMinMaxThreads (
+		min_worker_threads,
+		max_worker_threads,
+		min_io_completion_threads,
+		max_io_completion_threads,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
+bool
 ep_rt_write_event_threadpool_worker_thread_adjustment_sample (
 	double throughput,
 	uint16_t clr_instance_id)
@@ -3611,6 +4477,20 @@ ep_rt_write_event_threadpool_working_thread_count (
 		NULL) == 0 ? true : false;
 }
 
+bool
+ep_rt_write_event_threadpool_io_pack (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	uint16_t clr_instance_id)
+{
+	return FireEtwThreadPoolIOPack (
+		(const void *)native_overlapped,
+		(const void *)overlapped,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
 static
 void
 runtime_profiler_jit_begin (
@@ -3702,7 +4582,19 @@ runtime_profiler_class_loading (
 	MonoProfiler *prof,
 	MonoClass *klass)
 {
+	bool prevent_profiler_event_recursion = FALSE;
+	EventPipeThreadData *thread_data = eventpipe_thread_data_get_or_create ();
+	if (thread_data) {
+		// Prevent additional class loading to happen recursively as part of fire TypeLoadStart event.
+		// Additional class loading can happen as part of capturing callstack for TypeLoadStart event.
+		prevent_profiler_event_recursion = thread_data->prevent_profiler_event_recursion;
+		thread_data->prevent_profiler_event_recursion = TRUE;
+	}
+
 	ep_rt_mono_write_event_type_load_start (m_class_get_byval_arg (klass));
+
+	if (thread_data)
+		thread_data->prevent_profiler_event_recursion = prevent_profiler_event_recursion;
 }
 
 static
@@ -3971,7 +4863,7 @@ mono_profiler_fire_event_enter (void)
 		old_state = mono_profiler_volatile_load_gc_state_t (&_ep_rt_mono_profiler_gc_state);
 		if (MONO_PROFILER_GC_STATE_IS_GC_IN_PROGRESS (old_state)) {
 			// GC in progress and thread tries to fire event (this should be an unlikely scenario). Wait until GC is done.
-			ep_rt_spin_lock_aquire (&_ep_rt_mono_profiler_gc_state_lock);
+			ep_rt_spin_lock_acquire (&_ep_rt_mono_profiler_gc_state_lock);
 			ep_rt_spin_lock_release (&_ep_rt_mono_profiler_gc_state_lock);
 			old_state = mono_profiler_volatile_load_gc_state_t (&_ep_rt_mono_profiler_gc_state);
 		}
@@ -4001,7 +4893,7 @@ mono_profiler_gc_in_progress_start (void)
 	mono_profiler_gc_state_t new_state = 0;
 
 	// Make sure fire event calls will block and wait for GC completion.
-	ep_rt_spin_lock_aquire (&_ep_rt_mono_profiler_gc_state_lock);
+	ep_rt_spin_lock_acquire (&_ep_rt_mono_profiler_gc_state_lock);
 
 	// Set gc in progress state, preventing new fire event requests.
 	do {
@@ -4266,14 +5158,14 @@ void
 mono_profiler_trigger_heap_collect (MonoProfiler *prof)
 {
 	if (mono_profiler_gc_heap_collect_requested ()) {
-		ep_rt_spin_lock_aquire (&_ep_rt_mono_profiler_gc_state_lock);
+		ep_rt_spin_lock_acquire (&_ep_rt_mono_profiler_gc_state_lock);
 			mono_profiler_gc_heap_collect_requests_dec ();
 			mono_profiler_gc_heap_collect_in_progress_start ();
 		ep_rt_spin_lock_release (&_ep_rt_mono_profiler_gc_state_lock);
 
 		mono_gc_collect (mono_gc_max_generation ());
 
-		ep_rt_spin_lock_aquire (&_ep_rt_mono_profiler_gc_state_lock);
+		ep_rt_spin_lock_acquire (&_ep_rt_mono_profiler_gc_state_lock);
 			mono_profiler_pop_gc_heap_collect_param_request_value ();
 			mono_profiler_gc_heap_collect_in_progress_stop ();
 		ep_rt_spin_lock_release (&_ep_rt_mono_profiler_gc_state_lock);
@@ -4332,16 +5224,16 @@ mono_profiler_fire_buffered_gc_event_root_register (
 	uint8_t root_source = (uint8_t)source;
 	uintptr_t root_key = (uintptr_t)key;
 	const char *root_name = (name ? name : "");
-	uint32_t root_name_len = strlen (root_name) + 1;
+	size_t root_name_len = strlen (root_name) + 1;
 
 	MonoProfilerBufferedGCEvent gc_event_data;
 	gc_event_data.type = MONO_PROFILER_BUFFERED_GC_EVENT_ROOT_REGISTER;
-	gc_event_data.payload_size =
-		sizeof (root_id) +
+	gc_event_data.payload_size = (uint32_t)
+		(sizeof (root_id) +
 		sizeof (root_size) +
 		sizeof (root_source) +
 		sizeof (root_key) +
-		root_name_len;
+		root_name_len);
 
 	uint8_t * buffer = mono_profiler_buffered_gc_event_alloc (gc_event_data.payload_size);
 	if (buffer) {
@@ -4545,8 +5437,8 @@ mono_profiler_fire_buffered_gc_event_moves (
 	MonoProfilerBufferedGCEvent gc_event_data;
 	gc_event_data.type = MONO_PROFILER_BUFFERED_GC_EVENT_MOVES;
 	gc_event_data.payload_size =
-		sizeof (count) +
-		(count * (sizeof (uintptr_t) + sizeof (uintptr_t)));
+		(uint32_t)(sizeof (count) +
+		(count * (sizeof (uintptr_t) + sizeof (uintptr_t))));
 
 	uint8_t * buffer = mono_profiler_buffered_gc_event_alloc (gc_event_data.payload_size);
 	if (buffer) {
@@ -4612,8 +5504,8 @@ mono_profiler_fire_buffered_gc_event_roots (
 	MonoProfilerBufferedGCEvent gc_event_data;
 	gc_event_data.type = MONO_PROFILER_BUFFERED_GC_EVENT_ROOTS;
 	gc_event_data.payload_size =
-		sizeof (count) +
-		(count * (sizeof (uintptr_t) + sizeof (uintptr_t)));
+		(uint32_t)(sizeof (count) +
+		(count * (sizeof (uintptr_t) + sizeof (uintptr_t))));
 
 	uint8_t * buffer = mono_profiler_buffered_gc_event_alloc (gc_event_data.payload_size);
 	if (buffer) {
@@ -4711,15 +5603,17 @@ mono_profiler_fire_buffered_gc_event_heap_dump_object_reference (
 	object_size += 7;
 	object_size &= ~7;
 
-	MonoProfilerBufferedGCEvent gc_event_data;
-	gc_event_data.type = MONO_PROFILER_BUFFERED_GC_EVENT_OBJECT_REF;
-	gc_event_data.payload_size =
+	size_t payload_size =
 		sizeof (object_id) +
 		sizeof (vtable_id) +
 		sizeof (object_size) +
 		sizeof (object_gen) +
 		sizeof (object_ref_count) +
 		(object_ref_count * (sizeof (uint32_t) + sizeof (uintptr_t)));
+
+	MonoProfilerBufferedGCEvent gc_event_data;
+	gc_event_data.type = MONO_PROFILER_BUFFERED_GC_EVENT_OBJECT_REF;
+	gc_event_data.payload_size = GSIZE_TO_UINT32 (payload_size);
 
 	uint8_t *buffer = mono_profiler_buffered_gc_event_alloc (gc_event_data.payload_size);
 	if (buffer) {
@@ -4752,9 +5646,9 @@ mono_profiler_fire_buffered_gc_event_heap_dump_object_reference (
 
 		// Serialize directly as memory stream expected by FireEtwMonoProfilerGCHeapDumpObjectReference.
 		uintptr_t last_offset = 0;
-		for (int i = 0; i < object_ref_count; i++) {
+		for (uintptr_t i = 0; i < object_ref_count; i++) {
 			// GCEvent.Values[].ReferencesOffset
-			object_ref_offset = offsets [i] - last_offset;
+			object_ref_offset = GUINTPTR_TO_UINT32 (offsets [i] - last_offset);
 			memcpy (buffer, &object_ref_offset, sizeof (object_ref_offset));
 			buffer += sizeof (object_ref_offset);
 
@@ -4990,12 +5884,10 @@ mono_profiler_get_generic_types (
 			*generic_type_count = generic_instance->type_argc;
 			for (uint32_t i = 0; i < generic_instance->type_argc; ++i) {
 				uint8_t type = generic_instance->type_argv [i]->type;
-				memcpy (buffer, &type, sizeof (type));
-				buffer += sizeof (type);
+				ep_write_buffer_uint8_t (&buffer, type);
 
 				uint64_t class_id = (uint64_t)mono_class_from_mono_type_internal (generic_instance->type_argv [i]);
-				memcpy (buffer, &class_id, sizeof (class_id));
-				buffer += sizeof (class_id);
+				ep_write_buffer_uint64_t (&buffer, class_id);
 			}
 		}
 	}
@@ -5112,7 +6004,7 @@ mono_profiler_jit_done (
 	if (verbose) {
 		//TODO: Optimize string formatting into functions accepting GString to reduce heap alloc.
 		method_name = method->name;
-		method_signature = mono_signature_full_name (method->signature);
+		method_signature = mono_signature_full_name (mono_method_signature_internal (method));
 		if (method->klass)
 			method_namespace = mono_type_get_name_full (m_class_get_byval_arg (method->klass), MONO_TYPE_NAME_FORMAT_IL);
 	}
@@ -6391,10 +7283,10 @@ mono_profiler_add_provider_param (const EventFilterDescriptor *key)
 		if (param_ptr) {
 			param = ep_event_filter_desc_alloc (param_ptr, key->size, key->type);
 			if (param) {
-				memcpy ((uint8_t*)param->ptr,(const uint8_t*)key->ptr, key->size);
+				memcpy ((uint8_t*)(uintptr_t)param->ptr,(const uint8_t*)(uintptr_t)key->ptr, key->size);
 				_ep_rt_mono_profiler_provider_params = g_slist_append (_ep_rt_mono_profiler_provider_params, param);
 			} else {
-				g_free ((void *)param_ptr);
+				g_free ((void *)(uintptr_t)param_ptr);
 			}
 		}
 	}
@@ -6414,8 +7306,8 @@ mono_profiler_remove_provider_param (const EventFilterDescriptor *key)
 		while (list) {
 			param = (EventFilterDescriptor *)(list->data);
 			if (param && param->ptr && param->type == key->type && param->size == key->size &&
-				memcmp ((const void *)param->ptr, (const void *)key->ptr, param->size) == 0) {
-					g_free ((void *)param->ptr);
+				memcmp ((const void *)(uintptr_t)param->ptr, (const void *)(uintptr_t)key->ptr, param->size) == 0) {
+					g_free ((void *)(uintptr_t)param->ptr);
 					ep_event_filter_desc_free (param);
 					_ep_rt_mono_profiler_provider_params = g_slist_delete_link (_ep_rt_mono_profiler_provider_params, list);
 					removed = true;
@@ -6436,7 +7328,7 @@ mono_profiler_free_provider_params (void)
 	for (GSList *list = _ep_rt_mono_profiler_provider_params; list; list = list->next) {
 		EventFilterDescriptor *param = (EventFilterDescriptor *)(list->data);
 		if (param) {
-			g_free ((void *)param->ptr);
+			g_free ((void *)(uintptr_t)param->ptr);
 			ep_event_filter_desc_free (param);
 		}
 	}
@@ -6454,7 +7346,7 @@ mono_profiler_provider_params_get_value (
 	if (!param || !param->ptr || !param->size || !key)
 		return false;
 
-	const ep_char8_t *current = (ep_char8_t *)param->ptr;
+	const ep_char8_t *current = (ep_char8_t *)(uintptr_t)param->ptr;
 	const ep_char8_t *end = current + param->size;
 	bool found_key = false;
 

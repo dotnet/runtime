@@ -121,8 +121,8 @@
   <data name="Expr_MissingRightParen" xml:space="preserve"><value>The expression is missing the closing parenthesis.</value></data>
   <data name="Expr_UnknownToken" xml:space="preserve"><value>Cannot interpret token '{0}' at position {1}.</value></data>
   <data name="Expr_UnknownToken1" xml:space="preserve"><value>Expected {0}, but actual token at the position {2} is {1}.</value></data>
-  <data name="Expr_DatatypeConvertion" xml:space="preserve"><value>Cannot convert from {0} to {1}.</value></data>
-  <data name="Expr_DatavalueConvertion" xml:space="preserve"><value>Cannot convert value '{0}' to Type: {1}.</value></data>
+  <data name="Expr_DatatypeConversion" xml:space="preserve"><value>Cannot convert from {0} to {1}.</value></data>
+  <data name="Expr_DatavalueConversion" xml:space="preserve"><value>Cannot convert value '{0}' to Type: {1}.</value></data>
   <data name="Expr_InvalidName" xml:space="preserve"><value>Invalid column name [{0}].</value></data>
   <data name="Expr_InvalidDate" xml:space="preserve"><value>The expression contains invalid date constant '{0}'.</value></data>
   <data name="Expr_NonConstantArgument" xml:space="preserve"><value>Only constant expressions are allowed in the expression list for the IN operator.</value></data>
@@ -143,7 +143,7 @@
   <data name="Expr_EvalNoContext" xml:space="preserve"><value>Cannot evaluate non-constant expression without current row.</value></data>
   <data name="Expr_ExpressionUnbound" xml:space="preserve"><value>Unbound reference in the expression '{0}'.</value></data>
   <data name="Expr_ComputeNotAggregate" xml:space="preserve"><value>Cannot evaluate. Expression '{0}' is not an aggregate.</value></data>
-  <data name="Expr_FilterConvertion" xml:space="preserve"><value>Filter expression '{0}' does not evaluate to a Boolean term.</value></data>
+  <data name="Expr_FilterConversion" xml:space="preserve"><value>Filter expression '{0}' does not evaluate to a Boolean term.</value></data>
   <data name="Expr_InvalidType" xml:space="preserve"><value>Invalid type name '{0}'.</value></data>
   <data name="Expr_LookupArgument" xml:space="preserve"><value>Syntax error in Lookup expression: Expecting keyword 'Parent' followed by a single column argument with possible relation qualifier: Parent[(&lt;relation_name&gt;)].&lt;column_name&gt;.</value></data>
   <data name="Expr_InvokeArgument" xml:space="preserve"><value>Need a row or a table to Invoke DataFilter.</value></data>
@@ -156,6 +156,8 @@
   <data name="Expr_InvalidTimeZoneRange" xml:space="preserve"><value>Provided range for time one exceeds total of 14 hours.</value></data>
   <data name="Expr_MismatchKindandTimeSpan" xml:space="preserve"><value>Kind property of provided DateTime argument, does not match 'hours' and 'minutes' arguments.</value></data>
   <data name="Expr_UnsupportedType" xml:space="preserve"><value>A DataColumn of type '{0}' does not support expression.</value></data>
+  <data name="Batch_NotSupportedOnDataSourceBatch" xml:space="preserve"><value>Connection and transaction access is not supported on batches created from DbDataSource.</value></data>
+  <data name="Command_NotSupportedOnDataSourceCommand" xml:space="preserve"><value>Connection and transaction access is not supported on commands created from DbDataSource.</value></data>
   <data name="Data_EnforceConstraints" xml:space="preserve"><value>Failed to enable constraints. One or more rows contain values violating non-null, unique, or foreign-key constraints.</value></data>
   <data name="Data_CannotModifyCollection" xml:space="preserve"><value>Collection itself is not modifiable.</value></data>
   <data name="Data_CaseInsensitiveNameConflict" xml:space="preserve"><value>The given name '{0}' matches at least two names in the collection object with different cases, but does not match either of them with the same case.</value></data>
@@ -219,7 +221,7 @@
   <data name="DataColumn_INullableUDTwithoutStaticNull" xml:space="preserve"><value>Type '{0}' does not contain static Null property or field.</value></data>
   <data name="DataColumn_UDTImplementsIChangeTrackingButnotIRevertible" xml:space="preserve"><value>Type '{0}' does not implement IRevertibleChangeTracking; therefore can not proceed with RejectChanges().</value></data>
   <data name="DataColumn_SetAddedAndModifiedCalledOnNonUnchanged" xml:space="preserve"><value>SetAdded and SetModified can only be called on DataRows with Unchanged DataRowState.</value></data>
-  <data name="DataColumn_OrdinalExceedMaximun" xml:space="preserve"><value>Ordinal '{0}' exceeds the maximum number.</value></data>
+  <data name="DataColumn_OrdinalExceedMaximum" xml:space="preserve"><value>Ordinal '{0}' exceeds the maximum number.</value></data>
   <data name="DataColumn_NullableTypesNotSupported" xml:space="preserve"><value>DataSet does not support System.Nullable&lt;&gt;.</value></data>
   <data name="DataConstraint_NoName" xml:space="preserve"><value>Cannot change the name of a constraint to empty string when it is in the ConstraintCollection.</value></data>
   <data name="DataConstraint_Violation" xml:space="preserve"><value>Cannot enforce constraints on constraint {0}.</value></data>

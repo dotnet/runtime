@@ -1,9 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Nullable>enable</Nullable>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <ContractTypesPartiallyMoved>true</ContractTypesPartiallyMoved>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Runtime\CompilerServices\IDispatchConstantAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\IUnknownConstantAttribute.cs" />
@@ -36,7 +37,6 @@
     <Compile Include="System\Runtime\InteropServices\RegistrationClassContext.cs" />
     <Compile Include="System\Runtime\InteropServices\RegistrationConnectionType.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeEnvironment.cs" />
-    <Compile Include="System\Runtime\InteropServices\SetWin32ContextInIDispatchAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeLibFuncAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeLibFuncFlags.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeLibImportClassAttribute.cs" />
@@ -48,7 +48,9 @@
     <Compile Include="System\Security\SecureStringMarshal.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
   </ItemGroup>
+
 </Project>

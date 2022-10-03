@@ -9,20 +9,11 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-#if ES_BUILD_STANDALONE
-using Microsoft.Win32;
-using System.Security.Permissions;
-#endif
-
-#if !ES_BUILD_STANDALONE && TARGET_WINDOWS
+#if TARGET_WINDOWS
 using Internal.Win32;
 #endif
 
-#if ES_BUILD_STANDALONE
-namespace Microsoft.Diagnostics.Tracing
-#else
 namespace System.Diagnostics.Tracing
-#endif
 {
     internal enum EventProviderType
     {
@@ -45,9 +36,6 @@ namespace System.Diagnostics.Tracing
     /// Only here because System.Diagnostics.EventProvider needs one more extensibility hook (when it gets a
     /// controller callback)
     /// </summary>
-#if ES_BUILD_STANDALONE
-    [System.Security.Permissions.HostProtection(MayLeakOnAbort = true)]
-#endif
     internal class EventProvider : IDisposable
     {
         // This is the windows EVENT_DATA_DESCRIPTOR structure.  We expose it because this is what
@@ -147,7 +135,7 @@ namespace System.Diagnostics.Tracing
             status = EventRegister(eventSource, m_etwCallback);
             if (status != 0)
             {
-#if TARGET_WINDOWS && !ES_BUILD_STANDALONE
+#if TARGET_WINDOWS
                 throw new ArgumentException(Interop.Kernel32.GetMessage(unchecked((int)status)));
 #else
                 throw new ArgumentException(Convert.ToString(unchecked((int)status)));
@@ -381,8 +369,7 @@ namespace System.Diagnostics.Tracing
             List<SessionInfo>? liveSessionList = null;
 
             GetSessionInfo(
-                (int etwSessionId, long matchAllKeywords, ref List<SessionInfo>? sessionList) =>
-                    GetSessionInfoCallback(etwSessionId, matchAllKeywords, ref sessionList),
+                GetSessionInfoCallback,
                 ref liveSessionList);
 
             List<KeyValuePair<SessionInfo, bool>> changedSessionList = new List<KeyValuePair<SessionInfo, bool>>();
@@ -454,17 +441,13 @@ namespace System.Diagnostics.Tracing
         /// for the current process ID, calling 'action' for each session, and passing it the
         /// ETW session and the 'AllKeywords' the session enabled for the current provider.
         /// </summary>
-        private unsafe void GetSessionInfo(SessionInfoCallback action, ref List<SessionInfo>? sessionList)
+        private
+#if !TARGET_WINDOWS
+        static
+#endif
+        unsafe void GetSessionInfo(SessionInfoCallback action, ref List<SessionInfo>? sessionList)
         {
-            // We wish the EventSource package to be legal for Windows Store applications.
-            // Currently EnumerateTraceGuidsEx is not an allowed API, so we avoid its use here
-            // and use the information in the registry instead.  This means that ETW controllers
-            // that do not publish their intent to the registry (basically all controllers EXCEPT
-            // TraceEventSesion) will not work properly
-
-            // However the framework version of EventSource DOES have ES_SESSION_INFO defined and thus
-            // does not have this issue.
-#if (TARGET_WINDOWS && (ES_SESSION_INFO || !ES_BUILD_STANDALONE))
+#if TARGET_WINDOWS
             int buffSize = 256;     // An initial guess that probably works most of the time.
             byte* stackSpace = stackalloc byte[buffSize];
             byte* buffer = stackSpace;
@@ -520,60 +503,7 @@ namespace System.Diagnostics.Tracing
                     Marshal.FreeHGlobal((IntPtr)buffer);
                 }
             }
-#else
-#if TARGET_WINDOWS
-            // This code is only used in the Nuget Package Version of EventSource.  because
-            // the code above is using APIs baned from UWP apps.
-            //
-            // TODO: In addition to only working when TraceEventSession enables the provider, this code
-            // also has a problem because TraceEvent does not clean up if the registry is stale
-            // It is unclear if it is worth keeping, but for now we leave it as it does work
-            // at least some of the time.
 
-            // Determine our session from what is in the registry.
-            string regKey = @"\Microsoft\Windows\CurrentVersion\Winevt\Publishers\{" + m_providerName + "}";
-            if (IntPtr.Size == 8)
-                regKey = @"Software" + @"\Wow6432Node" + regKey;
-            else
-                regKey = @"Software" + regKey;
-
-            using (var key = Registry.LocalMachine.OpenSubKey(regKey))
-            {
-                if (key != null)
-                {
-                    foreach (string valueName in key.GetValueNames())
-                    {
-                        if (valueName.StartsWith("ControllerData_Session_", StringComparison.Ordinal))
-                        {
-                            string strId = valueName.Substring(23);      // strip of the ControllerData_Session_
-                            int etwSessionId;
-                            if (int.TryParse(strId, out etwSessionId))
-                            {
-#if ES_BUILD_STANDALONE
-                                // we need to assert this permission for partial trust scenarios
-                                (new RegistryPermission(RegistryPermissionAccess.Read, regKey)).Assert();
-#endif
-                                var data = key.GetValue(valueName) as byte[];
-                                if (data != null)
-                                {
-                                    var dataAsString = System.Text.Encoding.UTF8.GetString(data);
-                                    int keywordIdx = dataAsString.IndexOf("EtwSessionKeyword", StringComparison.Ordinal);
-                                    if (0 <= keywordIdx)
-                                    {
-                                        int startIdx = keywordIdx + 18;
-                                        int endIdx = dataAsString.IndexOf('\0', startIdx);
-                                        string keywordBitString = dataAsString.Substring(startIdx, endIdx - startIdx);
-                                        int keywordBit;
-                                        if (0 < endIdx && int.TryParse(keywordBitString, out keywordBit))
-                                            action(etwSessionId, 1L << keywordBit, ref sessionList);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-#endif
 #endif
         }
 
@@ -623,9 +553,6 @@ namespace System.Diagnostics.Tracing
                 string valueName = "ControllerData_Session_" + etwSessionId.ToString(CultureInfo.InvariantCulture);
 
                 // we need to assert this permission for partial trust scenarios
-#if ES_BUILD_STANDALONE
-                (new RegistryPermission(RegistryPermissionAccess.Read, regKey)).Assert();
-#endif
                 using (RegistryKey? key = Registry.LocalMachine.OpenSubKey(regKey))
                 {
                     data = key?.GetValue(valueName, null) as byte[];
@@ -922,7 +849,7 @@ namespace System.Diagnostics.Tracing
                             data = (int)Convert.ToInt64(data);  // This handles all int/uint or below (we treat them like 32 bit ints)
                         goto Again;
                     }
-                    catch { }   // On wierd cases (e.g. enums of type double), give up and for compat simply tostring.
+                    catch { }   // On weird cases (e.g. enums of type double), give up and for compat simply tostring.
                 }
 
                 // To our eyes, everything else is a just a string
@@ -995,15 +922,10 @@ namespace System.Diagnostics.Tracing
                 int index;
                 int refObjIndex = 0;
 
-#if ES_BUILD_STANDALONE
-                int[] refObjPosition = new int[EtwAPIMaxRefObjCount];
-                object?[] dataRefObj = new object?[EtwAPIMaxRefObjCount];
-#else
                 Debug.Assert(EtwAPIMaxRefObjCount == 8, $"{nameof(EtwAPIMaxRefObjCount)} must equal the number of fields in {nameof(EightObjects)}");
                 EightObjects eightObjectStack = default;
                 Span<int> refObjPosition = stackalloc int[EtwAPIMaxRefObjCount];
                 Span<object?> dataRefObj = new Span<object?>(ref eightObjectStack._arg0, EtwAPIMaxRefObjCount);
-#endif
 
                 EventData* userData = stackalloc EventData[2 * argCount];
                 for (int i = 0; i < 2 * argCount; i++)
@@ -1042,10 +964,6 @@ namespace System.Diagnostics.Tracing
 
                             if (refObjIndex >= dataRefObj.Length)
                             {
-#if ES_BUILD_STANDALONE
-                                Array.Resize(ref dataRefObj, dataRefObj.Length * 2);
-                                Array.Resize(ref refObjPosition, refObjPosition.Length * 2);
-#else
                                 Span<object?> newDataRefObj = new object?[dataRefObj.Length * 2];
                                 dataRefObj.CopyTo(newDataRefObj);
                                 dataRefObj = newDataRefObj;
@@ -1053,7 +971,6 @@ namespace System.Diagnostics.Tracing
                                 Span<int> newRefObjPosition = new int[refObjPosition.Length * 2];
                                 refObjPosition.CopyTo(newRefObjPosition);
                                 refObjPosition = newRefObjPosition;
-#endif
                             }
 
                             dataRefObj[refObjIndex] = supportedRefObj;
@@ -1175,7 +1092,6 @@ namespace System.Diagnostics.Tracing
             return true;
         }
 
-#if !ES_BUILD_STANDALONE
         /// <summary>Workaround for inability to stackalloc object[EtwAPIMaxRefObjCount == 8].</summary>
         private struct EightObjects
         {
@@ -1190,7 +1106,6 @@ namespace System.Diagnostics.Tracing
             private object? _arg7;
 #pragma warning restore CA1823, CS0169, IDE0051
         }
-#endif
 
         /// <summary>
         /// WriteEvent, method to be used by generated code on a derived class

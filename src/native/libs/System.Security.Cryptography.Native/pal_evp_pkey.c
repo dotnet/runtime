@@ -72,7 +72,7 @@ int32_t CryptoNative_EvpPKeySize(EVP_PKEY* pkey)
 {
     // This function is not expected to populate the error queue with
     // any errors, but it's technically possible that an external
-    // ENGINE or OSSL_PROVIDER populate the queue in their implmenetation,
+    // ENGINE or OSSL_PROVIDER populate the queue in their implementation,
     // but the calling code does not check for one.
     assert(pkey != NULL);
     return EVP_PKEY_get_size(pkey);

@@ -88,7 +88,6 @@ class Crst;
 #ifdef FEATURE_COMINTEROP
 class RCWCleanupList;
 #endif // FEATURE_COMINTEROP
-class BBSweep;
 
 //
 // loader handles are opaque types that track object pointers that have a lifetime
@@ -213,7 +212,7 @@ class OBJECTREF {
         OBJECTREF& operator=(const OBJECTREF &objref);
         OBJECTREF& operator=(TADDR nul);
 
-            // allow explict casts
+            // allow explicit casts
         explicit OBJECTREF(Object *pObject);
 
         void Validate(BOOL bDeep = TRUE, BOOL bVerifyNextHeader = TRUE, BOOL bVerifySyncBlock = TRUE);
@@ -345,9 +344,6 @@ GARY_DECL(TypeHandle, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
 
 extern "C" Volatile<int32_t>   g_TrapReturningThreads;
 
-EXTERN BBSweep              g_BBSweep;
-EXTERN IBCLogger            g_IBCLogger;
-
 #ifdef _DEBUG
 // next two variables are used to enforce an ASSERT in Thread::DbgFindThread
 // that does not allow g_TrapReturningThreads to creep up unchecked.
@@ -367,7 +363,6 @@ GPTR_DECL(MethodTable,      g_pStringClass);
 GPTR_DECL(MethodTable,      g_pArrayClass);
 GPTR_DECL(MethodTable,      g_pSZArrayHelperClass);
 GPTR_DECL(MethodTable,      g_pNullableClass);
-GPTR_DECL(MethodTable,      g_pByReferenceClass);
 GPTR_DECL(MethodTable,      g_pExceptionClass);
 GPTR_DECL(MethodTable,      g_pThreadAbortExceptionClass);
 GPTR_DECL(MethodTable,      g_pOutOfMemoryExceptionClass);
@@ -720,5 +715,16 @@ enum HostCallPreference
     AllowHostCalls,
     NoHostCalls,
 };
+
+#ifdef TARGET_WINDOWS
+typedef BOOL(WINAPI* PINITIALIZECONTEXT2)(PVOID Buffer, DWORD ContextFlags, PCONTEXT* Context, PDWORD ContextLength, ULONG64 XStateCompactionMask);
+extern PINITIALIZECONTEXT2 g_pfnInitializeContext2;
+
+#ifdef TARGET_X86
+typedef VOID(__cdecl* PRTLRESTORECONTEXT)(PCONTEXT ContextRecord, struct _EXCEPTION_RECORD* ExceptionRecord);
+extern PRTLRESTORECONTEXT g_pfnRtlRestoreContext;
+#endif // TARGET_X86
+
+#endif // TARGET_WINDOWS
 
 #endif /* _VARS_HPP */

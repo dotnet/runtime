@@ -243,7 +243,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private bool IsElementNode(ExtensionDataNodeType nodeType)
+        private static bool IsElementNode(ExtensionDataNodeType nodeType)
         {
             return (nodeType == ExtensionDataNodeType.Element ||
                 nodeType == ExtensionDataNodeType.ReferencedElement ||
@@ -427,7 +427,7 @@ namespace System.Runtime.Serialization
             return false;
         }
 
-        private void MoveNext(IDataNode? dataNode)
+        private static void MoveNext(IDataNode? dataNode)
         {
             throw NotImplemented.ByDesign;
         }
@@ -466,7 +466,9 @@ namespace System.Runtime.Serialization
         private void GrowElementsIfNeeded()
         {
             if (_elements == null)
+            {
                 _elements = new ElementData[8];
+            }
             else if (_elements.Length == _depth)
             {
                 ElementData[] newElements = new ElementData[_elements.Length * 2];
@@ -484,7 +486,7 @@ namespace System.Runtime.Serialization
 
         internal static string GetPrefix(string? ns)
         {
-            ns = ns ?? string.Empty;
+            ns ??= string.Empty;
             string? prefix = (string?)s_nsToPrefixTable[ns];
             if (prefix == null)
             {
@@ -529,9 +531,7 @@ namespace System.Runtime.Serialization
         public void AddAttribute(string prefix, string ns, string name, string? value)
         {
             GrowAttributesIfNeeded();
-            AttributeData attribute = attributes[attributeCount];
-            if (attribute == null)
-                attributes[attributeCount] = attribute = new AttributeData();
+            AttributeData attribute = attributes[attributeCount] ??= new AttributeData();
             attribute.prefix = prefix;
             attribute.ns = ns;
             attribute.localName = name;
@@ -543,7 +543,9 @@ namespace System.Runtime.Serialization
         private void GrowAttributesIfNeeded()
         {
             if (attributes == null)
+            {
                 attributes = new AttributeData[4];
+            }
             else if (attributes.Length == attributeCount)
             {
                 AttributeData[] newAttributes = new AttributeData[attributes.Length * 2];

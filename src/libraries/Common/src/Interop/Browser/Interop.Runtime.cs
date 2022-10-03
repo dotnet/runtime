@@ -4,121 +4,48 @@
 using System;
 using System.Runtime.CompilerServices;
 
-using JSObject = System.Runtime.InteropServices.JavaScript.JSObject;
-using JSException = System.Runtime.InteropServices.JavaScript.JSException;
-using Uint8Array = System.Runtime.InteropServices.JavaScript.Uint8Array;
-
 internal static partial class Interop
 {
-    internal static partial class Runtime
+    internal static unsafe partial class Runtime
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern string InvokeJS(string str, out int exceptionalResult);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object CompileFunction(string str, out int exceptionalResult);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object InvokeJSWithArgs(int jsHandle, string method, object?[] parms, out int exceptionalResult);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object GetObjectProperty(int jsHandle, string propertyName, out int exceptionalResult);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object SetObjectProperty(int jsHandle, string propertyName, object value, bool createIfNotExists, bool hasOwnProperty, out int exceptionalResult);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object GetByIndex(int jsHandle, int index, out int exceptionalResult);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object SetByIndex(int jsHandle, int index, object? value, out int exceptionalResult);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object GetGlobalObject(string? globalName, out int exceptionalResult);
+        internal static extern void ReleaseCSOwnedObject(IntPtr jsHandle);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern unsafe void BindJSFunction(in string function_name, in string module_name, void* signature, out IntPtr bound_function_js_handle, out int is_exception, out object result);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void InvokeJSFunction(IntPtr bound_function_js_handle, void* data);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern unsafe void BindCSFunction(in string fully_qualified_name, int signature_hash, void* signature, out int is_exception, out object result);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void MarshalPromise(void* data);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern IntPtr RegisterGCRoot(IntPtr start, int bytesSize, IntPtr name);
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void DeregisterGCRoot(IntPtr handle);
+
+        #region Legacy
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object ReleaseCSOwnedObject(int jsHandle);
+        internal static extern void InvokeJSWithArgsRef(IntPtr jsHandle, in string method, in object?[] parms, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object CreateCSOwnedObject(string className, object[] parms, out int exceptionalResult);
+        internal static extern void GetObjectPropertyRef(IntPtr jsHandle, in string propertyName, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object TypedArrayToArray(int jsHandle, out int exceptionalResult);
+        internal static extern void SetObjectPropertyRef(IntPtr jsHandle, in string propertyName, in object? value, bool createIfNotExists, bool hasOwnProperty, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object TypedArrayCopyTo(int jsHandle, int arrayPtr, int begin, int end, int bytesPerElement, out int exceptionalResult);
+        internal static extern void GetByIndexRef(IntPtr jsHandle, int index, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object TypedArrayFrom(int arrayPtr, int begin, int end, int bytesPerElement, int type, out int exceptionalResult);
+        internal static extern void SetByIndexRef(IntPtr jsHandle, int index, in object? value, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object TypedArrayCopyFrom(int jsHandle, int arrayPtr, int begin, int end, int bytesPerElement, out int exceptionalResult);
+        internal static extern void GetGlobalObjectRef(in string? globalName, out int exceptionalResult, out object result);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern string? AddEventListener(int jsHandle, string name, int gcHandle, int optionsJsHandle);
+        internal static extern void TypedArrayToArrayRef(IntPtr jsHandle, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern string? RemoveEventListener(int jsHandle, string name, int gcHandle, bool capture);
+        internal static extern void CreateCSOwnedObjectRef(in string className, in object[] parms, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object WebSocketSend(int webSocketJSHandle, IntPtr messagePtr, int offset, int length, int messageType, bool endOfMessage, out int promiseJSHandle, out int exceptionalResult);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object WebSocketReceive(int webSocketJSHandle, IntPtr bufferPtr, int offset, int length, IntPtr responsePtr, out int promiseJSHandle, out int exceptionalResult);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object WebSocketOpen(string uri, object[]? subProtocols, Delegate onClosed, out int webSocketJSHandle, out int promiseJSHandle, out int exceptionalResult);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern string WebSocketAbort(int webSocketJSHandle, out int exceptionalResult);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object WebSocketClose(int webSocketJSHandle, int code, string? reason, bool waitForCloseReceived, out int promiseJSHandle, out int exceptionalResult);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern string CancelPromise(int promiseJSHandle, out int exceptionalResult);
+        internal static extern void TypedArrayFromRef(int arrayPtr, int begin, int end, int bytesPerElement, int type, out int exceptionalResult, out object result);
 
-        // / <summary>
-        // / Execute the provided string in the JavaScript context
-        // / </summary>
-        // / <returns>The js.</returns>
-        // / <param name="str">String.</param>
-        public static string InvokeJS(string str)
-        {
-            string res = InvokeJS(str, out int exception);
-            if (exception != 0)
-                throw new JSException(res);
-            return res;
-        }
+        #endregion
 
-        public static System.Runtime.InteropServices.JavaScript.Function? CompileFunction(string snippet)
-        {
-            object res = CompileFunction(snippet, out int exception);
-            if (exception != 0)
-                throw new JSException((string)res);
-            ReleaseInFlight(res);
-            return res as System.Runtime.InteropServices.JavaScript.Function;
-        }
-
-        public static object GetGlobalObject(string? str = null)
-        {
-            int exception;
-            object jsObj = GetGlobalObject(str, out exception);
-
-            if (exception != 0)
-                throw new JSException($"Error obtaining a handle to global {str}");
-
-            ReleaseInFlight(jsObj);
-            return jsObj;
-        }
-
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void StopProfile()
-        {
-        }
-
-        // Called by the AOT profiler to save profile data into INTERNAL.aot_profile_data
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static unsafe void DumpAotProfileData(ref byte buf, int len, string extraArg)
-        {
-            if (len == 0)
-                throw new JSException("Profile data length is 0");
-
-            var arr = new byte[len];
-            fixed (void *p = &buf)
-            {
-                var span = new ReadOnlySpan<byte>(p, len);
-                // Send it to JS
-                var module = (JSObject)Runtime.GetGlobalObject("Module");
-                module.SetObjectProperty("aot_profile_data", Uint8Array.From(span));
-            }
-        }
-
-        internal static void ReleaseInFlight(object? obj)
-        {
-            JSObject? jsObj = obj as JSObject;
-            jsObj?.ReleaseInFlight();
-        }
     }
 }

@@ -36,7 +36,7 @@ namespace Internal.TypeSystem
             // Check default constructor constraint
             if ((constraints & GenericConstraints.DefaultConstructorConstraint) != 0)
             {
-                if (!instantiationParam.HasExplicitOrImplicitDefaultConstructor() 
+                if (!instantiationParam.HasExplicitOrImplicitDefaultConstructor()
                     && !CheckGenericSpecialConstraint(instantiationParam, GenericConstraints.DefaultConstructorConstraint))
                     return false;
             }
@@ -44,10 +44,14 @@ namespace Internal.TypeSystem
             // Check struct constraint
             if ((constraints & GenericConstraints.NotNullableValueTypeConstraint) != 0)
             {
-                if ((!instantiationParam.IsValueType || instantiationParam.IsNullable) 
+                if ((!instantiationParam.IsValueType || instantiationParam.IsNullable)
                     && !CheckGenericSpecialConstraint(instantiationParam, GenericConstraints.NotNullableValueTypeConstraint))
                     return false;
             }
+
+            // Check for ByRefLike support
+            if (instantiationParam.IsByRefLike && (constraints & GenericConstraints.AcceptByRefLike) == 0)
+                return false;
 
             var instantiatedConstraints = new ArrayBuilder<TypeDesc>();
             GetInstantiatedConstraintsRecursive(instantiationParamContext, instantiationParam, ref instantiatedConstraints);
@@ -65,7 +69,7 @@ namespace Internal.TypeSystem
             return true;
         }
 
-        // Used to determine whether a type parameter used to instantiate another type parameter with a specific special 
+        // Used to determine whether a type parameter used to instantiate another type parameter with a specific special
         // constraint satisfies that constraint.
         private static bool CheckGenericSpecialConstraint(TypeDesc type, GenericConstraints specialConstraint)
         {

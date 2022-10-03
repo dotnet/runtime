@@ -29,16 +29,16 @@ class Crst;
 
 // --------------------------------------------------------------------------------
 // PEImage is a PE file loaded into memory.
-// 
+//
 // The actual data is represented by PEImageLayout instances which are created on demand.
 //
 // Various PEImageLayouts can be classified into two kinds -
 //  - Flat    - the same layout as on disk/array or
-// 
+//
 //  - Loaded  - PE sections are mapped into virtual addresses.
 //              PE relocations are applied.
 //              Native exception handlers are registered with OS (on Windows).
-// 
+//
 // Flat layouts are sufficient for operations that do not require running native code,
 // Anything based on RVA, such as retrieving IL method bodies, is slightly less efficient,
 // since RVA must be translated to file offsets by iterating through section headers.
@@ -46,34 +46,34 @@ class Crst;
 //
 // Loaded layouts are functional supersets of Flat - anything that can be done with Flat
 // can be done with Loaded.
-// 
+//
 // Running native code in the PE (i.e. R2R or IJW scenarios) requires Loaded layout.
 // It is possible to execute R2R assembly from Flat layout in IL mode, but its R2R functionality
 // will be disabled. When R2R is explicitly turned off, Flat is sufficient for any scenario with
 // R2R assemblies.
 // In a case of IJW, the PE must be loaded by the native loader to ensure that native dependencies
 // are resolved.
-// 
+//
 // In some scenarios we create Loaded layouts by manually mapping images into memory.
 // That is particularly true on Unix where we cannot rely on OS loader.
 // Manual creation of layouts is limited to "IL only" images. This can be checked
 // for via `PEDecoder::IsILOnlyImage`
 // NOTE: historically, and somewhat confusingly, R2R PEs are considered IsILOnlyImage for this
 //       purpose. That is true even for composite R2R PEs that do not contain IL.
-// 
+//
 // A PEImage, depending on scenario, may end up creating both Flat and Loaded layouts,
 // thus it has two slots - m_pLayouts[IMAGE_COUNT].
-// 
+//
 // m_pLayouts[IMAGE_FLAT]
 //   When initialized contains a layout that allows operations for which Flat layout is sufficient -
 //   i.e. reading metadata
-// 
+//
 // m_pLayouts[IMAGE_LOADED]
 //   When initialized contains a layout that allows loading/running code.
-// 
+//
 // The layouts can only be unloaded together with the owning PEImage, so if we have Flat and
 // then need Loaded, we can only add one more. Thus we have two slots.
-// 
+//
 // Often the slots refer to the same layout though. That is because if we create Loaded before Flat,
 // we put Loaded into both slots, since it is functionally a superset of Flat.
 // Also for pure-IL assemblies Flat is sufficient for anything, so we may put Flat into both slots.
@@ -159,7 +159,6 @@ public:
     BOOL HasV1Metadata();
     IMDInternalImport* GetMDImport();
     BOOL MDImportLoaded();
-    IMDInternalImport* GetNativeMDImport(BOOL loadAllowed = TRUE);
 
     BOOL HasContents() ;
     BOOL IsPtrInImage(PTR_CVOID data);
@@ -182,7 +181,7 @@ public:
 
     PTR_CVOID GetMetadata(COUNT_T* pSize = NULL);
 
-    // Check utilites
+    // Check utilities
     static CHECK CheckStartup();
     static CHECK CheckCanonicalFullPath(const SString& path);
 
@@ -213,7 +212,6 @@ private:
     PTR_PEImageLayout GetExistingLayoutInternal(DWORD imageLayoutMask);
 
     void OpenMDImport();
-    void OpenNativeMDImport();
     // ------------------------------------------------------------
     // Private routines
     // ------------------------------------------------------------
@@ -337,7 +335,6 @@ private:
 #endif // METADATATRACKER_DATA
 
     IMDInternalImport* m_pMDImport;
-    IMDInternalImport* m_pNativeMDImport;
 };
 
 FORCEINLINE void PEImageRelease(PEImage *i)

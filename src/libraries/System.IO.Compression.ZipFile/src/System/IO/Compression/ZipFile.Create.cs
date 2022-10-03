@@ -393,17 +393,17 @@ namespace System.IO.Compression
                         if (file is FileInfo)
                         {
                             // Create entry for file:
-                            string entryName = ZipFileUtils.EntryFromPath(file.FullName, basePath.Length, entryNameLength, ref entryNameBuffer);
+                            string entryName = ArchivingUtils.EntryFromPath(file.FullName, basePath.Length, entryNameLength, ref entryNameBuffer);
                             ZipFileExtensions.DoCreateEntryFromFile(archive, file.FullName, entryName, compressionLevel);
                         }
                         else
                         {
                             // Entry marking an empty dir:
-                            if (file is DirectoryInfo possiblyEmpty && ZipFileUtils.IsDirEmpty(possiblyEmpty))
+                            if (file is DirectoryInfo possiblyEmpty && ArchivingUtils.IsDirEmpty(possiblyEmpty))
                             {
                                 // FullName never returns a directory separator character on the end,
                                 // but Zip archives require it to specify an explicit directory:
-                                string entryName = ZipFileUtils.EntryFromPath(file.FullName, basePath.Length, entryNameLength, ref entryNameBuffer, appendPathSeparator: true);
+                                string entryName = ArchivingUtils.EntryFromPath(file.FullName, basePath.Length, entryNameLength, ref entryNameBuffer, appendPathSeparator: true);
                                 archive.CreateEntry(entryName);
                             }
                         }
@@ -411,7 +411,7 @@ namespace System.IO.Compression
 
                     // If no entries create an empty root directory entry:
                     if (includeBaseDirectory && directoryIsEmpty)
-                        archive.CreateEntry(ZipFileUtils.EntryFromPath(di.Name, 0, di.Name.Length, ref entryNameBuffer, appendPathSeparator: true));
+                        archive.CreateEntry(ArchivingUtils.EntryFromPath(di.Name, 0, di.Name.Length, ref entryNameBuffer, appendPathSeparator: true));
                 }
                 finally
                 {

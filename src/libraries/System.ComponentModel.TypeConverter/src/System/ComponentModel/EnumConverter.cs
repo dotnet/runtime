@@ -62,7 +62,7 @@ namespace System.ComponentModel
         /// </summary>
         protected virtual IComparer Comparer => InvariantComparer.Default;
 
-        private static long GetEnumValue(bool isUnderlyingTypeUInt64, Enum enumVal, CultureInfo? culture)
+        private static long GetEnumValue(bool isUnderlyingTypeUInt64, object enumVal, CultureInfo? culture)
         {
             return isUnderlyingTypeUInt64 ?
                 unchecked((long)Convert.ToUInt64(enumVal, culture)) :
@@ -85,7 +85,7 @@ namespace System.ComponentModel
                         string[] values = strValue.Split(',');
                         foreach (string v in values)
                         {
-                            convertedValue |= GetEnumValue(isUnderlyingTypeUInt64, (Enum)Enum.Parse(EnumType, v, true), culture);
+                            convertedValue |= GetEnumValue(isUnderlyingTypeUInt64, Enum.Parse(EnumType, v, true), culture);
                         }
                         return Enum.ToObject(EnumType, convertedValue);
                     }
@@ -115,8 +115,10 @@ namespace System.ComponentModel
         /// <summary>
         /// Converts the given value object to the specified destination type.
         /// </summary>
-        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType!!)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
+            ArgumentNullException.ThrowIfNull(destinationType);
+
             if (destinationType == typeof(string) && value != null)
             {
                 // Raise an argument exception if the value isn't defined and if
@@ -169,14 +171,14 @@ namespace System.ComponentModel
                     bool isUnderlyingTypeUInt64 = Enum.GetUnderlyingType(EnumType) == typeof(ulong);
                     List<Enum> flagValues = new List<Enum>();
 
-                    Array objValues = Enum.GetValues(EnumType);
+                    Array objValues = Enum.GetValuesAsUnderlyingType(EnumType);
                     long[] ulValues = new long[objValues.Length];
                     for (int idx = 0; idx < objValues.Length; idx++)
                     {
-                        ulValues[idx] = GetEnumValue(isUnderlyingTypeUInt64, (Enum)objValues.GetValue(idx)!, culture);
+                        ulValues[idx] = GetEnumValue(isUnderlyingTypeUInt64, objValues.GetValue(idx)!, culture);
                     }
 
-                    long longValue = GetEnumValue(isUnderlyingTypeUInt64, (Enum)value, culture);
+                    long longValue = GetEnumValue(isUnderlyingTypeUInt64, value, culture);
                     bool valueFound = true;
                     while (valueFound)
                     {

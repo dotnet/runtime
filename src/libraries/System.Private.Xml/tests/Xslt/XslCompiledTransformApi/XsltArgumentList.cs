@@ -2597,7 +2597,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation("Unitialized and NULL return values from the methods in the extension object")]
+        //[Variation("Uninitialized and NULL return values from the methods in the extension object")]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Stream, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]

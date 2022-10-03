@@ -15,12 +15,7 @@ struct version_t
     int get_major() const { return m_major; }
     int get_minor() const { return m_minor; }
     int get_build() const { return m_build; }
-    int get_revision() const { return m_revision; }
-
-    void set_major(int m) { m_major = m; }
-    void set_minor(int m) { m_minor = m; }
-    void set_build(int m) { m_build = m; }
-    void set_revision(int m) { m_revision = m; }
+    // int get_revision() const { return m_revision; }
 
     pal::string_t as_str() const;
 

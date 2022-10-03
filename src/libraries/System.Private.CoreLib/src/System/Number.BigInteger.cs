@@ -602,6 +602,11 @@ namespace System
                         {
                             remLength--;
                         }
+                        else
+                        {
+                            // As soon as we find a non-zero block, the rest of remainder is significant
+                            break;
+                        }
                     }
 
                     rem._length = remLength;
@@ -1222,7 +1227,7 @@ namespace System
             }
 
             private void Clear(uint length) =>
-                Buffer.ZeroMemory(
+                NativeMemory.Clear(
                     (byte*)Unsafe.AsPointer(ref _blocks[0]), // This is safe to do since we are a ref struct
                     length * sizeof(uint));
 

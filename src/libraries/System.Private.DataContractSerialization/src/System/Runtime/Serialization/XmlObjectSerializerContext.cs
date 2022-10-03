@@ -1,17 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Security;
+using System.Xml;
+using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, System.Runtime.Serialization.DataContract>;
+
 namespace System.Runtime.Serialization
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Reflection;
-        using System.Security;
-    using System.Xml;
-    using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
-
     internal class XmlObjectSerializerContext
     {
         protected XmlObjectSerializer serializer;
@@ -95,17 +95,8 @@ namespace System.Runtime.Serialization
             get { return _dataContractResolver; }
         }
 
-        protected KnownTypeDataContractResolver KnownTypeResolver
-        {
-            get
-            {
-                if (_knownTypeResolver == null)
-                {
-                    _knownTypeResolver = new KnownTypeDataContractResolver(this);
-                }
-                return _knownTypeResolver;
-            }
-        }
+        protected KnownTypeDataContractResolver KnownTypeResolver =>
+            _knownTypeResolver ??= new KnownTypeDataContractResolver(this);
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal DataContract GetDataContract(Type type)
@@ -236,23 +227,14 @@ namespace System.Runtime.Serialization
         internal Type? ResolveNameFromKnownTypes(XmlQualifiedName typeName)
         {
             DataContract? dataContract = ResolveDataContractFromKnownTypes(typeName);
-            return dataContract == null ? null : dataContract.UnderlyingType;
+            return dataContract?.UnderlyingType;
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private DataContract? ResolveDataContractFromKnownTypes(XmlQualifiedName typeName)
-        {
-            DataContract? dataContract = PrimitiveDataContract.GetPrimitiveDataContract(typeName.Name, typeName.Namespace);
-            if (dataContract == null)
-            {
-                dataContract = scopedKnownTypes.GetDataContract(typeName);
-                if (dataContract == null)
-                {
-                    dataContract = GetDataContractFromSerializerKnownTypes(typeName);
-                }
-            }
-            return dataContract;
-        }
+        private DataContract? ResolveDataContractFromKnownTypes(XmlQualifiedName typeName) =>
+            PrimitiveDataContract.GetPrimitiveDataContract(typeName.Name, typeName.Namespace) ??
+            scopedKnownTypes.GetDataContract(typeName) ??
+            GetDataContractFromSerializerKnownTypes(typeName);
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         protected DataContract? ResolveDataContractFromKnownTypes(string typeName, string? typeNs, DataContract? memberTypeContract, Type? declaredType)

@@ -38,12 +38,15 @@ namespace System.Reflection.Tests
 
         public AssemblyTests()
         {
-            // Assembly.Location does not return the file path for single-file deployment targets.
-            DestTestAssemblyPath = Path.Combine(base.TestDirectory, s_sourceTestAssemblyName);
-            LoadFromTestPath = Path.Combine(base.TestDirectory, "System.Reflection.Tests.dll");
-            File.Copy(SourceTestAssemblyPath, DestTestAssemblyPath);
-            string currAssemblyPath = Path.Combine(Environment.CurrentDirectory, "System.Reflection.Tests.dll");
-            File.Copy(currAssemblyPath, LoadFromTestPath, true);
+            if (PlatformDetection.IsAssemblyLoadingSupported)
+            {
+                // Assembly.Location does not return the file path for single-file deployment targets.
+                DestTestAssemblyPath = Path.Combine(base.TestDirectory, s_sourceTestAssemblyName);
+                LoadFromTestPath = Path.Combine(base.TestDirectory, "System.Reflection.Tests.dll");
+                File.Copy(SourceTestAssemblyPath, DestTestAssemblyPath);
+                string currAssemblyPath = Path.Combine(Environment.CurrentDirectory, "System.Reflection.Tests.dll");
+                File.Copy(currAssemblyPath, LoadFromTestPath, true);
+            }
         }
 
         [Theory]
@@ -150,7 +153,11 @@ namespace System.Reflection.Tests
         {
             Assert.NotNull(Assembly.GetEntryAssembly());
             string assembly = Assembly.GetEntryAssembly().ToString();
-            bool correct = assembly.IndexOf("xunit.console", StringComparison.OrdinalIgnoreCase) != -1;
+
+            // The single file test runner is not xunit.console
+            string expectedAssembly = PlatformDetection.IsNativeAot ? "System.Reflection.Tests" : "xunit.console";
+
+            bool correct = assembly.IndexOf(expectedAssembly, StringComparison.OrdinalIgnoreCase) != -1;
             Assert.True(correct, $"Unexpected assembly name {assembly}");
         }
 
@@ -174,7 +181,7 @@ namespace System.Reflection.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         public void GetFile_InMemory()
         {
             var inMemBlob = File.ReadAllBytes(SourceTestAssemblyPath);
@@ -186,7 +193,7 @@ namespace System.Reflection.Tests
             Assert.Throws<FileNotFoundException>(() => asm.GetFiles(getResourceModules: false));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         public void CodeBaseInMemory()
         {
             var inMemBlob = File.ReadAllBytes(SourceTestAssemblyPath);
@@ -337,7 +344,7 @@ namespace System.Reflection.Tests
             Assert.Throws<FileNotFoundException>(() => Assembly.Load(new AssemblyName("no such assembly"))); // No such assembly
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         public void LoadFile()
         {
             Assembly currentAssembly = typeof(AssemblyTests).Assembly;
@@ -361,20 +368,20 @@ namespace System.Reflection.Tests
             Assert.Equal(loadedAssembly1, loadedAssembly2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         public void LoadFile_NullPath_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("path", () => Assembly.LoadFile(null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         public void LoadFile_NoSuchPath_ThrowsFileNotFoundException()
         {
             string rootedPath = Path.GetFullPath(Guid.NewGuid().ToString("N"));
             AssertExtensions.ThrowsContains<FileNotFoundException>(() => Assembly.LoadFile(rootedPath), rootedPath);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         public void LoadFile_PartiallyQualifiedPath_ThrowsArgumentException()
         {
             string path = "System.Runtime.Tests.dll";
@@ -384,7 +391,7 @@ namespace System.Reflection.Tests
 
         // This test should apply equally to Unix, but this reliably hits a particular one of the
         // myriad ways that assembly load can fail
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void LoadFile_ValidPEBadIL_ThrowsBadImageFormatExceptionWithPath()
         {
@@ -395,7 +402,7 @@ namespace System.Reflection.Tests
             AssertExtensions.ThrowsContains<BadImageFormatException>(() => Assembly.LoadFile(path), path);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         [InlineData(0)]
         [InlineData(5)]
         [InlineData(50)]
@@ -415,13 +422,13 @@ namespace System.Reflection.Tests
             AssertExtensions.ThrowsContains<BadImageFormatException>(() => Assembly.LoadFile(path), path);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         public void LoadFromUsingHashValue()
         {
             Assert.Throws<NotSupportedException>(() => Assembly.LoadFrom("abc", null, System.Configuration.Assemblies.AssemblyHashAlgorithm.SHA1));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         public void LoadFrom_SamePath_ReturnsEqualAssemblies()
         {
             Assembly assembly1 = Assembly.LoadFrom(DestTestAssemblyPath);
@@ -429,7 +436,7 @@ namespace System.Reflection.Tests
             Assert.Equal(assembly1, assembly2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         public void LoadFrom_SameIdentityAsAssemblyWithDifferentPath_ReturnsEqualAssemblies()
         {
             Assembly assembly1 = Assembly.LoadFrom(AssemblyPathHelper.GetAssemblyLocation(typeof(AssemblyTests).Assembly));
@@ -440,28 +447,28 @@ namespace System.Reflection.Tests
             Assert.Equal(assembly1, assembly2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         public void LoadFrom_NullAssemblyFile_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("assemblyFile", () => Assembly.LoadFrom(null));
             AssertExtensions.Throws<ArgumentNullException>("assemblyFile", () => Assembly.UnsafeLoadFrom(null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         public void LoadFrom_EmptyAssemblyFile_ThrowsArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>("path", null, (() => Assembly.LoadFrom("")));
             AssertExtensions.Throws<ArgumentException>("path", null, (() => Assembly.UnsafeLoadFrom("")));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         public void LoadFrom_NoSuchFile_ThrowsFileNotFoundException()
         {
             Assert.Throws<FileNotFoundException>(() => Assembly.LoadFrom("NoSuchPath"));
             Assert.Throws<FileNotFoundException>(() => Assembly.UnsafeLoadFrom("NoSuchPath"));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         public void UnsafeLoadFrom_SamePath_ReturnsEqualAssemblies()
         {
             Assembly assembly1 = Assembly.UnsafeLoadFrom(DestTestAssemblyPath);
@@ -469,13 +476,13 @@ namespace System.Reflection.Tests
             Assert.Equal(assembly1, assembly2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         public void LoadFrom_WithHashValue_ThrowsNotSupportedException()
         {
             Assert.Throws<NotSupportedException>(() => Assembly.LoadFrom(DestTestAssemblyPath, new byte[0], Configuration.Assemblies.AssemblyHashAlgorithm.None));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         public void LoadModule()
         {
             Assembly assembly = typeof(AssemblyTests).Assembly;
@@ -513,7 +520,14 @@ namespace System.Reflection.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))] // single file
         public void CodeBase()
         {
-            Assert.NotEmpty(Helpers.ExecutingAssembly.CodeBase);
+            if (PlatformDetection.IsNativeAot)
+            {
+                Assert.Throws<NotSupportedException>(() => _ = Helpers.ExecutingAssembly.CodeBase);
+            }
+            else
+            {
+                Assert.NotEmpty(Helpers.ExecutingAssembly.CodeBase);
+            }
         }
 #pragma warning restore SYSLIB0012
 
@@ -589,9 +603,16 @@ namespace System.Reflection.Tests
         [Fact]
         public void GetReferencedAssemblies()
         {
-            // It is too brittle to depend on the assembly references so we just call the method and check that it does not throw.
-            AssemblyName[] assemblies = Helpers.ExecutingAssembly.GetReferencedAssemblies();
-            Assert.NotEmpty(assemblies);
+            if (PlatformDetection.IsNativeAot)
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => Helpers.ExecutingAssembly.GetReferencedAssemblies());
+            }
+            else
+            {
+                // It is too brittle to depend on the assembly references so we just call the method and check that it does not throw.
+                AssemblyName[] assemblies = Helpers.ExecutingAssembly.GetReferencedAssemblies();
+                Assert.NotEmpty(assemblies);
+            }
         }
 
         public static IEnumerable<object[]> Modules_TestData()
@@ -654,6 +675,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51673", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [MemberData(nameof(GetCallingAssembly_TestData))]
         public void GetCallingAssembly(Assembly assembly1, Assembly assembly2, bool expected)
         {
@@ -667,10 +689,33 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67569", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void GetSatelliteAssemblyNeg()
         {
             Assert.Throws<ArgumentNullException>(() => (typeof(AssemblyTests).Assembly.GetSatelliteAssembly(null)));
             Assert.Throws<System.IO.FileNotFoundException>(() => (typeof(AssemblyTests).Assembly.GetSatelliteAssembly(CultureInfo.InvariantCulture)));
+        }
+
+        [Fact]
+        public void AssemblyLoadWithPublicKey()
+        {
+            AssemblyName an = new AssemblyName("System.Runtime");
+
+            Assembly a = Assembly.Load(an);
+
+            byte[] publicKey = a.GetName().GetPublicKey();
+            Assert.True(publicKey.Length > 0);
+            an.SetPublicKey(publicKey);
+
+            Assembly a1 = Assembly.Load(an);
+            Assert.Equal(a, a1);
+
+            // Force the public key token to be created
+            Assert.True(an.GetPublicKeyToken().Length > 0);
+
+            // Verify that we can still load the assembly
+            Assembly a2 = Assembly.Load(an);
+            Assert.Equal(a, a2);
         }
 
         [Fact]
@@ -701,7 +746,7 @@ namespace System.Reflection.Tests
             Assert.Throws<FileNotFoundException>(() => Assembly.Load("no such assembly")); // No such assembly
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         public void AssemblyLoadFromBytes()
         {
             Assembly assembly = typeof(AssemblyTests).Assembly;
@@ -725,7 +770,7 @@ namespace System.Reflection.Tests
             Assert.Throws<BadImageFormatException>(() => Assembly.Load(new byte[0]));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/36892", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void AssemblyLoadFromBytesWithSymbols()
         {
@@ -746,7 +791,7 @@ namespace System.Reflection.Tests
             Assert.Throws<PlatformNotSupportedException>(() => Assembly.ReflectionOnlyLoad(an.FullName));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         public void AssemblyReflectionOnlyLoadFromBytes()
         {
             Assembly assembly = typeof(AssemblyTests).Assembly;
@@ -826,6 +871,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public static void AssemblyGetForwardedTypesLoadFailure()
         {
             Assembly a = typeof(TypeInForwardedAssembly).Assembly;

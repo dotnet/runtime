@@ -358,7 +358,7 @@ namespace System.Data.OleDb
             return ADP.InvalidOperation(SR.Format(SR.OleDb_IDBInfoNotSupported));
         }
 
-        // explictly used error codes
+        // explicitly used error codes
         internal const int ADODB_AlreadyClosedError = unchecked((int)0x800A0E78);
         internal const int ADODB_NextResultError = unchecked((int)0x800A0CB3);
 
@@ -691,14 +691,13 @@ namespace System.Data.OleDb
         // Debug error string writeline
         internal static string ELookup(OleDbHResult hr)
         {
-            StringBuilder builder = new StringBuilder();
-            builder.Append(hr.ToString());
-            if ((0 < builder.Length) && char.IsDigit(builder[0]))
+            string result = hr.ToString();
+            if (char.IsDigit(result[0]))
             {
-                builder.Length = 0;
+                result = "";
             }
-            builder.Append($"(0x{(int)hr:X8})");
-            return builder.ToString();
+
+            return $"{result}(0x{(int)hr:X8})";
         }
 
 #if DEBUG

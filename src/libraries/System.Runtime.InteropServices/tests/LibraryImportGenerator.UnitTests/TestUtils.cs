@@ -12,6 +12,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -55,6 +56,16 @@ namespace LibraryImportGenerator.UnitTests
 
     public static class TestUtils
     {
+        internal static string GetFileLineName(
+            [CallerLineNumber] int lineNumber = 0,
+            [CallerFilePath] string? filePath = null)
+            => $"{Path.GetFileName(filePath)}:{lineNumber}";
+
+        internal static void Use<T>(T _)
+        {
+            // Workaround for - xUnit1026 // Theory methods should use all of their parameters
+        }
+
         /// <summary>
         /// Disable binding redirect warnings. They are disabled by default by the .NET SDK, but not by Roslyn.
         /// See https://github.com/dotnet/roslyn/issues/19640.
@@ -66,7 +77,7 @@ namespace LibraryImportGenerator.UnitTests
             }.ToImmutableDictionary();
 
         /// <summary>
-        /// Assert the pre-srouce generator compilation has only
+        /// Assert the pre-source generator compilation has only
         /// the expected failure diagnostics.
         /// </summary>
         /// <param name="comp"></param>
@@ -93,15 +104,42 @@ namespace LibraryImportGenerator.UnitTests
         }
 
         /// <summary>
+        /// Assert the post-source generator compilation has only
+        /// the expected failure diagnostics.
+        /// </summary>
+        /// <param name="comp"></param>
+        public static void AssertPostSourceGeneratorCompilation(Compilation comp, params string[] additionalAllowedDiagnostics)
+        {
+            var allowedDiagnostics = new HashSet<string>()
+            {
+                "CS8019", // Unnecessary using
+            };
+
+            foreach (string diagnostic in additionalAllowedDiagnostics)
+            {
+                allowedDiagnostics.Add(diagnostic);
+            }
+
+            var compDiags = comp.GetDiagnostics();
+            Assert.All(compDiags, diag =>
+            {
+                Assert.Subset(allowedDiagnostics, new HashSet<string> { diag.Id });
+            });
+        }
+
+        /// <summary>
         /// Create a compilation given source
         /// </summary>
         /// <param name="source">Source to compile</param>
         /// <param name="targetFramework">Target framework of the compilation</param>
         /// <param name="outputKind">Output type</param>
+        /// <param name="refs">Additional metadata references</param>
+        /// <param name="preprocessorSymbols">Prepocessor symbols</param>
+        /// <param name="allowUnsafe">Indicate if the compilation should allow unsafe code blocks</param>
         /// <returns>The resulting compilation</returns>
-        public static Task<Compilation> CreateCompilation(string source, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<string>? preprocessorSymbols = null)
+        public static Task<Compilation> CreateCompilation(string source, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null, IEnumerable<string>? preprocessorSymbols = null, bool allowUnsafe = true)
         {
-            return CreateCompilation(new[] { source }, targetFramework, outputKind, preprocessorSymbols);
+            return CreateCompilation(new[] { source }, targetFramework, outputKind, refs, preprocessorSymbols, allowUnsafe);
         }
 
         /// <summary>
@@ -110,14 +148,19 @@ namespace LibraryImportGenerator.UnitTests
         /// <param name="sources">Sources to compile</param>
         /// <param name="targetFramework">Target framework of the compilation</param>
         /// <param name="outputKind">Output type</param>
+        /// <param name="refs">Additional metadata references</param>
+        /// <param name="preprocessorSymbols">Prepocessor symbols</param>
+        /// <param name="allowUnsafe">Indicate if the compilation should allow unsafe code blocks</param>
         /// <returns>The resulting compilation</returns>
-        public static Task<Compilation> CreateCompilation(string[] sources, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<string>? preprocessorSymbols = null)
+        public static Task<Compilation> CreateCompilation(string[] sources, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null, IEnumerable<string>? preprocessorSymbols = null, bool allowUnsafe = true)
         {
             return CreateCompilation(
                 sources.Select(source =>
                     CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Preview, preprocessorSymbols: preprocessorSymbols))).ToArray(),
                 targetFramework,
-                outputKind);
+                outputKind,
+                refs,
+                allowUnsafe);
         }
 
         /// <summary>
@@ -126,21 +169,28 @@ namespace LibraryImportGenerator.UnitTests
         /// <param name="sources">Sources to compile</param>
         /// <param name="targetFramework">Target framework of the compilation</param>
         /// <param name="outputKind">Output type</param>
+        /// <param name="refs">Additional metadata references</param>
+        /// <param name="allowUnsafe">Indicate if the compilation should allow unsafe code blocks</param>
         /// <returns>The resulting compilation</returns>
-        public static async Task<Compilation> CreateCompilation(SyntaxTree[] sources, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary)
+        public static async Task<Compilation> CreateCompilation(SyntaxTree[] sources, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null, bool allowUnsafe = true)
         {
             var referenceAssemblies = await GetReferenceAssemblies(targetFramework);
 
             // [TODO] Can remove once ancillary logic is removed.
-            if (targetFramework is TestTargetFramework.Net6 or TestTargetFramework.Net)
+            if (targetFramework is TestTargetFramework.Net)
             {
                 referenceAssemblies = referenceAssemblies.Add(GetAncillaryReference());
+            }
+
+            if (refs is not null)
+            {
+                referenceAssemblies = referenceAssemblies.AddRange(refs);
             }
 
             return CSharpCompilation.Create("compilation",
                 sources,
                 referenceAssemblies,
-                new CSharpCompilationOptions(outputKind, allowUnsafe: true, specificDiagnosticOptions: BindingRedirectWarnings));
+                new CSharpCompilationOptions(outputKind, allowUnsafe: allowUnsafe, specificDiagnosticOptions: BindingRedirectWarnings));
         }
 
         /// <summary>
@@ -181,9 +231,9 @@ namespace LibraryImportGenerator.UnitTests
         /// <returns></returns>
         internal static MetadataReference GetAncillaryReference()
         {
-            // Include the assembly containing the new attribute and all of its references.
-            // [TODO] Remove once the attribute has been added to the BCL
-            var attrAssem = typeof(LibraryImportAttribute).GetTypeInfo().Assembly;
+            // Include the assembly containing the new types we are considering exposing publicly
+            // but haven't put through API review.
+            var attrAssem = typeof(MarshalEx).GetTypeInfo().Assembly;
             return MetadataReference.CreateFromFile(attrAssem.Location);
         }
 
@@ -220,26 +270,12 @@ namespace LibraryImportGenerator.UnitTests
                 optionsProvider: options,
                 driverOptions: driverOptions);
 
-        // The non-configurable test-packages folder may be incomplete/corrupt.
-        // - https://github.com/dotnet/roslyn-sdk/issues/487
-        // - https://github.com/dotnet/roslyn-sdk/issues/590
-        internal static void ThrowSkipExceptionIfPackagingException(Exception e)
-        {
-            if (e.GetType().FullName == "NuGet.Packaging.Core.PackagingException")
-                throw new SkipTestException($"Skipping test due to issue with test-packages ({e.Message}). See https://github.com/dotnet/roslyn-sdk/issues/590.");
-        }
-
         private static async Task<ImmutableArray<MetadataReference>> ResolveReferenceAssemblies(ReferenceAssemblies referenceAssemblies)
         {
             try
             {
                 ResolveRedirect.Instance.Start();
                 return await referenceAssemblies.ResolveAsync(LanguageNames.CSharp, CancellationToken.None);
-            }
-            catch (Exception e)
-            {
-                ThrowSkipExceptionIfPackagingException(e);
-                throw;
             }
             finally
             {

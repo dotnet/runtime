@@ -42,6 +42,9 @@
 #if defined(HOST_ARM64)
 #error Cannot define both HOST_X86 and HOST_ARM64
 #endif
+#if defined(HOST_LOONGARCH64)
+#error Cannot define both HOST_X86 and HOST_LOONGARCH64
+#endif
 #elif defined(HOST_AMD64)
 #if defined(HOST_X86)
 #error Cannot define both HOST_AMD64 and HOST_X86
@@ -51,6 +54,9 @@
 #endif
 #if defined(HOST_ARM64)
 #error Cannot define both HOST_AMD64 and HOST_ARM64
+#endif
+#if defined(HOST_LOONGARCH64)
+#error Cannot define both HOST_AMD64 and HOST_LOONGARCH64
 #endif
 #elif defined(HOST_ARM)
 #if defined(HOST_X86)
@@ -62,6 +68,9 @@
 #if defined(HOST_ARM64)
 #error Cannot define both HOST_ARM and HOST_ARM64
 #endif
+#if defined(HOST_LOONGARCH64)
+#error Cannot define both HOST_ARM and HOST_LOONGARCH64
+#endif
 #elif defined(HOST_ARM64)
 #if defined(HOST_X86)
 #error Cannot define both HOST_ARM64 and HOST_X86
@@ -71,6 +80,22 @@
 #endif
 #if defined(HOST_ARM)
 #error Cannot define both HOST_ARM64 and HOST_ARM
+#endif
+#if defined(HOST_LOONGARCH64)
+#error Cannot define both HOST_ARM64 and HOST_LOONGARCH64
+#endif
+#elif defined(HOST_LOONGARCH64)
+#if defined(HOST_X86)
+#error Cannot define both HOST_LOONGARCH64 and HOST_X86
+#endif
+#if defined(HOST_AMD64)
+#error Cannot define both HOST_LOONGARCH64 and HOST_AMD64
+#endif
+#if defined(HOST_ARM)
+#error Cannot define both HOST_LOONGARCH64 and HOST_ARM
+#endif
+#if defined(HOST_ARM64)
+#error Cannot define both HOST_LOONGARCH64 and HOST_ARM64
 #endif
 #else
 #error Unsupported or unset host architecture
@@ -86,6 +111,9 @@
 #if defined(TARGET_ARM64)
 #error Cannot define both TARGET_X86 and TARGET_ARM64
 #endif
+#if defined(TARGET_LOONGARCH64)
+#error Cannot define both TARGET_X86 and TARGET_LOONGARCH64
+#endif
 #elif defined(TARGET_AMD64)
 #if defined(TARGET_X86)
 #error Cannot define both TARGET_AMD64 and TARGET_X86
@@ -95,6 +123,9 @@
 #endif
 #if defined(TARGET_ARM64)
 #error Cannot define both TARGET_AMD64 and TARGET_ARM64
+#endif
+#if defined(TARGET_LOONGARCH64)
+#error Cannot define both TARGET_AMD64 and TARGET_LOONGARCH64
 #endif
 #elif defined(TARGET_ARM)
 #if defined(TARGET_X86)
@@ -106,6 +137,9 @@
 #if defined(TARGET_ARM64)
 #error Cannot define both TARGET_ARM and TARGET_ARM64
 #endif
+#if defined(TARGET_LOONGARCH64)
+#error Cannot define both TARGET_ARM and TARGET_LOONGARCH64
+#endif
 #elif defined(TARGET_ARM64)
 #if defined(TARGET_X86)
 #error Cannot define both TARGET_ARM64 and TARGET_X86
@@ -115,6 +149,22 @@
 #endif
 #if defined(TARGET_ARM)
 #error Cannot define both TARGET_ARM64 and TARGET_ARM
+#endif
+#if defined(TARGET_LOONGARCH64)
+#error Cannot define both TARGET_ARM64 and TARGET_LOONGARCH64
+#endif
+#elif defined(TARGET_LOONGARCH64)
+#if defined(TARGET_X86)
+#error Cannot define both TARGET_LOONGARCH64 and TARGET_X86
+#endif
+#if defined(TARGET_AMD64)
+#error Cannot define both TARGET_LOONGARCH64 and TARGET_AMD64
+#endif
+#if defined(TARGET_ARM)
+#error Cannot define both TARGET_LOONGARCH64 and TARGET_ARM
+#endif
+#if defined(TARGET_ARM64)
+#error Cannot define both TARGET_LOONGARCH64 and TARGET_ARM64
 #endif
 #else
 #error Unsupported or unset target architecture
@@ -163,6 +213,8 @@
 #define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_ARMNT
 #elif defined(TARGET_ARM64)
 #define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_ARM64 // 0xAA64
+#elif defined(TARGET_LOONGARCH64)
+#define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_LOONGARCH64 // 0x6264
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -207,24 +259,15 @@
 #define UNIX_AMD64_ABI_ONLY(x)
 #endif // defined(UNIX_AMD64_ABI)
 
-#if defined(DEBUG)
-#define DEBUG_ARG_SLOTS
-#endif
+#if defined(TARGET_LOONGARCH64)
+#define UNIX_LOONGARCH64_ONLY_ARG(x) , x
+#define UNIX_LOONGARCH64_ONLY(x) x
+#else // !TARGET_LOONGARCH64
+#define UNIX_LOONGARCH64_ONLY_ARG(x)
+#define UNIX_LOONGARCH64_ONLY(x)
+#endif // TARGET_LOONGARCH64
 
-#if defined(DEBUG_ARG_SLOTS)
-#define DEBUG_ARG_SLOTS_ARG(x) , x
-#define DEBUG_ARG_SLOTS_ONLY(x) x
-// On all platforms except Arm64 OSX arguments on the stack are taking
-// register size slots. On these platforms we could check that stack slots count
-// matches our new byte size calculations.
-#define DEBUG_ARG_SLOTS_ASSERT(x) assert(compMacOsArm64Abi() || (x))
-#else
-#define DEBUG_ARG_SLOTS_ARG(x)
-#define DEBUG_ARG_SLOTS_ONLY(x)
-#define DEBUG_ARG_SLOTS_ASSERT(x)
-#endif
-
-#if defined(UNIX_AMD64_ABI) || !defined(TARGET_64BIT) || defined(TARGET_ARM64)
+#if defined(UNIX_AMD64_ABI) || !defined(TARGET_64BIT) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 #define FEATURE_PUT_STRUCT_ARG_STK 1
 #endif
 
@@ -236,7 +279,7 @@
 #define UNIX_AMD64_ABI_ONLY(x)
 #endif // defined(UNIX_AMD64_ABI)
 
-#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64)
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 #define MULTIREG_HAS_SECOND_GC_RET 1
 #define MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(x) , x
 #define MULTIREG_HAS_SECOND_GC_RET_ONLY(x) x
@@ -249,7 +292,8 @@
 // Arm64 Windows supports FEATURE_ARG_SPLIT, note this is different from
 // the official Arm64 ABI.
 // Case: splitting 16 byte struct between x7 and stack
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+// LoongArch64's ABI supports FEATURE_ARG_SPLIT which splitting 16 byte struct between a7 and stack.
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 #define FEATURE_ARG_SPLIT 1
 #else
 #define FEATURE_ARG_SPLIT 0
@@ -284,8 +328,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 typedef class ICorJitInfo* COMP_HANDLE;
 
-const CORINFO_CLASS_HANDLE NO_CLASS_HANDLE = nullptr;
-const CORINFO_FIELD_HANDLE NO_FIELD_HANDLE = nullptr;
+const CORINFO_CLASS_HANDLE  NO_CLASS_HANDLE  = nullptr;
+const CORINFO_FIELD_HANDLE  NO_FIELD_HANDLE  = nullptr;
+const CORINFO_METHOD_HANDLE NO_METHOD_HANDLE = nullptr;
 
 /*****************************************************************************/
 
@@ -293,7 +338,8 @@ typedef unsigned IL_OFFSET;
 
 const IL_OFFSET BAD_IL_OFFSET = 0xffffffff;
 
-const unsigned BAD_VAR_NUM = UINT_MAX;
+const unsigned BAD_VAR_NUM    = UINT_MAX;
+const uint16_t BAD_LCL_OFFSET = UINT16_MAX;
 
 // Code can't be more than 2^31 in any direction.  This is signed, so it should be used for anything that is
 // relative to something else.
@@ -355,7 +401,7 @@ public:
 
 #define CSE_INTO_HANDLERS 0
 #define DUMP_FLOWGRAPHS DEBUG                  // Support for creating Xml Flowgraph reports in *.fgx files
-#define HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION 1 // if 1 we must have all handler entry points in the Hot code section
+#define HANDLER_ENTRY_MUST_BE_IN_HOT_SECTION 0 // if 1 we must have all handler entry points in the Hot code section
 
 /*****************************************************************************/
 
@@ -795,14 +841,21 @@ T dspOffset(T o)
 
 #endif // !defined(DEBUG)
 
-struct LikelyClassRecord
+struct LikelyClassMethodRecord
 {
-    CORINFO_CLASS_HANDLE clsHandle;
-    UINT32               likelihood;
+    intptr_t handle;
+    UINT32   likelihood;
 };
 
-extern "C" UINT32 WINAPI getLikelyClasses(LikelyClassRecord*                     pLikelyClasses,
+extern "C" UINT32 WINAPI getLikelyClasses(LikelyClassMethodRecord*               pLikelyClasses,
                                           UINT32                                 maxLikelyClasses,
+                                          ICorJitInfo::PgoInstrumentationSchema* schema,
+                                          UINT32                                 countSchemaItems,
+                                          BYTE*                                  pInstrumentationData,
+                                          int32_t                                ilOffset);
+
+extern "C" UINT32 WINAPI getLikelyMethods(LikelyClassMethodRecord*               pLikelyMethods,
+                                          UINT32                                 maxLikelyMethods,
                                           ICorJitInfo::PgoInstrumentationSchema* schema,
                                           UINT32                                 countSchemaItems,
                                           BYTE*                                  pInstrumentationData,

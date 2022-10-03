@@ -43,6 +43,9 @@ namespace PInvokeTests
         [DllImport("PInvokeNative", CallingConvention = CallingConvention.StdCall)]
         private static extern int VerifyByRefFoo(ref Foo value);
 
+        [DllImport("PInvokeNative", CallingConvention = CallingConvention.StdCall)]
+        private static extern ref Foo VerifyByRefFooReturn();
+
         [DllImport("PInvokeNative", CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
         private static extern bool GetNextChar(ref char c);
 
@@ -306,6 +309,12 @@ namespace PInvokeTests
         [DllImport("PInvokeNative", CallingConvention = CallingConvention.StdCall)]
         internal static extern decimal DecimalTest(decimal value);
 
+        [UnmanagedCallersOnly]
+        internal unsafe static void UnmanagedMethod(byte* address, byte value) => *address = value;
+
+        [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvStdcall)})]
+        internal unsafe static void StdcallMethod(byte* address, byte value) => *address = value;
+
         internal enum MagicEnum
         {
             MagicResult = 42,
@@ -334,6 +343,7 @@ namespace PInvokeTests
             TestWithoutPreserveSig();
             TestForwardDelegateWithUnmanagedCallersOnly();
             TestDecimal();
+            TestDifferentModopts();
 
             return 100;
         }
@@ -432,6 +442,10 @@ namespace PInvokeTests
 
             ThrowIfNotEquals(foo.a, 11, "By ref struct unmarshalling failed");
             ThrowIfNotEquals(foo.b, 21.0f, "By ref struct unmarshalling failed");
+
+            ref Foo retfoo = ref VerifyByRefFooReturn();
+            ThrowIfNotEquals(retfoo.a, 42, "By ref struct return failed");
+            ThrowIfNotEquals(retfoo.b, 43.0, "By ref struct return failed");
         }
 
         private static void TestString()
@@ -1101,6 +1115,37 @@ namespace PInvokeTests
             Console.WriteLine("Testing Forward Delegate with UnmanagedCallersOnly");
             Action a = Marshal.GetDelegateForFunctionPointer<Action>((IntPtr)(void*)(delegate* unmanaged<void>)&UnmanagedCallback);
             a();
+        }
+        
+        public static unsafe void TestDifferentModopts()
+        {
+            byte storage;
+
+            delegate* unmanaged<byte*, byte, void> unmanagedMethod = &UnmanagedMethod;
+
+            var outUnmanagedMethod = (delegate* unmanaged<out byte, byte, void>)unmanagedMethod;
+            outUnmanagedMethod(out storage, 12);
+            ThrowIfNotEquals(storage, 12, "Out unmanaged call failed.");
+
+            var refUnmanagedMethod = (delegate* unmanaged<ref byte, byte, void>)unmanagedMethod;
+            refUnmanagedMethod(ref storage, 34);
+            ThrowIfNotEquals(storage, 34, "Ref unmanaged call failed.");
+
+            delegate* unmanaged[Stdcall]<byte*, byte, void> stdcallMethod = &StdcallMethod;
+
+            var outStdcallMethod = (delegate* unmanaged[Stdcall]<out byte, byte, void>)stdcallMethod;
+            outStdcallMethod(out storage, 12);
+            ThrowIfNotEquals(storage, 12, "Out unmanaged stdcall failed.");
+
+            var refStdcallMethod = (delegate* unmanaged[Stdcall]<ref byte, byte, void>)stdcallMethod;
+            refStdcallMethod(ref storage, 34);
+            ThrowIfNotEquals(storage, 34, "Ref unmanaged stdcall failed.");
+            var refStdcallSuppressTransition = (delegate* unmanaged[Stdcall, SuppressGCTransition]<ref byte, byte, void>)stdcallMethod;
+            if (string.Empty.Length > 0)
+            {
+                // Do not actually call this because the calling convention is wrong. We just check the compiler didn't crash.
+                refStdcallSuppressTransition(ref storage, 56);
+            }
         }
     }
 

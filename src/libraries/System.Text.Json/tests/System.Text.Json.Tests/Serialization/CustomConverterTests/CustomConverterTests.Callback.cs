@@ -133,7 +133,7 @@ namespace System.Text.Json.Serialization.Tests
 
             ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<TopLevelPocoWithNoConverter>(Json, options));
             Assert.Contains(typeof(int[,]).ToString(), ex.ToString());
-            Assert.Contains(typeof(ChildPocoWithNoConverter).ToString(), ex.ToString());
+            Assert.Contains(typeof(ChildPocoWithNoConverterAndInvalidProperty).ToString(), ex.ToString());
             Assert.Contains("Path: $.InvalidProperty | LineNumber: 0 | BytePositionInLine: 20.", ex.ToString());
             Assert.Equal(2, ex.ToString().Split(new string[] { "Path:" }, StringSplitOptions.None).Length);
 
@@ -153,7 +153,7 @@ namespace System.Text.Json.Serialization.Tests
 
             ex = Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(poco, options));
             Assert.Contains(typeof(int[,]).ToString(), ex.ToString());
-            Assert.Contains(typeof(ChildPocoWithNoConverter).ToString(), ex.ToString());
+            Assert.Contains(typeof(ChildPocoWithNoConverterAndInvalidProperty).ToString(), ex.ToString());
             Assert.Contains("Path: $.InvalidProperty.", ex.ToString());
             Assert.Equal(2, ex.ToString().Split(new string[] { "Path:" }, StringSplitOptions.None).Length);
         }

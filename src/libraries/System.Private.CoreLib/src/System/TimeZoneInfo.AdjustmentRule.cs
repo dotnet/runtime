@@ -260,8 +260,10 @@ namespace System
                 }
             }
 
-            void ISerializable.GetObjectData(SerializationInfo info!!, StreamingContext context)
+            void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {
+                ArgumentNullException.ThrowIfNull(info);
+
                 info.AddValue("DateStart", _dateStart); // Do not rename (binary serialization)
                 info.AddValue("DateEnd", _dateEnd); // Do not rename (binary serialization)
                 info.AddValue("DaylightDelta", _daylightDelta); // Do not rename (binary serialization)
@@ -271,8 +273,10 @@ namespace System
                 info.AddValue("NoDaylightTransitions", _noDaylightTransitions); // Do not rename (binary serialization)
             }
 
-            private AdjustmentRule(SerializationInfo info!!, StreamingContext context)
+            private AdjustmentRule(SerializationInfo info, StreamingContext context)
             {
+                ArgumentNullException.ThrowIfNull(info);
+
                 _dateStart = (DateTime)info.GetValue("DateStart", typeof(DateTime))!; // Do not rename (binary serialization)
                 _dateEnd = (DateTime)info.GetValue("DateEnd", typeof(DateTime))!; // Do not rename (binary serialization)
                 _daylightDelta = (TimeSpan)info.GetValue("DaylightDelta", typeof(TimeSpan))!; // Do not rename (binary serialization)

@@ -28,11 +28,6 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
         public async Task IncompleteResponseStream_ResponseDropped_CancelsRequestToServer()
         {
-            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
-            {
-                return;
-            }
-
             using (HttpClient client = CreateHttpClient())
             {
                 bool stopGCs = false;

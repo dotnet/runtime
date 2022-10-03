@@ -39,7 +39,7 @@ public class Helper
         }
         else if (!actualSize.Equals(expectedSize))
         {
-            Console.WriteLine("\tTwo array are not equal.The sizes are not equal:Expected:{0},Actaul:{1}", expectedSize, actualSize);
+            Console.WriteLine("\tTwo array are not equal.The sizes are not equal. Expected: {0}, Actual: {1}", expectedSize, actualSize);
             return false;
         }
         for (int i = 0; i < expectedSize; ++i)

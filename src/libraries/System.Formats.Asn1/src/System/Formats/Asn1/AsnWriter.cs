@@ -223,8 +223,13 @@ namespace System.Formats.Asn1
         ///   A <see cref="PushSequence"/> or <see cref="PushSetOf"/> has not been closed via
         ///   <see cref="PopSequence"/> or <see cref="PopSetOf"/>.
         /// </exception>
-        public bool EncodedValueEquals(AsnWriter other!!)
+        public bool EncodedValueEquals(AsnWriter other)
         {
+            if (other is null)
+            {
+                throw new ArgumentNullException(nameof(other));
+            }
+
             return EncodeAsSpan().SequenceEqual(other.EncodeAsSpan());
         }
 
@@ -258,10 +263,7 @@ namespace System.Formats.Asn1
                 byte[]? oldBytes = _buffer;
                 Array.Resize(ref _buffer, BlockSize * blocks);
 
-                if (oldBytes != null)
-                {
-                    oldBytes.AsSpan(0, _offset).Clear();
-                }
+                oldBytes?.AsSpan(0, _offset).Clear();
 #endif
 
 #if DEBUG
@@ -378,8 +380,13 @@ namespace System.Formats.Asn1
         ///   This writer's value is encoded in a manner that is not compatible with the
         ///   ruleset for the destination writer.
         /// </exception>
-        public void CopyTo(AsnWriter destination!!)
+        public void CopyTo(AsnWriter destination)
         {
+            if (destination is null)
+            {
+                throw new ArgumentNullException(nameof(destination));
+            }
+
             try
             {
                 destination.WriteEncodedValue(EncodeAsSpan());
@@ -439,10 +446,7 @@ namespace System.Formats.Asn1
 
         private Scope PushTag(Asn1Tag tag, UniversalTagNumber tagType)
         {
-            if (_nestingStack == null)
-            {
-                _nestingStack = new Stack<StackFrame>();
-            }
+            _nestingStack ??= new Stack<StackFrame>();
 
             Debug.Assert(tag.IsConstructed);
             WriteTag(tag);
@@ -609,22 +613,6 @@ namespace System.Formats.Asn1
 
             Buffer.BlockCopy(tmp, 0, buffer, start, len);
             CryptoPool.Return(tmp, len);
-        }
-
-        internal static void Reverse(Span<byte> span)
-        {
-            int i = 0;
-            int j = span.Length - 1;
-
-            while (i < j)
-            {
-                byte tmp = span[i];
-                span[i] = span[j];
-                span[j] = tmp;
-
-                i++;
-                j--;
-            }
         }
 
         private static void CheckUniversalTag(Asn1Tag? tag, UniversalTagNumber universalTagNumber)

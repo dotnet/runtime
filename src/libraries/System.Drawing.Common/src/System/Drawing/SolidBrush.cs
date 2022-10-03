@@ -2,21 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Drawing.Internal;
 using System.Runtime.InteropServices;
 using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 
 namespace System.Drawing
 {
-#if FEATURE_SYSTEM_EVENTS
-    using System.Drawing.Internal;
-#endif
-
-    public sealed class SolidBrush : Brush
-#pragma warning disable SA1001
-#if FEATURE_SYSTEM_EVENTS
-        , ISystemColorTracker
-#endif
-#pragma warning restore SA1001
+    public sealed class SolidBrush : Brush, ISystemColorTracker
     {
         // GDI+ doesn't understand system colors, so we need to cache the value here.
         private Color _color = Color.Empty;
@@ -26,18 +18,16 @@ namespace System.Drawing
         {
             _color = color;
 
-            IntPtr nativeBrush = IntPtr.Zero;
+            IntPtr nativeBrush;
             int status = Gdip.GdipCreateSolidFill(_color.ToArgb(), out nativeBrush);
             Gdip.CheckStatus(status);
 
             SetNativeBrushInternal(nativeBrush);
 
-#if FEATURE_SYSTEM_EVENTS
             if (_color.IsSystemColor)
             {
                 SystemColorTracker.Add(this);
             }
-#endif
         }
 
         internal SolidBrush(Color color, bool immutable) : this(color)
@@ -101,19 +91,15 @@ namespace System.Drawing
 
                 if (_color != value)
                 {
-#if FEATURE_SYSTEM_EVENTS
                     Color oldColor = _color;
-#endif
                     InternalSetColor(value);
 
-#if FEATURE_SYSTEM_EVENTS
                     // NOTE: We never remove brushes from the active list, so if someone is
                     // changing their brush colors a lot, this could be a problem.
                     if (value.IsSystemColor && !oldColor.IsSystemColor)
                     {
                         SystemColorTracker.Add(this);
                     }
-#endif
                 }
             }
         }
@@ -127,7 +113,6 @@ namespace System.Drawing
             _color = value;
         }
 
-#if FEATURE_SYSTEM_EVENTS
         void ISystemColorTracker.OnSystemColorChanged()
         {
             if (NativeBrush != IntPtr.Zero)
@@ -135,6 +120,5 @@ namespace System.Drawing
                 InternalSetColor(_color);
             }
         }
-#endif
     }
 }

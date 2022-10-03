@@ -703,7 +703,7 @@ ep_on_exit:
 	ep_delete_provider (provider);
 	ep_event_free (ep_event);
 	ep_event_instance_free (ep_event_instance);
-	ep_event_metdata_event_free (metadata_event);
+	ep_event_metadata_event_free (metadata_event);
 
 	return result;
 
@@ -1271,7 +1271,7 @@ test_write_event_perf (void)
 	EventPipeSessionID session_id = 0;
 	EventPipeProviderConfiguration provider_config;
 	EventPipeProviderConfiguration *current_provider_config = NULL;
-	int64_t accumulted_write_time_ticks = 0;
+	int64_t accumulated_write_time_ticks = 0;
 	uint32_t events_written = 0;
 
 	current_provider_config = ep_provider_config_init (&provider_config, TEST_PROVIDER_NAME, 1, EP_EVENT_LEVEL_LOGALWAYS, "");
@@ -1305,7 +1305,7 @@ test_write_event_perf (void)
 		for (uint32_t i = 0; i < 1000; i++)
 			ep_write_event_2 (ep_event, data, ARRAY_SIZE (data), NULL, NULL);
 		int64_t stop = ep_perf_timestamp_get ();
-		accumulted_write_time_ticks += stop - start;
+		accumulated_write_time_ticks += stop - start;
 
 		// Drain events to not end up in having buffer manager OOM.
 		while (ep_get_next_event (session_id));
@@ -1313,14 +1313,14 @@ test_write_event_perf (void)
 
 	ep_event_data_fini (data);
 
-	float accumulted_write_time_sec = ((float)accumulted_write_time_ticks / (float)ep_perf_frequency_query ());
-	float events_written_per_sec = (float)events_written / (accumulted_write_time_sec ? accumulted_write_time_sec : 1.0);
+	float accumulated_write_time_sec = ((float)accumulated_write_time_ticks / (float)ep_perf_frequency_query ());
+	float events_written_per_sec = (float)events_written / (accumulated_write_time_sec ? accumulated_write_time_sec : 1.0);
 
 	// Measured number of events/second for one thread.
 	// TODO: Setup acceptable pass/failure metrics.
 	printf ("\n\tPerformance stats:\n");
 	printf ("\t\tTotal number of events: %i\n", events_written);
-	printf ("\t\tTotal time in sec: %.2f\n\t\tTotal number of events written per sec/core: %.2f\n\t", accumulted_write_time_sec, events_written_per_sec);
+	printf ("\t\tTotal time in sec: %.2f\n\t\tTotal number of events written per sec/core: %.2f\n\t", accumulated_write_time_sec, events_written_per_sec);
 
 ep_on_exit:
 	ep_disable (session_id);

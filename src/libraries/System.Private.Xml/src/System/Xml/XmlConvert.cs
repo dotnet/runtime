@@ -42,7 +42,7 @@ namespace System.Xml
         ///       DataColumn names, that contain characters that are not permitted in
         ///       XML names to valid names.</para>
         /// </devdoc>
-        [return: NotNullIfNotNull("name")]
+        [return: NotNullIfNotNull(nameof(name))]
         public static string? EncodeName(string? name)
         {
             return EncodeName(name, true/*Name_not_NmToken*/, false/*Local?*/);
@@ -52,7 +52,7 @@ namespace System.Xml
         ///    <para> Verifies the name is valid
         ///       according to production [7] in the XML spec.</para>
         /// </devdoc>
-        [return: NotNullIfNotNull("name")]
+        [return: NotNullIfNotNull(nameof(name))]
         public static string? EncodeNmToken(string? name)
         {
             return EncodeName(name, false/*Name_not_NmToken*/, false/*Local?*/);
@@ -62,7 +62,7 @@ namespace System.Xml
         ///    <para>Converts names, such as DataTable or DataColumn names, that contain
         ///       characters that are not permitted in XML names to valid names.</para>
         /// </devdoc>
-        [return: NotNullIfNotNull("name")]
+        [return: NotNullIfNotNull(nameof(name))]
         public static string? EncodeLocalName(string? name)
         {
             return EncodeName(name, true/*Name_not_NmToken*/, true/*Local?*/);
@@ -72,50 +72,40 @@ namespace System.Xml
         ///    <para>
         ///       Transforms an XML name into an object name (such as DataTable or DataColumn).</para>
         /// </devdoc>
-        [return: NotNullIfNotNull("name")]
+        [return: NotNullIfNotNull(nameof(name))]
         public static string? DecodeName(string? name)
         {
             if (string.IsNullOrEmpty(name))
+            {
                 return name;
-
-            StringBuilder? bufBld = null;
-
-            int length = name.Length;
-            int copyPosition = 0;
+            }
 
             int underscorePos = name.IndexOf('_');
-            MatchCollection? mc;
-            IEnumerator? en;
-            if (underscorePos >= 0)
-            {
-                mc = DecodeCharRegex().Matches(name, underscorePos);
-                en = mc.GetEnumerator();
-            }
-            else
+            if (underscorePos < 0)
             {
                 return name;
             }
+
+            Regex.ValueMatchEnumerator en = DecodeCharRegex().EnumerateMatches(name.AsSpan(underscorePos));
             int matchPos = -1;
-            if (en != null && en.MoveNext())
+            if (en.MoveNext())
             {
-                Match m = (Match)en.Current!;
-                matchPos = m.Index;
+                matchPos = underscorePos + en.Current.Index;
             }
 
+            StringBuilder? bufBld = null;
+            int length = name.Length;
+            int copyPosition = 0;
             for (int position = 0; position < length - EncodedCharLength + 1; position++)
             {
                 if (position == matchPos)
                 {
-                    if (en!.MoveNext())
+                    if (en.MoveNext())
                     {
-                        Match m = (Match)en.Current!;
-                        matchPos = m.Index;
+                        matchPos = underscorePos + en.Current.Index;
                     }
 
-                    if (bufBld == null)
-                    {
-                        bufBld = new StringBuilder(length + 20);
-                    }
+                    bufBld ??= new StringBuilder(length + 20);
                     bufBld.Append(name, copyPosition, position - copyPosition);
 
                     if (name[position + 6] != '_')
@@ -177,7 +167,7 @@ namespace System.Xml
             }
         }
 
-        [return: NotNullIfNotNull("name")]
+        [return: NotNullIfNotNull(nameof(name))]
         private static string? EncodeName(string? name, /*Name_not_NmToken*/ bool first, bool local)
         {
             if (string.IsNullOrEmpty(name))
@@ -208,13 +198,10 @@ namespace System.Xml
 
             if (first)
             {
-                if ((!XmlCharType.IsStartNCNameCharXml4e(name[0]) && (local || (!local && name[0] != ':'))) ||
+                if ((!XmlCharType.IsStartNCNameCharXml4e(name[0]) && (local || name[0] != ':')) ||
                      matchPos == 0)
                 {
-                    if (bufBld == null)
-                    {
-                        bufBld = new StringBuilder(length + 20);
-                    }
+                    bufBld ??= new StringBuilder(length + 20);
 
                     bufBld.Append("_x");
                     if (length > 1 && XmlCharType.IsHighSurrogate(name[0]) && XmlCharType.IsLowSurrogate(name[1]))
@@ -249,10 +236,7 @@ namespace System.Xml
                     (!local && !XmlCharType.IsNameCharXml4e(name[position])) ||
                     (matchPos == position))
                 {
-                    if (bufBld == null)
-                    {
-                        bufBld = new StringBuilder(length + 20);
-                    }
+                    bufBld ??= new StringBuilder(length + 20);
                     if (matchPos == position)
                         if (en!.MoveNext())
                         {
@@ -296,10 +280,10 @@ namespace System.Xml
 
         private const int EncodedCharLength = 7; // ("_xFFFF_".Length);
 
-        [RegexGenerator("_[Xx][0-9a-fA-F]{4}(?:_|[0-9a-fA-F]{4}_)")]
+        [GeneratedRegex("_[Xx][0-9a-fA-F]{4}(?:_|[0-9a-fA-F]{4}_)")]
         private static partial Regex DecodeCharRegex();
 
-        [RegexGenerator("(?<=_)[Xx][0-9a-fA-F]{4}(?:_|[0-9a-fA-F]{4}_)")]
+        [GeneratedRegex("(?<=_)[Xx][0-9a-fA-F]{4}(?:_|[0-9a-fA-F]{4}_)")]
         private static partial Regex EncodeCharRegex();
 
         private static int FromHex(char digit)
@@ -312,13 +296,17 @@ namespace System.Xml
             return FromBinHexString(s, true);
         }
 
-        internal static byte[] FromBinHexString(string s!!, bool allowOddCount)
+        internal static byte[] FromBinHexString(string s, bool allowOddCount)
         {
-            return BinHexDecoder.Decode(s.ToCharArray(), allowOddCount);
+            ArgumentNullException.ThrowIfNull(s);
+
+            return BinHexDecoder.Decode(s.AsSpan(), allowOddCount);
         }
 
-        internal static string ToBinHexString(byte[] inArray!!)
+        internal static string ToBinHexString(byte[] inArray)
         {
+            ArgumentNullException.ThrowIfNull(inArray);
+
             return BinHexEncoder.Encode(inArray, 0, inArray.Length);
         }
 
@@ -328,8 +316,10 @@ namespace System.Xml
         ///    <para>
         ///    </para>
         /// </devdoc>
-        public static string VerifyName(string name!!)
+        public static string VerifyName(string name)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             if (name.Length == 0)
             {
                 throw new ArgumentNullException(nameof(name), SR.Xml_EmptyName);
@@ -389,8 +379,10 @@ namespace System.Xml
             return VerifyNCName(name, ExceptionType.XmlException);
         }
 
-        internal static string VerifyNCName(string name!!, ExceptionType exceptionType)
+        internal static string VerifyNCName(string name, ExceptionType exceptionType)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             if (name.Length == 0)
             {
                 throw new ArgumentNullException(nameof(name), SR.Xml_EmptyLocalName);
@@ -423,7 +415,7 @@ namespace System.Xml
         ///    <para>
         ///    </para>
         /// </devdoc>
-        [return: NotNullIfNotNull("token")]
+        [return: NotNullIfNotNull(nameof(token))]
         public static string? VerifyTOKEN(string? token)
         {
             if (string.IsNullOrEmpty(token))
@@ -431,7 +423,10 @@ namespace System.Xml
                 return token;
             }
 
-            if (token[0] == ' ' || token[token.Length - 1] == ' ' || token.IndexOfAny(crt) != -1 || token.IndexOf("  ", StringComparison.Ordinal) != -1)
+            if (token.StartsWith(' ') ||
+                token.EndsWith(' ') ||
+                token.IndexOfAny(crt) >= 0 ||
+                token.Contains("  "))
             {
                 throw new XmlException(SR.Sch_NotTokenString, token);
             }
@@ -440,12 +435,15 @@ namespace System.Xml
 
         internal static Exception? TryVerifyTOKEN(string token)
         {
-            if (token == null || token.Length == 0)
+            if (string.IsNullOrEmpty(token))
             {
                 return null;
             }
 
-            if (token[0] == ' ' || token[token.Length - 1] == ' ' || token.IndexOfAny(crt) != -1 || token.IndexOf("  ", StringComparison.Ordinal) != -1)
+            if (token.StartsWith(' ') ||
+                token.EndsWith(' ') ||
+                token.IndexOfAny(crt) >= 0 ||
+                token.Contains("  "))
             {
                 return new XmlException(SR.Sch_NotTokenString, token);
             }
@@ -462,8 +460,10 @@ namespace System.Xml
             return VerifyNMTOKEN(name, ExceptionType.XmlException);
         }
 
-        internal static string VerifyNMTOKEN(string name!!, ExceptionType exceptionType)
+        internal static string VerifyNMTOKEN(string name, ExceptionType exceptionType)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             if (name.Length == 0)
             {
                 throw CreateException(SR.Xml_InvalidNmToken, name, exceptionType);
@@ -507,16 +507,19 @@ namespace System.Xml
 
         // Verification method for XML characters as defined in XML spec production [2] Char.
         // Throws XmlException if invalid character is found, otherwise returns the input string.
-        public static string VerifyXmlChars(string content!!)
+        public static string VerifyXmlChars(string content)
         {
+            ArgumentNullException.ThrowIfNull(content);
+
             VerifyCharData(content, ExceptionType.XmlException);
             return content;
         }
 
         // Verification method for XML public ID characters as defined in XML spec production [13] PubidChar.
         // Throws XmlException if invalid character is found, otherwise returns the input string.
-        public static string VerifyPublicId(string publicId!!)
+        public static string VerifyPublicId(string publicId)
         {
+            ArgumentNullException.ThrowIfNull(publicId);
 
             // returns the position of invalid character or -1
             int pos = XmlCharType.IsPublicId(publicId);
@@ -530,8 +533,9 @@ namespace System.Xml
 
         // Verification method for XML whitespace characters as defined in XML spec production [3] S.
         // Throws XmlException if invalid character is found, otherwise returns the input string.
-        public static string VerifyWhitespace(string content!!)
+        public static string VerifyWhitespace(string content)
         {
+            ArgumentNullException.ThrowIfNull(content);
 
             // returns the position of invalid character or -1
             int pos = XmlCharType.IsOnlyWhitespaceWithPos(content);
@@ -781,8 +785,10 @@ namespace System.Xml
             return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Boolean"));
         }
 
-        public static char ToChar(string s!!)
+        public static char ToChar(string s)
         {
+            ArgumentNullException.ThrowIfNull(s);
+
             if (s.Length != 1)
             {
                 throw new FormatException(SR.XmlConvert_NotOneCharString);
@@ -1159,36 +1165,33 @@ namespace System.Xml
 
         private static void CreateAllDateTimeFormats()
         {
-            if (s_allDateTimeFormats == null)
-            {
-                // no locking; the array is immutable so it's not a problem that it may get initialized more than once
-                s_allDateTimeFormats = new string[] {
-                    "yyyy-MM-ddTHH:mm:ss.FFFFFFFzzzzzz", //dateTime
-                    "yyyy-MM-ddTHH:mm:ss.FFFFFFF",
-                    "yyyy-MM-ddTHH:mm:ss.FFFFFFFZ",
-                    "HH:mm:ss.FFFFFFF",                  //time
-                    "HH:mm:ss.FFFFFFFZ",
-                    "HH:mm:ss.FFFFFFFzzzzzz",
-                    "yyyy-MM-dd",                   // date
-                    "yyyy-MM-ddZ",
-                    "yyyy-MM-ddzzzzzz",
-                    "yyyy-MM",                      // yearMonth
-                    "yyyy-MMZ",
-                    "yyyy-MMzzzzzz",
-                    "yyyy",                         // year
-                    "yyyyZ",
-                    "yyyyzzzzzz",
-                    "--MM-dd",                      // monthDay
-                    "--MM-ddZ",
-                    "--MM-ddzzzzzz",
-                    "---dd",                        // day
-                    "---ddZ",
-                    "---ddzzzzzz",
-                    "--MM--",                       // month
-                    "--MM--Z",
-                    "--MM--zzzzzz",
-                };
-            }
+            // no locking; the array is immutable so it's not a problem that it may get initialized more than once
+            s_allDateTimeFormats ??= new string[] {
+                "yyyy-MM-ddTHH:mm:ss.FFFFFFFzzzzzz", //dateTime
+                "yyyy-MM-ddTHH:mm:ss.FFFFFFF",
+                "yyyy-MM-ddTHH:mm:ss.FFFFFFFZ",
+                "HH:mm:ss.FFFFFFF",                  //time
+                "HH:mm:ss.FFFFFFFZ",
+                "HH:mm:ss.FFFFFFFzzzzzz",
+                "yyyy-MM-dd",                   // date
+                "yyyy-MM-ddZ",
+                "yyyy-MM-ddzzzzzz",
+                "yyyy-MM",                      // yearMonth
+                "yyyy-MMZ",
+                "yyyy-MMzzzzzz",
+                "yyyy",                         // year
+                "yyyyZ",
+                "yyyyzzzzzz",
+                "--MM-dd",                      // monthDay
+                "--MM-ddZ",
+                "--MM-ddzzzzzz",
+                "---dd",                        // day
+                "---ddZ",
+                "---ddzzzzzz",
+                "--MM--",                       // month
+                "--MM--Z",
+                "--MM--zzzzzz",
+            };
         }
 
         [Obsolete("Use XmlConvert.ToDateTime() that accepts an XmlDateTimeSerializationMode instead.")]
@@ -1235,20 +1238,26 @@ namespace System.Xml
             return dt;
         }
 
-        public static DateTimeOffset ToDateTimeOffset(string s!!)
+        public static DateTimeOffset ToDateTimeOffset(string s)
         {
+            ArgumentNullException.ThrowIfNull(s);
+
             XsdDateTime xsdDateTime = new XsdDateTime(s, XsdDateTimeFlags.AllXsd);
             DateTimeOffset dateTimeOffset = (DateTimeOffset)xsdDateTime;
             return dateTimeOffset;
         }
 
-        public static DateTimeOffset ToDateTimeOffset(string s!!, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format)
+        public static DateTimeOffset ToDateTimeOffset(string s, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format)
         {
+            ArgumentNullException.ThrowIfNull(s);
+
             return DateTimeOffset.ParseExact(s, format, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
 
-        public static DateTimeOffset ToDateTimeOffset(string s!!, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string[] formats)
+        public static DateTimeOffset ToDateTimeOffset(string s, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string[] formats)
         {
+            ArgumentNullException.ThrowIfNull(s);
+
             return DateTimeOffset.ParseExact(s, formats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
 
@@ -1498,10 +1507,7 @@ namespace System.Xml
                 char ch = value[i];
                 if ((int)ch < 0x20 || ch == '"')
                 {
-                    if (sb == null)
-                    {
-                        sb = new StringBuilder(value.Length + 4);
-                    }
+                    sb ??= new StringBuilder(value.Length + 4);
                     if (i - start > 0)
                     {
                         sb.Append(value, start, i - start);

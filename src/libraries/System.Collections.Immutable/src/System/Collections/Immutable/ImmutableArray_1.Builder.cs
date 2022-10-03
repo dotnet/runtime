@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Immutable
 {
@@ -240,6 +241,61 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
+            /// Inserts the specified values at the specified index.
+            /// </summary>
+            /// <param name="index">The index at which to insert the value.</param>
+            /// <param name="items">The elements to insert.</param>
+            public void InsertRange(int index, IEnumerable<T> items)
+            {
+                Requires.Range(index >= 0 && index <= this.Count, nameof(index));
+                Requires.NotNull(items, nameof(items));
+
+                int count = ImmutableExtensions.GetCount(ref items);
+                this.EnsureCapacity(this.Count + count);
+
+                if (index != this.Count)
+                {
+                    Array.Copy(_elements, index, _elements, index + count, _count - index);
+                }
+
+                if (!items.TryCopyTo(_elements, index))
+                {
+                    foreach (var item in items)
+                    {
+                        _elements[index++] = item;
+                    }
+                }
+
+                _count += count;
+            }
+
+            /// <summary>
+            /// Inserts the specified values at the specified index.
+            /// </summary>
+            /// <param name="index">The index at which to insert the value.</param>
+            /// <param name="items">The elements to insert.</param>
+            public void InsertRange(int index, ImmutableArray<T> items)
+            {
+                Requires.Range(index >= 0 && index <= this.Count, nameof(index));
+
+                if (items.IsEmpty)
+                {
+                    return;
+                }
+
+                this.EnsureCapacity(this.Count + items.Length);
+
+                if (index != this.Count)
+                {
+                    Array.Copy(_elements, index, _elements, index + items.Length, _count - index);
+                }
+
+                Array.Copy(items.array!, 0, _elements, index, items.Length);
+
+                _count += items.Length;
+            }
+
+            /// <summary>
             /// Adds an item to the <see cref="ICollection{T}"/>.
             /// </summary>
             /// <param name="item">The object to add to the <see cref="ICollection{T}"/>.</param>
@@ -406,7 +462,8 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Removes the specified element.
+            /// Removes the first occurrence of the specified element from the builder.
+            /// If no match is found, the builder remains unchanged.
             /// </summary>
             /// <param name="element">The element.</param>
             /// <returns>A value indicating whether the specified element was found and removed from the collection.</returns>
@@ -423,6 +480,55 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
+            /// Removes the first occurrence of the specified element from the builder.
+            /// If no match is found, the builder remains unchanged.
+            /// </summary>
+            /// <param name="element">The element to remove.</param>
+            /// <param name="equalityComparer">
+            /// The equality comparer to use in the search.
+            /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
+            /// </param>
+            /// <returns>A value indicating whether the specified element was found and removed from the collection.</returns>
+            public bool Remove(T element, IEqualityComparer<T>? equalityComparer)
+            {
+                int index = this.IndexOf(element, 0, _count, equalityComparer);
+
+                if (index >= 0)
+                {
+                    this.RemoveAt(index);
+                    return true;
+                }
+
+                return false;
+            }
+
+            /// <summary>
+            /// Removes all the elements that match the conditions defined by the specified
+            /// predicate.
+            /// </summary>
+            /// <param name="match">
+            /// The <see cref="Predicate{T}"/> delegate that defines the conditions of the elements
+            /// to remove.
+            /// </param>
+            public void RemoveAll(Predicate<T> match)
+            {
+                List<int>? removeIndices = null;
+                for (int i = 0; i < _count; i++)
+                {
+                    if (match(_elements[i]))
+                    {
+                        removeIndices ??= new List<int>();
+                        removeIndices.Add(i);
+                    }
+                }
+
+                if (removeIndices != null)
+                {
+                    RemoveAtRange(removeIndices);
+                }
+            }
+
+            /// <summary>
             /// Removes the <see cref="IList{T}"/> item at the specified index.
             /// </summary>
             /// <param name="index">The zero-based index of the item to remove.</param>
@@ -436,6 +542,98 @@ namespace System.Collections.Immutable
                 }
 
                 this.Count--;
+            }
+
+            /// <summary>
+            /// Removes the specified values from this list.
+            /// </summary>
+            /// <param name="index">The 0-based index into the array for the element to omit from the returned array.</param>
+            /// <param name="length">The number of elements to remove.</param>
+            public void RemoveRange(int index, int length)
+            {
+                Requires.Range(index >= 0 && index + length <= _count, nameof(index));
+
+                if (length == 0)
+                {
+                    return;
+                }
+
+                if (index + length < this._count)
+                {
+
+#if NET6_0_OR_GREATER
+                    if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                    {
+                        Array.Clear(_elements, index, length); // Clear the elements so that the gc can reclaim the references.
+                    }
+#endif
+                    Array.Copy(_elements, index + length, _elements, index, this.Count - index - length);
+                }
+
+                this._count -= length;
+            }
+
+            /// <summary>
+            /// Removes the specified values from this list.
+            /// </summary>
+            /// <param name="items">The items to remove if matches are found in this list.</param>
+            public void RemoveRange(IEnumerable<T> items)
+            {
+                this.RemoveRange(items, EqualityComparer<T>.Default);
+            }
+
+            /// <summary>
+            /// Removes the specified values from this list.
+            /// </summary>
+            /// <param name="items">The items to remove if matches are found in this list.</param>
+            /// <param name="equalityComparer">
+            /// The equality comparer to use in the search.
+            /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
+            /// </param>
+            public void RemoveRange(IEnumerable<T> items, IEqualityComparer<T>? equalityComparer)
+            {
+                Requires.NotNull(items, nameof(items));
+
+                var indicesToRemove = new SortedSet<int>();
+                foreach (var item in items)
+                {
+                    int index = this.IndexOf(item, 0, _count, equalityComparer);
+                    while (index >= 0 && !indicesToRemove.Add(index) && index + 1 < _count)
+                    {
+                        index = this.IndexOf(item, index + 1, equalityComparer);
+                    }
+                }
+
+                this.RemoveAtRange(indicesToRemove);
+            }
+
+            /// <summary>
+            /// Replaces the first equal element in the list with the specified element.
+            /// </summary>
+            /// <param name="oldValue">The element to replace.</param>
+            /// <param name="newValue">The element to replace the old element with.</param>
+            public void Replace(T oldValue, T newValue)
+            {
+                this.Replace(oldValue, newValue, EqualityComparer<T>.Default);
+            }
+
+            /// <summary>
+            /// Replaces the first equal element in the list with the specified element.
+            /// </summary>
+            /// <param name="oldValue">The element to replace.</param>
+            /// <param name="newValue">The element to replace the old element with.</param>
+            /// <param name="equalityComparer">
+            /// The equality comparer to use in the search.
+            /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
+            /// </param>
+            public void Replace(T oldValue, T newValue, IEqualityComparer<T>? equalityComparer)
+            {
+                int index = this.IndexOf(oldValue, 0, _count, equalityComparer);
+
+                if (index >= 0)
+                {
+                    _elements[index] = newValue;
+                }
             }
 
             /// <summary>
@@ -475,6 +673,32 @@ namespace System.Collections.Immutable
                 Requires.NotNull(array, nameof(array));
                 Requires.Range(index >= 0 && index + this.Count <= array.Length, nameof(index));
                 Array.Copy(_elements, 0, array, index, this.Count);
+            }
+
+            /// <summary>
+            /// Copies the contents of this array to the specified array.
+            /// </summary>
+            /// <param name="destination">The array to copy to.</param>
+            public void CopyTo(T[] destination)
+            {
+                Requires.NotNull(destination, nameof(destination));
+                Array.Copy(_elements, 0, destination, 0, this.Count);
+            }
+
+            /// <summary>
+            /// Copies the contents of this array to the specified array.
+            /// </summary>
+            /// <param name="sourceIndex">The index into this collection of the first element to copy.</param>
+            /// <param name="destination">The array to copy to.</param>
+            /// <param name="destinationIndex">The index into the destination array to which the first copied element is written.</param>
+            /// <param name="length">The number of elements to copy.</param>
+            public void CopyTo(int sourceIndex, T[] destination, int destinationIndex, int length)
+            {
+                Requires.NotNull(destination, nameof(destination));
+                Requires.Range(length >= 0, nameof(length));
+                Requires.Range(sourceIndex >= 0 && sourceIndex + length <= this.Count, nameof(sourceIndex));
+                Requires.Range(destinationIndex >= 0 && destinationIndex + length <= destination.Length, nameof(destinationIndex));
+                Array.Copy(_elements, sourceIndex, destination, destinationIndex, length);
             }
 
             /// <summary>
@@ -546,7 +770,7 @@ namespace System.Collections.Immutable
                 Requires.Range(startIndex >= 0 && startIndex < this.Count, nameof(startIndex));
                 Requires.Range(count >= 0 && startIndex + count <= this.Count, nameof(count));
 
-                equalityComparer = equalityComparer ?? EqualityComparer<T>.Default;
+                equalityComparer ??= EqualityComparer<T>.Default;
                 if (equalityComparer == EqualityComparer<T>.Default)
                 {
                     return Array.IndexOf(_elements, item, startIndex, count);
@@ -563,6 +787,21 @@ namespace System.Collections.Immutable
 
                     return -1;
                 }
+            }
+
+            /// <summary>
+            /// Searches the array for the specified item.
+            /// </summary>
+            /// <param name="item">The item to search for.</param>
+            /// <param name="startIndex">The index at which to begin the search.</param>
+            /// <param name="equalityComparer">
+            /// The equality comparer to use in the search.
+            /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
+            /// </param>
+            /// <returns>The 0-based index into the array where the item was found; or -1 if it could not be found.</returns>
+            public int IndexOf(T item, int startIndex, IEqualityComparer<T>? equalityComparer)
+            {
+                return this.IndexOf(item, startIndex, this.Count - startIndex, equalityComparer);
             }
 
             /// <summary>
@@ -628,7 +867,7 @@ namespace System.Collections.Immutable
                 Requires.Range(startIndex >= 0 && startIndex < this.Count, nameof(startIndex));
                 Requires.Range(count >= 0 && startIndex - count + 1 >= 0, nameof(count));
 
-                equalityComparer = equalityComparer ?? EqualityComparer<T>.Default;
+                equalityComparer ??= EqualityComparer<T>.Default;
                 if (equalityComparer == EqualityComparer<T>.Default)
                 {
                     return Array.LastIndexOf(_elements, item, startIndex, count);
@@ -694,11 +933,17 @@ namespace System.Collections.Immutable
 
                 if (Count > 1)
                 {
+#if NET6_0_OR_GREATER
+                    // MemoryExtensions.Sort is not available in .NET Framework / Standard 2.0.
+                    // But the overload with a Comparison argument doesn't allocate.
+                    _elements.AsSpan(0, _count).Sort(comparison);
+#else
                     // Array.Sort does not have an overload that takes both bounds and a Comparison.
                     // We could special case _count == _elements.Length in order to try to avoid
                     // the IComparer allocation, but the Array.Sort overload that takes a Comparison
                     // allocates such an IComparer internally, anyway.
                     Array.Sort(_elements, 0, _count, Comparer<T>.Create(comparison));
+#endif
                 }
             }
 
@@ -791,6 +1036,33 @@ namespace System.Collections.Immutable
                 {
                     nodes[offset + i] = items[i];
                 }
+            }
+
+            private void RemoveAtRange(ICollection<int> indicesToRemove)
+            {
+                Requires.NotNull(indicesToRemove, nameof(indicesToRemove));
+
+                if (indicesToRemove.Count == 0)
+                {
+                    return;
+                }
+
+                int copied = 0;
+                int removed = 0;
+                int lastIndexRemoved = -1;
+                foreach (var indexToRemove in indicesToRemove)
+                {
+                    Debug.Assert(lastIndexRemoved < indexToRemove);
+                    int copyLength = lastIndexRemoved == -1 ? indexToRemove : (indexToRemove - lastIndexRemoved - 1);
+                    Array.Copy(_elements, copied + removed, _elements, copied, copyLength);
+                    removed++;
+                    copied += copyLength;
+                    lastIndexRemoved = indexToRemove;
+                }
+
+                Array.Copy(_elements, copied + removed, _elements, copied, _elements.Length - (copied + removed));
+
+                _count -= indicesToRemove.Count;
             }
         }
     }

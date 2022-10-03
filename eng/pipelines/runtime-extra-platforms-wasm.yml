@@ -34,6 +34,24 @@ jobs:
       runAOT: true
       alwaysRun: true
 
+  # High resource AOT Library tests
+  - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+    parameters:
+      platforms:
+        - Browser_wasm
+        - Browser_wasm_win
+      nameSuffix: _HighResource_AOT
+      extraBuildArgs: /p:TestAssemblies=false /p:RunHighAOTResourceRequiringTestsOnly=true
+      buildAOTOnHelix: false
+      runAOT: true
+      alwaysRun: true
+
+  # Disabled for now
+  #- template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
+    #parameters:
+      #runProfile: 'v8'
+      #onlySanityCheck: true
+
 #
 # ********** For !rolling builds, IOW - PR builds *************
 # - run everything, if relevant paths changed
@@ -45,9 +63,53 @@ jobs:
     parameters:
       platforms:
         - Browser_wasm
+      # Don't run for rolling builds, as this is covered
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      scenarios:
+        - normal
+        - WasmTestOnBrowser
+        - WasmTestOnNodeJs
+
+  # Library tests - Windows
+  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+    parameters:
+      platforms:
         - Browser_wasm_win
       # Don't run for rolling builds, as this is covered
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      scenarios:
+        - WasmTestOnBrowser
+        - WasmTestOnNodeJs
+
+  # Library tests with full threading 
+  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+    parameters:
+      platforms:
+        - Browser_wasm
+        #- Browser_wasm_win
+      nameSuffix: _Threading
+      extraBuildArgs: /p:WasmEnableThreads=true
+      # Don't run for rolling builds, as this is covered
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      # NOTE - Since threading is experimental, we don't want to block mainline work
+      shouldContinueOnError: true
+      scenarios:
+        - normal
+        - WasmTestOnBrowser
+        - WasmTestOnNodeJs
+
+  # Library tests with internal threads only
+  - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+    parameters:
+      platforms:
+        - Browser_wasm
+        #- Browser_wasm_win
+      nameSuffix: _Threading_PerfTracing
+      extraBuildArgs: /p:WasmEnablePerfTracing=true
+      # Don't run for rolling builds, as this is covered
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      # NOTE - Since threading is experimental, we don't want to block mainline work
+      shouldContinueOnError: true
       scenarios:
         - normal
         - WasmTestOnBrowser
@@ -72,6 +134,18 @@ jobs:
       runAOT: true
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
 
+  # High resource AOT Library tests
+  - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
+    parameters:
+      platforms:
+        - Browser_wasm
+        - Browser_wasm_win
+      nameSuffix: _HighResource_AOT
+      extraBuildArgs: /p:TestAssemblies=false /p:RunHighAOTResourceRequiringTestsOnly=true
+      buildAOTOnHelix: false
+      runAOT: true
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+
   # Wasm.Build.Tests
   - template: /eng/pipelines/common/templates/wasm-build-tests.yml
     parameters:
@@ -93,3 +167,18 @@ jobs:
       platforms:
         - Browser_wasm
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+
+  - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
+    parameters:
+      platforms:
+        - Browser_wasm_firefox
+      browser: firefox
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      # ff tests are unstable currently
+      shouldContinueOnError: true
+
+  # Disable for now
+  #- template: /eng/pipelines/coreclr/perf-wasm-jobs.yml
+    #parameters:
+      #runProfile: 'v8'
+      #onlySanityCheck: true

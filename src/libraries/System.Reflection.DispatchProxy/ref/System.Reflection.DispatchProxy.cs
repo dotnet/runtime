@@ -9,6 +9,7 @@ namespace System.Reflection
     public abstract partial class DispatchProxy
     {
         protected DispatchProxy() { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("Creating a proxy instance requires generating code at runtime")]
         public static T Create<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.All)]  T, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TProxy>() where TProxy : System.Reflection.DispatchProxy { throw null; }
         protected abstract object? Invoke(System.Reflection.MethodInfo? targetMethod, object?[]? args);
     }

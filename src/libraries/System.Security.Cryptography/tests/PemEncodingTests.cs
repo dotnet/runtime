@@ -71,69 +71,17 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void TryWrite_Simple()
-        {
-            char[] buffer = new char[1000];
-            string label = "HELLO";
-            byte[] content = new byte[] { 0x66, 0x6F, 0x6F };
-            Assert.True(PemEncoding.TryWrite(label, content, buffer, out int charsWritten));
-            string pem = new string(buffer, 0, charsWritten);
-            Assert.Equal("-----BEGIN HELLO-----\nZm9v\n-----END HELLO-----", pem);
-        }
-
-        [Fact]
         public static void Write_Simple()
         {
             string label = "HELLO";
             byte[] content = new byte[] { 0x66, 0x6F, 0x6F };
-            char[] result = PemEncoding.Write(label, content);
-            string pem = new string(result);
-            Assert.Equal("-----BEGIN HELLO-----\nZm9v\n-----END HELLO-----", pem);
-        }
-
-        [Fact]
-        public static void TryWrite_Empty()
-        {
-            char[] buffer = new char[31];
-            Assert.True(PemEncoding.TryWrite(default, default, buffer, out int charsWritten));
-            string pem = new string(buffer, 0, charsWritten);
-            Assert.Equal("-----BEGIN -----\n-----END -----", pem);
+            AssertWrites("-----BEGIN HELLO-----\nZm9v\n-----END HELLO-----", label, content);
         }
 
         [Fact]
         public static void Write_Empty()
         {
-            char[] result = PemEncoding.Write(default, default);
-            string pem = new string(result);
-            Assert.Equal("-----BEGIN -----\n-----END -----", pem);
-        }
-
-        [Fact]
-        public static void TryWrite_BufferTooSmall()
-        {
-            char[] buffer = new char[30];
-            Assert.False(PemEncoding.TryWrite(default, default, buffer, out _));
-        }
-
-        [Fact]
-        public static void TryWrite_ExactLineNoPadding()
-        {
-            char[] buffer = new char[1000];
-            ReadOnlySpan<byte> data = new byte[] {
-                0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
-                0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
-                0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
-                0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
-                0, 1, 2, 3, 4, 5, 6, 7
-            };
-            string label = "FANCY DATA";
-            Assert.True(PemEncoding.TryWrite(label, data, buffer, out int charsWritten));
-            string pem = new string(buffer, 0, charsWritten);
-            string expected =
-                "-----BEGIN FANCY DATA-----\n" +
-                "AAECAwQFBgcICQABAgMEBQYHCAkAAQIDBAUGBwgJAAECAwQFBgcICQABAgMEBQYH\n" +
-                "-----END FANCY DATA-----";
-            Assert.Equal(expected, pem);
+            AssertWrites("-----BEGIN -----\n-----END -----", default, default);
         }
 
         [Fact]
@@ -147,13 +95,18 @@ namespace System.Security.Cryptography.Tests
                 0, 1, 2, 3, 4, 5, 6, 7
             };
             string label = "FANCY DATA";
-            char[] result = PemEncoding.Write(label, data);
-            string pem = new string(result);
             string expected =
                 "-----BEGIN FANCY DATA-----\n" +
                 "AAECAwQFBgcICQABAgMEBQYHCAkAAQIDBAUGBwgJAAECAwQFBgcICQABAgMEBQYH\n" +
                 "-----END FANCY DATA-----";
-            Assert.Equal(expected, pem);
+            AssertWrites(expected, label, data);
+        }
+
+        [Fact]
+        public static void TryWrite_BufferTooSmall()
+        {
+            char[] buffer = new char[30];
+            Assert.False(PemEncoding.TryWrite(default, default, buffer, out _));
         }
 
         [Fact]
@@ -181,28 +134,6 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
-        public static void TryWrite_WrapPadding()
-        {
-            char[] buffer = new char[1000];
-            ReadOnlySpan<byte> data = new byte[] {
-                0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
-                0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
-                0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
-                0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
-                0, 1, 2, 3, 4, 5, 6, 7, 8, 9
-            };
-            string label = "UNFANCY DATA";
-            Assert.True(PemEncoding.TryWrite(label, data, buffer, out int charsWritten));
-            string pem = new string(buffer, 0, charsWritten);
-            string expected =
-                "-----BEGIN UNFANCY DATA-----\n" +
-                "AAECAwQFBgcICQABAgMEBQYHCAkAAQIDBAUGBwgJAAECAwQFBgcICQABAgMEBQYH\n" +
-                "CAk=\n" +
-                "-----END UNFANCY DATA-----";
-            Assert.Equal(expected, pem);
-        }
-
-        [Fact]
         public static void Write_WrapPadding()
         {
             ReadOnlySpan<byte> data = new byte[] {
@@ -213,47 +144,12 @@ namespace System.Security.Cryptography.Tests
                 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
             };
             string label = "UNFANCY DATA";
-            char[] result = PemEncoding.Write(label, data);
-            string pem = new string(result);
             string expected =
                 "-----BEGIN UNFANCY DATA-----\n" +
                 "AAECAwQFBgcICQABAgMEBQYHCAkAAQIDBAUGBwgJAAECAwQFBgcICQABAgMEBQYH\n" +
                 "CAk=\n" +
                 "-----END UNFANCY DATA-----";
-            Assert.Equal(expected, pem);
-        }
-
-        [Fact]
-        public static void TryWrite_EcKey()
-        {
-            char[] buffer = new char[1000];
-            ReadOnlySpan<byte> data = new byte[] {
-                0x30, 0x74, 0x02, 0x01, 0x01, 0x04, 0x20, 0x20,
-                0x59, 0xef, 0xff, 0x13, 0xd4, 0x92, 0xf6, 0x6a,
-                0x6b, 0xcd, 0x07, 0xf4, 0x12, 0x86, 0x08, 0x6d,
-                0x81, 0x93, 0xed, 0x9c, 0xf0, 0xf8, 0x5b, 0xeb,
-                0x00, 0x70, 0x7c, 0x40, 0xfa, 0x12, 0x6c, 0xa0,
-                0x07, 0x06, 0x05, 0x2b, 0x81, 0x04, 0x00, 0x0a,
-                0xa1, 0x44, 0x03, 0x42, 0x00, 0x04, 0xdf, 0x23,
-                0x42, 0xe5, 0xab, 0x3c, 0x25, 0x53, 0x79, 0x32,
-                0x31, 0x7d, 0xe6, 0x87, 0xcd, 0x4a, 0x04, 0x41,
-                0x55, 0x78, 0xdf, 0xd0, 0x22, 0xad, 0x60, 0x44,
-                0x96, 0x7c, 0xf9, 0xe6, 0xbd, 0x3d, 0xe7, 0xf9,
-                0xc3, 0x0c, 0x25, 0x40, 0x7d, 0x95, 0x42, 0x5f,
-                0x76, 0x41, 0x4d, 0x81, 0xa4, 0x81, 0xec, 0x99,
-                0x41, 0xfa, 0x4a, 0xd9, 0x55, 0x55, 0x7c, 0x4f,
-                0xb1, 0xd9, 0x41, 0x75, 0x43, 0x44
-            };
-            string label = "EC PRIVATE KEY";
-            Assert.True(PemEncoding.TryWrite(label, data, buffer, out int charsWritten));
-            string pem = new string(buffer, 0, charsWritten);
-            string expected =
-                "-----BEGIN EC PRIVATE KEY-----\n" +
-                "MHQCAQEEICBZ7/8T1JL2amvNB/QShghtgZPtnPD4W+sAcHxA+hJsoAcGBSuBBAAK\n" +
-                "oUQDQgAE3yNC5as8JVN5MjF95ofNSgRBVXjf0CKtYESWfPnmvT3n+cMMJUB9lUJf\n" +
-                "dkFNgaSB7JlB+krZVVV8T7HZQXVDRA==\n" +
-                "-----END EC PRIVATE KEY-----";
-            Assert.Equal(expected, pem);
+            AssertWrites(expected, label, data);
         }
 
         [Fact]
@@ -277,15 +173,13 @@ namespace System.Security.Cryptography.Tests
                 0xb1, 0xd9, 0x41, 0x75, 0x43, 0x44
             };
             string label = "EC PRIVATE KEY";
-            char[] result = PemEncoding.Write(label, data);
-            string pem = new string(result);
             string expected =
                 "-----BEGIN EC PRIVATE KEY-----\n" +
                 "MHQCAQEEICBZ7/8T1JL2amvNB/QShghtgZPtnPD4W+sAcHxA+hJsoAcGBSuBBAAK\n" +
                 "oUQDQgAE3yNC5as8JVN5MjF95ofNSgRBVXjf0CKtYESWfPnmvT3n+cMMJUB9lUJf\n" +
                 "dkFNgaSB7JlB+krZVVV8T7HZQXVDRA==\n" +
                 "-----END EC PRIVATE KEY-----";
-            Assert.Equal(expected, pem);
+            AssertWrites(expected, label, data);
         }
 
         [Fact]
@@ -301,6 +195,30 @@ namespace System.Security.Cryptography.Tests
         {
             AssertExtensions.Throws<ArgumentException>("label", () =>
                 PemEncoding.Write("\n", default));
+        }
+
+        [Fact]
+        public static void WriteString_Throws_InvalidLabel()
+        {
+            AssertExtensions.Throws<ArgumentException>("label", () =>
+                PemEncoding.WriteString("\n", default));
+        }
+
+        private static void AssertWrites(string expected, ReadOnlySpan<char> label, ReadOnlySpan<byte> data)
+        {
+            // Array-returning
+            char[] resultArray = PemEncoding.Write(label, data);
+            Assert.Equal(expected, new string(resultArray));
+
+            // String-returning
+            string resultString = PemEncoding.WriteString(label, data);
+            Assert.Equal(expected, resultString);
+
+            // Buffer-writing
+            resultArray.AsSpan().Clear();
+            Assert.True(PemEncoding.TryWrite(label, data, resultArray, out int written), "PemEncoding.TryWrite");
+            Assert.Equal(expected.Length, written);
+            Assert.Equal(expected, new string(resultArray));
         }
     }
 }

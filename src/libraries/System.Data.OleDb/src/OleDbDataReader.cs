@@ -39,7 +39,7 @@ namespace System.Data.OleDb
         private long _sequentialBytesRead;
         private int _sequentialOrdinal;
 
-        private Bindings?[]? _bindings; // _metdata contains the ColumnBinding
+        private Bindings?[]? _bindings; // _metadata contains the ColumnBinding
 
         // do we need to jump to the next accessor
         private int _nextAccessorForRetrieval;
@@ -170,7 +170,7 @@ namespace System.Data.OleDb
         public override bool IsClosed
         {
             get
-            { // if we have a rowset or multipleresults, we may have more to read
+            { // if we have a rowset or multiplieresults, we may have more to read
                 Debug.Assert((_singleRow && !_isClosed && !_isRead && (null == _irow) && (null == _irowset)) ||
                              _isClosed == ((null == _irow) && (null == _irowset) && (null == _imultipleResults)
                                            && (null == _dbSchemaTable) && (null == _connection) && (null == _command)),
@@ -721,10 +721,7 @@ namespace System.Data.OleDb
             // release unmanaged objects
             RowHandleBuffer? rowHandleNativeBuffer = _rowHandleNativeBuffer;
             _rowHandleNativeBuffer = null;
-            if (null != rowHandleNativeBuffer)
-            {
-                rowHandleNativeBuffer.Dispose();
-            }
+            rowHandleNativeBuffer?.Dispose();
         }
 
         internal void CloseReaderFromConnection(bool canceling)
@@ -978,12 +975,9 @@ namespace System.Data.OleDb
                 reader.BuildMetaInfo();
                 reader.HasRowsRead();
 
-                if (_connection != null)
-                {
-                    // connection tracks all readers to prevent cmd from executing
-                    // until all readers (including nested) are closed
-                    _connection.AddWeakReference(reader, OleDbReferenceCollection.DataReaderTag);
-                }
+                // connection tracks all readers to prevent cmd from executing
+                // until all readers (including nested) are closed
+                _connection?.AddWeakReference(reader, OleDbReferenceCollection.DataReaderTag);
             }
 
             return reader!;
@@ -1276,7 +1270,7 @@ namespace System.Data.OleDb
 
                     // If a provider doesn't support IID_NULL and returns E_NOINTERFACE we want to break out
                     // of the loop without throwing an exception.  Our behavior will match ADODB in that scenario
-                    // where Recordset.Close just releases the interfaces without proccessing remaining results
+                    // where Recordset.Close just releases the interfaces without processing remaining results
                     if ((OleDbHResult.DB_S_NORESULT == hr) || (OleDbHResult.E_NOINTERFACE == hr))
                     {
                         break;
@@ -1927,7 +1921,7 @@ namespace System.Data.OleDb
             _nextAccessorForRetrieval++;
         }
 
-        private int IndexOf(Hashtable hash, string name)
+        private static int IndexOf(Hashtable hash, string name)
         {
             // via case sensitive search, first match with lowest ordinal matches
             object? index = hash[name];
@@ -1972,8 +1966,8 @@ namespace System.Data.OleDb
                 MetaData info = _metadata[i];
                 if ((null != info.baseTableName) && (0 < info.baseTableName.Length))
                 {
-                    catalogName = ((null != info.baseCatalogName) ? info.baseCatalogName : "");
-                    schemaName = ((null != info.baseSchemaName) ? info.baseSchemaName : "");
+                    catalogName = info.baseCatalogName ?? "";
+                    schemaName = info.baseSchemaName ?? "";
                     if (null == baseTableName)
                     {
                         baseSchemaName = schemaName;
@@ -2056,7 +2050,7 @@ namespace System.Data.OleDb
                 return;
             }
 
-            // look for a single unique contraint that can be upgraded
+            // look for a single unique constraint that can be upgraded
             if (_connection.SupportSchemaRowset(OleDbSchemaGuid.Indexes))
             {
                 object?[] restrictions = new object?[] { baseCatalogName, baseSchemaName, null, null, baseTableName };

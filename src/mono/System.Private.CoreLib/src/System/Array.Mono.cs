@@ -16,15 +16,9 @@ namespace System
         internal sealed class RawData
         {
             public IntPtr Bounds;
-            // The following is to prevent a mismatch between the managed and runtime
-            // layouts where MONO_BIG_ARRAYS is false on 64-bit big endian systems
-#if MONO_BIG_ARRAYS
-            public ulong Count;
-#else
             public uint Count;
 #if !TARGET_32BIT
             private uint _Pad;
-#endif
 #endif
             public byte Data;
         }
@@ -105,11 +99,8 @@ namespace System
 
         public static void Copy(Array sourceArray, Array destinationArray, int length)
         {
-            if (sourceArray == null)
-                throw new ArgumentNullException(nameof(sourceArray));
-
-            if (destinationArray == null)
-                throw new ArgumentNullException(nameof(destinationArray));
+            ArgumentNullException.ThrowIfNull(sourceArray);
+            ArgumentNullException.ThrowIfNull(destinationArray);
 
             Copy(sourceArray, sourceArray.GetLowerBound(0), destinationArray,
                 destinationArray.GetLowerBound(0), length);
@@ -122,11 +113,8 @@ namespace System
 
         private static void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
-            if (sourceArray == null)
-                throw new ArgumentNullException(nameof(sourceArray));
-
-            if (destinationArray == null)
-                throw new ArgumentNullException(nameof(destinationArray));
+            ArgumentNullException.ThrowIfNull(sourceArray);
+            ArgumentNullException.ThrowIfNull(destinationArray);
 
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -293,6 +281,21 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void InternalCreate(ref Array? result, IntPtr elementType, int rank, int* lengths, int* lowerBounds);
 
+        private unsafe nint GetFlattenedIndex(int rawIndex)
+        {
+            // Checked by the caller
+            Debug.Assert(Rank == 1);
+
+            int index = rawIndex - GetLowerBound(0);
+            int length = GetLength(0);
+
+            if ((uint)index >= (uint)length)
+                ThrowHelper.ThrowIndexOutOfRangeException();
+
+            Debug.Assert((uint)index < (nuint)LongLength);
+            return index;
+        }
+
         private unsafe nint GetFlattenedIndex(ReadOnlySpan<int> indices)
         {
             // Checked by the caller
@@ -457,7 +460,7 @@ namespace System
         internal T InternalArray__IReadOnlyList_get_Item<T>(int index)
         {
             if ((uint)index >= (uint)Length)
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
 
             T value;
             // Do not change this to call GetGenericValue_icall directly, due to special casing in the runtime.
@@ -488,7 +491,7 @@ namespace System
         internal T InternalArray__get_Item<T>(int index)
         {
             if ((uint)index >= (uint)Length)
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
 
             T value;
             // Do not change this to call GetGenericValue_icall directly, due to special casing in the runtime.
@@ -499,7 +502,7 @@ namespace System
         internal void InternalArray__set_Item<T>(int index, T item)
         {
             if ((uint)index >= (uint)Length)
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
 
             if (this is object?[] oarray)
             {

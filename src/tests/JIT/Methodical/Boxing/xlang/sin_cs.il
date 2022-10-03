@@ -12,11 +12,11 @@
 .assembly extern sinlib_cs
 {
 }
-.namespace SinCalc
+.namespace SinCalc_sin_cs_xlang_il
 {
-  .class auto ansi SinCalc extends [mscorlib]System.Object
+  .class public auto ansi SinCalc_sin_cs_xlang_il extends [mscorlib]System.Object
   {
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (

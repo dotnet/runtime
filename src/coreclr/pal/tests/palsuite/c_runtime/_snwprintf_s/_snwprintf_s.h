@@ -5,7 +5,7 @@
 **
 ** Source:  swprintf_s.h
 **
-** Purpose: Containts common testing functions for swprintf_s
+** Purpose: Contains common testing functions for swprintf_s
 **
 **
 **==========================================================================*/
@@ -53,7 +53,7 @@ inline void DoPointerTest_snwprintf_s(const WCHAR *formatstr, void* param, const
         Fail("ERROR: failed to insert pointer to %#p into \"%s\"\n"
              "Expected \"%s\", got \"%s\".\n", param, convertC(formatstr),
              convertC(checkstr1), convertC(buf));
-    }    
+    }
 }
 #define DoPointerTest DoPointerTest_snwprintf_s
 

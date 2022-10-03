@@ -21,9 +21,9 @@ namespace System.Composition
         ///     An <see cref="object"/> containing the metadata value. This can be
         ///     <see langword="null"/>.
         /// </param>
-        public PartMetadataAttribute(string name!!, object value)
+        public PartMetadataAttribute(string name, object value)
         {
-            Name = name;
+            Name = name ?? throw new ArgumentNullException(nameof(name));
             Value = value;
         }
 

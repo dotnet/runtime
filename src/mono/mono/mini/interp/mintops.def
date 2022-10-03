@@ -13,6 +13,7 @@ OPDEF(MINT_NIY, "niy", 1, 0, 0, MintOpNoArgs)
 OPDEF(MINT_DEF, "def", 2, 1, 0, MintOpNoArgs)
 OPDEF(MINT_IL_SEQ_POINT, "il_seq_point", 1, 0, 0, MintOpNoArgs)
 OPDEF(MINT_DUMMY_USE, "dummy_use", 2, 0, 1, MintOpNoArgs)
+OPDEF(MINT_TIER_PATCHPOINT_DATA, "tier_patchpoint_data", 2, 0, 0, MintOpShortInt)
 OPDEF(MINT_BREAK, "break", 1, 0, 0, MintOpNoArgs)
 OPDEF(MINT_BREAKPOINT, "breakpoint", 1, 0, 0, MintOpNoArgs)
 
@@ -337,6 +338,8 @@ OPDEF(MINT_JMP, "jmp", 2, 0, 0, MintOpMethodToken)
 
 OPDEF(MINT_ENDFILTER, "endfilter", 2, 0, 1, MintOpNoArgs)
 
+OPDEF(MINT_NEWOBJ_SLOW_UNOPT, "newobj_slow_unopt", 5, 1, 0, MintOpMethodToken)
+OPDEF(MINT_NEWOBJ_STRING_UNOPT, "newobj_string_unopt", 4, 1, 0, MintOpMethodToken)
 OPDEF(MINT_NEWOBJ_SLOW, "newobj_slow", 4, 1, 1, MintOpMethodToken)
 OPDEF(MINT_NEWOBJ_ARRAY, "newobj_array", 5, 1, 1, MintOpMethodToken)
 OPDEF(MINT_NEWOBJ_STRING, "newobj_string", 4, 1, 1, MintOpMethodToken)
@@ -646,7 +649,8 @@ OPDEF(MINT_SHR_I4_IMM, "shr.i4.imm", 4, 1, 1, MintOpShortInt)
 OPDEF(MINT_SHR_I8_IMM, "shr.i8.imm", 4, 1, 1, MintOpShortInt)
 
 
-OPDEF(MINT_CKFINITE, "ckfinite", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_CKFINITE_R4, "ckfinite.r4", 3, 1, 1, MintOpNoArgs)
+OPDEF(MINT_CKFINITE_R8, "ckfinite.r8", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_MKREFANY, "mkrefany", 4, 1, 1, MintOpClassToken)
 OPDEF(MINT_REFANYTYPE, "refanytype", 3, 1, 1, MintOpNoArgs)
 OPDEF(MINT_REFANYVAL, "refanyval", 4, 1, 1, MintOpNoArgs)
@@ -763,6 +767,9 @@ OPDEF(MINT_PROF_ENTER, "prof_enter", 2, 0, 0, MintOpShortInt)
 OPDEF(MINT_PROF_EXIT, "prof_exit", 5, 0, 1, MintOpShortAndInt)
 OPDEF(MINT_PROF_EXIT_VOID, "prof_exit_void", 2, 0, 0, MintOpNoArgs)
 OPDEF(MINT_PROF_COVERAGE_STORE, "prof_coverage_store", 5, 0, 0, MintOpLongInt)
+
+OPDEF(MINT_TIER_ENTER_METHOD, "tier_enter_method", 1, 0, 0, MintOpNoArgs)
+OPDEF(MINT_TIER_PATCHPOINT, "tier_patchpoint", 2, 0, 0, MintOpShortInt)
 
 OPDEF(MINT_INTRINS_ENUM_HASFLAG, "intrins_enum_hasflag", 5, 1, 2, MintOpClassToken)
 OPDEF(MINT_INTRINS_GET_HASHCODE, "intrins_get_hashcode", 3, 1, 1, MintOpNoArgs)

@@ -344,7 +344,7 @@ GcInfoSize& GcInfoSize::operator+=(const GcInfoSize& other)
     NumUntracked += other.NumUntracked;
     NumTransitions += other.NumTransitions;
     SizeOfCode += other.SizeOfCode;
-    EncPreservedSlots += other.EncPreservedSlots;
+    EncInfoSize += other.EncInfoSize;
 
     UntrackedSlotSize += other.UntrackedSlotSize;
     NumUntrackedSize += other.NumUntrackedSize;
@@ -392,7 +392,7 @@ void GcInfoSize::Log(DWORD level, const char * header)
         LogSpew(LF_GCINFO, level, "NumUntracked: %Iu\n", NumUntracked);
         LogSpew(LF_GCINFO, level, "NumTransitions: %Iu\n", NumTransitions);
         LogSpew(LF_GCINFO, level, "SizeOfCode: %Iu\n", SizeOfCode);
-        LogSpew(LF_GCINFO, level, "EncPreservedSlots: %Iu\n", EncPreservedSlots);
+        LogSpew(LF_GCINFO, level, "EncInfoSize: %Iu\n", EncInfoSize);
 
         LogSpew(LF_GCINFO, level, "---SIZES(bits)---\n");
         LogSpew(LF_GCINFO, level, "Total: %Iu\n", TotalSize);
@@ -484,6 +484,9 @@ GcInfoEncoder::GcInfoEncoder(
 
     m_StackBaseRegister = NO_STACK_BASE_REGISTER;
     m_SizeOfEditAndContinuePreservedArea = NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA;
+#ifdef TARGET_ARM64
+    m_SizeOfEditAndContinueFixedStackFrame = 0;
+#endif
     m_ReversePInvokeFrameSlot = NO_REVERSE_PINVOKE_FRAME;
 #ifdef TARGET_AMD64
     m_WantsReportOnlyLeaf = false;
@@ -759,6 +762,13 @@ void GcInfoEncoder::SetSizeOfEditAndContinuePreservedArea( UINT32 slots )
     _ASSERTE( m_SizeOfEditAndContinuePreservedArea == NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA );
     m_SizeOfEditAndContinuePreservedArea = slots;
 }
+
+#ifdef TARGET_ARM64
+void GcInfoEncoder::SetSizeOfEditAndContinueFixedStackFrame( UINT32 size )
+{
+    m_SizeOfEditAndContinueFixedStackFrame = size;
+}
+#endif
 
 #ifdef TARGET_AMD64
 void GcInfoEncoder::SetWantsReportOnlyLeaf()
@@ -1157,7 +1167,10 @@ void GcInfoEncoder::Build()
 
     if (m_SizeOfEditAndContinuePreservedArea != NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA)
     {
-        GCINFO_WRITE_VARL_U(m_Info1, m_SizeOfEditAndContinuePreservedArea, SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE, EncPreservedSlots);
+        GCINFO_WRITE_VARL_U(m_Info1, m_SizeOfEditAndContinuePreservedArea, SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE, EncInfoSize);
+#ifdef TARGET_ARM64
+        GCINFO_WRITE_VARL_U(m_Info1, m_SizeOfEditAndContinueFixedStackFrame, SIZE_OF_EDIT_AND_CONTINUE_FIXED_STACK_FRAME_ENCBASE, EncInfoSize);
+#endif
     }
 
     if (hasReversePInvokeFrame)

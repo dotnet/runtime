@@ -33,7 +33,7 @@ namespace System.Net.Http.Headers
         public bool Contains(string headerName) =>
             _headers is HttpHeaders headers &&
             headers.TryGetHeaderDescriptor(headerName, out HeaderDescriptor descriptor) &&
-            headers.ContainsKey(descriptor);
+            headers.Contains(descriptor);
 
         /// <summary>Gets the values for the specified header name.</summary>
         /// <param name="headerName">The name of the header.</param>

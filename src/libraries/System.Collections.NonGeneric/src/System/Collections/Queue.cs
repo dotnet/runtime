@@ -66,7 +66,7 @@ namespace System.Collections
         // Fills a Queue with the elements of an ICollection.  Uses the enumerator
         // to get each of the elements.
         //
-        public Queue(ICollection col!!) : this(col.Count)
+        public Queue(ICollection col) : this(col?.Count ?? throw new ArgumentNullException(nameof(col)))
         {
             IEnumerator en = col.GetEnumerator();
             while (en.MoveNext())
@@ -126,12 +126,14 @@ namespace System.Collections
         // CopyTo copies a collection into an Array, starting at a particular
         // index into the array.
         //
-        public virtual void CopyTo(Array array!!, int index)
+        public virtual void CopyTo(Array array, int index)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
             if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
 
             int arrayLen = array.Length;
             if (arrayLen - index < _size)
@@ -205,8 +207,10 @@ namespace System.Collections
         // class around the queue - the caller must not use references to the
         // original queue.
         //
-        public static Queue Synchronized(Queue queue!!)
+        public static Queue Synchronized(Queue queue)
         {
+            ArgumentNullException.ThrowIfNull(queue);
+
             return new SynchronizedQueue(queue);
         }
 
@@ -482,8 +486,10 @@ namespace System.Collections
         {
             private readonly Queue _queue;
 
-            public QueueDebugView(Queue queue!!)
+            public QueueDebugView(Queue queue)
             {
+                ArgumentNullException.ThrowIfNull(queue);
+
                 _queue = queue;
             }
 

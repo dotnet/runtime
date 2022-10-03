@@ -30,7 +30,8 @@ public class SimpleAndroidTestRunner : AndroidApplicationEntryPoint, IDevice
         int exitCode = 0;
         s_MainTestName = Path.GetFileNameWithoutExtension(s_testLibs[0]);
         string? verbose = Environment.GetEnvironmentVariable("XUNIT_VERBOSE")?.ToLower();
-        var simpleTestRunner = new SimpleAndroidTestRunner(verbose == "true" || verbose == "1");
+        bool enableMaxThreads = (Environment.GetEnvironmentVariable("XUNIT_SINGLE_THREADED") != "1");
+        var simpleTestRunner = new SimpleAndroidTestRunner(verbose == "true" || verbose == "1", enableMaxThreads);
         simpleTestRunner.TestsCompleted += (e, result) => 
         {
             if (result.FailedTests > 0)
@@ -42,17 +43,14 @@ public class SimpleAndroidTestRunner : AndroidApplicationEntryPoint, IDevice
         return exitCode;
     }
 
-    public SimpleAndroidTestRunner(bool verbose)
+    public SimpleAndroidTestRunner(bool verbose, bool enableMaxThreads)
     {
-        if (verbose)
+        MinimumLogLevel = (verbose) ? MinimumLogLevel.Verbose : MinimumLogLevel.Info;
+        _maxParallelThreads = (enableMaxThreads) ? Environment.ProcessorCount : 1;
+
+        if (!enableMaxThreads)
         {
-            MinimumLogLevel = MinimumLogLevel.Verbose;
-            _maxParallelThreads = 1;
-        }
-        else
-        {
-            MinimumLogLevel = MinimumLogLevel.Info;
-            _maxParallelThreads = Environment.ProcessorCount;
+            Console.WriteLine("XUNIT: SINGLE THREADED MODE ENABLED");
         }
     }
 

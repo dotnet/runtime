@@ -3,6 +3,7 @@
 
 #define TRACE
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Collections;
 using System.Threading;
 
@@ -172,7 +173,7 @@ namespace System.Diagnostics
         }
 
         [System.Diagnostics.Conditional("TRACE")]
-        public static void TraceInformation(string format, params object?[]? args)
+        public static void TraceInformation([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[]? args)
         {
             TraceInternal.TraceEvent(TraceEventType.Information, 0, format, args);
         }
@@ -184,7 +185,7 @@ namespace System.Diagnostics
         }
 
         [System.Diagnostics.Conditional("TRACE")]
-        public static void TraceWarning(string format, params object?[]? args)
+        public static void TraceWarning([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[]? args)
         {
             TraceInternal.TraceEvent(TraceEventType.Warning, 0, format, args);
         }
@@ -196,7 +197,7 @@ namespace System.Diagnostics
         }
 
         [System.Diagnostics.Conditional("TRACE")]
-        public static void TraceError(string format, params object?[]? args)
+        public static void TraceError([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[]? args)
         {
             TraceInternal.TraceEvent(TraceEventType.Error, 0, format, args);
         }

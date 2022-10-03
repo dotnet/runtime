@@ -109,8 +109,6 @@ BOOL FieldDesc::MightHaveName(ULONG nameHashValue)
 {
     LIMITED_METHOD_CONTRACT;
 
-    g_IBCLogger.LogFieldDescsAccess(this);
-
     // We only have space for a name hash when we are using the packed mb layout
     if (m_requiresFullMbValue)
     {
@@ -208,7 +206,7 @@ void* FieldDesc::GetStaticAddress(void *base)
     void* ret = GetStaticAddressHandle(base);       // Get the handle
 
         // For value classes, the handle points at an OBJECTREF
-        // which holds the boxed value class, so derefernce and unbox.
+        // which holds the boxed value class, so dereference and unbox.
     if (GetFieldType() == ELEMENT_TYPE_VALUETYPE && !IsRVA())
     {
         OBJECTREF obj = ObjectToOBJECTREF(*(Object**) ret);
@@ -254,8 +252,6 @@ PTR_VOID FieldDesc::GetStaticAddressHandle(PTR_VOID base)
         PRECONDITION(GetEnclosingMethodTable()->IsRestored_NoLogging());
     }
     CONTRACTL_END
-
-     g_IBCLogger.LogFieldDescsAccess(this);
 
     _ASSERTE(IsStatic());
 #ifdef EnC_SUPPORTED
@@ -371,7 +367,7 @@ void    FieldDesc::SetInstanceField(OBJECTREF o, const VOID * pInVal)
     //
     // assert that o is derived from MT of enclosing class
     //
-    // walk up o's inheritence chain to make sure m_pMTOfEnclosingClass is along it
+    // walk up o's inheritance chain to make sure m_pMTOfEnclosingClass is along it
     //
     MethodTable* pCursor = o->GetMethodTable();
 
@@ -471,7 +467,6 @@ PTR_VOID FieldDesc::GetAddress(PTR_VOID o)
     _ASSERTE(!IsEnCNew()); // when we call this while finding an EnC field via the DAC,
                            // the field desc is for the EnCHelper, not the new EnC field
 #endif
-    g_IBCLogger.LogFieldDescsAccess(this);
 
 #if defined(EnC_SUPPORTED) && !defined(DACCESS_COMPILE)
     // EnC added fields aren't at a simple offset like normal fields.
@@ -492,8 +487,6 @@ void *FieldDesc::GetInstanceAddress(OBJECTREF o)
         if(IsEnCNew()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);};
     }
     CONTRACTL_END;
-
-    g_IBCLogger.LogFieldDescsAccess(this);
 
     DWORD dwOffset = m_dwOffset; // GetOffset()
 

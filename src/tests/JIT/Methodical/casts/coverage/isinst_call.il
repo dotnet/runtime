@@ -11,7 +11,7 @@
 {
 }
 .assembly extern xunit.core {}
-.namespace JitTest
+.namespace JitTest_isinst_call_il
 {
   .class private auto ansi beforefieldinit BaseClass
          extends [mscorlib]System.Object
@@ -28,10 +28,10 @@
 
   } // end of class BaseClass
 
-  .class private auto ansi beforefieldinit TestClass
-         extends JitTest.BaseClass
+  .class public auto ansi beforefieldinit TestClass
+         extends JitTest_isinst_call_il.BaseClass
   {
-    .method private hidebysig static class JitTest.BaseClass 
+    .method private hidebysig static class JitTest_isinst_call_il.BaseClass 
             Method_To_Call(int32 cookie) cil managed
     {
       // Code size       52 (0x34)
@@ -47,16 +47,16 @@
                             IL_002c)
       IL_0018:  br.s       IL_0032
 
-      IL_001a:  newobj     instance void JitTest.TestClass::.ctor()
+      IL_001a:  newobj     instance void JitTest_isinst_call_il.TestClass::.ctor()
       IL_001f:  ret
 
-      IL_0020:  newobj     instance void JitTest.DerivedClass::.ctor()
+      IL_0020:  newobj     instance void JitTest_isinst_call_il.DerivedClass::.ctor()
       IL_0025:  ret
 
-      IL_0026:  newobj     instance void JitTest.BaseClass::.ctor()
+      IL_0026:  newobj     instance void JitTest_isinst_call_il.BaseClass::.ctor()
       IL_002b:  ret
 
-      IL_002c:  newobj     instance void JitTest.OtherClass::.ctor()
+      IL_002c:  newobj     instance void JitTest_isinst_call_il.OtherClass::.ctor()
       IL_0031:  ret
 
       IL_0032:  ldnull
@@ -69,7 +69,7 @@
     {
       // Code size       51 (0x33)
       .maxstack  2
-      .locals (class JitTest.TestClass V_0,
+      .locals (class JitTest_isinst_call_il.TestClass V_0,
                bool V_1)
       .try
       {
@@ -77,8 +77,8 @@
         IL_0001:  brfalse.s  IL_0019
 
         IL_0003:  ldarg.0
-        IL_0004:  call       class JitTest.BaseClass JitTest.TestClass::Method_To_Call(int32)
-        IL_0009:  isinst     JitTest.TestClass
+        IL_0004:  call       class JitTest_isinst_call_il.BaseClass JitTest_isinst_call_il.TestClass::Method_To_Call(int32)
+        IL_0009:  isinst     JitTest_isinst_call_il.TestClass
         IL_000e:  stloc.0
         IL_000f:  ldloc.0
         IL_0010:  ldnull
@@ -89,8 +89,8 @@
         IL_0017:  leave.s    IL_0031
 
         IL_0019:  ldarg.0
-        IL_001a:  call       class JitTest.BaseClass JitTest.TestClass::Method_To_Call(int32)
-        IL_001f:  isinst     JitTest.TestClass
+        IL_001a:  call       class JitTest_isinst_call_il.BaseClass JitTest_isinst_call_il.TestClass::Method_To_Call(int32)
+        IL_001f:  isinst     JitTest_isinst_call_il.TestClass
         IL_0024:  stloc.0
         IL_0025:  ldloc.0
         IL_0026:  ldnull
@@ -111,7 +111,7 @@
       IL_0032:  ret
     } // end of method TestClass::Test_CALL
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -122,7 +122,7 @@
       .maxstack  2
       IL_0000:  ldc.i4.0
       IL_0001:  ldc.i4.1
-      IL_0002:  call       bool JitTest.TestClass::Test_CALL(int32,
+      IL_0002:  call       bool JitTest_isinst_call_il.TestClass::Test_CALL(int32,
                                                              bool)
       IL_0007:  brtrue.s   IL_0016
 
@@ -133,7 +133,7 @@
 
       IL_0016:  ldc.i4.1
       IL_0017:  ldc.i4.1
-      IL_0018:  call       bool JitTest.TestClass::Test_CALL(int32,
+      IL_0018:  call       bool JitTest_isinst_call_il.TestClass::Test_CALL(int32,
                                                              bool)
       IL_001d:  brtrue.s   IL_002c
 
@@ -144,7 +144,7 @@
 
       IL_002c:  ldc.i4.2
       IL_002d:  ldc.i4.0
-      IL_002e:  call       bool JitTest.TestClass::Test_CALL(int32,
+      IL_002e:  call       bool JitTest_isinst_call_il.TestClass::Test_CALL(int32,
                                                              bool)
       IL_0033:  brtrue.s   IL_0042
 
@@ -155,7 +155,7 @@
 
       IL_0042:  ldc.i4.3
       IL_0043:  ldc.i4.0
-      IL_0044:  call       bool JitTest.TestClass::Test_CALL(int32,
+      IL_0044:  call       bool JitTest_isinst_call_il.TestClass::Test_CALL(int32,
                                                              bool)
       IL_0049:  brtrue.s   IL_0058
 
@@ -166,7 +166,7 @@
 
       IL_0058:  ldc.i4.4
       IL_0059:  ldc.i4.0
-      IL_005a:  call       bool JitTest.TestClass::Test_CALL(int32,
+      IL_005a:  call       bool JitTest_isinst_call_il.TestClass::Test_CALL(int32,
                                                              bool)
       IL_005f:  brtrue.s   IL_006e
 
@@ -187,14 +187,14 @@
       // Code size       7 (0x7)
       .maxstack  8
       IL_0000:  ldarg.0
-      IL_0001:  call       instance void JitTest.BaseClass::.ctor()
+      IL_0001:  call       instance void JitTest_isinst_call_il.BaseClass::.ctor()
       IL_0006:  ret
     } // end of method TestClass::.ctor
 
   } // end of class TestClass
 
   .class private auto ansi beforefieldinit DerivedClass
-         extends JitTest.TestClass
+         extends JitTest_isinst_call_il.TestClass
   {
     .method public hidebysig specialname rtspecialname 
             instance void .ctor() cil managed
@@ -202,7 +202,7 @@
       // Code size       7 (0x7)
       .maxstack  8
       IL_0000:  ldarg.0
-      IL_0001:  call       instance void JitTest.TestClass::.ctor()
+      IL_0001:  call       instance void JitTest_isinst_call_il.TestClass::.ctor()
       IL_0006:  ret
     } // end of method DerivedClass::.ctor
 
@@ -223,7 +223,7 @@
 
   } // end of class OtherClass
 
-} // end of namespace JitTest
+} // end of namespace JitTest_isinst_call_il
 
 //*********** DISASSEMBLY COMPLETE ***********************
 // WARNING: Created Win32 resource file isinst_call.res

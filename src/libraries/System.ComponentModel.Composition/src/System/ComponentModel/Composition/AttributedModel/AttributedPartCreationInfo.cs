@@ -24,8 +24,10 @@ namespace System.ComponentModel.Composition.AttributedModel
         private IEnumerable<ImportDefinition>? _imports;
         private HashSet<string>? _contractNamesOnNonInterfaces;
 
-        public AttributedPartCreationInfo(Type type!!, PartCreationPolicyAttribute? partCreationPolicy, bool ignoreConstructorImports, ICompositionElement? origin)
+        public AttributedPartCreationInfo(Type type, PartCreationPolicyAttribute? partCreationPolicy, bool ignoreConstructorImports, ICompositionElement? origin)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             _type = type;
             _ignoreConstructorImports = ignoreConstructorImports;
             _partCreationPolicy = partCreationPolicy;
@@ -173,17 +175,16 @@ namespace System.ComponentModel.Composition.AttributedModel
         {
             get
             {
-                if (_partCreationPolicy == null)
-                {
-                    _partCreationPolicy = _type.GetFirstAttribute<PartCreationPolicyAttribute>() ?? PartCreationPolicyAttribute.Default;
-                }
+                _partCreationPolicy ??= _type.GetFirstAttribute<PartCreationPolicyAttribute>() ?? PartCreationPolicyAttribute.Default;
 
                 return _partCreationPolicy.CreationPolicy;
             }
         }
 
-        private static ConstructorInfo? SelectPartConstructor(Type type!!)
+        private static ConstructorInfo? SelectPartConstructor(Type type)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             if (type.IsAbstract)
             {
                 return null;
@@ -286,7 +287,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             // The order of types returned here is important because it is used as a
             // priority list of which InhertedExport to choose if multiple exists with
             // the same contract name. Therefore ensure that we always return the types
-            // in the hiearchy from most derived to the lowest base type, followed
+            // in the hierarchy from most derived to the lowest base type, followed
             // by all the interfaces that this type implements.
             foreach (Type type in GetInheritedExports(_type))
             {
@@ -318,7 +319,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             return new AttributedExportDefinition(this, member, exportAttribute, typeIdentityType, contractName);
         }
 
-        private IEnumerable<MemberInfo> GetExportMembers(Type type)
+        private static IEnumerable<MemberInfo> GetExportMembers(Type type)
         {
             BindingFlags flags = BindingFlags.DeclaredOnly | BindingFlags.Public |
                 BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
@@ -361,7 +362,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             }
         }
 
-        private IEnumerable<Type> GetInheritedExports(Type type)
+        private static IEnumerable<Type> GetInheritedExports(Type type)
         {
             // If the type is abstract we aren't interested in type level exports
             if (type.IsAbstract)
@@ -372,7 +373,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             // The order of types returned here is important because it is used as a
             // priority list of which InhertedExport to choose if multiple exists with
             // the same contract name. Therefore ensure that we always return the types
-            // in the hiearchy from most derived to the lowest base type, followed
+            // in the hierarchy from most derived to the lowest base type, followed
             // by all the interfaces that this type implements.
 
             Type? currentType = type.BaseType;
@@ -437,7 +438,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             return imports;
         }
 
-        private IEnumerable<MemberInfo> GetImportMembers(Type type)
+        private static IEnumerable<MemberInfo> GetImportMembers(Type type)
         {
             if (type.IsAbstract)
             {
@@ -468,7 +469,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             }
         }
 
-        private IEnumerable<MemberInfo> GetDeclaredOnlyImportMembers(Type type)
+        private static IEnumerable<MemberInfo> GetDeclaredOnlyImportMembers(Type type)
         {
             BindingFlags flags = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
 

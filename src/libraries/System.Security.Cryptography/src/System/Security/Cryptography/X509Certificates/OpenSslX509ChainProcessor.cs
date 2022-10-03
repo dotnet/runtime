@@ -242,6 +242,11 @@ namespace System.Security.Cryptography.X509Certificates
 
                     if (authorityInformationAccess.Count == 0)
                     {
+                        if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                        {
+                            OpenSslX509ChainEventSource.Log.NoAiaFound(currentCert);
+                        }
+
                         break;
                     }
 
@@ -257,10 +262,7 @@ namespace System.Security.Cryptography.X509Certificates
                         break;
                     }
 
-                    if (downloadedCerts == null)
-                    {
-                        downloadedCerts = new List<X509Certificate2>();
-                    }
+                    downloadedCerts ??= new List<X509Certificate2>();
 
                     AddToStackAndUpRef(downloaded.Handle, _untrustedLookup);
                     downloadedCerts.Add(downloaded);
@@ -339,6 +341,11 @@ namespace System.Security.Cryptography.X509Certificates
 
         internal static void FlushStores()
         {
+            if (OpenSslX509ChainEventSource.Log.IsEnabled())
+            {
+                OpenSslX509ChainEventSource.Log.FlushStores();
+            }
+
             s_userRootStore.DoRefresh();
             s_userPersonalStore.DoRefresh();
             s_userIntermediateStore.DoRefresh();
@@ -348,17 +355,17 @@ namespace System.Security.Cryptography.X509Certificates
             X509RevocationMode revocationMode,
             X509RevocationFlag revocationFlag)
         {
-            if (revocationMode == X509RevocationMode.NoCheck)
-            {
-                return;
-            }
-
             int chainSize;
             int revocationSize;
 
             using (SafeX509StackHandle chainStack = Interop.Crypto.X509StoreCtxGetChain(_storeCtx))
             {
                 chainSize = Interop.Crypto.GetX509StackFieldCount(chainStack);
+
+                if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                {
+                    OpenSslX509ChainEventSource.Log.RevocationCheckStart(revocationMode, revocationFlag, chainSize);
+                }
 
                 switch (revocationFlag)
                 {
@@ -374,29 +381,54 @@ namespace System.Security.Cryptography.X509Certificates
                         break;
                 }
 
-                for (int i = 0; i < revocationSize; i++)
+                if (revocationMode != X509RevocationMode.NoCheck)
                 {
-                    using (SafeX509Handle cert =
-                        Interop.Crypto.X509UpRef(Interop.Crypto.GetX509StackField(chainStack, i)))
+                    for (int i = 0; i < revocationSize; i++)
                     {
-                        OpenSslCrlCache.AddCrlForCertificate(
-                            cert,
-                            _store,
-                            revocationMode,
-                            _verificationTime,
-                            _downloadTimeout);
+                        if (i == 0 && Interop.Crypto.X509ChainHasStapledOcsp(_storeCtx))
+                        {
+                            if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                            {
+                                OpenSslX509ChainEventSource.Log.StapledOcspPresent();
+                            }
+                        }
+                        else
+                        {
+                            using (SafeX509Handle cert =
+                                Interop.Crypto.X509UpRef(Interop.Crypto.GetX509StackField(chainStack, i)))
+                            {
+                                OpenSslCrlCache.AddCrlForCertificate(
+                                    cert,
+                                    _store,
+                                    revocationMode,
+                                    _verificationTime,
+                                    _downloadTimeout);
+                            }
+                        }
                     }
                 }
+
+                Interop.Crypto.X509StoreSetRevocationFlag(_store, revocationFlag);
+                Interop.Crypto.X509StoreCtxRebuildChain(_storeCtx);
             }
 
-            Interop.Crypto.X509StoreSetRevocationFlag(_store, revocationFlag);
-            Interop.Crypto.X509StoreCtxRebuildChain(_storeCtx);
+            Interop.Crypto.X509VerifyStatusCode errorCode = Interop.Crypto.X509StoreCtxGetError(_storeCtx);
+
+            if (OpenSslX509ChainEventSource.Log.IsEnabled())
+            {
+                OpenSslX509ChainEventSource.Log.CrlChainFinished(errorCode);
+            }
 
             // If anything is wrong, move see if we need to try OCSP,
             // or clearing an unwanted root revocation flag.
-            if (Interop.Crypto.X509StoreCtxGetError(_storeCtx) != Interop.Crypto.X509VerifyStatusCode.X509_V_OK)
+            if (errorCode != Interop.Crypto.X509VerifyStatusCode.X509_V_OK)
             {
                 FinishRevocation(revocationMode, revocationFlag, chainSize);
+            }
+
+            if (OpenSslX509ChainEventSource.Log.IsEnabled())
+            {
+                OpenSslX509ChainEventSource.Log.RevocationCheckStop();
             }
         }
 
@@ -411,7 +443,23 @@ namespace System.Security.Cryptography.X509Certificates
             // then there's nothing to do.
             if (workingChain.LastError < 0)
             {
+                if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                {
+                    OpenSslX509ChainEventSource.Log.AllRevocationErrorsIgnored();
+                }
+
                 return;
+            }
+
+            if (OpenSslX509ChainEventSource.Log.IsEnabled() && OpenSslX509ChainEventSource.Log.ShouldLogElementStatuses())
+            {
+                for (int logDepth = 0; logDepth <= workingChain.LastError; logDepth++)
+                {
+                    OpenSslX509ChainEventSource.Log.RawElementStatus(
+                        logDepth,
+                        workingChain[logDepth],
+                        ErrorCollection.BuildDiagnosticString);
+                }
             }
 
             Interop.Crypto.X509VerifyStatusCode statusCode;
@@ -573,6 +621,17 @@ namespace System.Security.Cryptography.X509Certificates
                     }
                 }
             }
+
+            if (OpenSslX509ChainEventSource.Log.IsEnabled() && OpenSslX509ChainEventSource.Log.ShouldLogElementStatuses())
+            {
+                for (int logDepth = 0; logDepth <= workingChain.LastError; logDepth++)
+                {
+                    OpenSslX509ChainEventSource.Log.FinalElementStatus(
+                        logDepth,
+                        workingChain[logDepth],
+                        ErrorCollection.BuildDiagnosticString);
+                }
+            }
         }
 
         private WorkingChain BuildWorkingChain()
@@ -664,9 +723,19 @@ namespace System.Security.Cryptography.X509Certificates
             SafeX509Handle certHandle,
             X509RevocationMode revocationMode)
         {
+            if (revocationMode == X509RevocationMode.NoCheck)
+            {
+                return X509VerifyStatusCodeUniversal.X509_V_ERR_UNABLE_TO_GET_CRL;
+            }
+
             string ocspCache = OpenSslCrlCache.GetCachedOcspResponseDirectory();
             Interop.Crypto.X509VerifyStatusCode status =
                 Interop.Crypto.X509ChainGetCachedOcspStatus(_storeCtx, ocspCache, chainDepth);
+
+            if (OpenSslX509ChainEventSource.Log.IsEnabled())
+            {
+                OpenSslX509ChainEventSource.Log.OcspResponseFromCache(chainDepth, status);
+            }
 
             if (status != X509VerifyStatusCodeUniversal.X509_V_ERR_UNABLE_TO_GET_CRL)
             {
@@ -688,11 +757,11 @@ namespace System.Security.Cryptography.X509Certificates
             using (SafeOcspRequestHandle req = Interop.Crypto.X509ChainBuildOcspRequest(_storeCtx, chainDepth))
             {
                 ArraySegment<byte> encoded = Interop.Crypto.OpenSslRentEncode(
-                    handle => Interop.Crypto.GetOcspRequestDerSize(handle),
-                    (handle, buf) => Interop.Crypto.EncodeOcspRequest(handle, buf),
+                    Interop.Crypto.GetOcspRequestDerSize,
+                    Interop.Crypto.EncodeOcspRequest,
                     req);
 
-                ArraySegment<char> urlEncoded = Base64UrlEncode(encoded);
+                ArraySegment<char> urlEncoded = UrlBase64Encoding.RentEncode(encoded);
                 string requestUrl = UrlPathAppend(baseUri, urlEncoded);
 
                 // Nothing sensitive is in the encoded request (it was sent via HTTP-non-S)
@@ -726,7 +795,14 @@ namespace System.Security.Cryptography.X509Certificates
                         // Opportunistic create, suppress all errors.
                     }
 
-                    return Interop.Crypto.X509ChainVerifyOcsp(_storeCtx, req, resp, ocspCache, chainDepth);
+                    status = Interop.Crypto.X509ChainVerifyOcsp(_storeCtx, req, resp, ocspCache, chainDepth);
+
+                    if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                    {
+                        OpenSslX509ChainEventSource.Log.OcspResponseFromDownload(chainDepth, status);
+                    }
+
+                    return status;
                 }
             }
         }
@@ -736,87 +812,12 @@ namespace System.Security.Cryptography.X509Certificates
             Debug.Assert(baseUri.Length > 0);
             Debug.Assert(resource.Length > 0);
 
-            int count = baseUri.Length + resource.Length;
-
-            if (baseUri[baseUri.Length - 1] == '/')
+            if (baseUri.EndsWith('/'))
             {
-                return string.Create(
-                    count,
-                    (baseUri, resource),
-                    (buf, st) =>
-                    {
-                        st.baseUri.CopyTo(buf);
-                        st.resource.Span.CopyTo(buf.Slice(st.baseUri.Length));
-                    });
+                return string.Concat(baseUri, resource.Span);
             }
 
-            return string.Create(
-                count + 1,
-                (baseUri, resource),
-                (buf, st) =>
-                {
-                    st.baseUri.CopyTo(buf);
-                    buf[st.baseUri.Length] = '/';
-                    st.resource.Span.CopyTo(buf.Slice(st.baseUri.Length + 1));
-                });
-        }
-
-        private static ArraySegment<char> Base64UrlEncode(ReadOnlySpan<byte> input)
-        {
-            // Every 3 bytes turns into 4 chars for the Base64 operation
-            int base64Len = ((input.Length + 2) / 3) * 4;
-            char[] base64 = ArrayPool<char>.Shared.Rent(base64Len);
-
-            if (!Convert.TryToBase64Chars(input, base64, out int charsWritten))
-            {
-                Debug.Fail($"Convert.TryToBase64 failed with {input.Length} bytes to a {base64.Length} buffer");
-                throw new CryptographicException();
-            }
-
-            Debug.Assert(charsWritten == base64Len);
-
-            // In the degenerate case every char will turn into 3 chars.
-            int urlEncodedLen = charsWritten * 3;
-            char[] urlEncoded = ArrayPool<char>.Shared.Rent(urlEncodedLen);
-            int writeIdx = 0;
-
-            for (int readIdx = 0; readIdx < charsWritten; readIdx++)
-            {
-                char cur = base64[readIdx];
-
-                if ((cur >= 'A' && cur <= 'Z') ||
-                    (cur >= 'a' && cur <= 'z') ||
-                    (cur >= '0' && cur <= '9'))
-                {
-                    urlEncoded[writeIdx++] = cur;
-                }
-                else if (cur == '+')
-                {
-                    urlEncoded[writeIdx++] = '%';
-                    urlEncoded[writeIdx++] = '2';
-                    urlEncoded[writeIdx++] = 'B';
-                }
-                else if (cur == '/')
-                {
-                    urlEncoded[writeIdx++] = '%';
-                    urlEncoded[writeIdx++] = '2';
-                    urlEncoded[writeIdx++] = 'F';
-                }
-                else if (cur == '=')
-                {
-                    urlEncoded[writeIdx++] = '%';
-                    urlEncoded[writeIdx++] = '3';
-                    urlEncoded[writeIdx++] = 'D';
-                }
-                else
-                {
-                    Debug.Fail($"'{cur}' is not a valid Base64 character");
-                    throw new CryptographicException();
-                }
-            }
-
-            ArrayPool<char>.Shared.Return(base64);
-            return new ArraySegment<char>(urlEncoded, 0, writeIdx);
+            return string.Concat(baseUri, "/", resource.Span);
         }
 
         private X509ChainElement[] BuildChainElements(
@@ -827,7 +828,7 @@ namespace System.Security.Cryptography.X509Certificates
             overallStatus = null;
 
             List<X509ChainStatus>? statusBuilder = null;
-
+            bool overallHasNotSignatureValid = false;
             using (SafeX509StackHandle chainStack = Interop.Crypto.X509StoreCtxGetChain(_storeCtx))
             {
                 int chainSize = Interop.Crypto.GetX509StackFieldCount(chainStack);
@@ -844,7 +845,20 @@ namespace System.Security.Cryptography.X509Certificates
                         statusBuilder ??= new List<X509ChainStatus>();
                         overallStatus ??= new List<X509ChainStatus>();
 
-                        AddElementStatus(elementErrors.Value, statusBuilder, overallStatus);
+                        bool hadSignatureNotValid = overallHasNotSignatureValid;
+                        AddElementStatus(elementErrors.Value, statusBuilder, overallStatus, ref overallHasNotSignatureValid);
+
+                        // Clear NotSignatureValid for the last element when overall chain is not PartialChain or UntrustedRoot.
+                        bool isLastElement = i == chainSize - 1;
+                        if (isLastElement && !hadSignatureNotValid && overallHasNotSignatureValid)
+                        {
+                            if (!ContainsStatus(overallStatus, X509ChainStatusFlags.PartialChain) &&
+                                !ContainsStatus(overallStatus, X509ChainStatusFlags.UntrustedRoot))
+                            {
+                                RemoveStatus(statusBuilder, X509ChainStatusFlags.NotSignatureValid);
+                                RemoveStatus(overallStatus, X509ChainStatusFlags.NotSignatureValid);
+                            }
+                        }
                         status = statusBuilder.ToArray();
                         statusBuilder.Clear();
                     }
@@ -900,10 +914,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (failsPolicyChecks)
             {
-                if (overallStatus == null)
-                {
-                    overallStatus = new List<X509ChainStatus>();
-                }
+                overallStatus ??= new List<X509ChainStatus>();
 
                 X509ChainStatus chainStatus = new X509ChainStatus
                 {
@@ -936,11 +947,12 @@ namespace System.Security.Cryptography.X509Certificates
         private static void AddElementStatus(
             ErrorCollection errorCodes,
             List<X509ChainStatus> elementStatus,
-            List<X509ChainStatus> overallStatus)
+            List<X509ChainStatus> overallStatus,
+            ref bool overallHasNotSignatureValid)
         {
-            foreach (var errorCode in errorCodes)
+            foreach (Interop.Crypto.X509VerifyStatusCode errorCode in errorCodes)
             {
-                AddElementStatus(errorCode, elementStatus, overallStatus);
+                AddElementStatus(errorCode, elementStatus, overallStatus, ref overallHasNotSignatureValid);
             }
 
             foreach (X509ChainStatus element in elementStatus)
@@ -965,7 +977,8 @@ namespace System.Security.Cryptography.X509Certificates
         private static void AddElementStatus(
             Interop.Crypto.X509VerifyStatusCode errorCode,
             List<X509ChainStatus> elementStatus,
-            List<X509ChainStatus> overallStatus)
+            List<X509ChainStatus> overallStatus,
+            ref bool overallHasNotSignatureValid)
         {
             X509ChainStatusFlags statusFlag = MapVerifyErrorToChainStatus(errorCode);
 
@@ -992,6 +1005,11 @@ namespace System.Security.Cryptography.X509Certificates
 
             elementStatus.Add(chainStatus);
             AddUniqueStatus(overallStatus, ref chainStatus);
+
+            if (statusFlag == X509ChainStatusFlags.NotSignatureValid)
+            {
+                overallHasNotSignatureValid = true;
+            }
         }
 
         private static void AddUniqueStatus(List<X509ChainStatus> list, ref X509ChainStatus status)
@@ -1007,6 +1025,31 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             list.Add(status);
+        }
+
+        private static bool ContainsStatus(List<X509ChainStatus> list, X509ChainStatusFlags statusCode)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i].Status == statusCode)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void RemoveStatus(List<X509ChainStatus> list, X509ChainStatusFlags statusCode)
+        {
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i].Status == statusCode)
+                {
+                    list.RemoveAt(i);
+                    return;
+                }
+            }
         }
 
         private static X509ChainStatusFlags MapVerifyErrorToChainStatus(Interop.Crypto.X509VerifyStatusCode code)
@@ -1105,7 +1148,7 @@ namespace System.Security.Cryptography.X509Certificates
                 case Interop.Crypto.X509VerifyStatusCode30.X509_V_ERR_INVALID_CA:
                     return X509ChainStatusFlags.InvalidBasicConstraints;
                 default:
-                    Debug.Fail("Unrecognized X509VerifyStatusCode:" + code);
+                    Debug.Fail("Unrecognized X509VerifyStatusCode:" + code.Code30);
                     throw new CryptographicException();
             }
         }
@@ -1117,7 +1160,7 @@ namespace System.Security.Cryptography.X509Certificates
                 case Interop.Crypto.X509VerifyStatusCode102.X509_V_ERR_INVALID_CA:
                     return X509ChainStatusFlags.InvalidBasicConstraints;
                 default:
-                    Debug.Fail("Unrecognized X509VerifyStatusCode:" + code);
+                    Debug.Fail("Unrecognized X509VerifyStatusCode:" + code.Code102);
                     throw new CryptographicException();
             }
         }
@@ -1129,7 +1172,7 @@ namespace System.Security.Cryptography.X509Certificates
                 case Interop.Crypto.X509VerifyStatusCode111.X509_V_ERR_INVALID_CA:
                     return X509ChainStatusFlags.InvalidBasicConstraints;
                 default:
-                    Debug.Fail("Unrecognized X509VerifyStatusCode:" + code);
+                    Debug.Fail("Unrecognized X509VerifyStatusCode:" + code.Code111);
                     throw new CryptographicException();
             }
         }
@@ -1179,22 +1222,44 @@ namespace System.Security.Cryptography.X509Certificates
                     if (StringComparer.Ordinal.Equals(description.AccessMethod, recordTypeOid))
                     {
                         GeneralNameAsn name = description.AccessLocation;
-                        if (name.Uri != null &&
-                            Uri.TryCreate(name.Uri, UriKind.Absolute, out Uri? uri) &&
-                            uri.Scheme == "http")
+
+                        if (name.Uri != null)
                         {
-                            return name.Uri;
+                            if (Uri.TryCreate(name.Uri, UriKind.Absolute, out Uri? uri) &&
+                                uri.Scheme == "http")
+                            {
+                                return name.Uri;
+                            }
+                            else if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                            {
+                                OpenSslX509ChainEventSource.Log.NonHttpAiaEntry(name.Uri);
+                            }
                         }
                     }
+                }
+
+                if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                {
+                    OpenSslX509ChainEventSource.Log.NoMatchingAiaEntry(recordTypeOid);
                 }
             }
             catch (CryptographicException)
             {
                 // Treat any ASN errors as if the extension was missing.
+
+                if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                {
+                    OpenSslX509ChainEventSource.Log.InvalidAia();
+                }
             }
             catch (AsnContentException)
             {
                 // Treat any ASN errors as if the extension was missing.
+
+                if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                {
+                    OpenSslX509ChainEventSource.Log.InvalidAia();
+                }
             }
 
             return null;
@@ -1232,7 +1297,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             return s_errorStrings.GetOrAdd(
                 code.Code,
-                c => Interop.Crypto.GetX509VerifyCertErrorString(c));
+                Interop.Crypto.GetX509VerifyCertErrorString);
         }
 
         private sealed class WorkingChain : IDisposable
@@ -1500,6 +1565,30 @@ namespace System.Security.Cryptography.X509Certificates
                 }
 
                 return bucket;
+            }
+
+            internal static string BuildDiagnosticString(object boxedErrorCollection)
+            {
+                ErrorCollection coll = (ErrorCollection)boxedErrorCollection;
+
+                StringBuilder builder = new StringBuilder();
+
+                foreach (Interop.Crypto.X509VerifyStatusCode code in coll)
+                {
+                    if (builder.Length > 0)
+                    {
+                        builder.Append(", ");
+                    }
+
+                    builder.Append(code.UniversalCode);
+                }
+
+                if (builder.Length == 0)
+                {
+                    return "(none)";
+                }
+
+                return builder.ToString();
             }
 
             internal struct Enumerator

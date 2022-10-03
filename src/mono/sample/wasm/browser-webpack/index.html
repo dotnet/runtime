@@ -4,14 +4,14 @@
 <head>
   <meta charset="utf-8" />
   <title>Getting Started</title>
+  <link rel="modulepreload" href="./main.js" />
+  <link rel="modulepreload" href="./app.js" />
 </head>
 
 <body>
-  <h3 id="header">Wasm Browser ES6 Sample</h3>
-  Answer to the Ultimate Question of Life, the Universe, and Everything is : <span id="out"></span>
-  <script type="text/javascript">exports = {}</script>
-  <script type="text/javascript" src="app.js"></script>
-  <script type="text/javascript" src="main.js"></script>
+  <h3 id="header">Wasm Browser Webpack Sample</h3>
+  Answer to the Ultimate Question of Life, the Universe, and Everything is: <span id="out"></span>
+  <script type='module' src="./main.js"></script>
 </body>
 
 </html>

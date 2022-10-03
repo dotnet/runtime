@@ -1,21 +1,23 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+
 namespace System.Xml.Serialization
 {
-    using System;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Reflection;
-
     internal static class TypeExtensions
     {
         private const string ImplicitCastOperatorName = "op_Implicit";
 
         public static bool TryConvertTo(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
-            this Type targetType!!,
+            this Type targetType,
             object? data, out object? returnValue)
         {
+            ArgumentNullException.ThrowIfNull(targetType);
+
             returnValue = null;
 
             if (data == null)

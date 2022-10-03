@@ -186,7 +186,7 @@ sgen_gc_descr_has_references (SgenDescriptor desc)
 	} while (0)
 
 /* a bitmap desc means that there are pointer references or we'd have
- * choosen run-length, instead: add an assert to check.
+ * chosen run-length, instead: add an assert to check.
  */
 #ifdef __GNUC__
 #define OBJ_BITMAP_FOREACH_PTR(desc,obj)	do {		\

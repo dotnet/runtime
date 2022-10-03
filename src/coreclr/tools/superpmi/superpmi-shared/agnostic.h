@@ -384,12 +384,19 @@ struct Agnostic_CanAccessClassOut
     DWORD                        result;
 };
 
-struct Agnostic_AppendClassName
+struct Agnostic_AppendClassNameIn
 {
+    DWORD     nBufLenIsZero;
     DWORDLONG classHandle;
     DWORD     fNamespace;
     DWORD     fFullInst;
     DWORD     fAssembly;
+};
+
+struct Agnostic_AppendClassNameOut
+{
+    DWORD nLen;
+    DWORD name_index;
 };
 
 struct Agnostic_CheckMethodModifier
@@ -637,6 +644,7 @@ struct GetReadyToRunHelper_TOKENout
 struct GetReadyToRunDelegateCtorHelper_TOKENIn
 {
     Agnostic_CORINFO_RESOLVED_TOKEN TargetMethod;
+    mdToken                         targetConstraint;
     DWORDLONG                       delegateType;
 };
 

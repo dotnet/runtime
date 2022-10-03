@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
+using System.Collections.Generic;
 using System.IO;
 using Xunit;
 using Xunit.Abstractions;
@@ -17,8 +17,8 @@ namespace Wasm.Build.Tests
         {
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [BuildAndRun(host: RunHost.V8)]
+        [Theory]
+        [BuildAndRun(host: RunHost.Chrome)]
         public void NativeLibraryWithVariadicFunctions(BuildArgs buildArgs, RunHost host, string id)
         {
             string code = @"
@@ -54,8 +54,8 @@ namespace Wasm.Build.Tests
             Assert.Contains("Main running", output);
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [BuildAndRun(host: RunHost.V8)]
+        [Theory]
+        [BuildAndRun(host: RunHost.Chrome)]
         public void DllImportWithFunctionPointersCompilesWithWarning(BuildArgs buildArgs, RunHost host, string id)
         {
             string code = @"
@@ -86,8 +86,8 @@ namespace Wasm.Build.Tests
             Assert.Contains("Main running", output);
         }
 
-        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
-        [BuildAndRun(host: RunHost.V8)]
+        [Theory]
+        [BuildAndRun(host: RunHost.Chrome)]
         public void DllImportWithFunctionPointers_ForVariadicFunction_CompilesWithWarning(BuildArgs buildArgs, RunHost host, string id)
         {
             string code = @"
@@ -113,6 +113,57 @@ namespace Wasm.Build.Tests
 
             output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
             Assert.Contains("Main running", output);
+        }
+
+        [Theory]
+        [BuildAndRun(host: RunHost.Chrome, parameters: new object[] { "tr_TR.UTF-8" })]
+        public void BuildNativeInNonEnglishCulture(BuildArgs buildArgs, string culture, RunHost host, string id)
+        {
+            // Check that we can generate interp tables in non-english cultures
+            // Prompted by https://github.com/dotnet/runtime/issues/71149
+
+            string code = @"
+                using System;
+                using System.Runtime.InteropServices;
+
+                Console.WriteLine($""square: {square(5)}"");
+                return 42;
+
+                [DllImport(""simple"")] static extern int square(int x);
+            ";
+
+            buildArgs = ExpandBuildArgs(buildArgs,
+                                        extraItems: @$"<NativeFileReference Include=""simple.c"" />",
+                                        extraProperties: buildArgs.AOT
+                                                            ? string.Empty
+                                                            : "<WasmBuildNative>true</WasmBuildNative>");
+
+            var extraEnvVars = new Dictionary<string, string> {
+                { "LANG", culture },
+                { "LC_ALL", culture },
+            };
+
+            (_, string output) = BuildProject(buildArgs,
+                                        id: id,
+                                        new BuildProjectOptions(
+                                            InitProject: () =>
+                                            {
+                                                File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), code);
+                                                File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", "simple.c"),
+                                                            Path.Combine(_projectDir!, "simple.c"));
+                                            },
+                                            Publish: buildArgs.AOT,
+                                            DotnetWasmFromRuntimePack: false,
+                                            ExtraBuildEnvironmentVariables: extraEnvVars
+                                            ));
+
+            output = RunAndTestWasmApp(buildArgs,
+                                       buildDir: _projectDir,
+                                       expectedExitCode: 42,
+                                       host: host,
+                                       id: id,
+                                       envVars: extraEnvVars);
+            Assert.Contains("square: 25", output);
         }
 
         private (BuildArgs, string) BuildForVariadicFunctionTests(string programText, BuildArgs buildArgs, string id)

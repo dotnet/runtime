@@ -39,7 +39,7 @@ namespace System.IO.Pipes
             Debug.Assert(bufferSize >= 0, "bufferSize is negative");
 
             bool bSuccess;
-            SafePipeHandle serverHandle;
+            SafePipeHandle serverHandle, clientHandle;
             SafePipeHandle newServerHandle;
 
             // Create the two pipe handles that make up the anonymous pipe.
@@ -50,11 +50,11 @@ namespace System.IO.Pipes
 
                 if (direction == PipeDirection.In)
                 {
-                    bSuccess = Interop.Kernel32.CreatePipe(out serverHandle, out _clientHandle, ref secAttrs, bufferSize);
+                    bSuccess = Interop.Kernel32.CreatePipe(out serverHandle, out clientHandle, ref secAttrs, bufferSize);
                 }
                 else
                 {
-                    bSuccess = Interop.Kernel32.CreatePipe(out _clientHandle, out serverHandle, ref secAttrs, bufferSize);
+                    bSuccess = Interop.Kernel32.CreatePipe(out clientHandle, out serverHandle, ref secAttrs, bufferSize);
                 }
             }
             finally
@@ -67,7 +67,12 @@ namespace System.IO.Pipes
 
             if (!bSuccess)
             {
-                throw Win32Marshal.GetExceptionForLastWin32Error();
+                Exception e = Win32Marshal.GetExceptionForLastWin32Error();
+
+                serverHandle.Dispose();
+                clientHandle.Dispose();
+
+                throw e;
             }
 
             // Duplicate the server handle to make it not inheritable.  Note: We need to do this so that the child
@@ -79,12 +84,19 @@ namespace System.IO.Pipes
 
             if (!bSuccess)
             {
-                throw Win32Marshal.GetExceptionForLastWin32Error();
+                Exception e = Win32Marshal.GetExceptionForLastWin32Error();
+
+                serverHandle.Dispose();
+                newServerHandle.Dispose();
+                clientHandle.Dispose();
+
+                throw e;
             }
 
             // Close the inheritable server handle.
             serverHandle.Dispose();
 
+            _clientHandle = clientHandle;
             InitializeHandle(newServerHandle, false, false);
 
             State = PipeState.Connected;

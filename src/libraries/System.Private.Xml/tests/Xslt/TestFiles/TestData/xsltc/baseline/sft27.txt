@@ -1,3 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?><testOut>
-      Let's see if we can resolve entities: RESOLVED_ENTITY 
-    </testOut>

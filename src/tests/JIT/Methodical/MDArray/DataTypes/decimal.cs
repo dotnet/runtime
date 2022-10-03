@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public struct VT
 {
@@ -33,7 +34,8 @@ public class decimalMDArrTest
     static decimal[][,] ja1_b = new decimal[2][,];
     static decimal[][, ,] ja2_b = new decimal[2][, ,];
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 
         bool pass = true;

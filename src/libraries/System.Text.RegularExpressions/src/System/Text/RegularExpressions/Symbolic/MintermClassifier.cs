@@ -33,9 +33,9 @@ namespace System.Text.RegularExpressions.Symbolic
         private readonly BDD _nonAscii;
 
         /// <summary>Create a classifier that maps a character to the ID of its associated minterm.</summary>
-        /// <param name="solver">Character algebra</param>
         /// <param name="minterms">A BDD for classifying all characters (ASCII and non-ASCII) to their corresponding minterm IDs.</param>
-        public MintermClassifier(CharSetSolver solver, BDD[] minterms)
+        /// <param name="solver">The character set solver to use.</param>
+        public MintermClassifier(BDD[] minterms, CharSetSolver solver)
         {
             Debug.Assert(minterms.Length > 0, "Requires at least");
 
@@ -84,7 +84,7 @@ namespace System.Text.RegularExpressions.Symbolic
             //    multi-terminal BDD).  This can be relatively common after (1) above is applied, as many
             //    patterns don't distinguish between any non-ASCII characters (e.g. "[0-9]*").  If every character
             //    in the BDD now maps to the same minterm, we can replace the BDD with a much simpler/faster/smaller one.
-            BDD nonAsciiBDD = solver.And(anyCharacterToMintermId, solver._nonAscii);
+            BDD nonAsciiBDD = solver.And(anyCharacterToMintermId, solver.NonAscii);
             nonAsciiBDD = nonAsciiBDD.IsEssentiallyBoolean(out BDD? singleTerminalBDD) ? singleTerminalBDD : nonAsciiBDD;
             _nonAscii = nonAsciiBDD;
         }

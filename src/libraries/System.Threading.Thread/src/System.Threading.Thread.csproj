@@ -2,9 +2,15 @@
   <PropertyGroup>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <Nullable>enable</Nullable>
+    <FeatureWasmThreads>false</FeatureWasmThreads>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(WasmEnableThreads)' == 'true'">
+    <!-- when wasm threading is enabled the implementation in CoreLib won't have the UnsupportedOSAttribute for browser,
+         but this contract still does since we only expose the wasm threading through System.Diagnostics.Threading.Thread.WebAssembly.Threading
+         so we need to baseline the ApiCompat errors related to that -->
+    <ApiCompatBaselineFile Include="ApiCompatBaseline.Threading.txt" />
   </ItemGroup>
 </Project>

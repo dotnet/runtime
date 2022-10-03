@@ -827,9 +827,9 @@ public class DebuggerAttribute
         HiddenMethod();
         HiddenMethodUserBreak();
     }
-    
+
     [System.Diagnostics.DebuggerStepThroughAttribute]
-    public static void StepThrougBp()
+    public static void StepThroughBp()
     {
         var a = 0;
         a++;
@@ -837,15 +837,15 @@ public class DebuggerAttribute
     }
 
     [System.Diagnostics.DebuggerStepThroughAttribute]
-    public static void StepThrougUserBp()
+    public static void StepThroughUserBp()
     {
         System.Diagnostics.Debugger.Break();
     }
 
     public static void RunStepThrough()
     {
-        StepThrougBp();
-        StepThrougUserBp();
+        StepThroughBp();
+        StepThroughUserBp();
     }
 
     [System.Diagnostics.DebuggerNonUserCode]
@@ -991,4 +991,269 @@ public class TestHotReloadUsingSDB {
             var myMethod = myType.GetMethod(methodName);
             myMethod.Invoke(null, null);
         }
+}
+
+#region Default Interface Method
+public interface IDefaultInterface
+{
+    public static string defaultInterfaceMember = "defaultInterfaceMember";
+
+    string DefaultMethod()
+    {
+        string localString = "DefaultMethod()";
+        DefaultInterfaceMethod.MethodForCallingFromDIM();
+        return $"{localString} from IDefaultInterface";
+    }
+
+    int DefaultMethodToOverride()
+    {
+        int retValue = 10;
+        return retValue;
+    }
+
+    async System.Threading.Tasks.Task DefaultMethodAsync()
+    {
+        string localString = "DefaultMethodAsync()";
+        DefaultInterfaceMethod.MethodForCallingFromDIM();
+        await System.Threading.Tasks.Task.FromResult(0);
+    }
+    static string DefaultMethodStatic()
+    {
+        string localString = "DefaultMethodStatic()";
+        DefaultInterfaceMethod.MethodForCallingFromDIM();
+        return $"{localString} from IDefaultInterface";
+    }
+
+    // cannot override the static method of the interface - skipping
+
+    static async System.Threading.Tasks.Task DefaultMethodAsyncStatic()
+    {
+        string localString = "DefaultMethodAsyncStatic()";
+        DefaultInterfaceMethod.MethodForCallingFromDIM();
+        await System.Threading.Tasks.Task.FromResult(0);
+    }
+}
+
+public interface IExtendIDefaultInterface : IDefaultInterface
+{
+    void DefaultMethod2(out string t)
+    {
+        string localString = "DefaultMethod2()";
+        t = $"{localString} from IExtendIDefaultInterface";
+    }
+
+    int IDefaultInterface.DefaultMethodToOverride()
+    {
+        int retValue = 110;
+        DefaultInterfaceMethod.MethodForCallingFromDIM();
+        return retValue;
+    }
+
+    [System.Diagnostics.DebuggerHidden]
+    void HiddenDefaultMethod()
+    {
+        var a = 9;
+    }
+
+    [System.Diagnostics.DebuggerStepThroughAttribute]
+    void StepThroughDefaultMethod()
+    {
+        var a = 0;
+    }
+
+    [System.Diagnostics.DebuggerNonUserCode]
+    void NonUserCodeDefaultMethod(Action boundaryTestFun = null)
+    {
+        if (boundaryTestFun != null)
+            boundaryTestFun();
+    }
+
+    [System.Diagnostics.DebuggerStepperBoundary]
+    void BoundaryBp()
+    {
+        var a = 15;
+    }
+}
+
+public class DIMClass : IExtendIDefaultInterface
+{
+    public int dimClassMember = 123;
+}
+
+public static class DefaultInterfaceMethod
+{
+    public static void Evaluate()
+    {
+        IExtendIDefaultInterface extendDefaultInter = new DIMClass();
+        string defaultFromIDefault = extendDefaultInter.DefaultMethod();
+        int overrideFromIExtend = extendDefaultInter.DefaultMethodToOverride();
+        extendDefaultInter.DefaultMethod2(out string default2FromIExtend);
+    }
+
+    public static async void EvaluateAsync()
+    {
+        IDefaultInterface defaultInter = new DIMClass();
+        await defaultInter.DefaultMethodAsync();
+    }
+
+    public static void EvaluateHiddenAttr()
+    {
+        IExtendIDefaultInterface extendDefaultInter = new DIMClass();
+        extendDefaultInter.HiddenDefaultMethod();
+    }
+
+    public static void EvaluateStepThroughAttr()
+    {
+        IExtendIDefaultInterface extendDefaultInter = new DIMClass();
+        extendDefaultInter.StepThroughDefaultMethod();
+    }
+
+    public static void EvaluateNonUserCodeAttr()
+    {
+        IExtendIDefaultInterface extendDefaultInter = new DIMClass();
+        extendDefaultInter.NonUserCodeDefaultMethod();
+    }
+
+    public static void EvaluateStepperBoundaryAttr()
+    {
+        IExtendIDefaultInterface extendDefaultInter = new DIMClass();
+        extendDefaultInter.NonUserCodeDefaultMethod(extendDefaultInter.BoundaryBp);
+    }
+
+    public static void EvaluateStatic()
+    {
+        IExtendIDefaultInterface.DefaultMethodStatic();
+    }
+
+    public static async void EvaluateAsyncStatic()
+    {
+        await IExtendIDefaultInterface.DefaultMethodAsyncStatic();
+    }
+
+    public static void MethodForCallingFromDIM()
+    {
+        string text = "a place for pausing and inspecting DIM";
+    }
+}
+#endregion
+public class DebugWithDeletedPdb
+{
+    public static void Run()
+    {
+        var asm = System.Reflection.Assembly.LoadFrom("debugger-test-with-pdb-deleted.dll");
+        var myType = asm.GetType("DebuggerTests.ClassWithPdbDeleted");
+        var myMethod = myType.GetConstructor(new Type[] { });
+        var exc = myMethod.Invoke(new object[]{});
+        System.Diagnostics.Debugger.Break();
+    }
+}
+
+public class DebugWithoutDebugSymbols
+{
+    public static void Run()
+    {
+        var asm = System.Reflection.Assembly.LoadFrom("debugger-test-without-debug-symbols.dll");
+        var myType = asm.GetType("DebuggerTests.ClassWithoutDebugSymbols");
+        var myMethod = myType.GetConstructor(new Type[] { });
+        var exc = myMethod.Invoke(new object[]{});
+        System.Diagnostics.Debugger.Break();
+    }
+}
+
+public class AsyncGeneric
+{
+    public static async void TestAsyncGeneric1Parm()
+    {
+        var a = await GetAsyncMethod<int>(10);
+        Console.WriteLine(a);
+    }
+    protected static async System.Threading.Tasks.Task<K> GetAsyncMethod<K>(K parm)
+    {
+        await System.Threading.Tasks.Task.Delay(1);
+        System.Diagnostics.Debugger.Break();
+        return parm;
+    }
+
+    public static async void TestKlassGenericAsyncGeneric()
+    {
+        var a = await MyKlass<bool, char>.GetAsyncMethod<int>(10);
+        Console.WriteLine(a);
+    }
+    class MyKlass<T, L>
+    {
+        public static async System.Threading.Tasks.Task<K> GetAsyncMethod<K>(K parm)
+        {
+            await System.Threading.Tasks.Task.Delay(1);
+            System.Diagnostics.Debugger.Break();
+            return parm;
+        }
+        public static async System.Threading.Tasks.Task<K> GetAsyncMethod2<K, R>(K parm)
+        {
+            await System.Threading.Tasks.Task.Delay(1);
+            System.Diagnostics.Debugger.Break();
+            return parm;
+        }
+    }
+
+    public static async void TestKlassGenericAsyncGeneric2()
+    {
+        var a = await MyKlass<bool>.GetAsyncMethod<int>(10);
+        Console.WriteLine(a);
+    }
+    class MyKlass<T>
+    {
+        public static async System.Threading.Tasks.Task<K> GetAsyncMethod<K>(K parm)
+        {
+            await System.Threading.Tasks.Task.Delay(1);
+            System.Diagnostics.Debugger.Break();
+            return parm;
+        }
+        public static async System.Threading.Tasks.Task<K> GetAsyncMethod2<K, R>(K parm)
+        {
+            await System.Threading.Tasks.Task.Delay(1);
+            System.Diagnostics.Debugger.Break();
+            return parm;
+        }
+        public class MyKlassNested<U>
+        {
+            public static async System.Threading.Tasks.Task<K> GetAsyncMethod<K>(K parm)
+            {
+                await System.Threading.Tasks.Task.Delay(1);
+                System.Diagnostics.Debugger.Break();
+                return parm;
+            }
+        }
+    }
+
+    public static async void TestKlassGenericAsyncGeneric3()
+    {
+        var a = await MyKlass<bool>.GetAsyncMethod2<int, char>(10);
+        Console.WriteLine(a);
+    }
+    public static async void TestKlassGenericAsyncGeneric4()
+    {
+        var a = await MyKlass<bool, double>.GetAsyncMethod2<int, char>(10);
+        Console.WriteLine(a);
+    }
+    public static async void TestKlassGenericAsyncGeneric5()
+    {
+        var a = await MyKlass<bool>.MyKlassNested<int>.GetAsyncMethod<char>('1');
+        Console.WriteLine(a);
+    }
+    public static async void TestKlassGenericAsyncGeneric6()
+    {
+        var a = await MyKlass<MyKlass<int>>.GetAsyncMethod<char>('1');
+        Console.WriteLine(a);
+    }
+}
+
+public class InspectIntPtr
+{
+    public static void Run()
+    {
+        IntPtr myInt = default;
+        IntPtr myInt2 = new IntPtr(1);
+
+        System.Diagnostics.Debugger.Break();
+    }
 }

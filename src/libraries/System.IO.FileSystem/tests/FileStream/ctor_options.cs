@@ -54,6 +54,19 @@ namespace System.IO.Tests
                         PreallocationSize = preallocationSize
                     });
 
+        protected virtual FileStream CreateFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, FileOptions options, long preallocationSize, UnixFileMode unixFileMode)
+            => new FileStream(path,
+                    new FileStreamOptions
+                    {
+                        Mode = mode,
+                        Access = access,
+                        Share = share,
+                        BufferSize = bufferSize,
+                        Options = options,
+                        PreallocationSize = preallocationSize,
+                        UnixCreateMode = unixFileMode
+                    });
+
         [Fact]
         public virtual void NegativePreallocationSizeThrows()
         {

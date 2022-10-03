@@ -21,7 +21,6 @@ class ThreadStore
 
     SList<Thread>       m_ThreadList;
     PTR_RuntimeInstance m_pRuntimeInstance;
-    CLREventStatic      m_SuspendCompleteEvent;
     ReaderWriterLock    m_Lock;
 
 private:
@@ -64,7 +63,6 @@ public:
     void        ResumeAllThreads(bool waitForGCEvent);
 
     static bool IsTrapThreadsRequested();
-    void        WaitForSuspendComplete();
 };
 typedef DPTR(ThreadStore) PTR_ThreadStore;
 

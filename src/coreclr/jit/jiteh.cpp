@@ -578,7 +578,7 @@ bool Compiler::bbIsTryBeg(BasicBlock* block)
     return (ehDsc != nullptr) && (block == ehDsc->ebdTryBeg);
 }
 
-// bbIsHanderBeg() returns true if "block" is the start of any handler or filter.
+// bbIsHandlerBeg() returns true if "block" is the start of any handler or filter.
 // Note that if a block is the beginning of a handler or filter, it must be the beginning
 // of the most nested handler or filter region it is in. Thus, we only need to look at the EH
 // descriptor corresponding to the handler index on the block.
@@ -888,7 +888,7 @@ unsigned Compiler::ehGetCallFinallyRegionIndex(unsigned finallyIndex, bool* inTr
     assert(finallyIndex != EHblkDsc::NO_ENCLOSING_INDEX);
     assert(ehGetDsc(finallyIndex)->HasFinallyHandler());
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     return ehGetDsc(finallyIndex)->ebdGetEnclosingRegionIndex(inTryRegion);
 #else
     *inTryRegion = true;
@@ -1663,7 +1663,7 @@ void Compiler::fgRemoveEH()
     assert(!fgDomsComputed);
     assert(!fgFuncletsCreated);
     assert(fgFirstFuncletBB == nullptr); // this should follow from "!fgFuncletsCreated"
-    assert(!optLoopsMarked);
+    assert(!optLoopTableValid);
 
     unsigned  XTnum;
     EHblkDsc* HBtab;
@@ -1686,7 +1686,7 @@ void Compiler::fgRemoveEH()
             // just deleting the blocks is sufficient. Note, however, that for every
             // BBJ_EHCATCHRET we delete, we need to fix up the reference count of the
             // block it points to (by subtracting one from its reference count).
-            // Note that the blocks for a filter immediately preceed the blocks for its associated filter-handler.
+            // Note that the blocks for a filter immediately precede the blocks for its associated filter-handler.
 
             BasicBlock* blkBeg  = HBtab->HasFilter() ? HBtab->ebdFilter : HBtab->ebdHndBeg;
             BasicBlock* blkLast = HBtab->ebdHndLast;
@@ -2382,7 +2382,7 @@ bool Compiler::fgNormalizeEHCase2()
                             newTryStart->bbFlags |= BBF_BACKWARD_JUMP_TARGET;
                         }
 
-                        // Now we need to split any flow edges targetting the old try begin block between the old
+                        // Now we need to split any flow edges targeting the old try begin block between the old
                         // and new block. Note that if we are handling a multiply-nested 'try', we may have already
                         // split the inner set. So we need to split again, from the most enclosing block that we've
                         // already created, namely, insertBeforeBlk.
@@ -2504,6 +2504,93 @@ bool Compiler::fgNormalizeEHCase2()
     }
 
     return modified;
+}
+
+//------------------------------------------------------------------------
+// fgCreateFiltersForGenericExceptions:
+//     For Exception types which require runtime lookup it creates a "fake" single-block
+//     EH filter that performs "catchArg isinst T!!" and in case of success forwards to the
+//     original EH handler.
+//
+
+void Compiler::fgCreateFiltersForGenericExceptions()
+{
+    for (unsigned ehNum = 0; ehNum < compHndBBtabCount; ehNum++)
+    {
+        EHblkDsc* eh = ehGetDsc(ehNum);
+        if (eh->ebdHandlerType == EH_HANDLER_CATCH)
+        {
+            // Resolve Exception type and check if it needs a runtime lookup
+            CORINFO_RESOLVED_TOKEN resolvedToken;
+            resolvedToken.tokenContext = impTokenLookupContextHandle;
+            resolvedToken.tokenScope   = info.compScopeHnd;
+            resolvedToken.token        = eh->ebdTyp;
+            resolvedToken.tokenType    = CORINFO_TOKENKIND_Casting;
+            info.compCompHnd->resolveToken(&resolvedToken);
+
+            CORINFO_GENERICHANDLE_RESULT embedInfo;
+            info.compCompHnd->embedGenericHandle(&resolvedToken, true, &embedInfo);
+            if (!embedInfo.lookup.lookupKind.needsRuntimeLookup)
+            {
+                // Exception type does not need runtime lookup
+                continue;
+            }
+
+            // Create a new bb for the fake filter
+            BasicBlock* filterBb  = bbNewBasicBlock(BBJ_EHFILTERRET);
+            BasicBlock* handlerBb = eh->ebdHndBeg;
+
+            // Now we need to spill CATCH_ARG (it should be the first thing evaluated)
+            GenTree* arg = new (this, GT_CATCH_ARG) GenTree(GT_CATCH_ARG, TYP_REF);
+            arg->gtFlags |= GTF_ORDER_SIDEEFF;
+            unsigned tempNum         = lvaGrabTemp(false DEBUGARG("SpillCatchArg"));
+            lvaTable[tempNum].lvType = TYP_REF;
+            GenTree* argAsg          = gtNewTempAssign(tempNum, arg);
+            arg                      = gtNewLclvNode(tempNum, TYP_REF);
+            fgInsertStmtAtBeg(filterBb, gtNewStmt(argAsg, handlerBb->firstStmt()->GetDebugInfo()));
+
+            // Create "catchArg is TException" tree
+            GenTree* runtimeLookup;
+            if (embedInfo.lookup.runtimeLookup.indirections == CORINFO_USEHELPER)
+            {
+                GenTree* ctxTree = getRuntimeContextTree(embedInfo.lookup.lookupKind.runtimeLookupKind);
+                runtimeLookup    = impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
+                                                          TYP_I_IMPL, &embedInfo.lookup.lookupKind, ctxTree);
+            }
+            else
+            {
+                runtimeLookup = getTokenHandleTree(&resolvedToken, true);
+            }
+            GenTree* isInstOfT = gtNewHelperCallNode(CORINFO_HELP_ISINSTANCEOF_EXCEPTION, TYP_INT, runtimeLookup, arg);
+            GenTree* retFilt   = gtNewOperNode(GT_RETFILT, TYP_INT, isInstOfT);
+
+            // Insert it right before the handler (and make it a pred of the handler)
+            fgInsertBBbefore(handlerBb, filterBb);
+            fgAddRefPred(handlerBb, filterBb);
+            fgNewStmtAtEnd(filterBb, retFilt, handlerBb->firstStmt()->GetDebugInfo());
+
+            filterBb->bbCatchTyp = BBCT_FILTER;
+            filterBb->bbCodeOffs = handlerBb->bbCodeOffs;
+            filterBb->bbHndIndex = handlerBb->bbHndIndex;
+            filterBb->bbTryIndex = handlerBb->bbTryIndex;
+            filterBb->bbJumpDest = handlerBb;
+            filterBb->bbSetRunRarely();
+            filterBb->bbFlags |= BBF_INTERNAL | BBF_DONT_REMOVE;
+
+            handlerBb->bbCatchTyp = BBCT_FILTER_HANDLER;
+            eh->ebdHandlerType    = EH_HANDLER_FILTER;
+            eh->ebdFilter         = filterBb;
+
+#ifdef DEBUG
+            if (verbose)
+            {
+                JITDUMP("EH%d: Adding EH filter block " FMT_BB " in front of generic handler " FMT_BB ":\n", ehNum,
+                        filterBb->bbNum, handlerBb->bbNum);
+                fgDumpBlock(filterBb);
+            }
+#endif // DEBUG
+        }
+    }
 }
 
 bool Compiler::fgNormalizeEHCase3()
@@ -4518,7 +4605,7 @@ void Compiler::fgExtendEHRegionAfter(BasicBlock* block)
 // inserting the block and properly extending some EH regions (if necessary)
 // puts the block in the correct region. We only consider the case of extending
 // an EH region after 'blk' (that is, to include 'blk' and the newly insert block);
-// we don't consider inserting a block as the the first block of an EH region following 'blk'.
+// we don't consider inserting a block as the first block of an EH region following 'blk'.
 //
 // Consider this example:
 //

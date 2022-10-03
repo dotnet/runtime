@@ -1,0 +1,270 @@
+Compat issues with assembly System.Private.CoreLib:
+TypesMustExist : Type 'Internal.Console' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.DeveloperExperience.DeveloperExperience' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ArraySignature' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ArraySignatureHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.AssemblyFlags' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.AssemblyHashAlgorithm' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.BooleanCollection' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ByReferenceSignature' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ByReferenceSignatureHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ByteCollection' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.CharCollection' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantBooleanArray' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantBooleanArrayHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantBooleanValue' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantBooleanValueHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantBoxedEnumValue' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantBoxedEnumValueHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantByteArray' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantByteArrayHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantByteValue' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantByteValueHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantCharArray' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantCharArrayHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantCharValue' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantCharValueHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantDoubleArray' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantDoubleArrayHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantDoubleValue' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantDoubleValueHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantEnumArray' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantEnumArrayHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantHandleArray' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantHandleArrayHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantInt16Array' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantInt16ArrayHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantInt16Value' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantInt16ValueHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantInt32Array' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantInt32ArrayHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantInt32Value' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantInt32ValueHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantInt64Array' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantInt64ArrayHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantInt64Value' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantInt64ValueHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantReferenceValue' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantReferenceValueHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantSByteArray' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantSByteArrayHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantSByteValue' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantSByteValueHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantSingleArray' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantSingleArrayHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantSingleValue' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantSingleValueHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantStringArray' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantStringArrayHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantStringValue' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantStringValueHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantUInt16Array' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantUInt16ArrayHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantUInt16Value' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantUInt16ValueHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantUInt32Array' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantUInt32ArrayHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantUInt32Value' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantUInt32ValueHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantUInt64Array' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantUInt64ArrayHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantUInt64Value' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ConstantUInt64ValueHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.CustomAttribute' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.CustomAttributeHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.CustomAttributeHandleCollection' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.DoubleCollection' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.Event' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.EventHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.EventHandleCollection' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.Field' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.FieldHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.FieldHandleCollection' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.FieldSignature' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.FieldSignatureHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.FunctionPointerSignature' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.FunctionPointerSignatureHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.GenericParameter' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.GenericParameterHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.GenericParameterHandleCollection' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.GenericParameterKind' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.Handle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.HandleCollection' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.HandleType' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.Int16Collection' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.Int32Collection' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.Int64Collection' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.MemberReference' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.MemberReferenceHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.MetadataReader' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.Method' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.MethodHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.MethodHandleCollection' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.MethodInstantiation' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.MethodInstantiationHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.MethodSemantics' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.MethodSemanticsAttributes' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.MethodSemanticsHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.MethodSemanticsHandleCollection' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.MethodSignature' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.MethodSignatureHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.MethodTypeVariableSignature' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.MethodTypeVariableSignatureHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ModifiedType' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ModifiedTypeHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.NamedArgument' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.NamedArgumentHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.NamedArgumentHandleCollection' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.NamedArgumentMemberKind' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.NamespaceDefinition' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.NamespaceDefinitionHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.NamespaceDefinitionHandleCollection' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.NamespaceReference' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.NamespaceReferenceHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.NativeFormatReaderExtensions' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.Parameter' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ParameterHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ParameterHandleCollection' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.PInvokeAttributes' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.PointerSignature' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.PointerSignatureHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.Property' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.PropertyHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.PropertyHandleCollection' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.PropertySignature' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.PropertySignatureHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.QualifiedField' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.QualifiedFieldHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.QualifiedMethod' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.QualifiedMethodHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.SByteCollection' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ScopeDefinition' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ScopeDefinitionHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ScopeDefinitionHandleCollection' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ScopeReference' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.ScopeReferenceHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.SingleCollection' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.SZArraySignature' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.SZArraySignatureHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.TypeDefinition' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.TypeDefinitionHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.TypeDefinitionHandleCollection' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.TypeForwarder' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.TypeForwarderHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.TypeForwarderHandleCollection' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.TypeInstantiationSignature' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.TypeInstantiationSignatureHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.TypeReference' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.TypeReferenceHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.TypeSpecification' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.TypeSpecificationHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.TypeVariableSignature' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.TypeVariableSignatureHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.UInt16Collection' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.UInt32Collection' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Metadata.NativeFormat.UInt64Collection' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Reflection.Augments.ReflectionAugments' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Reflection.Augments.ReflectionCoreCallbacks' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Reflection.Core.AssemblyBinder' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Reflection.Core.AssemblyBindResult' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Reflection.Core.QScopeDefinition' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Reflection.Core.ReflectionDomainSetup' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Reflection.Core.Execution.ExecutionDomain' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Reflection.Core.Execution.ExecutionEnvironment' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Reflection.Core.Execution.FieldAccessor' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Reflection.Core.Execution.MethodInvoker' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Reflection.Core.Execution.ReflectionCoreExecution' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Reflection.Extensions.NonPortable.CustomAttributeInheritanceRules' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Reflection.Extensions.NonPortable.CustomAttributeInstantiator' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Runtime.CanonTypeKind' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Runtime.ReadyToRunSectionType' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Runtime.TypeManagerHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Runtime.Augments.DynamicDelegateAugments' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Runtime.Augments.ReflectionExecutionDomainCallbacks' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Runtime.Augments.RuntimeAugments' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Runtime.Augments.StackTraceMetadataCallbacks' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Runtime.Augments.TypeLoaderCallbacks' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Runtime.CompilerHelpers.MathHelpers' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Runtime.CompilerHelpers.StartupCodeHelpers' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Runtime.CompilerHelpers.ThrowHelpers' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Runtime.CompilerServices.FixupRuntimeTypeHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Runtime.CompilerServices.FunctionPointerOps' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Runtime.CompilerServices.GenericMethodDescriptor' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Runtime.CompilerServices.MethodNameAndSignature' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Runtime.CompilerServices.OpenMethodResolver' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Runtime.CompilerServices.RuntimeFieldHandleInfo' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Runtime.CompilerServices.RuntimeMethodHandleInfo' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Runtime.CompilerServices.RuntimeSignature' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.Runtime.InteropServices.ComponentActivator' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.TypeSystem.ExceptionStringID' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'Internal.TypeSystem.LockFreeReaderHashtable<TKey, TValue>' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public void System.AppContext.add_FirstChanceException(System.EventHandler<System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs>)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public void System.AppContext.add_ProcessExit(System.EventHandler)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public void System.AppContext.add_UnhandledException(System.UnhandledExceptionEventHandler)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public void System.AppContext.remove_FirstChanceException(System.EventHandler<System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs>)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public void System.AppContext.remove_ProcessExit(System.EventHandler)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public void System.AppContext.remove_UnhandledException(System.UnhandledExceptionEventHandler)' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Array<T>' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.MDArray' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public void System.ModuleHandle..ctor(System.Reflection.Module)' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.RuntimeExceptionHelpers' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.RuntimeType' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public System.String System.Type.InternalNameIfAvailable.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public System.Boolean System.TypedReference.IsNull.get()' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Diagnostics.DebugAnnotations' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Diagnostics.DebuggerGuidedStepThroughAttribute' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'protected void System.Diagnostics.Tracing.EventCounter.Flush()' does not exist in the reference but it does exist in the implementation.
+CannotMakeTypeAbstract : Type 'System.Diagnostics.Tracing.EventListener' is abstract in the reference but is not abstract in the implementation.
+CannotMakeMoreVisible : Visibility of member 'System.Diagnostics.Tracing.EventListener..ctor()' is 'protected' in the reference but 'public' in the implementation.
+CannotMakeMoreVisible : Visibility of member 'System.Diagnostics.Tracing.EventListener.EventSourceIndex(System.Diagnostics.Tracing.EventSource)' is 'protected' in the reference but 'public' in the implementation.
+TypesMustExist : Type 'System.Diagnostics.Tracing.PropertyValue' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Diagnostics.Tracing.TraceLoggingEventTypes' does not exist in the reference but it does exist in the implementation.
+CannotMakeMemberAbstract : Member 'public System.Boolean System.IO.FileSystemInfo.Exists' is abstract in the reference but is not abstract in the implementation.
+CannotMakeMemberAbstract : Member 'public System.String System.IO.FileSystemInfo.Name' is abstract in the reference but is not abstract in the implementation.
+CannotMakeMemberAbstract : Member 'public System.Boolean System.IO.FileSystemInfo.Exists.get()' is abstract in the reference but is not abstract in the implementation.
+CannotMakeMemberAbstract : Member 'public System.String System.IO.FileSystemInfo.Name.get()' is abstract in the reference but is not abstract in the implementation.
+TypesMustExist : Type 'System.Reflection.AssemblyRuntimeNameHelpers' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Reflection.BinderBundle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Reflection.DynamicInvokeInfo' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Reflection.EnumInfo' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public System.Reflection.ParameterInfo[] System.Reflection.MethodBase.GetParametersNoCopy()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public System.Reflection.MethodBase System.Reflection.MethodBase.MetadataDefinitionMethod.get()' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Reflection.MissingMetadataException' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'protected System.ModuleHandle System.Reflection.Module.GetModuleHandleImpl()' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Reflection.RuntimeAssembly' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Reflection.RuntimeAssemblyName' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Reflection.Runtime.General.MetadataReaderExtensions' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Reflection.Runtime.General.NativeFormatMetadataReaderExtensions' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Reflection.Runtime.General.QGenericParameter' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Reflection.Runtime.General.QHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Reflection.Runtime.General.QMethodDefinition' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Reflection.Runtime.General.QSignatureTypeHandle' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Reflection.Runtime.General.QTypeDefinition' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Reflection.Runtime.General.QTypeDefRefOrSpec' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'protected System.String System.String System.Resources.ResourceManager.BaseNameField' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'protected System.Resources.IResourceReader System.Resources.IResourceReader System.Resources.ResourceSet.Reader' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Resources.RuntimeResourceSet' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Runtime.ExceptionIDs' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Runtime.RhFailFastReason' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Runtime.RuntimeImportAttribute' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Runtime.RuntimeImports' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Runtime.RuntimeObjectFactory' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Runtime.TypeLoaderExports' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Runtime.CompilerServices.EagerStaticClassConstructionAttribute' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Runtime.CompilerServices.ForceDictionaryLookupsAttribute' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Runtime.CompilerServices.ForceLazyDictionaryAttribute' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Runtime.CompilerServices.ICastable' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Runtime.CompilerServices.ReflectionBlockedAttribute' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Runtime.CompilerServices.StaticClassConstructionContext' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Runtime.InteropServices.InteropExtensions' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Runtime.InteropServices.NativeFunctionPointerWrapper' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Runtime.InteropServices.PInvokeMarshal' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public void System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute..ctor()' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Runtime.InteropServices.UnsafeGCHandle' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public System.Boolean System.Runtime.Serialization.SerializationInfo.DeserializationInProgress.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public void System.Runtime.Serialization.SerializationInfo.ThrowIfDeserializationInProgress()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public void System.Runtime.Serialization.SerializationInfo.ThrowIfDeserializationInProgress(System.String, System.Int32)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public void System.Runtime.Serialization.SerializationInfo.UpdateValue(System.String, System.Object, System.Type)' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Threading.Condition' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Threading.Lock' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Threading.LockHolder' does not exist in the reference but it does exist in the implementation.

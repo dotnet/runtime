@@ -8,7 +8,6 @@
 #include "corhost.h"
 #include "threads.h"
 
-#undef VirtualAlloc
 LPVOID ClrVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect) {
     CONTRACTL
     {
@@ -78,36 +77,18 @@ LPVOID ClrVirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, 
     }
 
 }
-#define VirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect) Dont_Use_VirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect)
 
-#undef VirtualFree
-BOOL ClrVirtualFree(LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType) {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
+BOOL ClrVirtualFree(LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType)
+{
+    WRAPPER_NO_CONTRACT;
     return (BOOL)(BYTE)::VirtualFree (lpAddress, dwSize, dwFreeType);
 }
-#define VirtualFree(lpAddress, dwSize, dwFreeType) Dont_Use_VirtualFree(lpAddress, dwSize, dwFreeType)
 
-#undef VirtualQuery
 SIZE_T ClrVirtualQuery(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SIZE_T dwLength)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    {
-        return ::VirtualQuery(lpAddress, lpBuffer, dwLength);
-    }
+    WRAPPER_NO_CONTRACT;
+    return ::VirtualQuery(lpAddress, lpBuffer, dwLength);
 }
-#define VirtualQuery(lpAddress, lpBuffer, dwLength) Dont_Use_VirtualQuery(lpAddress, lpBuffer, dwLength)
 
 #if defined(_DEBUG) && !defined(TARGET_UNIX)
 static VolatilePtr<BYTE> s_pStartOfUEFSection = NULL;
@@ -115,7 +96,6 @@ static VolatilePtr<BYTE> s_pEndOfUEFSectionBoundary = NULL;
 static Volatile<DWORD> s_dwProtection = 0;
 #endif // _DEBUG && !TARGET_UNIX
 
-#undef VirtualProtect
 BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect)
 {
     CONTRACTL
@@ -207,7 +187,7 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
                 BYTE* pEndOfUEFSectionBoundary = pAddressOfFollowingSection - 1;
 
                 // Set the end of UEF section boundary
-                FastInterlockExchangePointer(s_pEndOfUEFSectionBoundary.GetPointer(), pEndOfUEFSectionBoundary);
+                InterlockedExchangeT(s_pEndOfUEFSectionBoundary.GetPointer(), pEndOfUEFSectionBoundary);
             }
             else
             {
@@ -235,29 +215,12 @@ BOOL ClrVirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWO
 
     return ::VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect);
 }
-#define VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect) Dont_Use_VirtualProtect(lpAddress, dwSize, flNewProtect, lpflOldProtect)
 
-#undef SleepEx
 DWORD ClrSleepEx(DWORD dwMilliseconds, BOOL bAlertable)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    DWORD res;
-
-    {
-        res = ::SleepEx(dwMilliseconds, bAlertable);
-    }
-
-    return res;
+    WRAPPER_NO_CONTRACT;
+    return ::SleepEx(dwMilliseconds, bAlertable);
 }
-#define SleepEx(dwMilliseconds,bAlertable) \
-        Dont_Use_SleepEx(dwMilliseconds,bAlertable)
 
 // non-zero return value if this function causes the OS to switch to another thread
 // See file:spinlock.h#SwitchToThreadSpinning for an explanation of dwSwitchCount

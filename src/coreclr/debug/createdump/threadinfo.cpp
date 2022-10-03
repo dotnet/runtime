@@ -369,8 +369,8 @@ ThreadInfo::GetThreadStack()
     {
         MemoryRegion search(0, startAddress, startAddress + PAGE_SIZE);
         const MemoryRegion* region = CrashInfo::SearchMemoryRegions(m_crashInfo.OtherMappings(), search);
-        if (region != nullptr) {
-
+        if (region != nullptr)
+        {
             // Use the mapping found for the size of the thread's stack
             size = region->EndAddress() - startAddress;
 

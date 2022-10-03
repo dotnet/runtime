@@ -16,6 +16,7 @@ namespace System.Linq
         internal EnumerableQuery() { }
 
         [RequiresUnreferencedCode(Queryable.InMemoryQueryableExtensionMethodsRequiresUnreferencedCode)]
+        [RequiresDynamicCode(Queryable.InMemoryQueryableExtensionMethodsRequiresDynamicCode)]
         internal static IQueryable Create(Type elementType, IEnumerable sequence)
         {
             Type seqType = typeof(EnumerableQuery<>).MakeGenericType(elementType);
@@ -23,6 +24,7 @@ namespace System.Linq
         }
 
         [RequiresUnreferencedCode(Queryable.InMemoryQueryableExtensionMethodsRequiresUnreferencedCode)]
+        [RequiresDynamicCode(Queryable.InMemoryQueryableExtensionMethodsRequiresDynamicCode)]
         internal static IQueryable Create(Type elementType, Expression expression)
         {
             Type seqType = typeof(EnumerableQuery<>).MakeGenericType(elementType);
@@ -30,6 +32,8 @@ namespace System.Linq
         }
     }
 
+    [RequiresDynamicCode(Queryable.InMemoryQueryableExtensionMethodsRequiresDynamicCode)]
+    [RequiresUnreferencedCode(Queryable.InMemoryQueryableExtensionMethodsRequiresUnreferencedCode)]
     public class EnumerableQuery<T> : EnumerableQuery, IOrderedQueryable<T>, IQueryProvider
     {
         private readonly Expression _expression;
@@ -37,14 +41,12 @@ namespace System.Linq
 
         IQueryProvider IQueryable.Provider => this;
 
-        [RequiresUnreferencedCode(Queryable.InMemoryQueryableExtensionMethodsRequiresUnreferencedCode)]
         public EnumerableQuery(IEnumerable<T> enumerable)
         {
             _enumerable = enumerable;
             _expression = Expression.Constant(this);
         }
 
-        [RequiresUnreferencedCode(Queryable.InMemoryQueryableExtensionMethodsRequiresUnreferencedCode)]
         public EnumerableQuery(Expression expression)
         {
             _expression = expression;
@@ -58,20 +60,20 @@ namespace System.Linq
 
         Type IQueryable.ElementType => typeof(T);
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This class's ctor is annotated as RequiresUnreferencedCode.")]
-        IQueryable IQueryProvider.CreateQuery(Expression expression!!)
+        IQueryable IQueryProvider.CreateQuery(Expression expression)
         {
+            ArgumentNullException.ThrowIfNull(expression);
+
             Type? iqType = TypeHelper.FindGenericType(typeof(IQueryable<>), expression.Type);
             if (iqType == null)
                 throw Error.ArgumentNotValid(nameof(expression));
             return Create(iqType.GetGenericArguments()[0], expression);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This class's ctor is annotated as RequiresUnreferencedCode.")]
-        IQueryable<TElement> IQueryProvider.CreateQuery<TElement>(Expression expression!!)
+        IQueryable<TElement> IQueryProvider.CreateQuery<TElement>(Expression expression)
         {
+            ArgumentNullException.ThrowIfNull(expression);
+
             if (!typeof(IQueryable<TElement>).IsAssignableFrom(expression.Type))
             {
                 throw Error.ArgumentNotValid(nameof(expression));
@@ -79,17 +81,17 @@ namespace System.Linq
             return new EnumerableQuery<TElement>(expression);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This class's ctor is annotated as RequiresUnreferencedCode.")]
-        object? IQueryProvider.Execute(Expression expression!!)
+        object? IQueryProvider.Execute(Expression expression)
         {
+            ArgumentNullException.ThrowIfNull(expression);
+
             return EnumerableExecutor.Create(expression).ExecuteBoxed();
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This class's ctor is annotated as RequiresUnreferencedCode.")]
-        TElement IQueryProvider.Execute<TElement>(Expression expression!!)
+        TElement IQueryProvider.Execute<TElement>(Expression expression)
         {
+            ArgumentNullException.ThrowIfNull(expression);
+
             if (!typeof(TElement).IsAssignableFrom(expression.Type))
                 throw Error.ArgumentNotValid(nameof(expression));
             return new EnumerableExecutor<TElement>(expression).Execute();
@@ -99,8 +101,6 @@ namespace System.Linq
 
         IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This class's ctor is annotated as RequiresUnreferencedCode.")]
         private IEnumerator<T> GetEnumerator()
         {
             if (_enumerable == null)

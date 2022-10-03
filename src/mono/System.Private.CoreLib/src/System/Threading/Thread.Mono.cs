@@ -309,7 +309,7 @@ namespace System.Threading
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern ulong GetCurrentOSThreadId();
 
-        [MemberNotNull("self")]
+        [MemberNotNull(nameof(self))]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern void InitInternal(Thread thread);
 

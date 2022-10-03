@@ -305,9 +305,9 @@ public:
      */
     bool IsGcSafe();
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     bool HasTailCalls();
-#endif // TARGET_ARM || TARGET_ARM64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 
     PREGDISPLAY GetRegisterSet()
     {

@@ -1,22 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <FeatureGenericMath>false</FeatureGenericMath>
     <NoWarn>$(NoWarn),1718,SYSLIB0013</NoWarn>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
-    <Nullable>disable</Nullable>
     <!-- Disable nullability public only feature for NullabilityInfoContextTests -->
     <Features>$(Features.Replace('nullablePublicOnly', '')</Features>
-    <EnableRegexGenerator>true</EnableRegexGenerator>
   </PropertyGroup>
+
+  <!-- 
+    Add special trait for running local timezone validation tests on certain devices e.g. in CI to make sure the local timezone is correct and not UTC. Disable these tests otherwise.
+  -->
   <PropertyGroup>
-    <DefineConstants Condition="'$(FeatureGenericMath)' == 'true'">$(DefineConstants);FEATURE_GENERIC_MATH</DefineConstants>
+    <WithoutCategories Condition="'$(EnableAdditionalTimezoneChecks)' != 'true'">$(WithoutCategories);AdditionalTimezoneChecks</WithoutCategories>
   </PropertyGroup>
+
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
   </ItemGroup>
+
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\EnumTypes.cs" Link="Common\System\EnumTypes.cs" />
     <Compile Include="$(CommonTestPath)System\MockType.cs" Link="Common\System\MockType.cs" />
@@ -88,6 +91,7 @@
     <Compile Include="System\Int16Tests.cs" />
     <Compile Include="System\Int32Tests.cs" />
     <Compile Include="System\Int64Tests.cs" />
+    <Compile Include="System\Int128Tests.cs" />
     <Compile Include="System\IntPtrTests.cs" />
     <Compile Include="System\InvalidCastExceptionTests.cs" />
     <Compile Include="System\InvalidOperationExceptionTests.cs" />
@@ -118,6 +122,7 @@
     <Compile Include="System\RangeTests.cs" />
     <Compile Include="System\RankExceptionTests.cs" />
     <Compile Include="System\Reflection\NullabilityInfoContextTests.cs" />
+    <Compile Include="System\Reflection\RuntimeTypeMemberCacheTests.cs" />
     <Compile Include="System\SByteTests.cs" />
     <Compile Include="System\SingleTests.cs" />
     <Compile Include="System\StackOverflowExceptionTests.cs" />
@@ -141,6 +146,7 @@
     <Compile Include="System\UInt16Tests.cs" />
     <Compile Include="System\UInt32Tests.cs" />
     <Compile Include="System\UInt64Tests.cs" />
+    <Compile Include="System\UInt128Tests.cs" />
     <Compile Include="System\UIntPtrTests.cs" />
     <Compile Include="System\UnitySerializationHolderTests.cs" />
     <Compile Include="System\Uri.CreateStringTests.cs" />
@@ -220,6 +226,7 @@
     <Compile Include="System\Reflection\TypeDelegatorTests.cs" />
     <Compile Include="System\Reflection\TypeTests.Get.CornerCases.cs" />
     <Compile Include="System\Reflection\TypeTests.GetMember.cs" />
+    <Compile Include="System\Runtime\ControlledExecutionTests.cs" />
     <Compile Include="System\Runtime\DependentHandleTests.cs" />
     <Compile Include="System\Runtime\JitInfoTests.cs" />
     <Compile Include="System\Runtime\MemoryFailPointTests.cs" />
@@ -248,26 +255,32 @@
     <Compile Include="System\Type\TypeTests.Get.cs" />
     <Compile Include="$(CommonTestPath)System\RandomDataGenerator.cs" Link="Common\System\RandomDataGenerator.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="System\ExitCodeTests.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(FeatureGenericMath)' == 'true'">
+
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\GenericMathHelpers.cs" Link="Common\System\GenericMathHelpers.cs" />
     <Compile Include="System\ByteTests.GenericMath.cs" />
     <Compile Include="System\CharTests.GenericMath.cs" />
+    <Compile Include="System\DecimalTests.GenericMath.cs" />
     <Compile Include="System\DoubleTests.GenericMath.cs" />
-    <Compile Include="System\GenericMathHelpers.cs" />
     <Compile Include="System\HalfTests.GenericMath.cs" />
     <Compile Include="System\Int16Tests.GenericMath.cs" />
     <Compile Include="System\Int32Tests.GenericMath.cs" />
     <Compile Include="System\Int64Tests.GenericMath.cs" />
+    <Compile Include="System\Int128Tests.GenericMath.cs" />
     <Compile Include="System\IntPtrTests.GenericMath.cs" />
     <Compile Include="System\SByteTests.GenericMath.cs" />
     <Compile Include="System\SingleTests.GenericMath.cs" />
     <Compile Include="System\UInt16Tests.GenericMath.cs" />
     <Compile Include="System\UInt32Tests.GenericMath.cs" />
     <Compile Include="System\UInt64Tests.GenericMath.cs" />
+    <Compile Include="System\UInt128Tests.GenericMath.cs" />
     <Compile Include="System\UIntPtrTests.GenericMath.cs" />
   </ItemGroup>
+
   <ItemGroup>
     <Compile Include="System\Reflection\SignatureTypes.cs" />
     <Compile Include="System\Runtime\CompilerServices\CallerArgumentExpressionAttributeTests.cs" />
@@ -291,6 +304,7 @@
     <TrimmerRootDescriptor Include="$(ILLinkDescriptorsPath)ILLink.Descriptors.Castle.xml" />
     <TrimmerRootDescriptor Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
+
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Serialization.Tests.cs" Link="Common\System\Collections\IEnumerable.Generic.Serialization.Tests.cs" />
     <EmbeddedResource Include="System\Reflection\EmbeddedImage.png">
@@ -301,9 +315,13 @@
     </EmbeddedResource>
     <Compile Include="$(CommonTestPath)System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" Link="Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs" />
   </ItemGroup>
+
   <ItemGroup>
+    <AnalyzerReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj" />
+
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
     <PackageReference Include="System.Runtime.Numerics.TestData" Version="$(SystemRuntimeNumericsTestDataVersion)" GeneratePathProperty="true" />
+
     <ProjectReference Include="TestLoadAssembly\TestLoadAssembly.csproj" />
     <ProjectReference Include="TestCollectibleAssembly\TestCollectibleAssembly.csproj" />
     <ProjectReference Include="TestModule\System.Reflection.TestModule.ilproj" />

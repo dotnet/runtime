@@ -26,7 +26,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // Ensure types in signature are loadable and resolvable, otherwise we'll fail later while emitting the signature
             ((CompilerTypeSystemContext)fieldDesc.Context).EnsureLoadableType(fieldDesc.OwningType);
-            Debug.Assert(factory.SignatureContext.GetTargetModule(_fieldDesc) != null);
         }
 
         public override int ClassCode => 271828182;
@@ -39,7 +38,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 dataBuilder.AddSymbol(this);
 
-                EcmaModule targetModule = factory.SignatureContext.GetTargetModule(_fieldDesc);
+                IEcmaModule targetModule = factory.SignatureContext.GetTargetModule(_fieldDesc);
                 SignatureContext innerContext = dataBuilder.EmitFixup(factory, _fixupKind, targetModule, factory.SignatureContext);
                 uint baseOffset = 0;
                 uint fieldOffset = (uint)_fieldDesc.Offset.AsInt;

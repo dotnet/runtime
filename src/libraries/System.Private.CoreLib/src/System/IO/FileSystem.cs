@@ -5,6 +5,20 @@ namespace System.IO
 {
     internal static partial class FileSystem
     {
+        internal const UnixFileMode ValidUnixFileModes =
+            UnixFileMode.UserRead |
+            UnixFileMode.UserWrite |
+            UnixFileMode.UserExecute |
+            UnixFileMode.GroupRead |
+            UnixFileMode.GroupWrite |
+            UnixFileMode.GroupExecute |
+            UnixFileMode.OtherRead |
+            UnixFileMode.OtherWrite |
+            UnixFileMode.OtherExecute |
+            UnixFileMode.StickyBit |
+            UnixFileMode.SetGroup |
+            UnixFileMode.SetUser;
+
         internal static void VerifyValidPath(string path, string argName)
         {
             ArgumentException.ThrowIfNullOrEmpty(path, argName);
@@ -19,29 +33,19 @@ namespace System.IO
             ReadOnlySpan<char> srcNoDirectorySeparator = Path.TrimEndingDirectorySeparator(sourceFullPath.AsSpan());
             ReadOnlySpan<char> destNoDirectorySeparator = Path.TrimEndingDirectorySeparator(destFullPath.AsSpan());
 
-            ReadOnlySpan<char> sourceDirNameFromFullPath = Path.GetFileName(sourceFullPath.AsSpan());
-            ReadOnlySpan<char> destDirNameFromFullPath = Path.GetFileName(destFullPath.AsSpan());
+            // Don't allow the same path, except for changing the casing of the filename.
+            bool isCaseSensitiveRename = false;
+            if (srcNoDirectorySeparator.Equals(destNoDirectorySeparator, PathInternal.StringComparison))
+            {
+                if (PathInternal.IsCaseSensitive || // FileNames will be equal because paths are equal.
+                    Path.GetFileName(srcNoDirectorySeparator).SequenceEqual(Path.GetFileName(destNoDirectorySeparator)))
+                {
+                    throw new IOException(SR.IO_SourceDestMustBeDifferent);
+                }
+                isCaseSensitiveRename = true;
+            }
 
-            StringComparison fileSystemSensitivity = PathInternal.StringComparison;
-            bool directoriesAreCaseVariants =
-                !sourceDirNameFromFullPath.SequenceEqual(destDirNameFromFullPath) &&
-                sourceDirNameFromFullPath.Equals(destDirNameFromFullPath, StringComparison.OrdinalIgnoreCase);
-            bool sameDirectoryDifferentCase =
-                directoriesAreCaseVariants &&
-                destDirNameFromFullPath.Equals(sourceDirNameFromFullPath, fileSystemSensitivity);
-
-            // If the destination directories are the exact same name
-            if (!sameDirectoryDifferentCase && srcNoDirectorySeparator.Equals(destNoDirectorySeparator, fileSystemSensitivity))
-                throw new IOException(SR.IO_SourceDestMustBeDifferent);
-
-            ReadOnlySpan<char> sourceRoot = Path.GetPathRoot(srcNoDirectorySeparator);
-            ReadOnlySpan<char> destinationRoot = Path.GetPathRoot(destNoDirectorySeparator);
-
-            // Compare paths for the same, skip this step if we already know the paths are identical.
-            if (!sourceRoot.Equals(destinationRoot, StringComparison.OrdinalIgnoreCase))
-                throw new IOException(SR.IO_SourceDestMustHaveSameRoot);
-
-            MoveDirectory(sourceFullPath, destFullPath, sameDirectoryDifferentCase);
+            MoveDirectory(sourceFullPath, destFullPath, isCaseSensitiveRename);
         }
     }
 }

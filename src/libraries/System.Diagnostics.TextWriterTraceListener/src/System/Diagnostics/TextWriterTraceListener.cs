@@ -38,9 +38,11 @@ namespace System.Diagnostics
         /// <para>Initializes a new instance of the <see cref='System.Diagnostics.TextWriterTraceListener'/> class with the
         ///    specified name and using the stream as the recipient of the debugging and tracing output.</para>
         /// </devdoc>
-        public TextWriterTraceListener(Stream stream!!, string? name)
+        public TextWriterTraceListener(Stream stream, string? name)
             : base(name)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             _writer = new StreamWriter(stream);
         }
 
@@ -59,9 +61,11 @@ namespace System.Diagnostics
         ///    debugging
         ///    output.</para>
         /// </devdoc>
-        public TextWriterTraceListener(TextWriter writer!!, string? name)
+        public TextWriterTraceListener(TextWriter writer, string? name)
             : base(name)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             _writer = writer;
         }
 
@@ -206,6 +210,11 @@ namespace System.Diagnostics
         {
             if (_writer == null)
             {
+                InitializeWriter();
+            }
+
+            void InitializeWriter()
+            {
                 bool success = false;
 
                 if (_fileName == null)
@@ -217,8 +226,7 @@ namespace System.Diagnostics
                 // encoding to substitute illegal chars. For ex, In case of high surrogate character
                 // D800-DBFF without a following low surrogate character DC00-DFFF
                 // NOTE: We also need to use an encoding that does't emit BOM which is StreamWriter's default
-                Encoding noBOMwithFallback = GetEncodingWithFallback(new System.Text.UTF8Encoding(false));
-
+                Encoding noBOMwithFallback = GetEncodingWithFallback(new UTF8Encoding(false));
 
                 // To support multiple appdomains/instances tracing to the same file,
                 // we will try to open the given file for append but if we encounter
@@ -264,10 +272,6 @@ namespace System.Diagnostics
             }
         }
 
-        internal bool IsEnabled(TraceOptions opts)
-        {
-            return (opts & TraceOutputOptions) != 0;
-        }
-
+        internal bool IsEnabled(TraceOptions opts) => (opts & TraceOutputOptions) != 0;
     }
 }

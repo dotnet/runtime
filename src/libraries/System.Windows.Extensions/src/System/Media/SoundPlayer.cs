@@ -85,10 +85,7 @@ namespace System.Media
             get => _soundLocation;
             set
             {
-                if (value == null)
-                {
-                    value = string.Empty;
-                }
+                value ??= string.Empty;
 
                 if (_soundLocation.Equals(value))
                 {

@@ -62,7 +62,7 @@ int
 mono_poll (mono_pollfd *ufds, unsigned int nfds, int timeout)
 {
 	struct timeval tv, *tvptr;
-	int i, fd, events, affected, count;
+	int fd, events, affected, count;
 	fd_set rfds, wfds, efds;
 	int nexc = 0;
 	int maxfd = 0;
@@ -79,7 +79,7 @@ mono_poll (mono_pollfd *ufds, unsigned int nfds, int timeout)
 	FD_ZERO (&wfds);
 	FD_ZERO (&efds);
 
-	for (i = 0; i < nfds; i++) {
+	for (unsigned int i = 0; i < nfds; i++) {
 		ufds [i].revents = 0;
 		fd = ufds [i].fd;
 		if (fd < 0)
@@ -133,7 +133,7 @@ mono_poll (mono_pollfd *ufds, unsigned int nfds, int timeout)
 	}
 
 	count = 0;
-	for (i = 0; i < nfds && affected > 0; i++) {
+	for (unsigned int i = 0; i < nfds && affected > 0; i++) {
 		fd = ufds [i].fd;
 		if (fd < 0)
 			continue;

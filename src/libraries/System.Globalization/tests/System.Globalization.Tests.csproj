@@ -4,8 +4,11 @@
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <UnicodeUcdVersion>13.0</UnicodeUcdVersion>
+    <UnicodeUcdVersion>14.0</UnicodeUcdVersion>
   </PropertyGroup>
+  <ItemGroup>
+    <RdXmlFile Include="default.rd.xml" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="IcuTests.cs" />

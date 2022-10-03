@@ -59,9 +59,9 @@ disassemble wasm executables (.wasm files).
 # Deterministic execution
 
 Wasm execution can be made deterministic by passing the -s DETERMINISTIC=1 option to emcc.
-This will cause the app to allways execute the same way, i.e. using the same memory
+This will cause the app to always execute the same way, i.e. using the same memory
 addresses, random numbers, etc. This can be used to make random crashes happen reliably.
-Sometimes, hovewer, turning this on will make the problem disappear. In this case, it
+Sometimes, however, turning this on will make the problem disappear. In this case, it
 might be useful to add some controlled indeterminism. For example, to make the
 random number generator mostly deterministic, change `$getRandomDevice` in
 `upstream/emscripten/src/library.js` to:

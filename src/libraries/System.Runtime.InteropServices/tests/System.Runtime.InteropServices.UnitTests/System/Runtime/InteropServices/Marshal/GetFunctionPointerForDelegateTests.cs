@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.Tests
 {
     public class GetFunctionPointerForDelegateTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public void GetFunctionPointerForDelegate_NormalDelegateNonGeneric_ReturnsExpected()
         {
@@ -23,7 +23,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(pointer1, pointer2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public void GetFunctionPointerForDelegate_MarshalledDelegateNonGeneric_ReturnsExpected()
         {
@@ -40,7 +40,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(pointer1, pointer2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public void GetFunctionPointerForDelegate_NormalDelegateGeneric_ReturnsExpected()
         {
@@ -53,7 +53,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(pointer1, pointer2);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public void GetFunctionPointerForDelegate_MarshalledDelegateGeneric_ReturnsExpected()
         {
@@ -92,8 +92,29 @@ namespace System.Runtime.InteropServices.Tests
             AssertExtensions.Throws<ArgumentException>("delegate", () => Marshal.GetFunctionPointerForDelegate(d));
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
+        public void GetFunctionPointerForDelegate_MarshalledOpenStaticDelegate()
+        {
+            MethodInfo targetMethod = typeof(GetFunctionPointerForDelegateTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
+            Delegate original = targetMethod.CreateDelegate(typeof(NonGenericDelegate), null);
+            IntPtr ptr = Marshal.GetFunctionPointerForDelegate(original);
+            Assert.NotEqual(IntPtr.Zero, ptr);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
+        public void GetFunctionPointerForDelegate_MarshalledClosedStaticDelegate()
+        {
+            MethodInfo targetMethod = typeof(GetFunctionPointerForDelegateTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
+            Delegate original = targetMethod.CreateDelegate(typeof(NoArgsDelegate), "value");
+            IntPtr ptr = Marshal.GetFunctionPointerForDelegate(original);
+            Assert.NotEqual(IntPtr.Zero, ptr);
+        }
+
         public delegate void GenericDelegate<T>(T t);
         public delegate void NonGenericDelegate(string t);
+        public delegate void NoArgsDelegate();
 
         private static void Method(string s) { }
     }

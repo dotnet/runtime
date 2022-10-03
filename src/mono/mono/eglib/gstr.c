@@ -919,7 +919,7 @@ g_str_from_file_region (int fd, guint64 offset, gsize size)
 	int status;
 
 	do {
-		loc = lseek (fd, offset, SEEK_SET);
+		loc = lseek (fd, GUINT64_TO_LONG (offset), SEEK_SET);
 	} while (loc == -1 && errno == EINTR);
 	if (loc == -1)
 		return NULL;
@@ -928,7 +928,7 @@ g_str_from_file_region (int fd, guint64 offset, gsize size)
 		return NULL;
 	buffer [size] = 0;
 	do {
-		status = read (fd, buffer, size);
+		status = g_read (fd, buffer, size);
 	} while (status == -1 && errno == EINTR);
 	if (status == -1){
 		g_free (buffer);

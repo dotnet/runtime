@@ -4,6 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Text;
 namespace XUnitWrapperLibrary;
 
@@ -46,6 +48,11 @@ public class TestFilter
             }
             return stringToSearch == Filter;
         }
+            
+        public override string ToString()
+        {
+            return $"{Kind}{(Substring ? "~" : "=")}{Filter}";
+        }
     }
 
     public sealed class AndClause : ISearchClause
@@ -60,6 +67,11 @@ public class TestFilter
         }
 
         public bool IsMatch(string fullyQualifiedName, string displayName, string[] traits) => _left.IsMatch(fullyQualifiedName, displayName, traits) && _right.IsMatch(fullyQualifiedName, displayName, traits);
+  
+        public override string ToString()
+        {
+            return $"({_left}) && ({_right})";
+        }
     }
 
     public sealed class OrClause : ISearchClause
@@ -74,6 +86,11 @@ public class TestFilter
         }
 
         public bool IsMatch(string fullyQualifiedName, string displayName, string[] traits) => _left.IsMatch(fullyQualifiedName, displayName, traits) || _right.IsMatch(fullyQualifiedName, displayName, traits);
+    
+        public override string ToString()
+        {
+            return $"({_left}) || ({_right})";
+        }
     }
 
     public sealed class NotClause : ISearchClause
@@ -86,23 +103,73 @@ public class TestFilter
         }
 
         public bool IsMatch(string fullyQualifiedName, string displayName, string[] traits) => !_inner.IsMatch(fullyQualifiedName, displayName, traits);
-    }
-
-    private ISearchClause? _filter;
-
-    public TestFilter(string filterString)
-    {
-        if (filterString.IndexOfAny(new[] { '!', '(', ')', '~', '=' }) != -1)
+    
+        public override string ToString()
         {
-            throw new ArgumentException("Complex test filter expressions are not supported today. The only filters supported today are the simple form supported in 'dotnet test --filter' (substrings of the test's fully qualified name). If further filtering options are desired, file an issue on dotnet/runtime for support.", nameof(filterString));
+            return $"!({_inner})";
         }
-        _filter = new NameClause(TermKind.FullyQualifiedName, filterString, substring: true);
     }
 
-    public TestFilter(ISearchClause filter)
+    private readonly ISearchClause? _filter;
+
+    // Test exclusion list is a compatibility measure allowing for a smooth migration
+    // away from the legacy issues.targets issue tracking system. Before we migrate
+    // all tests to the new model, it's easier to keep bug exclusions in the existing
+    // issues.targets file as a split model would be very confusing for developers
+    // and test monitors.
+    private readonly HashSet<string>? _testExclusionList;
+
+    public TestFilter(string? filterString, HashSet<string>? testExclusionList)
+    {
+        if (filterString is not null)
+        {
+            if (filterString.IndexOfAny(new[] { '!', '(', ')', '~', '=' }) != -1)
+            {
+                throw new ArgumentException("Complex test filter expressions are not supported today. The only filters supported today are the simple form supported in 'dotnet test --filter' (substrings of the test's fully qualified name). If further filtering options are desired, file an issue on dotnet/runtime for support.", nameof(filterString));
+            }
+            _filter = new NameClause(TermKind.FullyQualifiedName, filterString, substring: true);
+        }
+        _testExclusionList = testExclusionList;
+    }
+
+    public TestFilter(ISearchClause? filter, HashSet<string>? testExclusionList)
     {
         _filter = filter;
+        _testExclusionList = testExclusionList;
     }
 
-    public bool ShouldRunTest(string fullyQualifiedName, string displayName, string[]? traits = null) => _filter is null ? true : _filter.IsMatch(fullyQualifiedName, displayName, traits ?? Array.Empty<string>());
+    public bool ShouldRunTest(string fullyQualifiedName, string displayName, string[]? traits = null)
+    {
+        if (_testExclusionList is not null && _testExclusionList.Contains(displayName.Replace("\\", "/")))
+        {
+            return false;
+        }
+        if (_filter is null)
+        {
+            return true;
+        }
+        return _filter.IsMatch(fullyQualifiedName, displayName, traits ?? Array.Empty<string>());
+    }
+    
+    public static HashSet<string> LoadTestExclusionList()
+    {
+        HashSet<string> output = new ();
+
+        // Try reading the exclusion list as a base64-encoded semicolon-delimited string as a commmand-line arg.
+        string[] arguments = Environment.GetCommandLineArgs();
+        string? testExclusionListArg = arguments.FirstOrDefault(arg => arg.StartsWith("--exclusion-list="));
+        if (testExclusionListArg is not null)
+        {
+            string testExclusionListPathFromCommandLine = testExclusionListArg.Substring("--exclusion-list=".Length);
+            output.UnionWith(File.ReadAllLines(testExclusionListPathFromCommandLine));
+        }
+
+        // Try reading the exclusion list as a line-delimited file.
+        string? testExclusionListPath = Environment.GetEnvironmentVariable("TestExclusionListPath");
+        if (!string.IsNullOrEmpty(testExclusionListPath))
+        {
+            output.UnionWith(File.ReadAllLines(testExclusionListPath));
+        }
+        return output;
+    }
 }

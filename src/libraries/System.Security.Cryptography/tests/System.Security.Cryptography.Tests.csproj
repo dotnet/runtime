@@ -6,10 +6,23 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
+  <ItemGroup>
+    <RdXmlFile Include="default.rd.xml" />
+  </ItemGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
-    <UseAndroidCrypto Condition="'$(TargetPlatformIdentifier)' == 'Android'">true</UseAndroidCrypto>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser'">
+    <HelixTargetsFile>wasm.helix.targets</HelixTargetsFile>
+
+    <WasmXHarnessMonoArgs Condition="'$(ContinuousIntegrationBuild)' != 'true' and '$(UseSubtleCryptoForTests)' == 'true'">$(WasmXHarnessMonoArgs) --setenv=TEST_EXPECT_SUBTLE_CRYPTO=true</WasmXHarnessMonoArgs>
+    <WasmXHarnessArgs Condition="'$(ContinuousIntegrationBuild)' != 'true' and '$(UseSubtleCryptoForTests)' == 'true'">$(WasmXHarnessArgs) --web-server-use-cop</WasmXHarnessArgs>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'Android'">
+    <UseAndroidCrypto>true</UseAndroidCrypto>
+    <XUnitSingleThreadedMode>true</XUnitSingleThreadedMode>
+    <XUnitUseRandomizedTestOrderer>true</XUnitUseRandomizedTestOrderer>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\ConnectedStreams.cs"
@@ -24,6 +37,8 @@
              Link="ProductionCode\Common\System\Net\MultiArrayBuffer.cs" />
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs"
              Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\SignatureSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\SignatureSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.Data.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.Data.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.cs"
@@ -265,6 +280,7 @@
     <Compile Include="Sha384ManagedTests.cs" />
     <Compile Include="Sha512Tests.cs" />
     <Compile Include="Sha512ManagedTests.cs" />
+    <Compile Include="SignatureAlgorithmHashTests.cs" />
     <Compile Include="SignatureDescriptionTests.cs" />
     <Compile Include="SimpleHashAlgorithmTest.cs" />
     <Compile Include="StreamHelpers.cs" />
@@ -275,6 +291,9 @@
     <Compile Include="TripleDesProvider.cs" />
     <Compile Include="TripleDesTests.cs" />
     <Compile Include="ZeroMemoryTests.cs" />
+    <Compile Include="X509Certificates\ChainPolicyTests.cs" />
+    <Compile Include="X509Certificates\CrlDistPointBuilderTests.cs" />
+    <Compile Include="X509Certificates\X500DistinguishedNameBuilderTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="DefaultECDsaProvider.Windows.cs" />
@@ -295,6 +314,9 @@
              Link="Common\Interop\Android\System.Security.Cryptography.Native.Android\Interop.Initialization.cs" />
     <Compile Include="DefaultECDsaProvider.Android.cs" />
     <Compile Include="DefaultECDiffieHellmanProvider.Android.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
+    <Compile Include="AesTests.Browser.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)StreamConformanceTests\StreamConformanceTests.csproj" />

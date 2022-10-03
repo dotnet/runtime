@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections;
 using Xunit;
 using Xunit.Sdk;
+using System.Reflection;
 
 namespace System.DirectoryServices.Tests
 {
@@ -13,6 +14,13 @@ namespace System.DirectoryServices.Tests
     {
         internal static bool IsLdapConfigurationExist => LdapConfiguration.Configuration != null;
         internal static bool IsActiveDirectoryServer => IsLdapConfigurationExist && LdapConfiguration.Configuration.IsActiveDirectoryServer;
+
+        [Fact]
+        public void TestGetAllTypes()
+        {
+            Type[] allTypes = typeof(DirectoryEntry).Assembly.GetTypes();
+            Assert.Contains(typeof(DirectoryEntry), allTypes);
+        }
 
         [ConditionalFact(nameof(IsLdapConfigurationExist))]
         public void TestOU() // adding and removing organization unit

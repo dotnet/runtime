@@ -3,4 +3,4 @@ MembersMustExist : Member 'protected void System.Diagnostics.Tracing.EventCounte
 CannotMakeTypeAbstract : Type 'System.Diagnostics.Tracing.EventListener' is abstract in the reference but is not abstract in the implementation.
 CannotMakeMoreVisible : Visibility of member 'System.Diagnostics.Tracing.EventListener..ctor()' is 'protected' in the reference but 'public' in the implementation.
 CannotMakeMoreVisible : Visibility of member 'System.Diagnostics.Tracing.EventListener.EventSourceIndex(System.Diagnostics.Tracing.EventSource)' is 'protected' in the reference but 'public' in the implementation.
-Total Issues: 4
+Total Issues: 8

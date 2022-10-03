@@ -770,7 +770,7 @@ protected:
 // exception.  The FRAME_ATTR_RESUMABLE flag tells
 // the GC that the preceding frame needs to be treated
 // like the top of stack (with the important implication that
-// caller-save-regsiters will be potential roots).
+// caller-save-registers will be potential roots).
 //-----------------------------------------------------------------------------
 #ifdef FEATURE_HIJACK
 //-----------------------------------------------------------------------------
@@ -860,6 +860,9 @@ public:
 #elif defined(TARGET_ARM64)
             Object** firstIntReg = (Object**)&this->GetContext()->X0;
             Object** lastIntReg  = (Object**)&this->GetContext()->X28;
+#elif defined(TARGET_LOONGARCH64)
+            Object** firstIntReg = (Object**)&this->GetContext()->Tp;
+            Object** lastIntReg  = (Object**)&this->GetContext()->S8;
 #else
             _ASSERTE(!"nyi for platform");
 #endif
@@ -948,7 +951,7 @@ public:
 
     //---------------------------------------------------------------
     // Gets value indicating whether the generic parameter type
-    // argument should be supressed.
+    // argument should be suppressed.
     //---------------------------------------------------------------
     virtual BOOL SuppressParamTypeArg()
     {
@@ -1901,6 +1904,10 @@ protected:
     TADDR           m_ReturnAddress;
     TADDR           m_x8; // ret buff arg
     ArgumentRegisters m_argumentRegisters;
+#elif defined (TARGET_LOONGARCH64)
+    TADDR           m_fp;
+    TADDR           m_ReturnAddress;
+    ArgumentRegisters m_argumentRegisters;
 #else
     TADDR           m_ReturnAddress;  // return address into unmanaged code
 #endif
@@ -2119,7 +2126,7 @@ public:
         return TYPE_INTERCEPTION;
     }
 
-    // Our base class is a a M2U TransitionType; but we're not. So override and set us back to None.
+    // Our base class is an M2U TransitionType; but we're not. So override and set us back to None.
     ETransitionType GetTransitionType()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2380,7 +2387,7 @@ public:
         return INTERCEPTION_PRESTUB;
     }
 
-    // Our base class is a a M2U TransitionType; but we're not. So override and set us back to None.
+    // Our base class is an M2U TransitionType; but we're not. So override and set us back to None.
     virtual ETransitionType GetTransitionType()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -2421,6 +2428,10 @@ public:
     GCFrame(Thread *pThread, OBJECTREF *pObjRefs, UINT numObjRefs, BOOL maybeInterior);
     ~GCFrame();
 
+    // Push and pop this frame from the thread's stack.
+    void Push(Thread* pThread);
+    void Pop();
+
 #endif // DACCESS_COMPILE
 
     void GcScanRoots(promote_func *fn, ScanContext* sc);
@@ -2446,9 +2457,9 @@ public:
 
 private:
     PTR_GCFrame   m_Next;
+    PTR_Thread    m_pCurThread;
     PTR_OBJECTREF m_pObjRefs;
     UINT          m_numObjRefs;
-    PTR_Thread    m_pCurThread;
     BOOL          m_MaybeInterior;
 };
 
@@ -3101,7 +3112,7 @@ private:
 
 //-----------------------------------------------------------------------------
 // FrameWithCookie is used to declare a Frame in source code with a cookie
-// immediately preceeding it.
+// immediately preceding it.
 // This is just a specialized version of GSCookieFor<T>
 //
 // For Frames that are set up by stubs, the stub is responsible for setting up
@@ -3310,7 +3321,7 @@ public:
 //     uses "sizeof" to count the OBJECTREF's.
 //
 //   - GCPROTECT_BEGIN spiritually violates our normal convention of not passing
-//     non-const refernce arguments. Unfortunately, this is necessary in
+//     non-const reference arguments. Unfortunately, this is necessary in
 //     order for the sizeof thing to work.
 //
 //   - GCPROTECT_BEGIN does _not_ zero out the OBJECTREF's. You must have

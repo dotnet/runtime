@@ -8,24 +8,26 @@ internal static partial class Interop
 {
     internal const short KEY_EVENT = 1;
 
-    // Windows's KEY_EVENT_RECORD
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal struct KeyEventRecord
+    internal struct KEY_EVENT_RECORD
     {
-        internal BOOL keyDown;
-        internal short repeatCount;
-        internal short virtualKeyCode;
-        internal short virtualScanCode;
-        internal ushort uChar; // Union between WCHAR and ASCII char
-        internal int controlKeyState;
+        internal BOOL bKeyDown;
+        internal ushort wRepeatCount;
+        internal ushort wVirtualKeyCode;
+        internal ushort wVirtualScanCode;
+        private ushort _uChar; // Union between WCHAR and ASCII char
+        internal uint dwControlKeyState;
+
+        // _uChar is stored as short to avoid any ambiguity for interop marshaling
+        internal char uChar => (char)_uChar;
     }
 
     // Really, this is a union of KeyEventRecords and other types.
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    internal struct InputRecord
+    internal struct INPUT_RECORD
     {
-        internal short eventType;
-        internal KeyEventRecord keyEvent;
+        internal ushort EventType;
+        internal KEY_EVENT_RECORD keyEvent;
         // This struct is a union!  Word alignment should take care of padding!
     }
 
@@ -34,6 +36,6 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Kernel32, EntryPoint = "ReadConsoleInputW",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool ReadConsoleInput(IntPtr hConsoleInput, out InputRecord buffer, int numInputRecords_UseOne, out int numEventsRead);
+        internal static partial bool ReadConsoleInput(IntPtr hConsoleInput, out INPUT_RECORD buffer, int numInputRecords_UseOne, out int numEventsRead);
     }
 }

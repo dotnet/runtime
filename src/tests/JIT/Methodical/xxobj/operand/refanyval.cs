@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace JitTest
+namespace JitTest_refanyval_operand_cs
 {
-    internal struct Test
+    public struct Test
     {
         private int _m_v;
 
@@ -46,7 +47,8 @@ namespace JitTest
             return T._m_v;
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             if (refanyval_ldobj() != 0)
             {

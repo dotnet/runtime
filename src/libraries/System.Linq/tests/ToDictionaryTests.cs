@@ -336,7 +336,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        public void EmtpySource()
+        public void EmptySource()
         {
             int[] elements = new int[] { };
             string[] keys = new string[] { };

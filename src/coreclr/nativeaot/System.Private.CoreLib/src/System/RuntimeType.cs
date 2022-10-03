@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System
@@ -20,7 +21,7 @@ namespace System
             // For desktop compatibility, do not bounce an incoming integer that's the wrong size.
             // Do a value-preserving cast of both it and the enum values and do a 64-bit compare.
 
-            if (!IsEnum)
+            if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum);
 
             return Enum.GetEnumName(this, rawValue);
@@ -28,7 +29,7 @@ namespace System
 
         public sealed override string[] GetEnumNames()
         {
-            if (!IsEnum)
+            if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
             string[] ret = Enum.InternalGetNames(this);
@@ -39,7 +40,7 @@ namespace System
 
         public sealed override Type GetEnumUnderlyingType()
         {
-            if (!IsEnum)
+            if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
             return Enum.InternalGetUnderlyingType(this);
@@ -50,8 +51,8 @@ namespace System
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
 
-            if (!IsEnum)
-                throw new ArgumentException(SR.Arg_MustBeEnum);
+            if (!IsActualEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
             if (value is string valueAsString)
             {
@@ -82,7 +83,7 @@ namespace System
                 else
                 {
                     Type underlyingType = Enum.InternalGetUnderlyingType(this);
-                    if (!(underlyingType.TypeHandle.ToEETypePtr() == value.EETypePtr))
+                    if (!(underlyingType.TypeHandle.ToEETypePtr() == value.GetEETypePtr()))
                         throw new ArgumentException(SR.Format(SR.Arg_EnumUnderlyingTypeAndObjectMustBeSameType, value.GetType(), underlyingType));
                 }
 
@@ -93,7 +94,7 @@ namespace System
         [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetValues<TEnum> overload instead.")]
         public sealed override Array GetEnumValues()
         {
-            if (!IsEnum)
+            if (!IsActualEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
             Array values = Enum.GetEnumInfo(this).ValuesAsUnderlyingType;
@@ -109,5 +110,16 @@ namespace System
             Array.Copy(values, result, values.Length);
             return result;
         }
+
+        public sealed override Array GetEnumValuesAsUnderlyingType()
+        {
+            if (!IsActualEnum)
+                throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
+
+            return (Array)Enum.GetEnumInfo(this).ValuesAsUnderlyingType.Clone();
+        }
+
+        internal bool IsActualEnum
+            => TryGetEEType(out EETypePtr eeType) && eeType.IsEnum;
     }
 }

@@ -443,7 +443,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
 
                 if (block != callFinally)
                 {
-                    JITDUMP("EH#%u found unexpected callfinally " FMT_BB "; skipping.\n");
+                    JITDUMP("EH#%u found unexpected callfinally " FMT_BB "; skipping.\n", XTnum, block->bbNum);
                     verifiedSingleCallfinally = false;
                     break;
                 }
@@ -454,7 +454,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
 
         if (!verifiedSingleCallfinally)
         {
-            JITDUMP("EH#%u -- unexpectedly -- has multiple callfinallys; skipping.\n");
+            JITDUMP("EH#%u -- unexpectedly -- has multiple callfinallys; skipping.\n", XTnum);
             XTnum++;
             assert(verifiedSingleCallfinally);
             continue;
@@ -1022,7 +1022,7 @@ PhaseStatus Compiler::fgCloneFinally()
         //  try { } catch { } finally { }
         //
         // will have two call finally blocks, one for the normal exit
-        // from the try, and the the other for the exit from the
+        // from the try, and the other for the exit from the
         // catch. They'll both pass the same return point which is the
         // statement after the finally, so they can share the clone.
         //
@@ -1739,7 +1739,7 @@ PhaseStatus Compiler::fgMergeFinallyChains()
             {
                 // The callfinally must be empty, so that we can
                 // safely retarget anything that branches here to
-                // another callfinally with the same contiuation.
+                // another callfinally with the same continuation.
                 assert(currentBlock->isEmpty());
 
                 // This callfinally invokes the finally for this try.
@@ -1871,7 +1871,7 @@ bool Compiler::fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
     BasicBlock* const canonicalCallFinally = continuationMap[continuationBlock];
     assert(canonicalCallFinally != nullptr);
 
-    // If the block already jumps to the canoncial call finally, no work needed.
+    // If the block already jumps to the canonical call finally, no work needed.
     if (block->bbJumpDest == canonicalCallFinally)
     {
         JITDUMP(FMT_BB " already canonical\n", block->bbNum);
@@ -2215,7 +2215,7 @@ PhaseStatus Compiler::fgTailMergeThrows()
 }
 
 //------------------------------------------------------------------------
-// fgTailMergeThrowsFallThroughHelper: fixup flow for fall throughs to mergable throws
+// fgTailMergeThrowsFallThroughHelper: fixup flow for fall throughs to mergeable throws
 //
 // Arguments:
 //    predBlock - block falling through to the throw helper
@@ -2261,7 +2261,7 @@ void Compiler::fgTailMergeThrowsFallThroughHelper(BasicBlock* predBlock,
 }
 
 //------------------------------------------------------------------------
-// fgTailMergeThrowsJumpToHelper: fixup flow for jumps to mergable throws
+// fgTailMergeThrowsJumpToHelper: fixup flow for jumps to mergeable throws
 //
 // Arguments:
 //    predBlock - block jumping to the throw helper

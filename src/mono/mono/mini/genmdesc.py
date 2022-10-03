@@ -2,7 +2,7 @@
 
 #
 # This tool is used to generate the cpu-<ARCH>.h files used by the JIT. The input is the
-# cpu-<ARCH>.md file, along with the instruction metadata in mini-ops.h.
+# cpu-<ARCH>.mdesc file, along with the instruction metadata in mini-ops.h.
 #
 
 import sys
@@ -23,9 +23,8 @@ allowed_defines = { "TARGET_X86" : 1,
                     "TARGET_ARM" : 1,
                     "TARGET_ARM64" : 1,
                     "TARGET_POWERPC" : 1,
-                    "TARGET_SPARC" : 1,
+                    "TARGET_POWERPC64" : 1,
                     "TARGET_S390X" : 1,
-                    "TARGET_MIPS" : 1,
                     "TARGET_RISCV" : 1,
                     "TARGET_RISCV32" : 1,
                     "TARGET_RISCV64" : 1,

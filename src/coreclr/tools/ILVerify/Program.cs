@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
-using System.CommandLine.Invocation;
+using System.CommandLine.Parsing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -41,42 +41,6 @@ namespace ILVerify
                     patternList.Add(new Regex(pattern, RegexOptions.Compiled));
             }
             return patternList;
-        }
-
-        public class Options
-        {
-            public string[] InputFilePath { get; set; }
-            public string[] Reference { get; set; }
-            public string SystemModule { get; set; }
-            public bool SanityChecks { get; set; }
-            public string[] Include { get; set; }
-            public FileInfo IncludeFile { get; set; }
-            public string[] Exclude { get; set; }
-            public FileInfo ExcludeFile { get; set; }
-            public string[] IgnoreError { get; set; }
-            public FileInfo IgnoreErrorFile { get; set; }
-            public bool Statistics { get; set; }
-            public bool Verbose { get; set; }
-            public bool Tokens { get; set; }
-        }
-
-        public static RootCommand RootCommand()
-        {
-            RootCommand command = new RootCommand();
-            command.AddArgument(new Argument<string[]>("input-file-path", "Input file(s)") { Arity = new ArgumentArity(1, Int32.MaxValue) });
-            command.AddOption(new Option<string[]>(new[] { "--reference", "-r" }, "Reference metadata from the specified assembly"));
-            command.AddOption(new Option<string>(new[] { "--system-module", "-s" }, "System module name (default: mscorlib)"));
-            command.AddOption(new Option<bool>(new[] { "--sanity-checks", "-c" }, "Check for valid constructs that are likely mistakes"));
-            command.AddOption(new Option<string[]>(new[] { "--include", "-i" }, "Use only methods/types/namespaces, which match the given regular expression(s)"));
-            command.AddOption(new Option<FileInfo>(new[] { "--include-file" }, "Same as --include, but the regular expression(s) are declared line by line in the specified file.").ExistingOnly());
-            command.AddOption(new Option<string[]>(new[] { "--exclude", "-e" }, "Skip methods/types/namespaces, which match the given regular expression(s)"));
-            command.AddOption(new Option<FileInfo>(new[] { "--exclude-file" }, "Same as --exclude, but the regular expression(s) are declared line by line in the specified file.").ExistingOnly());
-            command.AddOption(new Option<string[]>(new[] { "--ignore-error", "-g" }, "Ignore errors, which match the given regular expression(s)"));
-            command.AddOption(new Option<FileInfo>(new[] { "--ignore-error-file" }, "Same as --ignore-error, but the regular expression(s) are declared line by line in the specified file.").ExistingOnly());
-            command.AddOption(new Option<bool>(new[] { "--statistics" }, "Print verification statistics"));
-            command.AddOption(new Option<bool>(new[] { "--verbose", "-v" }, "Verbose output"));
-            command.AddOption(new Option<bool>(new[] { "--tokens", "-t" }, "Include metadata tokens in error messages"));
-            return command;
         }
 
         private Program(Options options)
@@ -489,29 +453,118 @@ namespace ILVerify
             return null;
         }
 
-        private static int Run(Options options)
+        //
+        // Command line parsing
+        //
+
+        private class ILVerifyRootCommand : RootCommand
         {
-            try
+            public Argument<string[]> InputFilePath { get; } =
+                new("input-file-path", "Input file(s)") { Arity = ArgumentArity.OneOrMore };
+            public Option<string[]> Reference { get; } =
+                new(new[] { "--reference", "-r" }, "Reference metadata from the specified assembly");
+            public Option<string> SystemModule { get; } =
+                new(new[] { "--system-module", "-s" }, "System module name (default: mscorlib)");
+            public Option<bool> SanityChecks { get; } =
+                new(new[] { "--sanity-checks", "-c" }, "Check for valid constructs that are likely mistakes");
+            public Option<string[]> Include { get; } =
+                new(new[] { "--include", "-i" }, "Use only methods/types/namespaces, which match the given regular expression(s)");
+            public Option<FileInfo> IncludeFile { get; } =
+                new Option<FileInfo>(new[] { "--include-file" }, "Same as --include, but the regular expression(s) are declared line by line in the specified file.").ExistingOnly();
+            public Option<string[]> Exclude { get; } =
+                new(new[] { "--exclude", "-e" }, "Skip methods/types/namespaces, which match the given regular expression(s)");
+            public Option<FileInfo> ExcludeFile { get; } =
+                new Option<FileInfo>(new[] { "--exclude-file" }, "Same as --exclude, but the regular expression(s) are declared line by line in the specified file.").ExistingOnly();
+            public Option<string[]> IgnoreError { get; } =
+                new(new[] { "--ignore-error", "-g" }, "Ignore errors, which match the given regular expression(s)");
+            public Option<FileInfo> IgnoreErrorFile { get; } =
+                new Option<FileInfo>(new[] { "--ignore-error-file" }, "Same as --ignore-error, but the regular expression(s) are declared line by line in the specified file.").ExistingOnly();
+            public Option<bool> Statistics { get; } =
+                new(new[] { "--statistics" }, "Print verification statistics");
+            public Option<bool> Verbose { get; } =
+                new(new[] { "--verbose", "-v" }, "Verbose output");
+            public Option<bool> Tokens { get; } =
+                new(new[] { "--tokens", "-t" }, "Include metadata tokens in error messages");
+
+            public ILVerifyRootCommand()
+                : base("Tool for verifying MSIL code based on ECMA-335.")
             {
-                return new Program(options).Run();
-            }
-            catch (CommandLineException e)
-            {
-                Console.WriteLine("Error: " + e.Message);
-                return 1;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Error: " + e.ToString());
-                return 1;
+                AddArgument(InputFilePath);
+                AddOption(Reference);
+                AddOption(SystemModule);
+                AddOption(SanityChecks);
+                AddOption(Include);
+                AddOption(IncludeFile);
+                AddOption(Exclude);
+                AddOption(ExcludeFile);
+                AddOption(IgnoreError);
+                AddOption(IgnoreErrorFile);
+                AddOption(Statistics);
+                AddOption(Verbose);
+                AddOption(Tokens);
+
+                this.SetHandler(context =>
+                {
+                    try
+                    {
+                        context.ExitCode = new Program(new Options(this, context.ParseResult)).Run();
+                    }
+                    catch (Exception e)
+                    {
+                        Console.ResetColor();
+                        Console.ForegroundColor = ConsoleColor.Red;
+
+                        // Omit the stacktrace from the error (different from the default System.CommandLine exception handler)
+                        Console.Error.WriteLine("Error: " + e.Message);
+
+                        Console.ResetColor();
+
+                        context.ExitCode = 1;
+                    }
+                });
             }
         }
 
-        private static async Task<int> Main(string[] args)
+        private class Options
         {
-            var command = RootCommand();
-            command.Handler = CommandHandler.Create<Options>(Run);
-            return await command.InvokeAsync(args);
+            public Options(ILVerifyRootCommand cmd, ParseResult res)
+            {
+                InputFilePath = res.GetValueForArgument(cmd.InputFilePath);
+                Reference = res.GetValueForOption(cmd.Reference);
+                SystemModule = res.GetValueForOption(cmd.SystemModule);
+                SanityChecks = res.GetValueForOption(cmd.SanityChecks);
+                Include = res.GetValueForOption(cmd.Include);
+                IncludeFile = res.GetValueForOption(cmd.IncludeFile);
+                Exclude = res.GetValueForOption(cmd.Exclude);
+                ExcludeFile = res.GetValueForOption(cmd.ExcludeFile);
+                IgnoreError = res.GetValueForOption(cmd.IgnoreError);
+                IgnoreErrorFile = res.GetValueForOption(cmd.IgnoreErrorFile);
+                Statistics = res.GetValueForOption(cmd.Statistics);
+                Verbose = res.GetValueForOption(cmd.Verbose);
+                Tokens = res.GetValueForOption(cmd.Tokens);
+            }
+
+            public string[] InputFilePath { get; }
+            public string[] Reference { get; }
+            public string SystemModule { get; }
+            public bool SanityChecks { get; }
+            public string[] Include { get; }
+            public FileInfo IncludeFile { get; }
+            public string[] Exclude { get; }
+            public FileInfo ExcludeFile { get; }
+            public string[] IgnoreError { get; }
+            public FileInfo IgnoreErrorFile { get; }
+            public bool Statistics { get; }
+            public bool Verbose { get; }
+            public bool Tokens { get; }
         }
+
+        private static int Main(string[] args) =>
+            new CommandLineBuilder(new ILVerifyRootCommand())
+                .UseVersionOption()
+                .UseHelp()
+                .UseParseErrorReporting()
+                .Build()
+                .Invoke(args);
     }
 }

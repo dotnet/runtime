@@ -90,7 +90,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_eccPrivate ?? (s_eccPrivate = new CngKeyBlobFormat("ECCPRIVATEBLOB")); // BCRYPT_ECCPRIVATE_BLOB
+                return s_eccPrivate ??= new CngKeyBlobFormat("ECCPRIVATEBLOB"); // BCRYPT_ECCPRIVATE_BLOB
             }
         }
 
@@ -98,7 +98,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_eccPublic ?? (s_eccPublic = new CngKeyBlobFormat("ECCPUBLICBLOB")); // BCRYPT_ECCPUBLIC_BLOB
+                return s_eccPublic ??= new CngKeyBlobFormat("ECCPUBLICBLOB"); // BCRYPT_ECCPUBLIC_BLOB
             }
         }
 
@@ -106,7 +106,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_eccFullPrivate ?? (s_eccFullPrivate = new CngKeyBlobFormat("ECCFULLPRIVATEBLOB")); // BCRYPT_ECCFULLPRIVATE_BLOB
+                return s_eccFullPrivate ??= new CngKeyBlobFormat("ECCFULLPRIVATEBLOB"); // BCRYPT_ECCFULLPRIVATE_BLOB
             }
         }
 
@@ -114,7 +114,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_eccFullPublic ?? (s_eccFullPublic = new CngKeyBlobFormat("ECCFULLPUBLICBLOB")); // BCRYPT_ECCFULLPUBLIC_BLOB
+                return s_eccFullPublic ??= new CngKeyBlobFormat("ECCFULLPUBLICBLOB"); // BCRYPT_ECCFULLPUBLIC_BLOB
             }
         }
 
@@ -122,7 +122,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_genericPrivate ?? (s_genericPrivate = new CngKeyBlobFormat("PRIVATEBLOB")); // BCRYPT_PRIVATE_KEY_BLOB
+                return s_genericPrivate ??= new CngKeyBlobFormat("PRIVATEBLOB"); // BCRYPT_PRIVATE_KEY_BLOB
             }
         }
 
@@ -130,7 +130,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_genericPublic ?? (s_genericPublic = new CngKeyBlobFormat("PUBLICBLOB")); // BCRYPT_PUBLIC_KEY_BLOB
+                return s_genericPublic ??= new CngKeyBlobFormat("PUBLICBLOB"); // BCRYPT_PUBLIC_KEY_BLOB
             }
         }
 
@@ -138,7 +138,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_opaqueTransport ?? (s_opaqueTransport = new CngKeyBlobFormat("OpaqueTransport")); // NCRYPT_OPAQUETRANSPORT_BLOB
+                return s_opaqueTransport ??= new CngKeyBlobFormat("OpaqueTransport"); // NCRYPT_OPAQUETRANSPORT_BLOB
             }
         }
 
@@ -146,7 +146,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return s_pkcs8Private ?? (s_pkcs8Private = new CngKeyBlobFormat("PKCS8_PRIVATEKEY")); // NCRYPT_PKCS8_PRIVATE_KEY_BLOB
+                return s_pkcs8Private ??= new CngKeyBlobFormat("PKCS8_PRIVATEKEY"); // NCRYPT_PKCS8_PRIVATE_KEY_BLOB
             }
         }
 

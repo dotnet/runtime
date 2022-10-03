@@ -14,7 +14,9 @@
 .assembly extern xunit.core {}
 
 
-.class private auto ansi beforefieldinit test extends [mscorlib]System.Object
+.namespace Test_throwinnestedcatch_il
+{
+.class public auto ansi beforefieldinit test extends [mscorlib]System.Object
 {
   .field private static class [eh_common]TestUtil.TestLog testLog
   .method private hidebysig specialname rtspecialname static void  .cctor() cil managed
@@ -39,7 +41,7 @@
 
     ldloc.s    expectedOut
     newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
-    stsfld     class [eh_common]TestUtil.TestLog test::testLog
+    stsfld     class [eh_common]TestUtil.TestLog Test_throwinnestedcatch_il.test::testLog
     ret
   } 
 
@@ -50,7 +52,7 @@
     )
     .entrypoint
 
-    ldsfld     class [eh_common]TestUtil.TestLog test::testLog
+    ldsfld     class [eh_common]TestUtil.TestLog Test_throwinnestedcatch_il.test::testLog
     callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
       
     .try
@@ -90,12 +92,13 @@
       leave IL_END
     }
     IL_END:
-    ldsfld     class [eh_common]TestUtil.TestLog test::testLog
+    ldsfld     class [eh_common]TestUtil.TestLog Test_throwinnestedcatch_il.test::testLog
     callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
       
-    ldsfld     class [eh_common]TestUtil.TestLog test::testLog
+    ldsfld     class [eh_common]TestUtil.TestLog Test_throwinnestedcatch_il.test::testLog
     callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
 
     ret
   }  
+}
 }

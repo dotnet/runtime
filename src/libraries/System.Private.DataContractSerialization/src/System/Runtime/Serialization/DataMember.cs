@@ -122,32 +122,10 @@ namespace System.Runtime.Serialization
         }
 
         private FastInvokerBuilder.Getter? _getter;
-        internal FastInvokerBuilder.Getter Getter
-        {
-            get
-            {
-                if (_getter == null)
-                {
-                    _getter = FastInvokerBuilder.CreateGetter(MemberInfo);
-                }
-
-                return _getter;
-            }
-        }
+        internal FastInvokerBuilder.Getter Getter => _getter ??= FastInvokerBuilder.CreateGetter(MemberInfo);
 
         private FastInvokerBuilder.Setter? _setter;
-        internal FastInvokerBuilder.Setter Setter
-        {
-            get
-            {
-                if (_setter == null)
-                {
-                    _setter = FastInvokerBuilder.CreateSetter(MemberInfo);
-                }
-
-                return _setter;
-            }
-        }
+        internal FastInvokerBuilder.Setter Setter => _setter ??= FastInvokerBuilder.CreateSetter(MemberInfo);
 
         private sealed class CriticalHelper
         {

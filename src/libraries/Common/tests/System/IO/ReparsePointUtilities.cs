@@ -19,15 +19,18 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
-public static class MountHelper
+public static partial class MountHelper
 {
-    [DllImport("kernel32.dll", EntryPoint = "GetVolumeNameForVolumeMountPointW", CharSet = CharSet.Unicode, BestFitMapping = false, SetLastError = true)]
-    private static extern bool GetVolumeNameForVolumeMountPoint(string volumeName, StringBuilder uniqueVolumeName, int uniqueNameBufferCapacity);
+    [LibraryImport("kernel32.dll", EntryPoint = "GetVolumeNameForVolumeMountPointW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+    [return:MarshalAs(UnmanagedType.Bool)]
+    private static partial bool GetVolumeNameForVolumeMountPoint(string volumeName, char[] uniqueVolumeName, int uniqueNameBufferCapacity);
     // unique volume name must be "\\?\Volume{GUID}\"
-    [DllImport("kernel32.dll", EntryPoint = "SetVolumeMountPointW", CharSet = CharSet.Unicode, BestFitMapping = false, SetLastError = true)]
-    private static extern bool SetVolumeMountPoint(string mountPoint, string uniqueVolumeName);
-    [DllImport("kernel32.dll", EntryPoint = "DeleteVolumeMountPointW", CharSet = CharSet.Unicode, BestFitMapping = false, SetLastError = true)]
-    private static extern bool DeleteVolumeMountPoint(string mountPoint);
+    [LibraryImport("kernel32.dll", EntryPoint = "SetVolumeMountPointW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+    [return:MarshalAs(UnmanagedType.Bool)]
+    private static partial bool SetVolumeMountPoint(string mountPoint, string uniqueVolumeName);
+    [LibraryImport("kernel32.dll", EntryPoint = "DeleteVolumeMountPointW", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+    [return:MarshalAs(UnmanagedType.Bool)]
+    private static partial bool DeleteVolumeMountPoint(string mountPoint);
 
     // Helper for ConditionalClass attributes
     internal static bool IsSubstAvailable => PlatformDetection.IsSubstAvailable;
@@ -83,7 +86,7 @@ public static class MountHelper
 
         bool isWindows = OperatingSystem.IsWindows();
 #endif
-        Process symLinkProcess = new Process();
+        using Process symLinkProcess = new Process();
         if (isWindows)
         {
             symLinkProcess.StartInfo.FileName = "cmd";
@@ -124,12 +127,12 @@ public static class MountHelper
 
         Console.WriteLine(string.Format("Mounting volume {0} at {1}", volumeName, mountPoint));
         bool r;
-        StringBuilder sb = new StringBuilder(1024);
-        r = GetVolumeNameForVolumeMountPoint(volumeName, sb, sb.Capacity);
+        char[] sb = new char[1024];
+        r = GetVolumeNameForVolumeMountPoint(volumeName, sb, sb.Length);
         if (!r)
             throw new Exception(string.Format("Win32 error: {0}", Marshal.GetLastPInvokeError()));
 
-        string uniqueName = sb.ToString();
+        string uniqueName = new string(sb);
         Console.WriteLine(string.Format("uniqueName: <{0}>", uniqueName));
         r = SetVolumeMountPoint(mountPoint, uniqueName);
         if (!r)
@@ -167,7 +170,7 @@ public static class MountHelper
 
     private static bool RunProcess(ProcessStartInfo startInfo)
     {
-        var process = Process.Start(startInfo);
+        using Process process = Process.Start(startInfo);
         process.WaitForExit();
         return process.ExitCode == 0;
     }

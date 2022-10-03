@@ -125,17 +125,8 @@ namespace System.Xml.Schema
                 _reader = reader;
             }
 
-            public override string? LookupNamespace(string prefix)
-            {
-                string? ns = _nsMgr.LookupNamespace(prefix);
-
-                if (ns == null)
-                {
-                    ns = _reader.LookupNamespace(prefix);
-                }
-
-                return ns;
-            }
+            public override string? LookupNamespace(string prefix) =>
+                _nsMgr.LookupNamespace(prefix) ?? _reader.LookupNamespace(prefix);
         }
 
         //////////////////////////////////////////////////////////////////////////////////////////////
@@ -703,8 +694,10 @@ namespace System.Xml.Schema
 
         internal override bool ProcessElement(string prefix, string name, string ns)
         {
-            XmlQualifiedName qname = new XmlQualifiedName(name, ns);
-            if (GetNextState(qname))
+            name ??= string.Empty;
+            ns ??= string.Empty;
+
+            if (GetNextState(name, ns))
             {
                 Push();
                 Debug.Assert(_currentEntry.InitFunc != null);
@@ -715,9 +708,9 @@ namespace System.Xml.Schema
             }
             else
             {
-                if (!IsSkipableElement(qname))
+                if (!IsSkipableElement())
                 {
-                    SendValidationEvent(SR.Sch_UnsupportedElement, qname.ToString());
+                    SendValidationEvent(SR.Sch_UnsupportedElement, XmlQualifiedName.ToString(name, ns));
                 }
                 return false;
             }
@@ -726,13 +719,15 @@ namespace System.Xml.Schema
 
         internal override void ProcessAttribute(string prefix, string name, string ns, string value)
         {
-            XmlQualifiedName qname = new XmlQualifiedName(name, ns);
+            name ??= string.Empty;
+            ns ??= string.Empty;
+
             if (_currentEntry.Attributes != null)
             {
                 for (int i = 0; i < _currentEntry.Attributes.Length; i++)
                 {
                     XsdAttributeEntry a = _currentEntry.Attributes[i];
-                    if (_schemaNames.TokenToQName[(int)a.Attribute].Equals(qname))
+                    if (_schemaNames.TokenToQName[(int)a.Attribute].Equals(name, ns))
                     {
                         try
                         {
@@ -753,10 +748,7 @@ namespace System.Xml.Schema
             {
                 if (ns == _schemaNames.NsXmlNs)
                 {
-                    if (_namespaces == null)
-                    {
-                        _namespaces = new List<XmlQualifiedName>();
-                    }
+                    _namespaces ??= new List<XmlQualifiedName>();
                     _namespaces.Add(new XmlQualifiedName((name == _schemaNames.QnXmlNs.Name) ? string.Empty : name, value));
                 }
                 else
@@ -768,7 +760,7 @@ namespace System.Xml.Schema
             }
             else
             {
-                SendValidationEvent(SR.Sch_UnsupportedAttribute, qname.ToString());
+                SendValidationEvent(SR.Sch_UnsupportedAttribute, XmlQualifiedName.ToString(name, ns));
             }
         }
 
@@ -2433,14 +2425,14 @@ namespace System.Xml.Schema
             }
         }
 
-        private bool GetNextState(XmlQualifiedName qname)
+        private bool GetNextState(string name, string ns)
         {
             if (_currentEntry.NextStates != null)
             {
                 for (int i = 0; i < _currentEntry.NextStates.Length; ++i)
                 {
                     int state = (int)_currentEntry.NextStates[i];
-                    if (_schemaNames.TokenToQName[(int)s_schemaEntries[state].Name].Equals(qname))
+                    if (_schemaNames.TokenToQName[(int)s_schemaEntries[state].Name].Equals(name, ns))
                     {
                         _nextEntry = s_schemaEntries[state];
                         return true;
@@ -2451,7 +2443,7 @@ namespace System.Xml.Schema
             return false;
         }
 
-        private bool IsSkipableElement(XmlQualifiedName qname)
+        private bool IsSkipableElement()
         {
             return ((CurrentElement == SchemaNames.Token.XsdDocumentation) ||
                     (CurrentElement == SchemaNames.Token.XsdAppInfo));

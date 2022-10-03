@@ -43,14 +43,6 @@ ep_volatile_store_eventpipe_state (EventPipeState state)
 
 static
 inline
-void
-ep_volatile_store_eventpipe_state_without_barrier (EventPipeState state)
-{
-	ep_rt_volatile_store_uint32_t_without_barrier ((volatile uint32_t *)&_ep_state, state);
-}
-
-static
-inline
 EventPipeSession *
 ep_volatile_load_session (size_t index)
 {
@@ -71,14 +63,6 @@ void
 ep_volatile_store_session (size_t index, EventPipeSession *session)
 {
 	ep_rt_volatile_store_ptr ((volatile void **)(&_ep_sessions [index]), session);
-}
-
-static
-inline
-void
-ep_volatile_store_session_without_barrier (size_t index, EventPipeSession *session)
-{
-	ep_rt_volatile_store_ptr_without_barrier ((volatile void **)(&_ep_sessions [index]), session);
 }
 
 static
@@ -107,14 +91,6 @@ ep_volatile_store_number_of_sessions (uint32_t number_of_sessions)
 
 static
 inline
-void
-ep_volatile_store_number_of_sessions_without_barrier (uint32_t number_of_sessions)
-{
-	ep_rt_volatile_store_uint32_t_without_barrier (&_ep_number_of_sessions, number_of_sessions);
-}
-
-static
-inline
 uint64_t
 ep_volatile_load_allow_write (void)
 {
@@ -123,26 +99,10 @@ ep_volatile_load_allow_write (void)
 
 static
 inline
-uint64_t
-ep_volatile_load_allow_write_without_barrier (void)
-{
-	return ep_rt_volatile_load_uint64_t_without_barrier (&_ep_allow_write);
-}
-
-static
-inline
 void
 ep_volatile_store_allow_write (uint64_t allow_write)
 {
 	ep_rt_volatile_store_uint64_t (&_ep_allow_write, allow_write);
-}
-
-static
-inline
-void
-ep_volatile_store_allow_write_without_barrier (uint64_t allow_write)
-{
-	ep_rt_volatile_store_uint64_t_without_barrier (&_ep_allow_write, allow_write);
 }
 
 /*
@@ -276,18 +236,6 @@ ep_walk_managed_stack_for_current_thread (EventPipeStackContents *stack_contents
 	return (thread != NULL) ? ep_rt_walk_managed_stack_for_thread (thread, stack_contents) : false;
 }
 
-static
-inline
-bool
-ep_walk_managed_stack_for_thread (ep_rt_thread_handle_t thread, EventPipeStackContents *stack_contents)
-{
-	EP_ASSERT (thread != NULL);
-	EP_ASSERT (stack_contents != NULL);
-
-	ep_stack_contents_reset (stack_contents);
-	return (thread != NULL) ? ep_rt_walk_managed_stack_for_thread (thread, stack_contents) : false;
-}
-
 bool
 ep_add_rundown_execution_checkpoint (
 	const ep_char8_t *name,
@@ -339,6 +287,56 @@ ep_system_time_get (EventPipeSystemTime *system_time)
 
 void
 ep_ipc_stream_factory_callback_set (EventPipeIpcStreamFactorySuspendedPortsCallback suspended_ports_callback);
+
+/*
+ * EventPipeWriteBuffer.
+ */
+
+static
+inline
+void
+ep_write_buffer_uint8_t (uint8_t **buffer, uint8_t value)
+{
+	memcpy (*buffer, &value, sizeof (value));
+	*buffer += sizeof (value);
+}
+
+#define EP_WRITE_BUFFER_INT(BITS, SIGNEDNESS) \
+static \
+inline \
+void \
+ep_write_buffer_##SIGNEDNESS##int##BITS##_t (uint8_t **buffer, SIGNEDNESS##int##BITS##_t value) \
+{ \
+	value = ep_rt_val_##SIGNEDNESS##int##BITS##_t (value); \
+	memcpy (*buffer, &value, sizeof (value)); \
+	*buffer += sizeof (value); \
+}
+
+EP_WRITE_BUFFER_INT (16, )
+EP_WRITE_BUFFER_INT (16, u)
+EP_WRITE_BUFFER_INT (32, )
+EP_WRITE_BUFFER_INT (32, u)
+EP_WRITE_BUFFER_INT (64, )
+EP_WRITE_BUFFER_INT (64, u)
+
+#undef EP_WRITE_BUFFER_INT
+
+static
+inline
+void
+ep_write_buffer_string_utf16_t (uint8_t **buf, const ep_char16_t *str, size_t len)
+{
+	memcpy (*buf, str, len);
+	*buf += len;
+}
+
+static
+inline
+void
+ep_write_buffer_timestamp (uint8_t **buffer, ep_timestamp_t value)
+{
+	ep_write_buffer_int64_t (buffer, value);
+}
 
 #else /* ENABLE_PERFTRACING */
 

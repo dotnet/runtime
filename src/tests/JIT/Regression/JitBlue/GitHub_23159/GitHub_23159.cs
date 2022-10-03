@@ -29,15 +29,15 @@ public static class GitHub_23159
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public unsafe static bool BytesOrdinalEqualsStringAndAscii(string previousValue, Span<byte> newValue)
     {
-        // We just widen the bytes to char for comparision, if either the string or the bytes are not ascii
+        // We just widen the bytes to char for comparison, if either the string or the bytes are not ascii
         // this will result in non-equality, so we don't need to specifically test for non-ascii.
         Debug.Assert(previousValue.Length == newValue.Length);
 
         // Use IntPtr values rather than int, to avoid unnessary 32 -> 64 movs on 64-bit.
-        // Unfortunately this means we also need to cast to byte* for comparisions as IntPtr doesn't
-        // support operator comparisions (e.g. <=, >, etc).
-        // Note: Pointer comparision is unsigned, so we use the compare pattern (offset + length <= count)
-        // rather than (offset <= count - length) which we'd do with signed comparision to avoid overflow.
+        // Unfortunately this means we also need to cast to byte* for comparisons as IntPtr doesn't
+        // support operator comparisons (e.g. <=, >, etc).
+        // Note: Pointer comparison is unsigned, so we use the compare pattern (offset + length <= count)
+        // rather than (offset <= count - length) which we'd do with signed comparison to avoid overflow.
         var count = (IntPtr)newValue.Length;
         var offset = (IntPtr)0;
 

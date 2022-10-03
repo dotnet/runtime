@@ -6,7 +6,7 @@
 **
 **
 **
-** Purpose: Defines a publically documentable contract for
+** Purpose: Defines a publicly documentable contract for
 ** reliability between a method and its callers, expressing
 ** what state will remain consistent in the presence of
 ** failures (ie async exceptions like thread abort) and whether

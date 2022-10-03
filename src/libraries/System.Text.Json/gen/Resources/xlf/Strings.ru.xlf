@@ -32,6 +32,16 @@
         <target state="translated">Дублирующееся имя типа.</target>
         <note />
       </trans-unit>
+      <trans-unit id="FastPathPolymorphismNotSupportedMessageFormat">
+        <source>Type '{0}' is annotated with 'JsonDerivedTypeAttribute' which is not supported in 'JsonSourceGenerationMode.Serialization'.</source>
+        <target state="translated">Тип '{0}' аннотирован атрибутом \"JsonDerivedTypeAttribute\", который не поддерживается в \"JsonSourceGenerationMode.Serialization\".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FastPathPolymorphismNotSupportedTitle">
+        <source>'JsonDerivedTypeAttribute' is not supported in 'JsonSourceGenerationMode.Serialization'.</source>
+        <target state="translated">Атрибут JsonDerivedTypeAttribute не поддерживается в \"JsonSourceGenerationMode.Serialization\".</target>
+        <note />
+      </trans-unit>
       <trans-unit id="InaccessibleJsonIncludePropertiesNotSupportedFormat">
         <source>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</source>
         <target state="translated">Элемент "{0}.{1}" аннотирован с использованием класса JsonIncludeAttribute, но генератор исходного кода не обнаруживает этот элемент.</target>

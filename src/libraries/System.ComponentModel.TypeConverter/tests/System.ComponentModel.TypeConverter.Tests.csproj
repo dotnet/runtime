@@ -65,6 +65,7 @@
     <Compile Include="DataObjectMethodAttributeTests.cs" />
     <Compile Include="DataObjectFieldAttributeTests.cs" />
     <Compile Include="DataObjectAttributeTests.cs" />
+    <Compile Include="DateOnlyConverterTests.cs" />
     <Compile Include="DateTimeConverterTests.cs" />
     <Compile Include="DateTimeOffsetConverterTests.cs" />
     <Compile Include="DecimalConverterTests.cs" />
@@ -94,6 +95,7 @@
     <Compile Include="EventDescriptorCollectionTests.cs" />
     <Compile Include="EventDescriptorTests.cs" />
     <Compile Include="GuidConverterTests.cs" />
+    <Compile Include="Int128ConverterTests.cs" />
     <Compile Include="Int16ConverterTests.cs" />
     <Compile Include="Int32ConverterTests.cs" />
     <Compile Include="Int64ConverterTests.cs" />
@@ -117,8 +119,10 @@
     <Compile Include="SampleClasses.cs" />
     <Compile Include="SByteConverterTests.cs" />
     <Compile Include="SingleConverterTests.cs" />
+    <Compile Include="HalfConverterTests.cs" />
     <Compile Include="StringConverterTests.cs" />
     <Compile Include="Timers\TimersDescriptionAttributeTests.cs" />
+    <Compile Include="TimeOnlyConverterTests.cs" />
     <Compile Include="TimeSpanConverterTests.cs" />
     <Compile Include="TypeConverterAttributeTests.cs" />
     <Compile Include="TypeConverterTests.cs" />
@@ -127,6 +131,7 @@
     <Compile Include="TypeDescriptionProviderAttributeTests.cs" />
     <Compile Include="TypeDescriptorTests.cs" />
     <Compile Include="TypeListConverterTests.cs" />
+    <Compile Include="UInt128ConverterTests.cs" />
     <Compile Include="UInt16ConverterTests.cs" />
     <Compile Include="UInt32ConverterTests.cs" />
     <Compile Include="UInt64ConverterTests.cs" />

@@ -5,8 +5,11 @@
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <!-- This test project is Windows only as it forces the use of NLS as the Globlaization platform -->
     <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
-    <UnicodeUcdVersion>13.0</UnicodeUcdVersion>
+    <UnicodeUcdVersion>14.0</UnicodeUcdVersion>
   </PropertyGroup>
+  <ItemGroup>
+    <RdXmlFile Include="..\default.rd.xml" />
+  </ItemGroup>
   <ItemGroup>
     <!-- Include tests from System.Globalization.Tests -->
     <Compile Include="NlsSwitchTests.cs" />
@@ -221,6 +224,9 @@
     <!-- Helpers -->
     <Compile Include="$(CommonTestPath)System\RandomDataGenerator.cs"
              Link="Common\System\RandomDataGenerator.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Globalization.UseNls" Value="true" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Private.Runtime.UnicodeData" Version="$(SystemPrivateRuntimeUnicodeDataVersion)" ExcludeAssets="contentFiles" GeneratePathProperty="true" />

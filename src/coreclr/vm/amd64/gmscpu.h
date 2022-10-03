@@ -176,7 +176,7 @@ inline void LazyMachState::setLazyStateFromUnwind(MachState* copy)
 EXTERN_C void LazyMachStateCaptureState(struct LazyMachState *pState);
 
 // CAPTURE_STATE captures just enough register state so that the state of the
-// processor can be deterined just after the the routine that has CAPTURE_STATE in
+// processor can be deterined just after the routine that has CAPTURE_STATE in
 // it returns.
 
 #define CAPTURE_STATE(machState, ret)                           \

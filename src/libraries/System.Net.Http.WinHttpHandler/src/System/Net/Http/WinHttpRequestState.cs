@@ -130,7 +130,7 @@ namespace System.Net.Http
         [AllowNull]
         public WinHttpTransportContext TransportContext
         {
-            get { return _transportContext ?? (_transportContext = new WinHttpTransportContext()); }
+            get { return _transportContext ??= new WinHttpTransportContext(); }
             set { _transportContext = value; }
         }
 

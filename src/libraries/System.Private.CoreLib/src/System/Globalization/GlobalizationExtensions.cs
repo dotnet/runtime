@@ -5,8 +5,10 @@ namespace System.Globalization
 {
     public static class GlobalizationExtensions
     {
-        public static StringComparer GetStringComparer(this CompareInfo compareInfo!!, CompareOptions options)
+        public static StringComparer GetStringComparer(this CompareInfo compareInfo, CompareOptions options)
         {
+            ArgumentNullException.ThrowIfNull(compareInfo);
+
             if (options == CompareOptions.Ordinal)
             {
                 return StringComparer.Ordinal;

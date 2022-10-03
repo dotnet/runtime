@@ -47,8 +47,10 @@ namespace pal
 }
 
 #ifdef TARGET_WINDOWS
+#define CDECL __cdecl
 #include <Windows.h>
 
+#define DLL_EXPORT __declspec(dllexport)
 #define MAIN __cdecl wmain
 #define W(str) L ## str
 
@@ -316,16 +318,24 @@ public:
 #include <config.h>
 #include <minipal/getexepath.h>
 
+#if __GNUC__ >= 4
+#define DLL_EXPORT __attribute__ ((visibility ("default")))
+#else
+#define DLL_EXPORT
+#endif
+#define CDECL
 #define MAIN main
 #define W(str) str
-#define FAILED(result) (result < 0)
-
+#define S_OK 0
+#define FAILED(result) (result < S_OK)
 #if !HAVE_DIRENT_D_TYPE
 #define DT_UNKNOWN 0
 #define DT_DIR 4
 #define DT_REG 8
 #define DT_LNK 10
 #endif
+
+typedef int HRESULT;
 
 namespace pal
 {

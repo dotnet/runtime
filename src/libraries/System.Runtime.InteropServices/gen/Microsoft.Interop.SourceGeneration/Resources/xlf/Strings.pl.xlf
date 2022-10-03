@@ -1,0 +1,117 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="pl" original="../Strings.resx">
+    <body>
+      <trans-unit id="ArraySizeMustBeSpecified">
+        <source>Marshalling an array from unmanaged to managed requires either the 'SizeParamIndex' or 'SizeConst' fields to be set on a 'MarshalAsAttribute' or the 'ConstantElementCount' or 'CountElementName' properties to be set on a 'MarshalUsingAttribute'.</source>
+        <target state="translated">Skierowanie tablicy z niezarządzanej do zarządzanej wymaga ustawienia pól „SizeParamIndex” lub „SizeConst” we właściwościach dla atrybutu„MarshalAsAttribute” lub wartości „ConstantElementCount” lub elementu „CountElementName” we właściwościach dla atrybutu „MarshalUsingAttribute”.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="BidirectionalMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
+        <target state="translated">Określony parametr musi być kierowany z zarządzanego do niezarządzanego i niezarządzanego do zarządzanego, ale typ marszałka „{0}” go nie obsługuje.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CollectionSizeParamTypeMustBeIntegral">
+        <source>The specified collection size parameter for an collection must be an integer type. If the size information is applied to a nested collection, the size parameter must be a collection of one less level of nesting with an integral element.</source>
+        <target state="translated">Określony parametr rozmiaru kolekcji dla kolekcji musi być liczbą całkowitą. Jeśli informacje o rozmiarze są stosowane do kolekcji zagnieżdżonej, parametr rozmiaru musi być kolekcją o jednym poziomie zagnieżdżenia mniej, o liczbie całkowitej.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConstantAndElementCountInfoDisallowed">
+        <source>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionDepth'</source>
+        <target state="translated">Tylko jedna z wartości „ConstantElementCount” lub element „ElementCountInfo” może być użyty w atrybucie „MarshalUsingAttribute” dla danego elementu „ElementIndirectionDepth”</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CyclicalCountInfo">
+        <source>This element cannot depend on '{0}' for collection size information without creating a dependency cycle</source>
+        <target state="translated">Ten element nie może zależeć od elementu „{0}” dla informacji o rozmiarze kolekcji bez tworzenia cyklu zależności</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DuplicateCountInfo">
+        <source>Count information for a given element at a given indirection level can only be specified once</source>
+        <target state="translated">Informacje o liczbie dla danego elementu na danym poziomie pośrednim można podać tylko raz</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DuplicateMarshallingInfo">
+        <source>Multiple marshalling attributes per element per indirection level is unsupported, but duplicate information was provided for indirection level {0}</source>
+        <target state="translated">Wiele atrybutów skierowania na element na poziomie pośrednim nie jest obsługiwanych, ale podano zduplikowane informacje dla poziomu pośredniego {0}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ExtraneousMarshallingInfo">
+        <source>Marshalling info was specified for 'ElementIndirectionDepth' {0}, but marshalling info was only needed for {1} level(s) of indirection</source>
+        <target state="translated">Informacje dotyczące skierowania zostały określone dla elementu „ElementIndirectionDepth” {0}, ale informacje dotyczące skierowania były potrzebne tylko dla poziomów pośrednich w liczbie {1}</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GraphHasCycles">
+        <source>The provided graph has cycles and cannot be topologically sorted.</source>
+        <target state="translated">Podany wykres zawiera cykle i nie można go posortować topologicznie.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InAttributeNotSupportedWithoutOut">
+        <source>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. The behavior of the '[In]' attribute without the '[Out]' attribute is the same as the default behavior.</source>
+        <target state="translated">Atrybut „[In]” nie jest obsługiwany, chyba że używany jest również atrybut „[Out]”. Zachowanie atrybutu „[In]” bez atrybutu „[Out]” jest takie samo jak zachowanie domyślne.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InOutAttributeByRefNotSupported">
+        <source>The '[In]' and '[Out]' attributes are unsupported on parameters passed by reference. Use the 'in', 'ref', or 'out' keywords instead.</source>
+        <target state="translated">Atrybuty „[In]” i „[Out]” nie są obsługiwane w parametrach przekazywanych przez odwołanie. Zamiast tego użyj słów kluczowych „in”, „ref” lub „out”.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InOutAttributeMarshalerNotSupported">
+        <source>The provided '[In]' and '[Out]' attributes on this parameter are unsupported on this parameter.</source>
+        <target state="translated">Podane atrybuty „[In]” i „[Out]” w tym parametrze nie są obsługiwane w tym parametrze.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</source>
+        <target state="translated">Określony parametr musi być kierowany z zarządzanego do niezarządzanego, ale typ marszałka „{0}” go nie obsługuje.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerEntryPointTypeMustMatchArity">
+        <source>The marshaller entry point type '{0}' for managed type '{1}' must have an arity of one greater than the managed type.</source>
+        <target state="translated">Typ punktu wejścia marshallera „{0}” dla typu zarządzanego „{1}” musi mieć liczbę argumentów o jeden większą niż typ zarządzany.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustBeStaticClassOrStruct">
+        <source>The marshaller type '{0}' for managed type '{1}' must be a static class or a struct.</source>
+        <target state="translated">Typ marshallera „{0}” dla typu zarządzanego „{1}” musi być statyczny.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingBoolAsUndefinedNotSupported">
+        <source>Marshalling bool without explicit marshalling information is not supported. Specify either 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="translated">Skierowanie wartości logicznej bez wyraźnych informacji o skierowaniu nie jest obsługiwane. Określ atrybut „MarshalUsingAttribute” lub atrybut „MarshalAsAttribute”.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingCharAsSpecifiedStringMarshallingNotSupported">
+        <source>Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</source>
+        <target state="translated">Znak marshallingu o wartości „StringMarshalling.{0}” nie jest obsługiwany. Zamiast tego ręcznie przekonwertuj typ znaków na żądaną reprezentację bajtów i przekaż do wygenerowanego źródła funkcji P/Invoke.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingCharAsStringMarshallingCustomNotSupported">
+        <source>Marshalling char with 'StringMarshalling.Custom' is not supported. To use a custom type marshaller, specify 'MarshalUsingAttribute'.</source>
+        <target state="translated">Znak marshallingu o wartości „StringMarshalling.Custom” nie jest obsługiwany. Aby użyć marshallera typu niestandardowego, określ atrybut „MarshalUsingAttribute”.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
+        <source>Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="translated">Ciągu lub znak marshallingu bez jawnych informacji o marshallingu nie jest obsługiwany. Określ atrybuty „LibraryImportAttribute.StringMarshalling”, „LibraryImportAttribute.StringMarshallingCustomType”, „MarshalUsingAttribute” lub „MarshalAsAttribute”.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RuntimeMarshallingMustBeDisabled">
+        <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
+        <target state="translated">Marshalling środowiska uruchomieniowego musi być wyłączony w tym projekcie przez zastosowanie do zestawu atrybutu „System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute”, aby umożliwić marshalling tego typu.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="SafeHandleByRefMustBeConcrete">
+        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
+        <target state="translated">Typ abstrakcyjny pochodzący od elementu „SafeHandle” nie może być skierowany przez odwołanie. Podany typ musi być konkretny.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
+        <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
+        <target state="translated">Określony parametr musi być kierowany z niezarządzanego do zarządzanego, ale typ marszałka „{0}” go nie obsługuje.</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

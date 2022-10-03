@@ -6,11 +6,28 @@ using System.Security.Authentication;
 
 namespace System.Net.Security
 {
-    internal sealed partial class SslConnectionInfo
+    internal partial struct SslConnectionInfo
     {
-        public SslConnectionInfo(SafeSslHandle sslContext)
+        public void UpdateSslConnectionInfo(SafeSslHandle sslContext)
         {
             Protocol = (int)MapProtocolVersion(Interop.Ssl.SslGetVersion(sslContext));
+            ReadOnlySpan<byte> alpn = Interop.Ssl.SslGetAlpnSelected(sslContext);
+            if (alpn.SequenceEqual(s_http1))
+            {
+                ApplicationProtocol = s_http1;
+            }
+            else if (alpn.SequenceEqual(s_http2))
+            {
+                ApplicationProtocol = s_http2;
+            }
+            else if (alpn.SequenceEqual(s_http3))
+            {
+                ApplicationProtocol = s_http3;
+            }
+            else if (alpn.Length > 0)
+            {
+                ApplicationProtocol = alpn.ToArray();
+            }
 
             MapCipherSuite(SslGetCurrentCipherSuite(sslContext));
         }

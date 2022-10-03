@@ -21,11 +21,12 @@ namespace System.Net.Http.Functional.Tests
 #if WINHTTPHANDLER_TEST
     using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
 #endif
-
     // Note:  Disposing the HttpClient object automatically disposes the handler within. So, it is not necessary
     // to separately Dispose (or have a 'using' statement) for the handler.
     public abstract class HttpClientHandlerTest : HttpClientHandlerTestBase
     {
+        public static bool IsNotWinHttpHandler = !IsWinHttpHandler;
+
         public HttpClientHandlerTest(ITestOutputHelper output) : base(output)
         {
         }
@@ -150,8 +151,9 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         [SkipOnPlatform(TestPlatforms.Browser, "ServerCertificateCustomValidationCallback not supported on Browser")]
+        [SkipOnPlatform(TestPlatforms.Android, "IPv6 loopback with SSL doesn't work on Android")]
         public async Task GetAsync_IPv6LinkLocalAddressUri_Success()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
@@ -164,9 +166,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            using HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
+            using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
             using HttpClient client = CreateHttpClient(handler);
 
             var options = new GenericLoopbackOptions { Address = TestHelper.GetIPv6LinkLocalAddress() };
@@ -184,7 +184,7 @@ namespace System.Net.Http.Functional.Tests
             }, options: options);
         }
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(GetAsync_IPBasedUri_Success_MemberData))]
         public async Task GetAsync_IPBasedUri_Success(IPAddress address)
         {
@@ -198,15 +198,15 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            using HttpClientHandler handler = CreateHttpClientHandler();
-            if (PlatformDetection.IsNotBrowser)
-            {
-                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-            }
-
+            using HttpClientHandler handler = CreateHttpClientHandler(allowAllCertificates: true);
             using HttpClient client = CreateHttpClient(handler);
 
             var options = new GenericLoopbackOptions { Address = address };
+
+            if (PlatformDetection.IsAndroid && options.UseSsl && address == IPAddress.IPv6Loopback)
+            {
+                throw new SkipTestException("IPv6 loopback with SSL doesn't work on Android");
+            }
 
             await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
@@ -228,11 +228,12 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Theory]
-        [InlineData("[::1234]")]
-        [InlineData("[::1234]:8080")]
+        [ConditionalTheory(nameof(IsNotWinHttpHandler))]
+        [InlineData("[::1234]", "[::1234]")]
+        [InlineData("[::1234]:8080", "[::1234]:8080")]
+        [InlineData("[fe80::9c3a:b64d:6249:1de8%2]", "[fe80::9c3a:b64d:6249:1de8]")]
         [SkipOnPlatform(TestPlatforms.Browser, "Proxy not supported on Browser")]
-        public async Task GetAsync_IPv6AddressInHostHeader_CorrectlyFormatted(string host)
+        public async Task GetAsync_IPv6AddressInHostHeader_CorrectlyFormatted(string host, string hostHeader)
         {
             string ipv6Address = "http://" + host;
             bool connectionAccepted = false;
@@ -248,13 +249,20 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient(handler))
                 {
                     handler.Proxy = new WebProxy(proxyUri);
-                    try { await client.GetAsync(ipv6Address); } catch { }
+                    try
+                    {
+                        await client.GetAsync(ipv6Address);
+                    }
+                    catch (Exception ex)
+                    {
+                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                    }
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
             {
                 connectionAccepted = true;
                 List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
-                Assert.Contains($"Host: {host}", headers);
+                Assert.Contains($"Host: {hostHeader}", headers);
             }));
 
             Assert.True(connectionAccepted);
@@ -267,7 +275,7 @@ namespace System.Net.Http.Functional.Tests
             where PlatformDetection.IsNotBrowser || !useSsl
             select new object[] { address, useSsl };
 
-        [Theory]
+        [ConditionalTheory]
         [MemberData(nameof(SecureAndNonSecure_IPBasedUri_MemberData))]
         public async Task GetAsync_SecureAndNonSecureIPBasedUri_CorrectlyFormatted(IPAddress address, bool useSsl)
         {
@@ -275,6 +283,11 @@ namespace System.Net.Http.Functional.Tests
             {
                 // Host header is not supported on HTTP/2 and later.
                 return;
+            }
+
+            if (PlatformDetection.IsAndroid && useSsl && address == IPAddress.IPv6Loopback)
+            {
+                throw new SkipTestException("IPv6 loopback with SSL doesn't work on Android");
             }
 
             var options = new LoopbackServer.Options { Address = address, UseSsl = useSsl };
@@ -292,7 +305,14 @@ namespace System.Net.Http.Functional.Tests
                         // we could not create SslStream in browser, [ActiveIssue("https://github.com/dotnet/runtime/issues/37669", TestPlatforms.Browser)]
                         handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                     }
-                    try { await client.GetAsync(url); } catch { }
+                    try
+                    {
+                        await client.GetAsync(url);
+                    }
+                    catch (Exception ex)
+                    {
+                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                    }
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
             {
@@ -449,7 +469,7 @@ namespace System.Net.Http.Functional.Tests
                     request.Headers.Referrer = new Uri("http://en.wikipedia.org/wiki/Main_Page");
                     request.Headers.TE.Add(new TransferCodingWithQualityHeaderValue("trailers"));
                     request.Headers.TE.Add(new TransferCodingWithQualityHeaderValue("deflate"));
-                    if (PlatformDetection.IsNotNodeJS) 
+                    if (PlatformDetection.IsNotNodeJS)
                     {
                         request.Headers.Trailer.Add("MyTrailer");
                         request.Headers.TransferEncoding.Add(new TransferCodingHeaderValue("chunked"));
@@ -468,7 +488,7 @@ namespace System.Net.Http.Functional.Tests
                     request.Headers.Add("X-Requested-With", "XMLHttpRequest");
                     request.Headers.Add("DNT", "1 (Do Not Track Enabled)");
                     request.Headers.Add("X-Forwarded-For", "client1");
-                    if (PlatformDetection.IsNotNodeJS) 
+                    if (PlatformDetection.IsNotNodeJS)
                     {
                         request.Headers.Add("X-Forwarded-For", "proxy1");
                         request.Headers.Add("X-Forwarded-For", "proxy2");
@@ -483,7 +503,7 @@ namespace System.Net.Http.Functional.Tests
                     request.Headers.Add("X-UIDH", "...");
                     request.Headers.Add("X-Csrf-Token", "i8XNjC4b8KVok4uw5RftR38Wgp2BFwql");
                     request.Headers.Add("X-Request-ID", "f058ebd6-02f7-4d3f-942e-904344e8cde5");
-                    if (PlatformDetection.IsNotNodeJS) 
+                    if (PlatformDetection.IsNotNodeJS)
                     {
                         request.Headers.Add("X-Request-ID", "f058ebd6-02f7-4d3f-942e-904344e8cde5");
                     }
@@ -524,7 +544,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Equal($"Basic {authSafeValue}", requestData.GetSingleHeaderValue("Proxy-Authorization"));
                         Assert.Equal("Mozilla/5.0", requestData.GetSingleHeaderValue("User-Agent"));
                         Assert.Equal("http://en.wikipedia.org/wiki/Main_Page", requestData.GetSingleHeaderValue("Referer"));
-                        if (PlatformDetection.IsNotNodeJS) 
+                        if (PlatformDetection.IsNotNodeJS)
                         {
                             Assert.Equal("MyTrailer", requestData.GetSingleHeaderValue("Trailer"));
                         }
@@ -543,7 +563,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal("bytes=500-999", requestData.GetSingleHeaderValue("Range"));
                     Assert.Equal("199 - \"Miscellaneous warning\"", requestData.GetSingleHeaderValue("Warning"));
                     Assert.Equal("XMLHttpRequest", requestData.GetSingleHeaderValue("X-Requested-With"));
-                    if (PlatformDetection.IsNotNodeJS) 
+                    if (PlatformDetection.IsNotNodeJS)
                     {
                         Assert.Equal("client1, proxy1, proxy2", requestData.GetSingleHeaderValue("X-Forwarded-For"));
                     }
@@ -560,11 +580,11 @@ namespace System.Net.Http.Functional.Tests
                     Assert.Equal("http://wap.samsungmobile.com/uaprof/SGH-I777.xml", requestData.GetSingleHeaderValue("X-Wap-Profile"));
                     Assert.Equal("...", requestData.GetSingleHeaderValue("X-UIDH"));
                     Assert.Equal("i8XNjC4b8KVok4uw5RftR38Wgp2BFwql", requestData.GetSingleHeaderValue("X-Csrf-Token"));
-                    if (PlatformDetection.IsNotNodeJS) 
+                    if (PlatformDetection.IsNotNodeJS)
                     {
                         Assert.Equal("f058ebd6-02f7-4d3f-942e-904344e8cde5, f058ebd6-02f7-4d3f-942e-904344e8cde5", requestData.GetSingleHeaderValue("X-Request-ID"));
                     }
-                    else 
+                    else
                     {
                         // node-fetch polyfill doesn't support combining multiple header values
                         Assert.Equal("f058ebd6-02f7-4d3f-942e-904344e8cde5", requestData.GetSingleHeaderValue("X-Request-ID"));
@@ -892,7 +912,10 @@ namespace System.Net.Http.Functional.Tests
                                 await Task.Delay(1);
                             }
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                        }
                     });
 
                     await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url));
@@ -1006,7 +1029,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Equal(PlatformDetection.IsBrowser && !enableWasmStreaming, responseStream.CanSeek);
 
                         // Not supported operations
-                        Assert.Throws<NotSupportedException>(() => responseStream.BeginWrite(new byte[1], 0, 1, null, null));
+                        await Assert.ThrowsAsync<NotSupportedException>(async () => await Task.Factory.FromAsync(responseStream.BeginWrite, responseStream.EndWrite, new byte[1], 0, 1, null));
                         if (!responseStream.CanSeek)
                         {
                             Assert.Throws<NotSupportedException>(() => responseStream.Length);
@@ -1660,7 +1683,10 @@ namespace System.Net.Http.Functional.Tests
                     {
                         await connection.ReadRequestDataAsync(readBody: true);
                     }
-                    catch { } // Eat errors from client disconnect.
+                    catch (Exception ex)
+                    {
+                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                    }
                     await clientFinished.Task.WaitAsync(TimeSpan.FromMinutes(2));
                 });
             });

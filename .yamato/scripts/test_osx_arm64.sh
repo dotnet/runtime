@@ -35,7 +35,7 @@ echo "****************************"
 echo "Unity: Running runtime tests"
 echo "****************************"
 echo
-./src/tests/build.sh arm64 release ci -tree:GC -tree:baseservices -tree:interop -tree:reflection
+./src/tests/build.sh arm64 release ci -tree:baseservices -tree:interop -tree:reflection
 ./src/tests/run.sh arm64 release
 
 echo

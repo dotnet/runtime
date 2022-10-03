@@ -44,10 +44,7 @@ namespace System.Reflection.TypeLoading
                     }
                     else
                     {
-                        if (exceptions == null)
-                        {
-                            exceptions = new List<Exception>();
-                        }
+                        exceptions ??= new List<Exception>();
                         exceptions.Add(exception!);
                     }
                 }

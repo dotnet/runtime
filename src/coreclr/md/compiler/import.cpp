@@ -1370,7 +1370,7 @@ STDMETHODIMP RegMeta::EnumProperties(         // S_OK, S_FALSE, or error.
             IfFailGo(m_pStgdb->m_MiniMd.GetPropertyMapRecord(ridPropertyMap, &pPropertyMapRec));
             ridStart = pMiniMd->getPropertyListOfPropertyMap(pPropertyMapRec);
             IfFailGo(pMiniMd->getEndPropertyListOfPropertyMap(ridPropertyMap, &ridEnd));
-            ridMax = pMiniMd->getCountPropertys() + 1;
+            ridMax = pMiniMd->getCountProperties() + 1;
             if(ridStart == 0) ridStart = 1;
             if(ridEnd > ridMax) ridEnd = ridMax;
             if(ridStart > ridEnd) ridStart=ridEnd;
@@ -2191,7 +2191,7 @@ STDMETHODIMP RegMeta::EnumModuleRefs(         // S_OK or error.
         pEnum = *ppmdEnum;
     }
 
-    // we can only fill the minimun of what caller asked for or what we have left
+    // we can only fill the minimum of what caller asked for or what we have left
     IfFailGo(HENUMInternal::EnumWithCount(pEnum, cMax, rModuleRefs, pcModuleRefs));
 
 ErrExit:
@@ -2549,8 +2549,8 @@ STDMETHODIMP RegMeta::GetPinvokeMap(          // S_OK or error.
     {
         IfFailGo( CLDB_E_RECORD_NOTFOUND );
     }
-    else
-        IfFailGo(m_pStgdb->m_MiniMd.GetImplMapRecord(iRecord, &pRecord));
+
+    IfFailGo(m_pStgdb->m_MiniMd.GetImplMapRecord(iRecord, &pRecord));
 
     if (pdwMappingFlags)
         *pdwMappingFlags = m_pStgdb->m_MiniMd.getMappingFlagsOfImplMap(pRecord);
@@ -3508,7 +3508,7 @@ HRESULT RegMeta::GetNestedClassProps(   // S_OK or error.
     // If not a typedef -- return error.
     if (TypeFromToken(tdNestedClass) != mdtTypeDef)
     {
-        IfFailGo(META_E_INVALID_TOKEN_TYPE); // PostError(META_E_INVALID_TOKEN_TYPE, tdNestedClass));
+        IfFailGo(META_E_INVALID_TOKEN_TYPE);
     }
 
     _ASSERTE(TypeFromToken(tdNestedClass) && !IsNilToken(tdNestedClass) && ptdEnclosingClass);

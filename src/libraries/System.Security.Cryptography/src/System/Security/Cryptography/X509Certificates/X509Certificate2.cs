@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Formats.Asn1;
 using System.IO;
+using System.Net;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Security.Cryptography.X509Certificates.Asn1;
@@ -260,19 +261,16 @@ namespace System.Security.Cryptography.X509Certificates
                 if (!HasPrivateKey)
                     return null;
 
-                if (_lazyPrivateKey == null)
+                _lazyPrivateKey ??= GetKeyAlgorithm() switch
                 {
-                    _lazyPrivateKey = GetKeyAlgorithm() switch
-                    {
-                        Oids.Rsa => Pal.GetRSAPrivateKey(),
-                        Oids.Dsa => Pal.GetDSAPrivateKey(),
+                    Oids.Rsa => Pal.GetRSAPrivateKey(),
+                    Oids.Dsa => Pal.GetDSAPrivateKey(),
 
-                        // This includes ECDSA, because an Oids.EcPublicKey key can be
-                        // many different algorithm kinds, not necessarily with mutual exclusion.
-                        // Plus, .NET Framework only supports RSA and DSA in this property.
-                        _ => throw new NotSupportedException(SR.NotSupported_KeyAlgorithm),
-                    };
-                }
+                    // This includes ECDSA, because an Oids.EcPublicKey key can be
+                    // many different algorithm kinds, not necessarily with mutual exclusion.
+                    // Plus, .NET Framework only supports RSA and DSA in this property.
+                    _ => throw new NotSupportedException(SR.NotSupported_KeyAlgorithm),
+                };
 
                 return _lazyPrivateKey;
             }
@@ -288,22 +286,12 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 ThrowIfInvalid();
 
-                X500DistinguishedName? issuerName = _lazyIssuerName;
-                if (issuerName == null)
-                    issuerName = _lazyIssuerName = Pal.IssuerName;
-                return issuerName;
+                return _lazyIssuerName ??= Pal.IssuerName;
             }
         }
 
-        public DateTime NotAfter
-        {
-            get { return GetNotAfter(); }
-        }
-
-        public DateTime NotBefore
-        {
-            get { return GetNotBefore(); }
-        }
+        public DateTime NotAfter => GetNotAfter();
+        public DateTime NotBefore => GetNotBefore();
 
         public PublicKey PublicKey
         {
@@ -312,14 +300,16 @@ namespace System.Security.Cryptography.X509Certificates
                 ThrowIfInvalid();
 
                 PublicKey? publicKey = _lazyPublicKey;
+
                 if (publicKey == null)
                 {
                     string keyAlgorithmOid = GetKeyAlgorithm();
-                    byte[] parameters = GetKeyAlgorithmParameters();
-                    byte[] keyValue = GetPublicKey();
+                    byte[] parameters = Pal.KeyAlgorithmParameters;
+                    byte[] keyValue = Pal.PublicKeyValue;
                     Oid oid = new Oid(keyAlgorithmOid);
                     publicKey = _lazyPublicKey = new PublicKey(oid, new AsnEncodedData(oid, parameters), new AsnEncodedData(oid, keyValue));
                 }
+
                 return publicKey;
             }
         }
@@ -343,13 +333,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public string SerialNumber
-        {
-            get
-            {
-                return GetSerialNumberString();
-            }
-        }
+        public string SerialNumber => GetSerialNumberString();
 
         public Oid SignatureAlgorithm
         {
@@ -357,13 +341,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 ThrowIfInvalid();
 
-                Oid? signatureAlgorithm = _lazySignatureAlgorithm;
-                if (signatureAlgorithm == null)
-                {
-                    string oidValue = Pal.SignatureAlgorithm;
-                    signatureAlgorithm = _lazySignatureAlgorithm = new Oid(oidValue, null);
-                }
-                return signatureAlgorithm;
+                return _lazySignatureAlgorithm ??= new Oid(Pal.SignatureAlgorithm, null);
             }
         }
 
@@ -373,10 +351,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 ThrowIfInvalid();
 
-                X500DistinguishedName? subjectName = _lazySubjectName;
-                if (subjectName == null)
-                    subjectName = _lazySubjectName = Pal.SubjectName;
-                return subjectName;
+                return _lazySubjectName ??= Pal.SubjectName;
             }
         }
 
@@ -429,8 +404,10 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         [UnsupportedOSPlatform("browser")]
-        public static X509ContentType GetCertContentType(string fileName!!)
+        public static X509ContentType GetCertContentType(string fileName)
         {
+            ArgumentNullException.ThrowIfNull(fileName);
+
             // .NET Framework compat: The .NET Framework expands the filename to a full path for the purpose of performing a CAS permission check. While CAS is not present here,
             // we still need to call GetFullPath() so we get the same exception behavior if the fileName is bad.
             _ = Path.GetFullPath(fileName);
@@ -443,10 +420,7 @@ namespace System.Security.Cryptography.X509Certificates
             return Pal.GetNameInfo(nameType, forIssuer);
         }
 
-        public override string ToString()
-        {
-            return base.ToString(fVerbose: true);
-        }
+        public override string ToString() => base.ToString(fVerbose: true);
 
         public override string ToString(bool verbose)
         {
@@ -725,7 +699,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         public ECDiffieHellman? GetECDiffieHellmanPublicKey()
         {
-            return this.GetPublicKey<ECDiffieHellman>(cert => HasECDiffieHellmanKeyUsage(cert));
+            return this.GetPublicKey<ECDiffieHellman>(HasECDiffieHellmanKeyUsage);
         }
 
         /// <summary>
@@ -740,7 +714,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         public ECDiffieHellman? GetECDiffieHellmanPrivateKey()
         {
-            return this.GetPrivateKey<ECDiffieHellman>(cert => HasECDiffieHellmanKeyUsage(cert));
+            return this.GetPrivateKey<ECDiffieHellman>(HasECDiffieHellmanKeyUsage);
         }
 
         /// <summary>
@@ -765,8 +739,10 @@ namespace System.Security.Cryptography.X509Certificates
         ///   The specified private key doesn't match the public key for this certificate.
         /// </para>
         /// </exception>
-        public X509Certificate2 CopyWithPrivateKey(ECDiffieHellman privateKey!!)
+        public X509Certificate2 CopyWithPrivateKey(ECDiffieHellman privateKey)
         {
+            ArgumentNullException.ThrowIfNull(privateKey);
+
             if (HasPrivateKey)
                 throw new InvalidOperationException(SR.Cryptography_Cert_AlreadyHasPrivateKey);
 
@@ -843,8 +819,10 @@ namespace System.Security.Cryptography.X509Certificates
         /// </para>
         /// </remarks>
         [UnsupportedOSPlatform("browser")]
-        public static X509Certificate2 CreateFromPemFile(string certPemFilePath!!, string? keyPemFilePath = default)
+        public static X509Certificate2 CreateFromPemFile(string certPemFilePath, string? keyPemFilePath = default)
         {
+            ArgumentNullException.ThrowIfNull(certPemFilePath);
+
             ReadOnlySpan<char> certContents = File.ReadAllText(certPemFilePath);
             ReadOnlySpan<char> keyContents = keyPemFilePath is null ? certContents : File.ReadAllText(keyPemFilePath);
 
@@ -907,8 +885,10 @@ namespace System.Security.Cryptography.X509Certificates
         /// </para>
         /// </remarks>
         [UnsupportedOSPlatform("browser")]
-        public static X509Certificate2 CreateFromEncryptedPemFile(string certPemFilePath!!, ReadOnlySpan<char> password, string? keyPemFilePath = default)
+        public static X509Certificate2 CreateFromEncryptedPemFile(string certPemFilePath, ReadOnlySpan<char> password, string? keyPemFilePath = default)
         {
+            ArgumentNullException.ThrowIfNull(certPemFilePath);
+
             ReadOnlySpan<char> certContents = File.ReadAllText(certPemFilePath);
             ReadOnlySpan<char> keyContents = keyPemFilePath is null ? certContents : File.ReadAllText(keyPemFilePath);
 
@@ -1155,16 +1135,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </remarks>
         public string ExportCertificatePem()
         {
-            int pemSize = PemEncoding.GetEncodedSize(PemLabels.X509Certificate.Length, RawDataMemory.Length);
-
-            return string.Create(pemSize, this, static (destination, cert) => {
-                if (!cert.TryExportCertificatePem(destination, out int charsWritten) ||
-                    charsWritten != destination.Length)
-                {
-                    Debug.Fail("Pre-allocated buffer was not the correct size.");
-                    throw new CryptographicException();
-                }
-            });
+            return PemEncoding.WriteString(PemLabels.X509Certificate, RawDataMemory.Span);
         }
 
         /// <summary>
@@ -1194,6 +1165,258 @@ namespace System.Security.Cryptography.X509Certificates
         public bool TryExportCertificatePem(Span<char> destination, out int charsWritten)
         {
             return PemEncoding.TryWrite(PemLabels.X509Certificate, RawDataMemory.Span, destination, out charsWritten);
+        }
+
+        /// <summary>
+        ///   Checks to see if the certificate matches the provided hostname.
+        /// </summary>
+        /// <param name="hostname">The host name to match against.</param>
+        /// <param name="allowWildcards">
+        ///   <see langword="true"/> to allow wildcard matching for <c>dNSName</c> values in the
+        ///   Subject Alternative Name extension; otherwise, <see langword="false"/>.
+        /// </param>
+        /// <param name="allowCommonName">
+        ///   <see langword="true"/> to allow matching against the subject Common Name value;
+        ///   otherwise, <see langword="false"/>.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true"/> if the certificate is a match for the requested hostname;
+        ///   otherwise, <see langword="false"/>
+        /// </returns>
+        /// <remarks>
+        ///   <para>
+        ///     This method is a platform neutral implementation of IETF RFC 6125 host matching logic.
+        ///     The SslStream class uses the hostname validator from the operating system, which may
+        ///     result in different values from this implementation.
+        ///   </para>
+        ///   <para>
+        ///     The logical flow of this method is:
+        ///     <list type="bullet">
+        ///       <item>
+        ///         If the hostname parses as an <see cref="IPAddress"/> then IPAddress matching is done;
+        ///         otherwise, DNS Name matching is done.
+        ///       </item>
+        ///       <item>
+        ///         For IPAddress matching, the value must be an exact match against an <c>iPAddress</c> value in an
+        ///         entry of the Subject Alternative Name extension.
+        ///       </item>
+        ///       <item>
+        ///         For DNS Name matching, the value must be an exact match against a <c>dNSName</c> value in an
+        ///         entry of the Subject Alternative Name extension, or a wildcard match against the same.
+        ///       </item>
+        ///       <item>
+        ///         For wildcard matching, the wildcard must be the first character in the <c>dNSName</c> entry,
+        ///         the second character must be a period (.), and the entry must have a length greater than two.
+        ///         The wildcard will only match the <paramref name="hostname"/> value up to the first period (.),
+        ///         remaining characters must be an exact match.
+        ///       </item>
+        ///       <item>
+        ///         If there is no Subject Alternative Name extension, or the extension does not have any entries
+        ///         of the appropriate type, then Common Name matching is used as a fallback.
+        ///       </item>
+        ///       <item>
+        ///         For Common Name matching, if the Subject Name contains a single Common Name, and that attribute
+        ///         is not defined as part of a multi-valued Relative Distinguished Name, then the hostname is matched
+        ///         against the Common Name attribute's value.
+        ///         Note that wildcards are not used in Common Name matching.
+        ///       </item>
+        ///     </list>
+        ///   </para>
+        ///   <para>
+        ///     This implementation considers <c>SRV-ID</c> values or <c>URI-ID</c> values as out-of-scope,
+        ///     and will not use their presence as a reason to stop the fallback from <c>DNS-ID</c> matching
+        ///     to the <c>CN-ID</c>.
+        ///   </para>
+        ///   <para>
+        ///     This method does not convert non-ASCII hostnames to the IDNA representation. For Unicode domains,
+        ///     the caller must make use of <see cref="System.Globalization.IdnMapping"/> or an equivalent IDNA mapper.
+        ///   </para>
+        ///   <para>
+        ///     The "exact" matches performed by this routine are <see cref="StringComparison.OrdinalIgnoreCase"/>,
+        ///     as domain names are not case-sensitive.
+        ///   </para>
+        ///   <para>
+        ///     This method does not determine if the hostname is authorized by a trusted authority.  A trust
+        ///     decision cannot be made without additionally checking for trust via <see cref="X509Chain"/>.
+        ///   </para>
+        ///   <para>
+        ///     This method does not check that the certificate has an <c>id-kp-serverAuth</c> (1.3.6.1.5.5.7.3.1)
+        ///     extended key usage.
+        ///   </para>
+        /// </remarks>
+        /// <exception cref="ArgumentException">
+        ///   The <paramref name="hostname"/> parameter is not a valid DNS hostname or IP address.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para>The certificate contains multiple Subject Alternative Name extensions.</para>
+        ///   <para>- or -</para>
+        ///   <para>The Subject Alternative Name extension or Subject Name could not be decoded.</para>
+        /// </exception>
+        /// <seealso cref="IPAddress.TryParse(string, out IPAddress)"/>
+        /// <seealso cref="Uri.CheckHostName"/>
+        public bool MatchesHostname(string hostname, bool allowWildcards = true, bool allowCommonName = true)
+        {
+            ArgumentNullException.ThrowIfNull(hostname);
+            IPAddress? ipAddress;
+
+            if (!IPAddress.TryParse(hostname, out ipAddress))
+            {
+                UriHostNameType kind = Uri.CheckHostName(hostname);
+
+                if (kind != UriHostNameType.Dns)
+                {
+                    throw new ArgumentException(
+                        SR.Argument_InvalidHostnameOrIPAddress,
+                        nameof(hostname));
+                }
+            }
+
+            X509Extension? rawSAN = null;
+
+            foreach (X509Extension extension in Pal.Extensions)
+            {
+                if (extension.Oid!.Value == Oids.SubjectAltName)
+                {
+                    if (rawSAN is null)
+                    {
+                        rawSAN = extension;
+                    }
+                    else
+                    {
+                        throw new CryptographicException(SR.Cryptography_X509_TooManySANs);
+                    }
+                }
+            }
+
+            if (rawSAN is not null)
+            {
+                Debug.Assert(rawSAN.GetType() == typeof(X509Extension));
+
+                var san = new X509SubjectAlternativeNameExtension();
+                san.CopyFrom(rawSAN);
+
+                bool hadAny = false;
+
+                if (ipAddress is not null)
+                {
+                    foreach (IPAddress sanEntry in san.EnumerateIPAddresses())
+                    {
+                        if (sanEntry.Equals(ipAddress))
+                        {
+                            return true;
+                        }
+
+                        hadAny = true;
+                    }
+                }
+                else
+                {
+                    ReadOnlySpan<char> match = hostname;
+
+                    // Treat "something.example.org." as "something.example.org"
+                    if (hostname.EndsWith('.'))
+                    {
+                        match = match.Slice(0, match.Length - 1);
+
+                        if (match.IsEmpty)
+                        {
+                            return false;
+                        }
+                    }
+
+                    ReadOnlySpan<char> afterFirstDot = default;
+                    int firstDot = match.IndexOf('.');
+                    Debug.Assert(firstDot != 0, "Leading periods should have been rejected.");
+
+                    if (firstDot > 0)
+                    {
+                        afterFirstDot = match.Slice(firstDot + 1);
+                    }
+
+                    foreach (string embedded in san.EnumerateDnsNames())
+                    {
+                        hadAny = true;
+
+                        if (embedded.Length == 0)
+                        {
+                            continue;
+                        }
+
+                        ReadOnlySpan<char> embeddedSpan = embedded;
+
+                        // Convert embedded "something.example.org." to "something.example.org"
+                        if (embedded.EndsWith('.'))
+                        {
+                            embeddedSpan = embeddedSpan.Slice(0, embeddedSpan.Length - 1);
+                        }
+
+                        if (allowWildcards && embeddedSpan.StartsWith("*.") && embeddedSpan.Length > 2)
+                        {
+                            if (embeddedSpan.Slice(2).Equals(afterFirstDot, StringComparison.OrdinalIgnoreCase))
+                            {
+                                return true;
+                            }
+                        }
+                        else if (embeddedSpan.Equals(match, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                if (hadAny)
+                {
+                    return false;
+                }
+            }
+
+            if (allowCommonName)
+            {
+                X500RelativeDistinguishedName? cn = null;
+
+                foreach (X500RelativeDistinguishedName rdn in SubjectName.EnumerateRelativeDistinguishedNames())
+                {
+                    if (rdn.HasMultipleElements)
+                    {
+                        AsnValueReader reader = new AsnValueReader(rdn.RawData.Span, AsnEncodingRules.DER);
+                        // Be lax with the sort order because Windows is
+                        AsnValueReader set = reader.ReadSetOf(skipSortOrderValidation: true);
+
+                        while (set.HasData)
+                        {
+                            // We're not concerned with the possibility that the attribute structure
+                            // is malformed here, because X500RelativeDistinguishedName already ensures it.
+                            // So we don't bother checking that there's a value after the OID and then nothing
+                            // after that.
+                            AsnValueReader attributeTypeAndValue = set.ReadSequence();
+                            Oid? type = Oids.GetSharedOrNullOid(ref attributeTypeAndValue);
+
+                            if (Oids.CommonNameOid.ValueEquals(type))
+                            {
+                                return false;
+                            }
+                        }
+                    }
+                    else if (Oids.CommonNameOid.ValueEquals(rdn.GetSingleElementType()))
+                    {
+                        if (cn is null)
+                        {
+                            cn = rdn;
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
+                }
+
+                if (cn is not null)
+                {
+                    return hostname.Equals(cn.GetSingleElementValue(), StringComparison.OrdinalIgnoreCase);
+                }
+            }
+
+            return false;
         }
 
         private static X509Certificate2 ExtractKeyFromPem<TAlg>(
@@ -1259,13 +1482,19 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         private static X509Extension? CreateCustomExtensionIfAny(Oid oid) =>
-            oid.Value switch
+            CreateCustomExtensionIfAny(oid.Value);
+
+        internal static X509Extension? CreateCustomExtensionIfAny(string? oidValue) =>
+            oidValue switch
             {
                 Oids.BasicConstraints => X509Pal.Instance.SupportsLegacyBasicConstraintsExtension ? new X509BasicConstraintsExtension() : null,
                 Oids.BasicConstraints2 => new X509BasicConstraintsExtension(),
                 Oids.KeyUsage => new X509KeyUsageExtension(),
                 Oids.EnhancedKeyUsage => new X509EnhancedKeyUsageExtension(),
                 Oids.SubjectKeyIdentifier => new X509SubjectKeyIdentifierExtension(),
+                Oids.AuthorityKeyIdentifier => new X509AuthorityKeyIdentifierExtension(),
+                Oids.AuthorityInformationAccess => new X509AuthorityInformationAccessExtension(),
+                Oids.SubjectAltName => new X509SubjectAlternativeNameExtension(),
                 _ => null,
             };
 

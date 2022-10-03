@@ -157,7 +157,7 @@ get_entropy_from_egd (const char *path, guchar *buffer, gssize buffer_size, Mono
 
 		/* block until daemon can return enough entropy */
 		request [0] = 2;
-		request [1] = buffer_size < 255 ? buffer_size : 255;
+		request [1] = buffer_size < 255 ? (guchar)buffer_size : 255;
 		while (count < 2) {
 			int sent = write (socket_fd, request + count, 2 - count);
 			err = errno;

@@ -12,7 +12,7 @@
 // Insert patchpoint checks into Tier0 methods, based on locations identified
 // during importation (see impImportBlockCode).
 //
-// There are now two diffrent types of patchpoints:
+// There are now two different types of patchpoints:
 //   * loop based: enable OSR transitions in loops
 //   * partial compilation: allows partial compilation of original method
 //
@@ -78,7 +78,7 @@ public:
                 // If we're instrumenting, we should not have decided to
                 // put class probes here, as that is driven by looking at IL.
                 //
-                assert((block->bbFlags & BBF_HAS_CLASS_PROFILE) == 0);
+                assert((block->bbFlags & BBF_HAS_HISTOGRAM_PROFILE) == 0);
 
                 // Clear the partial comp flag.
                 //
@@ -176,11 +176,11 @@ private:
         // Fill in helper block
         //
         // call PPHelper(&ppCounter, ilOffset)
-        GenTree*          ilOffsetNode  = compiler->gtNewIconNode(ilOffset, TYP_INT);
-        GenTree*          ppCounterRef  = compiler->gtNewLclvNode(ppCounterLclNum, TYP_INT);
-        GenTree*          ppCounterAddr = compiler->gtNewOperNode(GT_ADDR, TYP_I_IMPL, ppCounterRef);
-        GenTreeCall::Use* helperArgs    = compiler->gtNewCallArgs(ppCounterAddr, ilOffsetNode);
-        GenTreeCall*      helperCall    = compiler->gtNewHelperCallNode(CORINFO_HELP_PATCHPOINT, TYP_VOID, helperArgs);
+        GenTree*     ilOffsetNode  = compiler->gtNewIconNode(ilOffset, TYP_INT);
+        GenTree*     ppCounterRef  = compiler->gtNewLclvNode(ppCounterLclNum, TYP_INT);
+        GenTree*     ppCounterAddr = compiler->gtNewOperNode(GT_ADDR, TYP_I_IMPL, ppCounterRef);
+        GenTreeCall* helperCall =
+            compiler->gtNewHelperCallNode(CORINFO_HELP_PATCHPOINT, TYP_VOID, ppCounterAddr, ilOffsetNode);
 
         compiler->fgNewStmtAtEnd(helperBlock, helperCall);
     }
@@ -239,10 +239,9 @@ private:
         //
         // call PartialCompilationPatchpointHelper(ilOffset)
         //
-        GenTree*          ilOffsetNode = compiler->gtNewIconNode(ilOffset, TYP_INT);
-        GenTreeCall::Use* helperArgs   = compiler->gtNewCallArgs(ilOffsetNode);
-        GenTreeCall*      helperCall =
-            compiler->gtNewHelperCallNode(CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT, TYP_VOID, helperArgs);
+        GenTree*     ilOffsetNode = compiler->gtNewIconNode(ilOffset, TYP_INT);
+        GenTreeCall* helperCall =
+            compiler->gtNewHelperCallNode(CORINFO_HELP_PARTIAL_COMPILATION_PATCHPOINT, TYP_VOID, ilOffsetNode);
 
         compiler->fgNewStmtAtEnd(block, helperCall);
     }

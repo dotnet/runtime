@@ -83,14 +83,9 @@ namespace System.Security.Cryptography.Xml
                     }
                     finally
                     {
-                        if (toDecrypt != null)
-                            toDecrypt.Close();
-
-                        if (decryptedContent != null)
-                            decryptedContent.Close();
-
-                        if (streamReader != null)
-                            streamReader.Close();
+                        toDecrypt?.Close();
+                        decryptedContent?.Close();
+                        streamReader?.Close();
                     }
                 }
             }
@@ -145,8 +140,7 @@ namespace System.Security.Cryptography.Xml
                 throw new CryptographicException(SR.Cryptography_Xml_XrmlMissingIssuer);
 
             signatureNode = currentIssuerContext.SelectSingleNode("descendant-or-self::dsig:Signature[1]", _namespaceManager) as XmlElement;
-            if (signatureNode != null)
-                signatureNode.ParentNode.RemoveChild(signatureNode);
+            signatureNode?.ParentNode.RemoveChild(signatureNode);
 
             // Get the nearest license node
             currentLicenseContext = currentIssuerContext.SelectSingleNode("ancestor-or-self::r:license[1]", _namespaceManager) as XmlElement;

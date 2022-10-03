@@ -20,7 +20,7 @@ namespace System.ComponentModel
         {
             if (destinationType == typeof(string) && value is ICollection)
             {
-                return SR.Collection;
+                return SR.GetResourceString(nameof(SR.Collection), "(Collection)");
             }
 
             return base.ConvertTo(context, culture, value, destinationType);

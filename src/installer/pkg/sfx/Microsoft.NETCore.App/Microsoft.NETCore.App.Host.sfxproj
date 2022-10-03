@@ -16,7 +16,7 @@
     C++/CLI project system support.
   -->
   <ItemGroup>
-    <CrossArchSdkMsiInstallerArch Include="x86;x64" />
+    <CrossArchSdkMsiInstallerArch Include="x86;x64;arm64" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,6 +35,12 @@
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/ijwhost.dll" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/ijwhost.lib" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/libnethost.lib" />
+
+    <!-- Always include the static library PDB. When consuming the static library on Windows,
+        the linker needs the PDB to produce complete debug information for whatever is linking
+        in the static library. Without the PDB, consumers will hit LNK4099. -->
+    <_SymbolsToIncludeAlways Include="$(DotNetHostBinDir)PDB/libnethost.pdb" />
+    <NativeRuntimeAsset Include="@(_SymbolsToIncludeAlways)" IncludeAlways="true" />
   </ItemGroup>
 
   <ItemGroup>
@@ -43,9 +49,12 @@
                     IsSymbolFile="true"
                     IsNative="true" />
     <_SymbolFiles Condition="'$(TargetOS)' != 'windows'"
-                    Include="@(NativeRuntimeAsset->'%(RootDir)%(Directory)PDB/%(Filename)%(Extension)%(SymbolsSuffix)')"
+                    Include="@(NativeRuntimeAsset->'%(RootDir)%(Directory)%(Filename)%(Extension)%(SymbolsSuffix)')"
                     IsSymbolFile="true"
                     IsNative="true" />
+
+    <!-- Remove symbols that are explicitly shipped with implementation package -->
+    <_SymbolFiles Remove="@(_SymbolsToIncludeAlways)" />
   </ItemGroup>
 
   <Target Name="AddSymbolFiles" BeforeTargets="GetFilesToPackage">

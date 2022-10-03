@@ -66,14 +66,13 @@ namespace ILCompiler.DependencyAnalysis
 
 
             //
-            // CoreRT Nodes
+            // NativeAOT Nodes
             //
             MetadataNode,
             ResourceDataNode,
             ResourceIndexNode,
             TypeMetadataMapNode,
             ClassConstructorContextMap,
-            DynamicInvokeTemplateDataNode,
             ReflectionInvokeMapNode,
             DelegateMarshallingStubMapNode,
             StructMarshallingStubMapNode,

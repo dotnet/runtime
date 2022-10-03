@@ -55,16 +55,12 @@ END
 
 STRINGTABLE DISCARDABLE
 BEGIN
-    IDS_USAGE_TITLE         L"ILDASM command line syntax"
     IDS_USAGE_01            L"Usage: ildasm [options] <file_name> [options]\n\n"
     IDS_USAGE_02            L"Options for output redirection:\n"
     IDS_USAGE_03            L"  /OUT=<file name>    Direct output to file rather than to console.\n"
     IDS_USAGE_04A           L"  /HTML               Output in HTML format (valid with /OUT option only).\n"
     IDS_USAGE_04B           L"  /RTF                Output in rich text format (valid with /OUT option only).\n"
     IDS_USAGE_05            L"Options for file/console output:\n"
-#ifdef OWNER_OPTION_ENABLED
-    IDS_USAGE_06            L"  /OWNER=<owner name> Set owner name to disassemble a protected PE file.\n"
-#endif
     IDS_USAGE_07            L"  /BYTES              Show actual bytes (in hex) as instruction comments.\n"
 END
 
@@ -83,6 +79,7 @@ BEGIN
     IDS_USAGE_15            L"  /QUOTEALLNAMES      Include all names into single quotes.\n"
     IDS_USAGE_15A           L"  /NOCA               Suppress output of custom attributes.\n"
     IDS_USAGE_15B           L"  /CAVERBAL           Output CA blobs in verbal form (default - in binary form).\n"
+    IDS_USAGE_16            L"  /R2RNATIVEMETADATA  Output the metadata from the R2R Native manifest.\n"
     IDS_USAGE_17            L"The following options are valid for file/console output only:\n"
     IDS_USAGE_18            L"Options for EXE and DLL files:\n"
     IDS_USAGE_19            L"  /UTF8               Use UTF-8 encoding for output (default - ANSI).\n"
@@ -143,11 +140,8 @@ BEGIN
     IDS_E_NOCORHDR          L"error : '%s' has no valid CLR header and cannot be disassembled"
     IDS_E_BADCORHDR         L"error : Bad CLR header, or the version of the file format is not supported"
     IDS_E_OPENMD            L"error : Failed to open meta data"
-    IDS_E_COPYRIGHT         L"error : Copyrighted material - can not disassemble!"
     IDS_E_DASMOK            L"*********** DISASSEMBLY COMPLETE ***********************"
     IDS_E_PARTDASM          L"warning : THIS IS A PARTIAL DISASSEMBLY, NOT SUITABLE FOR RE-ASSEMBLING"
-    IDS_E_INSTRDT           L"error : Failed to create instruction decoding table"
-    IDS_E_NOCOMPR           L"error : Compression not supported"
     IDS_E_CLSENUM           L"error : Unable to enumerate classes"
     IDS_E_SELFNSTD          L"error : class %08X is nested in itself"
     IDS_E_NOENCLOS          L"error : class %08X is nested in missing class %08x"
@@ -211,42 +205,17 @@ STRINGTABLE DISCARDABLE
 BEGIN
     IDS_E_MULTIPLEINPUT     L"MULTIPLE INPUT FILES SPECIFIED\n\n"
     IDS_E_INVALIDOPTION     L"INVALID COMMAND LINE OPTION: %s\n\n"
-    IDS_PROGRESSBOX         L"ProgressBox"
-    IDS_DISASSEMBLING       L"Disassembling"
-    IDS_PB_FILE             L"File  %s"
-    IDS_PB_FILE1            L"File ...%s"
-    IDS_PB_TOFILE           L"To file  %s"
-    IDS_PB_TOFILE1          L"To file ...%s"
-    IDS_PB_CLASSESDONE      L"%d classes, %d done"
-    IDS_PB_GLOBALSDONE      L"%d global methods, %d done"
-    IDS_PB_CANCEL           L"Cancel"
-    IDS_PB_WRITINGDATA      L"Writing global data"
     IDS_W_CREATEDW32RES     L"WARNING: Created Win32 resource file %s"
     IDS_E_CORRUPTW32RES     L"ERROR: Corrupt Win32 resources"
     IDS_E_CANTOPENW32RES    L"ERROR: Unable to open file %s"
     IDS_E_CANTACCESSW32RES  L"ERROR: Unable to access Win32 resources"
-    IDS_CANTVIEW_TX         L"Can't view %s::%s(%s)"
-    IDS_CANTVIEW_HD         L"Can't View IL"
-    IDS_ONLYPEINGUI         L"ILDASM supports only PE files in graphic mode"
-    IDS_BADFILETYPE         L"Invalid File Type"
     IDS_E_CANTOPENOUT       L"Unable to open '%s' for output."
-    IDS_E_CANTCREATEPROC    L"Failed to CreateProcess\n\n"
-    IDS_TEXTTOOLARGEFORGUI  L"Text too large for GUI. Use File/Dump menu entry to disassemble to file."
-    IDS_FILTER_IN           L"PE file (*.exe,*.dll,*.mod,*.mdl,*.winmd)\t*.exe;*.dll;*.mod;*.mdl;*.winmd\tAny type (*.*)\t*.*\t\0"
-    IDS_FILTER_OUT          L"IL file (*.il)\t*.il\tText file (*.txt) \t*.txt\tAny type (*.*)\t*.*\t\0"
-    IDS_FILTER_OUT2         L"Text file (*.txt) \t*.txt\tAny type (*.*)\t*.*\t\0"
-    IDS_CANNOTOPENFILE      L"Cannot open file"
-    IDS_UNABLETOREGLIBS     L"Unable to register libraries!"
     IDS_ERRORREOPENINGFILE  L"Error reopening the file with FileToken 0x%08X"
     IDS_ASSEMNAMETOOLONG    L"error *** Assembly name too long, truncated to 1023 characters"
     IDS_ASMREFNAMETOOLONG   L"error *** AssemblyRef name too long, truncated to 1023 characters"
-    IDS_ERRORCAPTION        L"ERROR"
-    IDS_ILDASM_TITLE        L"Microsoft (R) .NET Framework IL Disassembler"
-    IDS_VERSION             L"Version %s"
     IDS_W_CREATEDMRES       L"WARNING: managed resource file %s created"
     IDS_E_READINGMRES       L"ERROR: reading managed resource %s at offset 0x%X"
     IDS_RTL                 L"RTL_False"    // change this to RTL_True on Arabic/Hebrew system
-    IDS_LEGALCOPYRIGHT      L"\251 Microsoft Corporation.  All rights reserved."
 END
 
 #endif    // English (U.S.) resources

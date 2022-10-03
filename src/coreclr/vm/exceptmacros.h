@@ -182,7 +182,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowOM();
 
 
 //==========================================================================
-// Helpful macros to declare exception handlers, their implementaiton,
+// Helpful macros to declare exception handlers, their implementation,
 // and to call them.
 //==========================================================================
 
@@ -311,7 +311,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
         MAKE_CURRENT_THREAD_AVAILABLE();                                                    \
         Exception* __pUnCException  = NULL;                                                 \
         Frame*     __pUnCEntryFrame = CURRENT_THREAD->GetFrame();                           \
-        bool       __fExceptionCatched = false;                                             \
+        bool       __fExceptionCaught = false;                                             \
         SCAN_EHMARKER();                                                                    \
         if (true) PAL_CPP_TRY {                                                             \
             SCAN_EHMARKER_TRY();                                                            \
@@ -327,7 +327,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
     {                                                                                       \
         Exception* __pUnCException  = NULL;                                                 \
         Frame*     __pUnCEntryFrame = (pHelperFrame);                                       \
-        bool       __fExceptionCatched = false;                                             \
+        bool       __fExceptionCaught = false;                                             \
         SCAN_EHMARKER();                                                                    \
         if (true) PAL_CPP_TRY {                                                             \
             SCAN_EHMARKER_TRY();                                                            \
@@ -343,11 +343,11 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
             CONSISTENCY_CHECK(NULL != __pException);                                        \
             __pUnCException = __pException;                                                 \
             UnwindAndContinueRethrowHelperInsideCatch(__pUnCEntryFrame, __pUnCException);   \
-            __fExceptionCatched = true;                                                     \
+            __fExceptionCaught = true;                                                     \
             SCAN_EHMARKER_END_CATCH();                                                      \
         }                                                                                   \
         PAL_CPP_ENDTRY                                                                      \
-        if (__fExceptionCatched)                                                            \
+        if (__fExceptionCaught)                                                            \
         {                                                                                   \
             SCAN_EHMARKER_CATCH();                                                          \
             UnwindAndContinueRethrowHelperAfterCatch(__pUnCEntryFrame, __pUnCException);    \

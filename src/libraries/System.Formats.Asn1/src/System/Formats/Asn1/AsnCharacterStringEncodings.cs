@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -378,8 +379,7 @@ namespace System.Formats.Asn1
 
             for (int i = 0; i < bytes.Length; i += 2)
             {
-                int val = bytes[i] << 8 | bytes[i + 1];
-                char c = (char)val;
+                char c = (char)BinaryPrimitives.ReadInt16BigEndian(bytes.Slice(i));
 
                 if (char.IsSurrogate(c))
                 {

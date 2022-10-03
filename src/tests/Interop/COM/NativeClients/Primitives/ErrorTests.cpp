@@ -75,6 +75,44 @@ namespace
             THROW_FAIL_IF_FALSE(hr == hrMaybe);
         }
     }
+
+    void VerifyHelpContext(_In_ IErrorMarshalTesting *et)
+    {
+        ::printf("Verify expected helplink and context\n");
+
+        HRESULT hrs[] =
+        {
+            E_NOTIMPL,
+            E_POINTER,
+            E_ACCESSDENIED,
+            E_OUTOFMEMORY,
+            E_INVALIDARG,
+            E_UNEXPECTED,
+            HRESULT{-1}
+        };
+
+        LPCWSTR helpLink = L"X:\\NotA\\RealPath\\dummy.hlp";
+
+        for (int i = 0; i < ARRAY_SIZE(hrs); ++i)
+        {
+            HRESULT hr = hrs[i];
+            DWORD helpContext = (DWORD)(i + 0x1234);
+            HRESULT hrMaybe = et->Throw_HResult_HelpLink(hr, helpLink, helpContext);
+            THROW_FAIL_IF_FALSE(hr == hrMaybe);
+
+            ComSmartPtr<IErrorInfo> pErrInfo;
+            THROW_IF_FAILED(GetErrorInfo(0, &pErrInfo));
+
+            BSTR helpLinkMaybe;
+            THROW_IF_FAILED(pErrInfo->GetHelpFile(&helpLinkMaybe));
+            THROW_FAIL_IF_FALSE(TP_wcmp_s(helpLink, helpLinkMaybe) == 0);
+            SysFreeString(helpLinkMaybe);
+
+            DWORD helpContextMaybe;
+            THROW_IF_FAILED(pErrInfo->GetHelpContext(&helpContextMaybe));
+            THROW_FAIL_IF_FALSE(helpContext == helpContextMaybe);
+        }
+    }
 }
 
 void Run_ErrorTests()
@@ -89,4 +127,5 @@ void Run_ErrorTests()
     VerifyExpectedException(errorMarshal);
     VerifyReturnHResult(errorMarshal);
     VerifyReturnHResultStruct(errorMarshal);
+    VerifyHelpContext(errorMarshal);
 }

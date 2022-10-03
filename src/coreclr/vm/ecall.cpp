@@ -875,7 +875,7 @@ void FCallAssert(void*& cache, void* target)
         }
     }
 
-    _ASSERTE(!"Could not find FCall implemenation in ECall.cpp");
+    _ASSERTE(!"Could not find FCall implementation in ECall.cpp");
 }
 
 void HCallAssert(void*& cache, void* target)

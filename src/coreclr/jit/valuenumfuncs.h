@@ -6,26 +6,27 @@
 // <is-shared-static>)
 
 // clang-format off
-ValueNumFuncDef(MemOpaque, 1, false, false, false)  // Args: 0: loop num
-ValueNumFuncDef(MapStore, 4, false, false, false)   // Args: 0: map, 1: index (e. g. field handle), 2: value being stored, 3: loop num.
-ValueNumFuncDef(MapSelect, 2, false, false, false)  // Args: 0: map, 1: key.
+ValueNumFuncDef(MemOpaque, 1, false, false, false)          // Args: 0: loop num
+ValueNumFuncDef(MapSelect, 2, false, false, false)          // Args: 0: map, 1: key.
+ValueNumFuncDef(MapStore, 4, false, false, false)           // Args: 0: map, 1: index (e. g. field handle), 2: value being stored, 3: loop num.
+ValueNumFuncDef(MapPhysicalStore, 3, false, false, false)   // Args: 0: map, 1: "physical selector": offset and size, 2: value being stored
+ValueNumFuncDef(BitCast, 2, false, false, false)            // Args: 0: VN of the arg, 1: VN of the target type
+ValueNumFuncDef(ZeroObj, 1, false, false, false)            // Args: 0: VN of the class handle.
+ValueNumFuncDef(PhiDef, 3, false, false, false)             // Args: 0: local var # (or -1 for memory), 1: SSA #, 2: VN of definition.
+ValueNumFuncDef(PhiMemoryDef, 2, false, false, false)       // Args: 0: VN for basic block pointer, 1: VN of definition
+ValueNumFuncDef(Phi, 2, false, false, false)                // A phi function.  Only occurs as arg of PhiDef or PhiMemoryDef.  Arguments are SSA numbers of var being defined.
 
-ValueNumFuncDef(FieldSeq, 2, false, false, false)   // Sequence (VN of null == empty) of (VN's of) field handles.
-ValueNumFuncDef(NotAField, 0, false, false, false)  // Value number function for FieldSeqStore::NotAField.
+ValueNumFuncDef(PtrToLoc, 2, false, true, false)            // Pointer (byref) to a local variable.  Args: VN's of: 0: local's number, 1: offset.
+ValueNumFuncDef(PtrToArrElem, 4, false, false, false)       // Pointer (byref) to an array element.  Args: 0: array elem type eq class var_types value, VN's of: 1: array, 2: index, 3: offset.
+ValueNumFuncDef(PtrToStatic, 3, false, true, false)         // Pointer (byref) to a static variable (or possibly a field thereof, if the static variable is a struct).
+                                                            // Args: 0: (VN of) the box's address if the static is "boxed",
+                                                            //       1: (VN of) the field sequence,
+                                                            //       2: (VN of) offset for the constituent struct fields
 
-ValueNumFuncDef(PtrToLoc, 2, false, true, false)            // Pointer (byref) to a local variable.  Args: VN's of: 0: var num, 1: FieldSeq.
-ValueNumFuncDef(PtrToArrElem, 4, false, false, false)       // Pointer (byref) to an array element.  Args: 0: array elem type eq class var_types value, VN's of: 1: array, 2: index, 3: FieldSeq.
-ValueNumFuncDef(PtrToStatic, 2, false, true, false)         // Pointer (byref) to a static variable (or possibly a field thereof, if the static variable is a struct).
-                                                            // Args: 0: (VN of) the box's address if the static is "boxed", 1: the field sequence, of which the first element is the static itself.
+ValueNumFuncDef(MDArrLength, 2, false, false, false)        // MD array len, Args: 0: array, 1: dimension
+ValueNumFuncDef(MDArrLowerBound, 2, false, false, false)    // MD array lower bound, Args: 0: array, 1: dimension
 
-ValueNumFuncDef(Phi, 2, false, false, false)        // A phi function.  Only occurs as arg of PhiDef or PhiMemoryDef.  Arguments are SSA numbers of var being defined.
-ValueNumFuncDef(PhiDef, 3, false, false, false)     // Args: 0: local var # (or -1 for memory), 1: SSA #, 2: VN of definition.
-// Wouldn't need this if I'd made memory a regular local variable...
-ValueNumFuncDef(PhiMemoryDef, 2, false, false, false) // Args: 0: VN for basic block pointer, 1: VN of definition
-ValueNumFuncDef(ZeroObj, 1, false, false, false)    // Zero-initialized struct. Args: 0: VN of the class handle.
 ValueNumFuncDef(InitVal, 1, false, false, false)    // An input arg, or init val of a local Args: 0: a constant VN.
-
-
 
 ValueNumFuncDef(Cast, 2, false, false, false)           // VNF_Cast: Cast Operation changes the representations size and unsigned-ness.
                                                         //           Args: 0: Source for the cast operation.
@@ -142,8 +143,9 @@ ValueNumFuncDef(JitReadyToRunNewArr, 3, false, true, false)
 ValueNumFuncDef(Box, 3, false, false, false)
 ValueNumFuncDef(BoxNullable, 3, false, false, false)
 
-ValueNumFuncDef(LazyStrCns, 2, false, true, false)  // lazy-initialized string literal (helper)
-ValueNumFuncDef(NonNullIndirect, 1, false, true, false)  // this indirect is expected to always return a non-null value
+ValueNumFuncDef(LazyStrCns, 2, false, true, false)            // Lazy-initialized string literal (helper)
+ValueNumFuncDef(InvariantLoad, 1, false, false, false)        // Args: 0: (VN of) the address.
+ValueNumFuncDef(InvariantNonNullLoad, 1, false, true, false)  // Args: 0: (VN of) the address.
 ValueNumFuncDef(Unbox, 2, false, true, false)
 
 ValueNumFuncDef(LT_UN, 2, false, false, false)      // unsigned or unordered comparisons
@@ -182,6 +184,10 @@ ValueNumFuncDef(HWI_##isa##_##name, argCount, false, false, false)   // All of t
 
 #elif defined (TARGET_ARM)
 // No Hardware Intrinsics on ARM32
+
+#elif defined (TARGET_LOONGARCH64)
+    //TODO-LOONGARCH64-CQ: add LoongArch64's Hardware Intrinsics Instructions if supported.
+
 #else
 #error Unsupported platform
 #endif

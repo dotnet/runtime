@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Diagnostics.SampleActivity`1.#ctor(System.Object,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.Diagnostics.DiagnosticSource.dll</Left>
+    <Right>lib/net7.0/System.Diagnostics.DiagnosticSource.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Diagnostics.DistributedContextPropagator.PropagatorGetterCallback.#ctor(System.Object,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.Diagnostics.DiagnosticSource.dll</Left>
+    <Right>lib/net7.0/System.Diagnostics.DiagnosticSource.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Diagnostics.DistributedContextPropagator.PropagatorSetterCallback.#ctor(System.Object,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.Diagnostics.DiagnosticSource.dll</Left>
+    <Right>lib/net7.0/System.Diagnostics.DiagnosticSource.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Diagnostics.Metrics.MeasurementCallback`1.#ctor(System.Object,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.Diagnostics.DiagnosticSource.dll</Left>
+    <Right>lib/net7.0/System.Diagnostics.DiagnosticSource.dll</Right>
+  </Suppression>
+</Suppressions>

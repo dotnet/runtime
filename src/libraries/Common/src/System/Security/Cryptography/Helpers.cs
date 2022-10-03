@@ -11,15 +11,7 @@ namespace Internal.Cryptography
     internal static partial class Helpers
     {
         [UnsupportedOSPlatformGuard("browser")]
-        internal static bool HasSymmetricEncryption { get; } =
-#if NETCOREAPP
-            !OperatingSystem.IsBrowser();
-#else
-            true;
-#endif
-
-        [UnsupportedOSPlatformGuard("browser")]
-        internal static bool HasHMAC { get; } =
+        internal static bool HasNonAesSymmetricEncryption =>
 #if NETCOREAPP
             !OperatingSystem.IsBrowser();
 #else
@@ -37,7 +29,7 @@ namespace Internal.Cryptography
 #if NETCOREAPP
         [UnsupportedOSPlatformGuard("android")]
         [UnsupportedOSPlatformGuard("browser")]
-        public static bool IsRC2Supported => !OperatingSystem.IsAndroid();
+        public static bool IsRC2Supported => !OperatingSystem.IsAndroid() && !OperatingSystem.IsBrowser();
 #else
         public static bool IsRC2Supported => true;
 #endif
@@ -50,7 +42,7 @@ namespace Internal.Cryptography
             true;
 #endif
 
-        [return: NotNullIfNotNull("src")]
+        [return: NotNullIfNotNull(nameof(src))]
         public static byte[]? CloneByteArray(this byte[]? src)
         {
             if (src == null)
@@ -71,6 +63,20 @@ namespace Internal.Cryptography
 
             bytesWritten = 0;
             return false;
+        }
+
+        internal static int HashOidToByteLength(string hashOid)
+        {
+            // This file is compiled in netstandard2.0, can't use the HashSizeInBytes consts.
+            return hashOid switch
+            {
+                Oids.Sha256 => 256 >> 3,
+                Oids.Sha384 => 384 >> 3,
+                Oids.Sha512 => 512 >> 3,
+                Oids.Sha1 => 160 >> 3,
+                Oids.Md5 => 128 >> 3,
+                _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashOid)),
+            };
         }
     }
 }

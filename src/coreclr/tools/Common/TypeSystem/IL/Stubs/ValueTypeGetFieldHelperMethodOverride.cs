@@ -142,11 +142,13 @@ namespace Internal.IL.Stubs
             }
         }
 
+        internal const string MetadataName = "__GetFieldHelper";
+
         public override string Name
         {
             get
             {
-                return "__GetFieldHelper";
+                return MetadataName;
             }
         }
 
@@ -154,7 +156,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                return "__GetFieldHelper";
+                return MetadataName;
             }
         }
     }

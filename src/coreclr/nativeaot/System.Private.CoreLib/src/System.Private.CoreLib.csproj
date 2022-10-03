@@ -21,7 +21,7 @@
   <PropertyGroup>
     <DefineConstants>SYSTEM_PRIVATE_CORELIB;FEATURE_MANAGED_ETW_CHANNELS;FEATURE_MANAGED_ETW;$(DefineConstants)</DefineConstants>
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
-    <TargetsCoreRT>true</TargetsCoreRT>
+    <FeatureNativeAot>true</FeatureNativeAot>
     <RuntimeBasePath>..\..\Runtime.Base\src\</RuntimeBasePath>
   </PropertyGroup>
 
@@ -36,10 +36,6 @@
   <PropertyGroup>
     <FeatureHardwareIntrinsics>true</FeatureHardwareIntrinsics>
     <FeatureSharedLowLevelLock>true</FeatureSharedLowLevelLock>
-  </PropertyGroup>
-  <PropertyGroup>
-    <FeatureGenericMath>true</FeatureGenericMath>
-    <DefineConstants Condition="'$(FeatureGenericMath)' == 'true'">$(DefineConstants);FEATURE_GENERIC_MATH</DefineConstants>
   </PropertyGroup>
 
   <!-- Sources -->
@@ -77,16 +73,29 @@
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\ModuleHeaders.cs">
       <Link>Internal\Runtime\ModuleHeaders.cs</Link>
     </Compile>
+    <Compile Include="$(CompilerCommonPath)\Internal\Runtime\MetadataBlob.cs">
+      <Link>MetadataBlob.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CompilerCommonPath)\Internal\NativeFormat\NativeFormatReader.cs">
       <Link>Common\src\Internal\NativeFormat\NativeFormatReader.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\Internal\NativeFormat\NativeFormatReader.Primitives.cs">
+      <Link>Common\src\Internal\NativeFormat\NativeFormatReader.Primitives.cs</Link>
+    </Compile>
+    <Compile Include="$(CompilerCommonPath)\Internal\NativeFormat\NativeFormatReader.String.cs">
+      <Link>Common\src\Internal\NativeFormat\NativeFormatReader.String.cs</Link>
+    </Compile>
+    <Compile Include="$(AotCommonPath)\Internal\Runtime\TypeLoader\ExternalReferencesTable.cs">
+      <Link>Common\src\Internal\Runtime\TypeLoader\ExternalReferencesTable.cs</Link>
     </Compile>
     <Compile Include="Internal\Runtime\ThreadStatics.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\StartupCode\StartupCodeHelpers.Extensions.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\ArrayHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\InteropHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\LdTokenHelpers.cs" />
+    <Compile Include="Internal\Runtime\CompilerHelpers\RuntimeInteropData.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\SynchronizedMethodHelpers.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\TypedReferenceHelpers.cs" />
   </ItemGroup>
@@ -111,7 +120,6 @@
     <Compile Include="Internal\Runtime\Augments\RuntimeAugments.cs" />
     <Compile Include="Internal\Runtime\Augments\ReflectionExecutionDomainCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\TypeLoaderCallbacks.cs" />
-    <Compile Include="Internal\Runtime\Augments\InteropCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\StackTraceMetadataCallbacks.cs" />
     <Compile Include="Internal\Runtime\Augments\DynamicDelegateAugments.cs" />
   </ItemGroup>
@@ -124,11 +132,11 @@
   <ItemGroup>
     <Compile Include="System\Reflection\RuntimeAssembly.cs" />
     <Compile Include="System\Reflection\RuntimeAssemblyName.cs" />
-    <Compile Include="System\Reflection\AssemblyNameHelpers.cs" />
     <Compile Include="System\Reflection\AssemblyRuntimeNameHelpers.cs" />
-    <Compile Include="System\Reflection\Attribute.CoreRT.cs" />
-    <Compile Include="System\Reflection\Assembly.CoreRT.cs" />
+    <Compile Include="System\Reflection\Attribute.NativeAot.cs" />
+    <Compile Include="System\Reflection\Assembly.NativeAot.cs" />
     <Compile Include="System\Reflection\BinderBundle.cs" />
+    <Compile Include="System\Reflection\DynamicInvokeInfo.cs" />
     <Compile Include="System\Reflection\Emit\AssemblyBuilder.cs" />
     <Compile Include="System\Reflection\Emit\ConstructorBuilder.cs" />
     <Compile Include="System\Reflection\Emit\CustomAttributeBuilder.cs" />
@@ -148,103 +156,103 @@
     <Compile Include="System\Reflection\Emit\SignatureHelper.cs" />
     <Compile Include="System\Reflection\Emit\TypeBuilder.cs" />
     <Compile Include="System\Reflection\EnumInfo.cs" />
-    <Compile Include="System\Reflection\FieldInfo.CoreRT.cs" />
-    <Compile Include="System\Reflection\MethodBase.CoreRT.cs" />
+    <Compile Include="System\Reflection\FieldInfo.NativeAot.cs" />
+    <Compile Include="System\Reflection\MethodBase.NativeAot.cs" />
     <Compile Include="System\Reflection\Metadata\AssemblyExtensions.cs" />
     <Compile Include="System\Reflection\Metadata\MetadataUpdater.cs" />
-    <Compile Include="System\Runtime\InteropServices\CriticalHandle.CoreRT.cs" />
-    <Compile Include="System\Activator.CoreRT.cs" />
-    <Compile Include="System\AppContext.CoreRT.cs" />
+    <Compile Include="System\Runtime\InteropServices\CriticalHandle.NativeAot.cs" />
+    <Compile Include="System\Activator.NativeAot.cs" />
+    <Compile Include="System\AppContext.NativeAot.cs" />
     <Compile Include="System\ArgIterator.cs" />
-    <Compile Include="System\Buffer.CoreRT.cs" />
-    <Compile Include="System\Collections\Generic\ArraySortHelper.CoreRT.cs" />
-    <Compile Include="System\Collections\Generic\Comparer.CoreRT.cs" />
-    <Compile Include="System\Collections\Generic\EqualityComparer.CoreRT.cs" />
+    <Compile Include="System\Buffer.NativeAot.cs" />
+    <Compile Include="System\Collections\Generic\ArraySortHelper.NativeAot.cs" />
+    <Compile Include="System\Collections\Generic\Comparer.NativeAot.cs" />
+    <Compile Include="System\Collections\Generic\EqualityComparer.NativeAot.cs" />
     <Compile Include="System\Collections\Generic\EqualOnlyComparer.cs" />
     <Compile Include="System\InvokeUtils.cs" />
-    <Compile Include="System\IO\FileLoadException.CoreRT.cs" />
+    <Compile Include="System\IO\FileLoadException.NativeAot.cs" />
     <Compile Include="System\RuntimeMethodHandle.cs" />
-    <Compile Include="System\Diagnostics\Debug.CoreRT.cs" />
+    <Compile Include="System\Diagnostics\Debug.NativeAot.cs" />
     <Compile Include="System\Diagnostics\Debugger.cs" />
     <Compile Include="System\Diagnostics\DebuggerGuidedStepThroughAttribute.cs" />
     <Compile Include="System\Diagnostics\DebugAnnotations.cs" />
-    <Compile Include="System\Diagnostics\StackFrame.CoreRT.cs" />
+    <Compile Include="System\Diagnostics\StackFrame.NativeAot.cs" />
     <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
-    <Compile Include="System\Diagnostics\StackTrace.CoreRT.cs" />
-    <Compile Include="System\Enum.CoreRT.cs" />
-    <Compile Include="System\Environment.CoreRT.cs" />
-    <Compile Include="System\GC.cs" />
-    <Compile Include="System\Helpers.cs" />
-    <Compile Include="System\Math.CoreRT.cs" />
-    <Compile Include="System\MathF.CoreRT.cs" />
-    <Compile Include="System\MissingMemberException.CoreRT.cs" />
+    <Compile Include="System\Diagnostics\StackTrace.NativeAot.cs" />
+    <Compile Include="System\Enum.NativeAot.cs" />
+    <Compile Include="System\Environment.NativeAot.cs" />
+    <Compile Include="System\GC.NativeAot.cs" />
+    <Compile Include="System\Math.NativeAot.cs" />
+    <Compile Include="System\MathF.NativeAot.cs" />
     <Compile Include="System\MulticastDelegate.cs" />
-    <Compile Include="System\Object.CoreRT.cs" />
+    <Compile Include="System\Object.NativeAot.cs" />
     <Compile Include="System\Reflection\MissingMetadataException.cs" />
-    <Compile Include="System\Resources\ManifestBasedResourceGroveler.CoreRT.cs" />
+    <Compile Include="System\Resources\ManifestBasedResourceGroveler.NativeAot.cs" />
     <Compile Include="System\RuntimeArgumentHandle.cs" />
     <Compile Include="System\RuntimeType.cs" />
+    <Compile Include="System\Runtime\ControlledExecution.NativeAot.cs" />
     <Compile Include="System\Runtime\DependentHandle.cs" />
     <Compile Include="System\Runtime\CompilerServices\ForceLazyDictionaryAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\EagerStaticClassConstructionAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ForceDictionaryLookupsAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ReflectionBlockedAttribute.cs" />
-    <Compile Include="System\Runtime\CompilerServices\RuntimeFeature.CoreRT.cs" />
+    <Compile Include="System\Runtime\CompilerServices\RuntimeFeature.NativeAot.cs" />
     <Compile Include="System\Runtime\CompilerServices\StaticClassConstructionContext.cs" />
     <Compile Include="System\Runtime\ExceptionIDs.cs" />
-    <Compile Include="System\Runtime\GCSettings.CoreRT.cs" />
+    <Compile Include="System\Runtime\GCSettings.NativeAot.cs" />
     <Compile Include="System\Runtime\TypeLoaderExports.cs" />
     <Compile Include="System\Runtime\InitializeFinalizerThread.cs" />
-    <Compile Include="System\Runtime\InteropServices\ComEventsHelper.CoreRT.cs" Condition="'$(FeatureCominterop)' == 'true'" />
-    <Compile Include="System\Runtime\InteropServices\ComWrappers.CoreRT.cs" Condition="'$(FeatureComWrappers)' == 'true'" />
-    <Compile Include="System\Runtime\InteropServices\GCHandle.CoreRT.cs" />
+    <Compile Include="System\Runtime\InteropServices\ComEventsHelper.NativeAot.cs" Condition="'$(FeatureCominterop)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\ComWrappers.NativeAot.cs" Condition="'$(FeatureComWrappers)' == 'true'" />
+    <Compile Include="System\Runtime\InteropServices\GCHandle.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\InteropExtensions.cs" />
     <Compile Include="System\Runtime\InteropServices\NativeFunctionPointerWrapper.cs" />
-    <Compile Include="System\Runtime\InteropServices\NativeLibrary.CoreRT.cs" />
+    <Compile Include="System\Runtime\InteropServices\NativeLibrary.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal.CoreRT.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal.Com.cs" Condition="'$(FeatureCominterop)' == 'true'" />
-    <Compile Include="System\Runtime\InteropServices\MemoryMarshal.CoreRT.cs" />
-    <Compile Include="System\Runtime\InteropServices\SafeHandle.CoreRT.cs" />
+    <Compile Include="System\Runtime\InteropServices\MissingInteropDataException.cs" />
+    <Compile Include="System\Runtime\InteropServices\MemoryMarshal.NativeAot.cs" />
+    <Compile Include="System\Runtime\InteropServices\SafeHandle.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\UnsafeGCHandle.cs" />
-    <Compile Include="System\Runtime\Intrinsics\X86\X86Base.CoreRT.cs" Condition="'$(SupportsX86Intrinsics)' == 'true'" />
-    <Compile Include="System\Runtime\JitInfo.CoreRT.cs" />
-    <Compile Include="System\Runtime\Loader\AssemblyLoadContext.CoreRT.cs" />
-    <Compile Include="System\String.CoreRT.cs" />
+    <Compile Include="System\Runtime\Intrinsics\X86\X86Base.NativeAot.cs" Condition="'$(SupportsX86Intrinsics)' == 'true'" />
+    <Compile Include="System\Runtime\JitInfo.NativeAot.cs" />
+    <Compile Include="System\Runtime\Loader\AssemblyLoadContext.NativeAot.cs" />
+    <Compile Include="System\String.NativeAot.cs" />
     <Compile Include="System\String.Intern.cs" />
-    <Compile Include="System\Array.CoreRT.cs" />
+    <Compile Include="System\Array.NativeAot.cs" />
     <Compile Include="System\Delegate.cs" />
     <Compile Include="System\RuntimeTypeHandle.cs" />
-    <Compile Include="System\Exception.CoreRT.cs" />
+    <Compile Include="System\Exception.NativeAot.cs" />
     <Compile Include="System\RuntimeExceptionHelpers.cs" />
     <Compile Include="System\EETypePtr.cs" />
     <Compile Include="System\Runtime\RuntimeImports.cs" />
     <Compile Include="System\ModuleHandle.cs" />
     <Compile Include="System\RuntimeFieldHandle.cs" />
-    <Compile Include="System\Text\StringBuilder.CoreRT.cs" />
+    <Compile Include="System\Text\StringBuilder.NativeAot.cs" />
     <Compile Include="System\Threading\ManagedThreadId.cs" />
     <Compile Include="System\Threading\Lock.cs" />
     <Compile Include="System\Threading\Condition.cs" />
     <Compile Include="System\Threading\Interlocked.cs" />
     <Compile Include="System\Threading\LockHolder.cs" />
-    <Compile Include="System\Threading\Monitor.CoreRT.cs" />
+    <Compile Include="System\Threading\Monitor.NativeAot.cs" />
     <Compile Include="System\Threading\ObjectHeader.cs" />
     <Compile Include="System\Threading\Overlapped.cs" />
     <Compile Include="System\Threading\SyncTable.cs" />
-    <Compile Include="System\Threading\Thread.CoreRT.cs" />
-    <Compile Include="System\Threading\ThreadPool.CoreRT.cs" />
-    <Compile Include="System\Type.CoreRT.cs" />
+    <Compile Include="System\Threading\Thread.NativeAot.cs" />
+    <Compile Include="System\Threading\ThreadPool.NativeAot.cs" />
+    <Compile Include="System\Type.NativeAot.cs" />
     <Compile Include="System\Type.Internal.cs" />
     <Compile Include="System\TypedReference.cs" />
     <Compile Include="System\TypeUnificationKey.cs" />
-    <Compile Include="System\TypeLoadException.CoreRT.cs" />
+    <Compile Include="System\TypeLoadException.NativeAot.cs" />
     <Compile Include="System\ValueType.cs" />
     <Compile Include="System\Runtime\RuntimeExportAttribute.cs" />
     <Compile Include="System\Runtime\RuntimeImportAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\ClassConstructorRunner.cs" />
-    <Compile Include="System\Runtime\CompilerServices\RuntimeHelpers.CoreRT.cs" />
-    <Compile Include="System\WeakReference.CoreRT.cs" />
-    <Compile Include="System\WeakReference.T.CoreRT.cs" />
+    <Compile Include="System\Runtime\CompilerServices\RuntimeHelpers.NativeAot.cs" />
+    <Compile Include="System\WeakReference.NativeAot.cs" />
+    <Compile Include="System\WeakReference.T.NativeAot.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.ExitProcess.cs">
@@ -253,6 +261,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeThreadPoolIOHandle.cs" />
+    <Compile Include="System\Runtime\InteropServices\NativeLibrary.NativeAot.Windows.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Windows.cs" />
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\Variant.cs">
       <Link>System\Runtime\InteropServices\Variant.cs</Link>
@@ -278,8 +287,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\OleAut32\Interop.VariantClear.cs">
       <Link>Interop\Windows\OleAut32\Interop.VariantClear.cs</Link>
     </Compile>
-    <Compile Include="System\Environment.CoreRT.Windows.cs" />
-    <Compile Include="System\Environment.CoreRT.Win32.cs" />
+    <Compile Include="System\Environment.NativeAot.Windows.cs" />
+    <Compile Include="System\Environment.NativeAot.Win32.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetTickCount64.cs">
       <Link>Interop\Windows\Kernel32\Interop.GetTickCount64.cs</Link>
     </Compile>
@@ -296,7 +305,7 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.DynamicLoad.cs">
       <Link>Interop\Windows\Kernel32\Interop.DynamicLoad.cs</Link>
     </Compile>
-    <Compile Include="System\Threading\Thread.CoreRT.Windows.cs" />
+    <Compile Include="System\Threading\Thread.NativeAot.Windows.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.ThreadPoolIO.cs">
       <Link>Interop\Windows\Kernel32\Interop.ThreadPoolIO.cs</Link>
     </Compile>
@@ -311,10 +320,11 @@
     <Compile Include="System\Threading\Win32ThreadPoolPreAllocatedOverlapped.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
-    <Compile Include="System\Environment.CoreRT.Unix.cs" />
+    <Compile Include="System\Environment.NativeAot.Unix.cs" />
+    <Compile Include="System\Runtime\InteropServices\NativeLibrary.NativeAot.Unix.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
     <Compile Include="System\Threading\LowLevelLifoSemaphore.Unix.cs" />
-    <Compile Include="System\Threading\Thread.CoreRT.Unix.cs" />
+    <Compile Include="System\Threading\Thread.NativeAot.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Abort.cs">
       <Link>Interop\Unix\System.Native\Interop.Abort.cs</Link>
     </Compile>
@@ -327,9 +337,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SchedGetCpu.cs">
       <Link>Interop\Unix\System.Native\Interop.SchedGetCpu.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.DynamicLoad.cs">
-      <Link>Interop\Unix\System.Native\Interop.DynamicLoad.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Threading.cs">
       <Link>Interop\Unix\System.Native\Interop.Threading.cs</Link>
     </Compile>
@@ -338,8 +345,14 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(CompilerCommonPath)\System\Collections\Generic\ArrayBuilder.cs">
+      <Link>ArrayBuilder.cs</Link>
+    </Compile>
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\Utilities\LockFreeReaderHashtable.cs">
       <Link>Utilities\LockFreeReaderHashtable.cs</Link>
+    </Compile>
+    <Compile Include="$(AotCommonPath)\System\Collections\Generic\EnumerableExtensions.cs">
+      <Link>System\Collections\Generic\EnumerableExtensions.cs</Link>
     </Compile>
     <Compile Include="$(AotCommonPath)\System\Collections\Generic\LowLevelList.cs">
       <Link>System\Collections\Generic\LowLevelList.cs</Link>
@@ -368,8 +381,8 @@
     <Compile Include="$(AotCommonPath)\System\Runtime\CompilerServices\__BlockReflectionAttribute.cs">
       <Link>System\Runtime\CompilerServices\__BlockReflectionAttribute.cs</Link>
     </Compile>
-    <Compile Include="$(CompilerCommonPath)\Internal\NativeFormat\NativeFormatReader.Primitives.cs">
-      <Link>Internal\NativeFormat\NativeFormatReader.Primitives.cs</Link>
+    <Compile Include="$(AotCommonPath)\System\Runtime\CompilerServices\DeveloperExperienceState.cs">
+      <Link>System\Runtime\CompilerServices\DeveloperExperienceState.cs</Link>
     </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\CanonTypeKind.cs">
       <Link>Internal\Runtime\CanonTypeKind.cs</Link>
@@ -384,7 +397,157 @@
       <Link>Internal\Runtime\LowLevelStringConverter.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- For now, link Runtime.Base into System.Private.CoreLib for CoreRT until there is proper multifile build -->
+  <!-- Native metadata reader -->
+  <PropertyGroup>
+    <MetadataCommonPath>$(CompilerCommonPath)\Internal\Metadata\NativeFormat</MetadataCommonPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MetadataCommonPath)\NativeFormatReaderCommonGen.cs" />
+    <Compile Include="$(MetadataCommonPath)\MdBinaryReader.cs" />
+    <Compile Include="$(MetadataCommonPath)\MdBinaryReaderGen.cs" />
+    <Compile Include="$(MetadataCommonPath)\NativeMetadataReader.cs" />
+    <Compile Include="$(MetadataCommonPath)\NativeFormatReaderGen.cs" />
+  </ItemGroup>
+  <!-- Reflection.Core -->
+  <ItemGroup>
+    <Compile Include="System\ActivatorImplementation.cs" />
+    <Compile Include="System\Reflection\Runtime\Assemblies\NativeFormat\NativeFormatRuntimeAssembly.cs" />
+    <Compile Include="System\Reflection\Runtime\Assemblies\NativeFormat\NativeFormatRuntimeAssembly.GetTypeCore.CaseInsensitive.cs" />
+    <Compile Include="System\Reflection\Runtime\Assemblies\NativeFormat\NativeFormatRuntimeAssembly.GetTypeCore.CaseSensitive.cs" />
+    <Compile Include="System\Reflection\Runtime\Assemblies\RuntimeAssemblyInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\ConstructorPolicies.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\EventPolicies.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\FieldPolicies.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\MemberPolicies.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\MemberTypeIndex.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\MethodPolicies.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\NameFilter.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\NameFilter.NativeFormat.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\NestedTypePolicies.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\PropertyPolicies.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\QueriedMemberList.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\QueryResult.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\QueryResult.Enumerator.cs" />
+    <Compile Include="System\Reflection\Runtime\BindingFlagSupport\Shared.cs" />
+    <Compile Include="System\Reflection\Runtime\CustomAttributes\NativeFormat\NativeFormatCustomAttributeData.cs" />
+    <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimeCustomAttributeData.cs" />
+    <Compile Include="System\Reflection\Runtime\CustomAttributes\RuntimePseudoCustomAttributeData.cs" />
+    <Compile Include="System\Reflection\Runtime\Dispensers\DefaultDispenserPolicy.cs" />
+    <Compile Include="System\Reflection\Runtime\Dispensers\Dispenser.cs" />
+    <Compile Include="System\Reflection\Runtime\Dispensers\DispenserAlgorithm.cs" />
+    <Compile Include="System\Reflection\Runtime\Dispensers\DispenserFactory.cs" />
+    <Compile Include="System\Reflection\Runtime\Dispensers\DispenserPolicy.cs" />
+    <Compile Include="System\Reflection\Runtime\Dispensers\DispenserScenario.cs" />
+    <Compile Include="System\Reflection\Runtime\Dispensers\DispenserThatAlwaysCreates.cs" />
+    <Compile Include="System\Reflection\Runtime\Dispensers\DispenserThatAlwaysReuses.cs" />
+    <Compile Include="System\Reflection\Runtime\Dispensers\DispenserThatReusesAsLongAsKeyIsAlive.cs" />
+    <Compile Include="System\Reflection\Runtime\Dispensers\DispenserThatReusesAsLongAsValueIsAlive.cs" />
+    <Compile Include="System\Reflection\Runtime\EventInfos\NativeFormat\NativeFormatRuntimeEventInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\EventInfos\RuntimeEventInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\FieldInfos\NativeFormat\NativeFormatRuntimeFieldInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\FieldInfos\RuntimeFieldInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\General\Assignability.cs" />
+    <Compile Include="System\Reflection\Runtime\General\BlockedRuntimeTypeNameGenerator.cs" />
+    <Compile Include="System\Reflection\Runtime\General\Dispensers.NativeFormat.cs" />
+    <Compile Include="System\Reflection\Runtime\General\Helpers.NativeFormat.cs" />
+    <Compile Include="System\Reflection\Runtime\General\ReflectionCoreCallbacksImplementation.cs" />
+    <Compile Include="System\Reflection\Runtime\General\Dispensers.cs" />
+    <Compile Include="System\Reflection\Runtime\General\Helpers.cs" />
+    <Compile Include="System\Reflection\Runtime\General\IRuntimeMemberInfoWithNoMetadataDefinition.cs" />
+    <Compile Include="System\Reflection\Runtime\General\LegacyCustomAttributeApis.cs" />
+    <Compile Include="System\Reflection\Runtime\General\ListBuilder.cs" />
+    <Compile Include="System\Reflection\Runtime\General\MetadataReaderExtensions.cs" />
+    <Compile Include="System\Reflection\Runtime\General\MetadataReaderExtensions.NativeFormat.cs" />
+    <Compile Include="System\Reflection\Runtime\General\NamespaceChain.cs" />
+    <Compile Include="System\Reflection\Runtime\General\NativeFormat\DefaultValueParser.cs" />
+    <Compile Include="System\Reflection\Runtime\General\RuntimeTypeHandleKey.cs" />
+    <Compile Include="System\Reflection\Runtime\General\ThunkedApis.cs" />
+    <Compile Include="System\Reflection\Runtime\General\ToStringUtils.cs" />
+    <Compile Include="System\Reflection\Runtime\General\TypeContext.cs" />
+    <Compile Include="System\Reflection\Runtime\General\TypeForwardInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\General\TypeResolver.cs" />
+    <Compile Include="System\Reflection\Runtime\General\TypeResolver.NativeFormat.cs" />
+    <Compile Include="System\Reflection\Runtime\General\TypeUnifier.cs" />
+    <Compile Include="System\Reflection\Runtime\General\TypeUnifier.NativeFormat.cs" />
+    <Compile Include="System\Reflection\Runtime\General\QHandles.cs" />
+    <Compile Include="System\Reflection\Runtime\General\QHandles.NativeFormat.cs" />
+    <Compile Include="System\Reflection\Runtime\General\QSignatureTypeHandle.cs" />
+    <Compile Include="System\Reflection\Runtime\General\QSignatureTypeHandle.NativeFormat.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\NativeFormat\NativeFormatMethodCommon.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\CustomMethodInvoker.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\CustomMethodInvokerAction.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\CustomMethodMapper.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\CustomMethodMapper.Nullable.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\CustomMethodMapper.String.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\InvokerOptions.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\OpenMethodInvoker.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeClsIdNullaryConstructorInfo.cs" Condition="'$(FeatureComInterop)' == 'true'" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeConstructedGenericMethodInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeConstructorInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeDummyMethodInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeMethodHelpers.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimePlainConstructorInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeSyntheticConstructorInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\IRuntimeMethodCommon.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeMethodInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeNamedMethodInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\RuntimeSyntheticMethodInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\SyntheticMethodId.cs" />
+    <Compile Include="System\Reflection\Runtime\MethodInfos\VirtualRuntimeParameterInfoArray.cs" />
+    <Compile Include="System\Reflection\Runtime\Modules\RuntimeModule.cs" />
+    <Compile Include="System\Reflection\Runtime\Modules\NativeFormat\NativeFormatRuntimeModule.cs" />
+    <Compile Include="System\Reflection\Runtime\ParameterInfos\NativeFormat\NativeFormatMethodParameterInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeFatMethodParameterInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeMethodParameterInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeParameterInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimePropertyIndexParameterInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeThinMethodParameterInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\ParameterInfos\RuntimeSyntheticParameterInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\PropertyInfos\NativeFormat\NativeFormatRuntimePropertyInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\PropertyInfos\RuntimePropertyInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\NativeFormat\NativeFormatRuntimeNamedTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\NativeFormat\NativeFormatRuntimeGenericParameterTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\NativeFormat\NativeFormatRuntimeNamedTypeInfo.UnificationKey.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\NativeFormat\NativeFormatRuntimeTypeInfo.CoreGetDeclared.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeArrayTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeByRefTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeClsIdTypeInfo.cs" Condition="'$(FeatureComInterop)' == 'true'"/>
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeClsIdTypeInfo.UnificationKey.cs" Condition="'$(FeatureComInterop)' == 'true'" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeConstructedGenericTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeConstructedGenericTypeInfo.UnificationKey.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeGenericParameterTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\NativeFormat\NativeFormatRuntimeGenericParameterTypeInfoForMethods.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\NativeFormat\NativeFormatRuntimeGenericParameterTypeInfoForMethods.UnificationKey.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\NativeFormat\NativeFormatRuntimeGenericParameterTypeInfoForTypes.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\NativeFormat\NativeFormatRuntimeGenericParameterTypeInfoForTypes.UnificationKey.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeHasElementTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeHasElementTypeInfo.UnificationKey.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeNamedTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeNoMetadataNamedTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimePointerTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeBlockedTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeDefinitionTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.GetMember.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.BindingFlags.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.CoreGetDeclared.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.InvokeMember.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeTypeInfo.TypeComponentsCache.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeParsing\GetTypeOptions.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeParsing\TypeName.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeParsing\TypeLexer.cs" />
+    <Compile Include="System\Reflection\Runtime\TypeParsing\TypeParser.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Internal\Reflection\Core\AssemblyBinder.cs" />
+    <Compile Include="Internal\Reflection\Core\ReflectionDomainSetup.cs" />
+    <Compile Include="Internal\Reflection\Core\Execution\ExecutionDomain.cs" />
+    <Compile Include="Internal\Reflection\Core\Execution\ExecutionEnvironment.cs" />
+    <Compile Include="Internal\Reflection\Core\Execution\FieldAccessor.cs" />
+    <Compile Include="Internal\Reflection\Core\Execution\MethodInvoker.cs" />
+    <Compile Include="Internal\Reflection\Core\Execution\ReflectionCoreExecution.cs" />
+  </ItemGroup>
+  <!-- For now, link Runtime.Base into System.Private.CoreLib until there is proper multifile build -->
   <PropertyGroup>
     <InPlaceRuntime>true</InPlaceRuntime>
   </PropertyGroup>
@@ -452,4 +615,12 @@
     <!-- This is the T4 template service and is added by VS anytime you modify a T4 template. Required for .tt files. -->
     <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
   </ItemGroup>
+
+  <!-- Import refererence assembly and ApiCompat logic -->
+  <PropertyGroup>
+    <IsSourceProject>true</IsSourceProject>
+    <ApiCompatValidateBaseline>true</ApiCompatValidateBaseline>
+  </PropertyGroup>
+  <Import Project="$(RepositoryEngineeringDir)resolveContract.props" />
+  <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
 </Project>

@@ -3,7 +3,7 @@
 
 namespace Internal.TypeSystem.Interop
 {
-    // Functionality related to determinstic ordering of types
+    // Functionality related to deterministic ordering of types
     partial class InlineArrayType
     {
         protected override int ClassCode => 226817075;

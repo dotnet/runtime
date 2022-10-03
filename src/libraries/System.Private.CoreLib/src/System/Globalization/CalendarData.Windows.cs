@@ -64,24 +64,22 @@ namespace System.Globalization
             return result;
         }
 
-        private void InsertOrSwapOverride(string? value, ref string[] destination)
+        private static void InsertOrSwapOverride(string? value, ref string[] destination)
         {
             if (value == null)
                 return;
 
-            for (int i = 0; i < destination.Length; i++)
+            int i = Array.IndexOf(destination, value);
+            if (i >= 0)
             {
-                if (destination[i] == value)
+                if (i > 0)
                 {
-                    if (i > 0)
-                    {
-                        string tmp = destination[0];
-                        destination[0] = value;
-                        destination[i] = tmp;
-                    }
-
-                    return;
+                    string tmp = destination[0];
+                    destination[0] = value;
+                    destination[i] = tmp;
                 }
+
+                return;
             }
 
             string[] newArray = new string[destination.Length + 1];
@@ -170,13 +168,13 @@ namespace System.Globalization
                     calendarId = CalendarId.JAPAN;
                     break;
                 case CalendarId.JULIAN:               // Data looks like gregorian US
-                case CalendarId.CHINESELUNISOLAR:     // Algorithmic, so actual data is irrelevent
-                case CalendarId.SAKA:                 // reserved to match Office but not implemented in our code, so data is irrelevent
-                case CalendarId.LUNAR_ETO_CHN:        // reserved to match Office but not implemented in our code, so data is irrelevent
-                case CalendarId.LUNAR_ETO_KOR:        // reserved to match Office but not implemented in our code, so data is irrelevent
-                case CalendarId.LUNAR_ETO_ROKUYOU:    // reserved to match Office but not implemented in our code, so data is irrelevent
-                case CalendarId.KOREANLUNISOLAR:      // Algorithmic, so actual data is irrelevent
-                case CalendarId.TAIWANLUNISOLAR:      // Algorithmic, so actual data is irrelevent
+                case CalendarId.CHINESELUNISOLAR:     // Algorithmic, so actual data is irrelevant
+                case CalendarId.SAKA:                 // reserved to match Office but not implemented in our code, so data is irrelevant
+                case CalendarId.LUNAR_ETO_CHN:        // reserved to match Office but not implemented in our code, so data is irrelevant
+                case CalendarId.LUNAR_ETO_KOR:        // reserved to match Office but not implemented in our code, so data is irrelevant
+                case CalendarId.LUNAR_ETO_ROKUYOU:    // reserved to match Office but not implemented in our code, so data is irrelevant
+                case CalendarId.KOREANLUNISOLAR:      // Algorithmic, so actual data is irrelevant
+                case CalendarId.TAIWANLUNISOLAR:      // Algorithmic, so actual data is irrelevant
                     calendarId = CalendarId.GREGORIAN_US;
                     break;
             }
@@ -212,7 +210,7 @@ namespace System.Globalization
                     // See if this works
                     if (!CallGetCalendarInfoEx(localeName, calendar, CAL_SCALNAME, out string _))
                     {
-                        // Failed, set it to a locale (fa-IR) that's alway has Gregorian US available in the OS
+                        // Failed, set it to a locale (fa-IR) that always has Gregorian US available in the OS
                         localeName = "fa-IR";
 
                         // See if that works

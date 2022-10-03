@@ -49,7 +49,6 @@ const int DFT_CODE_HEAP_SIZE = 8192;
 class StgStringPool;
 class StgBlobPool;
 class StgCodePool;
-class CorProfileData;
 
 //  Perform binary search on index table.
 //
@@ -97,7 +96,7 @@ protected:
     BYTE       *m_pSegData;     // Pointer to the data.
     StgPoolSeg *m_pNextSeg;     // Pointer to next segment, or NULL.
     // Size of the segment buffer. If this is last segment (code:m_pNextSeg is NULL), then it's the
-    // allocation size. If this is not the last segment, then this is shrinked to segment data size
+    // allocation size. If this is not the last segment, then this is shrunk to segment data size
     // (code:m_cbSegNext).
     ULONG       m_cbSegSize;
     ULONG       m_cbSegNext;    // Offset of next available byte in segment.
@@ -234,7 +233,7 @@ public:
 
 //*****************************************************************************
 // Return a pointer to a null terminated string given an offset previously
-// handed out by AddString or FindString. Only valid for use if the Storage pool is actuall ReadOnly, and not derived
+// handed out by AddString or FindString. Only valid for use if the Storage pool is actually ReadOnly, and not derived
 //*****************************************************************************
     __checkReturn
     inline HRESULT GetStringReadOnly(
@@ -795,7 +794,7 @@ public:
 //*****************************************************************************
 // Load a string heap from persisted memory.  If a copy of the data is made
 // (so that it may be updated), then a new hash table is generated which can
-// be used to elminate duplicates with new strings.
+// be used to eliminate duplicates with new strings.
 //*****************************************************************************
     __checkReturn
     HRESULT InitOnMem(                        // Return code.
@@ -952,7 +951,7 @@ public:
 //*****************************************************************************
 // Load a Guid heap from persisted memory.  If a copy of the data is made
 // (so that it may be updated), then a new hash table is generated which can
-// be used to elminate duplicates with new Guids.
+// be used to eliminate duplicates with new Guids.
 //*****************************************************************************
     __checkReturn
     HRESULT InitOnMem(                      // Return code.
@@ -1382,7 +1381,7 @@ private:
 
 //*****************************************************************************
 // CGrowableStream is a simple IStream implementation that grows as
-// its written to. All the memory is contigious, so read access is
+// its written to. All the memory is contiguous, so read access is
 // fast. A grow does a realloc, so be aware of that if you're going to
 // use this.
 //*****************************************************************************
