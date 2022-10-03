@@ -2167,7 +2167,7 @@ extern "C" EXPORT_API MonoDomain* EXPORT_CC mono_jit_init_version(const char *fi
     GCHeapUtilities::SetGCName("unitygc.dll");
 #endif
 
-    g_add_internal_lock.Init(CrstMonoICalls);
+    g_add_internal_lock.Init(CrstLeafLock);
 
     HRESULT hr;
 
