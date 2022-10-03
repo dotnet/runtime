@@ -325,8 +325,6 @@ namespace System.Net.Http
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
             Justification = "The values being passed into Write have the commonly used properties being preserved with DynamicDependency.")]
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
-            Justification = "The values being passed into Write have the commonly used properties being preserved with DynamicDependency.")]
         private static void Write<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(
             DiagnosticSource diagnosticSource,
             string name,
