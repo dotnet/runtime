@@ -1125,6 +1125,7 @@ namespace System.Xml.Schema
 
                     values.Add(typedValue);
                 }
+                Debug.Assert(_itemType.ListValueType.GetElementType() == _itemType.ValueType);
                 array = ToArray(values, _itemType.ListValueType);
             }
             if (values.Count < _minListSize)
@@ -1142,12 +1143,12 @@ namespace System.Xml.Schema
         Error:
             return exception;
 
+            // TODO: Replace with https://github.com/dotnet/runtime/issues/76478 once available
             [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
                 Justification = "Array type is always present as it is passed in as a parameter.")]
-            Array ToArray(ArrayList values, Type arrayType)
+            static Array ToArray(ArrayList values, Type arrayType)
             {
                 Array array = values.ToArray(arrayType.GetElementType()!);
-                Debug.Assert(array.GetType() == _itemType.ValueType.MakeArrayType());
                 return array;
             }
         }
