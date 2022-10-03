@@ -447,5 +447,45 @@ namespace System.Formats.Tar.Tests
 
             Assert.Throws<ArgumentException>("entry", () => writer.WriteEntry(entry));
         }
+
+        public static IEnumerable<object[]> WriteEntry_UsingTarEntry_FromTarReader_IntoTarWriter_TheoryData()
+        {
+            foreach (var entryFormat in new[] { TarEntryFormat.V7, TarEntryFormat.Ustar, TarEntryFormat.Pax, TarEntryFormat.Gnu })
+            {
+                foreach (var entryType in new[] { entryFormat == TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile, TarEntryType.Directory, TarEntryType.SymbolicLink })
+                {
+                    foreach (bool unseekableStream in new[] { false, true })
+                    {
+                        yield return new object[] { entryFormat, entryType, unseekableStream };
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(WriteEntry_UsingTarEntry_FromTarReader_IntoTarWriter_TheoryData))]
+        public void WriteEntry_UsingTarEntry_FromTarReader_IntoTarWriter(TarEntryFormat entryFormat, TarEntryType entryType, bool unseekableStream)
+        {
+            MemoryStream msSource = new();
+            MemoryStream msDestination = new();
+
+            WriteTarArchiveWithOneEntry(msSource, entryFormat, entryType);
+            msSource.Position = 0;
+
+            Stream source = new WrappedStream(msSource, msSource.CanRead, msSource.CanWrite, canSeek: !unseekableStream);
+            Stream destination = new WrappedStream(msDestination, msDestination.CanRead, msDestination.CanWrite, canSeek: !unseekableStream);
+
+            using (TarReader reader = new(source))
+            using (TarWriter writer = new(destination))
+            {
+                TarEntry entry;
+                while ((entry = reader.GetNextEntry()) != null)
+                {
+                    writer.WriteEntry(entry);
+                }
+            }
+
+            AssertExtensions.SequenceEqual(msSource.ToArray(), msDestination.ToArray());
+        }
     }
 }
