@@ -1581,7 +1581,6 @@ const char* Compiler::eeGetShortClassName(CORINFO_CLASS_HANDLE clsHnd)
     bool success = eeRunWithSPMIErrorTrap<FilterSuperPMIExceptionsParam_ee_il>(
         [](FilterSuperPMIExceptionsParam_ee_il* pParam) {
             int len = 0;
-            // Warning: crossgen2 doesn't fully implement the `appendClassName` API.
             // We need to pass size zero, get back the actual buffer size required, allocate that space,
             // and call the API again to get the full string.
             int cchStrLen = pParam->pJitInfo->compCompHnd->appendClassName(nullptr, &len, pParam->clazz);
