@@ -280,7 +280,7 @@ namespace System.Xml.Schema
             _typeCode = converterAtomic._typeCode;
             _clrTypeDefault = converterAtomic.DefaultClrListType;
             Debug.Assert(_clrTypeDefault!.IsArray);
-            // We don't support lists-of-lists, so we don't set _clrListTypeDefault to null.
+            // We don't support lists-of-lists, so we set _clrListTypeDefault to null.
             _clrListTypeDefault = null;
         }
 
@@ -445,6 +445,9 @@ namespace System.Xml.Schema
             get { return _clrTypeDefault; }
         }
 
+        /// <summary>
+        /// Return an array type with the element type of the default V1 Clr mapping of this converter's type.
+        /// </summary>
         protected Type? DefaultClrListType
         {
             get { return _clrListTypeDefault; }

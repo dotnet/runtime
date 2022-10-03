@@ -1143,7 +1143,7 @@ namespace System.Xml.Schema
             return exception;
 
             [UnconditionalSuppressMessage("AotAnalysis", "IL3050:AotUnfriendlyApi",
-                Justification = "Array type is alwasys present as it is passed in as a parameter.")]
+                Justification = "Array type is always present as it is passed in as a parameter.")]
             Array ToArray(ArrayList values, Type arrayType)
             {
                 Array array = values.ToArray(arrayType.GetElementType()!);
