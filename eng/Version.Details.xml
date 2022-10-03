@@ -314,10 +314,6 @@
       <Uri>https://github.com/dotnet/roslyn</Uri>
       <Sha>b189d3e226ef8b389560aaece38fa263e2cf1c15</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.4.0-3.22480.9">
-      <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>b189d3e226ef8b389560aaece38fa263e2cf1c15</Sha>
-    </Dependency>
     <Dependency Name="Microsoft.CodeAnalysis.Analyzers" Version="3.3.4-beta1.22503.2">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
       <Sha>f54c092f4099a87d4336a1f39e02d1a3cd553af9</Sha>
